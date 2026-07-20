@@ -29,7 +29,7 @@ Lookup table for inventory item categories (e.g., "Cables", "Peripherals", "Supp
 - Scoped by `company_id`; hide `company_id` from UI.
 
 ## 9. Audit Logging Requirements
-- `trg_inventory_categories_audit_insert|update|delete` in `database.sql` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- `trg_inventory_categories_audit_insert|update|delete` in `db/03_triggers.sql` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

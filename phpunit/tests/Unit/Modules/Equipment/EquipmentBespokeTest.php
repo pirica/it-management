@@ -19,7 +19,7 @@ class EquipmentBespokeTest extends TestCase
 
         require_once ROOT_PATH . 'modules/equipment/delete_functions.php';
 
-        // Use company_id 1 which is guaranteed to exist by database.sql
+        // Use company_id 1 which is guaranteed to exist by db/02_data.sql seeds
         $this->companyId = 1;
 
         // Set session company_id for auditing to bypass the 0 FK constraint in audit_logs

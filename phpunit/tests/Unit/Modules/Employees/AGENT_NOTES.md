@@ -5,7 +5,7 @@ Unit/regression tests for `modules/employees/`.
 
 ## 3. Required Relationships
 - Production docs: `modules/employees/AGENT_NOTES.md` (when present).
-- Database fixtures: `database.sql`.
+- Database fixtures: `db/02_data.sql`.
 
 ## 7. File Structure
 - `SafeImportTest.php` — asserts import does not delete rows missing from payload; runs `modules/employees/index.php` import via `ItmModuleIsolatedTestTrait::runIsolatedModule()` (subprocess — avoids redeclare fatal).

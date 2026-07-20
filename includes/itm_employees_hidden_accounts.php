@@ -18,7 +18,7 @@ function itm_employees_is_hidden_account($rowOrFlag)
 }
 
 /**
- * Why: Live installs may predate database.sql; index load ensures the protection column exists.
+ * Why: Live installs may predate db/; index load ensures the protection column exists.
  */
 function itm_employees_ensure_is_hidden_column($conn)
 {

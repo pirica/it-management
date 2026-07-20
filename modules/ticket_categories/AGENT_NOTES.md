@@ -33,7 +33,7 @@ Lookup table for categorizing support tickets (e.g., "Hardware", "Software", "Ne
 - Scoped by `company_id`; hide `company_id` from UI.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_ticket_categories_audit_insert`, `trg_ticket_categories_audit_update`, `trg_ticket_categories_audit_delete` on `ticket_categories` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_ticket_categories_audit_insert`, `trg_ticket_categories_audit_update`, `trg_ticket_categories_audit_delete` on `ticket_categories` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

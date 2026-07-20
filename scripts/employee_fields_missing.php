@@ -1,6 +1,6 @@
 <?php
 /**
- * Why: database.sql defines employees columns (e.g. termination_date) that may be absent
+ * Why: db/ defines employees columns (e.g. termination_date) that may be absent
  * from the live schema or from employees module screens. Surfaces both gaps in one run.
  *
  * Browser: open scripts/employee_fields_missing.php (login required).
@@ -39,7 +39,7 @@ $expectedCount = count(itm_fields_missing_parse_database_sql_table_columns()[ $t
 $liveCount = count(itm_fields_missing_live_table_columns($conn, $table));
 
 echo 'Employees schema/UI audit' . $nl;
-echo 'Expected columns (database.sql): ' . $expectedCount . $nl;
+echo 'Expected columns (db/): ' . $expectedCount . $nl;
 echo 'Live columns (SHOW COLUMNS): ' . $liveCount . $nl . $nl;
 
 echo itm_fields_missing_format_columns_block($moduleReport, $nl);

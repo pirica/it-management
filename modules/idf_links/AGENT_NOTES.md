@@ -43,7 +43,7 @@ Stores physical cable links between IDF ports (`port_id_a` and `port_id_b`), inc
 - Hide `company_id` in all user-facing screens.
 
 ## 9. Audit Logging Requirements
-Triggers in `database.sql` log all INSERT, UPDATE, and DELETE operations on `idf_links` to `audit_logs` when audit logging is enabled.
+Triggers in `db/03_triggers.sql` log all INSERT, UPDATE, and DELETE operations on `idf_links` to `audit_logs` when audit logging is enabled.
 
 | Trigger | Actions | Payload highlights |
 |---------|---------|-------------------|

@@ -243,7 +243,7 @@ function itm_extract_pitfalls(string $notes_path): string
 
     // Check if the pitfalls text is exactly the original outline placeholder from templates/AGENT_NOTES.md
     $cleaned_text = str_replace(["\r", "\n", "\t", " "], '', $pitfalls_text);
-    $template_placeholder = "Mistakesagentsmustavoid.VerifyFKdeletebehaviourin`database.sql`:|ChildFK|Pitfalltext||----------|----------------||`ONDELETESETNULL`|ChildFKsnulloutautomatically—nomanualdetach||`ONDELETECASCADE`|Parentdeleteremoveschildren||NoCASCADE/noSETNULL|DetachorclearchildFKsforactive`company_id`**before**parentdelete|Otherexamples:-Donotdeleterowsstillreferencedwhenschemablocksdelete.-Donotcopygeneric“detachfirst”textwithoutchecking`information_schema`/`database.sql`.-Bespokeorsensitivemodules:changeonlywhenexplicitlyrequested.-Document**knowngaps**(missing`employee_id`filter,unguardededitURLs)ratherthanidealbehaviour.";
+    $template_placeholder = "Mistakesagentsmustavoid.VerifyFKdeletebehaviourin`db/`:|ChildFK|Pitfalltext||----------|----------------||`ONDELETESETNULL`|ChildFKsnulloutautomatically—nomanualdetach||`ONDELETECASCADE`|Parentdeleteremoveschildren||NoCASCADE/noSETNULL|DetachorclearchildFKsforactive`company_id`**before**parentdelete|Otherexamples:-Donotdeleterowsstillreferencedwhenschemablocksdelete.-Donotcopygeneric“detachfirst”textwithoutchecking`information_schema`/`db/`.-Bespokeorsensitivemodules:changeonlywhenexplicitlyrequested.-Document**knowngaps**(missing`employee_id`filter,unguardededitURLs)ratherthanidealbehaviour.";
 
     if ($cleaned_text === $template_placeholder || strpos($pitfalls_text, 'Mistakes agents must avoid') !== false && strlen($cleaned_text) < 1000) {
         // If it contains ONLY the template outline table/text and nothing else, treat as empty

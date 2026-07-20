@@ -30,7 +30,7 @@ Defines which roles may assign other roles to users (e.g. Admin → IT Staff).
 - Scoped by `company_id`.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_role_assignment_rights_audit_insert`, `trg_role_assignment_rights_audit_update`, `trg_role_assignment_rights_audit_delete` on `role_assignment_rights` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_role_assignment_rights_audit_insert`, `trg_role_assignment_rights_audit_update`, `trg_role_assignment_rights_audit_delete` on `role_assignment_rights` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

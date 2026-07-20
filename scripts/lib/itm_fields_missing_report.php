@@ -51,7 +51,7 @@ if (!function_exists('itm_fields_missing_parse_database_sql_table_columns')) {
         if ($rootPath === null) {
             $rootPath = defined('ROOT_PATH') ? (string) ROOT_PATH : (dirname(__DIR__, 2) . DIRECTORY_SEPARATOR);
         }
-        $path = rtrim($rootPath, '/\\') . DIRECTORY_SEPARATOR . 'database.sql';
+        $path = rtrim($rootPath, '/\\') . DIRECTORY_SEPARATOR . 'db' . DIRECTORY_SEPARATOR . '01_schema.sql';
         if (!is_readable($path)) {
             return [];
         }
@@ -1891,7 +1891,7 @@ if (!function_exists('itm_fields_missing_audit_audited_ui_columns')) {
 
 if (!function_exists('itm_fields_missing_append_schema_column_passes')) {
     /**
-     * One PASS (or INFO when schema-only) per column present in both database.sql and live DB.
+     * One PASS (or INFO when schema-only) per column present in both db/ and live DB.
      *
      * @param list<string> $expectedColumns
      * @param list<string> $liveColumns
@@ -1910,7 +1910,7 @@ if (!function_exists('itm_fields_missing_append_schema_column_passes')) {
             if (!in_array($column, $liveColumns, true)) {
                 continue;
             }
-            $line = "{$table}.{$column}: live matches database.sql";
+            $line = "{$table}.{$column}: live matches db/01_schema.sql";
             if ($schemaOnly) {
                 $passes[] = $line;
                 continue;
@@ -3290,7 +3290,7 @@ if (!function_exists('itm_fields_missing_format_columns_block')) {
 
         if ($hasSchemaTable) {
             $out .= itm_fields_missing_format_inline_list_section(
-                'database.sql columns',
+                'db/ columns',
                 $expected,
                 $nl,
                 '(none)'
@@ -3302,7 +3302,7 @@ if (!function_exists('itm_fields_missing_format_columns_block')) {
                 '(none)'
             );
         } else {
-            $out .= '  database.sql columns (0): (none)' . $nl;
+            $out .= '  db/ columns (0): (none)' . $nl;
         }
 
         if ($skipped) {
@@ -3373,7 +3373,7 @@ if (!function_exists('itm_fields_missing_format_legend')) {
     function itm_fields_missing_format_legend(string $nl): string
     {
         $out = 'Section legend (same for every module; ui: tag shows audit path):' . $nl;
-        $out .= '  database.sql columns / live columns — canonical schema vs live MySQL (when the module has a table)' . $nl;
+        $out .= '  db/ columns / live columns — canonical schema vs live MySQL (when the module has a table)' . $nl;
         $out .= '  UI coverage audit: skipped — gated bespoke UI contract (page: title/favicon/list heading layout+emoji/new button position+style; list: search/sort/pagination/import/export/sample data)' . $nl;
         $out .= '  Bespoke gate list UI — Search, Sort, Pagination (Settings records_per_page), bulk actions, Actions column' . $nl;
         $out .= '  List heading layout — centered h1 + Settings new_button_position left/right gates' . $nl;
@@ -3693,14 +3693,14 @@ if (!function_exists('itm_fields_missing_audit_module')) {
             foreach ($schemaMissing as $column) {
                 $failures[] = [
                     'code' => 'schema_missing',
-                    'message' => "Live DB missing {$table}.{$column} (present in database.sql)",
+                    'message' => "Live DB missing {$table}.{$column} (present in db/)",
                 ];
             }
         }
 
         if ($schemaExtra !== []) {
             foreach ($schemaExtra as $column) {
-                $infos[] = "Live DB has extra {$table}.{$column} not listed in database.sql";
+                $infos[] = "Live DB has extra {$table}.{$column} not listed in db/01_schema.sql";
             }
         }
         if ($expectedColumns !== []) {
@@ -3991,7 +3991,7 @@ if (!function_exists('itm_fields_missing_audit_module')) {
 
 if (!function_exists('itm_fields_missing_audit_bespoke_ui_only')) {
     /**
-     * Schema-less bespoke module: scrape module forms only (no database.sql / live column pass).
+     * Schema-less bespoke module: scrape module forms only (no db/ / live column pass).
      *
      * @return array<string, mixed>
      */

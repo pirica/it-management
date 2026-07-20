@@ -1,9 +1,9 @@
 <?php
 /**
- * Export floor_plan_folders rows as database.sql-style INSERT statements.
+ * Export floor_plan_folders rows as db/02_data.sql-style INSERT statements.
  *
  * Why: folder seed data is tenant-specific; run this against your local Laragon DB
- * and paste the output into database.sql after the floor_plan_folders CREATE TABLE block.
+ * and paste the output into db/ after the floor_plan_folders CREATE TABLE block.
  *
  * Usage (repository root, PHP 7.4+ with MySQLi):
  *   php scripts/export_floor_plan_folders_seed.php

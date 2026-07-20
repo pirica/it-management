@@ -2,7 +2,7 @@
 /**
  * DB Field Active Audit Script
  *
- * Identifies tables missing the mandatory `active` column in database.sql and
+ * Identifies tables missing the mandatory `active` column in db/ and
  * detects module code that references `active` on those tables.
  *
  * CLI: php scripts/db_field_active.php [--json]
@@ -28,6 +28,7 @@ if (!function_exists('sanitize')) {
 
 require_once __DIR__ . '/lib/script_browser_nav.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 $nl = itm_script_output_nl();
 $argvList = $GLOBALS['argv'] ?? [];
@@ -38,9 +39,9 @@ if (!$itmIsCli) {
     itm_script_output_close_pre();
 }
 
-$dbSqlPath = dirname(__DIR__) . '/database.sql';
+$dbSqlPath = itm_database_sql_schema_path();
 if (!is_file($dbSqlPath)) {
-    $message = 'Error: database.sql not found at ' . $dbSqlPath;
+    $message = 'Error: db/01_schema.sql not found at ' . $dbSqlPath;
     if ($itmIsCli) {
         fwrite(STDERR, $message . PHP_EOL);
     } else {
@@ -96,7 +97,7 @@ if (is_dir($moduleDir)) {
                 $findings['potential_code_mismatches'][] = [
                     'file' => str_replace(dirname(__DIR__) . DIRECTORY_SEPARATOR, '', $filePath),
                     'table' => $targetTable,
-                    'reason' => "File uses 'active' in query, but table '$targetTable' is missing it in database.sql.",
+                    'reason' => "File uses 'active' in query, but table '$targetTable' is missing it in db/.",
                 ];
             }
         }
@@ -137,7 +138,7 @@ if ($asJson) {
 
 if ($itmIsCli) {
     echo colorText("DB Field 'active' Audit", 'info') . $nl;
-    echo '[INFO] CREATE TABLE blocks scanned in database.sql: ' . $tableCount . $nl;
+    echo '[INFO] CREATE TABLE blocks scanned in db/: ' . $tableCount . $nl;
     echo '[INFO] Tables missing active column: ' . $missingCount . $nl;
     echo '[INFO] Potential code mismatches: ' . $mismatchCount . $nl . $nl;
 
@@ -161,14 +162,14 @@ if ($itmIsCli) {
         echo itm_script_format_status_line('[PASS] All scanned tables include an active column; no module mismatches found.') . $nl;
     } else {
         echo itm_script_format_status_line('[FAIL] active column audit found schema or code mismatches.') . $nl;
-        echo '[INFO] Fix: add `active` tinyint NOT NULL DEFAULT \'1\' in database.sql and align module queries.' . $nl;
+        echo '[INFO] Fix: add `active` tinyint NOT NULL DEFAULT \'1\' in db/ and align module queries.' . $nl;
     }
 
     exit($passed ? 0 : 1);
 }
 
 echo '<h1>DB Field \'active\' Audit</h1>';
-echo '<p class="scripts-muted">Scans <code>database.sql</code> for compliance and identifies potential runtime errors where code expects an <code>active</code> column that does not exist.</p>';
+echo '<p class="scripts-muted">Scans <code>db/</code> split bundle for compliance and identifies potential runtime errors where code expects an <code>active</code> column that does not exist.</p>';
 echo '<p><strong>Tables scanned:</strong> ' . (int)$tableCount . '</p>';
 
 if ($passed) {
@@ -200,7 +201,7 @@ if ($mismatchCount === 0) {
         echo '<tr><td>' . $fileLink . '</td><td>' . $tableLink . '</td><td>' . sanitize($mismatch['reason']) . '</td></tr>';
     }
     echo '</tbody></table>';
-    echo '<div class="scripts-card" style="margin-top:20px;"><p class="scripts-muted">To fix: Add <code>`active` tinyint NOT NULL DEFAULT \'1\'</code> to the table definition in <code>database.sql</code> and update matching triggers.</p></div>';
+    echo '<div class="scripts-card" style="margin-top:20px;"><p class="scripts-muted">To fix: Add <code>`active` tinyint NOT NULL DEFAULT \'1\'</code> to the table definition in <code>db/</code> split bundle and update matching triggers.</p></div>';
 }
 
 itm_script_output_end();

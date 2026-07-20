@@ -32,7 +32,7 @@ Lookup table for system roles (e.g., "Admin", "IT Staff", "User").
 - Scoped by `company_id`; hide `company_id` from UI.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_employee_roles_audit_insert`, `trg_employee_roles_audit_update`, `trg_employee_roles_audit_delete` on `employee_roles` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_employee_roles_audit_insert`, `trg_employee_roles_audit_update`, `trg_employee_roles_audit_delete` on `employee_roles` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

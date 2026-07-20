@@ -268,6 +268,7 @@ define('EXPLORER_MAX_FILE_SIZE', 20971520); // 20MB
 
 // Load helpers needed before upload directory bootstrap
 require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
+require_once ROOT_PATH . 'includes/itm_database_sql_source.php';
 require_once ROOT_PATH . 'includes/itm_date_format.php';
 require_once ROOT_PATH . 'includes/itm_crud_audit_fields.php';
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
@@ -1108,7 +1109,7 @@ if (!function_exists('itm_split_sql_value_tuples')) {
 }
 
 /**
- * Extracts INSERT statements from database.sql, including multiline VALUES blocks.
+ * Extracts INSERT statements from db/02_data.sql, including multiline VALUES blocks.
  */
 if (!function_exists('itm_parse_database_sql_inserts')) {
     function itm_parse_database_sql_inserts($sqlText, $tableFilter = null) {
@@ -1198,7 +1199,7 @@ if (!function_exists('itm_table_outbound_fk_map')) {
 }
 
 /**
- * Lookup one database.sql INSERT row by primary key id (sample FK remap when live anchor is gone).
+ * Lookup one db/02_data.sql INSERT row by primary key id (sample FK remap when live anchor is gone).
  *
  * @return array<string, string>|null
  */
@@ -1212,9 +1213,8 @@ if (!function_exists('itm_seed_fk_anchor_row_from_database_sql')) {
 
         if ($parsedByTable === null) {
             $parsedByTable = [];
-            $sqlPath = ROOT_PATH . 'database.sql';
-            if (is_file($sqlPath)) {
-                $sqlBody = @file_get_contents($sqlPath);
+            $sqlBody = itm_database_sql_read_data();
+            if ($sqlBody !== '') {
                 if ($sqlBody !== false && function_exists('itm_parse_database_sql_inserts')) {
                     $parsedByTable = itm_parse_database_sql_inserts($sqlBody);
                 }
@@ -1242,7 +1242,7 @@ if (!function_exists('itm_seed_fk_anchor_row_from_database_sql')) {
 }
 
 /**
- * Match a tenant FK row using database.sql business keys (name/code/level, etc.).
+ * Match a tenant FK row using db/02_data.sql business keys (name/code/level, etc.).
  */
 if (!function_exists('itm_seed_match_tenant_fk_by_business_keys')) {
     function itm_seed_match_tenant_fk_by_business_keys(mysqli $conn, string $refTable, int $companyId, array $anchorRow): int
@@ -1292,7 +1292,7 @@ if (!function_exists('itm_seed_match_tenant_fk_by_business_keys')) {
 }
 
 /**
- * Resolves a database.sql FK id for sample seed when anchor rows are missing for the tenant.
+ * Resolves a db/02_data.sql FK id for sample seed when anchor rows are missing for the tenant.
  * Why: itm_fk_resolve_company_equivalent_id() must keep stale ids for edit UI; seed may substitute.
  */
 if (!function_exists('itm_seed_resolve_fk_from_database_sql')) {
@@ -1346,7 +1346,7 @@ if (!function_exists('itm_seed_resolve_fk_from_database_sql')) {
 }
 
 /**
- * Inserts sample rows for a module table from database.sql when empty.
+ * Inserts sample rows for a module table from db/02_data.sql when empty.
  */
 if (!function_exists('itm_seed_table_from_database_sql')) {
     function itm_seed_table_from_database_sql($conn, $tableName, $companyId, &$error = '') {
@@ -1364,15 +1364,9 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
             return 0;
         }
 
-        $sqlPath = ROOT_PATH . 'database.sql';
-        if (!is_file($sqlPath)) {
-            $error = 'Sample source file database.sql was not found.';
-            return 0;
-        }
-
-        $sqlBody = @file_get_contents($sqlPath);
-        if ($sqlBody === false) {
-            $error = 'Unable to read sample source file.';
+        $sqlBody = itm_database_sql_read_data();
+        if ($sqlBody === '') {
+            $error = 'Sample source file db/02_data.sql was not found or is empty.';
             return 0;
         }
 
@@ -1383,7 +1377,7 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
                 && function_exists('itm_seed_default_employee_sidebar_preferences_for_company')) {
                 return itm_seed_default_employee_sidebar_preferences_for_company($conn, $companyId, 1, $error);
             }
-            $error = 'No sample rows found in database.sql for this module.';
+            $error = 'No sample rows found in db/02_data.sql for this module.';
             return 0;
         }
 
@@ -1411,13 +1405,13 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
         }
 
         if ($sourceHasCompanyRows && !$sourceHasRequestedCompanyRows) {
-            $error = 'No sample rows found in database.sql for this company.';
+            $error = 'No sample rows found in db/02_data.sql for this company.';
             return 0;
         }
 
         // Why: Multi-tenant tables must never receive every INSERT row with only company_id rewritten.
         if (!$sourceHasCompanyRows && itm_table_has_column($conn, $tableName, 'company_id')) {
-            $error = 'No sample rows found in database.sql for this company.';
+            $error = 'No sample rows found in db/02_data.sql for this company.';
             return 0;
         }
 
@@ -1428,7 +1422,7 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
             $rawColumns = $rowEntry['columns'] ?? [];
             $rawValues = $rowEntry['values'] ?? [];
 
-            // Why: When database.sql already includes per-company samples, seed only rows
+            // Why: When db/02_data.sql already includes per-company samples, seed only rows
             // for the active company to avoid global-unique collisions on tenant-specific tables.
             if ($sourceHasCompanyRows && $sourceHasRequestedCompanyRows) {
                 $rowCompanyId = null;
@@ -1509,7 +1503,7 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
         }
 
         if ($insertCount === 0) {
-            $error = 'No sample rows found in database.sql for this module.';
+            $error = 'No sample rows found in db/02_data.sql for this module.';
         }
 
         return $insertCount;
@@ -1538,7 +1532,7 @@ if (!function_exists('itm_cleanup_catalogs_cross_tenant_fk_rows')) {
 }
 
 /**
- * Seeds all table samples from database.sql while keeping inserts idempotent.
+ * Seeds all table samples from db/02_data.sql while keeping inserts idempotent.
  */
 if (!function_exists('itm_seed_all_tables_from_database_sql')) {
     function itm_seed_all_tables_from_database_sql($conn, $companyId, &$error = '', &$seedReport = []) {
@@ -1554,14 +1548,14 @@ if (!function_exists('itm_seed_all_tables_from_database_sql')) {
             return 0;
         }
 
-        $sqlPath = ROOT_PATH . 'database.sql';
-        if (!is_file($sqlPath)) {
-            $error = 'Sample source file database.sql was not found.';
+        $sqlBody = itm_database_sql_read_data();
+        if ($sqlBody === '') {
+            $error = 'Sample source file db/02_data.sql was not found or is empty.';
             return 0;
         }
 
         $insertCount = 0;
-        foreach (itm_parse_database_sql_inserts((string)@file_get_contents($sqlPath)) as $tableName => $insertRows) {
+        foreach (itm_parse_database_sql_inserts($sqlBody) as $tableName => $insertRows) {
             unset($insertRows);
             if (!itm_is_safe_identifier($tableName)) {
                 continue;

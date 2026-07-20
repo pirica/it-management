@@ -6,7 +6,7 @@
 - **Integration:** MySQL database integration tests included
 
 ## Test Data & Isolation
-- **Fixtures:** Initial data from `database.sql`
+- **Fixtures:** Initial data from `db/01_schema.sql`
 - **Multi-tenancy:** Tests cover 5 seeded companies (TechCorp Global … Enterprise IT)
 - **Cleanup:** Tests use transaction rollback or temporary row approaches where implemented
 

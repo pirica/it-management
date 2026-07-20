@@ -31,7 +31,7 @@ Lookup table for switch port operational status (e.g. Up, Down, Unknown) with op
 - Scoped by `company_id`; hide `company_id` from UI.
 
 ## 9. Audit Logging Requirements
-- `trg_switch_status_audit_insert|update|delete` in `database.sql`.
+- `trg_switch_status_audit_insert|update|delete` in `db/03_triggers.sql`.
 
 ## 10. Common Pitfalls
 

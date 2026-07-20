@@ -4,7 +4,7 @@ Read scripts/scripts.php
 Read phpunit/* 
 Read scripts/api.php 
 Read scripts/SCRIPTS.md
-Read database.sql 
+Read db/ 
 Read full project
 
 On base on your learnings edit/update or create AGENT_NOTES.md is none exists for each modules/ on base of this (Module Template) don't use scripts to auto the process.
@@ -13,7 +13,7 @@ On base on your learnings edit/update or create AGENT_NOTES.md is none exists fo
 
 # AGENT_NOTES.md — module template
 
-Use this outline for every in-scope folder (`modules/<slug>/`, `config/`, `includes/`, `scripts/lib/`, etc.). **Read the module PHP and `database.sql` first** — do not bulk-generate or copy generic boilerplate without verifying behaviour.
+Use this outline for every in-scope folder (`modules/<slug>/`, `config/`, `includes/`, `scripts/lib/`, etc.). **Read the module PHP and `db/` first** — do not bulk-generate or copy generic boilerplate without verifying behaviour.
 
 File title: `# AGENT_NOTES.md - <Human Name>`
 
@@ -149,7 +149,7 @@ Describe what is logged and how.
 
 ### Database triggers (most CRUD tables)
 
-- Name triggers: `trg_{table}_audit_insert|update|delete` in `database.sql`
+- Name triggers: `trg_{table}_audit_insert|update|delete` in `db/03_triggers.sql`
 - Triggers **always** insert into `audit_logs` on DML — they are **not** gated by the `enable_audit_logs` UI setting
 - Actor context: `@app_employee_id`, `@app_company_id` from `config/config.php`
 
@@ -163,7 +163,7 @@ Do **not** write “when `enable_audit_logs` is enabled” for standard DB trigg
 
 ## 10. Common Pitfalls
 
-Mistakes agents must avoid. Verify FK delete behaviour in `database.sql`:
+Mistakes agents must avoid. Verify FK delete behaviour in `db/03_triggers.sql`:
 
 | Child FK | Pitfall text |
 |----------|----------------|
@@ -174,7 +174,7 @@ Mistakes agents must avoid. Verify FK delete behaviour in `database.sql`:
 Other examples:
 
 - Do not delete rows still referenced when schema blocks delete.
-- Do not copy generic “detach first” text without checking `information_schema` / `database.sql`.
+- Do not copy generic “detach first” text without checking `information_schema` / `db/`.
 - Bespoke or sensitive modules: change only when explicitly requested.
 - Document **known gaps** (missing `employee_id` filter, unguarded edit URLs) rather than ideal behaviour.
 
@@ -182,7 +182,7 @@ Other examples:
 
 ## 11. Examples of Safe Code Patterns
 
-Provide 1–2 examples using **real table and column names** from `database.sql`.
+Provide 1–2 examples using **real table and column names** from `db/01_schema.sql`.
 
 ### Safe SELECT
 
@@ -218,7 +218,7 @@ Example: Regression: `php scripts/verify_<module>.php`. Parent module: `modules/
 ## Authoring checklist (before marking complete)
 
 1. Read module entry PHP (`index.php` minimum; wrappers for `is_*`).
-2. Grep `database.sql` for `CREATE TABLE` and `trg_{table}_audit_*`.
+2. Grep `db/` for `CREATE TABLE` and `trg_{table}_audit_*`.
 3. Confirm CSRF helper name in PHP matches section 5.
 4. Confirm audit section matches unconditional triggers (unless module is read-only).
 5. Confirm section 11 column names exist in schema.

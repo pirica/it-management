@@ -2,7 +2,7 @@
 /**
  * Static audit: fail on stale user_id column / users table SQL after employees merge.
  *
- * Why: database.sql uses employee_id; leftover user_id SQL breaks at runtime.
+ * Why: db/ uses employee_id; leftover user_id SQL breaks at runtime.
  */
 require_once __DIR__ . '/lib/script_cli_output.php';
 

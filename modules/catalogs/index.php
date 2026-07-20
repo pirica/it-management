@@ -170,7 +170,7 @@ function cr_fk_options($conn, $fk, $company_id) {
     $rows = $loadRows();
 
     // Why: catalog edit forms become unusable when company-scoped FK tables are empty.
-    // Seeding from database.sql keeps dropdowns populated without exposing company_id in the UI.
+    // Seeding from db/ keeps dropdowns populated without exposing company_id in the UI.
     if ($hasCompany && empty($rows) && function_exists('itm_seed_table_from_database_sql')) {
         $seedError = '';
         itm_seed_table_from_database_sql($conn, $table, (int)$company_id, $seedError);

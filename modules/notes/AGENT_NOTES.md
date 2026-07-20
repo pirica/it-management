@@ -53,7 +53,7 @@ Google Keep–style personal and shared notes for the active company. Supports p
 - Notes cannot be moved between companies.
 
 ## 9. Audit Logging Requirements
-- **Private data (no audit):** `notes` and `note_labels` must not write to `audit_logs` and have no `trg_*_audit_*` triggers in `database.sql` (see `AGENTS.md` → **Private data — no audit trail**).
+- **Private data (no audit):** `notes` and `note_labels` must not write to `audit_logs` and have no `trg_*_audit_*` triggers in `db/03_triggers.sql` (see `AGENTS.md` → **Private data — no audit trail**).
 
 ## 10. Common Pitfalls
 - Do not list another user's private notes — always apply `itm_notes_visibility_sql()`. [Cursor-Valid]

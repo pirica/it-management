@@ -5,7 +5,7 @@ Unit/regression tests for `modules/employee_sidebar_preferences/`.
 
 ## 3. Required Relationships
 - Production docs: `modules/employee_sidebar_preferences/AGENT_NOTES.md`.
-- Database fixtures: `database.sql`.
+- Database fixtures: `db/02_data.sql`.
 
 ## 4. Business Rules (Critical for Agents)
 - **Disposable script test employees:** when tests INSERT/UPDATE `employees` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_employee.php`; never mutate seed employee id `1`. See `scripts/SCRIPTS.md` → Disposable script test users.

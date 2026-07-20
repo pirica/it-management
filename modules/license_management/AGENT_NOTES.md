@@ -18,7 +18,7 @@ Tracks software licenses per company: name, key, type, quantity, supplier, purch
 - **Quantity** defaults to **1** when omitted on create/save.
 - **Price** accepts `.` as decimal separator; **comma is converted to dot** on POST (`cr_normalize_price_input()`).
 - **Dates** stored as MySQL `DATE`; list/view/import use **dd/mm/yyyy** via `itm_format_cell_scalar_display()` / `itm_parse_date_input()`.
-- **Type** values come from tenant-scoped `license_types` rows (seeded in `database.sql` + cross-company `INSERT IGNORE` replication). Quick-add on the Type select inserts via `select_options_api.php` (`license_types` whitelist); full CRUD is under **`modules/license_types/`** with **company_id** hidden.
+- **Type** values come from tenant-scoped `license_types` rows (seeded in `db/03_triggers.sql` + cross-company `INSERT IGNORE` replication). Quick-add on the Type select inserts via `select_options_api.php` (`license_types` whitelist); full CRUD is under **`modules/license_types/`** with **company_id** hidden.
 - **Active** uses the standard checkbox double-label pattern on forms and badges on list/view.
 
 ## 5. UI Behavior Requirements
@@ -45,8 +45,8 @@ Tracks software licenses per company: name, key, type, quantity, supplier, purch
 - **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
 - Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - **`modules/license_types/`** — lookup CRUD; keep **`company_id`** in `$hideCompanyIdTables` on every duplicated entry file (`index.php`, `edit.php`, `view.php`, `list_all.php`). [Cursor-Valid]
-- **`license_management` seeds in `database.sql`** are declared **after** `suppliers` so FK parents exist before sample INSERTs (one sample row per company, companies 1–5). [Cursor-Valid]
-- **`license_types` seeds** — five lookup rows per company (companies 1–5) plus cross-company `INSERT IGNORE` replication in `database.sql`. [Cursor-Valid]
+- **`license_management` seeds in `db/03_triggers.sql`** are declared **after** `suppliers` so FK parents exist before sample INSERTs (one sample row per company, companies 1–5). [Cursor-Valid]
+- **`license_types` seeds** — five lookup rows per company (companies 1–5) plus cross-company `INSERT IGNORE` replication in `db/03_triggers.sql`. [Cursor-Valid]
 - **Do not use `employees.active`**-style filters elsewhere; unrelated but same class of bug as equipment assignee dropdown. [Cursor-Invalid]
 - **Deleting a `license_types` row** referenced by `license_management` fails (RESTRICT FK). [Cursor-Valid]
 - **Price import:** normalise comma decimals before `cr_validate_numeric_value()`. [Cursor-Fixed]

@@ -128,7 +128,7 @@ if (!$conn) {
     if ($tableRes && ($tableRow = mysqli_fetch_assoc($tableRes)) && (int)$tableRow['cnt'] === 1) {
         ss_verify_pass('system_status cache table exists');
     } else {
-        ss_verify_fail('system_status cache table missing — re-import database.sql or bash scripts/import_database_split.sh');
+        ss_verify_fail('system_status cache table missing — re-import via bash scripts/import_database_split.sh or bash scripts/import_database_split.sh');
     }
 
     $cacheRefresh = itm_system_status_refresh_tab($conn, 'php_settings', 1);

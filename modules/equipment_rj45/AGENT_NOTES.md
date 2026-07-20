@@ -30,7 +30,7 @@ Tracks standard RJ45 copper connections and port configurations for equipment.
 - Scoped by `company_id`.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_equipment_rj45_audit_insert`, `trg_equipment_rj45_audit_update`, `trg_equipment_rj45_audit_delete` on `equipment_rj45` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_equipment_rj45_audit_insert`, `trg_equipment_rj45_audit_update`, `trg_equipment_rj45_audit_delete` on `equipment_rj45` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

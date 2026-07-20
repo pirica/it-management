@@ -24,7 +24,7 @@ TRIGGERS_FILE="${ROOT}/db/03_triggers.sql"
 
 for f in "$SCHEMA_FILE" "$DATA_FILE" "$TRIGGERS_FILE"; do
   if [[ ! -f "$f" ]]; then
-    echo "FAIL: missing ${f} — run: php scripts/split_database_sql.php --apply"
+    echo "FAIL: missing ${f} — ensure db/01_schema.sql, db/02_data.sql, and db/03_triggers.sql exist."
     exit 1
   fi
 done
@@ -50,6 +50,5 @@ if [[ "$TABLE_COUNT" != "$DERIVED_TABLE_COUNT" ]]; then
 fi
 
 php scripts/verify_database_schema.php
-php scripts/verify_database_split_parity.php
 
-echo "OK: split database import completed (${TABLE_COUNT} tables)."
+echo "OK: db/ import completed (${TABLE_COUNT} tables)."

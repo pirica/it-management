@@ -5,7 +5,7 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 
 ## 2. Key Tables
 - **emails** — outbound send log (`to_email`, `subject`, `status`, `sent_at`, `details`).
-- **email_smtp_configurations** — SMTP host/port/credentials plus IMAP port (default 143) and POP3 port (default 110), TLS mode (default `None`), and require-secure toggle (default off); `is_default = 1` selects the tenant transport. `database.sql` seeds one default **IT Manager** profile per company (`companies` id 1–5).
+- **email_smtp_configurations** — SMTP host/port/credentials plus IMAP port (default 143) and POP3 port (default 110), TLS mode (default `None`), and require-secure toggle (default off); `is_default = 1` selects the tenant transport. `db/` seeds one default **IT Manager** profile per company (`companies` id 1–5).
 - **email_alert_rules** — per-company toggles (`rule_slug`, `enabled`, `days_before`, `notify_emails`).
 
 ## 3. Required Relationships
@@ -18,7 +18,7 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 - `itm_send_email($to, $subject, $html, $companyId)` logs every attempt to **emails** when `company_id` resolves.
 - Fragment HTML bodies are auto-wrapped in the login-style transactional template (`itm_email_build_transactional_html()`). Pass `email_template` (array with `subtitle`, `button_text`, `button_url`, `footer_text`) or `email_template => false` to skip wrapping.
 - Fallback: if no SMTP profile exists, `itm_send_email()` tries Resend (`RESEND_API_KEY` env).
-- Alert runner: `php scripts/run_email_alert_rules.php` (schedule via cron). Company 1 `database.sql` seeds use relative warranty/license expiry (`DATE_ADD(CURDATE(), …)`) so rows stay inside the default 30-day window after import. `verify_emails_module.php` **fails** (does not skip) when the window is empty; it inserts a disposable company-1 license sample, re-asserts, then deletes it. Other tenants need enabled rules plus `notify_emails`. Use `--verbose` when dispatched count is 0.
+- Alert runner: `php scripts/run_email_alert_rules.php` (schedule via cron). Company 1 `db/` seeds use relative warranty/license expiry (`DATE_ADD(CURDATE(), …)`) so rows stay inside the default 30-day window after import. `verify_emails_module.php` **fails** (does not skip) when the window is empty; it inserts a disposable company-1 license sample, re-asserts, then deletes it. Other tenants need enabled rules plus `notify_emails`. Use `--verbose` when dispatched count is 0.
 - Manual delivery tests: `php scripts/test_email_forgot.php email=… [--company=1]`, `php scripts/test_register_mail.php email=… [--company=1]`. Forgot-password emails include a **Reset password** CTA button plus the full reset URL in the body for copy/paste. The forgot test script stores a **real 24-hour reset token** for the matching employee (not a fixed placeholder).
 
 ## 5. UI Behavior Requirements
@@ -47,7 +47,7 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 
 ## 9. Audit Logging Requirements
 - **Send log (`emails`):** private-data exempt — no `trg_emails_audit_*` triggers and no `audit_logs` rows for send-log mutations (see `AGENTS.md` → **Private data — no audit trail**).
-- **SMTP / alert rules:** `email_smtp_configurations` and `email_alert_rules` remain auditable via `trg_*_audit_*` triggers in `database.sql`.
+- **SMTP / alert rules:** `email_smtp_configurations` and `email_alert_rules` remain auditable via `trg_*_audit_*` triggers in `db/03_triggers.sql`.
 
 ## 10. Common Pitfalls
 - Saving SMTP without default flag when multiple profiles exist — always confirm `is_default` behaviour. [Cursor-Valid]

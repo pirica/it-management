@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * List Boolean and Integer Fields
  *
@@ -17,7 +17,7 @@ itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator pri
 
 itm_script_output_begin('List Boolean and Integer Fields');
 
-$sqlPath = ROOT_PATH . 'database.sql';
+$sqlPath = itm_database_sql_schema_path();
 
 // CLI argument or query parameter source selection: 'sql', 'db', or 'both'
 $source = 'both';
@@ -38,7 +38,7 @@ if (!in_array($source, ['sql', 'db', 'both'])) {
 }
 
 /**
- * Parses database.sql CREATE TABLE statements and filters columns.
+ * Parses db/ CREATE TABLE statements and filters columns.
  */
 function parseSqlFields(string $sqlPath): array {
     if (!is_readable($sqlPath)) {
@@ -188,16 +188,16 @@ if (!$isCli) {
     echo "<div style='margin-bottom:15px;'>";
     echo "Source: ";
     echo "<a href='?source=both'>Both</a> | ";
-    echo "<a href='?source=sql'>database.sql</a> | ";
+    echo "<a href='?source=sql'>db/</a> | ";
     echo "<a href='?source=db'>Live Database</a>";
     echo "</div>";
 }
 
 if ($source === 'sql' || $source === 'both') {
     if (!$isCli) {
-        echo "<h3>--- Source: database.sql ---</h3>\n";
+        echo "<h3>--- Source: db/ ---</h3>\n";
     } else {
-        echo "=== Source: database.sql ===\n";
+        echo "=== Source: db/ ===\n";
     }
     $sqlFields = parseSqlFields($sqlPath);
     foreach ($sqlFields as $row) {

@@ -29,7 +29,7 @@ CRUD UI for the global **modules_registry** catalog (module slugs, display names
 - Registry table is global; pair with **company_module_access** for tenant enablement.
 
 ## 9. Audit Logging Requirements
-- `trg_modules_registry_audit_insert|update|delete` in `database.sql`.
+- `trg_modules_registry_audit_insert|update|delete` in `db/03_triggers.sql`.
 
 ## 10. Common Pitfalls
 

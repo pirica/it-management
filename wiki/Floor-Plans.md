@@ -25,7 +25,7 @@ The module blocks moving a folder into itself or its subfolders and rejects dupl
 
 ## Setup
 
-1. Import the Floor Plans section from `database.sql` on existing databases (`floor_plan_folders`, `floor_plan_tags`, `floor_plans`, `floor_plan_item_tags`).
+1. Import the Floor Plans section from `db/01_schema.sql` on existing databases (`floor_plan_folders`, `floor_plan_tags`, `floor_plans`, `floor_plan_item_tags`).
 2. Create the `floor_plans/` directory at the project root (company subfolders are created automatically).
 3. If tables are missing, the gallery shows an explicit migration message instead of a generic company error.
 

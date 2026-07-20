@@ -6,7 +6,7 @@ Unit/regression tests for `modules/explorer/`.
 ## 3. Required Relationships
 - Production docs: `modules/explorer/AGENT_NOTES.md`.
 - Upload/hardening reference: `scripts/AGENT_NOTES.md`.
-- Database fixtures: `database.sql`.
+- Database fixtures: `db/02_data.sql`.
 
 ## 7. File Structure
 - `ExplorerTest.php` — `get_full_path()` ACL (`testGetFullPathSecurity` uses `$employeeId`, not `$userId`); hidden listing entries (`testHiddenSystemEntries`); preview routing (`testPreviewModeRouting`); trash leaf filter (`testTrashListFiltersAncestorFolders` for `explorer_filter_trash_list_to_leaf_items()`).

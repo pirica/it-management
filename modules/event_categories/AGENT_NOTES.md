@@ -34,7 +34,7 @@ Lookup table for categorizing events and alerts (e.g., "Maintenance", "Holiday",
 - Scoped by `company_id`.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_event_categories_audit_insert`, `trg_event_categories_audit_update`, `trg_event_categories_audit_delete` on `event_categories` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_event_categories_audit_insert`, `trg_event_categories_audit_update`, `trg_event_categories_audit_delete` on `event_categories` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

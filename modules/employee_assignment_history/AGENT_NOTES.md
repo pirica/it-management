@@ -45,13 +45,13 @@ Tracks asset custody per employee: which **equipment** or **inventory item** (op
 - `employee_id`, `equipment_id`, and `inventory_item_id` must belong to the active company when set.
 
 ## 9. Audit Logging Requirements
-- Database triggers: `trg_employee_assignment_history_audit_insert`, `trg_employee_assignment_history_audit_update`, `trg_employee_assignment_history_audit_delete` on `employee_assignment_history` in `database.sql` (JSON includes `equipment_id`, `assigned_date`, `returned_date`, `asset_description`, user FKs, etc.).
+- Database triggers: `trg_employee_assignment_history_audit_insert`, `trg_employee_assignment_history_audit_update`, `trg_employee_assignment_history_audit_delete` on `employee_assignment_history` in `db/03_triggers.sql` (JSON includes `equipment_id`, `assigned_date`, `returned_date`, `asset_description`, user FKs, etc.).
 
 ## 10. Common Pitfalls
 
 - **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
 - Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
-- **Stale template references:** there is no `assignment_types` FK or `notes`-only insert shape — use real columns from `database.sql`. [Cursor-Valid]
+- **Stale template references:** there is no `assignment_types` FK or `notes`-only insert shape — use real columns from `db/01_schema.sql`. [Cursor-Valid]
 - **Deleting history** to end an assignment — prefer setting `returned_date` (equipment unassign/delete closes rows automatically). [Cursor-Valid]
 - **Duplicate employees:** unique `(company_id, employee_id)` rejects a second row; use UPDATE/UPSERT semantics. [Cursor-Valid]
 - **Equipment sync vs manual edit:** changing `equipment_id` here without updating `equipment.assigned_to_employee_id` desynchronises custody; prefer assignee changes on the equipment form. [Cursor-Valid]

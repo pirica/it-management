@@ -40,7 +40,7 @@ Admin-only CRUD for onboarding invitations. Each row stores a unique `invitation
 - Hide `company_id` from UI per standard CRUD rules.
 
 ## 9. Audit Logging Requirements
-- `trg_registration_invitations_audit_insert|update|delete` in `database.sql`.
+- `trg_registration_invitations_audit_insert|update|delete` in `db/03_triggers.sql`.
 
 ## 10. Common Pitfalls
 

@@ -251,7 +251,7 @@ why=Optimized stats path returns different aggregates than the legacy loop (corr
 exit=1
 classification=product
 evidence=Pass: 111 Fail: 2 Skip: 11. [FAIL] floor_plan_item_tags (scope=floor_plan_id) missing matching UNIQUE; [FAIL] bookmark_folders (scope=name) UNIQUE shape does not match gate (found 2 keys but not the expected company_id+name form).
-why=database.sql unique-key contract gaps for those tables.
+why=db/ unique-key contract gaps for those tables.
 
 ### check_index_table_compliance.php
 exit=1
@@ -268,7 +268,7 @@ why=Bespoke modules fail static UI-configuration coverage expectations.
 ### compare_database_sql_modules.php
 exit=1
 classification=false-positive
-evidence=Modules without database.sql table: 23 (birthdays, calendar, contacts, is_*, org_chart, reports, resignations, roles_permissions, settings, etc.). company_module_access vs modules_registry mismatch.
+evidence=Modules without db/ table: 23 (birthdays, calendar, contacts, is_*, org_chart, reports, resignations, roles_permissions, settings, etc.). company_module_access vs modules_registry mismatch.
 why=Script treats virtual/composite modules as requiring CREATE TABLE; many are intentional non-table UIs. Exit non-zero is expected until allowlist exists.
 
 ### idfs_api_payload_dry_run.php

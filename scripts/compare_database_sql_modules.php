@@ -1,8 +1,8 @@
-<?php
+﻿<?php
 /**
- * Compares database.sql CREATE TABLE names with modules/ folders and $crud_table mappings.
+ * Compares db/ CREATE TABLE names with modules/ folders and $crud_table mappings.
  *
- * Why: database.sql is the schema source of truth; modules/* should align for CRUD screens.
+ * Why: db/ is the schema source of truth; modules/* should align for CRUD screens.
  *
  * Browser: open while logged in (read-only report on load).
  * CLI: php scripts/compare_database_sql_modules.php [--json]
@@ -274,11 +274,11 @@ function itm_compare_database_sql_modules_report(string $sqlPath): array
             $moduleSummary['mismatch']++;
         } elseif (!isset($tableSet[$crudTable])) {
             $status = 'module_no_table';
-            $notes = itm_single_line_text('$crud_table not found in database.sql CREATE TABLE list.');
+            $notes = itm_single_line_text('$crud_table not found in db/03_triggers.sql01_schema.sql CREATE TABLE list.');
             $moduleSummary['module_no_table']++;
         } elseif ($crudTable !== $moduleName && !isset($tableSet[$moduleName])) {
             $status = 'matched';
-            $notes = itm_single_line_text('Module name differs from table; $crud_table exists in database.sql.');
+            $notes = itm_single_line_text('Module name differs from table; $crud_table exists In db/01_schema.sql.');
             $moduleSummary['matched']++;
         } elseif ($crudTable !== $moduleName && isset($tableSet[$moduleName])) {
             $status = 'matched';
@@ -286,7 +286,7 @@ function itm_compare_database_sql_modules_report(string $sqlPath): array
             $moduleSummary['matched']++;
         } else {
             $moduleSummary['matched']++;
-            $notes = itm_single_line_text('Module folder and $crud_table align with database.sql.');
+            $notes = itm_single_line_text('Module folder and $crud_table align with db/.');
         }
 
         $mappedColumns = ($crudTable !== '' && isset($tableColumnsMap[$crudTable])) ? $tableColumnsMap[$crudTable] : [];
@@ -320,7 +320,7 @@ function itm_compare_database_sql_modules_report(string $sqlPath): array
     ];
 }
 
-$sqlPath = ROOT_PATH . 'database.sql';
+$sqlPath = itm_database_sql_schema_path();
 $report = itm_compare_database_sql_modules_report($sqlPath);
 $cliArgv = $argv ?? [];
 $asJson = $itmIsCli
@@ -329,6 +329,7 @@ $asJson = $itmIsCli
 $cliShowAll = $itmIsCli && in_array('--all', $cliArgv, true);
 
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 if ($itmIsCli) {
     itm_script_output_begin();
@@ -339,14 +340,14 @@ if ($itmIsCli) {
         exit(($report['summary']['tables_without_module'] + $report['summary']['modules_without_table']) > 0 ? 1 : 0);
     }
 
-    echo "database.sql tables vs modules/ comparison" . $nl;
+    echo "db/01_schema.sql tables vs modules/ comparison" . $nl;
     echo str_repeat('=', 120) . $nl;
     echo 'SQL file: ' . $report['sql_path'] . $nl;
-    echo 'Tables in database.sql: ' . (int)$report['table_count'] . $nl;
+    echo 'Tables In db/01_schema.sql: ' . (int)$report['table_count'] . $nl;
     echo 'Module folders scanned: ' . (int)$report['module_count'] . $nl . $nl;
 
     echo "Tables without a module: " . (int)$report['summary']['tables_without_module'] . $nl;
-    echo "Modules without a database.sql table: " . (int)$report['summary']['modules_without_table'] . $nl . $nl;
+    echo "Modules without a db/ table: " . (int)$report['summary']['modules_without_table'] . $nl . $nl;
 
     echo "TABLES" . ($cliShowAll ? '' : ' (missing or mismatch only)') . $nl;
     echo str_repeat('-', 120) . $nl;
@@ -423,7 +424,7 @@ $itmCompareBaseUrl = defined('BASE_URL') ? (string)BASE_URL : '../';
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>database.sql vs modules</title>
+    <title>db/01_schema.sql vs modules</title>
     <link rel="stylesheet" href="../css/styles.css">
     <style>
         .report-wrap { max-width: 1200px; margin: 0 auto; padding: 24px 20px 48px; }
@@ -441,9 +442,9 @@ $itmCompareBaseUrl = defined('BASE_URL') ? (string)BASE_URL : '../';
 <div class="report-wrap">
 <?php itm_script_browser_nav_echo($itmCompareBaseUrl); ?>
     <div class="report-card">
-        <h1 style="margin-top:0;">database.sql tables vs modules/</h1>
+        <h1 style="margin-top:0;">db/01_schema.sql tables vs modules/</h1>
         <p class="report-muted">
-            Compares every <code>CREATE TABLE</code> in <code>database.sql</code> with module folders under
+            Compares every <code>CREATE TABLE</code> in <code>db/</code> split bundle with module folders under
             <code>modules/</code> and each module’s <code>$crud_table</code> in <code>index.php</code>.
         </p>
         <div class="report-summary">
@@ -498,7 +499,7 @@ $itmCompareBaseUrl = defined('BASE_URL') ? (string)BASE_URL : '../';
                     <th>Module</th>
                     <th>Status</th>
                     <th>$crud_table</th>
-                    <th>In database.sql</th>
+                    <th>In db/01_schema.sql</th>
                     <th>Columns</th>
                     <th>Notes</th>
                 </tr>

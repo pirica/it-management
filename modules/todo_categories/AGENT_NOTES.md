@@ -29,7 +29,7 @@ Lookup table for todo list categories (personal/company-scoped names used by the
 - Scoped by `company_id`; `cat_from_employee_id` ties categories to creating user when set.
 
 ## 9. Audit Logging Requirements
-- `trg_todo_categories_audit_insert|update|delete` in `database.sql`.
+- `trg_todo_categories_audit_insert|update|delete` in `db/03_triggers.sql`.
 
 ## 10. Common Pitfalls
 

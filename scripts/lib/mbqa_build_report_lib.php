@@ -215,7 +215,7 @@ function mbqar_rerun_runner_href(array $payload): string
 function mbqar_human_step_label(string $step): string
 {
     static $labels = [
-        'mysql' => 'database.sql seed rows',
+        'mysql' => 'db/02_data.sql seed rows',
         'error_log' => 'Error log',
         'list' => 'List page',
         'ui_check' => 'Table Actions UI',
@@ -249,7 +249,7 @@ function mbqar_human_step_label(string $step): string
 function mbqar_step_typical_cause(string $step): string
 {
     static $causes = [
-        'mysql' => 'database.sql could not be read or parsed for INSERT rows on this module table',
+        'mysql' => 'db/02_data.sql could not be read or parsed for INSERT rows on this module table',
         'error_log' => 'PHP warnings, notices, or fatals were written during this module run',
         'list' => 'Index page did not return HTTP 200 or contained a fatal error',
         'ui_check' => 'Actions column missing class itm-actions-cell and/or data-itm-actions-origin="1" on header or body cells',

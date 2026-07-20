@@ -1,6 +1,6 @@
-<?php
+﻿<?php
 /**
- * Normalize seed created_at timestamps in database.sql (INSERT data only).
+ * Normalize seed created_at timestamps In db/01_schema.sql (INSERT data only).
  *
  * Usage: php scripts/normalize_database_sql_created_at.php
  *
@@ -11,26 +11,27 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-    itm_script_output_begin('Normalize created_at in database.sql');
-    echo '<p><strong>CLI only.</strong> This script rewrites <code>database.sql</code> on disk. Run from the project root:</p>';
+    itm_script_output_begin('Normalize created_at in db/02_data.sql01_schema.sql');
+    echo '<p><strong>CLI only.</strong> This script rewrites <code>db/</code> split bundle on disk. Run from the project root:</p>';
     echo '<pre style="background:#f6f8fa;padding:12px;border:1px solid #d0d7de;border-radius:6px;">php scripts/normalize_database_sql_created_at.php</pre>';
     exit(1);
 }
 
 $root = dirname(__DIR__);
-$schemaPath = $root . DIRECTORY_SEPARATOR . 'database.sql';
+$schemaPath = itm_database_sql_schema_path();
 $targetCreatedAt = '2026-01-01 00:00:01';
 
 if (!is_file($schemaPath)) {
-    fwrite(STDERR, "database.sql not found.\n");
+    fwrite(STDERR, "db/01_schema.sql not found.\n");
     exit(1);
 }
 
 $sql = (string)file_get_contents($schemaPath);
 if ($sql === '') {
-    fwrite(STDERR, "database.sql is empty.\n");
+    fwrite(STDERR, "db/02_data.sql is empty.\n");
     exit(1);
 }
 

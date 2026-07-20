@@ -40,7 +40,7 @@ Maps employees (login accounts) to companies they may access after login. Drives
 - Writes must not attach users to companies outside admin intent.
 
 ## 9. Audit Logging Requirements
-- `trg_employee_companies_audit_insert|update|delete` in `database.sql`.
+- `trg_employee_companies_audit_insert|update|delete` in `db/03_triggers.sql`.
 
 ## 10. Common Pitfalls
 - Deleting admin user's last company mapping — locks admin out of tenant switcher. [Cursor-Valid]

@@ -30,7 +30,7 @@ Lookup table for types of locations (e.g., "Branch", "DataCenter", "Headquarters
 - Scoped by `company_id`; hide `company_id` from UI.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_location_types_audit_insert`, `trg_location_types_audit_update`, `trg_location_types_audit_delete` on `location_types` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_location_types_audit_insert`, `trg_location_types_audit_update`, `trg_location_types_audit_delete` on `location_types` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

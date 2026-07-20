@@ -16,7 +16,7 @@ require '../../config/config.php';
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 require __DIR__ . '/sample_seed_helpers.php';
 
-// Why: tickets.is_archived is defined in database.sql CREATE TABLE — no runtime ALTER.
+// Why: tickets.is_archived is defined in db/ CREATE TABLE — no runtime ALTER.
 
 // Handle Excel/CSV database import requests from table-tools.js.
 if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {

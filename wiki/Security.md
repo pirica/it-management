@@ -33,7 +33,7 @@ php scripts/analyze_database_health.php
 
 This helper runs `ANALYZE TABLE` per base table and prints table-specific warnings/errors.
 
-If a table reports `doesn't exist in engine`, rebuild only that table from `database.sql` or extract DDL from `db/01_schema.sql`:
+If a table reports `doesn't exist in engine`, rebuild only that table from `db/01_schema.sql` or extract DDL from `db/01_schema.sql`:
 
 ```bash
 php scripts/repair_table_from_schema.php --table=<table_name>

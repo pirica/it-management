@@ -34,7 +34,7 @@ if (!($conn instanceof mysqli)) {
 
 $tableRes = $conn->query("SHOW TABLES LIKE 'note_share_sessions'");
 if (!$tableRes || $tableRes->num_rows === 0) {
-    notes_share_verify_fail('note_share_sessions table missing — re-import database.sql or bash scripts/import_database_split.sh.');
+    notes_share_verify_fail('note_share_sessions table missing — re-import via bash scripts/import_database_split.sh or bash scripts/import_database_split.sh.');
     exit(1);
 }
 

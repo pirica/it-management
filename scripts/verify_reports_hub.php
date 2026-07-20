@@ -138,7 +138,7 @@ foreach ($helperNames as $helperName) {
 $opsSummary = get_ops_summary_metrics();
 if ((float)($opsSummary['total_revenue'] ?? 0) <= 0) {
     rh_verify_fail(
-        'Hotel Operations MTD total_revenue is zero — import database.sql or bash scripts/import_database_split.sh Reports Hub ops_report seeds, or add ops_report rows for the current month.'
+        'Hotel Operations MTD total_revenue is zero — run bash scripts/import_database_split.sh or bash scripts/import_database_split.sh Reports Hub ops_report seeds, or add ops_report rows for the current month.'
     );
 } else {
     rh_verify_pass('Hotel Operations MTD total_revenue > 0.');

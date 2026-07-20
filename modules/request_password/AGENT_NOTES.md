@@ -30,7 +30,7 @@ Handles user requests for password changes/resets. Requires a multi-stage approv
 - CSRF protection on all POST actions.
 - Multi-tenancy strictly enforced via `company_id`.
 - Soft delete pattern implemented: deleting a request password record updates `active = 0`, sets `deleted_by` and `deleted_at`, rather than hard-deleting the database row.
-- Audit triggers are defined in `database.sql` for INSERT, UPDATE, and DELETE actions on `request_password`, which capture both old and new states in the `audit_logs` table.
+- Audit triggers are defined in `db/03_triggers.sql` for INSERT, UPDATE, and DELETE actions on `request_password`, which capture both old and new states in the `audit_logs` table.
 
 ## 10. Common Pitfalls
 

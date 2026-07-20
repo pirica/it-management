@@ -1,8 +1,8 @@
-<?php
+﻿<?php
 /**
  * DB Design Diagram Generator
  *
- * Why: provide a drawdb-like visual schema map directly from database.sql without
+ * Why: provide a drawdb-like visual schema map directly from db/ without
  * requiring external tooling or framework dependencies.
  *
  * Usage (CLI):
@@ -18,7 +18,7 @@
 declare(strict_types=1);
 
 $itm_root_path = dirname(__DIR__) . DIRECTORY_SEPARATOR;
-$itm_schema_path = $itm_root_path . 'database.sql';
+$itm_schema_path = itm_database_sql_schema_path();
 
 function itm_dbdesign_escape(string $value): string
 {
@@ -196,7 +196,7 @@ function itm_dbdesign_to_mermaid(array $schema): string
 if (!is_file($itm_schema_path)) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=UTF-8');
-    echo 'database.sql not found at: ' . $itm_schema_path;
+    echo 'db/01_schema.sql not found at: ' . $itm_schema_path;
     exit;
 }
 
@@ -227,7 +227,7 @@ if ($itm_cli) {
 if ($itm_format === 'json') {
     header('Content-Type: application/json; charset=UTF-8');
     echo json_encode([
-        'source' => 'database.sql',
+        'source' => 'db/01_schema.sql',
         'table_count' => count($itm_schema['tables']),
         'relationship_count' => count($itm_schema['relationships']),
         'tables' => $itm_schema['tables'],
@@ -282,7 +282,7 @@ $itm_dbdesign_base = defined('BASE_URL') ? (string)BASE_URL : '../';
     <?php itm_script_browser_nav_echo($itm_dbdesign_base); ?>
     <div class="card">
         <h1>Database SQL Diagram</h1>
-        <p class="muted">Generated from <code>database.sql</code> (drawdb-style ER overview).</p>
+        <p class="muted">Generated from <code>db/</code> split bundle (drawdb-style ER overview).</p>
         <p class="muted">Tables: <strong><?= $itm_table_count; ?></strong> | Relationships: <strong><?= $itm_relationship_count; ?></strong> | Generated: <?= itm_dbdesign_escape($itm_generated_at); ?></p>
         <div class="toolbar">
             <a href="?format=mermaid" target="_blank">Open Mermaid Text</a>

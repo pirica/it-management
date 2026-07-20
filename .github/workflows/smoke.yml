@@ -53,8 +53,8 @@ jobs:
           extensions: mysqli
           coverage: none
 
-      # CI uses monolith database.sql; local dev may use bash scripts/import_database_split.sh (db/01→02→03).
-      - name: Import database.sql
+      # CI uses monolith db/; local dev may use bash scripts/import_database_split.sh (db/01→02→03).
+      - name: Import db/ split bundle
         env:
           MYSQL_HOST: 127.0.0.1
           MYSQL_PASSWORD: itmanagement

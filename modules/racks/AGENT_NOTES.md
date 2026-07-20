@@ -33,7 +33,7 @@ Manages physical server racks, including their size (total units), location, and
 - Scoped by `company_id`; hide `company_id` from UI.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_racks_audit_insert`, `trg_racks_audit_update`, `trg_racks_audit_delete` on `racks` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_racks_audit_insert`, `trg_racks_audit_update`, `trg_racks_audit_delete` on `racks` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

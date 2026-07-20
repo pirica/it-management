@@ -39,7 +39,7 @@ Stores per-user sidebar section/item order and visibility (`employee_sidebar_pre
 - Scoped by `company_id`; hide `company_id` from UI.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_employee_sidebar_preferences_audit_insert`, `trg_employee_sidebar_preferences_audit_update`, `trg_employee_sidebar_preferences_audit_delete` on `employee_sidebar_preferences` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_employee_sidebar_preferences_audit_insert`, `trg_employee_sidebar_preferences_audit_update`, `trg_employee_sidebar_preferences_audit_delete` on `employee_sidebar_preferences` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

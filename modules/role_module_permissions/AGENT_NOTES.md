@@ -31,7 +31,7 @@ Granular RBAC: view/create/edit/delete/import/export per module and role.
 - Scoped by `company_id`.
 
 ## 9. Audit Logging Requirements
-- Database triggers `trg_role_module_permissions_audit_insert`, `trg_role_module_permissions_audit_update`, `trg_role_module_permissions_audit_delete` on `role_module_permissions` in `database.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
+- Database triggers `trg_role_module_permissions_audit_insert`, `trg_role_module_permissions_audit_update`, `trg_role_module_permissions_audit_delete` on `role_module_permissions` in `db/03_triggers.sql` always write to `audit_logs` on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`).
 
 ## 10. Common Pitfalls
 

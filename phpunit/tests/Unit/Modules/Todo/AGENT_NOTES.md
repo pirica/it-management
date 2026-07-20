@@ -5,7 +5,7 @@ Unit/regression tests for `modules/todo/`.
 
 ## 3. Required Relationships
 - Production docs: `modules/todo/AGENT_NOTES.md` (when present).
-- Database fixtures: `database.sql`.
+- Database fixtures: `db/02_data.sql`.
 
 ## 7. File Structure
 - `TodoTest.php` — visibility, importance/completion, and authorization bypass; seeds extra employees via `itm_script_test_employee_create()` when fewer than three rows exist (never `employees.active`).

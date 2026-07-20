@@ -11,7 +11,7 @@
 ## Steps
 
 1. Extract the project files into your web root.
-2. Import `database.sql` into MySQL, **or** run `bash scripts/import_database_split.sh` for the generated `db/` split (order `01_schema` → `02_data` → `03_triggers` — see `db/AGENT_NOTES.md`).
+2. Import `db/` into MySQL, **or** run `bash scripts/import_database_split.sh` for the generated `db/` split (order `01_schema` → `02_data` → `03_triggers` — see `db/AGENT_NOTES.md`).
 3. Update database credentials in `config/config.php` (prefer environment variables — see [Security & Audits](Security#secrets-management-required)).
 4. Create an `images/` directory for equipment uploads.
 5. Create a `tickets_photos/` directory for ticket uploads.
@@ -21,7 +21,7 @@
 
 ## Existing databases
 
-For an existing database, apply the Floor Plans tables from `database.sql` if they are not already present:
+For an existing database, apply the Floor Plans tables from `db/01_schema.sql` if they are not already present:
 
 - `floor_plan_folders`
 - `floor_plan_tags`

@@ -42,7 +42,7 @@ Manages hierarchical folders for organizing bookmarks. Folders can be private to
 
 - **Hard delete (private data):** `index.php` delete actions use `DELETE FROM bookmark_folders` (not soft-delete). Dual-pane folder delete lives in `modules/bookmarks/delete_folder.php`. Employee delete cascades via FK. [Cursor-Fixed]
 - Do not add PHP “name already exists” guards for folders unless intentionally changing product rules. [Cursor-Valid]
-- Legacy installs: drop `uq_bookmark_folders_company_scope` if still present (`database.sql` comment under `CREATE TABLE bookmark_folders`). [Cursor-Valid]
+- Legacy installs: drop `uq_bookmark_folders_company_scope` if still present (`db/` comment under `CREATE TABLE bookmark_folders`). [Cursor-Valid]
 - **Circular References**: Avoid setting a folder's parent to itself or one of its children. [Cursor-Valid]
 - **Ambiguous Columns**: When joining with the `bookmarks` table, both have `active` and `employee_id` columns—always use table aliases (e.g., `bf.active`). [Cursor-Valid]
 

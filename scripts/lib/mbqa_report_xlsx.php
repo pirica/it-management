@@ -19,7 +19,7 @@ function mbqa_report_xlsx_path(string $projectRoot): string
 function mbqar_xlsx_step_label(string $step): string
 {
     static $labels = [
-        'mysql' => 'database.sql seed rows',
+        'mysql' => 'db/02_data.sql seed rows',
         'error_log' => 'Error log',
         'list' => 'List page',
         'ui_check' => 'Table Actions UI',
@@ -300,7 +300,7 @@ function mbqar_echo_xlsx_client_bootstrap(): void
 (function () {
   function stepLabel(step) {
     var labels = {
-      mysql: 'database.sql seed rows',
+      mysql: 'db/02_data.sql seed rows',
       error_log: 'Error log',
       list: 'List page',
       clear: 'Tenant clear',

@@ -1,6 +1,6 @@
-<?php
+﻿<?php
 /**
- * CLI-only: broad-spectrum SQL cleanup utility for database.sql.
+ * CLI-only: broad-spectrum SQL cleanup utility for db/.
  */
 if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     require_once __DIR__ . '/lib/script_browser_nav.php';
@@ -17,7 +17,7 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 $nl = itm_script_output_nl();
 itm_script_output_begin('Fix SQL Broad');
 
-$sqlPath = 'database.sql';
+$sqlPath = itm_database_sql_schema_path();
 $content = file_get_contents($sqlPath);
 
 $tablesToFix = [
@@ -135,6 +135,6 @@ foreach ($tablesToFix as $table) {
 }
 
 file_put_contents($sqlPath, $content);
-echo "Completed broad update of database.sql" . $nl;
+echo "Completed broad update of db/01_schema.sql" . $nl;
 
 itm_script_output_end();

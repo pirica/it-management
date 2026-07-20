@@ -43,7 +43,7 @@ itm_script_test_employee_register_teardown($conn, $employeeId, []);
 
 $schemaRes = $conn->query("SHOW COLUMNS FROM events LIKE 'title_hash'");
 if (!$schemaRes || $schemaRes->num_rows === 0) {
-    events_vault_fail('events.title_hash column missing — re-import database.sql or bash scripts/import_database_split.sh.');
+    events_vault_fail('events.title_hash column missing — re-import via bash scripts/import_database_split.sh or bash scripts/import_database_split.sh.');
     itm_script_test_employee_delete($conn, $employeeId);
     exit(1);
 }

@@ -5,7 +5,7 @@ Unit/regression tests for `modules/passwords/`.
 
 ## 3. Required Relationships
 - Production docs: `modules/passwords/AGENT_NOTES.md` (when present).
-- Database fixtures: `database.sql`.
+- Database fixtures: `db/02_data.sql`.
 
 ## 7. File Structure
 - `PasswordsTest.php` — DB CRUD unit tests.

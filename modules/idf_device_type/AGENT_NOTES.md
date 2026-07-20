@@ -36,7 +36,7 @@ Maintains the company-scoped lookup of device types used on IDF rack positions (
 ## 8. Multi-Tenant Rules
 - All SELECT, INSERT, UPDATE, and DELETE statements must include `company_id = ?` (or equivalent) for the active session company.
 - Hide `company_id` from list, view, and edit screens.
-- Seed data in `database.sql` duplicates types per company; never copy rows across tenants without setting `company_id`.
+- Seed data in `db/03_triggers.sql` duplicates types per company; never copy rows across tenants without setting `company_id`.
 
 ## 9. Audit Logging Requirements
 MySQL triggers on `idf_device_type` insert audit rows on INSERT/UPDATE/DELETE (unconditional DB triggers; not gated by `enable_audit_logs`). Session actor columns come from `config.php` (`@app_employee_id`, `@app_username`, etc.).

@@ -35,7 +35,7 @@ Company-scoped lookup of IT systems and applications (e.g. ERP, Email, VPN) used
 - Scoped by `company_id`; hide `company_id` from UI.
 
 ## 9. Audit Logging Requirements
-- `trg_system_access_audit_insert|update|delete` in `database.sql`.
+- `trg_system_access_audit_insert|update|delete` in `db/03_triggers.sql`.
 
 ## 10. Common Pitfalls
 - Deleting systems still referenced by **employee_system_access** — single delete shows `crud_error`; bulk delete may bypass per-row check. [Cursor-Valid]

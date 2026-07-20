@@ -1,6 +1,6 @@
 <?php
 /**
- * Audit database.sql for column mismatches in triggers and INSERT statements.
+ * Audit db/ for column mismatches in triggers and INSERT statements.
  *
  * Why: Metadata drift can leave triggers referencing non-existent columns
  * or INSERT statements with wrong column counts. This script validates
@@ -13,6 +13,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 if (PHP_SAPI !== 'cli') {
     require_once dirname(__DIR__) . '/config/config.php';
@@ -22,9 +23,9 @@ if (PHP_SAPI !== 'cli') {
 itm_script_output_begin('Check SQL Errors');
 $nl = itm_script_output_nl();
 
-$sqlPath = dirname(__DIR__) . '/database.sql';
+$sqlPath = itm_database_sql_schema_path();
 if (!is_file($sqlPath)) {
-    echo "Error: database.sql not found at $sqlPath" . $nl;
+    echo "Error: db/01_schema.sql not found at $sqlPath" . $nl;
     exit(1);
 }
 

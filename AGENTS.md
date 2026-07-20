@@ -77,9 +77,9 @@ A multi-company IT Asset Management System built with PHP and MySQL.
 
 This project stores and displays **Unicode** text (including emoji such as 🧩) end-to-end. Do not “fix” mojibake by removing punctuation or emoji—fix the **encoding contract**.
 
-### Database (`database.sql`)
+### Database (`db/`)
 
-* Database and tables use **`utf8mb4`** with **`utf8mb4_unicode_ci`** (see top of `database.sql`: `CREATE DATABASE … utf8mb4`, `SET NAMES utf8mb4`).
+* Database and tables use **`utf8mb4`** with **`utf8mb4_unicode_ci`** (see top of `db/`: `CREATE DATABASE … utf8mb4`, `SET NAMES utf8mb4`).
 * Application connection must match: `mysqli_set_charset($conn, 'utf8mb4')` in `config/config.php`.
 * Never downgrade to `utf8` (3-byte) for new tables—emoji and some symbols need 4-byte UTF-8.
 
@@ -150,7 +150,7 @@ On **bash**, prefer a heredoc or `--body-file` when the body contains `` ` ``, `
 
 ## 📂 Directory Map
 * `config/`: Core settings and `config.php`.
-* `db/`: Generated split SQL import bundle (`01_schema.sql`, `02_data.sql`, `03_triggers.sql`) from `database.sql`; see `db/AGENT_NOTES.md`.
+* `db/`: Canonical SQL bundle (`01_schema.sql`, `02_data.sql`, `03_triggers.sql`); see `db/AGENT_NOTES.md`. Path helpers: `includes/itm_database_sql_source.php`.
 * `includes/`: UI components (headers, sidebars) and utility functions.
 * `modules/`: Feature-specific CRUD logic.
 * `scripts/`: Maintenance, security audits, and CLI tools. Standards: `scripts/SCRIPTS.md`. Catalog: `scripts/scripts.php`.
@@ -175,7 +175,7 @@ Every **project folder that contains source code or agent-relevant assets** must
 **Mandatory agent contract (read → create → update):**
 
 1. **Read** — before editing any in-scope folder, read that folder's `AGENT_NOTES.md` (and the parent's file when the folder is a subfolder).
-2. **Create** — when adding a new in-scope folder, or when audit finds a gap, add `AGENT_NOTES.md` in the **same PR** using section headings from `templates/AGENT_NOTES.md` and facts from `database.sql`, module PHP, and `scripts/scripts.php`. Do **not** bulk-generate module notes without reading the code — the template forbids blind automation for `modules/`.
+2. **Create** — when adding a new in-scope folder, or when audit finds a gap, add `AGENT_NOTES.md` in the **same PR** using section headings from `templates/AGENT_NOTES.md` and facts from `db/01_schema.sql`, module PHP, and `scripts/scripts.php`. Do **not** bulk-generate module notes without reading the code — the template forbids blind automation for `modules/`.
 3. **Update** — whenever a change alters purpose, tables, relationships, business rules, UI behaviour, API actions, file layout, multi-tenant rules, audit requirements, or pitfalls, **update the matching `AGENT_NOTES.md` in the same deliverable**. Stale or missing notes are a **hard fail** for that task.
 
 **Completion gate:** code changes under a folder are not done until its `AGENT_NOTES.md` exists and reflects the current behaviour.
@@ -206,15 +206,15 @@ Each module must maintain a flat structure with these specific files:
 **Do not create Shared Templates:** Do not attempt to abstract CRUD into a single shared template. Each module must remain independent.
 
 ### 2. Database & Schema Rules
-* **Schema Updates:** If a field/table is deleted or a header renamed, update `database.sql`, then regenerate `db/01_schema.sql`, `db/02_data.sql`, and `db/03_triggers.sql` via `php scripts/split_database_sql.php --apply` and run `php scripts/verify_database_split_parity.php`.
-* **Split import bundle (`db/`):** Generated from `database.sql` (not hand-edited). Import in **one MySQL session** in order **01_schema → 02_data → 03_triggers** (`bash scripts/import_database_split.sh`). See `db/AGENT_NOTES.md`.
-* **No live `ALTER TABLE` in `database.sql`:** put keys, indexes, and foreign keys inside each table’s `CREATE TABLE`. Import already runs with `FOREIGN_KEY_CHECKS=0`, so FKs may reference tables created later in the file. Commented `-- ALTER TABLE …` lines are historical notes for existing databases only — do not add new executable `ALTER` statements.
+* **Schema updates:** Edit the appropriate `db/` file — `01_schema.sql` (DDL), `02_data.sql` (seeds/DML), `03_triggers.sql` (audit triggers).
+* **Import bundle (`db/`):** Import in **one MySQL session** in order **01_schema → 02_data → 03_triggers** (`bash scripts/import_database_split.sh`). See `db/AGENT_NOTES.md`.
+* **No live `ALTER TABLE` in `db/01_schema.sql`:** put keys, indexes, and foreign keys inside each table’s `CREATE TABLE`. Import already runs with `FOREIGN_KEY_CHECKS=0`, so FKs may reference tables created later in the file. Commented `-- ALTER TABLE …` lines are historical notes for existing databases only — do not add new executable `ALTER` statements.
 * **Company Scoping:**
     * **Hide** `company_id` from all UI views.
     * Add safe inline FK creation logic to create referenced rows automatically.
     * Scope all queries and inserts by `company_id`.
 * **Audit Logging:** The system sets MySQL session variables (`@app_employee_id`) in `config.php`. Do not overwrite these.
-* **Standard Fields:** Every new table in `database.sql` must include:
+* **Standard Fields:** Every new table in `db/01_schema.sql` must include:
     * `company_id` INT NOT NULL
     * `active` TINYINT DEFAULT '1'
     * `deleted_by` INT NULL
@@ -231,7 +231,7 @@ Each module must maintain a flat structure with these specific files:
     * **Delete / bulk / clear:** soft-delete via `UPDATE` setting `deleted_by` (session employee), `deleted_at` (NOW), and `active=0`; never hard `DELETE` for in-scope scaffold tables. Include `deleted_by` / `deleted_at` hidden inputs on delete forms when present; server still re-stamps from session.
     * Rollout apply/check: `php scripts/apply_crud_audit_soft_delete.php`, `php scripts/check_crud_audit_soft_delete.php`.
 * **Multi-company seed admins (mandatory):** Fresh import seeds five companies and one Admin employee per company. Role / access / status FKs and related grants must be **tenant-correct** (subqueries or `INSERT … SELECT` by `company_id` + name — never hardcode `role_id = 1` / `access_level_id = 1` for every company, and never hardcode `employee_roles.id` values that fight auto-increment).
-    * Usernames: company 1 → `Admin`; companies 2–5 → `Admin2` … `Admin5` (login is global by username/`LIMIT 1`, so duplicate `admin` usernames are unsafe). Password for all seed admins: `Admin` (bcrypt in `database.sql`).
+    * Usernames: company 1 → `Admin`; companies 2–5 → `Admin2` … `Admin5` (login is global by username/`LIMIT 1`, so duplicate `admin` usernames are unsafe). Password for all seed admins: `Admin` (bcrypt in `db/02_data.sql`).
     * `employee_companies`: each seed admin → home `company_id`; TechCorp `Admin` (company 1) also granted companies 2–5 for the tenant switcher / MBQA.
     * `ui_configuration`: one row per company bound to **that company’s** seed Admin `employee_id` (not `employee_id = 1` for every company).
     * After `employee_roles` seeds, `UPDATE employees … SET role_id` joins Admin role by `company_id` + name for the five seed admins.
@@ -260,7 +260,7 @@ Every module must implement:
 
 #### Private data — no audit trail (mandatory)
 
-Tables that store **private user content** must **not** be copied into `audit_logs` and must **not** define `trg_{table}_audit_*` triggers in `database.sql`. Do not add PHP `itm_log_audit()` / `itm_run_query()` audit hooks for mutations on these tables — keep the data private.
+Tables that store **private user content** must **not** be copied into `audit_logs` and must **not** define `trg_{table}_audit_*` triggers in `db/03_triggers.sql`. Do not add PHP `itm_log_audit()` / `itm_run_query()` audit hooks for mutations on these tables — keep the data private.
 
 | Table | Module / notes |
 |-------|----------------|
@@ -389,7 +389,7 @@ The ops report module (`modules/ops_report/`) provides a daily hotel operations 
 5. **UI copy in DB:** section titles, field labels, table headers, add-row button text, and `titles.*` (browser tab, export sheet/file prefix) persist in `ops_report.report_ui_json` (inline blur-save). **Exceptions:** the date suffix (`d.m.y` from selectors); `Company:` + `companies.company`; and the `.opr-controls` toolbar (Day, Month, Year, Go, Export Excel, Export PDF) remain hardcoded.
 6. **Exports:** XLSX and PDF must include company header and the full report sections (duty managers, figures & revenue, F&B, walk-round, guest experience, courtesy calls, butler, night shift rows).
 7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_ops_report.php` — D-2 lock, CRUD, cascade delete, registry row, `report_ui_json` seed, audit triggers on all `ops_report*` tables.
-8. **Audit logging:** `database.sql` defines `trg_{table}_audit_insert|update|delete` on every `ops_report*` table (parent + all child tables). Child triggers include `ops_report_id` in JSON payloads.
+8. **Audit logging:** `db/` defines `trg_{table}_audit_insert|update|delete` on every `ops_report*` table (parent + all child tables). Child triggers include `ops_report_id` in JSON payloads.
 
 #### Calendar, Alerts and Events integration (mandatory)
 
@@ -454,7 +454,7 @@ The Passwords module provides a secure, private manager for user credentials.
 The Private Contacts module (`modules/private_contacts/`) is a per-user address book with vault encryption and optional temporary share links.
 
 1. **Privacy scoping:** All queries MUST filter `employee_id = $_SESSION['employee_id']` (plus `company_id`). Never expose another user's contacts.
-2. **Encryption at rest:** PII text columns on `private_contacts` are `TEXT` in `database.sql` and stored encrypted via `itm_encrypt()` / `$_SESSION['vault_key']` (same master key as Passwords/Notes). List/create/edit/view show a lock screen until the vault is unlocked. Legacy plaintext rows still load via `pc_private_text_legacy_plaintext_check()`.
+2. **Encryption at rest:** PII text columns on `private_contacts` are `TEXT` in `db/03_triggers.sql` and stored encrypted via `itm_encrypt()` / `$_SESSION['vault_key']` (same master key as Passwords/Notes). List/create/edit/view show a lock screen until the vault is unlocked. Legacy plaintext rows still load via `pc_private_text_legacy_plaintext_check()`.
 3. **List search/sort/pagination:** Load rows for the employee, hydrate/decrypt, then filter and paginate in PHP (`pc_row_matches_search()`, `pc_compare_contact_rows()`) — no SQL `LIKE` on ciphertext.
 4. **Master key change:** `itm_vault_reencrypt_private_contacts()` in `includes/itm_vault_master_key.php` re-encrypts all contact fields atomically during master-key change in `user-config.php`.
 5. **Temporary share:** `private_contact_share_sessions` + `join.php` + `pc_share_helpers.php`; registered in `includes/itm_qr_share.php` / `itm_qr_share_join.php` (`type: private_contact`). QR / 6-digit / WhatsApp / Outlook share on list and view; `create_share_session` AJAX requires unlocked vault. Share payload is plaintext until expiry; table is **private-data exempt** from audit triggers.
@@ -472,7 +472,7 @@ The email management module (`modules/emails/` and `modules/email_smtp_configura
 5. **Project integration:** `send-email.php`, `forgot-password.php`, `register.php`, `modules/employee_onboarding_requests/` approval emails, and alert runner must call **`itm_send_email()`** — not MailerLite/Resend directly (Resend remains fallback when no SMTP profile exists).
 6. **Alert runner:** `php scripts/run_email_alert_rules.php` — schedule daily; respects `email_alert_rules.enabled` and `notify_emails`.
 7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_emails_module.php`.
-8. **Audit logging:** `email_smtp_configurations` and `email_alert_rules` use `trg_*_audit_*` triggers in `database.sql`. The **`emails`** send log is **private-data exempt** (no audit triggers — see **Private data — no audit trail**).
+8. **Audit logging:** `email_smtp_configurations` and `email_alert_rules` use `trg_*_audit_*` triggers in `db/03_triggers.sql`. The **`emails`** send log is **private-data exempt** (no audit triggers — see **Private data — no audit trail**).
 9. **Sidebar:** **Admin → 📧 Email Management** in `includes/ui_config.php`.
 
 #### Chatbot & Knowledge Base (mandatory)
@@ -496,14 +496,14 @@ The chatbot module provides a floating technical assistance widget powered by a 
 
 The license management module (`modules/license_management/`) tracks software licenses per company.
 
-1. **Tables:** **`license_management`** (CRUD module table) and **`license_types`** lookup (`Per User`, `Per Device`, `Enterprise`, `Subscription`, `Other`). **`modules/license_types/`** provides CRUD for the lookup; **`company_id`** must stay hidden in list/view/forms (same as warranty_types). Maintain default seeds in `database.sql` and cross-company `INSERT IGNORE` replication.
+1. **Tables:** **`license_management`** (CRUD module table) and **`license_types`** lookup (`Per User`, `Per Device`, `Enterprise`, `Subscription`, `Other`). **`modules/license_types/`** provides CRUD for the lookup; **`company_id`** must stay hidden in list/view/forms (same as warranty_types). Maintain default seeds in `db/03_triggers.sql` and cross-company `INSERT IGNORE` replication.
 2. **Required fields:** **`name`** is required on create/edit; **`quantity`** defaults to **1** when omitted; **`active`** defaults to **1**.
 3. **Foreign keys:** **`license_type_id`** → `license_types` (**RESTRICT** on delete); **`supplier_id`** → `suppliers` (**SET NULL** on delete).
 4. **Price:** Accepts `.` as decimal separator; **comma is converted to dot** on POST and Excel import (`cr_normalize_price_input()`).
 5. **Dates:** Stored as MySQL `DATE`; list/view/import display **dd/mm/yyyy** via `itm_format_cell_scalar_display()` / `itm_parse_date_input()`.
 6. **FK labels:** List/view must show **Type** and **Supplier** names (not raw IDs) via `itm_fk_label_by_id()` / `cr_fk_label_by_id()`. Form field order: Name, License Key, Type, Quantity, Supplier, Purchase Date, Expiry Date, Price, Active, Notes.
-7. **Standard CRUD:** Flattened departments scaffold — bulk delete, search, pagination, Excel import/export (`import_excel_rows` on `index.php`), empty-state sample data from `database.sql`.
-8. **Audit logging:** `database.sql` defines `trg_license_management_audit_insert|update|delete` and `trg_license_types_audit_*` (when Type rows are quick-added).
+7. **Standard CRUD:** Flattened departments scaffold — bulk delete, search, pagination, Excel import/export (`import_excel_rows` on `index.php`), empty-state sample data from `db/01_schema.sql`.
+8. **Audit logging:** `db/` defines `trg_license_management_audit_insert|update|delete` and `trg_license_types_audit_*` (when Type rows are quick-added).
 9. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/module_browser_qa_runner.php --module=license_management --company=1`.
 
 #### Request Password module (mandatory)
@@ -673,7 +673,7 @@ Not part of smoke — see **`scripts/SCRIPTS.md`** (Smoke tests). Bulk alias rep
     * validates CSRF (`itm_require_post_csrf()`),
     * confirms there is an active `company_id`,
     * re-checks the table is empty for that `company_id` before inserting.
-* **Source:** Seed rows must match `INSERT INTO` entries in `database.sql` for that module table.
+* **Source:** Seed rows must match `INSERT INTO` entries in `db/03_triggers.sql` for that module table.
 * **Tenant Safety:** Always write seeded rows with active `company_id`; never expose/edit `company_id` in UI.
 
 ### 6. Module Consistency Guardrail (Mandatory)
@@ -696,7 +696,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * Confirm fallback lookup is tenant-safe (company scoped first, then id-only fallback only for preserving legacy/shared references).
 * **Mandatory column + SQL relation audit (hard fail):**
   * For mandatory review requests, audit **all columns and SQL relations** for each requested module folder before code changes are finalized.
-  * Validate visible-column rendering in `index.php`, `view.php`, and `list_all.php` against `database.sql`/`information_schema` relationships.
+  * Validate visible-column rendering in `index.php`, `view.php`, and `list_all.php` against `db/`/`information_schema` relationships.
   * Replace raw foreign keys with meaningful related display values whenever possible (for example hostname, status, color name, VLAN name, device/position labels).
   * Include both declared FK constraints and relation-like `*_id` columns that may be stored without an explicit FK constraint.
   * Keep tenant-safe lookup order: `company_id` scoped lookup first, then id-only fallback only for legacy/shared references when scoped rows are missing.
@@ -775,7 +775,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 * **Backfill `files/` only:** `php scripts/ensure_files_htaccess_chain.php`. Full module map: `scripts/AGENT_NOTES.md`.
 
 ## 🛡️ Safety & Side Effects
-* **Risk of Regression (login.php):** Any changes to the login flow (e.g., joining with `employee_roles`) must be carefully verified against the schema in `database.sql` to avoid breaking authentication for all users.
+* **Risk of Regression (login.php):** Any changes to the login flow (e.g., joining with `employee_roles`) must be carefully verified against the schema in `db/03_triggers.sql` to avoid breaking authentication for all users.
 * **UI Redundancy:** Modules with custom export layouts should disable the default `table-tools.js` buttons using the `data-itm-no-export-*` attributes.
 
 ---
@@ -928,14 +928,12 @@ On **Windows Laragon** (Nelson's environment), **always** use the **full absolut
 
 On **Linux, macOS, CI, and any host where `php` is on PATH**, bare `php scripts/...` remains acceptable.
 
-* **Import `database.sql` (full file — do not strip the first lines):**
+* **Import `db/` split bundle (one MySQL session):**
     ```cmd
     cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
-    "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe" -u root -pitmanagement --default-character-set=utf8mb4 < database.sql
+    bash scripts/import_database_split.sh
     ```
-    Verify: `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';` → **130**, or `php scripts/verify_database_schema.php` (lists any missing tables). A partial import often stops at table **73** (`employee_companies`) — missing block includes `role_hierarchy` … `workstation_ram`, `rack_planner`. Common deploy bugs: stripping the first lines of `database.sql` (removes `DROP DATABASE`), wrong MySQL password, or `re-download-replace_DB.ps1` piping without `-pitmanagement`. Use the updated `laragon-portable\www\re-download.ps1` (full file + table count). Capture stderr (`2> mysql-import.err`) — MySQL may exit 0 while statements failed.
-  * **Split import (`db/` — optional alternative):** `bash scripts/import_database_split.sh` pipes `db/01_schema.sql` → `db/02_data.sql` → `db/03_triggers.sql` in one session. Regenerate after `database.sql` edits: `php scripts/split_database_sql.php --apply` then `php scripts/verify_database_split_parity.php`. Details: `db/AGENT_NOTES.md`.
-  * **PowerShell piping:** `database.sql` in git is **LF**; `-split "`r`n"` can yield a single “line” and skip the strip branch — still import the **complete** file. Prefer `cmd /c "\"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe\" -u root -pitmanagement --default-character-set=utf8mb4 < database.sql"` from the repo directory over stdin `Process` piping when imports truncate.
+    Or pipe all three files in one session (see `db/AGENT_NOTES.md`). Verify: `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';` → **130**, or `php scripts/verify_database_schema.php`. CI uses `bash scripts/verify_database_sql_import.sh` (wraps `import_database_split.sh`).
 * **Online AI Test Environment:**
   * `https://nelsonsalvador.myddns.me` | Login: `Admin` | Password: `Admin`.
   * `http://nelsonsalvador.myddns.me/phpmyadmin/` | Database: `itmanagement` | Login: `root` | Password: (blank).
@@ -1015,7 +1013,7 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
   * `php -l` on every touched `.php` file.
   * `php scripts/check_sql_injection_coverage.php` when PHP/SQL changed.
   * `php scripts/check_audit_logs_coverage.php` when CRUD or audit-related paths changed.
-  * `php scripts/check_database_sql_company_name_uniques.php` when `database.sql` or tenant unique keys changed.
+  * `php scripts/check_database_sql_company_name_uniques.php` when `db/` or tenant unique keys changed.
   * FK label guardrails: no raw `*_id` / `*_by` numeric IDs on list/detail when a label exists; persisted FKs stay selected on edit forms.
   * Module consistency rechecks for any touched module (`index.php`, `view.php`, `edit.php`, `create.php`, `list_all.php`, and `delete.php` when applicable).
   * IDF-related changes: `php scripts/idfs_sync_human_test.php` (or `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php` from the repo root) — hard-fail if any `[FAIL]`.
@@ -1080,7 +1078,7 @@ Cloud Agent VMs run Ubuntu 24.04 and do not ship with PHP, MySQL, or Apache pre-
 | **MySQL 8.0** | `sudo mkdir -p /var/run/mysqld && sudo chown mysql:mysql /var/run/mysqld && sudo chmod 755 /var/run/mysqld && sudo mysqld --user=mysql --datadir=/var/lib/mysql &` then `sleep 5` | `mysqladmin -u root -pitmanagement ping` → `mysqld is alive` |
 | **Apache 2.4** | `sudo apachectl start` | `curl -s -o /dev/null -w '%{http_code}' http://localhost/it-management/login.php` → `200` |
 
-MySQL root password is `itmanagement` (set by the update script on first run). Re-import the schema after a fresh VM with `mysql -u root -pitmanagement --default-character-set=utf8mb4 < database.sql` and verify 130 tables: `mysql -u root -pitmanagement -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';"`.
+MySQL root password is `itmanagement` (set by the update script on first run). Re-import the schema after a fresh VM with `mysql -u root -pitmanagement --default-character-set=utf8mb4 < db/` and verify 130 tables: `mysql -u root -pitmanagement -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';"`.
 
 ### Apache alias
 
@@ -1120,7 +1118,8 @@ playwright install chromium   # or: ~/.local/bin/playwright install chromium whe
     sleep 10
     mysqladmin -u root --socket=/tmp/itm-mysql.sock ping
     mysql -u root --socket=/tmp/itm-mysql.sock -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'itmanagement';"
-    mysql -u root -pitmanagement --socket=/tmp/itm-mysql.sock --default-character-set=utf8mb4 < database.sql
+    mysql -u root -pitmanagement --socket=/tmp/itm-mysql.sock --default-character-set=utf8mb4 < db/01_schema.sql
+   # Then pipe 02_data + 03_triggers in the same session — prefer: bash scripts/import_database_split.sh
     php -r '$c=mysqli_connect("127.0.0.1","root","itmanagement","itmanagement"); echo $c?"db ok\n":mysqli_connect_error();'
     ```
 

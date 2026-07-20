@@ -5,7 +5,7 @@ Unit/regression tests for `modules/access_levels/`.
 
 ## 3. Required Relationships
 - Production docs: `modules/access_levels/AGENT_NOTES.md` (when present).
-- Database fixtures: `database.sql`.
+- Database fixtures: `db/02_data.sql`.
 
 ## 7. File Structure
 - `*Test.php` / `*.unittest.php` — test classes for this module.

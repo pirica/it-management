@@ -75,7 +75,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - Private bookmarks with **empty notes** store encrypted ciphertext; `bkm_resolve_private_text()` must treat successful decrypt of `''` as valid — do not treat empty plaintext like decrypt failure. [Cursor-Valid]
 - Do not enforce unique folder names in PHP validation — the schema allows duplicates. [Cursor-Valid]
 - Dual-pane list table must stay inside `.content .card` — `ui-layout.js` only applies `table_actions_position` to `.content .card table`. [Cursor-Valid]
-- Existing DBs that still have `uq_bookmark_folders_company_scope` must `DROP INDEX` that key (see comment under `bookmark_folders` in `database.sql`). [Cursor-Valid]
+- Existing DBs that still have `uq_bookmark_folders_company_scope` must `DROP INDEX` that key (see comment under `bookmark_folders` in `db/03_triggers.sql`). [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

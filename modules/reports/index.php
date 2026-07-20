@@ -3,7 +3,7 @@
  * Reports Hub - Main Dashboard
  * @file reports/index.php
  * 
- * Visual dashboard using existing IT Management tables from database.sql.
+ * Visual dashboard using existing IT Management tables from db/.
  * No new database schema required - queries existing tables directly.
  */
 

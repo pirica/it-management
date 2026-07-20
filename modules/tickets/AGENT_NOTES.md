@@ -43,12 +43,12 @@ The central helpdesk/ticketing module for managing support requests.
 - Strictly scoped by `company_id`.
 
 ## 9. Audit Logging Requirements
-- `trg_tickets_audit_insert|update|delete` in `database.sql`.
+- `trg_tickets_audit_insert|update|delete` in `db/03_triggers.sql`.
 
 ## 10. Common Pitfalls
 - Soft-deleting tickets that should only be archived — use `archive.php` for archive/restore; soft-delete is for delete/bulk/clear. [Cursor-Valid]
 - Listing raw `status_id` / `assigned_to_employee_id` when label rows exist. [Cursor-Valid]
-- Runtime `SHOW COLUMNS` / `ALTER TABLE` for `tickets.is_archived` — removed; column is in `database.sql` `CREATE TABLE`. Do not re-add per-request schema mutation. [Cursor-Fixed]
+- Runtime `SHOW COLUMNS` / `ALTER TABLE` for `tickets.is_archived` — removed; column is in `db/03_triggers.sql` `CREATE TABLE`. Do not re-add per-request schema mutation. [Cursor-Fixed]
 - Photo paths must use `ticket_photo_public_path()` / upload helpers, not raw `../../tickets_photos/` assumptions. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
@@ -61,5 +61,5 @@ $stmt->execute();
 ```
 
 ## 12. Module Owner Notes (Optional)
-- **`database.sql` seeds:** one `TCK-0001` row per seeded company (ids 1–5), each with tenant `Open` `status_id`. The late `@replicate_source_company_id` block does **not** copy `tickets` — explicit per-company inserts are the only seed rows (avoids duplicate open tickets on import).
+- **`db/` seeds:** one `TCK-0001` row per seeded company (ids 1–5), each with tenant `Open` `status_id`. The late `@replicate_source_company_id` block does **not** copy `tickets` — explicit per-company inserts are the only seed rows (avoids duplicate open tickets on import).
 The primary interface for IT support operations.

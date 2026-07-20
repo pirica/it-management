@@ -2,7 +2,7 @@
 /**
  * Add or refresh the View audit meta bullet in module AGENT_NOTES.md files.
  *
- * Scope: bespoke list + status-driven slugs that have a matching CREATE TABLE in database.sql.
+ * Scope: bespoke list + status-driven slugs that have a matching CREATE TABLE in db/.
  * Skips modules without a same-named table (calendar, org_chart, is_*, passwords, settings, etc.).
  *
  * Usage:

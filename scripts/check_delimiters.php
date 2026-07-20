@@ -1,8 +1,8 @@
 <?php
 /**
- * Audit database.sql for correct DELIMITER usage in trigger blocks.
+ * Audit db/ for correct DELIMITER usage in trigger blocks.
  *
- * Why: Triggers in database.sql require custom delimiters ($$) to allow
+ * Why: Triggers in db/ require custom delimiters ($$) to allow
  * internal semicolons. This script identifies blocks missing delimiters
  * or using incorrect END sequences.
  *
@@ -13,6 +13,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 if (PHP_SAPI !== 'cli') {
     require_once dirname(__DIR__) . '/config/config.php';
@@ -22,9 +23,9 @@ if (PHP_SAPI !== 'cli') {
 itm_script_output_begin('Check Delimiters');
 $nl = itm_script_output_nl();
 
-$sqlPath = dirname(__DIR__) . '/database.sql';
+$sqlPath = itm_database_sql_schema_path();
 if (!is_file($sqlPath)) {
-    echo "Error: database.sql not found at $sqlPath" . $nl;
+    echo "Error: db/01_schema.sql not found at $sqlPath" . $nl;
     exit(1);
 }
 

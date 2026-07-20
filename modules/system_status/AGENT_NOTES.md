@@ -48,7 +48,7 @@ Registry: `modules_registry.module_slug = system_status` (system module, active)
 ---
 
 ## 5. UI Behavior Requirements
-- **Sidebar:** hardcoded under **Admin** in `itm_sidebar_base_structure()` (`🖥️ System Status`); registry seed includes matching `icon` in `database.sql`.
+- **Sidebar:** hardcoded under **Admin** in `itm_sidebar_base_structure()` (`🖥️ System Status`); registry seed includes matching `icon` in `db/03_triggers.sql`.
 - **No flattened list contract:** tabbed diagnostic dashboard omits standard Search/Sort/Pagination, table Actions, export card, bulk toolbar, and CRUD entry files on `index.php`. `check_ui_configuration_coverage.php` gate-excluded checks print `[n/a][fail|n/a][reviewed]` via `scripts/data/ui_configuration_reviewed.json` (manifest: `scripts/ui_configuration_reviewed.php`).
 - **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).
 
@@ -126,7 +126,7 @@ Documented in `scripts/api.php` (`itmDocSystemStatusApiActions()`). Catalogued i
 
 Collected metrics are **system-wide** (hardware, PHP, MySQL) — not filtered by tenant for display. Admin gate is the access control. The Sub Storage tree lists all companies' Explorer/upload folders.
 
-**Cache rows** are tenant-scoped: `UNIQUE (company_id, tab_key)` in `database.sql`. Refresh and tab reads use the active session `company_id`. When session `company_id` is missing or invalid (`<= 0`), the module falls back to `1` so admin diagnostics remain usable before company selection — intentional for this system-wide admin tool.
+**Cache rows** are tenant-scoped: `UNIQUE (company_id, tab_key)` in `db/03_triggers.sql`. Refresh and tab reads use the active session `company_id`. When session `company_id` is missing or invalid (`<= 0`), the module falls back to `1` so admin diagnostics remain usable before company selection — intentional for this system-wide admin tool.
 
 **Operational / security notes (cache fallback):**
 - Access remains **admin-only** (`itm_is_admin()` gate on `index.php`, API, phpinfo script).
@@ -137,13 +137,13 @@ Collected metrics are **system-wide** (hardware, PHP, MySQL) — not filtered by
 
 ## 9. Audit Logging Requirements
 
-`system_status` has `trg_system_status_audit_insert|update|delete` in `database.sql`. Refresh upserts log via UPDATE/INSERT triggers when `enable_audit_logs` is on.
+`system_status` has `trg_system_status_audit_insert|update|delete` in `db/03_triggers.sql`. Refresh upserts log via UPDATE/INSERT triggers when `enable_audit_logs` is on.
 
 ---
 
 ## 10. Common Pitfalls
 
-- **Stale tabs after deploy:** re-import `database.sql` (or create `system_status`) before Refresh works. [Cursor-Valid]
+- **Stale tabs after deploy:** re-import `db/` (or create `system_status`) before Refresh works. [Cursor-Valid]
 - **PowerShell on Linux:** hardware Refresh uses native `/proc` paths; never call `powershell.exe`. [Cursor-Valid]
 - **`shell_exec` disabled on Windows:** Monitoring Refresh may record partial errors; PHP Settings and Database cache paths still work. [Cursor-Valid]
 - **phpinfo link:** always live — not cached. [Cursor-Valid]
@@ -193,4 +193,4 @@ if (!isset($_SESSION['employee_id']) || !itm_is_admin($conn, $_SESSION['employee
 | PHPUnit | `phpunit/tests/Unit/Modules/SystemStatusApiTest.php` |
 | README screenshot | `ITM_SCREENSHOT_ONLY=system_status python3 scripts/take_screenshots_modules.py` → `docs/readme/system_status.png` |
 
-Run verification when changing this module, `includes/itm_system_status_*.php`, `database.sql` `system_status`, or any `includes/*.ps1` metrics script.
+Run verification when changing this module, `includes/itm_system_status_*.php`, `db/` `system_status`, or any `includes/*.ps1` metrics script.

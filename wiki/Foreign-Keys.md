@@ -17,7 +17,7 @@ Apply the same order for list/view label resolution and for edit-form option loa
 
 - Open `index.php` and `view.php` and confirm every `*_id` column shows a label, not `equipment_id=5` or `level_id=23`.
 - Propagate display renderer changes to **both** `index.php` and `view.php` before commit.
-- Audit visible columns in `list_all.php` against `database.sql` and `information_schema` relationships.
+- Audit visible columns in `list_all.php` against `db/` and `information_schema` relationships.
 
 ## Edit forms and dropdowns
 

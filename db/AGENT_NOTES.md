@@ -1,13 +1,12 @@
 # AGENT_NOTES.md - db/
 
 ## 1. Module Purpose
-Generated SQL import bundles split from canonical `database.sql` at the repository root.
+Canonical SQL schema, seed data, and audit triggers for the IT Management System.
 
 ## 4. Business Rules (Critical for Agents)
-- **Canonical source:** edit `database.sql` only; regenerate split files with `php scripts/split_database_sql.php --apply`.
+- **Canonical source:** edit `db/01_schema.sql` (DDL), `db/02_data.sql` (DML/seeds), and `db/03_triggers.sql` (triggers) directly.
 - **Import order:** `01_schema.sql` → `02_data.sql` → `03_triggers.sql` in **one MySQL session** (`bash scripts/import_database_split.sh`). Numeric prefix matches run order.
-- **Parity gate:** `php scripts/verify_database_split_parity.php` after every regeneration (130 tables, 337 triggers, data multiset match).
-- **Do not** hand-edit split boundaries (DML belongs in `02_data.sql`, triggers in `03_triggers.sql`, DDL in `01_schema.sql`).
+- **Boundaries:** DDL in `01_schema.sql`, DML in `02_data.sql`, triggers in `03_triggers.sql`.
 
 ## 7. File Structure
 - `01_schema.sql` — DDL (`DROP DATABASE`, `CREATE TABLE`, …)
@@ -32,11 +31,11 @@ cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
 
 Do **not** run schema, data, and triggers as three separate `mysql` CLI imports.
 
-**Verify after import:** `php scripts/verify_database_schema.php` (130 tables). Alternative full import: root `database.sql`.
+**Verify after import:** `php scripts/verify_database_schema.php` (130 tables).
 
 ## 10. Common Pitfalls
 - Importing `03_triggers.sql` before `02_data.sql` fills `audit_logs` during seed load. [Cursor-Valid]
 - Separate `mysql` CLI calls drop `@replicate_source_company_id` before replication `INSERT … SELECT`. [Cursor-Valid]
 
 ## 12. Module Owner Notes (Optional)
-Splitter lib: `scripts/lib/itm_database_sql_split.php`. Catalog: `scripts/SCRIPTS.md`.
+Path helpers: `includes/itm_database_sql_source.php`. Catalog: `scripts/SCRIPTS.md`.
