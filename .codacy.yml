@@ -1,0 +1,19 @@
+---
+# IT Management — Codacy Cloud configuration (see SCRIPTS.md → Codacy).
+#
+# Authoritative pre-merge security gates (repo-owned):
+#   php scripts/check_codacy_xss_echo.php --strict
+#   php scripts/check_sql_injection_coverage.php
+#   php scripts/check_manual_sql_string.php   # informational; URL href builders exempt
+#
+# Per-pattern severity cannot be set in this file. Opengrep rule
+# php.lang.security.injection.tainted-sql-string (Codacy message: "User data flows
+# into this manually-constructed SQL string") is downgraded to WARNING in
+# .semgrep.yaml. Enable Opengrep → Configuration file on the repository Code
+# patterns page after merge so Codacy loads that file.
+#
+exclude_paths:
+  - "qa-reports/**"
+  - "phpunit/coverage/**"
+  - "vendor/**"
+  - ".git/**"

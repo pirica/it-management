@@ -1,0 +1,1522 @@
+{
+  "version": 1,
+  "description": "Reviewed gate-excluded UI configuration coverage lines for check_ui_configuration_coverage.php. Matching entries print as [n/a][pass|fail|n/a][reviewed] (informational — exit semantics unchanged).",
+  "modules": {
+    "attempts": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Security log is read-only: no create.php and no manual create/edit forms; logs are inserted by login.php and forgot-password.php only.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "Module has no create.php — list is append-only via authentication flows"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No create.php — Settings new_button_position slots not applicable"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php — list-header create button style not applicable"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "No create.php by design"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "No edit.php by design"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php form"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php form"
+        }
+      ]
+    },
+    "audit_logs": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Immutable read-only audit trail: create.php redirects to index; no manual create/edit/delete; rows are written by triggers and application audit hooks only.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "create.php redirects to index — read-only / immutable module; no create action expected"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "create.php redirects to index — no list create button layout"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "create.php redirects to index — no list create button style"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Module has no delete.php — audit rows must not be bulk-deleted from UI"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "Edit not used (no edit.php and no edit.php link in index.php)"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Delete not used (no delete.php and no delete.php link in index.php)"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "Create entry has no detectable form in create.php (redirect-only)"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php"
+        }
+      ]
+    },
+    "backup_tape_log": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Monthly grid bespoke UI intentionally omits flattened CRUD list search, sort, pagination, create flow, and bulk toolbar.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "No create.php — rows auto-populated per day in the monthly grid"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No create.php — Settings new_button_position slots not applicable"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php — list-header create button style not applicable"
+        },
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "Monthly grid uses year/month/server selectors — no flattened list search input"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Rows are calendar days in selected month — fixed grid order, not column sort headers"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Full month grid on one page — no records_per_page paging"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Bulk toolbar intentionally omitted — grid uses per-row delete with date lock rules"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "No create.php — daily rows ensured by grid loader, not manual create"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php form"
+        }
+      ]
+    },
+    "birthdays": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Read-only monthly birthday list (index.php only): no CRUD entry files, no Actions column, no pagination — data sourced from employees.birthday with month/status filters.",
+      "checks": [
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No Actions column — read-only report list"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "No create.php — birthdays are employee profile data, not created here"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No create.php — Settings new_button_position slots not applicable"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php — list-header create button style not applicable"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Full month list on one page — no records_per_page paging"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "No delete.php — read-only module"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "No create.php by design"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "No edit.php by design"
+        },
+        {
+          "check": "View entry (view.php)",
+          "code": "ui_config_view_entry",
+          "note": "No view.php by design"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "No list_all.php by design"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "No delete.php by design"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php form"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php form"
+        }
+      ]
+    },
+    "budget_report": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Computed finance summary (index.php only): read-only report with period/search/sort filters — no CRUD entry files, Actions column, pagination, or bulk toolbar.",
+      "checks": [
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Full filtered report on one page — no records_per_page paging"
+        },
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No Actions column — read-only computed report"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "No create.php — rows aggregated from budget/forecast/expense tables"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No create.php — Settings new_button_position slots not applicable"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php — list-header create button style not applicable"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "No delete.php — read-only report module"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "No create.php by design"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "No edit.php by design"
+        },
+        {
+          "check": "View entry (view.php)",
+          "code": "ui_config_view_entry",
+          "note": "No view.php by design"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "No list_all.php by design"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "No delete.php by design"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php form"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php form"
+        }
+      ]
+    },
+    "company_module_access": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Admin company × module matrix bespoke UI: all registry rows on one page ordered by module_slug ASC; AJAX bulk_toggle_access replaces scaffold bulk-delete toolbar.",
+      "checks": [
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Matrix rows fixed ORDER BY module_slug ASC — no per-column sort headers or GET sort/dir"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Full registry matrix on one page — admin needs every module visible; no records_per_page paging"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Bulk toolbar omitted — matrix uses Select All / Cancel Select / Unselect All + ajax_action=bulk_toggle_access"
+        }
+      ]
+    },
+    "calendar": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Aggregated calendar grid (index.php only): no list table or local CRUD entry files — create/view deep-link to source modules (events, alerts, tickets, equipment, patches_updates).",
+      "checks": [
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "No modules/calendar/create.php — side panel ➕ links to ../events/create.php with start_date preset"
+        },
+        {
+          "check": "View entry (view.php)",
+          "code": "ui_config_view_entry",
+          "note": "No modules/calendar/view.php — grid links to source-module view.php (events, alerts, tickets, equipment, patches_updates)"
+        },
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No list table — calendar grid UI"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "No local create.php — new event via ../events/create.php side-panel link"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No local create.php — Settings new_button_position slots not applicable"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No local create.php — list-header create button style not applicable"
+        },
+        {
+          "check": "Export Buttons",
+          "code": "ui_config_export_buttons",
+          "note": "No list table — ICS export is bespoke GET ?export=ics, not table-tools.js"
+        },
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "No list table — month/week/day/year navigation replaces list search"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "No list table — grid ordering is chronological by integrated sources"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "No list table — calendar view paging is by date range, not records_per_page"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "No list table or delete.php — mutations happen in source modules"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "No edit.php by design"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "No list_all.php by design"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "No delete.php by design"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No local create.php form"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php form"
+        }
+      ]
+    },
+    "contacts": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Department-grouped contact directory (index.php only): inline edit via api/inline_edit.php — no scaffold CRUD shell, sort, pagination, or bulk delete.",
+      "checks": [
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Directory grouped by department with fixed SQL ORDER BY — no per-column sort headers or GET sort/dir"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Full contact directory on one page — no records_per_page paging"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "No modules/contacts/edit.php — inline edits use api/inline_edit.php (audit false positive on inline_edit.php path)"
+        },
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No Actions column — read-only directory with inline-edit spans"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "No create.php — employees are managed in modules/employees/"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No create.php — Settings new_button_position slots not applicable"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php — list-header create button style not applicable"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "No delete.php — directory is read-only except inline field updates"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "No create.php by design"
+        },
+        {
+          "check": "View entry (view.php)",
+          "code": "ui_config_view_entry",
+          "note": "No view.php by design"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "No list_all.php by design"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "No delete.php by design"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php form"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php form"
+        }
+      ]
+    },
+    "emails": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Three-tab Email Management shell (Send Logs | SMTP Configurations | Alert Rules): send-log list/search/sort/pagination/bulk live in tabs/send_logs.php; SMTP profiles use inline forms and create.php/edit.php redirects to index.php?tab=smtp; send-log soft-delete via delete.php (private-data exempt).",
+      "checks": [
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Standalone delete.php soft-deletes send logs (bulk/clear_table); POST enforced via itm_require_post_csrf() — static audit also expects $_SERVER REQUEST_METHOD in file"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "create.php redirects to index.php?tab=smtp — SMTP profile form is inline on the SMTP tab, not a scaffold create.php screen"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "edit.php redirects to index.php?tab=smtp — SMTP edit is inline on the SMTP tab"
+        },
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "Send Logs table (🔎 view + itm-actions-cell) is in tabs/send_logs.php — check_ui_configuration_coverage scans index.php only"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "create.php redirects to SMTP tab — Send Logs are append-only via itm_send_email(); ➕ on SMTP tab is server-managed in index.php"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "Settings new_button_position applies to index.php SMTP-tab header; audit treats create.php redirect as read-only scaffold"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "SMTP-tab ➕ uses btn-primary itm-list-new-button in index.php; audit does not see it when create.php redirects"
+        },
+        {
+          "check": "Export Buttons",
+          "code": "ui_config_export_buttons",
+          "note": "Send Logs use bespoke 📗 Export Excel (exportEmailLogsXlsx) in tabs/send_logs.php, not table-tools.js on an index.php table"
+        },
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "Server-side search on to_email/subject/status/details/sent_at in tabs/send_logs.php — not visible to index.php static scan"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Send Logs column sort (sort/dir + ▲/▼) implemented in tabs/send_logs.php — audit scans index.php only"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Send Logs use itm_resolve_records_per_page() with Previous/Next in tabs/send_logs.php — list markup not in index.php"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Bulk toolbar on Send Logs tab (tabs/send_logs.php) posts to delete.php — gate scan looks for table in index.php only"
+        }
+      ]
+    },
+    "employee_sidebar_preferences": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Read-only admin audit list for persisted sidebar preference rows — live drag-and-drop editor lives in includes/ui_config.php; no create/edit/delete UI in this module folder.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "No create.php — preference rows are written by sidebar editor/runtime, not manual CRUD create"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No create.php — Settings new_button_position slots not applicable"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php — list-header create button style not applicable"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "No delete.php — read-only audit list; bulk toolbar intentionally omitted per AGENT_NOTES.md"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "No create.php by design — preferences are not created from this module UI"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "No edit.php by design — view-only module"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "No delete.php by design — rows are not deleted from this audit list"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php form"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php form"
+        }
+      ]
+    },
+    "employee_system_access": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Employee × system checklist on index.php/edit.php/view.php — no create.php; CSV export in managed header slot; mutations via edit checklist not scaffold create/delete.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "No create.php — access rows edited per employee via edit.php checklist, not list create action"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No create.php — header uses data-itm-new-button-managed with CSV export in create slot"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php — no list-header ➕ create link"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "No delete.php — checklist edits replace bulk scaffold delete"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "No create.php by design"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "No list_all.php — single index checklist list only"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "No delete.php by design"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php form"
+        }
+      ]
+    },
+    "expiring": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Read-only expiration dashboard (no expiring table): aggregates equipment warranty/certificate and alert end dates — wrapper create/edit/delete/list_all exist for scaffold routing only; no flattened CRUD list search/sort/pagination.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "No writable expiring rows — create.php wrapper routes to dashboard; no primary create/add on index"
+        },
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "Bespoke summary/tab sections — no GET search input or server-side LIKE on a flattened index table"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Fixed SQL ordering per section — no per-column sort headers or GET sort/dir"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Full expiration sections on one page — no records_per_page paging"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "create.php wrapper delegates to index.php — no scaffold create form"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "edit.php wrapper delegates to index.php — no scaffold edit form"
+        },
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No Actions column — read-only dashboard rows link to source modules"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No server-managed new-button row — dashboard has no create flow"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php link on index.php"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Bulk toolbar intentionally omitted — read-only aggregator"
+        }
+      ]
+    },
+    "explorer": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Bespoke file-manager UI (index.php + api.php + file.php): folder grid and JSON API — no flattened CRUD table, create.php, edit.php, list_all.php, or delete.php.",
+      "checks": [
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No HTML list table — file grid uses context menu and api.php actions"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "No create.php — uploads/folders via Explorer toolbar and api.php"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No create.php — Settings new_button_position slots not applicable"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php — list-header create button style not applicable"
+        },
+        {
+          "check": "Export Buttons",
+          "code": "ui_config_export_buttons",
+          "note": "No table-tools list — ZIP/download via api.php downloadZip and file.php"
+        },
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "Client-side filter on current folder listing — not scaffold GET search on index.php table"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "No column-sort list — grid sort is bespoke JS, not GET sort/dir"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Folder listing is not server-paginated via records_per_page"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "No bulk-delete-form — multi-select delete uses Explorer API, not scaffold toolbar"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "No create.php by design"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "No edit.php by design — rename/move via api.php"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "No list_all.php by design"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "No delete.php by design — soft-delete to Trash via api.php"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php form"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php form"
+        }
+      ]
+    },
+    "idfs": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Bespoke IDF Dashboard Studio: create/edit forms live on index.php; create.php and edit.php are redirect-only QA entry files.",
+      "checks": [
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "create.php redirects to index.php — closet create form is inline on index.php, not a scaffold create.php screen"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "edit.php redirects to index.php?edit_idf= — inline edit panel on index.php, not a standalone edit.php form"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "create.php redirects to index — create flow is the inline New closet profile panel on index.php"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No list-header create button — create is inline panel; audit treats create.php redirect as read-only scaffold"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "Inline create panel on index.php — not a Settings-managed list-header ➕ button"
+        }
+      ]
+    },
+    "import": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Admin-only bulk-import wizard (Assets/Employees cards): no flattened CRUD table, CRUD entry files, or list toolbar — imports via AJAX JSON to import_excel_rows.",
+      "checks": [
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "Dual-card upload UI — no server-side list search on index.php"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "No list table — template download and file upload cards only"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "No paginated list — imports are one-shot file uploads"
+        },
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No Actions column in index.php"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Module has no delete.php"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "Create not used (no create.php and no create.php link in index.php)"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "Edit not used (no edit.php and no edit.php link in index.php)"
+        },
+        {
+          "check": "View entry (view.php)",
+          "code": "ui_config_view_entry",
+          "note": "View not used (no view.php and no view.php link in index.php)"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "List-all not used (no list_all.php and no list_all.php link in index.php)"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Delete not used (no delete.php and no delete.php link in index.php)"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php"
+        }
+      ]
+    },
+    "ops_report": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Daily hotel operations report uses day/month/year selectors and opr_ensure_report() auto-create — not a flattened CRUD list. create.php is a wrapper to index.php; cross-date search hit list has its own sort/pagination but the main report grid intentionally omits primary create, column sort, and bulk toolbar.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "create.php exists but index.php has no detectable primary create/add action — reports open by date via opr_ensure_report()"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No server-managed new-button row (ui-layout.js may relocate at runtime)"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php link on index.php"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Main report grid has no ORDER BY sort wiring — cross-date search hit table uses separate sort=report_date|sections"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Bulk toolbar intentionally omitted — daily report uses inline row add/delete AJAX, not scaffold bulk-delete"
+        }
+      ]
+    },
+    "org_chart": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Interactive org chart (index.php only): visual tree from employees.reports_to with drag-and-drop AJAX — no flattened CRUD table, entry files, or list toolbar.",
+      "checks": [
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No table in index.php — hierarchy is a visual tree diagram"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "Export Buttons",
+          "code": "ui_config_export_buttons",
+          "note": "No table in index.php — bespoke Excel structure export and html2canvas PNG, not table-tools.js"
+        },
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "No table in index.php — chart shows on_orgchart employees only"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "No table in index.php — tree layout algorithm positions nodes"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "No table in index.php — full org chart on one canvas"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "No table in index.php — hierarchy updates via drag-and-drop AJAX only"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "Create not used (no create.php and no create.php link in index.php)"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "Edit not used (no edit.php and no edit.php link in index.php)"
+        },
+        {
+          "check": "View entry (view.php)",
+          "code": "ui_config_view_entry",
+          "note": "View not used (no view.php and no view.php link in index.php)"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "List-all not used (no list_all.php and no list_all.php link in index.php)"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Delete not used (no delete.php and no delete.php link in index.php)"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php"
+        }
+      ]
+    },
+    "passwords": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Vault manager uses index.php modals and AJAX for create/edit — no scaffold create.php, edit.php, or list_all.php. Server-managed ➕ opens the entry modal; Search/Sort/Pagination and bulk delete are implemented on the entry list.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "Module has no create.php — primary ➕ opens entry modal on index.php (data-itm-new-button-managed=\"server\")"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "Module has no create.php — Settings new_button_position gates modal ➕ on index.php, not create.php btn-primary"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "Module has no create.php — list-header ➕ uses itm-list-new-button modal trigger, not create.php link"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "Create not used (no create.php and no create.php link in index.php)"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "Edit not used (no edit.php and no edit.php link in index.php)"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "List-all not used (no list_all.php and no list_all.php link in index.php)"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php"
+        }
+      ]
+    },
+    "private_contacts": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Vault address book uses index.php list with inline delete via index_logic.php — no delete.php, list_all.php, or scaffold bulk-delete toolbar. Search, Sort, Pagination, and create/edit/view entry files are implemented.",
+      "checks": [
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Module has no delete.php — per-row delete POST handled in index_logic.php"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "List-all not used (no list_all.php and no list_all.php link in index.php)"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Delete not used (no delete.php and no delete.php link in index.php)"
+        }
+      ]
+    },
+    "reports": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Read-only Reports Hub dashboard (index.php only): Chart.js stats and charts from api/helpers.php aggregating existing tenant tables — no flattened CRUD list, entry files, or list toolbar.",
+      "checks": [
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No table in index.php — dashboard uses chart cards and stat tiles"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "Export Buttons",
+          "code": "ui_config_export_buttons",
+          "note": "No table in index.php — charts are on-screen only, not table-tools.js exports"
+        },
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "No table in index.php — read-only aggregated metrics"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "No table in index.php — chart data ordered in SQL helpers"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "No table in index.php — full dashboard on one page"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "No table in index.php — module is read-only (no mutations)"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "Create not used (no create.php and no create.php link in index.php)"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "Edit not used (no edit.php and no edit.php link in index.php)"
+        },
+        {
+          "check": "View entry (view.php)",
+          "code": "ui_config_view_entry",
+          "note": "View not used (no view.php and no view.php link in index.php)"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "List-all not used (no list_all.php and no list_all.php link in index.php)"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Delete not used (no delete.php and no delete.php link in index.php)"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php"
+        }
+      ]
+    },
+    "roles_permissions": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Dual-pane RBAC matrix (index.php only): AJAX modals for add/edit role and matrix save — no scaffold create.php, list_all.php, or bulk-delete toolbar. Server-managed ➕ opens the add-role modal; permission matrix uses GET search on registry rows plus optional client-side filter.",
+      "checks": [
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Matrix rows fixed ORDER BY module_slug ASC — no per-column sort headers"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Full permission matrix on one page — no records_per_page paging"
+        },
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No Actions column — permission checkboxes per module row"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "Module has no create.php — primary ➕ opens add-role modal on index.php (data-itm-new-button-managed=\"server\")"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "Module has no create.php — Settings new_button_position gates modal ➕ on index.php"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "Module has no create.php — list-header ➕ uses itm-list-new-button modal trigger"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Module has no delete.php — matrix uses Check All / Uncheck All + save"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "Create not used (no create.php — add role via AJAX modal)"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "Edit not used (no edit.php — edit role via AJAX modal)"
+        },
+        {
+          "check": "View entry (view.php)",
+          "code": "ui_config_view_entry",
+          "note": "View not used (no view.php — dual-pane matrix on index.php only)"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "List-all not used (no list_all.php)"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Delete not used (no delete.php — roles are not soft-deleted from this matrix)"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php"
+        }
+      ]
+    },
+    "resignations": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Read-only weekly resignation report (index.php only): ISO week/month filters and sortable table — no CRUD entry files, no Actions column, no records_per_page pagination (full filtered week on one page).",
+      "checks": [
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Full weekly resignation list on one page — no records_per_page paging"
+        },
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No Actions column — read-only report list"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "Module has no create.php — Settings new_button_position slots not applicable"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php — list-header create button style not applicable"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Module has no delete.php — read-only module"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "Create not used (no create.php and no create.php link in index.php)"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "Edit not used (no edit.php and no edit.php link in index.php)"
+        },
+        {
+          "check": "View entry (view.php)",
+          "code": "ui_config_view_entry",
+          "note": "View not used (no view.php and no view.php link in index.php)"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "List-all not used (no list_all.php and no list_all.php link in index.php)"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Delete not used (no delete.php and no delete.php link in index.php)"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php"
+        }
+      ]
+    },
+    "settings": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Configuration and maintenance dashboard (index.php only): UI config form, SideMenu drag-reorder table, API key card, and All Backups filesystem list — no scaffold CRUD entry files, bulk toolbar, or records_per_page list paging on the audited first table.",
+      "checks": [
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "Audited first table is SideMenu settings (manual ↑/↓ order, no GET search). All Backups uses table-tools.js client-side row filter only — not server-side search on index.php"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Audited first table is SideMenu settings (manual reorder, no sort headers). All Backups has server-side usort on name/size/modified (#all-backups) — not the list screen the static audit resolves"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Configuration UI — no records_per_page paging on SideMenu or All Backups tables"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "Module has no create.php — Settings new_button_position slots not applicable"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "Module has no create.php — list-header create button style not applicable"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Module has no delete.php — backup rows delete per-file via POST; SideMenu has no bulk toolbar"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "Create not used (no create.php and no create.php link in index.php)"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "Edit not used (no edit.php and no edit.php link in index.php)"
+        },
+        {
+          "check": "View entry (view.php)",
+          "code": "ui_config_view_entry",
+          "note": "View not used (no view.php and no view.php link in index.php)"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "List-all not used (no list_all.php and no list_all.php link in index.php)"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Delete not used (no delete.php and no delete.php link in index.php)"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php"
+        }
+      ]
+    },
+    "system_status": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Admin diagnostic tabbed dashboard (monitoring, PHP settings, database): bespoke metric cards and cache refresh — no flattened list table, no create/edit/list-all/delete entry files, and no bulk toolbar on index.php.",
+      "checks": [
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No table in index.php — tab panels use metric cards and storage trees, not list Actions columns"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "Module has no create.php — rows are cache snapshots refreshed via POST Refresh, not manual create"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "Module has no create.php — Settings new_button_position slots not applicable (Refresh uses Settings UI toolbar placement)"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "Module has no create.php — list-header create button style not applicable"
+        },
+        {
+          "check": "Export Buttons",
+          "code": "ui_config_export_buttons",
+          "note": "No table in index.php — no table-tools.js export card on the diagnostic dashboard"
+        },
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "No table in index.php — tab navigation replaces flattened list search"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "No table in index.php — metrics tables are display-only, not sortable list headers"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "No table in index.php — no records_per_page paging on the diagnostic dashboard"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "No table in index.php — no bulk-delete toolbar on cache/metrics UI"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "Create not used (no create.php and no create.php link in index.php)"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "Edit not used (no edit.php and no edit.php link in index.php)"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "List-all not used (no list_all.php and no list_all.php link in index.php)"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Delete not used (no delete.php and no delete.php link in index.php)"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php"
+        }
+      ]
+    },
+    "todo": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Microsoft To-Do–style task cards on index.php: bespoke sidebar filters, task-row actions, and quick-add — no flattened list Actions column or scaffold bulk-delete toolbar.",
+      "checks": [
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No Actions column in index.php — task rows use inline checkbox, star, share, and view/edit affordances, not itm-actions-cell table chrome"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Bulk toolbar intentionally omitted — per-task delete on view/edit and quick-add flow; no ids[] bulk-delete form on card list"
+        }
+      ]
+    },
+    "is_*": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Equipment-type façade modules (is_switch, is_server, is_workstation, …) are thin wrappers that require modules/equipment/ — no local index.php table, list toolbar, or Settings new-button row for this audit.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "create.php delegates to equipment — façade index.php has no detectable primary create/add action (many façades set equipmentAllowCreate=false)"
+        },
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No table in façade index.php — list chrome lives in modules/equipment/index.php"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No server-managed new-button row on façade index.php"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php link on façade index.php — create routes through equipment module"
+        },
+        {
+          "check": "Export Buttons",
+          "code": "ui_config_export_buttons",
+          "note": "No table in façade index.php — export card is on equipment list"
+        },
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "No table in façade index.php — search is implemented in modules/equipment/index.php"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "No table in façade index.php — sort headers are on equipment list"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "No table in façade index.php — pagination uses equipment list + itm_resolve_records_per_page()"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "No table in façade index.php — bulk toolbar is on equipment list when enabled"
+        }
+      ]
+    }
+  }
+}
