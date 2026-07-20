@@ -125,7 +125,7 @@ if ($missing === [] && $extra === [] && count($actual) === count($expected)) {
     exit(0);
 }
 
-echo $nl . itm_script_format_status_line("[FAIL] FAIL — import incomplete or stale schema. Re-import the full database.sql (include DROP DATABASE at top; password itmanagement).") . $nl;
+echo $nl . itm_script_format_status_line("[FAIL] FAIL — import incomplete or stale schema. Re-import the full database.sql (include DROP DATABASE at top; password itmanagement) or run bash scripts/import_database_split.sh after regenerating db/*.sql.") . $nl;
 echo "Check mysql stderr (e.g. mysql-import.err) for the first ERROR after the last table created." . $nl;
 exit(1);
 

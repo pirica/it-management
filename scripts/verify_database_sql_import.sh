@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Import full database.sql and assert the live schema matches expectations.
+# Split alternative: bash scripts/import_database_split.sh (db/01 → 03 → 02, one session).
 # Used by CI (GitHub Actions MySQL service) and local verification after schema edits.
 #
 # Usage (repository root):

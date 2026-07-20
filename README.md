@@ -285,7 +285,7 @@ Full API documentation is available in the `scripts/api.php` file (viewable in t
 <h2 align="center">Installation</h2>
 
 1. Extract the project files into your web root.
-2. Import `database.sql` into MySQL.
+2. Import `database.sql` into MySQL (or run `bash scripts/import_database_split.sh` for the generated `db/` split — see `db/AGENT_NOTES.md`).
 3. Update database credentials in `config/config.php`.
 4. Create an `images/` directory for equipment uploads.
 5. Create a `tickets_photos/` directory for ticket uploads.
