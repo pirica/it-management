@@ -139,6 +139,90 @@ if (!mysqli_query($conn, $insertSql)) {
         etr_verify_pass('Resignations weekly filter returns probe employee');
     }
 
+    $searchFragment = substr($testExternalId, -6);
+    $searchPattern = '%' . $searchFragment . '%';
+    $searchSql = "SELECT e.id FROM employees e
+        INNER JOIN employee_statuses es ON es.id = e.employment_status_id AND es.company_id = e.company_id
+        LEFT JOIN employee_type et ON et.id = e.employee_type_id AND et.company_id = e.company_id
+        LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id
+        WHERE e.company_id = ?
+          AND e.id = ?
+          AND e.termination_date IS NOT NULL
+          AND " . itm_sql_valid_date_predicate('e.termination_date') . "
+          AND e.termination_date >= ?
+          AND e.termination_date <= ?
+          AND MONTH(e.termination_date) = ?
+          AND es.id = ?
+          AND e.employee_type_id = ?
+          AND (
+            e.external_id LIKE ?
+            OR e.first_name LIKE ?
+            OR e.last_name LIKE ?
+            OR CONCAT(e.first_name, ' ', e.last_name) LIKE ?
+            OR COALESCE(et.name_type, '') LIKE ?
+            OR COALESCE(d.name, '') LIKE ?
+            OR COALESCE(d.code, '') LIKE ?
+            OR DATE_FORMAT(e.start_date, '%d/%m/%Y') LIKE ?
+            OR DATE_FORMAT(e.termination_date, '%d/%m/%Y') LIKE ?
+            OR CONCAT(WEEK(e.termination_date, 3), '/', DATE_FORMAT(e.termination_date, '%y')) LIKE ?
+          )
+        LIMIT 1";
+    $searchStmt = mysqli_prepare($conn, $searchSql);
+    if (!$searchStmt) {
+        etr_verify_fail('Resignations search SQL prepare failed: ' . mysqli_error($conn));
+    } else {
+        $searchTypes = 'iissiiissssssssss';
+        mysqli_stmt_bind_param(
+            $searchStmt,
+            $searchTypes,
+            $companyId,
+            $probeEmployeeId,
+            $isoWeekBounds['start'],
+            $isoWeekBounds['end'],
+            $month,
+            $terminatedStatusId,
+            $teamMemberId,
+            $searchPattern,
+            $searchPattern,
+            $searchPattern,
+            $searchPattern,
+            $searchPattern,
+            $searchPattern,
+            $searchPattern,
+            $searchPattern,
+            $searchPattern,
+            $searchPattern
+        );
+        mysqli_stmt_execute($searchStmt);
+        $searchRes = mysqli_stmt_get_result($searchStmt);
+        if (!$searchRes || mysqli_num_rows($searchRes) !== 1) {
+            etr_verify_fail('Resignations search filter did not return probe employee for external_id fragment');
+        } else {
+            etr_verify_pass('Resignations search filter returns probe employee (external_id fragment)');
+        }
+        mysqli_stmt_close($searchStmt);
+    }
+
+    $indexPath = ROOT_PATH . 'modules/resignations/index.php';
+    if (!is_readable($indexPath)) {
+        etr_verify_fail('modules/resignations/index.php is not readable for h1 contract check');
+    } else {
+        require_once ROOT_PATH . 'scripts/lib/itm_ui_list_contract_checks.php';
+        $indexContent = (string) file_get_contents($indexPath);
+        $h1Check = itm_check_list_heading_emoji($indexContent);
+        if (($h1Check['status'] ?? '') !== 'pass') {
+            etr_verify_fail('Resignations list h1 contract: ' . ($h1Check['details'] ?? 'failed'));
+        } else {
+            etr_verify_pass('Resignations list h1 uses Settings sidebar icon via $moduleListHeading');
+        }
+        $searchCheck = itm_check_search($indexContent, 'modules/resignations/index.php');
+        if (($searchCheck['status'] ?? '') !== 'pass') {
+            etr_verify_fail('Resignations search UI contract: ' . ($searchCheck['details'] ?? 'failed'));
+        } else {
+            etr_verify_pass('Resignations search UI contract (input, SQL LIKE, emoji-only reset)');
+        }
+    }
+
     mysqli_query($conn, "DELETE FROM employees WHERE id={$probeEmployeeId} AND company_id={$companyId} LIMIT 1");
     etr_verify_pass('Cleaned up resignation probe employee');
 }
