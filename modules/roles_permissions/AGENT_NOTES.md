@@ -37,7 +37,7 @@ Unified dashboard for tenant role management and the RBAC permission matrix. Rep
 
 - Dual-pane layout patterned after `company_module_access`: Settings-managed list header (`data-itm-new-button-managed="server"`) with centered `$moduleListHeading` (sidebar icon + title via `itm_resolve_module_sidebar_icon()`), `new_button_position`-gated ➕ (`itm-list-new-button`, opens add-role modal), toolbar card (`margin-bottom:16px`), matrix card (`overflow:auto`), `Modules` column header, accent slug links, centred checkbox cells, and `badge` / `badge-danger` for system/inactive rows.
 - Role cards show name, **active employee count** (`N active`, SQL alias `active_count`), and **System** badge for Admin.
-- Toolbar: Check All, Uncheck All, Save (💾, admins only), module filter.
+- Toolbar: Check All, Uncheck All, Save (💾, admins only), server-side **Search (all fields)** on `module_slug` / `module_name` (GET `search`, emoji-only 🔙 reset preserves `role_id`), plus optional client-side matrix filter.
 - Add role (➕) and edit role (✏️) modals update `employee_roles.name` via AJAX (admins only). List-header ➕ uses `title="Create"` and respects Settings **new button position** (left / right / left_right).
 - Matrix table disables Excel/PDF export and Import Excel (`data-itm-no-export-excel="1"`, `data-itm-no-export-pdf="1"`, `data-itm-no-import-excel="1"`). Index table compliance honors the import opt-out (no `data-itm-db-import-endpoint` required — this is a permission matrix, not a CRUD row list).
 - Action buttons follow emoji-only visible labels with descriptive `title` attributes.

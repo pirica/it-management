@@ -235,6 +235,50 @@ if ($rolesIndexSource !== '') {
     } else {
         rp_verify_pass('roles_permissions list header gates modal ➕ per Settings new_button_position');
     }
+    $searchCheck = itm_check_search($rolesIndexSource, 'modules/roles_permissions/index.php');
+    if (($searchCheck['status'] ?? '') !== 'pass') {
+        rp_verify_fail('roles_permissions search UI contract: ' . ($searchCheck['details'] ?? 'failed'));
+    } else {
+        rp_verify_pass('roles_permissions search UI contract (input, in-memory filter, emoji-only reset)');
+    }
+}
+
+$registryProbeRows = itm_list_all_modules_registry($conn);
+$registryProbeMatch = null;
+foreach ($registryProbeRows as $registryProbeRow) {
+    $probeSlug = strtolower((string)($registryProbeRow['module_slug'] ?? ''));
+    if ($probeSlug === 'employees') {
+        $registryProbeMatch = $registryProbeRow;
+        break;
+    }
+}
+if (!is_array($registryProbeMatch)) {
+    rp_verify_fail('roles_permissions search probe: employees registry row missing.');
+} else {
+    $probeNeedle = 'employee';
+    $probeHaystack = strtolower(
+        (string)($registryProbeMatch['module_slug'] ?? '') . ' ' . (string)($registryProbeMatch['module_name'] ?? '')
+    );
+    if (strpos($probeHaystack, $probeNeedle) === false) {
+        rp_verify_fail('roles_permissions search probe haystack must match employees slug/name.');
+    } else {
+        $filteredProbeRows = array_values(array_filter($registryProbeRows, static function ($row) use ($probeNeedle) {
+            $haystack = strtolower((string)($row['module_slug'] ?? '') . ' ' . (string)($row['module_name'] ?? ''));
+            return strpos($haystack, $probeNeedle) !== false;
+        }));
+        $foundEmployees = false;
+        foreach ($filteredProbeRows as $filteredProbeRow) {
+            if (strtolower((string)($filteredProbeRow['module_slug'] ?? '')) === 'employees') {
+                $foundEmployees = true;
+                break;
+            }
+        }
+        if (!$foundEmployees) {
+            rp_verify_fail('roles_permissions in-memory search filter did not return employees registry row.');
+        } else {
+            rp_verify_pass('roles_permissions in-memory search filter returns employees for probe term "employee"');
+        }
+    }
 }
 
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
