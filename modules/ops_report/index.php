@@ -1213,10 +1213,12 @@ if (!isset($crud_title)) {
                             <div>Showing <?php echo $crossDateHitOffset + 1; ?>-<?php echo min($crossDateHitOffset + $searchPerPage, $crossDateHitTotal); ?> of <?php echo (int)$crossDateHitTotal; ?></div>
                             <div style="display:flex; gap:8px;">
                                 <?php if ($searchPage > 1): ?>
+                                    <a class="btn btn-sm" href="<?php echo $oprSearchHitsListUrl($searchSort, $searchDir, 1); ?>" title="First page">⏮️</a>
                                     <a class="btn btn-sm" href="<?php echo $oprSearchHitsListUrl($searchSort, $searchDir, $searchPage - 1); ?>" title="Previous page">◀️</a>
                                 <?php endif; ?>
                                 <?php if ($searchPage < $crossDateHitTotalPages): ?>
                                     <a class="btn btn-sm" href="<?php echo $oprSearchHitsListUrl($searchSort, $searchDir, $searchPage + 1); ?>" title="Next page">▶️</a>
+                                    <a class="btn btn-sm" href="<?php echo $oprSearchHitsListUrl($searchSort, $searchDir, $crossDateHitTotalPages); ?>" title="Last page">⏭️</a>
                                 <?php endif; ?>
                             </div>
                         </div>

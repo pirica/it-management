@@ -986,6 +986,18 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Browser: <a href="apply_pagination_emoji_labels.php">dry-run</a> / <a href="apply_pagination_emoji_labels.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_pagination_emoji_labels.php</code> then <code>php scripts/apply_pagination_emoji_labels.php --apply</code>.</td>
                 </tr>
                 <tr>
+                    <td><a href="apply_pagination_first_last.php" target="_blank" rel="nofollow noreferrer">apply_pagination_first_last.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Add **⏮️** first-page and **⏭️** last-page <code>btn-sm</code> anchors beside existing **◀️** / **▶️** list pagination (word-only <code>title</code> attributes). Covers standard <code>?search=&amp;sort=&amp;dir=&amp;page=</code> links plus bespoke builders (<code>pwd_build_list_url</code>, <code>sa_build_query</code>, <code>itm_audit_logs_build_query</code>, tickets <code>show_archived</code>, catalogs <code>$catalogNewProductsQuery</code>, IPAM focused list suffix, ops_report search hits, emails send logs). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Skips files that already include both first and last controls.</td>
+                    <td>Browser: <a href="apply_pagination_first_last.php">dry-run</a> / <a href="apply_pagination_first_last.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_pagination_first_last.php</code> then <code>php scripts/apply_pagination_first_last.php --apply</code>.</td>
+                </tr>
+                <tr>
+                    <td><a href="check_pagination_emoji.php" target="_blank" rel="nofollow noreferrer">check_pagination_emoji.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static audit: list pagination emoji-only visible labels (<code>⏮️</code>/<code>◀️</code>/<code>▶️</code>/<code>⏭️</code>) and word-only <code>title</code> attributes (<code>First page</code> … <code>Last page</code>). Scans module <code>index.php</code> (thin-router merge), <code>list_all.php</code>/<code>view.php</code>/<code>delete.php</code>, IPAM/rack <code>includes/partials/render.php</code>, and <code>tabs/*.php</code>. Uses <code>itm_check_pagination_nav_titles()</code>.</td>
+                    <td>Browser: plain-text report. CLI: <code>php scripts/check_pagination_emoji.php</code> — exit <code>0</code> when 0 violations. Run after pagination label or first/last control changes.</td>
+                </tr>
+                <tr>
                     <td><a href="verify_source_utf8_mojibake.php" target="_blank" rel="nofollow noreferrer">verify_source_utf8_mojibake.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Static audit: tracked <code>modules/</code>, <code>includes/</code>, <code>scripts/</code>, <code>js/</code>, <code>css/</code>, <code>config/</code> source must be valid UTF-8 without mojibake literals (corrupted emoji, accents, or punctuation). Optional scope: <code>?path=modules/patches_updates</code> / <code>--path=…</code>.</td>

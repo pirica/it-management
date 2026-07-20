@@ -860,11 +860,13 @@ if (!isset($crud_title)) {
                             <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo (int)$totalRows; ?></div>
                             <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
                                 <?php if ($page > 1): ?>
+                                    <a class="btn btn-sm" href="<?php echo sanitize(itm_idf_list_url(['page' => 1])); ?>" title="First page">⏮️</a>
                                     <a class="btn btn-sm" href="<?php echo sanitize(itm_idf_list_url(['page' => $page - 1])); ?>" title="Previous page">◀️</a>
                                 <?php endif; ?>
                                 <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
                                 <?php if ($page < $totalPages): ?>
                                     <a class="btn btn-sm" href="<?php echo sanitize(itm_idf_list_url(['page' => $page + 1])); ?>" title="Next page">▶️</a>
+                                    <a class="btn btn-sm" href="<?php echo sanitize(itm_idf_list_url(['page' => $totalPages])); ?>" title="Last page">⏭️</a>
                                 <?php endif; ?>
                             </div>
                         </div>

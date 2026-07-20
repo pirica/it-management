@@ -42,6 +42,7 @@ if (!function_exists('itm_tier2_check_scripts_canonical_fallback')) {
             'check_stale_user_terminology.php',
             'check_standard_crud_delegate_requires.php',
             'check_ui_action_emoji.php',
+            'check_pagination_emoji.php',
             'check_ui_configuration_coverage.php',
         ];
     }
