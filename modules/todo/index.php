@@ -516,7 +516,7 @@ if ($todoResolvedModuleIcon !== '') {
                             <?php else: ?>
                                 <span aria-hidden="true"></span>
                             <?php endif; ?>
-                            <h1><?php echo sanitize($moduleListHeading); ?></h1>
+                            <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                             <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
                                 <div style="display:flex;gap:8px;">
                                     <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>

@@ -181,7 +181,7 @@ if ($ssResolvedModuleIcon !== '') {
         <?php include '../../includes/header.php'; ?>
 
         <div class="content">
-            <div class="ss-page-toolbar" data-itm-new-button-managed="server">
+            <div data-itm-new-button-managed="server" class="ss-page-toolbar" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;gap:12px;flex-wrap:wrap;">
                 <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
                     <div class="ss-page-toolbar-side">
                         <form method="POST" action="<?php echo sanitize($ssRefreshFormAction); ?>" class="ss-form-inline">
@@ -192,7 +192,7 @@ if ($ssResolvedModuleIcon !== '') {
                 <?php else: ?>
                     <span aria-hidden="true"></span>
                 <?php endif; ?>
-                <h1><?php echo sanitize($moduleListHeading); ?></h1>
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                 <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
                     <div class="ss-page-toolbar-side">
                         <?php if ($newButtonPosition === 'right'): ?>
