@@ -1197,9 +1197,19 @@
           "note": "Edit not used (no edit.php — edit role via AJAX modal)"
         },
         {
+          "check": "View entry (view.php)",
+          "code": "ui_config_view_entry",
+          "note": "View not used (no view.php — dual-pane matrix on index.php only)"
+        },
+        {
           "check": "List-all entry (list_all.php)",
           "code": "ui_config_list_all_entry",
           "note": "List-all not used (no list_all.php)"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Delete not used (no delete.php — roles are not soft-deleted from this matrix)"
         },
         {
           "check": "Back & Save (create.php)",
