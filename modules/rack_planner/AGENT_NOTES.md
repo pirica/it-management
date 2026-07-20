@@ -23,11 +23,12 @@ Visual rack elevation planner. Stores layout JSON per named rack plan and refere
 - **Named verifier:** `php scripts/verify_rack_planner.php` (catalog: `scripts/scripts.php`) — price source sync + audit triggers; PHPUnit: `RackPlannerTest`.
 
 ## 5. UI Behavior Requirements
+- **Settings list contract:** Index/list_all header uses `data-itm-new-button-managed="server"` with `itm_resolve_new_button_position($ui_config)` (left / right / left_right ➕ slots, `title="Create"`, `itm-list-new-button`). Bulk toolbar (`Select to Delete`, `Cancel`, `Clear Table`) and row checkboxes render only when `$showBulkActions = ($totalRows >= $perPage)`.
 - **View audit meta:** Detail view must expose all six scaffold audit columns (`deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` — required by `fields_missing.php` bespoke view gate.
 - Vertical rack-unit grid; drag/drop placement.
 - Custom handlers in `includes/handlers.php` — disable redundant default exports when custom layout applies.
 - Auto-save AJAX (`ajax_update_layout`) returns HTTP 404 when `rack_planner` row is not tenant-scoped.
-- List view supports bulk delete/clear when row count ≥ `records_per_page`.
+- List view supports bulk delete/clear when row count ≥ `records_per_page` (entire bulk card and checkbox column gated via `$showBulkActions`).
 - **Responsive:** rack visualizer uses `min(600px, 100%)` width with horizontal scroll; mobile padding in `includes/partials/render.php`.
 
 ## 6. API Actions (If Applicable)
