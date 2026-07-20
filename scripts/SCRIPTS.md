@@ -903,7 +903,7 @@ Catalog: `scripts/scripts.php`.
 |--------|---------|
 | `php scripts/verify_ops_report.php` | Regression: D-2 edit lock, `ops_report` CRUD, child cascade delete, cross-date hit line format (`keyword \| day — sections`), audit triggers on all `ops_report*` tables, `modules_registry` row; PHPUnit: `OpsReportTest`, `OpsReportPermissionsTest` |
 | `php scripts/seed_ops_report_search_demo.php` | Seeds company 1 demo rows (`DemoManager` on two past dates) for manual QA and screenshot script; prints expected hit lines |
-| `python scripts/verify_ops_report_search_screenshot.py` | Seeds demo data, bypass login, captures `qa-reports/ops_report_search_hits_demo.png` (Playwright + local Apache). Env: `ITM_SCREENSHOT_BASE_URL`, `ITM_PHP_BIN`, `ITM_OPS_SEARCH_DEMO_KEYWORD` |
+| `python scripts/verify_ops_report_search_screenshot.py` | Seeds demo data, bypass login, captures five human-flow PNGs under `qa-reports/ops_report_search/` (all-dates hits, section filter, sort, this-day navigation, search bar). Playwright + local Apache. Env: `ITM_SCREENSHOT_BASE_URL`, `ITM_PHP_BIN`, `ITM_OPS_SEARCH_DEMO_KEYWORD` |
 
 Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*` tables in `database.sql`.
 

@@ -3,22 +3,32 @@
  * Seed Ops Report cross-date search demo rows for verify + screenshot scripts.
  *
  * CLI: php scripts/seed_ops_report_search_demo.php [--company=1] [--keyword=DemoManager]
- * Browser: scripts/seed_ops_report_search_demo.php (Admin only)
+ * Browser: http://localhost/it-management/scripts/seed_ops_report_search_demo.php (Admin session)
  */
 
-define('ITM_CLI_SCRIPT', true);
-require_once __DIR__ . '/../config/config.php';
+$itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
+if ($itmIsCli) {
+    define('ITM_CLI_SCRIPT', true);
+}
+
+require_once dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/lib/script_browser_nav.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_ops_report_search.php';
 
-$isBrowser = PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg';
-if ($isBrowser) {
+if (!$itmIsCli) {
     itm_script_require_admin_script_or_exit($conn);
-    itm_script_output_begin('Ops Report Search Demo Seed');
 }
 
+itm_script_output_begin('Ops Report Search Demo Seed');
 $nl = itm_script_output_nl();
-$options = $isBrowser ? ($_GET + $_POST) : getopt('', ['company:', 'keyword:']);
+
+if (!$itmIsCli) {
+    itm_script_output_close_pre();
+    echo '<h1>Ops Report Search Demo Seed</h1>';
+}
+
+$options = $itmIsCli ? getopt('', ['company:', 'keyword:']) : ($_GET + $_POST);
 $companyId = isset($options['company']) ? (int)$options['company'] : 1;
 $keyword = trim((string)($options['keyword'] ?? 'DemoManager'));
 if ($keyword === '') {
@@ -75,6 +85,7 @@ $guestOk = $guestReportId > 0 && opr_seed_insert_guest_row($conn, $companyId, $g
 
 if ($headerReportId <= 0 || !$guestOk) {
     echo colorText('[FAIL] Demo seed insert failed.', 'fail') . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
@@ -88,21 +99,16 @@ $today = (int)date('j');
 $month = (int)date('n');
 $year = (int)date('Y');
 $demoPath = opr_report_index_url($today, $month, $year, $keyword, 'all', 'all');
-$base = $isBrowser
-    ? (dirname($_SERVER['SCRIPT_NAME'] ?? '') . '/../modules/ops_report/')
-    : 'modules/ops_report/';
-$demoUrl = rtrim(str_replace('\\', '/', $base), '/') . '/' . $demoPath;
+$demoUrl = '/it-management/modules/ops_report/' . $demoPath;
 
 echo colorText('[PASS] Seeded Ops Report search demo for company ' . $companyId . '.', 'pass') . $nl;
 echo 'Keyword: ' . $keyword . $nl;
 echo 'Header report date: ' . $reportDateHeader . $nl;
 echo 'Guest report date: ' . $reportDateGuest . $nl;
-echo 'Demo URL path: ' . $demoUrl . $nl;
+echo 'Demo URL: http://localhost' . $demoUrl . $nl;
 echo 'Hit lines:' . $nl;
 foreach ($lines as $line) {
     echo '  - ' . $line . $nl;
 }
 
-if ($isBrowser) {
-    itm_script_output_end();
-}
+itm_script_output_end();
