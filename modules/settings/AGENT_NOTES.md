@@ -20,6 +20,7 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 - **Backup/Restore**: Handles SQL dump generation and manual SQL imports. **All Backups** table (`#all-backups`) uses `table-tools.js` export/import plus client-side row filter; server-side column sort via `?sort=name|size|modified&dir=ASC|DESC` (default `modified` `DESC`) with ▲/▼ on **File Name**, **Size (KB)**, and **Last Modified (UTC)**. **Options** column is first and not sortable.
 
 ## 5. UI Behavior Requirements
+- **ui_configuration reviewed gate:** gate-excluded in `scripts/data/ui_configuration_excluded_modules.txt`; intentional gaps (SideMenu drag-reorder table, no server search/pagination on audited first table, no CRUD entry files, All Backups client filter + server sort on `#all-backups` only) documented in `scripts/data/ui_configuration_reviewed.json` — audit lines print `[n/a][pass|fail|n/a][reviewed]`.
 - **Sidebar Toggles**: Uses checkboxes with a specific `change` event listener to ensure configuration persistence.
 - **Sidebar emoji overrides**: SideMenu module rows render in a compact table (`Show` | `Icon` | `Module` | `Order`) with `.itm-module-icon-input` in the icon column; matching the company default on save clears `module_icon_overrides`.
 - **Favicon/SQL Uploads**: Supports drag-and-drop file uploads for favicon and SQL backup files.

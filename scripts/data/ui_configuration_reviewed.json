@@ -1294,6 +1294,82 @@
         }
       ]
     },
+    "settings": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Configuration and maintenance dashboard (index.php only): UI config form, SideMenu drag-reorder table, API key card, and All Backups filesystem list — no scaffold CRUD entry files, bulk toolbar, or records_per_page list paging on the audited first table.",
+      "checks": [
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "Audited first table is SideMenu settings (manual ↑/↓ order, no GET search). All Backups uses table-tools.js client-side row filter only — not server-side search on index.php"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Audited first table is SideMenu settings (manual reorder, no sort headers). All Backups has server-side usort on name/size/modified (#all-backups) — not the list screen the static audit resolves"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Configuration UI — no records_per_page paging on SideMenu or All Backups tables"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "Module has no create.php — Settings new_button_position slots not applicable"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "Module has no create.php — list-header create button style not applicable"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Module has no delete.php — backup rows delete per-file via POST; SideMenu has no bulk toolbar"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "Create not used (no create.php and no create.php link in index.php)"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "Edit not used (no edit.php and no edit.php link in index.php)"
+        },
+        {
+          "check": "View entry (view.php)",
+          "code": "ui_config_view_entry",
+          "note": "View not used (no view.php and no view.php link in index.php)"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "List-all not used (no list_all.php and no list_all.php link in index.php)"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Delete not used (no delete.php and no delete.php link in index.php)"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php"
+        }
+      ]
+    },
     "is_*": {
       "reviewed_at": "2026-07-20",
       "reason": "Equipment-type façade modules (is_switch, is_server, is_workstation, …) are thin wrappers that require modules/equipment/ — no local index.php table, list toolbar, or Settings new-button row for this audit.",
