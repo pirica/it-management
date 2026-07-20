@@ -17,6 +17,9 @@ function itm_qr_share_allowed_tables()
         'todo_share_sessions',
         'event_share_sessions',
         'private_contact_share_sessions',
+        'explorer_share_sessions',
+        'floor_plan_share_sessions',
+        'rack_planner_share_sessions',
     ];
 }
 
@@ -29,6 +32,8 @@ function itm_qr_share_record_column($tableName)
         'todo_share_sessions' => 'todo_id',
         'event_share_sessions' => 'event_id',
         'private_contact_share_sessions' => 'private_contact_id',
+        'floor_plan_share_sessions' => 'floor_plan_id',
+        'rack_planner_share_sessions' => 'rack_planner_id',
     ];
 
     return $map[$tableName] ?? '';

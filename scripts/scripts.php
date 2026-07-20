@@ -1736,7 +1736,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="verify_qr_share_modules.php" target="_blank" rel="nofollow noreferrer">verify_qr_share_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression for Passwords, Bookmarks, Todo, Events, and Private Contacts QR/code share sessions: create session, payload snapshot, token lookup, join URL. Requires <code>password_share_sessions</code>, <code>bookmark_share_sessions</code>, <code>todo_share_sessions</code>, <code>event_share_sessions</code>, and <code>private_contact_share_sessions</code> in <code>db/</code> split bundle.</td>
+                    <td>Regression for Passwords, Bookmarks, Todo, Events, Private Contacts, Explorer, Floor Plans, and Rack Planner QR/code share sessions: create session, payload snapshot, token lookup, join URL. Requires matching <code>*_share_sessions</code> tables in <code>db/01_schema.sql</code>.</td>
                     <td><code>php scripts/verify_qr_share_modules.php</code></td>
                 </tr>
                 <tr>

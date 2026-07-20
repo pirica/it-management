@@ -41,6 +41,9 @@ Manages physical floor plan documents, including images, PDFs, and AutoCAD files
 - **index.php** — gallery entry point.
 - **view_detail.php** — file preview and detail.
 - **gallery_helpers.php** — shared logic for folder/file management.
+- **floor_plans_share_helpers.php**, **join.php**, **share_asset.php** — temporary QR/code share (`floor_plan_share_sessions`); 📱 on gallery cards and view screen.
+
+- **QR / code share (`join.php`, `share_asset.php`):** tenant-scoped temporary read links (30 min). `floor_plan_share_sessions` stores plaintext file metadata snapshot. UI: 📱 on gallery cards and view; modal via `includes/itm_qr_share_modal.php`. Public pages: `join.php`, `share_asset.php` (`ITM_QR_SHARE_PUBLIC`). Regression: `php scripts/verify_qr_share_modules.php`.
 
 ## 8. Multi-Tenant Rules
 - Strictly scoped by `company_id`.

@@ -63,12 +63,14 @@ All actions are POST to `api.php` with `action` parameter (JSON responses unless
 | `listRecycle` | Trash listing with same ACL as live storage; leaf filter via `explorer_filter_trash_list_to_leaf_items()` |
 | `restore` | Restore from Trash (normalise `item` path before ACL) |
 | `emptyRecycle` | Permanently empty permitted Trash items |
+| `create_share_session` | Temporary QR/code share for current `scope_path` folder or file tree |
 
 `GET api.php?downloadZip=1&path=` — ZIP download **only** when `path` is exactly `Private/{username}_{employee_id}` for the session employee.
 
 `file.php?path=` — authorised download/preview after `get_full_path()` ACL check.
 
 - `explorer_vault_bootstrap.php`, `explorer_vault_helpers.php` — vault unlock UI and Private-path gate helpers.
+- `explorer_share_helpers.php`, `join.php`, `share_file.php` — temporary QR/code share for scoped folders/files (`explorer_share_sessions`; private paths require vault unlock).
 - `index.php` — browser UI, sidebar, `resolveScopedFolderPath()`.
 - `api.php` — JSON file operations (`list`, `upload`, Trash, etc.).
 - `file.php` — authorised serve/preview after ACL.
@@ -109,4 +111,4 @@ explorer_ensure_dir($dir . '/' . $name); // wraps itm_ensure_files_storage_direc
 ```
 
 ## 12. Module Owner Notes (Optional)
-Regression: `php scripts/test_explorer_paths.php`; ZIP contract: `php scripts/verify_explorer_zip_leak.php` (blocked roots + scoped Private backup); path `./` bypass: `php scripts/repro_explorer_path_bypass_v4.php`; Zip Slip: `php scripts/repro_explorer_zip_slip_v2.php`. `.htaccess` RCE PoC: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php`. PHPUnit: `ExplorerTest::testGetFullPathSecurity`, `ExplorerTest::testTrashListFiltersAncestorFolders`, `ExplorerPathBypassTest`, `ExplorerZipSlipTest`.
+Regression: `php scripts/test_explorer_paths.php`; ZIP contract: `php scripts/verify_explorer_zip_leak.php` (blocked roots + scoped Private backup); path `./` bypass: `php scripts/repro_explorer_path_bypass_v4.php`; Zip Slip: `php scripts/repro_explorer_zip_slip_v2.php`. QR share: `php scripts/verify_qr_share_modules.php`. `.htaccess` RCE PoC: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php`. PHPUnit: `ExplorerTest::testGetFullPathSecurity`, `ExplorerTest::testTrashListFiltersAncestorFolders`, `ExplorerPathBypassTest`, `ExplorerZipSlipTest`.

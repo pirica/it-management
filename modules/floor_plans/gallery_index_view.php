@@ -216,6 +216,7 @@ if ($galleryFolderId > 0) {
                             <div class="itm-actions-wrap">
                                 <a class="btn btn-sm" href="view.php?id=<?php echo $fpId; ?>">🔎</a>
                                 <a class="btn btn-sm" href="edit.php?id=<?php echo $fpId; ?>">✏️</a>
+                                <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo $fpId; ?>)" title="Share to device">📱</button>
                                 <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this file?');">
                                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                     <input type="hidden" name="fp_action" value="delete_file">

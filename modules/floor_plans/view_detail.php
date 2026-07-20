@@ -86,5 +86,8 @@ if ($fpExt !== '' && !preg_match('/\.' . preg_quote($fpExt, '/') . '$/i', $fpDow
     <p style="margin-top:16px;">
         <a href="index.php" class="btn" title="Back">🔙</a>
         <a href="edit.php?id=<?php echo $fpPlanId; ?>" class="btn btn-primary" title="Edit">✏️</a>
+        <button type="button" class="btn btn-sm" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo $fpPlanId; ?>)" title="Share to device">📱</button>
+        <button type="button" class="btn btn-sm" onclick="itmOpenWhatsAppShare('index.php?ajax_action=create_share_session', <?php echo $fpPlanId; ?>, null, 'floor plan')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button>
+        <button type="button" class="btn btn-sm" onclick="itmOpenOutlookShare('index.php?ajax_action=create_share_session', <?php echo $fpPlanId; ?>, null, 'floor plan')" title="Share on Outlook">📨</button>
     </p>
 </div>

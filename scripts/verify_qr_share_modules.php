@@ -1,7 +1,7 @@
 <?php
 /**
  * CLI: php scripts/verify_qr_share_modules.php
- * Verifies temporary QR/code share sessions for Passwords, Bookmarks, Todo, and Events.
+ * Verifies temporary QR/code share sessions for Passwords, Bookmarks, Todo, Events, Explorer, Floor Plans, and Rack Planner.
  */
 
 define('ITM_CLI_SCRIPT', true);
@@ -11,6 +11,9 @@ require_once ROOT_PATH . 'modules/passwords/passwords_share_helpers.php';
 require_once ROOT_PATH . 'modules/bookmarks/bookmarks_share_helpers.php';
 require_once ROOT_PATH . 'modules/todo/todo_share_helpers.php';
 require_once ROOT_PATH . 'modules/events/events_share_helpers.php';
+require_once ROOT_PATH . 'modules/explorer/explorer_share_helpers.php';
+require_once ROOT_PATH . 'modules/floor_plans/floor_plans_share_helpers.php';
+require_once ROOT_PATH . 'modules/rack_planner/rack_planner_share_helpers.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
@@ -35,7 +38,7 @@ if (!($conn instanceof mysqli)) {
     exit(1);
 }
 
-foreach (['password_share_sessions', 'bookmark_share_sessions', 'todo_share_sessions', 'event_share_sessions', 'private_contact_share_sessions'] as $tableName) {
+foreach (['password_share_sessions', 'bookmark_share_sessions', 'todo_share_sessions', 'event_share_sessions', 'private_contact_share_sessions', 'explorer_share_sessions', 'floor_plan_share_sessions', 'rack_planner_share_sessions'] as $tableName) {
     $tableRes = $conn->query("SHOW TABLES LIKE '{$tableName}'");
     if (!$tableRes || $tableRes->num_rows === 0) {
         qr_share_verify_fail("{$tableName} table missing — re-import via bash scripts/import_database_split.sh or bash scripts/import_database_split.sh.");
@@ -166,15 +169,15 @@ $startDatetime = date('Y-m-d H:i:s', strtotime('+1 day'));
 $endDatetime = date('Y-m-d H:i:s', strtotime('+1 day +2 hours'));
 $eventLocation = 'Conference Room A';
 $eventIns = $conn->prepare(
-    'INSERT INTO events (company_id, title, description, start_datetime, end_datetime, location, created_by, active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)'
+    'INSERT INTO events (company_id, employee_id, title, description, start_datetime, end_datetime, location, created_by, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)'
 );
-$eventIns->bind_param('isssssi', $companyId, $eventTitle, $eventDescription, $startDatetime, $endDatetime, $eventLocation, $employeeId);
+$eventIns->bind_param('iisssssi', $companyId, $employeeId, $eventTitle, $eventDescription, $startDatetime, $endDatetime, $eventLocation, $employeeId);
 if (!$eventIns->execute()) {
     qr_share_verify_fail('Could not insert test event row.');
 } else {
     $eventId = (int)$eventIns->insert_id;
     $eventIns->close();
-    $eventCreated = events_share_create_session($conn, $eventId, $companyId, $employeeId, $username);
+    $eventCreated = events_share_create_session($conn, $eventId, $companyId, $employeeId, $username, true);
     if (!$eventCreated['ok'] || empty($eventCreated['session'])) {
         qr_share_verify_fail('events_share_create_session failed: ' . ($eventCreated['error'] ?? 'unknown'));
     } else {
@@ -194,6 +197,163 @@ if (!$eventIns->execute()) {
     }
     $conn->query('DELETE FROM event_share_sessions WHERE event_id = ' . (int)$eventId);
     $conn->query('DELETE FROM events WHERE id = ' . (int)$eventId);
+}
+
+// Explorer (Common folder snapshot)
+$scopeSuffix = bin2hex(random_bytes(2));
+$scopePath = 'Common/QRShareTest' . $scopeSuffix;
+$storageRoot = rtrim(str_replace('\\', '/', ROOT_PATH . 'files/' . $companyId), '/');
+$probeRelative = $scopePath . '/probe.txt';
+$probeAbsolute = $storageRoot . '/' . str_replace('/', DIRECTORY_SEPARATOR, $probeRelative);
+$probeDir = dirname($probeAbsolute);
+if (function_exists('itm_ensure_files_storage_directory')) {
+    itm_ensure_files_storage_directory($probeDir);
+} elseif (!is_dir($probeDir)) {
+    mkdir($probeDir, 0755, true);
+}
+if (@file_put_contents($probeAbsolute, 'explorer share probe') === false) {
+    qr_share_verify_fail('Could not create Explorer probe file.');
+} else {
+    $safeUsername = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $username);
+    $userPrivateDir = $safeUsername . '_' . $employeeId;
+    $explorerCreated = explorer_share_create_session(
+        $conn,
+        $companyId,
+        $employeeId,
+        $username,
+        $scopePath,
+        '',
+        $username,
+        true,
+        $storageRoot,
+        $userPrivateDir
+    );
+    if (!$explorerCreated['ok'] || empty($explorerCreated['session'])) {
+        qr_share_verify_fail('explorer_share_create_session failed: ' . ($explorerCreated['error'] ?? 'unknown'));
+    } else {
+        qr_share_verify_pass('Explorer share session created.');
+        $explorerPayload = itm_qr_share_decode_payload($explorerCreated['session']['payload_json'] ?? '');
+        if ($explorerPayload === null || ($explorerPayload['type'] ?? '') !== 'explorer' || (int)($explorerPayload['file_count'] ?? 0) < 1) {
+            qr_share_verify_fail('Explorer share payload mismatch.');
+        } else {
+            qr_share_verify_pass('Explorer share payload lists scoped files.');
+        }
+        $explorerJoinUrl = explorer_share_build_join_url((string)$explorerCreated['session']['access_token']);
+        if ($explorerJoinUrl === '' || stripos($explorerJoinUrl, 'modules/explorer/join.php?t=') === false) {
+            qr_share_verify_fail('Explorer join URL was not built.');
+        } else {
+            qr_share_verify_pass('Explorer join URL built.');
+        }
+    }
+    $conn->query('DELETE FROM explorer_share_sessions WHERE employee_id = ' . (int)$employeeId);
+    @unlink($probeAbsolute);
+    @rmdir($probeDir);
+}
+
+// Floor Plans
+require_once ROOT_PATH . 'modules/floor_plans/gallery_helpers.php';
+$storedFilename = 'qr-share-' . bin2hex(random_bytes(4)) . '.txt';
+$fpUploadDir = fp_company_upload_dir($companyId);
+if (!is_dir($fpUploadDir)) {
+    @mkdir($fpUploadDir, 0755, true);
+}
+$fpAbsolute = fp_absolute_path($companyId, $storedFilename);
+if (@file_put_contents($fpAbsolute, 'floor plan share probe') === false) {
+    qr_share_verify_fail('Could not create floor plan probe file.');
+} else {
+    $fpDisplayName = 'QR Share Plan ' . bin2hex(random_bytes(2));
+    $fpMime = 'text/plain';
+    $fpExt = 'txt';
+    $fpSize = (int)filesize($fpAbsolute);
+    $fpIns = $conn->prepare(
+        'INSERT INTO floor_plans (company_id, display_name, stored_filename, mime_type, file_ext, file_size, active, created_by) VALUES (?, ?, ?, ?, ?, ?, 1, ?)'
+    );
+    if (!$fpIns) {
+        qr_share_verify_fail('Could not prepare floor plan insert.');
+    } else {
+        $fpIns->bind_param('issssii', $companyId, $fpDisplayName, $storedFilename, $fpMime, $fpExt, $fpSize, $employeeId);
+        if (!$fpIns->execute()) {
+            qr_share_verify_fail('Could not insert test floor plan row.');
+        } else {
+            $floorPlanId = (int)$fpIns->insert_id;
+            $fpIns->close();
+            $fpCreated = floor_plans_share_create_session($conn, $floorPlanId, $companyId, $employeeId, $username);
+            if (!$fpCreated['ok'] || empty($fpCreated['session'])) {
+                qr_share_verify_fail('floor_plans_share_create_session failed: ' . ($fpCreated['error'] ?? 'unknown'));
+            } else {
+                qr_share_verify_pass('Floor plan share session created.');
+                $fpPayload = itm_qr_share_decode_payload($fpCreated['session']['payload_json'] ?? '');
+                if ($fpPayload === null || ($fpPayload['display_name'] ?? '') !== $fpDisplayName) {
+                    qr_share_verify_fail('Floor plan share payload mismatch.');
+                } else {
+                    qr_share_verify_pass('Floor plan share payload contains display name.');
+                }
+                $fpJoinUrl = floor_plans_share_build_join_url((string)$fpCreated['session']['access_token']);
+                if ($fpJoinUrl === '' || stripos($fpJoinUrl, 'modules/floor_plans/join.php?t=') === false) {
+                    qr_share_verify_fail('Floor plan join URL was not built.');
+                } else {
+                    qr_share_verify_pass('Floor plan join URL built.');
+                }
+            }
+            $conn->query('DELETE FROM floor_plan_share_sessions WHERE floor_plan_id = ' . (int)$floorPlanId);
+            $conn->query('DELETE FROM floor_plans WHERE id = ' . (int)$floorPlanId);
+        }
+        @unlink($fpAbsolute);
+    }
+}
+
+// Rack Planner
+$rackStatusId = 0;
+$rackStatusRes = $conn->query('SELECT id FROM rack_statuses WHERE company_id = ' . (int)$companyId . " AND name = 'Active' LIMIT 1");
+if ($rackStatusRes && ($rackStatusRow = $rackStatusRes->fetch_assoc())) {
+    $rackStatusId = (int)$rackStatusRow['id'];
+}
+if ($rackStatusId <= 0) {
+    $rackStatusRes = $conn->query('SELECT id FROM rack_statuses WHERE company_id = ' . (int)$companyId . ' ORDER BY id ASC LIMIT 1');
+    if ($rackStatusRes && ($rackStatusRow = $rackStatusRes->fetch_assoc())) {
+        $rackStatusId = (int)$rackStatusRow['id'];
+    }
+}
+if ($rackStatusId <= 0) {
+    qr_share_verify_fail('Could not resolve rack_statuses row for Rack Planner share test.');
+} else {
+    $rackName = 'QR Share Rack ' . bin2hex(random_bytes(2));
+    $rackUnits = 42;
+    $rackLayout = '{"version":1,"units":42,"devices":[]}';
+    $rackIns = $conn->prepare(
+        'INSERT INTO rack_planner (company_id, employee_id, name, rack_units, layout_json, status_id, active, created_by) VALUES (?, ?, ?, ?, ?, ?, 1, ?)'
+    );
+    if (!$rackIns) {
+        qr_share_verify_fail('Could not prepare rack planner insert.');
+    } else {
+        $rackIns->bind_param('iisisii', $companyId, $employeeId, $rackName, $rackUnits, $rackLayout, $rackStatusId, $employeeId);
+        if (!$rackIns->execute()) {
+            qr_share_verify_fail('Could not insert test rack planner row.');
+        } else {
+            $rackPlanId = (int)$rackIns->insert_id;
+            $rackIns->close();
+            $rackCreated = rack_planner_share_create_session($conn, $rackPlanId, $companyId, $employeeId, $username);
+            if (!$rackCreated['ok'] || empty($rackCreated['session'])) {
+                qr_share_verify_fail('rack_planner_share_create_session failed: ' . ($rackCreated['error'] ?? 'unknown'));
+            } else {
+                qr_share_verify_pass('Rack planner share session created.');
+                $rackPayload = itm_qr_share_decode_payload($rackCreated['session']['payload_json'] ?? '');
+                if ($rackPayload === null || ($rackPayload['name'] ?? '') !== $rackName || ($rackPayload['type'] ?? '') !== 'rack_planner') {
+                    qr_share_verify_fail('Rack planner share payload mismatch.');
+                } else {
+                    qr_share_verify_pass('Rack planner share payload contains plan name.');
+                }
+                $rackJoinUrl = rack_planner_share_build_join_url((string)$rackCreated['session']['access_token']);
+                if ($rackJoinUrl === '' || stripos($rackJoinUrl, 'modules/rack_planner/join.php?t=') === false) {
+                    qr_share_verify_fail('Rack planner join URL was not built.');
+                } else {
+                    qr_share_verify_pass('Rack planner join URL built.');
+                }
+            }
+            $conn->query('DELETE FROM rack_planner_share_sessions WHERE rack_planner_id = ' . (int)$rackPlanId);
+            $conn->query('DELETE FROM rack_planner WHERE id = ' . (int)$rackPlanId);
+        }
+    }
 }
 
 $conn->query('DELETE FROM password_share_sessions WHERE password_entry_id = ' . (int)$passwordEntryId);
