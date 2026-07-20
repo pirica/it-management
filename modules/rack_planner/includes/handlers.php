@@ -37,6 +37,8 @@ if (isset($_GET['ajax_action']) && (string)$_GET['ajax_action'] === 'create_shar
         'join_url' => rack_planner_share_build_join_url((string)$session['access_token']),
         'expires_at' => (string)$session['expires_at'],
         'ttl_seconds' => itm_qr_share_session_ttl_seconds(),
+        'has_images' => true,
+        'share_prompt_body' => 'WhatsApp and email cannot attach files. Only the join link and 6-digit code will be sent. The rack layout can be viewed on the join page.',
     ]);
 }
 
