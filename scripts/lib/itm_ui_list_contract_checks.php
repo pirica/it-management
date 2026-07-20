@@ -1038,7 +1038,8 @@ if (!function_exists('itm_check_list_heading_layout')) {
         $usesDynamicHeading = stripos($indexContent, '$moduleListHeading') !== false
             || stripos($indexContent, 'itm_sidebar_label_for_module') !== false;
         $readsNewButtonSetting = stripos($indexContent, '$newButtonPosition') !== false
-            && stripos($indexContent, 'new_button_position') !== false;
+            && (stripos($indexContent, 'new_button_position') !== false
+                || stripos($indexContent, 'itm_resolve_new_button_position') !== false);
         $gatesLeftCreate = preg_match(
             '/in_array\s*\(\s*\$newButtonPosition\s*,\s*\[\s*[\'"]left[\'"]\s*,\s*[\'"]left_right[\'"]\s*\]/i',
             $indexContent
@@ -1068,7 +1069,7 @@ if (!function_exists('itm_check_list_heading_layout')) {
             $missing[] = '$moduleListHeading from itm_sidebar_label_for_module()';
         }
         if (!$readsNewButtonSetting) {
-            $missing[] = '$newButtonPosition from ui_configuration new_button_position';
+            $missing[] = '$newButtonPosition from itm_resolve_new_button_position() or ui_configuration new_button_position';
         }
         if (!$gatesLeftCreate || !$gatesRightCreate) {
             $missing[] = 'left/right create buttons gated by $newButtonPosition (Settings)';
@@ -1311,9 +1312,13 @@ if (!function_exists('itm_check_new_button_position')) {
         }
 
         $readsSettings = preg_match(
-            '/\$newButtonPosition\s*=.*?new_button_position/s',
+            '/\$newButtonPosition\s*=\s*itm_resolve_new_button_position\s*\(/s',
             $indexContent
-        ) === 1;
+        ) === 1
+            || preg_match(
+                '/\$newButtonPosition\s*=.*?new_button_position/s',
+                $indexContent
+            ) === 1;
         $createPattern = itm_ui_index_primary_create_link_pattern();
         $leftGate = itm_ui_index_region_has_new_button_position_gate($regions['left'], 'left');
         $rightGate = itm_ui_index_region_has_new_button_position_gate($regions['right'], 'right');
@@ -1329,7 +1334,7 @@ if (!function_exists('itm_check_new_button_position')) {
 
         $missing = [];
         if (!$readsSettings) {
-            $missing[] = '$newButtonPosition from $ui_config[\'new_button_position\']';
+            $missing[] = '$newButtonPosition from itm_resolve_new_button_position($ui_config) or $ui_config[\'new_button_position\']';
         }
         if (!$leftGate) {
             $missing[] = 'left slot in_array($newButtonPosition, [\'left\', \'left_right\'])';

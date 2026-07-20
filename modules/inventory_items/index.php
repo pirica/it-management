@@ -131,10 +131,7 @@ $items = mysqli_query(
 );
 
 // Determine position of the "Add New" button based on UI preferences.
-$newButtonPosition = (string)($ui_config['new_button_position'] ?? 'left_right');
-if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
-    $newButtonPosition = 'left_right';
-}
+$newButtonPosition = itm_resolve_new_button_position($ui_config);
 // Why: List h1 must use Settings sidebar label so per-user emoji overrides apply in the list header.
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 

@@ -472,6 +472,33 @@ if (!function_exists('opr_search_cross_date_section_labels')) {
     }
 }
 
+if (!function_exists('opr_search_section_options')) {
+    function opr_search_section_options() {
+        return array_merge(['all' => 'All sections'], opr_search_cross_date_section_labels());
+    }
+}
+
+if (!function_exists('opr_search_normalize_section')) {
+    function opr_search_normalize_section($section) {
+        $section = trim((string)$section);
+        if ($section === '' || $section === 'all') {
+            return 'all';
+        }
+        $allowed = array_keys(opr_search_cross_date_section_labels());
+        return in_array($section, $allowed, true) ? $section : 'all';
+    }
+}
+
+if (!function_exists('opr_search_section_is_visible')) {
+    // Why: When a section filter is active, hide unrelated report blocks on this day.
+    function opr_search_section_is_visible($search, $searchSection, $sectionKey) {
+        if ($search === '' || $searchSection === 'all') {
+            return true;
+        }
+        return $searchSection === $sectionKey;
+    }
+}
+
 if (!function_exists('opr_search_merge_cross_date_hit')) {
     function opr_search_merge_cross_date_hit(array &$hits, $reportDate, $sectionLabel) {
         if ($reportDate === '' || $reportDate === null) {
@@ -488,26 +515,36 @@ if (!function_exists('opr_search_merge_cross_date_hit')) {
 
 if (!function_exists('opr_search_cross_date_hits')) {
     // Why: Find past/future report dates whose child rows or header text match the search term.
-    function opr_search_cross_date_hits($conn, $company_id, $search) {
+    function opr_search_cross_date_hits($conn, $company_id, $search, $searchSection = 'all') {
         if ($search === '') {
             return [];
         }
+        $searchSection = opr_search_normalize_section($searchSection);
         $pattern = opr_search_like_pattern($search);
         $labels = opr_search_cross_date_section_labels();
         $hits = [];
+        $scopes = $searchSection === 'all'
+            ? array_merge(['report'], array_keys(opr_child_table_map()))
+            : [$searchSection];
 
-        $reportConcatParts = [];
-        foreach (opr_report_fields() as $field) {
-            if (!itm_is_safe_identifier($field)) {
-                continue;
-            }
-            $reportConcatParts[] = "COALESCE(r.`{$field}`,'')";
-        }
-        if (!empty($reportConcatParts)) {
-            $reportConcat = 'CONCAT_WS(\' \', ' . implode(', ', $reportConcatParts) . ')';
-            $sql = 'SELECT DISTINCT r.report_date FROM ops_report r WHERE r.company_id = ? AND r.active = 1 AND ' . $reportConcat . ' LIKE ?';
-            $stmt = mysqli_prepare($conn, $sql);
-            if ($stmt) {
+        foreach ($scopes as $scope) {
+            if ($scope === 'report') {
+                $reportConcatParts = [];
+                foreach (opr_report_fields() as $field) {
+                    if (!itm_is_safe_identifier($field)) {
+                        continue;
+                    }
+                    $reportConcatParts[] = "COALESCE(r.`{$field}`,'')";
+                }
+                if (empty($reportConcatParts)) {
+                    continue;
+                }
+                $reportConcat = 'CONCAT_WS(\' \', ' . implode(', ', $reportConcatParts) . ')';
+                $sql = 'SELECT DISTINCT r.report_date FROM ops_report r WHERE r.company_id = ? AND r.active = 1 AND ' . $reportConcat . ' LIKE ?';
+                $stmt = mysqli_prepare($conn, $sql);
+                if (!$stmt) {
+                    continue;
+                }
                 mysqli_stmt_bind_param($stmt, 'is', $company_id, $pattern);
                 mysqli_stmt_execute($stmt);
                 $res = mysqli_stmt_get_result($stmt);
@@ -515,10 +552,14 @@ if (!function_exists('opr_search_cross_date_hits')) {
                     opr_search_merge_cross_date_hit($hits, $row['report_date'] ?? '', $labels['report']);
                 }
                 mysqli_stmt_close($stmt);
+                continue;
             }
-        }
 
-        foreach (opr_child_table_map() as $scope => $cfg) {
+            $map = opr_child_table_map();
+            if (!isset($map[$scope])) {
+                continue;
+            }
+            $cfg = $map[$scope];
             $table = $cfg['table'];
             if (!itm_is_safe_identifier($table)) {
                 continue;
@@ -556,7 +597,7 @@ if (!function_exists('opr_search_cross_date_hits')) {
 }
 
 if (!function_exists('opr_report_index_url')) {
-    function opr_report_index_url($day, $month, $year, $search = '', $searchScope = 'day') {
+    function opr_report_index_url($day, $month, $year, $search = '', $searchScope = 'day', $searchSection = 'all') {
         $query = [
             'day' => (int)$day,
             'month' => (int)$month,
@@ -567,6 +608,10 @@ if (!function_exists('opr_report_index_url')) {
         }
         if ($searchScope === 'all') {
             $query['search_scope'] = 'all';
+        }
+        $searchSection = opr_search_normalize_section($searchSection);
+        if ($searchSection !== 'all') {
+            $query['search_section'] = $searchSection;
         }
         return 'index.php?' . http_build_query($query);
     }
@@ -588,9 +633,10 @@ $searchScope = trim((string)($_GET['search_scope'] ?? 'day'));
 if (!in_array($searchScope, ['day', 'all'], true)) {
     $searchScope = 'day';
 }
+$searchSection = opr_search_normalize_section($_GET['search_section'] ?? 'all');
 $can_edit_report = opr_is_editable_date($selected_date, $is_admin);
 $crossDateHits = ($search !== '' && $searchScope === 'all')
-    ? opr_search_cross_date_hits($conn, $company_id, $search)
+    ? opr_search_cross_date_hits($conn, $company_id, $search, $searchSection)
     : [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_inline_edit'])) {
@@ -849,14 +895,30 @@ while ($row = mysqli_fetch_assoc($res)) {
 mysqli_stmt_close($stmt);
 
 if ($search !== '' && $searchScope === 'day') {
-    $fb_outlets = opr_report_apply_search_filter($fb_outlets, $search);
-    $walk_rounds = opr_report_apply_search_filter($walk_rounds, $search);
-    $courtesy_calls = opr_report_apply_search_filter($courtesy_calls, $search);
-    $guest_experiences = opr_report_apply_search_filter($guest_experiences, $search);
-    $butler_rows = opr_report_apply_search_filter($butler_rows, $search);
-    $night_shift_rows = opr_report_apply_search_filter($night_shift_rows, $search);
-    $hotel_figure_rows = opr_report_apply_search_filter($hotel_figure_rows, $search);
+    if ($searchSection === 'all' || $searchSection === 'fb_outlet') {
+        $fb_outlets = opr_report_apply_search_filter($fb_outlets, $search);
+    }
+    if ($searchSection === 'all' || $searchSection === 'walk_round') {
+        $walk_rounds = opr_report_apply_search_filter($walk_rounds, $search);
+    }
+    if ($searchSection === 'all' || $searchSection === 'courtesy_call') {
+        $courtesy_calls = opr_report_apply_search_filter($courtesy_calls, $search);
+    }
+    if ($searchSection === 'all' || $searchSection === 'guest_experience') {
+        $guest_experiences = opr_report_apply_search_filter($guest_experiences, $search);
+    }
+    if ($searchSection === 'all' || $searchSection === 'butler') {
+        $butler_rows = opr_report_apply_search_filter($butler_rows, $search);
+    }
+    if ($searchSection === 'all' || $searchSection === 'night_shift') {
+        $night_shift_rows = opr_report_apply_search_filter($night_shift_rows, $search);
+    }
+    if ($searchSection === 'all' || $searchSection === 'hotel_figure') {
+        $hotel_figure_rows = opr_report_apply_search_filter($hotel_figure_rows, $search);
+    }
 }
+
+$reportHeaderMatchesSearch = ($search === '' || $searchSection !== 'report' || opr_row_matches_search($report, $search));
 
 $oprSearchClearHref = htmlspecialchars(
     opr_report_index_url($selected_day, $selected_month, $selected_year),
@@ -963,6 +1025,14 @@ if (!isset($crud_title)) {
                             <option value="all" <?= $searchScope === 'all' ? 'selected' : '' ?>>All dates</option>
                         </select>
                     </div>
+                    <div class="form-group" style="margin:0; min-width:220px;">
+                        <label for="searchSection">Section</label>
+                        <select name="search_section" id="searchSection" class="form-control">
+                            <?php foreach (opr_search_section_options() as $sectionValue => $sectionLabel): ?>
+                                <option value="<?= sanitize($sectionValue) ?>" <?= $searchSection === $sectionValue ? 'selected' : '' ?>><?= sanitize($sectionLabel) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                     <button type="submit" class="btn btn-primary">Search</button>
                     <?php if ($search !== ''): ?>
                         <a class="btn" href="<?php echo $oprSearchClearHref; ?>" title="Clear">🔙</a>
@@ -986,7 +1056,8 @@ if (!isset($crud_title)) {
                                     (int)date('n', $hitTs),
                                     (int)date('Y', $hitTs),
                                     $search,
-                                    'day'
+                                    'day',
+                                    $searchSection
                                 ),
                                 ENT_QUOTES,
                                 'UTF-8'
@@ -1034,6 +1105,9 @@ if (!isset($crud_title)) {
                     <?php if ($searchScope === 'all'): ?>
                         <input type="hidden" name="search_scope" value="all">
                     <?php endif; ?>
+                    <?php if ($searchSection !== 'all'): ?>
+                        <input type="hidden" name="search_section" value="<?php echo sanitize($searchSection); ?>">
+                    <?php endif; ?>
                     <div class="form-group" style="margin:0;">
                         <label>Day</label>
                         <select name="day" class="form-control" onchange="this.form.submit()">
@@ -1068,6 +1142,7 @@ if (!isset($crud_title)) {
             </div>
 
             <div class="card opr-section" id="opr-report-root" data-report-id="<?= $report_id ?>" data-report-date="<?= sanitize($selected_date) ?>" data-can-edit="<?= $can_edit_report ? '1' : '0' ?>" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
+                <?php if (opr_search_section_is_visible($search, $searchSection, 'report') && $reportHeaderMatchesSearch): ?>
                 <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'sections.duty_managers'), $can_edit_report, 'sections.duty_managers', 'h2') ?>
                 <div class="opr-header-grid">
                     <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="today_shift">
@@ -1079,15 +1154,20 @@ if (!isset($crud_title)) {
                         <?= opr_render_editable_field($report['tomorrow_shift'] ?? '', $can_edit_report, true) ?>
                     </div>
                 </div>
+                <?php endif; ?>
 
+                <?php if (opr_search_section_is_visible($search, $searchSection, 'report') || opr_search_section_is_visible($search, $searchSection, 'hotel_figure')): ?>
                 <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'sections.hotel_figures'), $can_edit_report, 'sections.hotel_figures', 'h2') ?>
                 <div class="opr-metric-grid" id="opr-hotel-figures-grid">
+                    <?php if (opr_search_section_is_visible($search, $searchSection, 'report') && $reportHeaderMatchesSearch): ?>
                     <?php foreach ($metric_fields as $field): ?>
                     <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="<?= $field ?>">
                         <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'fields.' . $field), $can_edit_report, 'fields.' . $field, 'label') ?>
                         <?= opr_render_editable_field($report[$field] ?? '', $can_edit_report) ?>
                     </div>
                     <?php endforeach; ?>
+                    <?php endif; ?>
+                    <?php if (opr_search_section_is_visible($search, $searchSection, 'hotel_figure')): ?>
                     <?php foreach ($hotel_figure_rows as $row): ?>
                     <div class="opr-metric opr-metric-custom" data-row-id="<?= (int)$row['id'] ?>" data-scope="hotel_figure">
                         <div class="opr-metric-custom-head">
@@ -1103,15 +1183,20 @@ if (!isset($crud_title)) {
                         </div>
                     </div>
                     <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
-                <?php if ($can_edit_report): ?>
+                <?php if ($can_edit_report && opr_search_section_is_visible($search, $searchSection, 'hotel_figure')): ?>
                 <button type="button" class="btn btn-sm opr-no-print opr-btn-label" data-add-scope="hotel_figure"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'buttons.add_hotel_figure'), $can_edit_report, 'buttons.add_hotel_figure', 'span', 'opr-btn-label') ?></button>
                 <?php endif; ?>
+                <?php if (opr_search_section_is_visible($search, $searchSection, 'report') && $reportHeaderMatchesSearch): ?>
                 <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="stay_experience_comment" style="margin-top:10px;">
                     <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'fields.stay_experience_comment'), $can_edit_report, 'fields.stay_experience_comment', 'label') ?>
                     <?= opr_render_editable_field($report['stay_experience_comment'] ?? '', $can_edit_report, true) ?>
                 </div>
+                <?php endif; ?>
+                <?php endif; ?>
 
+                <?php if (opr_search_section_is_visible($search, $searchSection, 'fb_outlet')): ?>
                 <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'sections.fb_overview'), $can_edit_report, 'sections.fb_overview', 'h2', 'opr-section-spaced') ?>
                 <div style="overflow:auto;">
                     <table class="table opr-table" id="opr-fb-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
@@ -1144,7 +1229,9 @@ if (!isset($crud_title)) {
                 <?php if ($can_edit_report): ?>
                 <button type="button" class="btn btn-sm opr-no-print opr-btn-label" data-add-scope="fb_outlet"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'buttons.add_fb_outlet'), $can_edit_report, 'buttons.add_fb_outlet', 'span', 'opr-btn-label') ?></button>
                 <?php endif; ?>
+                <?php endif; ?>
 
+                <?php if (opr_search_section_is_visible($search, $searchSection, 'walk_round')): ?>
                 <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'sections.walk_round'), $can_edit_report, 'sections.walk_round', 'h2', 'opr-section-spaced') ?>
                 <div style="overflow:auto;">
                     <table class="table opr-table" id="opr-walk-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
@@ -1177,12 +1264,16 @@ if (!isset($crud_title)) {
                 <?php if ($can_edit_report): ?>
                 <button type="button" class="btn btn-sm opr-no-print opr-btn-label" data-add-scope="walk_round"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'buttons.add_walk_round'), $can_edit_report, 'buttons.add_walk_round', 'span', 'opr-btn-label') ?></button>
                 <?php endif; ?>
+                <?php endif; ?>
 
+                <?php if (opr_search_section_is_visible($search, $searchSection, 'report') && $reportHeaderMatchesSearch): ?>
                 <div class="opr-metric <?= $editClass ?>" data-scope="report" data-field="welcomes_notes" style="margin-top:16px;">
                     <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'fields.welcomes_notes'), $can_edit_report, 'fields.welcomes_notes', 'label') ?>
                     <?= opr_render_editable_field($report['welcomes_notes'] ?? '', $can_edit_report, true) ?>
                 </div>
+                <?php endif; ?>
 
+                <?php if (opr_search_section_is_visible($search, $searchSection, 'guest_experience')): ?>
                 <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'sections.guest_experience'), $can_edit_report, 'sections.guest_experience', 'h2', 'opr-section-spaced') ?>
                 <div style="overflow:auto;">
                     <table class="table opr-table" id="opr-guest-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
@@ -1215,7 +1306,9 @@ if (!isset($crud_title)) {
                 <?php if ($can_edit_report): ?>
                 <button type="button" class="btn btn-sm opr-no-print opr-btn-label" data-add-scope="guest_experience"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'buttons.add_guest_experience'), $can_edit_report, 'buttons.add_guest_experience', 'span', 'opr-btn-label') ?></button>
                 <?php endif; ?>
+                <?php endif; ?>
 
+                <?php if (opr_search_section_is_visible($search, $searchSection, 'courtesy_call')): ?>
                 <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'sections.courtesy_calls'), $can_edit_report, 'sections.courtesy_calls', 'h2', 'opr-section-spaced') ?>
                 <div style="overflow:auto;">
                     <table class="table opr-table" id="opr-courtesy-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
@@ -1248,7 +1341,9 @@ if (!isset($crud_title)) {
                 <?php if ($can_edit_report): ?>
                 <button type="button" class="btn btn-sm opr-no-print opr-btn-label" data-add-scope="courtesy_call"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'buttons.add_courtesy_call'), $can_edit_report, 'buttons.add_courtesy_call', 'span', 'opr-btn-label') ?></button>
                 <?php endif; ?>
+                <?php endif; ?>
 
+                <?php if (opr_search_section_is_visible($search, $searchSection, 'butler')): ?>
                 <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'sections.butler'), $can_edit_report, 'sections.butler', 'h2', 'opr-section-spaced') ?>
                 <div style="overflow:auto;">
                     <table class="table opr-table" id="opr-butler-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
@@ -1282,7 +1377,9 @@ if (!isset($crud_title)) {
                 <?php if ($can_edit_report): ?>
                 <button type="button" class="btn btn-sm opr-no-print opr-btn-label" data-add-scope="butler"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'buttons.add_butler'), $can_edit_report, 'buttons.add_butler', 'span', 'opr-btn-label') ?></button>
                 <?php endif; ?>
+                <?php endif; ?>
 
+                <?php if (opr_search_section_is_visible($search, $searchSection, 'night_shift')): ?>
                 <?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'sections.night_shift'), $can_edit_report, 'sections.night_shift', 'h2', 'opr-section-spaced') ?>
                 <div style="overflow:auto;">
                     <table class="table opr-table" id="opr-night-shift-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">
@@ -1315,6 +1412,7 @@ if (!isset($crud_title)) {
                 </div>
                 <?php if ($can_edit_report): ?>
                 <button type="button" class="btn btn-sm opr-no-print opr-btn-label" data-add-scope="night_shift"><?= opr_render_editable_ui_text(opr_ui_get($ui_json, 'buttons.add_night_shift'), $can_edit_report, 'buttons.add_night_shift', 'span', 'opr-btn-label') ?></button>
+                <?php endif; ?>
                 <?php endif; ?>
             </div>
 

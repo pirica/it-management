@@ -348,10 +348,7 @@ $page_title = 'Email Management';
 $modulePath = dirname($_SERVER['PHP_SELF']);
 // Why: List h1 must use Settings sidebar label so per-user emoji overrides apply in the tab shell header.
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
-$newButtonPosition = (string)($uiConfig['new_button_position'] ?? 'left_right');
-if (!in_array($newButtonPosition, ['left', 'right', 'left_right'], true)) {
-    $newButtonPosition = 'left_right';
-}
+$newButtonPosition = itm_resolve_new_button_position($uiConfig);
 $showSmtpCreateButton = ($active_tab === 'smtp');
 ?>
 <!DOCTYPE html>
