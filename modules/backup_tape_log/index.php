@@ -8,7 +8,7 @@
 require_once '../../config/config.php';
 
 $crud_table = 'backup_tape_log';
-$crud_title = 'Backup Tape Log';
+$crud_title = 'Backup Tape Log File';
 $crud_action = $crud_action ?? 'index';
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
@@ -373,7 +373,7 @@ if (!isset($currentUiConfig)) {
     $currentUiConfig = $ui_config ?? [];
 }
 if (!isset($crud_title)) {
-    $crud_title = 'Backup Tape Log';
+    $crud_title = 'Backup Tape Log File';
 }
 ?>
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
@@ -617,7 +617,7 @@ if (!isset($crud_title)) {
                 $canEditAll = $can_edit_restricted;
                 $canEditBasic = $isToday;
             ?>
-                <h1><?= $crud_action === 'create' ? 'New ' : 'Edit '; ?> Backup Tape Log</h1>
+                <h1><?= $crud_action === 'create' ? 'New ' : 'Edit '; ?> Backup Tape Log File</h1>
                 <div class="card">
                     <form method="POST" class="form-grid" style="max-width:980px;">
                         <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
@@ -688,7 +688,7 @@ if (!isset($crud_title)) {
                 </div>
 
             <?php elseif ($crud_action === 'view'): ?>
-                <h1>View Backup Tape Log</h1>
+                <h1>View Backup Tape Log File</h1>
                 <div class="card">
                     <table class="table">
                         <tr><th>Date</th><td><?= btl_format_date($data['log_date']) ?></td></tr>
