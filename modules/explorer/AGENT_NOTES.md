@@ -27,7 +27,8 @@ Secure multi-tenant file manager. Physical files under `files/{company_id}/` wit
 - **Trash listing:** `explorer_filter_trash_list_to_leaf_items()` drops ancestor folders created when a nested file is soft-deleted (e.g. only `Private/Admin_1/24.png` is listed, not `Private` or `Private/Admin_1`). Empty deleted folders still appear.
 - **Upload hardening (`deny_http`):** never bare `mkdir()` under `files/` — use `itm_ensure_files_storage_directory()` / `explorer_ensure_dir()`. Every segment gets force-written `deny_http` `.htaccess` + `index.html`. Serve UI via `itm_files_serve_url()` → `file.php`. See **`scripts/AGENT_NOTES.md`**.
 - **Upload validation:** `upload` accepts only a whitelist of extensions, checks detected MIME (`finfo` / `getimagesize`) against that extension, rejects dotfiles, and enforces `EXPLORER_MAX_FILE_SIZE` (20MB). MIME mismatch or oversize files are rejected with `error` in the JSON response.
-- **`downloadZip` (`api.php`):** allows **only** the exact path `Private/{username}_{employee_id}` for the signed-in employee. Blocks `Private` root, other users' folders, own private subfolders as zip targets, `Common`, `Departments`, `Trash`, and Home. The ZIP still includes all files recursively inside the allowed private folder.
+- **`downloadZip` (`api.php`):** allows **only** the exact path `Private/{username}_{employee_id}` for the signed-in employee. Blocks `Private` root, other users' folders, own private subfolders as zip targets, `Common`, `Departments`, `Trash`, and Home. The ZIP still includes all files recursively inside the allowed private folder. Requires vault unlock (`explorer_vault_helpers.php`).
+- **Vault gate:** `explorer_vault_bootstrap.php` / `explorer_vault_helpers.php` — `Private/{username}_{employee_id}/` paths (except `…/profile/` read via `file.php`) require `$_SESSION['vault_key']` in `index.php`, `api.php`, and `file.php`. Common and Departments work without unlock.
 
 ## 5. UI Behavior Requirements
 - **UI configuration audit:** gate-excluded bespoke file manager — no flattened CRUD table or scaffold create/edit/delete/list_all in `index.php`. Intentional `[n/a][n/a]` lines are `[reviewed]` in `scripts/data/ui_configuration_reviewed.json`.
@@ -67,7 +68,7 @@ All actions are POST to `api.php` with `action` parameter (JSON responses unless
 
 `file.php?path=` — authorised download/preview after `get_full_path()` ACL check.
 
-## 7. File Structure
+- `explorer_vault_bootstrap.php`, `explorer_vault_helpers.php` — vault unlock UI and Private-path gate helpers.
 - `index.php` — browser UI, sidebar, `resolveScopedFolderPath()`.
 - `api.php` — JSON file operations (`list`, `upload`, Trash, etc.).
 - `file.php` — authorised serve/preview after ACL.

@@ -213,6 +213,12 @@ if (isset($_GET['downloadZip'])) {
         exit('Invalid path or permission denied.');
     }
 
+    require_once ROOT_PATH . 'modules/explorer/explorer_vault_helpers.php';
+    $vaultCheck = explorer_enforce_vault_for_private_path($path, $user_private_dir);
+    if (!$vaultCheck['ok']) {
+        exit($vaultCheck['error']);
+    }
+
     $storage_root = ROOT_PATH . 'files/' . $company_id;
     $full = get_full_path($storage_root, $path, $user_id, $dept_code, $username);
 
@@ -518,6 +524,26 @@ if (!defined('ITM_EXPLORER_API_IN_PROCESS') || !ITM_EXPLORER_API_IN_PROCESS) {
 $action = $_POST['action'] ?? '';
 // Why: Normalize path to ensure trailing slashes do not bypass root protection guards.
 $path = trim((string)($_POST['path'] ?? ''), '/');
+
+require_once ROOT_PATH . 'modules/explorer/explorer_vault_helpers.php';
+if ($action !== '') {
+    $vaultPaths = [trim((string)$path, '/')];
+    if (isset($_POST['src_path'])) {
+        $vaultPaths[] = trim((string)$_POST['src_path'], '/');
+    }
+    if (isset($_POST['dest'])) {
+        $vaultPaths[] = trim((string)$_POST['dest'], '/');
+    }
+    foreach (array_unique(array_filter($vaultPaths, static function ($vaultPath) {
+        return $vaultPath !== '';
+    })) as $vaultPath) {
+        $vaultCheck = explorer_enforce_vault_for_private_path($vaultPath, $user_private_dir);
+        if (!$vaultCheck['ok']) {
+            echo json_encode(['error' => $vaultCheck['error'], 'vault_locked' => 1]);
+            exit;
+        }
+    }
+}
 
 switch ($action) {
 

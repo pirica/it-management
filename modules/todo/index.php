@@ -8,6 +8,13 @@ require_once ROOT_PATH . "includes/todo_visibility.php";
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 require_once ROOT_PATH . 'includes/itm_todo_search.php';
 require_once ROOT_PATH . 'includes/itm_todo_list_query.php';
+require_once __DIR__ . '/todo_vault_bootstrap.php';
+require_once __DIR__ . '/todo_vault_helpers.php';
+
+$logged_user_id = isset($_SESSION["employee_id"]) ? (int)$_SESSION["employee_id"] : 0;
+$company_id = isset($_SESSION["company_id"]) ? (int)$_SESSION["company_id"] : 0;
+$todoVaultState = todo_handle_vault_requests($conn, $logged_user_id);
+$todoVaultUnlocked = !empty($todoVaultState['unlocked']);
 
 if (!function_exists('todo_merge_assignee_users')) {
     /**
@@ -57,8 +64,6 @@ if (!function_exists('todo_merge_assignee_users')) {
 $crud_table = "todo";
 $crud_title = "To-Do";
 $crud_action = $crud_action ?? 'index';
-$logged_user_id = isset($_SESSION["employee_id"]) ? (int)$_SESSION["employee_id"] : 0;
-$company_id = isset($_SESSION["company_id"]) ? (int)$_SESSION["company_id"] : 0;
 
 // Metadata
 $categories = [];
@@ -96,6 +101,11 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $itmImportRawBody = file_get_contents('php://input');
     $itmImportJsonBody = json_decode((string)$itmImportRawBody, true);
     if (is_array($itmImportJsonBody) && isset($itmImportJsonBody['import_excel_rows'])) {
+        if (!$todoVaultUnlocked) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['ok' => false, 'error' => 'Unlock your vault before importing tasks.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
         $catMap = []; foreach ($categories as $id => $cat) { $catMap[strtolower($cat['name'])] = $id; }
         $userMap = []; foreach ($users as $id => $u) { $userMap[strtolower($u['username'])] = $id; }
         $deptMap = []; foreach ($departments as $id => $d) { $deptMap[strtolower($d['name'])] = $id; if (!empty($d['code'])) $deptMap[strtolower($d['code'])] = $id; }
@@ -201,13 +211,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         $created_by = isset($_POST["created_by"]) ? (int)$_POST["created_by"] : $logged_user_id;
         $updated_by = isset($_POST["updated_by"]) ? (int)$_POST["updated_by"] : $logged_user_id;
 
+        $prepared = todo_prepare_task_fields_for_storage($title, $description, $assigned_to_employee_id, $created_by);
+        if ($prepared === null) {
+            header('Location: index.php?vault_error=1');
+            die();
+        }
+        $title = $prepared['title'];
+        $title_hash = $prepared['title_hash'];
+        $description = $prepared['description'];
+
         if ($crud_action === "edit" && $editId > 0) {
             $visSql = itm_todo_visibility_sql();
-            $stmt = $conn->prepare("UPDATE todo SET title=?, description=?, due_date=?, reminder_at=?, repeat_pattern=?, category_id=?, department_id=?, assigned_to_employee_id=?, importance=?, completed=?, updated_by=? WHERE id=? AND company_id=? AND ($visSql)");
-            $stmt->bind_param("ssssssssiiiiiii", $title, $description, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_employee_id, $importance, $completed, $updated_by, $editId, $company_id, $logged_user_id, $logged_user_id);
+            $stmt = $conn->prepare("UPDATE todo SET title=?, title_hash=?, description=?, due_date=?, reminder_at=?, repeat_pattern=?, category_id=?, department_id=?, assigned_to_employee_id=?, importance=?, completed=?, updated_by=? WHERE id=? AND company_id=? AND ($visSql)");
+            $stmt->bind_param("ssssssssiiiiiii", $title, $title_hash, $description, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_employee_id, $importance, $completed, $updated_by, $editId, $company_id, $logged_user_id, $logged_user_id);
         } else {
-            $stmt = $conn->prepare("INSERT INTO todo (company_id, title, description, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_employee_id, created_by, importance, completed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("issssssssiii", $company_id, $title, $description, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_employee_id, $created_by, $importance, $completed);
+            $stmt = $conn->prepare("INSERT INTO todo (company_id, title, title_hash, description, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_employee_id, created_by, importance, completed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("isssssssssiii", $company_id, $title, $title_hash, $description, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_employee_id, $created_by, $importance, $completed);
         }
 
         if ($stmt->execute()) {
@@ -239,8 +258,14 @@ if (isset($_GET["ajax_action"])) {
         $assigned_to_employee_id = isset($_POST["assigned_to_employee_id"]) ? implode(",", array_filter(array_map("intval", $_POST["assigned_to_employee_id"]))) : null;
         $importance = (int)($_POST["importance"] ?? 0);
 
-        $stmt = $conn->prepare("INSERT INTO todo (company_id, title, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_employee_id, created_by, importance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("isssssssii", $company_id, $title, $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_employee_id, $logged_user_id, $importance);
+        $prepared = todo_prepare_task_fields_for_storage($title, '', $assigned_to_employee_id, $logged_user_id);
+        if ($prepared === null) {
+            echo json_encode(["ok" => false, "error" => "Unlock the vault to add private tasks."]);
+            die();
+        }
+
+        $stmt = $conn->prepare("INSERT INTO todo (company_id, title, title_hash, due_date, reminder_at, repeat_pattern, category_id, department_id, assigned_to_employee_id, created_by, importance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("issssssssii", $company_id, $prepared['title'], $prepared['title_hash'], $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_employee_id, $logged_user_id, $importance);
 
         if ($stmt->execute()) {
             echo json_encode(["ok" => true]);
@@ -280,7 +305,7 @@ if (isset($_GET["ajax_action"])) {
         require_once __DIR__ . '/todo_share_helpers.php';
         $todoId = (int)($_POST['id'] ?? 0);
         $ownerUsername = (string)($_SESSION['username'] ?? '');
-        $result = todo_share_create_session($conn, $todoId, $company_id, $logged_user_id, $ownerUsername, $categories, $departments, $users);
+        $result = todo_share_create_session($conn, $todoId, $company_id, $logged_user_id, $ownerUsername, $categories, $departments, $users, $todoVaultUnlocked);
         if (!$result['ok']) {
             http_response_code(400);
             echo json_encode(['ok' => false, 'error' => $result['error'] ?? 'Unable to create share session.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -339,6 +364,9 @@ if ($crud_action === "index") {
         'page' => $page,
         'per_page' => $perPage,
         'paginate' => true,
+        'categories' => $categories,
+        'departments' => $departments,
+        'users' => $users,
     ]);
     $tasks = $listResult['rows'];
     $totalRows = $listResult['totalRows'];
@@ -356,6 +384,7 @@ if ($crud_action === "index") {
         header("Location: index.php");
         die();
     }
+    todo_hydrate_task_row($data, $logged_user_id);
     todo_merge_assignee_users($conn, $company_id, $users, [(string)($data['assigned_to_employee_id'] ?? '')]);
 } elseif ($crud_action === "create") {
     $data = [];
@@ -369,6 +398,12 @@ if ($crud_action === "index") {
 }
 
 $moduleSlug = basename(dirname($_SERVER['PHP_SELF']));
+$todoVaultRedirect = 'index.php';
+if ($crud_action === 'edit' || $crud_action === 'view') {
+    $todoVaultRedirect = $crud_action . '.php?id=' . (int)$editId;
+} elseif ($crud_action === 'create') {
+    $todoVaultRedirect = 'create.php';
+}
 $todoCatalogLabel = itm_sidebar_label_for_module($moduleSlug) ?: '📝 To-Do';
 $todoCleanModuleTitle = itm_module_access_strip_catalog_label_prefix($todoCatalogLabel);
 $todoResolvedModuleIcon = itm_resolve_module_sidebar_icon($conn, $company_id, $logged_user_id, $moduleSlug);
@@ -484,6 +519,9 @@ if ($todoResolvedModuleIcon !== '') {
     <div class="main-content">
 	    <?php include ROOT_PATH . "includes/header.php"; ?>
         <div class="content">
+            <?php if (todo_ui_requires_vault_lock_screen($crud_action, $todoVaultState, $logged_user_id, !empty($data) ? $data : null)): ?>
+                <?php todo_render_vault_lock_screen($csrfToken, $todoVaultState, $todoVaultRedirect); ?>
+            <?php else: ?>
             <div class="todo-container">
                 <div class="todo-sidebar">
                     <a href="index.php" class="todo-sidebar-item">
@@ -1125,6 +1163,7 @@ if ($todoResolvedModuleIcon !== '') {
                     <?php endif; ?>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

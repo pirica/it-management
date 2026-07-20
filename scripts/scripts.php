@@ -1711,6 +1711,11 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><code>php scripts/verify_notes_vault.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/notes/notes_vault_helpers.php</code>, persistence in <code>modules/notes/index.php</code>, or <code>itm_vault_reencrypt_notes()</code>.</td>
                 </tr>
                 <tr>
+                    <td><a href="verify_todo_vault.php" target="_blank" rel="nofollow noreferrer">verify_todo_vault.php</a></td>
+                    <td>Todo vault</td>
+                    <td><code>php scripts/verify_todo_vault.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/todo/todo_vault_helpers.php</code>, persistence in <code>modules/todo/index.php</code>, or <code>itm_vault_reencrypt_todo()</code>.</td>
+                </tr>
+                <tr>
                     <td><a href="verify_events_vault.php" target="_blank" rel="nofollow noreferrer">verify_events_vault.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for Events vault encryption: private title/description/location encrypt at rest, shared events stay plaintext, hydrate when vault locked/unlocked. Disposable script employee.</td>

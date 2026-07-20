@@ -65,6 +65,12 @@ $user_dept_code_json = json_encode($safe_dept_code, JSON_UNESCAPED_UNICODE | JSO
 $storage_root = ROOT_PATH . 'files/' . $company_id;
 itm_ensure_files_storage_directory($storage_root);
 
+require_once __DIR__ . '/explorer_vault_bootstrap.php';
+require_once __DIR__ . '/explorer_vault_helpers.php';
+$explorerVaultState = explorer_handle_vault_requests($conn, $user_id);
+$explorerVaultUnlocked = !empty($explorerVaultState['unlocked']);
+$explorerVaultCsrf = itm_get_csrf_token();
+
 ?>
 <!DOCTYPE html>
 <html lang="en-GB">
@@ -313,6 +319,10 @@ body {
         <div id="breadcrumbs" class="breadcrumbs"></div>
     </div>
 
+    <div id="explorerVaultLockWrap" style="display:none;">
+        <?php explorer_render_vault_lock_screen($explorerVaultCsrf, $explorerVaultState, 'index.php'); ?>
+    </div>
+
     <div id="uploadArea" class="itm-photo-upload-target" role="button" tabindex="0" aria-label="Upload files">
         <p class="itm-dropzone-hint">Drag and drop files here, or click to browse.</p>
         <input type="file" multiple onchange="uploadFiles(this.files)" style="display:none;" id="explorerFileInput">
@@ -339,7 +349,39 @@ let contextItem = null;
 let inRecycle = false;
 let userPrivateDir = <?= $user_private_dir_json ?>;
 let userDeptCode = <?= $user_dept_code_json ?>;
+let explorerVaultUnlocked = <?= $explorerVaultUnlocked ? 'true' : 'false' ?>;
 let favourites = JSON.parse(localStorage.getItem("itm_explorer_favourites") || "[]");
+
+function explorerPathRequiresVault(path) {
+    const normalized = String(path || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+    if (!normalized) {
+        return false;
+    }
+    if (/^Private\/[^/]+\/profile(\/|$)/.test(normalized)) {
+        return false;
+    }
+    const prefix = "Private/" + userPrivateDir;
+    return normalized === prefix || normalized.startsWith(prefix + "/");
+}
+
+function toggleExplorerVaultLock(show) {
+    const lock = document.getElementById("explorerVaultLockWrap");
+    const desktop = document.getElementById("desktop");
+    const upload = document.getElementById("uploadArea");
+    const previewBox = document.getElementById("previewContainer");
+    if (lock) {
+        lock.style.display = show ? "block" : "none";
+    }
+    if (desktop) {
+        desktop.style.display = show ? "none" : "";
+    }
+    if (upload) {
+        upload.style.display = show ? "none" : "";
+    }
+    if (previewBox) {
+        previewBox.style.display = show ? "none" : previewBox.style.display;
+    }
+}
 
 /* Why: API blocks Private/Departments roots; UI must open the user's scoped subfolder instead. */
 function resolveScopedFolderPath(path) {
@@ -395,7 +437,12 @@ function api(action, data = {}) {
     return fetch("api.php", {
         method: "POST",
         body: new URLSearchParams(data)
-    }).then(r => r.json());
+    }).then(r => r.json()).then(res => {
+        if (res && res.vault_locked) {
+            toggleExplorerVaultLock(true);
+        }
+        return res;
+    });
 }
 
 /* TABS */
@@ -1029,6 +1076,15 @@ function loadFolder(path) {
     inRecycle = false;
     const scopedPath = resolveScopedFolderPath(path);
     if (scopedPath === null) return;
+    if (!explorerVaultUnlocked && explorerPathRequiresVault(scopedPath)) {
+        currentPath = scopedPath;
+        tabs[activeTab].path = currentPath;
+        toggleExplorerVaultLock(true);
+        renderTabs();
+        renderBreadcrumbs();
+        return;
+    }
+    toggleExplorerVaultLock(false);
     currentPath = scopedPath;
     tabs[activeTab].path = currentPath;
     api("list", { path: currentPath }).then(res => {

@@ -3415,7 +3415,8 @@ CREATE TABLE `todo_categories` (
 CREATE TABLE `todo` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
-  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
   `description` longtext COLLATE utf8mb4_unicode_ci,
   `due_date` datetime DEFAULT NULL,
   `reminder_at` datetime DEFAULT NULL,
@@ -3433,7 +3434,7 @@ CREATE TABLE `todo` (
   `updated_by` int DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_todo_company_scope` (`company_id`, `title`, `id`),
+  UNIQUE KEY `uq_todo_company_scope` (`company_id`, `created_by`, `id`),
   KEY `company_id` (`company_id`),
   KEY `category_id` (`category_id`),
   KEY `department_id` (`department_id`),
