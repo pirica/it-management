@@ -3,7 +3,7 @@
  * Split database.sql into schema / data / triggers files for ordered import.
  *
  * Why: Maintainers edit database.sql; split files are generated with clean boundaries
- * (DDL only in 01, DML in 03, triggers in 02) and import order 01 → 03 → 02.
+ * (DDL in 01, DML in 02, triggers in 03) with import order 01 → 02 → 03.
  */
 
 declare(strict_types=1);
@@ -249,12 +249,12 @@ if (!function_exists('itm_database_sql_split_write_files')) {
         );
 
         $schemaPath = $databaseDir . DIRECTORY_SEPARATOR . '01_schema.sql';
-        $triggerPath = $databaseDir . DIRECTORY_SEPARATOR . '02_triggers.sql';
-        $dataPath = $databaseDir . DIRECTORY_SEPARATOR . '03_data.sql';
+        $dataPath = $databaseDir . DIRECTORY_SEPARATOR . '02_data.sql';
+        $triggerPath = $databaseDir . DIRECTORY_SEPARATOR . '03_triggers.sql';
 
-        $schemaContent = $headerComment . "-- Schema (DDL only). Import before 03_data.sql and 02_triggers.sql.\n\n" . $schemaBody;
-        $triggerContent = $headerComment . "-- Audit triggers. Import after 03_data.sql (single MySQL session with 01 + 03).\n\n" . $triggerBody;
-        $dataContent = $headerComment . "-- Seed and replication data. Import after 01_schema.sql, before 02_triggers.sql.\n\n" . $dataBody;
+        $schemaContent = $headerComment . "-- Schema (DDL only). Import before 02_data.sql and 03_triggers.sql.\n\n" . $schemaBody;
+        $dataContent = $headerComment . "-- Seed and replication data. Import after 01_schema.sql, before 03_triggers.sql.\n\n" . $dataBody;
+        $triggerContent = $headerComment . "-- Audit triggers. Import after 02_data.sql (single MySQL session with 01 + 02).\n\n" . $triggerBody;
 
         if (file_put_contents($schemaPath, $schemaContent) === false) {
             throw new RuntimeException('Cannot write ' . $schemaPath);
@@ -307,7 +307,7 @@ if (!function_exists('itm_database_sql_split_schema_violations')) {
             $violations[] = '01_schema.sql must not contain DELETE statements';
         }
         if (preg_match('/^SET @/im', $schemaSql)) {
-            $violations[] = '01_schema.sql must not contain SET @user variables (belong in 03_data.sql)';
+            $violations[] = '01_schema.sql must not contain SET @user variables (belong in 02_data.sql)';
         }
         if (preg_match('/^CREATE TRIGGER\b/im', $schemaSql)) {
             $violations[] = '01_schema.sql must not contain CREATE TRIGGER statements';

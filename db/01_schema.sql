@@ -1,5 +1,5 @@
 -- IT Management SQL Backup
--- Schema (DDL only). Import before 03_data.sql and 02_triggers.sql.
+-- Schema (DDL only). Import before 02_data.sql and 03_triggers.sql.
 
 DROP DATABASE IF EXISTS `itmanagement`;
 

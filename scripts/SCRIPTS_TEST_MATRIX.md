@@ -1,4 +1,4 @@
-# Scripts full test matrix
+﻿# Scripts full test matrix
 
 > Canonical verification map for **cataloged** entries in `scripts/scripts.php`.
 > Do **not** use `perform_audit.php` as a quality gate. Prefer this matrix + existing runners.
@@ -23,7 +23,7 @@ Generated from catalog on 2026-07-16. Catalog rows classified: **234**.
 | `bash scripts/smoke_test.sh` | PHP lint; `check_csrf_coverage.php`; `check_sql_injection_coverage.php`; `check_fk_label_search_coverage.php` | MySQL, PHPUnit, MBQA, most `check_*` / `verify_*` |
 | `php scripts/run_tier2_checks.php` | All Tier 2 static `check_*` scripts from this matrix (parse or fallback list) | Tier 1 smoke trio, Tier 3+ runtime verifiers, MBQA |
 | `bash scripts/verify_database_sql_import.sh` | Full `database.sql` import + table count; calls schema verify | Module HTTP behaviour |
-| `bash scripts/import_database_split.sh` | Split `db/` import (01→03→02, one session) + schema verify + parity gate | CI (monolith path only) |
+| `bash scripts/import_database_split.sh` | Split `db/` import (01→02→03, one session) + schema verify + parity gate | CI (monolith path only) |
 | `php scripts/split_database_sql.php` | Dry-run split parser metrics | Writes files unless `--apply` |
 | `php scripts/verify_database_split_parity.php` | Static parity: `db/*` vs `database.sql` | MySQL not required |
 | `php scripts/verify_crud_fk_label_search.php` | Runtime FK label search (CI database-import) | Non-search modules |
@@ -38,7 +38,7 @@ If any script **destroys or corrupts** the live `itmanagement` database, seed da
 
 1. **Stop** the matrix batch.
 2. **Document** the culprit in `scripts/data/scripts-matrix-destroy-log.md` (and mark the matrix row `DESTROYED_ENV`).
-3. **Fresh clone** the database from `database.sql` or the generated `db/` split (`bash scripts/import_database_split.sh` — order 01→03→02 in one session). Do not continue on partial state.
+3. **Fresh clone** the database from `database.sql` or the generated `db/` split (`bash scripts/import_database_split.sh` — order 01→02→03 in one session). Do not continue on partial state.
 4. **Sanity-check**, then resume at the **next** script (or re-run only if the failure was a false alarm).
 
 ### Detect destruction
@@ -190,7 +190,7 @@ php scripts/employees_delete_clear_table_test.php
 | 1 | `run_tests.php` | MySQL optional | low | PHPUnit meta | Unit/integration suite under phpunit/tests/Unit |
 | 1 | `smoke_test.sh` | PHP | none | CI smoke | Lint + CSRF + SQLi + FK label static |
 | 1 | `verify_database_sql_import.sh` | MySQL | destroys-DB | CI database-import | Full database.sql re-import — baseline clone |
-| 1 | `import_database_split.sh` | MySQL | destroys-DB | manual / local | Split db/ re-import (01→03→02); runs schema + parity checks |
+| 1 | `import_database_split.sh` | MySQL | destroys-DB | manual / local | Split db/ re-import (01→02→03); runs schema + parity checks |
 | 1 | `verify_crud_fk_label_search.php` | MySQL | low | CI database-import | Runtime FK label search after import |
 | 2 | `check_audit_logs_coverage.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_codacy_xss_echo.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |

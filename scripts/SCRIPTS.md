@@ -1,4 +1,4 @@
-# Table of Contents
+﻿# Table of Contents
 
 - Scripts Development Standards
   - API documentation (`scripts/api.php`)
@@ -560,7 +560,7 @@ GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
 
 Local full import (requires MySQL, password `itmanagement`): `bash scripts/verify_database_sql_import.sh` — same command as CI **database-import** step 1. Local split alternative: `bash scripts/import_database_split.sh` (see `db/AGENT_NOTES.md`). Then run `php scripts/verify_crud_fk_label_search.php` for runtime FK label search regression.
 
-**Split database import (optional):** generated files under `db/` (`01_schema.sql`, `03_data.sql`, `02_triggers.sql`) are produced from `database.sql` via `php scripts/split_database_sql.php --apply`. Import in **one MySQL session** in order **01 → 03 → 02** (`bash scripts/import_database_split.sh`) so `@replicate_source_company_id` persists and audit triggers load after seed data. Parity gate: `php scripts/verify_database_split_parity.php`. Details: `db/AGENT_NOTES.md`.
+**Split database import (optional):** generated files under `db/` (`01_schema.sql`, `02_data.sql`, `03_triggers.sql`) are produced from `database.sql` via `php scripts/split_database_sql.php --apply`. Import in **one MySQL session** in order **01 → 02 → 03** (`bash scripts/import_database_split.sh`) so `@replicate_source_company_id` persists and audit triggers load after seed data. Parity gate: `php scripts/verify_database_split_parity.php`. Details: `db/AGENT_NOTES.md`.
 
 Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, `check_ui_action_emoji.php`, `check_crud_audit_soft_delete.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/scripts.php`).
 

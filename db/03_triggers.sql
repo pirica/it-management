@@ -1,5 +1,5 @@
 -- IT Management SQL Backup
--- Audit triggers. Import after 03_data.sql (single MySQL session with 01 + 03).
+-- Audit triggers. Import after 02_data.sql (single MySQL session with 01 + 02).
 
 USE `itmanagement`;
 

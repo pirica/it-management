@@ -19,8 +19,8 @@ MYSQL_USER="${MYSQL_USER:-root}"
 MYSQL_PASSWORD="${MYSQL_PASSWORD:-itmanagement}"
 
 SCHEMA_FILE="${ROOT}/db/01_schema.sql"
-DATA_FILE="${ROOT}/db/03_data.sql"
-TRIGGERS_FILE="${ROOT}/db/02_triggers.sql"
+DATA_FILE="${ROOT}/db/02_data.sql"
+TRIGGERS_FILE="${ROOT}/db/03_triggers.sql"
 
 for f in "$SCHEMA_FILE" "$DATA_FILE" "$TRIGGERS_FILE"; do
   if [[ ! -f "$f" ]]; then
@@ -31,7 +31,7 @@ done
 
 MYSQL=(mysql -h "$MYSQL_HOST" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" --default-character-set=utf8mb4)
 
-echo "==> Importing split database (01_schema → 03_data → 02_triggers) via ${MYSQL_HOST}"
+echo "==> Importing split database (01_schema → 02_data → 03_triggers) via ${MYSQL_HOST}"
 {
   cat "$SCHEMA_FILE"
   echo ""

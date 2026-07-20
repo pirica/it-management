@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * IT Management System - API Documentation (project-aligned)
  **/
@@ -564,7 +564,7 @@ function itmDocProjectJsonEndpoints(): array
             'method' => 'CLI',
             'path' => 'scripts/split_database_sql.php',
             'params' => '--apply (optional)',
-            'purpose' => 'Generate db/01_schema.sql, db/03_data.sql, db/02_triggers.sql from database.sql (dry-run default).',
+            'purpose' => 'Generate db/01_schema.sql, db/02_data.sql, db/03_triggers.sql from database.sql (dry-run default).',
         ],
         [
             'group' => 'Scripts / tooling',
@@ -578,7 +578,7 @@ function itmDocProjectJsonEndpoints(): array
             'method' => 'CLI',
             'path' => 'scripts/import_database_split.sh',
             'params' => 'MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD',
-            'purpose' => 'Import db/ split in one MySQL session (01_schema → 03_data → 02_triggers). See db/AGENT_NOTES.md.',
+            'purpose' => 'Import db/ split in one MySQL session (01_schema → 02_data → 03_triggers). See db/AGENT_NOTES.md.',
         ],
         [
             'group' => 'Scripts / tooling',

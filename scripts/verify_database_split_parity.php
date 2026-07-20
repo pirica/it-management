@@ -23,8 +23,8 @@ $root = dirname(__DIR__);
 $monolith = $root . DIRECTORY_SEPARATOR . 'database.sql';
 $paths = [
     'schema' => $root . DIRECTORY_SEPARATOR . 'db' . DIRECTORY_SEPARATOR . '01_schema.sql',
-    'triggers' => $root . DIRECTORY_SEPARATOR . 'db' . DIRECTORY_SEPARATOR . '02_triggers.sql',
-    'data' => $root . DIRECTORY_SEPARATOR . 'db' . DIRECTORY_SEPARATOR . '03_data.sql',
+    'data' => $root . DIRECTORY_SEPARATOR . 'db' . DIRECTORY_SEPARATOR . '02_data.sql',
+    'triggers' => $root . DIRECTORY_SEPARATOR . 'db' . DIRECTORY_SEPARATOR . '03_triggers.sql',
 ];
 
 $failures = [];
@@ -64,20 +64,20 @@ $expectedTriggers = $monoMetrics['triggers'];
 
 echo 'Expected from database.sql: ' . $expectedTables . ' tables, ' . $expectedTriggers . ' triggers.' . $nl;
 echo '01_schema.sql: ' . $schemaMetrics['tables'] . ' tables.' . $nl;
-echo '02_triggers.sql: ' . $triggerMetrics['triggers'] . ' triggers.' . $nl;
-echo '03_data.sql: ' . $dataMetrics['inserts'] . ' INSERT lines (monolith grep includes trigger bodies: ' . $monoMetrics['inserts'] . ').' . $nl;
+echo '02_data.sql: ' . $dataMetrics['inserts'] . ' INSERT lines (monolith grep includes trigger bodies: ' . $monoMetrics['inserts'] . ').' . $nl;
+echo '03_triggers.sql: ' . $triggerMetrics['triggers'] . ' triggers.' . $nl;
 
 if ($schemaMetrics['tables'] !== $expectedTables) {
     $failures[] = '01_schema.sql table count ' . $schemaMetrics['tables'] . ' != ' . $expectedTables;
 }
 if ($triggerMetrics['triggers'] !== $expectedTriggers) {
-    $failures[] = '02_triggers.sql trigger count ' . $triggerMetrics['triggers'] . ' != ' . $expectedTriggers;
+    $failures[] = '03_triggers.sql trigger count ' . $triggerMetrics['triggers'] . ' != ' . $expectedTriggers;
 }
 if ($schemaMetrics['triggers'] !== 0 || $schemaMetrics['inserts'] !== 0) {
     $failures[] = '01_schema.sql must not contain INSERT or CREATE TRIGGER statements';
 }
 if ($dataMetrics['tables'] !== 0 || $dataMetrics['triggers'] !== 0) {
-    $failures[] = '03_data.sql must not contain CREATE TABLE or CREATE TRIGGER statements';
+    $failures[] = '02_data.sql must not contain CREATE TABLE or CREATE TRIGGER statements';
 }
 
 $schemaViolations = itm_database_sql_split_schema_violations(file_get_contents($paths['schema']) ?: '');
@@ -107,7 +107,7 @@ $splitBuckets = itm_database_sql_split_monolith($splitDataSql === false ? '' : $
 $splitData = $normalizeDataStatements($splitBuckets['data']);
 
 if ($monoData !== $splitData) {
-    $failures[] = '03_data.sql DML does not match database.sql data bucket (count mono=' . count($monoData) . ', split=' . count($splitData) . ')';
+    $failures[] = '02_data.sql DML does not match database.sql data bucket (count mono=' . count($monoData) . ', split=' . count($splitData) . ')';
 }
 
 preg_match_all('/^CREATE TABLE `([^`]+)`/m', $monoSql, $monoTables);
@@ -123,7 +123,7 @@ preg_match_all('/^CREATE TRIGGER `([^`]+)`/m', file_get_contents($paths['trigger
 sort($monoTriggers[1]);
 sort($splitTriggers[1]);
 if ($monoTriggers[1] !== $splitTriggers[1]) {
-    $failures[] = 'CREATE TRIGGER name list mismatch between database.sql and 02_triggers.sql';
+    $failures[] = 'CREATE TRIGGER name list mismatch between database.sql and 03_triggers.sql';
 }
 
 if ($failures !== []) {
@@ -134,6 +134,6 @@ if ($failures !== []) {
 }
 
 echo colorText('PASS: split files match database.sql (' . count($monoData) . ' data statements, ' . $expectedTables . ' tables, ' . $expectedTriggers . ' triggers).', 'pass') . $nl;
-echo 'Import order (single MySQL session): db/01_schema.sql → db/03_data.sql → db/02_triggers.sql' . $nl;
+echo 'Import order (single MySQL session): db/01_schema.sql → db/02_data.sql → db/03_triggers.sql' . $nl;
 echo 'Or: bash scripts/import_database_split.sh' . $nl;
 exit(0);

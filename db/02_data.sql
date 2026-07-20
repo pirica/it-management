@@ -1,5 +1,5 @@
 -- IT Management SQL Backup
--- Seed and replication data. Import after 01_schema.sql, before 02_triggers.sql.
+-- Seed and replication data. Import after 01_schema.sql, before 03_triggers.sql.
 
 USE `itmanagement`;
 
