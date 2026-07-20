@@ -75,6 +75,13 @@ if ($ssRefreshedAt !== null && $ssRefreshedAt !== '') {
 }
 
 $page_title = 'System Status';
+$moduleSlug = basename(dirname($_SERVER['PHP_SELF']));
+$ssEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
+$ssResolvedModuleIcon = itm_resolve_module_sidebar_icon($conn, (int)$company_id, $ssEmployeeId, $moduleSlug);
+$ssCleanPageTitle = itm_module_access_strip_catalog_label_prefix($page_title);
+$moduleListHeading = trim($ssResolvedModuleIcon . ' ' . $ssCleanPageTitle);
+$newButtonPosition = itm_resolve_new_button_position($ui_config ?? null);
+$ssRefreshFormAction = '?tab=' . rawurlencode($active_tab);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -87,6 +94,9 @@ if (!isset($currentUiConfig)) {
 if (!isset($crud_title)) {
     $crud_title = 'System Status';
 }
+if ($ssResolvedModuleIcon !== '') {
+    $crud_title = trim($ssResolvedModuleIcon . ' ' . $ssCleanPageTitle);
+}
 ?>
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
@@ -97,11 +107,12 @@ if (!isset($crud_title)) {
         .status-tab { padding: 8px 16px; text-decoration: none; color: var(--text-primary); border-radius: 6px; white-space: nowrap; flex-shrink: 0; font-weight: 500; }
         .status-tab.active { background: var(--accent); color: #fff; font-weight: 600; }
         .status-tab:hover:not(.active) { background: var(--bg-secondary); }
-        .refresh-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
-        .refresh-toolbar h1 { margin: 0; font-size: clamp(1.25rem, 4vw, 1.5rem); }
-        .refresh-toolbar-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .ss-page-toolbar { position: relative; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; min-height: 40px; gap: 12px; flex-wrap: wrap; }
+        .ss-page-toolbar h1 { position: absolute; left: 50%; transform: translateX(-50%); margin: 0; text-align: center; font-size: clamp(1.25rem, 4vw, 1.5rem); }
+        .ss-page-toolbar-side { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .ss-cache-meta { font-size: 0.875rem; color: var(--text-secondary); }
         .ss-form-inline { margin: 0; }
+        .ss-db-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
         .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 16px; }
         .metrics-stack { display: flex; flex-direction: column; gap: 16px; }
         .ss-metric-span-wide { grid-column: 1 / -1; }
@@ -153,6 +164,9 @@ if (!isset($crud_title)) {
             .ss-extensions-columns { column-count: 3; }
             .ss-metric-span-full { grid-column: span 3; }
         }
+        @media (max-width: 767px) {
+            .ss-db-summary-grid { grid-template-columns: 1fr; }
+        }
         @media (max-width: 575px) {
             .info-table td:first-child, .info-table th:first-child { width: auto; }
             .ss-storage-summary, .ss-storage-leaf { grid-template-columns: 1fr; }
@@ -167,17 +181,37 @@ if (!isset($crud_title)) {
         <?php include '../../includes/header.php'; ?>
 
         <div class="content">
-            <div class="refresh-toolbar">
-                <h1><?php echo sanitize($page_title); ?></h1>
-                <div class="refresh-toolbar-meta">
-                    <?php if ($ssRefreshedDisplay !== ''): ?>
-                        <span class="ss-cache-meta">Last refreshed: <?php echo sanitize($ssRefreshedDisplay); ?></span>
-                    <?php endif; ?>
-                    <form method="POST" action="?tab=<?php echo sanitize($active_tab); ?>" class="ss-form-inline">
-                        <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
-                        <button type="submit" name="refresh_cache" value="1" class="btn btn-primary">🔄 Refresh</button>
-                    </form>
-                </div>
+            <div class="ss-page-toolbar" data-itm-new-button-managed="server">
+                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                    <div class="ss-page-toolbar-side">
+                        <form method="POST" action="<?php echo sanitize($ssRefreshFormAction); ?>" class="ss-form-inline">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                            <button type="submit" name="refresh_cache" value="1" class="btn btn-primary" title="Refresh">🔄</button>
+                        </form>
+                    </div>
+                <?php else: ?>
+                    <span aria-hidden="true"></span>
+                <?php endif; ?>
+                <h1><?php echo sanitize($moduleListHeading); ?></h1>
+                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                    <div class="ss-page-toolbar-side">
+                        <?php if ($newButtonPosition === 'right'): ?>
+                            <form method="POST" action="<?php echo sanitize($ssRefreshFormAction); ?>" class="ss-form-inline">
+                                <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                                <button type="submit" name="refresh_cache" value="1" class="btn btn-primary" title="Refresh">🔄</button>
+                            </form>
+                        <?php endif; ?>
+                        <?php if ($newButtonPosition === 'left_right' && $ssRefreshedDisplay !== ''): ?>
+                            <span class="ss-cache-meta">Last refreshed: <?php echo sanitize($ssRefreshedDisplay); ?></span>
+                        <?php endif; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="ss-page-toolbar-side">
+                        <?php if ($ssRefreshedDisplay !== ''): ?>
+                            <span class="ss-cache-meta">Last refreshed: <?php echo sanitize($ssRefreshedDisplay); ?></span>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <?php if ($refreshNotice !== ''): ?>
