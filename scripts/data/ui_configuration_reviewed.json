@@ -994,6 +994,52 @@
         }
       ]
     },
+    "passwords": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Vault manager uses index.php modals and AJAX for create/edit — no scaffold create.php, edit.php, or list_all.php. Server-managed ➕ opens the entry modal; Search/Sort/Pagination and bulk delete are implemented on the entry list.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "Module has no create.php — primary ➕ opens entry modal on index.php (data-itm-new-button-managed=\"server\")"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "Module has no create.php — Settings new_button_position gates modal ➕ on index.php, not create.php btn-primary"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "Module has no create.php — list-header ➕ uses itm-list-new-button modal trigger, not create.php link"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "Create not used (no create.php and no create.php link in index.php)"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "Edit not used (no edit.php and no edit.php link in index.php)"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "List-all not used (no list_all.php and no list_all.php link in index.php)"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php"
+        }
+      ]
+    },
     "is_*": {
       "reviewed_at": "2026-07-20",
       "reason": "Equipment-type façade modules (is_switch, is_server, is_workstation, …) are thin wrappers that require modules/equipment/ — no local index.php table, list toolbar, or Settings new-button row for this audit.",
