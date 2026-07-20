@@ -26,6 +26,7 @@ Per-user private address book (not the shared company Contacts module). Stores p
 - **Pagination:** `itm_resolve_records_per_page()`, `$perPage`, `$totalRows`, `LIMIT`/`$offset`, Previous/Next with `title="◀️ Previous"` / `title="▶️ Next"`.
 - `data-itm-db-import-endpoint="index.php"` on index table for Excel import.
 - Actions column uses `itm-actions-cell` + `itm-actions-wrap` (no `flex-wrap` — share + CRUD buttons stay on one line).
+- Gate-excluded UI config checks for missing `delete.php`, `list_all.php`, and bulk-delete toolbar are reviewed in `scripts/data/ui_configuration_reviewed.json` — inline per-row delete uses `index_logic.php`.
 - Create/edit profile photo uses the employees-style upload UI (`includes/profile_photo_fields.php`: circular drag-and-drop target, `itm-upload-helper.js`, **PNG only**). Hint: `Drag and drop or click to upload PNG.` Do not nest `<label for>` inside a click-bound upload target without the shared label guard in `itm-upload-helper.js` (prevents double file-picker).
 
 ## 6. API Actions (If Applicable)

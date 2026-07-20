@@ -1040,6 +1040,27 @@
         }
       ]
     },
+    "private_contacts": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Vault address book uses index.php list with inline delete via index_logic.php — no delete.php, list_all.php, or scaffold bulk-delete toolbar. Search, Sort, Pagination, and create/edit/view entry files are implemented.",
+      "checks": [
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Module has no delete.php — per-row delete POST handled in index_logic.php"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "List-all not used (no list_all.php and no list_all.php link in index.php)"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Delete not used (no delete.php and no delete.php link in index.php)"
+        }
+      ]
+    },
     "is_*": {
       "reviewed_at": "2026-07-20",
       "reason": "Equipment-type façade modules (is_switch, is_server, is_workstation, …) are thin wrappers that require modules/equipment/ — no local index.php table, list toolbar, or Settings new-button row for this audit.",
