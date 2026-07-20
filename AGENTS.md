@@ -264,11 +264,10 @@ Every module must implement:
   | ▶️ | Next page |
   | ⏮️ | First page |
   | ⏭️ | Last page |
-  | ⬅️ | Previous |
-  | ➡️ | Next |
 
-  Standard flattened list modules render **⏮️** / **◀️** / **▶️** / **⏭️** (`btn-sm` anchors) inside the `<?php if ($page > 1): ?>` / `<?php if ($page < $totalPages): ?>` blocks. **⬅️** / **➡️** are for non-page-step navigation elsewhere — not standard list pagination.
 
+  Standard flattened list modules render **⏮️** / **◀️** / **▶️** / **⏭️** (`btn-sm` anchors) inside the `<?php if ($page > 1): ?>` / `<?php if ($page < $totalPages): ?>` blocks. 
+  
   **Canonical markup** (reference: flattened CRUD `index.php`):
 
   ```html
