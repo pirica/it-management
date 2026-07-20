@@ -177,9 +177,9 @@ if ($selectedStatusIds !== [] && $selectedTypeIds !== [] && $isoWeekBounds !== n
             OR COALESCE(et.name_type, \'\') LIKE ?
             OR COALESCE(d.name, \'\') LIKE ?
             OR COALESCE(d.code, \'\') LIKE ?
-            OR CAST(e.start_date AS CHAR) LIKE ?
-            OR CAST(e.termination_date AS CHAR) LIKE ?
-            OR CAST(WEEK(e.termination_date, 3) AS CHAR) LIKE ?
+            OR DATE_FORMAT(e.start_date, \'%d/%m/%Y\') LIKE ?
+            OR DATE_FORMAT(e.termination_date, \'%d/%m/%Y\') LIKE ?
+            OR CONCAT(WEEK(e.termination_date, 3), \'/\', DATE_FORMAT(e.termination_date, \'%y\')) LIKE ?
         )';
         $types .= 'ssssssssss';
         $params[] = $searchPattern;
@@ -250,6 +250,13 @@ function resign_format_week_label($terminationDate) {
 
 $yearShort = substr((string)$selectedYear, -2);
 $reportTitle = 'Weekly Resignations Report - Week ' . $selectedWeek . '/' . $yearShort;
+
+// Why: List h1 and browser tab must honor Settings sidebar icon overrides for this module slug.
+$moduleSlug = basename(dirname($_SERVER['PHP_SELF']));
+$employeeId = (int)($_SESSION['employee_id'] ?? 0);
+$resolvedModuleIcon = itm_resolve_module_sidebar_icon($conn, $company_id, $employeeId, $moduleSlug);
+$cleanReportTitle = itm_module_access_strip_catalog_label_prefix($reportTitle);
+$moduleListHeading = trim($resolvedModuleIcon . ' ' . $cleanReportTitle);
 ?>
 <!DOCTYPE html>
 <html lang="en-GB">
@@ -261,7 +268,10 @@ if (!isset($currentUiConfig)) {
     $currentUiConfig = $ui_config ?? [];
 }
 if (!isset($crud_title)) {
-    $crud_title = 'Resignations';
+    $crud_title = $cleanReportTitle;
+}
+if ($resolvedModuleIcon !== '') {
+    $crud_title = trim($resolvedModuleIcon . ' ' . $cleanReportTitle);
 }
 ?>
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
@@ -283,7 +293,7 @@ if (!isset($crud_title)) {
         <?php include '../../includes/header.php'; ?>
         <div class="content">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
-                <h1 style="margin:0;">📋 <?= sanitize($reportTitle) ?></h1>
+                <h1 style="margin:0;" title="<?= sanitize($reportTitle) ?>"><?php echo sanitize($moduleListHeading); ?></h1>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <a href="../employees/index.php" class="btn">👤 Employees</a>
                 </div>
