@@ -2,8 +2,8 @@
 /**
  * DB Design Diagram Generator
  *
- * Why: provide a drawdb-like visual schema map directly from db/ without
- * requiring external tooling or framework dependencies.
+ * Why: provide a drawdb-like visual schema map from the live database when
+ * available, with db/01_schema.sql as fallback.
  *
  * Usage (CLI):
  *   php scripts/DBdesign.php --mermaid
@@ -17,8 +17,12 @@
 
 declare(strict_types=1);
 
-$itm_root_path = dirname(__DIR__) . DIRECTORY_SEPARATOR;
-$itm_schema_path = itm_database_sql_schema_path();
+if (!defined('ITM_CLI_SCRIPT')) {
+    define('ITM_CLI_SCRIPT', true);
+}
+
+require_once dirname(__DIR__) . '/config/config.php';
+require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 function itm_dbdesign_escape(string $value): string
 {
@@ -136,6 +140,150 @@ function itm_dbdesign_parse_schema(string $sql): array
     ];
 }
 
+function itm_dbdesign_simplify_column_type(string $columnType): string
+{
+    $columnType = strtolower(trim($columnType));
+    if ($columnType === '') {
+        return 'text';
+    }
+
+    if (preg_match('/^([a-z]+)/', $columnType, $match) === 1) {
+        return $match[1];
+    }
+
+    return 'text';
+}
+
+/**
+ * @return array{tables:array<string,array<string,mixed>>,relationships:list<array<string,mixed>>}
+ */
+function itm_dbdesign_load_from_database(mysqli $conn, string $database): array
+{
+    $tables = [];
+    $relationships = [];
+
+    $columnStmt = $conn->prepare(
+        'SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_KEY, EXTRA
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ?
+         ORDER BY TABLE_NAME, ORDINAL_POSITION'
+    );
+    if (!$columnStmt) {
+        return ['tables' => $tables, 'relationships' => $relationships];
+    }
+
+    $columnStmt->bind_param('s', $database);
+    $columnStmt->execute();
+    $columnResult = $columnStmt->get_result();
+
+    while ($row = $columnResult->fetch_assoc()) {
+        $tableName = (string) ($row['TABLE_NAME'] ?? '');
+        $columnName = (string) ($row['COLUMN_NAME'] ?? '');
+        if ($tableName === '' || $columnName === '') {
+            continue;
+        }
+
+        if (!isset($tables[$tableName])) {
+            $tables[$tableName] = [
+                'name' => $tableName,
+                'columns' => [],
+                'primary_keys' => [],
+            ];
+        }
+
+        $columnKey = (string) ($row['COLUMN_KEY'] ?? '');
+        $extra = strtolower((string) ($row['EXTRA'] ?? ''));
+        $isPk = $columnKey === 'PRI';
+
+        $tables[$tableName]['columns'][$columnName] = [
+            'name' => $columnName,
+            'type' => itm_dbdesign_simplify_column_type((string) ($row['COLUMN_TYPE'] ?? '')),
+            'not_null' => strtoupper((string) ($row['IS_NULLABLE'] ?? '')) === 'NO',
+            'auto_increment' => strpos($extra, 'auto_increment') !== false,
+            'is_pk' => $isPk,
+        ];
+
+        if ($isPk) {
+            $tables[$tableName]['primary_keys'][] = $columnName;
+        }
+    }
+
+    $columnStmt->close();
+
+    $fkStmt = $conn->prepare(
+        'SELECT TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME, CONSTRAINT_NAME
+         FROM information_schema.KEY_COLUMN_USAGE
+         WHERE TABLE_SCHEMA = ? AND REFERENCED_TABLE_NAME IS NOT NULL
+         ORDER BY CONSTRAINT_NAME, ORDINAL_POSITION'
+    );
+    if ($fkStmt) {
+        $fkStmt->bind_param('s', $database);
+        $fkStmt->execute();
+        $fkResult = $fkStmt->get_result();
+        $fkGroups = [];
+
+        while ($row = $fkResult->fetch_assoc()) {
+            $constraint = (string) ($row['CONSTRAINT_NAME'] ?? '');
+            $fromTable = (string) ($row['TABLE_NAME'] ?? '');
+            $groupKey = $constraint . '|' . $fromTable;
+            if (!isset($fkGroups[$groupKey])) {
+                $fkGroups[$groupKey] = [
+                    'from_table' => $fromTable,
+                    'to_table' => (string) ($row['REFERENCED_TABLE_NAME'] ?? ''),
+                    'from_columns' => [],
+                    'to_columns' => [],
+                ];
+            }
+            $fkGroups[$groupKey]['from_columns'][] = (string) ($row['COLUMN_NAME'] ?? '');
+            $fkGroups[$groupKey]['to_columns'][] = (string) ($row['REFERENCED_COLUMN_NAME'] ?? '');
+        }
+
+        $relationships = array_values($fkGroups);
+        $fkStmt->close();
+    }
+
+    ksort($tables, SORT_NATURAL | SORT_FLAG_CASE);
+
+    return [
+        'tables' => $tables,
+        'relationships' => $relationships,
+    ];
+}
+
+/**
+ * @return array{schema:array{tables:array<string,array<string,mixed>>,relationships:list<array<string,mixed>>},source:string}
+ */
+function itm_dbdesign_resolve_schema(): array
+{
+    global $conn;
+
+    if (isset($conn) && $conn instanceof mysqli) {
+        $database = defined('DB_NAME') && DB_NAME !== '' ? (string) DB_NAME : 'itmanagement';
+        $liveSchema = itm_dbdesign_load_from_database($conn, $database);
+        if (!empty($liveSchema['tables'])) {
+            return [
+                'schema' => $liveSchema,
+                'source' => 'live database (' . $database . ')',
+            ];
+        }
+    }
+
+    $schemaPath = itm_database_sql_schema_path();
+    if (!is_file($schemaPath)) {
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo 'Schema unavailable: live database has no tables and db/01_schema.sql was not found at: ' . $schemaPath;
+        exit;
+    }
+
+    $schemaSql = (string) file_get_contents($schemaPath);
+
+    return [
+        'schema' => itm_dbdesign_parse_schema($schemaSql),
+        'source' => 'db/01_schema.sql',
+    ];
+}
+
 function itm_dbdesign_to_mermaid(array $schema): string
 {
     $lines = [];
@@ -193,15 +341,14 @@ function itm_dbdesign_to_mermaid(array $schema): string
     return implode("\n", $lines);
 }
 
-if (!is_file($itm_schema_path)) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=UTF-8');
-    echo 'db/01_schema.sql not found at: ' . $itm_schema_path;
-    exit;
+if (PHP_SAPI !== 'cli' && isset($conn) && $conn instanceof mysqli) {
+    require_once __DIR__ . '/lib/script_cli_output.php';
+    itm_script_require_admin_script_or_exit($conn);
 }
 
-$itm_schema_sql = (string) file_get_contents($itm_schema_path);
-$itm_schema = itm_dbdesign_parse_schema($itm_schema_sql);
+$itm_schema_bundle = itm_dbdesign_resolve_schema();
+$itm_schema = $itm_schema_bundle['schema'];
+$itm_schema_source = $itm_schema_bundle['source'];
 $itm_mermaid = itm_dbdesign_to_mermaid($itm_schema);
 
 $itm_cli = PHP_SAPI === 'cli';
@@ -227,7 +374,7 @@ if ($itm_cli) {
 if ($itm_format === 'json') {
     header('Content-Type: application/json; charset=UTF-8');
     echo json_encode([
-        'source' => 'db/01_schema.sql',
+        'source' => $itm_schema_source,
         'table_count' => count($itm_schema['tables']),
         'relationship_count' => count($itm_schema['relationships']),
         'tables' => $itm_schema['tables'],
@@ -282,7 +429,7 @@ $itm_dbdesign_base = defined('BASE_URL') ? (string)BASE_URL : '../';
     <?php itm_script_browser_nav_echo($itm_dbdesign_base); ?>
     <div class="card">
         <h1>Database SQL Diagram</h1>
-        <p class="muted">Generated from <code>db/</code> split bundle (drawdb-style ER overview).</p>
+        <p class="muted">Generated from <code><?= itm_dbdesign_escape($itm_schema_source); ?></code> (drawdb-style ER overview).</p>
         <p class="muted">Tables: <strong><?= $itm_table_count; ?></strong> | Relationships: <strong><?= $itm_relationship_count; ?></strong> | Generated: <?= itm_dbdesign_escape($itm_generated_at); ?></p>
         <div class="toolbar">
             <a href="?format=mermaid" target="_blank">Open Mermaid Text</a>
