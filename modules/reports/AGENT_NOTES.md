@@ -51,6 +51,7 @@ This module is read-only and aggregates data from:
 - Uses **Chart.js** for data visualization.
 - Responsive dashboard layout with stats cards and chart cards.
 - Dark/Light theme support via `body` class.
+- **UI configuration reviewed:** gate-excluded bespoke dashboard (`index.php` only) — no flattened CRUD table, CRUD entry files, or Settings list toolbar; all 16 `check_ui_configuration_coverage.php` list-contract checks registered in `scripts/data/ui_configuration_reviewed.json` as `[n/a][n/a][reviewed]`.
 
 ---
 
