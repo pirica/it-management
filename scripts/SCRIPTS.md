@@ -805,7 +805,7 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 
 | Step | Runner (`module_browser_qa_runner.php`) | Manual UI (`js/bulk-delete-selection.js` in `includes/header.php`) |
 |------|----------------------------------------|---------------------------------------------------------------------|
-| **`add`** | `mbqa_ensure_bulk_sample_rows()` — random inserts until tenant count ≥ `records_per_page` when schema/unique keys allow | N/A (DB-only in QA) |
+| **`add`** | `mbqa_ensure_bulk_sample_rows()` — random inserts until tenant **live** row count (excludes `deleted_at` when present) ≥ `records_per_page` when schema/unique keys allow; skips `deleted_at` / `deleted_by` on insert so rows are not auto-soft-deleted | N/A (DB-only in QA) |
 | **`bulk_cancel`** | Verifies index HTML: `bulk-delete-form`, `bulk-delete-selection.js`, `bulk_action`, **Select to Delete**; static or JS-injected **`data-itm-bulk-cancel="1"`** `type="button"` | First **Select to Delete** → checkboxes + **Delete Selected** + visible **Cancel**; **Cancel** exits without POST |
 | **`bulk_delete`** | POST `modules/<slug>/delete.php` with `bulk_action=bulk_delete` and up to 3 `ids[]` (skips two-step UI) | Second click **Delete Selected** submits selected `ids[]` |
 
