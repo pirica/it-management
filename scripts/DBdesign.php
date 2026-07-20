@@ -2,8 +2,8 @@
 /**
  * DB Design Diagram Generator
  *
- * Why: provide a drawdb-like visual schema map from the live database when
- * available, with db/01_schema.sql as fallback.
+ * Why: provide a drawdb-like visual schema map from the current live MySQL
+ * database (information_schema), with db/01_schema.sql as fallback when DB is unavailable.
  *
  * Usage (CLI):
  *   php scripts/DBdesign.php --mermaid
@@ -258,7 +258,7 @@ function itm_dbdesign_resolve_schema(): array
     global $conn;
 
     if (isset($conn) && $conn instanceof mysqli) {
-        $database = defined('DB_NAME') && DB_NAME !== '' ? (string) DB_NAME : 'itmanagement';
+        $database = defined('DB_NAME') && DB_NAME !== '' && DB_NAME !== false ? (string) DB_NAME : 'itmanagement';
         $liveSchema = itm_dbdesign_load_from_database($conn, $database);
         if (!empty($liveSchema['tables'])) {
             return [
@@ -272,15 +272,13 @@ function itm_dbdesign_resolve_schema(): array
     if (!is_file($schemaPath)) {
         http_response_code(500);
         header('Content-Type: text/plain; charset=UTF-8');
-        echo 'Schema unavailable: live database has no tables and db/01_schema.sql was not found at: ' . $schemaPath;
+        echo 'Schema unavailable: could not read live database and db/01_schema.sql was not found at: ' . $schemaPath;
         exit;
     }
 
-    $schemaSql = (string) file_get_contents($schemaPath);
-
     return [
-        'schema' => itm_dbdesign_parse_schema($schemaSql),
-        'source' => 'db/01_schema.sql',
+        'schema' => itm_dbdesign_parse_schema((string) file_get_contents($schemaPath)),
+        'source' => 'db/01_schema.sql (fallback)',
     ];
 }
 
@@ -341,8 +339,14 @@ function itm_dbdesign_to_mermaid(array $schema): string
     return implode("\n", $lines);
 }
 
-if (PHP_SAPI !== 'cli' && isset($conn) && $conn instanceof mysqli) {
+if (PHP_SAPI !== 'cli') {
     require_once __DIR__ . '/lib/script_cli_output.php';
+    if (!isset($conn) || !($conn instanceof mysqli)) {
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo 'Database connection failed.';
+        exit;
+    }
     itm_script_require_admin_script_or_exit($conn);
 }
 
