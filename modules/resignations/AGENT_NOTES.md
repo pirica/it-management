@@ -30,6 +30,7 @@ Read-only weekly resignation report for the active company. Data is sourced from
 - Date columns display as **dd/mm/yyyy** via `itm_format_date_display()`.
 - Header actions: **Employees**.
 - Sidebar: `📋 Resignations` in Employee section (`includes/ui_config.php`).
+- **ui_configuration reviewed gate:** gate-excluded in `scripts/data/ui_configuration_excluded_modules.txt`; intentional gaps (no pagination, Actions column, CRUD entry files, bulk delete, new-button checks) documented in `scripts/data/ui_configuration_reviewed.json` — audit lines print `[n/a][pass|fail|n/a][reviewed]`.
 
 ## 6. API Actions (If Applicable)
 - None.
