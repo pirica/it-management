@@ -130,6 +130,19 @@ if ($indexCode === '') {
     } else {
         rpw_verify_pass('index.php documents creator-only delete guard.');
     }
+    require_once ROOT_PATH . 'scripts/lib/itm_ui_list_contract_checks.php';
+    $bulkDeleteCheck = itm_check_bulk_delete_actions($indexCode, 'modules/request_password/index.php', is_file(ROOT_PATH . 'modules/request_password/delete.php'));
+    if (($bulkDeleteCheck['status'] ?? '') !== 'pass') {
+        rpw_verify_fail('index.php bulk delete contract: ' . ($bulkDeleteCheck['details'] ?? 'failed'));
+    } else {
+        rpw_verify_pass('index.php bulk delete toolbar gated by records_per_page.');
+    }
+    $bulkCancelCheck = itm_check_bulk_cancel_contract($indexCode);
+    if (($bulkCancelCheck['status'] ?? '') !== 'pass') {
+        rpw_verify_fail('index.php bulk cancel contract: ' . ($bulkCancelCheck['details'] ?? 'failed'));
+    } else {
+        rpw_verify_pass('index.php bulk cancel uses shared bulk-delete-selection.js.');
+    }
 }
 
 $secret = 'request_password_secret_key_2024';
