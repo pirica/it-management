@@ -908,6 +908,92 @@
         }
       ]
     },
+    "org_chart": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Interactive org chart (index.php only): visual tree from employees.reports_to with drag-and-drop AJAX — no flattened CRUD table, entry files, or list toolbar.",
+      "checks": [
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No table in index.php — hierarchy is a visual tree diagram"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "Module has no create.php"
+        },
+        {
+          "check": "Export Buttons",
+          "code": "ui_config_export_buttons",
+          "note": "No table in index.php — bespoke Excel structure export and html2canvas PNG, not table-tools.js"
+        },
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "No table in index.php — chart shows on_orgchart employees only"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "No table in index.php — tree layout algorithm positions nodes"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "No table in index.php — full org chart on one canvas"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "No table in index.php — hierarchy updates via drag-and-drop AJAX only"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "Create not used (no create.php and no create.php link in index.php)"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "Edit not used (no edit.php and no edit.php link in index.php)"
+        },
+        {
+          "check": "View entry (view.php)",
+          "code": "ui_config_view_entry",
+          "note": "View not used (no view.php and no view.php link in index.php)"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "List-all not used (no list_all.php and no list_all.php link in index.php)"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Delete not used (no delete.php and no delete.php link in index.php)"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php"
+        }
+      ]
+    },
     "is_*": {
       "reviewed_at": "2026-07-20",
       "reason": "Equipment-type façade modules (is_switch, is_server, is_workstation, …) are thin wrappers that require modules/equipment/ — no local index.php table, list toolbar, or Settings new-button row for this audit.",

@@ -17,7 +17,8 @@ Interactive org chart from `employees.reports_to` reporting lines with drag-and-
 - **Layout:** dynamic tree positioning algorithm positions nodes from reporting lines.
 
 ## 5. UI Behavior Requirements
-- Visual tree diagram; optional image export.
+- Visual tree diagram; optional image export (html2canvas PNG) and Excel structure export — no flattened CRUD list table on `index.php`.
+- Gate-excluded UI configuration checks (Table Actions, new button, export toolbar, Search, Sort, Pagination, bulk delete, CRUD entry files) are reviewed in `scripts/data/ui_configuration_reviewed.json` — bespoke tree UI only.
 - **Responsive:** chart viewport height capped on mobile; toolbar wraps; nodes scale to `min(240px, 80vw)` below 768px.
 
 ## 6. API Actions (If Applicable)
