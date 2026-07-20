@@ -579,7 +579,7 @@ if ($resolvedModuleIcon !== '') {
             <h1 style="margin-top:0;font-size:1.25rem;" title="Add role">➕</h1>
             <form id="rp-add-role-form">
                 <div class="form-group">
-                    <label for="rp-add-role-name">Name</label>
+                    <label for="rp-add-role-name">Add Role</label>
                     <input type="text" id="rp-add-role-name" name="role_name" required maxlength="50">
                 </div>
                 <button type="submit" class="btn btn-primary" title="Create">➕</button>
