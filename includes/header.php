@@ -168,9 +168,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const intentRules = [
-        // Match visible label only — pagination hrefs include `search=` and must not become "Search".
-        { test: /^previous$/i, emoji: '◀️', label: 'Previous', source: 'visible' },
-        { test: /^next$/i, emoji: '▶️', label: 'Next', source: 'visible' },
+        // Match visible emoji — pagination hrefs include `search=` and must not become "Search".
+        { test: /^◀️$/, emoji: '◀️', label: 'Previous page', source: 'visible' },
+        { test: /^▶️$/, emoji: '▶️', label: 'Next page', source: 'visible' },
+        { test: /^⏮️$/, emoji: '⏮️', label: 'First page', source: 'visible' },
+        { test: /^⏭️$/, emoji: '⏭️', label: 'Last page', source: 'visible' },
+        { test: /^⬅️$/, emoji: '⬅️', label: 'Previous', source: 'visible' },
+        { test: /^➡️$/, emoji: '➡️', label: 'Next', source: 'visible' },
         { test: /(delete|remove|trash)/i, emoji: '🗑️', label: 'Delete item' },
         { test: /(edit|update|modify)/i, emoji: '✏️', label: 'Edit item' },
         { test: /(view|details|open)/i, emoji: '🔎', label: 'View details' },

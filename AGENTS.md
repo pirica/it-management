@@ -254,7 +254,29 @@ Every module must implement:
 * **Order:** Standardized sort fields ASC DESC - '▲' : '▼'.
 * **Tools:** `📗Export Excel`, `📄Export PDF`, and `📥Import Excel` (linked via `js/table-tools.js`).
     * **Disabling Exports:** Automatically generated export buttons can be hidden by adding `data-itm-no-export-excel="1"` or `data-itm-no-export-pdf="1"` to the `<table>` element or its parent `.card`.
-* **Navigation:** Standardized server-side pagination based on `records_per_page`. List **Previous** / **Next** controls use link text `Previous` and `Next` (preserve `search`, `sort`, `dir`, and `page` query params). **Required `title` attributes:** `title="◀️ Previous"` and `title="▶️ Next"` on pagination anchors (not `🔎 Search`). Pagination URLs include `search=`; `includes/header.php` auto-tooltips must match **visible link text** for Next/Previous and must not treat `search=` in `href` as a Search action. **QA (`pagination` step, after `add`):** when rows > `records_per_page`, verify server HTML on page 1 includes **Next** (`btn-sm`, `page=2`, `title="▶️ Next"`), then page 2 includes **Previous** (`btn-sm`, `page=1`, `title="◀️ Previous"`) — `index.php?search=&sort=id&dir=DESC&page=1` then `page=2`.
+* **Navigation:** Standardized server-side pagination based on `records_per_page`. List pagination controls use **emoji-only visible text** (NO MIXED — no words beside the emoji). Descriptive phrases belong in `title` / `aria-label` only. Preserve `search`, `sort`, `dir`, and `page` query params on every pagination URL. Pagination URLs include `search=`; `includes/header.php` auto-tooltips must not treat `search=` in `href` as a Search action.
+
+  **Pagination emoji map (visible text → `title`):**
+
+  | Visible emoji | `title` / meaning |
+  |---------------|-------------------|
+  | ◀️ | Previous page |
+  | ▶️ | Next page |
+  | ⏮️ | First page |
+  | ⏭️ | Last page |
+  | ⬅️ | Previous |
+  | ➡️ | Next |
+
+  Standard flattened list modules use **◀️** / **▶️** only (`btn-sm` anchors). Optional **⏮️** / **⏭️** when a module renders first/last page jumps; **⬅️** / **➡️** are for non-page-step navigation elsewhere — not standard list Previous/Next.
+
+  **Canonical markup** (reference: flattened CRUD `index.php`):
+
+  ```html
+  <a class="btn btn-sm" href="?search=…&sort=…&dir=…&page=<?php echo $page - 1; ?>" title="Previous page">◀️</a>
+  <a class="btn btn-sm" href="?search=…&sort=…&dir=…&page=<?php echo $page + 1; ?>" title="Next page">▶️</a>
+  ```
+
+  **QA (`pagination` step, after `add`):** when rows > `records_per_page`, verify server HTML on page 1 includes **▶️** (`btn-sm`, `page=2`, `title="Next page"`), then page 2 includes **◀️** (`btn-sm`, `page=1`, `title="Previous page"`) — `index.php?search=&sort=id&dir=DESC&page=1` then `page=2`.
 * **Error Reporting:** Standardized server-side `enable_all_error_reporting` value from Settings.
 * **Enable Audit Log:** `enable_audit_logs` value from Settings.
 * **Audit Trail Coverage:** Mandatory INSERT/UPDATE/DELETE logging to `audit_logs` if enabled so changes are traceable in the audit center — **except** private-data tables listed under **Private data — no audit trail** below (no `audit_logs` rows, no `trg_*_audit_*` triggers, no PHP `itm_log_audit()` on those tables).
@@ -853,8 +875,16 @@ Standard CRUD actions use **emoji-only visible text** on interactive controls an
 | Back / Cancel (forms and modals) | 🔙 |
 | Create / New / Add | ➕ |
 | Save | 💾 |
+| Previous page (list pagination) | ◀️ |
+| Next page (list pagination) | ▶️ |
+| First page (optional list jump) | ⏮️ |
+| Last page (optional list jump) | ⏭️ |
+| Previous (non-page nav) | ⬅️ |
+| Next (non-page nav) | ➡️ |
 
-**NO MIXED (zero tolerance):** do not ship visible labels that combine emoji + action word, for example `💾 Save`, `🔙 Back`, `🔎 View Ticket Details`, or `➕ New Equipment`. Compound headings use emoji-only visible text plus a descriptive `title` (see canonical markup below).
+**Pagination (NO MIXED):** list `index.php` / `list_all.php` pagination anchors use emoji-only visible text (`◀️` / `▶️` by default). `title` carries the phrase (`Previous page`, `Next page`, …) — never `title="◀️ Previous"` or visible `Next` beside ▶️. Helpers: `itm_ui_pagination_emoji()`, `itm_ui_pagination_title()` in `includes/itm_ui_action_labels.php`.
+
+**NO MIXED (zero tolerance):** do not ship visible labels that combine emoji + action word, for example `💾 Save`, `🔙 Back`, `🔎 View Ticket Details`, `➕ New Equipment`, or `▶️ Next`. Compound headings use emoji-only visible text plus a descriptive `title` (see canonical markup below).
 
 **Standard markup** (reference: `modules/manufacturers/index.php`):
 
@@ -867,9 +897,11 @@ Standard CRUD actions use **emoji-only visible text** on interactive controls an
 <a href="create.php" class="btn btn-primary" title="Create">➕</a>
 <h1 title="View ticket details">🔎</h1>
 <h1 title="<?php echo $is_edit ? 'Edit ticket' : 'New ticket'; ?>"><?php echo $is_edit ? '✏️' : '➕'; ?></h1>
+<a class="btn btn-sm" href="?…&page=<?php echo $page - 1; ?>" title="Previous page">◀️</a>
+<a class="btn btn-sm" href="?…&page=<?php echo $page + 1; ?>" title="Next page">▶️</a>
 ```
 
-**Header auto-tooltips (`includes/header.php` `intentRules`):** tooltips **may** use emoji + words (for example `🔎 View details`, `🔙 Go back`, `🔙 Cancel`). Visible node text must still follow NO MIXED. Bulk-selection cancel is skipped: `button[data-itm-bulk-cancel="1"]` keeps visible `Cancel`.
+**Header auto-tooltips (`includes/header.php` `intentRules`):** tooltips **may** use emoji + words (for example `🔎 View details`, `🔙 Go back`, `🔙 Cancel`). Visible node text must still follow NO MIXED. Bulk-selection cancel is skipped: `button[data-itm-bulk-cancel="1"]` keeps visible `Cancel`. Pagination anchors with visible **◀️** / **▶️** / **⏮️** / **⏭️** / **⬅️** / **➡️** rely on `title` for the phrase (`Previous page`, …).
 
 **Helpers:** `includes/itm_ui_action_labels.php` (`itm_ui_action_emoji()`, `itm_ui_action_title()`), loaded from `config/config.php`; JS mirror `js/itm-ui-action-labels.js` (included from `header.php`) for modals built in JavaScript.
 
@@ -884,17 +916,18 @@ Standard CRUD actions use **emoji-only visible text** on interactive controls an
 | `🗑️\s*Delete` | `🗑️ Delete` |
 | `➕\s*(Create\|New\|Add)` | `➕ New Task`, `➕ Add Bookmark` |
 | `🔎\s*View` | `🔎 View Ticket Details` |
+| `◀️\s*Previous` | `◀️ Previous`, `title="◀️ Previous"` |
+| `▶️\s*Next` | `▶️ Next`, `title="▶️ Next"` |
 
-Also fails on known compound literals (`View Ticket Details`, `Edit Ticket`, `New Equipment`, `Create IDF`, `Edit IDF`, `View Employee System Access`), plain-text standalone action words on interactive tags without emoji, and header `intentRules` drift (View must use 🔎, Back must use 🔙).
+Also fails on known compound literals (`View Ticket Details`, `Edit Ticket`, `New Equipment`, `Create IDF`, `Edit IDF`, `View Employee System Access`), plain-text standalone action words on interactive tags without emoji (including list pagination `Previous` / `Next`), and header `intentRules` drift (View must use 🔎, Back must use 🔙).
 
-**Bulk fix:** `php scripts/apply_ui_action_emoji.php` (dry-run default; `--apply` writes) for simple mixed markup. PHP ternary h1, idfs h3, and JS modal innerHTML still need manual edits.
+**Bulk fix:** `php scripts/apply_ui_action_emoji.php` (dry-run default; `--apply` writes) for simple mixed markup. List pagination legacy `Previous`/`Next` labels: `php scripts/apply_pagination_emoji_labels.php` then `--apply`. PHP ternary h1, idfs h3, and JS modal innerHTML still need manual edits.
 
 **Exemptions (visible text only):**
 
 | Keep as-is | Reason |
 |------------|--------|
 | `button[data-itm-bulk-cancel="1"]` → `Cancel` | Bulk delete QA contract (`js/bulk-delete-selection.js`) |
-| Pagination `Previous` / `Next` | Word labels with emoji in `title` only |
 | Bulk `Select to Delete`, `Delete Selected`, `Clear Table` | Bulk toolbar contract |
 | Submit `Search` | Search row contract |
 | Search reset emoji-only `🔙` on `<a>` | Search row contract (`title="Clear"` allowed; visible text must not be plain Clear or other words) |

@@ -128,10 +128,10 @@ $sendLogsColumnLabels = [
             <div>Page <?php echo (int)$page; ?> of <?php echo (int)$sendLogsTotalPages; ?></div>
             <div style="display:flex;gap:8px;">
                 <?php if ($page > 1): ?>
-                    <a class="btn btn-sm" href="<?php echo sanitize($emailsSendLogsPageUrl(['page' => $page - 1])); ?>" title="◀️ Previous">Previous</a>
+                    <a class="btn btn-sm" href="<?php echo sanitize($emailsSendLogsPageUrl(['page' => $page - 1])); ?>" title="Previous page">◀️</a>
                 <?php endif; ?>
                 <?php if ($page < $sendLogsTotalPages): ?>
-                    <a class="btn btn-sm" href="<?php echo sanitize($emailsSendLogsPageUrl(['page' => $page + 1])); ?>" title="▶️ Next">Next</a>
+                    <a class="btn btn-sm" href="<?php echo sanitize($emailsSendLogsPageUrl(['page' => $page + 1])); ?>" title="Next page">▶️</a>
                 <?php endif; ?>
             </div>
         </div>

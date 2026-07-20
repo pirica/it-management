@@ -67,7 +67,7 @@ function itm_ui_action_line_exempt(string $line): bool
     if (strpos($line, 'data-itm-bulk-cancel="1"') !== false && preg_match('/>\s*Cancel\s*</', $line)) {
         return true;
     }
-    if (preg_match('/>\s*(Previous|Next|Search|Select to Delete|Delete Selected|Clear Table)\s*</', $line)) {
+    if (preg_match('/>\s*(Search|Select to Delete|Delete Selected|Clear Table)\s*</', $line)) {
         return true;
     }
     // Descriptive non-actions containing action words without standard emoji prefix.
@@ -88,6 +88,7 @@ foreach ($files as $path) {
         'includes/itm_ui_action_labels.php',
         'scripts/check_ui_action_emoji.php',
         'scripts/apply_ui_action_emoji.php',
+        'scripts/apply_pagination_emoji_labels.php',
     ], true)) {
         continue;
     }
@@ -116,12 +117,12 @@ foreach ($files as $path) {
         }
 
         // Plain-text standalone action words on interactive tags (no leading emoji).
-        if (preg_match('/<(a|button|input)[^>]*>\s*(Save|Cancel|View|Edit|Delete|Create|Back|Add|New)\s*<\//i', $line, $m)) {
+        if (preg_match('/<(a|button|input)[^>]*>\s*(Save|Cancel|View|Edit|Delete|Create|Back|Add|New|Previous|Next|Prev)\s*<\//i', $line, $m)) {
             $word = $m[2];
             if (strcasecmp($word, 'Cancel') === 0 && strpos($line, 'data-itm-bulk-cancel="1"') !== false) {
                 continue;
             }
-            if (in_array($word, ['Previous', 'Next', 'Search'], true)) {
+            if ($word === 'Search') {
                 continue;
             }
             $violations[] = "{$rel}:{$humanLine} [plain action] >{$word}< without emoji";

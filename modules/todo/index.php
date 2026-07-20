@@ -974,10 +974,10 @@ if ($todoResolvedModuleIcon !== '') {
                                 <div>Showing <?php echo $listOffset + 1; ?>-<?php echo min($listOffset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
                                 <div style="display:flex;gap:8px;">
                                     <?php if ($page > 1): ?>
-                                        <a class="btn btn-sm" href="index.php?<?php echo http_build_query(['filter' => $filter, 'search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page - 1]); ?>" title="◀️ Previous">Previous</a>
+                                        <a class="btn btn-sm" href="index.php?<?php echo http_build_query(['filter' => $filter, 'search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page - 1]); ?>" title="Previous page">◀️</a>
                                     <?php endif; ?>
                                     <?php if ($page < $totalPages): ?>
-                                        <a class="btn btn-sm" href="index.php?<?php echo http_build_query(['filter' => $filter, 'search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page + 1]); ?>" title="▶️ Next">Next</a>
+                                        <a class="btn btn-sm" href="index.php?<?php echo http_build_query(['filter' => $filter, 'search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page + 1]); ?>" title="Next page">▶️</a>
                                     <?php endif; ?>
                                 </div>
                             </div>

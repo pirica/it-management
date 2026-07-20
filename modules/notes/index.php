@@ -1041,11 +1041,11 @@ if (!isset($crud_title)) {
                                     <div>Showing <?php echo $listOffset + 1; ?>-<?php echo min($listOffset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
                                     <div style="display:flex;gap:6px;">
                                         <?php if ($page > 1): ?>
-                                            <a class="btn btn-sm" href="list_all.php?<?php echo http_build_query(['filter' => $filter, 'search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page - 1] + ($filter === 'tag' && isset($_GET['label']) ? ['label' => (string)$_GET['label']] : [])); ?>" title="◀️ Previous">Previous</a>
+                                            <a class="btn btn-sm" href="list_all.php?<?php echo http_build_query(['filter' => $filter, 'search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page - 1] + ($filter === 'tag' && isset($_GET['label']) ? ['label' => (string)$_GET['label']] : [])); ?>" title="Previous page">◀️</a>
                                         <?php endif; ?>
                                         <span class="btn btn-sm" style="pointer-events:none;"><?php echo $page; ?> / <?php echo $totalPages; ?></span>
                                         <?php if ($page < $totalPages): ?>
-                                            <a class="btn btn-sm" href="list_all.php?<?php echo http_build_query(['filter' => $filter, 'search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page + 1] + ($filter === 'tag' && isset($_GET['label']) ? ['label' => (string)$_GET['label']] : [])); ?>" title="▶️ Next">Next</a>
+                                            <a class="btn btn-sm" href="list_all.php?<?php echo http_build_query(['filter' => $filter, 'search' => $searchRaw, 'sort' => $sort, 'dir' => $dir, 'page' => $page + 1] + ($filter === 'tag' && isset($_GET['label']) ? ['label' => (string)$_GET['label']] : [])); ?>" title="Next page">▶️</a>
                                         <?php endif; ?>
                                     </div>
                                 </div>
