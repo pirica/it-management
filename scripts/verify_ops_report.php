@@ -231,6 +231,35 @@ if (!$crossHit || ($crossHit['report_date'] ?? '') !== $pastDate) {
     opr_verify_pass('Cross-date search finds past report_date via guest experience child row');
 }
 
+require_once __DIR__ . '/lib/itm_ops_report_search.php';
+
+$sampleHits = [
+    '2026-01-10' => ['Guest Experience Report'],
+    '2026-01-20' => ['Duty Managers / Hotel Figures'],
+    '2026-01-15' => ['Courtesy Calls'],
+];
+$sampleRows = opr_search_cross_date_rows_from_hits($sampleHits);
+$sortedAsc = opr_search_cross_date_sort_rows($sampleRows, 'report_date', 'ASC');
+if (($sortedAsc[0]['report_date'] ?? '') !== '2026-01-10' || ($sortedAsc[2]['report_date'] ?? '') !== '2026-01-20') {
+    opr_verify_fail('Cross-date search sort ASC report_date expected oldest-to-newest order');
+} else {
+    opr_verify_pass('Cross-date search sort ASC report_date');
+}
+
+$sortedSections = opr_search_cross_date_sort_rows($sampleRows, 'sections', 'ASC');
+if (($sortedSections[0]['sections_label'] ?? '') !== 'Courtesy Calls') {
+    opr_verify_fail('Cross-date search sort ASC sections expected alphabetical section labels');
+} else {
+    opr_verify_pass('Cross-date search sort ASC sections');
+}
+
+$paginated = opr_search_cross_date_paginate_rows($sortedAsc, 2, 1);
+if (count($paginated['rows']) !== 1 || ($paginated['rows'][0]['report_date'] ?? '') !== '2026-01-15' || (int)$paginated['total'] !== 3) {
+    opr_verify_fail('Cross-date search pagination page/perPage mismatch');
+} else {
+    opr_verify_pass('Cross-date search pagination honours page and per-page size');
+}
+
 $stmt = mysqli_prepare($conn, 'DELETE FROM ops_report WHERE id = ? AND company_id = ?');
 mysqli_stmt_bind_param($stmt, 'ii', $pastReportId, $companyId);
 mysqli_stmt_execute($stmt);
