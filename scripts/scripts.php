@@ -494,20 +494,20 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="split_database_sql.php" target="_blank" rel="nofollow noreferrer">split_database_sql.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Generates <code>database/01_schema.sql</code>, <code>database/03_data.sql</code>, and <code>database/02_triggers.sql</code> from canonical <code>database.sql</code> (DDL / DML / triggers). Dry-run default; <code>--apply</code> or <code>?apply=1</code> (Admin) writes files. Shared lib: <code>lib/itm_database_sql_split.php</code>.</td>
+                    <td>Generates <code>db/01_schema.sql</code>, <code>db/03_data.sql</code>, and <code>db/02_triggers.sql</code> from canonical <code>database.sql</code> (DDL / DML / triggers). Dry-run default; <code>--apply</code> or <code>?apply=1</code> (Admin) writes files. Shared lib: <code>lib/itm_database_sql_split.php</code>.</td>
                     <td><code>php scripts/split_database_sql.php</code> then <code>php scripts/split_database_sql.php --apply</code> after <code>database.sql</code> edits. Regenerate before commit when the monolith changes.</td>
                 </tr>
                 <tr>
                     <td><a href="verify_database_split_parity.php" target="_blank" rel="nofollow noreferrer">verify_database_split_parity.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Asserts split files under <code>database/</code> match <code>database.sql</code>: <strong>130</strong> tables, <strong>337</strong> triggers, identical data-statement multiset, and no DML/trigger leakage in <code>01_schema.sql</code>.</td>
+                    <td>Asserts split files under <code>db/</code> match <code>database.sql</code>: <strong>130</strong> tables, <strong>337</strong> triggers, identical data-statement multiset, and no DML/trigger leakage in <code>01_schema.sql</code>.</td>
                     <td><code>php scripts/verify_database_split_parity.php</code> — run after <code>split_database_sql.php --apply</code> or when reviewing split-file PRs.</td>
                 </tr>
                 <tr>
                     <td>import_database_split.sh</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Imports split database files in one MySQL session: <code>01_schema.sql</code> → <code>03_data.sql</code> → <code>02_triggers.sql</code> (preserves <code>@replicate_source_company_id</code>; loads triggers after seed data). Runs <code>verify_database_schema.php</code> and <code>verify_database_split_parity.php</code> on success.</td>
-                    <td><code>bash scripts/import_database_split.sh</code> — same MySQL env vars as <code>verify_database_sql_import.sh</code>. See <code>database/README.md</code> for phpMyAdmin order.</td>
+                    <td><code>bash scripts/import_database_split.sh</code> — same MySQL env vars as <code>verify_database_sql_import.sh</code>. See <code>db/AGENT_NOTES.md</code> for import order.</td>
                 </tr>
                 <tr>
                     <td><a href="employee_fields_missing.php" target="_blank" rel="nofollow noreferrer">employee_fields_missing.php</a></td>

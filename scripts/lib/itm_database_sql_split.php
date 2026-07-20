@@ -230,7 +230,7 @@ if (!function_exists('itm_database_sql_split_write_files')) {
             throw new RuntimeException('Unclassified SQL statement: ' . $preview);
         }
 
-        $databaseDir = rtrim($rootPath, '/\\') . DIRECTORY_SEPARATOR . 'database';
+        $databaseDir = rtrim($rootPath, '/\\') . DIRECTORY_SEPARATOR . 'db';
         if (!is_dir($databaseDir) && !mkdir($databaseDir, 0775, true) && !is_dir($databaseDir)) {
             throw new RuntimeException('Cannot create ' . $databaseDir);
         }

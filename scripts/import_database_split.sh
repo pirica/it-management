@@ -18,9 +18,9 @@ MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
 MYSQL_USER="${MYSQL_USER:-root}"
 MYSQL_PASSWORD="${MYSQL_PASSWORD:-itmanagement}"
 
-SCHEMA_FILE="${ROOT}/database/01_schema.sql"
-DATA_FILE="${ROOT}/database/03_data.sql"
-TRIGGERS_FILE="${ROOT}/database/02_triggers.sql"
+SCHEMA_FILE="${ROOT}/db/01_schema.sql"
+DATA_FILE="${ROOT}/db/03_data.sql"
+TRIGGERS_FILE="${ROOT}/db/02_triggers.sql"
 
 for f in "$SCHEMA_FILE" "$DATA_FILE" "$TRIGGERS_FILE"; do
   if [[ ! -f "$f" ]]; then

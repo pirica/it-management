@@ -560,7 +560,7 @@ GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
 
 Local full import (requires MySQL, password `itmanagement`): `bash scripts/verify_database_sql_import.sh` — same command as CI **database-import** step 1. Then run `php scripts/verify_crud_fk_label_search.php` for runtime FK label search regression.
 
-**Split database import (optional):** generated files under `database/` (`01_schema.sql`, `03_data.sql`, `02_triggers.sql`) are produced from `database.sql` via `php scripts/split_database_sql.php --apply`. Import in **one MySQL session** in order **01 → 03 → 02** (`bash scripts/import_database_split.sh`) so `@replicate_source_company_id` persists and audit triggers load after seed data. Parity gate: `php scripts/verify_database_split_parity.php`. Details: `database/README.md`.
+**Split database import (optional):** generated files under `db/` (`01_schema.sql`, `03_data.sql`, `02_triggers.sql`) are produced from `database.sql` via `php scripts/split_database_sql.php --apply`. Import in **one MySQL session** in order **01 → 03 → 02** (`bash scripts/import_database_split.sh`) so `@replicate_source_company_id` persists and audit triggers load after seed data. Parity gate: `php scripts/verify_database_split_parity.php`. Details: `db/AGENT_NOTES.md`.
 
 Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, `check_ui_action_emoji.php`, `check_crud_audit_soft_delete.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/scripts.php`).
 
@@ -1053,7 +1053,7 @@ Canonical map of **all cataloged** `scripts/scripts.php` entries into execution 
 
 **Do not** use `perform_audit.php` as a blanket quality gate. It scans Tier 1–3 CLI scripts only (skips Tier 4 MBQA, Tier 5 maintenance, `repro_*`, `verify_*`, `_tmp_*`, `health.php`, and session-mock harnesses `test_ajax.php` / `test_edit.php`). Allowlisted intentional exit codes live in `scripts/data/perform_audit_allowlist.json`. Prefer Tier 1 runners first, then Tier 2/3 batches, then Tier 4 on a healthy clone; run `repro_*` / `verify_*` individually when needed.
 
-**Destroy -> document -> fresh clone:** if a script wrecks `itmanagement` or critical trees, record the culprit in `scripts/data/scripts-matrix-destroy-log.md` (status `DESTROYED_ENV`), re-import `database.sql` (or `bash scripts/verify_database_sql_import.sh`), sanity-check, then resume. Full protocol lives in `SCRIPTS_TEST_MATRIX.md`.
+**Destroy -> document -> fresh clone:** if a script wrecks `itmanagement` or critical trees, record the culprit in `scripts/data/scripts-matrix-destroy-log.md` (status `DESTROYED_ENV`), re-import `database.sql` (`bash scripts/verify_database_sql_import.sh`) or split bundle (`bash scripts/import_database_split.sh`), sanity-check, then resume. Full protocol lives in `SCRIPTS_TEST_MATRIX.md`.
 
 When adding a catalog row, update `SCRIPTS_TEST_MATRIX.md` in the same PR.
 

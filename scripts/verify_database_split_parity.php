@@ -1,6 +1,6 @@
 <?php
 /**
- * Verify database/ split files stay aligned with database.sql.
+ * Verify db/ split files stay aligned with database.sql.
  *
  * Browser: scripts/verify_database_split_parity.php (Administrator).
  * CLI: php scripts/verify_database_split_parity.php
@@ -22,9 +22,9 @@ $nl = itm_script_output_nl();
 $root = dirname(__DIR__);
 $monolith = $root . DIRECTORY_SEPARATOR . 'database.sql';
 $paths = [
-    'schema' => $root . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . '01_schema.sql',
-    'triggers' => $root . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . '02_triggers.sql',
-    'data' => $root . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . '03_data.sql',
+    'schema' => $root . DIRECTORY_SEPARATOR . 'db' . DIRECTORY_SEPARATOR . '01_schema.sql',
+    'triggers' => $root . DIRECTORY_SEPARATOR . 'db' . DIRECTORY_SEPARATOR . '02_triggers.sql',
+    'data' => $root . DIRECTORY_SEPARATOR . 'db' . DIRECTORY_SEPARATOR . '03_data.sql',
 ];
 
 $failures = [];
@@ -134,6 +134,6 @@ if ($failures !== []) {
 }
 
 echo colorText('PASS: split files match database.sql (' . count($monoData) . ' data statements, ' . $expectedTables . ' tables, ' . $expectedTriggers . ' triggers).', 'pass') . $nl;
-echo 'Import order (single MySQL session): database/01_schema.sql → database/03_data.sql → database/02_triggers.sql' . $nl;
+echo 'Import order (single MySQL session): db/01_schema.sql → db/03_data.sql → db/02_triggers.sql' . $nl;
 echo 'Or: bash scripts/import_database_split.sh' . $nl;
 exit(0);

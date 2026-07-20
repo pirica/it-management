@@ -205,7 +205,8 @@ Each module must maintain a flat structure with these specific files:
 **Do not create Shared Templates:** Do not attempt to abstract CRUD into a single shared template. Each module must remain independent.
 
 ### 2. Database & Schema Rules
-* **Schema Updates:** If a field/table is deleted or a header renamed, update `database.sql`.
+* **Schema Updates:** If a field/table is deleted or a header renamed, update `database.sql`, then regenerate `db/01_schema.sql`, `db/03_data.sql`, and `db/02_triggers.sql` via `php scripts/split_database_sql.php --apply` and run `php scripts/verify_database_split_parity.php`.
+* **Split import bundle (`db/`):** Generated from `database.sql` (not hand-edited). Import in **one MySQL session** in order **01_schema → 03_data → 02_triggers** (`bash scripts/import_database_split.sh`). See `db/AGENT_NOTES.md`.
 * **No live `ALTER TABLE` in `database.sql`:** put keys, indexes, and foreign keys inside each table’s `CREATE TABLE`. Import already runs with `FOREIGN_KEY_CHECKS=0`, so FKs may reference tables created later in the file. Commented `-- ALTER TABLE …` lines are historical notes for existing databases only — do not add new executable `ALTER` statements.
 * **Company Scoping:**
     * **Hide** `company_id` from all UI views.
@@ -932,6 +933,7 @@ On **Linux, macOS, CI, and any host where `php` is on PATH**, bare `php scripts/
     "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe" -u root -pitmanagement --default-character-set=utf8mb4 < database.sql
     ```
     Verify: `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';` → **130**, or `php scripts/verify_database_schema.php` (lists any missing tables). A partial import often stops at table **73** (`employee_companies`) — missing block includes `role_hierarchy` … `workstation_ram`, `rack_planner`. Common deploy bugs: stripping the first lines of `database.sql` (removes `DROP DATABASE`), wrong MySQL password, or `re-download-replace_DB.ps1` piping without `-pitmanagement`. Use the updated `laragon-portable\www\re-download.ps1` (full file + table count). Capture stderr (`2> mysql-import.err`) — MySQL may exit 0 while statements failed.
+  * **Split import (`db/` — optional alternative):** `bash scripts/import_database_split.sh` pipes `db/01_schema.sql` → `db/03_data.sql` → `db/02_triggers.sql` in one session. Regenerate after `database.sql` edits: `php scripts/split_database_sql.php --apply` then `php scripts/verify_database_split_parity.php`. Details: `db/AGENT_NOTES.md`.
   * **PowerShell piping:** `database.sql` in git is **LF**; `-split "`r`n"` can yield a single “line” and skip the strip branch — still import the **complete** file. Prefer `cmd /c "\"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe\" -u root -pitmanagement --default-character-set=utf8mb4 < database.sql"` from the repo directory over stdin `Process` piping when imports truncate.
 * **Online AI Test Environment:**
   * `https://nelsonsalvador.myddns.me` | Login: `Admin` | Password: `Admin`.

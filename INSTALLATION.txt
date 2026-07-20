@@ -4,7 +4,9 @@ IT MANAGEMENT SYSTEM - INSTALLATION GUIDE
 1. DATABASE SETUP
    - Open phpMyAdmin
    - Create new database or use existing
-   - Import database.sql
+   - Import database.sql (full monolith)
+     OR import split bundle in one session: bash scripts/import_database_split.sh
+     (see db/AGENT_NOTES.md — order 01_schema → 03_data → 02_triggers)
 
 2. FILE SETUP
    - Extract all files to: C:\Users\NelsonSalvador\Downloads\USBWebServer\USBWebServer\root\it-management\

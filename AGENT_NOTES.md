@@ -8,7 +8,7 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 - **Multi-Tenancy**: All data (except Companies and certain maintenance logs) must be scoped by `company_id` from the session.
 - **Architecture**: No Composer, No NPM. Use `config/config.php` for environment setup.
 - **API rate limits**: **Free** tier — unlimited, **no API key**, **session required** (`company_id` + `employee_id` in `PHPSESSID`). **Paid** tiers — hourly caps, API key required. See `AGENTS.md` → **API keys and rate limits (mandatory)** and `includes/itm_api_rate_limit.php`.
-- **`database.sql` hygiene**: No executable `ALTER TABLE` — define indexes/FKs on `CREATE TABLE`. Multi-company seed admins use tenant-correct role/access/status lookups; see `AGENTS.md` → **Database & Schema Rules**.
+- **`database.sql` hygiene**: No executable `ALTER TABLE` — define indexes/FKs on `CREATE TABLE`. Multi-company seed admins use tenant-correct role/access/status lookups; see `AGENTS.md` → **Database & Schema Rules**. Regenerate `db/*.sql` after monolith edits (`php scripts/split_database_sql.php --apply`, then `php scripts/verify_database_split_parity.php`).
 - **Login session rotation:** `login.php` calls `session_regenerate_id(true)` after successful password verification and before writing auth fields into `$_SESSION` (mitigates session fixation).
 - **Entry pages / errors:** root `index.php` must not force `display_errors`; error visibility comes from `config/config.php` via `enable_all_error_reporting`.
 
@@ -16,6 +16,7 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 - Bypassing the session-based company isolation. [Cursor-Valid]
 - Introducing external libraries. [Cursor-Valid]
 - Forgetting to update `database.sql` when changing the schema. [Cursor-Valid]
+- Editing `db/*.sql` by hand instead of regenerating from `database.sql`. [Cursor-Valid]
 - Allowing arbitrary line-wrapping in administrative or diagnostic reporting tables (always prevent line wrapping on columns using CSS `white-space: nowrap` and an auto-scrolling wrapper). [Cursor-Fixed]
 - Session fixation: reusing the pre-login session id after authentication without regeneration. [Cursor-Fixed]
 - Session cookie missing HttpOnly / SameSite / Secure (when HTTPS). [Cursor-Fixed]

@@ -4,7 +4,7 @@
 Schema, seed, `database.sql`, and split-file parity tests.
 
 ## 4. Business Rules (Critical for Agents)
-- **Split files:** `database/01_schema.sql`, `database/03_data.sql`, `database/02_triggers.sql` are generated from `database.sql`; parity gate `php scripts/verify_database_split_parity.php`.
+- **Split files:** `db/01_schema.sql`, `db/03_data.sql`, `db/02_triggers.sql` are generated from `database.sql`; parity gate `php scripts/verify_database_split_parity.php`.
 - **Disposable script test users:** when tests INSERT/UPDATE `employees` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_employee.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users.
 - Keep tests aligned with production module contracts in `AGENTS.md`.
 - Update tests when changing CSRF, SQLi, or tenant scoping in the target code.

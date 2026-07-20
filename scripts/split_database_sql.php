@@ -1,6 +1,6 @@
 <?php
 /**
- * Generate database/01_schema.sql, 02_triggers.sql, 03_data.sql from database.sql.
+ * Generate db/01_schema.sql, 02_triggers.sql, 03_data.sql from database.sql.
  *
  * Browser: scripts/split_database_sql.php (Administrator).
  * CLI: php scripts/split_database_sql.php [--apply]
@@ -60,7 +60,7 @@ if ($buckets['skipped'] !== []) {
 }
 
 if (!$apply) {
-    echo colorText('Dry run only. Re-run with --apply or ?apply=1 to write database/01_schema.sql, 02_triggers.sql, 03_data.sql.', 'info') . $nl;
+    echo colorText('Dry run only. Re-run with --apply or ?apply=1 to write db/01_schema.sql, 02_triggers.sql, 03_data.sql.', 'info') . $nl;
     exit(0);
 }
 
