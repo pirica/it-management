@@ -731,7 +731,9 @@ foreach ($modules as $module) {
                 $totals['excluded_pass']++;
             } elseif ($status === 'fail') {
                 $totals['excluded_fail']++;
-                $moduleExcludedFailures[$module][] = "{$checkName}: {$result['details']}";
+                if (!$isReviewed) {
+                    $moduleExcludedFailures[$module][] = "{$checkName}: {$result['details']}";
+                }
             } else {
                 $totals['excluded_n/a']++;
             }
@@ -762,7 +764,7 @@ echo 'PASS (gated): ' . $totals['pass'] . "\n";
 echo 'FAIL (gated): ' . $totals['fail'] . "\n";
 echo 'N/A  (gated): ' . $totals['n/a'] . "\n";
 echo 'Gate excluded [n/a][pass]: ' . $totals['excluded_pass'] . "\n";
-echo 'Gate excluded [n/a][fail]: ' . $totals['excluded_fail'] . " (informational — does not fail the run)\n";
+echo 'Gate excluded [n/a][fail]: ' . $totals['excluded_fail'] . " (informational — does not fail the run; footer lists unreviewed failures only)\n";
 echo 'Gate excluded [n/a][n/a]: ' . $totals['excluded_n/a'] . "\n";
 echo 'Gate excluded [reviewed]: ' . $totals['excluded_reviewed'] . "\n";
 
@@ -778,7 +780,7 @@ if ($totals['fail'] > 0) {
 }
 
 if (!empty($moduleExcludedFailures)) {
-    echo "\nGate-excluded modules with contract failures (informational only):\n";
+    echo "\nGate-excluded modules with unreviewed contract failures (informational only):\n";
     foreach ($moduleExcludedFailures as $module => $failures) {
         echo '- ' . itm_script_format_module_link($module) . "\n";
         foreach ($failures as $failure) {
