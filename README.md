@@ -123,7 +123,12 @@
 
 <p align="center"><strong>Database schema</strong> — core table relationships for the company-scoped multi-tenant data model.</p>
 
-<p align="center"><a href="[docs/readme/database-diagram.svg](https://github.com/pirica/it-management/blob/master/docs/readme/database-diagram.svg)" target="_blank"><img src="docs/readme/database-diagram.png" alt="Database schema overview" /></a></p>
+<p align="center">
+  <a href="https://raw.githubusercontent.com/pirica/it-management/master/docs/readme/database-diagram.svg" target="_blank">
+    <img src="docs/readme/database-diagram.png" alt="Database schema overview" />
+  </a>
+</p>
+
 
 <h2 align="center">Database Structure Overview</h2>
 
