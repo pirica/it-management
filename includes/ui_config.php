@@ -102,13 +102,14 @@ function itm_sidebar_base_structure() {
             'items' => [
                 ['id' => 'inventory_items', 'label' => '📦 Inventory', 'href' => 'modules/inventory_items/', 'match_dir' => 'inventory_items'],
                 ['id' => 'visitors_access_log', 'label' => '📝 Visitors Access Log', 'href' => 'modules/visitors_access_log/', 'match_dir' => 'visitors_access_log'],
-                ['id' => 'backup_tape_log', 'label' => '📼 Backup Tape Log', 'href' => 'modules/backup_tape_log/', 'match_dir' => 'backup_tape_log'],
+                ['id' => 'backup_tape_log', 'label' => '📼 Backup Tape Log File', 'href' => 'modules/backup_tape_log/', 'match_dir' => 'backup_tape_log'],
                 ['id' => 'companies', 'label' => '🌍 Companies', 'href' => 'modules/companies/', 'match_dir' => 'companies'],
                 ['id' => 'company_module_access', 'label' => '🧩 Company Module Access', 'href' => 'modules/company_module_access/', 'match_dir' => 'company_module_access'],
                 ['id' => 'roles_permissions', 'label' => '🛡️ Roles & Permissions', 'href' => 'modules/roles_permissions/', 'match_dir' => 'roles_permissions'],
                 ['id' => 'emails', 'label' => '📧 Email Management', 'href' => 'modules/emails/', 'match_dir' => 'emails'],
                 ['id' => 'import', 'label' => '📥 Bulk Import', 'href' => 'modules/import/', 'match_dir' => 'import'],
                 ['id' => 'ops_report', 'label' => '📋 Ops Report', 'href' => 'modules/ops_report/', 'match_dir' => 'ops_report'],
+                ['id' => 'system_status', 'label' => '🖥️ System Status', 'href' => 'modules/system_status/', 'match_dir' => 'system_status'],
             ],
         ],
         [
@@ -198,6 +199,8 @@ function itm_sidebar_module_default_label($moduleName) {
         'license_management' => '📄 License Management',
         'ops_report' => '📋 Ops Report',
         'reports' => '📊 Reports Hub',
+        'backup_tape_log' => '📼 Backup Tape Log File',
+        'system_status' => '🖥️ System Status',
     ];
 
     return $labels[$moduleName] ?? null;
