@@ -146,6 +146,8 @@ $dir = strtoupper($_GET['dir'] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
 
 $ui_config = itm_get_ui_configuration($conn, $company_id);
 $perPage = itm_resolve_records_per_page($ui_config);
+$moduleListHeading = itm_sidebar_label_for_module('rack_planner') ?: 'Rack Planner';
+$newButtonPosition = itm_resolve_new_button_position($ui_config);
 $page = max(1, (int)($_GET['page'] ?? 1));
 $offset = ($page - 1) * $perPage;
 

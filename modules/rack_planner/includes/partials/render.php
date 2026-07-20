@@ -319,11 +319,6 @@ if (!isset($crud_title)) {
             <?php endif; ?>
 
             <?php if ($crud_action === 'index' || $crud_action === 'list_all'): ?>
-                <div class="rack-planner-header">
-                    <h1>Rack Planner</h1>
-                    <a href="create.php" class="btn btn-primary">➕</a>
-                </div>
-
                 <?php
                 $whereClause = " WHERE company_id = ? AND deleted_at IS NULL";
                 $params = [$company_id];
@@ -358,17 +353,38 @@ if (!isset($crud_title)) {
 
                 $totalPages = max(1, (int)ceil($totalRows / $perPage));
                 if ($page > $totalPages) { $page = $totalPages; $offset = ($page - 1) * $perPage; }
+                $showBulkActions = ($totalRows >= $perPage);
+                $rackPlannerListColspan = $showBulkActions ? 6 : 5;
                 ?>
 
+                <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
+                    <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                        <div style="display:flex;gap:8px;">
+                            <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                        </div>
+                    <?php else: ?>
+                        <span></span>
+                    <?php endif; ?>
+                    <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
+                    <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                        <div style="display:flex;gap:8px;">
+                            <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                        </div>
+                    <?php else: ?>
+                        <span></span>
+                    <?php endif; ?>
+                </div>
+
+                <?php if ($showBulkActions): ?>
                 <div class="card" style="margin-bottom:16px;">
-                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
                         <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
                         <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
-                        <?php if ($totalRows >= $perPage): ?>
-                            <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
-                        <?php endif; ?>
+                        <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
+                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
                     </form>
                 </div>
+                <?php endif; ?>
 
                 <div class="card" style="margin-bottom:16px;">
                     <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
@@ -380,7 +396,7 @@ if (!isset($crud_title)) {
                         </div>
                         <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                             <button type="submit" class="btn btn-primary">Search</button>
-                            <a href="index.php" class="btn">🔙</a>
+                            <a href="index.php" class="btn" title="Clear">🔙</a>
                         </div>
                     </form>
                 </div>
@@ -389,7 +405,7 @@ if (!isset($crud_title)) {
                     <table data-itm-db-import-endpoint="index.php">
                         <thead>
                             <tr>
-                                <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
+                                <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
                                 <?php
                                 $rackPlannerSortQueryBase = 'search=' . urlencode($search) . '&page=' . (int)$page;
                                 $rackPlannerSortLinkStyle = 'text-decoration:none;color:inherit;';
@@ -429,7 +445,7 @@ if (!isset($crud_title)) {
                                     while ($row = mysqli_fetch_assoc($res)):
                             ?>
                                 <tr>
-                                    <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
+                                    <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                                     <td><?php echo sanitize($row['name']); ?></td>
                                     <td><?php echo (int)$row['rack_units']; ?> U</td>
                                     <td><?php echo sanitize($row['notes']); ?></td>
@@ -463,7 +479,7 @@ if (!isset($crud_title)) {
                                     endwhile;
                                 else:
                             ?>
-                                <tr><td colspan="6" style="text-align:center;">No rack plans found.</td></tr>
+                                <tr><td colspan="<?php echo (int)$rackPlannerListColspan; ?>" style="text-align:center;">No rack plans found.</td></tr>
                             <?php
                                 endif;
                                 mysqli_stmt_close($stmt);
