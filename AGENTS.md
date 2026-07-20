@@ -209,7 +209,7 @@ Each module must maintain a flat structure with these specific files:
 * **Schema updates:** Edit the appropriate `db/` file — `01_schema.sql` (DDL), `02_data.sql` (seeds/DML), `03_triggers.sql` (audit triggers).
 * **Import bundle (`db/`):** Import in **one MySQL session** in order **01_schema → 02_data → 03_triggers** (`bash scripts/import_database_split.sh`). See `db/AGENT_NOTES.md`.
 * **No live `ALTER TABLE` in `db/01_schema.sql`:** put keys, indexes, and foreign keys inside each table’s `CREATE TABLE`. Import already runs with `FOREIGN_KEY_CHECKS=0`, so FKs may reference tables created later in the file. Commented `-- ALTER TABLE …` lines are historical notes for existing databases only — do not add new executable `ALTER` statements.
-* **Incremental migrations (`db/migrations/`):** schema changes for **existing** databases belong in `db/migrations/{module}_{subject}.sql` (for example `todo_vault.sql`). Copy the table’s `CREATE TABLE` block from `db/01_schema.sql`, paste it into the migration with your changes, and use a **`{table}_new` swap** (`CREATE` → `INSERT … SELECT` → `DROP` → `RENAME`) to apply on live DBs — **do not use `ALTER TABLE` in migration files**. In the **same PR**, mirror the final shape in `db/01_schema.sql` (and `db/02_data.sql` when seeds change). Apply migrations manually on live DBs in filename order; there is no migration runner yet. See `db/migrations/AGENT_NOTES.md`.
+* **Incremental migrations (`db/migrations/`):** schema changes for **existing** databases belong in `db/migrations/{module}_{subject}.sql` (for example `todo_vault.sql`). Copy the table’s `CREATE TABLE` block from `db/01_schema.sql`, paste it into the migration with your changes, and apply with **`DROP TABLE IF EXISTS` + `CREATE TABLE`** (copy/paste replacement) — **no `ALTER TABLE`**, **no `{table}_new` staging tables**. In the **same PR**, mirror the final shape in `db/01_schema.sql` (and `db/02_data.sql` when seeds change). `DROP TABLE` removes existing rows; back up before applying on production. Apply migrations manually on live DBs in filename order; there is no migration runner yet. See `db/migrations/AGENT_NOTES.md`.
 * **Company Scoping:**
     * **Hide** `company_id` from all UI views.
     * Add safe inline FK creation logic to create referenced rows automatically.
@@ -449,7 +449,7 @@ The Todo module (`modules/todo/`) stores personal task title/description with va
 3. **Vault UI:** `modules/todo/todo_vault_bootstrap.php` — lock screen on index/create when vault is locked; private owned edit/view also require unlock. Shared/global tasks remain readable without unlock on edit/view.
 4. **Master key rotation:** `itm_vault_reencrypt_todo()` in `includes/itm_vault_master_key.php`; hooked from `user-config.php`.
 5. **Search:** list search runs in PHP after `todo_hydrate_task_row()` — encrypted columns are not SQL-`LIKE` searchable (`includes/itm_todo_list_query.php`).
-6. **Schema migration:** `db/migrations/todo_vault.sql` — full `CREATE TABLE` swap (`todo_new`); `title` → `TEXT`, `title_hash`, unique key `(company_id, created_by, id)`. No `ALTER TABLE` in migrations.
+6. **Schema migration:** `db/migrations/todo_vault.sql` — `DROP TABLE IF EXISTS todo` + full `CREATE TABLE` (`title` TEXT, `title_hash`, unique `(company_id, created_by, id)`). No `ALTER TABLE` or `_new` staging tables.
 7. **Regression script** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_todo_vault.php`.
 
 #### Passwords module (mandatory)

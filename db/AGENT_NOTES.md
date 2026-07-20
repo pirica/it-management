@@ -7,7 +7,7 @@ Canonical SQL schema, seed data, and audit triggers for the IT Management System
 - **Canonical source:** edit `db/01_schema.sql` (DDL), `db/02_data.sql` (DML/seeds), and `db/03_triggers.sql` (triggers) directly.
 - **Import order:** `01_schema.sql` → `02_data.sql` → `03_triggers.sql` in **one MySQL session** (`bash scripts/import_database_split.sh`). Numeric prefix matches run order.
 - **Boundaries:** DDL in `01_schema.sql`, DML in `02_data.sql`, triggers in `03_triggers.sql`.
-- **Incremental migrations:** `db/migrations/{module}_{subject}.sql` — full `CREATE TABLE` copies (no `ALTER TABLE`); see `db/migrations/AGENT_NOTES.md` for the `{table}_new` swap pattern on live DBs.
+- **Incremental migrations:** `db/migrations/{module}_{subject}.sql` — copy/paste `DROP TABLE IF EXISTS` + full `CREATE TABLE` from `db/01_schema.sql` (no `ALTER TABLE`, no `_new` staging). See `db/migrations/AGENT_NOTES.md`.
 
 ## 7. File Structure
 - `01_schema.sql` — DDL (`DROP DATABASE`, `CREATE TABLE`, …)

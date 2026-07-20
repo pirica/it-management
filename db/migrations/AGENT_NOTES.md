@@ -6,19 +6,18 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
 ## 4. Business Rules (Critical for Agents)
 - **Naming:** `db/migrations/{module}_{subject}.sql` (lowercase module slug, underscore subject). Examples: `todo_vault.sql`, `notes_vault.sql`.
 - **No `ALTER TABLE` in migrations (hard rule):** copy the current table definition from `db/01_schema.sql`, paste it into the migration file, apply the change, and ship the **full `CREATE TABLE`** block. Do not use `ALTER TABLE` / `MODIFY` / `ADD COLUMN` in `db/migrations/`.
-- **Live apply pattern (data-preserving):** when the table already has rows, use a swap table in the same migration file:
+- **No staging tables (hard rule):** do not use `{table}_new`, `RENAME TABLE`, or `INSERT … SELECT` swap patterns. Migrations use **copy/paste replacement** only:
   1. `SET FOREIGN_KEY_CHECKS = 0`
-  2. `CREATE TABLE \`{table}_new\` ( … full target definition … );`
-  3. `INSERT INTO \`{table}_new\` ( … ) SELECT … FROM \`{table}\`;` — backfill new columns in the `SELECT` (e.g. `SHA2(TRIM(title), 256)` for `title_hash` on legacy plaintext).
-  4. `DROP TABLE \`{table}\`;`
-  5. `RENAME TABLE \`{table}_new\` TO \`{table}\`;`
-  6. `SET FOREIGN_KEY_CHECKS = 1`
+  2. `DROP TABLE IF EXISTS \`{table}\`;`
+  3. `CREATE TABLE \`{table}\` ( … full target definition copied from `db/01_schema.sql` with your change … );`
+  4. `SET FOREIGN_KEY_CHECKS = 1`
+- **Data warning:** `DROP TABLE` removes existing rows. Back up or export data before applying on production; re-seed or restore manually when needed.
 - **Pair every migration with canonical schema:** mirror the same table shape in `db/01_schema.sql` (and `db/02_data.sql` when seeds change) in the **same PR**.
 - **Apply order:** run migrations manually on live DBs in filename order; there is no migration runner yet.
 - **No audit triggers** on private-data tables listed in `AGENTS.md` → Private data — no audit trail.
 
 ## 7. File Structure
-- `{module}_{subject}.sql` — one focused table change set per file (full `CREATE TABLE`, not `ALTER`)
+- `{module}_{subject}.sql` — one focused table replacement per file (`DROP TABLE` + full `CREATE TABLE`, not `ALTER`)
 - `index.html` — directory listing prevention
 
 ## 12. Module Owner Notes (Optional)
