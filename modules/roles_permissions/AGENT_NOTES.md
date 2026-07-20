@@ -40,6 +40,7 @@ Unified dashboard for tenant role management and the RBAC permission matrix. Rep
 - Toolbar: Check All, Uncheck All, Save (💾, admins only), server-side **Search (all fields)** on `module_slug` / `module_name` (GET `search`, emoji-only 🔙 reset preserves `role_id`), plus optional client-side matrix filter.
 - Add role (➕) and edit role (✏️) modals update `employee_roles.name` via AJAX (admins only). List-header ➕ uses `title="Create"` and respects Settings **new button position** (left / right / left_right).
 - Matrix table disables Excel/PDF export and Import Excel (`data-itm-no-export-excel="1"`, `data-itm-no-export-pdf="1"`, `data-itm-no-import-excel="1"`). Index table compliance honors the import opt-out (no `data-itm-db-import-endpoint` required — this is a permission matrix, not a CRUD row list).
+- **ui_configuration reviewed gate:** gate-excluded in `scripts/data/ui_configuration_excluded_modules.txt`; intentional gaps (fixed matrix sort order, no pagination, no Actions column, modal create/edit, no CRUD entry files) documented in `scripts/data/ui_configuration_reviewed.json` — audit lines print `[n/a][pass|fail|n/a][reviewed]`.
 - Action buttons follow emoji-only visible labels with descriptive `title` attributes.
 
 ## 6. API Actions (If Applicable)
