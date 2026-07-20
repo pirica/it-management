@@ -25,7 +25,7 @@ $mysqlVersion = (string)($ssPayload['mysql_version'] ?? 'Unavailable');
 $mysqlServiceName = (string)($ssPayload['mysql_service_name'] ?? 'mysqld');
 $mysqlDisplayName = (string)($ssPayload['mysql_display_name'] ?? 'MySQL Server (active PHP connection)');
 ?>
-<div class="metrics-grid">
+<div class="ss-db-summary-grid">
     <div class="metric-card">
         <h3>MySQL Service</h3>
         <div class="text-center mb-3">
@@ -59,38 +59,38 @@ $mysqlDisplayName = (string)($ssPayload['mysql_display_name'] ?? 'MySQL Server (
             <div class="metric-label">Approx. Total Rows</div>
         </div>
     </div>
+</div>
 
-    <div class="metric-card ss-metric-span-full">
-        <h3>Database Metrics — <?php echo sanitize($activeDatabase); ?></h3>
-        <div class="audit-table-wrap">
-            <table class="info-table">
-                <thead>
-                    <tr>
-                        <th>Table</th>
-                        <th class="ss-table-num">Rows</th>
-                        <th class="ss-table-num">Size (MB)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($dbReport['tables'])): ?>
-                        <tr><td colspan="3">No tables found for this database.</td></tr>
-                    <?php else: ?>
-                        <?php foreach ($dbReport['tables'] as $table): ?>
-                            <tr>
-                                <td><?php echo sanitize((string)($table['name'] ?? '')); ?></td>
-                                <td class="ss-table-num"><?php echo number_format((int)($table['rows'] ?? 0)); ?></td>
-                                <td class="ss-table-num"><?php echo number_format((float)($table['size_mb'] ?? 0), 2); ?></td>
-                            </tr>
-                        <?php endforeach; ?>
+<div class="metric-card ss-db-metrics-section">
+    <h3>Database Metrics — <?php echo sanitize($activeDatabase); ?></h3>
+    <div class="audit-table-wrap">
+        <table class="info-table">
+            <thead>
+                <tr>
+                    <th>Table</th>
+                    <th class="ss-table-num">Rows</th>
+                    <th class="ss-table-num">Size (MB)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($dbReport['tables'])): ?>
+                    <tr><td colspan="3">No tables found for this database.</td></tr>
+                <?php else: ?>
+                    <?php foreach ($dbReport['tables'] as $table): ?>
                         <tr>
-                            <td><strong>Total</strong></td>
-                            <td class="ss-table-num"><strong><?php echo number_format((int)($dbReport['total_rows'] ?? 0)); ?></strong></td>
-                            <td class="ss-table-num"><strong><?php echo number_format((float)($dbReport['total_size_mb'] ?? 0), 2); ?></strong></td>
+                            <td><?php echo sanitize((string)($table['name'] ?? '')); ?></td>
+                            <td class="ss-table-num"><?php echo number_format((int)($table['rows'] ?? 0)); ?></td>
+                            <td class="ss-table-num"><?php echo number_format((float)($table['size_mb'] ?? 0), 2); ?></td>
                         </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-        <p class="metric-label ss-note-spaced">Row counts come from <code>information_schema.TABLES.table_rows</code> (approximate for InnoDB).</p>
+                    <?php endforeach; ?>
+                    <tr>
+                        <td><strong>Total</strong></td>
+                        <td class="ss-table-num"><strong><?php echo number_format((int)($dbReport['total_rows'] ?? 0)); ?></strong></td>
+                        <td class="ss-table-num"><strong><?php echo number_format((float)($dbReport['total_size_mb'] ?? 0), 2); ?></strong></td>
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
     </div>
+    <p class="metric-label ss-note-spaced">Row counts come from <code>information_schema.TABLES.table_rows</code> (approximate for InnoDB).</p>
 </div>

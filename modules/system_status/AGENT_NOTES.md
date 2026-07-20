@@ -51,8 +51,10 @@ Registry: `modules_registry.module_slug = system_status` (system module, active)
 - **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).
 
 - **Tabs:** Monitoring, PHP Settings, Database (`index.php` → `tabs/*.php`). Invalid `tab` query falls back to `monitoring`.
+- **Page header (Settings UI):** `data-itm-new-button-managed="server"` toolbar with centered `$moduleListHeading` (`itm_resolve_module_sidebar_icon()` + title) and browser `<title>` using the same icon. **Refresh** (🔄, `title="Refresh"`) is gated by Settings `new_button_position` (default **left**); **Last refreshed** meta sits on the opposite toolbar side when Refresh is left-only.
+- **Database tab layout:** row 1 — **MySQL Service** and **Storage Summary** side by side (`.ss-db-summary-grid`, two columns; stacks on narrow viewports). Row 2 — full-width **Database Metrics — {DB_NAME}** table (`.ss-db-metrics-section`).
 - **Cache display:** tabs render from `system_status.payload_json`; Chart.js gauges on Monitoring use embedded cached JSON (no live API calls on GET).
-- **Refresh:** toolbar POST (`refresh_cache` + CSRF) runs `itm_system_status_refresh_all()` for **all** tabs; preserves active `?tab=` on redirect; shows **Last refreshed** from `updated_at` (`dd/mm/yyyy HH:MM`).
+- **Refresh:** toolbar POST (`refresh_cache` + CSRF) runs `itm_system_status_refresh_all()` for **all** tabs; preserves active `?tab=` on redirect; shows **Last refreshed** from `updated_at` (`dd/mm/yyyy HH:MM`) on the toolbar side opposite the Refresh control when `new_button_position` is `left`.
 - **First visit:** when the active tab has no cache row, `index.php` auto-seeds that tab once on GET.
 - **Empty cache:** warning banner on tab partials until Refresh or first-visit seed completes.
 - **Monitoring:** cached `system_info`, `cpu_usage`, and `storage_report`; Sub Storage tree via `itm_system_status_render_storage_node()`.

@@ -146,6 +146,32 @@ if (!$conn) {
     }
 }
 
+$indexSource = (string) @file_get_contents($moduleRoot . 'index.php');
+if (strpos($indexSource, 'data-itm-new-button-managed="server"') === false) {
+    ss_verify_fail('system_status index.php missing Settings UI managed header (data-itm-new-button-managed)');
+} else {
+    ss_verify_pass('system_status index.php uses Settings UI managed header');
+}
+
+if (strpos($indexSource, 'itm_resolve_module_sidebar_icon') === false || strpos($indexSource, '$moduleListHeading') === false) {
+    ss_verify_fail('system_status index.php missing dynamic moduleListHeading h1');
+} else {
+    ss_verify_pass('system_status index.php builds moduleListHeading from sidebar icon');
+}
+
+if (strpos($indexSource, 'itm_resolve_new_button_position') === false || strpos($indexSource, 'title="Refresh">🔄') === false) {
+    ss_verify_fail('system_status index.php missing Refresh control gated by new_button_position');
+} else {
+    ss_verify_pass('system_status index.php gates Refresh per Settings new_button_position');
+}
+
+$databaseTabSource = (string) @file_get_contents($moduleRoot . 'tabs/database.php');
+if (strpos($databaseTabSource, 'ss-db-summary-grid') === false || strpos($databaseTabSource, 'ss-db-metrics-section') === false) {
+    ss_verify_fail('system_status database tab missing two-row summary + metrics layout');
+} else {
+    ss_verify_pass('system_status database tab uses MySQL/Storage row + full-width metrics row');
+}
+
 $nativeActions = [
     'php_version', 'php_extensions', 'php_ini_values',
     'mysql_status', 'mysql_version', 'mysql_databases', 'mysql_size',
