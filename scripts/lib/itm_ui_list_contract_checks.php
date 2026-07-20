@@ -1603,7 +1603,7 @@ if (!function_exists('itm_check_bulk_cancel_contract')) {
 
 if (!function_exists('itm_check_pagination_nav_titles')) {
     /**
-     * MBQA pagination step: Previous/Next anchors use emoji title tooltips (not Search).
+     * MBQA pagination step: Previous/Next anchors use emoji-only visible text + word title.
      *
      * @return array{status:string,details:string}
      */
@@ -1613,8 +1613,11 @@ if (!function_exists('itm_check_pagination_nav_titles')) {
             return ['status' => 'n/a', 'details' => 'No table in ' . $sourceLabel];
         }
 
-        $hasNext = stripos($listContent, '>Next<') !== false || preg_match('/>\s*Next\s*<\/a>/i', $listContent) === 1;
-        $hasPrev = stripos($listContent, '>Previous<') !== false
+        $hasNext = preg_match('/>\s*▶️\s*<\/a>/u', $listContent) === 1
+            || stripos($listContent, '>Next<') !== false
+            || preg_match('/>\s*Next\s*<\/a>/i', $listContent) === 1;
+        $hasPrev = preg_match('/>\s*◀️\s*<\/a>/u', $listContent) === 1
+            || stripos($listContent, '>Previous<') !== false
             || preg_match('/>\s*Previous\s*<\/a>/i', $listContent) === 1
             || preg_match('/>\s*Prev\s*<\/a>/i', $listContent) === 1;
         if (!$hasNext && !$hasPrev) {
@@ -1622,26 +1625,42 @@ if (!function_exists('itm_check_pagination_nav_titles')) {
         }
 
         $missing = [];
-        if ($hasPrev
-            && stripos($listContent, 'title="◀️ Previous"') === false
-            && stripos($listContent, "title='◀️ Previous'") === false
-        ) {
-            $missing[] = 'title="◀️ Previous" on Previous link';
+        if ($hasPrev) {
+            if (preg_match('/>\s*Previous\s*<\/a>/i', $listContent) === 1
+                || preg_match('/>\s*Prev\s*<\/a>/i', $listContent) === 1
+            ) {
+                $missing[] = 'visible ◀️ on Previous link (not plain Previous/Prev text)';
+            }
+            $legacyPrevTitle = 'title="' . itm_ui_pagination_emoji('previous_page') . ' Previous"';
+            if (stripos($listContent, 'title="Previous page"') === false
+                && stripos($listContent, "title='Previous page'") === false
+                && stripos($listContent, $legacyPrevTitle) === false
+                && stripos($listContent, "title='" . itm_ui_pagination_emoji('previous_page') . " Previous'") === false
+            ) {
+                $missing[] = 'title="Previous page" on ◀️ link';
+            }
         }
-        if ($hasNext
-            && stripos($listContent, 'title="▶️ Next"') === false
-            && stripos($listContent, "title='▶️ Next'") === false
-        ) {
-            $missing[] = 'title="▶️ Next" on Next link';
+        if ($hasNext) {
+            if (preg_match('/>\s*Next\s*<\/a>/i', $listContent) === 1) {
+                $missing[] = 'visible ▶️ on Next link (not plain Next text)';
+            }
+            $legacyNextTitle = 'title="' . itm_ui_pagination_emoji('next_page') . ' Next"';
+            if (stripos($listContent, 'title="Next page"') === false
+                && stripos($listContent, "title='Next page'") === false
+                && stripos($listContent, $legacyNextTitle) === false
+                && stripos($listContent, "title='" . itm_ui_pagination_emoji('next_page') . " Next'") === false
+            ) {
+                $missing[] = 'title="Next page" on ▶️ link';
+            }
         }
         if (preg_match('/title="🔎\s*Search"/i', $listContent)) {
-            $missing[] = 'pagination link must not use title="🔎 Search" (use ◀️ Previous / ▶️ Next)';
+            $missing[] = 'pagination link must not use title="🔎 Search" (use Previous page / Next page titles)';
         }
 
         if ($missing === []) {
             return [
                 'status' => 'pass',
-                'details' => 'Pagination Previous/Next title attributes in ' . $sourceLabel,
+                'details' => 'Pagination ◀️/▶️ visible labels + title attributes in ' . $sourceLabel,
             ];
         }
 

@@ -1333,14 +1333,14 @@ function mbqa_render_browser_form(array $options): void
 
   function smokePagination(frame) {
     var doc = frame.contentDocument;
-    var next = queryByText(doc, 'a', 'Next');
+    var next = queryByText(doc, 'a', '▶️') || queryByText(doc, 'a', 'Next');
     if (!next) {
       return Promise.resolve(makeClickStep('pagination_click', true, 'N/A (Next link not visible)', { url: frame.src }));
     }
     return waitForFrameLoad(frame, function () { next.click(); })
       .then(function () {
         var page2 = frame.contentWindow.location.href.indexOf('page=2') !== -1;
-        var prev = queryByText(frame.contentDocument, 'a', 'Previous');
+        var prev = queryByText(frame.contentDocument, 'a', '◀️') || queryByText(frame.contentDocument, 'a', 'Previous');
         if (!prev) {
           return makeClickStep('pagination_click', false, 'Next clicked but Previous link missing', { page2: page2, url: frame.contentWindow.location.href });
         }
@@ -4705,17 +4705,29 @@ function mbqa_index_table_actions_matches_ui_contract(string $html): array
 }
 
 /**
- * Pagination Previous/Next anchor rendered in server HTML (not JS-only).
+ * Pagination ▶️/◀️ anchor rendered in server HTML (not JS-only).
  *
  * @return array{ok:bool,note:string}
  */
 function mbqa_index_pagination_button_in_html(string $html, string $label, int $targetPage): array
 {
-    $label = $label === 'Previous' ? 'Previous' : 'Next';
-    $expectedTitle = $label === 'Previous' ? '◀️ Previous' : '▶️ Next';
+    $isPrevious = $label === 'Previous';
+    $visibleEmoji = $isPrevious ? itm_ui_pagination_emoji('previous_page') : itm_ui_pagination_emoji('next_page');
+    $expectedTitle = $isPrevious ? itm_ui_pagination_title('previous_page') : itm_ui_pagination_title('next_page');
+    $legacyTitle = $isPrevious
+        ? (itm_ui_pagination_emoji('previous_page') . ' ' . 'Previous')
+        : (itm_ui_pagination_emoji('next_page') . ' ' . 'Next');
     $pageToken = 'page=' . (int)$targetPage;
 
-    if (!preg_match_all('/<a\b([^>]*)>\s*' . preg_quote($label, '/') . '\s*<\/a>/i', $html, $matches, PREG_SET_ORDER)) {
+    $emojiPattern = '/<a\b([^>]*)>\s*' . preg_quote($visibleEmoji, '/') . '\s*<\/a>/u';
+    $legacyTextPattern = '/<a\b([^>]*)>\s*' . preg_quote($isPrevious ? 'Previous' : 'Next', '/') . '\s*<\/a>/i';
+
+    $matches = [];
+    if (preg_match_all($emojiPattern, $html, $emojiMatches, PREG_SET_ORDER)) {
+        $matches = $emojiMatches;
+    } elseif (preg_match_all($legacyTextPattern, $html, $legacyMatches, PREG_SET_ORDER)) {
+        $matches = $legacyMatches;
+    } else {
         return ['ok' => false, 'note' => $label . ' button missing in HTML'];
     }
 
@@ -4730,11 +4742,15 @@ function mbqa_index_pagination_button_in_html(string $html, string $label, int $
         if (preg_match('/title="🔎\s*Search"/i', $attrs)) {
             return ['ok' => false, 'note' => $label . ' title=Search in HTML (expected ' . $expectedTitle . ')'];
         }
-        if (preg_match('/title="/i', $attrs) && stripos($attrs, 'title="' . $expectedTitle . '"') === false) {
+        $titleOk = stripos($attrs, 'title="' . $expectedTitle . '"') !== false
+            || stripos($attrs, "title='" . $expectedTitle . "'") !== false
+            || stripos($attrs, 'title="' . $legacyTitle . '"') !== false
+            || stripos($attrs, "title='" . $legacyTitle . "'") !== false;
+        if (preg_match('/title="/i', $attrs) && !$titleOk) {
             return ['ok' => false, 'note' => $label . ' title not ' . $expectedTitle . ' in HTML'];
         }
 
-        return ['ok' => true, 'note' => $label . ' rendered (page=' . $targetPage . ')'];
+        return ['ok' => true, 'note' => $visibleEmoji . ' rendered (page=' . $targetPage . ')'];
     }
 
     return ['ok' => false, 'note' => $label . ' btn-sm link to ' . $pageToken . ' missing in HTML'];

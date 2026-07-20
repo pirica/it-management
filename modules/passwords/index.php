@@ -492,11 +492,11 @@ if (!isset($crud_title)) {
                                     <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
                                     <div style="display:flex;gap:8px;align-items:center;">
                                         <?php if ($page > 1): ?>
-                                            <a class="btn btn-sm" href="<?php echo sanitize(pwd_build_list_url(array_merge($pwdListQueryState, ['page' => $page - 1]))); ?>" title="◀️ Previous">Previous</a>
+                                            <a class="btn btn-sm" href="<?php echo sanitize(pwd_build_list_url(array_merge($pwdListQueryState, ['page' => $page - 1]))); ?>" title="Previous page">◀️</a>
                                         <?php endif; ?>
                                         <span class="btn btn-sm" style="pointer-events:none;"><?php echo (int)$page; ?> / <?php echo (int)$totalPages; ?></span>
                                         <?php if ($page < $totalPages): ?>
-                                            <a class="btn btn-sm" href="<?php echo sanitize(pwd_build_list_url(array_merge($pwdListQueryState, ['page' => $page + 1]))); ?>" title="▶️ Next">Next</a>
+                                            <a class="btn btn-sm" href="<?php echo sanitize(pwd_build_list_url(array_merge($pwdListQueryState, ['page' => $page + 1]))); ?>" title="Next page">▶️</a>
                                         <?php endif; ?>
                                     </div>
                                 </div>

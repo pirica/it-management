@@ -46,7 +46,7 @@
             + '    <span>Don\u2019t show again</span>'
             + '  </label>'
             + '  <div class="itm-share-no-attach-actions">'
-            + '    <button type="button" class="btn" id="itmShareNoAttachCancel">Cancel</button>'
+            + '    <button type="button" class="btn" id="itmShareNoAttachCancel" title="Cancel">❌</button>'
             + '    <button type="button" class="btn btn-primary" id="itmShareNoAttachContinue">Continue</button>'
             + '  </div>'
             + '</div>';

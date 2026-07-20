@@ -780,7 +780,7 @@ Tier D modules run index navigation smoke only (`list`, `search`, `sort`); other
 | 5 | **`clear`** | FK-aware start-of-module tenant wipe (`companies` / `employees` skipped). |
 | 6 | **`sample_data`** | HTTP sample seed; FK parents first; DB fallback via `itm_seed_table_from_database_sql()` when anchor ids differ. |
 | 7 | **`add`** | Insert ~30 random tenant rows when count &lt; `records_per_page` + 1; grow unique-scope parents first. |
-| 8 | **`pagination`** | Page 1 **Next** / page 2 **Previous** when rows &gt; `records_per_page`. |
+| 8 | **`pagination`** | Page 1 **▶️** (`title="Next page"`, `page=2`) / page 2 **◀️** (`title="Previous page"`, `page=1`) when rows &gt; `records_per_page`. |
 | 9 | **`bulk_cancel`** | Bulk form + **Cancel** contract (`js/bulk-delete-selection.js`). |
 | 10 | **`bulk_delete`** | POST `delete.php` with up to 3 `ids[]` when rows ≥ `records_per_page` (N/A note when skipped). |
 | 11 | **`search`** | Search on index. |
@@ -1150,12 +1150,16 @@ Browser repair uses **selection mode** on `scripts/fix_source_utf8_mojibake.php`
 | `🗑️\s*Delete` | `🗑️ Delete` |
 | `➕\s*(Create\|New\|Add)` | `➕ New Task`, `➕ Add Bookmark` |
 | `🔎\s*View` | `🔎 View Ticket Details` |
+| `◀️\s*Previous` | `◀️ Previous`, `title="◀️ Previous"` |
+| `▶️\s*Next` | `▶️ Next`, `title="▶️ Next"` |
 
 **Known literals:** View Ticket Details, Edit Ticket, New Equipment, Create IDF, Edit IDF, View Employee System Access.
 
-**Exemptions:** bulk `data-itm-bulk-cancel="1"` visible `Cancel`; pagination Previous/Next; bulk Select to Delete / Clear Table; submit Search; descriptive non-actions (View IP record, Reset View, etc.); same-line `itm-ui-action-exempt:` comment. **Search reset is not exempt:** list contract requires emoji-only `🔙` on `<a>` (plain `Clear` fails `itm_check_search`).
+**Pagination emoji map (visible → `title`):** ◀️ Previous page · ▶️ Next page · ⏮️ First page · ⏭️ Last page · ⬅️ Previous · ➡️ Next. Helpers: `itm_ui_pagination_emoji()` / `itm_ui_pagination_title()` in `includes/itm_ui_action_labels.php`.
 
-**Bulk fix:** `php scripts/apply_ui_action_emoji.php` — **Browser + CLI**, dry-run default; `--apply` / `?apply=1` writes; lists changed files. PHP ternary h1, idfs h3, and JS modal innerHTML still need manual edits.
+**Exemptions:** bulk `data-itm-bulk-cancel="1"` visible `Cancel`; bulk Select to Delete / Clear Table; submit Search; descriptive non-actions (View IP record, Reset View, etc.); same-line `itm-ui-action-exempt:` comment. **Pagination is not exempt:** list anchors must use emoji-only visible text (`◀️` / `▶️`; optional `⏮️` / `⏭️`) with `title="Previous page"` / `title="Next page"` — plain `Previous` / `Next` or mixed `title="▶️ Next"` fail `itm_check_pagination_nav_titles()` and `check_ui_action_emoji.php`. **Search reset is not exempt:** list contract requires emoji-only `🔙` on `<a>` (plain `Clear` fails `itm_check_search`).
+
+**Bulk fix:** `php scripts/apply_ui_action_emoji.php` — **Browser + CLI**, dry-run default; `--apply` / `?apply=1` writes; lists changed files. List pagination legacy labels: `php scripts/apply_pagination_emoji_labels.php` (same dry-run / `--apply` contract). PHP ternary h1, idfs h3, and JS modal innerHTML still need manual edits.
 
 **Head favicon:** `php scripts/apply_head_favicon_link.php` — inserts `<?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>` after `<title>` in module `index.php`, `create.php`, `edit.php`, `view.php`, and standalone `list_all.php` / `view_all.php` files that have `<head>` but no Settings-backed favicon helper (dry-run default; `--apply` / `?apply=1` writes). Replaces legacy Settings/explorer hardcoded `<link rel="icon">` blocks with the shared helper.
 
