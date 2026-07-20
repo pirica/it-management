@@ -34,46 +34,63 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     <title>IT Management — Scripts</title>
     <link rel="stylesheet" href="../css/styles.css">
     <style>
-        body { padding: 0; margin: 0; background-color: var(--bg-secondary, #f6f8fa); }
-        .scripts-wrap { max-width: 1400px; width: 95%; margin: 0 auto; padding: 24px 20px 48px; min-height: calc(100vh - 60px); }
-        .scripts-card { background: var(--bg-primary, #fff); border: 1px solid var(--border, #d0d7de); border-radius: 8px; margin-bottom: 20px; padding: 18px 20px; }
-        .scripts-muted { color: var(--text-secondary, #57606a); margin: 0 0 12px; line-height: 1.5; }
-        .scripts-table-wrap { overflow-x: auto; margin-bottom: 20px; border: 1px solid var(--border, #d0d7de); border-radius: 8px; -webkit-overflow-scrolling: touch; background: var(--bg-primary, #fff); }
-        .scripts-table-wrap::-webkit-scrollbar { height: 8px; }
-        .scripts-table-wrap::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 4px; }
-        .scripts-table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-        .scripts-table-wrap::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
-        .scripts-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; border: none; min-width: max-content; }
-        .scripts-table th, .scripts-table td { border: 1px solid var(--border, #d0d7de); padding: 12px 16px; text-align: left; vertical-align: top; }
-        .scripts-table th, .scripts-table td { white-space: nowrap; }
-        .scripts-table th { background: var(--bg-secondary, #f6f8fa); }
-        .scripts-table th:first-child,
-        .scripts-table td:first-child,
-        .scripts-table th.scripts-access-col,
-        .scripts-table td.scripts-access-cell { white-space: nowrap; width: 1%; }
-        .scripts-table code { font-size: 0.88rem; word-break: break-word; }
-        .scripts-table td:last-child { white-space: normal; min-width: 300px; }
-        .scripts-access-badges { display: inline-flex; flex-wrap: nowrap; gap: 4px; align-items: center; }
-        .scripts-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+        body { padding: 0; margin: 0; background-color: var(--bg-secondary, #f6f8fa); color: var(--text-primary, #24292f); }
+        .scripts-wrap { max-width: 1280px; width: min(95%, 100%); margin: 0 auto; padding: 24px 20px 48px; min-height: calc(100vh - 60px); }
+        .scripts-card { background: var(--bg-primary, #fff); border: 1px solid var(--border, #d0d7de); border-radius: 10px; margin-bottom: 20px; padding: 20px 22px; box-shadow: 0 1px 2px rgba(27, 31, 36, 0.04); }
+        .scripts-muted { color: var(--text-secondary, #57606a); margin: 0 0 12px; line-height: 1.55; font-size: 0.92rem; }
+        .scripts-muted strong { color: var(--text-primary, #24292f); }
+        h1 { margin: 0 0 10px; font-size: 1.65rem; letter-spacing: -0.02em; }
+        h2 { margin: 0 0 16px; font-size: 1.2rem; letter-spacing: -0.01em; padding-bottom: 10px; border-bottom: 1px solid var(--border, #d0d7de); }
+        .scripts-intro-tools { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 0 0 16px; }
+        .scripts-filter { flex: 1 1 220px; max-width: 420px; padding: 9px 12px; border: 1px solid var(--border, #d0d7de); border-radius: 8px; background: var(--bg-primary, #fff); color: var(--text-primary, #24292f); font-size: 0.92rem; }
+        .scripts-filter:focus { outline: 2px solid #0969da; outline-offset: 1px; border-color: #0969da; }
+        .scripts-filter-hint { font-size: 0.82rem; color: var(--text-secondary, #57606a); }
+        .scripts-catalog-grid { margin-bottom: 4px; }
+        .scripts-catalog { width: 100%; border-collapse: collapse; border: none; }
+        .scripts-catalog thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+        .scripts-catalog tbody { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 14px; }
+        .scripts-catalog tr { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "title access" "what what" "how how"; gap: 8px 12px; margin: 0; padding: 16px 18px; border: 1px solid var(--border, #d0d7de); border-radius: 10px; background: var(--bg-secondary, #f6f8fa); box-shadow: 0 1px 2px rgba(27, 31, 36, 0.05); transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+        .scripts-catalog tr:hover { border-color: #0969da; box-shadow: 0 2px 8px rgba(9, 105, 218, 0.08); }
+        .scripts-catalog tr.scripts-catalog-hidden { display: none; }
+        .scripts-catalog td { display: block; border: none; padding: 0; text-align: left; vertical-align: top; white-space: normal; line-height: 1.5; font-size: 0.9rem; }
+        .scripts-catalog td:first-child { grid-area: title; align-self: center; }
+        .scripts-catalog td.scripts-access-cell { grid-area: access; align-self: start; justify-self: end; }
+        .scripts-catalog td:nth-child(3) { grid-area: what; color: var(--text-primary, #24292f); }
+        .scripts-catalog td:nth-child(4) { grid-area: how; color: var(--text-secondary, #57606a); padding-top: 10px; border-top: 1px dashed var(--border, #d0d7de); }
+        .scripts-catalog td:nth-child(3)::before,
+        .scripts-catalog td:nth-child(4)::before { display: block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary, #57606a); margin-bottom: 6px; }
+        .scripts-catalog td:nth-child(3)::before { content: "What it does"; }
+        .scripts-catalog td:nth-child(4)::before { content: "How to use"; }
+        .scripts-catalog td:first-child a { font-weight: 650; font-size: 0.98rem; color: #0969da; text-decoration: none; word-break: break-word; }
+        .scripts-catalog td:first-child a:hover { text-decoration: underline; }
+        .scripts-catalog code { font-size: 0.86rem; word-break: break-word; background: var(--bg-primary, #fff); border: 1px solid var(--border, #d0d7de); border-radius: 4px; padding: 1px 5px; }
+        .scripts-access-badges { display: inline-flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+        .scripts-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; line-height: 1.4; }
         .scripts-badge-web { background: #ddf4ff; color: #0969da; border: 1px solid #c0e6ff; }
         .scripts-badge-cli { background: #f6f8fa; color: #24292f; border: 1px solid #d0d7de; }
+        .scripts-badge-md { background: #fff8c5; color: #6a5f00; border: 1px solid #f0e6a8; }
         .scripts-toc { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 0 0 8px; padding: 0; list-style: none; }
         .scripts-toc a { color: #0969da; text-decoration: none; }
         .scripts-toc a:hover { text-decoration: underline; }
         .scripts-toc a.scripts-toc-external::after { content: " ↗"; font-size: 0.85em; }
-        h1 { margin: 0 0 8px; }
-        h2 { margin: 0 0 12px; font-size: 1.15rem; }
-        .scripts-cli-hint { margin-top: 16px; padding: 12px; border-radius: 6px; background: var(--bg-secondary, #f6f8fa); border: 1px solid var(--border, #d0d7de); font-size: 0.9rem; }
+        .scripts-cli-hint { margin-top: 16px; padding: 14px 16px; border-radius: 8px; background: var(--bg-secondary, #f6f8fa); border: 1px solid var(--border, #d0d7de); font-size: 0.88rem; line-height: 1.55; }
+        .scripts-cli-hint code { display: inline-block; margin-top: 4px; }
         .scripts-top-nav { position: sticky; top: 0; z-index: 100; margin: 0 0 16px; padding: 10px 20px; background: var(--bg-primary, #fff); border-bottom: 1px solid var(--border, #d0d7de); box-shadow: 0 1px 3px rgba(27, 31, 36, 0.08); }
-        .scripts-top-nav-inner { max-width: 1400px; width: 95%; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+        .scripts-top-nav-inner { max-width: 1280px; width: min(95%, 100%); margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
         .scripts-top-nav-brand { font-weight: 700; color: var(--text-primary, #24292f); text-decoration: none; white-space: nowrap; }
         .scripts-top-nav-brand:hover { text-decoration: underline; }
         .scripts-top-nav-links { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 0; padding: 0; list-style: none; flex: 1 1 auto; }
-        .scripts-top-nav-links a { color: #0969da; text-decoration: none; font-size: 0.9rem; white-space: nowrap; }
+        .scripts-top-nav-links a { color: #0969da; text-decoration: none; font-size: 0.88rem; white-space: nowrap; }
         .scripts-top-nav-links a:hover { text-decoration: underline; }
         .scripts-top-nav-links a.scripts-toc-external::after { content: " ↗"; font-size: 0.85em; }
         .scripts-top-nav-home { color: #0969da; text-decoration: none; font-size: 0.9rem; white-space: nowrap; margin-left: auto; }
         .scripts-top-nav-home:hover { text-decoration: underline; }
+        @media (max-width: 640px) {
+            .scripts-catalog tbody { grid-template-columns: 1fr; }
+            .scripts-catalog tr { grid-template-columns: 1fr; grid-template-areas: "title" "access" "what" "how"; }
+            .scripts-catalog td.scripts-access-cell { justify-self: start; }
+            .scripts-access-badges { justify-content: flex-start; }
+        }
     </style>
 </head>
 <body>
@@ -112,6 +129,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         <p class="scripts-muted">
             <strong>Data mutation quick reference:</strong> these scripts add sample/test rows in the DB: <code>module_browser_qa_runner.php</code>, <code>employees_delete_clear_table_test.php</code>, <code>equipment_delete_clear_table_test.php</code>, <code>explorer_human_test.php</code>, <code>floor_plans_folder_move_test.php</code>, <code>idfs_sync_human_test.php</code>, <code>auth_register_reset_human_test.php</code>, <code>tickets_related_equipment_delete_test.php</code>. Dump-only helper: <code>export_floor_plan_folders_seed.php</code> (prints <code>INSERT</code> SQL to stdout).
         </p>
+        <div class="scripts-intro-tools">
+            <input type="search" id="scripts-catalog-filter" class="scripts-filter" placeholder="Filter by script name, purpose, or command…" autocomplete="off" aria-label="Filter scripts catalog">
+            <span class="scripts-filter-hint" id="scripts-catalog-filter-count" aria-live="polite"></span>
+        </div>
         <div class="scripts-cli-hint">
             <strong>CLI example:</strong>
             <code>C:\&lt;folder&gt;\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\&lt;script&gt;.php [options]</code><br>
@@ -122,7 +143,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
 
     <div class="scripts-card" id="docs">
         <h2>Documentation</h2>
-        <div class="scripts-table-wrap"><table class="scripts-table">
+        <div class="scripts-catalog-grid"><table class="scripts-catalog">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -145,13 +166,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Open <code>scripts/pitfalls.php</code> in the browser (Admin only). CLI: <code>php scripts/pitfalls.php [-module=&lt;slug&#124;path&gt;] [--json]</code></td>                </tr>
                 <tr>
                     <td><a href="SCRIPTS.md" target="_blank" rel="nofollow noreferrer">SCRIPTS.md</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-md">Markdown</span></span></td>
                     <td>Development standards for the scripts directory (catalog, newlines, security, retention).</td>
                     <td>Read in repository root or online. Follow rules when creating new utilities.</td>
                 </tr>
                 <tr>
                     <td><a href="SCRIPTS_TEST_MATRIX.md" target="_blank" rel="nofollow noreferrer">SCRIPTS_TEST_MATRIX.md</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">Markdown</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-md">Markdown</span></span></td>
                     <td>Full catalog verification matrix: tiers 0–5, runner coverage map, Tier 5 exclusion list, destroy→document→fresh <code>db/</code> split bundle or <code>db/</code> split clone protocol. Companion logs: <code>data/scripts-matrix-destroy-log.md</code>, <code>data/scripts_errors.txt</code> (latest safe-matrix run).</td>
                     <td>Read before blanket <code>scripts/*</code> verification. Update in the same PR when adding catalog rows. Do not use <code>perform_audit.php</code> as a quality gate.</td>
                 </tr>
@@ -161,7 +182,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
 
     <div class="scripts-card" id="browser">
         <h2>Browser tools</h2>
-        <div class="scripts-table-wrap"><table class="scripts-table">
+        <div class="scripts-catalog-grid"><table class="scripts-catalog">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -270,7 +291,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     <div class="scripts-card" id="security">
         <h2>Security (interactive)</h2>
         <p class="scripts-muted">Browser-first sandboxes and form tests. Repo-wide static scanners are under <a href="#ci">CI &amp; static analysis</a>.</p>
-        <div class="scripts-table-wrap"><table class="scripts-table">
+        <div class="scripts-catalog-grid"><table class="scripts-catalog">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -364,7 +385,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     </div>
 <div class="scripts-card" id="tests">
         <h2>PHPUnit</h2>
-        <div class="scripts-table-wrap"><table class="scripts-table">
+        <div class="scripts-catalog-grid"><table class="scripts-catalog">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -433,7 +454,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     </div>
     <div class="scripts-card" id="database">
         <h2>Database</h2>
-        <div class="scripts-table-wrap"><table class="scripts-table">
+        <div class="scripts-catalog-grid"><table class="scripts-catalog">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -668,7 +689,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
 
     <div class="scripts-card" id="idf">
         <h2>IDF &amp; equipment</h2>
-        <div class="scripts-table-wrap"><table class="scripts-table">
+        <div class="scripts-catalog-grid"><table class="scripts-catalog">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -794,7 +815,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
 
     <div class="scripts-card" id="ui-modules">
         <h2>UI &amp; modules</h2>
-        <div class="scripts-table-wrap"><table class="scripts-table">
+        <div class="scripts-catalog-grid"><table class="scripts-catalog">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -885,7 +906,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     <div class="scripts-card" id="ci">
         <h2>CI &amp; static analysis</h2>
         <p class="scripts-muted">PHP scanners support <strong>Browser</strong> (plain-text) and <strong>CLI</strong> (recommended for CI). Only <code>smoke_test.sh</code> is CLI-only (bash).</p>
-        <div class="scripts-table-wrap"><table class="scripts-table">
+        <div class="scripts-catalog-grid"><table class="scripts-catalog">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -1191,7 +1212,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
 
     <div class="scripts-card" id="admin-tools">
         <h2>Administrative Tools</h2>
-        <div class="scripts-table-wrap"><table class="scripts-table">
+        <div class="scripts-catalog-grid"><table class="scripts-catalog">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -1452,7 +1473,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     </div>
     <div class="scripts-card" id="system-status">
         <h2>System Status</h2>
-        <div class="scripts-table-wrap"><table class="scripts-table">
+        <div class="scripts-catalog-grid"><table class="scripts-catalog">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -1556,7 +1577,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     </div>
     <div class="scripts-card" id="verification">
         <h2>Verification</h2>
-        <div class="scripts-table-wrap"><table class="scripts-table">
+        <div class="scripts-catalog-grid"><table class="scripts-catalog">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -2044,7 +2065,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     </div>
     <div class="scripts-card" id="deployment">
         <h2>Deployment &amp; Git</h2>
-        <div class="scripts-table-wrap"><table class="scripts-table">
+        <div class="scripts-catalog-grid"><table class="scripts-catalog">
             <thead>
                 <tr>
                     <th>Script</th>
@@ -2077,6 +2098,35 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         </p>
     </div>
 </div>
+<script>
+(function () {
+    var filterInput = document.getElementById('scripts-catalog-filter');
+    var countEl = document.getElementById('scripts-catalog-filter-count');
+    if (!filterInput) {
+        return;
+    }
+    var rows = Array.prototype.slice.call(document.querySelectorAll('.scripts-catalog tbody tr'));
+    var total = rows.length;
+
+    function updateFilter() {
+        var query = filterInput.value.replace(/^\s+|\s+$/g, '').toLowerCase();
+        var visible = 0;
+        rows.forEach(function (row) {
+            var match = query === '' || row.textContent.toLowerCase().indexOf(query) !== -1;
+            row.classList.toggle('scripts-catalog-hidden', !match);
+            if (match) {
+                visible += 1;
+            }
+        });
+        if (countEl) {
+            countEl.textContent = query === '' ? (total + ' scripts') : (visible + ' of ' + total + ' shown');
+        }
+    }
+
+    filterInput.addEventListener('input', updateFilter);
+    updateFilter();
+})();
+</script>
 </body>
 </html>
 
