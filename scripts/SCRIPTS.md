@@ -322,7 +322,7 @@ Add a table row with:
 | Column | Content |
 |--------|---------|
 | **Script** | Filename (link if browser-safe to open) |
-| **Access** | **Browser**, **CLI**, **Dry-run** (default preview; `--apply` / `?apply=1`), or **CLI-only** (bash, session hijack, stdout-only) — see catalog badges in `scripts/scripts.php` |
+| **Access** | **Browser** + **CLI** (most `scripts/*.php`), or **CLI-only** (bash, Python, session hijack helpers) — see catalog badges in `scripts/scripts.php` |
 | **What it does** | Plain-language purpose (one short paragraph) |
 | **How to use** | Exact browser URL/path, query flags, env vars, and CLI command: `php scripts/<name>.php [options]` |
 
@@ -481,7 +481,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 * Run from repository root: `php scripts/<script>.php [options]` (Linux/macOS/CI); on **Windows Laragon** use the **full PHP binary path** from **`AGENTS.md` → Setup & Debugging → PHP CLI tests**.
 * **Windows Laragon (mandatory for tests):** `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` — always use this full path when running scripts locally; in **PowerShell** prefix with **`&`**; list the exact shell command in PR test plans (see **`AGENTS.md` → Setup & Debugging → PHP CLI tests**).
 * **`PHP_BINARY` for sub-processes:** When a script needs to execute another PHP script, prefer using the **`PHP_BINARY`** constant to ensure the same PHP version is used.
-* **Repo-writing maintenance (`scripts/apply*.php` and peers):** **Browser + CLI** via `scripts/lib/itm_apply_script_bootstrap.php`. Default run is always **dry-run** (no writes; browser dry-run needs a signed-in session only). Writes only with CLI `--apply` or browser `?apply=1` (**Admin** session required for browser apply). Catalog badge: **Dry-run**. Same contract for `fix_sql*.php`, `normalize_database_sql_created_at.php`, `repair_table_from_schema.php`, `ensure_equipment_type_modules.php`, and `cleanup_equipment_test_module_artifacts.php` (preview counts / CREATE excerpt on dry-run).
+* **Repo-writing maintenance (`scripts/apply*.php` and peers):** **Browser + CLI** via `scripts/lib/itm_apply_script_bootstrap.php`. Default run is always **dry-run** (no writes; browser dry-run needs a signed-in session only). Writes only with CLI `--apply` or browser `?apply=1` (**Admin** session required for browser apply). Catalog shows **Browser** + **CLI** badges only (dry-run is described in **How to use**, not a separate badge).
 * **Static check scripts** (`check_*` audits): **Browser + CLI** via `scripts/lib/itm_script_access_helpers.php` → `itm_check_script_begin_browser_admin()` (Administrator in browser).
 * **Session-mock harnesses** (`test_ajax.php`, `test_edit.php`): **Browser + CLI** — browser Admin form (PHPSESSID + title/note id) or CLI positional args (`<PHPSESSID>`, title, note id for edit). CLI argv harness excluded from **`perform_audit.php`** (same contract as CSRF coverage skip).
 * List exact commands and outcomes in the PR description when checks ran.
