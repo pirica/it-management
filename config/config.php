@@ -269,6 +269,7 @@ define('EXPLORER_MAX_FILE_SIZE', 20971520); // 20MB
 // Load helpers needed before upload directory bootstrap
 require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
 require_once ROOT_PATH . 'includes/itm_database_sql_source.php';
+require_once ROOT_PATH . 'includes/itm_sample_data_seed.php';
 require_once ROOT_PATH . 'includes/itm_date_format.php';
 require_once ROOT_PATH . 'includes/itm_crud_audit_fields.php';
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
@@ -1213,11 +1214,15 @@ if (!function_exists('itm_seed_fk_anchor_row_from_database_sql')) {
 
         if ($parsedByTable === null) {
             $parsedByTable = [];
-            $sqlBody = itm_database_sql_read_data();
-            if ($sqlBody !== '') {
-                if ($sqlBody !== false && function_exists('itm_parse_database_sql_inserts')) {
-                    $parsedByTable = itm_parse_database_sql_inserts($sqlBody);
-                }
+            $sqlBody = '';
+            if (function_exists('itm_database_sql_read_sample')) {
+                $sqlBody = itm_database_sql_read_sample();
+            }
+            if ($sqlBody === '' && function_exists('itm_database_sql_read_data')) {
+                $sqlBody = itm_database_sql_read_data();
+            }
+            if ($sqlBody !== '' && function_exists('itm_parse_database_sql_inserts')) {
+                $parsedByTable = itm_parse_database_sql_inserts($sqlBody);
             }
         }
 
@@ -1346,171 +1351,6 @@ if (!function_exists('itm_seed_resolve_fk_from_database_sql')) {
 }
 
 /**
- * Inserts sample rows for a module table from db/02_data.sql when empty.
- */
-if (!function_exists('itm_seed_table_from_database_sql')) {
-    function itm_seed_table_from_database_sql($conn, $tableName, $companyId, &$error = '') {
-        $error = '';
-        $tableName = (string)$tableName;
-        $companyId = (int)$companyId;
-
-        if (!itm_is_safe_identifier($tableName)) {
-            $error = 'Invalid table selected for sample data.';
-            return 0;
-        }
-
-        if ($companyId <= 0) {
-            $error = 'A company must be selected before adding sample data.';
-            return 0;
-        }
-
-        $sqlBody = itm_database_sql_read_data();
-        if ($sqlBody === '') {
-            $error = 'Sample source file db/02_data.sql was not found or is empty.';
-            return 0;
-        }
-
-        $parsedInserts = itm_parse_database_sql_inserts($sqlBody, $tableName);
-        $tableRows = $parsedInserts[$tableName] ?? [];
-        if (empty($tableRows)) {
-            if ($tableName === 'employee_sidebar_preferences'
-                && function_exists('itm_seed_default_employee_sidebar_preferences_for_company')) {
-                return itm_seed_default_employee_sidebar_preferences_for_company($conn, $companyId, 1, $error);
-            }
-            $error = 'No sample rows found in db/02_data.sql for this module.';
-            return 0;
-        }
-
-        $sourceHasCompanyRows = false;
-        $sourceHasRequestedCompanyRows = false;
-        foreach ($tableRows as $rowEntry) {
-            $rawColumns = $rowEntry['columns'] ?? [];
-            $rawValues = $rowEntry['values'] ?? [];
-            foreach ($rawColumns as $index => $columnToken) {
-                $columnName = trim((string)$columnToken, "` \t\n\r\0\x0B");
-                if ($columnName !== 'company_id') {
-                    continue;
-                }
-                $sourceHasCompanyRows = true;
-                $rawCompanyToken = trim((string)($rawValues[$index] ?? ''));
-                if ($rawCompanyToken === '' || strtoupper($rawCompanyToken) === 'NULL') {
-                    continue;
-                }
-                $rawCompanyToken = trim($rawCompanyToken, "'\"");
-                if ((int)$rawCompanyToken === $companyId) {
-                    $sourceHasRequestedCompanyRows = true;
-                }
-                break;
-            }
-        }
-
-        if ($sourceHasCompanyRows && !$sourceHasRequestedCompanyRows) {
-            $error = 'No sample rows found in db/02_data.sql for this company.';
-            return 0;
-        }
-
-        // Why: Multi-tenant tables must never receive every INSERT row with only company_id rewritten.
-        if (!$sourceHasCompanyRows && itm_table_has_column($conn, $tableName, 'company_id')) {
-            $error = 'No sample rows found in db/02_data.sql for this company.';
-            return 0;
-        }
-
-        $tableFkMap = itm_table_outbound_fk_map($conn, $tableName);
-
-        $insertCount = 0;
-        foreach ($tableRows as $rowEntry) {
-            $rawColumns = $rowEntry['columns'] ?? [];
-            $rawValues = $rowEntry['values'] ?? [];
-
-            // Why: When db/02_data.sql already includes per-company samples, seed only rows
-            // for the active company to avoid global-unique collisions on tenant-specific tables.
-            if ($sourceHasCompanyRows && $sourceHasRequestedCompanyRows) {
-                $rowCompanyId = null;
-                foreach ($rawColumns as $index => $columnToken) {
-                    $columnName = trim((string)$columnToken, "` \t\n\r\0\x0B");
-                    if ($columnName !== 'company_id') {
-                        continue;
-                    }
-                    $rawCompanyToken = trim((string)($rawValues[$index] ?? ''));
-                    if ($rawCompanyToken !== '' && strtoupper($rawCompanyToken) !== 'NULL') {
-                        $rawCompanyToken = trim($rawCompanyToken, "'\"");
-                        $rowCompanyId = (int)$rawCompanyToken;
-                    }
-                    break;
-                }
-                if ($rowCompanyId !== $companyId) {
-                    continue;
-                }
-            }
-
-            $targetColumns = [];
-            $targetValues = [];
-            foreach ($rawColumns as $index => $columnToken) {
-                $columnName = trim((string)$columnToken, "` \t\n\r\0\x0B");
-                if ($columnName === '' || !itm_is_safe_identifier($columnName)) {
-                    continue;
-                }
-
-                if ($columnName === 'id') {
-                    continue;
-                }
-
-                if ($columnName === 'company_id') {
-                    $targetColumns[] = '`company_id`';
-                    $targetValues[] = (string)$companyId;
-                    continue;
-                }
-
-                $valueToken = (string)$rawValues[$index];
-                if (isset($tableFkMap[$columnName]) && function_exists('itm_seed_resolve_fk_from_database_sql')) {
-                    $rawFkToken = trim($valueToken);
-                    if ($rawFkToken !== '' && strtoupper($rawFkToken) !== 'NULL') {
-                        $rawFkToken = trim($rawFkToken, "'\"");
-                        $storedFkId = (int)$rawFkToken;
-                        if ($storedFkId > 0) {
-                            $resolvedFkId = itm_seed_resolve_fk_from_database_sql(
-                                $conn,
-                                $tableFkMap[$columnName],
-                                $companyId,
-                                $storedFkId
-                            );
-                            if ($resolvedFkId > 0) {
-                                $valueToken = (string)(int)$resolvedFkId;
-                            } elseif (function_exists('itm_table_column_is_nullable')
-                                && itm_table_column_is_nullable($conn, $tableName, $columnName)) {
-                                $valueToken = 'NULL';
-                            }
-                        }
-                    }
-                }
-
-                $targetColumns[] = '`' . str_replace('`', '``', $columnName) . '`';
-                $targetValues[] = $valueToken;
-            }
-
-            if (empty($targetColumns)) {
-                continue;
-            }
-
-            $insertSql = 'INSERT INTO `' . str_replace('`', '``', $tableName) . '` (' . implode(',', $targetColumns) . ') VALUES (' . implode(',', $targetValues) . ')';
-            $dbErrorCode = 0;
-            $dbErrorMessage = '';
-            if (!itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
-                $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
-                return $insertCount;
-            }
-            $insertCount++;
-        }
-
-        if ($insertCount === 0) {
-            $error = 'No sample rows found in db/02_data.sql for this module.';
-        }
-
-        return $insertCount;
-    }
-}
-
-/**
  * Removes catalog rows whose FK parents belong to a different company (legacy sample-data copies).
  */
 if (!function_exists('itm_cleanup_catalogs_cross_tenant_fk_rows')) {
@@ -1528,93 +1368,6 @@ if (!function_exists('itm_cleanup_catalogs_cross_tenant_fk_rows')) {
         }
 
         return $deleted;
-    }
-}
-
-/**
- * Seeds all table samples from db/02_data.sql while keeping inserts idempotent.
- */
-if (!function_exists('itm_seed_all_tables_from_database_sql')) {
-    function itm_seed_all_tables_from_database_sql($conn, $companyId, &$error = '', &$seedReport = []) {
-        $error = '';
-        $seedReport = [
-            'inserted_tables' => [],
-            'skipped_tables' => [],
-            'failed_tables' => [],
-        ];
-        $companyId = (int)$companyId;
-        if ($companyId <= 0) {
-            $error = 'A company must be selected before adding sample data.';
-            return 0;
-        }
-
-        $sqlBody = itm_database_sql_read_data();
-        if ($sqlBody === '') {
-            $error = 'Sample source file db/02_data.sql was not found or is empty.';
-            return 0;
-        }
-
-        $insertCount = 0;
-        foreach (itm_parse_database_sql_inserts($sqlBody) as $tableName => $insertRows) {
-            unset($insertRows);
-            if (!itm_is_safe_identifier($tableName)) {
-                continue;
-            }
-
-            $tableExistsRes = mysqli_query(
-                $conn,
-                "SHOW TABLES LIKE '" . mysqli_real_escape_string($conn, $tableName) . "'"
-            );
-            if (!$tableExistsRes || mysqli_num_rows($tableExistsRes) === 0) {
-                $seedReport['skipped_tables'][] = $tableName . ' (table does not exist)';
-                continue;
-            }
-
-            $hasCompanyId = itm_table_has_column($conn, $tableName, 'company_id');
-            $rowCount = 0;
-            if ($hasCompanyId) {
-                $countStmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS total_count FROM `' . str_replace('`', '``', $tableName) . '` WHERE company_id = ?');
-                if (!$countStmt) {
-                    continue;
-                }
-                mysqli_stmt_bind_param($countStmt, 'i', $companyId);
-                mysqli_stmt_execute($countStmt);
-                $countResult = mysqli_stmt_get_result($countStmt);
-                $countRow = $countResult ? mysqli_fetch_assoc($countResult) : null;
-                $rowCount = isset($countRow['total_count']) ? (int)$countRow['total_count'] : 0;
-                mysqli_stmt_close($countStmt);
-            } else {
-                $countRes = mysqli_query($conn, 'SELECT COUNT(*) AS total_count FROM `' . str_replace('`', '``', $tableName) . '`');
-                $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
-                $rowCount = isset($countRow['total_count']) ? (int)$countRow['total_count'] : 0;
-            }
-
-            // Why: Keep the bulk seeding safe to run repeatedly by only touching empty targets.
-            if ($rowCount > 0) {
-                $seedReport['skipped_tables'][] = $tableName . ' (already has data)';
-                continue;
-            }
-
-            $tableError = '';
-            $tableInsertCount = itm_seed_table_from_database_sql($conn, $tableName, $companyId, $tableError);
-            if ($tableInsertCount > 0) {
-                $insertCount += $tableInsertCount;
-                $seedReport['inserted_tables'][] = $tableName . ' (' . $tableInsertCount . ' rows)';
-            } elseif ($tableError !== '') {
-                $seedReport['failed_tables'][] = $tableName . ' (' . $tableError . ')';
-            } else {
-                $seedReport['skipped_tables'][] = $tableName . ' (no valid sample rows)';
-            }
-        }
-
-        if ($insertCount === 0) {
-            $notImportedTables = array_merge($seedReport['skipped_tables'], $seedReport['failed_tables']);
-            $error = 'No sample rows were inserted. Not imported tables: ' . implode(', ', $notImportedTables) . '.';
-        } elseif (!empty($seedReport['failed_tables'])) {
-            $error = 'Some sample data could not be imported: ' . implode(', ', $seedReport['failed_tables']) . '.';
-        }
-
-        return $insertCount;
     }
 }
 

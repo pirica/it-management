@@ -1773,17 +1773,8 @@ $browserRunViaQaButton = !mbqa_is_cli_sapi() && !empty($mbqaOptions['ajax']);
 $bespokeSmoke = mbqa_runner_bespoke_smoke_modules();
 $skipClear = mbqa_runner_skip_clear_modules();
 
-/** Why: Some modules need lookup parents in db/ before sample seed succeeds for a tenant. */
-$sampleSeedPrerequisites = [
-    // Why: cost_centers rows in db/ reference departments; seed that chain before HTTP sample_data.
-    'expenses' => ['departments', 'budget_categories', 'cost_centers', 'gl_accounts'],
-    'employee_positions' => ['departments'],
-    'employee_onboarding_requests' => ['departments', 'employee_positions'],
-    'approvers' => ['departments', 'employee_positions'],
-    'employee_assignment_history' => ['departments'],
-    'inventory_items' => ['inventory_categories', 'suppliers'],
-    'tickets' => ['ticket_categories', 'ticket_statuses', 'ticket_priorities', 'equipment'],
-];
+/** Why: Some modules need lookup parents in db/02_data_sample.sql before sample seed succeeds for a tenant. */
+$sampleSeedPrerequisites = itm_sample_data_prerequisite_map();
 
 $companyNames = mbqa_company_name_map();
 
@@ -2120,7 +2111,7 @@ function mbqa_runner_module_step_exceptions(): array
         ],
         // Why: db/ bundle has no INSERT rows for patches_updates; sample_data start + end restore are N/A in QA.
         'patches_updates' => [
-            'sample_data' => 'No sample rows found in db/02_data.sql for this module.',
+            'sample_data' => 'No sample rows found in db/02_data_sample.sql for this module.',
         ],
         // Why: Explorer not a standart module CRUD
         'explorer' => [
@@ -2155,15 +2146,15 @@ function mbqa_runner_module_step_exceptions(): array
         ],
         // Why: Employee Assignment History db/ bundle has no INSERT rows.
         'employee_assignment_history' => [
-            'sample_data' => 'No sample rows found in db/02_data.sql for this module.',
+            'sample_data' => 'No sample rows found in db/02_data_sample.sql for this module.',
         ],
         // Why: db/ bundle has no INSERT rows for approvers; sample_data start + end restore are N/A in QA.
         'approvers' => [
-            'sample_data' => 'No sample rows found in db/02_data.sql for this module.',
+            'sample_data' => 'No sample rows found in db/02_data_sample.sql for this module.',
         ],
-        // Why: IP address rows are generated from live subnets, not stored as static db/02_data.sql samples.
+        // Why: IP address rows are generated from live subnets, not stored as static db/02_data_sample.sql samples.
         'ip_addresses' => [
-            'sample_data' => 'N/A (IP addresses are generated from subnets, not db/02_data.sql samples)',
+            'sample_data' => 'N/A (IP addresses are generated from subnets, not db/02_data_sample.sql samples)',
         ],
         // Why: bulk random rows on equipment_types scaffold modules/is_mbqa_* folders; avoid module creations in QA.
         'equipment_types' => [
@@ -2176,14 +2167,14 @@ function mbqa_runner_module_step_exceptions(): array
         ],
         // Why: Idf Links dont have Sample data.
         'idf_links' => [
-            'sample_data' => 'No sample rows found in db/02_data.sql for this module.',
+            'sample_data' => 'No sample rows found in db/02_data_sample.sql for this module.',
         ],
         'idf_ports' => [
-            'sample_data' => 'No sample rows found in db/02_data.sql for this module.',
+            'sample_data' => 'No sample rows found in db/02_data_sample.sql for this module.',
         ],
         // Why: IDF positions need idf_id + device_type parents; HTTP sample seed from db/ is unreliable in QA.
         'idf_positions' => [
-            'sample_data' => 'No sample rows found in db/02_data.sql for this module.',
+            'sample_data' => 'No sample rows found in db/02_data_sample.sql for this module.',
         ],
         // Why: Employees manages application auth; avoid employee profile creation in QA.
         'employees' => [
@@ -2348,7 +2339,7 @@ function mbqa_run_create_screen_step(string $moduleUrl, string $modulesDir, stri
 
 function mbqa_index_has_sample_seed_error(string $html): bool
 {
-    return stripos($html, 'No sample rows found in db/02_data.sql') !== false;
+    return stripos($html, 'No sample rows found in db/02_data_sample.sql') !== false;
 }
 
 /** Pulls the flash error banner text after a failed sample-data POST. */
@@ -3101,7 +3092,7 @@ function mbqa_build_import_rows_from_db_template(mysqli $conn, string $table, in
 }
 
 /**
- * Import payload from db/02_data.sql INSERT samples (raw FK ids), when UI export labels fail to insert.
+ * Import payload from db/02_data_sample.sql INSERT samples (raw FK ids), when UI export labels fail to insert.
  *
  * @return array<int, array<int, string>>
  */
@@ -4169,35 +4160,12 @@ function mbqa_fill_scalar_value(
 }
 
 /**
- * Seeds db/02_data.sql parents for a module so random inserts can resolve NOT NULL FKs.
+ * Seeds db/02_data_sample.sql parents for a module so random inserts can resolve NOT NULL FKs.
  */
 function mbqa_seed_lookup_parents_for_table(mysqli $conn, string $table, int $companyId, array &$visited = []): void
 {
-    global $sampleSeedPrerequisites;
-
-    if (!function_exists('itm_seed_table_from_database_sql') || !itm_is_safe_identifier($table) || $companyId <= 0) {
-        return;
-    }
-
-    if (isset($visited[$table])) {
-        return;
-    }
-    $visited[$table] = true;
-
-    $parents = $sampleSeedPrerequisites[$table] ?? [];
-    if (function_exists('itm_table_outbound_fk_map')) {
-        foreach (itm_table_outbound_fk_map($conn, $table) as $fkMeta) {
-            $parentTable = (string)($fkMeta['REFERENCED_TABLE_NAME'] ?? '');
-            if ($parentTable !== '' && itm_is_safe_identifier($parentTable) && !in_array($parentTable, mbqa_tables_never_clear(), true)) {
-                $parents[] = $parentTable;
-            }
-        }
-    }
-
-    foreach (array_values(array_unique($parents)) as $parentTable) {
-        mbqa_seed_lookup_parents_for_table($conn, $parentTable, $companyId, $visited);
-        $seedErr = '';
-        itm_seed_table_from_database_sql($conn, $parentTable, $companyId, $seedErr);
+    if (function_exists('itm_seed_lookup_parents_for_table')) {
+        itm_seed_lookup_parents_for_table($conn, $table, $companyId, $visited);
     }
 }
 
@@ -6164,7 +6132,7 @@ foreach ($companiesToRun as $companyId) {
             if (empty($importRows)) {
                 $importRows = mbqa_build_import_rows_from_export($exportRows);
             }
-            $importNote = 'Export Excel headers with insertable row (db/02_data.sql FK ids when needed)';
+            $importNote = 'Export Excel headers with insertable row (db/02_data_sample.sql FK ids when needed)';
             $importPayload = json_encode([
                 'csrf_token' => $csrfIndex,
                 'import_excel_rows' => $importRows,

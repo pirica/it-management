@@ -716,7 +716,8 @@ Not part of smoke — see **`scripts/SCRIPTS.md`** (Smoke tests). Bulk alias rep
     * validates CSRF (`itm_require_post_csrf()`),
     * confirms there is an active `company_id`,
     * re-checks the table is empty for that `company_id` before inserting.
-* **Source:** Seed rows must match `INSERT INTO` entries in `db/03_triggers.sql` for that module table.
+* **Source:** Runtime templates live in **`db/02_data_sample.sql`** (company `1` rows are parse markers only — not a live-DB tenant requirement). Loaded via `itm_database_sql_read_sample()` / `includes/itm_sample_data_seed.php`. **Not** imported by `scripts/import_database_split.sh`. Regenerate from `db/02_data.sql` with `php scripts/extract_02_data_sample.php --apply`.
+* **Any tenant:** `itm_seed_table_from_database_sql()` stamps the active session `company_id` for **any** valid `companies.id` (including companies created after import). FK parents are auto-seeded first (`itm_seed_lookup_parents_for_table()`). Duplicate business keys are skipped; when no template applies on an empty table, exactly **one** random fallback row is inserted.
 * **Tenant Safety:** Always write seeded rows with active `company_id`; never expose/edit `company_id` in UI.
 
 ### 6. Module Consistency Guardrail (Mandatory)
