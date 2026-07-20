@@ -257,6 +257,7 @@ $employeeId = (int)($_SESSION['employee_id'] ?? 0);
 $resolvedModuleIcon = itm_resolve_module_sidebar_icon($conn, $company_id, $employeeId, $moduleSlug);
 $cleanReportTitle = itm_module_access_strip_catalog_label_prefix($reportTitle);
 $moduleListHeading = trim($resolvedModuleIcon . ' ' . $cleanReportTitle);
+$newButtonPosition = itm_resolve_new_button_position($ui_config ?? null);
 ?>
 <!DOCTYPE html>
 <html lang="en-GB">
@@ -292,11 +293,24 @@ if ($resolvedModuleIcon !== '') {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
-                <h1 style="margin:0;" title="<?= sanitize($reportTitle) ?>"><?php echo sanitize($moduleListHeading); ?></h1>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <a href="../employees/index.php" class="btn">👤 Employees</a>
-                </div>
+            <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
+                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                    <div style="display:flex;gap:8px;">
+                        <a href="../employees/index.php" class="btn" title="Employees">👤</a>
+                    </div>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
+                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                    <div style="display:flex;gap:8px;">
+                        <?php if ($newButtonPosition === 'right'): ?>
+                            <a href="../employees/index.php" class="btn" title="Employees">👤</a>
+                        <?php endif; ?>
+                    </div>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
             </div>
 
             <div class="card resign-controls" data-itm-no-export-pdf="1" data-itm-no-export-excel="1">

@@ -215,6 +215,12 @@ if (!mysqli_query($conn, $insertSql)) {
         } else {
             etr_verify_pass('Resignations list h1 uses Settings sidebar icon via $moduleListHeading');
         }
+        $layoutCheck = itm_check_list_heading_layout($indexContent);
+        if (($layoutCheck['status'] ?? '') !== 'pass') {
+            etr_verify_fail('Resignations list h1 layout (Settings UI): ' . ($layoutCheck['details'] ?? 'failed'));
+        } else {
+            etr_verify_pass('Resignations list h1 layout uses Settings-managed centered header row');
+        }
         $searchCheck = itm_check_search($indexContent, 'modules/resignations/index.php');
         if (($searchCheck['status'] ?? '') !== 'pass') {
             etr_verify_fail('Resignations search UI contract: ' . ($searchCheck['details'] ?? 'failed'));
