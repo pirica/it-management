@@ -1155,7 +1155,7 @@ Browser repair uses **selection mode** on `scripts/fix_source_utf8_mojibake.php`
 
 **Known literals:** View Ticket Details, Edit Ticket, New Equipment, Create IDF, Edit IDF, View Employee System Access.
 
-**Pagination emoji map (visible → `title`):** ⏮️ First page · ◀️ Previous page · ▶️ Next page · ⏭️ Last page · ⬅️ Previous · ➡️ Next. Standard list footers require all four page-step icons when navigation renders. Helpers: `itm_ui_pagination_emoji()` / `itm_ui_pagination_title()` in `includes/itm_ui_action_labels.php`.
+**Pagination emoji map (visible → `title`):** ⏮️ First page · ◀️ Previous page · ▶️ Next page · ⏭️ Last page. Standard list footers require all four page-step icons when navigation renders. Helpers: `itm_ui_pagination_emoji()` / `itm_ui_pagination_title()` in `includes/itm_ui_action_labels.php`.
 
 **Exemptions:** bulk `data-itm-bulk-cancel="1"` visible `Cancel`; bulk Select to Delete / Clear Table; submit Search; descriptive non-actions (View IP record, Reset View, etc.); same-line `itm-ui-action-exempt:` comment. **Pagination is not exempt:** list anchors must use emoji-only visible text (`⏮️` / `◀️` / `▶️` / `⏭️`) with `title="First page"` … `title="Last page"` — plain `Previous` / `Next` or mixed `title="▶️ Next"` fail `itm_check_pagination_nav_titles()`, `check_pagination_emoji.php`, and `check_ui_action_emoji.php`. **Search reset is not exempt:** list contract requires emoji-only `🔙` on `<a>` (plain `Clear` fails `itm_check_search`).
 
