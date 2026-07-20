@@ -265,6 +265,87 @@ mysqli_stmt_bind_param($stmt, 'ii', $pastReportId, $companyId);
 mysqli_stmt_execute($stmt);
 mysqli_stmt_close($stmt);
 
+require_once __DIR__ . '/lib/itm_ops_report_search.php';
+
+// Cross-date hit list: keyword | linked day — section labels (multi-date sample data).
+$hitKeyword = 'MBQA-HITLINE-' . substr(md5((string)mt_rand()), 0, 6);
+$hitDateHeader = date('Y-m-d', strtotime('-9 days'));
+$hitDateGuest = date('Y-m-d', strtotime('-14 days'));
+$sectionLabels = opr_search_cross_date_section_labels();
+
+foreach ([$hitDateHeader, $hitDateGuest] as $cleanupDate) {
+    $stmt = mysqli_prepare($conn, 'DELETE FROM ops_report WHERE company_id = ? AND report_date = ?');
+    mysqli_stmt_bind_param($stmt, 'is', $companyId, $cleanupDate);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+}
+
+$stmt = mysqli_prepare($conn, 'INSERT INTO ops_report (company_id, report_date, today_shift, active) VALUES (?, ?, ?, 1)');
+$headerShift = 'Shift ' . $hitKeyword;
+mysqli_stmt_bind_param($stmt, 'iss', $companyId, $hitDateHeader, $headerShift);
+if (!mysqli_stmt_execute($stmt)) {
+    opr_verify_fail('Insert header ops_report for hit-line verify failed: ' . mysqli_error($conn));
+} else {
+    $hitHeaderReportId = (int)mysqli_insert_id($conn);
+}
+mysqli_stmt_close($stmt);
+
+$stmt = mysqli_prepare($conn, 'INSERT INTO ops_report (company_id, report_date, today_shift, active) VALUES (?, ?, ?, 1)');
+$guestShift = 'Guest day';
+mysqli_stmt_bind_param($stmt, 'iss', $companyId, $hitDateGuest, $guestShift);
+if (!mysqli_stmt_execute($stmt)) {
+    opr_verify_fail('Insert guest ops_report for hit-line verify failed: ' . mysqli_error($conn));
+} else {
+    $hitGuestReportId = (int)mysqli_insert_id($conn);
+}
+mysqli_stmt_close($stmt);
+
+$guestName = $hitKeyword . ' Smith';
+$stmt = mysqli_prepare($conn, 'INSERT INTO ops_report_guest_experience (company_id, ops_report_id, guest_name, sort_order, active) VALUES (?, ?, ?, 0, 1)');
+mysqli_stmt_bind_param($stmt, 'iis', $companyId, $hitGuestReportId, $guestName);
+if (!mysqli_stmt_execute($stmt)) {
+    opr_verify_fail('Insert guest experience row for hit-line verify failed');
+}
+mysqli_stmt_close($stmt);
+
+$hitMap = opr_search_cross_date_hits($conn, $companyId, $hitKeyword, 'all');
+if (count($hitMap) < 2) {
+    opr_verify_fail('Cross-date hit map expected at least two report_date keys for hit-line verify');
+} else {
+    opr_verify_pass('Cross-date hit map returns multiple report dates for shared keyword');
+}
+
+$expectedHeaderLine = opr_search_cross_date_hit_line_text($hitKeyword, $hitDateHeader, [$sectionLabels['report']]);
+$expectedGuestLine = opr_search_cross_date_hit_line_text($hitKeyword, $hitDateGuest, [$sectionLabels['guest_experience']]);
+$actualHeaderLine = isset($hitMap[$hitDateHeader])
+    ? opr_search_cross_date_hit_line_text($hitKeyword, $hitDateHeader, $hitMap[$hitDateHeader])
+    : '';
+$actualGuestLine = isset($hitMap[$hitDateGuest])
+    ? opr_search_cross_date_hit_line_text($hitKeyword, $hitDateGuest, $hitMap[$hitDateGuest])
+    : '';
+
+if ($actualHeaderLine !== $expectedHeaderLine) {
+    opr_verify_fail('Hit line mismatch for header report (expected: ' . $expectedHeaderLine . ')');
+} else {
+    opr_verify_pass('Hit line format matches keyword | day — sections for header report');
+}
+
+if ($actualGuestLine !== $expectedGuestLine) {
+    opr_verify_fail('Hit line mismatch for guest report (expected: ' . $expectedGuestLine . ')');
+} else {
+    opr_verify_pass('Hit line format matches keyword | day — sections for guest experience');
+}
+
+foreach ([$hitHeaderReportId ?? 0, $hitGuestReportId ?? 0] as $cleanupId) {
+    if ($cleanupId <= 0) {
+        continue;
+    }
+    $stmt = mysqli_prepare($conn, 'DELETE FROM ops_report WHERE id = ? AND company_id = ?');
+    mysqli_stmt_bind_param($stmt, 'ii', $cleanupId, $companyId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+}
+
 // Table existence
 $requiredTables = [
     'ops_report',
