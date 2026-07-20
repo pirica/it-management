@@ -1,0 +1,368 @@
+# Scripts safe-matrix run
+started=2026-07-16T21:32:28.5851285+01:00
+finished=2026-07-16T21:37:17.7448196+01:00
+branch=fix/employees-bespoke-clear-table-soft-delete-tests
+php=C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe
+scope=tiers 1-3 (skip wipe import; exclude tiers 4-5)
+artifact=scripts/data/scripts_errors.txt
+raw_json=qa-reports/scripts-matrix-safe-run-raw.json
+
+## Counts
+pass=159 fail=17 skip=5 excluded=53 covered=0
+
+## Passed (OK / no errors)
+script=analyze_database_health.php exit=0 note=ok
+script=apitest_tier_basic.php exit=0 note=ok
+script=apitest_tier_free.php exit=0 note=ok
+script=benchmark_user_config.php exit=0 note=ok
+script=check_audit_logs_coverage.php exit=0 note=ok
+script=check_crud_audit_soft_delete.php exit=0 note=ok
+script=check_crud_rbac_coverage.php exit=0 note=ok
+script=check_csrf_coverage.php exit=0 note=ok
+script=check_delimiters.php exit=0 note=ok
+script=check_display_field_columns_search.php exit=0 note=ok
+script=check_duplicates.php exit=0 note=ok
+script=check_employees_clear_table_transaction.php exit=0 note=ok
+script=check_equipment_clear_table_delete.php exit=0 note=ok
+script=check_fk_label_search_coverage.php exit=0 note=ok
+script=check_multi_tenant_leaks.php exit=0 note=ok
+script=check_phones.php exit=0 note=ok
+script=check_points.php exit=0 note=ok
+script=check_script_disposable_employees.php exit=0 note=ok
+script=check_sql_errors.php exit=0 note=ok
+script=check_sql_injection_coverage.php exit=0 note=ok
+script=check_stale_user_id_sql.php exit=0 note=ok
+script=check_stale_user_terminology.php exit=0 note=ok
+script=check_standard_crud_delegate_requires.php exit=0 note=ok
+script=check_ui_action_emoji.php exit=0 note=ok
+script=count_args.php exit=0 note=ok
+script=count_db_tables.php exit=0 note=ok
+script=crud_actions.php exit=0 note=ok
+script=crud_tables.php exit=0 note=ok
+script=crud_titles.php exit=0 note=ok
+script=db_field_active.php exit=0 note=ok
+script=DBdesign.php exit=0 note=ok
+script=debug.php exit=0 note=ok
+script=debug_resignations_termination_date.php exit=0 note=ok
+script=detect_fk_dropdown_ui_risk_ui.php exit=0 note=ok
+script=employee_fields_missing.php exit=0 note=ok
+script=extract_by_fields.php exit=0 note=ok
+script=generate_FK_employee_id.php exit=0 note=ok
+script=generate_reassignment.php exit=0 note=ok
+script=health.php exit=0 note=ok
+script=idf_device_port_sort_test.php exit=0 note=ok
+script=list_active_and_checkboxes.php exit=0 note=ok
+script=list_boolean_integer_fields.php exit=0 note=ok
+script=list_enum_fields.php exit=0 note=ok
+script=list_modules_not_on_sidebar.php exit=0 note=ok
+script=list_phone_columns.php exit=0 note=ok
+script=repro_attempts_data_leak_v2.php exit=0 note=ok
+script=repro_audit_disclosure.php exit=0 note=ok
+script=repro_audit_token_leak.php exit=0 note=ok
+script=repro_auth_bypass_v3.php exit=0 note=ok
+script=repro_bac.php exit=0 note=ok
+script=repro_bac_updated.php exit=0 note=ok
+script=repro_birthdays_resignations_rbac.php exit=0 note=ok
+script=repro_bug.php exit=0 note=ok
+script=repro_contacts_idor.php exit=0 note=ok
+script=repro_cross_tenant_admin.php exit=0 note=ok
+script=repro_db_integrity.php exit=0 note=ok
+script=repro_destructive_import.php exit=0 note=ok
+script=repro_employee_companies_bac.php exit=0 note=ok
+script=repro_employee_companies_leak.php exit=0 note=ok
+script=repro_employee_dataloss.php exit=0 note=ok
+script=repro_equip_issues.php exit=0 note=ok
+script=repro_esa_vulnerability.php exit=0 note=ok
+script=repro_explorer_path_bypass_v4.php exit=0 note=ok
+script=repro_explorer_traversal.php exit=0 note=ok
+script=repro_explorer_zip_slip_v2.php exit=0 note=ok
+script=repro_generic_dataloss.php exit=0 note=ok
+script=repro_notes_idor.php exit=0 note=ok
+script=repro_notes_traversal.php exit=0 note=ok
+script=repro_rbac_bypass.php exit=0 note=ok
+script=repro_rce.php exit=0 note=ok
+script=repro_rce_updated.php exit=0 note=ok
+script=repro_request_password_bypass.php exit=0 note=ok
+script=repro_select_options.php exit=0 note=ok
+script=repro_select_options_rbac.php exit=0 note=ok
+script=repro_select_options_unauthorized_v2.php exit=0 note=ok
+script=repro_sqli.php exit=0 note=ok
+script=repro_sqli_updated.php exit=0 note=ok
+script=repro_status_leak.php exit=0 note=ok
+script=repro_todo_user_leak.php exit=0 note=ok
+script=repro_visitors_bac.php exit=0 note=ok
+script=repro_visitors_sqli.php exit=0 note=ok
+script=repro_vulnerabilities.php exit=0 note=ok
+script=repro_zip_slip.php exit=0 note=ok
+script=run_tests.php exit=0 note=ok
+script=schema_report.php exit=0 note=ok
+script=smoke_test.sh exit=0 note=ok
+script=sql_injection_matrix_test.php exit=0 note=ok
+script=system_status_api.php exit=0 note=ok
+script=system_status_phpinfo.php exit=0 note=ok
+script=test_ajax.php exit=0 note=ok
+script=test_cpu_usage.php exit=0 note=ok
+script=test_disk_usage.php exit=0 note=ok
+script=test_edit.php exit=0 note=ok
+script=test_email_forgot.php exit=0 note=ok
+script=test_employee_id-foreign_keys.php exit=0 note=ok
+script=test_explorer_paths.php exit=0 note=ok
+script=test_explorer_preview.php exit=0 note=ok
+script=test_form_failed_save_display.php exit=0 note=ok
+script=test_import_user_samples.php exit=0 note=ok
+script=test_mysql_databases.php exit=0 note=ok
+script=test_mysql_size.php exit=0 note=ok
+script=test_mysql_version.php exit=0 note=ok
+script=test_php_extensions.php exit=0 note=ok
+script=test_php_ini_values.php exit=0 note=ok
+script=test_php_version.php exit=0 note=ok
+script=test_ram_usage.php exit=0 note=ok
+script=test_register_mail.php exit=0 note=ok
+script=test_session.php exit=0 note=ok
+script=test_sql_injection.php exit=0 note=ok
+script=test_system_info.php exit=0 note=ok
+script=test_uptime.php exit=0 note=ok
+script=test_visualizer_v2.php exit=0 note=ok
+script=titles_list.php exit=0 note=ok
+script=titles_list_show.php exit=0 note=ok
+script=validate_DB_schema.php exit=0 note=ok
+script=validate_delete_employee.php exit=0 note=ok
+script=verify_api_coverage.php exit=0 note=ok
+script=verify_audit_logs_disclosure.php exit=0 note=ok
+script=verify_audit_updated.php exit=0 note=ok
+script=verify_auto_scaffolding.php exit=0 note=ok
+script=verify_clear_table_fix.php exit=0 note=ok
+script=verify_company_deletion.php exit=0 note=ok
+script=verify_company_module_access.php exit=0 note=ok
+script=verify_crud_fk_label_search.php exit=0 note=ok
+script=verify_dashboard_online_employees.php exit=0 note=ok
+script=verify_database_schema.php exit=0 note=ok
+script=verify_employee_type_resignations.php exit=0 note=ok
+script=verify_employees_equipment_search_coverage.php exit=0 note=ok
+script=verify_employees_sensitive_view.php exit=0 note=ok
+script=verify_equipment_triggers.php exit=0 note=ok
+script=verify_explorer_fix.php exit=0 note=ok
+script=verify_explorer_fix_standalone.php exit=0 note=ok
+script=verify_explorer_fix_updated.php exit=0 note=ok
+script=verify_explorer_fix_web.php exit=0 note=ok
+script=verify_explorer_rce_htaccess.php exit=0 note=ok
+script=verify_explorer_rce_marker.php exit=0 note=ok
+script=verify_explorer_updated.php exit=0 note=ok
+script=verify_explorer_zip_leak.php exit=0 note=ok
+script=verify_import_fix_updated.php exit=0 note=ok
+script=verify_invitations_escalation.php exit=0 note=ok
+script=verify_json_import_validation.php exit=0 note=ok
+script=verify_maintenance_scripts_rbac.php exit=0 note=ok
+script=verify_metadata_column_cache.php exit=0 note=ok
+script=verify_notes_ajax_contract.php exit=0 note=ok
+script=verify_ops_report.php exit=0 note=ok
+script=verify_password_reset_flow.php exit=0 note=ok
+script=verify_rbac_updated.php exit=0 note=ok
+script=verify_roles_permissions.php exit=0 note=ok
+script=verify_select_options_escalation.php exit=0 note=ok
+script=verify_sql.php exit=0 note=ok
+script=verify_sqli_updated.php exit=0 note=ok
+script=verify_status_leak_fixed.php exit=0 note=ok
+script=verify_update_port_zero_row.php exit=0 note=ok
+script=verify_user_config_profile.php exit=0 note=ok
+script=verify_user_idor.php exit=0 note=ok
+script=verify_visitors_bac_fix.php exit=0 note=ok
+script=verify_visitors_sqli_fix.php exit=0 note=ok
+
+## Skipped
+script=api.php status=SKIP note=docs-only
+script=itm-user-errors.js status=SKIP note=docs-only
+script=pitfalls.php status=SKIP note=docs-only
+script=SCRIPTS.md status=SKIP note=docs-only
+script=verify_database_sql_import.sh status=SKIP note=destroys-DB; substituted verify_database_schema.php + count_db_tables.php
+
+## Excluded
+script=apply_bulk_actions_records_per_page_gate.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=apply_bulk_delete_cancel_ux.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=apply_crud_audit_soft_delete.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=apply_crud_fk_label_search.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=apply_crud_hidden_employee_id_alias.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=apply_crud_rbac_guards.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=apply_date_display_format.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=apply_display_field_columns_search_alias.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=apply_form_failed_save_display_fix.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=apply_human_friendly_error_display.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=apply_itm_actions_cell_markers.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=apply_module_sample_data_seed.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=apply_ui_action_emoji.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=auth_register_reset_human_test.php status=EXCLUDED note=tier4-mutates-DB
+script=bypass_login.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=bypass_v2.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=cleanup_equipment_test_module_artifacts.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=delete_clone_employee.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=detect_fk_dropdown_ui_risk.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=employees_delete_clear_table_test.php status=EXCLUDED note=tier4-mutates-DB
+script=empty_folders.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=ensure_equipment_type_modules.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=ensure_files_htaccess_chain.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=equipment_delete_clear_table_test.php status=EXCLUDED note=tier4-mutates-DB
+script=explorer_human_test.php status=EXCLUDED note=tier4-mutates-DB
+script=export_floor_plan_folders_seed.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=fix_sql.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=fix_sql_broad.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=fix_sql_departments.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=floor_designer_test.php status=EXCLUDED note=tier4-mutates-DB
+script=floor_plans_folder_move_test.php status=EXCLUDED note=tier4-mutates-DB
+script=force_delete_company.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=generate_tests.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=identify_modules.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=idfs_sync_human_test.php status=EXCLUDED note=tier4-mutates-DB
+script=module_browser_qa_build_report.php status=EXCLUDED note=tier4-mutates-DB
+script=module_browser_qa_runner.php status=EXCLUDED note=tier4-mutates-DB
+script=module_clean_tests_qa_runner.php status=EXCLUDED note=tier4-mutates-DB
+script=normalize_database_sql_created_at.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=perform_audit.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=repair_table_from_schema.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=run_email_alert_rules.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=seed_company_module_access.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=sql_insert.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=sync_modules_registry.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=take_screenshots_modules.py status=EXCLUDED note=tier4-mutates-DB
+script=take_screenshots_modules_all.py status=EXCLUDED note=tier4-mutates-DB
+script=take_screenshots_passwords.py status=EXCLUDED note=tier4-mutates-DB
+script=tickets_related_equipment_delete_test.php status=EXCLUDED note=tier4-mutates-DB
+script=transfer_data_from_employee.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=update_all_created_at.php status=EXCLUDED note=tier5-destructive-or-maintenance
+script=verify_todo.py status=EXCLUDED note=tier4-mutates-DB
+script=verify_todo_categories.py status=EXCLUDED note=tier4-mutates-DB
+
+## Covered
+(none)
+
+## Failures (root cause)
+### benchmark_sidebar_module_access.php
+exit=1
+classification=product
+evidence=[FAIL] Optimized itm_sidebar_structure used 18 queries (expected <= 15). Other thresholds passed.
+why=Query-count regression vs script threshold (performance gate, not functional crash).
+
+### benchmark_stats_optimized.php
+exit=1
+classification=product
+evidence=Performance Improvement 77.73% but [FAIL] Results mismatch detected between original loop and optimized single query.
+why=Optimized stats path returns different aggregates than the legacy loop (correctness mismatch).
+
+### check_database_sql_company_name_uniques.php
+exit=1
+classification=product
+evidence=Pass: 111 Fail: 2 Skip: 11. [FAIL] floor_plan_item_tags (scope=floor_plan_id) missing matching UNIQUE; [FAIL] bookmark_folders (scope=name) UNIQUE shape does not match gate (found 2 keys but not the expected company_id+name form).
+why=database.sql unique-key contract gaps for those tables.
+
+### check_index_table_compliance.php
+exit=1
+classification=product
+evidence=Compliance violations not in baseline for modules including backup_tape_log, birthdays, bookmarks, contacts, import (missing data-itm-db-import-endpoint and/or data-itm-actions-origin markers).
+why=Index list tables missing required UI markers vs AGENTS contract; not grandfathered in scripts/data/index_table_compliance_baseline.txt.
+
+### check_ui_configuration_coverage.php
+exit=2
+classification=product
+evidence=tickets missing pagination wiring; todo missing Table Actions, New button, search, sort, pagination, bulk delete gates.
+why=Bespoke modules fail static UI-configuration coverage expectations.
+
+### compare_database_sql_modules.php
+exit=1
+classification=false-positive
+evidence=Modules without database.sql table: 23 (birthdays, calendar, contacts, is_*, org_chart, reports, resignations, roles_permissions, settings, etc.). company_module_access vs modules_registry mismatch.
+why=Script treats virtual/composite modules as requiring CREATE TABLE; many are intentional non-table UIs. Exit non-zero is expected until allowlist exists.
+
+### idfs_api_payload_dry_run.php
+exit=1
+classification=env
+evidence=ERROR: Please provide --endpoint=port_update|link_create|link_delete
+why=Requires CLI args; blank run is not a regression. Re-run with --endpoint=... for a real check.
+
+### repro_vault_corruption.php
+exit=1
+classification=product
+evidence=Test user created (ID: 999934) then Error inserting entry: (empty mysqli error text).
+why=Vault atomicity PoC failed inserting a password entry after creating disposable user ÔÇö likely schema/encrypt/session prerequisite.
+
+### test_db_error_messages.php
+exit=1
+classification=product
+evidence=[FAIL] unknown has no Database error prefix (other humanize cases passed).
+why=Unknown/generic DB error path still exposes or fails the no-prefix assertion.
+
+### test_mysql_status.php
+exit=1
+classification=env
+evidence=[FAIL] Error status returned: MySQL/MariaDB service not found
+why=PowerShell system-status probe looks for a Windows service name Laragon does not register the same way; MySQL is running via Laragon but service discovery fails.
+
+### test_notes_human.py
+exit=1
+classification=env
+evidence=ModuleNotFoundError: No module named 'playwright'
+why=Playwright not installed in this Python environment.
+
+### update_display.py
+exit=1
+classification=stale-script
+evidence=SyntaxError: unexpected character after line continuation character (broken escaped triple-quote string at line 8).
+why=Script source is corrupted / invalid Python — cannot run until fixed.
+
+### verify_dashboard_active_employees.php
+exit=1
+classification=product
+evidence=[FAIL] dashboard.php does not use employment status count helper for Active/On Leave (counts themselves OK for company 1).
+why=Static expectation that dashboard uses itm_employee Active/On Leave helpers; implementation drifted.
+
+### verify_dnd.py
+exit=1
+classification=env
+evidence=ModuleNotFoundError: No module named 'playwright'
+why=Playwright not installed.
+
+### verify_emails_module.php
+exit=1
+classification=env
+evidence=[FAIL] No warranty/license rows in the 30-day alert window for company 1 (run_email_alert_rules needs seed data). Schema/SMTP/UI checks passed.
+why=Seed data gap for alert-window fixtures, not a code crash.
+
+### verify_notes_ui.py
+exit=1
+classification=env
+evidence=ModuleNotFoundError: No module named 'playwright'
+why=Playwright not installed.
+
+### verify_system_status.php
+exit=1
+classification=env
+evidence=[FAIL] Windows PowerShell test failed for mysql_status; other native/PS metrics passed.
+why=Same Laragon MySQL service-name discovery issue as test_mysql_status.php.
+
+---
+
+# perform_audit hardened run (exploratory — not matrix safe-run)
+started=2026-07-17T02:51:30+00:00
+branch=fix/perform-audit-hardening-loop
+php=C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe
+scope=Tier 1-3 scripts only (excludes Tier 4 MBQA, Tier 5 maintenance, repro_*, verify_*, _tmp_*)
+artifact=scripts/php_error_audit_results.json
+allowlist=scripts/data/perform_audit_allowlist.json
+
+## Counts
+scanned=86 passed=82 allowlisted_exit_only=4 excluded=53 failed_exit=0 failed_errors=0
+verified=two consecutive runs exit 0 (2026-07-17)
+
+## Allowlisted exit-only (expected on healthy DB)
+script=check_database_sql_company_name_uniques.php max_exit=1
+script=check_index_table_compliance.php max_exit=1
+script=check_ui_configuration_coverage.php max_exit=2
+script=compare_database_sql_modules.php max_exit=1
+script=idfs_api_payload_dry_run.php max_exit=1
+script=test_mysql_status.php max_exit=1
+script=verify_system_status.php max_exit=1
+script=verify_emails_module.php max_exit=1
+
+## Product fixes in same deliverable
+- config.php: CLI REQUEST_METHOD bootstrap
+- benchmark_stats_optimized.php: back-to-back verify snapshots; timing advisory only
+- modules/resignations/index.php: search bind types (10 placeholders)
+- test_email_forgot.php / test_register_mail.php: define $nl before usage
