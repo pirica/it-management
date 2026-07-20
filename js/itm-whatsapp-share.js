@@ -39,7 +39,8 @@
                     openWhatsAppWithMessage(message);
                 };
                 if (typeof window.itmMaybeConfirmShareNoAttachments === 'function') {
-                    window.itmMaybeConfirmShareNoAttachments(!!data.has_images, openShare);
+                    var promptOptions = data.share_prompt_body ? { bodyText: data.share_prompt_body } : undefined;
+                    window.itmMaybeConfirmShareNoAttachments(!!data.has_images, openShare, promptOptions);
                 } else {
                     openShare();
                 }

@@ -30,7 +30,7 @@ Visual rack elevation planner. Stores layout JSON per named rack plan and refere
 - Auto-save AJAX (`ajax_update_layout`) returns HTTP 404 when `rack_planner` row is not tenant-scoped.
 - List view supports bulk delete/clear when row count ≥ `records_per_page` (entire bulk card and checkbox column gated via `$showBulkActions`).
 - **Responsive:** rack visualizer uses `min(600px, 100%)` width with horizontal scroll; mobile padding in `includes/partials/render.php`.
-- **View share UI:** temporary QR/code share buttons (📱, WhatsApp, Outlook) render in the rack footer `.rack-visualizer-export-actions` next to image/PDF/Excel export — not in the top header.
+- **View / edit share UI:** temporary QR/code share buttons (📱, WhatsApp, Outlook) render in the rack footer `.rack-visualizer-export-actions` next to image/PDF/Excel export on **view** and **edit** (saved plans only; not on create). WhatsApp/Outlook show the “Share link only” confirm before opening.
 
 ## 6. API Actions (If Applicable)
 - **ajax_update_layout** (POST on create/edit) — `id`, `rack_units`, `layout_json`; normalises layout, persists JSON, syncs prices to source tables; 404 when `affected_rows === 0`.
