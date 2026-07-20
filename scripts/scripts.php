@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Why: CLI runners include config without a web session; browser catalog must not set ITM_CLI_SCRIPT (avoids auth edge cases).
 if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
     define('ITM_CLI_SCRIPT', true);

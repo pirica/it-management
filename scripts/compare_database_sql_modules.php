@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Compares db/ CREATE TABLE names with modules/ folders and $crud_table mappings.
  *

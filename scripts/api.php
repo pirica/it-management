@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * IT Management System - API Documentation (project-aligned)
  **/

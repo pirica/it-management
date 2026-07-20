@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Verifies employees audit triggers do not disclose auth secrets in audit_logs.
  *
