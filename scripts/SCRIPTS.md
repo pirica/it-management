@@ -585,7 +585,13 @@ Browser menu: `scripts/run_tier2_checks.php` → **Run Tier 2 batch**. Optional 
 
 Optional DB regression (requires MySQL): `php scripts/employees_delete_clear_table_test.php`, `php scripts/equipment_delete_clear_table_test.php`.
 
-Module seed expansion in `db/03_triggers.sql` (repo write, no DB mutation): `php scripts/apply_module_sample_data_seed.php --module=<module_name> [--sample=name[:emoji] ...]` (dry-run default; `--apply` / `?apply=1` writes). Parses single-row and multi-row `INSERT … VALUES` blocks; adds one row per seeded `company_id` when a sample value is missing for that tenant. **Mirror mode:** when `db/` uses `INSERT … SELECT N, cols FROM table WHERE company_id = 1` (e.g. `knowledge_base`), new samples append only to the source company VALUES block — other tenants replicate on import. Use `--sample=title:content` for title/content tables. Browser dry-run: `scripts/apply_module_sample_data_seed.php?module=idf_device_type`; apply (Admin): `...?module=idf_device_type&apply=1`. Error paths use `itm_seed_fwrite_stderr()` (not raw `fwrite(STDERR)` — undefined in browser SAPI).
+Module seed expansion in `db/02_data.sql` (repo write, no DB mutation): `php scripts/apply_module_sample_data_seed.php --module=<module_name> [--sample=name[:emoji] ...]` (dry-run default; `--apply` / `?apply=1` writes `db/02_data.sql` and refreshes `db/02_data_sample.sql`). Parses single-row and multi-row `INSERT … VALUES` blocks; adds one row per seeded `company_id` when a sample value is missing for that tenant. **Mirror mode:** when `db/` uses `INSERT … SELECT N, cols FROM table WHERE company_id = 1` (e.g. `knowledge_base`), new samples append only to the source company VALUES block — other tenants replicate on import. Use `--sample=title:content` for title/content tables. Browser dry-run: `scripts/apply_module_sample_data_seed.php?module=idf_device_type`; apply (Admin): `...?module=idf_device_type&apply=1`. Error paths use `itm_seed_fwrite_stderr()` (not raw `fwrite(STDERR)` — undefined in browser SAPI).
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/extract_02_data_sample.php` | **Browser + CLI.** Dry-run default. Writes `db/02_data_sample.sql` from `db/02_data.sql` company `1` (template marker) INSERT rows. `--apply` / `?apply=1` (Admin). |
+| `php scripts/dedupe_02_data_per_company_inserts.php` | **Browser + CLI.** Lists/removes redundant companies `2–5` single-row INSERTs when `@replicate_source_company_id` replication exists. Dry-run default; `--apply` edits `db/02_data.sql`. |
+| `php scripts/verify_sample_data_seed.php` | Regression: seeds arbitrary disposable companies from `db/02_data_sample.sql` (`workstation_ram`, FK parent chain, duplicate skip). CLI: `php scripts/verify_sample_data_seed.php`. |
 
 #### PHPUnit test runner (`scripts/run_tests.php`)
 

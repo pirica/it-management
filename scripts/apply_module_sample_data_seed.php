@@ -892,18 +892,23 @@ if ($normalizedSamples === []) {
 
 $root = dirname(__DIR__);
 $schemaPath = itm_database_sql_schema_path();
+$dataPath = itm_database_sql_data_path();
+$samplePath = function_exists('itm_database_sql_sample_path') ? itm_database_sql_sample_path() : ($root . '/db/02_data_sample.sql');
 if (!is_file($schemaPath)) {
     itm_seed_fwrite_stderr("db/01_schema.sql not found.\n");
     exit(2);
 }
 
-$sql = (string)file_get_contents($schemaPath);
-if ($sql === '') {
+$schemaSql = (string)file_get_contents($schemaPath);
+$dataSql = is_file($dataPath) ? (string)file_get_contents($dataPath) : '';
+if ($dataSql === '') {
     itm_seed_fwrite_stderr("db/02_data.sql is empty.\n");
     exit(2);
 }
 
-$meta = itm_seed_find_table_metadata($sql, $table);
+$sql = $dataSql;
+
+$meta = itm_seed_find_table_metadata($schemaSql, $table);
 if ($meta === null) {
     itm_seed_fwrite_stderr("Table '{$table}' not found in db/ CREATE TABLE blocks.\n");
     exit(2);
@@ -1146,12 +1151,29 @@ if (!$apply) {
     exit(0);
 }
 
-if (file_put_contents($schemaPath, $newSql) === false) {
+if (file_put_contents($dataPath, $newSql) === false) {
     itm_seed_fwrite_stderr("Failed to write db/02_data.sql\n");
     exit(2);
 }
 
 echo colorText('[OK] db/02_data.sql updated successfully.', 'pass') . $nl;
+
+// Why: Runtime Add sample data reads db/02_data_sample.sql — refresh company 1 templates after import seed edits.
+$extractScript = __DIR__ . '/extract_02_data_sample.php';
+if (is_file($extractScript)) {
+    $phpBin = PHP_BINARY;
+    $extractCmd = escapeshellarg($phpBin) . ' ' . escapeshellarg($extractScript) . ' --apply';
+    if (function_exists('exec')) {
+        $extractOutput = [];
+        $extractExit = 0;
+        exec($extractCmd . ' 2>&1', $extractOutput, $extractExit);
+        if ($extractExit === 0) {
+            echo colorText('[OK] db/02_data_sample.sql refreshed from company 1 templates.', 'pass') . $nl;
+        } else {
+            echo colorText('[WARN] Could not refresh db/02_data_sample.sql (exit ' . $extractExit . ').', 'fail') . $nl;
+        }
+    }
+}
 itm_apply_script_finish_hint(true, $boot['is_cli'], $addedCount, $nl, 'apply_module_sample_data_seed.php');
 
 itm_script_output_end();

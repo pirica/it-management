@@ -566,7 +566,25 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="apply_module_sample_data_seed.php" target="_blank" rel="nofollow noreferrer">apply_module_sample_data_seed.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Automates per-module/table seed expansion: adds missing sample rows for every company listed in <code>companies</code> into <code>db/</code> split bundle. Default <code>idf_device_type</code> samples are <code>other</code> 📦, <code>server</code> 🖥️, <code>ups</code> 🔋, <code>patch_panel</code> ➿, and <code>switch</code> 🔀; custom <code>--sample</code> values supported. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists new INSERT statements and skipped targets before apply. Requires <code>--module</code> / <code>?module=</code>.</td>
-                    <td>Browser: <a href="apply_module_sample_data_seed.php?module=idf_device_type">dry-run</a> / <a href="apply_module_sample_data_seed.php?module=idf_device_type&amp;apply=1">apply=1</a>. CLI: <code>php scripts/apply_module_sample_data_seed.php --module=idf_device_type</code> then <code>php scripts/apply_module_sample_data_seed.php --module=idf_device_type --apply</code> · <code>--value-column=name --sample=LabPoE</code></td>
+                    <td>Browser: <a href="apply_module_sample_data_seed.php?module=idf_device_type">dry-run</a> / <a href="apply_module_sample_data_seed.php?module=idf_device_type&amp;apply=1">apply=1</a>. CLI: <code>php scripts/apply_module_sample_data_seed.php --module=idf_device_type</code> then <code>php scripts/apply_module_sample_data_seed.php --module=idf_device_type --apply</code> · <code>--value-column=name --sample=LabPoE</code>. After apply, refreshes <code>db/02_data_sample.sql</code>.</td>
+                </tr>
+                <tr>
+                    <td><a href="extract_02_data_sample.php" target="_blank" rel="nofollow noreferrer">extract_02_data_sample.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Builds <code>db/02_data_sample.sql</code> (runtime Add sample data templates) from company <code>1</code> rows in <code>db/02_data.sql</code>. <strong>Default = dry-run</strong>; writes with <code>--apply</code> / <code>?apply=1</code> (Admin).</td>
+                    <td>Browser: <a href="extract_02_data_sample.php">dry-run</a> / <a href="extract_02_data_sample.php?apply=1">apply=1</a>. CLI: <code>php scripts/extract_02_data_sample.php</code> then <code>php scripts/extract_02_data_sample.php --apply</code></td>
+                </tr>
+                <tr>
+                    <td><a href="dedupe_02_data_per_company_inserts.php" target="_blank" rel="nofollow noreferrer">dedupe_02_data_per_company_inserts.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Removes redundant companies <code>2–5</code> single-row INSERTs from <code>db/02_data.sql</code> when <code>@replicate_source_company_id</code> replication already copies from company <code>1</code>. <strong>Default = dry-run</strong>.</td>
+                    <td>Browser: <a href="dedupe_02_data_per_company_inserts.php">dry-run</a> / <a href="dedupe_02_data_per_company_inserts.php?apply=1">apply=1</a>. CLI: <code>php scripts/dedupe_02_data_per_company_inserts.php</code> then <code>--apply</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_sample_data_seed.php" target="_blank" rel="nofollow noreferrer">verify_sample_data_seed.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression: Add sample data seeds arbitrary disposable companies from <code>db/02_data_sample.sql</code> with tenant scoping, FK parent chain, and duplicate skip.</td>
+                    <td>Browser: <a href="verify_sample_data_seed.php">verify_sample_data_seed.php</a>. CLI: <code>php scripts/verify_sample_data_seed.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="export_floor_plan_folders_seed.php" target="_blank" rel="nofollow noreferrer">export_floor_plan_folders_seed.php</a></td>

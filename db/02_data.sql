@@ -9,63 +9,15 @@ SET FOREIGN_KEY_CHECKS=0;
 
 INSERT INTO `access_levels` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', NULL, 'Full', '2026-01-01 00:00:01');
 
-INSERT INTO `access_levels` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', NULL, 'Full', '2026-01-01 00:00:01');
-
-INSERT INTO `access_levels` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', NULL, 'Full', '2026-01-01 00:00:01');
-
-INSERT INTO `access_levels` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', NULL, 'Full', '2026-01-01 00:00:01');
-
-INSERT INTO `access_levels` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', NULL, 'Full', '2026-01-01 00:00:01');
-
 INSERT INTO `access_levels` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', NULL, 'Limited', '2026-01-01 00:00:01');
-
-INSERT INTO `access_levels` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', NULL, 'Limited', '2026-01-01 00:00:01');
-
-INSERT INTO `access_levels` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', NULL, 'Limited', '2026-01-01 00:00:01');
-
-INSERT INTO `access_levels` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', NULL, 'Limited', '2026-01-01 00:00:01');
-
-INSERT INTO `access_levels` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', NULL, 'Limited', '2026-01-01 00:00:01');
 
 INSERT INTO `access_levels` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', NULL, 'Read Only', '2026-01-01 00:00:01');
 
-INSERT INTO `access_levels` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', NULL, 'Read Only', '2026-01-01 00:00:01');
-
-INSERT INTO `access_levels` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', NULL, 'Read Only', '2026-01-01 00:00:01');
-
-INSERT INTO `access_levels` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', NULL, 'Read Only', '2026-01-01 00:00:01');
-
-INSERT INTO `access_levels` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', NULL, 'Read Only', '2026-01-01 00:00:01');
-
 INSERT INTO `assignment_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', NULL, 'Department', '2026-01-01 00:00:01');
-
-INSERT INTO `assignment_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', NULL, 'Department', '2026-01-01 00:00:01');
-
-INSERT INTO `assignment_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', NULL, 'Department', '2026-01-01 00:00:01');
-
-INSERT INTO `assignment_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', NULL, 'Department', '2026-01-01 00:00:01');
-
-INSERT INTO `assignment_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', NULL, 'Department', '2026-01-01 00:00:01');
 
 INSERT INTO `assignment_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', NULL, 'Individual', '2026-01-01 00:00:01');
 
-INSERT INTO `assignment_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', NULL, 'Individual', '2026-01-01 00:00:01');
-
-INSERT INTO `assignment_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', NULL, 'Individual', '2026-01-01 00:00:01');
-
-INSERT INTO `assignment_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', NULL, 'Individual', '2026-01-01 00:00:01');
-
-INSERT INTO `assignment_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', NULL, 'Individual', '2026-01-01 00:00:01');
-
 INSERT INTO `assignment_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', NULL, 'Shared', '2026-01-01 00:00:01');
-
-INSERT INTO `assignment_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', NULL, 'Shared', '2026-01-01 00:00:01');
-
-INSERT INTO `assignment_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', NULL, 'Shared', '2026-01-01 00:00:01');
-
-INSERT INTO `assignment_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', NULL, 'Shared', '2026-01-01 00:00:01');
-
-INSERT INTO `assignment_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', NULL, 'Shared', '2026-01-01 00:00:01');
 
 -- Data for `companies`
 INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, `email`, `website`, `vat`, `unit_no`, `comments`, `active`, `created_at`, `updated_at`) VALUES ('1', 'TechCorp Global', 'TC001', 'New York', 'USA', '+1-212-555-0101', 'info@techcorp.example', 'https://techcorp.example', 'US-TC-1001', NULL, 'Head office company profile', '1', '2026-01-01 00:00:01', NULL);
@@ -372,75 +324,11 @@ INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `e
 
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '1', 'Front Office', 'FO', 'Front Office', 'frontoffice@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
 
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '2', 'IT Operations', 'IT', 'Core IT operations team', 'it-ops@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '2', 'Food and Drinks', 'FNB', 'Food and Beverages department', 'fnb@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '2', 'Human Resources', 'HR', 'Human resources department', 'hr@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '2', 'Housekeeping', 'HK', 'Housekeeping operations', 'housekeeping@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '2', 'Front Office', 'FO', 'Front Office', 'frontoffice@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '3', 'IT Operations', 'IT', 'Core IT operations team', 'it-ops@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '3', 'Food and Drinks', 'FNB', 'Food and Beverages department', 'fnb@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '3', 'Human Resources', 'HR', 'Human resources department', 'hr@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '3', 'Housekeeping', 'HK', 'Housekeeping operations', 'housekeeping@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '3', 'Front Office', 'FO', 'Front Office', 'frontoffice@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '4', 'IT Operations', 'IT', 'Core IT operations team', 'it-ops@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '4', 'Food and Drinks', 'FNB', 'Food and Beverages department', 'fnb@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '4', 'Human Resources', 'HR', 'Human resources department', 'hr@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '4', 'Housekeeping', 'HK', 'Housekeeping operations', 'housekeeping@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '4', 'Front Office', 'FO', 'Front Office', 'frontoffice@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '5', 'IT Operations', 'IT', 'Core IT operations team', 'it-ops@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '5', 'Food and Drinks', 'FNB', 'Food and Beverages department', 'fnb@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '5', 'Human Resources', 'HR', 'Human resources department', 'hr@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '5', 'Housekeeping', 'HK', 'Housekeeping operations', 'housekeeping@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '5', 'Front Office', 'FO', 'Front Office', 'frontoffice@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
-
 INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '1', 'Revenue', 'Revenue-related general ledger accounts', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '2', 'Revenue', 'Revenue-related general ledger accounts', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '3', 'Revenue', 'Revenue-related general ledger accounts', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '4', 'Revenue', 'Revenue-related general ledger accounts', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '5', 'Revenue', 'Revenue-related general ledger accounts', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '1', 'Operating Expense', 'Operational expense accounts', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '2', 'Operating Expense', 'Operational expense accounts', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '3', 'Operating Expense', 'Operational expense accounts', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '4', 'Operating Expense', 'Operational expense accounts', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '5', 'Operating Expense', 'Operational expense accounts', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '1', 'Capital Expense', 'Capital expense accounts', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '2', 'Capital Expense', 'Capital expense accounts', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '3', 'Capital Expense', 'Capital expense accounts', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '4', 'Capital Expense', 'Capital expense accounts', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES (NULL, '5', 'Capital Expense', 'Capital expense accounts', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`, `created_at`) VALUES (NULL, '1', '1', 'Infrastructure', 'CC-IT-INFRA', '1', '2026-01-01 00:00:01');
 
@@ -592,41 +480,9 @@ INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`
 
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES (NULL, '1', '1', 'Level 1', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES (NULL, '2', NULL, 'General', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES (NULL, '2', '3', 'Level 1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES (NULL, '3', NULL, 'General', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES (NULL, '3', '5', 'Level 1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES (NULL, '4', NULL, 'General', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES (NULL, '4', '7', 'Level 1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES (NULL, '5', NULL, 'General', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES (NULL, '5', '9', 'Level 1', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES (NULL, '1', 'Ground Floor', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES (NULL, '1', 'Building A', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES (NULL, '2', 'Ground Floor', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES (NULL, '2', 'Building A', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES (NULL, '3', 'Ground Floor', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES (NULL, '3', 'Building A', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES (NULL, '4', 'Ground Floor', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES (NULL, '4', 'Building A', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES (NULL, '5', 'Ground Floor', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES (NULL, '5', 'Building A', '1', '2026-01-01 00:00:01');
 
 -- Data for `forecast_revisions_status`
 INSERT INTO `forecast_revisions_status` (`id`, `company_id`, `status`, `notes`, `active`, `created_at`, `updated_at`) VALUES (NULL, 1, 'Draft', 'Draft projection before finance review', 1, '2026-01-01 00:00:01', NULL),
@@ -688,23 +544,7 @@ ORDER BY seed.`sort_key`;
 
 INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`, `created_at`) VALUES (NULL, '1', 'Finance Review', 'Finance team review stage before general manager approval.', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`, `created_at`) VALUES (NULL, '2', 'Finance Review', 'Finance team review stage before general manager approval.', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`, `created_at`) VALUES (NULL, '3', 'Finance Review', 'Finance team review stage before general manager approval.', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`, `created_at`) VALUES (NULL, '4', 'Finance Review', 'Finance team review stage before general manager approval.', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`, `created_at`) VALUES (NULL, '5', 'Finance Review', 'Finance team review stage before general manager approval.', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`, `created_at`) VALUES (NULL, '1', 'GM Review', 'General manager review stage before final approval.', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`, `created_at`) VALUES (NULL, '2', 'GM Review', 'General manager review stage before final approval.', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`, `created_at`) VALUES (NULL, '3', 'GM Review', 'General manager review stage before final approval.', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`, `created_at`) VALUES (NULL, '4', 'GM Review', 'General manager review stage before final approval.', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`, `created_at`) VALUES (NULL, '5', 'GM Review', 'General manager review stage before final approval.', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `approvals` (`id`, `company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`, `created_at`)
 SELECT NULL, seed.`company_id`, fr.`id`, aps.`id`, frs.`id`, NULL, NULL, seed.`comments`, 1, seed.`created_at`
@@ -781,53 +621,13 @@ INSERT INTO `employee_onboarding_requests` (`id`, `company_id`, `employee_id`, `
 
 INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', NULL, 'Active', '2026-01-01 00:00:01');
 
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', NULL, 'Active', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', NULL, 'Active', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', NULL, 'Active', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', NULL, 'Active', '2026-01-01 00:00:01');
-
 INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', NULL, 'Contractor', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', NULL, 'Contractor', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', NULL, 'Contractor', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', NULL, 'Contractor', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', NULL, 'Contractor', '2026-01-01 00:00:01');
 
 INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', NULL, 'Inactive', '2026-01-01 00:00:01');
 
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', NULL, 'Inactive', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', NULL, 'Inactive', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', NULL, 'Inactive', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', NULL, 'Inactive', '2026-01-01 00:00:01');
-
 INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', NULL, 'On Leave', '2026-01-01 00:00:01');
 
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', NULL, 'On Leave', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', NULL, 'On Leave', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', NULL, 'On Leave', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', NULL, 'On Leave', '2026-01-01 00:00:01');
-
 INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', NULL, 'Terminated', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', NULL, 'Terminated', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', NULL, 'Terminated', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', NULL, 'Terminated', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', NULL, 'Terminated', '2026-01-01 00:00:01');
 
 INSERT INTO `employee_type` (`company_id`, `id`, `name_type`, `created_at`) VALUES ('1', '1', 'Team member', '2026-01-01 00:00:01');
 
@@ -902,213 +702,45 @@ INSERT INTO `employees` (`id`, `duplicate`, `company_id`, `first_name`, `last_na
 -- Why: Relative warranty keeps company-1 email alert runner / verify_emails_module in the default 30-day window after import.
 INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `department_id`, `supplier_id`, `assigned_to_employee_id`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `created_at`, `updated_at`) VALUES (1, 1, 1, NULL, 1, NULL, NULL, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, 1, NULL, NULL, 1, '2026-06-05', 8500.00, DATE_ADD(CURDATE(), INTERVAL 14 DAY), NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-01 00:00:01', '2026-04-26 22:07:32');
 
-INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `department_id`, `supplier_id`, `assigned_to_employee_id`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `created_at`, `updated_at`) VALUES (2, 2, 13, NULL, 2, NULL, NULL, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, 6, NULL, NULL, 9, '2026-06-05', 8500.00, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-01 00:00:01', '2026-04-26 22:06:38');
-
-INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `department_id`, `supplier_id`, `assigned_to_employee_id`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `created_at`, `updated_at`) VALUES (3, 3, 25, NULL, 3, NULL, NULL, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, 11, NULL, NULL, 17, '2026-06-05', 8500.00, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-01 00:00:01', '2026-04-26 22:07:18');
-
-INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `department_id`, `supplier_id`, `assigned_to_employee_id`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `created_at`, `updated_at`) VALUES (4, 4, 37, NULL, 4, NULL, NULL, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, 16, NULL, NULL, 25, '2026-06-05', 8500.00, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-01 00:00:01', '2026-04-26 22:04:17');
-
-INSERT INTO `equipment` (`id`, `company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `department_id`, `supplier_id`, `assigned_to_employee_id`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `created_at`, `updated_at`) VALUES (5, 5, 49, NULL, 5, NULL, NULL, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, 21, NULL, NULL, 33, '2026-06-05', 8500.00, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-01 00:00:01', '2026-04-26 22:06:55');
-
 INSERT INTO `equipment_environment` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'Managed', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_environment` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '3', 'Managed', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_environment` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '5', 'Managed', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_environment` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '7', 'Managed', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_environment` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '9', 'Managed', '2026-01-01 00:00:01');
 
 INSERT INTO `equipment_environment` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', 'Unmanaged', '2026-01-01 00:00:01');
 
-INSERT INTO `equipment_environment` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '4', 'Unmanaged', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_environment` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '6', 'Unmanaged', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_environment` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '8', 'Unmanaged', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_environment` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '10', 'Unmanaged', '2026-01-01 00:00:01');
-
 INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', 'QSFP 40 Gbps', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '4', 'QSFP 40 Gbps', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '7', 'QSFP 40 Gbps', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '10', 'QSFP 40 Gbps', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '13', 'QSFP 40 Gbps', '2026-01-01 00:00:01');
 
 INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'SFP 1 Gbps', '2026-01-01 00:00:01');
 
-INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '5', 'SFP 1 Gbps', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '8', 'SFP 1 Gbps', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '11', 'SFP 1 Gbps', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '14', 'SFP 1 Gbps', '2026-01-01 00:00:01');
-
 INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', 'SFP+ 10 Gbps', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '6', 'SFP+ 10 Gbps', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '9', 'SFP+ 10 Gbps', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '12', 'SFP+ 10 Gbps', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '15', 'SFP+ 10 Gbps', '2026-01-01 00:00:01');
 
 INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'Patch Panel A', '2026-01-01 00:00:01');
 
-INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '3', 'Patch Panel A', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '5', 'Patch Panel A', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '7', 'Patch Panel A', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '9', 'Patch Panel A', '2026-01-01 00:00:01');
-
 INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', 'Patch Panel B', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '4', 'Patch Panel B', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '6', 'Patch Panel B', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '8', 'Patch Panel B', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_patch` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '10', 'Patch Panel B', '2026-01-01 00:00:01');
 
 INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'Rack A', '2026-01-01 00:00:01');
 
-INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '3', 'Rack A', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '5', 'Rack A', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '7', 'Rack A', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '9', 'Rack A', '2026-01-01 00:00:01');
-
 INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', 'Rack B', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '4', 'Rack B', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '6', 'Rack B', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '8', 'Rack B', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_rack` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '10', 'Rack B', '2026-01-01 00:00:01');
 
 INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '5', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '9', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '13', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '17', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', '2', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '6', '2', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '10', '2', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '14', '2', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '18', '2', '2026-01-01 00:00:01');
 
 INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', '3', '2026-01-01 00:00:01');
 
-INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '7', '3', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '11', '3', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '15', '3', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '19', '3', '2026-01-01 00:00:01');
-
 INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '4', '4', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '8', '4', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '12', '4', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '16', '4', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_fiber_count` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '20', '4', '2026-01-01 00:00:01');
 
 INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('1', '1', 'PoE (802.3af)', 'Up to 15.4W', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('2', '4', 'PoE (802.3af)', 'Up to 15.4W', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('3', '7', 'PoE (802.3af)', 'Up to 15.4W', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('4', '10', 'PoE (802.3af)', 'Up to 15.4W', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('5', '13', 'PoE (802.3af)', 'Up to 15.4W', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('1', '2', 'PoE+ (802.3at)', 'Up to 30W', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('2', '5', 'PoE+ (802.3at)', 'Up to 30W', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('3', '8', 'PoE+ (802.3at)', 'Up to 30W', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('4', '11', 'PoE+ (802.3at)', 'Up to 30W', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('5', '14', 'PoE+ (802.3at)', 'Up to 30W', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('1', '3', 'PoE++ (802.3bt)', 'Up to 60-90W', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('2', '6', 'PoE++ (802.3bt)', 'Up to 60-90W', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('3', '9', 'PoE++ (802.3bt)', 'Up to 60-90W', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('4', '12', 'PoE++ (802.3bt)', 'Up to 60-90W', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_poe` (`company_id`, `id`, `name`, `watts`, `active`, `created_at`) VALUES ('5', '15', 'PoE++ (802.3bt)', 'Up to 60-90W', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', '16 ports', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '5', '16 ports', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '9', '16 ports', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '13', '16 ports', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '17', '16 ports', '2026-01-01 00:00:01');
 
 INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', '24 ports', '2026-01-01 00:00:01');
 
-INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '6', '24 ports', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '10', '24 ports', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '14', '24 ports', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '18', '24 ports', '2026-01-01 00:00:01');
-
 INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '4', '48 ports', '2026-01-01 00:00:01');
 
-INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '7', '48 ports', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '11', '48 ports', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '15', '48 ports', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '19', '48 ports', '2026-01-01 00:00:01');
-
 INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', '8 ports', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '8', '8 ports', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '12', '8 ports', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '16', '8 ports', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_rj45` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '20', '8 ports', '2026-01-01 00:00:01');
 
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('1', '1', 'Cat5', '100 Mbps', '100 MHz', '100 m', 'Obsolete; not recommended.', '1', '2026-01-01 00:00:01');
 
@@ -1126,8 +758,6 @@ INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwi
 
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('8', '2', 'Cat5e', '1 Gbps', '100 MHz', '100 m', 'Common in older homes; supports Gigabit.', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('9', '2', 'Cat6', '10 Gbps (up to 55 m), 1 Gbps (100 m)', '250 MHz', '55 m @ 10G', 'Good for most offices/homes.', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('10', '2', 'Cat6a', '10 Gbps', '500 MHz', '100 m', 'Best price/performance; future-proof.', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('11', '2', 'Cat7', '10 Gbps (100 m), up to 40 Gbps (<=50 m)', '600 MHz', '100 m', 'Shielded; used in EMI-heavy environments.', '1', '2026-01-01 00:00:01');
@@ -1137,8 +767,6 @@ INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwi
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('13', '3', 'Cat5', '100 Mbps', '100 MHz', '100 m', 'Obsolete; not recommended.', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('14', '3', 'Cat5e', '1 Gbps', '100 MHz', '100 m', 'Common in older homes; supports Gigabit.', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('15', '3', 'Cat6', '10 Gbps (up to 55 m), 1 Gbps (100 m)', '250 MHz', '55 m @ 10G', 'Good for most offices/homes.', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('16', '3', 'Cat6a', '10 Gbps', '500 MHz', '100 m', 'Best price/performance; future-proof.', '1', '2026-01-01 00:00:01');
 
@@ -1150,8 +778,6 @@ INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwi
 
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('20', '4', 'Cat5e', '1 Gbps', '100 MHz', '100 m', 'Common in older homes; supports Gigabit.', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('21', '4', 'Cat6', '10 Gbps (up to 55 m), 1 Gbps (100 m)', '250 MHz', '55 m @ 10G', 'Good for most offices/homes.', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('22', '4', 'Cat6a', '10 Gbps', '500 MHz', '100 m', 'Best price/performance; future-proof.', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('23', '4', 'Cat7', '10 Gbps (100 m), up to 40 Gbps (<=50 m)', '600 MHz', '100 m', 'Shielded; used in EMI-heavy environments.', '1', '2026-01-01 00:00:01');
@@ -1162,8 +788,6 @@ INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwi
 
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('26', '5', 'Cat5e', '1 Gbps', '100 MHz', '100 m', 'Common in older homes; supports Gigabit.', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('27', '5', 'Cat6', '10 Gbps (up to 55 m), 1 Gbps (100 m)', '250 MHz', '55 m @ 10G', 'Good for most offices/homes.', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('28', '5', 'Cat6a', '10 Gbps', '500 MHz', '100 m', 'Best price/performance; future-proof.', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES ('29', '5', 'Cat7', '10 Gbps (100 m), up to 40 Gbps (<=50 m)', '600 MHz', '100 m', 'Shielded; used in EMI-heavy environments.', '1', '2026-01-01 00:00:01');
@@ -1172,83 +796,19 @@ INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwi
 
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'Active', '2026-01-01 00:00:01');
 
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '9', 'Active', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '17', 'Active', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '25', 'Active', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '33', 'Active', '2026-01-01 00:00:01');
-
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '6', 'Decommissioned', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '10', 'Decommissioned', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '18', 'Decommissioned', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '26', 'Decommissioned', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '34', 'Decommissioned', '2026-01-01 00:00:01');
 
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '4', 'Faulty', '2026-01-01 00:00:01');
 
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '11', 'Faulty', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '19', 'Faulty', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '27', 'Faulty', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '35', 'Faulty', '2026-01-01 00:00:01');
-
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', 'Inactive', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '12', 'Inactive', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '20', 'Inactive', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '28', 'Inactive', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '36', 'Inactive', '2026-01-01 00:00:01');
 
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', 'Maintenance', '2026-01-01 00:00:01');
 
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '13', 'Maintenance', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '21', 'Maintenance', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '29', 'Maintenance', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '37', 'Maintenance', '2026-01-01 00:00:01');
-
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '7', 'On-Order', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '14', 'On-Order', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '22', 'On-Order', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '30', 'On-Order', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '38', 'On-Order', '2026-01-01 00:00:01');
 
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '8', 'Other', '2026-01-01 00:00:01');
 
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '15', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '23', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '31', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '39', 'Other', '2026-01-01 00:00:01');
-
 INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '5', 'Reserved', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '16', 'Reserved', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '24', 'Reserved', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '32', 'Reserved', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '40', 'Reserved', '2026-01-01 00:00:01');
 
 INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('1', '1', 'Switch', 'SWITCH', '🔀', '1', '2026-01-01 00:00:01');
 
@@ -1274,253 +834,37 @@ INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_e
 
 INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('1', '12', 'Other', 'OTHER', NULL, '1', '2026-01-01 00:00:01');
 
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('2', '13', 'Switch', 'SWITCH', '🔀', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('2', '14', 'Server', 'SRV', '🖥️', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('2', '15', 'Router', 'RTR', '✳️', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('2', '16', 'Firewall', 'FW', '🔥', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('2', '17', 'Port Patch Panel', 'PORT', '➿', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('2', '18', 'Access Point', 'AP', '🛜', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('2', '19', 'Workstation', 'WS', '💻', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('2', '20', 'POS', 'POS', '🏧', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('2', '21', 'Printer', 'PRN', '🖨️', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('2', '22', 'Phone', 'PHONE', '📞', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('2', '23', 'CCTV', 'CCCTV', '🎥', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('2', '24', 'Other', 'OTHER', NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('3', '25', 'Switch', 'SWITCH', '🔀', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('3', '26', 'Server', 'SRV', '🖥️', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('3', '27', 'Router', 'RTR', '✳️', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('3', '28', 'Firewall', 'FW', '🔥', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('3', '29', 'Port Patch Panel', 'PORT', '➿', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('3', '30', 'Access Point', 'AP', '🛜', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('3', '31', 'Workstation', 'WS', '💻', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('3', '32', 'POS', 'POS', '🏧', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('3', '33', 'Printer', 'PRN', '🖨️', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('3', '34', 'Phone', 'PHONE', '📞', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('3', '35', 'CCTV', 'CCCTV', '🎥', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('3', '36', 'Other', 'OTHER', NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('4', '37', 'Switch', 'SWITCH', '🔀', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('4', '38', 'Server', 'SRV', '🖥️', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('4', '39', 'Router', 'RTR', '✳️', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('4', '40', 'Firewall', 'FW', '🔥', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('4', '41', 'Port Patch Panel', 'PORT', '➿', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('4', '42', 'Access Point', 'AP', '🛜', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('4', '43', 'Workstation', 'WS', '💻', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('4', '44', 'POS', 'POS', '🏧', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('4', '45', 'Printer', 'PRN', '🖨️', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('4', '46', 'Phone', 'PHONE', '📞', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('4', '47', 'CCTV', 'CCCTV', '🎥', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('4', '48', 'Other', 'OTHER', NULL, '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('5', '49', 'Switch', 'SWITCH', '🔀', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('5', '50', 'Server', 'SRV', '🖥️', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('5', '51', 'Router', 'RTR', '✳️', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('5', '52', 'Firewall', 'FW', '🔥', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('5', '53', 'Port Patch Panel', 'PORT', '➿', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('5', '54', 'Access Point', 'AP', '🛜', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('5', '55', 'Workstation', 'WS', '💻', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('5', '56', 'POS', 'POS', '🏧', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('5', '57', 'Printer', 'PRN', '🖨️', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('5', '58', 'Phone', 'PHONE', '📞', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('5', '59', 'CCTV', 'CCCTV', '🎥', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('5', '60', 'Other', 'OTHER', NULL, '1', '2026-01-01 00:00:01');
-
 -- Data for `idf_device_type`
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', 'switch', '🔀', '1', '2026-01-01 00:00:01', NULL);
 
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('6', '2', 'switch', '🔀', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('11', '3', 'switch', '🔀', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('16', '4', 'switch', '🔀', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('21', '5', 'switch', '🔀', '1', '2026-01-01 00:00:01', NULL);
-
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('2', '1', 'patch_panel', '➿', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('7', '2', 'patch_panel', '➿', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('12', '3', 'patch_panel', '➿', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('17', '4', 'patch_panel', '➿', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('22', '5', 'patch_panel', '➿', '1', '2026-01-01 00:00:01', NULL);
 
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('3', '1', 'ups', '🔋', '1', '2026-01-01 00:00:01', NULL);
 
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('8', '2', 'ups', '🔋', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('13', '3', 'ups', '🔋', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('18', '4', 'ups', '🔋', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('23', '5', 'ups', '🔋', '1', '2026-01-01 00:00:01', NULL);
-
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('4', '1', 'server', '🖥️', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('9', '2', 'server', '🖥️', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('14', '3', 'server', '🖥️', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('19', '4', 'server', '🖥️', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('24', '5', 'server', '🖥️', '1', '2026-01-01 00:00:01', NULL);
 
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('5', '1', 'other', '📦', '1', '2026-01-01 00:00:01', NULL);
 
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('10', '2', 'other', '📦', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('15', '3', 'other', '📦', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('20', '4', 'other', '📦', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('25', '5', 'other', '📦', '1', '2026-01-01 00:00:01', NULL);
-
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('26', '1', 'firewall', '🛡️', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('29', '2', 'firewall', '🛡️', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('32', '3', 'firewall', '🛡️', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('35', '4', 'firewall', '🛡️', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('38', '5', 'firewall', '🛡️', '1', '2026-01-01 00:00:01', NULL);
 
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('27', '1', 'router', '📡', '1', '2026-01-01 00:00:01', NULL);
 
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('30', '2', 'router', '📡', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('33', '3', 'router', '📡', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('36', '4', 'router', '📡', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('39', '5', 'router', '📡', '1', '2026-01-01 00:00:01', NULL);
-
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('28', '1', 'pdu', '🔌', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('31', '2', 'pdu', '🔌', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('34', '3', 'pdu', '🔌', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('37', '4', 'pdu', '🔌', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES ('40', '5', 'pdu', '🔌', '1', '2026-01-01 00:00:01', NULL);
 
 -- Data for `idfs`
 INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('1', '1', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('2', '2', '2', '2', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('3', '3', '3', '3', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('4', '4', '4', '4', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES ('5', '5', '5', '5', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '1', 'Cables - Ethernet', 'CBL-ETH', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '7', 'Cables - Ethernet', 'CBL-ETH', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '13', 'Cables - Ethernet', 'CBL-ETH', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '19', 'Cables - Ethernet', 'CBL-ETH', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '25', 'Cables - Ethernet', 'CBL-ETH', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '2', 'Cables - USB', 'CBL-USB', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '8', 'Cables - USB', 'CBL-USB', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '14', 'Cables - USB', 'CBL-USB', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '20', 'Cables - USB', 'CBL-USB', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '26', 'Cables - USB', 'CBL-USB', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '3', 'Adapters', 'ADP', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '9', 'Adapters', 'ADP', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '15', 'Adapters', 'ADP', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '21', 'Adapters', 'ADP', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '27', 'Adapters', 'ADP', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '4', 'Batteries', 'BAT', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '10', 'Batteries', 'BAT', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '16', 'Batteries', 'BAT', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '22', 'Batteries', 'BAT', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '28', 'Batteries', 'BAT', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '5', 'Consumables', 'CONS', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '11', 'Consumables', 'CONS', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '17', 'Consumables', 'CONS', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '23', 'Consumables', 'CONS', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '29', 'Consumables', 'CONS', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '6', 'Other', 'OTH', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '12', 'Other', 'OTH', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '18', 'Other', 'OTH', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '24', 'Other', 'OTH', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '30', 'Other', 'OTH', '1', '2026-01-01 00:00:01');
 
 -- Data for `inventory_items`
 INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `storage_date`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `last_employee_id`, `last_employee_manual`, `comments`, `location_id`, `supplier_id`, `active`, `created_at`, `updated_at`) VALUES (1, 1, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 1, 1, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 1, 1, 1, '2026-01-01 00:00:01', '2026-05-17 05:08:05'),
@@ -1539,207 +883,39 @@ INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`)
 
 INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('1', '5', 'Other', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('2', '6', 'Per User', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('2', '7', 'Per Device', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('2', '8', 'Enterprise', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('2', '9', 'Subscription', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('2', '10', 'Other', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('3', '11', 'Per User', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('3', '12', 'Per Device', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('3', '13', 'Enterprise', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('3', '14', 'Subscription', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('3', '15', 'Other', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('4', '16', 'Per User', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('4', '17', 'Per Device', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('4', '18', 'Enterprise', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('4', '19', 'Subscription', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('4', '20', 'Other', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('5', '21', 'Per User', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('5', '22', 'Per Device', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('5', '23', 'Enterprise', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('5', '24', 'Subscription', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('5', '25', 'Other', '1', '2026-01-01 00:00:01');
-
 -- Data for `it_locations`
 INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('1', '1', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('2', '2', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '10', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('3', '3', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '17', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('4', '4', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '24', '1', '2026-01-01 00:00:01', NULL);
-
-INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES ('5', '5', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '31', '1', '2026-01-01 00:00:01', NULL);
 
 -- Data for `location_types`
 INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', 'Branch', '2026-01-01 00:00:01');
 
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '8', 'Branch', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '15', 'Branch', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '22', 'Branch', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '29', 'Branch', '2026-01-01 00:00:01');
-
 INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '4', 'DataCenter', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '9', 'DataCenter', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '16', 'DataCenter', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '23', 'DataCenter', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '30', 'DataCenter', '2026-01-01 00:00:01');
 
 INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'Headquarters', '2026-01-01 00:00:01');
 
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '10', 'Headquarters', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '17', 'Headquarters', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '24', 'Headquarters', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '31', 'Headquarters', '2026-01-01 00:00:01');
-
 INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '5', 'Office', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '11', 'Office', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '18', 'Office', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '25', 'Office', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '32', 'Office', '2026-01-01 00:00:01');
 
 INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '7', 'Other', '2026-01-01 00:00:01');
 
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '12', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '19', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '26', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '33', 'Other', '2026-01-01 00:00:01');
-
 INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '6', 'Remote', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '13', 'Remote', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '20', 'Remote', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '27', 'Remote', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '34', 'Remote', '2026-01-01 00:00:01');
 
 INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', 'Warehouse', '2026-01-01 00:00:01');
 
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '14', 'Warehouse', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '21', 'Warehouse', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '28', 'Warehouse', '2026-01-01 00:00:01');
-
-INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '35', 'Warehouse', '2026-01-01 00:00:01');
-
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '1', 'Cisco Systems', 'CSCO', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '9', 'Cisco Systems', 'CSCO', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '17', 'Cisco Systems', 'CSCO', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '25', 'Cisco Systems', 'CSCO', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '33', 'Cisco Systems', 'CSCO', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '2', 'Dell Technologies', 'DELL', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '10', 'Dell Technologies', 'DELL', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '18', 'Dell Technologies', 'DELL', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '26', 'Dell Technologies', 'DELL', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '34', 'Dell Technologies', 'DELL', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '3', 'HP Inc', 'HPE', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '11', 'HP Inc', 'HPE', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '19', 'HP Inc', 'HPE', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '27', 'HP Inc', 'HPE', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '35', 'HP Inc', 'HPE', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '4', 'Juniper Networks', 'JNPR', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '12', 'Juniper Networks', 'JNPR', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '20', 'Juniper Networks', 'JNPR', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '28', 'Juniper Networks', 'JNPR', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '36', 'Juniper Networks', 'JNPR', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '5', 'Ubiquiti Networks', 'UBNT', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '13', 'Ubiquiti Networks', 'UBNT', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '21', 'Ubiquiti Networks', 'UBNT', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '29', 'Ubiquiti Networks', 'UBNT', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '37', 'Ubiquiti Networks', 'UBNT', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '6', 'Apple', 'APPLE', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '14', 'Apple', 'APPLE', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '22', 'Apple', 'APPLE', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '30', 'Apple', 'APPLE', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '38', 'Apple', 'APPLE', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '7', 'Lenovo', 'LENOVO', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '15', 'Lenovo', 'LENOVO', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '23', 'Lenovo', 'LENOVO', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '31', 'Lenovo', 'LENOVO', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '39', 'Lenovo', 'LENOVO', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '8', 'Microsoft', 'MSFT', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '16', 'Microsoft', 'MSFT', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '24', 'Microsoft', 'MSFT', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '32', 'Microsoft', 'MSFT', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `manufacturers` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '40', 'Microsoft', 'MSFT', '1', '2026-01-01 00:00:01');
 
 --
 -- Dumping data for table `catalogs`
@@ -1802,38 +978,6 @@ INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_c
 
 INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('1', '4', 'Closed', '#808080', '1', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('2', '5', 'Open', '#FF0000', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('2', '6', 'In Progress', '#FFA500', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('2', '7', 'Resolved', '#00FF00', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('2', '8', 'Closed', '#808080', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('3', '9', 'Open', '#FF0000', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('3', '10', 'In Progress', '#FFA500', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('3', '11', 'Resolved', '#00FF00', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('3', '12', 'Closed', '#808080', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('4', '13', 'Open', '#FF0000', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('4', '14', 'In Progress', '#FFA500', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('4', '15', 'Resolved', '#00FF00', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('4', '16', 'Closed', '#808080', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('5', '17', 'Open', '#FF0000', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('5', '18', 'In Progress', '#FFA500', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('5', '19', 'Resolved', '#00FF00', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('5', '20', 'Closed', '#808080', '1', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('1', '1', 'Critical', '2026-01-01 00:00:01');
 
 INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('1', '2', 'High', '2026-01-01 00:00:01');
@@ -1844,185 +988,33 @@ INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) 
 
 INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('1', '5', 'Other', '2026-01-01 00:00:01');
 
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('2', '6', 'Critical', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('2', '7', 'High', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('2', '8', 'Medium', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('2', '9', 'Low', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('2', '10', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('3', '11', 'Critical', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('3', '12', 'High', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('3', '13', 'Medium', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('3', '14', 'Low', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('3', '15', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('4', '16', 'Critical', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('4', '17', 'High', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('4', '18', 'Medium', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('4', '19', 'Low', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('4', '20', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('5', '21', 'Critical', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('5', '22', 'High', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('5', '23', 'Medium', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('5', '24', 'Low', '2026-01-01 00:00:01');
-
-INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES ('5', '25', 'Other', '2026-01-01 00:00:01');
-
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', 'All-in-One', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '10', 'All-in-One', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '19', 'All-in-One', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '28', 'All-in-One', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '37', 'All-in-One', '2026-01-01 00:00:01');
 
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '8', 'Dotmatrix', '2026-01-01 00:00:01');
 
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '11', 'Dotmatrix', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '20', 'Dotmatrix', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '29', 'Dotmatrix', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '38', 'Dotmatrix', '2026-01-01 00:00:01');
-
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', 'Inkjet', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '12', 'Inkjet', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '21', 'Inkjet', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '30', 'Inkjet', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '39', 'Inkjet', '2026-01-01 00:00:01');
 
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '7', 'Label', '2026-01-01 00:00:01');
 
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '13', 'Label', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '22', 'Label', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '31', 'Label', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '40', 'Label', '2026-01-01 00:00:01');
-
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'Laser', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '14', 'Laser', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '23', 'Laser', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '32', 'Laser', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '41', 'Laser', '2026-01-01 00:00:01');
 
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '9', 'Other', '2026-01-01 00:00:01');
 
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '15', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '24', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '33', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '42', 'Other', '2026-01-01 00:00:01');
-
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '6', 'Photo', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '16', 'Photo', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '25', 'Photo', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '34', 'Photo', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '43', 'Photo', '2026-01-01 00:00:01');
 
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '4', 'Thermal', '2026-01-01 00:00:01');
 
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '17', 'Thermal', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '26', 'Thermal', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '35', 'Thermal', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '44', 'Thermal', '2026-01-01 00:00:01');
-
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '5', 'Wide-Format', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '18', 'Wide-Format', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '27', 'Wide-Format', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '36', 'Wide-Format', '2026-01-01 00:00:01');
-
-INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '45', 'Wide-Format', '2026-01-01 00:00:01');
 
 INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'Active', '2026-01-01 00:00:01');
 
-INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '5', 'Active', '2026-01-01 00:00:01');
-
-INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '9', 'Active', '2026-01-01 00:00:01');
-
-INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '13', 'Active', '2026-01-01 00:00:01');
-
-INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '17', 'Active', '2026-01-01 00:00:01');
-
 INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '4', 'Decommissioned', '2026-01-01 00:00:01');
-
-INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '6', 'Decommissioned', '2026-01-01 00:00:01');
-
-INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '10', 'Decommissioned', '2026-01-01 00:00:01');
-
-INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '14', 'Decommissioned', '2026-01-01 00:00:01');
-
-INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '18', 'Decommissioned', '2026-01-01 00:00:01');
 
 INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', 'Full', '2026-01-01 00:00:01');
 
-INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '7', 'Full', '2026-01-01 00:00:01');
-
-INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '11', 'Full', '2026-01-01 00:00:01');
-
-INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '15', 'Full', '2026-01-01 00:00:01');
-
-INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '19', 'Full', '2026-01-01 00:00:01');
-
 INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', 'Maintenance', '2026-01-01 00:00:01');
 
-INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '8', 'Maintenance', '2026-01-01 00:00:01');
-
-INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '12', 'Maintenance', '2026-01-01 00:00:01');
-
-INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '16', 'Maintenance', '2026-01-01 00:00:01');
-
-INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '20', 'Maintenance', '2026-01-01 00:00:01');
-
 INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`, `created_at`) VALUES ('1', '1', '1', 'Main Rack A', 'RACK-A', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`, `created_at`) VALUES ('2', '2', '2', 'Main Rack A', 'RACK-A', '5', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`, `created_at`) VALUES ('3', '3', '3', 'Main Rack A', 'RACK-A', '9', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`, `created_at`) VALUES ('4', '4', '4', 'Main Rack A', 'RACK-A', '13', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`, `created_at`) VALUES ('5', '5', '5', 'Main Rack A', 'RACK-A', '17', '1', '2026-01-01 00:00:01');
 
 -- Data for `employee_sidebar_preferences`
 -- Why: seed default sidebar layout for all 5 base companies and rely on table defaults for timestamps.
@@ -2144,63 +1136,15 @@ ORDER BY c.company_id, FIELD(t.entry_type, 'section', 'item'), t.display_order, 
 
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'Active', '2026-01-01 00:00:01');
 
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '6', 'Active', '2026-01-01 00:00:01');
-
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '11', 'Active', '2026-01-01 00:00:01');
-
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '16', 'Active', '2026-01-01 00:00:01');
-
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '21', 'Active', '2026-01-01 00:00:01');
-
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '4', 'Backup', '2026-01-01 00:00:01');
-
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '7', 'Backup', '2026-01-01 00:00:01');
-
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '12', 'Backup', '2026-01-01 00:00:01');
-
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '17', 'Backup', '2026-01-01 00:00:01');
-
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '22', 'Backup', '2026-01-01 00:00:01');
 
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', 'Inactive', '2026-01-01 00:00:01');
 
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '8', 'Inactive', '2026-01-01 00:00:01');
-
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '13', 'Inactive', '2026-01-01 00:00:01');
-
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '18', 'Inactive', '2026-01-01 00:00:01');
-
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '23', 'Inactive', '2026-01-01 00:00:01');
-
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '5', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '9', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '14', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '19', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '24', 'Other', '2026-01-01 00:00:01');
 
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', 'Preferred', '2026-01-01 00:00:01');
 
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '10', 'Preferred', '2026-01-01 00:00:01');
-
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '15', 'Preferred', '2026-01-01 00:00:01');
-
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '20', 'Preferred', '2026-01-01 00:00:01');
-
-INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '25', 'Preferred', '2026-01-01 00:00:01');
-
 INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`) VALUES ('1', '1', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`) VALUES ('2', '2', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '6', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`) VALUES ('3', '3', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '11', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`) VALUES ('4', '4', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '16', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`) VALUES ('5', '5', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '21', '1', '2026-01-01 00:00:01');
 
 -- Why: Relative expiry dates keep license alert seeds inside the default 30-day runner window after import.
 INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('1', '1', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '1', '1', '1', '2025-01-15', DATE_ADD(CURDATE(), INTERVAL 20 DAY), '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
@@ -2215,573 +1159,117 @@ INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `li
 
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('1', '1', 'Gray', '#808080', NULL, '2026-01-01 00:00:01');
 
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('2', '11', 'Gray', '#808080', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('3', '21', 'Gray', '#808080', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('4', '31', 'Gray', '#808080', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('5', '41', 'Gray', '#808080', NULL, '2026-01-01 00:00:01');
-
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('1', '2', 'Green', '#03b003', 'Printers', '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('2', '12', 'Green', '#03b003', 'Printers', '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('3', '22', 'Green', '#03b003', 'Printers', '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('4', '32', 'Green', '#03b003', 'Printers', '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('5', '42', 'Green', '#03b003', 'Printers', '2026-01-01 00:00:01');
 
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('1', '3', 'Red', '#ff0000', NULL, '2026-01-01 00:00:01');
 
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('2', '13', 'Red', '#ff0000', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('3', '23', 'Red', '#ff0000', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('4', '33', 'Red', '#ff0000', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('5', '43', 'Red', '#ff0000', NULL, '2026-01-01 00:00:01');
-
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('1', '4', 'Yellow', '#ffff00', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('2', '14', 'Yellow', '#ffff00', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('3', '24', 'Yellow', '#ffff00', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('4', '34', 'Yellow', '#ffff00', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('5', '44', 'Yellow', '#ffff00', NULL, '2026-01-01 00:00:01');
 
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('1', '5', 'Black', '#000000', NULL, '2026-01-01 00:00:01');
 
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('2', '15', 'Black', '#000000', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('3', '25', 'Black', '#000000', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('4', '35', 'Black', '#000000', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('5', '45', 'Black', '#000000', NULL, '2026-01-01 00:00:01');
-
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('1', '6', 'Blue', '#0000ff', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('2', '16', 'Blue', '#0000ff', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('3', '26', 'Blue', '#0000ff', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('4', '36', 'Blue', '#0000ff', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('5', '46', 'Blue', '#0000ff', NULL, '2026-01-01 00:00:01');
 
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('1', '7', 'White', '#ffffff', NULL, '2026-01-01 00:00:01');
 
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('2', '17', 'White', '#ffffff', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('3', '27', 'White', '#ffffff', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('4', '37', 'White', '#ffffff', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('5', '47', 'White', '#ffffff', NULL, '2026-01-01 00:00:01');
-
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('1', '8', 'Orange', '#ffa500', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('2', '18', 'Orange', '#ffa500', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('3', '28', 'Orange', '#ffa500', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('4', '38', 'Orange', '#ffa500', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('5', '48', 'Orange', '#ffa500', NULL, '2026-01-01 00:00:01');
 
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('1', '9', 'Dark Pink', '#800080', NULL, '2026-01-01 00:00:01');
 
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('2', '19', 'Dark Pink', '#800080', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('3', '29', 'Dark Pink', '#800080', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('4', '39', 'Dark Pink', '#800080', NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('5', '49', 'Dark Pink', '#800080', NULL, '2026-01-01 00:00:01');
-
 INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('1', '10', 'Other', NULL, NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('2', '20', 'Other', NULL, NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('3', '30', 'Other', NULL, NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('4', '40', 'Other', NULL, NULL, '2026-01-01 00:00:01');
-
-INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`) VALUES ('5', '50', 'Other', NULL, NULL, '2026-01-01 00:00:01');
 
 INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', 'Horizontal', '2026-01-01 00:00:01');
 
-INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '3', 'Horizontal', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '5', 'Horizontal', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '7', 'Horizontal', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '9', 'Horizontal', '2026-01-01 00:00:01');
-
 INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'Vertical', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '4', 'Vertical', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '6', 'Vertical', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '8', 'Vertical', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_numbering_layout` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '10', 'Vertical', '2026-01-01 00:00:01');
 
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('1', '1', 'RJ45', '2026-01-01 00:00:01');
 
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('2', '4', 'RJ45', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('3', '7', 'RJ45', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('4', '10', 'RJ45', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('5', '13', 'RJ45', '2026-01-01 00:00:01');
-
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('1', '2', 'SFP', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('2', '5', 'SFP', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('3', '8', 'SFP', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('4', '11', 'SFP', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('5', '14', 'SFP', '2026-01-01 00:00:01');
 
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('1', '3', 'Door', '2026-01-01 00:00:01');
 
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('2', '6', 'Door', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('3', '9', 'Door', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('4', '12', 'Door', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('5', '15', 'Door', '2026-01-01 00:00:01');
-
 INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('1', '16', 'Access Point', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('2', '17', 'Access Point', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('3', '18', 'Access Point', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('4', '19', 'Access Point', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUES ('5', '20', 'Access Point', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('4', '4', 'Disabled', '31', '2026-01-01 00:00:01');
 
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('1', '10', 'Disabled', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('2', '19', 'Disabled', '11', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('3', '28', 'Disabled', '21', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('5', '37', 'Disabled', '41', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('4', '2', 'Down', '33', '2026-01-01 00:00:01');
-
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('1', '11', 'Down', '3', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('2', '20', 'Down', '13', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('3', '29', 'Down', '23', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('5', '38', 'Down', '43', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('4', '6', 'Err-Disabled', '39', '2026-01-01 00:00:01');
 
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('1', '12', 'Err-Disabled', '9', '2026-01-01 00:00:01');
 
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('2', '21', 'Err-Disabled', '19', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('3', '30', 'Err-Disabled', '29', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('5', '39', 'Err-Disabled', '49', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('4', '8', 'Faulty', '38', '2026-01-01 00:00:01');
-
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('1', '13', 'Faulty', '8', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('2', '22', 'Faulty', '18', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('3', '31', 'Faulty', '28', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('5', '40', 'Faulty', '48', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('4', '3', 'Free', '32', '2026-01-01 00:00:01');
 
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('1', '14', 'Free', '2', '2026-01-01 00:00:01');
 
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('2', '23', 'Free', '12', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('3', '32', 'Free', '22', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('5', '41', 'Free', '42', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('4', '9', 'Reserved', '34', '2026-01-01 00:00:01');
-
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('1', '15', 'Reserved', '4', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('2', '24', 'Reserved', '14', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('3', '33', 'Reserved', '24', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('5', '42', 'Reserved', '44', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('4', '7', 'Testing', '36', '2026-01-01 00:00:01');
 
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('1', '16', 'Testing', '6', '2026-01-01 00:00:01');
 
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('2', '25', 'Testing', '16', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('3', '34', 'Testing', '26', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('5', '43', 'Testing', '46', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('4', '5', 'Unknown', '31', '2026-01-01 00:00:01');
-
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('1', '17', 'Unknown', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('2', '26', 'Unknown', '11', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('3', '35', 'Unknown', '21', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('5', '44', 'Unknown', '41', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('4', '1', 'Up', '36', '2026-01-01 00:00:01');
 
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('1', '18', 'Up', '6', '2026-01-01 00:00:01');
 
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('2', '27', 'Up', '16', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('3', '36', 'Up', '26', '2026-01-01 00:00:01');
-
-INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES ('5', '45', 'Up', '46', '2026-01-01 00:00:01');
-
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('1', '1', 'network_access', 'Network Access', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('16', '2', 'network_access', 'Network Access', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('31', '3', 'network_access', 'Network Access', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('46', '4', 'network_access', 'Network Access', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('61', '5', 'network_access', 'Network Access', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('2', '1', 'micros_emc', 'Micros Emc', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('17', '2', 'micros_emc', 'Micros Emc', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('32', '3', 'micros_emc', 'Micros Emc', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('47', '4', 'micros_emc', 'Micros Emc', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('62', '5', 'micros_emc', 'Micros Emc', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('3', '1', 'opera_username', 'Opera Username', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('18', '2', 'opera_username', 'Opera Username', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('33', '3', 'opera_username', 'Opera Username', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('48', '4', 'opera_username', 'Opera Username', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('63', '5', 'opera_username', 'Opera Username', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('4', '1', 'micros_card', 'Micros Card', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('19', '2', 'micros_card', 'Micros Card', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('34', '3', 'micros_card', 'Micros Card', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('49', '4', 'micros_card', 'Micros Card', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('64', '5', 'micros_card', 'Micros Card', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('5', '1', 'pms_id', 'PMS Id', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('20', '2', 'pms_id', 'PMS Id', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('35', '3', 'pms_id', 'PMS Id', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('50', '4', 'pms_id', 'PMS Id', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('65', '5', 'pms_id', 'PMS Id', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('6', '1', 'synergy_mms', 'Synergy Mms', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('21', '2', 'synergy_mms', 'Synergy Mms', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('36', '3', 'synergy_mms', 'Synergy Mms', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('51', '4', 'synergy_mms', 'Synergy Mms', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('66', '5', 'synergy_mms', 'Synergy Mms', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('7', '1', 'hu_the_lobby', 'HU The Lobby', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('22', '2', 'hu_the_lobby', 'HU The Lobby', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('37', '3', 'hu_the_lobby', 'HU The Lobby', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('52', '4', 'hu_the_lobby', 'HU The Lobby', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('67', '5', 'hu_the_lobby', 'HU The Lobby', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('8', '1', 'navision', 'Navision', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('23', '2', 'navision', 'Navision', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('38', '3', 'navision', 'Navision', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('53', '4', 'navision', 'Navision', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('68', '5', 'navision', 'Navision', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('9', '1', 'onq_ri', 'Onq Ri', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('24', '2', 'onq_ri', 'Onq Ri', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('39', '3', 'onq_ri', 'Onq Ri', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('54', '4', 'onq_ri', 'Onq Ri', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('69', '5', 'onq_ri', 'Onq Ri', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('10', '1', 'birchstreet', 'Birchstreet', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('25', '2', 'birchstreet', 'Birchstreet', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('40', '3', 'birchstreet', 'Birchstreet', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('55', '4', 'birchstreet', 'Birchstreet', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('70', '5', 'birchstreet', 'Birchstreet', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('11', '1', 'delphi', 'Delphi', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('26', '2', 'delphi', 'Delphi', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('41', '3', 'delphi', 'Delphi', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('56', '4', 'delphi', 'Delphi', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('71', '5', 'delphi', 'Delphi', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('12', '1', 'omina', 'Omina', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('27', '2', 'omina', 'Omina', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('42', '3', 'omina', 'Omina', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('57', '4', 'omina', 'Omina', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('72', '5', 'omina', 'Omina', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('13', '1', 'vingcard_system', 'Vingcard System', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('28', '2', 'vingcard_system', 'Vingcard System', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('43', '3', 'vingcard_system', 'Vingcard System', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('58', '4', 'vingcard_system', 'Vingcard System', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('73', '5', 'vingcard_system', 'Vingcard System', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('14', '1', 'digital_rev', 'Digital Rev', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('29', '2', 'digital_rev', 'Digital Rev', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('44', '3', 'digital_rev', 'Digital Rev', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('59', '4', 'digital_rev', 'Digital Rev', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('74', '5', 'digital_rev', 'Digital Rev', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('15', '1', 'office_key_card', 'Office Key Card', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('30', '2', 'office_key_card', 'Office Key Card', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('45', '3', 'office_key_card', 'Office Key Card', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('60', '4', 'office_key_card', 'Office Key Card', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('75', '5', 'office_key_card', 'Office Key Card', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('76', '1', 'email_account', 'Email Account', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('77', '2', 'email_account', 'Email Account', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('78', '3', 'email_account', 'Email Account', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('79', '4', 'email_account', 'Email Account', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('80', '5', 'email_account', 'Email Account', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('81', '1', 'landline_phone', 'Landline Phone', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('82', '2', 'landline_phone', 'Landline Phone', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('83', '3', 'landline_phone', 'Landline Phone', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('84', '4', 'landline_phone', 'Landline Phone', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('85', '5', 'landline_phone', 'Landline Phone', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('86', '1', 'mobile_phone', 'Mobile Phone', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('87', '2', 'mobile_phone', 'Mobile Phone', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('88', '3', 'mobile_phone', 'Mobile Phone', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('89', '4', 'mobile_phone', 'Mobile Phone', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('90', '5', 'mobile_phone', 'Mobile Phone', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('91', '1', 'mobile_email', 'Mobile Email', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('92', '2', 'mobile_email', 'Mobile Email', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('93', '3', 'mobile_email', 'Mobile Email', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('94', '4', 'mobile_email', 'Mobile Email', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `created_at`) VALUES ('95', '5', 'mobile_email', 'Mobile Email', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '1', 'Hardware Issue', 'HW', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '6', 'Hardware Issue', 'HW', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '11', 'Hardware Issue', 'HW', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '16', 'Hardware Issue', 'HW', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '21', 'Hardware Issue', 'HW', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '2', 'Network Problem', 'NET', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '7', 'Network Problem', 'NET', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '12', 'Network Problem', 'NET', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '17', 'Network Problem', 'NET', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '22', 'Network Problem', 'NET', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '3', 'Software Issue', 'SW', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '8', 'Software Issue', 'SW', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '13', 'Software Issue', 'SW', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '18', 'Software Issue', 'SW', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '23', 'Software Issue', 'SW', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '4', 'Maintenance', 'MAINT', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '9', 'Maintenance', 'MAINT', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '14', 'Maintenance', 'MAINT', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '19', 'Maintenance', 'MAINT', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '24', 'Maintenance', 'MAINT', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('1', '5', 'Other', 'OTHER', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('2', '10', 'Other', 'OTHER', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('3', '15', 'Other', 'OTHER', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('4', '20', 'Other', 'OTHER', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES ('5', '25', 'Other', 'OTHER', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('1', '1', 'Low', '1', '#0000FF', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('2', '6', 'Low', '1', '#0000FF', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('3', '11', 'Low', '1', '#0000FF', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('4', '16', 'Low', '1', '#0000FF', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('5', '21', 'Low', '1', '#0000FF', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('1', '2', 'Normal', '2', '#00FF00', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('2', '7', 'Normal', '2', '#00FF00', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('3', '12', 'Normal', '2', '#00FF00', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('4', '17', 'Normal', '2', '#00FF00', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('5', '22', 'Normal', '2', '#00FF00', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('1', '3', 'High', '3', '#FFA500', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('2', '8', 'High', '3', '#FFA500', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('3', '13', 'High', '3', '#FFA500', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('4', '18', 'High', '3', '#FFA500', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('5', '23', 'High', '3', '#FFA500', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('1', '4', 'Urgent', '4', '#FF0000', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('2', '9', 'Urgent', '4', '#FF0000', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('3', '14', 'Urgent', '4', '#FF0000', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('4', '19', 'Urgent', '4', '#FF0000', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('5', '24', 'Urgent', '4', '#FF0000', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('1', '5', 'Critical', '5', '#8B0000', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('2', '10', 'Critical', '5', '#8B0000', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('3', '15', 'Critical', '5', '#8B0000', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('4', '20', 'Critical', '5', '#8B0000', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('5', '25', 'Critical', '5', '#8B0000', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('1', '1', 'Open', '#FF0000', '0', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('2', '5', 'Open', '#FF0000', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('3', '9', 'Open', '#FF0000', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('4', '13', 'Open', '#FF0000', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('5', '17', 'Open', '#FF0000', '0', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('1', '2', 'In Progress', '#FFA500', '0', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('2', '6', 'In Progress', '#FFA500', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('3', '10', 'In Progress', '#FFA500', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('4', '14', 'In Progress', '#FFA500', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('5', '18', 'In Progress', '#FFA500', '0', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('1', '4', 'Closed', '#808080', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('2', '8', 'Closed', '#808080', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('3', '12', 'Closed', '#808080', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('4', '16', 'Closed', '#808080', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('5', '20', 'Closed', '#808080', '1', '1', '2026-01-01 00:00:01');
 
 -- Historical note for existing DBs (do not run on fresh import — columns are in CREATE TABLE above):
 -- ALTER TABLE `employees` ADD COLUMN `active` tinyint(1) DEFAULT '1' AFTER `raw_status_code`;
@@ -2815,46 +1303,6 @@ INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'IT
 INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'Helpdesk', '2026-01-01 00:00:01');
 
 INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'User', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (2, 'Admin', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (2, 'IT Manager', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (2, 'IT Assistant', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (2, 'Helpdesk', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (2, 'User', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (3, 'Admin', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (3, 'IT Manager', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (3, 'IT Assistant', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (3, 'Helpdesk', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (3, 'User', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (4, 'Admin', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (4, 'IT Manager', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (4, 'IT Assistant', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (4, 'Helpdesk', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (4, 'User', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (5, 'Admin', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (5, 'IT Manager', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (5, 'IT Assistant', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (5, 'Helpdesk', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (5, 'User', '2026-01-01 00:00:01');
 
 -- Why: Seed admins insert before employee_roles; bind tenant-correct Admin role_id by name.
 UPDATE `employees` e
@@ -2965,14 +1413,6 @@ INNER JOIN (
 
 INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`, `created_at`) VALUES ('1', '1', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`, `created_at`) VALUES ('2', '2', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`, `created_at`) VALUES ('3', '3', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`, `created_at`) VALUES ('4', '4', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`, `created_at`) VALUES ('5', '5', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `ip_subnets` (`company_id`, `vlan_id`, `cidr`, `network_ip`, `prefix_length`, `gateway_ip`, `dns1_ip`, `dns2_ip`, `dhcp_enabled`, `description`, `active`, `created_at`) VALUES ('1', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '1', NULL, '1', '2026-01-01 00:00:01'),
 ('2', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '1', NULL, '1', '2026-01-01 00:00:01'),
 ('3', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '1', NULL, '1', '2026-01-01 00:00:01'),
@@ -2981,543 +1421,111 @@ INSERT INTO `ip_subnets` (`company_id`, `vlan_id`, `cidr`, `network_ip`, `prefix
 
 INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '4', 'Enterprise', '2026-01-01 00:00:01');
 
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '7', 'Enterprise', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '13', 'Enterprise', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '19', 'Enterprise', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '25', 'Enterprise', '2026-01-01 00:00:01');
-
 INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', 'Extended', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '8', 'Extended', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '14', 'Extended', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '20', 'Extended', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '26', 'Extended', '2026-01-01 00:00:01');
 
 INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '5', 'None', '2026-01-01 00:00:01');
 
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '9', 'None', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '15', 'None', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '21', 'None', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '27', 'None', '2026-01-01 00:00:01');
-
 INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '6', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '10', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '16', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '22', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '28', 'Other', '2026-01-01 00:00:01');
 
 INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', 'Premium', '2026-01-01 00:00:01');
 
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '11', 'Premium', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '17', 'Premium', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '23', 'Premium', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '29', 'Premium', '2026-01-01 00:00:01');
-
 INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'Standard', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '12', 'Standard', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '18', 'Standard', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '24', 'Standard', '2026-01-01 00:00:01');
-
-INSERT INTO `warranty_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '30', 'Standard', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', 'All-in-One', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '9', 'All-in-One', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '17', 'All-in-One', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '25', 'All-in-One', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '33', 'All-in-One', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'Desktop', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '10', 'Desktop', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '18', 'Desktop', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '26', 'Desktop', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '34', 'Desktop', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', 'Laptop', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '11', 'Laptop', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '19', 'Laptop', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '27', 'Laptop', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '35', 'Laptop', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '6', 'Mobile', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '12', 'Mobile', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '20', 'Mobile', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '28', 'Mobile', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '36', 'Mobile', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '8', 'Other', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '13', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '21', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '29', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '37', 'Other', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '7', 'POS', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '14', 'POS', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '22', 'POS', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '30', 'POS', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '38', 'POS', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '4', 'Tablet', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '15', 'Tablet', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '23', 'Tablet', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '31', 'Tablet', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '39', 'Tablet', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '5', 'Thin-Client', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '16', 'Thin-Client', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '24', 'Thin-Client', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '32', 'Thin-Client', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '40', 'Thin-Client', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('1', '1', 'Desktop + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1', '0', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('2', '12', 'Desktop + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('3', '23', 'Desktop + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('4', '34', 'Desktop + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('5', '45', 'Desktop + 1 Monitor', 'MODE-PC-1MON', 'Desktop with 1 Monitor', '1', '1', '0', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('1', '2', 'Desktop + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('2', '13', 'Desktop + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('3', '24', 'Desktop + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('4', '35', 'Desktop + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('5', '46', 'Desktop + 2 Monitors', 'MODE-PC-2MON', 'Desktop with 2 Monitors', '2', '1', '0', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('1', '3', 'Laptop Only', 'MODE-LAP', 'Single Laptop', '0', '0', '0', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('2', '14', 'Laptop Only', 'MODE-LAP', 'Single Laptop', '0', '0', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('3', '25', 'Laptop Only', 'MODE-LAP', 'Single Laptop', '0', '0', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('4', '36', 'Laptop Only', 'MODE-LAP', 'Single Laptop', '0', '0', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('5', '47', 'Laptop Only', 'MODE-LAP', 'Single Laptop', '0', '0', '0', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('1', '4', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('2', '15', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('3', '26', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('4', '37', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('5', '48', 'All-in-One', 'MODE-AIO', 'All-in-One Device', '0', '1', '0', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('1', '5', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '1', '0', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('2', '16', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('3', '27', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('4', '38', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('5', '49', 'Shared Setup', 'MODE-SHARED', 'Shared Workstation', '1', '1', '0', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('1', '6', 'Laptop + Dock', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '0', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('2', '17', 'Laptop + Dock', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '0', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('3', '28', 'Laptop + Dock', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '0', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('4', '39', 'Laptop + Dock', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '0', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('5', '50', 'Laptop + Dock', 'MODE-LAP-DOCK', 'Laptop with Docking Station', '0', '1', '0', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('1', '7', 'Laptop + Dock + Monitor', 'MODE-LAP-DOCK1', 'Laptop with Docking Station & Monitor', '1', '1', '0', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('2', '18', 'Laptop + Dock + Monitor', 'MODE-LAP-DOCK1', 'Laptop with Docking Station & Monitor', '1', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('3', '29', 'Laptop + Dock + Monitor', 'MODE-LAP-DOCK1', 'Laptop with Docking Station & Monitor', '1', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('4', '40', 'Laptop + Dock + Monitor', 'MODE-LAP-DOCK1', 'Laptop with Docking Station & Monitor', '1', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('5', '51', 'Laptop + Dock + Monitor', 'MODE-LAP-DOCK1', 'Laptop with Docking Station & Monitor', '1', '1', '0', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('1', '8', 'Laptop + Dock + Monitors', 'MODE-LAP-DOCK2', 'Laptop with Docking Station & Monitors', '2', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('2', '19', 'Laptop + Dock + Monitors', 'MODE-LAP-DOCK2', 'Laptop with Docking Station & Monitors', '2', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('3', '30', 'Laptop + Dock + Monitors', 'MODE-LAP-DOCK2', 'Laptop with Docking Station & Monitors', '2', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('4', '41', 'Laptop + Dock + Monitors', 'MODE-LAP-DOCK2', 'Laptop with Docking Station & Monitors', '2', '1', '0', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('5', '52', 'Laptop + Dock + Monitors', 'MODE-LAP-DOCK2', 'Laptop with Docking Station & Monitors', '2', '1', '0', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('1', '9', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '0', '1', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('2', '20', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '0', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('3', '31', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '0', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('4', '42', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '0', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('5', '53', 'POS Only', 'MODE-POS', 'Point of Sale Terminal', '0', '0', '1', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('1', '10', 'POS + Desktop', 'MODE-POS1', 'Point of Sale Terminal + Desktop', '1', '1', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('2', '21', 'POS + Desktop', 'MODE-POS1', 'Point of Sale Terminal + Desktop', '1', '1', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('3', '32', 'POS + Desktop', 'MODE-POS1', 'Point of Sale Terminal + Desktop', '1', '1', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('4', '43', 'POS + Desktop', 'MODE-POS1', 'Point of Sale Terminal + Desktop', '1', '1', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('5', '54', 'POS + Desktop', 'MODE-POS1', 'Point of Sale Terminal + Desktop', '1', '1', '1', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('1', '11', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('2', '22', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('3', '33', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('4', '44', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_modes` (`company_id`, `id`, `mode_name`, `mode_code`, `description`, `monitor_count`, `has_keyboard_mouse`, `pos`, `active`, `created_at`) VALUES ('5', '55', 'POS + Laptop', 'MODE-POS2', 'Point of Sale Terminal + Laptop', '0', '1', '1', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'None', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '5', 'None', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '9', 'None', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '13', 'None', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '17', 'None', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', 'Office 2024 Pro', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '6', 'Office 2024 Pro', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '10', 'Office 2024 Pro', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '14', 'Office 2024 Pro', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '18', 'Office 2024 Pro', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', 'Office 2024 STD', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '7', 'Office 2024 STD', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '11', 'Office 2024 STD', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '15', 'Office 2024 STD', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '19', 'Office 2024 STD', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '4', 'Office 365', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '8', 'Office 365', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '12', 'Office 365', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '16', 'Office 365', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_office` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '20', 'Office 365', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'Windows', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '16', 'Windows', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '31', 'Windows', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '46', 'Windows', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '61', 'Windows', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', 'Windows 11', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '17', 'Windows 11', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '32', 'Windows 11', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '47', 'Windows 11', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '62', 'Windows 11', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', 'Windows 10', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '18', 'Windows 10', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '33', 'Windows 10', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '48', 'Windows 10', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '63', 'Windows 10', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '4', 'Windows Server', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '19', 'Windows Server', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '34', 'Windows Server', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '49', 'Windows Server', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '64', 'Windows Server', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '5', 'Windows Server 2012', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '20', 'Windows Server 2012', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '35', 'Windows Server 2012', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '50', 'Windows Server 2012', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '65', 'Windows Server 2012', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '6', 'Windows Server 2016', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '21', 'Windows Server 2016', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '36', 'Windows Server 2016', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '51', 'Windows Server 2016', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '66', 'Windows Server 2016', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '7', 'Windows Server 2019', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '22', 'Windows Server 2019', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '37', 'Windows Server 2019', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '52', 'Windows Server 2019', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '67', 'Windows Server 2019', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '8', 'Windows Server 2022', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '23', 'Windows Server 2022', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '38', 'Windows Server 2022', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '53', 'Windows Server 2022', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '68', 'Windows Server 2022', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '9', 'Windows Server 2025', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '24', 'Windows Server 2025', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '39', 'Windows Server 2025', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '54', 'Windows Server 2025', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '69', 'Windows Server 2025', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '10', 'Android', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '25', 'Android', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '40', 'Android', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '55', 'Android', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '70', 'Android', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '11', 'iOS', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '26', 'iOS', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '41', 'iOS', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '56', 'iOS', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '71', 'iOS', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '12', 'ChromeOS', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '27', 'ChromeOS', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '42', 'ChromeOS', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '57', 'ChromeOS', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '72', 'ChromeOS', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '13', 'Linux', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '28', 'Linux', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '43', 'Linux', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '58', 'Linux', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '73', 'Linux', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '14', 'macOS', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '29', 'macOS', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '44', 'macOS', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '59', 'macOS', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '74', 'macOS', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '15', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '30', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '45', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '60', 'Other', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_types` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '75', 'Other', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', '24H2', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '5', '24H2', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '9', '24H2', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '13', '24H2', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '17', '24H2', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', '25H2', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '6', '25H2', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '10', '25H2', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '14', '25H2', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '18', '25H2', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', '26H2', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '7', '26H2', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '11', '26H2', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '15', '26H2', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '19', '26H2', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '4', '10 LTSC', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '8', '10 LTSC', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '12', '10 LTSC', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '16', '10 LTSC', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_os_versions` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '20', '10 LTSC', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', '4 GB', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '7', '4 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '13', '4 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '19', '4 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '25', '4 GB', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '2', '8 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '8', '8 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '14', '8 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '20', '8 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '26', '8 GB', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', '16 GB', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '9', '16 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '15', '16 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '21', '16 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '27', '16 GB', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '4', '32 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '10', '32 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '16', '32 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '22', '32 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '28', '32 GB', '2026-01-01 00:00:01');
 
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '5', '64 GB', '2026-01-01 00:00:01');
 
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '11', '64 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '17', '64 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '23', '64 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '29', '64 GB', '2026-01-01 00:00:01');
-
 INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '6', '128 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('2', '12', '128 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('3', '18', '128 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('4', '24', '128 GB', '2026-01-01 00:00:01');
-
-INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES ('5', '30', '128 GB', '2026-01-01 00:00:01');
 
 -- Replicate shared table data to all companies
 SET @replicate_source_company_id := COALESCE(@replicate_source_company_id, 1);
