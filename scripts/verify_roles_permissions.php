@@ -212,6 +212,31 @@ if ($rolesIndexSource === '' || strpos($rolesIndexSource, "['active_count']") ==
     rp_verify_pass('roles_permissions/index.php reads active_count with employment status helpers.');
 }
 
+if ($rolesIndexSource !== '') {
+    require_once ROOT_PATH . 'scripts/lib/itm_ui_list_contract_checks.php';
+    $h1Check = itm_check_list_heading_emoji($rolesIndexSource);
+    if (($h1Check['status'] ?? '') !== 'pass') {
+        rp_verify_fail('roles_permissions list h1 contract: ' . ($h1Check['details'] ?? 'failed'));
+    } else {
+        rp_verify_pass('roles_permissions list h1 uses Settings sidebar icon via $moduleListHeading');
+    }
+    $layoutCheck = itm_check_list_heading_layout($rolesIndexSource);
+    if (($layoutCheck['status'] ?? '') !== 'pass') {
+        rp_verify_fail('roles_permissions list h1 layout (Settings UI): ' . ($layoutCheck['details'] ?? 'failed'));
+    } else {
+        rp_verify_pass('roles_permissions list h1 layout uses Settings-managed centered header row');
+    }
+    if (strpos($rolesIndexSource, 'data-itm-new-button-managed="server"') === false) {
+        rp_verify_fail('roles_permissions/index.php must use data-itm-new-button-managed="server" for list header.');
+    } elseif (strpos($rolesIndexSource, 'itm-list-new-button') === false || strpos($rolesIndexSource, 'rp-open-add-role') === false) {
+        rp_verify_fail('roles_permissions/index.php must gate modal ➕ with itm-list-new-button and rp-open-add-role.');
+    } elseif (strpos($rolesIndexSource, 'itm_resolve_new_button_position') === false) {
+        rp_verify_fail('roles_permissions/index.php must resolve Settings new_button_position for ➕ slots.');
+    } else {
+        rp_verify_pass('roles_permissions list header gates modal ➕ per Settings new_button_position');
+    }
+}
+
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 $adminActiveCount = 0;
 $empJoin = itm_employee_active_employment_status_join_sql('e', 'es');
