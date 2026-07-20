@@ -22,7 +22,7 @@ Read-only weekly resignation report for the active company. Data is sourced from
 
 ## 5. UI Behavior Requirements
 - **index.php only** — no create/edit/delete handlers.
-- **List `<h1>`:** `sanitize($moduleListHeading)` built from `itm_resolve_module_sidebar_icon()` + weekly `$reportTitle` (`Weekly Resignations Report - Week {week}/{yy}`); descriptive `title` attribute on the heading.
+- **List `<h1>`:** Settings-managed header row (`data-itm-new-button-managed="server"`) with centered `<?php echo sanitize($moduleListHeading); ?>`; heading text is `itm_resolve_module_sidebar_icon()` + weekly `$reportTitle`. **Employees** shortcut is gated by Settings `new_button_position` (left / `left_right` → left toolbar; `right` → right toolbar).
 - **Browser `<title>`:** dynamic sidebar icon prepended to `$reportTitle` via `$crud_title`, then canonical app-name suffix.
 - Filter card: Week, Month, Year, Employment Status multi-select, Employee Type multi-select, Search (all fields). Search matches visible columns including **dd/mm/yyyy** admission/last-work-day text and **Official Resignation Week** (`{week}/{yy}` via `DATE_FORMAT` / `CONCAT(WEEK…)`). Search reset uses emoji-only 🔙 (`title="Clear"`) when a query is active. Control card uses `data-itm-no-export-pdf` and `data-itm-no-export-excel`.
 - Table columns: ID TM (`external_id`), Name, Team member / Internship (`employee_type.name_type`), Department, Admission date (`start_date`), Last work day (`termination_date`), Official Resignation Week. No Actions column — UI config **Table Actions** check is `n/a`.
