@@ -1451,6 +1451,22 @@
         }
       ]
     },
+    "todo": {
+      "reviewed_at": "2026-07-20",
+      "reason": "Microsoft To-Do–style task cards on index.php: bespoke sidebar filters, task-row actions, and quick-add — no flattened list Actions column or scaffold bulk-delete toolbar.",
+      "checks": [
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "No Actions column in index.php — task rows use inline checkbox, star, share, and view/edit affordances, not itm-actions-cell table chrome"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Bulk toolbar intentionally omitted — per-task delete on view/edit and quick-add flow; no ids[] bulk-delete form on card list"
+        }
+      ]
+    },
     "is_*": {
       "reviewed_at": "2026-07-20",
       "reason": "Equipment-type façade modules (is_switch, is_server, is_workstation, …) are thin wrappers that require modules/equipment/ — no local index.php table, list toolbar, or Settings new-button row for this audit.",
