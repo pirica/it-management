@@ -646,8 +646,46 @@ if (is_dir(BACKUP_PATH)) {
     }
 }
 
-usort($backupFiles, static function ($a, $b) {
-    return $b['modified'] <=> $a['modified'];
+/**
+ * Builds a sort URL for the All Backups table (preserves sort/dir toggle).
+ */
+function settings_backup_sort_url($column, $currentSort, $currentDir) {
+    $nextDir = ($currentSort === $column && $currentDir === 'ASC') ? 'DESC' : 'ASC';
+
+    return 'index.php?' . http_build_query([
+        'sort' => $column,
+        'dir' => $nextDir,
+    ]) . '#all-backups';
+}
+
+/**
+ * Returns ▲/▼ for the active backup sort column.
+ */
+function settings_backup_sort_indicator($column, $currentSort, $currentDir) {
+    if ($currentSort !== $column) {
+        return '';
+    }
+
+    return $currentDir === 'ASC' ? ' ▲' : ' ▼';
+}
+
+$backupSortableColumns = ['name', 'size', 'modified'];
+$sort = trim((string)($_GET['sort'] ?? 'modified'));
+$dir = strtoupper(trim((string)($_GET['dir'] ?? 'DESC'))) === 'ASC' ? 'ASC' : 'DESC';
+if (!in_array($sort, $backupSortableColumns, true)) {
+    $sort = 'modified';
+}
+
+usort($backupFiles, static function ($a, $b) use ($sort, $dir) {
+    $mult = $dir === 'DESC' ? -1 : 1;
+    if ($sort === 'name') {
+        return $mult * strcasecmp((string)($a['name'] ?? ''), (string)($b['name'] ?? ''));
+    }
+    if ($sort === 'size') {
+        return $mult * (((int)($a['size'] ?? 0)) <=> ((int)($b['size'] ?? 0)));
+    }
+
+    return $mult * (((int)($a['modified'] ?? 0)) <=> ((int)($b['modified'] ?? 0)));
 });
 
 // Initialize configuration for form pre-filling.
@@ -1128,16 +1166,28 @@ if (!isset($crud_title)) {
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card" id="all-backups">
                     <div class="card-header"><h2>All Backups</h2></div>
                     <div class="card-body" style="overflow:auto;">
                         <table data-itm-db-import-endpoint="index.php">
                             <thead>
                             <tr>
-                                <th>File Name</th>
-                                <th>Size (KB)</th>
-                                <th>Last Modified (UTC)</th>
                                 <th>Options</th>
+                                <th>
+                                    <a href="<?php echo sanitize(settings_backup_sort_url('name', $sort, $dir)); ?>" style="text-decoration:none;color:inherit;">
+                                        File Name<?php echo settings_backup_sort_indicator('name', $sort, $dir); ?>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="<?php echo sanitize(settings_backup_sort_url('size', $sort, $dir)); ?>" style="text-decoration:none;color:inherit;">
+                                        Size (KB)<?php echo settings_backup_sort_indicator('size', $sort, $dir); ?>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="<?php echo sanitize(settings_backup_sort_url('modified', $sort, $dir)); ?>" style="text-decoration:none;color:inherit;">
+                                        Last Modified (UTC)<?php echo settings_backup_sort_indicator('modified', $sort, $dir); ?>
+                                    </a>
+                                </th>
                             </tr>
                             </thead>
                             <tbody>
@@ -1146,9 +1196,6 @@ if (!isset($crud_title)) {
                             <?php else: ?>
                                 <?php foreach ($backupFiles as $backup): ?>
                                     <tr>
-                                        <td><?php echo sanitize($backup['name']); ?></td>
-                                        <td><?php echo number_format($backup['size'] / 1024, 2); ?></td>
-                                        <td><?php echo gmdate('Y-m-d H:i:s', (int)$backup['modified']); ?></td>
                                         <td style="display:flex;gap:8px;flex-wrap:wrap;">
                                             <a class="btn btn-sm" href="index.php?download=<?php echo urlencode($backup['name']); ?>">Export</a>
                                             <form method="post" onsubmit="return confirm('Delete this backup file?');" style="display:inline;">
@@ -1158,6 +1205,9 @@ if (!isset($crud_title)) {
                                                 <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
                                             </form>
                                         </td>
+                                        <td><?php echo sanitize($backup['name']); ?></td>
+                                        <td><?php echo number_format($backup['size'] / 1024, 2); ?></td>
+                                        <td><?php echo gmdate('Y-m-d H:i:s', (int)$backup['modified']); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
