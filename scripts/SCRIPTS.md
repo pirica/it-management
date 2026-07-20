@@ -558,7 +558,7 @@ GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
 
 **database-import** job also runs `php scripts/verify_crud_fk_label_search.php` after import (requires MySQL).
 
-Local full import (requires MySQL, password `itmanagement`): `bash scripts/verify_database_sql_import.sh` — same command as CI **database-import** step 1. Then run `php scripts/verify_crud_fk_label_search.php` for runtime FK label search regression.
+Local full import (requires MySQL, password `itmanagement`): `bash scripts/verify_database_sql_import.sh` — same command as CI **database-import** step 1. Local split alternative: `bash scripts/import_database_split.sh` (see `db/AGENT_NOTES.md`). Then run `php scripts/verify_crud_fk_label_search.php` for runtime FK label search regression.
 
 **Split database import (optional):** generated files under `db/` (`01_schema.sql`, `03_data.sql`, `02_triggers.sql`) are produced from `database.sql` via `php scripts/split_database_sql.php --apply`. Import in **one MySQL session** in order **01 → 03 → 02** (`bash scripts/import_database_split.sh`) so `@replicate_source_company_id` persists and audit triggers load after seed data. Parity gate: `php scripts/verify_database_split_parity.php`. Details: `db/AGENT_NOTES.md`.
 

@@ -150,6 +150,7 @@ On **bash**, prefer a heredoc or `--body-file` when the body contains `` ` ``, `
 
 ## 📂 Directory Map
 * `config/`: Core settings and `config.php`.
+* `db/`: Generated split SQL import bundle (`01_schema.sql`, `03_data.sql`, `02_triggers.sql`) from `database.sql`; see `db/AGENT_NOTES.md`.
 * `includes/`: UI components (headers, sidebars) and utility functions.
 * `modules/`: Feature-specific CRUD logic.
 * `scripts/`: Maintenance, security audits, and CLI tools. Standards: `scripts/SCRIPTS.md`. Catalog: `scripts/scripts.php`.

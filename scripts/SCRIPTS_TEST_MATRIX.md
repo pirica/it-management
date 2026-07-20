@@ -23,6 +23,9 @@ Generated from catalog on 2026-07-16. Catalog rows classified: **234**.
 | `bash scripts/smoke_test.sh` | PHP lint; `check_csrf_coverage.php`; `check_sql_injection_coverage.php`; `check_fk_label_search_coverage.php` | MySQL, PHPUnit, MBQA, most `check_*` / `verify_*` |
 | `php scripts/run_tier2_checks.php` | All Tier 2 static `check_*` scripts from this matrix (parse or fallback list) | Tier 1 smoke trio, Tier 3+ runtime verifiers, MBQA |
 | `bash scripts/verify_database_sql_import.sh` | Full `database.sql` import + table count; calls schema verify | Module HTTP behaviour |
+| `bash scripts/import_database_split.sh` | Split `db/` import (01→03→02, one session) + schema verify + parity gate | CI (monolith path only) |
+| `php scripts/split_database_sql.php` | Dry-run split parser metrics | Writes files unless `--apply` |
+| `php scripts/verify_database_split_parity.php` | Static parity: `db/*` vs `database.sql` | MySQL not required |
 | `php scripts/verify_crud_fk_label_search.php` | Runtime FK label search (CI database-import) | Non-search modules |
 | `php scripts/run_tests.php` | PHPUnit suite under `phpunit/tests/Unit/` | Module entry HTTP flows; most `scripts/verify_*` |
 | `php scripts/module_browser_qa_runner.php` | HTTP CRUD matrix across modules/companies | `scripts/` verifiers; deep bespoke Tier D modules |
@@ -35,7 +38,7 @@ If any script **destroys or corrupts** the live `itmanagement` database, seed da
 
 1. **Stop** the matrix batch.
 2. **Document** the culprit in `scripts/data/scripts-matrix-destroy-log.md` (and mark the matrix row `DESTROYED_ENV`).
-3. **Fresh clone** the database from `database.sql` (do not continue on partial state).
+3. **Fresh clone** the database from `database.sql` or the generated `db/` split (`bash scripts/import_database_split.sh` — order 01→03→02 in one session). Do not continue on partial state.
 4. **Sanity-check**, then resume at the **next** script (or re-run only if the failure was a false alarm).
 
 ### Detect destruction
@@ -66,6 +69,8 @@ cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
 ```
 
 Or: `bash scripts/verify_database_sql_import.sh`
+
+Split alternative (same seed, one MySQL session): `bash scripts/import_database_split.sh` (requires `php scripts/split_database_sql.php --apply` first). See `db/AGENT_NOTES.md`.
 
 Then: `php scripts/verify_database_schema.php` (or `php scripts/count_db_tables.php`) and re-run Tier 1 smoke once before continuing.
 
@@ -184,8 +189,9 @@ php scripts/employees_delete_clear_table_test.php
 | 1 | `check_sql_injection_coverage.php` | PHP | none | CI smoke | Invoked by smoke_test.sh |
 | 1 | `run_tests.php` | MySQL optional | low | PHPUnit meta | Unit/integration suite under phpunit/tests/Unit |
 | 1 | `smoke_test.sh` | PHP | none | CI smoke | Lint + CSRF + SQLi + FK label static |
-| 1 | `verify_crud_fk_label_search.php` | MySQL | low | CI database-import | Runtime FK label search after import |
 | 1 | `verify_database_sql_import.sh` | MySQL | destroys-DB | CI database-import | Full database.sql re-import — baseline clone |
+| 1 | `import_database_split.sh` | MySQL | destroys-DB | manual / local | Split db/ re-import (01→03→02); runs schema + parity checks |
+| 1 | `verify_crud_fk_label_search.php` | MySQL | low | CI database-import | Runtime FK label search after import |
 | 2 | `check_audit_logs_coverage.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_codacy_xss_echo.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_manual_sql_string.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
@@ -204,6 +210,8 @@ php scripts/employees_delete_clear_table_test.php
 | 2 | `check_points.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_script_disposable_employees.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_sql_errors.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
+| 2 | `split_database_sql.php` | PHP | writes-repo | static-manual | Dry-run default; `--apply` regenerates `db/*.sql` from `database.sql` |
+| 2 | `verify_database_split_parity.php` | PHP | none | static-manual | Parity gate after split regeneration (130 tables, 337 triggers) |
 | 2 | `check_stale_user_id_sql.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_stale_user_terminology.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_standard_crud_delegate_requires.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
