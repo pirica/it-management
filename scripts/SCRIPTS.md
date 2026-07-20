@@ -589,9 +589,10 @@ Module seed expansion in `db/02_data.sql` (repo write, no DB mutation): `php scr
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/extract_02_data_sample.php` | **Browser + CLI.** Dry-run default. Writes `db/02_data_sample.sql` from `db/02_data.sql` company `1` (template marker) INSERT rows. `--apply` / `?apply=1` (Admin). |
+| `php scripts/extract_02_data_sample.php` | **Browser + CLI.** Dry-run default. Requires MySQL. Writes `db/02_data_sample.sql` from company `1` rows in `db/02_data.sql`, live MySQL backfill, and minimal synthesis so **every** tenant-scoped table has at least one template. `--apply` / `?apply=1` (Admin). |
+| `php scripts/check_02_data_sample_coverage.php` | Static gate: every tenant-scoped table (schema `company_id`, minus exempt list) has ≥1 company `1` marker row in `db/02_data_sample.sql`. Exit `1` when missing. |
 | `php scripts/dedupe_02_data_per_company_inserts.php` | **Browser + CLI.** Lists/removes redundant companies `2–5` single-row INSERTs when `@replicate_source_company_id` replication exists. Dry-run default; `--apply` edits `db/02_data.sql`. |
-| `php scripts/verify_sample_data_seed.php` | Regression: seeds arbitrary disposable companies from `db/02_data_sample.sql` (`workstation_ram`, FK parent chain, duplicate skip). CLI: `php scripts/verify_sample_data_seed.php`. |
+| `php scripts/verify_sample_data_seed.php` | Regression: seeds arbitrary disposable companies from `db/02_data_sample.sql` (`workstation_ram`, FK parent chain, duplicate skip, random fallback helper). CLI: `php scripts/verify_sample_data_seed.php`. |
 
 #### PHPUnit test runner (`scripts/run_tests.php`)
 

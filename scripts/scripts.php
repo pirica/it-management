@@ -571,8 +571,14 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="extract_02_data_sample.php" target="_blank" rel="nofollow noreferrer">extract_02_data_sample.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Builds <code>db/02_data_sample.sql</code> (runtime Add sample data templates) from company <code>1</code> rows in <code>db/02_data.sql</code>. <strong>Default = dry-run</strong>; writes with <code>--apply</code> / <code>?apply=1</code> (Admin).</td>
+                    <td>Builds <code>db/02_data_sample.sql</code> (runtime Add sample data templates) from company <code>1</code> rows in <code>db/02_data.sql</code>, live MySQL backfill, and minimal synthesis so every tenant-scoped table has at least one template. Requires MySQL. <strong>Default = dry-run</strong>; writes with <code>--apply</code> / <code>?apply=1</code> (Admin).</td>
                     <td>Browser: <a href="extract_02_data_sample.php">dry-run</a> / <a href="extract_02_data_sample.php?apply=1">apply=1</a>. CLI: <code>php scripts/extract_02_data_sample.php</code> then <code>php scripts/extract_02_data_sample.php --apply</code></td>
+                </tr>
+                <tr>
+                    <td><a href="check_02_data_sample_coverage.php" target="_blank" rel="nofollow noreferrer">check_02_data_sample_coverage.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static gate: every tenant-scoped table has at least one company <code>1</code> marker row in <code>db/02_data_sample.sql</code> (exempt: audit logs, RBAC, share sessions, <code>ui_configuration</code>, etc.).</td>
+                    <td>CLI: <code>php scripts/check_02_data_sample_coverage.php</code> — exit <code>1</code> when any table is missing.</td>
                 </tr>
                 <tr>
                     <td><a href="dedupe_02_data_per_company_inserts.php" target="_blank" rel="nofollow noreferrer">dedupe_02_data_per_company_inserts.php</a></td>
