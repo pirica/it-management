@@ -224,6 +224,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
         exit;
     }
 
+    tickets_repair_invisible_sample_rows($conn, (int)$company_id);
+    tickets_ensure_sample_rows_active($conn, (int)$company_id);
+
     $companyTotalRows = tickets_tenant_active_row_count($conn, (int)$company_id);
 
     if ($companyTotalRows > 0) {
@@ -232,13 +235,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
         exit;
     }
 
-    tickets_seed_lookup_parents($conn, (int)$company_id);
-
     $seedError = '';
     $insertedRows = itm_seed_table_from_database_sql($conn, 'tickets', (int)$company_id, $seedError);
     if ($insertedRows > 0) {
         tickets_repair_sample_equipment_links($conn, (int)$company_id);
         tickets_ensure_sample_rows_active($conn, (int)$company_id);
+        tickets_repair_invisible_sample_rows($conn, (int)$company_id);
     }
     if ($insertedRows <= 0) {
         $_SESSION['crud_error'] = $seedError !== ''
