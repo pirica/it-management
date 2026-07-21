@@ -7,6 +7,9 @@
  */
 
 require_once '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
+itm_crud_record_share_handle_ajax_request($conn, 'ops_report');
+
 
 $crud_table = 'ops_report';
 $crud_title = 'Ops Report';
@@ -1297,6 +1300,7 @@ if (!isset($crud_title)) {
                 <div class="btn-group">
                     <button type="button" class="btn btn-sm btn-success" onclick="exportOPR('xlsx')">📗 Export Excel</button>
                     <button type="button" class="btn btn-sm btn-danger" onclick="exportOPR('pdf')">📄 Export PDF</button>
+                    <?php echo itm_crud_record_share_render_action_buttons('ops_report', (int)$report_id, 'ops report'); ?>
                 </div>
             </div>
 
@@ -1889,5 +1893,6 @@ function doOprXlsxExport() {
     XLSX.writeFile(wb, filePrefix + '_<?= (int)$selected_year ?>_<?= (int)$selected_month ?>_<?= (int)$selected_day ?>.xlsx');
 }
 </script>
+<?php itm_crud_record_share_include_modal(); ?>
 </body>
 </html>

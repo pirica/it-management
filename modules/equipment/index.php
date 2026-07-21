@@ -13,6 +13,9 @@ $crud_title = 'Equipment';
 $crud_action = $crud_action ?? 'index';
 
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
+itm_crud_record_share_handle_ajax_request($conn, 'equipment');
+
 require_once ROOT_PATH . 'includes/itm_equipment_search.php';
 
 // Handle Excel/CSV database import requests from table-tools.js.
@@ -451,6 +454,9 @@ if (!empty($_SESSION['crud_success'])) {
                         <h2>Switch Port Manager</h2>
                         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                             <button class="btn btn-sm" id="switchExportImageBtn" type="button" title="Export switch layout as image">Export Image</button>
+                            <?php if ($selectedSwitchId > 0): ?>
+                                <?php echo itm_crud_record_share_render_action_buttons('equipment', (int)$selectedSwitchId, 'switch ports', ['share_kind' => 'switch_ports']); ?>
+                            <?php endif; ?>
                             <form method="get" style="display:flex;align-items:center;gap:8px;">
                                 <?php if ($searchRaw !== ''): ?>
                                     <input type="hidden" name="search" value="<?php echo sanitize($searchRaw); ?>">
@@ -1620,5 +1626,6 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($equipmentCsrfToken); ?>;
 </script>
 <script src="../../js/select-add-option.js"></script>
 <?php endif; ?>
+<?php itm_crud_record_share_include_modal(); ?>
 </body>
 </html>

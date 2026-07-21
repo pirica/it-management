@@ -323,7 +323,7 @@ if (!isset($crud_title)) {
             <?php if ($crud_action === 'index'): ?>
                 <div class="card" style="margin-bottom:16px;">
                     <div class="card-body">
-                        <p style="margin-top:0;">Enable or disable temporary QR / 6-digit share per company and module. Only share-capable modules (with a <code>company_module_share</code> row) can be toggled; others show <span class="badge">No share UI</span>. Explicit <code>enabled = 0</code> blocks <code>create_share_session</code>.</p>
+                        <p style="margin-top:0;">Enable or disable temporary QR / 6-digit share per company and module. Only modules with share implemented can be toggled; others show <span class="badge">No share UI</span> and stay disabled. Explicit <code>enabled = 0</code> blocks <code>create_share_session</code> for capable modules.</p>
                         <form method="GET" action="index.php" style="margin-bottom:16px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
                             <div class="form-group" style="margin:0;min-width:260px;flex:1;">
                                 <label for="moduleSearch">Search (all fields)</label>

@@ -324,7 +324,12 @@ CROSS JOIN `modules_registry` mr
 WHERE c.`active` = 1
   AND mr.`module_slug` IN (
     'notes', 'passwords', 'bookmarks', 'todo', 'events',
-    'private_contacts', 'explorer', 'floor_plans', 'rack_planner'
+    'private_contacts', 'explorer', 'floor_plans', 'rack_planner',
+    'employees', 'departments', 'equipment', 'catalogs', 'license_management',
+    'inventory_items', 'suppliers', 'alerts', 'tickets', 'patches_updates', 'ops_report',
+    'annual_budgets', 'approvals', 'approvals_stage', 'approver_type', 'approvers',
+    'budget_categories', 'cost_centers', 'expenses', 'forecast_revisions',
+    'forecast_revisions_status', 'gl_accounts', 'monthly_budgets'
   );
 
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '1', 'IT Operations', 'IT', 'Core IT operations team', 'it-ops@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');

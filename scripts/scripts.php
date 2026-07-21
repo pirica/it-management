@@ -1845,9 +1845,15 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><code>php scripts/verify_notes_share.php</code></td>
                 </tr>
                 <tr>
+                    <td><a href="apply_crud_record_share_modules.php" target="_blank" rel="nofollow noreferrer">apply_crud_record_share_modules.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Maintenance: wire <code>join.php</code>, AJAX <code>create_share_session</code>, view share buttons, and QR modal for CRUD record share rollout modules (<code>includes/itm_crud_record_share.php</code>). Dry-run default; pass <code>--apply</code> to write.</td>
+                    <td><code>php scripts/apply_crud_record_share_modules.php --apply</code></td>
+                </tr>
+                <tr>
                     <td><a href="verify_qr_share_modules.php" target="_blank" rel="nofollow noreferrer">verify_qr_share_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression for Passwords, Bookmarks, Todo, Events, Private Contacts, Explorer, Floor Plans, and Rack Planner QR/code share sessions: create session, payload snapshot, token lookup, join URL. Requires unified <code>share_sessions</code> in <code>db/01_schema.sql</code>.</td>
+                    <td>Regression for Passwords, Bookmarks, Todo, Events, Private Contacts, Explorer, Floor Plans, Rack Planner, and CRUD record (<code>departments</code>) QR/code share sessions: create session, payload snapshot, token lookup, join URL. Requires unified <code>share_sessions</code> in <code>db/01_schema.sql</code>.</td>
                     <td><code>php scripts/verify_qr_share_modules.php</code></td>
                 </tr>
                 <tr>

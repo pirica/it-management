@@ -8,6 +8,7 @@
  */
 
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
 itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
 require '../../includes/employee_system_access.php';
 require_once '../../includes/employee_profile_photo.php';
@@ -147,6 +148,7 @@ if (!isset($crud_title)) {
                     <h1 style="margin:0;">Employee #<?php echo (int)$employeeId; ?></h1>
                 </div>
                 <div style="display:flex;gap:8px;">
+                    <?php echo itm_crud_record_share_render_action_buttons('employees', (int)($employeeId ?? $id ?? $item['id'] ?? 0), 'employee'); ?>
                     <a href="index.php" class="btn">🔙</a>
                     <?php if (empty($employee['deleted_at'])): ?>
                         <a href="edit.php?id=<?php echo (int)$employeeId; ?>" class="btn btn-primary">✏️</a>
@@ -195,5 +197,6 @@ if (!isset($crud_title)) {
         </div>
     </div>
 </div>
+<?php itm_crud_record_share_include_modal(); ?>
 </body>
 </html>
