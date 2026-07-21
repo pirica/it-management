@@ -37,6 +37,10 @@ $searchRaw = trim((string)($_GET['search'] ?? ''));
 
 $errors = [];
 $notices = [];
+if (!empty($_SESSION['crud_error'])) {
+    $errors[] = (string)$_SESSION['crud_error'];
+    unset($_SESSION['crud_error']);
+}
 
 itm_email_ensure_alert_rules($conn, $company_id);
 
@@ -301,6 +305,29 @@ $emailsSendLogsPageUrl = static function (array $extra = []) use ($status_filter
 };
 
 $showSendLogsBulkActions = ($sendLogsTotalRows >= $perPage);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
+    if ($company_id <= 0) {
+        $_SESSION['crud_error'] = 'Sample data requires an active company.';
+        header('Location: index.php?tab=send_logs');
+        exit;
+    }
+
+    if ($totalEmails > 0) {
+        $_SESSION['crud_error'] = 'Sample data can only be added when no records exist.';
+        header('Location: index.php?tab=send_logs');
+        exit;
+    }
+
+    $seedError = '';
+    $insertedRows = itm_seed_table_from_database_sql($conn, 'emails', $company_id, $seedError);
+    if ($insertedRows <= 0 && $seedError !== '') {
+        $_SESSION['crud_error'] = $seedError;
+    }
+
+    header('Location: index.php?tab=send_logs');
+    exit;
+}
 
 $smtpConfigs = [];
 $smtpStmt = mysqli_prepare(

@@ -138,4 +138,12 @@ $sendLogsColumnLabels = [
             </div>
         </div>
     <?php endif; ?>
+    <?php if ($company_id > 0 && $totalEmails === 0): ?>
+        <div class="card" style="margin-top:12px;">
+            <form method="POST" style="display:flex;justify-content:center;">
+                <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                <button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
+            </form>
+        </div>
+    <?php endif; ?>
 </div>
