@@ -1037,17 +1037,11 @@ INSERT INTO `rack_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('
 INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`, `created_at`) VALUES ('1', '1', '1', 'Main Rack A', 'RACK-A', '1', '1', '2026-01-01 00:00:01');
 
 -- Data for `employee_sidebar_preferences`
--- Why: seed default sidebar layout for all 5 base companies and rely on table defaults for timestamps.
+-- Why: seed default sidebar layout per tenant seed admin (Admin, Admin2–Admin5), not employee_id=1 on every company.
 INSERT INTO `employee_sidebar_preferences` (`company_id`, `employee_id`, `entry_type`, `entry_id`, `section_id`, `display_order`, `is_visible`, `active`)
-SELECT c.company_id, 1 AS employee_id, t.entry_type, t.entry_id, t.section_id, t.display_order, 1 AS is_visible, 1 AS active
-FROM (
-    SELECT 1 AS company_id
-    UNION ALL SELECT 2
-    UNION ALL SELECT 3
-    UNION ALL SELECT 4
-    UNION ALL SELECT 5
-) AS c
-CROSS JOIN (
+SELECT e.`company_id`, e.`id`, t.`entry_type`, t.`entry_id`, t.`section_id`, t.`display_order`, 1 AS `is_visible`, 1 AS `active`
+FROM `employees` e
+INNER JOIN (
       SELECT 'section' AS entry_type, 'dashboard' AS entry_id, NULL AS section_id, 0 AS display_order
       UNION ALL SELECT 'section' AS entry_type, 'management' AS entry_id, NULL AS section_id, 1 AS display_order
       UNION ALL SELECT 'section' AS entry_type, 'employee' AS entry_id, NULL AS section_id, 2 AS display_order
@@ -1152,7 +1146,9 @@ CROSS JOIN (
       UNION ALL SELECT 'item' AS entry_type, 'floor_plans' AS entry_id, 'reference_data' AS section_id, 62 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'rj45_speed' AS entry_id, 'reference_data' AS section_id, 63 AS display_order
 ) AS t
-ORDER BY c.company_id, FIELD(t.entry_type, 'section', 'item'), t.display_order, t.entry_id;
+WHERE e.`username` LIKE 'Admin%'
+  AND e.`deleted_at` IS NULL
+ORDER BY e.`company_id`, FIELD(t.`entry_type`, 'section', 'item'), t.`display_order`, t.`entry_id`;
 
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '1', 'Active', '2026-01-01 00:00:01');
 

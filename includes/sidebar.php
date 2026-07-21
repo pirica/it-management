@@ -24,6 +24,10 @@ $csrfToken = itm_get_csrf_token();
 $visibility = $sidebarConfig['sidebar_visibility'] ?? itm_default_sidebar_visibility();
 $mainOrder = $sidebarConfig['sidebar_main_order'] ?? itm_default_sidebar_main_order();
 $submenuOrder = $sidebarConfig['sidebar_submenu_order'] ?? itm_default_sidebar_submenu_order();
+if (function_exists('itm_normalize_sidebar_submenu_order')) {
+    // Why: Persisted prefs can predate new catalog modules; always merge before render (same as Settings layout save).
+    $submenuOrder = itm_normalize_sidebar_submenu_order($submenuOrder);
+}
 $equipmentTypeSidebarVisibility = $sidebarConfig['equipment_type_sidebar_visibility'] ?? [];
 
 // Re-order top-level sections based on configuration
