@@ -773,7 +773,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // Send informational notification email to employee (no plaintext secrets in transit)
                         $emailTarget = !empty($current_user['work_email']) ? $current_user['work_email'] : ($current_user['personal_email'] ?? '');
                         if ($emailTarget !== '' && filter_var($emailTarget, FILTER_VALIDATE_EMAIL)) {
-                            $is_create = empty($current_user['vault_key_hash']);
+                            $is_create = $is_first;
                             $emailSubject = $is_create ? 'Vault Key Created' : 'Vault Key Updated';
                             $emailSubtitle = $is_create ? 'Your Vault Key is ready' : 'Your Vault Key has been changed';
                             $emailText = $is_create
@@ -1168,7 +1168,7 @@ foreach ($access_fields as $f):
                             <div class="card" id="vault-security">
                                 <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
                                     <strong>🔐 Vault Security</strong>
-                                    <button type="button" class="btn btn-sm" onclick="itmGenerateVaultKey()" title="Generate Secure High-Entropy Key">🔑 Generate Key</button>
+                                    <button type="button" class="btn btn-sm" onclick="itmGenerateVaultKey()" title="Generate Secure High-Entropy Key">🔑</button>
                                 </div>
                                 <form method="POST">
                                     <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>"><input type="hidden" name="action" value="vault_key_change">
@@ -1290,13 +1290,13 @@ foreach ($access_fields as $f):
         <p style="font-size:14px; margin-bottom:20px; color:var(--text-secondary); line-height:1.5;">
             Your generated Vault Key is displayed below.
             <br><strong style="color:#d93025;">CRITICAL:</strong> Save this key immediately in a secure location (such as a password manager or physical backup).
-            Once you click "Next", it will be completely cleared from browser memory and cannot be shown again.
+            Once you continue, this overlay field is cleared and the form fields are masked again. The key remains in the New/Confirm fields until you save or leave the page — save it externally before continuing.
         </p>
         <div style="display:flex; gap:8px; margin-bottom:24px;">
             <input type="text" id="itm-generated-key-field" readonly class="form-control" style="font-family:monospace; font-size:16px; text-align:center; font-weight:bold; background:var(--bg-secondary); color:var(--text-primary); border:2px solid var(--accent); padding:10px; width:100%;">
             <button class="btn btn-sm" type="button" onclick="itmCopyGeneratedKey()" title="Copy Key" style="font-size:16px;">🗐</button>
         </div>
-        <button type="button" class="btn btn-primary" style="width:100%; padding:12px; font-weight:bold;" onclick="itmCloseOneTimeDisplay()">Next ➡️</button>
+        <button type="button" class="btn btn-primary" style="width:100%; padding:12px; font-weight:bold;" onclick="itmCloseOneTimeDisplay()" title="Next">➡️</button>
     </div>
 </div>
 
@@ -1338,13 +1338,18 @@ window.itmTogglePassword = function(btn) {
 };
 
 window.itmGenerateVaultKey = function() {
-    // Generate a 24-character high-entropy master key
+    // Why: rejection sampling avoids modulo bias when mapping random bytes to charset indices.
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+';
+    const charsetLimit = Math.floor(0x100000000 / chars.length) * chars.length;
     let key = '';
-    const array = new Uint32Array(24);
-    window.crypto.getRandomValues(array);
     for (let i = 0; i < 24; i++) {
-        key += chars.charAt(array[i] % chars.length);
+        let randomValue;
+        do {
+            const buf = new Uint32Array(1);
+            window.crypto.getRandomValues(buf);
+            randomValue = buf[0];
+        } while (randomValue >= charsetLimit);
+        key += chars.charAt(randomValue % chars.length);
     }
 
     // Fill the inputs in the form
@@ -1387,7 +1392,7 @@ window.itmCopyGeneratedKey = function() {
 };
 
 window.itmCloseOneTimeDisplay = function() {
-    // Completely clear plaintext key from display element and browser memory
+    // Why: clear the overlay copy field only; form inputs keep the generated key until save/navigation.
     const keyField = document.getElementById('itm-generated-key-field');
     if (keyField) {
         keyField.value = '';

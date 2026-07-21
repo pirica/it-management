@@ -324,6 +324,40 @@ if ($disposableLicenseId > 0) {
     }
 }
 
+$userConfigPath = dirname(__DIR__) . '/user-config.php';
+if (!is_readable($userConfigPath)) {
+    emails_verify_fail('user-config.php missing for vault key notification contract.');
+} else {
+    $userConfigSrc = file_get_contents($userConfigPath);
+    if (!is_string($userConfigSrc) || $userConfigSrc === '') {
+        emails_verify_fail('user-config.php unreadable for vault key notification contract.');
+    } else {
+        $vaultContractFragments = [
+            "action === 'vault_key_change'",
+            'itm_send_email($emailTarget',
+            "'Vault Key Created'",
+            "'Vault Key Updated'",
+            "'email_template'",
+            "'button_url' => BASE_URL . 'dashboard.php'",
+        ];
+        $missingVaultFragments = [];
+        foreach ($vaultContractFragments as $fragment) {
+            if (strpos($userConfigSrc, $fragment) === false) {
+                $missingVaultFragments[] = $fragment;
+            }
+        }
+        if ($missingVaultFragments !== []) {
+            emails_verify_fail(
+                'user-config.php vault notification contract missing: ' . implode(', ', $missingVaultFragments)
+            );
+        } elseif (preg_match('/itm_send_email\s*\([^;]*\$(?:new_vk|new_master_key|old_vk_verify)/s', $userConfigSrc)) {
+            emails_verify_fail('user-config.php vault notification must not pass master-key variables into itm_send_email().');
+        } else {
+            emails_verify_pass('user-config.php vault key notification uses itm_send_email() without plaintext secrets.');
+        }
+    }
+}
+
 if ($failures > 0) {
     echo colorText('Verification finished with ' . $failures . ' failure(s).', 'fail') . $nl;
     itm_script_output_end();

@@ -367,8 +367,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="verify_emails_module.php" target="_blank" rel="nofollow noreferrer">verify_emails_module.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression checks for Email Management tables, registry row, SMTP seed, alert rules, <code>itm_send_email()</code>, and company 1 30-day warranty/license alert window (hard fail; disposable sample insert when empty).</td>
-                    <td><code>php scripts/verify_emails_module.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/emails/</code>, <code>includes/itm_email.php</code>, or <code>email*</code> / alert-window seed rows in <code>db/</code> split bundle.</td>
+                    <td>Regression checks for Email Management tables, registry row, SMTP seed, alert rules, <code>itm_send_email()</code>, <code>user-config.php</code> vault-key notification contract (no plaintext secrets), and company 1 30-day warranty/license alert window (hard fail; disposable sample insert when empty).</td>
+                    <td><code>php scripts/verify_emails_module.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/emails/</code>, <code>includes/itm_email.php</code>, <code>user-config.php</code> vault-key mail, or <code>email*</code> / alert-window seed rows in <code>db/</code> split bundle.</td>
                 </tr>
                 <tr>
                     <td><a href="run_email_alert_rules.php" target="_blank" rel="nofollow noreferrer">run_email_alert_rules.php</a></td>

@@ -34,7 +34,7 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 
 ## 6. API Actions (If Applicable)
 - No public JSON API; transactional send via `includes/itm_email.php` helpers.
-- Regression: `php scripts/verify_emails_module.php`.
+- Regression: `php scripts/verify_emails_module.php` (includes static vault-key notification contract in `user-config.php`).
 
 ## 7. File Structure
 - `index.php` — tab shell, POST handlers, stats.
