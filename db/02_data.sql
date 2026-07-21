@@ -705,18 +705,27 @@ INSERT INTO `employee_positions` (`id`, `company_id`, `department_id`, `name`, `
 (15, 5, 22, 'Trainee', 'Entry-level operational role for hospitality onboarding.', 1, '2026-01-01 00:00:01');
 
 -- Why: Multi-company seed admins need access_levels + employee_statuses on companies 2–5 before employees INSERT subqueries run.
+-- Why: Multi-company seed admins need access_levels, employee_statuses, and employee_roles on companies 1–5 before employees INSERT runs so they can bind role_id directly.
 SET @replicate_source_company_id := COALESCE(@replicate_source_company_id, 1);
 
 INSERT IGNORE INTO `access_levels` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `access_levels` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `employee_statuses` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `employee_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'Admin', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'IT Manager', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'IT Assistant', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'Helpdesk', '2026-01-01 00:00:01');
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'User', '2026-01-01 00:00:01');
+
+INSERT IGNORE INTO `employee_roles` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `employee_roles` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+
 INSERT INTO `employees` (`id`, `duplicate`, `company_id`, `first_name`, `last_name`, `display_name`, `work_email`, `personal_email`, `theme`, `emergency_contact_name`, `emergency_contact_relationship`, `emergency_contact_phone`, `mobile_phone`, `external_number`, `dect`, `extension`, `employee_code`, `external_id`, `password`, `vault_key_hash`, `reset_token`, `reset_token_hash`, `reset_token_expires_at`, `role_id`, `access_level_id`, `username`, `department_id`, `job_code`, `comments`, `request_date`, `start_date`, `requested_by`, `termination_requested_by`, `termination_date`, `network_access`, `micros_emc`, `opera_username`, `micros_card`, `pms_id`, `synergy_mms`, `hu_the_lobby`, `navision`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `office_key_card_department_id`, `workstation_mode_id`, `assignment_type_id`, `location_id`, `employment_status_id`, `employee_position_id`, `reports_to`, `on_contacts`, `on_orgchart`, `photo`, `employee_type_id`, `birthday`, `hide_year`, `is_hidden`, `raw_status_code`, `created_at`, `updated_at`) VALUES
-(NULL, 0, 1, 'System', 'Admin', 'System Admin1', 'admin@techcorp.example1.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, NULL, (SELECT `id` FROM `access_levels` WHERE `company_id` = 1 AND `name` = 'Full' LIMIT 1), 'Admin', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_statuses` WHERE `company_id` = 1 AND `name` = 'Active' LIMIT 1), NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', NULL),
-(NULL, 0, 2, 'System', 'Admin', 'System Admin2', 'admin@techcorp.example2.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, NULL, (SELECT `id` FROM `access_levels` WHERE `company_id` = 2 AND `name` = 'Full' LIMIT 1), 'Admin2', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_statuses` WHERE `company_id` = 2 AND `name` = 'Active' LIMIT 1), NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', NULL),
-(NULL, 0, 3, 'System', 'Admin', 'System Admin3', 'admin@techcorp.example3.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, NULL, (SELECT `id` FROM `access_levels` WHERE `company_id` = 3 AND `name` = 'Full' LIMIT 1), 'Admin3', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_statuses` WHERE `company_id` = 3 AND `name` = 'Active' LIMIT 1), NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', NULL),
-(NULL, 0, 4, 'System', 'Admin', 'System Admin4', 'admin@techcorp.example4.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, NULL, (SELECT `id` FROM `access_levels` WHERE `company_id` = 4 AND `name` = 'Full' LIMIT 1), 'Admin4', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_statuses` WHERE `company_id` = 4 AND `name` = 'Active' LIMIT 1), NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', NULL),
-(NULL, 0, 5, 'System', 'Admin', 'System Admin5', 'admin@techcorp.example5.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, NULL, (SELECT `id` FROM `access_levels` WHERE `company_id` = 5 AND `name` = 'Full' LIMIT 1), 'Admin5', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_statuses` WHERE `company_id` = 5 AND `name` = 'Active' LIMIT 1), NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', NULL);
+(NULL, 0, 1, 'System', 'Admin', 'System Admin1', 'admin@techcorp.example1.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_roles` WHERE `company_id` = 1 AND `name` = 'Admin' LIMIT 1), (SELECT `id` FROM `access_levels` WHERE `company_id` = 1 AND `name` = 'Full' LIMIT 1), 'Admin', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_statuses` WHERE `company_id` = 1 AND `name` = 'Active' LIMIT 1), NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', NULL),
+(NULL, 0, 2, 'System', 'Admin', 'System Admin2', 'admin@techcorp.example2.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_roles` WHERE `company_id` = 2 AND `name` = 'Admin' LIMIT 1), (SELECT `id` FROM `access_levels` WHERE `company_id` = 2 AND `name` = 'Full' LIMIT 1), 'Admin2', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_statuses` WHERE `company_id` = 2 AND `name` = 'Active' LIMIT 1), NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', NULL),
+(NULL, 0, 3, 'System', 'Admin', 'System Admin3', 'admin@techcorp.example3.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_roles` WHERE `company_id` = 3 AND `name` = 'Admin' LIMIT 1), (SELECT `id` FROM `access_levels` WHERE `company_id` = 3 AND `name` = 'Full' LIMIT 1), 'Admin3', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_statuses` WHERE `company_id` = 3 AND `name` = 'Active' LIMIT 1), NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', NULL),
+(NULL, 0, 4, 'System', 'Admin', 'System Admin4', 'admin@techcorp.example4.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_roles` WHERE `company_id` = 4 AND `name` = 'Admin' LIMIT 1), (SELECT `id` FROM `access_levels` WHERE `company_id` = 4 AND `name` = 'Full' LIMIT 1), 'Admin4', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_statuses` WHERE `company_id` = 4 AND `name` = 'Active' LIMIT 1), NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', NULL),
+(NULL, 0, 5, 'System', 'Admin', 'System Admin5', 'admin@techcorp.example5.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_roles` WHERE `company_id` = 5 AND `name` = 'Admin' LIMIT 1), (SELECT `id` FROM `access_levels` WHERE `company_id` = 5 AND `name` = 'Full' LIMIT 1), 'Admin5', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_statuses` WHERE `company_id` = 5 AND `name` = 'Active' LIMIT 1), NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', NULL);
 
 -- Data for `equipment`
 -- Why: Relative warranty keeps company-1 email alert runner / verify_emails_module in the default 30-day window after import.
@@ -1314,21 +1323,6 @@ SELECT e.`company_id`, e.`id`, 'left', 'left', 'left', 'left', 1, 1, 1, 0, '25',
 FROM `employees` e
 WHERE e.`work_email` LIKE 'admin@techcorp.example%.com';
 
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'Admin', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'IT Manager', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'IT Assistant', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'Helpdesk', '2026-01-01 00:00:01');
-
-INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'User', '2026-01-01 00:00:01');
-
--- Why: Seed admins insert before employee_roles; bind tenant-correct Admin role_id by name.
-UPDATE `employees` e
-INNER JOIN `employee_roles` er ON er.`company_id` = e.`company_id` AND er.`name` = 'Admin'
-SET e.`role_id` = er.`id`
-WHERE e.`username` IN ('Admin', 'Admin2', 'Admin3', 'Admin4', 'Admin5');
 
 -- Data for `registration_invitations`
 INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_employee_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`)
@@ -2133,9 +2127,3 @@ INSERT INTO `it_settings` (`company_id`, `contact_email`, `contact_phone`, `hour
 (3, 'help@networksolutions.example', '+1-415-555-0300', '09:00 - 17:00 PST', 'Please submit a ticket via the portal for escalation.'),
 (4, 'it@cloudtech.example', '+1-206-555-0400', '24/7', 'Contact the Level 2 support team via Slack #it-escalations.'),
 (5, 'it-ops@enterpriseit.example', '+1-617-555-0500', '08:00 - 20:00 EST', 'Standard escalation through the ticketing system.');
-
--- Why: Seed admins insert before employee_roles; bind tenant-correct Admin role_id by name across all companies.
-UPDATE `employees` e
-INNER JOIN `employee_roles` er ON er.`company_id` = e.`company_id` AND er.`name` = 'Admin'
-SET e.`role_id` = er.`id`
-WHERE e.`username` IN ('Admin', 'Admin2', 'Admin3', 'Admin4', 'Admin5');
