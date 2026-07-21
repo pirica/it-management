@@ -25,7 +25,7 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 - `import_excel_rows` JSON handler on POST.
 - CSRF on mutations.
 - **Search:** index search hydrates/decrypts via `todo_hydrate_task_row()` then filters in PHP (`todo_row_matches_search()` in `todo_vault_helpers.php`) — encrypted title/description are not SQL-`LIKE` searchable. List fetch uses `includes/itm_todo_list_query.php` (`todo_query_tasks_for_list()`) with Settings `records_per_page` pagination, sortable export-table headers, and emoji-only 🔙 search reset.
-- **Vault:** `todo_vault_bootstrap.php` / `todo_vault_helpers.php` — private tasks (empty assignee CSV, not company-global `NULL`) encrypt `title` + `description` at rest; lock screen on index/create and private owned edit/view. Master-key rotation: `itm_vault_reencrypt_todo()`. Migration: `db/migrations/todo_vault.sql` (`DROP TABLE` + full `CREATE TABLE` copy). Regression: `php scripts/verify_todo_vault.php`.
+- **Vault:** `todo_vault_bootstrap.php` / `todo_vault_helpers.php` — private tasks (empty assignee CSV, not company-global `NULL`) encrypt `title` + `description` at rest; lock screen on index/create and private owned edit/view (master key + optional TOTP via `includes/itm_vault_unlock.php`). Master-key rotation: `itm_vault_reencrypt_todo()`. Migration: `db/migrations/todo_vault.sql` (`DROP TABLE` + full `CREATE TABLE` copy). Regression: `php scripts/verify_todo_vault.php`.
 - **List header (Settings UI):** index list uses `data-itm-new-button-managed="server"` with centered `$moduleListHeading` (`itm_resolve_module_sidebar_icon()` + catalog **To-Do** label) and ➕ create link gated by Settings `new_button_position` (default **left**). Inline `position:relative` / centered `h1` styles satisfy `fields_missing.php` bespoke gate scrapes. Active filter name (My Day, Tasks, …) and today’s date render below the toolbar as subtitles.
 - **No flattened Actions/bulk contract:** task-card list omits standard Actions column and bulk-delete toolbar; gate-excluded checks print `[n/a][n/a][reviewed]` via `scripts/data/ui_configuration_reviewed.json` (manifest: `scripts/ui_configuration_reviewed.php`).
 - **Create control:** primary ➕ uses `btn btn-primary itm-list-new-button` + static `create.php` (active list `filter` stored in `$_SESSION['todo_create_filter']` for create presets).
@@ -38,7 +38,7 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 - **create_share_session** — creator-only temporary QR/code share (`todo_share_sessions`)
 
 ## 7. File Structure
-- `todo_vault_bootstrap.php`, `todo_vault_helpers.php` — vault unlock UI and encrypt/decrypt helpers.
+- `todo_vault_bootstrap.php`, `todo_vault_helpers.php` — vault unlock UI (`itm_vault_unlock.php`) and encrypt/decrypt helpers.
 - `index.php` — main UI, import, visibility-filtered queries.
 - `todo_share_helpers.php` — QR share session builder (`todo_share_create_session()`)
 - `join.php` — public 6-digit / token join page for shared task snapshots

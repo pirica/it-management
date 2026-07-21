@@ -4,7 +4,7 @@
 Incremental DDL scripts for **existing** databases. Fresh installs use the matching `CREATE TABLE` blocks in `db/01_schema.sql` (and seeds in `db/02_data.sql` when needed).
 
 ## 4. Business Rules (Critical for Agents)
-- **Naming:** `db/migrations/{module}_{subject}.sql` (lowercase module slug, underscore subject). Examples: `explorer_share.sql`, `floor_plans_share.sql`, `rack_planner_share.sql`.
+- **Naming:** `db/migrations/{module}_{subject}.sql` (lowercase module slug, underscore subject). Examples: `explorer_share.sql`, `employee_totp.sql`, `floor_plans_share.sql`.
 - **No `ALTER TABLE` in migrations (hard rule):** copy the current table definition from `db/01_schema.sql`, paste it into the migration file, apply the change, and ship the **full `CREATE TABLE`** block. Do not use `ALTER TABLE` / `MODIFY` / `ADD COLUMN` in `db/migrations/`.
 - **No staging tables (hard rule):** do not use `{table}_new`, `RENAME TABLE`, or `INSERT … SELECT` swap patterns. Migrations use **copy/paste replacement** only:
   1. `SET FOREIGN_KEY_CHECKS = 0`
@@ -18,6 +18,7 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
 
 ## 7. File Structure
 - `{module}_{subject}.sql` — one focused table replacement per file (`DROP TABLE` + full `CREATE TABLE`, not `ALTER`)
+- `employee_totp.sql` — `employees` table with `totp_secret` + `totp_enabled` (mirrors `db/01_schema.sql`; destructive — re-seed employees after apply)
 - `index.html` — directory listing prevention
 
 ## 12. Module Owner Notes (Optional)

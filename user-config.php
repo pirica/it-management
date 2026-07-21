@@ -740,6 +740,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'vault_key_change') {
         $curr_pw = $_POST['current_password'] ?? '';
         if (password_verify($curr_pw, $current_user['password'])) {
+            $totpGate = itm_totp_require_valid_code_or_error($current_user, $_POST['totp_code'] ?? '');
+            if (!$totpGate['ok']) {
+                $message = $totpGate['error'];
+                $message_type = 'error';
+            } else {
             $new_vk = $_POST['new_master_key'] ?? '';
             $confirm_vk = $_POST['confirm_master_key'] ?? '';
             if ($new_vk === $confirm_vk) {
@@ -794,7 +799,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } catch (Exception $e) { mysqli_rollback($conn); $message = $e->getMessage(); $message_type = 'error'; }
                 } else { $message = 'Old Vault Key incorrect.'; $message_type = 'error'; }
             } else { $message = 'Vault keys do not match.'; $message_type = 'error'; }
+            }
         } else { $message = 'System password incorrect.'; $message_type = 'error'; }
+    } elseif ($action === 'totp_setup_start') {
+        $curr_pw = $_POST['current_password'] ?? '';
+        if (!password_verify($curr_pw, $current_user['password'])) {
+            $message = 'System password incorrect.';
+            $message_type = 'error';
+        } elseif (itm_totp_employee_has_enabled($current_user)) {
+            $message = 'Two-factor authentication is already enabled.';
+            $message_type = 'error';
+        } else {
+            $_SESSION['totp_setup_secret'] = itm_totp_create_setup_secret();
+            $message = 'Scan the QR code with your authenticator app, then enter the 6-digit code to confirm.';
+            $message_type = 'success';
+        }
+    } elseif ($action === 'totp_setup_confirm') {
+        $setupSecret = (string)($_SESSION['totp_setup_secret'] ?? '');
+        if ($setupSecret === '') {
+            $message = '2FA setup session expired. Start setup again.';
+            $message_type = 'error';
+        } elseif (!itm_totp_verify_plain_secret($setupSecret, $_POST['totp_code'] ?? '')) {
+            $message = 'Incorrect authenticator code. Try again.';
+            $message_type = 'error';
+        } else {
+            $encryptedSecret = itm_totp_encrypt_secret($setupSecret);
+            $enabled = 1;
+            $stmt = mysqli_prepare($conn, 'UPDATE employees SET totp_secret = ?, totp_enabled = ? WHERE id = ? AND company_id = ?');
+            mysqli_stmt_bind_param($stmt, 'siii', $encryptedSecret, $enabled, $user_id, $home_company_id);
+            if (mysqli_stmt_execute($stmt)) {
+                mysqli_stmt_close($stmt);
+                unset($_SESSION['totp_setup_secret']);
+                itm_log_audit($conn, 'employees', $user_id, 'UPDATE', ['action' => 'totp_off'], ['action' => 'totp_enable']);
+                $message = 'Two-factor authentication enabled.';
+                $message_type = 'success';
+            } else {
+                mysqli_stmt_close($stmt);
+                $message = 'Unable to save 2FA settings.';
+                $message_type = 'error';
+            }
+        }
+    } elseif ($action === 'totp_disable') {
+        $curr_pw = $_POST['current_password'] ?? '';
+        if (!password_verify($curr_pw, $current_user['password'])) {
+            $message = 'System password incorrect.';
+            $message_type = 'error';
+        } else {
+            $totpGate = itm_totp_require_valid_code_or_error($current_user, $_POST['totp_code'] ?? '');
+            if (!$totpGate['ok']) {
+                $message = $totpGate['error'];
+                $message_type = 'error';
+            } else {
+                $stmt = mysqli_prepare($conn, 'UPDATE employees SET totp_secret = NULL, totp_enabled = 0 WHERE id = ? AND company_id = ?');
+                mysqli_stmt_bind_param($stmt, 'ii', $user_id, $home_company_id);
+                if (mysqli_stmt_execute($stmt)) {
+                    mysqli_stmt_close($stmt);
+                    unset($_SESSION['totp_setup_secret']);
+                    itm_log_audit($conn, 'employees', $user_id, 'UPDATE', ['action' => 'totp_enable'], ['action' => 'totp_disable']);
+                    $message = 'Two-factor authentication disabled.';
+                    $message_type = 'success';
+                } else {
+                    mysqli_stmt_close($stmt);
+                    $message = 'Unable to disable 2FA.';
+                    $message_type = 'error';
+                }
+            }
+        }
+    } elseif ($action === 'totp_setup_cancel') {
+        unset($_SESSION['totp_setup_secret']);
+        $message = '2FA setup cancelled.';
+        $message_type = 'info';
     } elseif ($action === 'update_sidebar') {
         $items = $_POST['sidebar_items'] ?? [];
         mysqli_begin_transaction($conn);
@@ -849,6 +923,17 @@ $user_config_render_flash = static function ($forAction = null) use ($message, $
 };
 $profileTheme = $profile_normalize_theme($current_user['theme'] ?? ($_SESSION['ui_theme'] ?? 'light'));
 $_SESSION['ui_theme'] = $profileTheme;
+$totpEnabled = itm_totp_employee_has_enabled($current_user);
+$totpSetupSecret = (string)($_SESSION['totp_setup_secret'] ?? '');
+$totpSetupPending = $totpSetupSecret !== '';
+$totpAccountLabel = trim((string)($current_user['work_email'] ?? ''));
+if ($totpAccountLabel === '') {
+    $totpAccountLabel = trim((string)($current_user['username'] ?? 'Employee'));
+}
+$totpIssuer = defined('APP_NAME') ? (string)APP_NAME : 'IT Management';
+$totpQrUrl = $totpSetupPending
+    ? itm_totp_build_qr_image_url($totpAccountLabel, $totpSetupSecret, $totpIssuer)
+    : '';
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="<?php echo sanitize($profileTheme); ?>">
@@ -1170,6 +1255,14 @@ foreach ($access_fields as $f):
                                     <strong>🔐 Vault Security</strong>
                                     <button type="button" class="btn btn-sm" onclick="itmGenerateVaultKey()" title="Generate Secure High-Entropy Key">🔑</button>
                                 </div>
+                                <p style="margin:0 0 12px; font-size:13px;">
+                                    2FA status:
+                                    <?php if ($totpEnabled): ?>
+                                        <span class="badge badge-success">Enabled</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-danger">Disabled</span>
+                                    <?php endif; ?>
+                                </p>
                                 <form method="POST">
                                     <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>"><input type="hidden" name="action" value="vault_key_change">
                                     <div class="form-group"><label>System Password</label><input type="password" name="current_password" required></div>
@@ -1196,9 +1289,66 @@ foreach ($access_fields as $f):
                                             <button class="btn btn-sm" type="button" onclick="itmTogglePassword(this)" title="Toggle Visibility">👁️</button>
                                         </div>
                                     </div>
+                                    <?php if ($totpEnabled): ?>
+                                    <div class="form-group">
+                                        <label>Authenticator Code</label>
+                                        <input type="text" name="totp_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
+                                    </div>
+                                    <?php endif; ?>
                                     <?php $user_config_render_flash('vault_key_change'); ?>
                                     <button type="submit" class="btn btn-primary" title="Save">💾</button>
                                 </form>
+
+                                <hr style="margin:20px 0; border:none; border-top:1px solid var(--border);">
+
+                                <?php if ($totpSetupPending): ?>
+                                    <div style="text-align:center; margin-bottom:16px;">
+                                        <p style="font-size:13px; margin-bottom:12px;">Scan this QR code with Google Authenticator, Authy, or another TOTP app.</p>
+                                        <img src="<?php echo sanitize($totpQrUrl); ?>" alt="TOTP QR code" width="200" height="200" style="border:1px solid var(--border); border-radius:8px;">
+                                        <p style="font-size:12px; color:var(--text-secondary); margin-top:8px;">Manual key: <code><?php echo sanitize($totpSetupSecret); ?></code></p>
+                                    </div>
+                                    <form method="POST" style="margin-bottom:12px;">
+                                        <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                                        <input type="hidden" name="action" value="totp_setup_confirm">
+                                        <div class="form-group">
+                                            <label>6-digit code</label>
+                                            <input type="text" name="totp_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
+                                        </div>
+                                        <?php $user_config_render_flash('totp_setup_confirm'); ?>
+                                        <button type="submit" class="btn btn-primary" title="Confirm 2FA">💾</button>
+                                    </form>
+                                    <form method="POST">
+                                        <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                                        <input type="hidden" name="action" value="totp_setup_cancel">
+                                        <button type="submit" class="btn btn-sm" title="Cancel">🔙</button>
+                                    </form>
+                                <?php elseif (!$totpEnabled): ?>
+                                    <form method="POST">
+                                        <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                                        <input type="hidden" name="action" value="totp_setup_start">
+                                        <div class="form-group">
+                                            <label>Enable 2FA — System Password</label>
+                                            <input type="password" name="current_password" required>
+                                        </div>
+                                        <?php $user_config_render_flash('totp_setup_start'); ?>
+                                        <button type="submit" class="btn btn-success btn-sm" title="Start 2FA setup">➕</button>
+                                    </form>
+                                <?php else: ?>
+                                    <form method="POST">
+                                        <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                                        <input type="hidden" name="action" value="totp_disable">
+                                        <div class="form-group">
+                                            <label>Disable 2FA — System Password</label>
+                                            <input type="password" name="current_password" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Authenticator Code</label>
+                                            <input type="text" name="totp_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
+                                        </div>
+                                        <?php $user_config_render_flash('totp_disable'); ?>
+                                        <button type="submit" class="btn btn-danger btn-sm" title="Disable 2FA">🗑️</button>
+                                    </form>
+                                <?php endif; ?>
                             </div>
                         </div>
 

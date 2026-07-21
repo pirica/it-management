@@ -17,7 +17,7 @@ Admin-facing audit trail for **non-private** INSERT, UPDATE, and DELETE activity
 - **JSON Metadata**: Old and new values are stored as JSON strings.
 - **Automatic triggering:** Most **audited** tables use MySQL triggers (`trg_{table}_audit_insert|update|delete`) in `db/03_triggers.sql`. PHP modules may also call `itm_log_audit()` when `ui_configuration.enable_audit_logs` is on.
 - **Private data exclusion:** These tables must **not** have audit triggers and must **not** receive `audit_logs` rows — `emails`, `password_entries`, `password_folders`, `private_contacts`, `todo_categories`, `todo`, `notes`, `note_labels`, `bookmark_folders`, `bookmarks`. The list view shows an informational note; absence of rows for those tables is expected.
-- **Employees trigger redaction:** `trg_employees_audit_*` in `db/03_triggers.sql` must not log `password`, `vault_key_hash`, `reset_token`, `reset_token_hash`, or `reset_token_expires_at`. Regression: `php scripts/verify_audit_logs_disclosure.php` (static trigger scan + live disposable employee probe + retro scan).
+- **Employees trigger redaction:** `trg_employees_audit_*` in `db/03_triggers.sql` must not log `password`, `vault_key_hash`, `totp_secret`, `reset_token`, `reset_token_hash`, or `reset_token_expires_at`. `totp_enabled` may appear in JSON payloads as a boolean flag only. Regression: `php scripts/verify_audit_logs_disclosure.php` (static trigger scan + live disposable employee probe + retro scan).
 
 ## 5. UI Behavior Requirements
 - **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).

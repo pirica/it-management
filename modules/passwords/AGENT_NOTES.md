@@ -27,9 +27,10 @@ Secure private password manager with vault encryption. It allows users to store 
 ## 4. Business Rules (Critical for Agents)
 
 - **Vault Security**: Data is encrypted at rest using `itm_encrypt` and a session-based `vault_key`.
-- **Master Key Change**: `user-config.php` re-encrypts all `password_entries` inside a DB transaction via `includes/itm_vault_master_key.php` (`itm_vault_reencrypt_password_entries()`); on failure the transaction rolls back and `vault_key_hash` is not updated.
+- **Vault unlock UI**: `includes/itm_vault_unlock.php` — lock screen on `index.php` / `view.php`; master key + optional 6-digit TOTP when `employees.totp_enabled = 1`.
+- **Master Key Change**: `user-config.php` re-encrypts all `password_entries` inside a DB transaction via `includes/itm_vault_master_key.php` (`itm_vault_reencrypt_password_entries()`); on failure the transaction rolls back and `vault_key_hash` is not updated. When TOTP is enabled, master-key change requires authenticator code in the Vault Security form.
 - **Private Data**: Passwords and folders are private to the `employee_id` and MUST be scoped to the logged-in employee (`employee_id = $_SESSION['employee_id']`).
-- **Session Key**: Decryption requires `$_SESSION['vault_key']` (SHA-256 hash of master key) to be populated. If absent, the module MUST prompt for the master key.
+- **Session Key**: Decryption requires `$_SESSION['vault_key']` (SHA-256 hash of master key) to be populated. If absent, the module MUST prompt for the master key (and TOTP when enabled).
 - **Encryption**: Passwords MUST be stored encrypted in the database using the `itm_encrypt()` helper.
 
 ---

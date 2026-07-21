@@ -16,6 +16,7 @@ CSRF, SQLi, and security guardrail tests.
 - **SelectOptionsBypassTest.php** — `companies` blocked from Select Options quick-add whitelist.
 - **VulnerabilityVerificationTest.php** — June 2026 security review regression tests (assert remediated behaviour); uses disposable users via `itm_script_test_employee_create()` for Notes ZIP traversal, Notes IDOR view, audit reset-token omission, RBAC delete on Expenses, users tenant scoping, and employee_companies admin gate checks. `createDisposableUser()` honours optional `company_id` in options (defaults to company `1`).
 - **VaultSecurityTest.php** — `itm_vault_reencrypt_password_entries()` rollback contract for vault master key changes; disposable user via `itm_script_test_employee_create()` (no `employees.active` column).
+- **TotpTest.php** — secret generation, encrypt/decrypt round-trip, employee-row verification, disabled skip path; disposable user via `itm_script_test_employee_create()`.
 - **SecurityFixesTest.php** — subprocess verification of fixed security paths; role-escalation and sensitive-import cases seed attackers via `itm_script_test_employee_create()` (no `employees.active` column).
 - **CrossTenantScopingTest.php** — tenant isolation for Todo and Employees; Employees list check uses `runIsolatedModule()` instead of in-process `include` (subprocess).
 

@@ -23,6 +23,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
   - Tenant unique-key audit (`php scripts/check_database_sql_company_name_uniques.php` / `includes/database_sql_unique_audit.php`) **skips** `bookmark_folders` and `bookmarks`.
 - **Import/export:** browser HTML bookmark files, CSV, and XLSX.
 - **Deletion (private data — hard delete):** `delete.php` and `delete_folder.php` use `DELETE` (not soft-delete). Optional folder delete moves child bookmarks to root or deletes folder contents when confirmed. Employee delete cascades via FK.
+- **Vault unlock:** `bkm_vault_bootstrap.php` → `includes/itm_vault_unlock.php` — master key + optional 6-digit TOTP when `employees.totp_enabled = 1`. Master-key rotation: `itm_vault_reencrypt_bookmark_urls()` via `user-config.php`.
 
 ## 5. UI Behavior Requirements
 - Dual-pane layout: left folder tree (📁/📂 emoji), right bookmark list.
@@ -50,6 +51,7 @@ Hierarchical bookmark manager with private and shared links, folder tree, drag-a
 - **export.php** / **export.js** — CSV, XLSX (CSV payload), TXT, HTML, and PDF (print view) via `export.php`. `bkm_export_row()` decrypts **own private** titles, URLs, and notes when `$_SESSION['vault_key']` is set; **shared** rows always export as plaintext. Private fields export blank when the vault is locked. `export.js` routes every format to `export.php` (no DOM scrape).
 
 ## 7. File Structure
+- `bkm_vault_bootstrap.php` — vault unlock/lock (`itm_vault_unlock.php`).
 - `index.php` — dual-pane UI, folder move POST, JSON import.
 - `list_all.php` — flattened list with bulk actions.
 - `create.php`, `edit.php`, `delete.php`, `view.php` — bookmark CRUD.

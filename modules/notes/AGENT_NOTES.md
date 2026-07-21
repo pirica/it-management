@@ -12,7 +12,7 @@ Google Keep–style personal and shared notes for the active company. Supports p
 - **notes** → depends on **companies** (`company_id`), **employees** (`employee_id`, share targets).
 - **notes** → uses **note_labels** for tag metadata.
 - Visibility helpers live in `includes/notes_visibility.php`.
-- Vault helpers: `modules/notes/notes_vault_bootstrap.php`, `modules/notes/notes_vault_helpers.php`.
+- Vault helpers: `modules/notes/notes_vault_bootstrap.php` (→ `includes/itm_vault_unlock.php`), `modules/notes/notes_vault_helpers.php`.
 
 ## 4. Business Rules (Critical for Agents)
 - A user sees only their own notes or notes shared with them (`itm_notes_visibility_sql()`).
@@ -21,11 +21,11 @@ Google Keep–style personal and shared notes for the active company. Supports p
 - `note_labels.label` is always encrypted for the owner; use `label_hash` for tag filter, rename, and duplicate checks.
 - Import maps tag names and usernames to tenant-scoped IDs before insert; requires unlocked vault.
 - Standard CSRF on all POST handlers via `itm_require_post_csrf()` (form/AJAX); JSON `import_excel_rows` validates `csrf_token` from the request body with `itm_validate_csrf_token()`.
-- Master key change re-encrypts private notes via `itm_vault_reencrypt_notes()` (`user-config.php`).
+- Master key change re-encrypts private notes via `itm_vault_reencrypt_notes()` (`user-config.php`). Vault unlock: `notes_vault_bootstrap.php` → `includes/itm_vault_unlock.php` (optional TOTP).
 
 ## 5. UI Behavior Requirements
 - **Settings list header:** `data-itm-new-button-managed="server"` row with centered `<?php echo sanitize($moduleListHeading); ?>` (`itm_sidebar_label_for_module()` for default view; filter-specific overrides for Reminders, tags, Archive, etc.); Settings `new_button_position` gates left/right ➕ create links (`itm-list-new-button`, `title="Create"`, `href="create.php"`).
-- **Vault lock screen** when vault is locked on index, list_all, create, and private owned edit/view (mirrors bookmarks).
+- **Vault lock screen** when vault is locked on index, list_all, create, and private owned edit/view (master key + optional 6-digit TOTP via `includes/itm_vault_unlock.php`).
 - **View audit meta:** Detail view loops `$viewColumns` (or equivalent field list including all six audit meta columns) and renders values through `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract. Row meta is for soft-delete display only; this module stays **private-data exempt** from `audit_logs` triggers.
 - Custom card/grid UI (not standard flattened table CRUD on index).
 - **Table view (`list_all.php`):** when `$totalRows >= $perPage`, show bulk toolbar (`bulk-delete-form`, Select to Delete, Cancel, Clear Table) with row `ids[]` checkboxes; posts to `delete.php` → `index.php` (`crud_action=delete`). Include `bulk-delete-selection.js` in index HTML (gate scans index, not header only).
@@ -45,7 +45,7 @@ Google Keep–style personal and shared notes for the active company. Supports p
 
 ## 7. File Structure
 - `index.php` — main UI, filters, import API, CRUD routing.
-- `notes_vault_bootstrap.php`, `notes_vault_helpers.php` — vault unlock UI and encrypt/decrypt helpers.
+- `notes_vault_bootstrap.php`, `notes_vault_helpers.php` — vault unlock UI and encrypt/decrypt helpers. Unlock delegates to `includes/itm_vault_unlock.php` (master key + optional TOTP).
 - `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` — standard entry wrappers.
 
 ## 8. Multi-Tenant Rules

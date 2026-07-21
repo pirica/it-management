@@ -13,7 +13,7 @@ Per-user private address book (not the shared company Contacts module). Stores p
 
 ## 4. Business Rules (Critical for Agents)
 - **Strict user isolation:** all queries must include `employee_id = logged-in employee`. Never show another user's private contacts.
-- **Vault (mandatory):** all contact PII text fields encrypt at rest with `itm_encrypt()` / `$_SESSION['vault_key']` (same master key as Passwords/Notes). List/create/edit/view show a lock screen until the vault is unlocked. Legacy plaintext rows still decrypt via `pc_private_text_legacy_plaintext_check()`.
+- **Vault (mandatory):** all contact PII text fields encrypt at rest with `itm_encrypt()` / `$_SESSION['vault_key']` (same master key as Passwords/Notes). List/create/edit/view show a lock screen until the vault is unlocked (`pc_vault_bootstrap.php` → `includes/itm_vault_unlock.php`; optional TOTP when enabled). Legacy plaintext rows still decrypt via `pc_private_text_legacy_plaintext_check()`.
 - **Search/sort/pagination:** list loads rows for the employee, hydrates/decrypts, then filters and paginates in PHP (`pc_row_matches_search()`, `pc_compare_contact_rows()`) — no SQL `LIKE` on ciphertext.
 - Favourite toggle and delete are POST + CSRF (`index_logic.php`).
 - Distinct from `modules/contacts/` (company directory).
@@ -38,7 +38,7 @@ Per-user private address book (not the shared company Contacts module). Stores p
 - `index.php` — HTML list view (search/sort/pagination wiring, Settings list header, `import_excel_rows` JSON handler).
 - `index_logic.php` — auth, POST handlers (toggle favourite, inline delete).
 - `private_contacts_list_helpers.php` — server-side list query (hydrate, search, sort, pagination).
-- `pc_vault_bootstrap.php`, `pc_vault_helpers.php` — vault unlock/lock UI and encrypt/decrypt/hydrate helpers.
+- `pc_vault_bootstrap.php`, `pc_vault_helpers.php` — vault unlock/lock UI (`itm_vault_unlock.php`) and encrypt/decrypt/hydrate helpers.
 - `pc_share_helpers.php`, `join.php` — temporary QR/WhatsApp/Outlook share sessions.
 - `pc_contact_form_helpers.php` — POST → plaintext map for create/edit encryption.
 - `create.php`, `edit.php`, `view.php` — CRUD screens.
