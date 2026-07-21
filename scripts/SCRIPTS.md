@@ -111,7 +111,7 @@ function colorText($text, $type) {
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/count_db_tables.php` | Counts live tables in `information_schema` for `itmanagement`, echoes the total as plain text, and overwrites `scripts/number_db_tables.txt`. Browser and CLI; **no login**. |
+| `php scripts/count_db_tables.php` | Counts live tables in `information_schema` for `itmanagement`, echoes the total as plain text, and overwrites `scripts/number_db_tables.txt`. Fresh `db/` import: **126** tables (must match `CREATE TABLE` count in `db/01_schema.sql`). Browser and CLI; **no login**. |
 
 Catalog: `scripts/scripts.php`.
 
@@ -552,7 +552,7 @@ GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
 | Job | Command | Purpose |
 |-----|---------|---------|
 | **smoke** | `bash scripts/smoke_test.sh` | PHP syntax lint + CSRF + SQLi + FK label search coverage audits (no MySQL) |
-| **database-import** | `bash scripts/verify_database_sql_import.sh` then `php scripts/verify_crud_fk_label_search.php` | Full `db/` import on MySQL 8.0 service; asserts table count matches **130** `CREATE TABLE` entries; runtime FK label search regression |
+| **database-import** | `bash scripts/verify_database_sql_import.sh` then `php scripts/verify_crud_fk_label_search.php` | Full `db/` import on MySQL 8.0 service; asserts table count matches **126** `CREATE TABLE` entries in `db/01_schema.sql`; runtime FK label search regression |
 
 **smoke** job steps only:
 
