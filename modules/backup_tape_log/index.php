@@ -76,6 +76,38 @@ while ($row = mysqli_fetch_assoc($res)) {
 }
 mysqli_stmt_close($stmt);
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
+    itm_require_post_csrf();
+
+    if ($company_id <= 0) {
+        $_SESSION['crud_error'] = 'Sample data requires an active company.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $seedError = '';
+    $insertedRows = itm_seed_table_from_database_sql($conn, 'backup_tape_log', $company_id, $seedError);
+    $seededServerId = function_exists('itm_seed_find_server_equipment_id')
+        ? itm_seed_find_server_equipment_id($conn, $company_id)
+        : 0;
+
+    if ($insertedRows <= 0 && $seedError !== '') {
+        $_SESSION['crud_error'] = $seedError;
+    } else {
+        $_SESSION['crud_success'] = 'Sample data added for today.';
+    }
+
+    $redirectServerId = $seededServerId > 0
+        ? $seededServerId
+        : (int)($_GET['server_id'] ?? ($_SESSION['btl_last_server_id'] ?? 0));
+    header(
+        'Location: index.php?server_id=' . (int)$redirectServerId
+        . '&month=' . (int)date('n')
+        . '&year=' . (int)date('Y')
+    );
+    exit;
+}
+
 // Month and Year Selection
 $selected_server_id = (int)($_GET['server_id'] ?? ($_SESSION['btl_last_server_id'] ?? ($servers[0]['id'] ?? 0)));
 $selected_month = (int)($_GET['month'] ?? date('n'));
@@ -84,6 +116,12 @@ $selected_year = (int)($_GET['year'] ?? date('Y'));
 if ($selected_server_id > 0) {
     $_SESSION['btl_last_server_id'] = $selected_server_id;
 }
+
+$btl_today_row_exists = false;
+if ($selected_server_id > 0 && function_exists('itm_seed_backup_tape_log_today_row_exists')) {
+    $btl_today_row_exists = itm_seed_backup_tape_log_today_row_exists($conn, $company_id, $selected_server_id);
+}
+$show_btl_sample_data = empty($servers) || !$btl_today_row_exists;
 
 // Handle AJAX Inline Update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_inline_edit'])) {
@@ -457,6 +495,13 @@ if (!isset($crud_title)) {
                         <button type="button" class="btn btn-sm btn-danger" onclick="exportBTL('pdf')">📄 Export PDF</button>
                     </div>
                 </div>
+
+                <?php if ($show_btl_sample_data): ?>
+                <form method="POST" style="margin-bottom:16px;">
+                    <input type="hidden" name="csrf_token" value="<?= sanitize($csrfToken) ?>">
+                    <button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
+                </form>
+                <?php endif; ?>
 
                 <div class="card" style="overflow:auto; padding:0;" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
                     <table class="table btl-table" id="btl-grid-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1" data-itm-no-import-excel="1">

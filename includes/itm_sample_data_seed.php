@@ -85,6 +85,249 @@ if (!function_exists('itm_seed_lookup_parents_for_table')) {
     }
 }
 
+if (!function_exists('itm_seed_find_server_equipment_id')) {
+    function itm_seed_find_server_equipment_id(mysqli $conn, int $companyId): int
+    {
+        if ($companyId <= 0) {
+            return 0;
+        }
+
+        $deletedPredicate = itm_table_has_column($conn, 'equipment', 'deleted_at')
+            ? ' AND e.deleted_at IS NULL'
+            : '';
+
+        $sql = "SELECT e.id FROM equipment e
+            INNER JOIN equipment_types et ON e.equipment_type_id = et.id
+            WHERE e.company_id = ? AND et.company_id = ? AND et.name = 'Server'
+              AND e.active = 1" . $deletedPredicate . '
+            ORDER BY e.id ASC LIMIT 1';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $companyId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+        mysqli_stmt_close($stmt);
+
+        return is_array($row) ? (int)($row['id'] ?? 0) : 0;
+    }
+}
+
+if (!function_exists('itm_seed_resolve_equipment_type_id_by_name')) {
+    function itm_seed_resolve_equipment_type_id_by_name(mysqli $conn, int $companyId, string $typeName): int
+    {
+        if ($companyId <= 0 || $typeName === '') {
+            return 0;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM equipment_types WHERE company_id = ? AND name = ? LIMIT 1'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'is', $companyId, $typeName);
+        mysqli_stmt_execute($stmt);
+        $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+        mysqli_stmt_close($stmt);
+
+        return is_array($row) ? (int)($row['id'] ?? 0) : 0;
+    }
+}
+
+if (!function_exists('itm_seed_ensure_equipment_type_id_by_name')) {
+    function itm_seed_ensure_equipment_type_id_by_name(mysqli $conn, int $companyId, string $typeName): int
+    {
+        $existingId = itm_seed_resolve_equipment_type_id_by_name($conn, $companyId, $typeName);
+        if ($existingId > 0) {
+            return $existingId;
+        }
+
+        $code = $typeName === 'Server' ? 'SRV' : strtoupper(substr($typeName, 0, 6));
+        $insertSql = 'INSERT INTO equipment_types (company_id, name, code, active) VALUES ('
+            . (int)$companyId . ", '"
+            . mysqli_real_escape_string($conn, $typeName) . "', '"
+            . mysqli_real_escape_string($conn, $code) . "', 1)";
+        if (!itm_run_query($conn, $insertSql)) {
+            return 0;
+        }
+
+        return itm_seed_resolve_equipment_type_id_by_name($conn, $companyId, $typeName);
+    }
+}
+
+if (!function_exists('itm_seed_find_equipment_copy_candidate_id')) {
+    function itm_seed_find_equipment_copy_candidate_id(mysqli $conn, int $companyId): int
+    {
+        if ($companyId <= 0) {
+            return 0;
+        }
+
+        $deletedPredicate = itm_table_has_column($conn, 'equipment', 'deleted_at')
+            ? ' AND deleted_at IS NULL'
+            : '';
+
+        $stmt = mysqli_prepare(
+            $conn,
+            "SELECT id FROM equipment WHERE company_id = ? AND name = ?" . $deletedPredicate . ' ORDER BY id ASC LIMIT 1'
+        );
+        if ($stmt) {
+            $sampleName = 'Primary File Server';
+            mysqli_stmt_bind_param($stmt, 'is', $companyId, $sampleName);
+            mysqli_stmt_execute($stmt);
+            $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+            mysqli_stmt_close($stmt);
+            if (is_array($row) && (int)($row['id'] ?? 0) > 0) {
+                return (int)$row['id'];
+            }
+        }
+
+        $res = mysqli_query(
+            $conn,
+            'SELECT id FROM equipment WHERE company_id = ' . (int)$companyId . $deletedPredicate . ' ORDER BY id ASC LIMIT 1'
+        );
+        $row = ($res) ? mysqli_fetch_assoc($res) : null;
+
+        return is_array($row) ? (int)($row['id'] ?? 0) : 0;
+    }
+}
+
+if (!function_exists('itm_seed_ensure_equipment_status_active_id')) {
+    function itm_seed_ensure_equipment_status_active_id(mysqli $conn, int $companyId): int
+    {
+        if ($companyId <= 0) {
+            return 0;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            "SELECT id FROM equipment_statuses WHERE company_id = ? AND name = 'Active' LIMIT 1"
+        );
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $companyId);
+            mysqli_stmt_execute($stmt);
+            $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+            mysqli_stmt_close($stmt);
+            if (is_array($row) && (int)($row['id'] ?? 0) > 0) {
+                return (int)$row['id'];
+            }
+        }
+
+        $insertSql = "INSERT INTO equipment_statuses (company_id, name, created_at) VALUES ("
+            . (int)$companyId . ", 'Active', '2026-01-01 00:00:01')";
+        if (!itm_run_query($conn, $insertSql)) {
+            return 0;
+        }
+
+        return (int)mysqli_insert_id($conn);
+    }
+}
+
+if (!function_exists('itm_seed_insert_minimal_primary_file_server')) {
+    function itm_seed_insert_minimal_primary_file_server(mysqli $conn, int $companyId, int $serverTypeId): int
+    {
+        if ($companyId <= 0 || $serverTypeId <= 0) {
+            return 0;
+        }
+
+        $statusId = itm_seed_ensure_equipment_status_active_id($conn, $companyId);
+        if ($statusId <= 0) {
+            return 0;
+        }
+
+        $insertSql = 'INSERT INTO equipment (company_id, equipment_type_id, name, serial_number, model, hostname, ip_address, status_id, purchase_date, purchase_cost, printer_color_capable, printer_scan, active, created_at) VALUES ('
+            . (int)$companyId . ', ' . (int)$serverTypeId . ", 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', "
+            . (int)$statusId . ", '2026-06-05', 8500.00, 0, 0, 1, '2026-01-01 00:00:01')";
+        if (!itm_run_query($conn, $insertSql)) {
+            return 0;
+        }
+
+        return itm_seed_find_server_equipment_id($conn, $companyId);
+    }
+}
+
+if (!function_exists('itm_seed_ensure_server_equipment')) {
+    function itm_seed_ensure_server_equipment(mysqli $conn, int $companyId): int
+    {
+        if ($companyId <= 0) {
+            return 0;
+        }
+
+        $serverEquipmentId = itm_seed_find_server_equipment_id($conn, $companyId);
+        if ($serverEquipmentId > 0) {
+            return $serverEquipmentId;
+        }
+
+        $serverTypeId = itm_seed_ensure_equipment_type_id_by_name($conn, $companyId, 'Server');
+        if ($serverTypeId <= 0) {
+            return 0;
+        }
+
+        $candidateId = itm_seed_find_equipment_copy_candidate_id($conn, $companyId);
+        if ($candidateId > 0) {
+            $stmt = mysqli_prepare(
+                $conn,
+                'UPDATE equipment SET equipment_type_id = ? WHERE id = ? AND company_id = ?'
+            );
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'iii', $serverTypeId, $candidateId, $companyId);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+            }
+
+            return itm_seed_find_server_equipment_id($conn, $companyId);
+        }
+
+        return itm_seed_insert_minimal_primary_file_server($conn, $companyId, $serverTypeId);
+    }
+}
+
+if (!function_exists('itm_seed_backup_tape_log_today_row_exists')) {
+    function itm_seed_backup_tape_log_today_row_exists(mysqli $conn, int $companyId, int $serverId): bool
+    {
+        if ($companyId <= 0 || $serverId <= 0) {
+            return false;
+        }
+
+        $today = date('Y-m-d');
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM backup_tape_log WHERE company_id = ? AND server_id = ? AND log_date = ? LIMIT 1'
+        );
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 'iis', $companyId, $serverId, $today);
+        mysqli_stmt_execute($stmt);
+        $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+        mysqli_stmt_close($stmt);
+
+        return is_array($row) && (int)($row['id'] ?? 0) > 0;
+    }
+}
+
+if (!function_exists('itm_seed_backup_tape_log_value_for_today')) {
+    function itm_seed_backup_tape_log_value_for_today(string $columnName, string $valueToken, int $serverId): string
+    {
+        if ($columnName === 'log_date') {
+            return "'" . date('Y-m-d') . "'";
+        }
+        if ($columnName === 'tape_to_be_used') {
+            return "'" . date('l') . "'";
+        }
+        if ($columnName === 'server_id' && $serverId > 0) {
+            return (string)$serverId;
+        }
+        if ($columnName === 'time_tape_inserted' || $columnName === 'time_returned_to_safe') {
+            return "'" . date('Y-m-d H:i:s') . "'";
+        }
+
+        return $valueToken;
+    }
+}
+
 if (!function_exists('itm_seed_row_assoc_from_insert_entry')) {
     /**
      * @param array{columns:array<int,string>,values:array<int,string>} $rowEntry
@@ -271,7 +514,11 @@ if (!function_exists('itm_seed_insert_random_fallback_row')) {
             return 0;
         }
 
-        itm_seed_lookup_parents_for_table($conn, $tableName, $companyId);
+        if ($tableName !== 'backup_tape_log') {
+            itm_seed_lookup_parents_for_table($conn, $tableName, $companyId);
+        } elseif (function_exists('itm_seed_ensure_server_equipment')) {
+            itm_seed_ensure_server_equipment($conn, $companyId);
+        }
 
         $columnMetas = itm_seed_table_column_metas($conn, $tableName);
         if ($columnMetas === []) {
@@ -299,13 +546,22 @@ if (!function_exists('itm_seed_insert_random_fallback_row')) {
             if ($name === 'company_id') {
                 $value = $companyId;
                 $bindType = 'i';
+            } elseif ($tableName === 'backup_tape_log' && $name === 'server_id' && function_exists('itm_seed_find_server_equipment_id')) {
+                $fkId = itm_seed_find_server_equipment_id($conn, $companyId);
+                if ($fkId > 0) {
+                    $value = $fkId;
+                    $bindType = 'i';
+                } elseif (!$nullable) {
+                    $error = 'Could not resolve Server equipment for backup_tape_log sample.';
+                    return 0;
+                }
             } elseif (isset($fkMap[$name])) {
                 $refTable = (string)($fkMap[$name]['REFERENCED_TABLE_NAME'] ?? '');
                 $fkId = 0;
                 if ($refTable !== '' && function_exists('itm_first_tenant_row_id')) {
                     $fkId = itm_first_tenant_row_id($conn, $refTable, $companyId);
                 }
-                if ($fkId <= 0 && $refTable !== '') {
+                if ($fkId <= 0 && $refTable !== '' && $tableName !== 'backup_tape_log') {
                     itm_seed_lookup_parents_for_table($conn, $refTable, $companyId);
                     if (function_exists('itm_first_tenant_row_id')) {
                         $fkId = itm_first_tenant_row_id($conn, $refTable, $companyId);
@@ -467,7 +723,17 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
             return 0;
         }
 
-        itm_seed_lookup_parents_for_table($conn, $tableName, $companyId);
+        $backupTapeServerId = 0;
+        if ($tableName !== 'backup_tape_log') {
+            itm_seed_lookup_parents_for_table($conn, $tableName, $companyId);
+        } elseif (function_exists('itm_seed_ensure_server_equipment')) {
+            $backupTapeServerId = itm_seed_ensure_server_equipment($conn, $companyId);
+            if ($backupTapeServerId > 0
+                && function_exists('itm_seed_backup_tape_log_today_row_exists')
+                && itm_seed_backup_tape_log_today_row_exists($conn, $companyId, $backupTapeServerId)) {
+                return 0;
+            }
+        }
 
         $tenantRowsBefore = itm_seed_tenant_row_count($conn, $tableName, $companyId);
 
@@ -509,6 +775,10 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
                 continue;
             }
 
+            if ($tableName === 'backup_tape_log' && $backupTapeServerId <= 0) {
+                continue;
+            }
+
             $targetColumns = [];
             $targetValues = [];
             foreach ($rawColumns as $index => $columnToken) {
@@ -525,6 +795,25 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
                     $targetColumns[] = '`company_id`';
                     $targetValues[] = (string)$companyId;
                     continue;
+                }
+
+                if ($tableName === 'backup_tape_log') {
+                    if ($columnName === 'server_id') {
+                        $targetColumns[] = '`server_id`';
+                        $targetValues[] = (string)$backupTapeServerId;
+                        continue;
+                    }
+                    if (in_array($columnName, ['log_date', 'tape_to_be_used', 'time_tape_inserted', 'time_returned_to_safe'], true)
+                        && function_exists('itm_seed_backup_tape_log_value_for_today')) {
+                        $valueToken = itm_seed_backup_tape_log_value_for_today(
+                            $columnName,
+                            (string)$rawValues[$index],
+                            $backupTapeServerId
+                        );
+                        $targetColumns[] = '`' . str_replace('`', '``', $columnName) . '`';
+                        $targetValues[] = $valueToken;
+                        continue;
+                    }
                 }
 
                 $valueToken = (string)$rawValues[$index];
