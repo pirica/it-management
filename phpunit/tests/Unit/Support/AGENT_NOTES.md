@@ -10,6 +10,7 @@ Shared PHPUnit infrastructure for script CLI subprocess tests and safe extractio
 - **ItmScriptCliTestCase:** extend this (not `TestCase` + trait require) for CLI audit script tests.
 - **ItmModuleIsolatedTestTrait:** subprocess `runIsolatedModule()` for module `index.php` handlers — required when a test would `include` the same module twice in one PHPUnit process (avoids `Cannot redeclare` fatals from procedural helpers in `modules/employees/index.php` and similar entry files).
 - **ItmPhpunitTestSessionTrait:** disposable `$_SESSION` actors via `itmPhpunitBeginTestSession()` / `itmPhpunitCreateDisposableSessionActor()` / `itmPhpunitEndTestSession()` — never `$_SESSION['employee_id'] = 1`. Subprocess harnesses: `itmPhpunitSessionArrayFromActor()`.
+- **ItmAuditContextCleanupExtension:** PHPUnit `AfterTestHook` registered in `phpunit/phpunit.xml` — clears `@app_company_id` / `@app_employee_id` via `itm_script_test_employee_clear_audit_context()` after every test so temp-company tests (e.g. `AlertsTest`) do not poison audit triggers on the shared `$conn`.
 
 ## 7. File Structure
 | File | Role |
@@ -19,6 +20,7 @@ Shared PHPUnit infrastructure for script CLI subprocess tests and safe extractio
 | `ItmExtractFunctionTestTrait.php` | `requireExtractedFunction()`, `itmExtractFunctionSource()` (brace-balanced) for Org Chart / Explorer tests |
 | `ItmModuleIsolatedTestTrait.php` | `runIsolatedModule()` — subprocess include for module entry files |
 | `ItmPhpunitTestSessionTrait.php` | Namespace `Tests\Unit\Support` — disposable PHPUnit `$_SESSION` actors (`itmPhpunitBeginTestSession`, `itmPhpunitEndTestSession`) |
+| `ItmAuditContextCleanupExtension.php` | PHPUnit extension — after-test MySQL audit session var reset |
 
 ## 10. Common Pitfalls
 - Including audit scripts at file scope halts PHPUnit — subprocess only. [Cursor-Valid]

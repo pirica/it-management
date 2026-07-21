@@ -50,8 +50,10 @@ if (!function_exists('itm_ensure_files_storage_directory')) {
 
 // Load the main configuration file
 require_once ROOT_PATH . 'config/config.php';
+require_once ROOT_PATH . 'scripts/lib/itm_script_test_employee.php';
 
 // Shared PHPUnit support (traits/base classes — not test files themselves)
+require_once __DIR__ . '/Unit/Support/ItmAuditContextCleanupExtension.php';
 require_once __DIR__ . '/Unit/Support/ItmScriptCliTestTrait.php';
 require_once __DIR__ . '/Unit/Support/ItmScriptCliTestCase.php';
 require_once __DIR__ . '/Unit/Support/ItmExtractFunctionTestTrait.php';

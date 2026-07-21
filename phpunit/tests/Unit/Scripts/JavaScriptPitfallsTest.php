@@ -49,6 +49,7 @@ final class JavaScriptPitfallsTest extends TestCase
                     $hasGuardOrCreate = (
                         strpos($content, 'rp-permission-matrix') !== false ||
                         strpos($content, 'cma-access-matrix') !== false ||
+                        strpos($content, 'sms-share-matrix') !== false ||
                         strpos($content, 'itm-floor-plan-card') !== false || // floor plans gallery
                         strpos($content, 'itmInitAddableSelects') !== false || // select-add-option
                         strpos($content, 'tableToolsAttached') !== false || // table-tools
