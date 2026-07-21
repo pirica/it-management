@@ -13,6 +13,9 @@ $crud_title = 'Tickets';
 $crud_action = $crud_action ?? 'index';
 
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
+itm_crud_record_share_handle_ajax_request($conn, 'tickets');
+
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 require __DIR__ . '/sample_seed_helpers.php';
 
@@ -509,6 +512,7 @@ if (!isset($crud_title)) {
 </div>
 <script src="../../js/theme.js"></script>
 <script src="../../js/bulk-delete-selection.js"></script>
+<?php itm_crud_record_share_include_modal(); ?>
 </body>
 </html>
 <?php

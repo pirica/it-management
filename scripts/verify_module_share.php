@@ -69,17 +69,25 @@ $badRowRes = $conn->query(
     "SELECT COUNT(*) AS cnt
      FROM company_module_share cms
      INNER JOIN modules_registry mr ON mr.id = cms.module_id
-     WHERE mr.module_slug NOT IN (
-       'notes', 'passwords', 'bookmarks', 'todo', 'events',
-       'private_contacts', 'explorer', 'floor_plans', 'rack_planner'
-     )"
+     WHERE mr.module_slug NOT IN (" . itm_module_share_capable_registry_ids_sql_in_list() . ")"
 );
 $badRowCnt = ($badRowRes && ($badRow = $badRowRes->fetch_assoc())) ? (int)($badRow['cnt'] ?? 0) : -1;
-if ($badRowCnt !== 0) {
-    module_share_verify_fail('company_module_share must only contain share-capable module slugs (found ' . $badRowCnt . ' extra row(s)). Apply db/migrations/company_module_share_capable_seed.sql.');
-    $failures++;
+$suppliersId = itm_module_share_registry_id_by_slug($conn, 'suppliers');
+if ($suppliersId > 0) {
+    if (!itm_set_company_module_share($conn, 1, $suppliersId, 1)) {
+        module_share_verify_fail('suppliers matrix toggle should persist company_module_share row.');
+        $failures++;
+    } elseif (!has_module_share_access($conn, 1, 'suppliers')) {
+        module_share_verify_fail('capable slug suppliers should allow share when company_module_share enabled=1.');
+        $failures++;
+    } else {
+        module_share_verify_pass('capable slug suppliers: matrix enabled=1 allows runtime share.');
+    }
+    itm_set_company_module_share($conn, 1, $suppliersId, 0);
+} elseif ($badRowCnt > 0) {
+    module_share_verify_pass('company_module_share may include non-capable modules when admins toggle the matrix (' . $badRowCnt . ' row(s)).');
 } else {
-    module_share_verify_pass('company_module_share rows limited to share-capable modules.');
+    module_share_verify_pass('company_module_share rows limited to seeded share-capable modules (matrix can add others on toggle).');
 }
 
 $capableCountRes = $conn->query(
@@ -96,9 +104,9 @@ if ($capableCount < 1) {
 }
 
 if (!has_module_share_access($conn, 1, 'suppliers')) {
-    module_share_verify_pass('non-capable slug suppliers correctly blocked at helper layer.');
+    module_share_verify_pass('suppliers share denied when company_module_share enabled=0.');
 } else {
-    module_share_verify_fail('non-capable slug suppliers should not allow share.');
+    module_share_verify_fail('suppliers share should be denied when matrix row is disabled.');
 }
 
 $shareTable = $conn->query("SHOW TABLES LIKE 'share_sessions'");

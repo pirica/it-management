@@ -16,6 +16,9 @@ $crud_title = 'Employees';
 $crud_action = $crud_action ?? 'index';
 
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
+itm_crud_record_share_handle_ajax_request($conn, 'employees');
+
 itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
 // Handle Excel/CSV database import requests from table-tools.js.
 if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
@@ -1043,5 +1046,6 @@ if (!isset($crud_title)) {
     });
 })();
 </script>
+<?php itm_crud_record_share_include_modal(); ?>
 </body>
 </html>

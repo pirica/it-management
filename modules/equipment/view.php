@@ -1,5 +1,6 @@
 <?php
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
 require_once __DIR__ . '/../../includes/ipam_helpers.php';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -249,7 +250,9 @@ if (!isset($crud_title)) {
     </td>
 </tr>
 </tbody></table>
-<p style="margin-top:16px;"><a class="btn" href="<?php echo sanitize($equipmentViewBackPath); ?>">🔙</a> <a class="btn btn-primary" href="<?php echo sanitize($equipmentViewEditPath); ?>?id=<?php echo (int)$item['id']; ?>">✏️</a></p>
+<p style="margin-top:16px;">
+<?php echo itm_crud_record_share_render_action_buttons('equipment', (int)($item['id'] ?? $id ?? 0), 'equipment'); ?>
+<a class="btn" href="<?php echo sanitize($equipmentViewBackPath); ?>" title="Back">🔙</a> <a class="btn btn-primary" href="<?php echo sanitize($equipmentViewEditPath); ?>?id=<?php echo (int)$item['id']; ?>" title="Edit">✏️</a></p>
 </div>
 
 <?php if (function_exists('itm_ipam_table_exists') && itm_ipam_table_exists($conn, 'ip_addresses')): ?>
@@ -287,4 +290,5 @@ if (!isset($crud_title)) {
 </div>
 <?php endif; ?>
 <?php endif; ?>
-</div></div></div><script src="../../js/theme.js"></script></body></html>
+</div></div></div><script src="../../js/theme.js"></script><?php itm_crud_record_share_include_modal(); ?>
+</body></html>

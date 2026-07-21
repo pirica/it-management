@@ -1,7 +1,7 @@
 <?php
 /**
  * CLI: php scripts/verify_qr_share_modules.php
- * Verifies temporary QR/code share sessions for Passwords, Bookmarks, Todo, Events, Explorer, Floor Plans, and Rack Planner.
+ * Verifies temporary QR/code share sessions for Passwords, Bookmarks, Todo, Events, Explorer, Floor Plans, Rack Planner, and CRUD record modules.
  */
 
 define('ITM_CLI_SCRIPT', true);
@@ -14,6 +14,7 @@ require_once ROOT_PATH . 'modules/events/events_share_helpers.php';
 require_once ROOT_PATH . 'modules/explorer/explorer_share_helpers.php';
 require_once ROOT_PATH . 'modules/floor_plans/floor_plans_share_helpers.php';
 require_once ROOT_PATH . 'modules/rack_planner/rack_planner_share_helpers.php';
+require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
@@ -361,6 +362,53 @@ if ($rackStatusId <= 0) {
             $conn->query('DELETE FROM rack_planner WHERE id = ' . (int)$rackPlanId);
         }
     }
+}
+
+// CRUD record share (departments — generic config payload)
+$deptModuleId = itm_module_share_registry_id_by_slug($conn, 'departments');
+$deptShareRestoreEnabled = null;
+if ($deptModuleId > 0) {
+    $deptShareRestoreEnabled = has_module_share_access($conn, $companyId, 'departments') ? 1 : 0;
+    itm_set_company_module_share($conn, $companyId, $deptModuleId, 1);
+}
+$deptCode = 'QR' . strtoupper(bin2hex(random_bytes(2)));
+$deptName = 'QR Share Dept ' . bin2hex(random_bytes(2));
+$deptIns = $conn->prepare(
+    'INSERT INTO departments (company_id, code, name, active, created_by) VALUES (?, ?, ?, 1, ?)'
+);
+if (!$deptIns) {
+    qr_share_verify_fail('Could not prepare department insert for CRUD share test.');
+} else {
+    $deptIns->bind_param('issi', $companyId, $deptCode, $deptName, $employeeId);
+    if (!$deptIns->execute()) {
+        qr_share_verify_fail('Could not insert test department row.');
+    } else {
+        $deptId = (int)$deptIns->insert_id;
+        $deptIns->close();
+        $deptCreated = itm_crud_record_share_create_session($conn, 'departments', $deptId, $companyId, $employeeId, $username);
+        if (!$deptCreated['ok'] || empty($deptCreated['session'])) {
+            qr_share_verify_fail('departments CRUD share session failed: ' . ($deptCreated['error'] ?? 'unknown'));
+        } else {
+            qr_share_verify_pass('Departments CRUD share session created.');
+            $deptPayload = itm_qr_share_decode_payload($deptCreated['session']['payload_json'] ?? '');
+            if ($deptPayload === null || ($deptPayload['type'] ?? '') !== 'crud_record' || ($deptPayload['heading'] ?? '') !== $deptName) {
+                qr_share_verify_fail('Departments CRUD share payload mismatch.');
+            } else {
+                qr_share_verify_pass('Departments CRUD share payload contains department name.');
+            }
+            $deptJoinUrl = itm_crud_record_share_build_join_url('departments', (string)$deptCreated['session']['access_token']);
+            if ($deptJoinUrl === '' || stripos($deptJoinUrl, 'modules/departments/join.php?t=') === false) {
+                qr_share_verify_fail('Departments join URL was not built.');
+            } else {
+                qr_share_verify_pass('Departments join URL built.');
+            }
+        }
+        $conn->query("DELETE FROM share_sessions WHERE module_slug = 'departments' AND record_id = " . (int)$deptId);
+        $conn->query('DELETE FROM departments WHERE id = ' . (int)$deptId);
+    }
+}
+if ($deptModuleId > 0 && $deptShareRestoreEnabled !== null) {
+    itm_set_company_module_share($conn, $companyId, $deptModuleId, (int)$deptShareRestoreEnabled);
 }
 
 $conn->query("DELETE FROM share_sessions WHERE module_slug = 'passwords' AND record_id = " . (int)$passwordEntryId);

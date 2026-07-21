@@ -5,6 +5,9 @@ $crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
+itm_crud_record_share_handle_ajax_request($conn, 'patches_updates');
+
 require_once '../../includes/itm_crud_fk_label_search.php';
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
@@ -1443,7 +1446,9 @@ if (!isset($crud_title)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
+                    <p style="margin-top:16px;">
+                        <?php echo itm_crud_record_share_render_action_buttons('patches_updates', (int)($data['id'] ?? 0), 'patch'); ?>
+                        <a href="index.php" class="btn" title="Back">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>" title="Edit">✏️</a></p>
                 </div>
             <?php endif; ?>
         </div>
@@ -1501,5 +1506,6 @@ if (typeof itmUploadHelper !== "undefined") {
 }
 </script>
 <script src="../../js/bulk-delete-selection.js"></script>
+<?php itm_crud_record_share_include_modal(); ?>
 </body>
 </html>

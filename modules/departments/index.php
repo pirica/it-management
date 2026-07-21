@@ -15,6 +15,9 @@ $crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require_once '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
+itm_crud_record_share_handle_ajax_request($conn, 'departments');
+
 require_once '../../includes/itm_crud_fk_label_search.php';
 
 // Validate table configuration to prevent unauthorized access to other tables
@@ -1128,7 +1131,9 @@ if (!isset($crud_title)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
+                    <p style="margin-top:16px;">
+                        <?php echo itm_crud_record_share_render_action_buttons('departments', (int)($data['id'] ?? 0), 'department'); ?>
+                        <a href="index.php" class="btn" title="Back">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>" title="Edit">✏️</a></p>
                 </div>
             <?php endif; ?>
         </div>
@@ -1162,5 +1167,6 @@ document.addEventListener('change', function (event) {
 });
 </script>
 
+<?php itm_crud_record_share_include_modal(); ?>
 </body>
 </html>

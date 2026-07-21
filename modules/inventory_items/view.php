@@ -7,6 +7,7 @@
  */
 
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
 
 $id = (int)($_GET['id'] ?? 0);
 $item = null;
@@ -136,9 +137,12 @@ if (!isset($crud_title)) {
                 <?php endif; ?>
 
                 <div style="display:flex;gap:10px;margin-top:20px;">
-                    <a href="index.php" class="btn">🔙</a>
                     <?php if ($item): ?>
-                        <a href="edit.php?id=<?php echo (int)$item['id']; ?>" class="btn btn-primary">✏️</a>
+                        <?php echo itm_crud_record_share_render_action_buttons('inventory_items', (int)($item['id'] ?? $id ?? 0), 'inventory item'); ?>
+                    <?php endif; ?>
+                    <a href="index.php" class="btn" title="Back">🔙</a>
+                    <?php if ($item): ?>
+                        <a href="edit.php?id=<?php echo (int)$item['id']; ?>" class="btn btn-primary" title="Edit">✏️</a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -146,5 +150,6 @@ if (!isset($crud_title)) {
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<?php itm_crud_record_share_include_modal(); ?>
 </body>
 </html>

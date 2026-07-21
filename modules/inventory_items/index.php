@@ -11,6 +11,9 @@ $crud_title = 'Inventory Items';
 $crud_action = $crud_action ?? 'index';
 
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
+itm_crud_record_share_handle_ajax_request($conn, 'inventory_items');
+
 // Handle Excel/CSV database import requests from table-tools.js.
 if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $itmImportRawBody = file_get_contents('php://input');
@@ -317,5 +320,6 @@ if (!isset($crud_title)) {
 </div>
 <script src="../../js/theme.js"></script>
 <script src="../../js/bulk-delete-selection.js"></script>
+<?php itm_crud_record_share_include_modal(); ?>
 </body>
 </html>

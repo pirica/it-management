@@ -22,6 +22,9 @@
  */
 
 require_once '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
+itm_crud_record_share_handle_ajax_request($conn, 'alerts');
+
 require_once '../../includes/itm_crud_fk_label_search.php';
 require_once ROOT_PATH . 'includes/alerts_visibility.php';
 
@@ -1522,7 +1525,8 @@ if (!isset($crud_title)) {
                         </tbody>
                     </table>
                     <p style="margin-top:16px;">
-                        <a href="index.php" class="btn">🔙</a>
+                        <?php echo itm_crud_record_share_render_action_buttons('alerts', (int)($data['id'] ?? 0), 'alert'); ?>
+                        <a href="index.php" class="btn" title="Back">🔙</a>
                         <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a>
                     </p>
                 </div>
@@ -1556,5 +1560,6 @@ if (typeof itmUploadHelper !== 'undefined') {
     itmUploadHelper.setupById("alertsIcsUploadTarget", "alertsIcsFileInput");
 }
 </script>
+<?php itm_crud_record_share_include_modal(); ?>
 </body>
 </html>

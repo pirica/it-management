@@ -189,6 +189,60 @@ function itm_qr_share_render_join_page($moduleLabel, $joinScriptPath, $accessTok
                         </tbody>
                     </table>
                 <?php endif; ?>
+            <?php elseif ($payloadType === 'crud_record'): ?>
+                <table class="join-table">
+                    <?php $crudFields = is_array($payload['fields'] ?? null) ? $payload['fields'] : []; ?>
+                    <?php foreach ($crudFields as $crudField): ?>
+                        <?php if (!is_array($crudField)) { continue; } ?>
+                        <tr>
+                            <th><?php echo sanitize((string)($crudField['label'] ?? '')); ?></th>
+                            <td style="white-space:pre-wrap;"><?php echo sanitize((string)($crudField['value'] ?? '')); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </table>
+            <?php elseif ($payloadType === 'equipment_switch_ports'): ?>
+                <p class="join-expiry"><?php echo sanitize((string)($payload['hostname'] ?? '')); ?></p>
+                <?php $equipPorts = is_array($payload['ports'] ?? null) ? $payload['ports'] : []; ?>
+                <?php if ($equipPorts !== []): ?>
+                    <table class="join-table" style="margin-top:16px;">
+                        <thead><tr><th>Port</th><th>Label</th><th>Status</th><th>Color</th><th>Notes</th></tr></thead>
+                        <tbody>
+                        <?php foreach ($equipPorts as $equipPort): ?>
+                            <?php if (!is_array($equipPort)) { continue; } ?>
+                            <tr>
+                                <td><?php echo (int)($equipPort['port_number'] ?? 0); ?></td>
+                                <td><?php echo sanitize((string)($equipPort['label'] ?? '')); ?></td>
+                                <td><?php echo sanitize((string)($equipPort['status'] ?? '')); ?></td>
+                                <td><?php echo sanitize((string)($equipPort['color'] ?? '')); ?></td>
+                                <td><?php echo sanitize((string)($equipPort['notes'] ?? '')); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            <?php elseif ($payloadType === 'ops_report'): ?>
+                <table class="join-table">
+                    <tr><th>Company</th><td><?php echo sanitize((string)($payload['company'] ?? '')); ?></td></tr>
+                    <tr><th>Report Date</th><td><?php echo sanitize((string)($payload['report_date'] ?? '')); ?></td></tr>
+                </table>
+                <?php $oprSections = is_array($payload['sections'] ?? null) ? $payload['sections'] : []; ?>
+                <?php foreach ($oprSections as $oprSection): ?>
+                    <?php if (!is_array($oprSection)) { continue; } ?>
+                    <h2 style="margin-top:20px;font-size:18px;"><?php echo sanitize((string)($oprSection['label'] ?? 'Section')); ?></h2>
+                    <?php $oprRows = is_array($oprSection['rows'] ?? null) ? $oprSection['rows'] : []; ?>
+                    <?php if ($oprRows !== []): ?>
+                        <table class="join-table">
+                            <tbody>
+                            <?php foreach ($oprRows as $oprRow): ?>
+                                <?php if (!is_array($oprRow)) { continue; } ?>
+                                <tr>
+                                    <td colspan="2"><pre style="margin:0;white-space:pre-wrap;font-family:inherit;"><?php echo sanitize(json_encode($oprRow, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)); ?></pre></td>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+                <?php endforeach; ?>
             <?php else: ?>
                 <p class="join-expiry">Unsupported share payload.</p>
             <?php endif; ?>
