@@ -1312,7 +1312,7 @@ INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `des
 INSERT INTO `ui_configuration` (`company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `enable_chatbot`, `enable_auto_scaffolding`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`)
 SELECT e.`company_id`, e.`id`, 'left', 'left', 'left', 'left', 1, 1, 1, 0, '25', '⚙️ IT Controls', CONCAT('images/favicons/company_', e.`company_id`, '.ico'), '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', NULL
 FROM `employees` e
-WHERE e.`username` IN ('Admin', 'Admin2', 'Admin3', 'Admin4', 'Admin5');
+WHERE e.`username` LIKE 'Admin%';
 
 INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'Admin', '2026-01-01 00:00:01');
 
@@ -1375,7 +1375,7 @@ UPDATE `attempts` SET `company_id` = COALESCE(
 INSERT INTO `employee_companies` (`employee_id`, `company_id`, `granted_by_employee_id`, `active`, `created_at`)
 SELECT e.`id`, e.`company_id`, NULL, 1, '2026-01-01 00:00:01'
 FROM `employees` e
-WHERE e.`username` IN ('Admin', 'Admin2', 'Admin3', 'Admin4', 'Admin5');
+WHERE e.`username` LIKE 'Admin%';
 
 INSERT INTO `employee_companies` (`employee_id`, `company_id`, `granted_by_employee_id`, `active`, `created_at`)
 SELECT e.`id`, c.`id`, NULL, 1, '2026-01-01 00:00:01'
@@ -1641,11 +1641,11 @@ INSERT IGNORE INTO `ticket_statuses` (`company_id`, `name`, `color`, `is_closed`
 
 INSERT IGNORE INTO `employee_roles` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `employee_roles` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
--- Why: Seed admins (Admin, Admin2–Admin5) insert before employee_roles; bind tenant Admin role_id after replication so companies 2–5 have roles.
+-- Why: Seed admins (username LIKE Admin%) insert before employee_roles; bind tenant Admin role_id after replication so companies 2–5 have roles.
 UPDATE `employees` e
 INNER JOIN `employee_roles` er ON er.`company_id` = e.`company_id` AND er.`name` = 'Admin'
 SET e.`role_id` = er.`id`
-WHERE e.`username` IN ('Admin', 'Admin2', 'Admin3', 'Admin4', 'Admin5');
+WHERE e.`username` LIKE 'Admin%';
 
 INSERT IGNORE INTO `warranty_types` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `warranty_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
