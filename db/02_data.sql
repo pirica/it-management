@@ -1328,7 +1328,7 @@ INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'Us
 UPDATE `employees` e
 INNER JOIN `employee_roles` er ON er.`company_id` = e.`company_id` AND er.`name` = 'Admin'
 SET e.`role_id` = er.`id`
-WHERE e.`work_email` LIKE 'admin@techcorp.example%.com';
+WHERE e.`username` IN ('Admin', 'Admin2', 'Admin3', 'Admin4', 'Admin5');
 
 -- Data for `registration_invitations`
 INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_employee_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`)
@@ -2138,4 +2138,4 @@ INSERT INTO `it_settings` (`company_id`, `contact_email`, `contact_phone`, `hour
 UPDATE `employees` e
 INNER JOIN `employee_roles` er ON er.`company_id` = e.`company_id` AND er.`name` = 'Admin'
 SET e.`role_id` = er.`id`
-WHERE e.`work_email` LIKE 'admin@techcorp.example%.com';
+WHERE e.`username` IN ('Admin', 'Admin2', 'Admin3', 'Admin4', 'Admin5');
