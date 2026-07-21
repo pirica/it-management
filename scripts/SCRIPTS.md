@@ -569,6 +569,11 @@ Local full import (requires MySQL, password `itmanagement`): `bash scripts/verif
 
 **Database import (`db/`):** canonical files under `db/` (`01_schema.sql`, `02_data.sql`, `03_triggers.sql`). Import in **one MySQL session** in order **01 → 02 → 03** (`bash scripts/import_database_split.sh`) so `@replicate_source_company_id` persists and audit triggers load after seed data. Details: `db/AGENT_NOTES.md`.
 
+| Script | Purpose |
+|--------|---------|
+| `php scripts/verify_database_schema.php` | Compare `CREATE TABLE` names in `db/01_schema.sql` with live `information_schema` (catches partial imports). |
+| `php scripts/verify_db_migrations.php` | Probe live DB against each `db/migrations/*.sql` file (Applied / Superseded / Not applied). Browser + CLI (Admin). `--json` / `?format=json`. Lib: `scripts/lib/itm_verify_db_migrations_report.php`. |
+
 Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, `check_ui_action_emoji.php`, `check_pagination_emoji.php`, `check_crud_audit_soft_delete.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/scripts.php`).
 
 **Tier 2 batch (pre-merge static cluster):** run every Tier 2 `check_*` script from `SCRIPTS_TEST_MATRIX.md` in one pass:
@@ -1040,6 +1045,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_private_contacts_vault.php` — private contacts vault encryption (`pc_vault_helpers.php`, list hydrate/search, master-key re-encrypt)
 - `php scripts/verify_qr_share_modules.php` — Passwords, Bookmarks, Todo, Events, Private Contacts, Explorer, Floor Plans, Rack Planner, and CRUD record share (`departments` via `includes/itm_crud_record_share.php`) temporary QR/code sessions (`share_sessions`, `join.php`, module `*_share_helpers.php`, shared `includes/itm_qr_share.php`). Inventory: `docs/CRUD_RECORD_SHARE.md`.
 - `php scripts/verify_module_share.php` — `company_module_share` opt-out matrix + `has_module_share_access()`; requires `share_sessions` table
+- `php scripts/verify_db_migrations.php` — each `db/migrations/*.sql` vs live schema/data (Applied / Superseded / Not applied)
 - `php scripts/verify_whatsapp_share.php` — WhatsApp deep-link message/url helpers (`includes/itm_whatsapp_share.php`, `js/itm-whatsapp-share.js`)
 - `php scripts/verify_outlook_share.php` — Outlook/mail compose helpers (`includes/itm_outlook_share.php`, `js/itm-outlook-share.js`)
 - `php scripts/verify_request_password.php` — `modules/request_password/` workflow + delete guard

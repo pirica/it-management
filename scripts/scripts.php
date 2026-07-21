@@ -503,6 +503,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Open <a href="count_db_tables.php">count_db_tables.php</a> (plain number response) or run <code>php scripts/count_db_tables.php</code> from the repository root. Output file: <code>scripts/number_db_tables.txt</code>.</td>
                 </tr>
                 <tr>
+                    <td><a href="verify_db_migrations.php" target="_blank" rel="nofollow noreferrer">verify_db_migrations.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Compares live <code>itmanagement</code> schema/data against every <code>db/migrations/*.sql</code> file (Applied / Superseded / Not applied). No migration history table — probes only. Shared lib: <code>lib/itm_verify_db_migrations_report.php</code>.</td>
+                    <td><code>php scripts/verify_db_migrations.php</code> or <a href="verify_db_migrations.php">browser</a> (Admin). JSON: <code>--json</code> or <code>?format=json</code>.</td>
+                </tr>
+                <tr>
                     <td><a href="verify_database_schema.php" target="_blank" rel="nofollow noreferrer">verify_database_schema.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Compares <code>CREATE TABLE</code> names in <code>db/</code> split bundle with <code>information_schema</code> for <code>itmanagement</code>. Use after PowerShell/MySQL imports that report success but stop early (e.g. 73 tables instead of 130). Lists missing/extra tables; exit <code>1</code> on mismatch.</td>

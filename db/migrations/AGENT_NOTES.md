@@ -14,6 +14,7 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
 - **Data warning:** `DROP TABLE` removes existing rows. Back up or export data before applying on production; re-seed or restore manually when needed.
 - **Pair every migration with canonical schema:** mirror the same table shape in `db/01_schema.sql` (and `db/02_data.sql` when seeds change) in the **same PR**.
 - **Apply order:** run migrations manually on live DBs in filename order; there is no migration runner yet.
+- **Live verification:** `php scripts/verify_db_migrations.php` (browser + CLI, Admin) probes each file in this folder against `information_schema` and seed data; `--json` / `?format=json` for machine output.
 - **No audit triggers** on private-data tables listed in `AGENTS.md` → Private data — no audit trail.
 
 ## 7. File Structure

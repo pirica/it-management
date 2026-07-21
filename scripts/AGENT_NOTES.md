@@ -48,6 +48,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **verify_select_options_escalation.php** — regression for Select Options API table whitelist (`includes/itm_select_options_policy.php`); see **`scripts/SCRIPTS.md` → Select Options API verification**.
 - **verify_notes_ajax_contract.php** — Notes AJAX blocked mutations return HTTP 404 with `ok:false` when `affected_rows === 0`; subprocess uses CLI `php.exe`, session before `config.php`, and asserts the owner's note was not soft-deleted (`active=1`, `deleted_at IS NULL`).
 - **verify_metadata_column_cache.php** — table-level `information_schema` cache in `itm_table_has_column()` / `itm_table_column_is_nullable()`; cold schema Questions delta 1–2, warm repeat schema delta 0 (measurement excludes trailing `SHOW STATUS`).
+- **verify_db_migrations.php** — live DB probes for each `db/migrations/*.sql` (Applied / Superseded / Not applied); lib `itm_verify_db_migrations_report.php`; `--json` / `?format=json`.
 - **verify_json_import_validation.php** — JSON import rejects invalid numeric/date column values instead of silent NULL inserts.
 - **repro_employee_dataloss.php** / **repro_generic_dataloss.php** — CLI regressions for import UPDATE column preservation (`providedFields` / non-destructive UPDATE); transactional seed/cleanup; exit non-zero on failure. Catalog: CLI-only rows in `scripts/scripts.php` (admin browser gate on catalog page).
 - **verify_maintenance_scripts_rbac.php** — browser Admin gate on MBQA runner, compare_database_sql_modules, and test_sql_injection.
