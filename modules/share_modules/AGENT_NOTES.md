@@ -1,7 +1,7 @@
 # AGENT_NOTES.md - modules/share_modules/
 
 ## 1. Module Purpose
-Administrator matrix to enable or disable temporary QR / 6-digit **share** per `modules_registry` row and company (`company_module_share`). Mirrors the layout of `modules/company_module_access/` without registry CRUD or per-cell sidebar icons.
+Administrator matrix to enable or disable temporary QR / 6-digit **share** per `modules_registry` row and company (`company_module_share`). Mirrors `modules/company_module_access/` layout (matrix + registry list/CRUD wrappers); no per-cell sidebar icons.
 
 ## 2. Database Tables
 - **`company_module_share`** — `(company_id, module_id, enabled)`; opt-out policy (no row or `enabled = 1` allows share; `enabled = 0` blocks `itm_qr_share_create_session()`).
@@ -15,7 +15,8 @@ Administrator matrix to enable or disable temporary QR / 6-digit **share** per `
 - **Seeds:** `db/02_data.sql` cross-joins active companies × `modules_registry` with `enabled = 1`. Live migration: `db/migrations/share_sessions_unified.sql`.
 
 ## 7. File Structure
-- `index.php` — matrix UI + AJAX handlers
+- `index.php` — matrix UI, registry CRUD via `$crud_action`, AJAX handlers
+- `create.php`, `edit.php`, `view.php`, `list_all.php`, `delete.php` — thin wrappers setting `$crud_action`
 - `index.html` — directory listing prevention
 
 ## 12. Module Owner Notes (Optional)
