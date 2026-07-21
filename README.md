@@ -132,17 +132,17 @@
 
 <h2 align="center">Database Structure Overview</h2>
 
-<p align="center">Fresh import of <code>db/</code> split bundle provisions <strong>130 tables</strong> and approximately <strong>3,085 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>employee_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
+<p align="center">Fresh import of <code>db/</code> split bundle provisions <strong>126 tables</strong> and approximately <strong>3,085 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>employee_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
 
 <h3 align="center">High-level summary</h3>
 
 | Metric | Value |
 | --- | --- |
-| **Tables** | 130 |
+| **Tables** | 126 |
 | **Sample rows** | ~3,085 (from <code>db/</code> split bundle) |
 | **Module folders** | 125 under <code>modules/</code> |
-| **Registry entries** | 130 in <code>modules_registry</code> |
-| **Company × module matrix** | 650 rows (5 seed companies × 130 modules) |
+| **Registry entries** | 149 in <code>modules_registry</code> (catalog slugs; not 1:1 with table count) |
+| **Company × module matrix** | 745 rows (5 seed companies × registry modules) |
 | **Sidebar preferences** | 540 rows (5 companies × 108 default sidebar items) |
 | **Functional domains** | 12 (see breakdown below) |
 
@@ -258,7 +258,7 @@
 | Planning and events | 3 | ~10 |
 | Operations | 10 | ~15 |
 | Workstation reference | 7 | ~280 |
-| **Total** | **130** | **~3,075** |
+| **Total** | **126** | **~3,075** |
 
 <h3 align="center">What this means</h3>
 

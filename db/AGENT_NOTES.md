@@ -36,7 +36,7 @@ cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
 
 Do **not** run schema, data, and triggers as three separate `mysql` CLI imports.
 
-**Verify after import:** `php scripts/verify_database_schema.php` (133 tables — count derived from `CREATE TABLE` lines in `01_schema.sql`).
+**Verify after import:** `php scripts/verify_database_schema.php` — compares live `information_schema` to `CREATE TABLE` names in `db/01_schema.sql` (currently **126** tables).
 
 ## 10. Common Pitfalls
 - Importing `03_triggers.sql` before `02_data.sql` fills `audit_logs` during seed load. [Cursor-Valid]

@@ -511,13 +511,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="verify_database_schema.php" target="_blank" rel="nofollow noreferrer">verify_database_schema.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Compares <code>CREATE TABLE</code> names in <code>db/</code> split bundle with <code>information_schema</code> for <code>itmanagement</code>. Use after PowerShell/MySQL imports that report success but stop early (e.g. 73 tables instead of 130). Lists missing/extra tables; exit <code>1</code> on mismatch.</td>
+                    <td>Compares <code>CREATE TABLE</code> names in <code>db/</code> split bundle with <code>information_schema</code> for <code>itmanagement</code>. Use after PowerShell/MySQL imports that report success but stop early (e.g. 73 tables instead of 126). Lists missing/extra tables; exit <code>1</code> on mismatch.</td>
                     <td><code>php scripts/verify_database_schema.php</code> — run from repository root after <code>db/</code> split bundle import; check <code>mysql-import.err</code> for the first <code>ERROR</code> line if this fails.</td>
                 </tr>
                 <tr>
                     <td>verify_database_sql_import.sh</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
-                    <td>Imports the full <code>db/</code> split bundle against a live MySQL 8.0 server and asserts the live <code>itmanagement</code> table count matches <code>CREATE TABLE</code> entries in <code>db/</code> split bundle (currently <strong>130</strong>). Catches INSERT/SELECT column-count mismatches (for example cross-company <code>equipment</code> seed at <code>department_id</code>). Used by CI job <strong>database-import</strong> in <code>.github/workflows/smoke.yml</code>. Split alternative: <code>import_database_split.sh</code>.</td>
+                    <td>Imports the full <code>db/</code> split bundle against a live MySQL 8.0 server and asserts the live <code>itmanagement</code> table count matches <code>CREATE TABLE</code> entries in <code>db/01_schema.sql</code> (currently <strong>126</strong>). Catches INSERT/SELECT column-count mismatches (for example cross-company <code>equipment</code> seed at <code>department_id</code>). Used by CI job <strong>database-import</strong> in <code>.github/workflows/smoke.yml</code>. Split alternative: <code>import_database_split.sh</code>.</td>
                     <td><code>bash scripts/verify_database_sql_import.sh</code> — requires MySQL on <code>127.0.0.1</code>, user <code>root</code>, password <code>itmanagement</code>. Env: <code>MYSQL_HOST</code>, <code>MYSQL_USER</code>, <code>MYSQL_PASSWORD</code>, optional <code>EXPECTED_TABLE_COUNT</code> override.</td>
                 </tr>
                 <tr>

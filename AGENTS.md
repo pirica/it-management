@@ -1006,7 +1006,7 @@ On **Linux, macOS, CI, and any host where `php` is on PATH**, bare `php scripts/
     cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
     bash scripts/import_database_split.sh
     ```
-    Or pipe all three files in one session (see `db/AGENT_NOTES.md`). Verify: `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';` → **130**, or `php scripts/verify_database_schema.php`. CI uses `bash scripts/verify_database_sql_import.sh` (wraps `import_database_split.sh`).
+    Or pipe all three files in one session (see `db/AGENT_NOTES.md`). Verify: `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';` → **126**, or `php scripts/verify_database_schema.php`. CI uses `bash scripts/verify_database_sql_import.sh` (wraps `import_database_split.sh`).
 * **Online AI Test Environment:**
   * `https://nelsonsalvador.myddns.me` | Login: `Admin` | Password: `Admin`.
   * `http://nelsonsalvador.myddns.me/phpmyadmin/` | Database: `itmanagement` | Login: `root` | Password: (blank).
@@ -1151,7 +1151,7 @@ Cloud Agent VMs run Ubuntu 24.04 and do not ship with PHP, MySQL, or Apache pre-
 | **MySQL 8.0** | `sudo mkdir -p /var/run/mysqld && sudo chown mysql:mysql /var/run/mysqld && sudo chmod 755 /var/run/mysqld && sudo mysqld --user=mysql --datadir=/var/lib/mysql &` then `sleep 5` | `mysqladmin -u root -pitmanagement ping` → `mysqld is alive` |
 | **Apache 2.4** | `sudo apachectl start` | `curl -s -o /dev/null -w '%{http_code}' http://localhost/it-management/login.php` → `200` |
 
-MySQL root password is `itmanagement` (set by the update script on first run). Re-import the schema after a fresh VM with `mysql -u root -pitmanagement --default-character-set=utf8mb4 < db/` and verify 130 tables: `mysql -u root -pitmanagement -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';"`.
+MySQL root password is `itmanagement` (set by the update script on first run). Re-import the schema after a fresh VM with `mysql -u root -pitmanagement --default-character-set=utf8mb4 < db/` and verify **126** tables: `mysql -u root -pitmanagement -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='itmanagement';"`.
 
 ### Apache alias
 
@@ -1196,7 +1196,7 @@ playwright install chromium   # or: ~/.local/bin/playwright install chromium whe
     php -r '$c=mysqli_connect("127.0.0.1","root","itmanagement","itmanagement"); echo $c?"db ok\n":mysqli_connect_error();'
     ```
 
-    Re-run the import when the datadir is fresh; expect ~130 tables in `itmanagement``.
+    Re-run the import when the datadir is fresh; expect **126** tables in `itmanagement`.
 
 **Capture (Roles & Permissions example — verified on Cloud Agent):**
 
