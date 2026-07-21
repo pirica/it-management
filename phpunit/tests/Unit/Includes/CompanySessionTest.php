@@ -60,6 +60,27 @@ class CompanySessionTest extends TestCase
         $this->assertSame('admin@techcorp.example1.com', (string)$_SESSION['email']);
     }
 
+    public function testAdminInitialLoginCompanyContextMatchesTenantSeedAdmin(): void
+    {
+        $loginEmployeeId = 1;
+        $initialCompanyId = 4;
+
+        $_SESSION['employee_id'] = $loginEmployeeId;
+        $_SESSION['login_employee_id'] = $loginEmployeeId;
+        $_SESSION['email'] = 'admin@techcorp.example1.com';
+        $_SESSION['username'] = 'Admin';
+
+        $this->assertTrue(
+            itm_switch_active_company_session($this->conn, $loginEmployeeId, $initialCompanyId, true),
+            'Admin first login should apply tenant context for the initial company.'
+        );
+        $this->assertSame($initialCompanyId, (int)$_SESSION['company_id']);
+        $this->assertSame($loginEmployeeId, (int)$_SESSION['login_employee_id']);
+        $this->assertSame(4, (int)$_SESSION['employee_id']);
+        $this->assertSame('Admin4', (string)$_SESSION['username']);
+        $this->assertSame('admin@techcorp.example4.com', (string)$_SESSION['email']);
+    }
+
     public function testEmployeeHasCompanyAccessViaGrant(): void
     {
         $companyId = $this->createTempCompany('Grant Test ' . uniqid());
