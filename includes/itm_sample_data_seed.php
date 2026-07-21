@@ -17,10 +17,28 @@ if (!function_exists('itm_sample_data_prerequisite_map')) {
             'expenses' => ['departments', 'budget_categories', 'cost_centers', 'gl_accounts'],
             'employee_positions' => ['departments'],
             'employee_onboarding_requests' => ['departments', 'employee_positions'],
-            'approvers' => ['departments', 'employee_positions'],
+            'approvers' => ['departments', 'employee_positions', 'approver_type'],
             'employee_assignment_history' => ['departments'],
             'inventory_items' => ['inventory_categories', 'suppliers'],
             'tickets' => ['ticket_categories', 'ticket_statuses', 'ticket_priorities', 'equipment'],
+        ];
+    }
+}
+
+if (!function_exists('itm_seed_lookup_parent_auto_seed_skip_tables')) {
+    /**
+     * Parents resolved at insert time (FK remap / existing tenant rows) — never bulk-seed from sample SQL.
+     *
+     * @return array<string, true>
+     */
+    function itm_seed_lookup_parent_auto_seed_skip_tables(): array
+    {
+        return [
+            'companies' => true,
+            'employees' => true,
+            'audit_logs' => true,
+            'employee_companies' => true,
+            'ui_configuration' => true,
         ];
     }
 }
@@ -31,6 +49,8 @@ if (!function_exists('itm_seed_lookup_parents_for_table')) {
      */
     function itm_seed_lookup_parents_for_table(mysqli $conn, string $table, int $companyId, array &$visited = []): void
     {
+        static $parentSeedStack = [];
+
         if (!function_exists('itm_seed_table_from_database_sql') || !itm_is_safe_identifier($table) || $companyId <= 0) {
             return;
         }
@@ -41,19 +61,26 @@ if (!function_exists('itm_seed_lookup_parents_for_table')) {
         $visited[$table] = true;
 
         $parents = itm_sample_data_prerequisite_map()[$table] ?? [];
-        if (function_exists('itm_table_outbound_fk_map')) {
-            foreach (itm_table_outbound_fk_map($conn, $table) as $fkMeta) {
-                $parentTable = (string)($fkMeta['REFERENCED_TABLE_NAME'] ?? '');
-                if ($parentTable !== '' && itm_is_safe_identifier($parentTable)) {
-                    $parents[] = $parentTable;
-                }
-            }
-        }
+        $skipParents = itm_seed_lookup_parent_auto_seed_skip_tables();
 
         foreach (array_values(array_unique($parents)) as $parentTable) {
+            if (!itm_is_safe_identifier($parentTable) || isset($skipParents[$parentTable])) {
+                continue;
+            }
+            if (isset($parentSeedStack[$parentTable])) {
+                continue;
+            }
+            if (function_exists('itm_seed_tenant_row_count')
+                && itm_table_has_column($conn, $parentTable, 'company_id')
+                && itm_seed_tenant_row_count($conn, $parentTable, $companyId) > 0) {
+                continue;
+            }
+
             itm_seed_lookup_parents_for_table($conn, $parentTable, $companyId, $visited);
             $seedErr = '';
+            $parentSeedStack[$parentTable] = true;
             itm_seed_table_from_database_sql($conn, $parentTable, $companyId, $seedErr);
+            unset($parentSeedStack[$parentTable]);
         }
     }
 }
