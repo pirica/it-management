@@ -12,6 +12,7 @@ Stores per-user sidebar section/item order and visibility (`employee_sidebar_pre
 
 ## 4. Business Rules (Critical for Agents)
 - **Immediate effect:** live sidebar reads these rows on every page load via `itm_sidebar_structure()` / `ui_config.php`.
+- **Seed admins:** `db/02_data.sql` binds default layout rows to each tenant seed admin (`username LIKE 'Admin%'`), not `employee_id = 1` on every `company_id`. `itm_get_employee_sidebar_preferences_config()` falls back to tenant seed admin / legacy `employee_id = 1` when the signed-in employee has no rows.
 - **Unique key:** `uq_employee_sidebar_pref_entry` on (`company_id`, `employee_id`, `entry_type`, `entry_id`).
 - **Read-only UI:** list and view screens do not expose create, edit, delete, bulk, or import flows.
 

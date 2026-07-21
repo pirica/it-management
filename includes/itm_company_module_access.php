@@ -200,6 +200,16 @@ if (!function_exists('has_module_access')) {
         if ($initialized_company !== $company_id || $forceRefresh) {
             itm_module_access_shared_static_cache('clear', $company_id);
 
+            if (function_exists('itm_discover_module_slugs_for_registry')
+                && function_exists('itm_list_all_modules_registry')
+                && function_exists('itm_sync_modules_registry_from_filesystem')) {
+                $discoveredCount = count(itm_discover_module_slugs_for_registry());
+                $registryCount = count(itm_list_all_modules_registry($conn));
+                if ($registryCount < $discoveredCount) {
+                    itm_sync_modules_registry_from_filesystem($conn);
+                }
+            }
+
             // Why: Partial DB imports can leave registry rows without company_module_access pairs; auto-backfill enabled=1 once per company per request.
             if (function_exists('itm_ensure_company_module_access_for_company')) {
                 itm_ensure_company_module_access_for_company($conn, $company_id);

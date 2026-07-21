@@ -2206,6 +2206,39 @@ function itm_reconcile_employee_sidebar_preferences_switch_ports($conn, $company
 }
 
 /**
+ * Loads raw sidebar preference rows for one employee/company pair.
+ *
+ * @return array<int,array<string,mixed>>
+ */
+function itm_load_employee_sidebar_preferences_rows($conn, $company_id, $user_id) {
+    if (!($conn instanceof mysqli)) {
+        return [];
+    }
+    $company_id = (int)$company_id;
+    $user_id = (int)$user_id;
+    if ($company_id <= 0 || $user_id <= 0) {
+        return [];
+    }
+
+    $sql = 'SELECT entry_type, entry_id, section_id, display_order, is_visible
+            FROM employee_sidebar_preferences
+            WHERE company_id = ? AND employee_id = ? AND active = 1
+            ORDER BY entry_type ASC, display_order ASC, id ASC';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return [];
+    }
+
+    mysqli_stmt_bind_param($stmt, 'ii', $company_id, $user_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $rows = $result ? mysqli_fetch_all($result, MYSQLI_ASSOC) : [];
+    mysqli_stmt_close($stmt);
+
+    return is_array($rows) ? $rows : [];
+}
+
+/**
  * Retrieves per-user relational sidebar preferences.
  */
 function itm_get_employee_sidebar_preferences_config($conn, $company_id, $user_id) {
@@ -2220,20 +2253,32 @@ function itm_get_employee_sidebar_preferences_config($conn, $company_id, $user_i
     itm_reconcile_employee_sidebar_preferences_switch_ports($conn, $company_id, $user_id);
     itm_reconcile_employee_sidebar_preferences_inventory($conn, $company_id, $user_id);
 
-    $sql = 'SELECT entry_type, entry_id, section_id, display_order, is_visible
-            FROM employee_sidebar_preferences
-            WHERE company_id = ? AND employee_id = ? AND active = 1
-            ORDER BY entry_type ASC, display_order ASC, id ASC';
-    $stmt = mysqli_prepare($conn, $sql);
-    if (!$stmt) {
-        return null;
-    }
+    $rows = itm_load_employee_sidebar_preferences_rows($conn, $company_id, $user_id);
+    if (!$rows) {
+        $fallbackUserIds = [];
+        if (function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
+            $seedAdminId = (int)itm_seed_resolve_tenant_seed_admin_employee_id($conn, $company_id);
+            if ($seedAdminId > 0) {
+                $fallbackUserIds[] = $seedAdminId;
+            }
+        }
+        $loginEmployeeId = (int)($_SESSION['login_employee_id'] ?? 0);
+        if ($loginEmployeeId > 0) {
+            $fallbackUserIds[] = $loginEmployeeId;
+        }
+        // Legacy imports stamped employee_id=1 on every company_id before tenant-admin binding.
+        $fallbackUserIds[] = 1;
+        $fallbackUserIds = array_values(array_unique(array_filter($fallbackUserIds, static function ($id) use ($user_id) {
+            return (int)$id > 0 && (int)$id !== (int)$user_id;
+        })));
 
-    mysqli_stmt_bind_param($stmt, 'ii', $company_id, $user_id);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $rows = $result ? mysqli_fetch_all($result, MYSQLI_ASSOC) : [];
-    mysqli_stmt_close($stmt);
+        foreach ($fallbackUserIds as $fallbackUserId) {
+            $rows = itm_load_employee_sidebar_preferences_rows($conn, $company_id, (int)$fallbackUserId);
+            if ($rows) {
+                break;
+            }
+        }
+    }
 
     if (!$rows) {
         return null;
