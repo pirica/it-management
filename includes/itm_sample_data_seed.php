@@ -36,9 +36,11 @@ if (!function_exists('itm_sample_data_prerequisite_map')) {
             'idf_links' => ['idf_ports'],
             'ops_report_butler' => ['ops_report'],
             'ops_report_courtesy_call' => ['ops_report'],
+            'ops_report_fb_outlet' => ['ops_report'],
             'ops_report_guest_experience' => ['ops_report'],
             'ops_report_hotel_figure' => ['ops_report'],
             'ops_report_night_shift' => ['ops_report'],
+            'ops_report_walk_round' => ['ops_report'],
         ];
     }
 }
@@ -100,6 +102,39 @@ if (!function_exists('itm_seed_lookup_parents_for_table')) {
             itm_seed_table_from_database_sql($conn, $parentTable, $companyId, $seedErr);
             unset($parentSeedStack[$parentTable]);
         }
+    }
+}
+
+if (!function_exists('itm_seed_ensure_tenant_table_sample_rows')) {
+    /**
+     * Why: FK fallback must seed the referenced table itself — lookup_parents only walks prerequisite parents.
+     */
+    function itm_seed_ensure_tenant_table_sample_rows(mysqli $conn, string $table, int $companyId): void
+    {
+        static $ensureStack = [];
+
+        if (!function_exists('itm_seed_table_from_database_sql')
+            || !itm_is_safe_identifier($table)
+            || $companyId <= 0) {
+            return;
+        }
+
+        if (isset($ensureStack[$table])) {
+            return;
+        }
+
+        itm_seed_lookup_parents_for_table($conn, $table, $companyId);
+
+        if (function_exists('itm_seed_tenant_row_count')
+            && itm_table_has_column($conn, $table, 'company_id')
+            && itm_seed_tenant_row_count($conn, $table, $companyId) > 0) {
+            return;
+        }
+
+        $ensureStack[$table] = true;
+        $seedErr = '';
+        itm_seed_table_from_database_sql($conn, $table, $companyId, $seedErr);
+        unset($ensureStack[$table]);
     }
 }
 
@@ -2431,7 +2466,11 @@ if (!function_exists('itm_seed_insert_random_fallback_row')) {
                     $fkId = itm_first_tenant_row_id($conn, $refTable, $companyId);
                 }
                 if ($fkId <= 0 && $refTable !== '' && $tableName !== 'backup_tape_log') {
-                    itm_seed_lookup_parents_for_table($conn, $refTable, $companyId);
+                    if (function_exists('itm_seed_ensure_tenant_table_sample_rows')) {
+                        itm_seed_ensure_tenant_table_sample_rows($conn, $refTable, $companyId);
+                    } else {
+                        itm_seed_lookup_parents_for_table($conn, $refTable, $companyId);
+                    }
                     if (function_exists('itm_first_tenant_row_id')) {
                         $fkId = itm_first_tenant_row_id($conn, $refTable, $companyId);
                     }

@@ -59,6 +59,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - **verify_dashboard_online_employees.php** — dashboard **Online now** / session presence regression.
 - **benchmark_sidebar_module_access.php** — read-only MySQL `Questions` benchmark for sidebar structure + `has_module_access()` filter vs uncached legacy N+1 simulation; shared lib `lib/itm_benchmark_sidebar_access.php`; env thresholds `ITM_BSMA_MAX_FULL_QUERIES`, `ITM_BSMA_MIN_REDUCTION_PCT`. See **`scripts/SCRIPTS.md` → Sidebar module-access benchmark**.
 - **verify_ops_report.php** — D-2 edit lock, `ops_report` CRUD, cascade delete, audit triggers on all `ops_report*` tables, registry row; browser or CLI via `lib/script_cli_output.php`; PHPUnit: `OpsReportTest`, `OpsReportPermissionsTest`.
+- **verify_ops_report_sample_data.php** — empty-tenant **Add sample data** for all seven `ops_report_*` child modules (`ops_report_id` parent seed); CLI only; mutates company `4` test rows.
 - **verify_rack_planner.php** — price source sync (`catalog:` / `equipment:` / `idf_unlinked:`), handlers wiring, audit triggers. Catalog: **`scripts/scripts.php`**; PHPUnit: `RackPlannerTest`.
 - **verify_request_password.php** — RBAC, HMAC approval links, list contract markers, creator-only soft-delete. Catalog: **`scripts/scripts.php`**; PoC: `repro_request_password_bypass.php`.
 - **verify_chatbot.php** — `chat_api.php` guards, `js/chatbot.js` XSS contract, `enable_chatbot` gating, tenant-scoped KB search. Catalog: **`scripts/scripts.php`**.

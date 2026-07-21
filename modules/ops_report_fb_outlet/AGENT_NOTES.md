@@ -21,6 +21,7 @@ Child rows for Food & Beverage outlet cover counts on a daily Ops Report. Each r
 - Standard flattened CRUD (`index.php`, `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`).
 - List: search across visible columns, sort, pagination, bulk delete when row count ≥ `records_per_page`, 📗/📄 export, 📥 import (`import_excel_rows`).
 - Hide `company_id` from list/view; render `ops_report_id` as parent report label when FK row exists.
+- **Add sample data:** requires tenant `ops_report` parent rows — seeded via `itm_sample_data_prerequisite_map()` (`ops_report_fb_outlet` → `ops_report`) and `itm_seed_ensure_tenant_table_sample_rows()` when resolving `ops_report_id`. Regression: `php scripts/verify_ops_report_sample_data.php`.
 - CSRF: form POST handlers use `cr_require_valid_csrf_token()`; JSON `import_excel_rows` validates via `itm_validate_csrf_token()` on the request body token. Forms include `csrf_token` from `cr_get_csrf_token()`.
 
 ## 6. API Actions (If Applicable)

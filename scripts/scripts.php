@@ -1296,6 +1296,16 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><code>php scripts/verify_ops_report.php</code>. PHPUnit: <code>php scripts/run_tests.php --filter OpsReport</code>. Run when changing <code>modules/ops_report/</code> or <code>ops_report*</code> tables in <code>db/</code> split bundle.</td>
                 </tr>
                 <tr>
+                    <td><a href="verify_ops_report_sample_data.php" target="_blank" rel="nofollow noreferrer">verify_ops_report_sample_data.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>
+                        MySQL regression for <strong>Add sample data</strong> on all seven <code>ops_report_*</code> child modules when the tenant has no parent <code>ops_report</code> rows. <strong>Mutates DB:</strong> deletes and re-seeds company <code>4</code> ops report tables during the test.
+                    </td>
+                    <td>
+                        CLI: <code>php scripts/verify_ops_report_sample_data.php</code> — exit <code>1</code> on failure. Run when changing <code>itm_sample_data_prerequisite_map()</code>, <code>itm_seed_ensure_tenant_table_sample_rows()</code>, or child-module sample POST handlers.
+                    </td>
+                </tr>
+                <tr>
                     <td><a href="seed_ops_report_search_demo.php" target="_blank" rel="nofollow noreferrer">seed_ops_report_search_demo.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Seeds company 1 Ops Report demo rows on two past dates with keyword <code>DemoManager</code> (header + guest experience child) for manual QA and screenshot capture; prints expected cross-date hit lines.</td>
