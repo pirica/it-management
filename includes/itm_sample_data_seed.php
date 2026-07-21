@@ -1780,6 +1780,12 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
                 continue;
             }
 
+            if (itm_table_has_column($conn, $tableName, 'company_id')
+                && !in_array('`company_id`', $targetColumns, true)) {
+                $targetColumns[] = '`company_id`';
+                $targetValues[] = (string)(int)$companyId;
+            }
+
             if ($tableName === 'alerts' && function_exists('itm_seed_apply_alerts_sample_row_defaults')) {
                 itm_seed_apply_alerts_sample_row_defaults($conn, $companyId, $targetColumns, $targetValues);
             }

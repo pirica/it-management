@@ -36,6 +36,7 @@ Tracks authentication-related attempts, including logins and password resets. It
 
 ## 10. Common Pitfalls
 
+- **Add sample data:** empty-state and seed guard are scoped by `company_id` (not global table count). Sample inserts stamp `company_id` via `itm_sample_data_seed.php` when the template row omits it.
 - **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
 - Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - **High Volume**: This table can grow very large; ensure indexes are used for performance. [Cursor-Valid]

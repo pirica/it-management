@@ -702,14 +702,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && isset($_POST['add_sample_data'])) {
     cr_require_valid_csrf_token();
 
-    if ($company_id <= 0) {
+    if (!$hasCompany || $company_id <= 0) {
         $_SESSION['crud_error'] = 'Sample data requires an active company.';
         header('Location: ' . $listUrl);
         exit;
     }
 
-    // Why: attempts is global (no company_id column); seed only when the whole table is empty.
-    $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table);
+    // Why: Empty-state button is tenant-scoped; seed only when this company has no attempts rows.
+    $where = ' WHERE company_id=' . (int)$company_id;
+    $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where;
     $countResult = mysqli_query($conn, $countSql);
     $existingRows = 0;
     if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
