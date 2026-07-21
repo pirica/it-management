@@ -1460,7 +1460,7 @@ if (!function_exists('itm_seed_fill_scalar_fallback_value')) {
 
 if (!function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
     /**
-     * Why: Per-tenant UI defaults and similar seeds must bind to that company's seed Admin, not a cross-company session employee.
+     * Why: Prefer tenant seed Admin; fall back to signed-in employee with company access for empty or cross-company tenants.
      */
     function itm_seed_resolve_tenant_seed_admin_employee_id(mysqli $conn, int $companyId): int
     {
@@ -1471,7 +1471,7 @@ if (!function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
         $username = $companyId === 1 ? 'Admin' : ('Admin' . $companyId);
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT id FROM employees WHERE company_id = ? AND username = ? AND deleted_at IS NULL LIMIT 1'
+            'SELECT id FROM employees WHERE company_id = ? AND LOWER(username) = LOWER(?) AND deleted_at IS NULL LIMIT 1'
         );
         if ($stmt) {
             mysqli_stmt_bind_param($stmt, 'is', $companyId, $username);
@@ -1501,19 +1501,53 @@ if (!function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
 
         $sessionEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
         if ($sessionEmployeeId > 0) {
-            $stmt = mysqli_prepare(
-                $conn,
-                'SELECT id FROM employees WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1'
-            );
-            if ($stmt) {
-                mysqli_stmt_bind_param($stmt, 'ii', $sessionEmployeeId, $companyId);
-                mysqli_stmt_execute($stmt);
-                $res = mysqli_stmt_get_result($stmt);
-                $row = ($res && ($fetched = mysqli_fetch_assoc($res))) ? $fetched : null;
-                mysqli_stmt_close($stmt);
-                if ($row && (int)($row['id'] ?? 0) > 0) {
-                    return (int)$row['id'];
+            $sessionAllowed = false;
+            if (function_exists('itm_employee_has_company_access')) {
+                $sessionAllowed = itm_employee_has_company_access($conn, $sessionEmployeeId, $companyId);
+            } else {
+                $homeStmt = mysqli_prepare(
+                    $conn,
+                    'SELECT id FROM employees WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1'
+                );
+                if ($homeStmt) {
+                    mysqli_stmt_bind_param($homeStmt, 'ii', $sessionEmployeeId, $companyId);
+                    mysqli_stmt_execute($homeStmt);
+                    $homeRes = mysqli_stmt_get_result($homeStmt);
+                    $sessionAllowed = $homeRes && mysqli_num_rows($homeRes) > 0;
+                    mysqli_stmt_close($homeStmt);
                 }
+            }
+
+            if ($sessionAllowed) {
+                $stmt = mysqli_prepare(
+                    $conn,
+                    'SELECT id FROM employees WHERE id = ? AND deleted_at IS NULL LIMIT 1'
+                );
+                if ($stmt) {
+                    mysqli_stmt_bind_param($stmt, 'i', $sessionEmployeeId);
+                    mysqli_stmt_execute($stmt);
+                    $res = mysqli_stmt_get_result($stmt);
+                    $row = ($res && ($fetched = mysqli_fetch_assoc($res))) ? $fetched : null;
+                    mysqli_stmt_close($stmt);
+                    if ($row && (int)($row['id'] ?? 0) > 0) {
+                        return (int)$row['id'];
+                    }
+                }
+            }
+        }
+
+        $liveStmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM employees WHERE company_id = ? AND deleted_at IS NULL ORDER BY id ASC LIMIT 1'
+        );
+        if ($liveStmt) {
+            mysqli_stmt_bind_param($liveStmt, 'i', $companyId);
+            mysqli_stmt_execute($liveStmt);
+            $liveRes = mysqli_stmt_get_result($liveStmt);
+            $liveRow = ($liveRes && ($fetched = mysqli_fetch_assoc($liveRes))) ? $fetched : null;
+            mysqli_stmt_close($liveStmt);
+            if ($liveRow && (int)($liveRow['id'] ?? 0) > 0) {
+                return (int)$liveRow['id'];
             }
         }
 
@@ -1543,7 +1577,7 @@ if (!function_exists('itm_seed_insert_ui_configuration_sample_row')) {
 
         $employeeId = itm_seed_resolve_tenant_seed_admin_employee_id($conn, $companyId);
         if ($employeeId <= 0) {
-            $error = 'Could not resolve tenant Admin employee for ui_configuration sample. Ensure this company has at least one employee.';
+            $error = 'Could not resolve an employee for ui_configuration sample. Sign in with access to this company or add an employee for this tenant first.';
             return 0;
         }
 
