@@ -316,12 +316,16 @@ FROM `companies` c
 CROSS JOIN `modules_registry` mr
 WHERE c.`active` = 1;
 
--- Data for `company_module_share` (QR/code share opt-out matrix; default enabled)
+-- Data for `company_module_share` (QR/code share matrix — seed enabled rows only for share-capable module slugs)
 INSERT INTO `company_module_share` (`company_id`, `module_id`, `enabled`)
 SELECT c.`id`, mr.`id`, 1
 FROM `companies` c
 CROSS JOIN `modules_registry` mr
-WHERE c.`active` = 1;
+WHERE c.`active` = 1
+  AND mr.`module_slug` IN (
+    'notes', 'passwords', 'bookmarks', 'todo', 'events',
+    'private_contacts', 'explorer', 'floor_plans', 'rack_planner'
+  );
 
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '1', 'IT Operations', 'IT', 'Core IT operations team', 'it-ops@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
 

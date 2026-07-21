@@ -107,6 +107,10 @@ INSERT IGNORE INTO `company_module_share` (`company_id`, `module_id`, `enabled`)
 SELECT c.`id`, mr.`id`, 1
 FROM `companies` c
 CROSS JOIN `modules_registry` mr
-WHERE c.`active` = 1;
+WHERE c.`active` = 1
+  AND mr.`module_slug` IN (
+    'notes', 'passwords', 'bookmarks', 'todo', 'events',
+    'private_contacts', 'explorer', 'floor_plans', 'rack_planner'
+  );
 
 SET FOREIGN_KEY_CHECKS = 1;

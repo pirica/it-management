@@ -61,6 +61,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             exit;
         }
 
+        if (!itm_module_share_is_capable_module_id($conn, $targetModuleId)) {
+            echo json_encode(['ok' => false, 'error' => 'This module does not support share.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
         $ok = itm_set_company_module_share($conn, $targetCompanyId, $targetModuleId, $enabled);
         echo json_encode(['ok' => (bool)$ok, 'enabled' => $enabled], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
@@ -83,6 +88,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             $targetCompanyId = (int)($pair['company_id'] ?? 0);
             $targetModuleId = (int)($pair['module_id'] ?? 0);
             if ($targetCompanyId <= 0 || $targetModuleId <= 0) {
+                continue;
+            }
+            if (!itm_module_share_is_capable_module_id($conn, $targetModuleId)) {
                 continue;
             }
             if (itm_set_company_module_share($conn, $targetCompanyId, $targetModuleId, $enabled)) {
@@ -315,7 +323,7 @@ if (!isset($crud_title)) {
             <?php if ($crud_action === 'index'): ?>
                 <div class="card" style="margin-bottom:16px;">
                     <div class="card-body">
-                        <p style="margin-top:0;">Enable or disable temporary QR / 6-digit share per company and module. Modules without a share implementation show as <span class="badge">No share UI</span> — toggles apply when share is added. Opt-out: no row or enabled = share allowed; explicit disable blocks <code>create_share_session</code>.</p>
+                        <p style="margin-top:0;">Enable or disable temporary QR / 6-digit share per company and module. Only share-capable modules (with a <code>company_module_share</code> row) can be toggled; others show <span class="badge">No share UI</span>. Explicit <code>enabled = 0</code> blocks <code>create_share_session</code>.</p>
                         <form method="GET" action="index.php" style="margin-bottom:16px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
                             <div class="form-group" style="margin:0;min-width:260px;flex:1;">
                                 <label for="moduleSearch">Search (all fields)</label>
@@ -372,11 +380,11 @@ if (!isset($crud_title)) {
                                     <?php foreach ($companies as $companyRow): ?>
                                         <?php
                                         $companyRowId = (int)($companyRow['id'] ?? 0);
-                                        $effectiveEnabled = itm_module_share_effective_enabled($conn, $companyRowId, $moduleId, $shareMap);
-                                        $toggleDisabled = !$isActive;
+                                        $effectiveEnabled = $hasShareImpl && itm_module_share_effective_enabled($conn, $companyRowId, $moduleId, $shareMap);
+                                        $toggleDisabled = !$isActive || !$hasShareImpl;
                                         ?>
                                         <td style="text-align:center;">
-                                            <label class="itm-checkbox-control" title="<?= $toggleDisabled ? 'Inactive registry rows cannot be toggled.' : 'Toggle share for this company' ?>">
+                                            <label class="itm-checkbox-control" title="<?= $toggleDisabled ? ($hasShareImpl ? 'Inactive registry rows cannot be toggled.' : 'No share UI for this module yet.') : 'Toggle share for this company' ?>">
                                                 <input
                                                     type="checkbox"
                                                     class="sms-share-toggle"
