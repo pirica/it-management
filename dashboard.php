@@ -96,11 +96,11 @@ if ($companyId > 0) {
 require_once ROOT_PATH . 'includes/itm_active_sessions.php';
 $online_now_count = itm_count_logged_in_users_for_company($companyId, $conn);
 
-// Fetch logged-in user details for the welcome message
-$userDisplayName = '';
-$userEmail = '';
+// Fetch logged-in user details for the welcome message (session is updated on tenant switch).
+$userDisplayName = trim((string)($_SESSION['username'] ?? ''));
+$userEmail = trim((string)($_SESSION['email'] ?? ''));
 
-if ($employeeId > 0) {
+if (($userDisplayName === '' || $userEmail === '') && $employeeId > 0) {
     // Why: employees has work_email / personal_email — no bare `email` column.
     $userStmt = mysqli_prepare(
         $conn,
@@ -111,10 +111,14 @@ if ($employeeId > 0) {
         if (mysqli_stmt_execute($userStmt)) {
             $userRes = mysqli_stmt_get_result($userStmt);
             $userData = $userRes ? mysqli_fetch_assoc($userRes) : null;
-            $userDisplayName = trim((string)($userData['username'] ?? ''));
-            $userEmail = trim((string)($userData['work_email'] ?? ''));
+            if ($userDisplayName === '') {
+                $userDisplayName = trim((string)($userData['username'] ?? ''));
+            }
             if ($userEmail === '') {
-                $userEmail = trim((string)($userData['personal_email'] ?? ''));
+                $userEmail = trim((string)($userData['work_email'] ?? ''));
+                if ($userEmail === '') {
+                    $userEmail = trim((string)($userData['personal_email'] ?? ''));
+                }
             }
         }
         mysqli_stmt_close($userStmt);

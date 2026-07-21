@@ -85,6 +85,7 @@ if (!$company) {
 }
 
 $_SESSION['employee_id'] = $employeeId;
+$_SESSION['login_employee_id'] = $employeeId;
 $_SESSION['username'] = (string)$user['username'];
 $_SESSION['role_name'] = strtolower((string)($user['role_name'] ?? '')) === 'admin'
     ? 'admin'
@@ -94,6 +95,15 @@ $_SESSION['company_name'] = (string)$company['company'];
 $_SESSION['read_only_user_config'] = 0;
 $_SESSION['ui_theme'] = (strtolower(trim((string)($user['theme'] ?? 'light'))) === 'dark') ? 'dark' : 'light';
 $_SESSION['vault_key'] = hash('sha256', $password);
+
+if (function_exists('itm_resolve_company_context_employee_id')
+    && function_exists('itm_apply_company_context_employee_session')) {
+    $contextEmployeeId = itm_resolve_company_context_employee_id($conn, $employeeId, (int)$company['id']);
+    itm_apply_company_context_employee_session($conn, $contextEmployeeId, $employeeId);
+    if ($contextEmployeeId !== $employeeId) {
+        $_SESSION['vault_key'] = hash('sha256', $password);
+    }
+}
 
 session_write_close();
 
