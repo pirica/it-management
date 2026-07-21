@@ -252,9 +252,38 @@ if ($companyC <= 0) {
                 echo '[FAIL] backup_tape_log sample log_date expected ' . $today . ', got ' . $logDate . $nl;
                 $failures++;
             } else {
-                echo '[PASS] backup_tape_log seeded Server equipment and today row for company C (' . $companyC . ').' . $nl;
+                echo '[PASS] backup_tape_log seeded Server and today row for company C (' . $companyC . ').' . $nl;
             }
         }
+    }
+}
+
+// switch_ports: Core Switch equipment + 24 RJ45 rows (not backup_tape_log).
+$companyD = vss_create_disposable_company($conn, 'D');
+if ($companyD <= 0) {
+    echo '[FAIL] Could not create disposable company D for switch_ports.' . $nl;
+    $failures++;
+} else {
+    $disposableIds[] = $companyD;
+    foreach (['switch_ports', 'switch_port_types', 'equipment', 'equipment_types', 'equipment_statuses', 'equipment_rj45', 'switch_status', 'cable_colors'] as $purgeTable) {
+        vss_purge_company_table($conn, $purgeTable, $companyD);
+    }
+
+    $seedErr = '';
+    $portsInserted = itm_seed_table_from_database_sql($conn, 'switch_ports', $companyD, $seedErr);
+    $switchId = function_exists('itm_seed_find_switch_equipment_id')
+        ? itm_seed_find_switch_equipment_id($conn, $companyD)
+        : 0;
+    $portCount = ($switchId > 0 && function_exists('itm_seed_count_switch_rj45_ports'))
+        ? itm_seed_count_switch_rj45_ports($conn, $companyD, $switchId)
+        : 0;
+
+    if ($portsInserted < 24 || $switchId <= 0 || $portCount !== 24) {
+        echo '[FAIL] switch_ports seed for company D (' . $companyD . '): inserted=' . $portsInserted
+            . ' switch_id=' . $switchId . ' rj45_ports=' . $portCount . ' err=' . $seedErr . $nl;
+        $failures++;
+    } else {
+        echo '[PASS] switch_ports seeded Core Switch with 24 RJ45 ports for company D (' . $companyD . ').' . $nl;
     }
 }
 
@@ -263,6 +292,11 @@ foreach ($disposableIds as $disposeId) {
     vss_purge_company_table($conn, 'employee_positions', $disposeId);
     vss_purge_company_table($conn, 'departments', $disposeId);
     vss_purge_company_table($conn, 'backup_tape_log', $disposeId);
+    vss_purge_company_table($conn, 'switch_port_types', $disposeId);
+    vss_purge_company_table($conn, 'switch_ports', $disposeId);
+    vss_purge_company_table($conn, 'switch_status', $disposeId);
+    vss_purge_company_table($conn, 'cable_colors', $disposeId);
+    vss_purge_company_table($conn, 'equipment_rj45', $disposeId);
     vss_purge_company_table($conn, 'equipment', $disposeId);
     vss_purge_company_table($conn, 'equipment_types', $disposeId);
     vss_purge_company_table($conn, 'equipment_statuses', $disposeId);

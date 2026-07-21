@@ -221,7 +221,24 @@ if (!function_exists('itm_seed_ensure_equipment_status_active_id')) {
             return 0;
         }
 
-        return (int)mysqli_insert_id($conn);
+        $resolvedId = (int)mysqli_insert_id($conn);
+        if ($resolvedId > 0) {
+            return $resolvedId;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            "SELECT id FROM equipment_statuses WHERE company_id = ? AND name = 'Active' LIMIT 1"
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+        mysqli_stmt_close($stmt);
+
+        return is_array($row) ? (int)($row['id'] ?? 0) : 0;
     }
 }
 
@@ -281,6 +298,464 @@ if (!function_exists('itm_seed_ensure_server_equipment')) {
         }
 
         return itm_seed_insert_minimal_primary_file_server($conn, $companyId, $serverTypeId);
+    }
+}
+
+if (!function_exists('itm_seed_find_switch_equipment_id')) {
+    function itm_seed_find_switch_equipment_id(mysqli $conn, int $companyId): int
+    {
+        if ($companyId <= 0) {
+            return 0;
+        }
+
+        $deletedPredicate = itm_table_has_column($conn, 'equipment', 'deleted_at')
+            ? ' AND e.deleted_at IS NULL'
+            : '';
+
+        $sql = "SELECT e.id FROM equipment e
+            INNER JOIN equipment_types et ON e.equipment_type_id = et.id
+            WHERE e.company_id = ? AND et.company_id = ? AND et.name = 'Switch'
+              AND e.active = 1" . $deletedPredicate . '
+            ORDER BY e.id ASC LIMIT 1';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $companyId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+        mysqli_stmt_close($stmt);
+
+        return is_array($row) ? (int)($row['id'] ?? 0) : 0;
+    }
+}
+
+if (!function_exists('itm_seed_ensure_equipment_rj45_id_by_name')) {
+    function itm_seed_ensure_equipment_rj45_id_by_name(mysqli $conn, int $companyId, string $rj45Name): int
+    {
+        if ($companyId <= 0 || $rj45Name === '') {
+            return 0;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM equipment_rj45 WHERE company_id = ? AND name = ? LIMIT 1'
+        );
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'is', $companyId, $rj45Name);
+            mysqli_stmt_execute($stmt);
+            $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+            mysqli_stmt_close($stmt);
+            if (is_array($row) && (int)($row['id'] ?? 0) > 0) {
+                return (int)$row['id'];
+            }
+        }
+
+        $insertSql = "INSERT INTO equipment_rj45 (company_id, name, created_at) VALUES ("
+            . (int)$companyId . ", '" . mysqli_real_escape_string($conn, $rj45Name) . "', '2026-01-01 00:00:01')";
+        if (!itm_run_query($conn, $insertSql)) {
+            return 0;
+        }
+
+        $resolvedId = (int)mysqli_insert_id($conn);
+        if ($resolvedId > 0) {
+            return $resolvedId;
+        }
+
+        $lookupStmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM equipment_rj45 WHERE company_id = ? AND name = ? LIMIT 1'
+        );
+        if (!$lookupStmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($lookupStmt, 'is', $companyId, $rj45Name);
+        mysqli_stmt_execute($lookupStmt);
+        $lookupRow = mysqli_fetch_assoc(mysqli_stmt_get_result($lookupStmt));
+        mysqli_stmt_close($lookupStmt);
+
+        return is_array($lookupRow) ? (int)($lookupRow['id'] ?? 0) : 0;
+    }
+}
+
+if (!function_exists('itm_seed_ensure_switch_port_type_rj45')) {
+    function itm_seed_ensure_switch_port_type_rj45(mysqli $conn, int $companyId): bool
+    {
+        if ($companyId <= 0) {
+            return false;
+        }
+
+        $typeName = 'RJ45';
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM switch_port_types WHERE company_id = ? AND type = ? LIMIT 1'
+        );
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'is', $companyId, $typeName);
+            mysqli_stmt_execute($stmt);
+            $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+            mysqli_stmt_close($stmt);
+            if (is_array($row) && (int)($row['id'] ?? 0) > 0) {
+                return true;
+            }
+        }
+
+        $insertSql = "INSERT INTO switch_port_types (company_id, type) VALUES ("
+            . (int)$companyId . ", 'RJ45')";
+
+        return (bool) itm_run_query($conn, $insertSql);
+    }
+}
+
+if (!function_exists('itm_seed_ensure_unknown_switch_status_id')) {
+    function itm_seed_ensure_unknown_switch_status_id(mysqli $conn, int $companyId): int
+    {
+        if ($companyId <= 0) {
+            return 0;
+        }
+
+        $statusStmt = mysqli_prepare(
+            $conn,
+            "SELECT id FROM switch_status WHERE company_id = ? AND LOWER(status) = 'unknown' LIMIT 1"
+        );
+        if ($statusStmt) {
+            mysqli_stmt_bind_param($statusStmt, 'i', $companyId);
+            mysqli_stmt_execute($statusStmt);
+            $statusRow = mysqli_fetch_assoc(mysqli_stmt_get_result($statusStmt));
+            mysqli_stmt_close($statusStmt);
+            $existingId = (int)($statusRow['id'] ?? 0);
+            if ($existingId > 0) {
+                return $existingId;
+            }
+        }
+
+        $grayColorId = 0;
+        $colorStmt = mysqli_prepare(
+            $conn,
+            "SELECT id FROM cable_colors WHERE company_id = ? AND LOWER(color_name) = 'gray' ORDER BY id ASC LIMIT 1"
+        );
+        if ($colorStmt) {
+            mysqli_stmt_bind_param($colorStmt, 'i', $companyId);
+            mysqli_stmt_execute($colorStmt);
+            $colorRow = mysqli_fetch_assoc(mysqli_stmt_get_result($colorStmt));
+            mysqli_stmt_close($colorStmt);
+            $grayColorId = (int)($colorRow['id'] ?? 0);
+        }
+        if ($grayColorId <= 0) {
+            $insertColorSql = "INSERT INTO cable_colors (company_id, color_name, hex_color, created_at) VALUES ("
+                . (int)$companyId . ", 'Gray', '#808080', '2026-01-01 00:00:01')";
+            if (itm_run_query($conn, $insertColorSql)) {
+                $grayColorId = (int)mysqli_insert_id($conn);
+            }
+            if ($grayColorId <= 0) {
+                $colorStmt = mysqli_prepare(
+                    $conn,
+                    "SELECT id FROM cable_colors WHERE company_id = ? AND LOWER(color_name) = 'gray' ORDER BY id ASC LIMIT 1"
+                );
+                if ($colorStmt) {
+                    mysqli_stmt_bind_param($colorStmt, 'i', $companyId);
+                    mysqli_stmt_execute($colorStmt);
+                    $colorRow = mysqli_fetch_assoc(mysqli_stmt_get_result($colorStmt));
+                    mysqli_stmt_close($colorStmt);
+                    $grayColorId = (int)($colorRow['id'] ?? 0);
+                }
+            }
+        }
+        if ($grayColorId <= 0) {
+            return 0;
+        }
+
+        $insertStatusSql = 'INSERT INTO switch_status (company_id, status, color_id, created_at) VALUES ('
+            . (int)$companyId . ", 'Unknown', " . (int)$grayColorId . ", '2026-01-01 00:00:01')";
+        if (!itm_run_query($conn, $insertStatusSql)) {
+            return 0;
+        }
+
+        $unknownStatusId = (int)mysqli_insert_id($conn);
+        if ($unknownStatusId > 0) {
+            return $unknownStatusId;
+        }
+
+        $statusStmt = mysqli_prepare(
+            $conn,
+            "SELECT id FROM switch_status WHERE company_id = ? AND LOWER(status) = 'unknown' LIMIT 1"
+        );
+        if (!$statusStmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($statusStmt, 'i', $companyId);
+        mysqli_stmt_execute($statusStmt);
+        $statusRow = mysqli_fetch_assoc(mysqli_stmt_get_result($statusStmt));
+        mysqli_stmt_close($statusStmt);
+
+        return is_array($statusRow) ? (int)($statusRow['id'] ?? 0) : 0;
+    }
+}
+
+if (!function_exists('itm_seed_parse_rj45_port_count_from_name')) {
+    function itm_seed_parse_rj45_port_count_from_name(string $rj45Name): int
+    {
+        if (preg_match('/(\d+)/', $rj45Name, $matches)) {
+            $count = (int)($matches[1] ?? 0);
+            if ($count > 0) {
+                return $count;
+            }
+        }
+
+        return 24;
+    }
+}
+
+if (!function_exists('itm_seed_count_switch_rj45_ports')) {
+    function itm_seed_count_switch_rj45_ports(mysqli $conn, int $companyId, int $equipmentId = 0): int
+    {
+        if ($companyId <= 0) {
+            return 0;
+        }
+
+        if ($equipmentId > 0) {
+            $stmt = mysqli_prepare(
+                $conn,
+                "SELECT COUNT(*) AS c FROM switch_ports WHERE company_id = ? AND equipment_id = ? AND LOWER(port_type) = 'rj45'"
+            );
+            if (!$stmt) {
+                return 0;
+            }
+            mysqli_stmt_bind_param($stmt, 'ii', $companyId, $equipmentId);
+            mysqli_stmt_execute($stmt);
+            $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+            mysqli_stmt_close($stmt);
+
+            return (int)($row['c'] ?? 0);
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            "SELECT COUNT(*) AS c FROM switch_ports WHERE company_id = ? AND LOWER(port_type) = 'rj45'"
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+        mysqli_stmt_close($stmt);
+
+        return (int)($row['c'] ?? 0);
+    }
+}
+
+if (!function_exists('itm_seed_ensure_switch_rj45_ports')) {
+  /**
+   * Ensure RJ45 switch_ports rows exist for sample switch equipment (default 24).
+   *
+   * @return int Rows inserted this call
+   */
+    function itm_seed_ensure_switch_rj45_ports(mysqli $conn, int $companyId, int $equipmentId, int $portCount, string $hostname): int
+    {
+        if ($companyId <= 0 || $equipmentId <= 0 || $portCount <= 0) {
+            return 0;
+        }
+
+        if (!itm_table_has_column($conn, 'switch_ports', 'equipment_id')) {
+            return 0;
+        }
+
+        $beforeCount = itm_seed_count_switch_rj45_ports($conn, $companyId, $equipmentId);
+
+        if (!itm_seed_ensure_switch_port_type_rj45($conn, $companyId)) {
+            return 0;
+        }
+
+        $unknownStatusId = itm_seed_ensure_unknown_switch_status_id($conn, $companyId);
+        if ($unknownStatusId <= 0) {
+            return 0;
+        }
+
+        $grayColorId = 0;
+        $colorStmt = mysqli_prepare(
+            $conn,
+            "SELECT id FROM cable_colors WHERE company_id = ? AND LOWER(color_name) = 'gray' ORDER BY id ASC LIMIT 1"
+        );
+        if ($colorStmt) {
+            mysqli_stmt_bind_param($colorStmt, 'i', $companyId);
+            mysqli_stmt_execute($colorStmt);
+            $colorRow = mysqli_fetch_assoc(mysqli_stmt_get_result($colorStmt));
+            mysqli_stmt_close($colorStmt);
+            $grayColorId = (int)($colorRow['id'] ?? 0);
+        }
+        if ($grayColorId <= 0) {
+            $anyColorStmt = mysqli_prepare(
+                $conn,
+                'SELECT id FROM cable_colors WHERE company_id = ? ORDER BY id ASC LIMIT 1'
+            );
+            if ($anyColorStmt) {
+                mysqli_stmt_bind_param($anyColorStmt, 'i', $companyId);
+                mysqli_stmt_execute($anyColorStmt);
+                $anyColorRow = mysqli_fetch_assoc(mysqli_stmt_get_result($anyColorStmt));
+                mysqli_stmt_close($anyColorStmt);
+                $grayColorId = (int)($anyColorRow['id'] ?? 0);
+            }
+        }
+        if ($grayColorId <= 0) {
+            return 0;
+        }
+
+        $portType = 'RJ45';
+        $insertStmt = mysqli_prepare(
+            $conn,
+            "INSERT INTO switch_ports (company_id, equipment_id, hostname, port_type, port_number, to_patch_port, status_id, color_id, comments, active)
+             SELECT ?, ?, NULLIF(?, ''), ?, ?, '', ?, ?, '', 1
+             WHERE NOT EXISTS (
+                SELECT 1 FROM switch_ports
+                WHERE company_id = ? AND equipment_id = ? AND port_number = ?
+             )"
+        );
+        if (!$insertStmt) {
+            return 0;
+        }
+
+        for ($portNo = 1; $portNo <= $portCount; $portNo++) {
+            mysqli_stmt_bind_param(
+                $insertStmt,
+                'iissiiiiii',
+                $companyId,
+                $equipmentId,
+                $hostname,
+                $portType,
+                $portNo,
+                $unknownStatusId,
+                $grayColorId,
+                $companyId,
+                $equipmentId,
+                $portNo
+            );
+            mysqli_stmt_execute($insertStmt);
+        }
+        mysqli_stmt_close($insertStmt);
+
+        $afterCount = itm_seed_count_switch_rj45_ports($conn, $companyId, $equipmentId);
+
+        return max(0, $afterCount - $beforeCount);
+    }
+}
+
+if (!function_exists('itm_seed_insert_minimal_sample_switch')) {
+    function itm_seed_insert_minimal_sample_switch(mysqli $conn, int $companyId, int $switchTypeId, int $rj45Id, int $portCount): int
+    {
+        if ($companyId <= 0 || $switchTypeId <= 0 || $rj45Id <= 0 || $portCount <= 0) {
+            return 0;
+        }
+
+        $statusId = itm_seed_ensure_equipment_status_active_id($conn, $companyId);
+        if ($statusId <= 0) {
+            return 0;
+        }
+
+        $hostname = 'sw-core-01';
+        $layoutId = 1;
+        $equipmentName = 'Core Switch';
+        $insertStmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO equipment (company_id, equipment_type_id, name, serial_number, model, hostname, ip_address, status_id, switch_rj45_id, switch_port_numbering_layout_id, printer_color_capable, printer_scan, active, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 1, ?)'
+        );
+        if (!$insertStmt) {
+            return 0;
+        }
+
+        $serialNumber = 'SN-SW-001';
+        $model = 'UniFi Switch 24 PoE';
+        $ipAddress = '192.168.10.10';
+        $createdAt = '2026-01-01 00:00:01';
+        mysqli_stmt_bind_param(
+            $insertStmt,
+            'iisssssiiis',
+            $companyId,
+            $switchTypeId,
+            $equipmentName,
+            $serialNumber,
+            $model,
+            $hostname,
+            $ipAddress,
+            $statusId,
+            $rj45Id,
+            $layoutId,
+            $createdAt
+        );
+        if (!mysqli_stmt_execute($insertStmt)) {
+            mysqli_stmt_close($insertStmt);
+            return 0;
+        }
+        mysqli_stmt_close($insertStmt);
+
+        $equipmentId = (int)mysqli_insert_id($conn);
+        if ($equipmentId <= 0) {
+            $equipmentId = itm_seed_find_switch_equipment_id($conn, $companyId);
+        }
+        if ($equipmentId <= 0) {
+            return 0;
+        }
+
+        itm_seed_ensure_switch_rj45_ports($conn, $companyId, $equipmentId, $portCount, $hostname);
+
+        return $equipmentId;
+    }
+}
+
+if (!function_exists('itm_seed_ensure_switch_equipment')) {
+    function itm_seed_ensure_switch_equipment(mysqli $conn, int $companyId): int
+    {
+        if ($companyId <= 0) {
+            return 0;
+        }
+
+        $rj45Name = '24 ports';
+        $rj45Id = itm_seed_ensure_equipment_rj45_id_by_name($conn, $companyId, $rj45Name);
+        $portCount = itm_seed_parse_rj45_port_count_from_name($rj45Name);
+        if ($rj45Id <= 0) {
+            return 0;
+        }
+
+        $switchEquipmentId = itm_seed_find_switch_equipment_id($conn, $companyId);
+        if ($switchEquipmentId > 0) {
+            $updateStmt = mysqli_prepare(
+                $conn,
+                'UPDATE equipment SET switch_rj45_id = ? WHERE id = ? AND company_id = ?'
+            );
+            if ($updateStmt) {
+                mysqli_stmt_bind_param($updateStmt, 'iii', $rj45Id, $switchEquipmentId, $companyId);
+                mysqli_stmt_execute($updateStmt);
+                mysqli_stmt_close($updateStmt);
+            }
+
+            $hostname = 'sw-core-01';
+            $hostStmt = mysqli_prepare(
+                $conn,
+                'SELECT hostname FROM equipment WHERE id = ? AND company_id = ? LIMIT 1'
+            );
+            if ($hostStmt) {
+                mysqli_stmt_bind_param($hostStmt, 'ii', $switchEquipmentId, $companyId);
+                mysqli_stmt_execute($hostStmt);
+                $hostRow = mysqli_fetch_assoc(mysqli_stmt_get_result($hostStmt));
+                mysqli_stmt_close($hostStmt);
+                $resolvedHost = trim((string)($hostRow['hostname'] ?? ''));
+                if ($resolvedHost !== '') {
+                    $hostname = $resolvedHost;
+                }
+            }
+
+            itm_seed_ensure_switch_rj45_ports($conn, $companyId, $switchEquipmentId, $portCount, $hostname);
+
+            return $switchEquipmentId;
+        }
+
+        $switchTypeId = itm_seed_ensure_equipment_type_id_by_name($conn, $companyId, 'Switch');
+        if ($switchTypeId <= 0) {
+            return 0;
+        }
+
+        return itm_seed_insert_minimal_sample_switch($conn, $companyId, $switchTypeId, $rj45Id, $portCount);
     }
 }
 
@@ -787,6 +1262,27 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
         }
 
         $backupTapeServerId = 0;
+        if ($tableName === 'switch_ports') {
+            if (!function_exists('itm_seed_ensure_switch_equipment')) {
+                $error = 'Switch ports sample seeding is unavailable.';
+                return 0;
+            }
+
+            $switchEquipmentId = itm_seed_ensure_switch_equipment($conn, $companyId);
+            if ($switchEquipmentId <= 0) {
+                $error = 'Could not create or resolve Switch equipment for sample ports.';
+                return 0;
+            }
+
+            $rj45PortCount = itm_seed_count_switch_rj45_ports($conn, $companyId, $switchEquipmentId);
+            if ($rj45PortCount < 24) {
+                $error = 'Expected 24 RJ45 switch_ports rows after sample seed (got ' . $rj45PortCount . ').';
+                return 0;
+            }
+
+            return $rj45PortCount;
+        }
+
         if ($tableName === 'backup_tape_log') {
             if (!function_exists('itm_seed_ensure_server_equipment')) {
                 $error = 'Backup tape log sample seeding is unavailable.';
