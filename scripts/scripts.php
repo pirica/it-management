@@ -900,6 +900,15 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     </td>
                 </tr>
                 <tr>
+                    <td><a href="verify_company_empty_sample_data.php" target="_blank" rel="nofollow noreferrer">verify_company_empty_sample_data.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Seeds empty tenant tables that have an <strong>Add sample data</strong> button (16-module allowlist). Uses shared <code>itm_seed_table_from_database_sql()</code>; exits <code>1</code> when any seed leaves the table empty.</td>
+                    <td>
+                        CLI: <code>php scripts/verify_company_empty_sample_data.php --company=4</code><br>
+                        Single module: <code>--module=monthly_budgets</code>
+                    </td>
+                </tr>
+                <tr>
                     <td><a href="compare_database_sql_modules.php" target="_blank" rel="nofollow noreferrer">compare_database_sql_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Compares every <code>CREATE TABLE</code> in <code>db/</code> split bundle with <code>modules/</code> folders and each module’s <code>$crud_table</code> mapping (matched, missing module, missing table, mismatch).</td>

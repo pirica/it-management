@@ -134,6 +134,7 @@ Catalog: `scripts/scripts.php`.
 | `php scripts/list_boolean_integer_fields.php` | Parses both `db/` and the live database to list fields of Boolean, int, tinyint, and other numeric types, matching tables to modules by name. |
 | `php scripts/list_enum_fields.php` | Parses both `db/` and the live database to list ENUM fields, matching tables to modules by name. |
 | `php scripts/list_empty_tables.php` | Lists tenant-scoped tables with zero live rows for the session company (browser Admin) or `--company=N` (CLI). Browser filter: `?company=N` (dropdown on page). Links to `modules/{table}/index.php` in a new tab when the module folder exists. JSON: `--json` / `?company=N&format=json`. |
+| `php scripts/verify_company_empty_sample_data.php` | Regression: for a tenant (`--company=N`), seeds every empty module that exposes **Add sample data** via `itm_seed_lookup_parents_for_table()` + `itm_seed_table_from_database_sql()`; exits `1` on failure. Optional `--module=slug` for one module. Pairs with `list_empty_tables.php` before/after tenant onboarding checks. |
 | `php scripts/extract_by_fields.php` | Parses `db/` to extract column definitions containing keywords like `by`, `to`, `employee_id`, `employee`. Output is formatted and saved to `scripts/fields_by.txt`. |
 
 ### Select Options API verification
