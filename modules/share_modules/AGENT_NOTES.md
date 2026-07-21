@@ -14,6 +14,8 @@ Administrator matrix to enable or disable temporary QR / 6-digit **share** per `
 - **AJAX:** `toggle_share`, `bulk_toggle_share` with CSRF; UI script `js/share-modules-matrix.js`.
 - **Seeds:** `db/02_data.sql` inserts `company_module_share` for active companies × share-capable `modules_registry` rows only (`enabled = 1`). Live DBs: `db/migrations/company_module_share_capable_seed.sql`.
 
+- **Bespoke UI audit:** listed in `docs/list_bespoke_UI.txt`; `fields_missing.php` bespoke gate — Search/Import Excel pass; Sort and Pagination reviewed in `scripts/data/fields_missing_reviewed.json` (matrix shows all registry rows on one page).
+
 ## 7. File Structure
 - `index.php` — matrix UI, registry CRUD via `$crud_action`, AJAX handlers
 - `create.php`, `edit.php`, `view.php`, `list_all.php`, `delete.php` — thin wrappers setting `$crud_action`

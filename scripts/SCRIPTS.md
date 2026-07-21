@@ -996,7 +996,7 @@ Use this registry when a bespoke module **intentionally** fails a gated UI check
 
 **Strict gate:** `php scripts/fields_missing.php --strict-gate` (browser: `?strict_gate=1`) exits `1` when any bespoke `[SKIP][fail]` line is **not** in the registry. Reviewed `[SKIP][fail][reviewed]` lines do not fail strict gate. Use in CI when bespoke gate hygiene must be enforced.
 
-**Seeded modules:** `backup_tape_log` — Search, Sort, Pagination (monthly grid bespoke UI). `company_module_access` — Sort, Pagination (admin matrix UI; Search and Import Excel implemented on `index.php`).
+**Seeded modules:** `backup_tape_log` — Search, Sort, Pagination (monthly grid bespoke UI). `company_module_access` — Sort, Pagination (admin matrix UI; Search and Import Excel implemented on `index.php`). `share_modules` — Sort, Pagination (admin share matrix UI; Search and Import Excel implemented on `index.php`).
 
 #### `ui_configuration` reviewed exceptions (`scripts/data/ui_configuration_reviewed.json`)
 
