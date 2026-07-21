@@ -2,7 +2,7 @@
 /**
  * Lists tenant-scoped tables with zero rows for the active session company.
  *
- * Browser: signed-in session (uses $_SESSION['company_id']). Admin gate on load.
+ * Browser: signed-in session; optional filter via ?company=N (defaults to session company_id). Admin gate on load.
  * CLI: php scripts/list_empty_tables.php [--company=N] [--json]
  *
  * Module links open modules/{table}/index.php in a new tab when that folder exists.
@@ -111,6 +111,7 @@ $asJson = $itmIsCli
     ? in_array('--json', $argvList, true)
     : isset($_GET['format']) && strtolower((string)$_GET['format']) === 'json';
 
+$sessionCompanyId = (int)($_SESSION['company_id'] ?? ($company_id ?? 0));
 $companyId = 0;
 if ($itmIsCli) {
     foreach ($argvList as $arg) {
@@ -118,9 +119,11 @@ if ($itmIsCli) {
             $companyId = (int)$match[1];
         }
     }
+} elseif (isset($_GET['company']) && (string)$_GET['company'] !== '') {
+    $companyId = (int)$_GET['company'];
 }
 if ($companyId <= 0) {
-    $companyId = (int)($_SESSION['company_id'] ?? ($company_id ?? 0));
+    $companyId = $sessionCompanyId;
 }
 
 if ($companyId <= 0) {
@@ -136,6 +139,20 @@ if ($companyId <= 0) {
 if (!$itmIsCli) {
     require_once ROOT_PATH . 'includes/itm_maintenance_script_admin_gate.php';
     itm_enforce_maintenance_script_admin_browser($conn);
+}
+
+$companyOptions = [];
+$companyRes = mysqli_query($conn, 'SELECT id, company, incode FROM companies WHERE active = 1 ORDER BY company ASC');
+while ($companyRes && ($companyRow = mysqli_fetch_assoc($companyRes))) {
+    $companyOptions[] = $companyRow;
+}
+if ($companyId > 0 && !array_filter($companyOptions, static function (array $row) use ($companyId): bool {
+    return (int)($row['id'] ?? 0) === $companyId;
+})) {
+    $singleRes = mysqli_query($conn, 'SELECT id, company, incode FROM companies WHERE id = ' . (int)$companyId . ' LIMIT 1');
+    if ($singleRes && ($singleRow = mysqli_fetch_assoc($singleRes))) {
+        $companyOptions[] = $singleRow;
+    }
 }
 
 $modulesRoot = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'modules';
@@ -194,6 +211,9 @@ $esc = static function ($value): string {
         .report-table th { background: var(--table-header-bg, #f6f8fa); }
         .report-muted { color: var(--text-muted, #57606a); margin: 0 0 12px; line-height: 1.5; }
         code { font-size: 0.88rem; }
+        .filter-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 12px; }
+        .filter-row label { display: block; font-weight: 600; margin-bottom: 6px; }
+        .filter-row select { min-width: 280px; padding: 8px 10px; border: 1px solid var(--border-color, #d0d7de); border-radius: 6px; }
     </style>
 </head>
 <body>
@@ -201,7 +221,23 @@ $esc = static function ($value): string {
 <?php itm_script_browser_nav_echo($baseUrl); ?>
     <div class="report-card">
         <h1 style="margin-top:0;">Empty tenant tables</h1>
-        <p class="report-muted"><strong>Company id : <?php echo (int)$report['company_id']; ?></strong></p>
+        <p class="report-muted"><strong>Company id : <?php echo (int)$report['company_id']; ?></strong><?php if ($sessionCompanyId > 0 && $sessionCompanyId !== (int)$report['company_id']): ?> · session company id : <?php echo (int)$sessionCompanyId; ?><?php endif; ?></p>
+        <form class="filter-row" method="get" action="">
+            <div>
+                <label for="company">Company</label>
+                <select name="company" id="company">
+                    <?php foreach ($companyOptions as $companyRow): ?>
+                        <?php $optionId = (int)($companyRow['id'] ?? 0); ?>
+                        <option value="<?php echo $optionId; ?>"<?php echo $optionId === (int)$report['company_id'] ? ' selected' : ''; ?>>
+                            <?php echo $esc((string)($companyRow['company'] ?? '') . ' (' . (string)($companyRow['incode'] ?? '') . ') [ID: ' . $optionId . ']'); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div>
+                <button type="submit" class="btn btn-sm btn-primary" title="Apply filter">Apply</button>
+            </div>
+        </form>
         <p class="report-muted">
             Scanned <code>company_id</code> tables: <strong><?php echo (int)$report['scanned_tables']; ?></strong> ·
             Non-empty: <strong><?php echo (int)$report['non_empty_tables']; ?></strong> ·
@@ -209,7 +245,7 @@ $esc = static function ($value): string {
             (live rows only when <code>deleted_at</code> exists).
         </p>
         <p>
-            <a class="btn btn-sm" href="?format=json">JSON</a>
+            <a class="btn btn-sm" href="?company=<?php echo (int)$report['company_id']; ?>&amp;format=json">JSON</a>
             <a class="btn btn-sm" href="../index.php">Home</a>
         </p>
     </div>
