@@ -1585,6 +1585,55 @@ if (!function_exists('itm_seed_insert_ui_configuration_sample_row')) {
         $faviconPath = 'images/favicons/company_' . $companyId . '.ico';
         $equipmentVisibility = '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}';
 
+        $existingStmt = mysqli_prepare(
+            $conn,
+            'SELECT id, deleted_at FROM ui_configuration WHERE company_id = ? AND employee_id = ? LIMIT 1'
+        );
+        if ($existingStmt) {
+            mysqli_stmt_bind_param($existingStmt, 'ii', $companyId, $employeeId);
+            mysqli_stmt_execute($existingStmt);
+            $existingRes = mysqli_stmt_get_result($existingStmt);
+            $existingRow = ($existingRes && ($fetched = mysqli_fetch_assoc($existingRes))) ? $fetched : null;
+            mysqli_stmt_close($existingStmt);
+            if ($existingRow) {
+                if (($existingRow['deleted_at'] ?? null) === null) {
+                    return 0;
+                }
+
+                $restoreId = (int)($existingRow['id'] ?? 0);
+                if ($restoreId > 0) {
+                    $restoreStmt = mysqli_prepare(
+                        $conn,
+                        'UPDATE ui_configuration SET
+                            table_actions_position = \'left\',
+                            new_button_position = \'left\',
+                            export_buttons_position = \'left\',
+                            back_save_position = \'left\',
+                            enable_all_error_reporting = 1,
+                            enable_audit_logs = 1,
+                            enable_chatbot = 1,
+                            enable_auto_scaffolding = 0,
+                            records_per_page = \'25\',
+                            app_name = ?,
+                            favicon_path = ?,
+                            equipment_type_sidebar_visibility = ?,
+                            active = 1,
+                            deleted_by = NULL,
+                            deleted_at = NULL
+                         WHERE id = ? AND company_id = ?'
+                    );
+                    if ($restoreStmt) {
+                        mysqli_stmt_bind_param($restoreStmt, 'sssii', $appName, $faviconPath, $equipmentVisibility, $restoreId, $companyId);
+                        if (mysqli_stmt_execute($restoreStmt)) {
+                            mysqli_stmt_close($restoreStmt);
+                            return 1;
+                        }
+                        mysqli_stmt_close($restoreStmt);
+                    }
+                }
+            }
+        }
+
         $stmt = mysqli_prepare(
             $conn,
             'INSERT INTO ui_configuration (
@@ -1832,7 +1881,15 @@ if (!function_exists('itm_seed_tenant_row_count')) {
             return (int)($row['c'] ?? 0);
         }
 
-        $stmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS c FROM `' . str_replace('`', '``', $tableName) . '` WHERE company_id = ?');
+        $deletedFilter = '';
+        if (function_exists('itm_table_has_column') && itm_table_has_column($conn, $tableName, 'deleted_at')) {
+            $deletedFilter = ' AND deleted_at IS NULL';
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT COUNT(*) AS c FROM `' . str_replace('`', '``', $tableName) . '` WHERE company_id = ?' . $deletedFilter
+        );
         if (!$stmt) {
             return 0;
         }
