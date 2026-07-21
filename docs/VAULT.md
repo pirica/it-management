@@ -69,7 +69,7 @@ UI helpers in `user-config.php` (client-side only; the server never receives the
 
 | Control | Behaviour |
 |---------|-----------|
-| **🔑** (header) | Generates a 24-character key with `crypto.getRandomValues()`, copies it into **New** / **Confirm**, shows the overlay. |
+| **🔑** (header) | Generates a 24-character key with unbiased `crypto.getRandomValues()` rejection sampling, copies it into **New** / **Confirm**, shows the overlay. Visible control is emoji-only (`title` carries the phrase). |
 | **One-time overlay** | Read-only field + **🗐** copy; user must save the key externally. |
 | **➡️** (overlay dismiss) | Clears the overlay field and masks form inputs as `type="password"` again. Values remain in the form until save or navigation — users must submit **💾** to persist. |
 | **👁️** (per field) | Toggles visibility on Current / New / Confirm master-key inputs. |
