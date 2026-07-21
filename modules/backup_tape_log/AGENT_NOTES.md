@@ -18,7 +18,7 @@ Manages a monthly grid view to track server backup tapes. It allows users to rec
 - **Role-Based Access:** `itm_is_admin()` and IT staff full access; regular users may have restricted fields/dates.
 - **Date Logic:** `btl_format_datetime` treats `1970-01-01` as "—" for display.
 - **Exports:** XLSX and PDF must include custom header (Year, Month, Company, Server, Unit No) and grid layout.
-- **Add sample data:** `index.php` POST `add_sample_data` calls `itm_seed_table_from_database_sql('backup_tape_log')`, which ensures a **Server** equipment row (`itm_seed_ensure_server_equipment()`) and inserts a **today** log row (editable grid). Button shows when no servers exist or the selected server has no row for today.
+- **Add sample data:** `index.php` POST `add_sample_data` calls `itm_seed_insert_backup_tape_log_today_row()` (after `itm_seed_ensure_server_equipment()`), inserting a direct **today** row — not the stale template date from `02_data_sample.sql`. Button shows when no servers exist or the selected server has no row for today.
 
 ## 5. UI Behavior Requirements
 - **Display title:** **Backup Tape Log File** (sidebar, registry `module_name`, `$crud_title`, and create/edit/view headings); index grid h1 keeps year prefix (`{year} Backup Tape Log File`).

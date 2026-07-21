@@ -328,6 +328,69 @@ if (!function_exists('itm_seed_backup_tape_log_value_for_today')) {
     }
 }
 
+if (!function_exists('itm_seed_insert_backup_tape_log_today_row')) {
+    /**
+     * Insert one editable backup_tape_log row for today (direct INSERT — avoids template FK remap skips).
+     */
+    function itm_seed_insert_backup_tape_log_today_row(mysqli $conn, int $companyId, int $serverId, &$error = ''): int
+    {
+        $error = '';
+        if ($companyId <= 0 || $serverId <= 0) {
+            $error = 'Server is required before adding backup tape log sample data.';
+            return 0;
+        }
+
+        if (function_exists('itm_seed_backup_tape_log_today_row_exists')
+            && itm_seed_backup_tape_log_today_row_exists($conn, $companyId, $serverId)) {
+            return 0;
+        }
+
+        $today = date('Y-m-d');
+        $dayName = date('l');
+        $now = date('Y-m-d H:i:s');
+        $printName = 'Sample backup log';
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO backup_tape_log (company_id, server_id, log_date, tape_to_be_used, time_tape_inserted, time_returned_to_safe, print_name, backup_status, problem_details, tape_used_for_restore, ism_review, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)'
+        );
+        if (!$stmt) {
+            $error = 'Could not prepare backup_tape_log sample insert.';
+            return 0;
+        }
+
+        $backupStatus = 'Full';
+        $problemDetails = 'Sample backup log entry';
+        $tapeUsed = 0;
+        $ismReview = 0;
+        mysqli_stmt_bind_param(
+            $stmt,
+            'iisssssssii',
+            $companyId,
+            $serverId,
+            $today,
+            $dayName,
+            $now,
+            $now,
+            $printName,
+            $backupStatus,
+            $problemDetails,
+            $tapeUsed,
+            $ismReview
+        );
+
+        if (!mysqli_stmt_execute($stmt)) {
+            $error = 'Could not insert backup tape log sample row: ' . mysqli_stmt_error($stmt);
+            mysqli_stmt_close($stmt);
+            return 0;
+        }
+
+        mysqli_stmt_close($stmt);
+
+        return 1;
+    }
+}
+
 if (!function_exists('itm_seed_row_assoc_from_insert_entry')) {
     /**
      * @param array{columns:array<int,string>,values:array<int,string>} $rowEntry
@@ -724,16 +787,27 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
         }
 
         $backupTapeServerId = 0;
-        if ($tableName !== 'backup_tape_log') {
-            itm_seed_lookup_parents_for_table($conn, $tableName, $companyId);
-        } elseif (function_exists('itm_seed_ensure_server_equipment')) {
-            $backupTapeServerId = itm_seed_ensure_server_equipment($conn, $companyId);
-            if ($backupTapeServerId > 0
-                && function_exists('itm_seed_backup_tape_log_today_row_exists')
-                && itm_seed_backup_tape_log_today_row_exists($conn, $companyId, $backupTapeServerId)) {
+        if ($tableName === 'backup_tape_log') {
+            if (!function_exists('itm_seed_ensure_server_equipment')) {
+                $error = 'Backup tape log sample seeding is unavailable.';
                 return 0;
             }
+
+            $backupTapeServerId = itm_seed_ensure_server_equipment($conn, $companyId);
+            if ($backupTapeServerId <= 0) {
+                $error = 'Could not create or resolve Server equipment for backup tape log.';
+                return 0;
+            }
+
+            if (!function_exists('itm_seed_insert_backup_tape_log_today_row')) {
+                $error = 'Backup tape log sample seeding is unavailable.';
+                return 0;
+            }
+
+            return itm_seed_insert_backup_tape_log_today_row($conn, $companyId, $backupTapeServerId, $error);
         }
+
+        itm_seed_lookup_parents_for_table($conn, $tableName, $companyId);
 
         $tenantRowsBefore = itm_seed_tenant_row_count($conn, $tableName, $companyId);
 
