@@ -797,6 +797,16 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     </td>
                 </tr>
                 <tr>
+                    <td><a href="verify_tickets_sample_data.php" target="_blank" rel="nofollow noreferrer">verify_tickets_sample_data.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>
+                        MySQL regression for tickets <strong>Add sample data</strong> on empty tenants: seeds <code>TCK-0001</code> with <code>is_archived = 0</code> when the company has no local employees (session Admin cross-company stamp). <strong>Mutates DB:</strong> deletes and re-seeds company <code>4</code> ticket lookup rows during the test.
+                    </td>
+                    <td>
+                        CLI: <code>php scripts/verify_tickets_sample_data.php</code> — exit <code>1</code> on failure. Run when changing <code>itm_seed_insert_tickets_sample_row()</code>, <code>modules/tickets/sample_seed_helpers.php</code>, or tickets sample POST in <code>index.php</code>.
+                    </td>
+                </tr>
+                <tr>
                     <td><a href="verify_equipment_triggers.php" target="_blank" rel="nofollow noreferrer">verify_equipment_triggers.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>

@@ -1704,6 +1704,25 @@ if (!function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
                     }
                 }
             }
+
+            // Why: Empty tenants may have no local Admin row; session company_id already passed tenant gates.
+            $sessionCompanyId = (int)($_SESSION['company_id'] ?? 0);
+            if ($sessionCompanyId === $companyId) {
+                $scopedStmt = mysqli_prepare(
+                    $conn,
+                    'SELECT id FROM employees WHERE id = ? AND deleted_at IS NULL LIMIT 1'
+                );
+                if ($scopedStmt) {
+                    mysqli_stmt_bind_param($scopedStmt, 'i', $sessionEmployeeId);
+                    mysqli_stmt_execute($scopedStmt);
+                    $scopedRes = mysqli_stmt_get_result($scopedStmt);
+                    $scopedRow = ($scopedRes && ($fetched = mysqli_fetch_assoc($scopedRes))) ? $fetched : null;
+                    mysqli_stmt_close($scopedStmt);
+                    if ($scopedRow && (int)($scopedRow['id'] ?? 0) > 0) {
+                        return (int)$scopedRow['id'];
+                    }
+                }
+            }
         }
 
         $liveStmt = mysqli_prepare(
@@ -1870,6 +1889,192 @@ if (!function_exists('itm_seed_apply_tickets_sample_row_defaults')) {
                 $targetValues[$idx] = (string)$employeeId;
             }
         }
+    }
+}
+
+if (!function_exists('itm_seed_insert_tickets_sample_row')) {
+    /**
+     * Why: Generic template/fallback seed fails on empty tenants when created_by_employee_id cannot be remapped.
+     */
+    function itm_seed_insert_tickets_sample_row(mysqli $conn, int $companyId, &$error = ''): int
+    {
+        $error = '';
+        if ($companyId <= 0) {
+            $error = 'A company must be selected before adding sample data.';
+            return 0;
+        }
+
+        $helpersPath = ROOT_PATH . 'modules/tickets/sample_seed_helpers.php';
+        if (is_file($helpersPath)) {
+            require_once $helpersPath;
+        }
+
+        if (function_exists('tickets_repair_invisible_sample_rows')) {
+            tickets_repair_invisible_sample_rows($conn, $companyId);
+        }
+        if (function_exists('tickets_ensure_sample_rows_active')) {
+            tickets_ensure_sample_rows_active($conn, $companyId);
+        }
+
+        if (function_exists('tickets_tenant_active_row_count')
+            && tickets_tenant_active_row_count($conn, $companyId) > 0) {
+            return 0;
+        }
+
+        $externalCode = 'TCK-0001';
+        $existingStmt = mysqli_prepare(
+            $conn,
+            'SELECT id, is_archived, deleted_at, active FROM tickets WHERE company_id = ? AND ticket_external_code = ? LIMIT 1'
+        );
+        if ($existingStmt) {
+            mysqli_stmt_bind_param($existingStmt, 'is', $companyId, $externalCode);
+            mysqli_stmt_execute($existingStmt);
+            $existingRes = mysqli_stmt_get_result($existingStmt);
+            $existingRow = ($existingRes && ($fetched = mysqli_fetch_assoc($existingRes))) ? $fetched : null;
+            mysqli_stmt_close($existingStmt);
+            if (is_array($existingRow)) {
+                if (($existingRow['deleted_at'] ?? null) === null
+                    && (int)($existingRow['is_archived'] ?? 0) === 0
+                    && (int)($existingRow['active'] ?? 1) === 1) {
+                    return 0;
+                }
+
+                $restoreId = (int)($existingRow['id'] ?? 0);
+                if ($restoreId > 0) {
+                    $restoreStmt = mysqli_prepare(
+                        $conn,
+                        'UPDATE tickets SET is_archived = 0, active = 1, deleted_at = NULL, deleted_by = NULL WHERE id = ? AND company_id = ?'
+                    );
+                    if ($restoreStmt) {
+                        mysqli_stmt_bind_param($restoreStmt, 'ii', $restoreId, $companyId);
+                        if (mysqli_stmt_execute($restoreStmt)) {
+                            mysqli_stmt_close($restoreStmt);
+                            if (function_exists('tickets_repair_sample_equipment_links')) {
+                                tickets_repair_sample_equipment_links($conn, $companyId);
+                            }
+
+                            return 1;
+                        }
+                        mysqli_stmt_close($restoreStmt);
+                    }
+                }
+            }
+        }
+
+        if (function_exists('tickets_seed_lookup_parents')) {
+            tickets_seed_lookup_parents($conn, $companyId);
+        } elseif (function_exists('itm_seed_lookup_parents_for_table')) {
+            itm_seed_lookup_parents_for_table($conn, 'tickets', $companyId);
+        }
+
+        $employeeId = function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')
+            ? itm_seed_resolve_tenant_seed_admin_employee_id($conn, $companyId)
+            : 0;
+        if ($employeeId <= 0) {
+            $error = 'Could not resolve an employee for the tickets sample. Sign in with access to this company or add an employee for this tenant first.';
+            return 0;
+        }
+
+        $categoryId = itm_seed_resolve_tenant_row_id_by_column($conn, 'ticket_categories', $companyId, 'code', 'MAINT');
+        if ($categoryId <= 0) {
+            $categoryId = itm_seed_resolve_tenant_row_id_by_column($conn, 'ticket_categories', $companyId, 'name', 'Maintenance');
+        }
+        $statusId = itm_seed_resolve_tenant_row_id_by_column($conn, 'ticket_statuses', $companyId, 'name', 'Open');
+        $priorityId = itm_seed_resolve_tenant_row_id_by_column($conn, 'ticket_priorities', $companyId, 'name', 'Normal');
+        if ($priorityId <= 0 && function_exists('itm_first_tenant_row_id')) {
+            $priorityId = itm_first_tenant_row_id($conn, 'ticket_priorities', $companyId);
+        }
+
+        if ($categoryId <= 0 || $statusId <= 0 || $priorityId <= 0) {
+            $error = 'Could not resolve ticket category, status, or priority rows for this company.';
+            return 0;
+        }
+
+        $equipmentId = 0;
+        if (function_exists('tickets_sample_primary_file_server_id')) {
+            $equipmentId = tickets_sample_primary_file_server_id($conn, $companyId);
+        }
+
+        $title = 'Server patching required';
+        $description = 'Patch cycle for file server';
+
+        if ($equipmentId > 0) {
+            $stmt = mysqli_prepare(
+                $conn,
+                'INSERT INTO tickets (
+                    company_id, ticket_external_code, title, description,
+                    category_id, status_id, priority_id,
+                    created_by_employee_id, assigned_to_employee_id,
+                    equipment_id, is_archived, active, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, NOW())'
+            );
+            if (!$stmt) {
+                $error = 'Could not prepare tickets sample insert.';
+                return 0;
+            }
+            mysqli_stmt_bind_param(
+                $stmt,
+                'isssiiiiii',
+                $companyId,
+                $externalCode,
+                $title,
+                $description,
+                $categoryId,
+                $statusId,
+                $priorityId,
+                $employeeId,
+                $employeeId,
+                $equipmentId
+            );
+        } else {
+            $stmt = mysqli_prepare(
+                $conn,
+                'INSERT INTO tickets (
+                    company_id, ticket_external_code, title, description,
+                    category_id, status_id, priority_id,
+                    created_by_employee_id, assigned_to_employee_id,
+                    is_archived, active, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, NOW())'
+            );
+            if (!$stmt) {
+                $error = 'Could not prepare tickets sample insert.';
+                return 0;
+            }
+            mysqli_stmt_bind_param(
+                $stmt,
+                'isssiiiii',
+                $companyId,
+                $externalCode,
+                $title,
+                $description,
+                $categoryId,
+                $statusId,
+                $priorityId,
+                $employeeId,
+                $employeeId
+            );
+        }
+
+        if (!mysqli_stmt_execute($stmt)) {
+            $dbErrorCode = (int)mysqli_errno($conn);
+            $dbErrorMessage = (string)mysqli_error($conn);
+            mysqli_stmt_close($stmt);
+            if (function_exists('itm_seed_insert_row_is_unique_violation')
+                && itm_seed_insert_row_is_unique_violation($dbErrorCode, $dbErrorMessage)) {
+                return 0;
+            }
+            $error = function_exists('itm_format_db_constraint_error')
+                ? itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage)
+                : 'Could not insert tickets sample row.';
+            return 0;
+        }
+        mysqli_stmt_close($stmt);
+
+        if (function_exists('tickets_repair_sample_equipment_links')) {
+            tickets_repair_sample_equipment_links($conn, $companyId);
+        }
+
+        return 1;
     }
 }
 
@@ -2573,6 +2778,10 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
 
         if ($tableName === 'role_module_permissions') {
             return itm_seed_insert_role_module_permissions_sample_rows($conn, $companyId, $error);
+        }
+
+        if ($tableName === 'tickets') {
+            return itm_seed_insert_tickets_sample_row($conn, $companyId, $error);
         }
 
         itm_seed_lookup_parents_for_table($conn, $tableName, $companyId);
