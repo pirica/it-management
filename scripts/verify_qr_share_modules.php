@@ -18,19 +18,21 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 itm_script_output_begin('QR Share Modules Verification');
+$nl = itm_script_output_nl();
 
 $failures = 0;
 
 function qr_share_verify_fail($message)
 {
-    global $failures;
+    global $failures, $nl;
     $failures++;
-    fwrite(STDERR, "[FAIL] {$message}\n");
+    echo colorText('[FAIL] ' . $message, 'fail') . $nl;
 }
 
 function qr_share_verify_pass($message)
 {
-    fwrite(STDOUT, "[PASS] {$message}\n");
+    global $nl;
+    echo colorText('[PASS] ' . $message, 'pass') . $nl;
 }
 
 if (!($conn instanceof mysqli)) {
@@ -362,9 +364,11 @@ unset($_SESSION['vault_key']);
 itm_script_test_employee_delete($conn, $employeeId);
 
 if ($failures > 0) {
-    fwrite(STDERR, "\n{$failures} failure(s).\n");
+    echo colorText($failures . ' failure(s).', 'fail') . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
-fwrite(STDOUT, "\nAll QR share module checks passed.\n");
+echo colorText('All QR share module checks passed.', 'pass') . $nl;
+itm_script_output_end();
 exit(0);
