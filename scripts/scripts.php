@@ -1388,6 +1388,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Browser: <a href="verify_dashboard_online_employees.php">verify_dashboard_online_employees.php</a>. CLI: <code>php scripts/verify_dashboard_online_employees.php</code>. Run when changing online session presence or dashboard Online now markup.</td>
                 </tr>
                 <tr>
+                    <td><a href="apply_new_company_module_share_capable_seed.php" target="_blank" rel="nofollow noreferrer">apply_new_company_module_share_capable_seed.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Backfills <code>company_module_share</code> for share-capable slugs only (same as <code>db/migrations/company_module_share_capable_seed.sql</code>): DELETE non-capable rows, <code>INSERT IGNORE</code> <code>enabled=1</code> for active companies × capable registry modules. Slugs match <code>itm_qr_share_capable_module_slugs()</code>. Dry-run default.</td>
+                    <td>CLI: <code>php scripts/apply_new_company_module_share_capable_seed.php</code> (dry-run), <code>php scripts/apply_new_company_module_share_capable_seed.php --apply</code>, <code>php scripts/apply_new_company_module_share_capable_seed.php --apply --company=3</code>. Browser: <a href="apply_new_company_module_share_capable_seed.php">dry-run</a>, <a href="apply_new_company_module_share_capable_seed.php?apply=1">apply</a> (Admin).</td>
+                </tr>
+                <tr>
                     <td><a href="seed_company_module_access.php" target="_blank" rel="nofollow noreferrer">seed_company_module_access.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Backfills <code>company_module_access</code> rows as <code>enabled=1</code> for active companies (all modules or one <code>company_id</code>). Calls <code>sync_modules_registry.php</code> first when seeding a single company.</td>

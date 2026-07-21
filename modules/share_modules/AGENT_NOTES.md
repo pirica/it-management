@@ -12,7 +12,7 @@ Administrator matrix to enable or disable temporary QR / 6-digit **share** per `
 - **Runtime enforcement:** `includes/itm_module_share.php` → `has_module_share_access()`; called from `itm_qr_share_create_session()`.
 - **Share implementation list:** `itm_qr_share_capable_module_slugs()` in `includes/itm_qr_share.php` — matrix shows all registry modules; only capable slugs get enabled toggles (others show **No share UI**). Full inventory (32 capable slugs: 9 vault/explorer + 23 CRUD record) in **`docs/CRUD_RECORD_SHARE.md`**; CRUD wiring via `includes/itm_crud_record_share.php`.
 - **AJAX:** `toggle_share`, `bulk_toggle_share` with CSRF; UI script `js/share-modules-matrix.js`.
-- **Seeds:** `db/02_data.sql` inserts `company_module_share` for active companies × share-capable `modules_registry` rows only (`enabled = 1`). Live DBs: `db/migrations/company_module_share_capable_seed.sql`.
+- **Seeds:** `db/02_data.sql` inserts `company_module_share` for active companies × share-capable `modules_registry` rows only (`enabled = 1`). Live DBs: `db/migrations/company_module_share_capable_seed.sql` or `php scripts/apply_new_company_module_share_capable_seed.php --apply`.
 
 - **Bespoke UI audit:** listed in `docs/list_bespoke_UI.txt`; `fields_missing.php` bespoke gate — Search/Import Excel pass; Sort and Pagination reviewed in `scripts/data/fields_missing_reviewed.json` (matrix shows all registry rows on one page).
 
