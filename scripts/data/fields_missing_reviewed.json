@@ -39,6 +39,22 @@
         }
       ]
     },
+    "share_modules": {
+      "reviewed_at": "2026-07-21",
+      "reason": "Admin company × module share matrix mirrors company_module_access: full registry on one page ordered by slug; matrix search is in-memory on slug/name only. Registry flat list (`list_all`) is auxiliary.",
+      "checks": [
+        {
+          "check": "Sort",
+          "code": "bespoke_list_ui_sort",
+          "note": "Table in index.php missing sort wiring: GET/sort variable, ASC/DESC direction, ORDER BY sort wiring, sortable header indicators (▲/▼ or $nextDir)"
+        },
+        {
+          "check": "Pagination",
+          "code": "bespoke_list_ui_pagination",
+          "note": "Table in index.php missing pagination wiring: itm_resolve_records_per_page(), $perPage, LIMIT/OFFSET paging, page query state, page navigation controls, total row/page count"
+        }
+      ]
+    },
     "ops_report": {
       "reviewed_at": "2026-07-19",
       "reason": "Daily hotel operations report uses day/month/year selectors and opr_ensure_report() auto-create — not a flattened CRUD list. create.php is a wrapper to index.php; no list sort/pagination or primary ➕ create link.",
