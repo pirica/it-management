@@ -287,6 +287,39 @@ if ($companyD <= 0) {
     }
 }
 
+// equipment: Server + Switch (24 RJ45 switch_ports).
+$companyE = vss_create_disposable_company($conn, 'E');
+if ($companyE <= 0) {
+    echo '[FAIL] Could not create disposable company E for equipment.' . $nl;
+    $failures++;
+} else {
+    $disposableIds[] = $companyE;
+    foreach (['switch_ports', 'switch_port_types', 'equipment', 'equipment_types', 'equipment_statuses', 'equipment_rj45', 'switch_status', 'cable_colors'] as $purgeTable) {
+        vss_purge_company_table($conn, $purgeTable, $companyE);
+    }
+
+    $seedErr = '';
+    $equipInserted = itm_seed_table_from_database_sql($conn, 'equipment', $companyE, $seedErr);
+    $serverId = function_exists('itm_seed_find_server_equipment_id')
+        ? itm_seed_find_server_equipment_id($conn, $companyE)
+        : 0;
+    $switchId = function_exists('itm_seed_find_switch_equipment_id')
+        ? itm_seed_find_switch_equipment_id($conn, $companyE)
+        : 0;
+    $portCount = ($switchId > 0 && function_exists('itm_seed_count_switch_rj45_ports'))
+        ? itm_seed_count_switch_rj45_ports($conn, $companyE, $switchId)
+        : 0;
+
+    if ($equipInserted !== 2 || $serverId <= 0 || $switchId <= 0 || $portCount !== 24) {
+        echo '[FAIL] equipment seed for company E (' . $companyE . '): inserted=' . $equipInserted
+            . ' server_id=' . $serverId . ' switch_id=' . $switchId . ' rj45_ports=' . $portCount
+            . ' err=' . $seedErr . $nl;
+        $failures++;
+    } else {
+        echo '[PASS] equipment seeded Server, Switch, and 24 RJ45 switch_ports for company E (' . $companyE . ').' . $nl;
+    }
+}
+
 foreach ($disposableIds as $disposeId) {
     vss_purge_company_table($conn, 'workstation_ram', $disposeId);
     vss_purge_company_table($conn, 'employee_positions', $disposeId);

@@ -759,6 +759,49 @@ if (!function_exists('itm_seed_ensure_switch_equipment')) {
     }
 }
 
+if (!function_exists('itm_seed_insert_equipment_sample_rows')) {
+    /**
+     * Equipment Add sample data: one Server + one Switch (24 RJ45 switch_ports rows).
+     *
+     * @return int Number of equipment rows ensured (2 on success)
+     */
+    function itm_seed_insert_equipment_sample_rows(mysqli $conn, int $companyId, &$error = ''): int
+    {
+        $error = '';
+        if ($companyId <= 0) {
+            $error = 'A company must be selected before adding sample data.';
+            return 0;
+        }
+
+        if (!function_exists('itm_seed_ensure_server_equipment')
+            || !function_exists('itm_seed_ensure_switch_equipment')
+            || !function_exists('itm_seed_count_switch_rj45_ports')) {
+            $error = 'Equipment sample seeding is unavailable.';
+            return 0;
+        }
+
+        $serverEquipmentId = itm_seed_ensure_server_equipment($conn, $companyId);
+        if ($serverEquipmentId <= 0) {
+            $error = 'Could not create or resolve Server equipment for sample data.';
+            return 0;
+        }
+
+        $switchEquipmentId = itm_seed_ensure_switch_equipment($conn, $companyId);
+        if ($switchEquipmentId <= 0) {
+            $error = 'Could not create or resolve Switch equipment for sample data.';
+            return 0;
+        }
+
+        $rj45PortCount = itm_seed_count_switch_rj45_ports($conn, $companyId, $switchEquipmentId);
+        if ($rj45PortCount < 24) {
+            $error = 'Expected 24 RJ45 switch_ports rows after Switch sample seed (got ' . $rj45PortCount . ').';
+            return 0;
+        }
+
+        return 2;
+    }
+}
+
 if (!function_exists('itm_seed_backup_tape_log_today_row_exists')) {
     function itm_seed_backup_tape_log_today_row_exists(mysqli $conn, int $companyId, int $serverId): bool
     {
@@ -1262,6 +1305,10 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
         }
 
         $backupTapeServerId = 0;
+        if ($tableName === 'equipment') {
+            return itm_seed_insert_equipment_sample_rows($conn, $companyId, $error);
+        }
+
         if ($tableName === 'switch_ports') {
             if (!function_exists('itm_seed_ensure_switch_equipment')) {
                 $error = 'Switch ports sample seeding is unavailable.';

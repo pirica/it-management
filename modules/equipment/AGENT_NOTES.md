@@ -27,6 +27,7 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 - **Asset Tagging:** Each item should ideally have a unique serial or asset number within the company.
 - **Type-Specific Logic:** `modules/is_*` façades delegate here; do not delete canonical `is_switch`, `is_server`, etc. Gate-excluded UI configuration list-contract gaps for façades are reviewed under registry key `is_*` in `scripts/data/ui_configuration_reviewed.json` (no local `index.php` table — list chrome is here).
 - **Switch port tiles:** RJ45/SFP icon mapping per AGENTS.md (Unknown vs active PNG paths).
+- **Add sample data:** `index.php` POST `add_sample_data` calls `itm_seed_insert_equipment_sample_rows()` (via `itm_seed_table_from_database_sql('equipment')`) — ensures **Primary File Server** (Server type) and **Core Switch** (`equipment_rj45` **24 ports**) plus **24 RJ45** `switch_ports` rows; bypasses `02_data_sample.sql` FK remap on empty tenants.
 
 ## 5. UI Behavior Requirements
 - **View audit meta:** Detail view lists all six scaffold audit columns (`deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) with employee names and `d-m-Y - H:i:s` timestamps; list hides meta fields. Employment/equipment/ticket **status** badges are separate from row `active` (soft-delete mirror).
