@@ -27,7 +27,7 @@ Hosts the individual PHP view files that render the tab panes (Send Logs, SMTP c
 
 ## 7. File Structure
 - **alert_rules.php** — Alert rules list and form fields.
-- **send_logs.php** — Sent logs table and filter controls.
+- **send_logs.php** — Sent logs table and filter controls; **Add sample data** when tenant send-log count is zero (`itm_seed_table_from_database_sql($conn, 'emails', …)`).
 - **smtp.php** — SMTP profile editor panel.
 - **index.html** — Directory listing prevention placeholder.
 

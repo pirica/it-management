@@ -23,6 +23,7 @@ if (!function_exists('itm_sample_data_prerequisite_map')) {
             'tickets' => ['ticket_categories', 'ticket_statuses', 'ticket_priorities', 'equipment'],
             'forecast_revisions' => ['cost_centers', 'gl_accounts', 'forecast_revisions_status'],
             'approvals' => ['forecast_revisions', 'approvals_stage'],
+            'emails' => ['email_smtp_configurations'],
         ];
     }
 }
