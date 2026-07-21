@@ -1371,6 +1371,14 @@ if (!function_exists('itm_seed_resolve_fk_from_database_sql')) {
             return $fallbackId;
         }
 
+        if (function_exists('itm_seed_ensure_tenant_table_sample_rows')) {
+            itm_seed_ensure_tenant_table_sample_rows($conn, $refTable, $companyId);
+            $fallbackId = itm_first_tenant_row_id($conn, $refTable, $companyId);
+            if ($fallbackId > 0) {
+                return $fallbackId;
+            }
+        }
+
         return 0;
     }
 }

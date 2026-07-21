@@ -20,6 +20,7 @@ Child rows for walk-round area checks on a daily Ops Report. Each row records ea
 ## 5. UI Behavior Requirements
 - Standard flattened CRUD with search, sort, pagination, bulk delete (when rows ≥ `records_per_page`), export, import.
 - Hide `company_id`; show human-readable parent report reference for `ops_report_id`.
+- **Add sample data:** requires tenant `ops_report` parent rows — seeded via `itm_sample_data_prerequisite_map()` (`ops_report_walk_round` → `ops_report`) and `itm_seed_ensure_tenant_table_sample_rows()` when resolving `ops_report_id`. Regression: `php scripts/verify_ops_report_sample_data.php`.
 - CSRF on POST; `active` checkbox uses double-label pattern on create/edit.
 
 ## 6. API Actions (If Applicable)
