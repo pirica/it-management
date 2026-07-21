@@ -920,7 +920,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         exit;
     }
 
-    $where = ' WHERE company_id=' . (int)$company_id;
+    $where = itm_alerts_build_scoped_where_sql((int)$company_id, $logged_user_id);
     $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where;
     $countResult = mysqli_query($conn, $countSql);
     $existingRows = 0;
@@ -1069,6 +1069,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             $sqlValuesStamp = null;
             itm_crud_stamp_update_audit($data, $sqlValuesStamp, $data);
         }
+        if (function_exists('itm_crud_normalize_bind_values_for_persist')) {
+            itm_crud_normalize_bind_values_for_persist($data, $fieldColumns);
+        }
         $fields = []; $placeholders = []; $params = []; $types = '';
 
         foreach ($fieldColumns as $col) {
@@ -1135,14 +1138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 }
 
 // FETCH LIST DATA (Pagination, Search, and Sort)
-$where = '';
-        if ($hasCompany && $company_id > 0) { 
-    $where = ' WHERE e.company_id=' . (int)$company_id; 
-    $where .= ' AND ' . itm_alerts_visibility_sql_literal($logged_user_id, 'e');
-}
-if (function_exists('itm_crud_append_not_deleted_predicate')) {
-    $where = itm_crud_append_not_deleted_predicate($where, 'e');
-}
+$where = itm_alerts_build_scoped_where_sql((int)$company_id, $logged_user_id, 'e');
 
 // SEARCH
 $searchRaw = trim((string)($_GET['search'] ?? ''));

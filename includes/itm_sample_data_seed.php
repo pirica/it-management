@@ -1189,6 +1189,56 @@ if (!function_exists('itm_seed_fill_scalar_fallback_value')) {
     }
 }
 
+if (!function_exists('itm_seed_resolve_alerts_sample_created_by')) {
+    /**
+     * Why: Sample alerts must have a creator stamp; session employee preferred, else first tenant employee.
+     */
+    function itm_seed_resolve_alerts_sample_created_by(mysqli $conn, int $companyId): int
+    {
+        $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+        if ($employeeId > 0) {
+            return $employeeId;
+        }
+        if ($companyId > 0 && function_exists('itm_first_tenant_row_id')) {
+            return (int)itm_first_tenant_row_id($conn, 'employees', $companyId);
+        }
+
+        return 0;
+    }
+}
+
+if (!function_exists('itm_seed_apply_alerts_sample_row_defaults')) {
+    /**
+     * Why: Seeded alerts must be company-global (assigned_to NULL) so every tenant user sees them in the list.
+     *
+     * @param array<int, string> $targetColumns
+     * @param array<int, string> $targetValues SQL literal tokens (e.g. NULL, '1', quoted strings)
+     */
+    function itm_seed_apply_alerts_sample_row_defaults(mysqli $conn, int $companyId, array &$targetColumns, array &$targetValues): void
+    {
+        $assignedIdx = array_search('`assigned_to_employee_id`', $targetColumns, true);
+        if ($assignedIdx !== false) {
+            $targetValues[$assignedIdx] = 'NULL';
+        } else {
+            $targetColumns[] = '`assigned_to_employee_id`';
+            $targetValues[] = 'NULL';
+        }
+
+        $createdBy = itm_seed_resolve_alerts_sample_created_by($conn, $companyId);
+        if ($createdBy <= 0) {
+            return;
+        }
+
+        $createdIdx = array_search('`created_by`', $targetColumns, true);
+        if ($createdIdx !== false) {
+            $targetValues[$createdIdx] = (string)$createdBy;
+        } else {
+            $targetColumns[] = '`created_by`';
+            $targetValues[] = (string)$createdBy;
+        }
+    }
+}
+
 if (!function_exists('itm_seed_insert_random_fallback_row')) {
     /**
      * Insert exactly one synthetic row when no template rows apply for an empty tenant table.
@@ -1243,6 +1293,9 @@ if (!function_exists('itm_seed_insert_random_fallback_row')) {
                     return 0;
                 }
             } elseif (isset($fkMap[$name])) {
+                if ($tableName === 'alerts' && $name === 'assigned_to_employee_id') {
+                    continue;
+                }
                 $refTable = (string)($fkMap[$name]['REFERENCED_TABLE_NAME'] ?? '');
                 $fkId = 0;
                 if ($refTable !== '' && function_exists('itm_first_tenant_row_id')) {
@@ -1286,6 +1339,16 @@ if (!function_exists('itm_seed_insert_random_fallback_row')) {
             $targetValues[] = '?';
             $bindTypes .= $bindType;
             $bindParams[] = $value;
+        }
+
+        if ($tableName === 'alerts' && function_exists('itm_seed_resolve_alerts_sample_created_by')) {
+            $createdBy = itm_seed_resolve_alerts_sample_created_by($conn, $companyId);
+            if ($createdBy > 0) {
+                $targetColumns[] = '`created_by`';
+                $targetValues[] = '?';
+                $bindTypes .= 'i';
+                $bindParams[] = $createdBy;
+            }
         }
 
         if ($targetColumns === []) {
@@ -1570,6 +1633,10 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
 
             if (empty($targetColumns)) {
                 continue;
+            }
+
+            if ($tableName === 'alerts' && function_exists('itm_seed_apply_alerts_sample_row_defaults')) {
+                itm_seed_apply_alerts_sample_row_defaults($conn, $companyId, $targetColumns, $targetValues);
             }
 
             $insertSql = 'INSERT INTO `' . str_replace('`', '``', $tableName) . '` (' . implode(',', $targetColumns) . ') VALUES (' . implode(',', $targetValues) . ')';

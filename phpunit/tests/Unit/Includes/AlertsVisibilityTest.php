@@ -71,4 +71,14 @@ class AlertsVisibilityTest extends TestCase
         $this->assertSame([1, 7, 7], $params);
         $this->assertStringContainsString('e.assigned_to_employee_id IS NULL', $conditions[1]);
     }
+
+    public function testBuildScopedWhereSqlIncludesCompanyVisibilityAndLiveRows(): void
+    {
+        require_once ROOT_PATH . 'includes/itm_crud_audit_fields.php';
+
+        $where = itm_alerts_build_scoped_where_sql(4, 1, 'e');
+        $this->assertStringContainsString('e.company_id=4', $where);
+        $this->assertStringContainsString('e.assigned_to_employee_id IS NULL', $where);
+        $this->assertStringContainsString('e.deleted_at IS NULL', $where);
+    }
 }

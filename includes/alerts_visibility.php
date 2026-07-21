@@ -42,3 +42,22 @@ function itm_alerts_append_visibility_filter(&$conditions, &$types, &$params, $l
     $params[] = $employeeId;
     $params[] = $employeeId;
 }
+
+/**
+ * Build list/sample-data WHERE for tenant alerts: company scope, visibility, live rows only.
+ */
+function itm_alerts_build_scoped_where_sql($companyId, $loggedUserId, $tableAlias = '')
+{
+    $companyId = (int)$companyId;
+    if ($companyId <= 0) {
+        return '';
+    }
+
+    $where = ' WHERE ' . itm_alerts_normalize_sql_alias($tableAlias) . 'company_id=' . $companyId;
+    $where .= ' AND ' . itm_alerts_visibility_sql_literal($loggedUserId, $tableAlias);
+    if (function_exists('itm_crud_append_not_deleted_predicate')) {
+        $where = itm_crud_append_not_deleted_predicate($where, $tableAlias);
+    }
+
+    return $where;
+}

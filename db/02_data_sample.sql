@@ -10,7 +10,7 @@ INSERT INTO `access_levels` (`company_id`, `id`, `name`, `created_at`) VALUES
 ('1', NULL, 'Read Only', '2026-01-01 00:00:01');
 
 INSERT INTO `alerts` (`company_id`, `title`, `description`, `start_datetime`, `end_datetime`, `location`, `category_id`, `assigned_to_employee_id`, `active`) VALUES
-(1, 'Sample eead8e05', 'Sample be66da8b', '2026-07-20 23:56:01', '2026-07-20 23:56:01', 'Sample f563e85a', 1, 1, 1);
+(1, 'Sample eead8e05', 'Sample be66da8b', '2026-07-20 23:56:01', '2026-07-20 23:56:01', 'Sample f563e85a', 1, NULL, 1);
 
 INSERT INTO `annual_budgets` (`company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
 (1, '1', '1', '2026', '48000.00', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
