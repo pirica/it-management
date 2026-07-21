@@ -18,7 +18,11 @@ class ScriptCatalogSmokeTest extends TestCase
     {
         $paths = [];
         foreach (glob(ROOT_PATH . 'scripts/*.php') ?: [] as $file) {
-            $paths[] = ['scripts/' . basename($file)];
+            $base = basename($file);
+            if (strpos($base, '_tmp_') === 0) {
+                continue;
+            }
+            $paths[] = ['scripts/' . $base];
         }
         foreach (glob(ROOT_PATH . 'scripts/lib/*.php') ?: [] as $file) {
             $paths[] = ['scripts/lib/' . basename($file)];

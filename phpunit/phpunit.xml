@@ -4,6 +4,9 @@
          bootstrap="tests/bootstrap.php"
          colors="true"
          verbose="true">
+    <extensions>
+        <extension class="ItmAuditContextCleanupExtension"/>
+    </extensions>
     <testsuites>
         <testsuite name="IT Management Test Suite">
             <directory suffix="unittest.php">tests/Unit</directory>

@@ -160,6 +160,10 @@
     }
 
     shareToggles().forEach(function (toggle) {
+        if (toggle.dataset.smsToggleBound === '1') {
+            return;
+        }
+        toggle.dataset.smsToggleBound = '1';
         toggle.addEventListener('change', function () {
             if (selectionMode) {
                 return;

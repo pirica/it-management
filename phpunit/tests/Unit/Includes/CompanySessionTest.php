@@ -24,6 +24,7 @@ class CompanySessionTest extends TestCase
     {
         foreach ($this->companyIds as $companyId) {
             mysqli_query($this->conn, 'DELETE FROM employee_companies WHERE company_id = ' . (int)$companyId);
+            mysqli_query($this->conn, 'DELETE FROM audit_logs WHERE company_id = ' . (int)$companyId);
             mysqli_query($this->conn, 'DELETE FROM companies WHERE id = ' . (int)$companyId);
         }
         $this->companyIds = [];

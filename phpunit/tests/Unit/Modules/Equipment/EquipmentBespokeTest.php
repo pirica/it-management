@@ -58,6 +58,17 @@ class EquipmentBespokeTest extends TestCase
         return mysqli_insert_id($this->conn);
     }
 
+    private function getOrCreateSwitchStatus($name = 'Unknown') {
+        $safeName = mysqli_real_escape_string($this->conn, $name);
+        $res = mysqli_query($this->conn, "SELECT id FROM switch_status WHERE company_id = {$this->companyId} AND status = '$safeName' LIMIT 1");
+        if ($row = mysqli_fetch_assoc($res)) {
+            return (int)$row['id'];
+        }
+        $colorId = $this->getOrCreateColor();
+        mysqli_query($this->conn, "INSERT INTO switch_status (company_id, status, color_id) VALUES ({$this->companyId}, '$safeName', $colorId)");
+        return (int)mysqli_insert_id($this->conn);
+    }
+
     private function getOrCreateUser() {
         $res = mysqli_query($this->conn, "SELECT id FROM employees WHERE company_id = {$this->companyId} LIMIT 1");
         if ($row = mysqli_fetch_assoc($res)) {
@@ -83,7 +94,8 @@ class EquipmentBespokeTest extends TestCase
         $this->assertTrue($res, "Failed to insert equipment: " . mysqli_error($this->conn));
         $equipmentId = mysqli_insert_id($this->conn);
 
-        $res = mysqli_query($this->conn, "INSERT INTO switch_ports (company_id, equipment_id, port_number, port_type, status_id, color_id) VALUES ({$this->companyId}, $equipmentId, 999, 'RJ45', 1, $colorId)");
+        $switchStatusId = $this->getOrCreateSwitchStatus('Unknown');
+        $res = mysqli_query($this->conn, "INSERT INTO switch_ports (company_id, equipment_id, port_number, port_type, status_id, color_id) VALUES ({$this->companyId}, $equipmentId, 999, 'RJ45', $switchStatusId, $colorId)");
         $this->assertTrue($res, "Failed to insert switch_port: " . mysqli_error($this->conn));
         $portId = mysqli_insert_id($this->conn);
 
