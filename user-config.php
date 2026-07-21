@@ -769,6 +769,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         mysqli_commit($conn);
                         itm_log_audit($conn, 'employees', $user_id, 'UPDATE', ['action'=>'vault_key_change'], ['action'=>'vault_key_change_success']);
                         if (isset($_SESSION['vault_key'])) $_SESSION['vault_key'] = hash('sha256', $new_vk);
+
+                        // Send informational notification email to employee (no plaintext secrets in transit)
+                        $emailTarget = !empty($current_user['work_email']) ? $current_user['work_email'] : ($current_user['personal_email'] ?? '');
+                        if ($emailTarget !== '' && filter_var($emailTarget, FILTER_VALIDATE_EMAIL)) {
+                            $is_create = empty($current_user['vault_key_hash']);
+                            $emailSubject = $is_create ? 'Vault Key Created' : 'Vault Key Updated';
+                            $emailSubtitle = $is_create ? 'Your Vault Key is ready' : 'Your Vault Key has been changed';
+                            $emailText = $is_create
+                                ? '<p>Your private Vault Key has been successfully created.</p><p>You can now securely store your passwords, notes, private bookmarks, and personal contacts.</p>'
+                                : '<p>Your private Vault Key has been successfully updated.</p><p>Your private data has been automatically re-encrypted with your new key.</p>';
+
+                            require_once ROOT_PATH . 'includes/itm_email.php';
+                            itm_send_email($emailTarget, $emailSubject, $emailText, $home_company_id, [
+                                'email_template' => [
+                                    'subtitle' => $emailSubtitle,
+                                    'button_text' => 'Go to Dashboard',
+                                    'button_url' => BASE_URL . 'dashboard.php',
+                                ],
+                            ]);
+                        }
+
                         $message = 'Vault key updated!'; $message_type = 'success';
                     } catch (Exception $e) { mysqli_rollback($conn); $message = $e->getMessage(); $message_type = 'error'; }
                 } else { $message = 'Old Vault Key incorrect.'; $message_type = 'error'; }
@@ -1145,13 +1166,36 @@ foreach ($access_fields as $f):
                                 </form>
                             </div>
                             <div class="card" id="vault-security">
-                                <div class="card-header"><strong>🔐 Vault Security</strong></div>
+                                <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                                    <strong>🔐 Vault Security</strong>
+                                    <button type="button" class="btn btn-sm" onclick="itmGenerateVaultKey()" title="Generate Secure High-Entropy Key">🔑 Generate Key</button>
+                                </div>
                                 <form method="POST">
                                     <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>"><input type="hidden" name="action" value="vault_key_change">
                                     <div class="form-group"><label>System Password</label><input type="password" name="current_password" required></div>
-                                    <?php if($current_user['vault_key_hash']):?><div class="form-group"><label>Current Master Key</label><input type="password" name="old_master_key_verify" required></div><?php endif;?>
-                                    <div class="form-group"><label>New Master Key</label><input type="password" name="new_master_key" required></div>
-                                    <div class="form-group"><label>Confirm</label><input type="password" name="confirm_master_key" required></div>
+                                    <?php if($current_user['vault_key_hash']):?>
+                                        <div class="form-group">
+                                            <label>Current Master Key</label>
+                                            <div style="display:flex; gap:8px;">
+                                                <input type="password" name="old_master_key_verify" required style="flex:1;">
+                                                <button class="btn btn-sm" type="button" onclick="itmTogglePassword(this)" title="Toggle Visibility">👁️</button>
+                                            </div>
+                                        </div>
+                                    <?php endif;?>
+                                    <div class="form-group">
+                                        <label>New Master Key</label>
+                                        <div style="display:flex; gap:8px;">
+                                            <input type="password" name="new_master_key" required style="flex:1;">
+                                            <button class="btn btn-sm" type="button" onclick="itmTogglePassword(this)" title="Toggle Visibility">👁️</button>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Confirm</label>
+                                        <div style="display:flex; gap:8px;">
+                                            <input type="password" name="confirm_master_key" required style="flex:1;">
+                                            <button class="btn btn-sm" type="button" onclick="itmTogglePassword(this)" title="Toggle Visibility">👁️</button>
+                                        </div>
+                                    </div>
                                     <?php $user_config_render_flash('vault_key_change'); ?>
                                     <button type="submit" class="btn btn-primary" title="Save">💾</button>
                                 </form>
@@ -1238,6 +1282,24 @@ foreach ($access_fields as $f):
         </div>
     </div>
 </div>
+<!-- One-Time Display overlay for generated high-entropy master key -->
+<div id="itm-vault-one-time-display" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:var(--bg-primary); border:1px solid var(--border); border-radius:12px; max-width:480px; width:90%; padding:30px; text-align:center; box-shadow:var(--shadow-lg); color:var(--text-primary);">
+        <div style="font-size:48px; margin-bottom:16px;">🔑</div>
+        <h2 style="margin-bottom:12px;">Secure One-Time Display</h2>
+        <p style="font-size:14px; margin-bottom:20px; color:var(--text-secondary); line-height:1.5;">
+            Your generated Vault Key is displayed below.
+            <br><strong style="color:#d93025;">CRITICAL:</strong> Save this key immediately in a secure location (such as a password manager or physical backup).
+            Once you click "Next", it will be completely cleared from browser memory and cannot be shown again.
+        </p>
+        <div style="display:flex; gap:8px; margin-bottom:24px;">
+            <input type="text" id="itm-generated-key-field" readonly class="form-control" style="font-family:monospace; font-size:16px; text-align:center; font-weight:bold; background:var(--bg-secondary); color:var(--text-primary); border:2px solid var(--accent); padding:10px; width:100%;">
+            <button class="btn btn-sm" type="button" onclick="itmCopyGeneratedKey()" title="Copy Key" style="font-size:16px;">🗐</button>
+        </div>
+        <button type="button" class="btn btn-primary" style="width:100%; padding:12px; font-weight:bold;" onclick="itmCloseOneTimeDisplay()">Next ➡️</button>
+    </div>
+</div>
+
 <script src="js/theme.js"></script>
 <script>
 (function () {
@@ -1267,6 +1329,81 @@ foreach ($access_fields as $f):
             document.getElementById('form-photo').submit();
         }
     });
+
+window.itmTogglePassword = function(btn) {
+    const input = btn.parentNode.querySelector('input');
+    if (input) {
+        input.type = input.type === 'password' ? 'text' : 'password';
+    }
+};
+
+window.itmGenerateVaultKey = function() {
+    // Generate a 24-character high-entropy master key
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+';
+    let key = '';
+    const array = new Uint32Array(24);
+    window.crypto.getRandomValues(array);
+    for (let i = 0; i < 24; i++) {
+        key += chars.charAt(array[i] % chars.length);
+    }
+
+    // Fill the inputs in the form
+    const newKeyInput = document.querySelector('input[name="new_master_key"]');
+    const confirmKeyInput = document.querySelector('input[name="confirm_master_key"]');
+    if (newKeyInput) { newKeyInput.value = key; newKeyInput.type = 'text'; }
+    if (confirmKeyInput) { confirmKeyInput.value = key; confirmKeyInput.type = 'text'; }
+
+    // Set the value in the one-time display modal and show it
+    const keyField = document.getElementById('itm-generated-key-field');
+    if (keyField) {
+        keyField.value = key;
+    }
+
+    const modal = document.getElementById('itm-vault-one-time-display');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+};
+
+window.itmCopyGeneratedKey = function() {
+    const keyField = document.getElementById('itm-generated-key-field');
+    if (keyField) {
+        const key = keyField.value;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(key).then(() => {
+                alert('Vault Key copied successfully! Save it securely now.');
+            }).catch(() => {
+                // Fallback to execCommand
+                keyField.select();
+                document.execCommand('copy');
+                alert('Vault Key copied successfully! Save it securely now.');
+            });
+        } else {
+            keyField.select();
+            document.execCommand('copy');
+            alert('Vault Key copied successfully! Save it securely now.');
+        }
+    }
+};
+
+window.itmCloseOneTimeDisplay = function() {
+    // Completely clear plaintext key from display element and browser memory
+    const keyField = document.getElementById('itm-generated-key-field');
+    if (keyField) {
+        keyField.value = '';
+    }
+
+    // Mask the inputs in the form again for security
+    const newKeyInput = document.querySelector('input[name="new_master_key"]');
+    const confirmKeyInput = document.querySelector('input[name="confirm_master_key"]');
+    if (newKeyInput) { newKeyInput.type = 'password'; }
+    if (confirmKeyInput) { confirmKeyInput.type = 'password'; }
+
+    const modal = document.getElementById('itm-vault-one-time-display');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+};
 </script>
 </body>
 </html>
