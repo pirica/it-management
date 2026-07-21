@@ -90,11 +90,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
     $seededServerId = function_exists('itm_seed_find_server_equipment_id')
         ? itm_seed_find_server_equipment_id($conn, $company_id)
         : 0;
+    $todayRowExists = $seededServerId > 0
+        && function_exists('itm_seed_backup_tape_log_today_row_exists')
+        && itm_seed_backup_tape_log_today_row_exists($conn, $company_id, $seededServerId);
 
-    if ($insertedRows <= 0 && $seedError !== '') {
-        $_SESSION['crud_error'] = $seedError;
-    } else {
+    if ($insertedRows > 0 || $todayRowExists) {
         $_SESSION['crud_success'] = 'Sample data added for today.';
+    } else {
+        $_SESSION['crud_error'] = $seedError !== ''
+            ? $seedError
+            : 'Could not add a backup log row for today.';
     }
 
     $redirectServerId = $seededServerId > 0
@@ -104,6 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
         'Location: index.php?server_id=' . (int)$redirectServerId
         . '&month=' . (int)date('n')
         . '&year=' . (int)date('Y')
+        . '#btl-today-row'
     );
     exit;
 }
@@ -538,7 +544,7 @@ if (!isset($crud_title)) {
                                 $canEditBasic = $isToday && !$no_server_selected;
                                 $canEditAll = $can_edit_restricted && !$no_server_selected;
                             ?>
-                            <tr class="<?= $rowClass ?>" data-date="<?= $date ?>" data-id="<?= $rowId ?>">
+                            <tr class="<?= $rowClass ?>" data-date="<?= $date ?>" data-id="<?= $rowId ?>"<?= $isToday ? ' id="btl-today-row"' : '' ?>>
                                 <td class="btl-readonly" style="font-weight:bold;"><?= btl_format_date($date) ?></td>
                                 <td class="btl-readonly" <?= $isSunday ? 'style="background-color: #ffff00 !important; color: #000 !important;"' : '' ?>><?= date('l', strtotime($date)) ?></td>
 
@@ -765,6 +771,11 @@ if (!isset($crud_title)) {
 alert('No servers found');
 <?php endif; ?>
 document.addEventListener('DOMContentLoaded', function() {
+    const todayRow = document.getElementById('btl-today-row');
+    if (todayRow) {
+        todayRow.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+
     // Inline editing
     document.querySelectorAll('.inline-editable').forEach(cell => {
         const display = cell.querySelector('.display-val');
