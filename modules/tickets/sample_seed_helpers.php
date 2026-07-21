@@ -14,6 +14,89 @@ function tickets_sample_ticket_external_codes(): array
 }
 
 /**
+ * Count tenant tickets visible on the default (non-archived) list.
+ */
+function tickets_tenant_active_row_count(mysqli $conn, int $companyId): int
+{
+    if ($companyId <= 0) {
+        return 0;
+    }
+
+    $res = mysqli_query(
+        $conn,
+        'SELECT COUNT(*) AS total FROM tickets WHERE company_id = ' . (int)$companyId
+        . ' AND deleted_at IS NULL AND is_archived = 0'
+    );
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+
+    return (int)($row['total'] ?? 0);
+}
+
+/**
+ * Ensure sample ticket rows stay on the active list after seed/repair.
+ */
+function tickets_ensure_sample_rows_active(mysqli $conn, int $companyId): int
+{
+    if ($companyId <= 0) {
+        return 0;
+    }
+
+    $updatedTotal = 0;
+    foreach (tickets_sample_ticket_external_codes() as $externalCode) {
+        if (!is_string($externalCode) || $externalCode === '') {
+            continue;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'UPDATE tickets SET is_archived = 0, active = 1, deleted_at = NULL, deleted_by = NULL'
+            . ' WHERE company_id = ? AND ticket_external_code = ? AND (is_archived = 1 OR deleted_at IS NOT NULL OR active = 0)'
+        );
+        if (!$stmt) {
+            continue;
+        }
+
+        mysqli_stmt_bind_param($stmt, 'is', $companyId, $externalCode);
+        mysqli_stmt_execute($stmt);
+        $updatedTotal += max(0, mysqli_affected_rows($conn));
+        mysqli_stmt_close($stmt);
+    }
+
+    return $updatedTotal;
+}
+
+/**
+ * Unarchive legacy sample/fallback rows that were hidden from the default list.
+ */
+function tickets_repair_invisible_sample_rows(mysqli $conn, int $companyId): int
+{
+    if ($companyId <= 0) {
+        return 0;
+    }
+
+    $codes = tickets_sample_ticket_external_codes();
+    $codeClauses = [];
+    foreach ($codes as $code) {
+        if (is_string($code) && $code !== '') {
+            $codeClauses[] = "ticket_external_code = '" . mysqli_real_escape_string($conn, $code) . "'";
+        }
+    }
+
+    $matchSql = "title LIKE 'Sample %'";
+    if ($codeClauses !== []) {
+        $matchSql = '(' . implode(' OR ', $codeClauses) . ' OR ' . $matchSql . ')';
+    }
+
+    $sql = 'UPDATE tickets SET is_archived = 0, active = 1, deleted_at = NULL, deleted_by = NULL'
+        . ' WHERE company_id = ' . (int)$companyId
+        . ' AND deleted_at IS NULL AND is_archived = 1 AND ' . $matchSql;
+
+    mysqli_query($conn, $sql);
+
+    return max(0, mysqli_affected_rows($conn));
+}
+
+/**
  * Recursively seed db/02_data.sql parents required by a target table.
  */
 function tickets_seed_database_sql_parents_for_table(mysqli $conn, string $table, int $companyId, array &$visited = []): void

@@ -224,9 +224,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
         exit;
     }
 
-    $companyCountResult = mysqli_query($conn, "SELECT COUNT(*) AS total FROM tickets WHERE company_id = " . (int)$company_id . " AND deleted_at IS NULL");
-    $companyCountRow = $companyCountResult ? mysqli_fetch_assoc($companyCountResult) : null;
-    $companyTotalRows = (int)($companyCountRow['total'] ?? 0);
+    $companyTotalRows = tickets_tenant_active_row_count($conn, (int)$company_id);
 
     if ($companyTotalRows > 0) {
         $_SESSION['crud_error'] = 'Sample data can only be added when no records exist.';
@@ -240,6 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
     $insertedRows = itm_seed_table_from_database_sql($conn, 'tickets', (int)$company_id, $seedError);
     if ($insertedRows > 0) {
         tickets_repair_sample_equipment_links($conn, (int)$company_id);
+        tickets_ensure_sample_rows_active($conn, (int)$company_id);
     }
     if ($insertedRows <= 0) {
         $_SESSION['crud_error'] = $seedError !== ''
@@ -256,6 +255,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
 // Extraction of search and sorting parameters
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $showArchived = (int)($_GET['show_archived'] ?? 0) === 1;
+
+if ($company_id > 0) {
+    tickets_repair_invisible_sample_rows($conn, (int)$company_id);
+}
 
 $archiveFilterSql = $showArchived ? " AND t.is_archived = 1" : " AND t.is_archived = 0";
 // If searching, include both archived and active as requested
@@ -325,9 +328,7 @@ $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
 $totalRows = (int)($countRow['total'] ?? 0);
 mysqli_stmt_close($countStmt);
 
-$companyCountQuery = mysqli_query($conn, "SELECT COUNT(*) AS total FROM tickets WHERE company_id = " . (int)$company_id . " AND deleted_at IS NULL");
-$companyCountRow = $companyCountQuery ? mysqli_fetch_assoc($companyCountQuery) : null;
-$companyTotalRows = (int)($companyCountRow['total'] ?? 0);
+$companyTotalRows = tickets_tenant_active_row_count($conn, (int)$company_id);
 $totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
 if ($page > $totalPages) {
     $page = $totalPages;

@@ -1428,7 +1428,13 @@ if (!function_exists('itm_seed_fill_scalar_fallback_value')) {
         $suffix = substr(md5($tableName . '-' . $name . '-' . microtime(true)), 0, 8);
         $lower = strtolower($name);
 
-        if (preg_match('/^(tinyint|smallint|mediumint|int|bigint|bit)/', $type) || $name === 'active') {
+        if ($name === 'active') {
+            return '1';
+        }
+        if ($name === 'is_archived') {
+            return '0';
+        }
+        if (preg_match('/^(tinyint|smallint|mediumint|int|bigint|bit)/', $type)) {
             return '1';
         }
         if ($name === 'amount' || strpos($type, 'decimal') !== false || strpos($type, 'double') !== false || strpos($type, 'float') !== false) {
@@ -1665,6 +1671,41 @@ if (!function_exists('itm_seed_insert_ui_configuration_sample_row')) {
         mysqli_stmt_close($stmt);
 
         return 1;
+    }
+}
+
+if (!function_exists('itm_seed_apply_tickets_sample_row_defaults')) {
+    /**
+     * Why: Sample tickets must appear on the default list (is_archived = 0) and use a tenant-safe creator.
+     *
+     * @param array<int, string> $targetColumns
+     * @param array<int, string> $targetValues SQL literal tokens (e.g. NULL, '1', quoted strings)
+     */
+    function itm_seed_apply_tickets_sample_row_defaults(mysqli $conn, int $companyId, array &$targetColumns, array &$targetValues): void
+    {
+        $archivedIdx = array_search('`is_archived`', $targetColumns, true);
+        if ($archivedIdx !== false) {
+            $targetValues[$archivedIdx] = '0';
+        } else {
+            $targetColumns[] = '`is_archived`';
+            $targetValues[] = '0';
+        }
+
+        $employeeId = 0;
+        if (function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
+            $employeeId = itm_seed_resolve_tenant_seed_admin_employee_id($conn, $companyId);
+        }
+        if ($employeeId <= 0) {
+            return;
+        }
+
+        foreach (['created_by_employee_id', 'assigned_to_employee_id'] as $employeeColumn) {
+            $columnToken = '`' . $employeeColumn . '`';
+            $idx = array_search($columnToken, $targetColumns, true);
+            if ($idx !== false) {
+                $targetValues[$idx] = (string)$employeeId;
+            }
+        }
     }
 }
 
@@ -2488,6 +2529,10 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
 
             if ($tableName === 'alerts' && function_exists('itm_seed_apply_alerts_sample_row_defaults')) {
                 itm_seed_apply_alerts_sample_row_defaults($conn, $companyId, $targetColumns, $targetValues);
+            }
+
+            if ($tableName === 'tickets' && function_exists('itm_seed_apply_tickets_sample_row_defaults')) {
+                itm_seed_apply_tickets_sample_row_defaults($conn, $companyId, $targetColumns, $targetValues);
             }
 
             $insertSql = 'INSERT INTO `' . str_replace('`', '``', $tableName) . '` (' . implode(',', $targetColumns) . ') VALUES (' . implode(',', $targetValues) . ')';
