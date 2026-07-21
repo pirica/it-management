@@ -34,6 +34,7 @@ Manages the approval workflow for forecast revisions. It tracks the stage, statu
 
 ## 10. Common Pitfalls
 
+- **Add sample data:** requires tenant `forecast_revisions` and `approvals_stage` rows — `itm_seed_insert_approvals_sample_row()` in `includes/itm_sample_data_seed.php` seeds parents first and resolves FKs by tenant id (not hardcoded template ids from `db/02_data.sql`).
 - **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
 - Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - **Mismatched Stages**: Ensure the `stage` ID corresponds to a valid record in `approvals_stage`. [Cursor-Valid]
