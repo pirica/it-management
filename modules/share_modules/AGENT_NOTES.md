@@ -22,4 +22,4 @@ Administrator matrix to enable or disable temporary QR / 6-digit **share** per `
 - `index.html` — directory listing prevention
 
 ## 12. Module Owner Notes (Optional)
-Sidebar: Admin → **📱 Share Modules** (`includes/ui_config.php`). Regression: `php scripts/verify_module_share.php`.
+Sidebar: Admin → **📱 Share Modules** (`includes/ui_config.php`). Regression: `php scripts/verify_module_share.php`. Inventory report (non-share modules, linked names): `php scripts/list_modules_without_share.php` (browser: `scripts/list_modules_without_share.php`).

@@ -66,3 +66,4 @@ Existing databases: `db/migrations/company_module_share_capable_seed.sql`
 
 - `php scripts/verify_qr_share_modules.php` — vault/explorer modules + `departments` CRUD record probe
 - `php scripts/verify_module_share.php` — `company_module_share` matrix + `has_module_share_access()`
+- `php scripts/list_modules_without_share.php` — HTML/CLI report of registry rows **without** share (`No share UI`); browser links module names to `modules/{slug}/index.php`
