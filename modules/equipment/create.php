@@ -440,6 +440,24 @@ function equipment_resolve_status_id_for_company(mysqli $conn, int $companyId, i
     return 0;
 }
 
+function equipment_sql_nullable_int($value, $fallbackSql = 'NULL')
+{
+    if ($value === null || $value === '') {
+        return $fallbackSql;
+    }
+
+    return (string)(int)$value;
+}
+
+function equipment_sql_nullable_timestamp(mysqli $conn, $value, $fallbackSql = 'NULL')
+{
+    if ($value === null || $value === '') {
+        return $fallbackSql;
+    }
+
+    return "'" . escape_sql((string)$value, $conn) . "'";
+}
+
 function equipment_name_exists(mysqli $conn, int $companyId, string $name, int $excludeId = 0): bool
 {
     if ($companyId <= 0 || trim($name) === '') {
@@ -2140,12 +2158,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $currentEmployeeId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 'NULL';
         $active = 1;
 
-        $created_by = $data['created_by'] !== '' ? (int)$data['created_by'] : $currentEmployeeId;
-        $created_at = $data['created_at'] !== '' ? "'" . escape_sql($data['created_at'], $conn) . "'" : 'CURRENT_TIMESTAMP';
+        $created_by = equipment_sql_nullable_int($data['created_by'], (string)$currentEmployeeId);
+        if ($isEdit) {
+            $created_at = equipment_sql_nullable_timestamp($conn, $data['created_at'], 'CURRENT_TIMESTAMP');
+        } else {
+            $created_at = 'CURRENT_TIMESTAMP';
+        }
         $updated_by = $currentEmployeeId;
         $updated_at = 'CURRENT_TIMESTAMP';
-        $deleted_by = $data['deleted_by'] !== '' ? (int)$data['deleted_by'] : 'NULL';
-        $deleted_at = $data['deleted_at'] !== '' ? "'" . escape_sql($data['deleted_at'], $conn) . "'" : 'NULL';
+        $deleted_by = equipment_sql_nullable_int($data['deleted_by']);
+        $deleted_at = equipment_sql_nullable_timestamp($conn, $data['deleted_at']);
 
         $workstationOfficeUpdateSql = $hasWorkstationOfficeIdColumn ? "workstation_office_id=$workstation_office_id,\n                    " : '';
         $workstationOfficeInsertColumns = $hasWorkstationOfficeIdColumn ? ', workstation_office_id' : '';
