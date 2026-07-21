@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 $itmIsCli = PHP_SAPI === 'cli';
 
-if ($itmIsCli) {
+if ($itmIsCli && !defined('ITM_CLI_SCRIPT')) {
     define('ITM_CLI_SCRIPT', true);
 }
 
@@ -104,6 +104,10 @@ function itm_list_empty_tables_collect_report(mysqli $conn, int $companyId, stri
         'scanned_tables' => $scanned,
         'non_empty_tables' => $nonEmpty,
     ];
+}
+
+if (defined('ITM_LIST_EMPTY_TABLES_LIB_ONLY')) {
+    return;
 }
 
 $argvList = $GLOBALS['argv'] ?? [];

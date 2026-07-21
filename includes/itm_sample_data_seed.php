@@ -25,6 +25,19 @@ if (!function_exists('itm_sample_data_prerequisite_map')) {
             'approvals' => ['forecast_revisions', 'approvals_stage'],
             'emails' => ['email_smtp_configurations'],
             'events' => ['event_categories'],
+            'note_labels' => ['notes'],
+            'monthly_budgets' => ['annual_budgets'],
+            'patches_updates' => ['equipment', 'patches_updates_status', 'patches_updates_level'],
+            'floor_designer' => ['floor_plans'],
+            'floor_designer_points' => ['floor_designer'],
+            'idf_positions' => ['idfs', 'idf_device_type'],
+            'idf_ports' => ['idf_positions'],
+            'idf_links' => ['idf_ports'],
+            'ops_report_butler' => ['ops_report'],
+            'ops_report_courtesy_call' => ['ops_report'],
+            'ops_report_guest_experience' => ['ops_report'],
+            'ops_report_hotel_figure' => ['ops_report'],
+            'ops_report_night_shift' => ['ops_report'],
         ];
     }
 }
@@ -1734,6 +1747,330 @@ if (!function_exists('itm_seed_filter_template_rows')) {
     }
 }
 
+if (!function_exists('itm_seed_normalize_template_value_token')) {
+    /**
+     * Why: db/02_data_sample.sql uses long "Sample …" placeholders that exceed varchar limits on some columns.
+     */
+    function itm_seed_normalize_template_value_token(string $tableName, string $columnName, string $valueToken): string
+    {
+        $raw = trim($valueToken);
+        $unquoted = trim($raw, "'\"");
+        $isSamplePlaceholder = stripos($unquoted, 'Sample ') === 0;
+
+        if ($columnName === 'file_ext' && ($isSamplePlaceholder || strlen($unquoted) > 10)) {
+            return "'png'";
+        }
+
+        if ($columnName === 'mime_type' && $isSamplePlaceholder) {
+            return "'image/png'";
+        }
+
+        if ($columnName === 'case_closed' && ($isSamplePlaceholder || strlen($unquoted) > 10)) {
+            return "'No'";
+        }
+
+        if ($columnName === 'equipment_id' && in_array($tableName, ['idf_positions', 'idf_links'], true)
+            && ($isSamplePlaceholder || strlen($unquoted) > 9)) {
+            return 'NULL';
+        }
+
+        if ($isSamplePlaceholder && in_array($columnName, ['stored_filename', 'display_name'], true)
+            && $tableName === 'floor_plans') {
+            return "'" . substr(str_replace("'", '', $unquoted), 0, 64) . "'";
+        }
+
+        return $valueToken;
+    }
+}
+
+if (!function_exists('itm_seed_insert_floor_plans_sample_rows')) {
+    function itm_seed_insert_floor_plans_sample_rows(mysqli $conn, int $companyId, &$error = ''): int
+    {
+        $error = '';
+        if ($companyId <= 0) {
+            $error = 'A company must be selected before adding sample data.';
+            return 0;
+        }
+
+        $helpersPath = ROOT_PATH . 'modules/floor_plans/gallery_helpers.php';
+        if (!is_file($helpersPath)) {
+            $error = 'Floor plans sample seeding is unavailable.';
+            return 0;
+        }
+        require_once $helpersPath;
+
+        if (!function_exists('fp_seed_sample_folders_and_tags')) {
+            $error = 'Floor plans sample seeding is unavailable.';
+            return 0;
+        }
+
+        $inserted = fp_seed_sample_folders_and_tags($conn, $companyId);
+        if (itm_seed_tenant_row_count($conn, 'floor_plans', $companyId) > 0) {
+            return max($inserted, 1);
+        }
+
+        $folderId = 0;
+        if (function_exists('itm_first_tenant_row_id')) {
+            $folderId = itm_first_tenant_row_id($conn, 'floor_plan_folders', $companyId);
+        }
+        if ($folderId <= 0) {
+            if ($inserted > 0) {
+                return $inserted;
+            }
+            $error = 'Could not resolve floor plan folder for sample file row.';
+            return 0;
+        }
+
+        $displayName = 'Sample floor plan';
+        $storedFilename = 'sample-floor-plan.png';
+        $mimeType = 'image/png';
+        $fileExt = 'png';
+        $fileSize = 1;
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO floor_plans (company_id, folder_id, display_name, stored_filename, mime_type, file_ext, file_size, active)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 1)'
+        );
+        if (!$stmt) {
+            $error = 'Could not prepare floor_plans sample insert.';
+            return $inserted;
+        }
+        mysqli_stmt_bind_param(
+            $stmt,
+            'iissssi',
+            $companyId,
+            $folderId,
+            $displayName,
+            $storedFilename,
+            $mimeType,
+            $fileExt,
+            $fileSize
+        );
+        if (!mysqli_stmt_execute($stmt)) {
+            $error = mysqli_stmt_error($stmt);
+            mysqli_stmt_close($stmt);
+            return $inserted;
+        }
+        mysqli_stmt_close($stmt);
+
+        return $inserted + 1;
+    }
+}
+
+if (!function_exists('itm_seed_resolve_switch_port_type_id')) {
+    function itm_seed_resolve_switch_port_type_id(mysqli $conn, int $companyId, string $preferredType = 'RJ45'): int
+    {
+        if ($companyId <= 0) {
+            return 0;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            "SELECT id FROM switch_port_types WHERE company_id = ? AND type = ? ORDER BY id ASC LIMIT 1"
+        );
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'is', $companyId, $preferredType);
+            mysqli_stmt_execute($stmt);
+            $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+            mysqli_stmt_close($stmt);
+            if (is_array($row) && (int)($row['id'] ?? 0) > 0) {
+                return (int)$row['id'];
+            }
+        }
+
+        if (function_exists('itm_first_tenant_row_id')) {
+            return itm_first_tenant_row_id($conn, 'switch_port_types', $companyId);
+        }
+
+        return 0;
+    }
+}
+
+if (!function_exists('itm_seed_insert_idf_positions_sample_rows')) {
+    function itm_seed_insert_idf_positions_sample_rows(mysqli $conn, int $companyId, &$error = ''): int
+    {
+        $error = '';
+        if ($companyId <= 0) {
+            return 0;
+        }
+        if (itm_seed_tenant_row_count($conn, 'idf_positions', $companyId) > 0) {
+            return 0;
+        }
+
+        itm_seed_lookup_parents_for_table($conn, 'idf_positions', $companyId);
+
+        $idfId = function_exists('itm_first_tenant_row_id')
+            ? itm_first_tenant_row_id($conn, 'idfs', $companyId)
+            : 0;
+        if ($idfId <= 0) {
+            $error = 'Could not resolve IDF for sample position.';
+            return 0;
+        }
+
+        $deviceTypeId = function_exists('itm_first_tenant_row_id')
+            ? itm_first_tenant_row_id($conn, 'idf_device_type', $companyId)
+            : 0;
+        if ($deviceTypeId <= 0) {
+            $error = 'Could not resolve IDF device type for sample position.';
+            return 0;
+        }
+
+        $deviceName = 'Sample Device';
+        $rj45Count = 24;
+        $sfpCount = 0;
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO idf_positions (company_id, idf_id, position_no, device_type, device_name, equipment_id, rj45_count, sfp_count, active)
+             VALUES (?, ?, 1, ?, ?, NULL, ?, ?, 1)'
+        );
+        if (!$stmt) {
+            $error = 'Could not prepare idf_positions sample insert.';
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'iiisii', $companyId, $idfId, $deviceTypeId, $deviceName, $rj45Count, $sfpCount);
+        if (!mysqli_stmt_execute($stmt)) {
+            $error = mysqli_stmt_error($stmt);
+            mysqli_stmt_close($stmt);
+            return 0;
+        }
+        mysqli_stmt_close($stmt);
+
+        return 1;
+    }
+}
+
+if (!function_exists('itm_seed_insert_idf_ports_sample_rows')) {
+    function itm_seed_insert_idf_ports_sample_rows(mysqli $conn, int $companyId, &$error = ''): int
+    {
+        $error = '';
+        if ($companyId <= 0) {
+            return 0;
+        }
+        if (itm_seed_tenant_row_count($conn, 'idf_ports', $companyId) > 0) {
+            return 0;
+        }
+
+        itm_seed_lookup_parents_for_table($conn, 'idf_ports', $companyId);
+
+        $positionId = function_exists('itm_first_tenant_row_id')
+            ? itm_first_tenant_row_id($conn, 'idf_positions', $companyId)
+            : 0;
+        if ($positionId <= 0) {
+            $subErr = '';
+            itm_seed_insert_idf_positions_sample_rows($conn, $companyId, $subErr);
+            $positionId = function_exists('itm_first_tenant_row_id')
+                ? itm_first_tenant_row_id($conn, 'idf_positions', $companyId)
+                : 0;
+        }
+        if ($positionId <= 0) {
+            $error = 'Could not resolve IDF position for sample ports.';
+            return 0;
+        }
+
+        $portTypeId = itm_seed_resolve_switch_port_type_id($conn, $companyId, 'RJ45');
+        if ($portTypeId <= 0) {
+            $error = 'Could not resolve switch port type for sample IDF ports.';
+            return 0;
+        }
+
+        $statusId = function_exists('itm_seed_ensure_unknown_switch_status_id')
+            ? itm_seed_ensure_unknown_switch_status_id($conn, $companyId)
+            : 0;
+        if ($statusId <= 0 && function_exists('itm_first_tenant_row_id')) {
+            $statusId = itm_first_tenant_row_id($conn, 'switch_status', $companyId);
+        }
+        if ($statusId <= 0) {
+            $error = 'Could not resolve switch status for sample IDF ports.';
+            return 0;
+        }
+
+        $inserted = 0;
+        for ($portNo = 1; $portNo <= 2; $portNo++) {
+            $label = 'Port ' . $portNo;
+            $hexColor = '#808080';
+            $stmt = mysqli_prepare(
+                $conn,
+                'INSERT INTO idf_ports (company_id, position_id, port_no, port_type, label, status_id, hex_color, active)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 1)'
+            );
+            if (!$stmt) {
+                continue;
+            }
+            mysqli_stmt_bind_param($stmt, 'iiiisis', $companyId, $positionId, $portNo, $portTypeId, $label, $statusId, $hexColor);
+            if (mysqli_stmt_execute($stmt)) {
+                $inserted++;
+            }
+            mysqli_stmt_close($stmt);
+        }
+
+        if ($inserted === 0) {
+            $error = 'Could not insert sample IDF ports.';
+        }
+
+        return $inserted;
+    }
+}
+
+if (!function_exists('itm_seed_insert_idf_links_sample_rows')) {
+    function itm_seed_insert_idf_links_sample_rows(mysqli $conn, int $companyId, &$error = ''): int
+    {
+        $error = '';
+        if ($companyId <= 0) {
+            return 0;
+        }
+        if (itm_seed_tenant_row_count($conn, 'idf_links', $companyId) > 0) {
+            return 0;
+        }
+
+        itm_seed_lookup_parents_for_table($conn, 'idf_links', $companyId);
+
+        $portRes = mysqli_query(
+            $conn,
+            'SELECT id FROM idf_ports WHERE company_id = ' . (int)$companyId . ' ORDER BY id ASC LIMIT 2'
+        );
+        $portIds = [];
+        while ($portRes && ($portRow = mysqli_fetch_assoc($portRes))) {
+            $portIds[] = (int)($portRow['id'] ?? 0);
+        }
+        if (count($portIds) < 1) {
+            $subErr = '';
+            itm_seed_insert_idf_ports_sample_rows($conn, $companyId, $subErr);
+            $portRes = mysqli_query(
+                $conn,
+                'SELECT id FROM idf_ports WHERE company_id = ' . (int)$companyId . ' ORDER BY id ASC LIMIT 2'
+            );
+            $portIds = [];
+            while ($portRes && ($portRow = mysqli_fetch_assoc($portRes))) {
+                $portIds[] = (int)($portRow['id'] ?? 0);
+            }
+        }
+        if ($portIds === []) {
+            $error = 'Could not resolve IDF ports for sample link.';
+            return 0;
+        }
+
+        $portA = $portIds[0];
+        $portB = $portIds[count($portIds) > 1 ? 1 : 0];
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO idf_links (company_id, port_id_a, port_id_b, active) VALUES (?, ?, ?, 1)'
+        );
+        if (!$stmt) {
+            $error = 'Could not prepare idf_links sample insert.';
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'iii', $companyId, $portA, $portB);
+        if (!mysqli_stmt_execute($stmt)) {
+            $error = mysqli_stmt_error($stmt);
+            mysqli_stmt_close($stmt);
+            return 0;
+        }
+        mysqli_stmt_close($stmt);
+
+        return 1;
+    }
+}
+
 if (!function_exists('itm_seed_table_from_database_sql')) {
     /**
      * Inserts sample rows for a module table from db/02_data_sample.sql for any tenant company_id.
@@ -1807,6 +2144,22 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
         if ($tableName === 'events') {
             $employeeId = (int)($_SESSION['employee_id'] ?? 0);
             return itm_seed_insert_events_sample_rows($conn, $companyId, $employeeId, $error);
+        }
+
+        if ($tableName === 'floor_plans') {
+            return itm_seed_insert_floor_plans_sample_rows($conn, $companyId, $error);
+        }
+
+        if ($tableName === 'idf_positions') {
+            return itm_seed_insert_idf_positions_sample_rows($conn, $companyId, $error);
+        }
+
+        if ($tableName === 'idf_ports') {
+            return itm_seed_insert_idf_ports_sample_rows($conn, $companyId, $error);
+        }
+
+        if ($tableName === 'idf_links') {
+            return itm_seed_insert_idf_links_sample_rows($conn, $companyId, $error);
         }
 
         itm_seed_lookup_parents_for_table($conn, $tableName, $companyId);
@@ -1893,6 +2246,9 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
                 }
 
                 $valueToken = (string)$rawValues[$index];
+                if (function_exists('itm_seed_normalize_template_value_token')) {
+                    $valueToken = itm_seed_normalize_template_value_token($tableName, $columnName, $valueToken);
+                }
                 if (isset($tableFkMap[$columnName]) && function_exists('itm_seed_resolve_fk_from_database_sql')) {
                     $rawFkToken = trim($valueToken);
                     if ($rawFkToken !== '' && strtoupper($rawFkToken) !== 'NULL') {
