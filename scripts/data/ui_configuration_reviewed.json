@@ -303,6 +303,27 @@
         }
       ]
     },
+    "share_modules": {
+      "reviewed_at": "2026-07-21",
+      "reason": "Admin company × module share matrix bespoke UI: all registry rows on one page ordered by module_slug ASC; AJAX bulk_toggle_share replaces scaffold bulk-delete toolbar.",
+      "checks": [
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Matrix rows fixed ORDER BY module_slug ASC — no per-column sort headers or GET sort/dir"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Full registry matrix on one page — admin needs every module visible; no records_per_page paging"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Bulk toolbar omitted — matrix uses Select All / Cancel Select / Unselect All + ajax_action=bulk_toggle_share"
+        }
+      ]
+    },
     "calendar": {
       "reviewed_at": "2026-07-19",
       "reason": "Aggregated calendar grid (index.php only): no list table or local CRUD entry files — create/view deep-link to source modules (events, alerts, tickets, equipment, patches_updates).",

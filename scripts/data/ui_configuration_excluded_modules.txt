@@ -31,6 +31,7 @@ cable_colors
 companies
 contacts
 company_module_access
+share_modules
 emails
 employee_companies
 employee_sidebar_preferences
