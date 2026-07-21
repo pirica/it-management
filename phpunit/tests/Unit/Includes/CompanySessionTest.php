@@ -29,22 +29,35 @@ class CompanySessionTest extends TestCase
         $this->companyIds = [];
     }
 
-    public function testSwitchActiveCompanySessionKeepsEmployeeId(): void
+    public function testSwitchActiveCompanySessionMapsAdminToTenantSeedEmployee(): void
     {
-        $adminEmployeeId = 1;
-        $companyId = $this->createTempCompany('Switcher Test ' . uniqid());
+        $loginEmployeeId = 1;
+        $targetCompanyId = 2;
 
-        $_SESSION['employee_id'] = $adminEmployeeId;
+        $_SESSION['employee_id'] = $loginEmployeeId;
+        $_SESSION['login_employee_id'] = $loginEmployeeId;
         $_SESSION['company_id'] = 1;
         $_SESSION['company_name'] = 'TechCorp Global';
 
         $this->assertTrue(
-            itm_switch_active_company_session($this->conn, $adminEmployeeId, $companyId, true),
+            itm_switch_active_company_session($this->conn, $loginEmployeeId, $targetCompanyId, true),
             'Admin should switch to any active company.'
         );
-        $this->assertSame($companyId, (int)$_SESSION['company_id']);
-        $this->assertSame($adminEmployeeId, (int)$_SESSION['employee_id'], 'Tenant switch must not replace employee_id.');
+        $this->assertSame($targetCompanyId, (int)$_SESSION['company_id']);
+        $this->assertSame($loginEmployeeId, (int)$_SESSION['login_employee_id'], 'Login identity must stay stable.');
+        $this->assertSame(2, (int)$_SESSION['employee_id'], 'Cross-tenant Admin should use DataCenter Plus seed Admin2.');
+        $this->assertSame('Admin2', (string)$_SESSION['username']);
+        $this->assertSame('admin@techcorp.example2.com', (string)$_SESSION['email']);
         $this->assertNotSame('', trim((string)($_SESSION['company_name'] ?? '')));
+
+        $this->assertTrue(
+            itm_switch_active_company_session($this->conn, (int)$_SESSION['employee_id'], 1, true),
+            'Admin should switch back to home company.'
+        );
+        $this->assertSame(1, (int)$_SESSION['company_id']);
+        $this->assertSame($loginEmployeeId, (int)$_SESSION['employee_id'], 'Home tenant restores login employee.');
+        $this->assertSame('Admin', (string)$_SESSION['username']);
+        $this->assertSame('admin@techcorp.example1.com', (string)$_SESSION['email']);
     }
 
     public function testEmployeeHasCompanyAccessViaGrant(): void

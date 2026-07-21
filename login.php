@@ -181,6 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
 
             $_SESSION['employee_id'] = $employeeId;
+            $_SESSION['login_employee_id'] = $employeeId;
             $_SESSION['username'] = (string)($user['username'] ?? 'User');
             $_SESSION['email'] = $resolvedEmail;
             $_SESSION['role_name'] = (string)($user['role_name'] ?? '');
