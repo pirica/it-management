@@ -41,6 +41,7 @@ Do **not** run schema, data, and triggers as three separate `mysql` CLI imports.
 - Importing `03_triggers.sql` before `02_data.sql` fills `audit_logs` during seed load. [Cursor-Valid]
 - Separate `mysql` CLI calls drop `@replicate_source_company_id` before replication `INSERT … SELECT`. [Cursor-Valid]
 - Multi-company seed `employees` (companies 2–5) subquery `employment_status_id` / `access_level_id` **before** the late `@replicate_source_company_id` block — an early `access_levels` + `employee_statuses` replication block must run immediately before that `employees` INSERT in `02_data.sql`. [Cursor-Valid]
+- Seed admin `role_id` (`Admin`, `Admin2`–`Admin5` usernames) must be set **after** `INSERT IGNORE INTO employee_roles …` replication in `02_data.sql`. An earlier UPDATE only binds company 1; `itm_is_admin()` stays false for Admin2–Admin5 until `role_id` points at the tenant `Admin` role. Live fix: `db/migrations/employees_seed_admin_role_id.sql`. [Cursor-Valid]
 
 ## 12. Module Owner Notes (Optional)
 Path helpers: `includes/itm_database_sql_source.php`. Catalog: `scripts/SCRIPTS.md`.
