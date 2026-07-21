@@ -378,12 +378,7 @@ if (!function_exists('itm_database_sql_unique_audit_run')) {
             // Why: Junction of plan+tag; PK (floor_plan_id, tag_id) is the identity — not a name UNIQUE.
             'floor_plan_item_tags' => 'Junction table; identity is PRIMARY KEY (floor_plan_id, tag_id), not a name UNIQUE.',
             // Why: Ephemeral QR/code snapshots (includes/itm_qr_share.php); UNIQUE on access_token only.
-            'note_share_sessions' => 'Ephemeral share snapshot; identity is UNIQUE (access_token); multiple rows per employee for different parent records.',
-            'password_share_sessions' => 'Ephemeral share snapshot; identity is UNIQUE (access_token); multiple rows per employee for different parent records.',
-            'bookmark_share_sessions' => 'Ephemeral share snapshot; identity is UNIQUE (access_token); multiple rows per employee for different parent records.',
-            'todo_share_sessions' => 'Ephemeral share snapshot; identity is UNIQUE (access_token); multiple rows per employee for different parent records.',
-            'event_share_sessions' => 'Ephemeral share snapshot; identity is UNIQUE (access_token); multiple rows per employee for different parent records.',
-            'private_contact_share_sessions' => 'Ephemeral share snapshot; identity is UNIQUE (access_token); multiple rows per employee for different parent records.',
+            'share_sessions' => 'Ephemeral share snapshot; identity is UNIQUE (access_token); module_slug + record_id or scope_path_hash.',
         ];
 
         foreach ($parsed as $tableRow) {

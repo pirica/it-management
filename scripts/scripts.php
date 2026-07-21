@@ -1810,14 +1810,20 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="verify_notes_share.php" target="_blank" rel="nofollow noreferrer">verify_notes_share.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression for Notes QR/code share sessions: create session, token/code lookup, payload snapshot, join URL, asset filename guard. Requires <code>note_share_sessions</code> in <code>db/</code> split bundle.</td>
+                    <td>Regression for Notes QR/code share sessions: create session, token/code lookup, payload snapshot, join URL, asset filename guard. Requires <code>share_sessions</code> in <code>db/</code> split bundle.</td>
                     <td><code>php scripts/verify_notes_share.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="verify_qr_share_modules.php" target="_blank" rel="nofollow noreferrer">verify_qr_share_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression for Passwords, Bookmarks, Todo, Events, Private Contacts, Explorer, Floor Plans, and Rack Planner QR/code share sessions: create session, payload snapshot, token lookup, join URL. Requires matching <code>*_share_sessions</code> tables in <code>db/01_schema.sql</code>.</td>
+                    <td>Regression for Passwords, Bookmarks, Todo, Events, Private Contacts, Explorer, Floor Plans, and Rack Planner QR/code share sessions: create session, payload snapshot, token lookup, join URL. Requires unified <code>share_sessions</code> in <code>db/01_schema.sql</code>.</td>
                     <td><code>php scripts/verify_qr_share_modules.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="verify_module_share.php" target="_blank" rel="nofollow noreferrer">verify_module_share.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for <code>company_module_share</code> opt-out matrix and <code>has_module_share_access()</code> used by <code>itm_qr_share_create_session()</code>. Admin UI: <code>modules/share_modules/</code>.</td>
+                    <td><code>php scripts/verify_module_share.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="verify_whatsapp_share.php" target="_blank" rel="nofollow noreferrer">verify_whatsapp_share.php</a></td>

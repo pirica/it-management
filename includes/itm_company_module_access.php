@@ -13,6 +13,7 @@ if (!function_exists('itm_module_access_system_slugs')) {
             'employee_companies',
             'employee_roles',
             'company_module_access',
+            'share_modules',
             'audit_logs',
             'role_module_permissions',
             'ui_configuration',
@@ -41,6 +42,7 @@ if (!function_exists('itm_module_access_admin_only_slugs')) {
             'employee_companies',
             'employee_roles',
             'company_module_access',
+            'share_modules',
             'audit_logs',
             'role_module_permissions',
             'ui_configuration',
@@ -1132,6 +1134,9 @@ if (!function_exists('itm_seed_company_module_access_for_module')) {
         mysqli_stmt_execute($stmt);
         $count = (int)mysqli_stmt_affected_rows($stmt);
         mysqli_stmt_close($stmt);
+        if (function_exists('itm_seed_company_module_share_for_module')) {
+            itm_seed_company_module_share_for_module($conn, $module_id);
+        }
         return $count;
     }
 }

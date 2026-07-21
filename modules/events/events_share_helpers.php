@@ -7,9 +7,15 @@ require_once ROOT_PATH . 'includes/events_visibility.php';
 require_once ROOT_PATH . 'includes/itm_qr_share.php';
 require_once __DIR__ . '/events_vault_helpers.php';
 
+function events_share_module_slug()
+{
+    return 'events';
+}
+
+/** @deprecated Use events_share_module_slug() */
 function events_share_table_name()
 {
-    return 'event_share_sessions';
+    return events_share_module_slug();
 }
 
 function events_share_join_script_path()
@@ -106,7 +112,7 @@ function events_share_create_session($conn, $eventId, $companyId, $employeeId, $
         return ['ok' => false, 'error' => 'Could not encode share payload.'];
     }
 
-    return itm_qr_share_create_session($conn, events_share_table_name(), [
+    return itm_qr_share_create_session($conn, events_share_module_slug(), [
         'company_id' => $companyId,
         'employee_id' => $employeeId,
         'record_id' => $eventId,

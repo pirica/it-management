@@ -40,12 +40,17 @@ if (!($conn instanceof mysqli)) {
     exit(1);
 }
 
-foreach (['password_share_sessions', 'bookmark_share_sessions', 'todo_share_sessions', 'event_share_sessions', 'private_contact_share_sessions', 'explorer_share_sessions', 'floor_plan_share_sessions', 'rack_planner_share_sessions'] as $tableName) {
-    $tableRes = $conn->query("SHOW TABLES LIKE '{$tableName}'");
-    if (!$tableRes || $tableRes->num_rows === 0) {
-        qr_share_verify_fail("{$tableName} table missing — re-import via bash scripts/import_database_split.sh or bash scripts/import_database_split.sh.");
-        exit(1);
+$tableRes = $conn->query("SHOW TABLES LIKE 'share_sessions'");
+if (!$tableRes || $tableRes->num_rows === 0) {
+    foreach (['password_share_sessions', 'bookmark_share_sessions', 'todo_share_sessions', 'event_share_sessions', 'private_contact_share_sessions', 'explorer_share_sessions', 'floor_plan_share_sessions', 'rack_planner_share_sessions'] as $legacyTable) {
+        $legacyRes = $conn->query("SHOW TABLES LIKE '{$legacyTable}'");
+        if ($legacyRes && $legacyRes->num_rows > 0) {
+            qr_share_verify_fail('Legacy share table still present — apply db/migrations/share_sessions_unified.sql or re-import db/ split bundle.');
+            exit(1);
+        }
     }
+    qr_share_verify_fail('share_sessions table missing — re-import via bash scripts/import_database_split.sh.');
+    exit(1);
 }
 
 $companyId = 1;
@@ -93,7 +98,7 @@ if (!$pwdCreated['ok'] || empty($pwdCreated['session'])) {
     } else {
         qr_share_verify_pass('Password share payload contains decrypted fields.');
     }
-    if (itm_qr_share_fetch_session_by_token($conn, passwords_share_table_name(), (string)$pwdSession['access_token']) === null) {
+    if (itm_qr_share_fetch_session_by_token($conn, passwords_share_module_slug(), (string)$pwdSession['access_token']) === null) {
         qr_share_verify_fail('Password session token lookup failed.');
     } else {
         qr_share_verify_pass('Password session resolves by access_token.');
@@ -126,7 +131,7 @@ if (!$bkmIns->execute()) {
             qr_share_verify_pass('Bookmark share payload contains URL.');
         }
     }
-    $conn->query('DELETE FROM bookmark_share_sessions WHERE bookmark_id = ' . (int)$bookmarkId);
+    $conn->query("DELETE FROM share_sessions WHERE module_slug = 'bookmarks' AND record_id = " . (int)$bookmarkId);
     $conn->query('DELETE FROM bookmarks WHERE id = ' . (int)$bookmarkId);
 }
 
@@ -160,7 +165,7 @@ if (!$todoIns->execute()) {
             qr_share_verify_pass('Todo join URL built.');
         }
     }
-    $conn->query('DELETE FROM todo_share_sessions WHERE todo_id = ' . (int)$todoId);
+    $conn->query("DELETE FROM share_sessions WHERE module_slug = 'todo' AND record_id = " . (int)$todoId);
     $conn->query('DELETE FROM todo WHERE id = ' . (int)$todoId);
 }
 
@@ -197,7 +202,7 @@ if (!$eventIns->execute()) {
             qr_share_verify_pass('Event join URL built.');
         }
     }
-    $conn->query('DELETE FROM event_share_sessions WHERE event_id = ' . (int)$eventId);
+    $conn->query("DELETE FROM share_sessions WHERE module_slug = 'events' AND record_id = " . (int)$eventId);
     $conn->query('DELETE FROM events WHERE id = ' . (int)$eventId);
 }
 
@@ -247,7 +252,7 @@ if (@file_put_contents($probeAbsolute, 'explorer share probe') === false) {
             qr_share_verify_pass('Explorer join URL built.');
         }
     }
-    $conn->query('DELETE FROM explorer_share_sessions WHERE employee_id = ' . (int)$employeeId);
+    $conn->query("DELETE FROM share_sessions WHERE module_slug = 'explorer' AND employee_id = " . (int)$employeeId);
     @unlink($probeAbsolute);
     @rmdir($probeDir);
 }
@@ -297,7 +302,7 @@ if (@file_put_contents($fpAbsolute, 'floor plan share probe') === false) {
                     qr_share_verify_pass('Floor plan join URL built.');
                 }
             }
-            $conn->query('DELETE FROM floor_plan_share_sessions WHERE floor_plan_id = ' . (int)$floorPlanId);
+            $conn->query("DELETE FROM share_sessions WHERE module_slug = 'floor_plans' AND record_id = " . (int)$floorPlanId);
             $conn->query('DELETE FROM floor_plans WHERE id = ' . (int)$floorPlanId);
         }
         @unlink($fpAbsolute);
@@ -352,13 +357,13 @@ if ($rackStatusId <= 0) {
                     qr_share_verify_pass('Rack planner join URL built.');
                 }
             }
-            $conn->query('DELETE FROM rack_planner_share_sessions WHERE rack_planner_id = ' . (int)$rackPlanId);
+            $conn->query("DELETE FROM share_sessions WHERE module_slug = 'rack_planner' AND record_id = " . (int)$rackPlanId);
             $conn->query('DELETE FROM rack_planner WHERE id = ' . (int)$rackPlanId);
         }
     }
 }
 
-$conn->query('DELETE FROM password_share_sessions WHERE password_entry_id = ' . (int)$passwordEntryId);
+$conn->query("DELETE FROM share_sessions WHERE module_slug = 'passwords' AND record_id = " . (int)$passwordEntryId);
 $conn->query('DELETE FROM password_entries WHERE id = ' . (int)$passwordEntryId);
 unset($_SESSION['vault_key']);
 itm_script_test_employee_delete($conn, $employeeId);

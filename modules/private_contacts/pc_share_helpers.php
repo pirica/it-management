@@ -6,9 +6,15 @@
 require_once ROOT_PATH . 'includes/itm_qr_share.php';
 require_once __DIR__ . '/pc_vault_helpers.php';
 
+function pc_share_module_slug()
+{
+    return 'private_contacts';
+}
+
+/** @deprecated Use pc_share_module_slug() */
 function pc_share_table_name()
 {
-    return 'private_contact_share_sessions';
+    return pc_share_module_slug();
 }
 
 function pc_share_join_script_path()
@@ -90,7 +96,7 @@ function pc_share_create_session($conn, $contactId, $companyId, $employeeId, $ow
         return ['ok' => false, 'error' => 'Could not encode share payload.'];
     }
 
-    return itm_qr_share_create_session($conn, pc_share_table_name(), [
+    return itm_qr_share_create_session($conn, pc_share_module_slug(), [
         'company_id' => $companyId,
         'employee_id' => $employeeId,
         'record_id' => $contactId,

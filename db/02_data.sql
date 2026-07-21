@@ -73,6 +73,8 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("company_module_access", "Company Module Access", 1, 1);
 
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("share_modules", "Share Modules", 1, 1);
+
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("contacts", "Contacts", 0, 1);
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("cost_centers", "Cost Centers", 0, 1);
@@ -309,6 +311,13 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 
 -- Data for `company_module_access`
 INSERT INTO `company_module_access` (`company_id`, `module_id`, `enabled`)
+SELECT c.`id`, mr.`id`, 1
+FROM `companies` c
+CROSS JOIN `modules_registry` mr
+WHERE c.`active` = 1;
+
+-- Data for `company_module_share` (QR/code share opt-out matrix; default enabled)
+INSERT INTO `company_module_share` (`company_id`, `module_id`, `enabled`)
 SELECT c.`id`, mr.`id`, 1
 FROM `companies` c
 CROSS JOIN `modules_registry` mr

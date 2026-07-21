@@ -3,64 +3,43 @@
  * Temporary QR / code share sessions for Notes (SpeedyShare-style cross-device read).
  */
 
+require_once ROOT_PATH . 'includes/itm_qr_share.php';
 require_once ROOT_PATH . 'includes/notes_visibility.php';
 require_once __DIR__ . '/notes_vault_helpers.php';
 
+function notes_share_module_slug()
+{
+    return 'notes';
+}
+
 function notes_share_session_ttl_seconds()
 {
-    return 1800;
+    return itm_qr_share_session_ttl_seconds();
 }
 
 function notes_share_normalize_code($code)
 {
-    $code = preg_replace('/\D+/', '', (string)$code);
-
-    return strlen($code) === 6 ? $code : '';
+    return itm_qr_share_normalize_code($code);
 }
 
 function notes_share_generate_code($conn)
 {
-    for ($attempt = 0; $attempt < 40; $attempt++) {
-        $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $stmt = $conn->prepare(
-            'SELECT id FROM note_share_sessions WHERE share_code = ? AND expires_at > NOW() AND active = 1 AND deleted_at IS NULL LIMIT 1'
-        );
-        if (!$stmt) {
-            return '';
-        }
-        $stmt->bind_param('s', $code);
-        $stmt->execute();
-        $exists = (bool)$stmt->get_result()->fetch_assoc();
-        $stmt->close();
-        if (!$exists) {
-            return $code;
-        }
-    }
-
-    return '';
+    return itm_qr_share_generate_code($conn);
 }
 
 function notes_share_generate_access_token()
 {
-    return bin2hex(random_bytes(32));
+    return itm_qr_share_generate_access_token();
 }
 
 function notes_share_purge_expired_sessions($conn)
 {
-    if (!($conn instanceof mysqli)) {
-        return;
-    }
-    itm_run_query($conn, 'DELETE FROM note_share_sessions WHERE expires_at <= NOW()');
+    itm_qr_share_purge_expired_sessions($conn);
 }
 
 function notes_share_build_join_url($accessToken)
 {
-    $accessToken = trim((string)$accessToken);
-    if ($accessToken === '') {
-        return '';
-    }
-
-    return rtrim((string)BASE_URL, '/') . '/modules/notes/join.php?t=' . rawurlencode($accessToken);
+    return itm_qr_share_build_join_url('modules/notes/join.php', $accessToken);
 }
 
 /**
@@ -68,24 +47,7 @@ function notes_share_build_join_url($accessToken)
  */
 function notes_share_fetch_session_by_token($conn, $accessToken)
 {
-    $accessToken = trim((string)$accessToken);
-    if ($accessToken === '' || !($conn instanceof mysqli)) {
-        return null;
-    }
-
-    notes_share_purge_expired_sessions($conn);
-    $stmt = $conn->prepare(
-        'SELECT * FROM note_share_sessions WHERE access_token = ? AND expires_at > NOW() AND active = 1 AND deleted_at IS NULL LIMIT 1'
-    );
-    if (!$stmt) {
-        return null;
-    }
-    $stmt->bind_param('s', $accessToken);
-    $stmt->execute();
-    $row = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-
-    return $row ?: null;
+    return itm_qr_share_fetch_session_by_token($conn, notes_share_module_slug(), $accessToken);
 }
 
 /**
@@ -93,24 +55,7 @@ function notes_share_fetch_session_by_token($conn, $accessToken)
  */
 function notes_share_fetch_session_by_code($conn, $shareCode)
 {
-    $shareCode = notes_share_normalize_code($shareCode);
-    if ($shareCode === '' || !($conn instanceof mysqli)) {
-        return null;
-    }
-
-    notes_share_purge_expired_sessions($conn);
-    $stmt = $conn->prepare(
-        'SELECT * FROM note_share_sessions WHERE share_code = ? AND expires_at > NOW() AND active = 1 AND deleted_at IS NULL LIMIT 1'
-    );
-    if (!$stmt) {
-        return null;
-    }
-    $stmt->bind_param('s', $shareCode);
-    $stmt->execute();
-    $row = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-
-    return $row ?: null;
+    return itm_qr_share_fetch_session_by_code($conn, notes_share_module_slug(), $shareCode);
 }
 
 /**
@@ -213,53 +158,12 @@ function notes_share_create_session($conn, $noteId, $companyId, $employeeId, $ow
         return ['ok' => false, 'error' => 'Could not encode share payload.'];
     }
 
-    $shareCode = notes_share_generate_code($conn);
-    $accessToken = notes_share_generate_access_token();
-    if ($shareCode === '' || $accessToken === '') {
-        return ['ok' => false, 'error' => 'Could not generate share code.'];
-    }
-
-    notes_share_purge_expired_sessions($conn);
-
-    $stmtDeactivate = $conn->prepare(
-        'UPDATE note_share_sessions SET active = 0, deleted_at = NOW(), deleted_by = ?, updated_by = ? WHERE company_id = ? AND employee_id = ? AND note_id = ? AND active = 1 AND deleted_at IS NULL'
-    );
-    if ($stmtDeactivate) {
-        $stmtDeactivate->bind_param('iiiii', $employeeId, $employeeId, $companyId, $employeeId, $noteId);
-        $stmtDeactivate->execute();
-        $stmtDeactivate->close();
-    }
-
-    $ttl = notes_share_session_ttl_seconds();
-    $stmtInsert = $conn->prepare(
-        'INSERT INTO note_share_sessions (company_id, employee_id, note_id, share_code, access_token, payload_json, expires_at, created_by) VALUES (?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND), ?)'
-    );
-    if (!$stmtInsert) {
-        return ['ok' => false, 'error' => 'Could not create share session.'];
-    }
-    $stmtInsert->bind_param('iiisssii', $companyId, $employeeId, $noteId, $shareCode, $accessToken, $payloadJson, $ttl, $employeeId);
-    if (!$stmtInsert->execute()) {
-        $stmtInsert->close();
-
-        return ['ok' => false, 'error' => 'Could not save share session.'];
-    }
-    $sessionId = (int)$stmtInsert->insert_id;
-    $stmtInsert->close();
-
-    $stmtFetch = $conn->prepare('SELECT * FROM note_share_sessions WHERE id = ? LIMIT 1');
-    if (!$stmtFetch) {
-        return ['ok' => false, 'error' => 'Share session created but could not be loaded.'];
-    }
-    $stmtFetch->bind_param('i', $sessionId);
-    $stmtFetch->execute();
-    $session = $stmtFetch->get_result()->fetch_assoc();
-    $stmtFetch->close();
-
-    if (!$session) {
-        return ['ok' => false, 'error' => 'Share session not found after create.'];
-    }
-
-    return ['ok' => true, 'session' => $session];
+    return itm_qr_share_create_session($conn, notes_share_module_slug(), [
+        'company_id' => $companyId,
+        'employee_id' => $employeeId,
+        'record_id' => $noteId,
+        'payload_json' => $payloadJson,
+    ]);
 }
 
 /**

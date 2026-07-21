@@ -6,9 +6,15 @@
 require_once ROOT_PATH . 'includes/itm_qr_share.php';
 require_once __DIR__ . '/gallery_helpers.php';
 
+function floor_plans_share_module_slug()
+{
+    return 'floor_plans';
+}
+
+/** @deprecated Use floor_plans_share_module_slug() */
 function floor_plans_share_table_name()
 {
-    return 'floor_plan_share_sessions';
+    return floor_plans_share_module_slug();
 }
 
 function floor_plans_share_join_script_path()
@@ -95,7 +101,7 @@ function floor_plans_share_create_session($conn, $floorPlanId, $companyId, $empl
         return ['ok' => false, 'error' => 'Could not encode share payload.'];
     }
 
-    return itm_qr_share_create_session($conn, floor_plans_share_table_name(), [
+    return itm_qr_share_create_session($conn, floor_plans_share_module_slug(), [
         'company_id' => $companyId,
         'employee_id' => $employeeId,
         'record_id' => $floorPlanId,
@@ -114,7 +120,7 @@ function floor_plans_share_validate_asset_request($conn, $accessToken, &$session
         return ['ok' => false, 'error' => 'Invalid request.'];
     }
 
-    $session = itm_qr_share_fetch_session_by_token($conn, floor_plans_share_table_name(), $accessToken);
+    $session = itm_qr_share_fetch_session_by_token($conn, floor_plans_share_module_slug(), $accessToken);
     if (!$session) {
         return ['ok' => false, 'error' => 'Session expired.'];
     }
