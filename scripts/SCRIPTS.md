@@ -152,7 +152,9 @@ Run after changes to `modules/select_options_api.php` or `includes/itm_select_op
 | `php scripts/repro_destructive_import.php` | Repro — employees import must not delete rows missing from payload (company 1). **Browser + CLI dry-run default**; `--apply` / `?apply=1` (Admin) seeds two disposable employees via `itm_script_test_employee_create()`, imports only Keep Me, asserts Delete Me survives, then tears down disposable rows. |
 | `php scripts/repro_vault_corruption.php` | Regression — vault master key re-encryption rolls back on failure; entries stay decryptable with the old key. Seeds disposable user + `password_entries` rows with `company_id` (NOT NULL). Browser-safe errors (no `STDERR`). |
 
-Run after login/forgot-password attempt logging changes, Select Options policy updates, vault master key change logic in `user-config.php` / `includes/itm_vault_master_key.php`, or employees import changes.
+Run after login/forgot-password attempt logging changes, Select Options policy updates, vault master key / TOTP change logic in `user-config.php` / `includes/itm_vault_master_key.php` / `includes/itm_totp_helpers.php` / `includes/itm_vault_unlock.php`, or employees import changes.
+
+**TOTP PHPUnit:** `php scripts/run_tests.php --filter TotpTest` — secret generation, encrypt/decrypt round-trip, employee-row verification (`phpunit/tests/Unit/Security/TotpTest.php`; disposable user via `itm_script_test_employee_create()`).
 
 **Departments quick-add (`__add_new__`):** whitelisted in `includes/itm_select_options_policy.php`. `select_options_api.php` auto-inserts `company_id` (when `data-add-company-scoped="1"`) and `active=1`. Only **`name`** is required in the modal (`new_value`); **`code`** is optional via `data-add-extra-fields` (`required: false`). Used on equipment create/edit (`modules/equipment/create.php`).
 

@@ -17,42 +17,9 @@ $conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if (!$conn) { die('Connection failed: ' . mysqli_connect_error()); }
 $user_id = (int)$_SESSION['employee_id'];
 
-// Fetch user's vault status
-$user_stmt = mysqli_prepare($conn, 'SELECT vault_key_hash FROM employees WHERE id = ?');
-mysqli_stmt_bind_param($user_stmt, 'i', $user_id);
-mysqli_stmt_execute($user_stmt);
-$user_data = mysqli_fetch_assoc(mysqli_stmt_get_result($user_stmt));
-mysqli_stmt_close($user_stmt);
-
-$has_vault_configured = !empty($user_data['vault_key_hash']);
-
-// Handle Vault Unlock if master_key is submitted via POST
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['master_key'])) {
-    if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
-        die('Invalid CSRF token');
-    }
-
-    $master_key = $_POST['master_key'];
-    
-    if (!$has_vault_configured) {
-        header('Location: ../../user-config.php#vault-security');
-        die();
-    }
-
-    if (password_verify($master_key, $user_data['vault_key_hash'])) {
-        $_SESSION['vault_key'] = hash('sha256', (string)$master_key);
-        header('Location: index.php');
-        die();
-    } else {
-        $error_message = 'Incorrect Master Key.';
-    }
-}
-
-if (isset($_GET['action']) && $_GET['action'] === 'lock') {
-    unset($_SESSION['vault_key']);
-    header('Location: index.php');
-    die();
-}
+$vaultState = itm_vault_handle_unlock_requests($conn, $user_id, 'pwd_vault_redirect', 'index.php', 'index.php');
+$has_vault_configured = !empty($vaultState['configured']);
+$error_message = (string)($vaultState['error'] ?? '');
 
 // Module Configuration
 $module_title = 'Passwords';
@@ -297,27 +264,15 @@ if (!isset($crud_title)) {
         <div class="content">
 
             <?php if (empty($_SESSION['vault_key'])): ?>
-                <div style="max-width: 400px; margin: 80px auto; text-align: center;" class="card">
-                    <div style="font-size: 48px; margin-bottom: 16px;">🔒</div>
-                    <h2>Vault Locked</h2>
-                    <p>Enter your master key to access your passwords.</p>
-                    <?php if (isset($error_message)): ?>
-                        <div class="alert alert-danger"><?php echo htmlspecialchars($error_message); ?></div>
-                    <?php endif; ?>
-                    <form method="POST">
-                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        <div class="form-group">
-                            <input type="password" name="master_key" class="form-control" placeholder="Master Key" required autofocus style="text-align: center;">
-                        </div>
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">Unlock Vault</button>
-                    </form>
-                    <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px; display: flex; flex-direction: column; gap: 8px;">
-                        <?php if (!$has_vault_configured): ?>
-                            <a href="../../user-config.php#vault-security" class="btn btn-success btn-sm">Create Vault Key</a>
-                        <?php endif; ?>
-                        <a href="../../user-config.php#vault-security" class="btn btn-sm">Change Master Key</a>
-                    </div>
-                </div>
+                <?php
+                itm_vault_render_lock_screen(
+                    $csrfToken,
+                    $vaultState,
+                    'Enter your master key to access your passwords.',
+                    'pwd_vault_redirect',
+                    'index.php'
+                );
+                ?>
             <?php else: ?>
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                     <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>

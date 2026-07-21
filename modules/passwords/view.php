@@ -20,27 +20,16 @@ $error = '';
 $data = null;
 $folderLabel = '—';
 
-$user_stmt = mysqli_prepare($conn, 'SELECT vault_key_hash FROM employees WHERE id = ? LIMIT 1');
-mysqli_stmt_bind_param($user_stmt, 'i', $user_id);
-mysqli_stmt_execute($user_stmt);
-$user_data = mysqli_fetch_assoc(mysqli_stmt_get_result($user_stmt));
-mysqli_stmt_close($user_stmt);
-$has_vault_configured = !empty($user_data['vault_key_hash']);
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['master_key'])) {
-    if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
-        die('Invalid CSRF token');
-    }
-    if (!$has_vault_configured) {
-        header('Location: ../../user-config.php#vault-security');
-        exit;
-    }
-    if (password_verify((string)$_POST['master_key'], (string)$user_data['vault_key_hash'])) {
-        $_SESSION['vault_key'] = hash('sha256', (string)$_POST['master_key']);
-        header('Location: view.php?id=' . $id);
-        exit;
-    }
-    $error = 'Incorrect Master Key.';
+$vaultState = itm_vault_handle_unlock_requests(
+    $conn,
+    $user_id,
+    'pwd_vault_redirect',
+    'view.php?id=' . $id,
+    'view.php?id=' . $id
+);
+$has_vault_configured = !empty($vaultState['configured']);
+if ($error === '' && (string)($vaultState['error'] ?? '') !== '') {
+    $error = (string)$vaultState['error'];
 }
 
 $vaultUnlocked = !empty($_SESSION['vault_key']);
@@ -113,24 +102,18 @@ if (!isset($currentUiConfig)) {
             <h1 title="View password entry">🔎</h1>
             <div class="card" style="max-width: 900px;">
                 <?php if (!$vaultUnlocked): ?>
-                    <div style="max-width: 400px; margin: 40px auto; text-align: center;">
-                        <div style="font-size: 48px; margin-bottom: 16px;">🔒</div>
-                        <h2>Vault Locked</h2>
-                        <p>Enter your master key to view this password entry.</p>
-                        <?php if ($error !== ''): ?>
-                            <div class="alert alert-danger"><?php echo sanitize($error); ?></div>
-                        <?php endif; ?>
-                        <form method="POST">
-                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                            <div class="form-group">
-                                <input type="password" name="master_key" class="form-control" placeholder="Master Key" required autofocus style="text-align: center;">
-                            </div>
-                            <button type="submit" class="btn btn-primary" style="width: 100%;">Unlock Vault</button>
-                        </form>
-                        <div style="margin-top: 20px;">
-                            <a href="index.php" class="btn btn-sm" title="Back">🔙</a>
-                        </div>
-                    </div>
+                    <?php
+                    itm_vault_render_lock_screen(
+                        $csrfToken,
+                        $vaultState,
+                        'Enter your master key to view this password entry.',
+                        'pwd_vault_redirect',
+                        'view.php?id=' . $id,
+                        [
+                            ['href' => 'index.php', 'title' => 'Back', 'label' => '🔙'],
+                        ]
+                    );
+                    ?>
                 <?php elseif (!is_array($data)): ?>
                     <?php echo itm_render_alert_errors($error !== '' ? [$error] : ['Password entry not found.']); ?>
                     <div style="margin-top: 16px;"><a href="index.php" class="btn" title="Back">🔙</a></div>

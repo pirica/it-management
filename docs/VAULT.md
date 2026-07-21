@@ -5,6 +5,7 @@ Employee-scoped encryption for Passwords, Notes, Bookmarks, Private Contacts, To
 | Layer | Detail |
 |-------|--------|
 | **Authentication hash** | `employees.vault_key_hash` — bcrypt of the plaintext master key (`password_hash` / `password_verify`). |
+| **TOTP (optional 2FA)** | `employees.totp_secret` (encrypted at rest via `itm_totp_encrypt_secret()`), `employees.totp_enabled`. Required for vault unlock and master-key create/change when enabled. |
 | **Session derivation key** | `$_SESSION['vault_key']` — `hash('sha256', $plaintext_master_key)` used by `itm_encrypt()` / `itm_decrypt()`. |
 | **Re-encryption** | `includes/itm_vault_master_key.php` helpers during master-key change inside a DB transaction. |
 
@@ -19,6 +20,7 @@ First-time setup when `employees.vault_key_hash` is empty.
 1. **Entry:** Profile → **Vault Security** (`user-config.php#vault-security`).
 2. **Inputs:**
    - **System Password** — verified with `password_verify()` against `employees.password`.
+   - **Authenticator Code** (when `totp_enabled = 1`) — 6-digit TOTP via `itm_totp_verify_employee_code()`.
    - **New Master Key** and **Confirm Master Key** — must match.
 3. **Optional — Generate Key:** click **🔑** (**Generate Secure High-Entropy Key**). Client-side JavaScript uses `window.crypto.getRandomValues()` to build a 24-character key, fills the New/Confirm fields, and opens the **one-time display** overlay (see [§1.D](#d-secure-key-generation-one-time-display)).
 4. **Processing:**
@@ -35,10 +37,11 @@ When `$_SESSION['vault_key']` is empty, secured modules show a **Vault Locked** 
 
 **Flow:**
 
-1. User submits the master key on the lock screen.
+1. User submits the master key on the lock screen (and 6-digit TOTP when 2FA is enabled).
 2. `password_verify($master_key, $user_data['vault_key_hash'])`.
-3. On success: `$_SESSION['vault_key'] = hash('sha256', (string)$master_key)`.
-4. Encrypted rows are fetched and decrypted with `itm_decrypt($ciphertext, $_SESSION['vault_key'])`.
+3. When enabled: `itm_totp_verify_employee_code()` on the submitted authenticator code.
+4. On success: `$_SESSION['vault_key'] = hash('sha256', (string)$master_key)`.
+5. Encrypted rows are fetched and decrypted with `itm_decrypt($ciphertext, $_SESSION['vault_key'])`.
 
 ### C. Change Master Key
 
@@ -47,6 +50,7 @@ Updates an existing vault key and re-encrypts all private data atomically.
 1. **Entry:** Profile → **Vault Security**.
 2. **Inputs:**
    - **System Password**
+   - **Authenticator Code** (when `totp_enabled = 1`)
    - **Current Master Key** (when `vault_key_hash` already exists)
    - **New Master Key** and **Confirm Master Key**
 3. **Optional — Generate Key:** same client-side generator and one-time display as create (§1.D).
@@ -75,6 +79,15 @@ UI helpers in `user-config.php` (client-side only; the server never receives the
 | **👁️** (per field) | Toggles visibility on Current / New / Confirm master-key inputs. |
 
 > **Note:** Dismissing the overlay does not erase key material from the DOM form fields; it only hides the dedicated display field. Treat the overlay as a convenience copy step, not a cryptographic wipe.
+
+### E. Two-factor authentication (TOTP)
+
+Profile → **Vault Security** (`#vault-security`):
+
+1. **Enable:** submit system password (`totp_setup_start`) → scan QR / enter manual secret → confirm 6-digit code (`totp_setup_confirm`).
+2. **Disable:** system password + current TOTP code (`totp_disable`).
+3. **Storage:** `totp_secret` encrypted with `itm_totp_encryption_key()` (server-side, not vault session key).
+4. **Enforcement:** vault unlock (`includes/itm_vault_unlock.php`) and master-key create/change require TOTP when enabled.
 
 ---
 
@@ -146,10 +159,16 @@ Same pattern as forgot-password, registration welcome mail, and employee onboard
 
 | Path | Role |
 |------|------|
-| `user-config.php` | Vault Security form, POST `vault_key_change`, key generator JS, one-time overlay |
+| `user-config.php` | Vault Security form, POST `vault_key_change`, TOTP enable/disable, key generator JS, one-time overlay |
+| `includes/itm_totp_helpers.php` | `PHPGangsta_GoogleAuthenticator`, encrypted `totp_secret` storage, verification helpers |
+| `includes/itm_vault_unlock.php` | Shared vault lock screen + unlock POST handler (master key + optional TOTP) |
 | `includes/itm_vault_master_key.php` | Re-encryption helpers during key change |
 | `includes/itm_email.php` | `itm_send_email()` transport + transactional template |
 | `modules/emails/` | Operator UI for send logs and SMTP configuration |
 | `modules/passwords/`, `modules/notes/`, … | Vault-gated modules consuming `$_SESSION['vault_key']` |
 
 Regression when changing mail behaviour: `php scripts/verify_emails_module.php`.
+
+**Schema (existing DBs):** apply `db/migrations/employee_totp.sql` (`DROP TABLE` + full `employees` `CREATE TABLE` with `totp_secret` / `totp_enabled` — destructive; back up or re-import `db/02_data.sql` after apply). Fresh installs: columns are already in `db/01_schema.sql`.
+
+**Tests:** `php scripts/run_tests.php --filter TotpTest` (secret generation, encrypt/decrypt, employee verification flow).

@@ -195,6 +195,7 @@ Repro/verify CLI scripts and PHPUnit tests that INSERT or UPDATE `employees`, to
 ### Employee Dashboard & Profile (user-config.php)
 - **Scoping**: Must remain employee-scoped. Always use `WHERE employee_id = ?` (or appropriate variants like `created_by_employee_id`) for dashboard data.
 - **Vault Security**: Master Key changes must be atomic using database transactions and handle re-encryption of all existing vault entries.
+- **TOTP (optional 2FA)**: `employees.totp_secret` (encrypted via `itm_totp_encrypt_secret()`), `employees.totp_enabled`. Enable/disable in **Vault Security** (`#vault-security`); when enabled, vault unlock and master-key create/change require a 6-digit authenticator code. Canonical doc: `docs/VAULT.md`.
 
 
 
@@ -366,7 +367,7 @@ The explorer module (`modules/explorer/`) provides a secure, multi-tenant file s
     - **`index.html`** — empty placeholder from `itm_upload_directory_empty_index_html()` (always overwritten; **required on every folder segment**, not only leaves).
     Do **not** use bare `mkdir()` for tenant file trees. Serve `/files/` assets in UI through `itm_files_serve_url()` → `modules/explorer/file.php` (direct `../../files/…` URLs break after `deny_http`). Block dotfile uploads (e.g. `.htaccess`) in Explorer — managed `.htaccess` is restored on every ensure. See `scripts/AGENT_NOTES.md` and `scripts/ensure_files_htaccess_chain.php` for backfill.
 5. **Regression scripts:** `php scripts/test_explorer_paths.php` (path ACL logic); `php scripts/verify_explorer_zip_leak.php` (Step 1: blocked roots; Step 2: exact `Private/{username}_{employee_id}` only; Step 3: all other paths blocked). PoC for malicious `.htaccess` upload: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php` (catalog in `scripts/scripts.php`). PHPUnit: `ExplorerTest::testTrashListFiltersAncestorFolders`.
-6. **Vault gate (Private folder):** `explorer_vault_bootstrap.php` / `explorer_vault_helpers.php` — unlocking sets `$_SESSION['vault_key']` (same master key as Passwords/Notes). **Common** and **Departments** work without unlock; paths under `Private/{username}_{employee_id}/` (except `…/profile/` assets served via `file.php`) require vault unlock in `index.php`, `api.php`, and `file.php`. `downloadZip` for the own Private folder also requires unlock.
+6. **Vault gate (Private folder):** `explorer_vault_bootstrap.php` / `explorer_vault_helpers.php` — unlocking sets `$_SESSION['vault_key']` (same master key as Passwords/Notes). **Common** and **Departments** work without unlock; paths under `Private/{username}_{employee_id}/` (except `…/profile/` assets served via `file.php`) require vault unlock in `index.php`, `api.php`, and `file.php`. `downloadZip` for the own Private folder also requires unlock. When `employees.totp_enabled = 1`, unlock uses shared `includes/itm_vault_unlock.php` (master key + 6-digit TOTP).
 7. **QR / folder share (`join.php`, `share_file.php`):** `share_sessions` (`module_slug = explorer`) stores a recursive file snapshot for a scoped folder or single file under **Common/**, **Departments/{dept_code}/**, or **Private/{username}_{employee_id}/** (Private requires vault unlock at create). Context menu **Share 📱** calls `api.php` `create_share_session` with `scope_path`. Public join lists files; downloads use token-scoped `share_file.php`. Company-level enable/disable: `modules/share_modules/` + `company_module_share`. Regression: `php scripts/verify_qr_share_modules.php`, `php scripts/verify_module_share.php`.
 
 #### Org Chart and Hierarchy (mandatory)
@@ -464,7 +465,7 @@ The Notes module (`modules/notes/`) stores personal note content with vault encr
 1. **Private notes:** when `shared_with_json` is empty/null, encrypt `title`, `content`, and `checklist_json` at rest with `itm_encrypt()` using `$_SESSION['vault_key']`; store `title_hash` (SHA-256 of plaintext title) for tag/filter helpers.
 2. **Shared notes:** when `shared_with_json` lists share targets, keep `title`, `content`, and `checklist_json` as plaintext so recipients can read without the owner's vault.
 3. **Labels:** `note_labels.label` is always encrypted for the owning employee; use `label_hash` for tag filter and rename/delete lookups.
-4. **Vault UI:** `modules/notes/notes_vault_bootstrap.php` — lock screen on index/list_all/create when vault is locked; private owned edit/view also require unlock. Shared notes remain readable without unlock.
+4. **Vault UI:** `modules/notes/notes_vault_bootstrap.php` — lock screen on index/list_all/create when vault is locked; private owned edit/view also require unlock. Shared notes remain readable without unlock. When `employees.totp_enabled = 1`, unlock requires master key + 6-digit TOTP (`includes/itm_vault_unlock.php`).
 5. **Master key rotation:** `itm_vault_reencrypt_notes()` in `includes/itm_vault_master_key.php`; hooked from `user-config.php` with passwords/bookmarks re-encryption.
 6. **Search:** list search runs in PHP after `notes_hydrate_note_row()` — encrypted columns are not SQL-`LIKE` searchable.
 7. **Regression script** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_notes_vault.php`.
@@ -475,7 +476,7 @@ The Todo module (`modules/todo/`) stores personal task title/description with va
 
 1. **Private tasks:** when `assigned_to_employee_id` is empty (not `NULL` company-global) and assignees are only the creator, encrypt `title` and `description` at rest with `itm_encrypt()` using `$_SESSION['vault_key']`; store `title_hash` (SHA-256 of plaintext title).
 2. **Shared / company tasks:** `assigned_to_employee_id IS NULL` (company-global) or CSV includes another employee — keep `title` and `description` plaintext.
-3. **Vault UI:** `modules/todo/todo_vault_bootstrap.php` — lock screen on index/create when vault is locked; private owned edit/view also require unlock. Shared/global tasks remain readable without unlock on edit/view.
+3. **Vault UI:** `modules/todo/todo_vault_bootstrap.php` — lock screen on index/create when vault is locked; private owned edit/view also require unlock. Shared/global tasks remain readable without unlock on edit/view. Optional TOTP via `includes/itm_vault_unlock.php`.
 4. **Master key rotation:** `itm_vault_reencrypt_todo()` in `includes/itm_vault_master_key.php`; hooked from `user-config.php`.
 5. **Search:** list search runs in PHP after `todo_hydrate_task_row()` — encrypted columns are not SQL-`LIKE` searchable (`includes/itm_todo_list_query.php`).
 6. **Schema migration:** `db/migrations/todo_vault.sql` — `DROP TABLE IF EXISTS todo` + full `CREATE TABLE` (`title` TEXT, `title_hash`, unique `(company_id, created_by, id)`). No `ALTER TABLE` or `_new` staging tables.
@@ -486,7 +487,7 @@ The Todo module (`modules/todo/`) stores personal task title/description with va
 The Passwords module provides a secure, private manager for user credentials.
 1. **Privacy Scoping**: All queries for password folders and entries MUST be strictly scoped to the logged-in employee (`employee_id = $_SESSION['employee_id']`). Data is never shared across the company.
 2. **Encryption at Rest**: Passwords MUST be stored encrypted in the database using the `itm_encrypt()` helper. Decryption requires the `$_SESSION['vault_key']` (unlocked via master key).
-3. **Vault State**: If the `$_SESSION['vault_key']` is absent, the module MUST prompt for the master key and hide all decrypted data.
+3. **Vault State**: If the `$_SESSION['vault_key']` is absent, the module MUST prompt for the master key and hide all decrypted data. When TOTP is enabled on the employee row, the lock screen also requires a 6-digit authenticator code (`includes/itm_vault_unlock.php`).
 4. **Master Key Change**: Re-encryption of all entries during a master key change must be atomic via database transactions.
 5. **UI behavior**: Password fields MUST be masked by default with a toggle visibility button. Always provide a 🗐 icon for copying fields to the clipboard.
 6. **Special import/export:** Tools menu (CSV/Excel modals + `exportVault` / `export_handler.php`), not table-tools. Entry list table uses `data-itm-no-import-excel` / `data-itm-no-export-*`; Actions cells (including JS rows) keep `itm-actions-cell` + `data-itm-actions-origin="1"`.
@@ -497,7 +498,7 @@ The Passwords module provides a secure, private manager for user credentials.
 The Private Contacts module (`modules/private_contacts/`) is a per-user address book with vault encryption and optional temporary share links.
 
 1. **Privacy scoping:** All queries MUST filter `employee_id = $_SESSION['employee_id']` (plus `company_id`). Never expose another user's contacts.
-2. **Encryption at rest:** PII text columns on `private_contacts` are `TEXT` in `db/03_triggers.sql` and stored encrypted via `itm_encrypt()` / `$_SESSION['vault_key']` (same master key as Passwords/Notes). List/create/edit/view show a lock screen until the vault is unlocked. Legacy plaintext rows still load via `pc_private_text_legacy_plaintext_check()`.
+2. **Encryption at rest:** PII text columns on `private_contacts` are `TEXT` in `db/03_triggers.sql` and stored encrypted via `itm_encrypt()` / `$_SESSION['vault_key']` (same master key as Passwords/Notes). List/create/edit/view show a lock screen until the vault is unlocked (`pc_vault_bootstrap.php` → `includes/itm_vault_unlock.php`; optional TOTP). Legacy plaintext rows still load via `pc_private_text_legacy_plaintext_check()`.
 3. **List search/sort/pagination:** Load rows for the employee, hydrate/decrypt, then filter and paginate in PHP (`pc_row_matches_search()`, `pc_compare_contact_rows()`) — no SQL `LIKE` on ciphertext.
 4. **Master key change:** `itm_vault_reencrypt_private_contacts()` in `includes/itm_vault_master_key.php` re-encrypts all contact fields atomically during master-key change in `user-config.php`.
 5. **Temporary share:** `share_sessions` (`module_slug = private_contacts`) + `join.php` + `pc_share_helpers.php`; registered in `includes/itm_qr_share.php` / `itm_qr_share_join.php` (`type: private_contact`). QR / 6-digit / WhatsApp / Outlook share on list and view; `create_share_session` AJAX requires unlocked vault. Share payload is plaintext until expiry; table is **private-data exempt** from audit triggers. Company gate: `has_module_share_access()` via `modules/share_modules/`.
