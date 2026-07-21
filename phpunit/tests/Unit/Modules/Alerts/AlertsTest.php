@@ -290,4 +290,39 @@ class AlertsTest extends TestCase
         $res = mysqli_query($this->conn, 'SELECT id FROM alerts WHERE id = ' . (int)$alertId . ' LIMIT 1');
         $this->assertTrue($res && mysqli_num_rows($res) === 0, 'Expected alert ' . (int)$alertId . ' to be deleted.');
     }
+
+    public function testSampleSeedCreatesGlobalVisibleAlert(): void
+    {
+        require_once ROOT_PATH . 'includes/itm_sample_data_seed.php';
+
+        $tempCompanyId = $this->createTempCompany();
+        mysqli_query($this->conn, 'SET @app_company_id = ' . $tempCompanyId);
+        $_SESSION['employee_id'] = $this->employeeIds[0];
+        $_SESSION['company_id'] = $tempCompanyId;
+
+        $seedError = '';
+        $inserted = itm_seed_table_from_database_sql($this->conn, 'alerts', $tempCompanyId, $seedError);
+        $this->assertGreaterThan(0, $inserted, $seedError !== '' ? $seedError : 'Expected sample alert insert.');
+
+        $stmt = mysqli_prepare(
+            $this->conn,
+            'SELECT assigned_to_employee_id, created_by FROM alerts WHERE company_id = ? ORDER BY id DESC LIMIT 1'
+        );
+        if (!$stmt) {
+            $this->fail(mysqli_error($this->conn));
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $tempCompanyId);
+        mysqli_stmt_execute($stmt);
+        $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+        mysqli_stmt_close($stmt);
+
+        $this->assertNotNull($row);
+        $this->assertNull($row['assigned_to_employee_id']);
+        $this->assertNotNull($row['created_by']);
+
+        $where = itm_alerts_build_scoped_where_sql($tempCompanyId, $this->employeeIds[2], 'e');
+        $countRes = mysqli_query($this->conn, 'SELECT COUNT(*) AS total_rows FROM alerts e ' . $where);
+        $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
+        $this->assertSame(1, (int)($countRow['total_rows'] ?? 0), 'Global sample alert must be visible to any company user.');
+    }
 }

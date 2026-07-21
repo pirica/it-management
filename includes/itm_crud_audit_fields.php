@@ -123,6 +123,43 @@ if (!function_exists('itm_crud_append_not_deleted_predicate')) {
     }
 }
 
+if (!function_exists('itm_crud_column_type_is_datetime')) {
+    function itm_crud_column_type_is_datetime($colType)
+    {
+        $colType = strtolower((string)$colType);
+
+        return strpos($colType, 'date') !== false || strpos($colType, 'timestamp') !== false;
+    }
+}
+
+if (!function_exists('itm_crud_normalize_bind_values_for_persist')) {
+    /**
+     * Why: Prepared statements treat '' as invalid for DATE/DATETIME/TIMESTAMP; soft-delete audit columns must bind SQL NULL on create.
+     *
+     * @param array $data
+     * @param array $fieldColumns DESCRIBE-style column arrays with Field/Type keys
+     */
+    function itm_crud_normalize_bind_values_for_persist(array &$data, array $fieldColumns)
+    {
+        foreach ($fieldColumns as $col) {
+            $name = (string)($col['Field'] ?? '');
+            if ($name === '' || !array_key_exists($name, $data) || $data[$name] !== '') {
+                continue;
+            }
+
+            $colType = strtolower((string)($col['Type'] ?? ''));
+            if (itm_crud_column_type_is_datetime($colType)) {
+                $data[$name] = null;
+                continue;
+            }
+
+            if (strpos($colType, 'int') !== false && in_array($name, ['deleted_by', 'created_by', 'updated_by'], true)) {
+                $data[$name] = null;
+            }
+        }
+    }
+}
+
 if (!function_exists('itm_crud_stamp_create_audit')) {
     /**
      * Stamp create actor/time onto $data and matching $sqlValues when keys exist.
@@ -141,14 +178,20 @@ if (!function_exists('itm_crud_stamp_create_audit')) {
             if (is_array($sqlValues)) {
                 $sqlValues['created_by'] = (string)$employeeId;
             }
+            $data['updated_by'] = $employeeId;
+            if (is_array($sqlValues)) {
+                $sqlValues['updated_by'] = (string)$employeeId;
+            }
         }
         $data['created_at'] = $now;
+        $data['updated_at'] = $now;
         if (is_array($sqlValues)) {
             $esc = (isset($conn) && $conn) ? mysqli_real_escape_string($conn, $now) : addslashes($now);
             $sqlValues['created_at'] = "'" . $esc . "'";
+            $sqlValues['updated_at'] = "'" . $esc . "'";
         }
-        $data['deleted_by'] = '';
-        $data['deleted_at'] = '';
+        $data['deleted_by'] = null;
+        $data['deleted_at'] = null;
         if (is_array($sqlValues)) {
             $sqlValues['deleted_by'] = 'NULL';
             $sqlValues['deleted_at'] = 'NULL';

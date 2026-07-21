@@ -15,7 +15,7 @@ This module manages notifications and alerts within the system. It supports both
 - **Visibility Logic**:
     - **Global Alerts**: Records where `assigned_to_employee_id IS NULL` are visible to all users in the company.
     - **Private Alerts**: Records where `assigned_to_employee_id = $user_id` are visible only to that user and the creator.
-- **Visibility Helpers**: Always use `includes/alerts_visibility.php` to generate SQL conditions for visibility.
+- **Visibility Helpers**: Always use `includes/alerts_visibility.php` to generate SQL conditions for visibility. List counts and **Add sample data** both use `itm_alerts_build_scoped_where_sql()` (company + visibility + `deleted_at IS NULL`) so an empty list matches the sample-data gate.
 - **ICS Support**: Supports importing events from ICS files.
 
 ## 5. UI Behavior Requirements
@@ -39,8 +39,10 @@ This module manages notifications and alerts within the system. It supports both
 
 ## 10. Common Pitfalls
 
-- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via `itm_crud_stamp_create_audit()` / `itm_crud_stamp_update_audit()`; before prepared INSERT/UPDATE bind, call `itm_crud_normalize_bind_values_for_persist($data, $fieldColumns)` so empty audit timestamps bind as SQL `NULL` (not `''`, which triggers MySQL 1292 *Date has an invalid date or time*); delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
 - Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
+- **Add sample data gate:** must count visible live rows (`itm_alerts_build_scoped_where_sql()`), not all `company_id` rows — otherwise private alerts for other users or soft-deleted rows block seeding while the list looks empty. [Cursor-Fixed]
+- **Sample data visibility:** `db/02_data_sample.sql` and `itm_seed_apply_alerts_sample_row_defaults()` force `assigned_to_employee_id = NULL` (global alert) and stamp `created_by` from the session employee (or first tenant employee). Rows with a non-null assignee and `created_by = NULL` exist in the DB but are hidden from other users — fix existing rows with `UPDATE alerts SET assigned_to_employee_id = NULL, created_by = <employee_id> WHERE …`. [Cursor-Fixed]
 - **Leaking Private Alerts**: Failing to include the `assigned_to_employee_id` check in custom queries can leak private notifications to other users. [Cursor-Valid]
 - **Date/Time Formatting**: Ensure `start_datetime` and `end_datetime` are handled correctly for SQL and UI display. [Cursor-Valid]
 
