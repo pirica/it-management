@@ -42,7 +42,7 @@ This is the entry point for the entire system. Refer to `AGENTS.md` for the auth
 
 
 ## 13. Employee Dashboard & Profile
-The `user-config.php` has been upgraded to a full Employee Dashboard & Profile system.
+- **Vault Security (`#vault-security`):** master-key create/change, optional TOTP 2FA, client-side **🔑** key generator, and **Secure One-Time Display** overlay after **💾** save (and when generating). Notification-only emails on create/update (no plaintext secrets).
 - **Scoping**: All dashboard data is scoped to the logged-in employee via `employee_id` or relevant created/assigned fields.
 - **Stat Cards**: Displays stats from all modules using employee-related ID fields (30+ combinations tracked).
 - **Profile Management**: Integrated photo upload (circular drag-and-drop), theme selection, and emergency contact details.

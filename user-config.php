@@ -659,6 +659,8 @@ $activity_list = array_slice($activity_list, 0, 10);
 $message = '';
 $message_type = 'info';
 $message_action = '';
+// Why: after a successful vault key save, show the plaintext key once in the overlay (same request only — never stored server-side).
+$vault_key_otd_plaintext = '';
 // Why: after a successful theme save, sync employees.theme into localStorage for js/theme.js.
 $syncThemeToClient = false;
 
@@ -738,6 +740,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else { $message = 'Passwords do not match.'; $message_type = 'error'; }
         } else { $message = 'Current password incorrect.'; $message_type = 'error'; }
     } elseif ($action === 'vault_key_change') {
+        $message_action = 'vault_key_change';
         $curr_pw = $_POST['current_password'] ?? '';
         if (password_verify($curr_pw, $current_user['password'])) {
             $totpGate = itm_totp_require_valid_code_or_error($current_user, $_POST['totp_code'] ?? '');
@@ -795,7 +798,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             ]);
                         }
 
-                        $message = 'Vault key updated!'; $message_type = 'success';
+                        $vault_key_otd_plaintext = $new_vk;
+                        $message = 'Vault key saved successfully.';
+                        $message_type = 'success';
+                        $message_action = 'vault_key_change';
                     } catch (Exception $e) { mysqli_rollback($conn); $message = $e->getMessage(); $message_type = 'error'; }
                 } else { $message = 'Old Vault Key incorrect.'; $message_type = 'error'; }
             } else { $message = 'Vault keys do not match.'; $message_type = 'error'; }
@@ -1437,11 +1443,7 @@ foreach ($access_fields as $f):
     <div style="background:var(--bg-primary); border:1px solid var(--border); border-radius:12px; max-width:480px; width:90%; padding:30px; text-align:center; box-shadow:var(--shadow-lg); color:var(--text-primary);">
         <div style="font-size:48px; margin-bottom:16px;">🔑</div>
         <h2 style="margin-bottom:12px;">Secure One-Time Display</h2>
-        <p style="font-size:14px; margin-bottom:20px; color:var(--text-secondary); line-height:1.5;">
-            Your generated Vault Key is displayed below.
-            <br><strong style="color:#d93025;">CRITICAL:</strong> Save this key immediately in a secure location (such as a password manager or physical backup).
-            Once you continue, this overlay field is cleared and the form fields are masked again. The key remains in the New/Confirm fields until you save or leave the page — save it externally before continuing.
-        </p>
+        <p id="itm-vault-otd-message" style="font-size:14px; margin-bottom:20px; color:var(--text-secondary); line-height:1.5;"></p>
         <div style="display:flex; gap:8px; margin-bottom:24px;">
             <input type="text" id="itm-generated-key-field" readonly class="form-control" style="font-family:monospace; font-size:16px; text-align:center; font-weight:bold; background:var(--bg-secondary); color:var(--text-primary); border:2px solid var(--accent); padding:10px; width:100%;">
             <button class="btn btn-sm" type="button" onclick="itmCopyGeneratedKey()" title="Copy Key" style="font-size:16px;">🗐</button>
@@ -1487,6 +1489,27 @@ window.itmTogglePassword = function(btn) {
     }
 };
 
+window.itmVaultOtdMessages = {
+    generated: 'Your generated Vault Key is displayed below.<br><strong style="color:#d93025;">CRITICAL:</strong> Save this key immediately in a secure location (such as a password manager or physical backup). Once you continue, this overlay field is cleared and the form fields are masked again. The key remains in the New/Confirm fields until you save or leave the page — save it externally before continuing.',
+    saved: 'Your Vault Key was saved successfully. This is your only chance to copy it from this screen.<br><strong style="color:#d93025;">CRITICAL:</strong> Store it in a secure location (password manager or physical backup). The server cannot recover this key if you lose it. Once you continue, this display is cleared permanently.'
+};
+
+window.itmShowVaultKeyOneTimeDisplay = function(key, mode) {
+    const keyField = document.getElementById('itm-generated-key-field');
+    const modal = document.getElementById('itm-vault-one-time-display');
+    const messageEl = document.getElementById('itm-vault-otd-message');
+    if (!keyField || !modal) {
+        return;
+    }
+    const displayMode = (mode === 'saved') ? 'saved' : 'generated';
+    keyField.value = key;
+    modal.setAttribute('data-itm-otd-mode', displayMode);
+    if (messageEl) {
+        messageEl.innerHTML = window.itmVaultOtdMessages[displayMode] || window.itmVaultOtdMessages.generated;
+    }
+    modal.style.display = 'flex';
+};
+
 window.itmGenerateVaultKey = function() {
     // Why: rejection sampling avoids modulo bias when mapping random bytes to charset indices.
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+';
@@ -1502,22 +1525,12 @@ window.itmGenerateVaultKey = function() {
         key += chars.charAt(randomValue % chars.length);
     }
 
-    // Fill the inputs in the form
     const newKeyInput = document.querySelector('input[name="new_master_key"]');
     const confirmKeyInput = document.querySelector('input[name="confirm_master_key"]');
     if (newKeyInput) { newKeyInput.value = key; newKeyInput.type = 'text'; }
     if (confirmKeyInput) { confirmKeyInput.value = key; confirmKeyInput.type = 'text'; }
 
-    // Set the value in the one-time display modal and show it
-    const keyField = document.getElementById('itm-generated-key-field');
-    if (keyField) {
-        keyField.value = key;
-    }
-
-    const modal = document.getElementById('itm-vault-one-time-display');
-    if (modal) {
-        modal.style.display = 'flex';
-    }
+    window.itmShowVaultKeyOneTimeDisplay(key, 'generated');
 };
 
 window.itmCopyGeneratedKey = function() {
@@ -1542,23 +1555,40 @@ window.itmCopyGeneratedKey = function() {
 };
 
 window.itmCloseOneTimeDisplay = function() {
-    // Why: clear the overlay copy field only; form inputs keep the generated key until save/navigation.
     const keyField = document.getElementById('itm-generated-key-field');
+    const modal = document.getElementById('itm-vault-one-time-display');
+    const displayMode = modal ? modal.getAttribute('data-itm-otd-mode') : 'generated';
+
     if (keyField) {
         keyField.value = '';
     }
 
-    // Mask the inputs in the form again for security
     const newKeyInput = document.querySelector('input[name="new_master_key"]');
     const confirmKeyInput = document.querySelector('input[name="confirm_master_key"]');
-    if (newKeyInput) { newKeyInput.type = 'password'; }
-    if (confirmKeyInput) { confirmKeyInput.type = 'password'; }
+    if (displayMode === 'saved') {
+        // Why: after save the hash is persisted — wipe any residual plaintext from the form.
+        if (newKeyInput) { newKeyInput.value = ''; newKeyInput.type = 'password'; }
+        if (confirmKeyInput) { confirmKeyInput.value = ''; confirmKeyInput.type = 'password'; }
+        const oldKeyInput = document.querySelector('input[name="old_master_key_verify"]');
+        if (oldKeyInput) { oldKeyInput.value = ''; oldKeyInput.type = 'password'; }
+        const sysPwInput = document.querySelector('#vault-security input[name="current_password"]');
+        if (sysPwInput) { sysPwInput.value = ''; }
+    } else {
+        if (newKeyInput) { newKeyInput.type = 'password'; }
+        if (confirmKeyInput) { confirmKeyInput.type = 'password'; }
+    }
 
-    const modal = document.getElementById('itm-vault-one-time-display');
     if (modal) {
         modal.style.display = 'none';
+        modal.removeAttribute('data-itm-otd-mode');
     }
 };
+
+<?php if ($vault_key_otd_plaintext !== ''): ?>
+document.addEventListener('DOMContentLoaded', function () {
+    window.itmShowVaultKeyOneTimeDisplay(<?php echo json_encode($vault_key_otd_plaintext, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>, 'saved');
+});
+<?php endif; ?>
 </script>
 </body>
 </html>
