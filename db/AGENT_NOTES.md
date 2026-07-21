@@ -8,7 +8,7 @@ Canonical SQL schema, seed data, and audit triggers for the IT Management System
 - **Import order:** `01_schema.sql` → `02_data.sql` → `03_triggers.sql` in **one MySQL session** (`bash scripts/import_database_split.sh`). Numeric prefix matches run order.
 - **Boundaries:** DDL in `01_schema.sql`, DML in `02_data.sql`, triggers in `03_triggers.sql`.
 - **Incremental migrations:** `db/migrations/{module}_{subject}.sql` — copy/paste `DROP TABLE IF EXISTS` + full `CREATE TABLE` from `db/01_schema.sql` (no `ALTER TABLE`, no `_new` staging). See `db/migrations/AGENT_NOTES.md`.
-- **QR share session tables (private-data exempt):** `explorer_share_sessions` (scoped folder path + `scope_path_hash`), `floor_plan_share_sessions` (`floor_plan_id` FK), `rack_planner_share_sessions` (`rack_planner_id` FK). Defined in `01_schema.sql` after `private_contact_share_sessions`; no rows in `02_data.sql`; no audit triggers in `03_triggers.sql`.
+- **QR share (private-data exempt):** unified `share_sessions` (`module_slug`, `record_id`, optional `scope_path` / `scope_path_hash` for Explorer). Company enable/disable matrix: `company_module_share` + `modules/share_modules/`. Defined in `01_schema.sql`; no rows in `02_data.sql` for `share_sessions`; `company_module_share` seeded in `02_data.sql`; no audit triggers on `share_sessions` in `03_triggers.sql`. Live migration from per-module `*_share_sessions` tables: `db/migrations/share_sessions_unified.sql`.
 
 ## 7. File Structure
 - `01_schema.sql` — DDL (`DROP DATABASE`, `CREATE TABLE`, …)

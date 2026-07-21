@@ -6,9 +6,15 @@
 require_once ROOT_PATH . 'includes/itm_qr_share.php';
 require_once ROOT_PATH . 'includes/todo_visibility.php';
 
+function todo_share_module_slug()
+{
+    return 'todo';
+}
+
+/** @deprecated Use todo_share_module_slug() */
 function todo_share_table_name()
 {
-    return 'todo_share_sessions';
+    return todo_share_module_slug();
 }
 
 function todo_share_join_script_path()
@@ -118,7 +124,7 @@ function todo_share_create_session($conn, $todoId, $companyId, $employeeId, $own
         return ['ok' => false, 'error' => 'Could not encode share payload.'];
     }
 
-    return itm_qr_share_create_session($conn, todo_share_table_name(), [
+    return itm_qr_share_create_session($conn, todo_share_module_slug(), [
         'company_id' => $companyId,
         'employee_id' => $employeeId,
         'record_id' => $todoId,

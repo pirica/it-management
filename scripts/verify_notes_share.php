@@ -34,9 +34,14 @@ if (!($conn instanceof mysqli)) {
     exit(1);
 }
 
-$tableRes = $conn->query("SHOW TABLES LIKE 'note_share_sessions'");
+$tableRes = $conn->query("SHOW TABLES LIKE 'share_sessions'");
 if (!$tableRes || $tableRes->num_rows === 0) {
-    notes_share_verify_fail('note_share_sessions table missing — re-import via bash scripts/import_database_split.sh or bash scripts/import_database_split.sh.');
+    $legacyRes = $conn->query("SHOW TABLES LIKE 'note_share_sessions'");
+    if ($legacyRes && $legacyRes->num_rows > 0) {
+        notes_share_verify_fail('Legacy note_share_sessions still present — apply db/migrations/share_sessions_unified.sql or re-import db/ split bundle.');
+        exit(1);
+    }
+    notes_share_verify_fail('share_sessions table missing — re-import via bash scripts/import_database_split.sh.');
     exit(1);
 }
 
@@ -111,7 +116,7 @@ if (!$upd->execute()) {
     notes_share_verify_fail('Could not set images_json on test note.');
 } else {
     $upd->close();
-    $conn->query('DELETE FROM note_share_sessions WHERE note_id = ' . (int)$noteId);
+    $conn->query("DELETE FROM share_sessions WHERE module_slug = 'notes' AND record_id = " . (int)$noteId);
     $withImages = notes_share_create_session($conn, $noteId, $companyId, $employeeId, $username, true);
     if (!$withImages['ok'] || empty($withImages['session'])) {
         notes_share_verify_fail('Share session with images failed.');
@@ -134,7 +139,7 @@ if ($assetCheck['ok']) {
     notes_share_verify_pass('Asset validation rejects invalid filenames.');
 }
 
-$conn->query('DELETE FROM note_share_sessions WHERE note_id = ' . (int)$noteId);
+$conn->query("DELETE FROM share_sessions WHERE module_slug = 'notes' AND record_id = " . (int)$noteId);
 $conn->query('DELETE FROM notes WHERE id = ' . (int)$noteId);
 itm_script_test_employee_delete($conn, $employeeId);
 

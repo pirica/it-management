@@ -6,9 +6,15 @@
 require_once ROOT_PATH . 'includes/itm_qr_share.php';
 require_once __DIR__ . '/includes/functions.php';
 
+function rack_planner_share_module_slug()
+{
+    return 'rack_planner';
+}
+
+/** @deprecated Use rack_planner_share_module_slug() */
 function rack_planner_share_table_name()
 {
-    return 'rack_planner_share_sessions';
+    return rack_planner_share_module_slug();
 }
 
 function rack_planner_share_join_script_path()
@@ -116,7 +122,7 @@ function rack_planner_share_create_session($conn, $planId, $companyId, $employee
         return ['ok' => false, 'error' => 'Could not encode share payload.'];
     }
 
-    return itm_qr_share_create_session($conn, rack_planner_share_table_name(), [
+    return itm_qr_share_create_session($conn, rack_planner_share_module_slug(), [
         'company_id' => $companyId,
         'employee_id' => $employeeId,
         'record_id' => $planId,

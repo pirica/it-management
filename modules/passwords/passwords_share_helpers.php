@@ -5,9 +5,15 @@
 
 require_once ROOT_PATH . 'includes/itm_qr_share.php';
 
+function passwords_share_module_slug()
+{
+    return 'passwords';
+}
+
+/** @deprecated Use passwords_share_module_slug() */
 function passwords_share_table_name()
 {
-    return 'password_share_sessions';
+    return passwords_share_module_slug();
 }
 
 function passwords_share_join_script_path()
@@ -85,7 +91,7 @@ function passwords_share_create_session($conn, $entryId, $companyId, $employeeId
         return ['ok' => false, 'error' => 'Could not encode share payload.'];
     }
 
-    return itm_qr_share_create_session($conn, passwords_share_table_name(), [
+    return itm_qr_share_create_session($conn, passwords_share_module_slug(), [
         'company_id' => $companyId,
         'employee_id' => $employeeId,
         'record_id' => $entryId,

@@ -25,15 +25,7 @@ if (!function_exists('itm_sample_sql_exempt_tables')) {
         ];
 
         foreach ([
-            'explorer_share_sessions',
-            'floor_plan_share_sessions',
-            'rack_planner_share_sessions',
-            'note_share_sessions',
-            'password_share_sessions',
-            'bookmark_share_sessions',
-            'todo_share_sessions',
-            'event_share_sessions',
-            'private_contact_share_sessions',
+            'share_sessions',
         ] as $shareTable) {
             $tables[] = $shareTable;
         }

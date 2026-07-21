@@ -2099,6 +2099,31 @@ END$$
 
 DELIMITER ;
 
+DROP TRIGGER IF EXISTS `trg_company_module_share_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_company_module_share_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_company_module_share_audit_delete`;
+
+DELIMITER $$
+
+CREATE TRIGGER `trg_company_module_share_audit_insert` AFTER INSERT ON `company_module_share` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'company_module_share', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'module_id', NEW.`module_id`, 'enabled', NEW.`enabled`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_company_module_share_audit_update` AFTER UPDATE ON `company_module_share` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'company_module_share', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'module_id', OLD.`module_id`, 'enabled', OLD.`enabled`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'module_id', NEW.`module_id`, 'enabled', NEW.`enabled`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_company_module_share_audit_delete` AFTER DELETE ON `company_module_share` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'company_module_share', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'module_id', OLD.`module_id`, 'enabled', OLD.`enabled`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DELIMITER ;
+
 DROP TRIGGER IF EXISTS `trg_role_assignment_rights_audit_insert`;
 
 DROP TRIGGER IF EXISTS `trg_role_assignment_rights_audit_update`;

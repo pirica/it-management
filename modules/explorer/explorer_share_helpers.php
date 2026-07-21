@@ -12,9 +12,15 @@ if (!function_exists('get_full_path')) {
     require_once __DIR__ . '/api.php';
 }
 
+function explorer_share_module_slug()
+{
+    return 'explorer';
+}
+
+/** @deprecated Use explorer_share_module_slug() */
 function explorer_share_table_name()
 {
-    return 'explorer_share_sessions';
+    return explorer_share_module_slug();
 }
 
 function explorer_share_join_script_path()
@@ -218,47 +224,13 @@ function explorer_share_create_session($conn, $companyId, $employeeId, $ownerUse
         return ['ok' => false, 'error' => 'Could not encode share payload.'];
     }
 
-    $tableName = explorer_share_table_name();
-    itm_qr_share_assert_table($tableName);
-    $shareCode = itm_qr_share_generate_code($conn, $tableName);
-    $accessToken = itm_qr_share_generate_access_token();
-    if ($shareCode === '' || $accessToken === '') {
-        return ['ok' => false, 'error' => 'Could not generate share code.'];
-    }
-
-    itm_qr_share_purge_expired_sessions($conn, $tableName);
-    $scopeHash = explorer_share_scope_path_hash($scopePath);
-
-    $stmtDeactivate = $conn->prepare(
-        'UPDATE `' . $tableName . '` SET active = 0, deleted_at = NOW(), deleted_by = ?, updated_by = ? WHERE company_id = ? AND employee_id = ? AND scope_path_hash = ? AND active = 1 AND deleted_at IS NULL'
-    );
-    if ($stmtDeactivate) {
-        $stmtDeactivate->bind_param('iiiis', $employeeId, $employeeId, $companyId, $employeeId, $scopeHash);
-        $stmtDeactivate->execute();
-        $stmtDeactivate->close();
-    }
-
-    $ttl = itm_qr_share_session_ttl_seconds();
-    $insertSql = 'INSERT INTO `' . $tableName . '` (company_id, employee_id, scope_path, scope_path_hash, share_code, access_token, payload_json, expires_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND), ?)';
-    $stmtInsert = $conn->prepare($insertSql);
-    if (!$stmtInsert) {
-        return ['ok' => false, 'error' => 'Could not create share session.'];
-    }
-    $stmtInsert->bind_param('iisssssii', $companyId, $employeeId, $scopePath, $scopeHash, $shareCode, $accessToken, $payloadJson, $ttl, $employeeId);
-    if (!$stmtInsert->execute()) {
-        $stmtInsert->close();
-
-        return ['ok' => false, 'error' => 'Could not save share session.'];
-    }
-    $sessionId = (int)$stmtInsert->insert_id;
-    $stmtInsert->close();
-
-    $session = itm_qr_share_fetch_session_by_token($conn, $tableName, $accessToken);
-    if (!$session) {
-        return ['ok' => false, 'error' => 'Share session not found after create.'];
-    }
-
-    return ['ok' => true, 'session' => $session];
+    return itm_qr_share_create_session($conn, explorer_share_module_slug(), [
+        'company_id' => $companyId,
+        'employee_id' => $employeeId,
+        'scope_path' => $scopePath,
+        'scope_path_hash' => explorer_share_scope_path_hash($scopePath),
+        'payload_json' => $payloadJson,
+    ]);
 }
 
 /**
@@ -273,7 +245,7 @@ function explorer_share_validate_file_request($conn, $accessToken, $fileId, &$se
         return ['ok' => false, 'error' => 'Invalid request.'];
     }
 
-    $session = itm_qr_share_fetch_session_by_token($conn, explorer_share_table_name(), $accessToken);
+    $session = itm_qr_share_fetch_session_by_token($conn, explorer_share_module_slug(), $accessToken);
     if (!$session) {
         return ['ok' => false, 'error' => 'Session expired.'];
     }

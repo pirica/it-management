@@ -6,9 +6,15 @@
 require_once ROOT_PATH . 'includes/itm_qr_share.php';
 require_once __DIR__ . '/helpers.php';
 
+function bookmarks_share_module_slug()
+{
+    return 'bookmarks';
+}
+
+/** @deprecated Use bookmarks_share_module_slug() */
 function bookmarks_share_table_name()
 {
-    return 'bookmark_share_sessions';
+    return bookmarks_share_module_slug();
 }
 
 function bookmarks_share_join_script_path()
@@ -106,7 +112,7 @@ function bookmarks_share_create_session($conn, $bookmarkId, $companyId, $employe
         return ['ok' => false, 'error' => 'Could not encode share payload.'];
     }
 
-    return itm_qr_share_create_session($conn, bookmarks_share_table_name(), [
+    return itm_qr_share_create_session($conn, bookmarks_share_module_slug(), [
         'company_id' => $companyId,
         'employee_id' => $employeeId,
         'record_id' => $bookmarkId,
