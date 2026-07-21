@@ -27,7 +27,8 @@ First-time setup when `employees.vault_key_hash` is empty.
    - No re-encryption pipeline (no existing ciphertext).
    - `password_hash($new_vk, PASSWORD_DEFAULT)` → `employees.vault_key_hash`.
    - `$_SESSION['vault_key'] = hash('sha256', $new_vk)` unlocks the vault for the current session.
-5. **Notification email (no secrets):** after a successful commit, if the employee has a valid `work_email` (fallback `personal_email`), `itm_send_email()` sends a **Vault Key Created** message via the tenant default SMTP profile. The body contains no plaintext key; delivery is logged in **Email Management → Send Logs** (`emails` table). See [§3 Email integration](#3-email-integration).
+5. **One-time display (after save):** on success, the profile page opens the **Secure One-Time Display** overlay with the plaintext key (same request only — not stored server-side after render). User must copy the key before dismissing **➡️**; dismiss clears the overlay and vault form fields.
+6. **Notification email (no secrets):** after a successful commit, if the employee has a valid `work_email` (fallback `personal_email`), `itm_send_email()` sends a **Vault Key Created** message via the tenant default SMTP profile. The body contains no plaintext key; delivery is logged in **Email Management → Send Logs** (`emails` table). See [§3 Email integration](#3-email-integration).
 
 ### B. Unlock Vault
 
@@ -65,7 +66,8 @@ Updates an existing vault key and re-encrypts all private data atomically.
    - Update `employees.vault_key_hash` with bcrypt hash of the new key.
    - **Commit** on success; **rollback** on any exception (data stays on the old key).
 5. **Session sync:** `$_SESSION['vault_key'] = hash('sha256', $new_vk)`.
-6. **Notification email (no secrets):** after commit, **Vault Key Updated** via `itm_send_email()` (same transport/logging as create). No plaintext key in the message.
+6. **One-time display (after save):** same overlay as create (§1.D) — shown automatically after **💾** succeeds so the user can copy the new key before it is cleared from the page.
+7. **Notification email (no secrets):** after commit, **Vault Key Updated** via `itm_send_email()` (same transport/logging as create). No plaintext key in the message.
 
 ### D. Secure key generation (one-time display)
 
@@ -75,10 +77,10 @@ UI helpers in `user-config.php` (client-side only; the server never receives the
 |---------|-----------|
 | **🔑** (header) | Generates a 24-character key with unbiased `crypto.getRandomValues()` rejection sampling, copies it into **New** / **Confirm**, shows the overlay. Visible control is emoji-only (`title` carries the phrase). |
 | **One-time overlay** | Read-only field + **🗐** copy; user must save the key externally. |
-| **➡️** (overlay dismiss) | Clears the overlay field and masks form inputs as `type="password"` again. Values remain in the form until save or navigation — users must submit **💾** to persist. |
+| **➡️** (overlay dismiss) | Clears the overlay field. **Generated** mode masks New/Confirm inputs (values kept until **💾**). **Saved** mode also clears vault form fields (system password, current/new/confirm master key). |
 | **👁️** (per field) | Toggles visibility on Current / New / Confirm master-key inputs. |
 
-> **Note:** Dismissing the overlay does not erase key material from the DOM form fields; it only hides the dedicated display field. Treat the overlay as a convenience copy step, not a cryptographic wipe.
+> **Note:** Dismissing the overlay after **🔑** generate does not erase key material from the DOM form fields; it only hides the dedicated display field. After a successful **💾** save, dismiss clears all vault key inputs — the plaintext exists only in the overlay until **➡️** is clicked.
 
 ### E. Two-factor authentication (TOTP)
 
