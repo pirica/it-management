@@ -55,6 +55,60 @@ if (!function_exists('itm_company_module_share_map')) {
     }
 }
 
+if (!function_exists('itm_module_share_registry_slug_by_id')) {
+    function itm_module_share_registry_slug_by_id($conn, $moduleId)
+    {
+        $moduleId = (int)$moduleId;
+        if ($moduleId <= 0 || !($conn instanceof mysqli) || !itm_module_share_table_exists($conn, 'modules_registry')) {
+            return '';
+        }
+        $stmt = mysqli_prepare($conn, 'SELECT module_slug FROM modules_registry WHERE id = ? LIMIT 1');
+        if (!$stmt) {
+            return '';
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $moduleId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+
+        return trim((string)($row['module_slug'] ?? ''));
+    }
+}
+
+if (!function_exists('itm_module_share_is_capable_module_id')) {
+    function itm_module_share_is_capable_module_id($conn, $moduleId)
+    {
+        if (!function_exists('itm_qr_share_capable_module_slugs')) {
+            require_once ROOT_PATH . 'includes/itm_qr_share.php';
+        }
+        $slug = itm_module_share_registry_slug_by_id($conn, $moduleId);
+
+        return $slug !== '' && in_array($slug, itm_qr_share_capable_module_slugs(), true);
+    }
+}
+
+if (!function_exists('itm_module_share_capable_registry_ids_sql_in_list')) {
+    /**
+     * Slugs for SQL IN (...) — must stay aligned with itm_qr_share_capable_module_slugs().
+     *
+     * @return string
+     */
+    function itm_module_share_capable_registry_ids_sql_in_list()
+    {
+        if (!function_exists('itm_qr_share_capable_module_slugs')) {
+            require_once ROOT_PATH . 'includes/itm_qr_share.php';
+        }
+        $slugs = itm_qr_share_capable_module_slugs();
+        $quoted = [];
+        foreach ($slugs as $slug) {
+            $quoted[] = "'" . str_replace("'", "''", (string)$slug) . "'";
+        }
+
+        return implode(', ', $quoted);
+    }
+}
+
 if (!function_exists('itm_module_share_registry_id_by_slug')) {
     function itm_module_share_registry_id_by_slug($conn, $moduleSlug)
     {
@@ -82,13 +136,13 @@ if (!function_exists('itm_module_share_effective_enabled')) {
         $companyId = (int)$companyId;
         $moduleId = (int)$moduleId;
         if ($companyId <= 0 || $moduleId <= 0) {
-            return true;
+            return false;
         }
         if (!is_array($shareMap)) {
             $shareMap = itm_company_module_share_map($conn);
         }
         if (!isset($shareMap[$companyId][$moduleId])) {
-            return true;
+            return false;
         }
 
         return (int)$shareMap[$companyId][$moduleId] === 1;
@@ -132,6 +186,9 @@ if (!function_exists('itm_set_company_module_share')) {
         $moduleId = (int)$moduleId;
         $enabled = (int)((bool)$enabled);
         if ($companyId <= 0 || $moduleId <= 0 || !($conn instanceof mysqli)) {
+            return false;
+        }
+        if (!itm_module_share_is_capable_module_id($conn, $moduleId)) {
             return false;
         }
 
@@ -193,6 +250,9 @@ if (!function_exists('itm_seed_company_module_share_for_module')) {
         if ($moduleId <= 0 || !($conn instanceof mysqli) || !itm_module_share_table_exists($conn, 'company_module_share')) {
             return false;
         }
+        if (!itm_module_share_is_capable_module_id($conn, $moduleId)) {
+            return true;
+        }
 
         $sql = 'INSERT IGNORE INTO company_module_share (company_id, module_id, enabled)
                 SELECT c.id, ?, 1 FROM companies c WHERE c.active = 1';
@@ -219,7 +279,8 @@ if (!function_exists('itm_seed_company_module_share_all')) {
                 SELECT c.id, mr.id, 1
                 FROM companies c
                 CROSS JOIN modules_registry mr
-                WHERE c.active = 1';
+                WHERE c.active = 1
+                  AND mr.module_slug IN (' . itm_module_share_capable_registry_ids_sql_in_list() . ')';
 
         return (bool)mysqli_query($conn, $sql);
     }

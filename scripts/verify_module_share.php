@@ -43,10 +43,10 @@ if ($notesId <= 0) {
 }
 
 if (!has_module_share_access($conn, 1, 'notes')) {
-    module_share_verify_fail('notes share should be allowed by default for company 1.');
+    module_share_verify_fail('notes share should be allowed when company_module_share has enabled=1 for company 1.');
     $failures++;
 } else {
-    module_share_verify_pass('notes share allowed by default for company 1.');
+    module_share_verify_pass('notes share allowed from company_module_share DB row for company 1.');
 }
 
 itm_set_company_module_share($conn, 1, $notesId, 0);
@@ -59,10 +59,40 @@ if (has_module_share_access($conn, 1, 'notes')) {
 
 itm_set_company_module_share($conn, 1, $notesId, 1);
 if (!has_module_share_access($conn, 1, 'notes')) {
-    module_share_verify_fail('notes share should be re-enabled.');
+    module_share_verify_fail('notes share should be allowed when company_module_share row has enabled=1.');
     $failures++;
 } else {
-    module_share_verify_pass('notes share re-enabled.');
+    module_share_verify_pass('notes share allowed when company_module_share row has enabled=1.');
+}
+
+$badRowRes = $conn->query(
+    "SELECT COUNT(*) AS cnt
+     FROM company_module_share cms
+     INNER JOIN modules_registry mr ON mr.id = cms.module_id
+     WHERE mr.module_slug NOT IN (
+       'notes', 'passwords', 'bookmarks', 'todo', 'events',
+       'private_contacts', 'explorer', 'floor_plans', 'rack_planner'
+     )"
+);
+$badRowCnt = ($badRowRes && ($badRow = $badRowRes->fetch_assoc())) ? (int)($badRow['cnt'] ?? 0) : -1;
+if ($badRowCnt !== 0) {
+    module_share_verify_fail('company_module_share must only contain share-capable module slugs (found ' . $badRowCnt . ' extra row(s)). Apply db/migrations/company_module_share_capable_seed.sql.');
+    $failures++;
+} else {
+    module_share_verify_pass('company_module_share rows limited to share-capable modules.');
+}
+
+$capableCountRes = $conn->query(
+    "SELECT COUNT(*) AS cnt FROM company_module_share cms
+     INNER JOIN modules_registry mr ON mr.id = cms.module_id
+     WHERE mr.module_slug = 'notes' AND cms.enabled = 1"
+);
+$capableCount = ($capableCountRes && ($capRow = $capableCountRes->fetch_assoc())) ? (int)($capRow['cnt'] ?? 0) : 0;
+if ($capableCount < 1) {
+    module_share_verify_fail('notes should have at least one enabled company_module_share row — re-import db/ or run company_module_share_capable_seed.sql.');
+    $failures++;
+} else {
+    module_share_verify_pass('notes has enabled company_module_share row(s) in DB.');
 }
 
 if (!has_module_share_access($conn, 1, 'suppliers')) {
