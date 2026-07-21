@@ -887,9 +887,9 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="list_empty_tables.php" target="_blank" rel="nofollow noreferrer">list_empty_tables.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Lists every <code>company_id</code> table with zero live rows for the signed-in session company or a selected company (<code>?company=N</code> dropdown / <code>--company=N</code> on CLI). Links to <code>modules/{table}/index.php</code> in a new tab when the module folder exists.</td>
+                    <td>Lists every <code>company_id</code> table with zero live rows for the signed-in session company or a selected company (<code>?company_id=N</code> dropdown / <code>--company=N</code> on CLI).</td>
                     <td>
-                        <strong>Admin login required</strong> in browser. Open <a href="list_empty_tables.php" target="_blank" rel="nofollow noreferrer">list_empty_tables.php</a>, filter with <a href="list_empty_tables.php?company=2">?company=2</a>, or <a href="list_empty_tables.php?company=1&amp;format=json">?company=1&amp;format=json</a>.<br>
+                        <strong>Admin login required</strong> in browser. Open <a href="list_empty_tables.php" target="_blank" rel="nofollow noreferrer">list_empty_tables.php</a>, filter with <a href="list_empty_tables.php?company_id=2">?company_id=2</a>, or <a href="list_empty_tables.php?company_id=1&amp;format=json">?company_id=1&amp;format=json</a>.<br>
                         CLI: <code>php scripts/list_empty_tables.php --company=1</code> · JSON: <code>--json</code>
                     </td>
                 </tr>

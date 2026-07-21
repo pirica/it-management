@@ -2,7 +2,7 @@
 /**
  * Lists tenant-scoped tables with zero rows for the active session company.
  *
- * Browser: signed-in session; optional filter via ?company=N (defaults to session company_id). Admin gate on load.
+ * Browser: signed-in session; optional filter via ?company_id=N (defaults to session company_id). Admin gate on load.
  * CLI: php scripts/list_empty_tables.php [--company=N] [--json]
  *
  * Module links open modules/{table}/index.php in a new tab when that folder exists.
@@ -119,6 +119,8 @@ if ($itmIsCli) {
             $companyId = (int)$match[1];
         }
     }
+} elseif (isset($_GET['company_id']) && (string)$_GET['company_id'] !== '') {
+    $companyId = (int)$_GET['company_id'];
 } elseif (isset($_GET['company']) && (string)$_GET['company'] !== '') {
     $companyId = (int)$_GET['company'];
 }
@@ -224,8 +226,8 @@ $esc = static function ($value): string {
         <p class="report-muted"><strong>Company id : <?php echo (int)$report['company_id']; ?></strong><?php if ($sessionCompanyId > 0 && $sessionCompanyId !== (int)$report['company_id']): ?> · session company id : <?php echo (int)$sessionCompanyId; ?><?php endif; ?></p>
         <form class="filter-row" method="get" action="">
             <div>
-                <label for="company">Company</label>
-                <select name="company" id="company">
+                <label for="company_id">company_id</label>
+                <select name="company_id" id="company_id">
                     <?php foreach ($companyOptions as $companyRow): ?>
                         <?php $optionId = (int)($companyRow['id'] ?? 0); ?>
                         <option value="<?php echo $optionId; ?>"<?php echo $optionId === (int)$report['company_id'] ? ' selected' : ''; ?>>
@@ -245,7 +247,7 @@ $esc = static function ($value): string {
             (live rows only when <code>deleted_at</code> exists).
         </p>
         <p>
-            <a class="btn btn-sm" href="?company=<?php echo (int)$report['company_id']; ?>&amp;format=json">JSON</a>
+            <a class="btn btn-sm" href="?company_id=<?php echo (int)$report['company_id']; ?>&amp;format=json">JSON</a>
             <a class="btn btn-sm" href="../index.php">Home</a>
         </p>
     </div>
