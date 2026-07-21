@@ -21,6 +21,8 @@ if (!function_exists('itm_sample_data_prerequisite_map')) {
             'employee_assignment_history' => ['departments'],
             'inventory_items' => ['inventory_categories', 'suppliers'],
             'tickets' => ['ticket_categories', 'ticket_statuses', 'ticket_priorities', 'equipment'],
+            'forecast_revisions' => ['cost_centers', 'gl_accounts', 'forecast_revisions_status'],
+            'approvals' => ['forecast_revisions', 'approvals_stage'],
         ];
     }
 }
@@ -82,6 +84,145 @@ if (!function_exists('itm_seed_lookup_parents_for_table')) {
             itm_seed_table_from_database_sql($conn, $parentTable, $companyId, $seedErr);
             unset($parentSeedStack[$parentTable]);
         }
+    }
+}
+
+if (!function_exists('itm_seed_resolve_tenant_row_id_by_column')) {
+    function itm_seed_resolve_tenant_row_id_by_column(mysqli $conn, string $table, int $companyId, string $column, string $value): int
+    {
+        if ($companyId <= 0 || $value === '' || !itm_is_safe_identifier($table) || !itm_is_safe_identifier($column)) {
+            return 0;
+        }
+
+        $sql = 'SELECT id FROM `' . str_replace('`', '``', $table) . '` WHERE company_id = ? AND `'
+            . str_replace('`', '``', $column) . '` = ? ORDER BY id ASC LIMIT 1';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'is', $companyId, $value);
+        mysqli_stmt_execute($stmt);
+        $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+        mysqli_stmt_close($stmt);
+
+        return is_array($row) ? (int)($row['id'] ?? 0) : 0;
+    }
+}
+
+if (!function_exists('itm_seed_ensure_approvals_stage_row')) {
+    function itm_seed_ensure_approvals_stage_row(mysqli $conn, int $companyId, string $stageName, string $description): int
+    {
+        $stageName = trim($stageName);
+        if ($companyId <= 0 || $stageName === '') {
+            return 0;
+        }
+
+        $existingId = itm_seed_resolve_tenant_row_id_by_column($conn, 'approvals_stage', $companyId, 'stage', $stageName);
+        if ($existingId > 0) {
+            return $existingId;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO approvals_stage (company_id, stage, description, active) VALUES (?, ?, ?, 1)'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'iss', $companyId, $stageName, $description);
+        if (!mysqli_stmt_execute($stmt)) {
+            mysqli_stmt_close($stmt);
+            return 0;
+        }
+        mysqli_stmt_close($stmt);
+
+        return itm_seed_resolve_tenant_row_id_by_column($conn, 'approvals_stage', $companyId, 'stage', $stageName);
+    }
+}
+
+if (!function_exists('itm_seed_insert_approvals_sample_row')) {
+    /**
+     * Why: approvals sample rows require tenant-scoped forecast_revisions + approvals_stage FKs (not template ids from db/02_data.sql).
+     */
+    function itm_seed_insert_approvals_sample_row(mysqli $conn, int $companyId, &$error = ''): int
+    {
+        $error = '';
+        if ($companyId <= 0) {
+            $error = 'A company must be selected before adding sample data.';
+            return 0;
+        }
+
+        if (function_exists('itm_seed_tenant_row_count') && itm_seed_tenant_row_count($conn, 'approvals', $companyId) > 0) {
+            return 0;
+        }
+
+        itm_seed_lookup_parents_for_table($conn, 'approvals', $companyId);
+
+        $revisionId = function_exists('itm_first_tenant_row_id')
+            ? (int)itm_first_tenant_row_id($conn, 'forecast_revisions', $companyId)
+            : 0;
+        if ($revisionId <= 0) {
+            $parentError = '';
+            itm_seed_table_from_database_sql($conn, 'forecast_revisions', $companyId, $parentError);
+            $revisionId = function_exists('itm_first_tenant_row_id')
+                ? (int)itm_first_tenant_row_id($conn, 'forecast_revisions', $companyId)
+                : 0;
+        }
+        if ($revisionId <= 0) {
+            $error = 'Could not resolve forecast revision for approvals sample.';
+            return 0;
+        }
+
+        $stageId = itm_seed_ensure_approvals_stage_row(
+            $conn,
+            $companyId,
+            'Finance Review',
+            'Finance team review stage before general manager approval.'
+        );
+        if ($stageId <= 0) {
+            $error = 'Could not resolve approvals stage for sample data.';
+            return 0;
+        }
+
+        $statusId = itm_seed_resolve_tenant_row_id_by_column($conn, 'forecast_revisions_status', $companyId, 'status', 'Finance Review');
+        if ($statusId <= 0) {
+            $statusId = itm_seed_resolve_tenant_row_id_by_column($conn, 'forecast_revisions_status', $companyId, 'status', 'Draft');
+        }
+        if ($statusId <= 0 && function_exists('itm_first_tenant_row_id')) {
+            $statusId = (int)itm_first_tenant_row_id($conn, 'forecast_revisions_status', $companyId);
+        }
+        if ($statusId <= 0) {
+            $error = 'Could not resolve forecast revision status for approvals sample.';
+            return 0;
+        }
+
+        $comments = 'Awaiting finance validation for submission batch.';
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO approvals (company_id, forecast_revision_id, stage, status, comments, active)
+             VALUES (?, ?, ?, ?, ?, 1)'
+        );
+        if (!$stmt) {
+            $error = 'Could not prepare approvals sample insert.';
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'iiiis', $companyId, $revisionId, $stageId, $statusId, $comments);
+        if (!mysqli_stmt_execute($stmt)) {
+            $dbErrorCode = (int)mysqli_errno($conn);
+            $dbErrorMessage = (string)mysqli_error($conn);
+            mysqli_stmt_close($stmt);
+            if (function_exists('itm_seed_insert_row_is_unique_violation')
+                && itm_seed_insert_row_is_unique_violation($dbErrorCode, $dbErrorMessage)) {
+                return 0;
+            }
+            $error = function_exists('itm_format_db_constraint_error')
+                ? itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage)
+                : 'Could not insert approvals sample row.';
+            return 0;
+        }
+        mysqli_stmt_close($stmt);
+
+        return 1;
     }
 }
 
@@ -1517,6 +1658,10 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
             }
 
             return itm_seed_insert_backup_tape_log_today_row($conn, $companyId, $backupTapeServerId, $error);
+        }
+
+        if ($tableName === 'approvals') {
+            return itm_seed_insert_approvals_sample_row($conn, $companyId, $error);
         }
 
         itm_seed_lookup_parents_for_table($conn, $tableName, $companyId);
