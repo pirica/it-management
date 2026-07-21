@@ -267,6 +267,29 @@ function events_compare_event_rows(array $a, array $b, $sort, $dir)
 }
 
 /**
+ * Count live events visible to the signed-in employee (owner or shared recipient).
+ */
+function events_count_visible_live_events(mysqli $conn, int $companyId, int $employeeId): int
+{
+    if ($companyId <= 0 || $employeeId <= 0) {
+        return 0;
+    }
+
+    $visSql = itm_events_visibility_sql('e');
+    $sql = 'SELECT COUNT(*) AS c FROM events e WHERE e.company_id = ? AND e.deleted_at IS NULL AND (' . $visSql . ')';
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        return 0;
+    }
+    $stmt->bind_param('iii', $companyId, $employeeId, $employeeId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    return (int)($row['c'] ?? 0);
+}
+
+/**
  * @return array{rows:list<array<string,mixed>>,totalRows:int,totalPages:int,page:int}
  */
 function events_query_events_for_list($conn, array $options)

@@ -24,6 +24,7 @@ if (!function_exists('itm_sample_data_prerequisite_map')) {
             'forecast_revisions' => ['cost_centers', 'gl_accounts', 'forecast_revisions_status'],
             'approvals' => ['forecast_revisions', 'approvals_stage'],
             'emails' => ['email_smtp_configurations'],
+            'events' => ['event_categories'],
         ];
     }
 }
@@ -224,6 +225,144 @@ if (!function_exists('itm_seed_insert_approvals_sample_row')) {
         mysqli_stmt_close($stmt);
 
         return 1;
+    }
+}
+
+if (!function_exists('itm_seed_insert_events_sample_rows')) {
+    /**
+     * Why: events list is owner/shared visibility scoped; generic tenant row counts block seed when other users or soft-deleted rows exist.
+     */
+    function itm_seed_insert_events_sample_rows(mysqli $conn, int $companyId, int $employeeId, &$error = ''): int
+    {
+        $error = '';
+        if ($companyId <= 0 || $employeeId <= 0) {
+            $error = 'A company must be selected before adding sample data.';
+            return 0;
+        }
+
+        $helpersPath = ROOT_PATH . 'modules/events/events_vault_helpers.php';
+        if (is_file($helpersPath)) {
+            require_once $helpersPath;
+        }
+        if (!function_exists('events_count_visible_live_events')) {
+            $error = 'Events sample seeding is unavailable.';
+            return 0;
+        }
+        if (events_count_visible_live_events($conn, $companyId, $employeeId) > 0) {
+            return 0;
+        }
+
+        itm_seed_lookup_parents_for_table($conn, 'events', $companyId);
+
+        $sqlBody = itm_database_sql_read_sample();
+        if ($sqlBody === '') {
+            $error = 'Sample source file db/02_data_sample.sql was not found or is empty.';
+            return 0;
+        }
+
+        $parsedInserts = itm_parse_database_sql_inserts($sqlBody, 'events');
+        $tableRows = $parsedInserts['events'] ?? [];
+        if ($tableRows === []) {
+            return itm_seed_insert_random_fallback_row($conn, 'events', $companyId, $error);
+        }
+
+        $templateCompanyId = defined('ITM_SAMPLE_SQL_TEMPLATE_COMPANY_ID')
+            ? (int)ITM_SAMPLE_SQL_TEMPLATE_COMPANY_ID
+            : 1;
+        $tableRows = itm_seed_filter_template_rows($tableRows, $templateCompanyId);
+        if ($tableRows === []) {
+            return itm_seed_insert_random_fallback_row($conn, 'events', $companyId, $error);
+        }
+
+        $tableFkMap = itm_table_outbound_fk_map($conn, 'events');
+        $insertCount = 0;
+
+        foreach ($tableRows as $rowEntry) {
+            $rawColumns = $rowEntry['columns'] ?? [];
+            $rawValues = $rowEntry['values'] ?? [];
+            $rowAssoc = itm_seed_row_assoc_from_insert_entry($rowEntry);
+
+            if (itm_seed_table_row_exists_for_tenant($conn, 'events', $companyId, $rowAssoc)) {
+                continue;
+            }
+
+            $targetColumns = [];
+            $targetValues = [];
+            foreach ($rawColumns as $index => $columnToken) {
+                $columnName = trim((string)$columnToken, "` \t\n\r\0\x0B");
+                if ($columnName === '' || !itm_is_safe_identifier($columnName)) {
+                    continue;
+                }
+
+                if ($columnName === 'id') {
+                    continue;
+                }
+
+                if ($columnName === 'company_id') {
+                    $targetColumns[] = '`company_id`';
+                    $targetValues[] = (string)$companyId;
+                    continue;
+                }
+
+                if ($columnName === 'employee_id' || $columnName === 'created_by') {
+                    $targetColumns[] = '`' . str_replace('`', '``', $columnName) . '`';
+                    $targetValues[] = (string)(int)$employeeId;
+                    continue;
+                }
+
+                $valueToken = (string)$rawValues[$index];
+                if (isset($tableFkMap[$columnName]) && function_exists('itm_seed_resolve_fk_from_database_sql')) {
+                    $rawFkToken = trim($valueToken);
+                    if ($rawFkToken !== '' && strtoupper($rawFkToken) !== 'NULL') {
+                        $rawFkToken = trim($rawFkToken, "'\"");
+                        $storedFkId = (int)$rawFkToken;
+                        if ($storedFkId > 0) {
+                            $resolvedFkId = itm_seed_resolve_fk_from_database_sql(
+                                $conn,
+                                $tableFkMap[$columnName],
+                                $companyId,
+                                $storedFkId
+                            );
+                            if ($resolvedFkId > 0) {
+                                $valueToken = (string)(int)$resolvedFkId;
+                            } elseif (function_exists('itm_table_column_is_nullable')
+                                && itm_table_column_is_nullable($conn, 'events', $columnName)) {
+                                $valueToken = 'NULL';
+                            } else {
+                                continue 2;
+                            }
+                        }
+                    }
+                }
+
+                $targetColumns[] = '`' . str_replace('`', '``', $columnName) . '`';
+                $targetValues[] = $valueToken;
+            }
+
+            if ($targetColumns === []) {
+                continue;
+            }
+
+            $insertSql = 'INSERT INTO `events` (' . implode(',', $targetColumns) . ') VALUES (' . implode(',', $targetValues) . ')';
+            $dbErrorCode = 0;
+            $dbErrorMessage = '';
+            if (!itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
+                if (itm_seed_insert_row_is_unique_violation($dbErrorCode, $dbErrorMessage)) {
+                    continue;
+                }
+                $error = function_exists('itm_format_db_constraint_error')
+                    ? itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage)
+                    : 'Could not insert events sample row.';
+                return $insertCount;
+            }
+            $insertCount++;
+        }
+
+        if ($insertCount === 0 && $error === '') {
+            $error = 'No sample rows could be inserted from db/02_data_sample.sql for this module.';
+        }
+
+        return $insertCount;
     }
 }
 
@@ -1663,6 +1802,11 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
 
         if ($tableName === 'approvals') {
             return itm_seed_insert_approvals_sample_row($conn, $companyId, $error);
+        }
+
+        if ($tableName === 'events') {
+            $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+            return itm_seed_insert_events_sample_rows($conn, $companyId, $employeeId, $error);
         }
 
         itm_seed_lookup_parents_for_table($conn, $tableName, $companyId);
