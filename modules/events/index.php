@@ -978,15 +978,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         exit;
     }
 
-    $where = ' WHERE company_id=' . (int)$company_id;
-    $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where;
-    $countResult = mysqli_query($conn, $countSql);
-    $existingRows = 0;
-    if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
-        $existingRows = (int)($countRow['total_rows'] ?? 0);
+    if ($logged_user_id <= 0) {
+        $_SESSION['crud_error'] = 'Sample data requires a signed-in employee.';
+        header('Location: ' . $listUrl);
+        exit;
     }
 
-    if ($existingRows > 0) {
+    if (events_count_visible_live_events($conn, (int)$company_id, $logged_user_id) > 0) {
         $_SESSION['crud_error'] = 'Sample data can only be added when no records exist.';
         header('Location: ' . $listUrl);
         exit;
