@@ -48,38 +48,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     itm_require_post_csrf();
     
     $company_id = (int)($_POST['company_id'] ?? 0);
-    $company = null;
 
-    if ($isAdmin) {
-        // Admins can select any active company
-        $stmt = mysqli_prepare($conn, 'SELECT c.company FROM companies c WHERE c.id = ? AND c.active = 1 LIMIT 1');
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'i', $company_id);
-            if (mysqli_stmt_execute($stmt)) {
-                $res = mysqli_stmt_get_result($stmt);
-                $company = $res ? mysqli_fetch_assoc($res) : null;
-            }
-            mysqli_stmt_close($stmt);
+    if ($company_id > 0 && function_exists('itm_switch_active_company_session')) {
+        if (itm_switch_active_company_session($conn, $employeeId, $company_id, $isAdmin)) {
+            header('Location: dashboard.php');
+            exit();
         }
-    } else {
-        // Regular users must be assigned to the company
-        $stmt = mysqli_prepare($conn, 'SELECT c.company FROM companies c INNER JOIN employee_companies uc ON uc.company_id = c.id WHERE c.id = ? AND uc.employee_id = ? AND c.active = 1 LIMIT 1');
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'ii', $company_id, $employeeId);
-            if (mysqli_stmt_execute($stmt)) {
-                $res = mysqli_stmt_get_result($stmt);
-                $company = $res ? mysqli_fetch_assoc($res) : null;
-            }
-            mysqli_stmt_close($stmt);
-        }
-    }
-
-    // If valid company selected, store in session and proceed to dashboard
-    if ($company) {
-        $_SESSION['company_id'] = $company_id;
-        $_SESSION['company_name'] = $company['company'];
-        header('Location: dashboard.php');
-        exit();
     }
 }
 

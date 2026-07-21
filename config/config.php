@@ -295,6 +295,7 @@ require_once ROOT_PATH . 'includes/audit_functions.php';
 require_once ROOT_PATH . 'includes/itm_company_module_access.php';
 require_once ROOT_PATH . 'includes/itm_email.php';
 require_once ROOT_PATH . 'includes/itm_role_module_permissions.php';
+require_once ROOT_PATH . 'includes/itm_company_session.php';
 require_once ROOT_PATH . 'includes/equipment_poe_helpers.php';
 
 // Establish Database Connection

@@ -21,57 +21,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['company_id'])) {
     itm_require_post_csrf();
 
     $requestedCompanyId = (int)($_POST['company_id'] ?? 0);
-    $selectedCompany = null;
-
-    if ($isAdmin) {
-        $switchStmt = mysqli_prepare($conn, 'SELECT company FROM companies WHERE id = ? AND active = 1 LIMIT 1');
-        if ($switchStmt) {
-            mysqli_stmt_bind_param($switchStmt, 'i', $requestedCompanyId);
-            if (mysqli_stmt_execute($switchStmt)) {
-                $switchRes = mysqli_stmt_get_result($switchStmt);
-                $selectedCompany = $switchRes ? mysqli_fetch_assoc($switchRes) : null;
-            }
-            mysqli_stmt_close($switchStmt);
+    if ($requestedCompanyId > 0 && function_exists('itm_switch_active_company_session')) {
+        if (itm_switch_active_company_session($conn, $employeeId, $requestedCompanyId, $isAdmin)) {
+            header('Location: dashboard.php');
+            exit();
         }
-    } else {
-        $switchStmt = mysqli_prepare(
-            $conn,
-            'SELECT c.company
-             FROM companies c
-             INNER JOIN employee_companies uc ON uc.company_id = c.id
-             WHERE c.id = ? AND uc.employee_id = ? AND c.active = 1
-             LIMIT 1'
-        );
-        if ($switchStmt) {
-            mysqli_stmt_bind_param($switchStmt, 'ii', $requestedCompanyId, $employeeId);
-            if (mysqli_stmt_execute($switchStmt)) {
-                $switchRes = mysqli_stmt_get_result($switchStmt);
-                $selectedCompany = $switchRes ? mysqli_fetch_assoc($switchRes) : null;
-            }
-            mysqli_stmt_close($switchStmt);
-        }
-    }
-
-    if ($selectedCompany) {
-        // Busca o ID do employee nessa empresa nova
-        $empStmt = mysqli_prepare($conn, 'SELECT id FROM employees WHERE username = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
-        if ($empStmt) {
-            $currentUsername = $_SESSION['username'] ?? '';
-            mysqli_stmt_bind_param($empStmt, 'si', $currentUsername, $requestedCompanyId);
-            mysqli_stmt_execute($empStmt);
-            $empRes = mysqli_stmt_get_result($empStmt);
-            $newEmployee = $empRes ? mysqli_fetch_assoc($empRes) : null;
-            mysqli_stmt_close($empStmt);
-
-            if ($newEmployee) {
-                $_SESSION['employee_id'] = (int)$newEmployee['id'];
-            }
-        }
-
-        $_SESSION['company_id'] = $requestedCompanyId;
-        $_SESSION['company_name'] = (string)$selectedCompany['company'];
-        header('Location: dashboard.php');
-        exit();
     }
 }
 
@@ -168,7 +122,11 @@ if ($employeeId > 0) {
 }
 
 // Compose the personalized welcome message
-$welcomeMessage = 'Welcome to DataCenter Plus';
+$companyLabel = trim((string)($_SESSION['company_name'] ?? ''));
+if ($companyLabel === '' && is_array($company_data)) {
+    $companyLabel = trim((string)($company_data['company'] ?? ''));
+}
+$welcomeMessage = 'Welcome to ' . ($companyLabel !== '' ? $companyLabel : 'your company');
 if ($userDisplayName !== '' && $userEmail !== '') {
     $welcomeMessage .= ', ' . $userDisplayName . ' (' . $userEmail . ')';
 } elseif ($userDisplayName !== '') {
