@@ -147,8 +147,8 @@ if (!function_exists('itm_crud_stamp_create_audit')) {
             $esc = (isset($conn) && $conn) ? mysqli_real_escape_string($conn, $now) : addslashes($now);
             $sqlValues['created_at'] = "'" . $esc . "'";
         }
-        $data['deleted_by'] = null;
-        $data['deleted_at'] = null;
+        $data['deleted_by'] = '';
+        $data['deleted_at'] = '';
         if (is_array($sqlValues)) {
             $sqlValues['deleted_by'] = 'NULL';
             $sqlValues['deleted_at'] = 'NULL';
