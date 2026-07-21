@@ -102,3 +102,8 @@ $stmt->execute();
 
 ## 12. Module Owner Notes (Optional)
 The core of the HR/Identity management in the system. Regression: `php scripts/employee_fields_missing.php` — schema and critical UI coverage for `employees` columns (including `termination_date`). Resignations weekly filter debug: `php scripts/debug_resignations_termination_date.php` (catalogued in `scripts/scripts.php`).
+## Share (temporary QR / code)
+- **Capable:** `itm_qr_share_capable_module_slugs()`.
+- **UI:** Share buttons on view.php (admin employee profile).
+- **Wiring:** `includes/itm_crud_record_share.php`; public `join.php`; AJAX `index.php?ajax_action=create_share_session`. Company gate: `modules/share_modules/`.
+- **Doc:** `docs/CRUD_RECORD_SHARE.md`.

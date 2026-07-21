@@ -78,3 +78,8 @@ $stmt->execute();
 
 ## 12. Module Owner Notes (Optional)
 The primary inventory module.
+## Share (temporary QR / code)
+- **Capable:** `itm_qr_share_capable_module_slugs()`.
+- **UI:** Share on view.php; Switch Port Manager share on index.php?switch_id=&spm=1 (share_kind=switch_ports).
+- **Wiring:** `includes/itm_crud_record_share.php`; public `join.php`; AJAX `index.php?ajax_action=create_share_session`. Company gate: `modules/share_modules/`.
+- **Doc:** `docs/CRUD_RECORD_SHARE.md`.

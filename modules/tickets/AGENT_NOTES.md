@@ -64,3 +64,8 @@ $stmt->execute();
 ## 12. Module Owner Notes (Optional)
 - **`db/` seeds:** one `TCK-0001` row per seeded company (ids 1–5), each with tenant `Open` `status_id`. The late `@replicate_source_company_id` block does **not** copy `tickets` — explicit per-company inserts are the only seed rows (avoids duplicate open tickets on import).
 The primary interface for IT support operations.
+## Share (temporary QR / code)
+- **Capable:** `itm_qr_share_capable_module_slugs()`.
+- **UI:** Share buttons on view.php.
+- **Wiring:** `includes/itm_crud_record_share.php`; public `join.php`; AJAX `index.php?ajax_action=create_share_session`. Company gate: `modules/share_modules/`.
+- **Doc:** `docs/CRUD_RECORD_SHARE.md`.

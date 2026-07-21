@@ -52,3 +52,8 @@ $stmt->execute();
 
 ## 12. Module Owner Notes (Optional)
 Used to define the hierarchy of who can approve what.
+## Share (temporary QR / code)
+- **Capable:** `itm_qr_share_capable_module_slugs()`.
+- **UI:** Share buttons on index.php inline view block.
+- **Wiring:** `includes/itm_crud_record_share.php`; public `join.php`; AJAX `index.php?ajax_action=create_share_session`. Company gate: `modules/share_modules/`.
+- **Doc:** `docs/CRUD_RECORD_SHARE.md`.

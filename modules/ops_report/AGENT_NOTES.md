@@ -72,3 +72,8 @@ $report = opr_ensure_report($conn, $company_id, $selected_date);
 
 ## 12. Module Owner Notes (Optional)
 Layout mirrors the hotel Daily Operations Report PDF (duty managers, revenue block, F&B grid, walk-round, guest experience, courtesy calls, butler, night shift guest list).
+## Share (temporary QR / code)
+- **Capable:** `itm_qr_share_capable_module_slugs()`.
+- **UI:** Share buttons on index.php report toolbar (loaded report_id).
+- **Wiring:** `includes/itm_crud_record_share.php`; public `join.php`; AJAX `index.php?ajax_action=create_share_session`. Company gate: `modules/share_modules/`.
+- **Doc:** `docs/CRUD_RECORD_SHARE.md`.
