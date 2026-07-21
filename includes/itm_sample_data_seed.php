@@ -1892,6 +1892,64 @@ if (!function_exists('itm_seed_apply_tickets_sample_row_defaults')) {
     }
 }
 
+if (!function_exists('itm_seed_sync_mysql_audit_session_for_company')) {
+    /**
+     * Why: Audit triggers use COALESCE(@app_company_id, NEW.company_id); stale session company ids break INSERT FK checks.
+     */
+    function itm_seed_sync_mysql_audit_session_for_company(mysqli $conn, int $companyId, ?int $employeeId = null): void
+    {
+        if ($companyId <= 0) {
+            return;
+        }
+
+        if ($employeeId === null || $employeeId <= 0) {
+            $sessionEmployeeId = isset($_SESSION['employee_id']) ? (int)$_SESSION['employee_id'] : 0;
+            if ($sessionEmployeeId > 0) {
+                $employeeId = $sessionEmployeeId;
+            } elseif (function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
+                $employeeId = itm_seed_resolve_tenant_seed_admin_employee_id($conn, $companyId);
+            } else {
+                $employeeId = 0;
+            }
+        }
+
+        $auditUserId = $employeeId > 0 ? (int)$employeeId : null;
+        $username = isset($_SESSION['username']) ? (string)$_SESSION['username'] : '';
+        $email = isset($_SESSION['email']) ? (string)$_SESSION['email'] : '';
+
+        if ($auditUserId !== null) {
+            $stmt = mysqli_prepare($conn, 'SELECT username, work_email FROM employees WHERE id = ? LIMIT 1');
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'i', $auditUserId);
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+                $row = ($res && ($fetched = mysqli_fetch_assoc($res))) ? $fetched : null;
+                mysqli_stmt_close($stmt);
+                if (is_array($row)) {
+                    $resolvedUsername = trim((string)($row['username'] ?? ''));
+                    if ($resolvedUsername !== '') {
+                        $username = $resolvedUsername;
+                    }
+                    $resolvedEmail = trim((string)($row['work_email'] ?? ''));
+                    if ($resolvedEmail !== '') {
+                        $email = $resolvedEmail;
+                    }
+                }
+            }
+        }
+
+        $ip = function_exists('itm_get_client_ip_address') ? itm_get_client_ip_address() : (string)($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+        $userAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? 'itm_sample_data_seed'), 0, 255);
+
+        mysqli_query($conn, 'SET @app_employee_id = ' . ($auditUserId === null ? 'NULL' : (string)$auditUserId));
+        mysqli_query($conn, 'SET @app_company_id = ' . (string)$companyId);
+        mysqli_query($conn, "SET @app_username = '" . mysqli_real_escape_string($conn, $username) . "'");
+        mysqli_query($conn, "SET @app_email = '" . mysqli_real_escape_string($conn, $email) . "'");
+        mysqli_query($conn, "SET @app_ip_address = '" . mysqli_real_escape_string($conn, $ip) . "'");
+        mysqli_query($conn, "SET @app_user_agent = '" . mysqli_real_escape_string($conn, $userAgent) . "'");
+    }
+}
+
 if (!function_exists('itm_seed_upsert_tickets_lookup_row')) {
     /**
      * Why: Tickets sample seed needs canonical lookup names even when generic fallback rows already exist for the tenant.
@@ -1989,6 +2047,8 @@ if (!function_exists('itm_seed_ensure_tickets_lookup_parents')) {
             return;
         }
 
+        itm_seed_sync_mysql_audit_session_for_company($conn, $companyId);
+
         foreach (
             [
                 ['name' => 'Hardware Issue', 'code' => 'HW'],
@@ -2054,6 +2114,21 @@ if (!function_exists('itm_seed_insert_tickets_sample_row')) {
             $error = 'A company must be selected before adding sample data.';
             return 0;
         }
+
+        $companyStmt = mysqli_prepare($conn, 'SELECT id FROM companies WHERE id = ? LIMIT 1');
+        if ($companyStmt) {
+            mysqli_stmt_bind_param($companyStmt, 'i', $companyId);
+            mysqli_stmt_execute($companyStmt);
+            $companyRes = mysqli_stmt_get_result($companyStmt);
+            $companyRow = ($companyRes && ($fetched = mysqli_fetch_assoc($companyRes))) ? $fetched : null;
+            mysqli_stmt_close($companyStmt);
+            if (!is_array($companyRow)) {
+                $error = 'Could not resolve the selected company for tickets sample data.';
+                return 0;
+            }
+        }
+
+        itm_seed_sync_mysql_audit_session_for_company($conn, $companyId);
 
         $helpersPath = ROOT_PATH . 'modules/tickets/sample_seed_helpers.php';
         if (is_file($helpersPath)) {

@@ -89,4 +89,19 @@ if ($garbageInserted !== 1) {
     vtsd_pass('Tickets sample seed succeeds when lookup parents only have generic fallback rows.');
 }
 
+mysqli_query($conn, 'DELETE FROM tickets WHERE company_id = ' . (int)$companyId);
+mysqli_query($conn, 'DELETE FROM ticket_categories WHERE company_id = ' . (int)$companyId);
+mysqli_query($conn, 'DELETE FROM ticket_statuses WHERE company_id = ' . (int)$companyId);
+mysqli_query($conn, 'DELETE FROM ticket_priorities WHERE company_id = ' . (int)$companyId);
+$_SESSION['company_id'] = 99999;
+mysqli_query($conn, 'SET @app_company_id = 99999');
+
+$staleErr = '';
+$staleInserted = itm_seed_insert_tickets_sample_row($conn, $companyId, $staleErr);
+if ($staleInserted !== 1) {
+    vtsd_fail('Expected sample seed to succeed with stale session company_id; inserted=' . (int)$staleInserted . ' err=' . $staleErr);
+} else {
+    vtsd_pass('Tickets sample seed succeeds when PHP session company_id is stale.');
+}
+
 exit($failures === 0 ? 0 : 1);
