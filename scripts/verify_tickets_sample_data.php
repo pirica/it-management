@@ -73,4 +73,20 @@ if ((int)($row['is_archived'] ?? 1) !== 0) {
     vtsd_pass('Sample ticket is not archived.');
 }
 
+mysqli_query($conn, 'DELETE FROM tickets WHERE company_id = ' . (int)$companyId);
+mysqli_query($conn, 'DELETE FROM ticket_categories WHERE company_id = ' . (int)$companyId);
+mysqli_query($conn, 'DELETE FROM ticket_statuses WHERE company_id = ' . (int)$companyId);
+mysqli_query($conn, 'DELETE FROM ticket_priorities WHERE company_id = ' . (int)$companyId);
+mysqli_query($conn, "INSERT INTO ticket_categories (company_id, name, code, active) VALUES ({$companyId}, 'Sample deadbeef', 'SMP', 1)");
+mysqli_query($conn, "INSERT INTO ticket_statuses (company_id, name, color, is_closed, active) VALUES ({$companyId}, 'Sample deadbeef', '#808080', 0, 1)");
+mysqli_query($conn, "INSERT INTO ticket_priorities (company_id, name, level, color, active) VALUES ({$companyId}, 'Sample deadbeef', 1, '#808080', 1)");
+
+$garbageErr = '';
+$garbageInserted = itm_seed_insert_tickets_sample_row($conn, $companyId, $garbageErr);
+if ($garbageInserted !== 1) {
+    vtsd_fail('Expected sample seed to succeed when only generic fallback lookup rows exist; inserted=' . (int)$garbageInserted . ' err=' . $garbageErr);
+} else {
+    vtsd_pass('Tickets sample seed succeeds when lookup parents only have generic fallback rows.');
+}
+
 exit($failures === 0 ? 0 : 1);

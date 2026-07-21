@@ -1892,6 +1892,157 @@ if (!function_exists('itm_seed_apply_tickets_sample_row_defaults')) {
     }
 }
 
+if (!function_exists('itm_seed_upsert_tickets_lookup_row')) {
+    /**
+     * Why: Tickets sample seed needs canonical lookup names even when generic fallback rows already exist for the tenant.
+     */
+    function itm_seed_upsert_tickets_lookup_row(mysqli $conn, int $companyId, string $table, string $name, array $extraColumns = []): int
+    {
+        if ($companyId <= 0 || $name === '' || !itm_is_safe_identifier($table)) {
+            return 0;
+        }
+
+        $selectStmt = mysqli_prepare(
+            $conn,
+            'SELECT id, deleted_at FROM `' . str_replace('`', '``', $table) . '` WHERE company_id = ? AND name = ? LIMIT 1'
+        );
+        if ($selectStmt) {
+            mysqli_stmt_bind_param($selectStmt, 'is', $companyId, $name);
+            mysqli_stmt_execute($selectStmt);
+            $selectRes = mysqli_stmt_get_result($selectStmt);
+            $existingRow = ($selectRes && ($fetched = mysqli_fetch_assoc($selectRes))) ? $fetched : null;
+            mysqli_stmt_close($selectStmt);
+            if (is_array($existingRow)) {
+                $existingId = (int)($existingRow['id'] ?? 0);
+                if ($existingId > 0 && ($existingRow['deleted_at'] ?? null) !== null) {
+                    $restoreStmt = mysqli_prepare(
+                        $conn,
+                        'UPDATE `' . str_replace('`', '``', $table) . '` SET active = 1, deleted_at = NULL, deleted_by = NULL WHERE id = ? AND company_id = ?'
+                    );
+                    if ($restoreStmt) {
+                        mysqli_stmt_bind_param($restoreStmt, 'ii', $existingId, $companyId);
+                        mysqli_stmt_execute($restoreStmt);
+                        mysqli_stmt_close($restoreStmt);
+                    }
+                }
+
+                return $existingId;
+            }
+        }
+
+        $sqlColumns = ['`company_id`', '`name`', '`active`'];
+        $placeholders = ['?', '?', '1'];
+        $bindTypes = 'is';
+        $bindValues = [$companyId, $name];
+
+        foreach ($extraColumns as $columnName => $columnValue) {
+            if (!itm_is_safe_identifier((string)$columnName)) {
+                continue;
+            }
+            $sqlColumns[] = '`' . str_replace('`', '``', (string)$columnName) . '`';
+            $placeholders[] = '?';
+            if (is_int($columnValue)) {
+                $bindTypes .= 'i';
+            } else {
+                $bindTypes .= 's';
+            }
+            $bindValues[] = $columnValue;
+        }
+
+        $sql = 'INSERT INTO `' . str_replace('`', '``', $table) . '` ('
+            . implode(', ', $sqlColumns) . ') VALUES (' . implode(', ', $placeholders) . ')';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return itm_seed_resolve_tenant_row_id_by_column($conn, $table, $companyId, 'name', $name);
+        }
+
+        $refs = [];
+        $refs[] = &$bindTypes;
+        foreach ($bindValues as $key => $value) {
+            $refs[] = &$bindValues[$key];
+        }
+        call_user_func_array('mysqli_stmt_bind_param', array_merge([$stmt], $refs));
+
+        if (!mysqli_stmt_execute($stmt)) {
+            mysqli_stmt_close($stmt);
+
+            return itm_seed_resolve_tenant_row_id_by_column($conn, $table, $companyId, 'name', $name);
+        }
+
+        $insertId = (int)mysqli_insert_id($conn);
+        mysqli_stmt_close($stmt);
+        if ($insertId > 0) {
+            return $insertId;
+        }
+
+        return itm_seed_resolve_tenant_row_id_by_column($conn, $table, $companyId, 'name', $name);
+    }
+}
+
+if (!function_exists('itm_seed_ensure_tickets_lookup_parents')) {
+    /**
+     * Why: tickets_seed_lookup_parents skips bulk seed when any row exists; ensure canonical lookup labels either way.
+     */
+    function itm_seed_ensure_tickets_lookup_parents(mysqli $conn, int $companyId): void
+    {
+        if ($companyId <= 0) {
+            return;
+        }
+
+        foreach (
+            [
+                ['name' => 'Hardware Issue', 'code' => 'HW'],
+                ['name' => 'Network Problem', 'code' => 'NET'],
+                ['name' => 'Software Issue', 'code' => 'SW'],
+                ['name' => 'Maintenance', 'code' => 'MAINT'],
+                ['name' => 'Other', 'code' => 'OTHER'],
+            ] as $categoryRow
+        ) {
+            itm_seed_upsert_tickets_lookup_row(
+                $conn,
+                $companyId,
+                'ticket_categories',
+                (string)$categoryRow['name'],
+                ['code' => (string)$categoryRow['code']]
+            );
+        }
+
+        foreach (
+            [
+                ['name' => 'Open', 'color' => '#FF0000', 'is_closed' => 0],
+                ['name' => 'In Progress', 'color' => '#FFA500', 'is_closed' => 0],
+                ['name' => 'Closed', 'color' => '#808080', 'is_closed' => 1],
+            ] as $statusRow
+        ) {
+            itm_seed_upsert_tickets_lookup_row(
+                $conn,
+                $companyId,
+                'ticket_statuses',
+                (string)$statusRow['name'],
+                ['color' => (string)$statusRow['color'], 'is_closed' => (int)$statusRow['is_closed']]
+            );
+        }
+
+        foreach (
+            [
+                ['name' => 'Low', 'level' => 1, 'color' => '#0000FF'],
+                ['name' => 'Normal', 'level' => 2, 'color' => '#00FF00'],
+                ['name' => 'High', 'level' => 3, 'color' => '#FFA500'],
+                ['name' => 'Urgent', 'level' => 4, 'color' => '#FF0000'],
+                ['name' => 'Critical', 'level' => 5, 'color' => '#8B0000'],
+            ] as $priorityRow
+        ) {
+            itm_seed_upsert_tickets_lookup_row(
+                $conn,
+                $companyId,
+                'ticket_priorities',
+                (string)$priorityRow['name'],
+                ['level' => (int)$priorityRow['level'], 'color' => (string)$priorityRow['color']]
+            );
+        }
+    }
+}
+
 if (!function_exists('itm_seed_insert_tickets_sample_row')) {
     /**
      * Why: Generic template/fallback seed fails on empty tenants when created_by_employee_id cannot be remapped.
@@ -1966,6 +2117,7 @@ if (!function_exists('itm_seed_insert_tickets_sample_row')) {
         } elseif (function_exists('itm_seed_lookup_parents_for_table')) {
             itm_seed_lookup_parents_for_table($conn, 'tickets', $companyId);
         }
+        itm_seed_ensure_tickets_lookup_parents($conn, $companyId);
 
         $employeeId = function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')
             ? itm_seed_resolve_tenant_seed_admin_employee_id($conn, $companyId)
@@ -1981,6 +2133,12 @@ if (!function_exists('itm_seed_insert_tickets_sample_row')) {
         }
         $statusId = itm_seed_resolve_tenant_row_id_by_column($conn, 'ticket_statuses', $companyId, 'name', 'Open');
         $priorityId = itm_seed_resolve_tenant_row_id_by_column($conn, 'ticket_priorities', $companyId, 'name', 'Normal');
+        if ($categoryId <= 0 && function_exists('itm_first_tenant_row_id')) {
+            $categoryId = itm_first_tenant_row_id($conn, 'ticket_categories', $companyId);
+        }
+        if ($statusId <= 0 && function_exists('itm_first_tenant_row_id')) {
+            $statusId = itm_first_tenant_row_id($conn, 'ticket_statuses', $companyId);
+        }
         if ($priorityId <= 0 && function_exists('itm_first_tenant_row_id')) {
             $priorityId = itm_first_tenant_row_id($conn, 'ticket_priorities', $companyId);
         }

@@ -140,7 +140,12 @@ function tickets_seed_lookup_parents(mysqli $conn, int $companyId): void
             continue;
         }
 
-        $countRes = mysqli_query($conn, 'SELECT COUNT(*) AS total FROM `' . $parentTable . '` WHERE company_id = ' . (int)$companyId);
+        $countRes = mysqli_query(
+            $conn,
+            'SELECT COUNT(*) AS total FROM `' . $parentTable . '` WHERE company_id = ' . (int)$companyId
+            . (function_exists('itm_table_has_column') && itm_table_has_column($conn, $parentTable, 'deleted_at')
+                ? ' AND deleted_at IS NULL' : '')
+        );
         $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
         if ((int)($countRow['total'] ?? 0) > 0) {
             continue;
@@ -150,6 +155,10 @@ function tickets_seed_lookup_parents(mysqli $conn, int $companyId): void
         if (function_exists('itm_seed_table_from_database_sql')) {
             itm_seed_table_from_database_sql($conn, $parentTable, $companyId, $parentErr);
         }
+    }
+
+    if (function_exists('itm_seed_ensure_tickets_lookup_parents')) {
+        itm_seed_ensure_tickets_lookup_parents($conn, $companyId);
     }
 
     tickets_seed_sample_equipment($conn, $companyId);
