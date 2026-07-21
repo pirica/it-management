@@ -359,7 +359,7 @@ if (!function_exists('itm_seed_insert_events_sample_rows')) {
             $insertSql = 'INSERT INTO `events` (' . implode(',', $targetColumns) . ') VALUES (' . implode(',', $targetValues) . ')';
             $dbErrorCode = 0;
             $dbErrorMessage = '';
-            if (!itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
+            if (itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage) === false) {
                 if (itm_seed_insert_row_is_unique_violation($dbErrorCode, $dbErrorMessage)) {
                     continue;
                 }
@@ -444,9 +444,7 @@ if (!function_exists('itm_seed_ensure_equipment_type_id_by_name')) {
             . (int)$companyId . ", '"
             . mysqli_real_escape_string($conn, $typeName) . "', '"
             . mysqli_real_escape_string($conn, $code) . "', 1)";
-        if (!itm_run_query($conn, $insertSql)) {
-            return 0;
-        }
+        itm_run_query($conn, $insertSql);
 
         return itm_seed_resolve_equipment_type_id_by_name($conn, $companyId, $typeName);
     }
@@ -511,14 +509,8 @@ if (!function_exists('itm_seed_ensure_equipment_status_active_id')) {
 
         $insertSql = "INSERT INTO equipment_statuses (company_id, name, created_at) VALUES ("
             . (int)$companyId . ", 'Active', '2026-01-01 00:00:01')";
-        if (!itm_run_query($conn, $insertSql)) {
-            return 0;
-        }
-
-        $resolvedId = (int)mysqli_insert_id($conn);
-        if ($resolvedId > 0) {
-            return $resolvedId;
-        }
+        // Why: itm_log_audit runs after INSERT — mysqli_insert_id() may be audit_logs.id, not equipment_statuses.id.
+        itm_run_query($conn, $insertSql);
 
         $stmt = mysqli_prepare(
             $conn,
@@ -615,7 +607,7 @@ if (!function_exists('itm_seed_insert_minimal_primary_file_server')) {
         $insertSql = 'INSERT INTO equipment (company_id, equipment_type_id, name, serial_number, model, hostname, ip_address, status_id, purchase_date, purchase_cost, printer_color_capable, printer_scan, active, created_at) VALUES ('
             . (int)$companyId . ', ' . (int)$serverTypeId . ", 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', "
             . (int)$statusId . ", '2026-06-05', 8500.00, 0, 0, 1, '2026-01-01 00:00:01')";
-        if (!itm_run_query($conn, $insertSql)) {
+        if (itm_run_query($conn, $insertSql) === false) {
             return 0;
         }
 
@@ -711,14 +703,8 @@ if (!function_exists('itm_seed_ensure_equipment_rj45_id_by_name')) {
 
         $insertSql = "INSERT INTO equipment_rj45 (company_id, name, created_at) VALUES ("
             . (int)$companyId . ", '" . mysqli_real_escape_string($conn, $rj45Name) . "', '2026-01-01 00:00:01')";
-        if (!itm_run_query($conn, $insertSql)) {
-            return 0;
-        }
-
-        $resolvedId = (int)mysqli_insert_id($conn);
-        if ($resolvedId > 0) {
-            return $resolvedId;
-        }
+        // Why: itm_log_audit runs after INSERT — mysqli_insert_id() may not be equipment_rj45.id.
+        itm_run_query($conn, $insertSql);
 
         $lookupStmt = mysqli_prepare(
             $conn,
@@ -761,7 +747,7 @@ if (!function_exists('itm_seed_ensure_switch_port_type_rj45')) {
         $insertSql = "INSERT INTO switch_port_types (company_id, type) VALUES ("
             . (int)$companyId . ", 'RJ45')";
 
-        return (bool) itm_run_query($conn, $insertSql);
+        return itm_run_query($conn, $insertSql) !== false;
     }
 }
 
@@ -802,21 +788,17 @@ if (!function_exists('itm_seed_ensure_unknown_switch_status_id')) {
         if ($grayColorId <= 0) {
             $insertColorSql = "INSERT INTO cable_colors (company_id, color_name, hex_color, created_at) VALUES ("
                 . (int)$companyId . ", 'Gray', '#808080', '2026-01-01 00:00:01')";
-            if (itm_run_query($conn, $insertColorSql)) {
-                $grayColorId = (int)mysqli_insert_id($conn);
-            }
-            if ($grayColorId <= 0) {
-                $colorStmt = mysqli_prepare(
-                    $conn,
-                    "SELECT id FROM cable_colors WHERE company_id = ? AND LOWER(color_name) = 'gray' ORDER BY id ASC LIMIT 1"
-                );
-                if ($colorStmt) {
-                    mysqli_stmt_bind_param($colorStmt, 'i', $companyId);
-                    mysqli_stmt_execute($colorStmt);
-                    $colorRow = mysqli_fetch_assoc(mysqli_stmt_get_result($colorStmt));
-                    mysqli_stmt_close($colorStmt);
-                    $grayColorId = (int)($colorRow['id'] ?? 0);
-                }
+            itm_run_query($conn, $insertColorSql);
+            $colorStmt = mysqli_prepare(
+                $conn,
+                "SELECT id FROM cable_colors WHERE company_id = ? AND LOWER(color_name) = 'gray' ORDER BY id ASC LIMIT 1"
+            );
+            if ($colorStmt) {
+                mysqli_stmt_bind_param($colorStmt, 'i', $companyId);
+                mysqli_stmt_execute($colorStmt);
+                $colorRow = mysqli_fetch_assoc(mysqli_stmt_get_result($colorStmt));
+                mysqli_stmt_close($colorStmt);
+                $grayColorId = (int)($colorRow['id'] ?? 0);
             }
         }
         if ($grayColorId <= 0) {
@@ -825,14 +807,7 @@ if (!function_exists('itm_seed_ensure_unknown_switch_status_id')) {
 
         $insertStatusSql = 'INSERT INTO switch_status (company_id, status, color_id, created_at) VALUES ('
             . (int)$companyId . ", 'Unknown', " . (int)$grayColorId . ", '2026-01-01 00:00:01')";
-        if (!itm_run_query($conn, $insertStatusSql)) {
-            return 0;
-        }
-
-        $unknownStatusId = (int)mysqli_insert_id($conn);
-        if ($unknownStatusId > 0) {
-            return $unknownStatusId;
-        }
+        itm_run_query($conn, $insertStatusSql);
 
         $statusStmt = mysqli_prepare(
             $conn,
@@ -2294,7 +2269,7 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
             $insertSql = 'INSERT INTO `' . str_replace('`', '``', $tableName) . '` (' . implode(',', $targetColumns) . ') VALUES (' . implode(',', $targetValues) . ')';
             $dbErrorCode = 0;
             $dbErrorMessage = '';
-            if (!itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
+            if (itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage) === false) {
                 if (itm_seed_insert_row_is_unique_violation($dbErrorCode, $dbErrorMessage)) {
                     continue;
                 }

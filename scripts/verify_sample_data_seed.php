@@ -1,7 +1,23 @@
 <?php
-define('ITM_CLI_SCRIPT', true);
+/**
+ * Regression: sample data seed helpers stamp arbitrary tenant companies.
+ *
+ * CLI: php scripts/verify_sample_data_seed.php
+ * Browser (Admin): scripts/verify_sample_data_seed.php
+ */
+
+$vssIsCli = PHP_SAPI === 'cli';
+
+if ($vssIsCli && !defined('ITM_CLI_SCRIPT')) {
+    define('ITM_CLI_SCRIPT', true);
+}
+
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+
+if (!$vssIsCli) {
+    itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
+}
 
 itm_script_output_begin();
 
@@ -13,14 +29,19 @@ if (!$conn instanceof mysqli) {
     exit(1);
 }
 
+function vss_sync_seed_audit_context(mysqli $conn): void
+{
+    // Why: Disposable browser sessions and itm_log_audit can leave @app_* stale; seed inserts use DB audit triggers.
+    mysqli_query($conn, 'SET @app_company_id = 1');
+    mysqli_query($conn, 'SET @app_employee_id = 1');
+}
+
 /**
  * @return int Company id or 0
  */
 function vss_create_disposable_company(mysqli $conn, string $label): int
 {
-    // Why: companies INSERT audit trigger requires a valid @app_company_id before the new row exists.
-    mysqli_query($conn, 'SET @app_company_id = 1');
-    mysqli_query($conn, 'SET @app_employee_id = 1');
+    vss_sync_seed_audit_context($conn);
 
     $companyName = 'SampleSeedVerify-' . $label . '-' . bin2hex(random_bytes(4));
     $incode = strtoupper(substr(md5($companyName), 0, 6));
@@ -269,6 +290,7 @@ if ($companyD <= 0) {
         vss_purge_company_table($conn, $purgeTable, $companyD);
     }
 
+    vss_sync_seed_audit_context($conn);
     $seedErr = '';
     $portsInserted = itm_seed_table_from_database_sql($conn, 'switch_ports', $companyD, $seedErr);
     $switchId = function_exists('itm_seed_find_switch_equipment_id')
@@ -298,6 +320,7 @@ if ($companyE <= 0) {
         vss_purge_company_table($conn, $purgeTable, $companyE);
     }
 
+    vss_sync_seed_audit_context($conn);
     $seedErr = '';
     $equipInserted = itm_seed_table_from_database_sql($conn, 'equipment', $companyE, $seedErr);
     $serverId = function_exists('itm_seed_find_server_equipment_id')
