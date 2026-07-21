@@ -1458,6 +1458,133 @@ if (!function_exists('itm_seed_fill_scalar_fallback_value')) {
     }
 }
 
+if (!function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
+    /**
+     * Why: Per-tenant UI defaults and similar seeds must bind to that company's seed Admin, not a cross-company session employee.
+     */
+    function itm_seed_resolve_tenant_seed_admin_employee_id(mysqli $conn, int $companyId): int
+    {
+        if ($companyId <= 0) {
+            return 0;
+        }
+
+        $username = $companyId === 1 ? 'Admin' : ('Admin' . $companyId);
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM employees WHERE company_id = ? AND username = ? AND deleted_at IS NULL LIMIT 1'
+        );
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'is', $companyId, $username);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            $row = ($res && ($fetched = mysqli_fetch_assoc($res))) ? $fetched : null;
+            mysqli_stmt_close($stmt);
+            if ($row && (int)($row['id'] ?? 0) > 0) {
+                return (int)$row['id'];
+            }
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            "SELECT id FROM employees WHERE company_id = ? AND work_email LIKE 'admin@techcorp.example%.com' AND deleted_at IS NULL ORDER BY id ASC LIMIT 1"
+        );
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $companyId);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            $row = ($res && ($fetched = mysqli_fetch_assoc($res))) ? $fetched : null;
+            mysqli_stmt_close($stmt);
+            if ($row && (int)($row['id'] ?? 0) > 0) {
+                return (int)$row['id'];
+            }
+        }
+
+        $sessionEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
+        if ($sessionEmployeeId > 0) {
+            $stmt = mysqli_prepare(
+                $conn,
+                'SELECT id FROM employees WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1'
+            );
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'ii', $sessionEmployeeId, $companyId);
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+                $row = ($res && ($fetched = mysqli_fetch_assoc($res))) ? $fetched : null;
+                mysqli_stmt_close($stmt);
+                if ($row && (int)($row['id'] ?? 0) > 0) {
+                    return (int)$row['id'];
+                }
+            }
+        }
+
+        if (function_exists('itm_first_tenant_row_id')) {
+            return (int)itm_first_tenant_row_id($conn, 'employees', $companyId);
+        }
+
+        return 0;
+    }
+}
+
+if (!function_exists('itm_seed_insert_ui_configuration_sample_row')) {
+    /**
+     * Why: ui_configuration has no 02_data_sample.sql rows; generic fallback cannot resolve employee_id or varchar defaults.
+     */
+    function itm_seed_insert_ui_configuration_sample_row(mysqli $conn, int $companyId, &$error = ''): int
+    {
+        $error = '';
+        if ($companyId <= 0) {
+            $error = 'A company must be selected before adding sample data.';
+            return 0;
+        }
+
+        if (function_exists('itm_seed_tenant_row_count') && itm_seed_tenant_row_count($conn, 'ui_configuration', $companyId) > 0) {
+            return 0;
+        }
+
+        $employeeId = itm_seed_resolve_tenant_seed_admin_employee_id($conn, $companyId);
+        if ($employeeId <= 0) {
+            $error = 'Could not resolve tenant Admin employee for ui_configuration sample. Ensure this company has at least one employee.';
+            return 0;
+        }
+
+        $appName = '⚙️ IT Controls';
+        $faviconPath = 'images/favicons/company_' . $companyId . '.ico';
+        $equipmentVisibility = '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}';
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO ui_configuration (
+                company_id, employee_id, table_actions_position, new_button_position,
+                export_buttons_position, back_save_position, enable_all_error_reporting,
+                enable_audit_logs, enable_chatbot, enable_auto_scaffolding, records_per_page,
+                app_name, favicon_path, equipment_type_sidebar_visibility, active
+            ) VALUES (?, ?, \'left\', \'left\', \'left\', \'left\', 1, 1, 1, 0, \'25\', ?, ?, ?, 1)'
+        );
+        if (!$stmt) {
+            $error = 'Could not prepare ui_configuration sample insert.';
+            return 0;
+        }
+
+        mysqli_stmt_bind_param($stmt, 'iisss', $companyId, $employeeId, $appName, $faviconPath, $equipmentVisibility);
+        if (!mysqli_stmt_execute($stmt)) {
+            $dbErrorCode = (int)mysqli_errno($conn);
+            $dbErrorMessage = (string)mysqli_error($conn);
+            mysqli_stmt_close($stmt);
+            if (function_exists('itm_seed_insert_row_is_unique_violation')
+                && itm_seed_insert_row_is_unique_violation($dbErrorCode, $dbErrorMessage)) {
+                return 0;
+            }
+            $error = function_exists('itm_format_db_constraint_error')
+                ? itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage)
+                : 'Could not insert ui_configuration sample row.';
+            return 0;
+        }
+        mysqli_stmt_close($stmt);
+
+        return 1;
+    }
+}
+
 if (!function_exists('itm_seed_resolve_alerts_sample_created_by')) {
     /**
      * Why: Sample alerts must have a creator stamp; session employee preferred, else first tenant employee.
@@ -1468,8 +1595,8 @@ if (!function_exists('itm_seed_resolve_alerts_sample_created_by')) {
         if ($employeeId > 0) {
             return $employeeId;
         }
-        if ($companyId > 0 && function_exists('itm_first_tenant_row_id')) {
-            return (int)itm_first_tenant_row_id($conn, 'employees', $companyId);
+        if (function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
+            return itm_seed_resolve_tenant_seed_admin_employee_id($conn, $companyId);
         }
 
         return 0;
@@ -1567,7 +1694,9 @@ if (!function_exists('itm_seed_insert_random_fallback_row')) {
                 }
                 $refTable = (string)($fkMap[$name]['REFERENCED_TABLE_NAME'] ?? '');
                 $fkId = 0;
-                if ($refTable !== '' && function_exists('itm_first_tenant_row_id')) {
+                if ($refTable === 'employees' && function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
+                    $fkId = itm_seed_resolve_tenant_seed_admin_employee_id($conn, $companyId);
+                } elseif ($refTable !== '' && function_exists('itm_first_tenant_row_id')) {
                     $fkId = itm_first_tenant_row_id($conn, $refTable, $companyId);
                 }
                 if ($fkId <= 0 && $refTable !== '' && $tableName !== 'backup_tape_log') {
@@ -2135,6 +2264,10 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
 
         if ($tableName === 'idf_links') {
             return itm_seed_insert_idf_links_sample_rows($conn, $companyId, $error);
+        }
+
+        if ($tableName === 'ui_configuration') {
+            return itm_seed_insert_ui_configuration_sample_row($conn, $companyId, $error);
         }
 
         itm_seed_lookup_parents_for_table($conn, $tableName, $companyId);
