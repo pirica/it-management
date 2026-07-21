@@ -97,7 +97,7 @@ $capableCountRes = $conn->query(
 );
 $capableCount = ($capableCountRes && ($capRow = $capableCountRes->fetch_assoc())) ? (int)($capRow['cnt'] ?? 0) : 0;
 if ($capableCount < 1) {
-    module_share_verify_fail('notes should have at least one enabled company_module_share row — re-import db/ or run company_module_share_capable_seed.sql.');
+    module_share_verify_fail('notes should have at least one enabled company_module_share row — re-import db/ or run php scripts/apply_new_company_module_share_capable_seed.php --apply (or db/migrations/company_module_share_capable_seed.sql).');
     $failures++;
 } else {
     module_share_verify_pass('notes has enabled company_module_share row(s) in DB.');

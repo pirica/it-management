@@ -60,7 +60,7 @@ Maintenance bulk-wiring: `php scripts/apply_crud_record_share_modules.php --appl
 
 Fresh import: `db/02_data.sql` seeds `company_module_share` for all capable slugs × active companies.
 
-Existing databases: `db/migrations/company_module_share_capable_seed.sql`
+Existing databases: `db/migrations/company_module_share_capable_seed.sql` or `php scripts/apply_new_company_module_share_capable_seed.php --apply` (optional `--company=N` for one tenant). Dry-run default.
 
 ## Regression
 
