@@ -23,6 +23,7 @@ if (!function_exists('itm_sample_data_prerequisite_map')) {
             'tickets' => ['ticket_categories', 'ticket_statuses', 'ticket_priorities', 'equipment'],
             'forecast_revisions' => ['cost_centers', 'gl_accounts', 'forecast_revisions_status'],
             'approvals' => ['forecast_revisions', 'approvals_stage'],
+            'role_module_permissions' => ['employee_roles'],
             'emails' => ['email_smtp_configurations'],
             'events' => ['event_categories'],
             'note_labels' => ['notes'],
@@ -121,6 +122,169 @@ if (!function_exists('itm_seed_resolve_tenant_row_id_by_column')) {
         mysqli_stmt_close($stmt);
 
         return is_array($row) ? (int)($row['id'] ?? 0) : 0;
+    }
+}
+
+if (!function_exists('itm_seed_resolve_tenant_admin_role_id')) {
+    /**
+     * Why: RBAC sample rows bind to the tenant Admin role (ALL wildcard) when present.
+     */
+    function itm_seed_resolve_tenant_admin_role_id(mysqli $conn, int $companyId): int
+    {
+        if ($companyId <= 0) {
+            return 0;
+        }
+
+        $roleId = itm_seed_resolve_tenant_row_id_by_column($conn, 'employee_roles', $companyId, 'name', 'Admin');
+        if ($roleId > 0) {
+            return $roleId;
+        }
+
+        return 0;
+    }
+}
+
+if (!function_exists('itm_seed_ensure_tenant_employee_roles_for_rbac')) {
+    /**
+     * Why: role_module_permissions requires employee_roles rows; sample SQL omits Admin on some tenants.
+     */
+    function itm_seed_ensure_tenant_employee_roles_for_rbac(mysqli $conn, int $companyId, &$error = ''): bool
+    {
+        $error = '';
+        if ($companyId <= 0) {
+            $error = 'A company must be selected before adding sample data.';
+            return false;
+        }
+
+        if (function_exists('itm_seed_tenant_row_count')
+            && itm_seed_tenant_row_count($conn, 'employee_roles', $companyId) === 0
+            && function_exists('itm_seed_table_from_database_sql')) {
+            $seedErr = '';
+            itm_seed_table_from_database_sql($conn, 'employee_roles', $companyId, $seedErr);
+        }
+
+        if (itm_seed_resolve_tenant_admin_role_id($conn, $companyId) > 0) {
+            return true;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO employee_roles (company_id, name, active) VALUES (?, \'Admin\', 1)'
+        );
+        if (!$stmt) {
+            $error = 'Could not prepare Admin role for RBAC sample data.';
+            return false;
+        }
+
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        if (!mysqli_stmt_execute($stmt)) {
+            $dbErrorCode = (int)mysqli_errno($conn);
+            $dbErrorMessage = (string)mysqli_error($conn);
+            mysqli_stmt_close($stmt);
+            if (function_exists('itm_seed_insert_row_is_unique_violation')
+                && itm_seed_insert_row_is_unique_violation($dbErrorCode, $dbErrorMessage)) {
+                return itm_seed_resolve_tenant_admin_role_id($conn, $companyId) > 0;
+            }
+            $error = function_exists('itm_format_db_constraint_error')
+                ? itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage)
+                : 'Could not create Admin role for RBAC sample data.';
+            return false;
+        }
+        mysqli_stmt_close($stmt);
+
+        return itm_seed_resolve_tenant_admin_role_id($conn, $companyId) > 0;
+    }
+}
+
+if (!function_exists('itm_seed_insert_role_module_permissions_sample_rows')) {
+    /**
+     * Why: No role_module_permissions rows in db/02_data_sample.sql; generic fallback cannot resolve role_id.
+     */
+    function itm_seed_insert_role_module_permissions_sample_rows(mysqli $conn, int $companyId, &$error = ''): int
+    {
+        $error = '';
+        if ($companyId <= 0) {
+            $error = 'A company must be selected before adding sample data.';
+            return 0;
+        }
+
+        if (function_exists('itm_seed_tenant_row_count')
+            && itm_seed_tenant_row_count($conn, 'role_module_permissions', $companyId) > 0) {
+            return 0;
+        }
+
+        if (!itm_seed_ensure_tenant_employee_roles_for_rbac($conn, $companyId, $error)) {
+            return 0;
+        }
+
+        $sampleRows = [
+            ['Admin', 'ALL'],
+            ['Helpdesk', 'Tickets'],
+            ['User', 'Tickets'],
+        ];
+
+        $insertCount = 0;
+        foreach ($sampleRows as $sampleRow) {
+            $roleName = (string)($sampleRow[0] ?? '');
+            $moduleName = (string)($sampleRow[1] ?? '');
+            if ($roleName === '' || $moduleName === '') {
+                continue;
+            }
+
+            $roleId = itm_seed_resolve_tenant_row_id_by_column($conn, 'employee_roles', $companyId, 'name', $roleName);
+            if ($roleId <= 0) {
+                continue;
+            }
+
+            $existsStmt = mysqli_prepare(
+                $conn,
+                'SELECT id FROM role_module_permissions WHERE company_id = ? AND role_id = ? AND module_name = ? AND deleted_at IS NULL LIMIT 1'
+            );
+            if ($existsStmt) {
+                mysqli_stmt_bind_param($existsStmt, 'iis', $companyId, $roleId, $moduleName);
+                mysqli_stmt_execute($existsStmt);
+                $existsRes = mysqli_stmt_get_result($existsStmt);
+                $existsRow = ($existsRes && ($fetched = mysqli_fetch_assoc($existsRes))) ? $fetched : null;
+                mysqli_stmt_close($existsStmt);
+                if ($existsRow) {
+                    continue;
+                }
+            }
+
+            $insertStmt = mysqli_prepare(
+                $conn,
+                'INSERT INTO role_module_permissions (
+                    company_id, role_id, module_name, can_view, can_create, can_edit, can_delete, can_import, can_export, active
+                ) VALUES (?, ?, ?, 1, 1, 1, 1, 1, 1, 1)'
+            );
+            if (!$insertStmt) {
+                continue;
+            }
+
+            mysqli_stmt_bind_param($insertStmt, 'iis', $companyId, $roleId, $moduleName);
+            if (!mysqli_stmt_execute($insertStmt)) {
+                $dbErrorCode = (int)mysqli_errno($conn);
+                $dbErrorMessage = (string)mysqli_error($conn);
+                mysqli_stmt_close($insertStmt);
+                if (function_exists('itm_seed_insert_row_is_unique_violation')
+                    && itm_seed_insert_row_is_unique_violation($dbErrorCode, $dbErrorMessage)) {
+                    continue;
+                }
+                $error = function_exists('itm_format_db_constraint_error')
+                    ? itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage)
+                    : 'Could not insert role_module_permissions sample row.';
+                return $insertCount;
+            }
+            mysqli_stmt_close($insertStmt);
+            $insertCount++;
+        }
+
+        if ($insertCount <= 0) {
+            $error = 'Could not insert role_module_permissions sample rows. Ensure this company has Admin, Helpdesk, and User roles.';
+            return 0;
+        }
+
+        return $insertCount;
     }
 }
 
@@ -1820,6 +1984,11 @@ if (!function_exists('itm_seed_insert_random_fallback_row')) {
                 $fkId = 0;
                 if ($refTable === 'employees' && function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
                     $fkId = itm_seed_resolve_tenant_seed_admin_employee_id($conn, $companyId);
+                } elseif ($refTable === 'employee_roles' && $name === 'role_id' && function_exists('itm_seed_resolve_tenant_admin_role_id')) {
+                    $fkId = itm_seed_resolve_tenant_admin_role_id($conn, $companyId);
+                    if ($fkId <= 0 && function_exists('itm_first_tenant_row_id')) {
+                        $fkId = itm_first_tenant_row_id($conn, $refTable, $companyId);
+                    }
                 } elseif ($refTable !== '' && function_exists('itm_first_tenant_row_id')) {
                     $fkId = itm_first_tenant_row_id($conn, $refTable, $companyId);
                 }
@@ -2400,6 +2569,10 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
 
         if ($tableName === 'ui_configuration') {
             return itm_seed_insert_ui_configuration_sample_row($conn, $companyId, $error);
+        }
+
+        if ($tableName === 'role_module_permissions') {
+            return itm_seed_insert_role_module_permissions_sample_rows($conn, $companyId, $error);
         }
 
         itm_seed_lookup_parents_for_table($conn, $tableName, $companyId);

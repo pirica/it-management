@@ -12,6 +12,7 @@ Granular RBAC: view/create/edit/delete/import/export per module and role.
 ## 4. Business Rules (Critical for Agents)
 - **Unique constraint:** one permission set per company + role + module name.
 - **`ALL` module name:** global permissions for a role when module name is `ALL`.
+- **Add sample data (empty table):** `itm_seed_insert_role_module_permissions_sample_rows()` mirrors fresh-import seeds (`Admin` → `ALL`, `Helpdesk`/`User` → `Tickets`) after **`itm_seed_ensure_tenant_employee_roles_for_rbac()`** seeds/creates tenant `employee_roles` (including `Admin` when missing). No generic fallback for `role_id`.
 
 ## 5. UI Behavior Requirements
 - **View audit meta:** Detail view loops `$viewColumns` (or equivalent field list including all six audit meta columns) and renders values through `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract.
