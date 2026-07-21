@@ -201,8 +201,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $company = $companyRes ? mysqli_fetch_assoc($companyRes) : null;
                     mysqli_stmt_close($companyStmt);
                     if ($company) {
-                        $_SESSION['company_id'] = (int)$company['id'];
-                        $_SESSION['company_name'] = (string)$company['company'];
+                        $initialCompanyId = (int)$company['id'];
+                        // Why: First alphabetical company may not be the login employee's home tenant; remap Admin context (email/username) like dashboard switcher.
+                        if (function_exists('itm_switch_active_company_session')) {
+                            itm_switch_active_company_session($conn, $employeeId, $initialCompanyId, true);
+                        } else {
+                            $_SESSION['company_id'] = $initialCompanyId;
+                            $_SESSION['company_name'] = (string)$company['company'];
+                        }
                     }
                 }
                 header('Location: dashboard.php');

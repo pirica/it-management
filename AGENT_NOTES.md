@@ -9,7 +9,7 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 - **Architecture**: No Composer, No NPM. Use `config/config.php` for environment setup.
 - **API rate limits**: **Free** tier — unlimited, **no API key**, **session required** (`company_id` + `employee_id` in `PHPSESSID`). **Paid** tiers — hourly caps, API key required. See `AGENTS.md` → **API keys and rate limits (mandatory)** and `includes/itm_api_rate_limit.php`.
 - **`db/` hygiene**: No executable `ALTER TABLE` — define indexes/FKs on `CREATE TABLE`. Multi-company seed admins use tenant-correct role/access/status lookups; see `AGENTS.md` → **Database & Schema Rules**. Edit `db/01_schema.sql`, `db/02_data.sql`, and `db/03_triggers.sql` directly.
-- **Login session rotation:** `login.php` calls `session_regenerate_id(true)` after successful password verification and before writing auth fields into `$_SESSION` (mitigates session fixation).
+- **Login session rotation:** `login.php` calls `session_regenerate_id(true)` after successful password verification and before writing auth fields into `$_SESSION` (mitigates session fixation). Admin success path also calls `itm_switch_active_company_session()` for the first active company so session `email` / `username` match that tenant's seed Admin when it is not the login employee's home company.
 - **Entry pages / errors:** root `index.php` must not force `display_errors`; error visibility comes from `config/config.php` via `enable_all_error_reporting`.
 
 ## 10. Common Pitfalls
@@ -31,9 +31,9 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 
 ## 7. File Structure (high level)
 - **config/**, **includes/**, **modules/**, **scripts/** — application code.
-- **login.php** — authentication; regenerates the session id on success.
+- **login.php** — authentication; regenerates the session id on success; Admin login calls `itm_switch_active_company_session()` for the initial company so welcome email/username match the tenant (not only after manual company switch).
 - **index.php** — company selection after login (no forced error display).
-- **dashboard.php** — landing stats: row 1 module totals (Equipment, Tickets, Employees) exclude soft-deleted rows; row 2 **Active** / **On Leave** via `itm_employee_count_by_employment_status_name()` (`company_id` + resolved `employment_status_id` + `deleted_at IS NULL`); **Online now** via session presence; welcome uses session `company_name` + `username` / `email` (cross-tenant Admin switches remap context employee via `itm_switch_active_company_session()` while `login_employee_id` stays the signed-in user); company switch uses `itm_is_admin()` + `employee_companies` grants. Distinct from Roles & Permissions sidebar **N active** counts per role. Regression: `php scripts/verify_dashboard_active_employees.php`.
+- **dashboard.php** — landing stats: row 1 module totals (Equipment, Tickets, Employees) exclude soft-deleted rows; row 2 **Active** / **On Leave** via `itm_employee_count_by_employment_status_name()` (`company_id` + resolved `employment_status_id` + `deleted_at IS NULL`); **Online now** via session presence; welcome uses session `company_name` + `username` / `email` (cross-tenant Admin context via `itm_switch_active_company_session()` on login and company switch; `login_employee_id` stays the signed-in user); company switch uses `itm_is_admin()` + `employee_companies` grants. Distinct from Roles & Permissions sidebar **N active** counts per role. Regression: `php scripts/verify_dashboard_active_employees.php`.
 - **css/styles.css** — global stylesheet with responsive breakpoints and shared layout utilities (see **`css/AGENT_NOTES.md`**).
 - **phpunit/** — PHPUnit PHAR, `phpunit.xml`, and `tests/` tree. Runner: **`scripts/run_tests.php`**; coverage report: **`phpunit/coverage/html/coverage.html`**. See **`phpunit/AGENT_NOTES.md`** and **`scripts/SCRIPTS.md` → PHPUnit test runner**.
 
