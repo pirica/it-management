@@ -200,6 +200,11 @@ if (!function_exists('has_module_access')) {
         if ($initialized_company !== $company_id || $forceRefresh) {
             itm_module_access_shared_static_cache('clear', $company_id);
 
+            // Why: Partial DB imports can leave registry rows without company_module_access pairs; auto-backfill enabled=1 once per company per request.
+            if (function_exists('itm_ensure_company_module_access_for_company')) {
+                itm_ensure_company_module_access_for_company($conn, $company_id);
+            }
+
             // Why: Ensure icon columns exist before attempting to fetch them in the batch query.
             itm_ensure_module_access_icon_columns($conn);
 
@@ -971,6 +976,50 @@ if (!function_exists('itm_sync_modules_registry_from_filesystem')) {
             'total' => count(itm_discover_module_slugs_for_registry()),
             'access_seeded' => itm_seed_company_module_access_all($conn),
         ];
+    }
+}
+
+if (!function_exists('itm_ensure_company_module_access_for_company')) {
+    /**
+     * Backfill missing company_module_access rows (enabled=1) for one tenant when registry coverage is incomplete.
+     *
+     * @return int Rows inserted via INSERT IGNORE (0 when already complete)
+     */
+    function itm_ensure_company_module_access_for_company($conn, $company_id)
+    {
+        static $ensuredCompanyIds = [];
+
+        $company_id = (int)$company_id;
+        if ($company_id <= 0 || !$conn instanceof mysqli
+            || !itm_module_access_table_exists($conn, 'modules_registry')
+            || !itm_module_access_table_exists($conn, 'company_module_access')) {
+            return 0;
+        }
+        if (isset($ensuredCompanyIds[$company_id])) {
+            return 0;
+        }
+        $ensuredCompanyIds[$company_id] = true;
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT COUNT(*) AS missing
+             FROM modules_registry mr
+             LEFT JOIN company_module_access cma ON cma.module_id = mr.id AND cma.company_id = ?
+             WHERE cma.id IS NULL'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $company_id);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        if ((int)($row['missing'] ?? 0) <= 0) {
+            return 0;
+        }
+
+        return itm_seed_company_module_access_for_company($conn, $company_id);
     }
 }
 
