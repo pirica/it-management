@@ -674,13 +674,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         exit;
     }
 
-    $where = ' WHERE company_id=' . (int)$company_id;
-    $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where;
-    $countResult = mysqli_query($conn, $countSql);
-    $existingRows = 0;
-    if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
-        $existingRows = (int)($countRow['total_rows'] ?? 0);
-    }
+    $existingRows = function_exists('itm_seed_tenant_row_count')
+        ? itm_seed_tenant_row_count($conn, $crud_table, (int)$company_id)
+        : 0;
 
     if ($existingRows > 0) {
         $_SESSION['crud_error'] = 'Sample data can only be added when no records exist.';
@@ -877,6 +873,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 }
 
 // FETCH LIST DATA (Pagination, Search, and Sort)
+$tenantLiveRowCount = 0;
+if ($hasCompany && $company_id > 0 && function_exists('itm_seed_tenant_row_count')) {
+    $tenantLiveRowCount = itm_seed_tenant_row_count($conn, $crud_table, (int)$company_id);
+}
+
 $where = '';
 if ($hasCompany && $company_id > 0) { $where = ' WHERE company_id=' . (int)$company_id; }
 if (function_exists('itm_crud_append_not_deleted_predicate')) {
@@ -1105,7 +1106,7 @@ if (!isset($crud_title)) {
                     </table>
                 </div>
 
-                <?php if ($hasCompany && $company_id > 0 && $totalRows === 0): ?>
+                <?php if ($hasCompany && $company_id > 0 && $tenantLiveRowCount === 0): ?>
                     <div class="card" style="margin-top:12px;">
                         <form method="POST" style="display:flex;justify-content:center;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
