@@ -13,19 +13,35 @@ if (!function_exists('itm_enforce_maintenance_script_admin_browser')) {
             return;
         }
 
-        $employeeId = (int)($_SESSION['employee_id'] ?? 0);
-        if ($employeeId <= 0 || (int)($_SESSION['company_id'] ?? 0) <= 0) {
+        if (!($conn instanceof mysqli)) {
+            http_response_code(500);
+            header('Content-Type: text/plain; charset=utf-8');
+            echo 'Database connection is required.';
+            exit;
+        }
+
+        // Why: scripts/* browser isolation swaps to a disposable test employee — honor the real signed-in Admin too.
+        if (function_exists('itm_script_session_or_authorization_is_admin')
+            && itm_script_session_or_authorization_is_admin($conn)) {
+            return;
+        }
+
+        $sessionEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
+        $sessionCompanyId = (int)($_SESSION['company_id'] ?? 0);
+        $authorizationEmployeeId = function_exists('itm_script_get_browser_authorization_employee_id')
+            ? itm_script_get_browser_authorization_employee_id()
+            : 0;
+
+        if ($sessionEmployeeId <= 0 && $sessionCompanyId <= 0 && $authorizationEmployeeId <= 0) {
             http_response_code(401);
             header('Content-Type: text/plain; charset=utf-8');
             echo 'Login required. Sign in as an administrator, then open this script again.';
             exit;
         }
 
-        if (!function_exists('itm_is_admin') || !itm_is_admin($conn, $employeeId)) {
-            http_response_code(403);
-            header('Content-Type: text/plain; charset=utf-8');
-            echo 'Forbidden: administrator access required.';
-            exit;
-        }
+        http_response_code(403);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Forbidden: administrator access required.';
+        exit;
     }
 }
