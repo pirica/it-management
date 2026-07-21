@@ -18,6 +18,7 @@ Manages individual ports on a switch device, tracking connectivity, VLANs, and s
 - **Wrapper routing:** `create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php` may set `$crud_action` before requiring `index.php` — **do not overwrite** wrapper-provided `$crud_action` in `index.php`.
 - **Port Sorting:** UI sorts RJ45 before other types via CASE in ORDER BY.
 - **Foreign Key Mapping:** AJAX handlers map empty/0 IDs to NULL.
+- **Add sample data:** `index.php` POST `add_sample_data` calls `itm_seed_table_from_database_sql('switch_ports')`, which ensures **Core Switch** equipment (`equipment_rj45` **24 ports**) and inserts **24 RJ45** `switch_ports` rows (Unknown status, Gray cable colour) — not the single stale template row from `02_data_sample.sql`.
 
 ## 5. UI Behavior Requirements
 - **View audit meta:** Detail view loops `$viewColumns` (or equivalent field list including all six audit meta columns) and renders values through `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`). List/index hide audit meta per soft-delete contract.
