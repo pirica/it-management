@@ -175,10 +175,97 @@ if (!function_exists('itm_seed_insert_random_fallback_row')) {
     }
 }
 
+// backup_tape_log: ensure Server equipment exists (re-type wrong-type row or minimal insert).
+$companyC = vss_create_disposable_company($conn, 'C');
+if ($companyC <= 0) {
+    echo '[FAIL] Could not create disposable company C for backup_tape_log.' . $nl;
+    $failures++;
+} else {
+    $disposableIds[] = $companyC;
+    foreach (['backup_tape_log', 'equipment', 'equipment_types', 'equipment_statuses'] as $purgeTable) {
+        vss_purge_company_table($conn, $purgeTable, $companyC);
+    }
+
+    $switchTypeId = 0;
+    $switchStmt = mysqli_prepare(
+        $conn,
+        "INSERT INTO equipment_types (company_id, name, code, active) VALUES (?, 'Switch', 'SW', 1)"
+    );
+    if ($switchStmt) {
+        mysqli_stmt_bind_param($switchStmt, 'i', $companyC);
+        mysqli_stmt_execute($switchStmt);
+        $switchTypeId = (int)mysqli_insert_id($conn);
+        mysqli_stmt_close($switchStmt);
+    }
+
+    $statusId = 0;
+    $statusStmt = mysqli_prepare(
+        $conn,
+        "INSERT INTO equipment_statuses (company_id, name, created_at) VALUES (?, 'Active', '2026-01-01 00:00:01')"
+    );
+    if ($statusStmt) {
+        mysqli_stmt_bind_param($statusStmt, 'i', $companyC);
+        mysqli_stmt_execute($statusStmt);
+        $statusId = (int)mysqli_insert_id($conn);
+        mysqli_stmt_close($statusStmt);
+    }
+
+    if ($switchTypeId <= 0 || $statusId <= 0) {
+        echo '[FAIL] Could not seed equipment lookup rows for backup_tape_log test company C.' . $nl;
+        $failures++;
+    } else {
+        $equipStmt = mysqli_prepare(
+            $conn,
+            "INSERT INTO equipment (company_id, equipment_type_id, name, hostname, status_id, active) VALUES (?, ?, 'Primary File Server', 'srv-wrong-type', ?, 1)"
+        );
+        if ($equipStmt) {
+            mysqli_stmt_bind_param($equipStmt, 'iii', $companyC, $switchTypeId, $statusId);
+            mysqli_stmt_execute($equipStmt);
+            mysqli_stmt_close($equipStmt);
+        }
+
+        $seedErr = '';
+        $btlInserted = itm_seed_table_from_database_sql($conn, 'backup_tape_log', $companyC, $seedErr);
+        $serverId = function_exists('itm_seed_find_server_equipment_id')
+            ? itm_seed_find_server_equipment_id($conn, $companyC)
+            : 0;
+
+        if ($btlInserted < 1 || $serverId <= 0) {
+            echo '[FAIL] backup_tape_log seed for company C (' . $companyC . '): inserted=' . $btlInserted
+                . ' server_id=' . $serverId . ' err=' . $seedErr . $nl;
+            $failures++;
+        } else {
+            $today = date('Y-m-d');
+            $dateStmt = mysqli_prepare(
+                $conn,
+                'SELECT log_date FROM backup_tape_log WHERE company_id = ? AND server_id = ? LIMIT 1'
+            );
+            $logDate = '';
+            if ($dateStmt) {
+                mysqli_stmt_bind_param($dateStmt, 'ii', $companyC, $serverId);
+                mysqli_stmt_execute($dateStmt);
+                $dateRow = mysqli_fetch_assoc(mysqli_stmt_get_result($dateStmt));
+                mysqli_stmt_close($dateStmt);
+                $logDate = (string)($dateRow['log_date'] ?? '');
+            }
+            if ($logDate !== $today) {
+                echo '[FAIL] backup_tape_log sample log_date expected ' . $today . ', got ' . $logDate . $nl;
+                $failures++;
+            } else {
+                echo '[PASS] backup_tape_log seeded Server equipment and today row for company C (' . $companyC . ').' . $nl;
+            }
+        }
+    }
+}
+
 foreach ($disposableIds as $disposeId) {
     vss_purge_company_table($conn, 'workstation_ram', $disposeId);
     vss_purge_company_table($conn, 'employee_positions', $disposeId);
     vss_purge_company_table($conn, 'departments', $disposeId);
+    vss_purge_company_table($conn, 'backup_tape_log', $disposeId);
+    vss_purge_company_table($conn, 'equipment', $disposeId);
+    vss_purge_company_table($conn, 'equipment_types', $disposeId);
+    vss_purge_company_table($conn, 'equipment_statuses', $disposeId);
     vss_purge_company_table($conn, $fallbackTable, $disposeId);
     vss_delete_company($conn, $disposeId);
 }
