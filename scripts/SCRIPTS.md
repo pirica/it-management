@@ -716,7 +716,7 @@ Full-module browser QA runs HTTP session checks across the five seeded companies
 * `scripts/idfs_sync_human_test.php` (creates temporary equipment/switch/idf rows for end-to-end sync checks).
 * `scripts/auth_register_reset_human_test.php` (creates disposable invitations and script-test employees for auth flows).
 * `scripts/tickets_related_equipment_delete_test.php` (seeds sample ticket rows from `db/01_schema.sql`).
-* `scripts/verify_tickets_sample_data.php` (empty-tenant tickets **Add sample data** — `TCK-0001`, active list visibility, no local employees).
+* `scripts/verify_tickets_sample_data.php` (empty-tenant tickets **Add sample data** — `TCK-0001`, active list visibility, no local employees, stale session `@app_company_id`).
 
 **Script that dumps seed SQL (no DB writes):**
 
