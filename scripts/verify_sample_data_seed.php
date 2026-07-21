@@ -64,49 +64,6 @@ function vss_delete_company(mysqli $conn, int $companyId): void
     mysqli_stmt_close($stmt);
 }
 
-/**
- * Tables with company_id but no parsed rows in db/02_data_sample.sql (fallback path).
- *
- * @return array<int, string>
- */
-function vss_fallback_candidate_tables(): array
-{
-    return [
-        'gl_accounts',
-        'expenses',
-        'license_management',
-        'annual_budgets',
-    ];
-}
-
-function vss_table_has_sample_template(string $tableName): bool
-{
-    if (!function_exists('itm_database_sql_read_sample') || !function_exists('itm_parse_database_sql_inserts')) {
-        return false;
-    }
-
-    $parsed = itm_parse_database_sql_inserts(itm_database_sql_read_sample(), $tableName);
-
-    return !empty($parsed[$tableName]);
-}
-
-/**
- * @return string Empty when no suitable table found.
- */
-function vss_resolve_fallback_test_table(): string
-{
-    foreach (vss_fallback_candidate_tables() as $tableName) {
-        if (!itm_is_safe_identifier($tableName)) {
-            continue;
-        }
-        if (!vss_table_has_sample_template($tableName)) {
-            return $tableName;
-        }
-    }
-
-    return '';
-}
-
 $disposableIds = [];
 $companyA = vss_create_disposable_company($conn, 'A');
 $companyB = vss_create_disposable_company($conn, 'B');
@@ -190,15 +147,15 @@ if ($positionInserted < 1) {
     }
 }
 
-// Random fallback when no template exists in db/02_data_sample.sql (gl_accounts has no VALUES templates).
-$fallbackTable = vss_resolve_fallback_test_table();
-if ($fallbackTable === '') {
-    echo '[FAIL] No fallback candidate table without db/02_data_sample.sql templates.' . $nl;
+// Random fallback helper (direct call — every table now has db/02_data_sample.sql templates).
+$fallbackTable = 'gl_accounts';
+vss_purge_company_table($conn, $fallbackTable, $companyA);
+$seedErr = '';
+if (!function_exists('itm_seed_insert_random_fallback_row')) {
+    echo '[FAIL] itm_seed_insert_random_fallback_row is not available.' . $nl;
     $failures++;
 } else {
-    vss_purge_company_table($conn, $fallbackTable, $companyA);
-    $seedErr = '';
-    $fallbackCount = itm_seed_table_from_database_sql($conn, $fallbackTable, $companyA, $seedErr);
+    $fallbackCount = itm_seed_insert_random_fallback_row($conn, $fallbackTable, $companyA, $seedErr);
     if ($fallbackCount !== 1) {
         echo '[FAIL] Random fallback expected 1 row for ' . $fallbackTable . ', got ' . $fallbackCount . ': ' . $seedErr . $nl;
         $failures++;
@@ -222,9 +179,7 @@ foreach ($disposableIds as $disposeId) {
     vss_purge_company_table($conn, 'workstation_ram', $disposeId);
     vss_purge_company_table($conn, 'employee_positions', $disposeId);
     vss_purge_company_table($conn, 'departments', $disposeId);
-    if ($fallbackTable !== '') {
-        vss_purge_company_table($conn, $fallbackTable, $disposeId);
-    }
+    vss_purge_company_table($conn, $fallbackTable, $disposeId);
     vss_delete_company($conn, $disposeId);
 }
 
