@@ -901,11 +901,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr>
                     <td><a href="verify_company_empty_sample_data.php" target="_blank" rel="nofollow noreferrer">verify_company_empty_sample_data.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Seeds empty tenant tables that have an <strong>Add sample data</strong> button (16-module allowlist). Uses shared <code>itm_seed_table_from_database_sql()</code>; exits <code>1</code> when any seed leaves the table empty.</td>
                     <td>
+                        <strong>Admin login required</strong> in browser.<br>
+                        Browser: <a href="verify_company_empty_sample_data.php?company=4">?company=4</a><br>
                         CLI: <code>php scripts/verify_company_empty_sample_data.php --company=4</code><br>
-                        Single module: <code>--module=monthly_budgets</code>
+                        Single module: <code>--module=monthly_budgets</code> / <code>?module=monthly_budgets</code>
                     </td>
                 </tr>
                 <tr>

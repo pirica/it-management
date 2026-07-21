@@ -1,28 +1,52 @@
 <?php
 /**
- * Verifies Add sample data seeding for empty tenant tables (CLI).
+ * Verifies Add sample data seeding for empty tenant tables.
  *
- * Usage:
+ * CLI:
  *   php scripts/verify_company_empty_sample_data.php --company=4
  *   php scripts/verify_company_empty_sample_data.php --company=4 --module=monthly_budgets
+ *
+ * Browser (Admin): scripts/verify_company_empty_sample_data.php?company=4
+ * Optional: ?module=monthly_budgets
  */
 
 declare(strict_types=1);
 
-define('ITM_CLI_SCRIPT', true);
+$vcesdIsCli = PHP_SAPI === 'cli';
+
+if ($vcesdIsCli && !defined('ITM_CLI_SCRIPT')) {
+    define('ITM_CLI_SCRIPT', true);
+}
+
 define('ITM_LIST_EMPTY_TABLES_LIB_ONLY', true);
 
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/list_empty_tables.php';
 
+if (!$vcesdIsCli) {
+    itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
+}
+
 itm_script_output_begin('Company empty-table sample data verification');
 
 $nl = itm_script_output_nl();
 
+if (!function_exists('vcesd_fail')) {
+    function vcesd_fail(string $message, int $exitCode = 1): void
+    {
+        global $nl;
+        if (defined('STDERR') && is_resource(STDERR)) {
+            fwrite(STDERR, $message . $nl);
+        } else {
+            echo (function_exists('colorText') ? colorText($message, 'fail') : $message) . $nl;
+        }
+        exit($exitCode);
+    }
+}
+
 if (!$conn instanceof mysqli) {
-    fwrite(STDERR, '[FAIL] Database connection is required.' . $nl);
-    exit(1);
+    vcesd_fail('[FAIL] Database connection is required.');
 }
 
 /**
@@ -60,18 +84,30 @@ function vcesd_sample_data_button_modules(): array
 }
 
 /**
- * @return array<int, string>
+ * @return array{0:int,1:string}
  */
-function vcesd_parse_argv(array $argv): array
+function vcesd_parse_request(bool $isCli): array
 {
     $companyId = 0;
     $moduleFilter = '';
 
-    foreach ($argv as $arg) {
-        if (preg_match('/^--company=(\d+)$/', (string)$arg, $match)) {
-            $companyId = (int)$match[1];
-        } elseif (preg_match('/^--module=(.+)$/', (string)$arg, $match)) {
-            $moduleFilter = trim((string)$match[1]);
+    if ($isCli) {
+        foreach ($GLOBALS['argv'] ?? [] as $arg) {
+            if (preg_match('/^--company=(\d+)$/', (string)$arg, $match)) {
+                $companyId = (int)$match[1];
+            } elseif (preg_match('/^--module=(.+)$/', (string)$arg, $match)) {
+                $moduleFilter = trim((string)$match[1]);
+            }
+        }
+    } else {
+        if (isset($_GET['company']) && (string)$_GET['company'] !== '') {
+            $companyId = (int)$_GET['company'];
+        }
+        if (isset($_GET['module']) && trim((string)$_GET['module']) !== '') {
+            $moduleFilter = trim((string)$_GET['module']);
+        }
+        if ($companyId <= 0) {
+            $companyId = (int)($_SESSION['company_id'] ?? 0);
         }
     }
 
@@ -127,11 +163,12 @@ function vcesd_resolve_admin_employee_id(mysqli $conn, int $companyId): int
     return is_array($row) ? (int)($row['id'] ?? 0) : 0;
 }
 
-[$companyId, $moduleFilter] = vcesd_parse_argv($GLOBALS['argv'] ?? []);
+[$companyId, $moduleFilter] = vcesd_parse_request($vcesdIsCli);
 
 if ($companyId <= 0) {
-    fwrite(STDERR, 'Company id is required: --company=N' . $nl);
-    exit(1);
+    vcesd_fail($vcesdIsCli
+        ? 'Company id is required: --company=N'
+        : 'Company id is required: ?company=N (or select a company in session).');
 }
 
 $buttonModules = vcesd_sample_data_button_modules();
@@ -168,8 +205,7 @@ if ($candidates === []) {
 
 $employeeId = vcesd_resolve_admin_employee_id($conn, $companyId);
 if ($employeeId <= 0) {
-    fwrite(STDERR, '[FAIL] Could not resolve Admin employee for company ' . $companyId . '.' . $nl);
-    exit(1);
+    vcesd_fail('[FAIL] Could not resolve Admin employee for company ' . $companyId . '.');
 }
 
 $_SESSION['company_id'] = $companyId;
