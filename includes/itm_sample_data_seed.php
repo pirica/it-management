@@ -242,6 +242,59 @@ if (!function_exists('itm_seed_ensure_equipment_status_active_id')) {
     }
 }
 
+if (!function_exists('itm_seed_restore_equipment_by_name_if_deleted')) {
+    function itm_seed_restore_equipment_by_name_if_deleted(
+        mysqli $conn,
+        int $companyId,
+        string $equipmentName,
+        int $equipmentTypeId,
+        int $statusId
+    ): int {
+        if ($companyId <= 0 || $equipmentName === '' || $equipmentTypeId <= 0 || $statusId <= 0) {
+            return 0;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id, deleted_at, active FROM equipment WHERE company_id = ? AND name = ? LIMIT 1'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'is', $companyId, $equipmentName);
+        mysqli_stmt_execute($stmt);
+        $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+        mysqli_stmt_close($stmt);
+        if (!is_array($row) || (int)($row['id'] ?? 0) <= 0) {
+            return 0;
+        }
+
+        $equipmentId = (int)$row['id'];
+        $isDeleted = trim((string)($row['deleted_at'] ?? '')) !== '' || (int)($row['active'] ?? 1) === 0;
+        if (!$isDeleted) {
+            return 0;
+        }
+
+        $restoreStmt = mysqli_prepare(
+            $conn,
+            'UPDATE equipment
+             SET equipment_type_id = ?, status_id = ?, active = 1, deleted_at = NULL, deleted_by = NULL, updated_at = CURRENT_TIMESTAMP
+             WHERE id = ? AND company_id = ?'
+        );
+        if (!$restoreStmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($restoreStmt, 'iiii', $equipmentTypeId, $statusId, $equipmentId, $companyId);
+        if (!mysqli_stmt_execute($restoreStmt)) {
+            mysqli_stmt_close($restoreStmt);
+            return 0;
+        }
+        mysqli_stmt_close($restoreStmt);
+
+        return $equipmentId;
+    }
+}
+
 if (!function_exists('itm_seed_insert_minimal_primary_file_server')) {
     function itm_seed_insert_minimal_primary_file_server(mysqli $conn, int $companyId, int $serverTypeId): int
     {
@@ -252,6 +305,17 @@ if (!function_exists('itm_seed_insert_minimal_primary_file_server')) {
         $statusId = itm_seed_ensure_equipment_status_active_id($conn, $companyId);
         if ($statusId <= 0) {
             return 0;
+        }
+
+        $restoredId = itm_seed_restore_equipment_by_name_if_deleted(
+            $conn,
+            $companyId,
+            'Primary File Server',
+            $serverTypeId,
+            $statusId
+        );
+        if ($restoredId > 0) {
+            return $restoredId;
         }
 
         $insertSql = 'INSERT INTO equipment (company_id, equipment_type_id, name, serial_number, model, hostname, ip_address, status_id, purchase_date, purchase_cost, printer_color_capable, printer_scan, active, created_at) VALUES ('
@@ -653,8 +717,50 @@ if (!function_exists('itm_seed_insert_minimal_sample_switch')) {
         }
 
         $hostname = 'sw-core-01';
-        $layoutId = 1;
         $equipmentName = 'Core Switch';
+        $restoredId = itm_seed_restore_equipment_by_name_if_deleted(
+            $conn,
+            $companyId,
+            $equipmentName,
+            $switchTypeId,
+            $statusId
+        );
+        if ($restoredId > 0) {
+            $updateStmt = mysqli_prepare(
+                $conn,
+                'UPDATE equipment SET switch_rj45_id = ?, hostname = ? WHERE id = ? AND company_id = ?'
+            );
+            if ($updateStmt) {
+                mysqli_stmt_bind_param($updateStmt, 'isii', $rj45Id, $hostname, $restoredId, $companyId);
+                mysqli_stmt_execute($updateStmt);
+                mysqli_stmt_close($updateStmt);
+            }
+            itm_seed_ensure_switch_rj45_ports($conn, $companyId, $restoredId, $portCount, $hostname);
+
+            return $restoredId;
+        }
+
+        $layoutId = 0;
+        $layoutStmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM switch_port_numbering_layout WHERE company_id = ? ORDER BY id ASC LIMIT 1'
+        );
+        if ($layoutStmt) {
+            mysqli_stmt_bind_param($layoutStmt, 'i', $companyId);
+            mysqli_stmt_execute($layoutStmt);
+            $layoutRow = mysqli_fetch_assoc(mysqli_stmt_get_result($layoutStmt));
+            mysqli_stmt_close($layoutStmt);
+            $layoutId = (int)($layoutRow['id'] ?? 0);
+        }
+        if ($layoutId <= 0) {
+            $globalLayoutRes = mysqli_query($conn, 'SELECT id FROM switch_port_numbering_layout ORDER BY id ASC LIMIT 1');
+            if ($globalLayoutRes && ($globalLayoutRow = mysqli_fetch_assoc($globalLayoutRes))) {
+                $layoutId = (int)($globalLayoutRow['id'] ?? 0);
+            }
+        }
+        if ($layoutId <= 0) {
+            return 0;
+        }
         $insertStmt = mysqli_prepare(
             $conn,
             'INSERT INTO equipment (company_id, equipment_type_id, name, serial_number, model, hostname, ip_address, status_id, switch_rj45_id, switch_port_numbering_layout_id, printer_color_capable, printer_scan, active, created_at)

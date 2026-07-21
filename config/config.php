@@ -678,6 +678,24 @@ if (!function_exists('itm_mysql_error_extract_column')) {
 }
 
 /**
+ * Extracts the child column from a MySQL foreign-key constraint failure message.
+ */
+if (!function_exists('itm_mysql_error_extract_fk_column')) {
+    function itm_mysql_error_extract_fk_column($message) {
+        $text = (string)$message;
+        if ($text === '') {
+            return '';
+        }
+
+        if (preg_match('/FOREIGN KEY \(`([^`]+)`\)/i', $text, $match)) {
+            return (string)($match[1] ?? '');
+        }
+
+        return '';
+    }
+}
+
+/**
  * Builds a required-field message from a column name.
  */
 if (!function_exists('itm_format_required_field_error')) {
@@ -778,6 +796,11 @@ if (!function_exists('itm_format_db_constraint_error')) {
 
                 return 'This record cannot be deleted because other records still reference it.' . $referenceDetails . ' Remove or reassign the related records first.';
             case 1452:
+                $fkColumn = itm_mysql_error_extract_fk_column($fallbackText);
+                if ($fkColumn !== '') {
+                    return itm_format_required_field_error($fkColumn);
+                }
+
                 return 'The selected related record is no longer available for your company. It may have been deleted or moved. Please refresh the page and select a different value.';
             case 1062:
                 return 'A record with the same unique value already exists. Use a different value.';

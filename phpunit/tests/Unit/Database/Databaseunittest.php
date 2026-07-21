@@ -28,5 +28,8 @@ class DatabaseUnittest extends TestCase
         $msg = "Cannot delete or update a parent row: a foreign key constraint fails (`itmanagement`.`employees`, CONSTRAINT `employees_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`))";
         $this->assertStringContainsString('cannot be deleted because other records still reference it', itm_format_db_constraint_error(1451, $msg));
         $this->assertStringContainsString('Referenced by table "employees"', itm_format_db_constraint_error(1451, $msg));
+
+        $fkMsg = "Cannot add or update a child row: a foreign key constraint fails (`itmanagement`.`equipment`, CONSTRAINT `equipment_ibfk_4` FOREIGN KEY (`status_id`) REFERENCES `equipment_statuses` (`id`))";
+        $this->assertStringContainsString('Status', itm_format_db_constraint_error(1452, $fkMsg));
     }
 }

@@ -337,6 +337,68 @@ function equipment_table_varchar_length(mysqli $conn, string $table, string $col
     return 0;
 }
 
+function equipment_fk_option_exists_for_company(mysqli $conn, string $table, int $recordId, int $companyId): bool
+{
+    if ($recordId <= 0 || $companyId <= 0 || !equipment_table_exists($conn, $table)) {
+        return false;
+    }
+
+    $hasCompanyColumn = equipment_table_has_column($conn, $table, 'company_id');
+    if ($hasCompanyColumn) {
+        $stmt = mysqli_prepare($conn, 'SELECT id FROM `' . $table . '` WHERE id = ? AND company_id = ? LIMIT 1');
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $recordId, $companyId);
+    } else {
+        $stmt = mysqli_prepare($conn, 'SELECT id FROM `' . $table . '` WHERE id = ? LIMIT 1');
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $recordId);
+    }
+
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $exists = $res && mysqli_num_rows($res) === 1;
+    mysqli_stmt_close($stmt);
+
+    return $exists;
+}
+
+function equipment_resolve_switch_port_numbering_layout_id(mysqli $conn, int $companyId, int $requestedId): int
+{
+    if ($requestedId > 0 && equipment_fk_option_exists_for_company($conn, 'switch_port_numbering_layout', $requestedId, $companyId)) {
+        return $requestedId;
+    }
+
+    if ($companyId > 0 && equipment_table_exists($conn, 'switch_port_numbering_layout')) {
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM switch_port_numbering_layout WHERE company_id = ? ORDER BY id ASC LIMIT 1'
+        );
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $companyId);
+            mysqli_stmt_execute($stmt);
+            $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+            mysqli_stmt_close($stmt);
+            $resolvedId = (int)($row['id'] ?? 0);
+            if ($resolvedId > 0) {
+                return $resolvedId;
+            }
+        }
+    }
+
+    if (equipment_table_exists($conn, 'switch_port_numbering_layout')) {
+        $res = mysqli_query($conn, 'SELECT id FROM switch_port_numbering_layout ORDER BY id ASC LIMIT 1');
+        if ($res && ($row = mysqli_fetch_assoc($res))) {
+            return (int)($row['id'] ?? 0);
+        }
+    }
+
+    return 0;
+}
+
 function equipment_name_exists(mysqli $conn, int $companyId, string $name, int $excludeId = 0): bool
 {
     if ($companyId <= 0 || trim($name) === '') {
@@ -1669,9 +1731,6 @@ foreach ($statuses as $statusItem) {
 if ($defaultStatusId === '' && !empty($statuses)) {
     $defaultStatusId = (string)$statuses[0]['id'];
 }
-if ($defaultStatusId === '') {
-    $defaultStatusId = '1';
-}
 $warrantyTypes = fetch_options($conn, 'warranty_types');
 $printerTypes = fetch_options($conn, 'printer_device_types');
 $workstationDeviceTypes = fetch_options($conn, 'workstation_device_types');
@@ -1687,6 +1746,10 @@ $switchFiberRackOptions = fetch_options($conn, 'equipment_fiber_rack');
 $switchPoeOptions = itm_equipment_poe_options_rows($conn, (int)$company_id);
 $switchEnvironmentOptions = fetch_options($conn, 'equipment_environment');
 $switchPortNumberingLayoutOptions = fetch_options($conn, 'switch_port_numbering_layout');
+$defaultSwitchPortLayoutId = '';
+if (!empty($switchPortNumberingLayoutOptions)) {
+    $defaultSwitchPortLayoutId = (string)$switchPortNumberingLayoutOptions[0]['id'];
+}
 $hasWorkstationOfficeIdColumn = equipment_table_has_column($conn, 'equipment', 'workstation_office_id');
 $hasEquipmentRj45SpeedColumn = equipment_table_has_column($conn, 'equipment', 'rj45_speed_id');
 $hasWorkstationOsVersionIdColumn = equipment_table_has_column($conn, 'equipment', 'workstation_os_version_id');
@@ -1718,7 +1781,7 @@ $data = [
     'workstation_device_type_id' => '', 'workstation_os_type_id' => '',
     'workstation_office_id' => '', 'rj45_speed_id' => '', 'workstation_os_version_id' => '', 'workstation_ram_id' => '',
     'workstation_processor' => '', 'workstation_storage' => '', 'workstation_os_installed_on' => '',
-    'switch_rj45_id' => '', 'switch_port_numbering_layout_id' => '1', 'switch_fiber_id' => '', 'switch_fiber_patch_id' => '', 'switch_fiber_rack_id' => '', 'switch_fiber_ports_number' => '', 'switch_fiber_port_label' => '', 'switch_poe_id' => '', 'switch_environment_id' => '',
+    'switch_rj45_id' => '', 'switch_port_numbering_layout_id' => $defaultSwitchPortLayoutId, 'switch_fiber_id' => '', 'switch_fiber_patch_id' => '', 'switch_fiber_rack_id' => '', 'switch_fiber_ports_number' => '', 'switch_fiber_port_label' => '', 'switch_poe_id' => '', 'switch_environment_id' => '',
     'notes' => '', 'photo_filename' => '',
     'active' => 1,
     'deleted_by' => '', 'deleted_at' => '', 'created_by' => '', 'created_at' => '', 'updated_by' => '', 'updated_at' => '',
@@ -1733,7 +1796,7 @@ if ($isEdit) {
         if ($res && mysqli_num_rows($res) === 1) {
             $data = array_merge($data, mysqli_fetch_assoc($res));
             if (empty($data['switch_port_numbering_layout_id'])) {
-                $data['switch_port_numbering_layout_id'] = '1';
+                $data['switch_port_numbering_layout_id'] = $defaultSwitchPortLayoutId;
             }
             $originalData = $data;
         } else {
@@ -1779,7 +1842,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $data['switch_fiber_port_label'] = isset($_POST['switch_fiber_port_label']) ? substr(trim((string)$_POST['switch_fiber_port_label']), 0, 100) : '';
 
-    if ((int)$data['status_id'] <= 0) {
+    if ((int)$data['status_id'] <= 0 && $defaultStatusId !== '') {
         $data['status_id'] = $defaultStatusId;
     }
 
@@ -1787,8 +1850,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $isServerEquipment = $serverTypeId > 0 && (int)$data['equipment_type_id'] === $serverTypeId;
     $requestedIdfId = (int)($data['idf_id'] ?? 0);
 
-    if ($data['name'] === '' || (int)$data['equipment_type_id'] <= 0) {
-        $error = 'Please fill required fields: Name, Type.';
+    $missingRequired = [];
+    if ($data['name'] === '') {
+        $missingRequired[] = 'Name';
+    }
+    if ((int)$data['equipment_type_id'] <= 0) {
+        $missingRequired[] = 'Type';
+    }
+    if ((int)$data['status_id'] <= 0) {
+        $missingRequired[] = 'Status';
+    }
+    if ($isSwitchEquipment && (int)$data['switch_rj45_id'] <= 0) {
+        $missingRequired[] = 'RJ45 Ports';
+    }
+
+    if ($missingRequired !== []) {
+        $error = 'Please fill required fields: ' . implode(', ', $missingRequired) . '.';
+    } elseif (!equipment_fk_option_exists_for_company($conn, 'equipment_statuses', (int)$data['status_id'], (int)$company_id)) {
+        $error = 'Please select a valid Status for this company.';
     } elseif (equipment_name_exists($conn, (int)$company_id, $data['name'], $isEdit ? (int)$id : 0)) {
         $error = 'Equipment name already exists for this company.';
     } elseif (equipment_optional_unique_field_exists($conn, (int)$company_id, 'serial_number', (string)$data['serial_number'], $isEdit ? (int)$id : 0)) {
@@ -1797,8 +1876,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Hostname already exists for this company.';
     } elseif (equipment_optional_unique_field_exists($conn, (int)$company_id, 'ip_address', (string)$data['ip_address'], $isEdit ? (int)$id : 0)) {
         $error = 'IP Address already exists for this company.';
-    } elseif ($isSwitchEquipment && (int)$data['switch_rj45_id'] <= 0) {
-        $error = 'Please fill required field: RJ45 Ports for switch equipment.';
     } elseif ($requestedIdfId > 0) {
         $assignmentCheckEquipmentId = $isEdit ? (int)$id : 0;
         $idfAssignmentError = equipment_validate_idf_assignment($conn, (int)$company_id, $assignmentCheckEquipmentId, $requestedIdfId);
@@ -1929,6 +2006,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!$error) {
+        $resolvedSwitchPortLayoutId = equipment_resolve_switch_port_numbering_layout_id(
+            $conn,
+            (int)$company_id,
+            (int)$data['switch_port_numbering_layout_id']
+        );
+        if ($resolvedSwitchPortLayoutId <= 0) {
+            $error = 'Switch Port Numbering Layout is not configured for this company. Add one under Switch Port Numbering Layout and try again.';
+        } else {
+            $data['switch_port_numbering_layout_id'] = (string)$resolvedSwitchPortLayoutId;
+        }
+    }
+
+    if (!$error) {
         $equipment_type_id = (int)$data['equipment_type_id'];
         $manufacturer_id = (int)$data['manufacturer_id'] ?: 'NULL';
         $location_id = (int)$data['location_id'] ?: 'NULL';
@@ -1964,7 +2054,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $workstation_storage = $data['workstation_storage'] === '' ? 'NULL' : "'" . escape_sql($data['workstation_storage'], $conn) . "'";
         $workstation_os_installed_on = $data['workstation_os_installed_on'] === '' ? 'NULL' : "'" . escape_sql($data['workstation_os_installed_on'], $conn) . "'";
         $switch_rj45_id = (int)$data['switch_rj45_id'] ?: 'NULL';
-        $switch_port_numbering_layout_id = (int)$data['switch_port_numbering_layout_id'] ?: '1';
+        $switch_port_numbering_layout_id = (int)$data['switch_port_numbering_layout_id'];
         $switch_fiber_id = (int)$data['switch_fiber_id'] ?: 'NULL';
         $switch_fiber_patch_id = (int)$data['switch_fiber_patch_id'] ?: 'NULL';
         $switch_fiber_rack_id = (int)$data['switch_fiber_rack_id'] ?: 'NULL';
