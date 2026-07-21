@@ -24,7 +24,6 @@ require_once dirname(__DIR__) . '/config/config.php';
 
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 require_once __DIR__ . '/lib/itm_apply_new_company_module_share_seed.php';
-require_once __DIR__ . '/lib/script_browser_nav.php';
 
 $boot = itm_apply_script_bootstrap('Apply new company module share capable seed', ['skip_db_tests' => false]);
 $apply = $boot['apply'];
@@ -64,9 +63,6 @@ if (empty($report['ok'])) {
 
 if (!$isCli) {
     itm_script_output_close_pre();
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Apply module share capable seed</title>';
-    echo '<link rel="stylesheet" href="../css/styles.css"></head><body style="padding:20px;">';
-    itm_script_browser_nav_echo(defined('BASE_URL') ? (string)BASE_URL : '../');
     echo '<h1>Apply company_module_share capable seed</h1>';
     echo '<p>Equivalent to <code>db/migrations/company_module_share_capable_seed.sql</code>. ';
     echo 'Dry-run by default; add <code>?apply=1</code> (Admin) to write.</p>';
@@ -96,7 +92,7 @@ if (!$apply) {
         if ($companyId > 0) {
             $qs .= '&company=' . (int)$companyId;
         }
-        echo '<p><a class="btn btn-primary" href="?' . htmlspecialchars($qs, ENT_QUOTES, 'UTF-8') . '">Apply now</a></p></body></html>';
+        echo '<p><a href="?' . htmlspecialchars($qs, ENT_QUOTES, 'UTF-8') . '">Apply now</a></p>';
     }
     itm_script_output_end();
     exit(0);
@@ -125,7 +121,7 @@ if ((int)($after['non_capable_rows'] ?? -1) !== 0 || (int)($after['missing_pairs
 
 echo colorText('[PASS] company_module_share capable seed is complete for scope.', 'pass') . $nl;
 if (!$isCli) {
-    echo '<p><a class="btn" href="verify_module_share.php">Verify module share</a></p></body></html>';
+    echo '<p><a href="verify_module_share.php">Verify module share</a></p>';
 }
 itm_script_output_end();
 exit(0);
