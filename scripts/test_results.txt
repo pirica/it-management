@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Management API Documentation</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f6f8fa; color: #1f2328; margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .card { background: #fff; border: 1px solid #d0d7de; border-radius: 8px; padding: 18px; margin-bottom: 16px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #d0d7de; padding: 8px; text-align: left; vertical-align: top; }
+        th { background: #f6f8fa; }
+        code, pre { background: #f0f3f6; border-radius: 6px; }
+        pre { padding: 12px; overflow-x: auto; }
+        .muted { color: #57606a; font-size: .9rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <nav class="itm-script-nav" aria-label="Scripts navigation" style="margin:0 0 16px;padding:10px 14px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:0.9rem;"><a href="scripts.php" style="color:#0969da;text-decoration:none;font-weight:600;">← Scripts index</a></nav>    <div class="card">
+        <h1>IT Management API Documentation</h1>
+        <p>Comprehensive API documentation for the <strong>actual JSON endpoints available in this project</strong>, including authentication model, validation, error handling, and examples.</p>
+        <p class="muted">Generated: 2026-06-07 01:00:48 UTC</p>
+    </div>
+
+    <div class="card">
+        <h2>Overview</h2>
+        <ul>
+            <li>This project uses <strong>session-based authentication + CSRF</strong> (not JWT bearer tokens).</li>
+            <li>Most JSON APIs are internal AJAX endpoints used by module pages.</li>
+            <li>Multi-tenancy is enforced via session <code>company_id</code> checks in endpoints.</li>
+            <li><strong>Do not send <code>company_id</code> in API payloads</strong>; tenant context is resolved server-side from the authenticated session.</li>
+            <li>Many modules expose a JSON import endpoint at their own <code>modules/&lt;module&gt;/index.php</code>.</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>Authentication</h2>
+        <p>All protected endpoints require:</p>
+        <ol>
+            <li>An authenticated PHP session cookie.</li>
+            <li>A valid CSRF token in <code>csrf_token</code> (body) or <code>X-CSRF-Token</code> header (where supported).</li>
+            <li>An active <code>company_id</code> context in session for tenant-scoped operations.</li>
+            <li>Tenant scope is automatic: requests are filtered by server-side session company; payload-level <code>company_id</code> is intentionally hidden from UI/API contracts.</li>
+        </ol>
+<pre><code># 1) Login and store session cookies (example)
+curl -c cookies.txt -X POST "http://localhost/it-management/login.php" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data "email=Admin&amp;password=Admin&amp;csrf_token=&lt;token_from_login_form&gt;"
+
+# 2) Call a protected JSON endpoint with same cookie + CSRF token
+curl -b cookies.txt -X POST "http://localhost/it-management/includes/get_ports.php" \
+  -H "Content-Type: application/json" \
+  -d '{"switch_id": 1, "csrf_token": "&lt;csrf_token&gt;"}'</code></pre>
+    </div>
+
+    <div class="card">
+        <h2>Available APIs (non-module specific)</h2>
+        <table>
+            <thead><tr><th>Method</th><th>Endpoint</th><th>Purpose</th></tr></thead>
+            <tbody>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>includes/get_ports.php</code></td>
+                    <td>Fetch/seed switch ports and lookup metadata.</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>includes/update_port.php</code></td>
+                    <td>Update switch port fields and sync matching idf_ports rows; To IDF saves now auto-create/update/delete auto-synced idf_ports records.</td>
+                </tr>
+                            <tr>
+                    <td>GET</td>
+                    <td><code>modules/idfs/index.php?refresh_select_options=rack|location</code></td>
+                    <td>Refresh select options for IDF forms.</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/employee_assignment_history/index.php</code></td>
+                    <td>Employee Assignment History save-to-database import endpoint (JSON rows from table-tools).</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/tickets/archive.php</code></td>
+                    <td>Archive or un-archive a ticket (requires id, archive_action, and csrf_token).</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>scripts/test_sql_injection.php</code></td>
+                    <td>Security test helper endpoint used during audits.</td>
+                </tr>
+                            <tr>
+                    <td>GET</td>
+                    <td><code>scripts/DBdesign.php?format=html|mermaid|json</code></td>
+                    <td>Generate db/ ER diagram output (drawdb-style viewer, Mermaid, or JSON).</td>
+                </tr>
+                            <tr>
+                    <td>GET</td>
+                    <td><code>modules/calendar/index.php?date=YYYY-MM-DD</code></td>
+                    <td>Fetch calendar view for a specific month/year and selected day.</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/tickets/archive.php</code></td>
+                    <td>Archive or un-archive a support ticket. Requires id and archive_action (archive/unarchive).</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/org_chart/index.php</code></td>
+                    <td>Update employee reporting hierarchy via drag-and-drop. Requires employee_id, reports_to, and action=update_hierarchy.</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/visitors_access_log/index.php</code></td>
+                    <td>Visitors Access Log inline editing and timestamp updates. Supports ajax_inline_edit=1 or action_timestamp=1.</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/floor_designer/index.php</code></td>
+                    <td>Floor Designer AJAX actions: save_point, update_point_pos, update_comment_pos, delete_point, get_switch_ports.</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/floor_designer_points/index.php</code></td>
+                    <td>Floor Designer Points save-to-database import endpoint (JSON rows from table-tools).</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/alerts/index.php</code></td>
+                    <td>Alerts save-to-database import endpoint (JSON rows) or ICS file import support.</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/explorer/api.php</code></td>
+                    <td>Explorer file management actions (create, rename, delete, move, upload).</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/patches_updates/list_all.php</code></td>
+                    <td>Patches &amp; Updates save-to-database import endpoint (JSON rows).</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>scripts/module_browser_qa_runner.php</code></td>
+                    <td>QA runner for automated browser testing (requires action and credentials).</td>
+                </tr>
+                            <tr>
+                    <td>GET</td>
+                    <td><code>scripts/compare_database_sql_modules.php</code></td>
+                    <td>Compare database schema with module definitions (JSON output).</td>
+                </tr>
+                            <tr>
+                    <td>GET</td>
+                    <td><code>scripts/list_modules_not_on_sidebar.php</code></td>
+                    <td>List modules missing from the sidebar (JSON output).</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>scripts/check_audit_logs_coverage.php</code></td>
+                    <td>Static analysis of audit log coverage (supports ajax=1).</td>
+                </tr>
+                        </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>IDF API Endpoints</h2>
+        <p>All endpoints below are under <code>modules/idfs/api/</code> and are POST-only JSON handlers.</p>
+        <table>
+            <thead><tr><th>Method</th><th>Endpoint</th></tr></thead>
+            <tbody>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idfs/api/cable_color_add.php</code></td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idfs/api/link_create.php</code></td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idfs/api/link_delete.php</code></td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idfs/api/port_update.php</code></td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idfs/api/ports_regen.php</code></td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idfs/api/ports_sync.php</code></td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idfs/api/position_copy.php</code></td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idfs/api/position_delete.php</code></td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idfs/api/position_get.php</code></td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idfs/api/position_move.php</code></td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idfs/api/position_remove_slot.php</code></td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idfs/api/position_reorder.php</code></td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idfs/api/position_save.php</code></td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idfs/api/switch_port_row.php</code></td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idfs/api/switch_ports_by_equipment.php</code></td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idfs/api/switch_status_add.php</code></td>
+                </tr>
+                        </tbody>
+        </table>
+<pre><code># Example: save an IDF position
+curl -b cookies.txt -X POST "http://localhost/it-management/modules/idfs/api/position_save.php" \
+  -H "Content-Type: application/json" \
+  -d '{"csrf_token":"&lt;csrf_token&gt;","id":12,"name":"U12","notes":"Reserved"}'</code></pre>
+    </div>
+
+    <div class="card">
+        <h2>Module Import APIs (all detected)</h2>
+        <p>Detected <strong>89</strong> module import JSON endpoints. These are used by the 📥 Import Excel flow in <code>js/table-tools.js</code>.</p>
+        <table>
+            <thead><tr><th>Method</th><th>Endpoint</th><th>Handler</th><th>Purpose</th></tr></thead>
+            <tbody>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/access_levels/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/alerts/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/annual_budgets/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/approvals/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/approvals_stage/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/approver_type/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/approvers/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/assignment_types/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/attempts/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/budget_categories/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/budget_report/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/cable_colors/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/catalogs/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/companies/index.php</code></td>
+                    <td>shared_guarded</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/cost_centers/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/departments/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/employee_assignment_history/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/employee_onboarding_requests/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/employee_positions/index.php</code></td>
+                    <td>shared</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/employee_statuses/index.php</code></td>
+                    <td>shared</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/employee_system_access/index.php</code></td>
+                    <td>shared_guarded</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/employees/index.php</code></td>
+                    <td>shared_guarded</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/equipment/index.php</code></td>
+                    <td>shared_guarded</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/equipment_environment/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/equipment_fiber/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/equipment_fiber_count/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/equipment_fiber_patch/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/equipment_fiber_rack/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/equipment_poe/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/equipment_rj45/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/equipment_statuses/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/equipment_types/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/event_categories/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/events/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/expenses/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/expiring/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/floor_designer/index.php</code></td>
+                    <td>shared</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/floor_designer_points/index.php</code></td>
+                    <td>shared</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/floor_plans/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/forecast_revisions/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/forecast_revisions_status/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/gl_accounts/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idf_device_type/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idf_links/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idf_ports/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idf_positions/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/idfs/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/inventory_categories/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/inventory_items/index.php</code></td>
+                    <td>shared_guarded</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/it_locations/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/location_types/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/manufacturers/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/monthly_budgets/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/patches_updates/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/patches_updates_level/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/patches_updates_status/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/printer_device_types/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/rack_statuses/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/racks/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/registration_invitations/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/rj45_speed/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/role_assignment_rights/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/role_hierarchy/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/role_module_permissions/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/settings/index.php</code></td>
+                    <td>shared_guarded</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/supplier_statuses/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/suppliers/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/switch_port_numbering_layout/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/switch_port_types/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/switch_ports/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/switch_status/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/system_access/index.php</code></td>
+                    <td>shared_guarded</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/ticket_categories/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/ticket_priorities/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/ticket_statuses/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/tickets/index.php</code></td>
+                    <td>shared_guarded</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/ui_configuration/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/user_companies/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/user_roles/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/user_sidebar_preferences/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/users/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/vlans/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/warranty_types/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/workstation_device_types/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/workstation_modes/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/workstation_office/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/workstation_os_types/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/workstation_os_versions/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                            <tr>
+                    <td>POST</td>
+                    <td><code>modules/workstation_ram/index.php</code></td>
+                    <td>inline</td>
+                    <td>Excel/CSV save-to-database import endpoint used by js/table-tools.js</td>
+                </tr>
+                        </tbody>
+        </table>
+<pre><code># Example: table-tools.js JSON import payload
+curl -b cookies.txt -X POST "http://localhost/it-management/modules/departments/index.php" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "csrf_token":"&lt;csrf_token&gt;",
+    "import_excel_rows":[
+      ["Name","Active"],
+      ["IT", "1"],
+      ["HR", "1"]
+    ]
+  }'
+
+# Typical success response
+{"ok": true, "inserted": 2}</code></pre>
+    </div>
+
+    <div class="card">
+        <h2>Modules without detected JSON Import API</h2>
+        <p>The modules below currently do not expose an <code>import_excel_rows</code> JSON endpoint in their <code>index.php</code> file.</p>
+                    <ul>
+                                    <li><code>modules/audit_logs/index.php</code></li>
+                                    <li><code>modules/backup_tape_log/index.php</code></li>
+                                    <li><code>modules/calendar/index.php</code></li>
+                                    <li><code>modules/contacts/index.php</code></li>
+                                    <li><code>modules/explorer/index.php</code></li>
+                                    <li><code>modules/ip_addresses/index.php</code></li>
+                                    <li><code>modules/ip_subnets/index.php</code></li>
+                                    <li><code>modules/is_access_point/index.php</code></li>
+                                    <li><code>modules/is_cctv/index.php</code></li>
+                                    <li><code>modules/is_firewall/index.php</code></li>
+                                    <li><code>modules/is_other/index.php</code></li>
+                                    <li><code>modules/is_phone/index.php</code></li>
+                                    <li><code>modules/is_port_patch_panel/index.php</code></li>
+                                    <li><code>modules/is_pos/index.php</code></li>
+                                    <li><code>modules/is_printer/index.php</code></li>
+                                    <li><code>modules/is_router/index.php</code></li>
+                                    <li><code>modules/is_server/index.php</code></li>
+                                    <li><code>modules/is_switch/index.php</code></li>
+                                    <li><code>modules/is_workstation/index.php</code></li>
+                                    <li><code>modules/org_chart/index.php</code></li>
+                                    <li><code>modules/rack_planner/index.php</code></li>
+                                    <li><code>modules/visitors_access_log/index.php</code></li>
+                            </ul>
+            </div>
+
+    <div class="card">
+        <h2>Error Handling</h2>
+        <table>
+            <thead><tr><th>Status</th><th>Common message</th><th>When it happens</th></tr></thead>
+            <tbody>
+            <tr><td>400</td><td><code>Invalid CSRF token.</code>, <code>Missing switch id</code></td><td>Bad payload or missing required fields.</td></tr>
+            <tr><td>401</td><td><code>Unauthorized</code></td><td>No valid session or company context.</td></tr>
+            <tr><td>403</td><td><code>Invalid CSRF token</code></td><td>CSRF check failed.</td></tr>
+            <tr><td>404</td><td><code>Switch not found</code></td><td>Resource not found in tenant scope.</td></tr>
+            <tr><td>405</td><td><code>Method not allowed</code></td><td>Wrong HTTP verb.</td></tr>
+            <tr><td>500</td><td><code>DB error</code>, schema messages</td><td>Server-side SQL/schema issues.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>Rate Limiting</h2>
+        <p>No centralized API rate limiting middleware is defined for these JSON endpoints. Login and reset flows include attempt/rate controls; implement reverse-proxy or app-level throttling if public API exposure is planned.</p>
+    </div>
+
+<div class="card">
+        <h2>Versioning</h2>
+        <p>Current endpoints are file-path based and are not under a versioned prefix like <code>/api/v1</code>. If external integrations are planned, introduce a versioned gateway path before publishing public contracts.</p>
+    </div>
+
+    <div class="card">
+        <h2>Validation Rules (practical summary)</h2>
+        <ul>
+            <li><code>csrf_token</code> is mandatory on protected POST endpoints.</li>
+            <li><code>switch_id</code> is required for <code>includes/get_ports.php</code> and <code>includes/update_port.php</code>.</li>
+            <li><code>id</code> is required for <code>includes/update_port.php</code>.</li>
+            <li><code>import_excel_rows</code> must include header row + at least one data row for module import APIs.</li>
+            <li>All DB writes are tenant-scoped by active session company.</li>
+            <li><code>company_id</code> is not a client-editable API field for these endpoints; if missing from session, endpoints return unauthorized/company-context errors.</li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>
+--- API Documentation Coverage Report ---
+Date: 2026-06-07 01:00:48
+
+1. Modules without Import Endpoint:
+   - audit_logs
+   - backup_tape_log
+   - calendar
+   - contacts
+   - explorer
+   - ip_addresses
+   - ip_subnets
+   - is_access_point
+   - is_cctv
+   - is_firewall
+   - is_other
+   - is_phone
+   - is_port_patch_panel
+   - is_pos
+   - is_printer
+   - is_router
+   - is_server
+   - is_switch
+   - is_workstation
+   - org_chart
+   - rack_planner
+   - visitors_access_log
+
+2. Bespoke Endpoints Validation:
+   [OK] /app/api-tests/../includes/get_ports.php exists.
+   [OK] /app/api-tests/../includes/update_port.php exists.
+   [OK] /app/api-tests/../modules/idfs/index.php exists.
+   [OK] /app/api-tests/../modules/employee_assignment_history/index.php exists.
+   [OK] /app/api-tests/../modules/tickets/archive.php exists.
+   [OK] /app/api-tests/../scripts/test_sql_injection.php exists.
+   [OK] /app/api-tests/../scripts/DBdesign.php exists.
+   [OK] /app/api-tests/../modules/calendar/index.php exists.
+   [OK] /app/api-tests/../modules/tickets/archive.php exists.
+   [OK] /app/api-tests/../modules/org_chart/index.php exists.
+   [OK] /app/api-tests/../modules/visitors_access_log/index.php exists.
+   [OK] /app/api-tests/../modules/floor_designer/index.php exists.
+   [OK] /app/api-tests/../modules/floor_designer_points/index.php exists.
+   [OK] /app/api-tests/../modules/alerts/index.php exists.
+   [OK] /app/api-tests/../modules/explorer/api.php exists.
+   [OK] /app/api-tests/../modules/patches_updates/list_all.php exists.
+   [OK] /app/api-tests/../scripts/module_browser_qa_runner.php exists.
+   [OK] /app/api-tests/../scripts/compare_database_sql_modules.php exists.
+   [OK] /app/api-tests/../scripts/list_modules_not_on_sidebar.php exists.
+   [OK] /app/api-tests/../scripts/check_audit_logs_coverage.php exists.
+
+3. Checking for undocumented module AJAX handlers:
+   [WARN] Undocumented JSON handler: modules/idfs/device.php
+   [WARN] Undocumented JSON handler: modules/idfs/view.php
+
+--- End of Report ---

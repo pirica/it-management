@@ -1,0 +1,42 @@
+[
+  {
+    "script": "check_database_sql_company_name_uniques.php",
+    "reason": "Static schema unique-key audit reports known gaps (floor_plan_item_tags, bookmark_folders) on healthy installs.",
+    "max_exit_code": 1
+  },
+  {
+    "script": "check_index_table_compliance.php",
+    "reason": "Index table marker compliance gate exits 1 when bespoke modules are not in baseline.",
+    "max_exit_code": 1
+  },
+  {
+    "script": "compare_database_sql_modules.php",
+    "reason": "Virtual/composite modules without CREATE TABLE are expected; exit 1 is informational.",
+    "max_exit_code": 1
+  },
+  {
+    "script": "idfs_api_payload_dry_run.php",
+    "reason": "Requires --endpoint=port_update|link_create|link_delete; bare audit invocation is not a regression.",
+    "max_exit_code": 1
+  },
+  {
+    "script": "test_mysql_status.php",
+    "reason": "Windows service-name probe fails on Laragon portable even when mysqld is running.",
+    "max_exit_code": 1
+  },
+  {
+    "script": "verify_system_status.php",
+    "reason": "Delegates to test_mysql_status Laragon service-name probe on Windows.",
+    "max_exit_code": 1
+  },
+  {
+    "script": "verify_emails_module.php",
+    "reason": "Alert-window fixture check may exit 1 when no warranty/license rows fall in the 30-day window.",
+    "max_exit_code": 1
+  },
+  {
+    "script": "check_ui_configuration_coverage.php",
+    "reason": "Bespoke modules (tickets, todo) intentionally differ from flattened CRUD UI contract.",
+    "max_exit_code": 2
+  }
+]

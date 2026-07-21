@@ -1,0 +1,56 @@
+# Module folder names gate-excluded by scripts/check_ui_configuration_coverage.php (smoke step 5).
+# Gate-excluded modules still appear in the report as [n/a][pass|fail|n/a]; only gated [fail] exits 2.
+# One slug per line. Lines starting with # are comments.
+
+# Bespoke screens (no standard index table contract).
+# Legacy or custom list UIs (non-standard action column / create chrome).
+idfs
+employees
+equipment
+settings
+employee_system_access
+user_companies
+user_sidebar_preferences
+ui_configuration
+attempts
+audit_logs
+budget_report
+expiring
+
+# Thin index.php routers; list/create UI lives under includes/partials/render.php.
+ip_subnets
+ip_addresses
+rack_planner
+
+# Bespoke UIs (docs/list_bespoke_UI.txt) — no flattened CRUD list contract on index.php.
+backup_tape_log
+birthdays
+bookmarks
+calendar
+cable_colors
+companies
+contacts
+company_module_access
+share_modules
+emails
+employee_companies
+employee_sidebar_preferences
+explorer
+floor_designer
+import
+inventory_items
+notes
+ops_report
+org_chart
+passwords
+private_contacts
+reports
+request_password
+resignations
+roles_permissions
+switch_ports
+system_access
+system_status
+todo
+visitors_access_log
+vlans

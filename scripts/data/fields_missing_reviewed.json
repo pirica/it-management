@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "description": "Reviewed bespoke gate failures for fields_missing.php. Matching entries render as [SKIP][fail][reviewed] (informational — same exit semantics as [SKIP][fail]).",
+  "modules": {
+    "backup_tape_log": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Monthly grid bespoke UI intentionally omits flattened CRUD list search, sort, and pagination.",
+      "checks": [
+        {
+          "check": "Search",
+          "code": "bespoke_list_ui_search",
+          "note": "Table in index.php missing search wiring: GET/search variable, search input, server-side search conditions"
+        },
+        {
+          "check": "Sort",
+          "code": "bespoke_list_ui_sort",
+          "note": "Table in index.php missing sort wiring: GET/sort variable, ASC/DESC direction, ORDER BY sort wiring, sortable header indicators (▲/▼ or $nextDir)"
+        },
+        {
+          "check": "Pagination",
+          "code": "bespoke_list_ui_pagination",
+          "note": "Table in index.php missing pagination wiring: itm_resolve_records_per_page(), $perPage, LIMIT/OFFSET paging, page query state, page navigation controls, total row/page count"
+        }
+      ]
+    },
+    "company_module_access": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Admin company × module matrix is not a flattened CRUD list: rows are all registry modules sorted by slug; matrix search is in-memory on slug/name only. Registry flat list (`list_all`) is auxiliary.",
+      "checks": [
+        {
+          "check": "Sort",
+          "code": "bespoke_list_ui_sort",
+          "note": "Table in index.php missing sort wiring: GET/sort variable, ASC/DESC direction, ORDER BY sort wiring, sortable header indicators (▲/▼ or $nextDir)"
+        },
+        {
+          "check": "Pagination",
+          "code": "bespoke_list_ui_pagination",
+          "note": "Table in index.php missing pagination wiring: itm_resolve_records_per_page(), $perPage, LIMIT/OFFSET paging, page query state, page navigation controls, total row/page count"
+        }
+      ]
+    },
+    "share_modules": {
+      "reviewed_at": "2026-07-21",
+      "reason": "Admin company × module share matrix mirrors company_module_access: full registry on one page ordered by slug; matrix search is in-memory on slug/name only. Registry flat list (`list_all`) is auxiliary.",
+      "checks": [
+        {
+          "check": "Sort",
+          "code": "bespoke_list_ui_sort",
+          "note": "Table in index.php missing sort wiring: GET/sort variable, ASC/DESC direction, ORDER BY sort wiring, sortable header indicators (▲/▼ or $nextDir)"
+        },
+        {
+          "check": "Pagination",
+          "code": "bespoke_list_ui_pagination",
+          "note": "Table in index.php missing pagination wiring: itm_resolve_records_per_page(), $perPage, LIMIT/OFFSET paging, page query state, page navigation controls, total row/page count"
+        }
+      ]
+    },
+    "ops_report": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Daily hotel operations report uses day/month/year selectors and opr_ensure_report() auto-create — not a flattened CRUD list. create.php is a wrapper to index.php; no list sort/pagination or primary ➕ create link.",
+      "checks": [
+        {
+          "check": "Sort",
+          "code": "bespoke_list_ui_sort",
+          "note": "Table in index.php missing sort wiring: GET/sort variable, ASC/DESC direction, ORDER BY sort wiring, sortable header indicators (▲/▼ or $nextDir)"
+        },
+        {
+          "check": "Pagination",
+          "code": "bespoke_list_ui_pagination",
+          "note": "Table in index.php missing pagination wiring: itm_resolve_records_per_page(), $perPage, LIMIT/OFFSET paging, page query state, total row/page count"
+        },
+        {
+          "check": "New button",
+          "code": "bespoke_list_ui_new_button",
+          "note": "create.php exists but index.php has no detectable primary create/add action"
+        }
+      ]
+    },
+    "switch_ports": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Switch port delete must hard DELETE with IDF sync (idf_ports, idf_links). Scaffold soft-delete would leave orphaned infrastructure rows; list has no deleted_at filter because rows are removed.",
+      "checks": [
+        {
+          "check": "Hard delete contract",
+          "code": "bespoke_hard_delete",
+          "note": "switch_ports bespoke gate: delete uses hard DELETE (expected itm_crud_build_soft_delete_sql soft-delete)"
+        },
+        {
+          "check": "List live filter",
+          "code": "bespoke_list_missing_soft_delete_filter",
+          "note": "switch_ports bespoke gate: list query missing deleted_at IS NULL filter (or itm_crud_append_not_deleted_predicate)"
+        }
+      ]
+    },
+    "tickets": {
+      "reviewed_at": "2026-07-19",
+      "reason": "Ticket create/edit intentionally expose business Created By (`created_by_employee_id` dropdown) and ticket logged-at (`created_at` datetime-local) — not scaffold audit meta; audit `created_by`/`updated_by` remain server-stamped on save.",
+      "checks": [
+        {
+          "check": "Excluded audit meta on create/edit forms",
+          "code": "ui_excluded_exposed",
+          "note": "tickets excluded UI column created_by: visible on create/edit forms"
+        },
+        {
+          "check": "Excluded audit meta on create/edit forms",
+          "code": "ui_excluded_exposed",
+          "note": "tickets excluded UI column created_at: visible on create/edit forms"
+        }
+      ]
+    },
+    "vlans": {
+      "reviewed_at": "2026-07-19",
+      "reason": "VLAN delete must hard DELETE when clearing switch_ports, idf_ports, and ip_subnets references. Scaffold soft-delete would leave orphaned network FKs; list has no deleted_at filter because rows are removed.",
+      "checks": [
+        {
+          "check": "Hard delete contract",
+          "code": "bespoke_hard_delete",
+          "note": "vlans bespoke gate: delete uses hard DELETE (expected itm_crud_build_soft_delete_sql soft-delete)"
+        },
+        {
+          "check": "List live filter",
+          "code": "bespoke_list_missing_soft_delete_filter",
+          "note": "vlans bespoke gate: list query missing deleted_at IS NULL filter (or itm_crud_append_not_deleted_predicate)"
+        }
+      ]
+    }
+  }
+}
