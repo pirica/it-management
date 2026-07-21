@@ -70,3 +70,8 @@ mysqli_stmt_execute($stmt);
 ## 12. Module Owner Notes (Optional)
 Sample seed row per company: Microsoft 365 E3 (`license_types.name = Per User`, supplier from tenant `suppliers` seed).
 Authoritative cross-module rules: **`AGENTS.md` → License Management (mandatory)**. README screenshots: `docs/readme/license_management.png`, `docs/readme/demo_license_management.png`. MBQA: `php scripts/module_browser_qa_runner.php --module=license_management --company=1` (see **`scripts/SCRIPTS.md`**).
+## Share (temporary QR / code)
+- **Capable:** `itm_qr_share_capable_module_slugs()`.
+- **UI:** Share buttons on index.php inline view block.
+- **Wiring:** `includes/itm_crud_record_share.php`; public `join.php`; AJAX `index.php?ajax_action=create_share_session`. Company gate: `modules/share_modules/`.
+- **Doc:** `docs/CRUD_RECORD_SHARE.md`.

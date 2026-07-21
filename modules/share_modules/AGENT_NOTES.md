@@ -10,7 +10,7 @@ Administrator matrix to enable or disable temporary QR / 6-digit **share** per `
 ## 4. Business Rules (Critical for Agents)
 - **Admin only:** `itm_is_admin()` gate on `index.php` (same as Company Module Access).
 - **Runtime enforcement:** `includes/itm_module_share.php` → `has_module_share_access()`; called from `itm_qr_share_create_session()`.
-- **Share implementation list:** `itm_qr_share_capable_module_slugs()` in `includes/itm_qr_share.php` — matrix shows all registry modules; only capable slugs get enabled toggles (others show **No share UI**). Capable set includes original vault/explorer modules plus CRUD record modules wired via `includes/itm_crud_record_share.php` (employees, departments, equipment, catalogs, license_management, inventory_items, suppliers, alerts, tickets, patches_updates, ops_report, and budget modules).
+- **Share implementation list:** `itm_qr_share_capable_module_slugs()` in `includes/itm_qr_share.php` — matrix shows all registry modules; only capable slugs get enabled toggles (others show **No share UI**). Full inventory (32 capable slugs: 9 vault/explorer + 23 CRUD record) in **`docs/CRUD_RECORD_SHARE.md`**; CRUD wiring via `includes/itm_crud_record_share.php`.
 - **AJAX:** `toggle_share`, `bulk_toggle_share` with CSRF; UI script `js/share-modules-matrix.js`.
 - **Seeds:** `db/02_data.sql` inserts `company_module_share` for active companies × share-capable `modules_registry` rows only (`enabled = 1`). Live DBs: `db/migrations/company_module_share_capable_seed.sql`.
 

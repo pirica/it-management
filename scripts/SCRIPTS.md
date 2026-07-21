@@ -1036,7 +1036,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_events_vault.php` — events private-field vault encryption (`events_vault_helpers.php`, shared vs private persistence, hydrate when vault locked/unlocked)
 - `php scripts/verify_notes_share.php` — notes temporary QR/code share sessions (`note_share_sessions`, `join.php`, `notes_share_helpers.php`)
 - `php scripts/verify_private_contacts_vault.php` — private contacts vault encryption (`pc_vault_helpers.php`, list hydrate/search, master-key re-encrypt)
-- `php scripts/verify_qr_share_modules.php` — Passwords, Bookmarks, Todo, Events, Private Contacts, Explorer, Floor Plans, Rack Planner, and CRUD record share (`departments` via `includes/itm_crud_record_share.php`) temporary QR/code sessions (`share_sessions`, `join.php`, module `*_share_helpers.php`, shared `includes/itm_qr_share.php`)
+- `php scripts/verify_qr_share_modules.php` — Passwords, Bookmarks, Todo, Events, Private Contacts, Explorer, Floor Plans, Rack Planner, and CRUD record share (`departments` via `includes/itm_crud_record_share.php`) temporary QR/code sessions (`share_sessions`, `join.php`, module `*_share_helpers.php`, shared `includes/itm_qr_share.php`). Inventory: `docs/CRUD_RECORD_SHARE.md`.
 - `php scripts/verify_module_share.php` — `company_module_share` opt-out matrix + `has_module_share_access()`; requires `share_sessions` table
 - `php scripts/verify_whatsapp_share.php` — WhatsApp deep-link message/url helpers (`includes/itm_whatsapp_share.php`, `js/itm-whatsapp-share.js`)
 - `php scripts/verify_outlook_share.php` — Outlook/mail compose helpers (`includes/itm_outlook_share.php`, `js/itm-outlook-share.js`)
@@ -1439,6 +1439,9 @@ Explorer sidebar **Profile Storage** opens this folder for the logged-in user. T
 |--------|-------|----------------------|
 | `php scripts/empty_folders.php` | **Entire project** (every folder under repo root; skips `.git`, `.github`, and other dot dirs) | Empty `index.html` on **every** folder; managed `.htaccess` + `index.html` on upload paths (`images/`, `tickets_photos/`, `floor_plans/`, `backups/`, `files/`) |
 | `php scripts/ensure_files_htaccess_chain.php` | `files/` only | `deny_http` `.htaccess` + empty `index.html` on every segment (idempotent) |
+| `php scripts/apply_crud_record_share_modules.php` | CRUD record share rollout modules | Dry-run by default; `--apply` writes `join.php`, AJAX handler, view share buttons, and QR modal includes via `includes/itm_crud_record_share.php` |
+| `php scripts/fix_crud_record_share_view_buttons.php` | Scaffold `index.php` inline view blocks | Repairs share button markup when view needle pattern drifted (dry-run default; `--apply` to write) |
+| `php scripts/patch_crud_share_agent_notes.php` | CRUD record share rollout modules | Appends **Share (temporary QR / code)** section to each module `AGENT_NOTES.md` (dry-run default; `--apply` to write) |
 
 Run `empty_folders.php` after deploy, when adding new directories, or when folders were created without placeholders. The script lists only **new or changed** paths (repo-relative `index.html`) before the summary line. A second run on an unchanged tree prints `No new or changed folders.` and reports how many folders were already current.
 

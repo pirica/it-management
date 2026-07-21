@@ -1847,8 +1847,14 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="apply_crud_record_share_modules.php" target="_blank" rel="nofollow noreferrer">apply_crud_record_share_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Maintenance: wire <code>join.php</code>, AJAX <code>create_share_session</code>, view share buttons, and QR modal for CRUD record share rollout modules (<code>includes/itm_crud_record_share.php</code>). Dry-run default; pass <code>--apply</code> to write.</td>
+                    <td>Maintenance: wire <code>join.php</code>, AJAX <code>create_share_session</code>, view share buttons, and QR modal for CRUD record share rollout modules (<code>includes/itm_crud_record_share.php</code>). Dry-run default; pass <code>--apply</code> to write. Inventory: <code>docs/CRUD_RECORD_SHARE.md</code>.</td>
                     <td><code>php scripts/apply_crud_record_share_modules.php --apply</code></td>
+                </tr>
+                <tr>
+                    <td><a href="patch_crud_share_agent_notes.php" target="_blank" rel="nofollow noreferrer">patch_crud_share_agent_notes.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Maintenance: append <strong>Share (temporary QR / code)</strong> section to each CRUD record share module <code>AGENT_NOTES.md</code>. Dry-run default; pass <code>--apply</code> to write.</td>
+                    <td><code>php scripts/patch_crud_share_agent_notes.php --apply</code></td>
                 </tr>
                 <tr>
                     <td><a href="verify_qr_share_modules.php" target="_blank" rel="nofollow noreferrer">verify_qr_share_modules.php</a></td>

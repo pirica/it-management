@@ -563,6 +563,21 @@ The Request Password module (`modules/request_password/`) handles user requests 
 
 **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_request_password.php`; PoC: `php scripts/repro_request_password_bypass.php`.
 
+#### CRUD record share (mandatory)
+
+Flattened CRUD and selected bespoke modules expose **temporary QR / 6-digit / WhatsApp / Outlook share** for a single record snapshot via `includes/itm_crud_record_share.php` and unified `share_sessions`.
+
+1. **Capable slugs (23):** `employees`, `departments`, `equipment`, `catalogs`, `license_management`, `inventory_items`, `suppliers`, `alerts`, `tickets`, `patches_updates`, `ops_report`, `annual_budgets`, `approvals`, `approvals_stage`, `approver_type`, `approvers`, `budget_categories`, `cost_centers`, `expenses`, `forecast_revisions`, `forecast_revisions_status`, `gl_accounts`, `monthly_budgets` — merged into `itm_qr_share_capable_module_slugs()` with the original nine vault/explorer modules.
+2. **Not implemented (by design):** dashboard/snapshot-less modules (`calendar`, `reports`, `expiring`, `org_chart`, `birthdays`); modules without `view.php` (`contacts`, `resignations`, `budget_report`); child/lookup registry rows whose parent module already has share (e.g. `bookmark_folders` when `bookmarks` is capable).
+3. **Wiring:** each capable module has `join.php`, `index.php?ajax_action=create_share_session` handler, share action buttons, and `itm_crud_record_share_include_modal()`. Bulk maintenance: `php scripts/apply_crud_record_share_modules.php --apply`.
+4. **Equipment:** record share on `view.php`; Switch Port Manager share on `index.php?switch_id=&spm=1` with POST `share_kind=switch_ports`.
+5. **Ops report:** share button on the loaded daily report toolbar (`report_id` from `opr_ensure_report()`).
+6. **Company gate:** `modules/share_modules/` + `company_module_share`; runtime `has_module_share_access()` inside `itm_qr_share_create_session()`.
+7. **Join payloads:** `crud_record`, `equipment_switch_ports`, and bespoke ops report snapshots — rendered in `includes/itm_qr_share_join.php`.
+8. **Canonical inventory:** `docs/CRUD_RECORD_SHARE.md`.
+
+**Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_qr_share_modules.php` (includes `departments` CRUD probe); `php scripts/verify_module_share.php`.
+
 #### Company module access (mandatory)
 
 The `company_module_access` module lets administrators (`itm_is_admin()`) enable or disable modules per company.
