@@ -1021,14 +1021,13 @@ if ($todoResolvedModuleIcon !== '') {
                             </div>
                             <div class="form-group">
                                 <label>Department</label>
-                                <select name="department_id[]" multiple size="5" data-addable-select="1" data-add-table="departments" data-add-friendly="department" data-add-company-scoped="1">
-                                    <option value="">-- None --</option>
-                                    <option value="__add_new__">➕</option>
-                                    <?php 
+                                <select name="department_id[]" multiple size="5" data-addable-select="1" data-add-table="departments" data-add-id-col="id" data-add-label-col="name" data-add-friendly="department" data-add-company-scoped="1">
+                                    <?php
                                     $selectedDepts = explode(',', (string)($data['department_id'] ?? ''));
                                     foreach ($departments as $dept): ?>
                                         <option value="<?php echo $dept["id"]; ?>" <?php echo in_array($dept["id"], $selectedDepts) ? "selected" : ""; ?>><?php echo sanitize($dept["name"]); ?></option>
                                     <?php endforeach; ?>
+                                    <option value="__add_new__">➕</option>
                                 </select>
                             </div>
                             <div class="form-group">

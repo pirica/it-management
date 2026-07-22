@@ -16,6 +16,8 @@ if (defined('ROOT_PATH')) {
     require_once dirname(dirname(dirname(__FILE__))) . '/config/config.php';
 }
 
+require_once ROOT_PATH . 'modules/explorer/explorer_storage_helpers.php';
+
 /* ---------------- SAFE PATH HELPERS ---------------- */
 
 /**
@@ -23,7 +25,8 @@ if (defined('ROOT_PATH')) {
  * Ensures the user has permission to access the requested path.
  */
 if (!function_exists('get_full_path')) {
-function get_full_path($storage_root, $relative_path, $user_id, $dept_code, $username) {
+function get_full_path($storage_root, $relative_path, $user_id, $dept_codes, $username) {
+    $dept_codes = explorer_normalize_department_codes($dept_codes);
     $relative_path = explorer_normalize_relative_path($relative_path);
     if ($relative_path === null) {
         return null;
@@ -50,19 +53,12 @@ function get_full_path($storage_root, $relative_path, $user_id, $dept_code, $use
         }
     }
 
-    // Paths starting with 'Departments' are restricted to the user's department code subfolder.
+    // Paths starting with 'Departments': root lists every code folder; subfolders require assignment.
     if ($relative_path === 'Departments' || str_starts_with($relative_path, 'Departments/')) {
-        if ($dept_code === '') {
-            return null;
-        }
-
-        // Why: Departments root is listable; list action filters to the user's code folder only.
         if ($relative_path === 'Departments') {
             return $full;
         }
-
-        if (!str_starts_with($relative_path, "Departments/$dept_code/") &&
-            $relative_path !== "Departments/$dept_code") {
+        if (!explorer_department_path_allowed($relative_path, $dept_codes)) {
             return null;
         }
     }
@@ -198,12 +194,9 @@ if (isset($_GET['downloadZip'])) {
     $user_id = (int)$_SESSION['employee_id'];
     $username = $_SESSION['username'] ?? 'unknown';
 
-    // Fetch department for user
-    $dept_code = '';
-    $dept_res = mysqli_query($conn, "SELECT d.code FROM employees e LEFT JOIN departments d ON d.id = e.department_id WHERE e.id = $user_id AND e.company_id = $company_id LIMIT 1");
-    if ($dept_res && $dept_row = mysqli_fetch_assoc($dept_res)) {
-        $dept_code = trim((string)($dept_row['code'] ?? ''));
-    }
+    // Fetch department codes for ACL checks inside get_full_path().
+      require_once ROOT_PATH . 'modules/explorer/explorer_storage_helpers.php';
+    $zip_dept_codes = explorer_fetch_user_department_codes($conn, $user_id, $company_id);
 
     $path = explorer_normalize_relative_path(trim((string)($_GET['path'] ?? ''), '/'));
     if ($path === null) {
@@ -225,7 +218,7 @@ if (isset($_GET['downloadZip'])) {
     }
 
     $storage_root = ROOT_PATH . 'files/' . $company_id;
-    $full = get_full_path($storage_root, $path, $user_id, $dept_code, $username);
+    $full = get_full_path($storage_root, $path, $user_id, $zip_dept_codes, $username);
 
     if (!$full || !is_dir($full)) exit("Invalid path or permission denied.");
 
@@ -280,10 +273,8 @@ $username = $_SESSION['username'] ?? 'unknown';
 $safe_username = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $username);
 $user_private_dir = "{$safe_username}_{$user_id}";
 
-require_once ROOT_PATH . 'modules/explorer/explorer_storage_helpers.php';
-
-// Why: Fetch user department code for access control.
-$safe_dept_code = explorer_fetch_user_department_code($conn, $user_id, $company_id);
+// Why: Fetch user department codes for access control.
+$user_dept_codes = explorer_fetch_user_department_codes($conn, $user_id, $company_id);
 
 // Why: New storage root is /files/ instead of /modules/explorer/data/
 $storage_root = ROOT_PATH . 'files/' . $company_id;
@@ -406,7 +397,7 @@ function explorer_validate_upload_file($tmpName, $safeName, $fileSize, &$error) 
  * Synchronises a filesystem change to the explorer database table.
  */
 if (!function_exists('sync_db')) {
-function sync_db($conn, $company_id, $user_id, $safe_dept_code, $path, $name, $type, $action = 'add') {
+function sync_db($conn, $company_id, $user_id, $user_dept_codes, $path, $name, $type, $action = 'add') {
     if (!isset($conn) || !$conn) return;
     $path = trim((string)$path, '/');
     $name = basename((string)$name);
@@ -414,11 +405,12 @@ function sync_db($conn, $company_id, $user_id, $safe_dept_code, $path, $name, $t
     if ($action === 'add') {
         $is_private = (str_starts_with($path, 'Private') || $path === 'Private') ? 1 : 0;
 
-        // Find department_id from safe_dept_code
+        // Find department_id from the folder path or the first assigned code.
         $db_dept_id = null;
-        if ($safe_dept_code !== '') {
+        $sync_dept_code = explorer_resolve_department_code_for_sync($path, $user_dept_codes);
+        if ($sync_dept_code !== '') {
             $stmt_d = mysqli_prepare($conn, "SELECT id FROM departments WHERE company_id = ? AND code = ? LIMIT 1");
-            mysqli_stmt_bind_param($stmt_d, "is", $company_id, $safe_dept_code);
+            mysqli_stmt_bind_param($stmt_d, "is", $company_id, $sync_dept_code);
             mysqli_stmt_execute($stmt_d);
             $res_d = mysqli_stmt_get_result($stmt_d);
             if ($row_d = mysqli_fetch_assoc($res_d)) {
@@ -539,18 +531,25 @@ switch ($action) {
 /* ---------------- LIST ---------------- */
 case "list":
     // Why: get_full_path already trims $path, but we keep the local $path trimmed for logic checks.
-    $dir = get_full_path($storage_root, $path, $user_id, $safe_dept_code, $username);
-    if (!$dir) { echo json_encode(['items' => []]); break; }
+    $dir = get_full_path($storage_root, $path, $user_id, $user_dept_codes, $username);
+    if (!$dir) {
+        if ($path !== '' && str_starts_with($path, 'Departments/')) {
+            echo json_encode([
+                'items' => [],
+                'error' => 'You do not have access to this department folder.',
+                'forbidden' => 1,
+            ]);
+            break;
+        }
+        echo json_encode(['items' => []]);
+        break;
+    }
 
     $items = [];
     if (is_dir($dir)) {
         foreach (scandir($dir) as $f) {
             if ($f === "." || $f === ".." || $f === "Trash" || $f === "Recycle") continue;
             if (explorer_is_hidden_system_entry($f)) continue;
-            // Why: At Departments root, hide other department code folders on disk.
-            if ($path === 'Departments' && $safe_dept_code !== '' && $f !== $safe_dept_code) {
-                continue;
-            }
 
             $full = $dir . "/" . $f;
             $type = is_dir($full) ? "folder" : "file";
@@ -566,11 +565,11 @@ case "list":
             ];
 
             // Sync to DB on list (discovery)
-            sync_db($conn, $company_id, $user_id, $safe_dept_code, $path, $f, $type);
+            sync_db($conn, $company_id, $user_id, $user_dept_codes, $path, $f, $type);
         }
     }
     // Why: Home shows Trash only when this user has recoverable items (sidebar link always available).
-    if ($path === '' && explorer_user_has_visible_trash_items($trash_root, $user_id, $safe_dept_code, $username)) {
+    if ($path === '' && explorer_user_has_visible_trash_items($trash_root, $user_id, $user_dept_codes, $username)) {
         $items[] = [
             'name' => 'Trash',
             'type' => 'trash',
@@ -583,7 +582,7 @@ case "list":
 
 /* ---------------- OPEN ---------------- */
 case "open":
-    $dir = get_full_path($storage_root, $path, $user_id, $safe_dept_code, $username);
+    $dir = get_full_path($storage_root, $path, $user_id, $user_dept_codes, $username);
     $item = get_safe_post_item();
     if ($item === null) { echo json_encode(['preview' => 'unsupported', 'message' => 'Invalid item name.']); break; }
     $full = $dir . "/" . $item;
@@ -631,7 +630,7 @@ case "open":
 
 /* ---------------- CREATE FOLDER ---------------- */
 case "createFolder":
-    $dir = get_full_path($storage_root, $path, $user_id, $safe_dept_code, $username);
+    $dir = get_full_path($storage_root, $path, $user_id, $user_dept_codes, $username);
 
     // Why: Block folder creation directly in Home root, Private root, Departments root or Trash.
     if ($path === '' || $path === 'Private' || $path === 'Departments' || $path === 'Trash') {
@@ -641,7 +640,7 @@ case "createFolder":
 
     $name = get_safe_post_name() ?? 'New Folder';
     if ($dir && explorer_ensure_dir($dir . "/" . $name)) {
-        sync_db($conn, $company_id, $user_id, $safe_dept_code, $path, $name, 'folder');
+        sync_db($conn, $company_id, $user_id, $user_dept_codes, $path, $name, 'folder');
         echo json_encode(["ok" => 1]);
     } else {
         echo json_encode(["ok" => 0, "error" => "Unable to create folder."]);
@@ -650,7 +649,7 @@ case "createFolder":
 
 /* ---------------- DELETE ---------------- */
 case "delete":
-    $dir = get_full_path($storage_root, $path, $user_id, $safe_dept_code, $username);
+    $dir = get_full_path($storage_root, $path, $user_id, $user_dept_codes, $username);
     $item = get_safe_post_item();
     if ($item === null) { echo json_encode(["ok" => 0, "error" => "Invalid item name."]); break; }
     $src = $dir . "/" . $item;
@@ -690,7 +689,7 @@ case "delete":
     explorer_ensure_dir(dirname($dst));
 
     if (@rename($src, $dst)) {
-        sync_db($conn, $company_id, $user_id, $safe_dept_code, $path, $item, '', 'delete');
+        sync_db($conn, $company_id, $user_id, $user_dept_codes, $path, $item, '', 'delete');
         echo json_encode(["ok" => 1]);
     } else {
         echo json_encode(["ok" => 0]);
@@ -699,7 +698,7 @@ case "delete":
 
 /* ---------------- RENAME ---------------- */
 case "rename":
-    $dir = get_full_path($storage_root, $path, $user_id, $safe_dept_code, $username);
+    $dir = get_full_path($storage_root, $path, $user_id, $user_dept_codes, $username);
     $item = get_safe_post_item();
     $name = get_safe_post_name();
 
@@ -718,9 +717,9 @@ case "rename":
     $dst = $dir . "/" . $name;
 
     if (@rename($src, $dst)) {
-        sync_db($conn, $company_id, $user_id, $safe_dept_code, $path, $item, '', 'delete');
+        sync_db($conn, $company_id, $user_id, $user_dept_codes, $path, $item, '', 'delete');
         $type = is_dir($dst) ? 'folder' : 'file';
-        sync_db($conn, $company_id, $user_id, $safe_dept_code, $path, $name, $type, 'add');
+        sync_db($conn, $company_id, $user_id, $user_dept_codes, $path, $name, $type, 'add');
         echo json_encode(["ok" => 1]);
     } else {
         echo json_encode(["ok" => 0]);
@@ -733,8 +732,8 @@ case "copy":
     $src_rel = trim((string)($_POST['src_path'] ?? $path), '/');
     $dest_rel = trim((string)($_POST['dest'] ?? $src_rel), '/');
 
-    $dir = get_full_path($storage_root, $src_rel, $user_id, $safe_dept_code, $username);
-    $targetDir = get_full_path($storage_root, $dest_rel, $user_id, $safe_dept_code, $username);
+    $dir = get_full_path($storage_root, $src_rel, $user_id, $user_dept_codes, $username);
+    $targetDir = get_full_path($storage_root, $dest_rel, $user_id, $user_dept_codes, $username);
 
     $item = get_safe_post_item();
     if ($item === null) { echo json_encode(["ok" => 0, "error" => "Invalid item name."]); break; }
@@ -769,7 +768,7 @@ case "copy":
 
     if ($ok) {
         $type = is_dir($dst) ? 'folder' : 'file';
-        sync_db($conn, $company_id, $user_id, $safe_dept_code, $dest_rel, $new_name, $type, 'add');
+        sync_db($conn, $company_id, $user_id, $user_dept_codes, $dest_rel, $new_name, $type, 'add');
         echo json_encode(["ok" => 1]);
     } else {
         echo json_encode(["ok" => 0]);
@@ -782,8 +781,8 @@ case "move":
     $src_rel = trim((string)($_POST['src_path'] ?? $path), '/');
     $dest_rel = trim((string)($_POST['dest'] ?? ''), '/');
 
-    $dir = get_full_path($storage_root, $src_rel, $user_id, $safe_dept_code, $username);
-    $targetDir = get_full_path($storage_root, $dest_rel, $user_id, $safe_dept_code, $username);
+    $dir = get_full_path($storage_root, $src_rel, $user_id, $user_dept_codes, $username);
+    $targetDir = get_full_path($storage_root, $dest_rel, $user_id, $user_dept_codes, $username);
 
     $item = get_safe_post_item();
     if ($item === null) { echo json_encode(["ok" => 0, "error" => "Invalid item name."]); break; }
@@ -812,9 +811,9 @@ case "move":
     $dst = $targetDir . "/" . basename($item);
 
     if (@rename($src, $dst)) {
-        sync_db($conn, $company_id, $user_id, $safe_dept_code, $src_rel, $item, '', 'delete');
+        sync_db($conn, $company_id, $user_id, $user_dept_codes, $src_rel, $item, '', 'delete');
         $type = is_dir($dst) ? 'folder' : 'file';
-        sync_db($conn, $company_id, $user_id, $safe_dept_code, $dest_rel, $item, $type, 'add');
+        sync_db($conn, $company_id, $user_id, $user_dept_codes, $dest_rel, $item, $type, 'add');
         echo json_encode(["ok" => 1]);
     } else {
         echo json_encode(["ok" => 0]);
@@ -823,7 +822,7 @@ case "move":
 
 /* ---------------- ZIP ---------------- */
 case "zip":
-    $dir = get_full_path($storage_root, $path, $user_id, $safe_dept_code, $username);
+    $dir = get_full_path($storage_root, $path, $user_id, $user_dept_codes, $username);
     $item = get_safe_post_item();
     if ($item === null) { echo json_encode(["ok" => 0, "error" => "Invalid item name."]); break; }
     $src = $dir . "/" . $item;
@@ -856,7 +855,7 @@ case "zip":
             $zip->addFile($src, basename($src));
         }
         $zip->close();
-        sync_db($conn, $company_id, $user_id, $safe_dept_code, $path, $item . ".zip", 'zip', 'add');
+        sync_db($conn, $company_id, $user_id, $user_dept_codes, $path, $item . ".zip", 'zip', 'add');
         echo json_encode(["ok" => 1]);
     } else {
         echo json_encode(["ok" => 0]);
@@ -865,7 +864,7 @@ case "zip":
 
 /* ---------------- UNZIP ---------------- */
 case "unzip":
-    $dir = get_full_path($storage_root, $path, $user_id, $safe_dept_code, $username);
+    $dir = get_full_path($storage_root, $path, $user_id, $user_dept_codes, $username);
     $item = get_safe_post_item();
     if ($item === null) { echo json_encode(["ok" => 0, "error" => "Invalid item name."]); break; }
     $src = $dir . "/" . $item;
@@ -890,7 +889,7 @@ case "unzip":
 
 /* ---------------- UPLOAD ---------------- */
 case "upload":
-    $dir = get_full_path($storage_root, $path, $user_id, $safe_dept_code, $username);
+    $dir = get_full_path($storage_root, $path, $user_id, $user_dept_codes, $username);
     if (!$dir) { echo json_encode(["ok" => 0]); break; }
 
     // Why: Block upload directly in restricted top-level folders.
@@ -921,7 +920,7 @@ case "upload":
             }
 
             if (@move_uploaded_file($tmp, $dir . "/" . $safe_name)) {
-                sync_db($conn, $company_id, $user_id, $safe_dept_code, $path, $safe_name, 'file');
+                sync_db($conn, $company_id, $user_id, $user_dept_codes, $path, $safe_name, 'file');
                 $uploadedCount++;
             } else {
                 $uploadErrors[] = 'Could not store ' . $safe_name . '.';
@@ -942,7 +941,7 @@ case "upload":
 
 /* ---------------- DATE STRUCTURES ---------------- */
 case "createYear":
-    $dir = get_full_path($storage_root, $path, $user_id, $safe_dept_code, $username);
+    $dir = get_full_path($storage_root, $path, $user_id, $user_dept_codes, $username);
     if (!$dir || $path === '' || $path === 'Private' || $path === 'Departments' || $path === 'Trash') {
         echo json_encode(["ok" => 0, "error" => "Restricted location."]); break;
     }
@@ -950,14 +949,14 @@ case "createYear":
     foreach ([$cur - 1, $cur, $cur + 1] as $y) {
         if (!is_dir("$dir/$y")) {
             explorer_ensure_dir("$dir/$y");
-            sync_db($conn, $company_id, $user_id, $safe_dept_code, $path, (string)$y, 'folder');
+            sync_db($conn, $company_id, $user_id, $user_dept_codes, $path, (string)$y, 'folder');
         }
     }
     echo json_encode(["ok" => 1]);
     break;
 
 case "createMonths":
-    $dir = get_full_path($storage_root, $path, $user_id, $safe_dept_code, $username);
+    $dir = get_full_path($storage_root, $path, $user_id, $user_dept_codes, $username);
     if (!$dir || $path === '' || $path === 'Private' || $path === 'Departments' || $path === 'Trash') {
         echo json_encode(["ok" => 0, "error" => "Restricted location."]); break;
     }
@@ -969,14 +968,14 @@ case "createMonths":
     foreach ($months as $m) {
         if (!is_dir("$dir/$m")) {
             explorer_ensure_dir("$dir/$m");
-            sync_db($conn, $company_id, $user_id, $safe_dept_code, $path, $m, 'folder');
+            sync_db($conn, $company_id, $user_id, $user_dept_codes, $path, $m, 'folder');
         }
     }
     echo json_encode(["ok" => 1]);
     break;
 
 case "createDays":
-    $dir = get_full_path($storage_root, $path, $user_id, $safe_dept_code, $username);
+    $dir = get_full_path($storage_root, $path, $user_id, $user_dept_codes, $username);
     if (!$dir || $path === '' || $path === 'Private' || $path === 'Departments' || $path === 'Trash') {
         echo json_encode(["ok" => 0, "error" => "Restricted location."]); break;
     }
@@ -1001,14 +1000,14 @@ case "createDays":
         $d = str_pad($i, 2, '0', STR_PAD_LEFT);
         if (!is_dir("$dir/$d")) {
             explorer_ensure_dir("$dir/$d");
-            sync_db($conn, $company_id, $user_id, $safe_dept_code, $path, $d, 'folder');
+            sync_db($conn, $company_id, $user_id, $user_dept_codes, $path, $d, 'folder');
         }
     }
     echo json_encode(["ok" => 1]);
     break;
 
 case "createYearMonthDay":
-    $dir = get_full_path($storage_root, $path, $user_id, $safe_dept_code, $username);
+    $dir = get_full_path($storage_root, $path, $user_id, $user_dept_codes, $username);
     if (!$dir || $path === '' || $path === 'Private' || $path === 'Departments' || $path === 'Trash') {
         echo json_encode(["ok" => 0, "error" => "Restricted location."]); break;
     }
@@ -1022,9 +1021,9 @@ case "createYearMonthDay":
     $full_path = "$dir/$y/$m_folder/$d";
     if (!is_dir($full_path)) {
         explorer_ensure_dir($full_path);
-        sync_db($conn, $company_id, $user_id, $safe_dept_code, $path, $y, 'folder');
-        sync_db($conn, $company_id, $user_id, $safe_dept_code, "$path/$y", $m_folder, 'folder');
-        sync_db($conn, $company_id, $user_id, $safe_dept_code, "$path/$y/$m_folder", $d, 'folder');
+        sync_db($conn, $company_id, $user_id, $user_dept_codes, $path, $y, 'folder');
+        sync_db($conn, $company_id, $user_id, $user_dept_codes, "$path/$y", $m_folder, 'folder');
+        sync_db($conn, $company_id, $user_id, $user_dept_codes, "$path/$y/$m_folder", $d, 'folder');
     }
     echo json_encode(["ok" => 1]);
     break;
@@ -1032,7 +1031,7 @@ case "createYearMonthDay":
 /* ---------------- TRASH BIN ---------------- */
 case "listRecycle":
     echo json_encode([
-        'items' => explorer_collect_visible_trash_items($trash_root, $user_id, $safe_dept_code, $username),
+        'items' => explorer_collect_visible_trash_items($trash_root, $user_id, $user_dept_codes, $username),
     ]);
     break;
 
@@ -1044,7 +1043,7 @@ case "restore":
     }
 
     // Why: Ensure user has permission to the item being restored.
-    if (get_full_path($trash_root, $item, $user_id, $safe_dept_code, $username) === null) {
+    if (get_full_path($trash_root, $item, $user_id, $user_dept_codes, $username) === null) {
         echo json_encode(["ok" => 0, "error" => "Permission denied."]);
         break;
     }
@@ -1058,7 +1057,7 @@ case "restore":
         if ($path === '.') $path = '';
         $name = basename($item);
         $type = is_dir($dst) ? 'folder' : 'file';
-        sync_db($conn, $company_id, $user_id, $safe_dept_code, $path, $name, $type, 'add');
+        sync_db($conn, $company_id, $user_id, $user_dept_codes, $path, $name, $type, 'add');
         echo json_encode(["ok" => 1]);
     } else {
         echo json_encode(["ok" => 0]);
@@ -1074,7 +1073,7 @@ case "emptyRecycle":
         foreach ($it as $file) {
             $rel = substr($file->getPathname(), strlen($trash_root) + 1);
             $safe_rel = str_replace('\\', '/', $rel);
-            if (get_full_path($trash_root, $safe_rel, $user_id, $safe_dept_code, $username) === null) {
+            if (get_full_path($trash_root, $safe_rel, $user_id, $user_dept_codes, $username) === null) {
                 continue;
             }
             if ($file->isDir()) {
@@ -1103,7 +1102,7 @@ case "create_share_session":
         $user_id,
         $ownerUsername,
         $scopePath,
-        $safe_dept_code,
+        $user_dept_codes,
         $username,
         $vaultUnlocked,
         $storage_root,

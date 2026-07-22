@@ -47,9 +47,9 @@ $user_private_dir_json = json_encode($user_private_dir, JSON_UNESCAPED_UNICODE |
 
 require_once __DIR__ . '/explorer_storage_helpers.php';
 
-// Why: Department scope for sidebar and folder navigation (Private root is API-blocked; Departments root lists the user's code folder).
-$safe_dept_code = explorer_fetch_user_department_code($conn, $user_id, $company_id);
-$user_dept_code_json = json_encode($safe_dept_code, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+// Why: Department ACL codes for Explorer (Departments root shows all; subfolders require assignment).
+$user_dept_codes = explorer_fetch_user_department_codes($conn, $user_id, $company_id);
+$user_dept_codes_json = json_encode($user_dept_codes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
 // Why: Create tenant Explorer folders (including Departments/{code}) when missing before first API call.
 explorer_ensure_tenant_storage_scaffold($conn, $company_id, $user_id, $username);
@@ -337,7 +337,7 @@ const CLIPBOARD_STORAGE_KEY = "itm_explorer_clipboard";
 let contextItem = null;
 let inRecycle = false;
 let userPrivateDir = <?= $user_private_dir_json ?>;
-let userDeptCode = <?= $user_dept_code_json ?>;
+let userDeptCodes = <?= $user_dept_codes_json ?>;
 let explorerVaultUnlocked = <?= $explorerVaultUnlocked ? 'true' : 'false' ?>;
 let favourites = JSON.parse(localStorage.getItem("itm_explorer_favourites") || "[]");
 
@@ -372,17 +372,26 @@ function toggleExplorerVaultLock(show) {
     }
 }
 
-/* Why: API blocks Private root; Departments opens the root with the user's code folder inside. */
+/* Why: Private root is API-blocked; Departments root lists every code folder. */
+function explorerCanAccessDepartmentCode(code) {
+    return Array.isArray(userDeptCodes) && userDeptCodes.indexOf(code) !== -1;
+}
+
+function explorerShowDepartmentForbidden() {
+    const message = "You do not have access to this department folder.";
+    if (typeof itmShowForbiddenModal === "function") {
+        itmShowForbiddenModal(message);
+        return;
+    }
+    alert(message);
+}
+
 function resolveScopedFolderPath(path) {
     const normalized = String(path || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
     if (normalized === "Private") {
         return "Private/" + userPrivateDir;
     }
     if (normalized === "Departments") {
-        if (userDeptCode === "") {
-            alert("You are not assigned to a department. Department files are unavailable.");
-            return null;
-        }
         return "Departments";
     }
     return normalized;
@@ -832,6 +841,10 @@ function openItem(name, type) {
     }
     if (type === "folder") {
         let nextPath = currentPath ? currentPath + "/" + name : name;
+        if (currentPath === "Departments" && !explorerCanAccessDepartmentCode(name)) {
+            explorerShowDepartmentForbidden();
+            return;
+        }
         nextPath = resolveScopedFolderPath(nextPath);
         if (nextPath === null) return;
         currentPath = nextPath;
@@ -1122,6 +1135,10 @@ function loadFolder(path) {
     currentPath = scopedPath;
     tabs[activeTab].path = currentPath;
     api("list", { path: currentPath }).then(res => {
+        if (res && res.forbidden) {
+            explorerShowDepartmentForbidden();
+            return;
+        }
         renderIcons(res.items || []);
         renderTabs();
         renderBreadcrumbs();

@@ -274,6 +274,7 @@ require_once ROOT_PATH . 'includes/itm_date_format.php';
 require_once ROOT_PATH . 'includes/itm_crud_audit_fields.php';
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 require_once ROOT_PATH . 'includes/itm_employee_contact_email.php';
+require_once ROOT_PATH . 'includes/itm_employee_departments.php';
 require_once ROOT_PATH . 'includes/ui_alert_helpers.php';
 require_once ROOT_PATH . 'includes/itm_user_forbidden.php';
 require_once ROOT_PATH . 'includes/fk_dropdown_helpers.php';

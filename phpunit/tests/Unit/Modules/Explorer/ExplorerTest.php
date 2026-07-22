@@ -18,6 +18,7 @@ class ExplorerTest extends TestCase
     {
         $this->storageRoot = __DIR__ . '/storage_root';
 
+        require_once ROOT_PATH . 'modules/explorer/explorer_storage_helpers.php';
         $this->requireExtractedFunction(ROOT_PATH . 'modules/explorer/api.php', 'get_full_path');
         $this->requireExtractedFunction(ROOT_PATH . 'modules/explorer/api.php', 'explorer_is_hidden_system_entry');
         $this->requireExtractedFunction(ROOT_PATH . 'modules/explorer/api.php', 'explorer_resolve_preview_mode');
@@ -31,35 +32,37 @@ class ExplorerTest extends TestCase
         }
 
         $userPrivateDir = "{$this->safeUsername}_{$this->employeeId}";
+        $assignedCodes = [$this->deptCode, 'FO'];
 
         // Root and Common
-        $this->assertNotNull(get_full_path($this->storageRoot, '', $this->employeeId, $this->deptCode, $this->username));
-        $this->assertNotNull(get_full_path($this->storageRoot, 'Common', $this->employeeId, $this->deptCode, $this->username));
-        $this->assertNotNull(get_full_path($this->storageRoot, 'Common/sub', $this->employeeId, $this->deptCode, $this->username));
+        $this->assertNotNull(get_full_path($this->storageRoot, '', $this->employeeId, $assignedCodes, $this->username));
+        $this->assertNotNull(get_full_path($this->storageRoot, 'Common', $this->employeeId, $assignedCodes, $this->username));
+        $this->assertNotNull(get_full_path($this->storageRoot, 'Common/sub', $this->employeeId, $assignedCodes, $this->username));
 
         // Private - Own (root is blocked, subfolder is allowed)
-        $this->assertNull(get_full_path($this->storageRoot, 'Private', $this->employeeId, $this->deptCode, $this->username));
-        $this->assertNotNull(get_full_path($this->storageRoot, "Private/$userPrivateDir", $this->employeeId, $this->deptCode, $this->username));
-        $this->assertNotNull(get_full_path($this->storageRoot, "Private/$userPrivateDir/file.txt", $this->employeeId, $this->deptCode, $this->username));
+        $this->assertNull(get_full_path($this->storageRoot, 'Private', $this->employeeId, $assignedCodes, $this->username));
+        $this->assertNotNull(get_full_path($this->storageRoot, "Private/$userPrivateDir", $this->employeeId, $assignedCodes, $this->username));
+        $this->assertNotNull(get_full_path($this->storageRoot, "Private/$userPrivateDir/file.txt", $this->employeeId, $assignedCodes, $this->username));
 
         // Private - Other (blocked)
-        $this->assertNull(get_full_path($this->storageRoot, 'Private/otheruser_999', $this->employeeId, $this->deptCode, $this->username));
+        $this->assertNull(get_full_path($this->storageRoot, 'Private/otheruser_999', $this->employeeId, $assignedCodes, $this->username));
 
-        // Departments - root listable when assigned; subfolders scoped to own code
-        $this->assertNotNull(get_full_path($this->storageRoot, 'Departments', $this->employeeId, $this->deptCode, $this->username));
-        $this->assertNull(get_full_path($this->storageRoot, 'Departments', $this->employeeId, '', $this->username));
-        $this->assertNotNull(get_full_path($this->storageRoot, "Departments/{$this->deptCode}", $this->employeeId, $this->deptCode, $this->username));
+        // Departments - root lists all folders; subfolders require assignment
+        $this->assertNotNull(get_full_path($this->storageRoot, 'Departments', $this->employeeId, $assignedCodes, $this->username));
+        $this->assertNotNull(get_full_path($this->storageRoot, 'Departments', $this->employeeId, [], $this->username));
+        $this->assertNotNull(get_full_path($this->storageRoot, "Departments/{$this->deptCode}", $this->employeeId, $assignedCodes, $this->username));
+        $this->assertNotNull(get_full_path($this->storageRoot, 'Departments/FO', $this->employeeId, $assignedCodes, $this->username));
 
         // Departments - Other (blocked)
-        $this->assertNull(get_full_path($this->storageRoot, 'Departments/OTHERDEPT', $this->employeeId, $this->deptCode, $this->username));
+        $this->assertNull(get_full_path($this->storageRoot, 'Departments/OTHERDEPT', $this->employeeId, $assignedCodes, $this->username));
 
         // Directory Traversal (blocked)
-        $this->assertNull(get_full_path($this->storageRoot, '../secrets', $this->employeeId, $this->deptCode, $this->username));
+        $this->assertNull(get_full_path($this->storageRoot, '../secrets', $this->employeeId, $assignedCodes, $this->username));
 
         // ./ prefix bypass attempts (blocked after normalization)
-        $this->assertNull(get_full_path($this->storageRoot, './Private', $this->employeeId, $this->deptCode, $this->username));
-        $this->assertNull(get_full_path($this->storageRoot, './Private/otheruser_999', $this->employeeId, $this->deptCode, $this->username));
-        $this->assertNotNull(get_full_path($this->storageRoot, './Departments', $this->employeeId, $this->deptCode, $this->username));
+        $this->assertNull(get_full_path($this->storageRoot, './Private', $this->employeeId, $assignedCodes, $this->username));
+        $this->assertNull(get_full_path($this->storageRoot, './Private/otheruser_999', $this->employeeId, $assignedCodes, $this->username));
+        $this->assertNotNull(get_full_path($this->storageRoot, './Departments', $this->employeeId, $assignedCodes, $this->username));
     }
 
     public function testHiddenSystemEntries()

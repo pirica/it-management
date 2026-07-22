@@ -16,7 +16,7 @@ Secure multi-tenant file manager. Physical files under `files/{company_id}/` wit
   - `Departments/{dept_code}/` — department members only (uses department code instead of ID).
   - `Private/{username}_{user_id}/` — owner only.
   - `Trash/` — soft-deleted items (relative paths mirror live layout).
-- **Blocked API access** to `Private` root (`get_full_path` returns null). The UI resolves sidebar Private navigation to `Private/{username}_{user_id}` via `resolveScopedFolderPath()` in `index.php`. **Departments** root is listable for assigned employees; the `list` action shows only their `Departments/{dept_code}/` folder (other codes on disk are hidden).
+- **Blocked API access** to `Private` root (`get_full_path` returns null). The UI resolves sidebar Private navigation to `Private/{username}_{user_id}` via `resolveScopedFolderPath()` in `index.php`. **Departments** root lists every tenant `departments.code` folder; entering `Departments/{code}/` requires assignment via `employees.department_id` and/or `employee_departments`. Unauthorized entry returns API `forbidden: 1` and shows the shared forbidden modal in the browser.
 - **Blocked creation/upload** at Home root, `Private` root, `Departments` root, and `Trash` root.
 - **Protected folders:** top-level `Common`, `Departments`, `Private`, `Trash`, and items directly under `Private`/`Departments` roots cannot be renamed, moved, deleted, copied, or zipped. User primary private folder cannot be renamed, moved, or deleted.
 - **Trash Protection:** `Trash` root cannot be deleted if it contains any items.
@@ -89,7 +89,8 @@ All actions are POST to `api.php` with `action` parameter (JSON responses unless
 - Allowing upload in blocked roots (Home, Private root, Departments root). [Cursor-Valid]
 - Trusting only the client filename extension for Explorer uploads (no MIME/size check). [Cursor-Fixed]
 - Navigating to `Private` in JS without `resolveScopedFolderPath()` — list API returns empty after root blocking. [Cursor-Valid]
-- Expecting other department code folders at `Departments/` root — list filters to the signed-in employee's code only. [Cursor-Valid]
+- Expecting other department code folders at `Departments/` root — list filters to the signed-in employee's code only. [Cursor-Fixed]
+- Entering an unassigned `Departments/{code}/` folder without modal/alert. [Cursor-Fixed]
 - `restore` POST `item` must be normalized before ACL and filesystem paths (backslashes bypass segment checks). [Cursor-Valid]
 - Linking `../../files/…` in HTML after `deny_http` — images/downloads break; use `itm_files_serve_url()`. [Cursor-Valid]
 - Hand-editing `.htaccess` under `files/` — removed on next `itm_ensure_files_storage_directory()` call. [Cursor-Valid]
@@ -112,4 +113,4 @@ explorer_ensure_dir($dir . '/' . $name); // wraps itm_ensure_files_storage_direc
 ```
 
 ## 12. Module Owner Notes (Optional)
-Regression: `php scripts/test_explorer_paths.php`; ZIP contract: `php scripts/verify_explorer_zip_leak.php` (blocked roots + scoped Private backup); path `./` bypass: `php scripts/repro_explorer_path_bypass_v4.php`; Zip Slip: `php scripts/repro_explorer_zip_slip_v2.php`. QR share: `php scripts/verify_qr_share_modules.php`. `.htaccess` RCE PoC: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php`. PHPUnit: `ExplorerTest::testGetFullPathSecurity`, `ExplorerTest::testTrashListFiltersAncestorFolders`, `ExplorerPathBypassTest`, `ExplorerZipSlipTest`.
+Regression: `php scripts/test_explorer_paths.php`; `php scripts/verify_explorer_department_access.php`; ZIP contract: `php scripts/verify_explorer_zip_leak.php` (blocked roots + scoped Private backup); path `./` bypass: `php scripts/repro_explorer_path_bypass_v4.php`; Zip Slip: `php scripts/repro_explorer_zip_slip_v2.php`. QR share: `php scripts/verify_qr_share_modules.php`. `.htaccess` RCE PoC: `verify_explorer_rce_htaccess.php`, `verify_explorer_rce_marker.php`. PHPUnit: `ExplorerTest::testGetFullPathSecurity`, `ExplorerTest::testTrashListFiltersAncestorFolders`, `ExplorerPathBypassTest`, `ExplorerZipSlipTest`.

@@ -80,6 +80,45 @@
           selectEl.appendChild(option);
     }
 
+    function getSelectedValues(selectEl) {
+        if (!selectEl.multiple) {
+            return selectEl.value && selectEl.value !== ADD_VALUE ? [selectEl.value] : [];
+        }
+        return Array.from(selectEl.selectedOptions)
+            .map((opt) => opt.value)
+            .filter((value) => value !== '' && value !== ADD_VALUE);
+    }
+
+    function setSelectedValues(selectEl, values) {
+        const wanted = new Set(values.map(String));
+        Array.from(selectEl.options).forEach((opt) => {
+            opt.selected = wanted.has(String(opt.value));
+        });
+    }
+
+    function storePreviousSelection(selectEl) {
+        if (selectEl.multiple) {
+            selectEl.dataset.previousSelected = JSON.stringify(getSelectedValues(selectEl));
+            return;
+        }
+        if (selectEl.value !== ADD_VALUE) {
+            selectEl.dataset.previousValue = selectEl.value || '';
+        }
+    }
+
+    function restorePreviousSelection(selectEl) {
+        if (selectEl.multiple) {
+            try {
+                const previous = JSON.parse(selectEl.dataset.previousSelected || '[]');
+                setSelectedValues(selectEl, Array.isArray(previous) ? previous : []);
+            } catch (error) {
+                setSelectedValues(selectEl, []);
+            }
+            return;
+        }
+        selectEl.value = selectEl.dataset.previousValue || '';
+    }
+
     function parseExtraFieldConfig(selectEl) {
         const raw = selectEl.getAttribute('data-add-extra-fields');
         if (!raw) return [];
@@ -504,11 +543,11 @@
     async function addValue(selectEl) {
         const userInput = await collectInput(selectEl);
         if (userInput === null) {
-            selectEl.value = selectEl.dataset.previousValue || '';
+            restorePreviousSelection(selectEl);
             return;
         }
         if (userInput === false) {
-            selectEl.value = selectEl.dataset.previousValue || '';
+            restorePreviousSelection(selectEl);
             return;
         }
 
@@ -523,7 +562,9 @@
             }, userInput);
 
             const blankOption = Array.from(selectEl.options).find((opt) => opt.value === '');
-            const blankHtml = blankOption ? `<option value="">${escapeHtml(blankOption.textContent)}</option>` : '';
+            const blankHtml = (!selectEl.multiple && blankOption)
+                ? `<option value="">${escapeHtml(blankOption.textContent)}</option>`
+                : '';
             const existingOptions = Array.from(selectEl.options).filter((opt) => opt.value !== '' && opt.value !== ADD_VALUE);
             const usesLabelAsValue = existingOptions.some((opt) => String(opt.value) === String(opt.textContent || '').trim());
             const optionHtml = (result.options || []).map((opt) => {
@@ -536,13 +577,33 @@
                 return `<option value="${escapeHtml(optionValue)}"${hexAttr}>${escapeHtml(optionLabel)}</option>`;
             }).join('');
             selectEl.innerHTML = `${blankHtml}${optionHtml}<option value="${ADD_VALUE}">➕</option>`;
-            if (usesLabelAsValue) {
+
+            if (selectEl.multiple) {
+                let previous = [];
+                try {
+                    previous = JSON.parse(selectEl.dataset.previousSelected || '[]');
+                } catch (error) {
+                    previous = [];
+                }
+                const newValue = usesLabelAsValue
+                    ? String(((result.options || []).find((opt) => String(opt.id) === String(result.selected_id)) || {}).label || '')
+                    : String(result.selected_id);
+                const allSelected = Array.from(new Set(
+                    (Array.isArray(previous) ? previous : [])
+                        .concat(newValue ? [newValue] : [])
+                        .filter((value) => value !== '' && value !== ADD_VALUE)
+                ));
+                setSelectedValues(selectEl, allSelected);
+                selectEl.dataset.previousSelected = JSON.stringify(allSelected);
+            } else if (usesLabelAsValue) {
                 const selectedOption = (result.options || []).find((opt) => String(opt.id) === String(result.selected_id));
                 selectEl.value = String((selectedOption && selectedOption.label) || '');
             } else {
                 selectEl.value = String(result.selected_id);
             }
-            selectEl.dataset.previousValue = selectEl.value || '';
+            if (!selectEl.multiple) {
+                selectEl.dataset.previousValue = selectEl.value || '';
+            }
             selectEl.dispatchEvent(new CustomEvent('itm:add-option:added', {
                 bubbles: true,
                 detail: {
@@ -557,7 +618,7 @@
             } else {
                 window.alert(error.message || 'Could not add the value right now.');
             }
-            selectEl.value = selectEl.dataset.previousValue || '';
+            restorePreviousSelection(selectEl);
         } finally {
             selectEl.disabled = false;
         }
@@ -576,20 +637,32 @@
         selectEl.dataset.itmAddableBound = '1';
 
         injectAddOption(selectEl);
-        selectEl.dataset.previousValue = selectEl.value || '';
+        storePreviousSelection(selectEl);
 
         selectEl.addEventListener('focus', function () {
-            if (selectEl.value !== ADD_VALUE) {
-                selectEl.dataset.previousValue = selectEl.value || '';
-            }
+            storePreviousSelection(selectEl);
         });
 
         selectEl.addEventListener('change', function () {
+            if (selectEl.multiple) {
+                const selected = Array.from(selectEl.selectedOptions).map((opt) => opt.value);
+                if (selected.includes(ADD_VALUE)) {
+                    Array.from(selectEl.options).forEach((opt) => {
+                        if (opt.value === ADD_VALUE) {
+                            opt.selected = false;
+                        }
+                    });
+                    addValue(selectEl);
+                    return;
+                }
+                storePreviousSelection(selectEl);
+                return;
+            }
             if (selectEl.value === ADD_VALUE) {
                 addValue(selectEl);
                 return;
             }
-            selectEl.dataset.previousValue = selectEl.value || '';
+            storePreviousSelection(selectEl);
         });
     }
 

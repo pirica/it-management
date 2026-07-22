@@ -13,40 +13,79 @@ if (!function_exists('explorer_sanitize_storage_segment')) {
     }
 }
 
+if (!function_exists('explorer_normalize_department_codes')) {
+    function explorer_normalize_department_codes($dept_codes)
+    {
+        if (!is_array($dept_codes)) {
+            $dept_codes = $dept_codes === '' || $dept_codes === null ? [] : [(string)$dept_codes];
+        }
+        $normalized = [];
+        foreach ($dept_codes as $code) {
+            $safe = explorer_sanitize_storage_segment($code);
+            if ($safe !== '') {
+                $normalized[$safe] = $safe;
+            }
+        }
+
+        return array_values($normalized);
+    }
+}
+
+if (!function_exists('explorer_department_path_allowed')) {
+    function explorer_department_path_allowed($relative_path, array $dept_codes)
+    {
+        $relative_path = explorer_normalize_relative_path($relative_path);
+        if ($relative_path === null) {
+            return false;
+        }
+        if ($relative_path === 'Departments') {
+            return true;
+        }
+        if (!str_starts_with($relative_path, 'Departments/')) {
+            return true;
+        }
+
+        $parts = explode('/', $relative_path);
+        $segment = explorer_sanitize_storage_segment($parts[1] ?? '');
+        if ($segment === '') {
+            return false;
+        }
+
+        return in_array($segment, explorer_normalize_department_codes($dept_codes), true);
+    }
+}
+
+if (!function_exists('explorer_fetch_user_department_codes')) {
+    function explorer_fetch_user_department_codes($conn, $user_id, $company_id)
+    {
+        return explorer_normalize_department_codes(
+            itm_employee_allowed_department_codes($conn, (int)$company_id, (int)$user_id)
+        );
+    }
+}
+
 if (!function_exists('explorer_fetch_user_department_code')) {
     /**
-     * Resolve the signed-in employee's department code for the active tenant company.
+     * @deprecated Use explorer_fetch_user_department_codes(); returns the first allowed code.
      */
     function explorer_fetch_user_department_code($conn, $user_id, $company_id)
     {
-        $user_id = (int)$user_id;
-        $company_id = (int)$company_id;
-        if ($user_id <= 0 || $company_id <= 0 || !$conn) {
-            return '';
-        }
+        $codes = explorer_fetch_user_department_codes($conn, $user_id, $company_id);
 
-        $stmt = mysqli_prepare(
-            $conn,
-            'SELECT d.code
-             FROM employees e
-             INNER JOIN departments d ON d.id = e.department_id AND d.company_id = ?
-             WHERE e.id = ?
-             LIMIT 1'
-        );
-        if (!$stmt) {
-            return '';
-        }
+        return $codes[0] ?? '';
+    }
+}
 
-        mysqli_stmt_bind_param($stmt, 'ii', $company_id, $user_id);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        $code = '';
-        if ($res && ($row = mysqli_fetch_assoc($res))) {
-            $code = explorer_sanitize_storage_segment($row['code'] ?? '');
+if (!function_exists('explorer_resolve_department_code_for_sync')) {
+    function explorer_resolve_department_code_for_sync($path, array $dept_codes)
+    {
+        $path = trim(str_replace('\\', '/', (string)$path), '/');
+        if (preg_match('#^Departments/([^/]+)#', $path, $matches)) {
+            return explorer_sanitize_storage_segment($matches[1] ?? '');
         }
-        mysqli_stmt_close($stmt);
+        $dept_codes = explorer_normalize_department_codes($dept_codes);
 
-        return $code;
+        return $dept_codes[0] ?? '';
     }
 }
 
