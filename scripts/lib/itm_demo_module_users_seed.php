@@ -454,7 +454,18 @@ if (!function_exists('itm_demo_module_users_upsert_employee')) {
         $moduleSlugs = itm_demo_module_users_normalize_module_slugs($spec);
         $accessLevelId = (int)($spec['access_level_id'] ?? 0);
         $employmentStatusId = (int)($spec['employment_status_id'] ?? 0);
-        $departmentId = isset($spec['department_id']) ? (int)$spec['department_id'] : 0;
+        $departmentIds = [];
+        if (isset($spec['department_ids']) && is_array($spec['department_ids'])) {
+            $departmentIds = function_exists('itm_employee_normalize_department_ids')
+                ? itm_employee_normalize_department_ids($spec['department_ids'])
+                : array_values(array_filter(array_map('intval', $spec['department_ids'])));
+        } elseif (isset($spec['department_id'])) {
+            $legacyDepartmentId = (int)$spec['department_id'];
+            if ($legacyDepartmentId > 0) {
+                $departmentIds = [$legacyDepartmentId];
+            }
+        }
+        $departmentId = $departmentIds !== [] ? (int)$departmentIds[0] : 0;
         $employeePositionId = isset($spec['employee_position_id']) ? (int)$spec['employee_position_id'] : 0;
         $grantedByEmployeeId = (int)($spec['granted_by_employee_id'] ?? 0);
 
@@ -536,6 +547,8 @@ if (!function_exists('itm_demo_module_users_upsert_employee')) {
                 $sql .= ', department_id = ?';
                 $types .= 'i';
                 $params[] = $departmentId;
+            } elseif ($departmentIds === [] && array_key_exists('department_ids', $spec)) {
+                $sql .= ', department_id = NULL';
             }
             if ($employeePositionId > 0) {
                 $sql .= ', employee_position_id = ?';
@@ -619,6 +632,16 @@ if (!function_exists('itm_demo_module_users_upsert_employee')) {
         itm_demo_module_users_ensure_company_grant($conn, $employeeId, $companyId, $grantedByEmployeeId);
         itm_demo_module_users_ensure_ui_configuration($conn, $companyId, $employeeId);
         itm_demo_module_users_save_sidebar_prefs($conn, $companyId, $employeeId, $moduleSlugs);
+
+        if ($departmentIds !== [] && function_exists('itm_employee_sync_department_assignments')) {
+            itm_employee_sync_department_assignments(
+                $conn,
+                $companyId,
+                $employeeId,
+                $departmentIds,
+                $grantedByEmployeeId > 0 ? $grantedByEmployeeId : $employeeId
+            );
+        }
 
         $result['ok'] = true;
         $result['messages'][] = 'Sidebar + ui_configuration synced for ' . $username . '.';

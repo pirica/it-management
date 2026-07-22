@@ -1396,7 +1396,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="fast_create_acc.php" target="_blank" rel="nofollow noreferrer">fast_create_acc.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Admin form to create/update demo employees with FK selects (company, tenant <strong>Role</strong> with ➕ quick-add, employment status, access level, department, position), <strong>Work Email</strong> + <strong>Personal Email</strong> (at least one required), and multi-select <strong>Modules</strong> (<code>module_slugs[]</code>) plus <code>role_module_permissions</code> (one row per module), sidebar prefs, and <code>ui_configuration</code>. CLI bundle: <code>--seed-demo-bundle</code>.</td>
+                    <td>Admin form to create/update demo employees with FK selects (company, tenant <strong>Role</strong> with ➕ quick-add, employment status, access level, multi-select <strong>Departments</strong> <code>department_ids[]</code> with ➕ quick-add, position), <strong>Work Email</strong> + <strong>Personal Email</strong> (at least one required), and multi-select <strong>Modules</strong> (<code>module_slugs[]</code>) plus <code>role_module_permissions</code> (one row per module), sidebar prefs, <code>employee_departments</code> sync, and <code>ui_configuration</code>. CLI bundle: <code>--seed-demo-bundle</code>.</td>
                     <td>Browser: <a href="fast_create_acc.php">fast_create_acc.php</a>. CLI: <code>php scripts/fast_create_acc.php --seed-demo-bundle --company=1</code>. Shared lib: <code>lib/itm_demo_module_users_seed.php</code>.</td>
                 </tr>
                 <tr>
@@ -1757,6 +1757,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression check: Employees list/view HTML omits password and reset-token columns (<code>itm_employees_auth_filter_ui_columns()</code>).</td>
                     <td><code>php scripts/verify_employees_sensitive_view.php</code></td>
+                </tr>
+                <tr>
+                    <td><a href="check_department_select_quick_add.php" target="_blank" rel="nofollow noreferrer">check_department_select_quick_add.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static audit: every department FK <code>&lt;select&gt;</code> in <code>modules/</code> and <code>scripts/</code> must include trailing <code>&lt;option value="__add_new__"&gt;➕&lt;/option&gt;</code> (per-select block, not file-wide).</td>
+                    <td><code>php scripts/check_department_select_quick_add.php</code></td>
                 </tr>
                 <tr>
                     <td><a href="verify_explorer_department_access.php" target="_blank" rel="nofollow noreferrer">verify_explorer_department_access.php</a></td>

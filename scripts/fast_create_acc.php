@@ -78,6 +78,7 @@ $form = [
     'access_level_id' => 0,
     'employment_status_id' => 0,
     'department_id' => 0,
+    'department_ids' => [],
     'employee_position_id' => 0,
 ];
 
@@ -100,9 +101,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $postedModuleSlugs = [];
             }
             $form['module_slugs'] = array_values(array_filter(array_map('trim', $postedModuleSlugs)));
+            $form['department_ids'] = itm_employee_normalize_department_ids($_POST['department_ids'] ?? []);
+            $form['department_id'] = (int)($form['department_ids'][0] ?? 0);
 
             foreach (array_keys($form) as $key) {
-                if ($key === 'module_slugs') {
+                if ($key === 'module_slugs' || $key === 'department_ids') {
                     continue;
                 }
                 if ($key === 'company_id' || $key === 'access_level_id' || $key === 'employment_status_id'
@@ -148,6 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'access_level_id' => (int)$form['access_level_id'],
                 'employment_status_id' => (int)$form['employment_status_id'],
                 'department_id' => (int)$form['department_id'],
+                'department_ids' => $form['department_ids'],
                 'employee_position_id' => (int)$form['employee_position_id'],
                 'granted_by_employee_id' => $grantedByEmployeeId,
             ];
@@ -170,6 +174,7 @@ foreach ($fkOptions['employee_roles'] as $roleRow) {
     }
 }
 $selectedRoleId = (int)$form['role_id'];
+$selectedDepartmentIds = is_array($form['department_ids']) ? $form['department_ids'] : [];
 ?>
 <!doctype html>
 <html lang="en">
@@ -349,14 +354,21 @@ $selectedRoleId = (int)$form['role_id'];
             </div>
 
             <div>
-                <label for="department_id">Department (optional)</label>
-                <select name="department_id" id="department_id">
-                    <option value="0">-- None --</option>
+                <label for="department_ids">Departments (optional)</label>
+                <select name="department_ids[]" id="department_ids" multiple size="5"
+                    data-addable-select="1"
+                    data-add-table="departments"
+                    data-add-id-col="id"
+                    data-add-label-col="name"
+                    data-add-company-scoped="1"
+                    data-add-friendly="department">
                     <?php foreach ($fkOptions['departments'] as $row): ?>
-                        <option value="<?php echo (int)$row['id']; ?>"<?php echo (int)$row['id'] === (int)$form['department_id'] ? ' selected' : ''; ?>>
-                            <?php echo htmlspecialchars((string)$row['name'], ENT_QUOTES, 'UTF-8'); ?>
+                        <?php $deptId = (int)($row['id'] ?? 0); ?>
+                        <option value="<?php echo $deptId; ?>"<?php echo in_array($deptId, $selectedDepartmentIds, true) ? ' selected' : ''; ?>>
+                            <?php echo htmlspecialchars(itm_department_option_label($row), ENT_QUOTES, 'UTF-8'); ?>
                         </option>
                     <?php endforeach; ?>
+                    <option value="__add_new__">➕</option>
                 </select>
             </div>
 
