@@ -1765,6 +1765,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><code>php scripts/check_department_select_quick_add.php</code></td>
                 </tr>
                 <tr>
+                    <td><a href="check_fast_create_acc_select_quick_add.php" target="_blank" rel="nofollow noreferrer">check_fast_create_acc_select_quick_add.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Static audit: every FK <code>&lt;select&gt;</code> in <code>fast_create_acc.php</code> includes <code>__add_new__</code> ➕ (exempt: <code>demo_template</code>, <code>company_id</code> switcher, <code>module_slugs[]</code>).</td>
+                    <td><code>php scripts/check_fast_create_acc_select_quick_add.php</code></td>
+                </tr>
+                <tr>
                     <td><a href="verify_explorer_department_access.php" target="_blank" rel="nofollow noreferrer">verify_explorer_department_access.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for Explorer <code>Departments/</code> listing (all code folders visible) and per-code ACL (assigned folders allowed, others blocked). Requires <code>employee_departments</code> migration on live DBs.</td>
