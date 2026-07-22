@@ -32,80 +32,144 @@ $dashAllStats = is_array($dash['all_stats'] ?? null) ? $dash['all_stats'] : [];
  * @param string $href
  * @param string $value
  * @param string $label
+ * @param string $icon
  * @param bool $isLink
  */
-$renderDashCard = static function ($href, $value, $label, $isLink = true) {
+$renderDashCard = static function ($href, $value, $label, $icon = '📊', $isLink = true) {
     $tag = $isLink ? 'a' : 'div';
     $class = 'itm-emp-dash-card' . ($isLink ? '' : ' itm-emp-dash-card-static');
     $hrefAttr = $isLink ? ' href="' . sanitize($href) . '"' : '';
     echo '<' . $tag . ' class="' . $class . '"' . $hrefAttr . '>';
+    echo '<span class="itm-emp-dash-card-top">';
+    echo '<span class="itm-emp-dash-card-icon" aria-hidden="true">' . sanitize($icon) . '</span>';
     echo '<span class="itm-emp-dash-card-val">' . sanitize((string)$value) . '</span>';
+    echo '</span>';
     echo '<span class="itm-emp-dash-card-lbl">' . sanitize($label) . '</span>';
     echo '</' . $tag . '>';
 };
+
+/**
+ * @param string $title
+ * @param string $subtitle
+ * @param callable $renderCards
+ */
+$renderDashSection = static function ($title, $subtitle, $renderCards) use ($renderDashCard) {
+    ob_start();
+    $renderCards($renderDashCard);
+    $cardsHtml = trim((string)ob_get_clean());
+    if ($cardsHtml === '') {
+        return;
+    }
+    ?>
+    <section class="itm-emp-dash-section">
+        <header class="itm-emp-dash-section-head">
+            <h2 class="itm-emp-dash-section-title"><?php echo sanitize($title); ?></h2>
+            <span class="itm-emp-dash-section-sub"><?php echo sanitize($subtitle); ?></span>
+        </header>
+        <div class="itm-emp-dash-panel">
+            <div class="itm-emp-dash-grid">
+                <?php echo $cardsHtml; ?>
+            </div>
+        </div>
+    </section>
+    <?php
+};
 ?>
-<section class="itm-emp-dash-section">
-    <h2 class="itm-emp-dash-section-title">My work</h2>
-    <div class="itm-emp-dash-grid">
-        <?php if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'equipment')): ?>
-            <?php $renderDashCard('modules/equipment/index.php', $dashAssignedAssets, '💻 My Assets'); ?>
-        <?php endif; ?>
-        <?php if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'tickets')): ?>
-            <?php $renderDashCard('modules/tickets/index.php', (int)$dashTicketSummary['open'] . '/' . (int)$dashTicketSummary['total'], '🎟️ My Tickets (Open/Total)'); ?>
-        <?php endif; ?>
-        <?php if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'events')): ?>
-            <?php $renderDashCard('modules/events/index.php', $dashEventsCreated . '/' . $dashEventsForMe, '📅 My Events (My/For Me)'); ?>
-        <?php endif; ?>
-        <?php if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'alerts')): ?>
-            <?php $renderDashCard('modules/alerts/index.php', $dashAlertsCreated . '/' . $dashAlertsForMe, '📢 My Alerts (My/For Me)'); ?>
-        <?php endif; ?>
-        <?php if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'equipment')): ?>
-            <?php $renderDashCard('modules/equipment/index.php', $dashWorkstation ? '1' : '0', '💻 My Hardware'); ?>
-        <?php endif; ?>
-        <?php if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'employee_system_access')): ?>
-            <?php $renderDashCard('modules/employee_system_access/index.php', $dashSystemAccessCount, 'System Access'); ?>
-        <?php endif; ?>
-    </div>
-</section>
+<?php
+$renderDashSection('My work', 'Assets, tickets, and assignments', static function ($renderDashCard) use (
+    $conn,
+    $company_id,
+    $dashAssignedAssets,
+    $dashTicketSummary,
+    $dashEventsCreated,
+    $dashEventsForMe,
+    $dashAlertsCreated,
+    $dashAlertsForMe,
+    $dashWorkstation,
+    $dashSystemAccessCount
+) {
+    if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'equipment')) {
+        $renderDashCard('modules/equipment/index.php', $dashAssignedAssets, 'My Assets', '💻');
+    }
+    if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'tickets')) {
+        $renderDashCard(
+            'modules/tickets/index.php',
+            (int)$dashTicketSummary['open'] . '/' . (int)$dashTicketSummary['total'],
+            'My Tickets (Open/Total)',
+            '🎟️'
+        );
+    }
+    if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'events')) {
+        $renderDashCard(
+            'modules/events/index.php',
+            $dashEventsCreated . '/' . $dashEventsForMe,
+            'My Events (My/For Me)',
+            '📅'
+        );
+    }
+    if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'alerts')) {
+        $renderDashCard(
+            'modules/alerts/index.php',
+            $dashAlertsCreated . '/' . $dashAlertsForMe,
+            'My Alerts (My/For Me)',
+            '📢'
+        );
+    }
+    if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'equipment')) {
+        $renderDashCard('modules/equipment/index.php', $dashWorkstation ? '1' : '0', 'My Hardware', '💻');
+    }
+    if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'employee_system_access')) {
+        $renderDashCard('modules/employee_system_access/index.php', $dashSystemAccessCount, 'System Access', '🔑');
+    }
+});
 
-<section class="itm-emp-dash-section">
-    <h2 class="itm-emp-dash-section-title">Personal</h2>
-    <div class="itm-emp-dash-grid">
-        <?php if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'explorer')): ?>
-            <?php $renderDashCard('modules/explorer/index.php', $dashFileCount ? '1' : '0', '🌐 My Files'); ?>
-        <?php endif; ?>
-        <?php if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'passwords')): ?>
-            <?php $renderDashCard('modules/passwords/index.php', $dashVaultCount, '🔐 Vault Entries'); ?>
-        <?php endif; ?>
-        <?php foreach ($dashAllStats as $statRow): ?>
-            <?php
-            if ((int)($statRow['count'] ?? 0) <= 0) {
-                continue;
-            }
-            if (in_array((string)($statRow['table'] ?? ''), $dashShownTables, true)) {
-                continue;
-            }
-            $slug = (string)($statRow['slug'] ?? '');
-            if (!itm_employee_dashboard_module_slug_allowed($conn, $company_id, $slug)) {
-                continue;
-            }
-            $renderDashCard('modules/' . $slug . '/index.php', (int)$statRow['count'], (string)($statRow['label'] ?? 'Module'));
-            ?>
-        <?php endforeach; ?>
-    </div>
-</section>
-
-<section class="itm-emp-dash-section">
-    <h2 class="itm-emp-dash-section-title">Activity</h2>
-    <div class="itm-emp-dash-grid">
-        <?php
-        $lastLoginDisplay = $dashLastLogin ? date('d/m/y', strtotime((string)$dashLastLogin)) : 'Never';
-        $joinedDisplay = $dashJoinedAt !== '' ? date('d/m/y', strtotime($dashJoinedAt)) : '—';
-        $renderDashCard('#', $lastLoginDisplay, '🕒 Last Login', false);
-        $renderDashCard('#', $joinedDisplay, '📅 Joined Date', false);
-        if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'audit_logs')) {
-            $renderDashCard('modules/audit_logs/index.php', $dashActivityCount, '🕒 My Activity');
+$renderDashSection('Personal', 'Files, vault, and your modules', static function ($renderDashCard) use (
+    $conn,
+    $company_id,
+    $dashFileCount,
+    $dashVaultCount,
+    $dashAllStats,
+    $dashShownTables
+) {
+    if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'explorer')) {
+        $renderDashCard('modules/explorer/index.php', $dashFileCount ? '1' : '0', 'My Files', '🌐');
+    }
+    if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'passwords')) {
+        $renderDashCard('modules/passwords/index.php', $dashVaultCount, 'Vault Entries', '🔐');
+    }
+    foreach ($dashAllStats as $statRow) {
+        if ((int)($statRow['count'] ?? 0) <= 0) {
+            continue;
         }
-        ?>
-    </div>
-</section>
+        if (in_array((string)($statRow['table'] ?? ''), $dashShownTables, true)) {
+            continue;
+        }
+        $slug = (string)($statRow['slug'] ?? '');
+        if (!itm_employee_dashboard_module_slug_allowed($conn, $company_id, $slug)) {
+            continue;
+        }
+        $renderDashCard(
+            'modules/' . $slug . '/index.php',
+            (int)$statRow['count'],
+            (string)($statRow['label'] ?? 'Module'),
+            '📊'
+        );
+    }
+});
+
+$renderDashSection('Activity', 'Login history and recent actions', static function ($renderDashCard) use (
+    $conn,
+    $company_id,
+    $dashLastLogin,
+    $dashJoinedAt,
+    $dashActivityCount
+) {
+    $lastLoginDisplay = $dashLastLogin ? date('d/m/y', strtotime((string)$dashLastLogin)) : 'Never';
+    $joinedDisplay = $dashJoinedAt !== '' ? date('d/m/y', strtotime($dashJoinedAt)) : '—';
+    $renderDashCard('#', $lastLoginDisplay, 'Last Login', '🕒', false);
+    $renderDashCard('#', $joinedDisplay, 'Joined Date', '📅', false);
+    if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'audit_logs')) {
+        $renderDashCard('modules/audit_logs/index.php', $dashActivityCount, 'My Activity', '🕒');
+    }
+});
+?>
