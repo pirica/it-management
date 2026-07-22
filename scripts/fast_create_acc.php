@@ -13,6 +13,7 @@ if (PHP_SAPI === 'cli') {
 }
 
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/itm_fk_option_labels.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_demo_module_users_seed.php';
 
@@ -103,6 +104,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $form['module_slugs'] = array_values(array_filter(array_map('trim', $postedModuleSlugs)));
             $form['department_ids'] = itm_employee_normalize_department_ids($_POST['department_ids'] ?? []);
             $form['department_id'] = (int)($form['department_ids'][0] ?? 0);
+
+            foreach (['role_id', 'employment_status_id', 'access_level_id', 'employee_position_id'] as $intFkField) {
+                if (isset($_POST[$intFkField]) && (string)$_POST[$intFkField] === '__add_new__') {
+                    $_POST[$intFkField] = '0';
+                }
+            }
 
             foreach (array_keys($form) as $key) {
                 if ($key === 'module_slugs' || $key === 'department_ids') {
@@ -331,25 +338,45 @@ $selectedDepartmentIds = is_array($form['department_ids']) ? $form['department_i
 
             <div>
                 <label for="employment_status_id">Employment status</label>
-                <select name="employment_status_id" id="employment_status_id">
+                <select name="employment_status_id" id="employment_status_id"
+                    data-addable-select="1"
+                    data-add-table="employee_statuses"
+                    data-add-id-col="id"
+                    data-add-label-col="name"
+                    data-add-company-scoped="1"
+                    data-add-friendly="employment status">
                     <option value="0">-- Auto (Active) --</option>
                     <?php foreach ($fkOptions['employee_statuses'] as $row): ?>
                         <option value="<?php echo (int)$row['id']; ?>"<?php echo (int)$row['id'] === (int)$form['employment_status_id'] ? ' selected' : ''; ?>>
                             <?php echo htmlspecialchars((string)$row['name'], ENT_QUOTES, 'UTF-8'); ?>
                         </option>
                     <?php endforeach; ?>
+                    <?php if ((int)$form['employment_status_id'] > 0 && !in_array((int)$form['employment_status_id'], array_map('intval', array_column($fkOptions['employee_statuses'], 'id')), true)): ?>
+                        <option value="<?php echo (int)$form['employment_status_id']; ?>" selected>#<?php echo (int)$form['employment_status_id']; ?></option>
+                    <?php endif; ?>
+                    <option value="__add_new__">➕</option>
                 </select>
             </div>
 
             <div>
                 <label for="access_level_id">Access level</label>
-                <select name="access_level_id" id="access_level_id">
+                <select name="access_level_id" id="access_level_id"
+                    data-addable-select="1"
+                    data-add-table="access_levels"
+                    data-add-id-col="id"
+                    data-add-label-col="name"
+                    data-add-company-scoped="1"
+                    data-add-friendly="access level">
                     <option value="0">-- Auto (Limited) --</option>
                     <?php foreach ($fkOptions['access_levels'] as $row): ?>
                         <option value="<?php echo (int)$row['id']; ?>"<?php echo (int)$row['id'] === (int)$form['access_level_id'] ? ' selected' : ''; ?>>
                             <?php echo htmlspecialchars((string)$row['name'], ENT_QUOTES, 'UTF-8'); ?>
                         </option>
                     <?php endforeach; ?>
+                    <?php if ((int)$form['access_level_id'] > 0 && !in_array((int)$form['access_level_id'], array_map('intval', array_column($fkOptions['access_levels'], 'id')), true)): ?>
+                        <option value="<?php echo (int)$form['access_level_id']; ?>" selected>#<?php echo (int)$form['access_level_id']; ?></option>
+                    <?php endif; ?>
+                    <option value="__add_new__">➕</option>
                 </select>
             </div>
 
@@ -374,13 +401,23 @@ $selectedDepartmentIds = is_array($form['department_ids']) ? $form['department_i
 
             <div>
                 <label for="employee_position_id">Position (optional)</label>
-                <select name="employee_position_id" id="employee_position_id">
+                <select name="employee_position_id" id="employee_position_id"
+                    data-addable-select="1"
+                    data-add-table="employee_positions"
+                    data-add-id-col="id"
+                    data-add-label-col="name"
+                    data-add-company-scoped="1"
+                    data-add-friendly="position title">
                     <option value="0">-- None --</option>
                     <?php foreach ($fkOptions['employee_positions'] as $row): ?>
                         <option value="<?php echo (int)$row['id']; ?>"<?php echo (int)$row['id'] === (int)$form['employee_position_id'] ? ' selected' : ''; ?>>
                             <?php echo htmlspecialchars((string)$row['name'], ENT_QUOTES, 'UTF-8'); ?>
                         </option>
                     <?php endforeach; ?>
+                    <?php if ((int)$form['employee_position_id'] > 0 && !in_array((int)$form['employee_position_id'], array_map('intval', array_column($fkOptions['employee_positions'], 'id')), true)): ?>
+                        <option value="<?php echo (int)$form['employee_position_id']; ?>" selected>#<?php echo (int)$form['employee_position_id']; ?></option>
+                    <?php endif; ?>
+                    <option value="__add_new__">➕</option>
                 </select>
             </div>
         </div>
