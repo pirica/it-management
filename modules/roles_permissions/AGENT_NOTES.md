@@ -6,7 +6,7 @@ Unified dashboard for tenant role management and the RBAC permission matrix. Rep
 
 ## 2. Key Tables
 
-- **employee_roles** — role name and `active`
+- **employee_roles** — role name and `active`; `sidebar_show` (`TINYINT(1) NOT NULL DEFAULT 1`) controls whether the role keeps sidebar modules visible when personalized sidebar prefs hide them
 - **role_module_permissions** — per-role module flags (`can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`)
 - **role_hierarchy** — display order for the role sidebar (`hierarchy_order`)
 - **modules_registry** — module rows shown in the matrix (`module_name` is stored in permission rows)
@@ -38,7 +38,7 @@ Unified dashboard for tenant role management and the RBAC permission matrix. Rep
 - Dual-pane layout patterned after `company_module_access`: Settings-managed list header (`data-itm-new-button-managed="server"`) with centered `$moduleListHeading` (sidebar icon + title via `itm_resolve_module_sidebar_icon()`), `new_button_position`-gated ➕ (`itm-list-new-button`, opens add-role modal), toolbar card (`margin-bottom:16px`), matrix card (`overflow:auto`), `Modules` column header, accent slug links, centred checkbox cells, and `badge` / `badge-danger` for system/inactive rows.
 - Role cards show name, **active employee count** (`N active`, SQL alias `active_count`), and **System** badge for Admin.
 - Toolbar: Check All, Uncheck All, Save (💾, admins only), server-side **Search (all fields)** on `module_slug` / `module_name` (GET `search`, emoji-only 🔙 reset preserves `role_id`), plus optional client-side matrix filter.
-- Add role (➕) and edit role (✏️) modals update `employee_roles.name` via AJAX (admins only). List-header ➕ uses `title="Create"` and respects Settings **new button position** (left / right / left_right).
+- Add role (➕) and edit role (✏️) modals update `employee_roles.name` and `employee_roles.sidebar_show` via AJAX (admins only). Edit modal uses the standard `active`-style checkbox (✅/❌) for **Sidebar show** (default `1`). Role cards show a **Sidebar hidden** badge when `sidebar_show = 0`.
 - Matrix table disables Excel/PDF export and Import Excel (`data-itm-no-export-excel="1"`, `data-itm-no-export-pdf="1"`, `data-itm-no-import-excel="1"`). Index table compliance honors the import opt-out (no `data-itm-db-import-endpoint` required — this is a permission matrix, not a CRUD row list).
 - **ui_configuration reviewed gate:** gate-excluded in `scripts/data/ui_configuration_excluded_modules.txt`; intentional gaps (fixed matrix sort order, no pagination, no Actions column, modal create/edit, no CRUD entry files) documented in `scripts/data/ui_configuration_reviewed.json` — audit lines print `[n/a][pass|fail|n/a][reviewed]`.
 - Action buttons follow emoji-only visible labels with descriptive `title` attributes.
@@ -47,7 +47,7 @@ Unified dashboard for tenant role management and the RBAC permission matrix. Rep
 
 - `ajax_action=save_permissions` — POST JSON bulk upsert of matrix rows (`permissions_json`).
 - `ajax_action=create_role` — POST create role + hierarchy row.
-- `ajax_action=update_role` — POST update role name (non-Admin roles only).
+- `ajax_action=update_role` — POST update role name and `sidebar_show` (non-Admin roles only).
 
 All AJAX handlers require CSRF (`itm_require_post_csrf()`) and administrator access.
 

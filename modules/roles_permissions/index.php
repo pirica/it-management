@@ -25,7 +25,7 @@ function rp_load_roles(mysqli $conn, int $companyId): array
     // Why: Sidebar count = employees.role_id + tenant company_id + HR employment status Active.
     $empJoin = itm_employee_active_employment_status_join_sql('e', 'es');
     $empActive = itm_employee_active_employment_status_predicate_sql('es');
-    $sql = 'SELECT er.id, er.name, er.active,
+    $sql = 'SELECT er.id, er.name, er.active, er.sidebar_show,
                    COALESCE(rh.hierarchy_order, 999) AS hierarchy_order,
                    (SELECT COUNT(*)
                     FROM employees e' . $empJoin . '
@@ -130,7 +130,7 @@ function rp_fetch_role(mysqli $conn, int $companyId, int $roleId): ?array
 
     $stmt = mysqli_prepare(
         $conn,
-        'SELECT id, name, active FROM employee_roles WHERE company_id = ? AND id = ? LIMIT 1'
+        'SELECT id, name, active, sidebar_show FROM employee_roles WHERE company_id = ? AND id = ? LIMIT 1'
     );
     if (!$stmt) {
         return null;
@@ -297,6 +297,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
     if ($ajaxAction === 'update_role') {
         $roleId = (int)($_POST['role_id'] ?? 0);
         $roleName = trim((string)($_POST['role_name'] ?? ''));
+        $sidebarShow = ((string)($_POST['sidebar_show'] ?? '0') === '1') ? 1 : 0;
         $roleRow = rp_fetch_role($conn, $activeCompanyId, $roleId);
         if (!$roleRow) {
             echo json_encode(['ok' => false, 'error' => 'Role not found.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -313,13 +314,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
 
         $stmtUpdate = mysqli_prepare(
             $conn,
-            'UPDATE employee_roles SET name = ? WHERE company_id = ? AND id = ? LIMIT 1'
+            'UPDATE employee_roles SET name = ?, sidebar_show = ? WHERE company_id = ? AND id = ? LIMIT 1'
         );
         if (!$stmtUpdate) {
             echo json_encode(['ok' => false, 'error' => 'Could not update role.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             exit;
         }
-        mysqli_stmt_bind_param($stmtUpdate, 'sii', $roleName, $activeCompanyId, $roleId);
+        mysqli_stmt_bind_param($stmtUpdate, 'siii', $roleName, $sidebarShow, $activeCompanyId, $roleId);
         $ok = mysqli_stmt_execute($stmtUpdate);
         mysqli_stmt_close($stmtUpdate);
 
@@ -461,6 +462,7 @@ if ($resolvedModuleIcon !== '') {
                                     $isSelected = $roleId === $selectedRoleId;
                                     $isSystem = rp_role_is_system($roleRow);
                                     $activeCount = (int)($roleRow['active_count'] ?? 0);
+                                    $sidebarShow = (int)($roleRow['sidebar_show'] ?? 1) === 1;
                                     ?>
                                     <a
                                         href="<?= $modulePathEsc ?>/index.php?role_id=<?= $roleId ?>"
@@ -472,6 +474,9 @@ if ($resolvedModuleIcon !== '') {
                                             <span aria-hidden="true">›</span>
                                         </div>
                                         <div style="color:var(--text-secondary,#666);font-size:12px;margin-top:4px;" title="Active employees with this role"><?= (int)$activeCount ?> active</div>
+                                        <?php if (!$sidebarShow): ?>
+                                            <div style="margin-top:6px;"><span class="badge badge-danger" title="Sidebar show disabled for this role">Sidebar hidden</span></div>
+                                        <?php endif; ?>
                                         <?php if ($isSystem): ?>
                                             <div style="margin-top:6px;"><span class="badge">System</span></div>
                                         <?php endif; ?>
@@ -630,6 +635,14 @@ if ($resolvedModuleIcon !== '') {
                 <div class="form-group">
                     <label for="rp-edit-role-name">Name</label>
                     <input type="text" id="rp-edit-role-name" name="role_name" required maxlength="50" value="<?= sanitize((string)$selectedRole['name']) ?>">
+                </div>
+                <div class="form-group">
+                    <label for="rp-edit-sidebar-show">Sidebar show</label>
+                    <label class="itm-checkbox-control">
+                        <?php $rpSidebarShow = (int)($selectedRole['sidebar_show'] ?? 1) === 1; ?>
+                        <input type="checkbox" id="rp-edit-sidebar-show" name="sidebar_show" value="1" <?= $rpSidebarShow ? 'checked' : '' ?>>
+                        <span>Sidebar show <span class="itm-check-indicator" aria-hidden="true"><?= $rpSidebarShow ? '✅' : '❌' ?></span></span>
+                    </label>
                 </div>
                 <button type="submit" class="btn btn-primary" title="Save">💾</button>
                 <button type="button" class="btn" id="rp-close-edit-role" title="Cancel">🔙</button>

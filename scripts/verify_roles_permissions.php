@@ -58,6 +58,16 @@ foreach ($requiredTables as $table) {
     }
 }
 
+if (function_exists('itm_verify_db_migrations_column_exists')) {
+    require_once __DIR__ . '/lib/itm_verify_db_migrations_report.php';
+}
+if (function_exists('itm_verify_db_migrations_column_exists')
+    && itm_verify_db_migrations_column_exists($conn, 'employee_roles', 'sidebar_show')) {
+    rp_verify_pass('employee_roles.sidebar_show column present.');
+} else {
+    rp_verify_fail('employee_roles.sidebar_show column missing (apply db/01_schema.sql or db/migrations/employee_roles_sidebar_show.sql).');
+}
+
 $indexPath = ROOT_PATH . 'modules/roles_permissions/index.php';
 if (!is_file($indexPath)) {
     rp_verify_fail('Missing modules/roles_permissions/index.php');
@@ -240,6 +250,13 @@ if ($rolesIndexSource !== '') {
         rp_verify_fail('roles_permissions search UI contract: ' . ($searchCheck['details'] ?? 'failed'));
     } else {
         rp_verify_pass('roles_permissions search UI contract (input, in-memory filter, emoji-only reset)');
+    }
+    if (strpos($rolesIndexSource, 'sidebar_show') === false) {
+        rp_verify_fail('roles_permissions/index.php must load and save employee_roles.sidebar_show.');
+    } elseif (strpos($rolesIndexSource, 'name="sidebar_show"') === false) {
+        rp_verify_fail('roles_permissions edit modal must expose sidebar_show checkbox.');
+    } else {
+        rp_verify_pass('roles_permissions edit flow includes sidebar_show field.');
     }
 }
 

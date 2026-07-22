@@ -182,7 +182,8 @@
             submitBtn.disabled = true;
             postJson('update_role', {
                 role_id: roleId.value,
-                role_name: (nameInput.value || '').trim()
+                role_name: (nameInput.value || '').trim(),
+                sidebar_show: editRoleForm.querySelector('[name="sidebar_show"]') && editRoleForm.querySelector('[name="sidebar_show"]').checked ? '1' : '0'
             }).then(function (payload) {
                 if (!payload || !payload.ok) {
                     throw new Error((payload && payload.error) || 'Could not update role');
