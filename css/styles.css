@@ -1676,6 +1676,69 @@ a.itm-list-new-button.btn.btn-primary {
     margin-bottom: 0;
 }
 
+.itm-message-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+}
+
+.itm-message-modal-overlay[hidden] {
+    display: none !important;
+}
+
+.itm-message-modal-card {
+    width: min(480px, 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-lg);
+    padding: 18px;
+}
+
+.itm-message-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.itm-message-modal-title {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.itm-message-modal-close {
+    background: transparent;
+    border: 0;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.itm-message-modal-body {
+    margin-bottom: 16px;
+}
+
+.itm-message-modal-message {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.itm-message-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
 /* Port visualizer keeps contrast consistent in both light and dark themes. */
 .itm-port-visualizer-container--split {
     justify-content: flex-start;

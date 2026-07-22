@@ -340,6 +340,8 @@
             }
             if (window.itmNotifyError) {
                 window.itmNotifyError(message);
+            } else if (window.itmShowForbiddenModal && /^Forbidden:/i.test(message)) {
+                window.itmShowForbiddenModal(message);
             } else {
                 window.alert(message);
             }

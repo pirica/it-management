@@ -275,6 +275,7 @@ require_once ROOT_PATH . 'includes/itm_crud_audit_fields.php';
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 require_once ROOT_PATH . 'includes/itm_employee_contact_email.php';
 require_once ROOT_PATH . 'includes/ui_alert_helpers.php';
+require_once ROOT_PATH . 'includes/itm_user_forbidden.php';
 require_once ROOT_PATH . 'includes/fk_dropdown_helpers.php';
 require_once ROOT_PATH . 'includes/employee_dropdown_helpers.php';
 require_once ROOT_PATH . 'includes/itm_ui_action_labels.php';
@@ -2266,14 +2267,7 @@ if (!function_exists('itm_require_admin')) {
             return;
         }
 
-        if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'POST') {
-            http_response_code(403);
-            echo 'Forbidden: administrator access required.';
-            exit;
-        }
-
-        header('Location: ' . BASE_URL . 'dashboard.php');
-        exit;
+        itm_exit_forbidden('Forbidden: administrator access required.');
     }
 }
 
