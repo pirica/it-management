@@ -167,8 +167,17 @@
         region.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    window.itmShowForbiddenModal = function (message) {
+    function sentenceCaseMessage(message) {
         var text = String(message || '').trim();
+        if (!text) {
+            return '';
+        }
+        text = text.replace(/^Forbidden:\s*/i, '').trim() || text;
+        return text.charAt(0).toUpperCase() + text.slice(1);
+    }
+
+    window.itmShowForbiddenModal = function (message) {
+        var text = sentenceCaseMessage(message);
         if (!text) {
             return;
         }
@@ -178,7 +187,7 @@
         var overlay = ensureMessageModal();
         var messageNode = overlay.querySelector('.itm-message-modal-message');
         if (messageNode) {
-            messageNode.textContent = text.replace(/^Forbidden:\s*/i, '').trim() || text;
+            messageNode.textContent = text;
         }
         overlay.hidden = false;
         var okButton = overlay.querySelector('.itm-message-modal-ok');

@@ -295,7 +295,7 @@ if (!function_exists('itm_require_role_module_permission')) {
             require_once __DIR__ . '/itm_user_forbidden.php';
         }
 
-        itm_exit_forbidden('Forbidden: insufficient module permissions.');
+        itm_exit_forbidden('Forbidden: Insufficient module permissions.');
     }
 }
 

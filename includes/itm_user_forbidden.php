@@ -22,6 +22,13 @@ if (!function_exists('itm_forbidden_user_message')) {
             return 'You do not have permission to perform this action.';
         }
 
+        if (function_exists('mb_substr') && function_exists('mb_strtoupper')) {
+            $first = mb_strtoupper(mb_substr($text, 0, 1, 'UTF-8'), 'UTF-8');
+            $text = $first . mb_substr($text, 1, null, 'UTF-8');
+        } else {
+            $text = ucfirst($text);
+        }
+
         return $text;
     }
 }
