@@ -93,6 +93,24 @@ if (strpos($dashboardSource, 'itm-emp-dash-hero') === false) {
     ed_verify_pass('dashboard.php renders hero section');
 }
 
+if (strpos($cardsSource, 'itm-emp-dash-panel') === false) {
+    ed_verify_fail('Employee dashboard cards must use panel layout (itm-emp-dash-panel)');
+} else {
+    ed_verify_pass('Employee dashboard cards use panel layout');
+}
+
+if (strpos($cardsSource, 'itm-emp-dash-card-icon') === false) {
+    ed_verify_fail('Employee dashboard cards must render icon tiles (itm-emp-dash-card-icon)');
+} else {
+    ed_verify_pass('Employee dashboard cards render icon tiles');
+}
+
+if (strpos($dashboardSource, 'css/styles.css?v=') === false) {
+    ed_verify_fail('dashboard.php must load styles.css with cache-busting version query');
+} else {
+    ed_verify_pass('dashboard.php loads versioned stylesheet');
+}
+
 if ($failures > 0) {
     echo $nl . colorText('Verification failed with ' . $failures . ' issue(s).', 'fail') . $nl;
     itm_script_output_end();

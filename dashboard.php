@@ -75,21 +75,32 @@ $positionName = trim((string)($current_user['position_name'] ?? ''));
 $departmentName = trim((string)($current_user['department_name'] ?? ''));
 $heroMetaParts = array_filter([$positionName, $departmentName, $companyLabel !== '' ? $companyLabel : null]);
 $heroMeta = implode(' · ', $heroMetaParts);
+$profileTheme = (strtolower(trim((string)($current_user['theme'] ?? ($_SESSION['ui_theme'] ?? 'light')))) === 'dark') ? 'dark' : 'light';
+$stylesCssPath = ROOT_PATH . 'css/styles.css';
+$stylesCssVersion = is_file($stylesCssPath) ? (string)filemtime($stylesCssPath) : '1';
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="<?php echo sanitize($profileTheme); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - <?php echo sanitize($displayName); ?></title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/styles.css?v=<?php echo sanitize($stylesCssVersion); ?>">
+    <script>
+    (function () {
+        var theme = <?php echo json_encode($profileTheme, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+        window.ITM_PREFERRED_THEME = theme;
+        try { localStorage.setItem('theme', theme); } catch (e) {}
+        document.documentElement.setAttribute('data-theme', theme);
+    })();
+    </script>
 </head>
 <body>
 <div class="container">
     <?php include 'includes/sidebar.php'; ?>
     <div class="main-content">
         <?php include 'includes/header.php'; ?>
-        <div class="content">
+        <div class="content itm-employee-dashboard">
             <div style="position:relative;display:flex;justify-content:flex-end;align-items:center;margin-bottom:20px;min-height:40px;">
                 <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;" title="Dashboard">📊</h1>
             </div>
@@ -103,6 +114,7 @@ $heroMeta = implode(' · ', $heroMetaParts);
                     <?php endif; ?>
                 </div>
                 <div class="itm-emp-dash-hero-body">
+                    <p class="itm-emp-dash-hero-kicker">Welcome back</p>
                     <h2 class="itm-emp-dash-hero-name"><?php echo sanitize($displayName); ?></h2>
                     <?php if ($heroMeta !== ''): ?>
                         <p class="itm-emp-dash-hero-meta"><?php echo sanitize($heroMeta); ?></p>
@@ -111,7 +123,7 @@ $heroMeta = implode(' · ', $heroMetaParts);
                         <span class="badge badge-success"><?php echo sanitize($statusName); ?></span>
                     <?php endif; ?>
                 </div>
-                <div>
+                <div class="itm-emp-dash-hero-actions">
                     <a class="btn btn-primary" href="<?php echo BASE_URL; ?>user-config.php" title="Edit profile">✏️</a>
                 </div>
             </div>
