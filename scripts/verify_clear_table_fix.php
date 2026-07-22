@@ -123,5 +123,12 @@ mysqli_query($conn, "DELETE FROM companies WHERE id = $testCompanyId");
 mysqli_query($conn, "DELETE FROM employees WHERE company_id IN (SELECT id FROM (SELECT id FROM companies WHERE company = 'Test Company Bespoke Employees') t)");
 mysqli_query($conn, "DELETE FROM companies WHERE company = 'Test Company Bespoke Employees'");
 
+if ($exitCode === 0) {
+    echo colorText('[PASS] Cleanup complete.', 'pass') . $nl;
+    echo colorText('[PASS] Verification complete.', 'pass') . $nl;
+} else {
+    echo colorText('[FAIL] Cleanup complete; verification failed (see errors above).', 'fail') . $nl;
+}
+
 itm_script_output_end();
 exit($exitCode);
