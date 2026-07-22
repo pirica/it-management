@@ -1382,6 +1382,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Browser: <a href="verify_roles_permissions.php">verify_roles_permissions.php</a>. CLI: <code>php scripts/verify_roles_permissions.php</code>. Run when changing <code>modules/roles_permissions/</code>, <code>js/roles-permissions-matrix.js</code>, or <code>role_module_permissions</code> / <code>employee_roles</code> schema.</td>
                 </tr>
                 <tr>
+                    <td><a href="verify_demo_module_restrictions.php" target="_blank" rel="nofollow noreferrer">verify_demo_module_restrictions.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for demo users <code>demo1</code>–<code>demo5</code> (single-module access + Settings/Dashboard) and seed admins <code>Admin</code>/<code>Admin2</code>–<code>Admin5</code>: <code>password_verify</code>, <code>itm_is_admin()</code>, <code>has_module_access</code>, RBAC <code>can_view</code>, subprocess module <code>index.php</code> probes. Contract: <code>lib/itm_demo_module_restrictions_contract.php</code>.</td>
+                    <td>Browser: <a href="verify_demo_module_restrictions.php">verify_demo_module_restrictions.php</a>. CLI: <code>php scripts/verify_demo_module_restrictions.php</code>. Run after seeding demo users in <code>db/02_data.sql</code> or a dedicated seed script.</td>
+                </tr>
+                <tr>
                     <td><a href="verify_dashboard_active_employees.php" target="_blank" rel="nofollow noreferrer">verify_dashboard_active_employees.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for <code>admin.php</code> row-2 <strong>Active</strong> and <strong>On Leave</strong> stats: helper call-sites, no leftover join-predicate SQL, soft-delete-aware counts (optional <code>ITM_TEST_COMPANY_ID</code>); employee <code>dashboard.php</code> must not duplicate company counts.</td>
