@@ -1,6 +1,6 @@
 <?php
 /**
- * Employees module — fast demo account creator (module-scoped RBAC).
+ * Employees module — fast account creator (module-scoped RBAC).
  *
  * Browser UI for the active session company. CLI / seed bundle remain on scripts/fast_create_acc.php.
  */
@@ -28,7 +28,7 @@ $form = [
     'username' => '',
     'password' => '',
     'first_name' => '',
-    'last_name' => 'Demo',
+    'last_name' => '',
     'work_email' => '',
     'personal_email' => '',
     'role_id' => 0,
