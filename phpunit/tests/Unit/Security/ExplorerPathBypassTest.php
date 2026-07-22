@@ -11,6 +11,7 @@ class ExplorerPathBypassTest extends TestCase
 
     protected function setUp(): void
     {
+        require_once ROOT_PATH . 'modules/explorer/explorer_storage_helpers.php';
         $this->requireExtractedFunction(ROOT_PATH . 'modules/explorer/api.php', 'get_full_path');
     }
 

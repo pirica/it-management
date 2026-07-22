@@ -129,6 +129,7 @@ $form = [
 
 // Load current permission IDs
 $selectedSystemAccessIds = esa_get_employee_access_ids($conn, (int)$company_id, $id);
+$selectedDepartmentIds = itm_employee_allowed_department_ids($conn, (int)$company_id, $id);
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -138,6 +139,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach ($form as $key => $default) {
         $form[$key] = trim((string)($_POST[$key] ?? ''));
     }
+    $selectedDepartmentIds = itm_employee_normalize_department_ids($_POST['department_ids'] ?? []);
+    $form['department_id'] = (string)($selectedDepartmentIds[0] ?? '');
     itm_crud_force_active_live($form);
     $selectedSystemAccessIds = array_values(array_unique(array_map('intval', $_POST['system_access_ids'] ?? [])));
 
@@ -232,6 +235,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (mysqli_query($conn, $sql)) {
             // Update permissions in modern normalized table
             esa_save_employee_access_ids($conn, (int)$company_id, $id, $selectedSystemAccessIds);
+            itm_employee_sync_department_assignments($conn, (int)$company_id, $id, $selectedDepartmentIds, (int)($_SESSION['employee_id'] ?? 0));
             header('Location: view.php?id=' . $id);
             exit;
         }
@@ -338,11 +342,10 @@ if (!isset($crud_title)) {
                         </div>
 
                         <!-- LOOKUP SELECTS -->
-                        <div class="form-group"><label>Department</label>
-                            <select name="department_id" data-addable-select="1" data-add-table="departments" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="department">
-                                <option value="">-- None --</option>
+                        <div class="form-group"><label>Departments</label>
+                            <select name="department_ids[]" multiple size="5" data-addable-select="1" data-add-table="departments" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="department">
                                 <?php foreach ($departmentRows as $d): ?>
-                                    <option value="<?php echo (int)$d['id']; ?>" <?php echo ((string)$d['id'] === (string)$form['department_id']) ? 'selected' : ''; ?>><?php echo sanitize(itm_department_option_label($d)); ?></option>
+                                    <option value="<?php echo (int)$d['id']; ?>" <?php echo in_array((int)$d['id'], $selectedDepartmentIds, true) ? 'selected' : ''; ?>><?php echo sanitize(itm_department_option_label($d)); ?></option>
                                 <?php endforeach; ?>
                                 <option value="__add_new__">➕</option>
                             </select>

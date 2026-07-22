@@ -23,7 +23,7 @@ $user_private_dir = "{$safe_username}_{$user_id}";
 require_once ROOT_PATH . 'modules/explorer/explorer_storage_helpers.php';
 
 // Why: Department ACL uses departments.code (e.g. FNB), matching api.php get_full_path().
-$safe_dept_code = explorer_fetch_user_department_code($conn, $user_id, $company_id);
+$user_dept_codes = explorer_fetch_user_department_codes($conn, $user_id, $company_id);
 
 $path = $_GET['path'] ?? '';
 $storage_root = ROOT_PATH . 'files/' . $company_id;
@@ -85,8 +85,7 @@ if ($relative_path === 'Departments' || str_starts_with($relative_path, 'Departm
         exit("Access denied to department folder.");
     }
 
-    if ($safe_dept_code === '' || (!str_starts_with($relative_path, "Departments/$safe_dept_code/") &&
-        $relative_path !== "Departments/$safe_dept_code")) {
+    if (!explorer_department_path_allowed($relative_path, $user_dept_codes)) {
         http_response_code(403);
         exit("Access denied to department folder.");
     }

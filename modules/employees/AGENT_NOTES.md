@@ -10,6 +10,7 @@ The central module for managing employee records, including contact info, hierar
 ## 3. Required Relationships
 - **employees** → depends on **companies**.
 - **employees** → depends on **departments**.
+- **employee_departments** — many-to-many assignments (`employee_id`, `department_id`, `company_id`); Explorer department-folder ACL and create/edit **Departments** multi-select read via `includes/itm_employee_departments.php`. Primary `employees.department_id` mirrors the first selected department on save.
 - **employees** → depends on **employee_positions**.
 - **employees** → depends on **employee_statuses**.
 - **employees** → optionally depends on **employee_type** via `employee_type_id`.
@@ -56,6 +57,7 @@ The central module for managing employee records, including contact info, hierar
 - **List search (all fields):** `index.php` search matches raw employee columns plus FK label text from joined lookups (`employee_statuses.name`, `employee_roles.name`, `departments.name` and `departments.code`, `it_locations.location_code`, position name/description, manager name/username, etc.) via `includes/itm_employees_search.php` — e.g. `?search=Active` matches employment status label; `?search=FNB` matches department code; `?search=First Last` matches `CONCAT(first_name, ' ', last_name)` when both columns are visible; `?search=555-…` matches `mobile_phone` even though that column is hidden from the list (ESA matrix). Regression: `php scripts/verify_employees_equipment_search_coverage.php`.
 - **View:** Profile thumbnail when `photo` + linked user exist; birthday respects `hide_year`.
 - **Hierarchy Mapping**: Edit form should allow selecting a manager from other employees in the same company.
+- **Departments (multi):** create/edit use `department_ids[]` multi-select (`multiple size="5"`) with `data-addable-select="1"` and trailing `<option value="__add_new__">➕</option>` (departments quick-add). POST syncs `employee_departments` via `itm_employee_sync_department_assignments()`; `__add_new__` is ignored server-side.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import with auto-lookup resolution for departments and positions.
