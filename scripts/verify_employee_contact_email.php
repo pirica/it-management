@@ -120,12 +120,12 @@ if (strpos($editSource, 'itm_employee_validate_contact_email_or_error') !== fals
     vece_fail('employees/edit.php missing shared contact email validator.');
 }
 
-$fastAccPath = __DIR__ . '/fast_create_acc.php';
+$fastAccPath = __DIR__ . '/../modules/employees/fast_create_acc.php';
 $fastAccSource = is_file($fastAccPath) ? (string)file_get_contents($fastAccPath) : '';
 if (strpos($fastAccSource, 'name="personal_email"') !== false && strpos($fastAccSource, 'name="work_email"') !== false) {
-    vece_pass('fast_create_acc.php exposes work_email and personal_email fields.');
+    vece_pass('modules/employees/fast_create_acc.php exposes work_email and personal_email fields.');
 } else {
-    vece_fail('fast_create_acc.php must expose both email fields.');
+    vece_fail('modules/employees/fast_create_acc.php must expose both email fields.');
 }
 
 $disposable = itm_script_test_employee_create($conn, 1, ['script_slug' => 'verify-employee-contact-email']);
