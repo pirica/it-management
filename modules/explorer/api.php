@@ -275,37 +275,18 @@ $username = $_SESSION['username'] ?? 'unknown';
 $safe_username = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $username);
 $user_private_dir = "{$safe_username}_{$user_id}";
 
+require_once ROOT_PATH . 'modules/explorer/explorer_storage_helpers.php';
+
 // Why: Fetch user department code for access control.
-$dept_code = '';
-if ($company_id > 0 && $user_id > 0 && isset($conn) && $conn) {
-    $dept_res = mysqli_query($conn, "SELECT d.code FROM employees e LEFT JOIN departments d ON d.id = e.department_id WHERE e.id = $user_id AND e.company_id = $company_id LIMIT 1");
-    if ($dept_res && $dept_row = mysqli_fetch_assoc($dept_res)) {
-        $dept_code = trim((string)($dept_row['code'] ?? ''));
-    }
-}
-// Why: Sanitise department code for filesystem safety.
-$safe_dept_code = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $dept_code);
+$safe_dept_code = explorer_fetch_user_department_code($conn, $user_id, $company_id);
 
 // Why: New storage root is /files/ instead of /modules/explorer/data/
 $storage_root = ROOT_PATH . 'files/' . $company_id;
 $trash_root = ROOT_PATH . 'files/' . $company_id . '/Trash';
 
-// Why: Auto-create basic structure if it doesn't exist and deny direct HTTP access on every segment.
-// Skip auto-creation when included for verification only to avoid unwanted folder noise.
+// Why: Auto-create basic structure when missing; skip during verification-only includes.
 if ($company_id > 0 && isset($conn) && $conn && !(defined('ITM_VERIFY_SKIP_ROUTER') && ITM_VERIFY_SKIP_ROUTER)) {
-    itm_ensure_files_storage_directory($storage_root);
-    itm_ensure_files_storage_directory($trash_root);
-
-    // Why: Ensure standard top-level folders exist on first use of any API action.
-    itm_ensure_files_storage_directory("$storage_root/Common");
-    itm_ensure_files_storage_directory("$storage_root/Private");
-    itm_ensure_files_storage_directory("$storage_root/Departments");
-
-    // Why: Ensure user-specific folders exist.
-    itm_ensure_files_storage_directory("$storage_root/Private/$user_private_dir");
-    if ($safe_dept_code !== '') {
-        itm_ensure_files_storage_directory("$storage_root/Departments/$safe_dept_code");
-    }
+    explorer_ensure_tenant_storage_scaffold($conn, $company_id, $user_id, $username);
 }
 
 if (!function_exists('explorer_ensure_dir')) {
