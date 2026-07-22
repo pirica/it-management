@@ -47,7 +47,7 @@ $user_private_dir_json = json_encode($user_private_dir, JSON_UNESCAPED_UNICODE |
 
 require_once __DIR__ . '/explorer_storage_helpers.php';
 
-// Why: Department scope for sidebar and folder navigation (Private/Departments roots are API-blocked).
+// Why: Department scope for sidebar and folder navigation (Private root is API-blocked; Departments root lists the user's code folder).
 $safe_dept_code = explorer_fetch_user_department_code($conn, $user_id, $company_id);
 $user_dept_code_json = json_encode($safe_dept_code, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
@@ -372,7 +372,7 @@ function toggleExplorerVaultLock(show) {
     }
 }
 
-/* Why: API blocks Private/Departments roots; UI must open the user's scoped subfolder instead. */
+/* Why: API blocks Private root; Departments opens the root with the user's code folder inside. */
 function resolveScopedFolderPath(path) {
     const normalized = String(path || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
     if (normalized === "Private") {
@@ -383,7 +383,7 @@ function resolveScopedFolderPath(path) {
             alert("You are not assigned to a department. Department files are unavailable.");
             return null;
         }
-        return "Departments/" + userDeptCode;
+        return "Departments";
     }
     return normalized;
 }
