@@ -52,16 +52,18 @@ $renderDashCard = static function ($href, $value, $label, $icon = '📊', $isLin
  * @param string $title
  * @param string $subtitle
  * @param callable $renderCards
+ * @param string $sectionClass
  */
-$renderDashSection = static function ($title, $subtitle, $renderCards) use ($renderDashCard) {
+$renderDashSection = static function ($title, $subtitle, $renderCards, $sectionClass = '') use ($renderDashCard) {
     ob_start();
     $renderCards($renderDashCard);
     $cardsHtml = trim((string)ob_get_clean());
     if ($cardsHtml === '') {
         return;
     }
+    $sectionClassAttr = $sectionClass !== '' ? ' ' . sanitize($sectionClass) : '';
     ?>
-    <section class="itm-emp-dash-section">
+    <section class="itm-emp-dash-section<?php echo $sectionClassAttr; ?>">
         <header class="itm-emp-dash-section-head">
             <h2 class="itm-emp-dash-section-title"><?php echo sanitize($title); ?></h2>
             <span class="itm-emp-dash-section-sub"><?php echo sanitize($subtitle); ?></span>
@@ -172,6 +174,6 @@ $renderDashSection('Activity', 'Login history and recent actions', static functi
     if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'audit_logs')) {
         $renderDashCard('modules/audit_logs/index.php', $dashActivityCount, 'My Activity', '🕒');
     }
-});
+}, 'itm-emp-dash-section--single-col');
 ?>
 </div>

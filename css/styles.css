@@ -851,6 +851,10 @@ body.itm-employee-dashboard-page .content.itm-employee-dashboard {
     gap: 10px;
 }
 
+.itm-emp-dash-section--single-col .itm-emp-dash-grid {
+    grid-template-columns: 1fr;
+}
+
 a.itm-emp-dash-card,
 div.itm-emp-dash-card {
     display: flex;
@@ -947,10 +951,6 @@ a.itm-emp-dash-card:hover {
     .itm-emp-dash-section:last-child {
         grid-column: 1 / -1;
     }
-
-    .itm-emp-dash-section:last-child .itm-emp-dash-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
 }
 
 @media (max-width: 1023px) {
@@ -982,10 +982,6 @@ a.itm-emp-dash-card:hover {
 
     .itm-emp-dash-section:last-child {
         grid-column: auto;
-    }
-
-    .itm-emp-dash-section:last-child .itm-emp-dash-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .itm-emp-dash-panel {
@@ -1023,15 +1019,14 @@ a.itm-emp-dash-card:hover {
         flex: 1 1 100%;
         justify-content: flex-start;
     }
-
-    .itm-emp-dash-section:last-child .itm-emp-dash-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
 }
 
 @media (max-width: 400px) {
-    .itm-emp-dash-grid,
-    .itm-emp-dash-section:last-child .itm-emp-dash-grid {
+    .itm-emp-dash-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .itm-emp-dash-section--single-col .itm-emp-dash-grid {
         grid-template-columns: 1fr;
     }
 
