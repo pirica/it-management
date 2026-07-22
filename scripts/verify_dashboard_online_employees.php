@@ -1,6 +1,6 @@
 <?php
 /**
- * Dashboard Online now regression checks.
+ * Admin page Online now regression checks.
  *
  * CLI: php scripts/verify_dashboard_online_employees.php
  * Browser: scripts/verify_dashboard_online_employees.php
@@ -13,7 +13,7 @@ require_once __DIR__ . '/../config/config.php';
 require_once ROOT_PATH . 'includes/itm_active_sessions.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 
-itm_script_output_begin('Dashboard Online Now Verification');
+itm_script_output_begin('Admin Online Now Verification');
 
 $nl = itm_script_output_nl();
 $failures = 0;
@@ -66,19 +66,19 @@ if (!$conn instanceof mysqli) {
     exit(1);
 }
 
-$dashboardPath = ROOT_PATH . 'dashboard.php';
-if (!is_file($dashboardPath)) {
-    don_verify_fail('Missing dashboard.php');
+$adminPath = ROOT_PATH . 'admin.php';
+if (!is_file($adminPath)) {
+    don_verify_fail('Missing admin.php');
 } else {
-    $dashboardSource = (string)file_get_contents($dashboardPath);
-    if (strpos($dashboardSource, 'itm_count_logged_in_users_for_company') === false) {
-        don_verify_fail('dashboard.php does not call itm_count_logged_in_users_for_company()');
-    } elseif (strpos($dashboardSource, 'stat-label">Online now</div>') === false) {
-        don_verify_fail('dashboard.php is missing the Online now stat card label');
-    } elseif (strpos($dashboardSource, 'online_now_count') === false) {
-        don_verify_fail('dashboard.php is missing online_now_count variable');
+    $adminSource = (string)file_get_contents($adminPath);
+    if (strpos($adminSource, 'itm_count_logged_in_users_for_company') === false) {
+        don_verify_fail('admin.php does not call itm_count_logged_in_users_for_company()');
+    } elseif (strpos($adminSource, 'stat-label">Online now</div>') === false) {
+        don_verify_fail('admin.php is missing the Online now stat card label');
+    } elseif (strpos($adminSource, 'online_now_count') === false) {
+        don_verify_fail('admin.php is missing online_now_count variable');
     } else {
-        don_verify_pass('dashboard.php renders the Online now stat card');
+        don_verify_pass('admin.php renders the Online now stat card');
     }
 }
 
@@ -109,7 +109,7 @@ if ($failures > 0) {
     exit(1);
 }
 
-echo $nl . colorText('All dashboard Online now checks passed.', 'pass') . $nl;
+echo $nl . colorText('All admin Online now checks passed.', 'pass') . $nl;
 exit(0);
 
 itm_script_output_end();

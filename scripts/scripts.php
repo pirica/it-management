@@ -1384,14 +1384,32 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="verify_dashboard_active_employees.php" target="_blank" rel="nofollow noreferrer">verify_dashboard_active_employees.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression for <code>dashboard.php</code> row-2 <strong>Active</strong> and <strong>On Leave</strong> stats: helper call-sites, no leftover join-predicate SQL, soft-delete-aware counts (optional <code>ITM_TEST_COMPANY_ID</code>).</td>
-                    <td>Browser: <a href="verify_dashboard_active_employees.php">verify_dashboard_active_employees.php</a>. CLI: <code>php scripts/verify_dashboard_active_employees.php</code>. Run when changing <code>dashboard.php</code> or Active/On Leave employee count logic.</td>
+                    <td>Regression for <code>admin.php</code> row-2 <strong>Active</strong> and <strong>On Leave</strong> stats: helper call-sites, no leftover join-predicate SQL, soft-delete-aware counts (optional <code>ITM_TEST_COMPANY_ID</code>); employee <code>dashboard.php</code> must not duplicate company counts.</td>
+                    <td>Browser: <a href="verify_dashboard_active_employees.php">verify_dashboard_active_employees.php</a>. CLI: <code>php scripts/verify_dashboard_active_employees.php</code>. Run when changing <code>admin.php</code> or Active/On Leave employee count logic.</td>
                 </tr>
                 <tr>
                     <td><a href="verify_dashboard_online_employees.php" target="_blank" rel="nofollow noreferrer">verify_dashboard_online_employees.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression for <code>dashboard.php</code> row-2 <strong>Online now</strong> stat: session presence helper, <code>config/config.php</code> touch hook, count after touch.</td>
-                    <td>Browser: <a href="verify_dashboard_online_employees.php">verify_dashboard_online_employees.php</a>. CLI: <code>php scripts/verify_dashboard_online_employees.php</code>. Run when changing online session presence or dashboard Online now markup.</td>
+                    <td>Regression for <code>admin.php</code> row-2 <strong>Online now</strong> stat: session presence helper, <code>config/config.php</code> touch hook, count after touch.</td>
+                    <td>Browser: <a href="verify_dashboard_online_employees.php">verify_dashboard_online_employees.php</a>. CLI: <code>php scripts/verify_dashboard_online_employees.php</code>. Run when changing online session presence or admin Online now markup.</td>
+                </tr>
+                <tr>
+                    <td><a href="verify_employee_dashboard.php" target="_blank" rel="nofollow noreferrer">verify_employee_dashboard.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for employee <code>dashboard.php</code>: hero + grouped stat cards, <code>includes/itm_employee_dashboard.php</code> loader, no company switcher or employment-status counts.</td>
+                    <td>Browser: <a href="verify_employee_dashboard.php">verify_employee_dashboard.php</a>. CLI: <code>php scripts/verify_employee_dashboard.php</code>. Run when changing employee dashboard cards or stats loader.</td>
+                </tr>
+                <tr>
+                    <td><a href="verify_admin_page_gate.php" target="_blank" rel="nofollow noreferrer">verify_admin_page_gate.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for <code>admin.php</code> admin-only gate: <code>itm_is_admin()</code> and redirect to <code>dashboard.php</code> for non-admins.</td>
+                    <td>Browser: <a href="verify_admin_page_gate.php">verify_admin_page_gate.php</a>. CLI: <code>php scripts/verify_admin_page_gate.php</code>. Run when changing admin page access control.</td>
+                </tr>
+                <tr>
+                    <td><a href="verify_settings_admin_buttons.php" target="_blank" rel="nofollow noreferrer">verify_settings_admin_buttons.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for Settings admin toolbar: <code>ADMIN</code> → <code>admin.php</code>, <code>SCRIPTS</code> → <code>scripts/scripts.php</code>, visible only when <code>itm_is_admin()</code>.</td>
+                    <td>Browser: <a href="verify_settings_admin_buttons.php">verify_settings_admin_buttons.php</a>. CLI: <code>php scripts/verify_settings_admin_buttons.php</code>. Run when changing Settings admin shortcuts.</td>
                 </tr>
                 <tr>
                     <td><a href="apply_new_company_module_share_capable_seed.php" target="_blank" rel="nofollow noreferrer">apply_new_company_module_share_capable_seed.php</a></td>

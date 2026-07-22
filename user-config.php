@@ -7,12 +7,12 @@ require_once ROOT_PATH . 'includes/employee_profile_photo.php';
 SELECT COUNT(assigned_to_employee_id) FROM `events` WHERE `assigned_to_employee_id` = 1 AND `company_id` = 1;
 */
 /**
- * user-config.php - Employee Dashboard & Profile System
+ * user-config.php - Employee Profile & Preferences
  *
  * Scoped to the logged-in employee.
- * Provides a dashboard with stat cards linking to modules.
+ * Personal stat cards live on dashboard.php.
  * Two-column layout:
- *   - Left: Profile Summary, Stats, Progress, Org Chart Path.
+ *   - Left: Profile Summary, Progress, Org Chart Path.
  *   - Right: Profile Editing, Security, Sidebar Prefs, Activity, etc.
  */
 
@@ -68,84 +68,6 @@ if ($company_id <= 0) {
 //echo "Comp $company_id";
 
 
-// Optimized by Bolt ⚡: Redundant individual queries for events and alerts counts removed.
-// They are now extracted from the consolidated $all_stats block below.
-
-$stmt = mysqli_prepare($conn, "SELECT COUNT(file_name) AS total_files FROM explorer WHERE company_id = ? AND employee_id = ? AND file_name LIKE '%.%' AND active = 1");
-
-mysqli_stmt_bind_param($stmt, "ii", $company_id, $user_id); // Fixed order of parameters to match SQL: company_id, employee_id
-mysqli_stmt_execute($stmt);
-$row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
-
-$total_files = (int)($row['total_files'] ?? 0);
-//echo $total_files;
-//print_r($total_files);
-//$result = mysqli_stmt_get_result($stmt);
-//var_dump(mysqli_fetch_assoc($result));
-//echo "$row";
-
-
-/*
-echo "<pre>";
-print_r($_SESSION);
-echo "</pre>";
-*/
-
-
-/**
- * Count the number of files in a given directory, skipping certain filenames.
- *
- * @param string $dir Path to the directory
- * @param array $skipFiles List of filenames to skip
- * @return int|false Number of files, or false on error
- */
-function countFilesInDirectory(string $dir, array $skipFiles = []) {
-    if (!is_dir($dir)) {
-       // trigger_error("Error: '$dir' is not a valid directory.", E_USER_WARNING);
-        return false;
-    }
-
-    try {
-        // Altera para iteradores recursivos para entrar em todas as subpastas automaticamente
-        $directory = new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS);
-        $iterator = new RecursiveIteratorIterator($directory);
-        $count = 0;
-
-        foreach ($iterator as $fileinfo) {
-            if ($fileinfo->isFile()) {
-                $filename = $fileinfo->getFilename();
-                // Ignora os ficheiros da lista de exclusão
-                if (!in_array($filename, $skipFiles, true)) {
-                    $count++;
-                }
-            }
-        }
-
-        return $count;
-    } catch (Exception $e) {
-        trigger_error("Error reading directory: " . $e->getMessage(), E_USER_WARNING);
-        return false;
-    }
-}
-
-$employee_id = $_SESSION['employee_id'];
-$username     = $_SESSION['username'];
-$company_id_sess   = $_SESSION['company_id'];
-
-$foldername = "{$username}_{$employee_id}";
-$dir = __DIR__ . "/files/{$company_id_sess}/Private/{$foldername}/";
-
-$skipList = ['index.html', '.htaccess', 'index.php'];
-$fileCount = countFilesInDirectory($dir, $skipList);
-
-if ($fileCount !== false) {
-  //  echo "Número de ficheiros na pasta (incluindo subpastas): $fileCount";
-}
-
-
-
-
-
 
 
 
@@ -196,251 +118,39 @@ $_SESSION['assignment_types'] = $assignment_types;
 //echo $_SESSION['assignment_types'];
 }
 
-
-
-
-// Stats gathering - All modules using specified fields
-// Optimized: consolidated COUNT queries via includes/itm_user_config_stats.php.
-require_once ROOT_PATH . 'includes/itm_user_config_stats.php';
-$stat_definitions = itm_user_config_stat_definitions();
-$all_stats = itm_user_config_fetch_stats_batch($conn, $stat_definitions, $user_id, $company_id);
-
-// Extract variables used in UI from consolidated stats
-$alertsEventsCounts = itm_user_config_extract_alerts_events_counts($all_stats);
-$total_events_forme = $alertsEventsCounts['total_events_forme'];
-$total_events_created = $alertsEventsCounts['total_events_created'];
-$total_alerts_forme = $alertsEventsCounts['total_alerts_forme'];
-$total_alerts_created = $alertsEventsCounts['total_alerts_created'];
-$assigned_assets_count = 0;
-$vault_entries_count = 0;
-
-foreach ($all_stats as $s) {
-    if ($s['table'] === 'equipment' && $s['field'] === 'assigned_to_employee_id') $assigned_assets_count = $s['count'];
-    if ($s['table'] === 'password_entries' && $s['field'] === 'employee_id') $vault_entries_count = $s['count'];
+// Why: Profile System Access Overview still needs the employee_system_access row (dashboard owns auto-insert).
+$system_access_overview = [];
+$systemAccessColumns = [];
+$systemAccessRes = mysqli_query($conn, 'DESCRIBE employee_system_access');
+if ($systemAccessRes) {
+    while ($systemAccessRow = mysqli_fetch_assoc($systemAccessRes)) {
+        $systemAccessColumns[] = $systemAccessRow['Field'];
+    }
 }
-
-
-$sql = "
-    SELECT
-        COUNT(*) as total,
-        SUM(CASE WHEN ts.is_closed = 0 THEN 1 ELSE 0 END) as open,
-        SUM(CASE WHEN ts.is_closed = 1 THEN 1 ELSE 0 END) as closed
-    FROM tickets t
-    JOIN ticket_statuses ts ON t.status_id = ts.id
-    WHERE t.assigned_to_employee_id = ?
-    AND t.company_id = ?
-";
-
-
-$stmt = mysqli_prepare($conn, $sql);
-
-if (!$stmt) {
-    echo "<span style='color:red'>PREPARE FAILED: " . mysqli_error($conn) . "</span><br>";
-}
-
-
-if (!mysqli_stmt_bind_param($stmt, 'ii', $user_id, $company_id)) {
-    echo "<span style='color:red'>BIND FAILED: " . mysqli_stmt_error($stmt) . "</span><br>";
-}
-
-if (!mysqli_stmt_execute($stmt)) {
-    echo "<span style='color:red'>EXECUTE FAILED: " . mysqli_stmt_error($stmt) . "</span><br>";
-}
-
-mysqli_stmt_bind_result($stmt, $total, $open, $closed);
-
-if (!mysqli_stmt_fetch($stmt)) {
-
-    $ticket_summary = ['total' => 0, 'open' => 0, 'closed' => 0];
-} else {
-
-    $ticket_summary = [
-        'total'  => (int)$total,
-        'open'   => (int)$open,
-        'closed' => (int)$closed
-    ];
-}
-
-mysqli_stmt_close($stmt);
-
-
-
-$sql = "
-    SELECT created_at
-    FROM attempts
-    WHERE employee_id = ?
-      AND attempt_source = 'login'
-      AND attempt_type = 'success'
-    ORDER BY created_at DESC
-    LIMIT 1
-";
-
-
-
-$stmt = mysqli_prepare($conn, $sql);
-
-if (!$stmt) {
-    echo "<span style='color:red'>PREPARE FAILED: " . mysqli_error($conn) . "</span><br>";
-}
-
-
-if (!mysqli_stmt_bind_param($stmt, 'i', $user_id)) {
-    echo "<span style='color:red'>BIND FAILED: " . mysqli_stmt_error($stmt) . "</span><br>";
-}
-
-if (!mysqli_stmt_execute($stmt)) {
-    echo "<span style='color:red'>EXECUTE FAILED: " . mysqli_stmt_error($stmt) . "</span><br>";
-}
-
-
-mysqli_stmt_bind_result($stmt, $created_at);
-
-if (!mysqli_stmt_fetch($stmt)) {
-    $last_login_row = ['created_at' => null];
-} else {
-    $last_login_row = ['created_at' => $created_at];
-}
-
-mysqli_stmt_close($stmt);
-
-
-
-
-/* 1) Descobrir colunas dinâmicas da tabela employee_system_access */
-$columns = [];
-$system_access_count_0 = 0;
-$system_access_count_1 = 0;
-//echo "user_id  $user_id - company_id  $company_id";
-$res = mysqli_query($conn, "DESCRIBE employee_system_access");
-if (!$res) die("DESCRIBE failed: " . mysqli_error($conn));
-
-while ($row = mysqli_fetch_assoc($res)) {
-    $columns[] = $row['Field'];
-}
-
-/* 2) Excluir colunas meta e montar SELECT apenas com colunas reais (DESCRIBE).
- * Why: never merge invented names like changed_at into SELECT — employee_system_access
- * has created_at/updated_at (and audit soft-delete cols) but not changed_at. */
-$fixed = [
+$systemAccessFixed = [
     'id', 'company_id', 'employee_id', 'active',
     'changed_at', 'created_at', 'updated_at', 'deleted_at',
     'created_by', 'updated_by', 'deleted_by',
 ];
-$dynamic_columns = array_values(array_diff($columns, $fixed));
-// Why: SELECT only columns that exist on the live table.
-$all_columns = $columns;
-$select_list = implode(', ', array_map(static function ($c) {
+$systemAccessSelectList = implode(', ', array_map(static function ($c) {
     return '`' . str_replace('`', '``', (string)$c) . '`';
-}, $all_columns));
-
-$sql = "SELECT $select_list FROM employee_system_access WHERE employee_id = ? AND company_id = ?";
-
-// Lista de controlo para verificar se existem colunas novas comparando com o código antigo
-$sql2 = "SELECT network_access, micros_emc, opera_username, micros_card, pms_id, synergy_mms, hu_the_lobby, navision, onq_ri, birchstreet, delphi, digital_rev, omina, vingcard_system, digital_rev, office_key_card FROM employees WHERE `id` = ? AND company_id = ?";
-
-/* 3) COMPARAR E EXIBIR AVISO (Apenas informativo) */
-preg_match('/SELECT\s+(.+?)\s+FROM/i', $sql2, $matches);
-$fields_sql2_raw = explode(',', $matches[1]);
-
-$fields_sql2 = array_map(fn($c) => trim($c, " `\t\n\r"), $fields_sql2_raw);
-$fields_sql2 = array_unique(array_filter($fields_sql2));
-
-$missing_in_sql = array_diff($fields_sql2, $all_columns);
-
-if (!empty($missing_in_sql)) {
-  //  echo "<h3>Aviso: Colunas em \$sql2 que não existem na tabela employee_system_access:</h3><ul>";
-    foreach ($missing_in_sql as $column) {
-    //    echo "<li>`$column`</li>";
-    }
-  //  echo "</ul>";
-}
-
-/* 4) PREPARE & EXECUTE */
-$stmt = mysqli_prepare($conn, $sql);
-if (!$stmt) die("PREPARE FAILED: " . mysqli_error($conn));
-
-mysqli_stmt_bind_param($stmt, 'ii', $user_id, $company_id);
-
-if (!mysqli_stmt_execute($stmt)) {
-    die("EXECUTE FAILED: " . mysqli_stmt_error($stmt));
-}
-
-/* 5) FETCH DINÂMICO CORRIGIDO (Extração nativa e segura) */
-$result = mysqli_stmt_get_result($stmt);
-$system_access_overview = [];
-if ($result) {
-    while ($row = mysqli_fetch_assoc($result)) {
-        $system_access_overview[] = $row;
-    }
-}
-mysqli_stmt_close($stmt);
-
-/* 6) CRIAR REGISTO SE ESTIVER VAZIO */
-if (empty($system_access_overview)) {
-    $insert_fields = array_merge(['employee_id', 'company_id'], $dynamic_columns);
-    $escaped_fields = array_map(fn($f) => "`$f`", $insert_fields);
-
-    $insert_values = array_merge([$user_id, $company_id], array_fill(0, count($dynamic_columns), 0));
-    $placeholders = implode(', ', array_fill(0, count($insert_values), '?'));
-
-    $insert_sql = "INSERT INTO employee_system_access (" . implode(', ', $escaped_fields) . ") VALUES ($placeholders)";
-
-    $stmt_ins = mysqli_prepare($conn, $insert_sql);
-    if ($stmt_ins) {
-        $types = str_repeat('i', count($insert_values));
-        mysqli_stmt_bind_param($stmt_ins, $types, ...$insert_values);
-        mysqli_stmt_execute($stmt_ins);
-        mysqli_stmt_close($stmt_ins);
-
-        echo "<script>window.location.reload();</script>";
-        exit;
-    }
-}
-
-/* 7) PROCESSAR CONTAGENS E LISTAGEM VISUAL */
-if (!empty($system_access_overview)) {
-    $access_row = $system_access_overview[0];
-
-    // Remove meta/audit columns before counting access flags
-    foreach ($fixed as $metaCol) {
-        unset($access_row[$metaCol]);
-    }
-
-    // Converte os dados reais da BD para inteiros (garante 0 ou 1 numéricos)
-    $access_row = array_map('intval', $access_row);
-
-    // Faz a contagem real
-    $counts = array_count_values($access_row);
-
-    $system_access_count_0 = $counts[0] ?? 0;
-    $system_access_count_1 = $counts[1] ?? 0;
-
-   // echo "<p><strong>Sumário (employee_system_access):</strong> Com acesso: $system_access_count_1 | Sem acesso: $system_access_count_0</p>";
-
-    // Exibição visual com ícones atualizados conforme o valor real da BD
-   // echo "<div style='font-family: sans-serif; line-height: 2;'>";
-    foreach ($access_row as $coluna => $valor) {
-        $label = ucwords(str_replace('_', ' ', $coluna));
-        if ($valor === 1) {
-    //        echo "✅ <strong>$label</strong><br>";
-        } else {
-    //        echo "❌ $label<br>";
+}, $systemAccessColumns));
+if ($systemAccessSelectList !== '') {
+    $systemAccessStmt = mysqli_prepare(
+        $conn,
+        'SELECT ' . $systemAccessSelectList . ' FROM employee_system_access WHERE employee_id = ? AND company_id = ?'
+    );
+    if ($systemAccessStmt) {
+        mysqli_stmt_bind_param($systemAccessStmt, 'ii', $user_id, $company_id);
+        if (mysqli_stmt_execute($systemAccessStmt)) {
+            $systemAccessResult = mysqli_stmt_get_result($systemAccessStmt);
+            while ($systemAccessResult && ($systemAccessDataRow = mysqli_fetch_assoc($systemAccessResult))) {
+                $system_access_overview[] = $systemAccessDataRow;
+            }
         }
+        mysqli_stmt_close($systemAccessStmt);
     }
-  //  echo "</div>";
-
-} else {
-   // echo "<p>Nenhum registo encontrado para os IDs fornecidos (User ID: $user_id | Company ID: $company_id).</p>";
 }
-
-
-
-
-
-
-
-
-
 
 
 $sql = "
@@ -945,7 +655,7 @@ $totpQrUrl = $totpSetupPending
 <html lang="en" data-theme="<?php echo sanitize($profileTheme); ?>">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard - <?php echo sanitize($current_user['display_name'] ?: $current_user['username']); ?></title>
+    <title>Profile - <?php echo sanitize($current_user['display_name'] ?: $current_user['username']); ?></title>
     <link rel="stylesheet" href="css/styles.css">
     <script>
     // Why: apply employees.theme before paint; theme.js later reads localStorage.
@@ -957,13 +667,10 @@ $totpQrUrl = $totpSetupPending
     })();
     </script>
     <style>
-        .emp-dashboard { display: flex; flex-direction: column; gap: 20px; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
-        .stat-card { background: var(--bg-primary); padding: 15px; border-radius: 8px; border: 1px solid var(--border); text-decoration: none; color: inherit; transition: all 0.2s; }
-        .stat-card:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: var(--shadow-lg); }
-        .stat-val { font-size: 22px; font-weight: 700; display: block; color: var(--text-primary); }
-        .stat-lbl { font-size: 12px; color: var(--text-secondary); }
         .layout-2col { display: grid; grid-template-columns: 280px 1fr; gap: 20px; }
+        .stat-lbl { font-size: 12px; color: var(--text-secondary); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+        .stat-card { background: var(--bg-primary); padding: 12px; border-radius: 8px; border: 1px solid var(--border); }
         .col-left { display: flex; flex-direction: column; gap: 20px; }
         .col-right { display: flex; flex-direction: column; gap: 20px; }
         /* Why: Fixed 280px sidebar collapses into a single column on phones/tablets. */
@@ -995,64 +702,8 @@ $totpQrUrl = $totpSetupPending
         <?php include 'includes/header.php'; ?>
         <div class="content">
             <?php $user_config_render_flash(); ?>
-            <div style="margin-top:20px;"><a class="btn" href="dashboard.php">🔙</a></div><br><br>
-            <div class="emp-dashboard">
-                <!-- 1. DASHBOARD STAT CARDS -->
-                <div class="stats-grid">
-                    <a href="modules/equipment/index.php" class="stat-card">
-                        <span class="stat-val"><?php echo $assigned_assets_count; ?></span>
-                        <span class="stat-lbl">💻 My Assets</span>
-                    </a>
-                    <a href="modules/explorer/index.php" class="stat-card">
-                        <span class="stat-val"><?php echo $fileCount ? "1" : "0"; ?></span>
-                        <span class="stat-lbl">🌐 My Files</span>
-                    </a>
-                    <a href="modules/tickets/index.php" class="stat-card">
-                        <span class="stat-val"><?php echo (int)$ticket_summary['open']; ?>/<?php echo (int)$ticket_summary['total']; ?></span>
-                        <span class="stat-lbl">🎟️ My Tickets (Open/Total)</span>
-                    </a>
-                    <a href="modules/events/index.php" class="stat-card">
-                        <span class="stat-val"><?php echo $total_events_created; ?>/<?php echo $total_events_forme; ?></span>
-                        <span class="stat-lbl">📅 My Events (My/For Me)</span>
-                    </a>
-                    <a href="modules/alerts/index.php" class="stat-card">
-                        <span class="stat-val"><?php echo $total_alerts_created; ?>/<?php echo $total_alerts_forme; ?></span>
-                        <span class="stat-lbl">📢 My Alerts (My/For Me)</span>
-                    </a>
-                    <a href="modules/passwords/index.php" class="stat-card">
-                        <span class="stat-val"><?php echo $vault_entries_count; ?></span>
-                        <span class="stat-lbl">🔐 Vault Entries</span>
-                    </a>
-                    <div class="stat-card">
-                        <span class="stat-val"><?php echo $last_login_row ? date('d/m/y', strtotime($last_login_row['created_at'])) : 'Never'; ?></span>
-                        <span class="stat-lbl">🕒 Last Login</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-val"><?php echo date('d/m/y', strtotime($current_user['created_at'])); ?></span>
-                        <span class="stat-lbl">📅 Joined Date</span>
-                    </div>
-                    <a href="modules/equipment/index.php" class="stat-card">
-                        <span class="stat-val"><?php echo $workstation ? "1" : "0"; ?></span>
-                        <span class="stat-lbl">💻 My Hardware</span>
-                    </a>
-                    <a href="modules/audit_logs/index.php" class="stat-card">
-                        <span class="stat-val"><?php echo count($activity_list); ?></span>
-                        <span class="stat-lbl">🕒 My Activity</span>
-                    </a>
-					<a href="modules/employee_system_access/index.php" class="stat-card">
-                        <span class="stat-val"><?php echo $system_access_count_1; ?></span>
-                        <span class="stat-lbl">System Access</span>
-                    </a>
-                    <!-- All other 30 combinations grid -->
-                    <?php foreach ($all_stats as $s): if ($s['count'] > 0 && !in_array($s['table'], ['equipment','tickets','password_entries','attempts'])): ?>
-                        <a href="modules/<?php echo $s['slug']; ?>/index.php" class="stat-card">
-                            <span class="stat-val"><?php echo $s['count']; ?></span>
-                            <span class="stat-lbl"><?php echo sanitize($s['label']); ?></span>
-                        </a>
-                    <?php endif; endforeach; ?>
-                </div>
-
-                <div class="layout-2col">
+            <div style="margin-top:20px;"><a class="btn" href="dashboard.php" title="Back">🔙</a></div><br><br>
+            <div class="layout-2col">
                     <!-- LEFT COLUMN -->
                     <div class="col-left">
                         <div class="card" style="text-align:center;">

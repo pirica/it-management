@@ -764,6 +764,13 @@ if (!isset($crud_title)) {
             </div>
             <p style="margin-bottom:20px;">Options: configure UI button positions, create required SQL tables, and manage full SQL backups.</p>
 
+            <?php if (itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))): ?>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+                <a class="btn btn-primary" href="<?php echo BASE_URL; ?>admin.php" title="Admin overview">ADMIN</a>
+                <a class="btn" href="<?php echo BASE_URL; ?>scripts/scripts.php" title="Scripts catalog">SCRIPTS</a>
+            </div>
+            <?php endif; ?>
+
             <?php if ($message): ?>
                 <div class="alert alert-success"><?php echo sanitize($message); ?></div>
                 <?php if (!empty($systemTableReport['created_tables']) || !empty($systemTableReport['verified_tables']) || !empty($systemTableReport['added_columns'])): ?>

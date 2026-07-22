@@ -1,6 +1,6 @@
 <?php
 /**
- * Employee dashboard stat definitions and query helpers for user-config.php.
+ * Employee dashboard stat definitions and query helpers for dashboard.php.
  *
  * Why: Single source for consolidated COUNT subqueries and benchmark_stats_optimized.php parity.
  */

@@ -26,6 +26,7 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 - **Favicon/SQL Uploads**: Supports drag-and-drop file uploads for favicon and SQL backup files.
 - **Favicon preview**: On load, `itm_ui_config_sync_favicon_path_from_disk()` backfills empty `favicon_path` when `images/favicons/company_{company_id}.ico` already exists (uploaded file without DB path). Preview and tab icon use `itm_ui_config_resolve_favicon_relative_path()` + `itm_ui_config_favicon_url($config, $company_id)`.
 - **API key POST actions**: `save_api_key`, `generate_api_key` (CSRF required).
+- **Admin toolbar:** when `itm_is_admin()`, index intro shows **ADMIN** (`admin.php`) and **SCRIPTS** (`scripts/scripts.php`) buttons above the UI Configuration card.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — (in `index.php`) handles bulk JSON import of settings (though rare).
