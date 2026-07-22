@@ -123,10 +123,18 @@ if (strpos($dashboardSource, 'itm-employee-dashboard-page') === false) {
     ed_verify_pass('dashboard.php sets viewport layout body class');
 }
 
-if (strpos($cardsSource, 'itm-emp-dash-section--single-col') === false) {
-    ed_verify_fail('Activity section must use single-column grid (itm-emp-dash-section--single-col)');
+$stylesSource = (string)@file_get_contents(ROOT_PATH . 'css/styles.css');
+if (strpos($cardsSource, 'itm-emp-dash-section--activity') === false) {
+    ed_verify_fail('Activity section must use bottom row layout (itm-emp-dash-section--activity)');
 } else {
-    ed_verify_pass('Activity section uses single-column grid');
+    ed_verify_pass('Activity section uses bottom row layout');
+}
+
+if (strpos($stylesSource, 'itm-emp-dash-section--activity .itm-emp-dash-grid') === false
+    || strpos($stylesSource, 'repeat(3') === false) {
+    ed_verify_fail('Activity section CSS must use a three-column single-row card grid');
+} else {
+    ed_verify_pass('Activity section uses three-column card row');
 }
 
 if ($failures > 0) {

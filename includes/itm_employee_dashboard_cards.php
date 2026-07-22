@@ -174,6 +174,6 @@ $renderDashSection('Activity', 'Login history and recent actions', static functi
     if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'audit_logs')) {
         $renderDashCard('modules/audit_logs/index.php', $dashActivityCount, 'My Activity', '🕒');
     }
-}, 'itm-emp-dash-section--single-col');
+}, 'itm-emp-dash-section--activity');
 ?>
 </div>
