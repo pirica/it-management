@@ -72,6 +72,7 @@ $form = [
     'last_name' => 'Demo',
     'work_email' => '',
     'personal_email' => '',
+    'role_id' => 0,
     'role_name' => '',
     'module_slugs' => [],
     'access_level_id' => 0,
@@ -105,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     continue;
                 }
                 if ($key === 'company_id' || $key === 'access_level_id' || $key === 'employment_status_id'
-                    || $key === 'department_id' || $key === 'employee_position_id') {
+                    || $key === 'department_id' || $key === 'employee_position_id' || $key === 'role_id') {
                     $form[$key] = (int)($_POST[$key] ?? 0);
                     continue;
                 }
@@ -118,6 +119,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ((string)$template['username'] === $templateKey) {
                         $form['username'] = (string)$template['username'];
                         $form['password'] = (string)$template['password'];
+                        $form['role_id'] = itm_demo_module_users_lookup_role_id_by_name(
+                            $conn,
+                            (int)$template['company_id'],
+                            (string)$template['role_name']
+                        );
                         $form['role_name'] = (string)$template['role_name'];
                         $form['module_slugs'] = itm_demo_module_restrictions_module_slugs_for_user($template);
                         $form['first_name'] = ucfirst((string)$template['username']);
@@ -136,6 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'last_name' => $form['last_name'] !== '' ? $form['last_name'] : 'Demo',
                 'work_email' => $form['work_email'],
                 'personal_email' => $form['personal_email'],
+                'role_id' => (int)$form['role_id'],
                 'role_name' => $form['role_name'],
                 'module_slugs' => $form['module_slugs'],
                 'access_level_id' => (int)$form['access_level_id'],
@@ -155,6 +162,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $csrfToken = itm_get_csrf_token();
+$roleLookup = [];
+foreach ($fkOptions['employee_roles'] as $roleRow) {
+    $roleId = (int)($roleRow['id'] ?? 0);
+    if ($roleId > 0) {
+        $roleLookup[$roleId] = (string)($roleRow['name'] ?? '');
+    }
+}
+$selectedRoleId = (int)$form['role_id'];
 ?>
 <!doctype html>
 <html lang="en">
@@ -222,6 +237,7 @@ $csrfToken = itm_get_csrf_token();
                         $templateModules = implode(', ', itm_demo_module_restrictions_module_slugs_for_user($template));
                         ?>
                         <option value="<?php echo htmlspecialchars((string)$template['username'], ENT_QUOTES, 'UTF-8'); ?>"
+                            data-role-name="<?php echo htmlspecialchars((string)$template['role_name'], ENT_QUOTES, 'UTF-8'); ?>"
                             <?php echo $form['demo_template'] === (string)$template['username'] ? 'selected' : ''; ?>>
                             <?php echo htmlspecialchars((string)$template['username'] . ' → ' . $templateModules, ENT_QUOTES, 'UTF-8'); ?>
                         </option>
@@ -287,8 +303,25 @@ $csrfToken = itm_get_csrf_token();
             </div>
 
             <div>
-                <label for="role_name">Role name</label>
-                <input type="text" name="role_name" id="role_name" required value="<?php echo htmlspecialchars($form['role_name'], ENT_QUOTES, 'UTF-8'); ?>">
+                <label for="role_id">Role</label>
+                <select name="role_id" id="role_id" required
+                    data-addable-select="1"
+                    data-add-table="employee_roles"
+                    data-add-id-col="id"
+                    data-add-label-col="name"
+                    data-add-company-scoped="1"
+                    data-add-friendly="role">
+                    <option value="">-- Select --</option>
+                    <?php foreach ($roleLookup as $roleId => $roleName): ?>
+                        <option value="<?php echo (int)$roleId; ?>"<?php echo (int)$roleId === $selectedRoleId ? ' selected' : ''; ?>>
+                            <?php echo htmlspecialchars($roleName, ENT_QUOTES, 'UTF-8'); ?>
+                        </option>
+                    <?php endforeach; ?>
+                    <?php if ($selectedRoleId > 0 && !isset($roleLookup[$selectedRoleId])): ?>
+                        <option value="<?php echo (int)$selectedRoleId; ?>" selected>#<?php echo (int)$selectedRoleId; ?></option>
+                    <?php endif; ?>
+                    <option value="__add_new__">➕</option>
+                </select>
             </div>
 
             <div>
@@ -346,5 +379,35 @@ $csrfToken = itm_get_csrf_token();
         </div>
     </form>
 </div>
+<script>
+window.ITM_BASE_URL = <?php echo json_encode(BASE_URL, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+</script>
+<script src="../js/select-add-option.js"></script>
+<script>
+(function () {
+    var demoTemplate = document.getElementById('demo_template');
+    var roleSelect = document.getElementById('role_id');
+    if (!demoTemplate || !roleSelect) {
+        return;
+    }
+    demoTemplate.addEventListener('change', function () {
+        var option = demoTemplate.options[demoTemplate.selectedIndex];
+        if (!option) {
+            return;
+        }
+        var roleName = option.getAttribute('data-role-name') || '';
+        if (roleName === '') {
+            return;
+        }
+        for (var i = 0; i < roleSelect.options.length; i++) {
+            if (roleSelect.options[i].text === roleName) {
+                roleSelect.value = roleSelect.options[i].value;
+                return;
+            }
+        }
+    });
+})();
+</script>
 </body>
 </html>
