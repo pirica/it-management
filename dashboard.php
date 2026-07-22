@@ -95,46 +95,43 @@ $stylesCssVersion = is_file($stylesCssPath) ? (string)filemtime($stylesCssPath) 
     })();
     </script>
 </head>
-<body>
+<body class="itm-employee-dashboard-page">
 <div class="container">
     <?php include 'includes/sidebar.php'; ?>
     <div class="main-content">
         <?php include 'includes/header.php'; ?>
         <div class="content itm-employee-dashboard">
-            <div style="position:relative;display:flex;justify-content:flex-end;align-items:center;margin-bottom:20px;min-height:40px;">
-                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;" title="Dashboard">📊</h1>
-            </div>
-
-            <div class="itm-emp-dash-hero">
-                <div class="itm-emp-dash-hero-photo">
-                    <?php if ($profilePhotoUrl): ?>
-                        <img src="<?php echo sanitize($profilePhotoUrl); ?>" alt="Profile">
-                    <?php else: ?>
-                        <span aria-hidden="true">👤</span>
-                    <?php endif; ?>
+            <div class="itm-emp-dash-shell">
+                <div class="itm-emp-dash-hero">
+                    <div class="itm-emp-dash-hero-photo">
+                        <?php if ($profilePhotoUrl): ?>
+                            <img src="<?php echo sanitize($profilePhotoUrl); ?>" alt="Profile">
+                        <?php else: ?>
+                            <span aria-hidden="true">👤</span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="itm-emp-dash-hero-body">
+                        <p class="itm-emp-dash-hero-kicker" title="Dashboard">📊 Welcome back</p>
+                        <h2 class="itm-emp-dash-hero-name"><?php echo sanitize($displayName); ?></h2>
+                        <?php if ($heroMeta !== ''): ?>
+                            <p class="itm-emp-dash-hero-meta"><?php echo sanitize($heroMeta); ?></p>
+                        <?php endif; ?>
+                        <?php if ($statusName !== ''): ?>
+                            <span class="badge badge-success"><?php echo sanitize($statusName); ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="itm-emp-dash-hero-actions">
+                        <a class="btn btn-primary" href="<?php echo BASE_URL; ?>user-config.php" title="Edit profile">✏️</a>
+                        <a class="btn" href="<?php echo BASE_URL; ?>user-config.php" title="Profile and preferences">👤</a>
+                        <?php if ($isAdminUser): ?>
+                            <a class="btn" href="<?php echo BASE_URL; ?>admin.php" title="Admin overview">🛡️</a>
+                        <?php endif; ?>
+                    </div>
                 </div>
-                <div class="itm-emp-dash-hero-body">
-                    <p class="itm-emp-dash-hero-kicker">Welcome back</p>
-                    <h2 class="itm-emp-dash-hero-name"><?php echo sanitize($displayName); ?></h2>
-                    <?php if ($heroMeta !== ''): ?>
-                        <p class="itm-emp-dash-hero-meta"><?php echo sanitize($heroMeta); ?></p>
-                    <?php endif; ?>
-                    <?php if ($statusName !== ''): ?>
-                        <span class="badge badge-success"><?php echo sanitize($statusName); ?></span>
-                    <?php endif; ?>
-                </div>
-                <div class="itm-emp-dash-hero-actions">
-                    <a class="btn btn-primary" href="<?php echo BASE_URL; ?>user-config.php" title="Edit profile">✏️</a>
-                </div>
-            </div>
 
-            <?php include ROOT_PATH . 'includes/itm_employee_dashboard_cards.php'; ?>
-
-            <div class="itm-emp-dash-footer">
-                <a class="btn" href="<?php echo BASE_URL; ?>user-config.php" title="Profile and preferences">👤</a>
-                <?php if ($isAdminUser): ?>
-                    <a class="btn" href="<?php echo BASE_URL; ?>admin.php" title="Admin overview">🛡️</a>
-                <?php endif; ?>
+                <div class="itm-emp-dash-body">
+                    <?php include ROOT_PATH . 'includes/itm_employee_dashboard_cards.php'; ?>
+                </div>
             </div>
         </div>
     </div>

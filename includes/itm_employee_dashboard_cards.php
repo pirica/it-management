@@ -75,6 +75,7 @@ $renderDashSection = static function ($title, $subtitle, $renderCards) use ($ren
     <?php
 };
 ?>
+<div class="itm-emp-dash-sections">
 <?php
 $renderDashSection('My work', 'Assets, tickets, and assignments', static function ($renderDashCard) use (
     $conn,
@@ -173,3 +174,4 @@ $renderDashSection('Activity', 'Login history and recent actions', static functi
     }
 });
 ?>
+</div>
