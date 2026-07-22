@@ -1076,7 +1076,18 @@ if (!isset($crud_title)) {
     <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
-        .opr-controls { display:flex; gap:10px; align-items:flex-end; margin-bottom:20px; flex-wrap:wrap; }
+        .opr-controls { display:flex; gap:10px; align-items:center; margin-bottom:20px; flex-wrap:wrap; }
+        .opr-toolbar-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .opr-toolbar-actions .btn {
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            gap:4px;
+            min-height:32px;
+            line-height:1.2;
+            white-space:nowrap;
+        }
+        .opr-toolbar-actions .btn img { display:block; }
         .opr-section { margin-bottom:24px; }
         .opr-section h2 { margin:0 0 10px; font-size:1.1rem; }
         .opr-section-spaced { margin-top:20px; }
@@ -1297,7 +1308,7 @@ if (!isset($crud_title)) {
                     <button type="submit" class="btn btn-primary">Go</button>
                 </form>
                 <div style="flex-grow:1;"></div>
-                <div class="btn-group">
+                <div class="opr-toolbar-actions">
                     <button type="button" class="btn btn-sm btn-success" onclick="exportOPR('xlsx')">📗 Export Excel</button>
                     <button type="button" class="btn btn-sm btn-danger" onclick="exportOPR('pdf')">📄 Export PDF</button>
                     <?php echo itm_crud_record_share_render_action_buttons('ops_report', (int)$report_id, 'ops report'); ?>
