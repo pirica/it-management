@@ -69,7 +69,7 @@ foreach ($sectionsById as $section) {
         <?php
         $sectionId = $section['id'];
         // Skip hidden sections (pref + no visible children)
-        if (!itm_sidebar_section_effective_visible($sectionId, $sidebarConfig, $conn, (int)($company_id ?? 0))) {
+        if (!itm_sidebar_section_effective_visible($sectionId, $sidebarConfig, $conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0))) {
             continue;
         }
 
@@ -83,7 +83,7 @@ foreach ($sectionsById as $section) {
         }
 
         $visibleItems = array_values(array_filter($orderedItems, static function ($sidebarItem) use ($sidebarConfig, $conn, $company_id) {
-            return itm_sidebar_item_effective_visible($sidebarItem, $sidebarConfig, $conn, (int)($company_id ?? 0));
+            return itm_sidebar_item_effective_visible($sidebarItem, $sidebarConfig, $conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0));
         }));
 
         // Don't render a section if it has no visible items

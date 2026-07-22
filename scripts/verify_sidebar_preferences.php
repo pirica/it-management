@@ -73,6 +73,7 @@ $settingsSource = (string)file_get_contents(ROOT_PATH . 'modules/settings/index.
 foreach ([
     'itm_sidebar_item_passes_access_gate' => 'Settings SideMenu filters by module access.',
     'itm_sidebar_item_effective_visible' => 'Settings SideMenu uses effective visibility for checkboxes.',
+    'itm_equipment_type_sidebar_effective_visible' => 'Settings Equipment Type Sidebar uses effective visibility.',
     'itm_sidebar_apply_access_gates_to_visibility' => 'Settings save applies access gates to sidebar visibility.',
     'itm_sidebar_section_effective_visible' => 'Settings SideMenu uses section effective visibility.',
     'itm_sidebar_prepare_layout_config_for_save' => 'Settings save normalizes submenu sections before persist.',
@@ -82,6 +83,13 @@ foreach ([
     } else {
         vsp_pass($label);
     }
+}
+
+$uiConfigSource = (string)file_get_contents(ROOT_PATH . 'includes/ui_config.php');
+if (strpos($uiConfigSource, 'itm_employee_role_sidebar_show_enabled') === false) {
+    vsp_fail('includes/ui_config.php missing itm_employee_role_sidebar_show_enabled().');
+} else {
+    vsp_pass('ui_config.php resolves employee_roles.sidebar_show.');
 }
 
 // --- Canonical section placement ---
@@ -111,6 +119,79 @@ if (!function_exists('itm_sidebar_sync_section_visibility_from_items')) {
     } else {
         vsp_pass('Section visibility sync hides empty sections.');
     }
+}
+
+require_once __DIR__ . '/lib/itm_verify_db_migrations_report.php';
+if (function_exists('itm_verify_db_migrations_column_exists')
+    && itm_verify_db_migrations_column_exists($conn, 'employee_roles', 'sidebar_show')
+    && function_exists('has_module_access')
+    && has_module_access($conn, $companyId, 'tickets')) {
+    $helpdeskRoleId = 0;
+    $roleStmt = mysqli_prepare(
+        $conn,
+        'SELECT id FROM employee_roles WHERE company_id = ? AND LOWER(name) = ? AND active = 1 LIMIT 1'
+    );
+    if ($roleStmt) {
+        $helpdeskName = 'helpdesk';
+        mysqli_stmt_bind_param($roleStmt, 'is', $companyId, $helpdeskName);
+        mysqli_stmt_execute($roleStmt);
+        mysqli_stmt_bind_result($roleStmt, $helpdeskRoleId);
+        mysqli_stmt_fetch($roleStmt);
+        mysqli_stmt_close($roleStmt);
+    }
+    if ($helpdeskRoleId > 0) {
+        $roleUpdate = mysqli_prepare($conn, 'UPDATE employees SET role_id = ? WHERE id = ? AND company_id = ? LIMIT 1');
+        if ($roleUpdate) {
+            mysqli_stmt_bind_param($roleUpdate, 'iii', $helpdeskRoleId, $employeeId, $companyId);
+            mysqli_stmt_execute($roleUpdate);
+            mysqli_stmt_close($roleUpdate);
+        }
+
+        $layoutConfig = itm_get_ui_configuration($conn, $companyId, $employeeId);
+        if (!is_array($layoutConfig)) {
+            $layoutConfig = itm_ui_config_defaults();
+        }
+        $layoutConfig['sidebar_visibility']['tickets'] = 0;
+        $ticketsItem = itm_sidebar_item_catalog()['tickets'] ?? null;
+        if (is_array($ticketsItem)) {
+            $ticketsItem['id'] = 'tickets';
+            if (itm_sidebar_item_effective_visible($ticketsItem, $layoutConfig, $conn, $companyId, $employeeId)) {
+                vsp_pass('sidebar_show=1 keeps RBAC-allowed tickets visible when layout pref hides it.');
+            } else {
+                vsp_fail('Expected tickets effective visible when employee_roles.sidebar_show=1 and role has can_view.');
+            }
+
+            $disableStmt = mysqli_prepare(
+                $conn,
+                'UPDATE employee_roles SET sidebar_show = 0 WHERE company_id = ? AND id = ? LIMIT 1'
+            );
+            if ($disableStmt) {
+                mysqli_stmt_bind_param($disableStmt, 'ii', $companyId, $helpdeskRoleId);
+                mysqli_stmt_execute($disableStmt);
+                mysqli_stmt_close($disableStmt);
+                itm_employee_role_sidebar_show_enabled($conn, $employeeId, true);
+                if (!itm_sidebar_item_effective_visible($ticketsItem, $layoutConfig, $conn, $companyId, $employeeId)) {
+                    vsp_pass('sidebar_show=0 respects layout hide prefs for tickets.');
+                } else {
+                    vsp_fail('Expected tickets hidden when employee_roles.sidebar_show=0.');
+                }
+                $restoreStmt = mysqli_prepare(
+                    $conn,
+                    'UPDATE employee_roles SET sidebar_show = 1 WHERE company_id = ? AND id = ? LIMIT 1'
+                );
+                if ($restoreStmt) {
+                    mysqli_stmt_bind_param($restoreStmt, 'ii', $companyId, $helpdeskRoleId);
+                    mysqli_stmt_execute($restoreStmt);
+                    mysqli_stmt_close($restoreStmt);
+                    itm_employee_role_sidebar_show_enabled($conn, $employeeId, true);
+                }
+            }
+        }
+    } else {
+        vsp_fail('Helpdesk role missing for sidebar_show runtime probe.');
+    }
+} else {
+    vsp_pass('sidebar_show runtime probe skipped (column missing, or tickets module inaccessible).');
 }
 
 // --- DB round-trip: wrong section_id reconciles to canonical parent ---
