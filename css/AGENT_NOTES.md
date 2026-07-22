@@ -27,7 +27,7 @@ Contains the global application stylesheet for the IT Management system.
 ### Shared utility classes (reuse in modules)
 | Class | Purpose |
 |-------|---------|
-| `.itm-split-layout` / `.itm-split-sidebar` / `.itm-split-main` | Dual-pane layouts; stack below 768px |
+| `.itm-toolbar-actions` | Flex row for export/share/nav button groups; aligns `btn btn-sm` controls (custom export toolbars in ops_report, backup_tape_log, equipment SPM, CRUD view share footers via `:has()`) |
 | `.itm-empty-state-lg` | Large empty states; reduced padding on mobile |
 | `.itm-responsive-table-wrap`, `.audit-table-wrap` | Horizontal scroll for wide tables |
 | `.itm-page-toolbar` | Flex toolbar with wrap |

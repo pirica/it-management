@@ -236,9 +236,9 @@ if (!isset($crud_title)) {
         <div class="content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                 <h1>📈 Organizational Chart</h1>
-                <div class="toolbar">
-                    <button id="btn-export-excel" class="btn btn-sm btn-success">📗 Export Excel</button>
-                    <button id="btn-save-image" class="btn btn-sm btn-primary">📄 Save as Image</button>
+                <div class="itm-toolbar-actions toolbar">
+                    <button id="btn-export-excel" class="btn btn-sm" type="button" title="Export Excel">📗 Export Excel</button>
+                    <button id="btn-save-image" class="btn btn-sm" type="button" title="Save as image">📄 Save as Image</button>
                     <button id="btn-zoom-in" class="btn btn-sm">+</button>
                     <button id="btn-zoom-out" class="btn btn-sm">-</button>
                     <button id="btn-reset" class="btn btn-sm">Reset View</button>

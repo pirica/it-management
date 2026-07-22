@@ -1294,6 +1294,42 @@ input[type="color"] {
     display: none;
 }
 
+.itm-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.itm-toolbar-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 32px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.itm-toolbar-actions .btn img {
+    display: block;
+}
+
+.card > p:has(button[title="Share to device"]) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.card > p:has(button[title="Share to device"]) .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    line-height: 1.2;
+}
+
 /* Shared responsive layout utilities (split panes, tables, toolbars, canvases) */
 .itm-split-layout {
     display: flex;

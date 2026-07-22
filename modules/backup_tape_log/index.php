@@ -425,7 +425,7 @@ if (!isset($crud_title)) {
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
         .btl-grid-header { margin-bottom: 20px; }
-        .btl-controls { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap; }
+        .btl-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
         .btl-table th { white-space: nowrap; }
         .btl-readonly { background-color: var(--bg-secondary); }
         .btl-today { background-color: rgba(var(--primary-rgb), 0.1); border-left: 4px solid var(--primary-color) !important; }
@@ -496,9 +496,9 @@ if (!isset($crud_title)) {
                         <button type="submit" class="btn btn-primary">Go</button>
                     </form>
                     <div style="flex-grow:1;"></div>
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-sm btn-success" onclick="exportBTL('xlsx')">📗 Export Excel</button>
-                        <button type="button" class="btn btn-sm btn-danger" onclick="exportBTL('pdf')">📄 Export PDF</button>
+                    <div class="itm-toolbar-actions">
+                        <button type="button" class="btn btn-sm" onclick="exportBTL('xlsx')" title="Export Excel">📗 Export Excel</button>
+                        <button type="button" class="btn btn-sm" onclick="exportBTL('pdf')" title="Export PDF">📄 Export PDF</button>
                     </div>
                 </div>
 
