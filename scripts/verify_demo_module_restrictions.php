@@ -246,11 +246,13 @@ foreach (itm_demo_module_restrictions_demo_users() as $demoSpec) {
     $username = (string)$demoSpec['username'];
     $passwordPlain = (string)$demoSpec['password'];
     $companyId = (int)$demoSpec['company_id'];
-    $primarySlug = (string)$demoSpec['primary_slug'];
+    $primarySlug = (string)($demoSpec['primary_slug'] ?? '');
+    $moduleSlugs = itm_demo_module_restrictions_module_slugs_for_user($demoSpec);
     $roleName = (string)$demoSpec['role_name'];
     $allowedSlugs = (array)$demoSpec['allowed_slugs'];
 
-    echo '-- ' . $username . ' (primary: ' . $primarySlug . ') --' . $nl;
+    $modulesLabel = $moduleSlugs !== [] ? implode(', ', $moduleSlugs) : $primarySlug;
+    echo '-- ' . $username . ' (modules: ' . $modulesLabel . ') --' . $nl;
 
     $row = itm_demo_module_restrictions_load_employee($conn, $username);
     if (!$row) {

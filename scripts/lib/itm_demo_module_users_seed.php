@@ -1,6 +1,6 @@
 <?php
 /**
- * Seed demo single-module employees (demo1–demo5) and reusable account helpers.
+ * Seed demo employees (demo1–demo5) and reusable account helpers.
  *
  * Why: db/02_data.sql, fast_create_acc.php, and verify_demo_module_restrictions.php
  * share one implementation for roles, RBAC rows, employees, and sidebar prefs.
@@ -76,18 +76,51 @@ if (!function_exists('itm_demo_module_users_lookup_fk_id')) {
     }
 }
 
+if (!function_exists('itm_demo_module_users_normalize_module_slugs')) {
+    /**
+     * @param array<string,mixed> $spec
+     * @return string[]
+     */
+    function itm_demo_module_users_normalize_module_slugs(array $spec)
+    {
+        if (!empty($spec['module_slugs']) && is_array($spec['module_slugs'])) {
+            $slugs = $spec['module_slugs'];
+        } elseif (!empty($spec['primary_slug'])) {
+            $slugs = [(string)$spec['primary_slug']];
+        } else {
+            return [];
+        }
+
+        $skip = ['settings', 'dashboard', 'dashboard_link'];
+        $normalized = [];
+        foreach ($slugs as $slug) {
+            $slug = strtolower(trim((string)$slug));
+            if ($slug === '' || in_array($slug, $skip, true)) {
+                continue;
+            }
+            $normalized[$slug] = $slug;
+        }
+
+        return array_values($normalized);
+    }
+}
+
 if (!function_exists('itm_demo_module_users_ensure_role')) {
     /**
+     * @param string|string[] $moduleSlugs One slug or list of module slugs for RBAC rows.
      * @return array{role_id:int,created:bool,error:string}
      */
-    function itm_demo_module_users_ensure_role(mysqli $conn, $companyId, $roleName, $moduleSlug)
+    function itm_demo_module_users_ensure_role(mysqli $conn, $companyId, $roleName, $moduleSlugs)
     {
         $companyId = (int)$companyId;
         $roleName = trim((string)$roleName);
-        $moduleSlug = strtolower(trim((string)$moduleSlug));
+        if (is_string($moduleSlugs)) {
+            $moduleSlugs = [$moduleSlugs];
+        }
+        $moduleSlugs = itm_demo_module_users_normalize_module_slugs(['module_slugs' => $moduleSlugs]);
         $result = ['role_id' => 0, 'created' => false, 'error' => ''];
 
-        if ($companyId <= 0 || $roleName === '' || $moduleSlug === '') {
+        if ($companyId <= 0 || $roleName === '' || $moduleSlugs === []) {
             $result['error'] = 'Invalid role seed parameters.';
             return $result;
         }
@@ -133,13 +166,17 @@ if (!function_exists('itm_demo_module_users_ensure_role')) {
             return $result;
         }
 
-        $moduleName = itm_demo_module_users_resolve_module_name($conn, $moduleSlug);
-        $permStmt = mysqli_prepare(
-            $conn,
-            'SELECT id FROM role_module_permissions
-             WHERE company_id = ? AND role_id = ? AND module_name = ? LIMIT 1'
-        );
-        if ($permStmt) {
+        foreach ($moduleSlugs as $moduleSlug) {
+            $moduleName = itm_demo_module_users_resolve_module_name($conn, $moduleSlug);
+            $permStmt = mysqli_prepare(
+                $conn,
+                'SELECT id FROM role_module_permissions
+                 WHERE company_id = ? AND role_id = ? AND module_name = ? LIMIT 1'
+            );
+            if (!$permStmt) {
+                continue;
+            }
+
             mysqli_stmt_bind_param($permStmt, 'iis', $companyId, $roleId, $moduleName);
             mysqli_stmt_execute($permStmt);
             $permRes = mysqli_stmt_get_result($permStmt);
@@ -167,12 +204,18 @@ if (!function_exists('itm_demo_module_users_ensure_role')) {
 }
 
 if (!function_exists('itm_demo_module_users_save_sidebar_prefs')) {
-    function itm_demo_module_users_save_sidebar_prefs(mysqli $conn, $companyId, $employeeId, $primarySlug)
+    /**
+     * @param string|string[] $moduleSlugs
+     */
+    function itm_demo_module_users_save_sidebar_prefs(mysqli $conn, $companyId, $employeeId, $moduleSlugs)
     {
         $companyId = (int)$companyId;
         $employeeId = (int)$employeeId;
-        $primarySlug = strtolower(trim((string)$primarySlug));
-        if ($companyId <= 0 || $employeeId <= 0 || $primarySlug === '') {
+        if (is_string($moduleSlugs)) {
+            $moduleSlugs = [$moduleSlugs];
+        }
+        $moduleSlugs = itm_demo_module_users_normalize_module_slugs(['module_slugs' => $moduleSlugs]);
+        if ($companyId <= 0 || $employeeId <= 0 || $moduleSlugs === []) {
             return false;
         }
 
@@ -191,14 +234,26 @@ if (!function_exists('itm_demo_module_users_save_sidebar_prefs')) {
             mysqli_stmt_close($delete);
         }
 
-        $sectionId = itm_demo_module_users_sidebar_section_for_slug($primarySlug);
         $rows = [
             ['section', 'dashboard', null, 0],
             ['item', 'dashboard_link', 'dashboard', 0],
             ['item', 'settings', 'dashboard', 1],
-            ['section', $sectionId, null, 1],
-            ['item', $primarySlug, $sectionId, 0],
         ];
+
+        $sectionsAdded = [];
+        $sectionOrder = 1;
+        $itemOrderBySection = [];
+        foreach ($moduleSlugs as $moduleSlug) {
+            $sectionId = itm_demo_module_users_sidebar_section_for_slug($moduleSlug);
+            if (!isset($sectionsAdded[$sectionId])) {
+                $rows[] = ['section', $sectionId, null, $sectionOrder];
+                $sectionsAdded[$sectionId] = true;
+                $sectionOrder++;
+                $itemOrderBySection[$sectionId] = 0;
+            }
+            $rows[] = ['item', $moduleSlug, $sectionId, $itemOrderBySection[$sectionId]];
+            $itemOrderBySection[$sectionId]++;
+        }
 
         $insert = mysqli_prepare(
             $conn,
@@ -320,15 +375,15 @@ if (!function_exists('itm_demo_module_users_upsert_employee')) {
         $lastName = trim((string)($spec['last_name'] ?? ''));
         $workEmail = trim((string)($spec['work_email'] ?? ''));
         $roleName = trim((string)($spec['role_name'] ?? ''));
-        $primarySlug = strtolower(trim((string)($spec['primary_slug'] ?? '')));
+        $moduleSlugs = itm_demo_module_users_normalize_module_slugs($spec);
         $accessLevelId = (int)($spec['access_level_id'] ?? 0);
         $employmentStatusId = (int)($spec['employment_status_id'] ?? 0);
         $departmentId = isset($spec['department_id']) ? (int)$spec['department_id'] : 0;
         $employeePositionId = isset($spec['employee_position_id']) ? (int)$spec['employee_position_id'] : 0;
         $grantedByEmployeeId = (int)($spec['granted_by_employee_id'] ?? 0);
 
-        if ($companyId <= 0 || $username === '' || $passwordPlain === '' || $primarySlug === '' || $roleName === '') {
-            $result['errors'][] = 'company_id, username, password, role_name, and primary_slug are required.';
+        if ($companyId <= 0 || $username === '' || $passwordPlain === '' || $moduleSlugs === [] || $roleName === '') {
+            $result['errors'][] = 'company_id, username, password, role_name, and at least one module slug are required.';
             return $result;
         }
 
@@ -356,7 +411,7 @@ if (!function_exists('itm_demo_module_users_upsert_employee')) {
             return $result;
         }
 
-        $roleEnsure = itm_demo_module_users_ensure_role($conn, $companyId, $roleName, $primarySlug);
+        $roleEnsure = itm_demo_module_users_ensure_role($conn, $companyId, $roleName, $moduleSlugs);
         if ($roleEnsure['role_id'] <= 0) {
             $result['errors'][] = $roleEnsure['error'] !== '' ? $roleEnsure['error'] : 'Could not ensure demo role.';
             return $result;
@@ -468,7 +523,7 @@ if (!function_exists('itm_demo_module_users_upsert_employee')) {
         $result['employee_id'] = $employeeId;
         itm_demo_module_users_ensure_company_grant($conn, $employeeId, $companyId, $grantedByEmployeeId);
         itm_demo_module_users_ensure_ui_configuration($conn, $companyId, $employeeId);
-        itm_demo_module_users_save_sidebar_prefs($conn, $companyId, $employeeId, $primarySlug);
+        itm_demo_module_users_save_sidebar_prefs($conn, $companyId, $employeeId, $moduleSlugs);
 
         $result['ok'] = true;
         $result['messages'][] = 'Sidebar + ui_configuration synced for ' . $username . '.';
@@ -492,6 +547,7 @@ if (!function_exists('itm_demo_module_users_seed_bundle')) {
             }
 
             $payload = $demoSpec;
+            $payload['module_slugs'] = itm_demo_module_restrictions_module_slugs_for_user($demoSpec);
             $payload['granted_by_employee_id'] = $grantedByEmployeeId;
             $payload['first_name'] = ucfirst((string)$demoSpec['username']);
             $payload['last_name'] = 'Demo';
