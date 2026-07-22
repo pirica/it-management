@@ -52,10 +52,15 @@ function get_full_path($storage_root, $relative_path, $user_id, $dept_code, $use
 
     // Paths starting with 'Departments' are restricted to the user's department code subfolder.
     if ($relative_path === 'Departments' || str_starts_with($relative_path, 'Departments/')) {
-        // Forbidden to access the 'Departments' root itself.
-        if ($relative_path === 'Departments') return null;
+        if ($dept_code === '') {
+            return null;
+        }
 
-        if ($dept_code === '') return null; // User has no department code
+        // Why: Departments root is listable; list action filters to the user's code folder only.
+        if ($relative_path === 'Departments') {
+            return $full;
+        }
+
         if (!str_starts_with($relative_path, "Departments/$dept_code/") &&
             $relative_path !== "Departments/$dept_code") {
             return null;
@@ -542,6 +547,10 @@ case "list":
         foreach (scandir($dir) as $f) {
             if ($f === "." || $f === ".." || $f === "Trash" || $f === "Recycle") continue;
             if (explorer_is_hidden_system_entry($f)) continue;
+            // Why: At Departments root, hide other department code folders on disk.
+            if ($path === 'Departments' && $safe_dept_code !== '' && $f !== $safe_dept_code) {
+                continue;
+            }
 
             $full = $dir . "/" . $f;
             $type = is_dir($full) ? "folder" : "file";

@@ -34,8 +34,10 @@ function get_full_path_logic($storage_root, $relative_path, $user_id, $dept_code
     }
 
     if ($relative_path === 'Departments' || str_starts_with($relative_path, 'Departments/')) {
-        if ($relative_path === 'Departments') return null;
         if ($dept_code === '') return null;
+        if ($relative_path === 'Departments') {
+            return $full;
+        }
         if (!str_starts_with($relative_path, "Departments/$dept_code/") &&
             $relative_path !== "Departments/$dept_code") {
             return null;
@@ -61,7 +63,8 @@ $test_cases = [
     ['Private/' . $user_private_dir . '/sub', 'IT', true, 'Subfolder in own private'],
     ['Private/other_456', 'IT', false, 'Other user private folder'],
     ['Private\\other_456\\secret', 'IT', false, 'Backslash other private path'],
-    ['Departments', 'IT', false, 'Departments root'],
+    ['Departments', 'IT', true, 'Departments root'],
+    ['Departments', '', false, 'Departments root without assignment'],
     ['Departments/' . $dept_code, 'IT', true, 'Own department folder'],
     ['Departments/OTHER', 'IT', false, 'Other department folder'],
     ['Departments/IT/sub', 'IT', true, 'Subfolder in own department'],
@@ -69,7 +72,7 @@ $test_cases = [
     ['Common/../Private', 10, false, 'Traversal attempt'],
     ['./Private', 10, false, 'Private root (bypass ./ prefix)'],
     ['./Private/other_456', 10, false, 'Other private folder (bypass ./ prefix)'],
-    ['./Departments', 10, false, 'Departments root (bypass ./ prefix)'],
+    ['./Departments', 'IT', true, 'Departments root (bypass ./ prefix)'],
 ];
 
 require_once __DIR__ . '/lib/script_cli_output.php';
