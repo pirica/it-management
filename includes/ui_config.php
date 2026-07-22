@@ -872,6 +872,111 @@ function itm_sidebar_item_catalog() {
 }
 
 /**
+ * Whether a sidebar catalog item passes company access gates (before visibility prefs).
+ */
+function itm_sidebar_item_passes_access_gate($itemId, $conn, $companyId) {
+    $itemId = trim((string)$itemId);
+    if ($itemId === '' || $itemId === 'dashboard_link' || $itemId === 'settings') {
+        return true;
+    }
+    if (!($conn instanceof mysqli) || !function_exists('has_module_access')) {
+        return true;
+    }
+
+    return has_module_access($conn, (int)$companyId, $itemId);
+}
+
+/**
+ * Mirrors includes/sidebar.php visibility rules for one catalog item.
+ */
+function itm_sidebar_item_effective_visible(array $sidebarItem, $sidebarConfig, $conn, $companyId) {
+    if (!is_array($sidebarConfig)) {
+        $sidebarConfig = itm_ui_config_defaults();
+    }
+
+    $itemId = (string)($sidebarItem['id'] ?? '');
+    if ($itemId === '') {
+        return false;
+    }
+
+    $visibility = $sidebarConfig['sidebar_visibility'] ?? itm_default_sidebar_visibility();
+    if ((int)($visibility[$itemId] ?? 1) !== 1) {
+        return false;
+    }
+
+    if (!itm_sidebar_item_passes_access_gate($itemId, $conn, $companyId)) {
+        return false;
+    }
+
+    if ($itemId === 'audit_logs' && (int)($sidebarConfig['enable_audit_logs'] ?? 1) !== 1) {
+        return false;
+    }
+
+    $equipmentTypeSidebarVisibility = $sidebarConfig['equipment_type_sidebar_visibility'] ?? [];
+    if (array_key_exists($itemId, $equipmentTypeSidebarVisibility)) {
+        return (int)$equipmentTypeSidebarVisibility[$itemId] === 1;
+    }
+
+    return true;
+}
+
+/**
+ * Persist Personalized Sidebar checkboxes from user-config.php (visibility only).
+ */
+function itm_user_config_save_personalized_sidebar_items($conn, $companyId, $userId, array $checkedItemIds) {
+    if (!($conn instanceof mysqli)) {
+        return false;
+    }
+
+    $companyId = (int)$companyId;
+    $userId = (int)$userId;
+    if ($companyId <= 0 || $userId <= 0) {
+        return false;
+    }
+
+    $checkedLookup = [];
+    foreach ($checkedItemIds as $checkedId) {
+        $checkedId = trim((string)$checkedId);
+        if ($checkedId !== '') {
+            $checkedLookup[$checkedId] = true;
+        }
+    }
+
+    $sidebarConfig = itm_get_ui_configuration($conn, $companyId, $userId);
+    if (!is_array($sidebarConfig)) {
+        $sidebarConfig = itm_ui_config_defaults();
+    }
+
+    $visibility = $sidebarConfig['sidebar_visibility'] ?? itm_default_sidebar_visibility();
+    $catalog = itm_sidebar_item_catalog();
+
+    foreach ($catalog as $itemId => $item) {
+        if ($itemId === 'dashboard_link') {
+            continue;
+        }
+        if (!itm_sidebar_item_passes_access_gate($itemId, $conn, $companyId)) {
+            $visibility[$itemId] = 0;
+            continue;
+        }
+        $visibility[$itemId] = isset($checkedLookup[$itemId]) ? 1 : 0;
+    }
+
+    $layoutConfig = [
+        'sidebar_visibility' => itm_normalize_sidebar_visibility($visibility),
+        'sidebar_main_order' => $sidebarConfig['sidebar_main_order'] ?? itm_default_sidebar_main_order(),
+        'sidebar_submenu_order' => $sidebarConfig['sidebar_submenu_order'] ?? itm_default_sidebar_submenu_order(),
+    ];
+
+    if (!itm_save_employee_sidebar_preferences($conn, $companyId, $userId, $layoutConfig)) {
+        return false;
+    }
+
+    itm_get_ui_configuration($conn, $companyId, $userId, true);
+
+    return true;
+}
+
+/**
  * Retrieves the sidebar label for a given module directory
  */
 function itm_sidebar_label_for_module($moduleDir) {
