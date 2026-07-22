@@ -781,15 +781,25 @@ body.itm-employee-dashboard-page .content.itm-employee-dashboard {
 
 .itm-emp-dash-sections {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr) auto;
     gap: 12px;
     height: 100%;
     min-height: 0;
     overflow: hidden;
 }
 
-.itm-emp-dash-hero-actions {
-    flex-shrink: 0;
+.itm-emp-dash-section--activity {
+    grid-column: 1 / -1;
+}
+
+.itm-emp-dash-section--activity .itm-emp-dash-panel {
+    flex: 0 0 auto;
+    overflow: visible;
+}
+
+.itm-emp-dash-section--activity .itm-emp-dash-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .itm-emp-dash-section {
@@ -808,15 +818,6 @@ body.itm-employee-dashboard-page .content.itm-employee-dashboard {
     margin-bottom: 8px;
     padding: 0 2px;
     flex-shrink: 0;
-}
-
-.itm-emp-dash-section-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 12px;
-    padding: 0 4px;
 }
 
 .itm-emp-dash-section-title {
@@ -849,10 +850,6 @@ body.itm-employee-dashboard-page .content.itm-employee-dashboard {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
-}
-
-.itm-emp-dash-section--single-col .itm-emp-dash-grid {
-    grid-template-columns: 1fr;
 }
 
 a.itm-emp-dash-card,
@@ -944,12 +941,8 @@ a.itm-emp-dash-card:hover {
 }
 
 @media (max-width: 1200px) {
-    .itm-emp-dash-sections {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .itm-emp-dash-section:last-child {
-        grid-column: 1 / -1;
+    .itm-emp-dash-section--activity .itm-emp-dash-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
@@ -972,6 +965,7 @@ a.itm-emp-dash-card:hover {
 
     .itm-emp-dash-sections {
         grid-template-columns: 1fr;
+        grid-template-rows: auto;
         height: auto;
         overflow: visible;
     }
@@ -980,8 +974,12 @@ a.itm-emp-dash-card:hover {
         overflow: visible;
     }
 
-    .itm-emp-dash-section:last-child {
+    .itm-emp-dash-section--activity {
         grid-column: auto;
+    }
+
+    .itm-emp-dash-section--activity .itm-emp-dash-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .itm-emp-dash-panel {
@@ -1026,8 +1024,8 @@ a.itm-emp-dash-card:hover {
         grid-template-columns: 1fr;
     }
 
-    .itm-emp-dash-section--single-col .itm-emp-dash-grid {
-        grid-template-columns: 1fr;
+    .itm-emp-dash-section--activity .itm-emp-dash-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .itm-emp-dash-hero-photo {
