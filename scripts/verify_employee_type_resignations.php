@@ -106,10 +106,10 @@ if ($isoWeekBounds === null) {
 }
 
 $insertSql = "INSERT INTO employees (
-    company_id, first_name, last_name, display_name, employment_status_id, employee_type_id,
+    company_id, first_name, last_name, display_name, work_email, employment_status_id, employee_type_id,
     external_id, start_date, termination_date, raw_status_code
 ) VALUES (
-    {$companyId}, 'QA', 'Resign', 'QA Resign', {$terminatedStatusId}, {$teamMemberId},
+    {$companyId}, 'QA', 'Resign', 'QA Resign', '" . mysqli_real_escape_string($conn, $testExternalId . '@resign-probe.example.com') . "', {$terminatedStatusId}, {$teamMemberId},
     '" . mysqli_real_escape_string($conn, $testExternalId) . "', '{$startDate}', '{$terminationDate}', 'T'
 )";
 if (!mysqli_query($conn, $insertSql)) {

@@ -1388,9 +1388,15 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Browser: <a href="verify_demo_module_restrictions.php">verify_demo_module_restrictions.php</a>. CLI: <code>php scripts/verify_demo_module_restrictions.php</code>. Run after seeding demo users in <code>db/02_data.sql</code> or <code>fast_create_acc.php</code>.</td>
                 </tr>
                 <tr>
+                    <td><a href="verify_employee_contact_email.php" target="_blank" rel="nofollow noreferrer">verify_employee_contact_email.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression: at least one of <code>work_email</code> / <code>personal_email</code> on employee create/edit/import (<code>includes/itm_employee_contact_email.php</code>); helper checks, create/edit wiring, <code>fast_create_acc</code> both email fields, disposable employee create.</td>
+                    <td>CLI: <code>php scripts/verify_employee_contact_email.php</code>. Run when changing employee email validation or employees import/create/edit paths.</td>
+                </tr>
+                <tr>
                     <td><a href="fast_create_acc.php" target="_blank" rel="nofollow noreferrer">fast_create_acc.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Admin form to create/update demo employees with FK selects (company, employment status, access level, department, position) and multi-select <strong>Modules</strong> (<code>module_slugs[]</code>) plus dedicated <code>employee_roles</code> / <code>role_module_permissions</code> (one row per module), sidebar prefs, and <code>ui_configuration</code>. CLI bundle: <code>--seed-demo-bundle</code>.</td>
+                    <td>Admin form to create/update demo employees with FK selects (company, employment status, access level, department, position), <strong>Work Email</strong> + <strong>Personal Email</strong> (at least one required), and multi-select <strong>Modules</strong> (<code>module_slugs[]</code>) plus dedicated <code>employee_roles</code> / <code>role_module_permissions</code> (one row per module), sidebar prefs, and <code>ui_configuration</code>. CLI bundle: <code>--seed-demo-bundle</code>.</td>
                     <td>Browser: <a href="fast_create_acc.php">fast_create_acc.php</a>. CLI: <code>php scripts/fast_create_acc.php --seed-demo-bundle --company=1</code>. Shared lib: <code>lib/itm_demo_module_users_seed.php</code>.</td>
                 </tr>
                 <tr>

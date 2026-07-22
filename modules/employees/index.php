@@ -619,6 +619,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                     }
 
                     if ($hasChanges) {
+                        list($effectiveWork, $effectivePersonal) = itm_employee_resolve_contact_emails_after_merge(
+                            $mapped,
+                            $existingCurrent,
+                            $providedFields
+                        );
+                        $contactEmailError = itm_employee_validate_contact_email_or_error($effectiveWork, $effectivePersonal);
+                        if ($contactEmailError !== null) {
+                            $importErrors[] = "Row {$sourceRowNumber} (Update): " . $contactEmailError;
+                            continue;
+                        }
                         $sets = [];
                         foreach ($updateColumns as $col) { if ($col !== 'company_id') { $sets[] = emp_escape_identifier($col) . '=' . $values[$col]; } }
                         $sql = 'UPDATE employees SET ' . implode(',', $sets) . ' WHERE id=' . $existingId . ' AND company_id=' . (int)$company_id . ' LIMIT 1';
@@ -631,6 +641,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                         $skipped += 1; $matchedIds[] = $existingId; $processedIdMap[$existingId] = true;
                     }
                 } else {
+                    $contactEmailError = itm_employee_validate_contact_email_or_error(
+                        $mapped['work_email'] ?? '',
+                        $mapped['personal_email'] ?? ''
+                    );
+                    if ($contactEmailError !== null) {
+                        $importErrors[] = "Row {$sourceRowNumber} (Insert): " . $contactEmailError;
+                        continue;
+                    }
                     // Insert new record
                     $sql = 'INSERT INTO employees (' . implode(',', array_map('emp_escape_identifier', $columns)) . ') VALUES (' . implode(',', array_values($values)) . ')';
                     if (mysqli_query($conn, $sql)) {

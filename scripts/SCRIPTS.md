@@ -880,6 +880,7 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 |--------|---------|
 | `php scripts/verify_roles_permissions.php` | Regression: `modules_registry` row, module folder + JS, RBAC exempt slug, Admin `ALL` wildcard with six flags, seeded roles/hierarchy for company 1, `can_import`/`can_export` columns, role sidebar `active_count` (role_id + HR Active) |
 | `php scripts/verify_demo_module_restrictions.php` | Regression: seed admins (`Admin`, `Admin2`–`Admin5`) password + `itm_is_admin()`; demo users `demo1`–`demo5` single-module `has_module_access` / RBAC `can_view` + subprocess index probes (contract: `lib/itm_demo_module_restrictions_contract.php`) |
+| `php scripts/verify_employee_contact_email.php` | Regression: at least one of `work_email` / `personal_email` required (`includes/itm_employee_contact_email.php`); helper unit checks, create/edit static wiring, `fast_create_acc` both fields, disposable employee create |
 | `php scripts/fast_create_acc.php` | Admin browser form + CLI `--seed-demo-bundle` to create/update demo employees (`lib/itm_demo_module_users_seed.php`): FK selects (company, status, access level, department, position) and **multi-select Modules** (`module_slugs[]`), dedicated role + RBAC row per module, sidebar prefs, `ui_configuration` |
 | `php scripts/verify_dashboard_active_employees.php` | Regression: **admin.php** row 2 **Active** / **On Leave** call `itm_employee_count_by_employment_status_name()` (no inline `LOWER(es.name)`); helper matches live `deleted_at IS NULL` counts; employee `dashboard.php` must not duplicate company counts; optional `ITM_TEST_COMPANY_ID` |
 | `php scripts/verify_dashboard_online_employees.php` | Regression: **admin.php** **Online now** stat, session presence touch hook, count after touch |
@@ -890,6 +891,8 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 Run `verify_roles_permissions.php` when changing `modules/roles_permissions/`, `js/roles-permissions-matrix.js`, `includes/itm_role_module_permissions.php`, or `employee_roles` / `role_module_permissions` / `role_hierarchy` schema in `db/03_triggers.sql`.
 
 Run `verify_demo_module_restrictions.php` when changing demo user seeds (`demo1`–`demo5`), their dedicated `employee_roles` / `role_module_permissions` rows, or company-module / RBAC enforcement for single-module demo accounts.
+
+Run `verify_employee_contact_email.php` when changing employee email validation, `includes/itm_employee_contact_email.php`, employees create/edit/import paths, or `fast_create_acc.php` email fields.
 
 Run `verify_dashboard_active_employees.php` when changing `admin.php` or `includes/itm_employee_employment_status.php` Active/On Leave count logic.
 

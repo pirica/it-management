@@ -95,8 +95,9 @@ function test_employee_trigger($conn) {
         return false;
     }
 
-    $sql = "INSERT INTO employees (company_id, first_name, last_name, username, role_id, employment_status_id) 
-            VALUES ($company_id, 'Test', 'Admin', '$username', $role_id, $status_id)";
+    $workEmail = mysqli_real_escape_string($conn, $username . '@repro-db-integrity.example.com');
+    $sql = "INSERT INTO employees (company_id, first_name, last_name, username, work_email, role_id, employment_status_id) 
+            VALUES ($company_id, 'Test', 'Admin', '$username', '$workEmail', $role_id, $status_id)";
     
     if (!mysqli_query($conn, $sql)) {
         echo colorText("[EXPECTED FAIL] Employee insert failed (as predicted): " . mysqli_error($conn), 'warn') . $nl;
