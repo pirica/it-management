@@ -123,6 +123,12 @@ if (strpos($dashboardSource, 'itm-employee-dashboard-page') === false) {
     ed_verify_pass('dashboard.php sets viewport layout body class');
 }
 
+if (strpos($cardsSource, 'itm-emp-dash-section--single-col') === false) {
+    ed_verify_fail('Activity section must use single-column grid (itm-emp-dash-section--single-col)');
+} else {
+    ed_verify_pass('Activity section uses single-column grid');
+}
+
 if ($failures > 0) {
     echo $nl . colorText('Verification failed with ' . $failures . ' issue(s).', 'fail') . $nl;
     itm_script_output_end();
