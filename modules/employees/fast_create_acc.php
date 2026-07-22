@@ -144,8 +144,6 @@ $crud_title = 'Fast Create Account';
                 <a href="index.php" class="btn" title="Back">🔙</a>
             </div>
 
-            <p class="hint" style="color:var(--text-secondary,#57606a);margin:0 0 16px;">Create or update a demo employee for the active company with role, RBAC per selected module, sidebar prefs, and <code>ui_configuration</code>. Hold Ctrl (Windows) or Cmd (macOS) to select multiple modules.</p>
-
             <?php echo itm_render_alert_errors($errors); ?>
             <?php foreach ($messages as $message): ?>
                 <div class="alert alert-success"><?php echo sanitize($message); ?></div>
