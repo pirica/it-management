@@ -74,6 +74,9 @@ $uiFieldOptions = [
 ];
 
 $sidebarStructure = itm_sidebar_structure();
+// Why: Equipment-type sidebar toggles only apply when the employee can access the Equipment module.
+$settingsEmployeeHasEquipmentAccess = function_exists('has_module_access')
+    && has_module_access($conn, (int)$company_id, 'equipment');
 $equipmentTypeRows = [];
 $equipmentTypeEmojiMap = [
     'access_point' => '📶',
@@ -91,22 +94,24 @@ $equipmentTypeEmojiMap = [
 $hasEquipmentTypesCompanyId = itm_table_has_column($conn, 'equipment_types', 'company_id');
 $hasEquipmentTypeEditEmoji = itm_table_has_column($conn, 'equipment_types', 'field_edit_emoji');
 $equipmentTypeSelectFields = $hasEquipmentTypeEditEmoji ? 'id, name, field_edit_emoji' : 'id, name';
-if ($hasEquipmentTypesCompanyId && $company_id > 0) {
-    $equipmentTypeStmt = mysqli_prepare($conn, 'SELECT ' . $equipmentTypeSelectFields . ' FROM equipment_types WHERE company_id = ? ORDER BY name ASC');
-    if ($equipmentTypeStmt) {
-        mysqli_stmt_bind_param($equipmentTypeStmt, 'i', $company_id);
-        mysqli_stmt_execute($equipmentTypeStmt);
-        $equipmentTypeRes = mysqli_stmt_get_result($equipmentTypeStmt);
-        while ($equipmentTypeRes && ($row = mysqli_fetch_assoc($equipmentTypeRes))) {
-            $equipmentTypeRows[] = $row;
+if ($settingsEmployeeHasEquipmentAccess) {
+    if ($hasEquipmentTypesCompanyId && $company_id > 0) {
+        $equipmentTypeStmt = mysqli_prepare($conn, 'SELECT ' . $equipmentTypeSelectFields . ' FROM equipment_types WHERE company_id = ? ORDER BY name ASC');
+        if ($equipmentTypeStmt) {
+            mysqli_stmt_bind_param($equipmentTypeStmt, 'i', $company_id);
+            mysqli_stmt_execute($equipmentTypeStmt);
+            $equipmentTypeRes = mysqli_stmt_get_result($equipmentTypeStmt);
+            while ($equipmentTypeRes && ($row = mysqli_fetch_assoc($equipmentTypeRes))) {
+                $equipmentTypeRows[] = $row;
+            }
+            mysqli_stmt_close($equipmentTypeStmt);
         }
-        mysqli_stmt_close($equipmentTypeStmt);
-    }
-} else {
-    $equipmentTypeRes = mysqli_query($conn, 'SELECT ' . $equipmentTypeSelectFields . ' FROM equipment_types ORDER BY name ASC');
-    if ($equipmentTypeRes) {
-        while ($row = mysqli_fetch_assoc($equipmentTypeRes)) {
-            $equipmentTypeRows[] = $row;
+    } else {
+        $equipmentTypeRes = mysqli_query($conn, 'SELECT ' . $equipmentTypeSelectFields . ' FROM equipment_types ORDER BY name ASC');
+        if ($equipmentTypeRes) {
+            while ($row = mysqli_fetch_assoc($equipmentTypeRes)) {
+                $equipmentTypeRows[] = $row;
+            }
         }
     }
 }
@@ -418,18 +423,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newConfig['enable_audit_logs'] = isset($_POST['enable_audit_logs']) ? 1 : 0;
         $newConfig['enable_chatbot'] = isset($_POST['enable_chatbot']) ? 1 : 0;
         $newConfig['enable_auto_scaffolding'] = isset($_POST['enable_auto_scaffolding']) ? 1 : 0;
-        $newConfig['equipment_type_sidebar_visibility'] = [];
-        foreach ($equipmentTypeRows as $equipmentTypeRow) {
-            $typeName = (string)($equipmentTypeRow['name'] ?? '');
-            $itemId = itm_equipment_type_sidebar_item_id($typeName);
-            if ($itemId === '') {
-                continue;
+        if ($settingsEmployeeHasEquipmentAccess) {
+            $newConfig['equipment_type_sidebar_visibility'] = [];
+            foreach ($equipmentTypeRows as $equipmentTypeRow) {
+                $typeName = (string)($equipmentTypeRow['name'] ?? '');
+                $itemId = itm_equipment_type_sidebar_item_id($typeName);
+                if ($itemId === '') {
+                    continue;
+                }
+                $newConfig['equipment_type_sidebar_visibility'][$itemId] = isset($_POST['equipment_sidebar_visibility'][$itemId]) ? 1 : 0;
+                $equipmentTypeEmojiUpdates[] = [
+                    'id' => (int)($equipmentTypeRow['id'] ?? 0),
+                    'emoji' => trim((string)($_POST['equipment_sidebar_emoji'][$itemId] ?? '')),
+                ];
             }
-            $newConfig['equipment_type_sidebar_visibility'][$itemId] = isset($_POST['equipment_sidebar_visibility'][$itemId]) ? 1 : 0;
-            $equipmentTypeEmojiUpdates[] = [
-                'id' => (int)($equipmentTypeRow['id'] ?? 0),
-                'emoji' => trim((string)($_POST['equipment_sidebar_emoji'][$itemId] ?? '')),
-            ];
+        } else {
+            $newConfig['equipment_type_sidebar_visibility'] = $currentUiConfig['equipment_type_sidebar_visibility'] ?? [];
         }
         $newConfig['records_per_page'] = strtolower((string)($_POST['records_per_page'] ?? '25'));
         $newConfig['app_name'] = trim((string)($_POST['app_name'] ?? ''));
@@ -482,6 +491,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newConfig['module_icon_overrides'] = [];
         foreach (itm_sidebar_item_catalog() as $catalogItemId => $catalogItem) {
             $moduleSlug = trim((string)($catalogItem['match_dir'] ?? ''));
+            if ($moduleSlug === '' && $catalogItemId === 'dashboard_link') {
+                $moduleSlug = 'dashboard';
+            }
             if ($moduleSlug === '') {
                 continue;
             }
@@ -914,21 +926,30 @@ if (!isset($crud_title)) {
                                             <?php
                                             $itemId = $item['id'];
                                             $moduleSlug = trim((string)($item['match_dir'] ?? ''));
-                                            $userModuleIcon = '';
-                                            if ($moduleSlug !== '') {
-                                                $userModuleIcon = trim((string)(($currentUiConfig['module_icon_overrides'] ?? [])[$moduleSlug] ?? ''));
+                                            $settingsSidebarIconKey = $moduleSlug;
+                                            if ($settingsSidebarIconKey === '' && $itemId === 'dashboard_link') {
+                                                $settingsSidebarIconKey = 'dashboard';
                                             }
-                                            $companyModuleIcon = ($moduleSlug !== '' && function_exists('itm_resolve_module_sidebar_icon'))
-                                                ? itm_resolve_module_sidebar_icon($conn, (int)$company_id, 0, $moduleSlug)
-                                                : '';
-                                            $displayModuleIcon = $userModuleIcon !== '' ? $userModuleIcon : $companyModuleIcon;
                                             $itemLabelParts = function_exists('itm_module_access_split_catalog_label')
                                                 ? itm_module_access_split_catalog_label((string)($item['label'] ?? ''))
                                                 : ['icon' => '', 'text' => (string)($item['label'] ?? '')];
+                                            $catalogItemIcon = trim((string)($itemLabelParts['icon'] ?? ''));
+                                            $userModuleIcon = '';
+                                            if ($settingsSidebarIconKey !== '') {
+                                                $userModuleIcon = trim((string)(($currentUiConfig['module_icon_overrides'] ?? [])[$settingsSidebarIconKey] ?? ''));
+                                            }
+                                            $companyModuleIcon = ($settingsSidebarIconKey !== '' && function_exists('itm_resolve_module_sidebar_icon'))
+                                                ? itm_resolve_module_sidebar_icon($conn, (int)$company_id, 0, $settingsSidebarIconKey)
+                                                : '';
+                                            if ($companyModuleIcon === '' && $catalogItemIcon !== '') {
+                                                $companyModuleIcon = $catalogItemIcon;
+                                            }
+                                            $displayModuleIcon = $userModuleIcon !== '' ? $userModuleIcon : $companyModuleIcon;
                                             $itemLabelText = trim((string)($itemLabelParts['text'] ?? ''));
                                             if ($itemLabelText === '') {
                                                 $itemLabelText = (string)($item['label'] ?? $itemId);
                                             }
+                                            $showSidebarIconInput = ($settingsSidebarIconKey !== '' || $catalogItemIcon !== '');
                                             ?>
                                             <tr class="sidebar-setting-row" data-item-id="<?php echo sanitize($itemId); ?>">
                                                 <td class="itm-sidebar-settings-show">
@@ -938,7 +959,7 @@ if (!isset($crud_title)) {
                                                     </label>
                                                 </td>
                                                 <td class="itm-sidebar-settings-icon">
-                                                    <?php if ($moduleSlug !== ''): ?>
+                                                    <?php if ($showSidebarIconInput): ?>
                                                         <input
                                                             type="text"
                                                             class="itm-module-icon-input"
@@ -1001,6 +1022,7 @@ if (!isset($crud_title)) {
                                     </label>
                                 </div>
                             </div>
+                            <?php if ($settingsEmployeeHasEquipmentAccess): ?>
                             <div>
                                 <h3 style="margin-top:0;">Emoji Equipment Type Sidebar</h3>
                                 <?php if (empty($equipmentTypeRows)): ?>
@@ -1048,6 +1070,7 @@ if (!isset($crud_title)) {
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </div>
+                            <?php endif; ?>
                         </div>
 
                         <div class="itm-form-actions itm-align-left">

@@ -22,7 +22,8 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 ## 5. UI Behavior Requirements
 - **ui_configuration reviewed gate:** gate-excluded in `scripts/data/ui_configuration_excluded_modules.txt`; intentional gaps (SideMenu drag-reorder table, no server search/pagination on audited first table, no CRUD entry files, All Backups client filter + server sort on `#all-backups` only) documented in `scripts/data/ui_configuration_reviewed.json` — audit lines print `[n/a][pass|fail|n/a][reviewed]`.
 - **Sidebar Toggles**: Uses checkboxes with a specific `change` event listener to ensure configuration persistence.
-- **Sidebar emoji overrides**: SideMenu module rows render in a compact table (`Show` | `Icon` | `Module` | `Order`) with `.itm-module-icon-input` in the icon column; matching the company default on save clears `module_icon_overrides`.
+- **Sidebar emoji overrides**: SideMenu module rows render in a compact table (`Show` | `Icon` | `Module` | `Order`) with `.itm-module-icon-input` in the icon column; matching the company default on save clears `module_icon_overrides`. `dashboard_link` uses catalog emoji fallback (`📈`) because it has `match_page` only (icon key `dashboard` on save).
+- **Emoji Equipment Type Sidebar**: hidden when the signed-in employee lacks `has_module_access(..., 'equipment')`; save preserves existing `equipment_type_sidebar_visibility` when the block is not rendered.
 - **Favicon/SQL Uploads**: Supports drag-and-drop file uploads for favicon and SQL backup files.
 - **Favicon preview**: On load, `itm_ui_config_sync_favicon_path_from_disk()` backfills empty `favicon_path` when `images/favicons/company_{company_id}.ico` already exists (uploaded file without DB path). Preview and tab icon use `itm_ui_config_resolve_favicon_relative_path()` + `itm_ui_config_favicon_url($config, $company_id)`.
 - **API key POST actions**: `save_api_key`, `generate_api_key` (CSRF required).
