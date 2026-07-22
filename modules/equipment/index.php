@@ -460,7 +460,7 @@ if (!empty($_SESSION['crud_success'])) {
                 <div class="card" id="switch-port-manager" style="margin-top:20px;">
                     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
                         <h2>Switch Port Manager</h2>
-                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <div class="itm-toolbar-actions">
                             <button class="btn btn-sm" id="switchExportImageBtn" type="button" title="Export switch layout as image">Export Image</button>
                             <?php if ($selectedSwitchId > 0): ?>
                                 <?php echo itm_crud_record_share_render_action_buttons('equipment', (int)$selectedSwitchId, 'switch ports', ['share_kind' => 'switch_ports']); ?>
