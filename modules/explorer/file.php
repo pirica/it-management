@@ -20,12 +20,10 @@ $username = $_SESSION['username'] ?? 'unknown';
 $safe_username = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $username);
 $user_private_dir = "{$safe_username}_{$user_id}";
 
-// Why: Fetch user department for access control.
-$dept_id = 0;
-$dept_res = mysqli_query($conn, "SELECT department_id FROM employees WHERE id = $user_id AND company_id = $company_id LIMIT 1");
-if ($dept_res && $dept_row = mysqli_fetch_assoc($dept_res)) {
-    $dept_id = (int)$dept_row['department_id'];
-}
+require_once ROOT_PATH . 'modules/explorer/explorer_storage_helpers.php';
+
+// Why: Department ACL uses departments.code (e.g. FNB), matching api.php get_full_path().
+$safe_dept_code = explorer_fetch_user_department_code($conn, $user_id, $company_id);
 
 $path = $_GET['path'] ?? '';
 $storage_root = ROOT_PATH . 'files/' . $company_id;
@@ -87,8 +85,8 @@ if ($relative_path === 'Departments' || str_starts_with($relative_path, 'Departm
         exit("Access denied to department folder.");
     }
 
-    if ($dept_id <= 0 || (!str_starts_with($relative_path, "Departments/$dept_id/") &&
-        $relative_path !== "Departments/$dept_id")) {
+    if ($safe_dept_code === '' || (!str_starts_with($relative_path, "Departments/$safe_dept_code/") &&
+        $relative_path !== "Departments/$safe_dept_code")) {
         http_response_code(403);
         exit("Access denied to department folder.");
     }

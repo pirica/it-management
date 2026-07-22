@@ -45,25 +45,14 @@ $safe_username = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $username);
 $user_private_dir = "{$safe_username}_{$user_id}";
 $user_private_dir_json = json_encode($user_private_dir, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
 
+require_once __DIR__ . '/explorer_storage_helpers.php';
+
 // Why: Department scope for sidebar and folder navigation (Private/Departments roots are API-blocked).
-$dept_code = '';
-$dept_stmt = mysqli_prepare($conn, "SELECT d.code FROM employees e LEFT JOIN departments d ON d.id = e.department_id WHERE e.id = ? AND e.company_id = ? LIMIT 1");
-if ($dept_stmt) {
-    mysqli_stmt_bind_param($dept_stmt, "ii", $user_id, $company_id);
-    mysqli_stmt_execute($dept_stmt);
-    $dept_res = mysqli_stmt_get_result($dept_stmt);
-    if ($dept_res && $dept_row = mysqli_fetch_assoc($dept_res)) {
-        $dept_code = trim((string)($dept_row['code'] ?? ''));
-    }
-    mysqli_stmt_close($dept_stmt);
-}
-// Why: Sanitise department code for filesystem safety to match api.php.
-$safe_dept_code = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $dept_code);
+$safe_dept_code = explorer_fetch_user_department_code($conn, $user_id, $company_id);
 $user_dept_code_json = json_encode($safe_dept_code, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-// Why: Ensure the root /files/{company_id} directory exists with deny_http on every segment.
-$storage_root = ROOT_PATH . 'files/' . $company_id;
-itm_ensure_files_storage_directory($storage_root);
+// Why: Create tenant Explorer folders (including Departments/{code}) when missing before first API call.
+explorer_ensure_tenant_storage_scaffold($conn, $company_id, $user_id, $username);
 
 require_once __DIR__ . '/explorer_vault_bootstrap.php';
 require_once __DIR__ . '/explorer_vault_helpers.php';
