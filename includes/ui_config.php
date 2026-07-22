@@ -921,6 +921,122 @@ function itm_sidebar_item_effective_visible(array $sidebarItem, $sidebarConfig, 
 }
 
 /**
+ * Apply company module access gates to sidebar visibility map.
+ * When $checkedLookup is provided, accessible items use checked=1 / unchecked=0.
+ */
+function itm_sidebar_apply_access_gates_to_visibility(array $visibility, $conn, $companyId, array $checkedLookup = null) {
+    foreach (itm_sidebar_item_catalog() as $itemId => $item) {
+        if ($itemId === 'dashboard_link') {
+            continue;
+        }
+        if (!itm_sidebar_item_passes_access_gate($itemId, $conn, $companyId)) {
+            $visibility[$itemId] = 0;
+            continue;
+        }
+        if ($checkedLookup !== null) {
+            $visibility[$itemId] = isset($checkedLookup[$itemId]) ? 1 : 0;
+        }
+    }
+
+    return $visibility;
+}
+
+/**
+ * Whether a section has at least one effectively visible catalog item.
+ */
+function itm_sidebar_section_has_visible_items($sectionId, $sidebarConfig, $conn, $companyId) {
+    $sectionId = (string)$sectionId;
+    if ($sectionId === '') {
+        return false;
+    }
+    if (!is_array($sidebarConfig)) {
+        $sidebarConfig = itm_ui_config_defaults();
+    }
+
+    $submenuOrder = $sidebarConfig['sidebar_submenu_order'] ?? itm_default_sidebar_submenu_order();
+    $submenuOrder = itm_normalize_sidebar_submenu_order($submenuOrder);
+    $catalog = itm_sidebar_item_catalog();
+    $sectionItems = $submenuOrder[$sectionId] ?? [];
+    if (!is_array($sectionItems)) {
+        return false;
+    }
+
+    foreach ($sectionItems as $itemId) {
+        $itemId = (string)$itemId;
+        if ($itemId === '' || !isset($catalog[$itemId])) {
+            continue;
+        }
+        $item = $catalog[$itemId];
+        $item['id'] = $itemId;
+        if (itm_sidebar_item_effective_visible($item, $sidebarConfig, $conn, (int)$companyId)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Section is shown only when its pref is visible and it has visible children.
+ */
+function itm_sidebar_section_effective_visible($sectionId, $sidebarConfig, $conn, $companyId) {
+    if (!is_array($sidebarConfig)) {
+        $sidebarConfig = itm_ui_config_defaults();
+    }
+    $visibility = $sidebarConfig['sidebar_visibility'] ?? itm_default_sidebar_visibility();
+    if ((int)($visibility[$sectionId] ?? 1) !== 1) {
+        return false;
+    }
+
+    return itm_sidebar_section_has_visible_items($sectionId, $sidebarConfig, $conn, $companyId);
+}
+
+/**
+ * Hide section prefs when no child items are effectively visible.
+ */
+function itm_sidebar_sync_section_visibility_from_items(array $visibility, $sidebarConfig, $conn, $companyId) {
+    if (!is_array($sidebarConfig)) {
+        $sidebarConfig = itm_ui_config_defaults();
+    }
+
+    $layoutConfig = $sidebarConfig;
+    $layoutConfig['sidebar_visibility'] = $visibility;
+    $mainOrder = $layoutConfig['sidebar_main_order'] ?? itm_default_sidebar_main_order();
+    foreach ($mainOrder as $sectionId) {
+        $sectionId = (string)$sectionId;
+        if ($sectionId === '') {
+            continue;
+        }
+        if (!itm_sidebar_section_has_visible_items($sectionId, $layoutConfig, $conn, $companyId)) {
+            $visibility[$sectionId] = 0;
+        }
+    }
+
+    return $visibility;
+}
+
+/**
+ * Normalize submenu placement and sync section visibility before persisting layout rows.
+ */
+function itm_sidebar_prepare_layout_config_for_save(array $config, $conn, $companyId) {
+    $companyId = (int)$companyId;
+    if (!isset($config['sidebar_visibility']) || !is_array($config['sidebar_visibility'])) {
+        $config['sidebar_visibility'] = itm_default_sidebar_visibility();
+    }
+
+    $config['sidebar_main_order'] = itm_normalize_sidebar_main_order($config['sidebar_main_order'] ?? itm_default_sidebar_main_order());
+    $config['sidebar_submenu_order'] = itm_normalize_sidebar_submenu_order($config['sidebar_submenu_order'] ?? itm_default_sidebar_submenu_order());
+    $config['sidebar_visibility'] = itm_sidebar_sync_section_visibility_from_items(
+        itm_normalize_sidebar_visibility($config['sidebar_visibility']),
+        $config,
+        $conn,
+        $companyId
+    );
+
+    return $config;
+}
+
+/**
  * Persist Personalized Sidebar checkboxes from user-config.php (visibility only).
  */
 function itm_user_config_save_personalized_sidebar_items($conn, $companyId, $userId, array $checkedItemIds) {
@@ -948,24 +1064,14 @@ function itm_user_config_save_personalized_sidebar_items($conn, $companyId, $use
     }
 
     $visibility = $sidebarConfig['sidebar_visibility'] ?? itm_default_sidebar_visibility();
-    $catalog = itm_sidebar_item_catalog();
-
-    foreach ($catalog as $itemId => $item) {
-        if ($itemId === 'dashboard_link') {
-            continue;
-        }
-        if (!itm_sidebar_item_passes_access_gate($itemId, $conn, $companyId)) {
-            $visibility[$itemId] = 0;
-            continue;
-        }
-        $visibility[$itemId] = isset($checkedLookup[$itemId]) ? 1 : 0;
-    }
+    $visibility = itm_sidebar_apply_access_gates_to_visibility($visibility, $conn, $companyId, $checkedLookup);
 
     $layoutConfig = [
         'sidebar_visibility' => itm_normalize_sidebar_visibility($visibility),
         'sidebar_main_order' => $sidebarConfig['sidebar_main_order'] ?? itm_default_sidebar_main_order(),
         'sidebar_submenu_order' => $sidebarConfig['sidebar_submenu_order'] ?? itm_default_sidebar_submenu_order(),
     ];
+    $layoutConfig = itm_sidebar_prepare_layout_config_for_save($layoutConfig, $conn, $companyId);
 
     if (!itm_save_employee_sidebar_preferences($conn, $companyId, $userId, $layoutConfig)) {
         return false;
@@ -1756,34 +1862,29 @@ function itm_normalize_sidebar_submenu_order($raw) {
         return $default;
     }
 
-    $normalized = [];
-    $assigned = [];
-
-    // Process explicitly ordered items
-    foreach ($default as $sectionId => $defaultIds) {
-        $sectionRaw = $raw[$sectionId] ?? [];
+    $flatOrder = [];
+    $seen = [];
+    foreach ($raw as $sectionRaw) {
         if (!is_array($sectionRaw)) {
-            $sectionRaw = [];
-        }
-
-        $sectionOrder = [];
-        foreach ($sectionRaw as $id) {
-            $id = (string)$id;
-            if (isset($catalog[$id]) && !isset($assigned[$id])) {
-                $sectionOrder[] = $id;
-                $assigned[$id] = true;
-            }
-        }
-
-        $normalized[$sectionId] = $sectionOrder;
-    }
-
-    // Assign un-ordered items to their default sections
-    foreach (array_keys($catalog) as $itemId) {
-        if (isset($assigned[$itemId])) {
             continue;
         }
-        $targetSection = $defaultParent[$itemId] ?? itm_array_key_first($default);
+        foreach ($sectionRaw as $id) {
+            $id = (string)$id;
+            if ($id === '' || !isset($catalog[$id]) || isset($seen[$id])) {
+                continue;
+            }
+            $flatOrder[] = $id;
+            $seen[$id] = true;
+        }
+    }
+
+    $normalized = [];
+    foreach (array_keys($default) as $sectionId) {
+        $normalized[$sectionId] = [];
+    }
+
+    foreach ($flatOrder as $itemId) {
+        $targetSection = $defaultParent[$itemId] ?? null;
         if ($targetSection === null || !isset($normalized[$targetSection])) {
             $targetSection = itm_array_key_first($normalized);
         }
@@ -1791,7 +1892,34 @@ function itm_normalize_sidebar_submenu_order($raw) {
             continue;
         }
         $normalized[$targetSection][] = $itemId;
-        $assigned[$itemId] = true;
+    }
+
+    foreach ($default as $sectionId => $defaultIds) {
+        foreach ($defaultIds as $itemId) {
+            if (isset($seen[$itemId]) || !isset($catalog[$itemId])) {
+                continue;
+            }
+            $targetSection = $defaultParent[$itemId] ?? $sectionId;
+            if (!isset($normalized[$targetSection])) {
+                $targetSection = $sectionId;
+            }
+            if (!isset($normalized[$targetSection])) {
+                continue;
+            }
+            $normalized[$targetSection][] = $itemId;
+            $seen[$itemId] = true;
+        }
+    }
+
+    foreach (array_keys($catalog) as $itemId) {
+        if (isset($seen[$itemId])) {
+            continue;
+        }
+        $targetSection = $defaultParent[$itemId] ?? itm_array_key_first($default);
+        if ($targetSection === null || !isset($normalized[$targetSection])) {
+            continue;
+        }
+        $normalized[$targetSection][] = $itemId;
     }
 
     return $normalized;
@@ -1870,9 +1998,8 @@ function itm_save_ui_configuration($conn, $company_id, $input, $user_id = null) 
     }
     $sidebarPreferencesSaved = itm_save_employee_sidebar_preferences($conn, $company_id, $user_id, $config);
     if (!$sidebarPreferencesSaved) {
-        // Why: UI configuration updates (positions, app name, toggles) must remain saveable
-        // even when legacy sidebar preference data cannot be migrated in one request.
         error_log('itm_save_ui_configuration: sidebar preferences sync failed for company_id=' . $company_id . ', user_id=' . $user_id);
+        return false;
     }
 
     return true;
@@ -2065,6 +2192,55 @@ function itm_ensure_employee_sidebar_preferences_audit_triggers($conn) {
     }
 
     return true;
+}
+
+/**
+ * Reconciles item rows onto canonical catalog parent sections (e.g. explorer -> employee).
+ */
+function itm_reconcile_employee_sidebar_preferences_canonical_sections($conn, $company_id, $user_id) {
+    if (!($conn instanceof mysqli)) {
+        return false;
+    }
+    $company_id = (int)$company_id;
+    $user_id = (int)$user_id;
+    if ($company_id <= 0 || $user_id <= 0) {
+        return false;
+    }
+
+    $defaultParent = itm_sidebar_default_item_parent_map();
+    if (!$defaultParent) {
+        return true;
+    }
+
+    $entryType = 'item';
+    mysqli_begin_transaction($conn);
+
+    $updateSql = 'UPDATE employee_sidebar_preferences
+                  SET section_id = ?
+                  WHERE company_id = ? AND employee_id = ? AND entry_type = ? AND entry_id = ? AND active = 1
+                    AND (section_id IS NULL OR section_id <> ?)';
+    $updateStmt = mysqli_prepare($conn, $updateSql);
+    if (!$updateStmt) {
+        mysqli_rollback($conn);
+        return false;
+    }
+
+    foreach ($defaultParent as $itemId => $canonicalSection) {
+        $itemId = (string)$itemId;
+        $canonicalSection = (string)$canonicalSection;
+        if ($itemId === '' || $canonicalSection === '') {
+            continue;
+        }
+        mysqli_stmt_bind_param($updateStmt, 'siisss', $canonicalSection, $company_id, $user_id, $entryType, $itemId, $canonicalSection);
+        if (!mysqli_stmt_execute($updateStmt)) {
+            mysqli_stmt_close($updateStmt);
+            mysqli_rollback($conn);
+            return false;
+        }
+    }
+
+    mysqli_stmt_close($updateStmt);
+    return mysqli_commit($conn);
 }
 
 /**
@@ -2357,6 +2533,7 @@ function itm_get_employee_sidebar_preferences_config($conn, $company_id, $user_i
     }
     itm_reconcile_employee_sidebar_preferences_switch_ports($conn, $company_id, $user_id);
     itm_reconcile_employee_sidebar_preferences_inventory($conn, $company_id, $user_id);
+    itm_reconcile_employee_sidebar_preferences_canonical_sections($conn, $company_id, $user_id);
 
     $rows = itm_load_employee_sidebar_preferences_rows($conn, $company_id, $user_id);
     if (!$rows) {
@@ -2480,6 +2657,7 @@ function itm_save_employee_sidebar_preferences($conn, $company_id, $user_id, $co
         return false;
     }
 
+    $config = itm_sidebar_prepare_layout_config_for_save($config, $conn, $company_id);
     $rows = itm_sidebar_layout_rows_from_config($config);
 
     mysqli_begin_transaction($conn);

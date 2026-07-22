@@ -529,6 +529,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'update_sidebar') {
         $items = is_array($_POST['sidebar_items'] ?? null) ? $_POST['sidebar_items'] : [];
         if (itm_user_config_save_personalized_sidebar_items($conn, $company_id, $user_id, $items)) {
+            $ui_config = itm_get_ui_configuration($conn, $company_id, $user_id);
             itm_log_audit($conn, 'employee_sidebar_preferences', $user_id, 'UPDATE', ['action' => 'sidebar_preferences_change'], ['action' => 'sidebar_preferences_change_success']);
             $message = 'Sidebar updated!';
             $message_type = 'success';
@@ -587,7 +588,8 @@ $totpIssuer = defined('APP_NAME') ? (string)APP_NAME : 'IT Management';
 $totpQrUrl = $totpSetupPending
     ? itm_totp_build_qr_image_url($totpAccountLabel, $totpSetupSecret, $totpIssuer)
     : '';
-$user_config_sidebar_ui = $ui_config ?? itm_get_ui_configuration($conn, $company_id, $user_id);
+$ui_config = itm_get_ui_configuration($conn, $company_id, $user_id);
+$user_config_sidebar_ui = $ui_config;
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="<?php echo sanitize($profileTheme); ?>">
@@ -973,6 +975,12 @@ foreach ($access_fields as $f):
                                         if ($id === 'dashboard_link') {
                                             continue;
                                         }
+                                        if (!itm_sidebar_item_passes_access_gate($id, $conn, $company_id)) {
+                                            continue;
+                                        }
+                                        $sidebarItem = is_array($item) ? $item : [];
+                                        $sidebarItem['id'] = $id;
+                                        $sidebarItemChecked = itm_sidebar_item_effective_visible($sidebarItem, $user_config_sidebar_ui, $conn, $company_id);
                                         // Why: Open module in a new tab from the prefs grid without underline chrome.
                                         $sidebarItemHref = !empty($item['href']) ? (string)$item['href'] : ('modules/' . $id . '/');
                                         $sidebarItem = is_array($item) ? $item : [];

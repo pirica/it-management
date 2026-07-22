@@ -478,6 +478,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newConfig['sidebar_visibility'] = is_array($sidebarVisibilityInput) ? $sidebarVisibilityInput : [];
         $newConfig['sidebar_main_order'] = is_array($sidebarMainOrderInput) ? $sidebarMainOrderInput : [];
         $newConfig['sidebar_submenu_order'] = is_array($sidebarSubmenuOrderInput) ? $sidebarSubmenuOrderInput : [];
+        $newConfig['sidebar_visibility'] = itm_normalize_sidebar_visibility(
+            itm_sidebar_apply_access_gates_to_visibility($newConfig['sidebar_visibility'], $conn, (int)$company_id)
+        );
+        $newConfig = itm_sidebar_prepare_layout_config_for_save($newConfig, $conn, (int)$company_id);
 
         $newConfig['module_icon_overrides'] = [];
         foreach (itm_sidebar_item_catalog() as $catalogItemId => $catalogItem) {
@@ -879,11 +883,24 @@ if (!isset($crud_title)) {
                         <div class="sidebar-settings-list" id="sidebar-settings-list">
                             <?php $sidebarSettingsTableHeaderRendered = false; ?>
                             <?php foreach ($sidebarStructure as $section): ?>
-                                <?php $sectionId = $section['id']; ?>
+                                <?php
+                                $sectionId = $section['id'];
+                                $accessibleSectionItems = [];
+                                foreach ($section['items'] as $sectionItem) {
+                                    $sectionItemId = (string)($sectionItem['id'] ?? '');
+                                    if ($sectionItemId === '' || !itm_sidebar_item_passes_access_gate($sectionItemId, $conn, (int)$company_id)) {
+                                        continue;
+                                    }
+                                    $accessibleSectionItems[] = $sectionItem;
+                                }
+                                if ($accessibleSectionItems === []) {
+                                    continue;
+                                }
+                                ?>
                                 <div class="sidebar-setting-section" data-section-id="<?php echo sanitize($sectionId); ?>">
                                     <div class="sidebar-setting-row sidebar-setting-main" data-main-id="<?php echo sanitize($sectionId); ?>">
                                         <label class="role-flag-option">
-                                            <input type="checkbox" class="sidebar-visible-toggle" data-target-id="<?php echo sanitize($sectionId); ?>" <?php echo (($currentUiConfig['sidebar_visibility'][$sectionId] ?? 1) === 1) ? 'checked' : ''; ?>>
+                                            <input type="checkbox" class="sidebar-visible-toggle" data-target-id="<?php echo sanitize($sectionId); ?>" <?php echo itm_sidebar_section_effective_visible($sectionId, $currentUiConfig, $conn, (int)$company_id) ? 'checked' : ''; ?>>
                                             <span><?php echo sanitize($section['title']); ?></span>
                                         </label>
                                         <div class="itm-sidebar-settings-section-actions">
@@ -910,9 +927,12 @@ if (!isset($crud_title)) {
                                             <?php $sidebarSettingsTableHeaderRendered = true; ?>
                                         <?php endif; ?>
                                         <tbody class="sidebar-setting-children">
-                                        <?php foreach ($section['items'] as $item): ?>
+                                        <?php foreach ($accessibleSectionItems as $item): ?>
                                             <?php
                                             $itemId = $item['id'];
+                                            $sidebarItem = is_array($item) ? $item : [];
+                                            $sidebarItem['id'] = $itemId;
+                                            $sidebarItemChecked = itm_sidebar_item_effective_visible($sidebarItem, $currentUiConfig, $conn, (int)$company_id);
                                             $moduleSlug = trim((string)($item['match_dir'] ?? ''));
                                             $userModuleIcon = '';
                                             if ($moduleSlug !== '') {
@@ -933,7 +953,7 @@ if (!isset($crud_title)) {
                                             <tr class="sidebar-setting-row" data-item-id="<?php echo sanitize($itemId); ?>">
                                                 <td class="itm-sidebar-settings-show">
                                                     <label class="role-flag-option itm-sidebar-settings-show-label">
-                                                        <input type="checkbox" class="sidebar-visible-toggle" data-target-id="<?php echo sanitize($itemId); ?>" <?php echo (($currentUiConfig['sidebar_visibility'][$itemId] ?? 1) === 1) ? 'checked' : ''; ?>>
+                                                        <input type="checkbox" class="sidebar-visible-toggle" data-target-id="<?php echo sanitize($itemId); ?>"<?php echo $sidebarItemChecked ? ' checked' : ''; ?>>
                                                         <span class="sr-only">Show <?php echo sanitize($itemLabelText); ?></span>
                                                     </label>
                                                 </td>
