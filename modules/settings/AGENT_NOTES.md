@@ -4,8 +4,8 @@
 Central hub for system-wide configuration, UI customization, sidebar management, and database maintenance/backups.
 
 ## 2. Key Tables
-- **ui_configuration** — stores UI element positioning, pagination, favicon, per-user `module_icon_overrides` JSON, and per-user API key / rate-limit metadata.
-- **employee_sidebar_preferences** — stores the visibility and order of sidebar items for users.
+- **ui_configuration** — stores UI element positioning, pagination, favicon, per-user `module_icon_overrides` JSON, `equipment_type_sidebar_visibility` JSON, and per-user API key / rate-limit metadata. **Does not** store sidebar section/item order or show-hide flags (legacy columns removed at runtime).
+- **employee_sidebar_preferences** — canonical SideMenu layout per `company_id` + `employee_id`: `entry_type` (`section`/`item`), `entry_id`, `section_id`, `display_order`, **`is_visible`**. Written by `itm_save_employee_sidebar_preferences()` from Settings **save_ui_config** and `user-config.php` **update_sidebar**.
 - **equipment_types** — (partially managed here for icons/emojis).
 
 ## 3. Required Relationships
@@ -21,7 +21,7 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 
 ## 5. UI Behavior Requirements
 - **ui_configuration reviewed gate:** gate-excluded in `scripts/data/ui_configuration_excluded_modules.txt`; intentional gaps (SideMenu drag-reorder table, no server search/pagination on audited first table, no CRUD entry files, All Backups client filter + server sort on `#all-backups` only) documented in `scripts/data/ui_configuration_reviewed.json` — audit lines print `[n/a][pass|fail|n/a][reviewed]`.
-- **Sidebar Toggles**: Uses checkboxes with a specific `change` event listener to ensure configuration persistence.
+- **Sidebar Toggles**: Uses checkboxes with a specific `change` event listener to ensure configuration persistence. SideMenu lists only modules the signed-in employee can access (`itm_sidebar_item_passes_access_gate()`); item checkbox state uses `itm_sidebar_item_effective_visible()`; section checkbox state uses `itm_sidebar_section_effective_visible()`. Save applies `itm_sidebar_apply_access_gates_to_visibility()` and `itm_sidebar_prepare_layout_config_for_save()` (canonical `section_id` + section visibility sync) before `itm_save_ui_configuration()`.
 - **Sidebar emoji overrides**: SideMenu module rows render in a compact table (`Show` | `Icon` | `Module` | `Order`) with `.itm-module-icon-input` in the icon column; matching the company default on save clears `module_icon_overrides`.
 - **Favicon/SQL Uploads**: Supports drag-and-drop file uploads for favicon and SQL backup files.
 - **Favicon preview**: On load, `itm_ui_config_sync_favicon_path_from_disk()` backfills empty `favicon_path` when `images/favicons/company_{company_id}.ico` already exists (uploaded file without DB path). Preview and tab icon use `itm_ui_config_resolve_favicon_relative_path()` + `itm_ui_config_favicon_url($config, $company_id)`.

@@ -207,6 +207,21 @@ if ($userConfig === false) {
     } else {
         ucp_pass('upload_photo uses home_company_id.');
     }
+    if (strpos($userConfig, 'itm_sidebar_item_effective_visible') === false) {
+        ucp_fail('user-config.php Personalized Sidebar must use itm_sidebar_item_effective_visible().');
+    } else {
+        ucp_pass('user-config.php Personalized Sidebar uses effective visibility helper.');
+    }
+    if (strpos($userConfig, 'itm_user_config_save_personalized_sidebar_items') === false) {
+        ucp_fail('user-config.php must save sidebar prefs via itm_user_config_save_personalized_sidebar_items().');
+    } else {
+        ucp_pass('user-config.php uses shared personalized sidebar save helper.');
+    }
+    if (!preg_match('/update_sidebar[\s\S]{0,400}\$ui_config\s*=\s*itm_get_ui_configuration/', $userConfig)) {
+        ucp_fail('user-config.php must reload $ui_config after successful update_sidebar.');
+    } else {
+        ucp_pass('user-config.php reloads $ui_config after sidebar save.');
+    }
 }
 
 @unlink($tmpPng);

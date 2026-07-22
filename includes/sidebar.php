@@ -28,7 +28,6 @@ if (function_exists('itm_normalize_sidebar_submenu_order')) {
     // Why: Persisted prefs can predate new catalog modules; always merge before render (same as Settings layout save).
     $submenuOrder = itm_normalize_sidebar_submenu_order($submenuOrder);
 }
-$equipmentTypeSidebarVisibility = $sidebarConfig['equipment_type_sidebar_visibility'] ?? [];
 
 // Re-order top-level sections based on configuration
 $sectionsById = [];
@@ -69,8 +68,8 @@ foreach ($sectionsById as $section) {
     <?php foreach ($orderedSections as $section): ?>
         <?php
         $sectionId = $section['id'];
-        // Skip hidden sections
-        if (($visibility[$sectionId] ?? 1) !== 1) {
+        // Skip hidden sections (pref + no visible children)
+        if (!itm_sidebar_section_effective_visible($sectionId, $sidebarConfig, $conn, (int)($company_id ?? 0))) {
             continue;
         }
 
@@ -83,27 +82,8 @@ foreach ($sectionsById as $section) {
             }
         }
 
-        $visibleItems = array_values(array_filter($orderedItems, static function ($sidebarItem) use ($visibility, $equipmentTypeSidebarVisibility, $sidebarConfig, $conn, $company_id) {
-            if (($visibility[$sidebarItem['id']] ?? 1) !== 1) {
-                return false;
-            }
-
-            $itemId = (string)($sidebarItem['id'] ?? '');
-            if ($itemId !== 'dashboard_link' && $itemId !== 'settings' && function_exists('has_module_access')) {
-                if (!has_module_access($conn, (int)($company_id ?? 0), $itemId)) {
-                    return false;
-                }
-            }
-
-            if ($itemId === 'audit_logs' && ((int)($sidebarConfig['enable_audit_logs'] ?? 1) !== 1)) {
-                return false;
-            }
-
-            if ($itemId !== '' && array_key_exists($itemId, $equipmentTypeSidebarVisibility)) {
-                return ((int)$equipmentTypeSidebarVisibility[$itemId]) === 1;
-            }
-
-            return true;
+        $visibleItems = array_values(array_filter($orderedItems, static function ($sidebarItem) use ($sidebarConfig, $conn, $company_id) {
+            return itm_sidebar_item_effective_visible($sidebarItem, $sidebarConfig, $conn, (int)($company_id ?? 0));
         }));
 
         // Don't render a section if it has no visible items

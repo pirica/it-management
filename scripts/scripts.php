@@ -365,6 +365,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><code>php scripts/verify_user_config_profile.php</code> — exit <code>1</code> on failure. Run when changing <code>user-config.php</code>, <code>includes/employee_profile_photo.php</code>, or Explorer <code>file.php</code> profile photo serving.</td>
                 </tr>
                 <tr>
+                    <td><a href="verify_sidebar_preferences.php" target="_blank" rel="nofollow noreferrer">verify_sidebar_preferences.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Regression for <code>employee_sidebar_preferences</code> save/load: Personalized Sidebar + Settings SideMenu access contracts, DB round-trip via <code>itm_user_config_save_personalized_sidebar_items()</code>.</td>
+                    <td><code>php scripts/verify_sidebar_preferences.php</code> — exit <code>1</code> on failure. Run when changing <code>user-config.php</code>, <code>modules/settings/index.php</code> SideMenu, or <code>includes/ui_config.php</code> sidebar helpers.</td>
+                </tr>
+                <tr>
                     <td><a href="verify_emails_module.php" target="_blank" rel="nofollow noreferrer">verify_emails_module.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression checks for Email Management tables, registry row, SMTP seed, alert rules, <code>itm_send_email()</code>, <code>user-config.php</code> vault-key notification contract (no plaintext secrets), and company 1 30-day warranty/license alert window (hard fail; disposable sample insert when empty).</td>
