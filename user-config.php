@@ -243,65 +243,6 @@ while ($curr_id) {
 
 
 $sql = "
-    SELECT *
-    FROM employee_sidebar_preferences
-    WHERE employee_id = ?
-      AND company_id = ?
-";
-
-
-$stmt = mysqli_prepare($conn, $sql);
-
-if (!$stmt) {
-    echo "<span style='color:red'>PREPARE FAILED: " . mysqli_error($conn) . "</span><br>";
-}
-
-
-
-if (!mysqli_stmt_bind_param($stmt, 'ii', $user_id, $company_id)) {
-    echo "<span style='color:red'>BIND FAILED: " . mysqli_stmt_error($stmt) . "</span><br>";
-}
-
-if (!mysqli_stmt_execute($stmt)) {
-    echo "<span style='color:red'>EXECUTE FAILED: " . mysqli_stmt_error($stmt) . "</span><br>";
-}
-
-/* BIND DINÂMICO DOS RESULTADOS */
-$meta = mysqli_stmt_result_metadata($stmt);
-$bindVars = [];
-$row = [];
-
-
-
-while ($field = mysqli_fetch_field($meta)) {
-
-    $bindVars[] = &$row[$field->name];
-}
-
-call_user_func_array([$stmt, 'bind_result'], $bindVars);
-
-$sidebar_prefs_raw = [];
-
-while (mysqli_stmt_fetch($stmt)) {
-
-    $sidebar_prefs_raw[] = $row;
-}
-
-mysqli_stmt_close($stmt);
-
-
-
-/* TRANSFORMAR EM MAPA entry_id => is_visible */
-$sidebar_prefs = [];
-
-foreach ($sidebar_prefs_raw as $p) {
-    $sidebar_prefs[$p['entry_id']] = (int)$p['is_visible'];
-}
-
-
-
-
-$sql = "
     SELECT
         'audit' AS type,
         table_name,
@@ -586,19 +527,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = '2FA setup cancelled.';
         $message_type = 'info';
     } elseif ($action === 'update_sidebar') {
-        $items = $_POST['sidebar_items'] ?? [];
-        mysqli_begin_transaction($conn);
-        $stmt = mysqli_prepare($conn, "UPDATE employee_sidebar_preferences SET is_visible = 0 WHERE employee_id = ? AND company_id = ?");
-        mysqli_stmt_bind_param($stmt, 'i', $user_id);
-        mysqli_stmt_execute($stmt); mysqli_stmt_close($stmt);
-        foreach ($items as $item_id) {
-            $stmt = mysqli_prepare($conn, "INSERT INTO employee_sidebar_preferences (company_id, employee_id, entry_type, entry_id, is_visible) VALUES (?, ?, 'item', ?, 1) ON DUPLICATE KEY UPDATE is_visible = 1");
-            mysqli_stmt_bind_param($stmt, 'iis', $company_id, $user_id, $item_id);
-            mysqli_stmt_execute($stmt); mysqli_stmt_close($stmt);
+        $items = is_array($_POST['sidebar_items'] ?? null) ? $_POST['sidebar_items'] : [];
+        if (itm_user_config_save_personalized_sidebar_items($conn, $company_id, $user_id, $items)) {
+            itm_log_audit($conn, 'employee_sidebar_preferences', $user_id, 'UPDATE', ['action' => 'sidebar_preferences_change'], ['action' => 'sidebar_preferences_change_success']);
+            $message = 'Sidebar updated!';
+            $message_type = 'success';
+        } else {
+            $message = 'Unable to update sidebar preferences.';
+            $message_type = 'error';
         }
-        mysqli_commit($conn);
-        itm_log_audit($conn, 'employee_sidebar_preferences', $user_id, 'UPDATE', ['action'=>'sidebar_preferences_change'], ['action'=>'sidebar_preferences_change_success']);
-        $message = 'Sidebar updated!'; $message_type = 'success';
     } elseif ($action === 'upload_photo') {
         if (isset($_FILES['photo'])) {
             $res = emp_profile_photo_store_upload($home_company_id, $current_user, $_FILES['photo']);
@@ -650,6 +587,7 @@ $totpIssuer = defined('APP_NAME') ? (string)APP_NAME : 'IT Management';
 $totpQrUrl = $totpSetupPending
     ? itm_totp_build_qr_image_url($totpAccountLabel, $totpSetupSecret, $totpIssuer)
     : '';
+$user_config_sidebar_ui = $ui_config ?? itm_get_ui_configuration($conn, $company_id, $user_id);
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="<?php echo sanitize($profileTheme); ?>">
@@ -1031,12 +969,18 @@ foreach ($access_fields as $f):
                             <form method="POST">
                                 <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>"><input type="hidden" name="action" value="update_sidebar">
                                 <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap:10px;">
-                                    <?php foreach(itm_sidebar_item_catalog() as $id=>$item): if($id==='dashboard_link')continue;
+                                    <?php foreach (itm_sidebar_item_catalog() as $id => $item):
+                                        if ($id === 'dashboard_link') {
+                                            continue;
+                                        }
                                         // Why: Open module in a new tab from the prefs grid without underline chrome.
                                         $sidebarItemHref = !empty($item['href']) ? (string)$item['href'] : ('modules/' . $id . '/');
+                                        $sidebarItem = is_array($item) ? $item : [];
+                                        $sidebarItem['id'] = $id;
+                                        $sidebarItemChecked = itm_sidebar_item_effective_visible($sidebarItem, $user_config_sidebar_ui, $conn, $company_id);
                                     ?>
                                         <label class="itm-checkbox-control">
-                                            <input type="checkbox" name="sidebar_items[]" value="<?php echo sanitize($id); ?>" <?php echo ($sidebar_prefs[$id]??1)?'checked':''; ?>>
+                                            <input type="checkbox" name="sidebar_items[]" value="<?php echo sanitize($id); ?>"<?php echo $sidebarItemChecked ? ' checked' : ''; ?>>
                                             <span><a class="itm-user-config-sidebar-link" href="<?php echo sanitize($sidebarItemHref); ?>" target="_blank" rel="noopener noreferrer"><?php echo sanitize($item['label']); ?></a></span>
                                         </label>
                                     <?php endforeach; ?>
