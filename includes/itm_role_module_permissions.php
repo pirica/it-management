@@ -291,14 +291,11 @@ if (!function_exists('itm_require_role_module_permission')) {
             return;
         }
 
-        if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'POST') {
-            http_response_code(403);
-            echo 'Forbidden: insufficient module permissions.';
-            exit;
+        if (!function_exists('itm_exit_forbidden')) {
+            require_once __DIR__ . '/itm_user_forbidden.php';
         }
 
-        header('Location: ' . BASE_URL . 'dashboard.php');
-        exit;
+        itm_exit_forbidden('Forbidden: insufficient module permissions.');
     }
 }
 

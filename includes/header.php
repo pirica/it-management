@@ -47,6 +47,12 @@ if (!empty($_SESSION['crud_success'])) {
     echo itm_render_alert_errors((string)$_SESSION['crud_success'], 'success');
     unset($_SESSION['crud_success']);
 }
+
+$itmForbiddenFlash = '';
+if (!empty($_SESSION['itm_forbidden_message'])) {
+    $itmForbiddenFlash = itm_forbidden_user_message((string)$_SESSION['itm_forbidden_message']);
+    unset($_SESSION['itm_forbidden_message']);
+}
 ?>
 <div id="itm-js-alert-region" class="itm-js-alert-region" aria-live="polite"></div>
 
@@ -77,6 +83,7 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 window.ITM_UI_CONFIG = <?php echo json_encode($headerUiConfig); ?>;
 window.ITM_APP_NAME = <?php echo json_encode($app_name ?? itm_ui_config_app_name($headerUiConfig)); ?>;
 window.ITM_FAVICON_URL = <?php echo json_encode($favicon_url ?? itm_ui_config_favicon_url($headerUiConfig)); ?>;
+window.ITM_FORBIDDEN_FLASH = <?php echo json_encode($itmForbiddenFlash !== '' ? $itmForbiddenFlash : null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
 
 <!-- Global JS Library Dependencies -->

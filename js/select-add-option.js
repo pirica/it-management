@@ -180,9 +180,19 @@
             body: payload.toString(),
         });
 
-        const result = await response.json();
-        if (!response.ok || !result.ok) {
-            throw new Error(result.error || 'Unable to add new option.');
+        const responseText = await response.text();
+        let result = null;
+        try {
+            result = responseText ? JSON.parse(responseText) : null;
+        } catch (parseError) {
+            result = null;
+        }
+
+        if (!response.ok || !result || !result.ok) {
+            const message = (result && result.error)
+                ? result.error
+                : (responseText.trim() || 'Unable to add new option.');
+            throw new Error(message);
         }
 
         return result;

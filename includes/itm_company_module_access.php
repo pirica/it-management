@@ -1296,8 +1296,11 @@ if (!function_exists('itm_enforce_module_access_or_exit')) {
             return;
         }
 
-        http_response_code(403);
-        die('Access Denied');
+        if (!function_exists('itm_exit_forbidden')) {
+            require_once __DIR__ . '/itm_user_forbidden.php';
+        }
+
+        itm_exit_forbidden('Forbidden: Access denied.');
     }
 }
 
