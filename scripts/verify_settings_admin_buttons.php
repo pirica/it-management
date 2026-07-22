@@ -69,6 +69,30 @@ if (strpos($settingsSource, '>SCRIPTS<') === false) {
     sab_verify_pass('settings/index.php renders SCRIPTS button');
 }
 
+if (strpos($settingsSource, 'All roles') === false) {
+    sab_verify_fail('settings/index.php must render All roles section for enable_chatbot');
+} else {
+    sab_verify_pass('settings/index.php renders All roles section');
+}
+
+if (strpos($settingsSource, 'System (Admin Role only)') === false) {
+    sab_verify_fail('settings/index.php must render System (Admin Role only) section');
+} else {
+    sab_verify_pass('settings/index.php renders System (Admin Role only) section');
+}
+
+if (strpos($settingsSource, '$settingsIsAdmin') === false) {
+    sab_verify_fail('settings/index.php must define $settingsIsAdmin for system-flag gating');
+} else {
+    sab_verify_pass('settings/index.php defines $settingsIsAdmin');
+}
+
+if (strpos($settingsSource, 'non-admins must not change them via crafted POST') === false) {
+    sab_verify_fail('settings/index.php save_ui_config must preserve admin-only system flags for non-admins');
+} else {
+    sab_verify_pass('settings/index.php preserves admin-only system flags on save');
+}
+
 if ($failures > 0) {
     echo $nl . colorText('Verification failed with ' . $failures . ' issue(s).', 'fail') . $nl;
     itm_script_output_end();

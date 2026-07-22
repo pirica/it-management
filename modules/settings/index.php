@@ -131,6 +131,7 @@ if (isset($_SESSION['settings_flash_message'])) {
 
 $csrfToken = itm_get_csrf_token();
 $settingsUserId = isset($_SESSION['employee_id']) ? (int) $_SESSION['employee_id'] : 0;
+$settingsIsAdmin = $settingsUserId > 0 && itm_is_admin($conn, $settingsUserId);
 $currentUiConfig = itm_get_ui_configuration($conn, $company_id);
 if ($settingsUserId > 0) {
     itm_ui_config_sync_favicon_path_from_disk($conn, (int) $company_id, $settingsUserId);
@@ -419,10 +420,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach (array_keys($uiFieldLabels) as $key) {
             $newConfig[$key] = $_POST[$key] ?? '';
         }
-        $newConfig['enable_all_error_reporting'] = isset($_POST['enable_all_error_reporting']) ? 1 : 0;
-        $newConfig['enable_audit_logs'] = isset($_POST['enable_audit_logs']) ? 1 : 0;
         $newConfig['enable_chatbot'] = isset($_POST['enable_chatbot']) ? 1 : 0;
-        $newConfig['enable_auto_scaffolding'] = isset($_POST['enable_auto_scaffolding']) ? 1 : 0;
+        if ($settingsIsAdmin) {
+            $newConfig['enable_all_error_reporting'] = isset($_POST['enable_all_error_reporting']) ? 1 : 0;
+            $newConfig['enable_audit_logs'] = isset($_POST['enable_audit_logs']) ? 1 : 0;
+            $newConfig['enable_auto_scaffolding'] = isset($_POST['enable_auto_scaffolding']) ? 1 : 0;
+        } else {
+            // Why: System flags are admin-only in Settings UI; non-admins must not change them via crafted POST.
+            $newConfig['enable_all_error_reporting'] = (int) ($currentUiConfig['enable_all_error_reporting'] ?? 1);
+            $newConfig['enable_audit_logs'] = (int) ($currentUiConfig['enable_audit_logs'] ?? 1);
+            $newConfig['enable_auto_scaffolding'] = (int) ($currentUiConfig['enable_auto_scaffolding'] ?? 0);
+        }
         if ($settingsEmployeeHasEquipmentAccess) {
             $newConfig['equipment_type_sidebar_visibility'] = [];
             foreach ($equipmentTypeRows as $equipmentTypeRow) {
@@ -1016,32 +1024,38 @@ if (!isset($crud_title)) {
 
                         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:16px;">
                             <div>
-                                <h3 style="margin-top:0;">System</h3>
+                                <h3 style="margin-top:0;">All roles</h3>
+                                <div class="form-group">
+                                    <label class="role-flag-option" for="enable_chatbot">
+                                        <input type="checkbox" id="enable_chatbot" name="enable_chatbot" value="1" <?php echo ((int) ($currentUiConfig['enable_chatbot'] ?? 1) === 1) ? 'checked' : ''; ?>>
+                                        <span>Enable IT Support Chatbot</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <?php if ($settingsIsAdmin): ?>
+                            <div>
+                                <h3 style="margin-top:0;">System (Admin Role only)</h3>
+                                <h4 style="margin:0 0 12px 0;font-size:1em;font-weight:600;">System</h4>
                                 <div class="form-group">
                                     <label class="role-flag-option" for="enable_all_error_reporting">
-                                        <input type="checkbox" id="enable_all_error_reporting" name="enable_all_error_reporting" value="1" <?php echo (($currentUiConfig['enable_all_error_reporting'] ?? 1) === 1) ? 'checked' : ''; ?>>
+                                        <input type="checkbox" id="enable_all_error_reporting" name="enable_all_error_reporting" value="1" <?php echo ((int) ($currentUiConfig['enable_all_error_reporting'] ?? 1) === 1) ? 'checked' : ''; ?>>
                                         <span>Enable all error reporting</span>
                                     </label>
                                 </div>
                                 <div class="form-group">
                                     <label class="role-flag-option" for="enable_audit_logs">
-                                        <input type="checkbox" id="enable_audit_logs" name="enable_audit_logs" value="1" <?php echo (($currentUiConfig['enable_audit_logs'] ?? 1) === 1) ? 'checked' : ''; ?>>
+                                        <input type="checkbox" id="enable_audit_logs" name="enable_audit_logs" value="1" <?php echo ((int) ($currentUiConfig['enable_audit_logs'] ?? 1) === 1) ? 'checked' : ''; ?>>
                                         <span>Enable Audit Logs</span>
                                     </label>
                                 </div>
                                 <div class="form-group">
-                                    <label class="role-flag-option" for="enable_chatbot">
-                                        <input type="checkbox" id="enable_chatbot" name="enable_chatbot" value="1" <?php echo (($currentUiConfig['enable_chatbot'] ?? 1) === 1) ? 'checked' : ''; ?>>
-                                        <span>Enable IT Support Chatbot</span>
-                                    </label>
-                                </div>
-                                <div class="form-group">
                                     <label class="role-flag-option" for="enable_auto_scaffolding">
-                                        <input type="checkbox" id="enable_auto_scaffolding" name="enable_auto_scaffolding" value="1" <?php echo (($currentUiConfig['enable_auto_scaffolding'] ?? 0) === 1) ? 'checked' : ''; ?>>
+                                        <input type="checkbox" id="enable_auto_scaffolding" name="enable_auto_scaffolding" value="1" <?php echo ((int) ($currentUiConfig['enable_auto_scaffolding'] ?? 0) === 1) ? 'checked' : ''; ?>>
                                         <span>Enable Dynamic Auto-Scaffolding</span>
                                     </label>
                                 </div>
                             </div>
+                            <?php endif; ?>
                             <?php if ($settingsEmployeeHasEquipmentAccess): ?>
                             <div>
                                 <h3 style="margin-top:0;">Emoji Equipment Type Sidebar</h3>

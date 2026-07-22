@@ -889,7 +889,7 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 | `php scripts/verify_dashboard_online_employees.php` | Regression: **admin.php** **Online now** stat, session presence touch hook, count after touch |
 | `php scripts/verify_employee_dashboard.php` | Regression: employee **dashboard.php** hero + grouped stat cards, `includes/itm_employee_dashboard.php` loader, no company switcher |
 | `php scripts/verify_admin_page_gate.php` | Regression: **admin.php** `itm_is_admin()` gate and redirect to `dashboard.php` |
-| `php scripts/verify_settings_admin_buttons.php` | Regression: Settings **ADMIN** / **SCRIPTS** toolbar (admin-only) links to `admin.php` and `scripts/scripts.php` |
+| `php scripts/verify_settings_admin_buttons.php` | Regression: Settings **ADMIN** / **SCRIPTS** toolbar (admin-only), **All roles** chatbot block, **System (Admin Role only)** flags, and non-admin save preservation |
 
 Run `verify_roles_permissions.php` when changing `modules/roles_permissions/`, `js/roles-permissions-matrix.js`, `includes/itm_role_module_permissions.php`, or `employee_roles` / `role_module_permissions` / `role_hierarchy` schema in `db/03_triggers.sql`.
 

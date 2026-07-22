@@ -1432,8 +1432,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="verify_settings_admin_buttons.php" target="_blank" rel="nofollow noreferrer">verify_settings_admin_buttons.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Regression for Settings admin toolbar: <code>ADMIN</code> → <code>admin.php</code>, <code>SCRIPTS</code> → <code>scripts/scripts.php</code>, visible only when <code>itm_is_admin()</code>.</td>
-                    <td>Browser: <a href="verify_settings_admin_buttons.php">verify_settings_admin_buttons.php</a>. CLI: <code>php scripts/verify_settings_admin_buttons.php</code>. Run when changing Settings admin shortcuts.</td>
+                    <td>Regression for Settings: admin toolbar (<code>ADMIN</code> → <code>admin.php</code>, <code>SCRIPTS</code> → <code>scripts/scripts.php</code>), <strong>All roles</strong> chatbot block, <strong>System (Admin Role only)</strong> flags, and non-admin save preservation.</td>
+                    <td>Browser: <a href="verify_settings_admin_buttons.php">verify_settings_admin_buttons.php</a>. CLI: <code>php scripts/verify_settings_admin_buttons.php</code>. Run when changing Settings admin shortcuts or system-flag layout.</td>
                 </tr>
                 <tr>
                     <td><a href="apply_new_company_module_share_capable_seed.php" target="_blank" rel="nofollow noreferrer">apply_new_company_module_share_capable_seed.php</a></td>
