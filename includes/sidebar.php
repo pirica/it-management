@@ -68,8 +68,8 @@ foreach ($sectionsById as $section) {
     <?php foreach ($orderedSections as $section): ?>
         <?php
         $sectionId = $section['id'];
-        // Skip hidden sections
-        if (($visibility[$sectionId] ?? 1) !== 1) {
+        // Skip hidden sections (pref + no visible children)
+        if (!itm_sidebar_section_effective_visible($sectionId, $sidebarConfig, $conn, (int)($company_id ?? 0))) {
             continue;
         }
 

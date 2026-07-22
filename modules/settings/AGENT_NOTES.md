@@ -4,8 +4,8 @@
 Central hub for system-wide configuration, UI customization, sidebar management, and database maintenance/backups.
 
 ## 2. Key Tables
-- **ui_configuration** — stores UI element positioning, pagination, favicon, per-user `module_icon_overrides` JSON, and per-user API key / rate-limit metadata.
-- **employee_sidebar_preferences** — stores the visibility and order of sidebar items for users.
+- **ui_configuration** — stores UI element positioning, pagination, favicon, per-user `module_icon_overrides` JSON, `equipment_type_sidebar_visibility` JSON, and per-user API key / rate-limit metadata. **Does not** store sidebar section/item order or show-hide flags (legacy columns removed at runtime).
+- **employee_sidebar_preferences** — canonical SideMenu layout per `company_id` + `employee_id`: `entry_type` (`section`/`item`), `entry_id`, `section_id`, `display_order`, **`is_visible`**. Written by `itm_save_employee_sidebar_preferences()` from Settings **save_ui_config** and `user-config.php` **update_sidebar**.
 - **equipment_types** — (partially managed here for icons/emojis).
 
 ## 3. Required Relationships

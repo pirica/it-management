@@ -963,7 +963,8 @@ Run `verify_reports_hub.php` when changing `modules/reports/`, `modules/reports/
 | Script | Purpose |
 |--------|---------|
 | `php scripts/verify_emails_module.php` | Regression: `emails`, `email_smtp_configurations`, `email_alert_rules` tables, `modules_registry` row, default SMTP seed, alert rule seeds, `itm_send_email()` helper; static vault-key notification contract in `user-config.php` (subjects, transactional template, no master-key variables in `itm_send_email()` args); company 1 warranty/license **30-day alert window is a hard fail** (script inserts disposable license sample when empty, then deletes it). `db/` uses relative `DATE_ADD(CURDATE(), …)` expiry seeds so fresh imports stay in-window |
-| `php scripts/verify_user_config_profile.php` | Regression for `user-config.php` profile fields: home-company UPDATE vs tenant switcher, birthday/theme/emergency round-trip, profile photo URL must be app-absolute `modules/explorer/file.php` (not `../../modules/…`) |
+| `php scripts/verify_user_config_profile.php` | Regression for `user-config.php` profile fields: home-company UPDATE vs tenant switcher, birthday/theme/emergency round-trip, profile photo URL must be app-absolute `modules/explorer/file.php` (not `../../modules/…`); static `$ui_config` reload after sidebar save |
+| `php scripts/verify_sidebar_preferences.php` | Regression: canonical section normalize/reconcile (`explorer` → `employee`), section visibility sync, `employee_sidebar_preferences` DB round-trip, Settings SideMenu access-gate static wiring, `user-config.php` fresh `$ui_config` contract |
 | `php scripts/run_email_alert_rules.php` | Dispatches enabled alert rules per company (warranty, license, certificate, alerts, notes, to-do, events); optional `--company=1` and `--verbose` (per-rule match/sent notes when count is 0) |
 | `php scripts/test_email_forgot.php` | Manual forgot-password email test via `itm_send_email()` / tenant SMTP; creates a real 24-hour reset token for the matching employee before sending; CLI supports `--company=1` (defaults to session company or `1`) |
 | `php scripts/test_register_mail.php` | Manual registration welcome email test via `itm_send_email()`; CLI supports `--company=1` |
@@ -971,6 +972,8 @@ Run `verify_reports_hub.php` when changing `modules/reports/`, `modules/reports/
 Run `verify_emails_module.php` when changing `modules/emails/`, `includes/itm_email.php`, `user-config.php` vault-key notification mail, or `email*` tables in `db/03_triggers.sql`.
 
 Run `verify_user_config_profile.php` when changing `user-config.php`, `includes/employee_profile_photo.php`, or Explorer `file.php` profile-photo serving.
+
+Run `verify_sidebar_preferences.php` when changing `user-config.php` Personalized Sidebar, `modules/settings/` SideMenu, or `includes/ui_config.php` sidebar save/load helpers.
 
 ### System Status scripts
 
