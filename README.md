@@ -274,7 +274,7 @@
 
 <p align="center"><img src="docs/readme/company-module-access-architecture.svg" alt="Company Module Access architectural map: UI surfaces, request bootstrap, and database tables" /></p>
 
-<p align="center">UI entry points (<code>sidebar.php</code>, <code>dashboard.php</code>, <code>modules/company_module_access/</code>) call shared helpers in <code>includes/itm_company_module_access.php</code>. Enforcement gates every <code>modules/*</code> request after login. Data lives in <code>modules_registry</code> (global catalog) and <code>company_module_access</code> (per-company <code>enabled</code> flags). Fresh installs seed all company × module rows from <code>db/</code> split bundle; upgrades can run <code>php scripts/seed_company_module_access.php</code>.</p>
+<p align="center">UI entry points (<code>sidebar.php</code>, <code>dashboard.php</code> employee landing, <code>admin.php</code> company overview, <code>modules/company_module_access/</code>) call shared helpers in <code>includes/itm_company_module_access.php</code>. Enforcement gates every <code>modules/*</code> request after login. Data lives in <code>modules_registry</code> (global catalog) and <code>company_module_access</code> (per-company <code>enabled</code> flags). Fresh installs seed all company × module rows from <code>db/</code> split bundle; upgrades can run <code>php scripts/seed_company_module_access.php</code>.</p>
 
 <h2 align="center">API & Examples</h2>
 

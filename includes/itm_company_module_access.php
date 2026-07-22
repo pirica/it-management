@@ -64,6 +64,7 @@ if (!function_exists('itm_module_access_bypass_paths')) {
             'reset-password.php',
             'index.php',
             'dashboard.php',
+            'admin.php',
             'user-config.php',
         ];
     }

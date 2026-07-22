@@ -658,6 +658,133 @@ tr.ticket-row-colorized:hover {
     font-weight: 500;
 }
 
+/* Employee dashboard (dashboard.php) */
+.itm-emp-dash-hero {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 24px;
+    margin-bottom: 28px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+
+.itm-emp-dash-hero-photo {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    border: 3px solid var(--bg-secondary);
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+}
+
+.itm-emp-dash-hero-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.itm-emp-dash-hero-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.itm-emp-dash-hero-name {
+    margin: 0 0 4px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.itm-emp-dash-hero-meta {
+    margin: 0 0 10px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.itm-emp-dash-section {
+    margin-bottom: 28px;
+}
+
+.itm-emp-dash-section-title {
+    margin: 0 0 14px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.itm-emp-dash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+}
+
+.itm-emp-dash-card {
+    display: block;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.itm-emp-dash-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+    box-shadow: var(--shadow-lg);
+}
+
+.itm-emp-dash-card-static {
+    cursor: default;
+}
+
+.itm-emp-dash-card-static:hover {
+    transform: none;
+    border-color: var(--border);
+    box-shadow: none;
+}
+
+.itm-emp-dash-card-val {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1.2;
+    margin-bottom: 6px;
+}
+
+.itm-emp-dash-card-lbl {
+    display: block;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.35;
+}
+
+.itm-emp-dash-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+@media (max-width: 640px) {
+    .itm-emp-dash-hero {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     /* Keep mobile navigation off-canvas until explicitly opened by the toggle button. */
