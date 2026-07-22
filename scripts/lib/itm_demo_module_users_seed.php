@@ -105,65 +105,16 @@ if (!function_exists('itm_demo_module_users_normalize_module_slugs')) {
     }
 }
 
-if (!function_exists('itm_demo_module_users_ensure_role')) {
+if (!function_exists('itm_demo_module_users_apply_role_module_permissions')) {
     /**
-     * @param string|string[] $moduleSlugs One slug or list of module slugs for RBAC rows.
-     * @return array{role_id:int,created:bool,error:string}
+     * @param string[] $moduleSlugs
      */
-    function itm_demo_module_users_ensure_role(mysqli $conn, $companyId, $roleName, $moduleSlugs)
+    function itm_demo_module_users_apply_role_module_permissions(mysqli $conn, $companyId, $roleId, array $moduleSlugs)
     {
         $companyId = (int)$companyId;
-        $roleName = trim((string)$roleName);
-        if (is_string($moduleSlugs)) {
-            $moduleSlugs = [$moduleSlugs];
-        }
-        $moduleSlugs = itm_demo_module_users_normalize_module_slugs(['module_slugs' => $moduleSlugs]);
-        $result = ['role_id' => 0, 'created' => false, 'error' => ''];
-
-        if ($companyId <= 0 || $roleName === '' || $moduleSlugs === []) {
-            $result['error'] = 'Invalid role seed parameters.';
-            return $result;
-        }
-
-        $stmt = mysqli_prepare(
-            $conn,
-            'SELECT id FROM employee_roles WHERE company_id = ? AND name = ? AND deleted_at IS NULL LIMIT 1'
-        );
-        if (!$stmt) {
-            $result['error'] = 'Could not query employee_roles.';
-            return $result;
-        }
-
-        mysqli_stmt_bind_param($stmt, 'is', $companyId, $roleName);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        $row = $res ? mysqli_fetch_assoc($res) : null;
-        mysqli_stmt_close($stmt);
-
-        $roleId = is_array($row) ? (int)($row['id'] ?? 0) : 0;
-        if ($roleId <= 0) {
-            $insert = mysqli_prepare(
-                $conn,
-                'INSERT INTO employee_roles (company_id, name, active, created_at) VALUES (?, ?, 1, NOW())'
-            );
-            if (!$insert) {
-                $result['error'] = 'Could not insert employee_roles row.';
-                return $result;
-            }
-            mysqli_stmt_bind_param($insert, 'is', $companyId, $roleName);
-            if (!mysqli_stmt_execute($insert)) {
-                mysqli_stmt_close($insert);
-                $result['error'] = 'employee_roles insert failed.';
-                return $result;
-            }
-            $roleId = (int)mysqli_insert_id($conn);
-            mysqli_stmt_close($insert);
-            $result['created'] = true;
-        }
-
-        if ($roleId <= 0) {
-            $result['error'] = 'Role id missing after ensure.';
-            return $result;
+        $roleId = (int)$roleId;
+        if ($companyId <= 0 || $roleId <= 0 || $moduleSlugs === []) {
+            return;
         }
 
         foreach ($moduleSlugs as $moduleSlug) {
@@ -197,6 +148,129 @@ if (!function_exists('itm_demo_module_users_ensure_role')) {
                 }
             }
         }
+    }
+}
+
+if (!function_exists('itm_demo_module_users_lookup_role_id_by_name')) {
+    function itm_demo_module_users_lookup_role_id_by_name(mysqli $conn, $companyId, $roleName)
+    {
+        $companyId = (int)$companyId;
+        $roleName = trim((string)$roleName);
+        if ($companyId <= 0 || $roleName === '') {
+            return 0;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM employee_roles WHERE company_id = ? AND name = ? AND deleted_at IS NULL LIMIT 1'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+
+        mysqli_stmt_bind_param($stmt, 'is', $companyId, $roleName);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+
+        return is_array($row) ? (int)($row['id'] ?? 0) : 0;
+    }
+}
+
+if (!function_exists('itm_demo_module_users_ensure_role_by_id')) {
+    /**
+     * @param string|string[] $moduleSlugs
+     * @return array{role_id:int,created:bool,error:string}
+     */
+    function itm_demo_module_users_ensure_role_by_id(mysqli $conn, $companyId, $roleId, $moduleSlugs)
+    {
+        $companyId = (int)$companyId;
+        $roleId = (int)$roleId;
+        if (is_string($moduleSlugs)) {
+            $moduleSlugs = [$moduleSlugs];
+        }
+        $moduleSlugs = itm_demo_module_users_normalize_module_slugs(['module_slugs' => $moduleSlugs]);
+        $result = ['role_id' => 0, 'created' => false, 'error' => ''];
+
+        if ($companyId <= 0 || $roleId <= 0 || $moduleSlugs === []) {
+            $result['error'] = 'Invalid role id seed parameters.';
+            return $result;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM employee_roles WHERE company_id = ? AND id = ? AND deleted_at IS NULL LIMIT 1'
+        );
+        if (!$stmt) {
+            $result['error'] = 'Could not query employee_roles.';
+            return $result;
+        }
+
+        mysqli_stmt_bind_param($stmt, 'ii', $companyId, $roleId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+
+        if (!is_array($row)) {
+            $result['error'] = 'Selected role is not valid for this company.';
+            return $result;
+        }
+
+        itm_demo_module_users_apply_role_module_permissions($conn, $companyId, $roleId, $moduleSlugs);
+        $result['role_id'] = $roleId;
+        return $result;
+    }
+}
+
+if (!function_exists('itm_demo_module_users_ensure_role')) {
+    /**
+     * @param string|string[] $moduleSlugs One slug or list of module slugs for RBAC rows.
+     * @return array{role_id:int,created:bool,error:string}
+     */
+    function itm_demo_module_users_ensure_role(mysqli $conn, $companyId, $roleName, $moduleSlugs)
+    {
+        $companyId = (int)$companyId;
+        $roleName = trim((string)$roleName);
+        if (is_string($moduleSlugs)) {
+            $moduleSlugs = [$moduleSlugs];
+        }
+        $moduleSlugs = itm_demo_module_users_normalize_module_slugs(['module_slugs' => $moduleSlugs]);
+        $result = ['role_id' => 0, 'created' => false, 'error' => ''];
+
+        if ($companyId <= 0 || $roleName === '' || $moduleSlugs === []) {
+            $result['error'] = 'Invalid role seed parameters.';
+            return $result;
+        }
+
+        $roleId = itm_demo_module_users_lookup_role_id_by_name($conn, $companyId, $roleName);
+        if ($roleId <= 0) {
+            $insert = mysqli_prepare(
+                $conn,
+                'INSERT INTO employee_roles (company_id, name, active, created_at) VALUES (?, ?, 1, NOW())'
+            );
+            if (!$insert) {
+                $result['error'] = 'Could not insert employee_roles row.';
+                return $result;
+            }
+            mysqli_stmt_bind_param($insert, 'is', $companyId, $roleName);
+            if (!mysqli_stmt_execute($insert)) {
+                mysqli_stmt_close($insert);
+                $result['error'] = 'employee_roles insert failed.';
+                return $result;
+            }
+            $roleId = (int)mysqli_insert_id($conn);
+            mysqli_stmt_close($insert);
+            $result['created'] = true;
+        }
+
+        if ($roleId <= 0) {
+            $result['error'] = 'Role id missing after ensure.';
+            return $result;
+        }
+
+        itm_demo_module_users_apply_role_module_permissions($conn, $companyId, $roleId, $moduleSlugs);
 
         $result['role_id'] = $roleId;
         return $result;
@@ -375,6 +449,7 @@ if (!function_exists('itm_demo_module_users_upsert_employee')) {
         $lastName = trim((string)($spec['last_name'] ?? ''));
         $workEmail = trim((string)($spec['work_email'] ?? ''));
         $personalEmail = trim((string)($spec['personal_email'] ?? ''));
+        $roleId = (int)($spec['role_id'] ?? 0);
         $roleName = trim((string)($spec['role_name'] ?? ''));
         $moduleSlugs = itm_demo_module_users_normalize_module_slugs($spec);
         $accessLevelId = (int)($spec['access_level_id'] ?? 0);
@@ -383,8 +458,13 @@ if (!function_exists('itm_demo_module_users_upsert_employee')) {
         $employeePositionId = isset($spec['employee_position_id']) ? (int)$spec['employee_position_id'] : 0;
         $grantedByEmployeeId = (int)($spec['granted_by_employee_id'] ?? 0);
 
-        if ($companyId <= 0 || $username === '' || $passwordPlain === '' || $moduleSlugs === [] || $roleName === '') {
-            $result['errors'][] = 'company_id, username, password, role_name, and at least one module slug are required.';
+        if ($companyId <= 0 || $username === '' || $passwordPlain === '' || $moduleSlugs === []) {
+            $result['errors'][] = 'company_id, username, password, and at least one module slug are required.';
+            return $result;
+        }
+
+        if ($roleId <= 0 && $roleName === '') {
+            $result['errors'][] = 'role_id or role_name is required.';
             return $result;
         }
 
@@ -420,7 +500,11 @@ if (!function_exists('itm_demo_module_users_upsert_employee')) {
             return $result;
         }
 
-        $roleEnsure = itm_demo_module_users_ensure_role($conn, $companyId, $roleName, $moduleSlugs);
+        if ($roleId > 0) {
+            $roleEnsure = itm_demo_module_users_ensure_role_by_id($conn, $companyId, $roleId, $moduleSlugs);
+        } else {
+            $roleEnsure = itm_demo_module_users_ensure_role($conn, $companyId, $roleName, $moduleSlugs);
+        }
         if ($roleEnsure['role_id'] <= 0) {
             $result['errors'][] = $roleEnsure['error'] !== '' ? $roleEnsure['error'] : 'Could not ensure demo role.';
             return $result;
