@@ -788,6 +788,10 @@ body.itm-employee-dashboard-page .content.itm-employee-dashboard {
     overflow: hidden;
 }
 
+.itm-emp-dash-hero-actions {
+    flex-shrink: 0;
+}
+
 .itm-emp-dash-section {
     display: flex;
     flex-direction: column;
@@ -804,6 +808,15 @@ body.itm-employee-dashboard-page .content.itm-employee-dashboard {
     margin-bottom: 8px;
     padding: 0 2px;
     flex-shrink: 0;
+}
+
+.itm-emp-dash-section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 0 4px;
 }
 
 .itm-emp-dash-section-title {
