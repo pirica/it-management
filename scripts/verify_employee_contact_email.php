@@ -127,6 +127,13 @@ if (strpos($fastAccSource, 'name="personal_email"') !== false && strpos($fastAcc
 } else {
     vece_fail('modules/employees/fast_create_acc.php must expose both email fields.');
 }
+if (strpos($fastAccSource, 'itm_department_option_label') !== false) {
+    if (strpos($fastAccSource, 'itm_fk_option_labels.php') !== false) {
+        vece_pass('fast_create_acc.php loads itm_fk_option_labels for department labels.');
+    } else {
+        vece_fail('fast_create_acc.php calls itm_department_option_label() without requiring itm_fk_option_labels.php.');
+    }
+}
 
 $disposable = itm_script_test_employee_create($conn, 1, ['script_slug' => 'verify-employee-contact-email']);
 if (is_array($disposable) && (int)($disposable['id'] ?? 0) > 0) {
