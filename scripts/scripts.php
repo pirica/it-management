@@ -1390,7 +1390,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <td><a href="fast_create_acc.php" target="_blank" rel="nofollow noreferrer">fast_create_acc.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td>Admin form to create/update single-module demo employees with FK selects (company, employment status, access level, department, position, primary module) plus dedicated <code>employee_roles</code> / <code>role_module_permissions</code>, sidebar prefs, and <code>ui_configuration</code>. CLI bundle: <code>--seed-demo-bundle</code>.</td>
+                    <td>Admin form to create/update demo employees with FK selects (company, employment status, access level, department, position) and multi-select <strong>Modules</strong> (<code>module_slugs[]</code>) plus dedicated <code>employee_roles</code> / <code>role_module_permissions</code> (one row per module), sidebar prefs, and <code>ui_configuration</code>. CLI bundle: <code>--seed-demo-bundle</code>.</td>
                     <td>Browser: <a href="fast_create_acc.php">fast_create_acc.php</a>. CLI: <code>php scripts/fast_create_acc.php --seed-demo-bundle --company=1</code>. Shared lib: <code>lib/itm_demo_module_users_seed.php</code>.</td>
                 </tr>
                 <tr>

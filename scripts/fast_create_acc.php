@@ -1,6 +1,6 @@
 <?php
 /**
- * Fast account creator for single-module demo employees.
+ * Fast account creator for demo employees with module-scoped RBAC.
  *
  * Browser: scripts/fast_create_acc.php (Admin session)
  * CLI: php scripts/fast_create_acc.php --seed-demo-bundle [--company=1]
@@ -72,7 +72,7 @@ $form = [
     'last_name' => 'Demo',
     'work_email' => '',
     'role_name' => '',
-    'primary_slug' => '',
+    'module_slugs' => [],
     'access_level_id' => 0,
     'employment_status_id' => 0,
     'department_id' => 0,
@@ -93,7 +93,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $selectedCompanyId = $companyId;
             $fkOptions = itm_demo_module_users_fetch_fk_options($conn, $selectedCompanyId);
         } else {
+            $postedModuleSlugs = $_POST['module_slugs'] ?? [];
+            if (!is_array($postedModuleSlugs)) {
+                $postedModuleSlugs = [];
+            }
+            $form['module_slugs'] = array_values(array_filter(array_map('trim', $postedModuleSlugs)));
+
             foreach (array_keys($form) as $key) {
+                if ($key === 'module_slugs') {
+                    continue;
+                }
                 if ($key === 'company_id' || $key === 'access_level_id' || $key === 'employment_status_id'
                     || $key === 'department_id' || $key === 'employee_position_id') {
                     $form[$key] = (int)($_POST[$key] ?? 0);
@@ -109,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $form['username'] = (string)$template['username'];
                         $form['password'] = (string)$template['password'];
                         $form['role_name'] = (string)$template['role_name'];
-                        $form['primary_slug'] = (string)$template['primary_slug'];
+                        $form['module_slugs'] = itm_demo_module_restrictions_module_slugs_for_user($template);
                         $form['first_name'] = ucfirst((string)$template['username']);
                         $form['work_email'] = strtolower((string)$template['username']) . '@demo.example.com';
                         $form['company_id'] = (int)$template['company_id'];
@@ -126,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'last_name' => $form['last_name'] !== '' ? $form['last_name'] : 'Demo',
                 'work_email' => $form['work_email'],
                 'role_name' => $form['role_name'],
-                'primary_slug' => $form['primary_slug'],
+                'module_slugs' => $form['module_slugs'],
                 'access_level_id' => (int)$form['access_level_id'],
                 'employment_status_id' => (int)$form['employment_status_id'],
                 'department_id' => (int)$form['department_id'],
@@ -159,6 +168,7 @@ $csrfToken = itm_get_csrf_token();
         .fca-grid .full { grid-column: 1 / -1; }
         label { display: block; font-weight: 600; margin-bottom: 6px; }
         input, select { width: 100%; padding: 10px; border: 1px solid var(--border, #d0d7de); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); }
+        select[multiple] { min-height: 220px; }
         .alert { padding: 12px 14px; border-radius: 6px; margin-bottom: 16px; }
         .alert-success { background: #dafbe1; color: #1a7f37; border: 1px solid #aff5b4; }
         .alert-error { background: #ffebe9; color: #cf222e; border: 1px solid #ffc1c0; }
@@ -172,7 +182,7 @@ $csrfToken = itm_get_csrf_token();
 <div class="fca-wrap">
     <?php require_once __DIR__ . '/lib/script_browser_nav.php'; itm_script_browser_nav_echo(); ?>
     <h1 title="Fast create account">➕</h1>
-    <p class="hint">Create or update a single-module demo employee with required FK fields, dedicated role, RBAC row, sidebar prefs, and <code>ui_configuration</code>.</p>
+    <p class="hint">Create or update a demo employee with required FK fields, dedicated role, RBAC rows per selected module, sidebar prefs, and <code>ui_configuration</code>. Hold Ctrl (Windows) or Cmd (macOS) to select multiple modules.</p>
 
     <?php foreach ($messages as $message): ?>
         <div class="alert alert-success"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
@@ -206,9 +216,12 @@ $csrfToken = itm_get_csrf_token();
                 <select name="demo_template" id="demo_template">
                     <option value="">-- Custom account --</option>
                     <?php foreach ($demoTemplates as $template): ?>
+                        <?php
+                        $templateModules = implode(', ', itm_demo_module_restrictions_module_slugs_for_user($template));
+                        ?>
                         <option value="<?php echo htmlspecialchars((string)$template['username'], ENT_QUOTES, 'UTF-8'); ?>"
                             <?php echo $form['demo_template'] === (string)$template['username'] ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars((string)$template['username'] . ' → ' . $template['primary_slug'], ENT_QUOTES, 'UTF-8'); ?>
+                            <?php echo htmlspecialchars((string)$template['username'] . ' → ' . $templateModules, ENT_QUOTES, 'UTF-8'); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -226,13 +239,15 @@ $csrfToken = itm_get_csrf_token();
                 </select>
             </div>
 
-            <div>
-                <label for="primary_slug">Primary module</label>
-                <select name="primary_slug" id="primary_slug" required>
-                    <option value="">-- Select module --</option>
+            <div class="full">
+                <label for="module_slugs">Modules</label>
+                <select name="module_slugs[]" id="module_slugs" multiple required>
                     <?php foreach ($fkOptions['modules'] as $module): ?>
-                        <option value="<?php echo htmlspecialchars((string)$module['module_slug'], ENT_QUOTES, 'UTF-8'); ?>"
-                            <?php echo $form['primary_slug'] === (string)$module['module_slug'] ? 'selected' : ''; ?>>
+                        <?php
+                        $slug = (string)$module['module_slug'];
+                        $isSelected = in_array($slug, $form['module_slugs'], true);
+                        ?>
+                        <option value="<?php echo htmlspecialchars($slug, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $isSelected ? ' selected' : ''; ?>>
                             <?php echo htmlspecialchars((string)$module['module_name'], ENT_QUOTES, 'UTF-8'); ?>
                         </option>
                     <?php endforeach; ?>

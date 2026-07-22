@@ -139,6 +139,37 @@ if (!function_exists('itm_demo_module_restrictions_load_employee')) {
     }
 }
 
+if (!function_exists('itm_demo_module_restrictions_module_slugs_for_user')) {
+    /**
+     * RBAC/sidebar module slugs for a demo user (excludes settings/dashboard).
+     *
+     * @param array{module_slugs?:string[],primary_slug?:string,allowed_slugs?:string[]} $demoUser
+     * @return string[]
+     */
+    function itm_demo_module_restrictions_module_slugs_for_user(array $demoUser)
+    {
+        if (!empty($demoUser['module_slugs']) && is_array($demoUser['module_slugs'])) {
+            $slugs = $demoUser['module_slugs'];
+        } elseif (!empty($demoUser['primary_slug'])) {
+            $slugs = [(string)$demoUser['primary_slug']];
+        } else {
+            $slugs = (array)($demoUser['allowed_slugs'] ?? []);
+        }
+
+        $skip = ['settings', 'dashboard', 'dashboard_link'];
+        $normalized = [];
+        foreach ($slugs as $slug) {
+            $slug = strtolower(trim((string)$slug));
+            if ($slug === '' || in_array($slug, $skip, true)) {
+                continue;
+            }
+            $normalized[$slug] = $slug;
+        }
+
+        return array_values($normalized);
+    }
+}
+
 if (!function_exists('itm_demo_module_restrictions_denied_slugs_for_user')) {
     /**
      * @param array{allowed_slugs?:string[]} $demoUser
