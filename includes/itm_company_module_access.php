@@ -300,6 +300,16 @@ if (!function_exists('has_module_access')) {
                 return true;
             }
             if (in_array($module_slug, itm_module_access_admin_only_slugs(), true)) {
+                // Why: Demo Audit and similar roles grant admin-only slugs via explicit RBAC rows.
+                if ($employeeId > 0
+                    && function_exists('itm_user_has_role_module_permission')
+                    && function_exists('itm_resolve_rbac_module_name_for_slug')) {
+                    $moduleName = itm_resolve_rbac_module_name_for_slug($conn, $module_slug);
+                    if ($moduleName !== ''
+                        && itm_user_has_role_module_permission($conn, $employeeId, $company_id, $moduleName, 'view')) {
+                        return true;
+                    }
+                }
                 return false;
             }
         }
@@ -308,7 +318,42 @@ if (!function_exists('has_module_access')) {
             return true;
         }
 
-        return !empty($access_cache[$module_slug]);
+        if (empty($access_cache[$module_slug])) {
+            return false;
+        }
+
+        // Why: Non-admin roles without ALL wildcard inherit only explicit role_module_permissions rows.
+        if (!$isAdmin && $employeeId > 0
+            && function_exists('itm_role_module_permission_row')
+            && function_exists('itm_resolve_rbac_module_name_for_slug')) {
+            $roleId = 0;
+            $roleStmt = mysqli_prepare($conn, 'SELECT role_id FROM employees WHERE id = ? LIMIT 1');
+            if ($roleStmt) {
+                mysqli_stmt_bind_param($roleStmt, 'i', $employeeId);
+                mysqli_stmt_execute($roleStmt);
+                $roleRes = mysqli_stmt_get_result($roleStmt);
+                $roleRow = $roleRes ? mysqli_fetch_assoc($roleRes) : null;
+                mysqli_stmt_close($roleStmt);
+                $roleId = is_array($roleRow) ? (int)($roleRow['role_id'] ?? 0) : 0;
+            }
+
+            if ($roleId > 0) {
+                $allRow = itm_role_module_permission_row($conn, $company_id, $roleId, 'ALL');
+                if (is_array($allRow) && (int)($allRow['can_view'] ?? 0) === 1) {
+                    return true;
+                }
+
+                $moduleName = itm_resolve_rbac_module_name_for_slug($conn, $module_slug);
+                if ($moduleName === '') {
+                    return false;
+                }
+
+                $moduleRow = itm_role_module_permission_row($conn, $company_id, $roleId, $moduleName);
+                return is_array($moduleRow) && (int)($moduleRow['can_view'] ?? 0) === 1;
+            }
+        }
+
+        return true;
     }
 }
 
@@ -1222,7 +1267,9 @@ if (!function_exists('itm_enforce_module_access_or_exit')) {
         global $itmSkipWebAuth;
 
         if (PHP_SAPI === 'cli' || !empty($itmSkipWebAuth)) {
-            return;
+            if (!(defined('ITM_SIMULATE_WEB_MODULE_PROBE') && ITM_SIMULATE_WEB_MODULE_PROBE)) {
+                return;
+            }
         }
 
         $currentFile = basename((string)($_SERVER['PHP_SELF'] ?? ''));

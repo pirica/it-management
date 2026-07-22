@@ -13,6 +13,14 @@ $crud_title = 'Equipment';
 $crud_action = $crud_action ?? 'index';
 
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_role_module_permissions.php';
+itm_require_role_module_permission(
+    $conn,
+    (int)($_SESSION['employee_id'] ?? 0),
+    (int)($_SESSION['company_id'] ?? 0),
+    'Equipment',
+    'view'
+);
 require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
 itm_crud_record_share_handle_ajax_request($conn, 'equipment');
 

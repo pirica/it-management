@@ -11,7 +11,7 @@ Admin-facing audit trail for **non-private** INSERT, UPDATE, and DELETE activity
 - **audit_logs** → depends on **employees** (via `employee_id`).
 
 ## 4. Business Rules (Critical for Agents)
-- **Admin-only UI:** `index.php` and `view.php` require `itm_is_admin()`; non-admins are redirected to the dashboard.
+- **Admin-only UI:** `index.php` and `view.php` require `itm_is_admin()` **or** `role_module_permissions` `can_view` on **Audit Logs** (demo2 / Demo Audit role); non-authorized users redirect to the dashboard. Backup/clear/download remain admin-only (`$isAuditLogsAdmin`).
 - **Immutable**: Audit logs should generally not be editable. The UI supports viewing; admins may back up, download, or clear all tenant logs for maintenance.
 - **Admin maintenance actions (`index.php`):** when an administrator is signed in, the list view exposes **Download ALL Logs** (streams a tenant-scoped `.sql` export), **Backup ALL Logs** (writes the same SQL dump under `backups/` via `BACKUP_PATH`, with best-effort duplicate copy when `DUPLICATE_BACKUP_PATH` is set), and **Clear ALL Logs** (deletes all `audit_logs` rows for the active `company_id` after confirm). All three use CSRF POST handlers and re-check `itm_is_admin()`.
 - **JSON Metadata**: Old and new values are stored as JSON strings.
