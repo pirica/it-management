@@ -872,6 +872,180 @@ function itm_sidebar_item_catalog() {
 }
 
 /**
+ * Resolve employee id for sidebar visibility (explicit arg or session).
+ */
+function itm_resolve_sidebar_employee_id($employeeId = 0) {
+    $employeeId = (int)$employeeId;
+    if ($employeeId <= 0 && isset($_SESSION['employee_id'])) {
+        $employeeId = (int)$_SESSION['employee_id'];
+    }
+
+    return $employeeId > 0 ? $employeeId : 0;
+}
+
+/**
+ * Whether the signed-in employee role keeps RBAC-allowed modules visible when layout prefs hide them.
+ */
+function itm_employee_role_sidebar_show_enabled($conn, $employeeId = 0, $forceRefresh = false) {
+    static $cache = [];
+    static $columnExists = null;
+
+    $employeeId = itm_resolve_sidebar_employee_id($employeeId);
+    if ($employeeId <= 0 || !($conn instanceof mysqli)) {
+        return true;
+    }
+    if (!$forceRefresh && array_key_exists($employeeId, $cache)) {
+        return $cache[$employeeId];
+    }
+
+    if ($columnExists === null) {
+        $columnExists = function_exists('itm_table_has_column')
+            && itm_table_has_column($conn, 'employee_roles', 'sidebar_show');
+    }
+    if (!$columnExists) {
+        $cache[$employeeId] = true;
+
+        return true;
+    }
+
+    $enabled = true;
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT er.sidebar_show
+         FROM employees e
+         INNER JOIN employee_roles er ON er.id = e.role_id AND er.company_id = e.company_id
+         WHERE e.id = ? AND e.deleted_at IS NULL
+         LIMIT 1'
+    );
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $employeeId);
+        mysqli_stmt_execute($stmt);
+        $row = null;
+        if (function_exists('itm_mysqli_stmt_fetch_assoc')) {
+            $row = itm_mysqli_stmt_fetch_assoc($stmt);
+        } elseif (function_exists('mysqli_stmt_get_result')) {
+            $res = mysqli_stmt_get_result($stmt);
+            $row = $res ? mysqli_fetch_assoc($res) : null;
+        }
+        mysqli_stmt_close($stmt);
+        if (is_array($row)) {
+            $enabled = (int)($row['sidebar_show'] ?? 1) === 1;
+        }
+    }
+
+    $cache[$employeeId] = $enabled;
+
+    return $enabled;
+}
+
+/**
+ * RBAC can_view for a sidebar catalog item (equipment-type ids fall back to equipment module).
+ */
+function itm_sidebar_item_passes_role_view($conn, $companyId, $employeeId, $itemId) {
+    $itemId = trim((string)$itemId);
+    $employeeId = itm_resolve_sidebar_employee_id($employeeId);
+    $companyId = (int)$companyId;
+    if ($itemId === '' || $employeeId <= 0 || $companyId <= 0 || !($conn instanceof mysqli)) {
+        return $itemId === 'dashboard_link' || $itemId === 'settings';
+    }
+    if ($itemId === 'dashboard_link' || $itemId === 'settings') {
+        return true;
+    }
+    if (function_exists('itm_is_admin') && itm_is_admin($conn, $employeeId)) {
+        return true;
+    }
+    if (!function_exists('itm_user_has_role_module_permission')
+        || !function_exists('itm_resolve_rbac_module_name_for_slug')) {
+        return true;
+    }
+
+    $moduleName = itm_resolve_rbac_module_name_for_slug($conn, $itemId);
+    if ($moduleName === '' && strpos($itemId, 'is_') === 0) {
+        $moduleName = itm_resolve_rbac_module_name_for_slug($conn, 'equipment');
+    }
+    if ($moduleName === '') {
+        return true;
+    }
+
+    return itm_user_has_role_module_permission($conn, $employeeId, $companyId, $moduleName, 'view');
+}
+
+/**
+ * True when sidebar_visibility or equipment_type_sidebar_visibility hides the item.
+ */
+function itm_sidebar_item_pref_hidden_by_layout($sidebarConfig, $itemId) {
+    if (!is_array($sidebarConfig)) {
+        return false;
+    }
+
+    $itemId = trim((string)$itemId);
+    if ($itemId === '') {
+        return false;
+    }
+
+    $visibility = $sidebarConfig['sidebar_visibility'] ?? itm_default_sidebar_visibility();
+    if ((int)($visibility[$itemId] ?? 1) !== 1) {
+        return true;
+    }
+
+    $equipmentTypeSidebarVisibility = $sidebarConfig['equipment_type_sidebar_visibility'] ?? [];
+    if (array_key_exists($itemId, $equipmentTypeSidebarVisibility)) {
+        return (int)$equipmentTypeSidebarVisibility[$itemId] !== 1;
+    }
+
+    return false;
+}
+
+/**
+ * Role sidebar_show may force-show layout-hidden items that pass access + RBAC view gates.
+ */
+function itm_sidebar_item_role_show_override_visible(array $sidebarItem, $sidebarConfig, $conn, $companyId, $employeeId = 0) {
+    if (!itm_employee_role_sidebar_show_enabled($conn, $employeeId)) {
+        return false;
+    }
+
+    $itemId = (string)($sidebarItem['id'] ?? '');
+    if ($itemId === '' || !itm_sidebar_item_pref_hidden_by_layout($sidebarConfig, $itemId)) {
+        return false;
+    }
+
+    if (!itm_sidebar_item_passes_access_gate($itemId, $conn, $companyId)) {
+        return false;
+    }
+
+    if ($itemId === 'audit_logs' && (int)($sidebarConfig['enable_audit_logs'] ?? 1) !== 1) {
+        return false;
+    }
+
+    return itm_sidebar_item_passes_role_view($conn, $companyId, $employeeId, $itemId);
+}
+
+/**
+ * Effective checked state for Settings → Emoji Equipment Type Sidebar rows.
+ */
+function itm_equipment_type_sidebar_effective_visible($itemId, $sidebarConfig, $conn, $companyId, $employeeId = 0) {
+    $itemId = trim((string)$itemId);
+    if ($itemId === '') {
+        return false;
+    }
+    if (!is_array($sidebarConfig)) {
+        $sidebarConfig = itm_ui_config_defaults();
+    }
+
+    if ((int)(($sidebarConfig['equipment_type_sidebar_visibility'][$itemId] ?? 1)) === 1) {
+        return true;
+    }
+
+    return itm_sidebar_item_role_show_override_visible(
+        ['id' => $itemId],
+        $sidebarConfig,
+        $conn,
+        (int)$companyId,
+        $employeeId
+    );
+}
+
+/**
  * Whether a sidebar catalog item passes company access gates (before visibility prefs).
  */
 function itm_sidebar_item_passes_access_gate($itemId, $conn, $companyId) {
@@ -889,7 +1063,7 @@ function itm_sidebar_item_passes_access_gate($itemId, $conn, $companyId) {
 /**
  * Mirrors includes/sidebar.php visibility rules for one catalog item.
  */
-function itm_sidebar_item_effective_visible(array $sidebarItem, $sidebarConfig, $conn, $companyId) {
+function itm_sidebar_item_effective_visible(array $sidebarItem, $sidebarConfig, $conn, $companyId, $employeeId = 0) {
     if (!is_array($sidebarConfig)) {
         $sidebarConfig = itm_ui_config_defaults();
     }
@@ -897,6 +1071,10 @@ function itm_sidebar_item_effective_visible(array $sidebarItem, $sidebarConfig, 
     $itemId = (string)($sidebarItem['id'] ?? '');
     if ($itemId === '') {
         return false;
+    }
+
+    if (itm_sidebar_item_role_show_override_visible($sidebarItem, $sidebarConfig, $conn, $companyId, $employeeId)) {
+        return true;
     }
 
     $visibility = $sidebarConfig['sidebar_visibility'] ?? itm_default_sidebar_visibility();
@@ -944,7 +1122,7 @@ function itm_sidebar_apply_access_gates_to_visibility(array $visibility, $conn, 
 /**
  * Whether a section has at least one effectively visible catalog item.
  */
-function itm_sidebar_section_has_visible_items($sectionId, $sidebarConfig, $conn, $companyId) {
+function itm_sidebar_section_has_visible_items($sectionId, $sidebarConfig, $conn, $companyId, $employeeId = 0) {
     $sectionId = (string)$sectionId;
     if ($sectionId === '') {
         return false;
@@ -968,7 +1146,7 @@ function itm_sidebar_section_has_visible_items($sectionId, $sidebarConfig, $conn
         }
         $item = $catalog[$itemId];
         $item['id'] = $itemId;
-        if (itm_sidebar_item_effective_visible($item, $sidebarConfig, $conn, (int)$companyId)) {
+        if (itm_sidebar_item_effective_visible($item, $sidebarConfig, $conn, (int)$companyId, $employeeId)) {
             return true;
         }
     }
@@ -979,22 +1157,18 @@ function itm_sidebar_section_has_visible_items($sectionId, $sidebarConfig, $conn
 /**
  * Section is shown only when its pref is visible and it has visible children.
  */
-function itm_sidebar_section_effective_visible($sectionId, $sidebarConfig, $conn, $companyId) {
+function itm_sidebar_section_effective_visible($sectionId, $sidebarConfig, $conn, $companyId, $employeeId = 0) {
     if (!is_array($sidebarConfig)) {
         $sidebarConfig = itm_ui_config_defaults();
     }
-    $visibility = $sidebarConfig['sidebar_visibility'] ?? itm_default_sidebar_visibility();
-    if ((int)($visibility[$sectionId] ?? 1) !== 1) {
-        return false;
-    }
 
-    return itm_sidebar_section_has_visible_items($sectionId, $sidebarConfig, $conn, $companyId);
+    return itm_sidebar_section_has_visible_items($sectionId, $sidebarConfig, $conn, $companyId, $employeeId);
 }
 
 /**
  * Hide section prefs when no child items are effectively visible.
  */
-function itm_sidebar_sync_section_visibility_from_items(array $visibility, $sidebarConfig, $conn, $companyId) {
+function itm_sidebar_sync_section_visibility_from_items(array $visibility, $sidebarConfig, $conn, $companyId, $employeeId = 0) {
     if (!is_array($sidebarConfig)) {
         $sidebarConfig = itm_ui_config_defaults();
     }
@@ -1007,7 +1181,7 @@ function itm_sidebar_sync_section_visibility_from_items(array $visibility, $side
         if ($sectionId === '') {
             continue;
         }
-        if (!itm_sidebar_section_has_visible_items($sectionId, $layoutConfig, $conn, $companyId)) {
+        if (!itm_sidebar_section_has_visible_items($sectionId, $layoutConfig, $conn, $companyId, $employeeId)) {
             $visibility[$sectionId] = 0;
         }
     }
@@ -1018,7 +1192,7 @@ function itm_sidebar_sync_section_visibility_from_items(array $visibility, $side
 /**
  * Normalize submenu placement and sync section visibility before persisting layout rows.
  */
-function itm_sidebar_prepare_layout_config_for_save(array $config, $conn, $companyId) {
+function itm_sidebar_prepare_layout_config_for_save(array $config, $conn, $companyId, $employeeId = 0) {
     $companyId = (int)$companyId;
     if (!isset($config['sidebar_visibility']) || !is_array($config['sidebar_visibility'])) {
         $config['sidebar_visibility'] = itm_default_sidebar_visibility();
@@ -1030,7 +1204,8 @@ function itm_sidebar_prepare_layout_config_for_save(array $config, $conn, $compa
         itm_normalize_sidebar_visibility($config['sidebar_visibility']),
         $config,
         $conn,
-        $companyId
+        $companyId,
+        $employeeId
     );
 
     return $config;
@@ -1071,7 +1246,7 @@ function itm_user_config_save_personalized_sidebar_items($conn, $companyId, $use
         'sidebar_main_order' => $sidebarConfig['sidebar_main_order'] ?? itm_default_sidebar_main_order(),
         'sidebar_submenu_order' => $sidebarConfig['sidebar_submenu_order'] ?? itm_default_sidebar_submenu_order(),
     ];
-    $layoutConfig = itm_sidebar_prepare_layout_config_for_save($layoutConfig, $conn, $companyId);
+    $layoutConfig = itm_sidebar_prepare_layout_config_for_save($layoutConfig, $conn, $companyId, $userId);
 
     if (!itm_save_employee_sidebar_preferences($conn, $companyId, $userId, $layoutConfig)) {
         return false;
@@ -2657,7 +2832,7 @@ function itm_save_employee_sidebar_preferences($conn, $company_id, $user_id, $co
         return false;
     }
 
-    $config = itm_sidebar_prepare_layout_config_for_save($config, $conn, $company_id);
+    $config = itm_sidebar_prepare_layout_config_for_save($config, $conn, $company_id, $user_id);
     $rows = itm_sidebar_layout_rows_from_config($config);
 
     mysqli_begin_transaction($conn);

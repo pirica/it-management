@@ -29,6 +29,7 @@ Unified dashboard for tenant role management and the RBAC permission matrix. Rep
 - Matrix columns: **View**, **Add** (`can_create`), **Edit**, **Delete**, **Import**, **Export** — six flags aligned with RBAC enforcement.
 - Effective flags: per-module row when present; otherwise inherit from `module_name = 'ALL'`; otherwise all flags false.
 - Saving permissions upserts `(company_id, role_id, module_name)` rows; never overwrites the `ALL` wildcard via the matrix save path.
+- Runtime sidebar / Settings SideMenu honour `employee_roles.sidebar_show` via `includes/ui_config.php` (`itm_sidebar_item_effective_visible()`, `itm_equipment_type_sidebar_effective_visible()`).
 - New roles insert into `employee_roles` and append `role_hierarchy` with the next order value.
 - **User counts** on role cards show **N active** (SQL alias `active_count`): employees where `employees.company_id = er.company_id`, `employees.role_id = er.id`, and HR employment status **Active** via `includes/itm_employee_employment_status.php`. Not session presence (dashboard **Online now**) and not all assigned employees regardless of HR status.
 - Company module access remains the first visibility gate; this module configures the second RBAC layer.

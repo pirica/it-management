@@ -980,12 +980,12 @@ foreach ($access_fields as $f):
                                         }
                                         $sidebarItem = is_array($item) ? $item : [];
                                         $sidebarItem['id'] = $id;
-                                        $sidebarItemChecked = itm_sidebar_item_effective_visible($sidebarItem, $user_config_sidebar_ui, $conn, $company_id);
+                                        $sidebarItemChecked = itm_sidebar_item_effective_visible($sidebarItem, $user_config_sidebar_ui, $conn, $company_id, $user_id);
                                         // Why: Open module in a new tab from the prefs grid without underline chrome.
                                         $sidebarItemHref = !empty($item['href']) ? (string)$item['href'] : ('modules/' . $id . '/');
                                         $sidebarItem = is_array($item) ? $item : [];
                                         $sidebarItem['id'] = $id;
-                                        $sidebarItemChecked = itm_sidebar_item_effective_visible($sidebarItem, $user_config_sidebar_ui, $conn, $company_id);
+                                        $sidebarItemChecked = itm_sidebar_item_effective_visible($sidebarItem, $user_config_sidebar_ui, $conn, $company_id, $user_id);
                                     ?>
                                         <label class="itm-checkbox-control">
                                             <input type="checkbox" name="sidebar_items[]" value="<?php echo sanitize($id); ?>"<?php echo $sidebarItemChecked ? ' checked' : ''; ?>>

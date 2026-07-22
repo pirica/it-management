@@ -490,7 +490,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newConfig['sidebar_visibility'] = itm_normalize_sidebar_visibility(
             itm_sidebar_apply_access_gates_to_visibility($newConfig['sidebar_visibility'], $conn, (int)$company_id)
         );
-        $newConfig = itm_sidebar_prepare_layout_config_for_save($newConfig, $conn, (int)$company_id);
+        $newConfig = itm_sidebar_prepare_layout_config_for_save($newConfig, $conn, (int)$company_id, (int)($_SESSION['employee_id'] ?? 0));
 
         $newConfig['module_icon_overrides'] = [];
         foreach (itm_sidebar_item_catalog() as $catalogItemId => $catalogItem) {
@@ -912,7 +912,7 @@ if (!isset($crud_title)) {
                                 <div class="sidebar-setting-section" data-section-id="<?php echo sanitize($sectionId); ?>">
                                     <div class="sidebar-setting-row sidebar-setting-main" data-main-id="<?php echo sanitize($sectionId); ?>">
                                         <label class="role-flag-option">
-                                            <input type="checkbox" class="sidebar-visible-toggle" data-target-id="<?php echo sanitize($sectionId); ?>" <?php echo itm_sidebar_section_effective_visible($sectionId, $currentUiConfig, $conn, (int)$company_id) ? 'checked' : ''; ?>>
+                                            <input type="checkbox" class="sidebar-visible-toggle" data-target-id="<?php echo sanitize($sectionId); ?>" <?php echo itm_sidebar_section_effective_visible($sectionId, $currentUiConfig, $conn, (int)$company_id, (int)($_SESSION['employee_id'] ?? 0)) ? 'checked' : ''; ?>>
                                             <span><?php echo sanitize($section['title']); ?></span>
                                         </label>
                                         <div class="itm-sidebar-settings-section-actions">
@@ -944,7 +944,7 @@ if (!isset($crud_title)) {
                                             $itemId = $item['id'];
                                             $sidebarItem = is_array($item) ? $item : [];
                                             $sidebarItem['id'] = $itemId;
-                                            $sidebarItemChecked = itm_sidebar_item_effective_visible($sidebarItem, $currentUiConfig, $conn, (int)$company_id);
+                                            $sidebarItemChecked = itm_sidebar_item_effective_visible($sidebarItem, $currentUiConfig, $conn, (int)$company_id, (int)($_SESSION['employee_id'] ?? 0));
                                             $moduleSlug = trim((string)($item['match_dir'] ?? ''));
                                             $settingsSidebarIconKey = $moduleSlug;
                                             if ($settingsSidebarIconKey === '' && $itemId === 'dashboard_link') {
@@ -1063,7 +1063,7 @@ if (!isset($crud_title)) {
                                         if ($itemId === '') {
                                             continue;
                                         }
-                                        $isChecked = (($currentUiConfig['equipment_type_sidebar_visibility'][$itemId] ?? 1) === 1);
+                                        $isChecked = itm_equipment_type_sidebar_effective_visible($itemId, $currentUiConfig, $conn, (int)$company_id, (int)($_SESSION['employee_id'] ?? 0));
                                         ?>
                                         <div class="form-group" style="margin-bottom:8px;">
                                             <label class="role-flag-option" for="equipment_type_<?php echo sanitize($itemId); ?>" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
