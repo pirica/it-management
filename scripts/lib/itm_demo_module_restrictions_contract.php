@@ -2,7 +2,7 @@
 /**
  * Canonical contract for demo users with single-module access (company 1).
  *
- * Why: verify_demo_module_restrictions.php and seed_demo_module_users.php share one
+ * Why: verify_demo_module_restrictions.php and fast_create_acc.php share one
  * definition of usernames, passwords, allowed modules, and probe slugs.
  */
 

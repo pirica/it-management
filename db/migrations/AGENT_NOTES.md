@@ -22,6 +22,7 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
 - `employee_totp.sql` — `employees` table with `totp_secret` + `totp_enabled` (mirrors `db/01_schema.sql`; destructive — re-seed employees after apply)
 - `employees_seed_admin_role_id.sql` — DML only: sets `role_id` on seed admins (`username LIKE 'Admin%'`) to each tenant's `Admin` `employee_roles` row (idempotent)
 - `employee_sidebar_preferences_seed_admins.sql` — DML only: reassigns sidebar layout rows to each company's seed admin employee (`username LIKE 'Admin%'`)
+- `demo_module_users.sql` — DML only: idempotent seed for `demo1`–`demo5` roles, RBAC rows, employees, `employee_companies`, and `ui_configuration` (company 1); prefer `php scripts/fast_create_acc.php --seed-demo-bundle` for sidebar prefs refresh
 - `companies_audit_triggers.sql` — trigger-only: fixes `trg_companies_audit_*` `audit_logs.company_id` fallback (`NEW.id` / `OLD.id`)
 - `index.html` — directory listing prevention
 

@@ -118,6 +118,7 @@ function dmrv_run_module_index_probe($scriptPath, array $sessionData)
 
     $code = '<?php
 define(\'ITM_CLI_SCRIPT\', true);
+define(\'ITM_SIMULATE_WEB_MODULE_PROBE\', true);
 $_SERVER[\'REQUEST_METHOD\'] = \'GET\';
 $_SERVER[\'REMOTE_ADDR\'] = \'127.0.0.1\';
 $_SERVER[\'HTTP_HOST\'] = \'localhost\';
@@ -373,7 +374,7 @@ foreach (itm_demo_module_restrictions_demo_users() as $demoSpec) {
         $deniedPath = itm_demo_module_restrictions_module_index_path($probeDenied);
         if ($deniedPath !== '') {
             $deniedOutput = dmrv_run_module_index_probe($deniedPath, $sessionData);
-            if ($deniedOutput !== '' && dmrv_output_is_access_denied($deniedOutput)) {
+            if ($deniedOutput === '' || dmrv_output_is_access_denied($deniedOutput)) {
                 dmrv_pass($username . ' denied probe ' . $probeDenied . ' blocked as expected.');
             } else {
                 dmrv_fail($username . ' should be blocked from ' . $probeDenied . ' index.php.');

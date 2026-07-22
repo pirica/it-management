@@ -1385,7 +1385,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_demo_module_restrictions.php" target="_blank" rel="nofollow noreferrer">verify_demo_module_restrictions.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td>Regression for demo users <code>demo1</code>–<code>demo5</code> (single-module access + Settings/Dashboard) and seed admins <code>Admin</code>/<code>Admin2</code>–<code>Admin5</code>: <code>password_verify</code>, <code>itm_is_admin()</code>, <code>has_module_access</code>, RBAC <code>can_view</code>, subprocess module <code>index.php</code> probes. Contract: <code>lib/itm_demo_module_restrictions_contract.php</code>.</td>
-                    <td>Browser: <a href="verify_demo_module_restrictions.php">verify_demo_module_restrictions.php</a>. CLI: <code>php scripts/verify_demo_module_restrictions.php</code>. Run after seeding demo users in <code>db/02_data.sql</code> or a dedicated seed script.</td>
+                    <td>Browser: <a href="verify_demo_module_restrictions.php">verify_demo_module_restrictions.php</a>. CLI: <code>php scripts/verify_demo_module_restrictions.php</code>. Run after seeding demo users in <code>db/02_data.sql</code> or <code>fast_create_acc.php</code>.</td>
+                </tr>
+                <tr>
+                    <td><a href="fast_create_acc.php" target="_blank" rel="nofollow noreferrer">fast_create_acc.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td>Admin form to create/update single-module demo employees with FK selects (company, employment status, access level, department, position, primary module) plus dedicated <code>employee_roles</code> / <code>role_module_permissions</code>, sidebar prefs, and <code>ui_configuration</code>. CLI bundle: <code>--seed-demo-bundle</code>.</td>
+                    <td>Browser: <a href="fast_create_acc.php">fast_create_acc.php</a>. CLI: <code>php scripts/fast_create_acc.php --seed-demo-bundle --company=1</code>. Shared lib: <code>lib/itm_demo_module_users_seed.php</code>.</td>
                 </tr>
                 <tr>
                     <td><a href="verify_dashboard_active_employees.php" target="_blank" rel="nofollow noreferrer">verify_dashboard_active_employees.php</a></td>

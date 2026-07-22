@@ -11,7 +11,15 @@ $crud_title = 'Audit Logs';
 $crud_action = $crud_action ?? 'index';
 
 require '../../config/config.php';
-if (!itm_is_admin($conn, $_SESSION['employee_id'] ?? 0)) {
+require_once ROOT_PATH . 'includes/itm_role_module_permissions.php';
+
+$employeeId = (int)($_SESSION['employee_id'] ?? 0);
+$companyId = (int)($_SESSION['company_id'] ?? 0);
+$canViewAuditLogs = itm_is_admin($conn, $employeeId);
+if (!$canViewAuditLogs) {
+    $canViewAuditLogs = itm_user_has_role_module_permission($conn, $employeeId, $companyId, 'Audit Logs', 'view');
+}
+if (!$canViewAuditLogs) {
     header('Location: ' . BASE_URL . 'dashboard.php');
     exit;
 }

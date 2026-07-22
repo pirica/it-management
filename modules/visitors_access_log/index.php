@@ -9,6 +9,14 @@ $crud_title = 'Visitors Access Log';
 $crud_action = $crud_action ?? 'index';
 
 require_once '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_role_module_permissions.php';
+itm_require_role_module_permission(
+    $conn,
+    (int)($_SESSION['employee_id'] ?? 0),
+    (int)($_SESSION['company_id'] ?? 0),
+    'Visitors Access Log',
+    'view'
+);
 require_once ROOT_PATH . 'includes/itm_crud_scalar_column_search.php';
 
 // Handle Excel/CSV database import requests from table-tools.js.

@@ -1325,6 +1325,16 @@ INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'He
 
 INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'User', '2026-01-01 00:00:01');
 
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'Demo Tickets', '2026-01-01 00:00:01');
+
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'Demo Audit', '2026-01-01 00:00:01');
+
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'Demo Visitors', '2026-01-01 00:00:01');
+
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'Demo Request Password', '2026-01-01 00:00:01');
+
+INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES (1, 'Demo Equipment', '2026-01-01 00:00:01');
+
 -- Data for `registration_invitations`
 INSERT INTO `registration_invitations` (`id`, `company_id`, `email`, `invitation_code`, `invited_by_employee_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `created_at`)
 SELECT seed.`id`, seed.`company_id`, seed.`email`, seed.`invitation_code`, inviter.`id`, er.`id`, al.`id`, NULL, NULL, 1, '2026-01-01 00:00:01'
@@ -1408,6 +1418,18 @@ INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `
 SELECT er.`company_id`, er.`id`, 'Tickets', 1, 1, 1, 1, 1, 1, '2026-01-01 00:00:01'
 FROM `employee_roles` er
 WHERE er.`name` IN ('Helpdesk', 'User');
+
+INSERT INTO `role_module_permissions` (`company_id`, `role_id`, `module_name`, `can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`, `created_at`)
+SELECT er.`company_id`, er.`id`, seed.`module_name`, 1, 1, 1, 1, 1, 1, '2026-01-01 00:00:01'
+FROM `employee_roles` er
+INNER JOIN (
+  SELECT 'Demo Tickets' AS `role_name`, 'Tickets' AS `module_name`
+  UNION ALL SELECT 'Demo Audit', 'Audit Logs'
+  UNION ALL SELECT 'Demo Visitors', 'Visitors Access Log'
+  UNION ALL SELECT 'Demo Request Password', 'Request Password'
+  UNION ALL SELECT 'Demo Equipment', 'Equipment'
+) seed ON seed.`role_name` = er.`name`
+WHERE er.`company_id` = 1;
 
 -- Why: Assignment rights resolve both sides by role name within the same company_id.
 INSERT INTO `role_assignment_rights` (`company_id`, `role_id`, `can_assign_role_id`, `created_at`)
@@ -1647,6 +1669,62 @@ UPDATE `employees` e
 INNER JOIN `employee_roles` er ON er.`company_id` = e.`company_id` AND er.`name` = 'Admin'
 SET e.`role_id` = er.`id`
 WHERE e.`username` LIKE 'Admin%';
+
+-- Why: demo1–demo5 single-module QA accounts; bcrypt password equals username (demo1/demo1, …).
+INSERT INTO `employees` (`company_id`, `first_name`, `last_name`, `display_name`, `work_email`, `password`, `username`, `role_id`, `access_level_id`, `employment_status_id`, `active`, `created_at`)
+SELECT 1, seed.`first_name`, 'Demo', seed.`display_name`, seed.`work_email`, seed.`password_hash`, seed.`username`, er.`id`, al.`id`, es.`id`, 1, '2026-01-01 00:00:01'
+FROM (
+  SELECT 'demo1' AS `username`, 'Demo1' AS `first_name`, 'Demo1 Demo' AS `display_name`, 'demo1@demo.example.com' AS `work_email`, '$2y$10$TbFFjehZcAC0SGdr3GLfSOXmUvp2QWMkRSrXp92jWas7gmvRSiYOW' AS `password_hash`, 'Demo Tickets' AS `role_name`
+  UNION ALL SELECT 'demo2', 'Demo2', 'Demo2 Demo', 'demo2@demo.example.com', '$2y$10$IPFBQTONOpLrY9rwud/t0uu46Hrj5YPE72yBG5TRoKw3kF1b/xuBW', 'Demo Audit'
+  UNION ALL SELECT 'demo3', 'Demo3', 'Demo3 Demo', 'demo3@demo.example.com', '$2y$10$YHc784pJBe5hxkD0Q1ZqSeU4wibUHeN6y5c7JGwQQb2m1N/EYLBjK', 'Demo Visitors'
+  UNION ALL SELECT 'demo4', 'Demo4', 'Demo4 Demo', 'demo4@demo.example.com', '$2y$10$Y3f6oYePBLVF5eiVNtO3MezpCC3vm9kbmlSBFalgN1RDRc1NFJB9u', 'Demo Request Password'
+  UNION ALL SELECT 'demo5', 'Demo5', 'Demo5 Demo', 'demo5@demo.example.com', '$2y$10$f9K1IJIQwdLIBuf1foR7seDqx6Brt8r49tlmtcynSxnjctjvL1rR2', 'Demo Equipment'
+) seed
+INNER JOIN `employee_roles` er ON er.`company_id` = 1 AND er.`name` = seed.`role_name`
+INNER JOIN `access_levels` al ON al.`company_id` = 1 AND al.`name` = 'Limited'
+INNER JOIN `employee_statuses` es ON es.`company_id` = 1 AND es.`name` = 'Active';
+
+INSERT INTO `employee_companies` (`employee_id`, `company_id`, `granted_by_employee_id`, `active`, `created_at`)
+SELECT e.`id`, e.`company_id`, NULL, 1, '2026-01-01 00:00:01'
+FROM `employees` e
+WHERE e.`username` IN ('demo1', 'demo2', 'demo3', 'demo4', 'demo5');
+
+INSERT INTO `ui_configuration` (`company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `enable_chatbot`, `enable_auto_scaffolding`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`)
+SELECT e.`company_id`, e.`id`, 'left', 'left', 'left', 'left', 1, 1, 0, 0, '25', '⚙️ IT Controls', 'images/favicons/company_1.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', '2026-01-01 00:00:01', NULL
+FROM `employees` e
+WHERE e.`username` IN ('demo1', 'demo2', 'demo3', 'demo4', 'demo5');
+
+INSERT INTO `employee_sidebar_preferences` (`company_id`, `employee_id`, `entry_type`, `entry_id`, `section_id`, `display_order`, `is_visible`, `active`)
+SELECT e.`company_id`, e.`id`, t.`entry_type`, t.`entry_id`, t.`section_id`, t.`display_order`, 1, 1
+FROM `employees` e
+INNER JOIN (
+  SELECT 'demo1' AS `username`, 'section' AS `entry_type`, 'dashboard' AS `entry_id`, NULL AS `section_id`, 0 AS `display_order`
+  UNION ALL SELECT 'demo1', 'item', 'dashboard_link', 'dashboard', 0
+  UNION ALL SELECT 'demo1', 'item', 'settings', 'dashboard', 1
+  UNION ALL SELECT 'demo1', 'section', 'management', NULL, 1
+  UNION ALL SELECT 'demo1', 'item', 'tickets', 'management', 0
+  UNION ALL SELECT 'demo2', 'section', 'dashboard', NULL, 0
+  UNION ALL SELECT 'demo2', 'item', 'dashboard_link', 'dashboard', 0
+  UNION ALL SELECT 'demo2', 'item', 'settings', 'dashboard', 1
+  UNION ALL SELECT 'demo2', 'section', 'reference_data', NULL, 1
+  UNION ALL SELECT 'demo2', 'item', 'audit_logs', 'reference_data', 0
+  UNION ALL SELECT 'demo3', 'section', 'dashboard', NULL, 0
+  UNION ALL SELECT 'demo3', 'item', 'dashboard_link', 'dashboard', 0
+  UNION ALL SELECT 'demo3', 'item', 'settings', 'dashboard', 1
+  UNION ALL SELECT 'demo3', 'section', 'management', NULL, 1
+  UNION ALL SELECT 'demo3', 'item', 'visitors_access_log', 'management', 0
+  UNION ALL SELECT 'demo4', 'section', 'dashboard', NULL, 0
+  UNION ALL SELECT 'demo4', 'item', 'dashboard_link', 'dashboard', 0
+  UNION ALL SELECT 'demo4', 'item', 'settings', 'dashboard', 1
+  UNION ALL SELECT 'demo4', 'section', 'management', NULL, 1
+  UNION ALL SELECT 'demo4', 'item', 'request_password', 'management', 0
+  UNION ALL SELECT 'demo5', 'section', 'dashboard', NULL, 0
+  UNION ALL SELECT 'demo5', 'item', 'dashboard_link', 'dashboard', 0
+  UNION ALL SELECT 'demo5', 'item', 'settings', 'dashboard', 1
+  UNION ALL SELECT 'demo5', 'section', 'management', NULL, 1
+  UNION ALL SELECT 'demo5', 'item', 'equipment', 'management', 0
+) t ON t.`username` = e.`username`
+WHERE e.`username` IN ('demo1', 'demo2', 'demo3', 'demo4', 'demo5');
 
 INSERT IGNORE INTO `warranty_types` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `warranty_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
