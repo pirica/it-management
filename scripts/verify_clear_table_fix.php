@@ -57,8 +57,8 @@ mysqli_stmt_close($stmtSt);
 
 // 2. Setup: Create a test employee
 $testUsername = 'test_clear_' . bin2hex(random_bytes(4));
-$stmtEmp = mysqli_prepare($conn, "INSERT INTO employees (company_id, first_name, last_name, username, employment_status_id) VALUES (?, 'Test', 'Clear', ?, ?)");
-mysqli_stmt_bind_param($stmtEmp, 'isi', $testCompanyId, $testUsername, $statusId);
+$stmtEmp = mysqli_prepare($conn, "INSERT INTO employees (company_id, first_name, last_name, username, work_email, employment_status_id) VALUES (?, 'Test', 'Clear', ?, ?, ?)");
+mysqli_stmt_bind_param($stmtEmp, 'isssi', $testCompanyId, $testUsername, $testUsername . '@script-test.example.com', $statusId);
 if (!mysqli_stmt_execute($stmtEmp)) {
     echo colorText('[FAIL] Employee insert failed: ' . mysqli_error($conn), 'fail') . $nl;
     mysqli_stmt_close($stmtEmp);

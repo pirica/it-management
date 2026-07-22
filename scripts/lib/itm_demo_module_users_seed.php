@@ -374,6 +374,7 @@ if (!function_exists('itm_demo_module_users_upsert_employee')) {
         $firstName = trim((string)($spec['first_name'] ?? ''));
         $lastName = trim((string)($spec['last_name'] ?? ''));
         $workEmail = trim((string)($spec['work_email'] ?? ''));
+        $personalEmail = trim((string)($spec['personal_email'] ?? ''));
         $roleName = trim((string)($spec['role_name'] ?? ''));
         $moduleSlugs = itm_demo_module_users_normalize_module_slugs($spec);
         $accessLevelId = (int)($spec['access_level_id'] ?? 0);
@@ -396,6 +397,14 @@ if (!function_exists('itm_demo_module_users_upsert_employee')) {
         if ($workEmail === '') {
             $workEmail = strtolower($username) . '@demo.example.com';
         }
+
+        $emailError = itm_employee_validate_contact_email_or_error($workEmail, $personalEmail);
+        if ($emailError !== null) {
+            $result['errors'][] = $emailError;
+            return $result;
+        }
+
+        $personalEmailParam = $personalEmail !== '' ? $personalEmail : null;
 
         if ($accessLevelId <= 0) {
             $accessLevelId = itm_demo_module_users_lookup_fk_id($conn, 'access_levels', $companyId, 'name', 'Limited');
@@ -423,15 +432,16 @@ if (!function_exists('itm_demo_module_users_upsert_employee')) {
         $employeeId = is_array($existing) ? (int)($existing['id'] ?? 0) : 0;
 
         if ($employeeId > 0) {
-            $sql = 'UPDATE employees SET company_id = ?, first_name = ?, last_name = ?, display_name = ?, work_email = ?,
+            $sql = 'UPDATE employees SET company_id = ?, first_name = ?, last_name = ?, display_name = ?, work_email = ?, personal_email = ?,
                     password = ?, role_id = ?, access_level_id = ?, employment_status_id = ?';
-            $types = 'isssssiii';
+            $types = 'issssssiii';
             $params = [
                 $companyId,
                 $firstName,
                 $lastName,
                 trim($firstName . ' ' . $lastName),
                 $workEmail,
+                $personalEmailParam,
                 $passwordHash,
                 $result['role_id'],
                 $accessLevelId,
@@ -478,9 +488,9 @@ if (!function_exists('itm_demo_module_users_upsert_employee')) {
             $stmt = mysqli_prepare(
                 $conn,
                 'INSERT INTO employees
-                 (company_id, first_name, last_name, display_name, work_email, password, role_id,
+                 (company_id, first_name, last_name, display_name, work_email, personal_email, password, role_id,
                   access_level_id, employment_status_id, username, department_id, employee_position_id, active, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
             );
             if (!$stmt) {
                 $result['errors'][] = 'Could not prepare employee INSERT.';
@@ -489,12 +499,13 @@ if (!function_exists('itm_demo_module_users_upsert_employee')) {
 
             mysqli_stmt_bind_param(
                 $stmt,
-                'isssssiiisii',
+                'issssssiiisii',
                 $companyId,
                 $firstName,
                 $lastName,
                 $displayName,
                 $workEmail,
+                $personalEmailParam,
                 $passwordHash,
                 $result['role_id'],
                 $accessLevelId,

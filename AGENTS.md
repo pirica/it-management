@@ -399,6 +399,7 @@ The employees module (`modules/employees/`) provides specialized import logic fo
     - **Positions:** If a position title is provided but not found, it must be automatically created and linked to the resolved department.
 4. **Email Classification:** The system must automatically classify emails. Known personal domains (e.g., gmail.com, yahoo.com) route to `personal_email`; others route to `work_email`.
 5. **Boolean Normalization:** Support for common export markers is mandatory. Convert '✅' or 'Active' to `1` and '❌' to `0` for boolean fields like `on_contacts` and `on_orgchart`.
+6. **Contact email (mandatory):** `work_email` and `personal_email` are individually optional in UI (no HTML `required` on either field). **At least one** must be non-empty on employee **create**, **edit**, and **import** (CSV + `import_excel_rows`). Shared helper: `includes/itm_employee_contact_email.php`. Regression: `php scripts/verify_employee_contact_email.php`.
 
 #### Backup Tape Log (mandatory)
 

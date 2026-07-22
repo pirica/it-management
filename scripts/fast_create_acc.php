@@ -71,6 +71,7 @@ $form = [
     'first_name' => '',
     'last_name' => 'Demo',
     'work_email' => '',
+    'personal_email' => '',
     'role_name' => '',
     'module_slugs' => [],
     'access_level_id' => 0,
@@ -134,6 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'first_name' => $form['first_name'],
                 'last_name' => $form['last_name'] !== '' ? $form['last_name'] : 'Demo',
                 'work_email' => $form['work_email'],
+                'personal_email' => $form['personal_email'],
                 'role_name' => $form['role_name'],
                 'module_slugs' => $form['module_slugs'],
                 'access_level_id' => (int)$form['access_level_id'],
@@ -274,9 +276,14 @@ $csrfToken = itm_get_csrf_token();
                 <input type="text" name="last_name" id="last_name" value="<?php echo htmlspecialchars($form['last_name'], ENT_QUOTES, 'UTF-8'); ?>">
             </div>
 
-            <div class="full">
+            <div>
                 <label for="work_email">Work email</label>
                 <input type="email" name="work_email" id="work_email" value="<?php echo htmlspecialchars($form['work_email'], ENT_QUOTES, 'UTF-8'); ?>">
+            </div>
+
+            <div>
+                <label for="personal_email">Personal email</label>
+                <input type="email" name="personal_email" id="personal_email" value="<?php echo htmlspecialchars($form['personal_email'], ENT_QUOTES, 'UTF-8'); ?>">
             </div>
 
             <div>

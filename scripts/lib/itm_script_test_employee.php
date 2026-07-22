@@ -95,7 +95,16 @@ if (!function_exists('itm_script_test_employee_create')) {
             return null;
         }
 
-        $email = isset($options['email']) ? trim((string)$options['email']) : ($username . '@script-test.example.com');
+        $workEmail = isset($options['work_email']) ? trim((string)$options['work_email']) : '';
+        $personalEmail = isset($options['personal_email']) ? trim((string)$options['personal_email']) : '';
+        if ($workEmail === '' && $personalEmail === '') {
+            $workEmail = isset($options['email']) ? trim((string)$options['email']) : ($username . '@script-test.example.com');
+        }
+        if (itm_employee_validate_contact_email_or_error($workEmail, $personalEmail) !== null) {
+            return null;
+        }
+
+        $email = $workEmail !== '' ? $workEmail : $personalEmail;
         $password = isset($options['password']) ? (string)$options['password'] : 'script-test-pass';
         $roleId = isset($options['role_id']) ? (int)$options['role_id'] : 2;
         $accessLevelId = isset($options['access_level_id']) ? (int)$options['access_level_id'] : 2;

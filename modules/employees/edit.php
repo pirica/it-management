@@ -144,8 +144,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validation
     if ($form['first_name'] === '') { $errors[] = 'First Name is required.'; }
     if ($form['last_name'] === '') { $errors[] = 'Last Name is required.'; }
-    if ($form['work_email'] === '' && $form['personal_email'] === '') {
-        $errors[] = 'Personal Email is required if Work Email is not provided.';
+    $emailError = itm_employee_validate_contact_email_or_error($form['work_email'], $form['personal_email']);
+    if ($emailError !== null) {
+        $errors[] = $emailError;
     }
     if ($form['display_name'] === '') { $form['display_name'] = trim($form['first_name'] . ' ' . $form['last_name']); }
     if ($form['full_name'] === '') { $form['full_name'] = trim($form['first_name'] . ' ' . $form['last_name']); }

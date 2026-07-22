@@ -209,14 +209,15 @@ function edct_insert_approver_type(mysqli $conn, int $companyId, string $descrip
  */
 function edct_insert_employee(mysqli $conn, int $companyId, int $statusId, string $first, string $last)
 {
+    $workEmail = strtolower(preg_replace('/[^a-z0-9]+/i', '.', $first . '.' . $last)) . '@edct-test.example.com';
     $stmt = mysqli_prepare(
         $conn,
-        'INSERT INTO employees (company_id, first_name, last_name, employment_status_id) VALUES (?, ?, ?, ?)'
+        'INSERT INTO employees (company_id, first_name, last_name, work_email, employment_status_id) VALUES (?, ?, ?, ?, ?)'
     );
     if (!$stmt) {
         return 0;
     }
-    mysqli_stmt_bind_param($stmt, 'issi', $companyId, $first, $last, $statusId);
+    mysqli_stmt_bind_param($stmt, 'isssi', $companyId, $first, $last, $workEmail, $statusId);
     if (!mysqli_stmt_execute($stmt)) {
         mysqli_stmt_close($stmt);
         return 0;

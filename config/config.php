@@ -273,6 +273,7 @@ require_once ROOT_PATH . 'includes/itm_sample_data_seed.php';
 require_once ROOT_PATH . 'includes/itm_date_format.php';
 require_once ROOT_PATH . 'includes/itm_crud_audit_fields.php';
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
+require_once ROOT_PATH . 'includes/itm_employee_contact_email.php';
 require_once ROOT_PATH . 'includes/ui_alert_helpers.php';
 require_once ROOT_PATH . 'includes/fk_dropdown_helpers.php';
 require_once ROOT_PATH . 'includes/employee_dropdown_helpers.php';
@@ -2066,6 +2067,35 @@ if (!function_exists('itm_handle_json_table_import')) {
                 $checkRes = mysqli_query($conn, $checkSql);
                 if ($checkRes && mysqli_num_rows($checkRes) > 0) {
                     $existingId = $rowId;
+                }
+            }
+
+            if ($tableName === 'employees') {
+                $incomingEmails = [
+                    'work_email' => itm_employee_contact_email_from_sql_value($rowValues['work_email'] ?? 'NULL'),
+                    'personal_email' => itm_employee_contact_email_from_sql_value($rowValues['personal_email'] ?? 'NULL'),
+                ];
+                $existingEmailRow = null;
+                if ($existingId > 0) {
+                    $emailLookupSql = 'SELECT work_email, personal_email FROM employees WHERE id = '
+                        . (int)$existingId . ' AND company_id = ' . (int)$companyId . ' LIMIT 1';
+                    $emailLookupRes = mysqli_query($conn, $emailLookupSql);
+                    $existingEmailRow = ($emailLookupRes && mysqli_num_rows($emailLookupRes) > 0)
+                        ? mysqli_fetch_assoc($emailLookupRes)
+                        : null;
+                }
+                list($effectiveWork, $effectivePersonal) = itm_employee_resolve_contact_emails_after_merge(
+                    $incomingEmails,
+                    is_array($existingEmailRow) ? $existingEmailRow : [],
+                    $providedFields
+                );
+                $employeeEmailError = itm_employee_validate_contact_email_or_error($effectiveWork, $effectivePersonal);
+                if ($employeeEmailError !== null) {
+                    $failedRows++;
+                    if (count($importErrors) < 5) {
+                        $importErrors[] = 'row ' . ($rowIndex + 1) . ': ' . $employeeEmailError;
+                    }
+                    continue;
                 }
             }
 

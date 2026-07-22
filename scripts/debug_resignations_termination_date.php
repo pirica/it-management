@@ -302,10 +302,11 @@ if ($teamMemberRes && ($teamMemberRow = mysqli_fetch_assoc($teamMemberRes))) {
 if ($terminatedStatusId > 0 && $teamMemberTypeId > 0 && in_array($terminatedStatusId, $statusIds, true) && in_array($teamMemberTypeId, $typeIds, true)) {
     $probeExternalId = 'MBQA-RESIGN-DEBUG-' . bin2hex(random_bytes(4));
     $startDate = date('Y-m-d', strtotime($canonicalDate . ' -120 days'));
+    $probeWorkEmail = $probeExternalId . '@resign-debug.example.com';
     $insertSql = 'INSERT INTO employees (
-        company_id, first_name, last_name, display_name, employment_status_id, employee_type_id,
+        company_id, first_name, last_name, display_name, work_email, employment_status_id, employee_type_id,
         external_id, start_date, termination_date, raw_status_code
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
     $insertStmt = mysqli_prepare($conn, $insertSql);
     if ($insertStmt) {
         $firstName = 'QA';
@@ -314,11 +315,12 @@ if ($terminatedStatusId > 0 && $teamMemberTypeId > 0 && in_array($terminatedStat
         $rawStatus = 'T';
         mysqli_stmt_bind_param(
             $insertStmt,
-            'isssiissss',
+            'issssiissss',
             $companyId,
             $firstName,
             $lastName,
             $displayName,
+            $probeWorkEmail,
             $terminatedStatusId,
             $teamMemberTypeId,
             $probeExternalId,
