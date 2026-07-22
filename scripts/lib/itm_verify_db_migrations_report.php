@@ -303,6 +303,15 @@ if (!function_exists('itm_verify_db_migrations_report')) {
             $totpOk ? 'employees.totp_secret and employees.totp_enabled present.' : 'TOTP columns missing on employees.'
         ));
 
+        // employee_roles_sidebar_show.sql
+        $sidebarShowOk = itm_verify_db_migrations_column_exists($conn, 'employee_roles', 'sidebar_show');
+        $add(itm_verify_db_migrations_row(
+            'employee_roles_sidebar_show.sql',
+            $sidebarShowOk ? 'pass' : 'fail',
+            $sidebarShowOk ? 'Applied' : 'Not applied',
+            $sidebarShowOk ? 'employee_roles.sidebar_show present.' : 'sidebar_show column missing on employee_roles.'
+        ));
+
         // employees_seed_admin_role_id.sql
         $adminsWrongRole = itm_verify_db_migrations_scalar_count(
             $conn,

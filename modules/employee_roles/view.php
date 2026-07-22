@@ -137,8 +137,11 @@ function cr_render_cell_value($table, $field, $value) {
             return $auditHtml;
         }
     }
-    if ($field === 'active') {
+    if ($field === 'active' || $field === 'sidebar_show') {
         $isActive = ((int)$value === 1);
+        if ($field === 'sidebar_show') {
+            return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Show' : 'Hide') . '</span>';
+        }
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
 

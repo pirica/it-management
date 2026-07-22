@@ -20,6 +20,7 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
 ## 7. File Structure
 - `{module}_{subject}.sql` — one focused table replacement per file (`DROP TABLE` + full `CREATE TABLE`, not `ALTER`)
 - `employee_totp.sql` — `employees` table with `totp_secret` + `totp_enabled` (mirrors `db/01_schema.sql`; destructive — re-seed employees after apply)
+- `employee_roles_sidebar_show.sql` — `employee_roles` table with `sidebar_show` (`TINYINT(1) NOT NULL DEFAULT 1`; destructive — re-seed roles after apply)
 - `employees_seed_admin_role_id.sql` — DML only: sets `role_id` on seed admins (`username LIKE 'Admin%'`) to each tenant's `Admin` `employee_roles` row (idempotent)
 - `employees_employee_departments.sql` — adds `employee_departments` junction table + backfill from `employees.department_id` (mirrors `db/01_schema.sql`)
 - `employee_sidebar_preferences_seed_admins.sql` — DML only: reassigns sidebar layout rows to each company's seed admin employee (`username LIKE 'Admin%'`)

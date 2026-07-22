@@ -4,7 +4,7 @@
 Lookup table for system roles (e.g., "Admin", "IT Staff", "User").
 
 ## 2. Key Tables
-- **employee_roles** — stores role names and status.
+- **employee_roles** — stores role names, `active`, and `sidebar_show` (`TINYINT(1) NOT NULL DEFAULT 1`).
 
 ## 3. Required Relationships
 - **employee_roles** → depends on **companies**.
@@ -21,6 +21,7 @@ Lookup table for system roles (e.g., "Admin", "IT Staff", "User").
 - **Actions column**: `class="itm-actions-cell"` and `data-itm-actions-origin="1"` on Actions header and body cells.
 - **Import endpoint**: `data-itm-db-import-endpoint="index.php"` on the index list table.
 - **`active` field**: list/view use `badge-success` / `badge-danger` (no emoji); create/edit use `itm-checkbox-control` with ✅/❌.
+- **`sidebar_show` field**: list/view use `badge-success` **Show** / `badge-danger` **Hide**; create/edit use the same checkbox pattern as `active` (default checked / `1`).
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — JSON POST to `index.php`; bulk import from 📥 Import Excel (`table-tools.js` save-to-database flow).
