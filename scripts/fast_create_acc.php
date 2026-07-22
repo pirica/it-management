@@ -13,6 +13,7 @@ if (PHP_SAPI === 'cli') {
 }
 
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/itm_fk_option_labels.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_demo_module_users_seed.php';
 
