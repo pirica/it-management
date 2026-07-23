@@ -68,7 +68,7 @@ Each catalog card shows **table tags** derived from static analysis of the linke
 | 2 | both table names |
 | 3+ | `Mixed` |
 
-**Scan scope (most accurate within `scripts/`):** entry file + transitive `require`/`include` under `scripts/` (including `scripts/lib/`) + one-level literal `scripts/*.php` spawn targets + literal `scripts/data/*` and `scripts/*` **`.json` / `.txt` / `.md`** references (plain-text schema table names) + **filename tokens** (underscore segments and singular stems, e.g. `employee` → `employees`, `apply_crud_hidden_employee_id_alias.php` → `employees`). Does not scan `config.php`, `includes/`, or `modules/`.
+**Scan scope (most accurate within `scripts/`):** entry file + transitive `require`/`include` under `scripts/` (including `scripts/lib/`) + one-level literal `scripts/*.php` spawn targets + literal `scripts/data/*` and `scripts/*` **`.json` / `.txt` / `.md`** references (plain-text schema table names). Bare filenames such as `AGENT_NOTES.md` resolve to `scripts/AGENT_NOTES.md` when that file exists. **Filename tokens** (`employee` → `employees`, etc.) still apply. Does not scan `config.php`, `includes/`, or `modules/`.
 
 **UI:** tag pills on each card (`scripts-badge-tag`), `data-tags` on `<tr>`, chip bar filter (`All` / `Codebase` / `Python` / `Server` / `Info` / `Markdown` / `Mixed` / table names) combined with the text search box.
 

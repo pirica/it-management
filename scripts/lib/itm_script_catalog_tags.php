@@ -276,18 +276,12 @@ if (!function_exists('itm_script_catalog_tags_resolve_scripts_data_path')) {
                 . str_replace('/', DIRECTORY_SEPARATOR, (string)$dataMatch[1]);
         } elseif (preg_match('#^/([a-zA-Z0-9_.-]+\.(?:json|txt|md))$#i', '/' . $relativePath, $rootMatch)) {
             $basename = (string)$rootMatch[1];
-            $ext = strtolower((string)pathinfo($basename, PATHINFO_EXTENSION));
             $candidates[] = $scriptsRootReal . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . $basename;
-            if ($ext !== 'md') {
-                $candidates[] = $scriptsRootReal . DIRECTORY_SEPARATOR . $basename;
-            }
+            $candidates[] = $scriptsRootReal . DIRECTORY_SEPARATOR . $basename;
         } elseif (preg_match('#^(?:scripts/)?([a-zA-Z0-9_.-]+\.(?:json|txt|md))$#i', $relativePath, $basenameMatch)) {
             $basename = (string)$basenameMatch[1];
-            $ext = strtolower((string)pathinfo($basename, PATHINFO_EXTENSION));
             $candidates[] = $scriptsRootReal . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . $basename;
-            if ($ext !== 'md') {
-                $candidates[] = $scriptsRootReal . DIRECTORY_SEPARATOR . $basename;
-            }
+            $candidates[] = $scriptsRootReal . DIRECTORY_SEPARATOR . $basename;
         } else {
             return null;
         }
@@ -366,6 +360,7 @@ if (!function_exists('itm_script_catalog_tags_classify_data_refs')) {
             '#(/data/[a-zA-Z0-9_.-]+\.(?:json|txt|md))#i',
             '#[\'"](/[a-zA-Z0-9_.-]+\.(?:json|txt|md))[\'"]#i',
             '#[\'"]([a-zA-Z0-9_.-]+\.(?:json|txt|md))[\'"]#i',
+            '#\b([a-zA-Z0-9_.-]+\.(?:json|txt|md))\b#i',
         ];
 
         $tokens = [];
@@ -386,12 +381,8 @@ if (!function_exists('itm_script_catalog_tags_classify_data_refs')) {
 
             $scoped = $resolved !== null
                 || (bool)preg_match('#(?:scripts/)?data/[a-zA-Z0-9_.-]+\.(?:json|txt|md)#i', $token)
-                || (bool)preg_match('#scripts/[a-zA-Z0-9_.-]+\.(?:json|txt|md)#i', $token);
-
-            if ($ext === 'md' && $resolved === null && !preg_match('#scripts/[a-zA-Z0-9_.-]+\.md#i', $token)
-                && !preg_match('#(?:scripts/)?data/[a-zA-Z0-9_.-]+\.md#i', $token)) {
-                continue;
-            }
+                || (bool)preg_match('#scripts/[a-zA-Z0-9_.-]+\.(?:json|txt|md)#i', $token)
+                || (bool)preg_match('#^[^/]+\.(?:json|txt|md)$#i', $normalized);
 
             if (!$scoped) {
                 continue;

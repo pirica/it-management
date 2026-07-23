@@ -212,10 +212,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
             </thead>
             <tbody>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="DBdesign.php" target="_blank" rel="nofollow noreferrer">DBdesign.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>ER-style diagram generated from <code>db/</code> split bundle (Mermaid render, zoom, SVG/PNG export).</td>
                     <td>
                         Open <a href="DBdesign.php" target="_blank" rel="nofollow noreferrer">DBdesign.php</a>. Optional:
@@ -224,31 +224,31 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         CLI: <code>php scripts/DBdesign.php --mermaid</code> or <code>--json</code>.
                     </td>
                 </tr>
-                <tr data-tags="Info">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="crud_tables.php" target="_blank" rel="nofollow noreferrer">crud_tables.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Lists each module’s first <code>$crud_table</code> in <code>index.php</code>. Bespoke/exception modules without it show <strong>Skip</strong> (<code>docs/list_bespoke_UI.txt</code> + <code>scripts/data/crud_tables_skip_modules.txt</code>).</td>
                     <td>Browser: HTML report. CLI: <code>php scripts/crud_tables.php</code> (HTML to stdout) or <code>&gt; crud_tables.html</code>.</td>
                 </tr>
-                <tr data-tags="Info">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="crud_titles.php" target="_blank" rel="nofollow noreferrer">crud_titles.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Lists each module’s first <code>$crud_title</code> in <code>index.php</code>. <code>is_*</code> modules and bespoke slugs without it show <strong>Skip</strong>.</td>
                     <td>Browser: HTML report. CLI: <code>php scripts/crud_titles.php</code> (HTML to stdout) or <code>&gt; crud_titles.html</code>.</td>
                 </tr>
-                <tr data-tags="Info">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="crud_actions.php" target="_blank" rel="nofollow noreferrer">crud_actions.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Lists every module entry file (<code>index.php</code> and CRUD wrappers) and each <code>$crud_action =</code> assignment. Non-standard CRUD modules with no assignment show <strong>Skip</strong>.</td>
                     <td>Browser: HTML report. CLI: <code>php scripts/crud_actions.php</code> (HTML to stdout) or <code>&gt; crud_actions.html</code>.</td>
                 </tr>
-                <tr data-tags="audit_logs">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="update_all_created_at.php" target="_blank" rel="nofollow noreferrer">update_all_created_at.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">audit_logs</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>After importing <code>db/</code> split bundle, sets every live row’s <code>created_at</code> to one timestamp (default <code>2026-01-01 00:00:01</code>). Dry-run previews counts first.</td>
                     <td><strong>Log in first.</strong> Open <a href="update_all_created_at.php" target="_blank" rel="nofollow noreferrer">update_all_created_at.php</a> (HTML + <strong>← Scripts index</strong>). CLI: <code>php scripts/update_all_created_at.php --dry-run</code></td>
                 </tr>
@@ -262,10 +262,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         CLI: <code>php scripts/detect_fk_dropdown_ui_risk.php</code> · <code>--company=N</code> · <code>--json</code> · <code>--data-only</code> · <code>--code-only</code> · <code>--repair-catalogs</code> (one-time legacy DB cleanup).
                     </td>
                 </tr>
-                <tr data-tags="companies">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="detect_fk_dropdown_ui_risk.php" target="_blank" rel="nofollow noreferrer">detect_fk_dropdown_ui_risk.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">companies</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Same scanner as the UI. Browser requests load <code>detect_fk_dropdown_ui_risk_ui.php</code>; CLI prints human-readable lines (or JSON with <code>--json</code>).</td>
                     <td>
                         Browser: opens the UI. CLI:
@@ -302,10 +302,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         CLI: <code>php scripts/extract_by_fields.php</code>
                     </td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="debug.php" target="_blank" rel="nofollow noreferrer">debug.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>System overview (DB, tables, PHP version, extensions, and file permissions).</td>
                     <td>Open in browser for quick troubleshooting.</td>
                 </tr>
@@ -333,10 +333,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
             </thead>
             <tbody>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_form_failed_save_display.php" target="_blank" rel="nofollow noreferrer">test_form_failed_save_display.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Scans all module create forms for SQL-quoted re-display after failed saves (e.g. <code>value="'USA'"</code>); optional runtime POST tests per module.</td>
                     <td>
                         <strong>Log in first.</strong> Open <a href="test_form_failed_save_display.php" target="_blank" rel="nofollow noreferrer">test_form_failed_save_display.php</a>, run static scan, optionally enable <em>Runtime HTTP tests</em>.
@@ -354,72 +354,72 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         Use only in dev/staging — not a public endpoint.
                     </td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apply_form_failed_save_display_fix.php" target="_blank" rel="nofollow noreferrer">apply_form_failed_save_display_fix.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Bulk-applies <code>cr_form_display_value</code> / POST normalization fixes across CRUD entry files (companion to the form test above). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped targets. Optional <code>--module</code> / <code>?module=</code> filter.</td>
                     <td>Browser: <a href="apply_form_failed_save_display_fix.php" target="_blank" rel="nofollow noreferrer">dry-run</a> / <a href="apply_form_failed_save_display_fix.php?apply=1" target="_blank" rel="nofollow noreferrer">apply=1</a> · <a href="apply_form_failed_save_display_fix.php?module=manufacturers" target="_blank" rel="nofollow noreferrer">?module=manufacturers</a>. CLI: <code>php scripts/apply_form_failed_save_display_fix.php</code> then <code>php scripts/apply_form_failed_save_display_fix.php --apply</code> · <code>--module=manufacturers</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_db_error_messages.php" target="_blank" rel="nofollow noreferrer">test_db_error_messages.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Read-only assertion harness for <code>itm_format_db_constraint_error()</code>, <code>itm_render_alert_errors()</code>, and <code>itm_humanize_api_error_message()</code> (e.g. NOT NULL → “Please select a value for Employee”; strips <code>Database error:</code> / <code>DB error:</code> prefixes). Lists passed/failed assertion labels.</td>
                     <td>Browser: <a href="test_db_error_messages.php">run</a>. CLI: <code>php scripts/test_db_error_messages.php</code> — exit <code>1</code> on any failed assertion. Run after changing <code>config/config.php</code>, <code>includes/ui_alert_helpers.php</code>, or IDF/header flash paths.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apply_human_friendly_error_display.php" target="_blank" rel="nofollow noreferrer">apply_human_friendly_error_display.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Replaces duplicated <code>alert alert-error</code> blocks with <code>itm_render_alert_errors()</code> across module PHP files (all modules, including bespoke folders). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped targets. Optional <code>--module</code> / <code>?module=</code> filter.</td>
                     <td>Browser: <a href="apply_human_friendly_error_display.php" target="_blank" rel="nofollow noreferrer">dry-run</a> / <a href="apply_human_friendly_error_display.php?apply=1" target="_blank" rel="nofollow noreferrer">apply=1</a> · <a href="apply_human_friendly_error_display.php?module=approvers" target="_blank" rel="nofollow noreferrer">?module=approvers</a>. CLI: <code>php scripts/apply_human_friendly_error_display.php</code> then <code>php scripts/apply_human_friendly_error_display.php --apply</code> · <code>--module=approvers</code></td>
                 </tr>
-                <tr data-tags="emails employees">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="test_email_forgot.php" target="_blank" rel="nofollow noreferrer">test_email_forgot.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">emails</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Test script for Password Reset email delivery verification.</td>
                     <td>
                         <strong>Log in first.</strong> Open <a href="test_email_forgot.php" target="_blank" rel="nofollow noreferrer">test_email_forgot.php</a>.
                         CLI: <code>php scripts/test_email_forgot.php email=test@example.com</code> or <code>php scripts/test_email_forgot.php email=test@example.com --company=1</code>
                     </td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="test_register_mail.php" target="_blank" rel="nofollow noreferrer">test_register_mail.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Test script for Registration Welcome email delivery verification.</td>
                     <td>
                         <strong>Log in first.</strong> Open <a href="test_register_mail.php" target="_blank" rel="nofollow noreferrer">test_register_mail.php</a>.
                         CLI: <code>php scripts/test_register_mail.php email=test@example.com</code> or <code>php scripts/test_register_mail.php email=test@example.com --company=1</code>
                     </td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_user_config_profile.php" target="_blank" rel="nofollow noreferrer">verify_user_config_profile.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for <code>user-config.php</code> profile fields: home-company UPDATE (vs tenant switcher), birthday/theme/emergency round-trip, and profile photo URL/serve contract (app-absolute Explorer proxy, not <code>../../modules/…</code>).</td>
                     <td><code>php scripts/verify_user_config_profile.php</code> — exit <code>1</code> on failure. Run when changing <code>user-config.php</code>, <code>includes/employee_profile_photo.php</code>, or Explorer <code>file.php</code> profile photo serving.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_sidebar_preferences.php" target="_blank" rel="nofollow noreferrer">verify_sidebar_preferences.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for <code>employee_sidebar_preferences</code> save/load: Personalized Sidebar + Settings SideMenu access contracts, DB round-trip via <code>itm_user_config_save_personalized_sidebar_items()</code>.</td>
                     <td><code>php scripts/verify_sidebar_preferences.php</code> — exit <code>1</code> on failure. Run when changing <code>user-config.php</code>, <code>modules/settings/index.php</code> SideMenu, or <code>includes/ui_config.php</code> sidebar helpers.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_emails_module.php" target="_blank" rel="nofollow noreferrer">verify_emails_module.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression checks for Email Management tables, registry row, SMTP seed, alert rules, <code>itm_send_email()</code>, <code>user-config.php</code> vault-key notification contract (no plaintext secrets), and company 1 30-day warranty/license alert window (hard fail; disposable sample insert when empty).</td>
                     <td><code>php scripts/verify_emails_module.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/emails/</code>, <code>includes/itm_email.php</code>, <code>user-config.php</code> vault-key mail, or <code>email*</code> / alert-window seed rows in <code>db/</code> split bundle.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="run_email_alert_rules.php" target="_blank" rel="nofollow noreferrer">run_email_alert_rules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Dispatches enabled <code>email_alert_rules</code> (warranty, license, certificate, alerts, notes, to-do, events) using tenant default SMTP.</td>
                     <td><code>php scripts/run_email_alert_rules.php</code>, <code>php scripts/run_email_alert_rules.php --company=1</code>, or <code>php scripts/run_email_alert_rules.php --verbose</code>. Schedule via cron; admin browser access. Use <code>--verbose</code> when dispatched count is 0 to see per-rule match notes.</td>
                 </tr>
@@ -445,10 +445,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
             </thead>
             <tbody>
-                <tr data-tags="Markdown">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="run_tests.php" target="_blank" rel="nofollow noreferrer">run_tests.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Runs the PHPUnit suite in <code>phpunit/tests/Unit/</code> via <code>phpunit/phpunit.phar</code> and <code>phpunit/phpunit.xml</code>. Browser menu: <strong>Standard</strong> (verbose) or <strong>HTML coverage</strong> (Xdebug/PCOV). Report: <code>phpunit/coverage/html/coverage.html</code>. Skips coverage driver when Xdebug/PCOV missing. <code>processUncoveredFiles="false"</code> in phpunit.xml for reliable report generation. Entry guards: <code>includes/itm_script_entry_guard.php</code>. See <code>scripts/SCRIPTS.md</code> (PHPUnit test runner).</td>
                     <td>
                         Browser menu: <a href="run_tests.php" target="_blank" rel="nofollow noreferrer">run_tests.php</a><br>
@@ -458,45 +458,45 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         Skip DB: <code>ITM_SKIP_DB_TESTS=1</code> or browser checkbox
                     </td>
                 </tr>
-                <tr data-tags="Mixed Info">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="identify_modules.php" target="_blank" rel="nofollow noreferrer">identify_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Scans the <code>modules/</code> directory to identify and categorize all modules into standard CRUD and bespoke types, saving metadata to <code>scripts/modules_metadata.json</code>.</td>
                     <td>Browser: <a href="identify_modules.php" target="_blank" rel="nofollow noreferrer">JSON preview</a> (Admin) · <a href="identify_modules.php?save=1" target="_blank" rel="nofollow noreferrer">?save=1</a> writes <code>modules_metadata.json</code>. CLI: <code>php scripts/identify_modules.php &gt; scripts/modules_metadata.json</code></td>
                 </tr>
-                <tr data-tags="Mixed Info">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="generate_tests.php" target="_blank" rel="nofollow noreferrer">generate_tests.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Automatically generates PHPUnit integration tests for all standard CRUD modules identified in the metadata. Creates test files in <code>phpunit/tests/Unit/Modules/</code>.</td>
                     <td>Browser: <a href="generate_tests.php" target="_blank" rel="nofollow noreferrer">dry-run</a> (Admin) · <a href="generate_tests.php?apply=1" target="_blank" rel="nofollow noreferrer">?apply=1</a> writes missing tests only (skips existing <code>*Test.php</code>). CLI: <code>php scripts/generate_tests.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_import_user_samples.php" target="_blank" rel="nofollow noreferrer">test_import_user_samples.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Verifies the JSON table import logic against specific user-provided sample data for the employees module.</td>
                     <td>Browser: <a href="test_import_user_samples.php" target="_blank" rel="nofollow noreferrer">run</a> (Admin). CLI: <code>php scripts/test_import_user_samples.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_ajax.php" target="_blank" rel="nofollow noreferrer">test_ajax.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>CLI harness that mocks session/POST for Notes <code>quick_add</code> AJAX.</td>
                     <td>Browser: <a href="test_ajax.php" target="_blank" rel="nofollow noreferrer">form</a> (Admin). CLI: <code>php scripts/test_ajax.php &lt;PHPSESSID&gt; &lt;title&gt;</code> — excluded from <code>perform_audit.php</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_edit.php" target="_blank" rel="nofollow noreferrer">test_edit.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>CLI harness that mocks session/POST for Notes edit.</td>
                     <td>Browser: <a href="test_edit.php" target="_blank" rel="nofollow noreferrer">form</a> (Admin). CLI: <code>php scripts/test_edit.php &lt;PHPSESSID&gt; &lt;title&gt; &lt;note_id&gt;</code> — excluded from <code>perform_audit.php</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_session.php" target="_blank" rel="nofollow noreferrer">test_session.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Verifies session handling and persistence.</td>
                     <td>Browser: <a href="test_session.php" target="_blank" rel="nofollow noreferrer">dump current session</a> (Admin). CLI: <code>php scripts/test_session.php</code> or <code>php scripts/test_session.php &lt;PHPSESSID&gt;</code></td>
                 </tr>
@@ -529,31 +529,31 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Local MySQL admin UI for schema inspection, ad-hoc SQL, and imports (database <code>itmanagement</code> on typical Laragon installs).</td>
                     <td>Open <a href="http://localhost/phpmyadmin/" target="_blank" rel="noopener noreferrer">http://localhost/phpmyadmin/</a> in a new tab. Default dev: user <code>root</code>, password per your Laragon/MySQL setup (often blank locally).</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="analyze_database_health.php" target="_blank" rel="nofollow noreferrer">analyze_database_health.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Runs <code>ANALYZE TABLE</code> on every base table and lists per-table success/failure (avoids phpMyAdmin stopping on first error).</td>
                     <td>Open <a href="analyze_database_health.php">analyze_database_health.php</a> while logged in. Optional CLI: <code>php scripts/analyze_database_health.php</code></td>
                 </tr>
-                <tr data-tags="companies">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="force_delete_company.php" target="_blank" rel="nofollow noreferrer">force_delete_company.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">companies</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Bypasses triggers and FK checks to completely remove a company and its data across all <code>company_id</code> tables (including audit logs).</td>
                     <td>Open <a href="force_delete_company.php">force_delete_company.php</a> while logged in as Admin. CLI: <code>php scripts/force_delete_company.php --id=N</code>. <strong>DANGER: Destructive.</strong></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_database_sql_company_name_uniques.php">check_database_sql_company_name_uniques.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Audits <code>db/</code> split bundle: each <code>company_id</code> table needs 2 uniques (PRIMARY + scope UNIQUE). Floor plans: <code>IFNULL(parent_folder_id,0)+name</code> / <code>IFNULL(folder_id,0)+display_name</code> (not <code>company_id+folder_id</code> alone). Skips <code>bookmark_folders</code> (duplicate names OK) and <code>floor_plan_item_tags</code> (junction PK only).</td>
                     <td>Open <a href="check_database_sql_company_name_uniques.php">check_database_sql_company_name_uniques.php</a> or <code>php scripts/check_database_sql_company_name_uniques.php</code> (exit 1 if any fail).</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repair_table_from_schema.php" target="_blank" rel="nofollow noreferrer">repair_table_from_schema.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Rebuilds one InnoDB table from <code>db/01_schema.sql</code> when metadata drift causes "doesn't exist in engine" errors. <strong>Destructive</strong> on apply — dry-run validates <code>--table</code> / <code>?table=</code> and shows CREATE excerpt only.</td>
                     <td>Browser: <a href="repair_table_from_schema.php?table=equipment">dry-run</a> / <a href="repair_table_from_schema.php?table=equipment&amp;apply=1">apply=1</a> (Admin). CLI: <code>php scripts/repair_table_from_schema.php --table=table_name</code> then <code>--apply</code> — backup first.</td>
                 </tr>
@@ -564,17 +564,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Counts live tables in <code>information_schema</code> for <code>itmanagement</code>, echoes the total as plain text, and overwrites <code>scripts/number_db_tables.txt</code> with the same number (for external monitors). <strong>No login required.</strong></td>
                     <td>Open <a href="count_db_tables.php">count_db_tables.php</a> (plain number response) or run <code>php scripts/count_db_tables.php</code> from the repository root. Output file: <code>scripts/number_db_tables.txt</code>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_db_migrations.php" target="_blank" rel="nofollow noreferrer">verify_db_migrations.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Compares live <code>itmanagement</code> schema/data against every <code>db/migrations/*.sql</code> file (Applied / Superseded / Not applied). No migration history table — probes only. Shared lib: <code>lib/itm_verify_db_migrations_report.php</code>.</td>
                     <td><code>php scripts/verify_db_migrations.php</code> or <a href="verify_db_migrations.php">browser</a> (Admin). JSON: <code>--json</code> or <code>?format=json</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_database_schema.php" target="_blank" rel="nofollow noreferrer">verify_database_schema.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Compares <code>CREATE TABLE</code> names in <code>db/</code> split bundle with <code>information_schema</code> for <code>itmanagement</code>. Use after PowerShell/MySQL imports that report success but stop early (e.g. 73 tables instead of 126). Lists missing/extra tables; exit <code>1</code> on mismatch.</td>
                     <td><code>php scripts/verify_database_schema.php</code> — run from repository root after <code>db/</code> split bundle import; check <code>mysql-import.err</code> for the first <code>ERROR</code> line if this fails.</td>
                 </tr>
@@ -592,10 +592,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Imports <code>db/</code> SQL in one MySQL session: <code>01_schema.sql</code> → <code>02_data.sql</code> → <code>03_triggers.sql</code> (preserves <code>@replicate_source_company_id</code>; loads triggers after seed data). Runs <code>verify_database_schema.php</code> on success.</td>
                     <td><code>bash scripts/import_database_split.sh</code> — same MySQL env vars as <code>verify_database_sql_import.sh</code>. See <code>db/AGENT_NOTES.md</code> for import order.</td>
                 </tr>
-                <tr data-tags="Mixed Info">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="employee_fields_missing.php" target="_blank" rel="nofollow noreferrer">employee_fields_missing.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Compares <code>employees</code> columns in <code>db/</code> split bundle and the live schema with create/edit/view/index coverage in <code>modules/employees/</code>. Fails when critical columns (including <code>termination_date</code>) are missing from the DB or module UI; lists optional gaps as <code>[INFO]</code>. Uses shared lib <code>itm_fields_missing_report.php</code>.</td>
                     <td><code>php scripts/employee_fields_missing.php</code> — run after changing <code>db/</code> split bundle, <code>modules/employees/</code> profile fields, or employee list/import columns. Full multi-module audit: <code>php scripts/fields_missing.php</code>.</td>
                 </tr>
@@ -606,160 +606,160 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>All-module schema/UI audit: <code>db/</code> split bundle columns vs live MySQL vs module screens for every discoverable <code>$crud_table</code> module. Flattened scaffold: <code>[PASS]</code>/<code>[FAIL]</code>; bespoke/status-driven slugs: gated <code>[SKIP][pass]</code>/<code>[SKIP][fail]</code>/<code>[SKIP][fail][reviewed]</code> (page + list UI contract via <code>scripts/lib/itm_ui_list_contract_checks.php</code>). Reviewed exceptions: <a href="fields_missing_reviewed.php" target="_blank" rel="nofollow noreferrer">fields_missing_reviewed.php</a> · <code>scripts/data/fields_missing_reviewed.json</code>. Shared lib: <code>itm_fields_missing_report.php</code>.</td>
                     <td>Browser: optional <code>?module=</code> · <code>?strict_gate=1</code> · <code>?json=1</code>. CLI: <code>php scripts/fields_missing.php</code> · <code>--module=&lt;slug&gt;</code> · <code>--json</code> · <code>--strict-gate</code>. Exit <code>1</code> on actionable <code>[FAIL]</code>; default exit <code>0</code> for bespoke <code>[SKIP][fail]</code> only; <code>--strict-gate</code> also fails on unreviewed bespoke <code>[SKIP][fail]</code>. JSON schema for reviewed exceptions: <code>scripts/SCRIPTS.md</code> → <em>fields_missing reviewed exceptions</em>.</td>
                 </tr>
-                <tr data-tags="Mixed Info">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="fields_missing_reviewed.php" target="_blank" rel="nofollow noreferrer">fields_missing_reviewed.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Read-only manifest for reviewed bespoke <code>[SKIP][fail]</code> gate lines consumed by <code>fields_missing.php</code>. Data: <code>scripts/data/fields_missing_reviewed.json</code> (module slug + check label/code + reason).</td>
                     <td><code>php scripts/fields_missing_reviewed.php</code> · <code>--json</code> · exit <code>1</code> on invalid registry JSON.</td>
                 </tr>
-                <tr data-tags="Mixed Info">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="ui_configuration_reviewed.php" target="_blank" rel="nofollow noreferrer">ui_configuration_reviewed.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Read-only manifest for reviewed gate-excluded <code>[n/a][pass|fail|n/a]</code> lines consumed by <code>check_ui_configuration_coverage.php</code>. Data: <code>scripts/data/ui_configuration_reviewed.json</code> (module slug + UI config check label/code + reason).</td>
                     <td><code>php scripts/ui_configuration_reviewed.php</code> · <code>--json</code> · exit <code>1</code> on invalid registry JSON.</td>
                 </tr>
-                <tr data-tags="equipment">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="debug_equipment_create_rollback_errno.php" target="_blank" rel="nofollow noreferrer">debug_equipment_create_rollback_errno.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">equipment</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Diagnose generic equipment create save errors: runs a deliberate failing <code>equipment</code> INSERT (NULL <code>status_id</code>) inside a transaction and compares <code>mysqli_errno()</code> / <code>mysqli_error()</code> plus <code>itm_format_db_constraint_error()</code> output before vs after <code>mysqli_rollback()</code>. Exit <code>1</code> when rollback clears the error state (explains the vague “Review the required fields” UI message).</td>
                     <td><code>php scripts/debug_equipment_create_rollback_errno.php --company_id=1</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="debug_resignations_termination_date.php" target="_blank" rel="nofollow noreferrer">debug_resignations_termination_date.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Diagnose why a <code>termination_date</code> (default <code>18/06/2026</code>, ISO week 25) does or does not match <code>modules/resignations/index.php</code> — PHP vs MySQL week metadata, ISO bounds, legacy <code>YEAR/MONTH/WEEK</code>, simulated module SQL (<code>itm_sql_valid_date_predicate()</code>; not <code>&lt;&gt; '0000-00-00'</code>), employee row, verify-probe bounds. Use when the report is empty or prepare fails with <code>Incorrect DATE value: '0000-00-00'</code>.</td>
                     <td><code>php scripts/debug_resignations_termination_date.php --date=18/06/2026 --company_id=1 --week=25 --month=6 --year=2026</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_employee_type_resignations.php" target="_blank" rel="nofollow noreferrer">verify_employee_type_resignations.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for <code>employee_type</code> seed data, <code>employees.start_date</code> / <code>employee_type_id</code>, <code>modules_registry</code> slugs, and the weekly resignations SQL filter (<code>itm_iso_week_bounds()</code>, <code>MONTH(termination_date)</code>, <code>itm_sql_valid_date_predicate()</code>) aligned with <code>modules/resignations/index.php</code>.</td>
                     <td><code>php scripts/verify_employee_type_resignations.php</code> — after changes to <code>modules/employee_type/</code>, <code>modules/resignations/</code>, <code>modules/employees/</code> termination/type fields, or related <code>db/</code> split bundle tables.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="normalize_database_sql_created_at.php" target="_blank" rel="nofollow noreferrer">normalize_database_sql_created_at.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Sets every seed <code>created_at</code> literal in <code>db/01_schema.sql</code> INSERT rows to one timestamp (default <code>2026-01-01 00:00:01</code>); leaves <code>updated_at</code> and other date columns unchanged. <strong>Default = dry-run</strong>; writes <code>db/01_schema.sql</code> with <code>--apply</code> / <code>?apply=1</code> (Admin).</td>
                     <td>Browser: <a href="normalize_database_sql_created_at.php">dry-run</a> / <a href="normalize_database_sql_created_at.php?apply=1">apply=1</a>. CLI: <code>php scripts/normalize_database_sql_created_at.php</code> then <code>php scripts/normalize_database_sql_created_at.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="companies">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apply_module_sample_data_seed.php" target="_blank" rel="nofollow noreferrer">apply_module_sample_data_seed.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">companies</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Automates per-module/table seed expansion: adds missing sample rows for every company listed in <code>companies</code> into <code>db/</code> split bundle. Default <code>idf_device_type</code> samples are <code>other</code> 📦, <code>server</code> 🖥️, <code>ups</code> 🔋, <code>patch_panel</code> ➿, and <code>switch</code> 🔀; custom <code>--sample</code> values supported. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists new INSERT statements and skipped targets before apply. Requires <code>--module</code> / <code>?module=</code>.</td>
                     <td>Browser: <a href="apply_module_sample_data_seed.php?module=idf_device_type">dry-run</a> / <a href="apply_module_sample_data_seed.php?module=idf_device_type&amp;apply=1">apply=1</a>. CLI: <code>php scripts/apply_module_sample_data_seed.php --module=idf_device_type</code> then <code>php scripts/apply_module_sample_data_seed.php --module=idf_device_type --apply</code> · <code>--value-column=name --sample=LabPoE</code>. After apply, refreshes <code>db/02_data_sample.sql</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="extract_02_data_sample.php" target="_blank" rel="nofollow noreferrer">extract_02_data_sample.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Builds <code>db/02_data_sample.sql</code> (runtime Add sample data templates) from company <code>1</code> rows in <code>db/02_data.sql</code>, live MySQL backfill, and minimal synthesis so every tenant-scoped table has at least one template. Requires MySQL. <strong>Default = dry-run</strong>; writes with <code>--apply</code> / <code>?apply=1</code> (Admin).</td>
                     <td>Browser: <a href="extract_02_data_sample.php">dry-run</a> / <a href="extract_02_data_sample.php?apply=1">apply=1</a>. CLI: <code>php scripts/extract_02_data_sample.php</code> then <code>php scripts/extract_02_data_sample.php --apply</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_02_data_sample_coverage.php" target="_blank" rel="nofollow noreferrer">check_02_data_sample_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static gate: every tenant-scoped table has at least one company <code>1</code> marker row in <code>db/02_data_sample.sql</code> (exempt: audit logs, RBAC, share sessions, <code>ui_configuration</code>, etc.).</td>
                     <td>CLI: <code>php scripts/check_02_data_sample_coverage.php</code> — exit <code>1</code> when any table is missing.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="dedupe_02_data_per_company_inserts.php" target="_blank" rel="nofollow noreferrer">dedupe_02_data_per_company_inserts.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Removes redundant companies <code>2–5</code> single-row INSERTs from <code>db/02_data.sql</code> when <code>@replicate_source_company_id</code> replication already copies from company <code>1</code>. <strong>Default = dry-run</strong>.</td>
                     <td>Browser: <a href="dedupe_02_data_per_company_inserts.php">dry-run</a> / <a href="dedupe_02_data_per_company_inserts.php?apply=1">apply=1</a>. CLI: <code>php scripts/dedupe_02_data_per_company_inserts.php</code> then <code>--apply</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_sample_data_seed.php" target="_blank" rel="nofollow noreferrer">verify_sample_data_seed.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression: Add sample data seeds arbitrary disposable companies from <code>db/02_data_sample.sql</code> with tenant scoping, FK parent chain, and duplicate skip.</td>
                     <td>Browser: <a href="verify_sample_data_seed.php">verify_sample_data_seed.php</a>. CLI: <code>php scripts/verify_sample_data_seed.php</code></td>
                 </tr>
-                <tr data-tags="floor_plans floor_plan_folders">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="export_floor_plan_folders_seed.php" target="_blank" rel="nofollow noreferrer">export_floor_plan_folders_seed.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">floor_plans</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">floor_plan_folders</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Exports <code>floor_plan_folders</code> rows from the live DB as <code>db/</code> split bundle-style <code>INSERT</code> statements for pasting into seed data. Read-only dump (no dry-run apply gate).</td>
                     <td>
                         Browser: <a href="export_floor_plan_folders_seed.php">all companies</a> · <a href="export_floor_plan_folders_seed.php?company=1">?company=1</a><br>
                         CLI: <code>php scripts/export_floor_plan_folders_seed.php</code> · <code>php scripts/export_floor_plan_folders_seed.php --company=1</code> — exit <code>1</code> when no rows.
                     </td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_delimiters.php" target="_blank" rel="nofollow noreferrer">check_delimiters.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Audit db/ for correct DELIMITER usage in trigger blocks.</td>
                     <td>Open <a href="check_delimiters.php">check_delimiters.php</a> while logged in. CLI: <code>php scripts/check_delimiters.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_duplicates.php" target="_blank" rel="nofollow noreferrer">check_duplicates.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Audit db/ for duplicate column definitions in CREATE TABLE blocks.</td>
                     <td>Open <a href="check_duplicates.php">check_duplicates.php</a> while logged in. CLI: <code>php scripts/check_duplicates.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_phones.php" target="_blank" rel="nofollow noreferrer">check_phones.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Identify tables in db/ that contain phone-related columns for PII auditing.</td>
                     <td>Open <a href="check_phones.php">check_phones.php</a> while logged in. CLI: <code>php scripts/check_phones.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_sql_errors.php" target="_blank" rel="nofollow noreferrer">check_sql_errors.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Audit db/ for column mismatches in triggers and INSERT statements.</td>
                     <td>Open <a href="check_sql_errors.php">check_sql_errors.php</a> while logged in. CLI: <code>php scripts/check_sql_errors.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="count_args.php" target="_blank" rel="nofollow noreferrer">count_args.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Count arguments in the <code>trg_employees_audit_insert</code> trigger in db/.</td>
                     <td>Open <a href="count_args.php">count_args.php</a> while logged in. CLI: <code>php scripts/count_args.php</code></td>
                 </tr>
-                <tr data-tags="departments">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="fix_sql_departments.php" target="_blank" rel="nofollow noreferrer">fix_sql_departments.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">departments</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Fix column count mismatch in departments INSERT statements in <code>db/01_schema.sql</code>. <strong>Default = dry-run</strong>.</td>
                     <td>Browser: <a href="fix_sql_departments.php">dry-run</a> / <a href="fix_sql_departments.php?apply=1">apply=1</a>. CLI: <code>php scripts/fix_sql_departments.php</code> then <code>--apply</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="list_phone_columns.php" target="_blank" rel="nofollow noreferrer">list_phone_columns.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>List columns for each table defined in db/, filtering for phone columns.</td>
                     <td>Open <a href="list_phone_columns.php">list_phone_columns.php</a> while logged in. CLI: <code>php scripts/list_phone_columns.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_sql.php" target="_blank" rel="nofollow noreferrer">verify_sql.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Comprehensive SQL audit script for db/ (delimiters, duplicates, references).</td>
                     <td>Open <a href="verify_sql.php">verify_sql.php</a> while logged in. CLI: <code>php scripts/verify_sql.php</code></td>
                 </tr>
-                <tr data-tags="cable_colors switch_port_types">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="fix_sql.php" target="_blank" rel="nofollow noreferrer">fix_sql.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">cable_colors</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">switch_port_types</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Utility to fix common SQL errors in <code>db/01_schema.sql</code> (<code>cable_colors</code>, <code>switch_port_types</code>). <strong>Default = dry-run</strong>.</td>
                     <td>Browser: <a href="fix_sql.php">dry-run</a> / <a href="fix_sql.php?apply=1">apply=1</a>. CLI: <code>php scripts/fix_sql.php</code> then <code>--apply</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="fix_sql_broad.php" target="_blank" rel="nofollow noreferrer">fix_sql_broad.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Broad-spectrum SQL cleanup utility for <code>db/01_schema.sql</code>. <strong>Default = dry-run</strong>.</td>
                     <td>Browser: <a href="fix_sql_broad.php">dry-run</a> / <a href="fix_sql_broad.php?apply=1">apply=1</a>. CLI: <code>php scripts/fix_sql_broad.php</code> then <code>--apply</code>.</td>
                 </tr>
@@ -770,52 +770,52 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Visual report for database schema validation (errors, warnings, and SKIP DELETE CASCADE skips).</td>
                     <td>Open <a href="schema_report.php">schema_report.php</a> in the browser.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="validate_DB_schema.php" target="_blank" rel="nofollow noreferrer">validate_DB_schema.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Validates database schema consistency (FKs, duplicate indexes, orphaned indexes); intentional CASCADE prints as <code>[SKIP]</code>.</td>
                     <td>Open <a href="validate_DB_schema.php">validate_DB_schema.php</a> in the browser.</td>
                 </tr>
-                <tr data-tags="employees">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_employee_id-foreign_keys.php" target="_blank" rel="nofollow noreferrer">test_employee_id-foreign_keys.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Validates <code>employee_id</code> foreign keys across all tables.</td>
                     <td>Open <a href="test_employee_id-foreign_keys.php">test_employee_id-foreign_keys.php</a> in the browser.</td>
                 </tr>
-                <tr data-tags="employees">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="validate_delete_employee.php" target="_blank" rel="nofollow noreferrer">validate_delete_employee.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Validates if employees can be safely deleted by checking FKs and triggers.</td>
                     <td>Open <a href="validate_delete_employee.php">validate_delete_employee.php</a> in the browser.</td>
                 </tr>
-                <tr data-tags="employees">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="generate_FK_employee_id.php" target="_blank" rel="nofollow noreferrer">generate_FK_employee_id.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Generates SQL for missing <code>employee_id</code> foreign keys.</td>
                     <td>Open <a href="generate_FK_employee_id.php">generate_FK_employee_id.php</a> in the browser.</td>
                 </tr>
-                <tr data-tags="employees">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="generate_reassignment.php" target="_blank" rel="nofollow noreferrer">generate_reassignment.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reassignment plan before delete: filter by <strong>employee id</strong>, row counts, skip reasons, FK debug. Default dry-run + rows-only.</td>
                     <td>Open <a href="generate_reassignment.php">generate_reassignment.php</a> — <code>?employee_id=N</code> preview or <code>?from=N&amp;to=M</code> for apply SQL.</td>
                 </tr>
-                <tr data-tags="employees">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="transfer_data_from_employee.php" target="_blank" rel="nofollow noreferrer">transfer_data_from_employee.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Clones an employee and copies related data. <strong>Default dry-run</strong>; <code>apply=1</code> mutates DB (Admin).</td>
                     <td>Open <a href="transfer_data_from_employee.php">transfer_data_from_employee.php</a> — preview with employee id, then <code>?id=N&amp;apply=1</code> only when needed.</td>
                 </tr>
-                <tr data-tags="employees">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="delete_clone_employee.php" target="_blank" rel="nofollow noreferrer">delete_clone_employee.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Deletes a cloned employee and related data. <strong>Default dry-run</strong>; <code>apply=1</code> is destructive (Admin).</td>
                     <td>Open <a href="delete_clone_employee.php">delete_clone_employee.php</a> — preview with employee id, then <code>?id=N&amp;apply=1</code> only when needed.</td>
                 </tr>
@@ -835,10 +835,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
             </thead>
             <tbody>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="idfs_sync_human_test.php" target="_blank" rel="nofollow noreferrer">idfs_sync_human_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>End-to-end HTTP regression for IDF rack/device flows; asserts sync across <code>idf_ports</code>, <code>switch_ports</code>, <code>equipment</code>, <code>idf_links</code>. <strong>Mutates DB:</strong> creates temporary equipment/port/position/link rows and removes temporary artifacts at the end. After login, POSTs to <code>index.php</code> so session <code>company_id</code> matches <code>ITM_COMPANY_ID</code>; company-selection GET resolves redirects manually (open_basedir-safe).</td>
                     <td>
                         CLI (recommended): <code>php scripts/idfs_sync_human_test.php</code><br>
@@ -846,20 +846,20 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         Browser: HTML log with <strong>← Scripts index</strong> and module/table links (debugging). Required before IDF-related PRs per AGENTS.md.
                     </td>
                 </tr>
-                <tr data-tags="idfs">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="idfs_api_payload_dry_run.php" target="_blank" rel="nofollow noreferrer">idfs_api_payload_dry_run.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">idfs</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Validates IDF device API JSON payloads offline (no MySQL). Read-only structure checks — always dry-run.</td>
                     <td>
                         Browser: <a href="idfs_api_payload_dry_run.php?samples=1">samples</a> · <code>?endpoint=port_update&amp;json=…</code><br>
                         CLI: <code>php scripts/idfs_api_payload_dry_run.php --samples</code> · <code>--endpoint=port_update --file=payload.json</code>
                     </td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="idf_device_port_sort_test.php" target="_blank" rel="nofollow noreferrer">idf_device_port_sort_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Proves RJ45 ports sort before fiber (SFP) in IDF device SQL; optional live MySQL checks.</td>
                     <td>
                         Browser: plain-text <code>[PASS]</code>/<code>[FAIL]</code> log. CLI:
@@ -867,26 +867,26 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         <code>--offline-only</code>
                     </td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="ensure_equipment_type_modules.php" target="_blank" rel="nofollow noreferrer">ensure_equipment_type_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Verifies or recreates canonical equipment-type façade modules under <code>modules/is_*</code> (<code>is_switch</code>, <code>is_server</code>, <code>is_workstation</code>, …). Does not delete anything. <strong>Default = dry-run</strong> (lists missing); <code>--apply</code> / <code>?apply=1</code> runs scaffold.</td>
                     <td>Browser: <a href="ensure_equipment_type_modules.php">dry-run</a> / <a href="ensure_equipment_type_modules.php?apply=1">apply=1</a>. CLI: <code>php scripts/ensure_equipment_type_modules.php</code> then <code>--apply</code>. Exit <code>1</code> if any canonical <code>index.php</code> is missing after apply.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="cleanup_equipment_test_module_artifacts.php" target="_blank" rel="nofollow noreferrer">cleanup_equipment_test_module_artifacts.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>
                         <strong>Destructive (local dev DB) on apply:</strong> removes regression-test <code>equipment_types</code> rows (including <code>MBQA-equipment_types-…</code> runner tags), ITM test companies, junk <code>modules/is_*_itm_eqdct_*</code> / <code>*_itm_edct_*</code> / orphan <code>modules/is_mbqa_equipment_types_*</code> folders, and matching sidebar prefs — then re-ensures canonical <code>is_*</code> modules. Never removes <code>is_switch</code>, <code>is_server</code>, etc. <strong>Default = dry-run</strong> preview counts. Browser <strong>Run QA</strong> runs apply mode silently before/after <code>module_browser_qa_runner.php</code>.
                     </td>
                     <td>Browser: <a href="cleanup_equipment_test_module_artifacts.php">dry-run</a> / <a href="cleanup_equipment_test_module_artifacts.php?apply=1">apply=1</a> (Admin). CLI: <code>php scripts/cleanup_equipment_test_module_artifacts.php</code> then <code>--apply</code>. Manual run after other equipment DB tests if needed.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="equipment_delete_clear_table_test.php" target="_blank" rel="nofollow noreferrer">equipment_delete_clear_table_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>
                         MySQL regression for equipment <code>clear_table</code> and transactional <code>equipment_delete_record()</code>. Uses equipment type names <code>Switch</code> / <code>Server</code> only (not suffixed names) so canonical <code>modules/is_*</code> façades are reused and the sidebar stays clean. <strong>Mutates DB:</strong> creates temporary tenant/reference/equipment rows, then cleans them up.
                     </td>
@@ -895,10 +895,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         Browser: static checks only (no DB or filesystem cleanup). MySQL regression requires CLI: <code>php scripts/equipment_delete_clear_table_test.php</code>.
                     </td>
                 </tr>
-                <tr data-tags="equipment tickets">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="tickets_related_equipment_delete_test.php" target="_blank" rel="nofollow noreferrer">tickets_related_equipment_delete_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">equipment</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">tickets</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>
                         MySQL regression for tickets sample data: seeds lookup parents (including <code>equipment</code>), inserts <code>TCK-0001</code> with <code>asset_id</code> on Primary File Server, and asserts <code>equipment_delete_record()</code> is blocked with a Related Asset / in-use message. <strong>Mutates DB:</strong> seeds/updates sample ticket rows during the test.
                     </td>
@@ -907,10 +907,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         Browser: static checks only (no DB). MySQL regression requires CLI.
                     </td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_tickets_sample_data.php" target="_blank" rel="nofollow noreferrer">verify_tickets_sample_data.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>
                         MySQL regression for tickets <strong>Add sample data</strong> on empty tenants: seeds <code>TCK-0001</code> with <code>is_archived = 0</code> when the company has no local employees (session Admin cross-company stamp). <strong>Mutates DB:</strong> deletes and re-seeds company <code>4</code> ticket lookup rows during the test.
                     </td>
@@ -918,10 +918,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         CLI: <code>php scripts/verify_tickets_sample_data.php</code> — exit <code>1</code> on failure. Run when changing <code>itm_seed_insert_tickets_sample_row()</code>, <code>modules/tickets/sample_seed_helpers.php</code>, or tickets sample POST in <code>index.php</code>.
                     </td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_equipment_triggers.php" target="_blank" rel="nofollow noreferrer">verify_equipment_triggers.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>
                         MySQL regression for <code>equipment</code> audit triggers: verifies that <code>INSERT</code>, <code>UPDATE</code>, and <code>DELETE</code> operations on the equipment table are correctly logged to <code>audit_logs</code>. <strong>Mutates DB:</strong> creates and deletes temporary equipment rows.
                     </td>
@@ -930,27 +930,27 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         Browser: runs the verification and displays results (HTML).
                     </td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="employees_delete_clear_table_test.php" target="_blank" rel="nofollow noreferrer">employees_delete_clear_table_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>MySQL regression for employees <code>clear_table</code> soft-delete (detach + <code>active=0</code>/<code>deleted_at</code>; live rows cleared, audit rows remain). <strong>Mutates DB:</strong> creates temporary tenant/reference/employee rows, then cleans them up.</td>
                     <td>
                         CLI: <code>php scripts/employees_delete_clear_table_test.php</code> · <code>ITM_SKIP_DB_TESTS=1</code> · <code>ITM_TEST_COMPANY_ID</code>.<br>
                         Browser: static checks only (no DB mutations). MySQL regression requires CLI: <code>php scripts/employees_delete_clear_table_test.php</code>.
                     </td>
                 </tr>
-                <tr data-tags="floor_designer_points switch_port_types">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_points.php" target="_blank" rel="nofollow noreferrer">check_points.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">floor_designer_points</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">switch_port_types</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Audits network points and connections.</td>
                     <td>CLI: <code>php scripts/check_points.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_visualizer_v2.php" target="_blank" rel="nofollow noreferrer">test_visualizer_v2.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Mock Vertical vs Horizontal IDF port visualizer (48 ports).</td>
                     <td>Browser: <code>scripts/test_visualizer_v2.php</code>. Regression: <code>php scripts/verify_port_visualizer_layout.php</code>.</td>
                 </tr>
@@ -961,10 +961,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression: Vertical odd/even grid placement vs Horizontal L→R (<code>grid-row</code> / <code>grid-column</code>).</td>
                     <td><code>php scripts/verify_port_visualizer_layout.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_rack_planner.php" target="_blank" rel="nofollow noreferrer">verify_rack_planner.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for <code>modules/rack_planner/</code>: <code>rack_planner</code> table + registry row, handler price-source sync wiring, audit triggers, and disposable <code>catalog:</code> / <code>equipment:</code> / <code>idf_unlinked:</code> price propagation to source tables.</td>
                     <td><code>php scripts/verify_rack_planner.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/rack_planner/</code>, <code>rack_planner_sync_source_prices_from_layout()</code>, or related <code>db/</code> split bundle tables. PHPUnit: <code>php scripts/run_tests.php --filter RackPlanner</code>.</td>
                 </tr>
@@ -984,38 +984,38 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
             </thead>
             <tbody>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="titles_list.php" target="_blank" rel="nofollow noreferrer">titles_list.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Scans all PHP files under <code>modules/</code> for <code>&lt;title&gt;</code> tags. Summary: match vs not match for canonical <code>&lt;title&gt;&lt;?= sanitize($crud_title) ?&gt; - &lt;?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?&gt;&lt;/title&gt;</code>; non-matching rows prefixed <code>[NOT MATCH]</code>.</td>
                     <td>Browser: HTML report. CLI: <code>php scripts/titles_list.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="titles_list_show.php" target="_blank" rel="nofollow noreferrer">titles_list_show.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Same scan/summary as <code>titles_list.php</code> with rendered inner title text; non-matching rows prefixed <code>[NOT MATCH]</code>.</td>
                     <td>Browser: HTML report. CLI: <code>php scripts/titles_list_show.php</code></td>
                 </tr>
-                <tr data-tags="Mixed Info">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="verify_module_page_chrome.php" target="_blank" rel="nofollow noreferrer">verify_module_page_chrome.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Cross-check: canonical browser <code>&lt;title&gt;</code> (<code>titles_list.php</code>) and Settings favicon wiring (<code>fields_missing.php</code> bespoke gate) on every <code>modules/**/*.php</code> file with a standalone <code>&lt;head&gt;</code>. Exit <code>1</code> on any title or favicon failure.</td>
                     <td>Browser: <a href="verify_module_page_chrome.php">verify_module_page_chrome.php</a>. CLI: <code>php scripts/verify_module_page_chrome.php</code></td>
                 </tr>
-                <tr data-tags="Mixed Info">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="verify_favicon_root_cause.php" target="_blank" rel="nofollow noreferrer">verify_favicon_root_cause.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Admin diagnostic: <code>ui_configuration</code> favicon path + on-disk <code>.ico</code> (Settings data layer) and module <code>&lt;head&gt;</code> favicon gate counts. Explains why <code>apply_head_favicon_link.php</code> alone does not fix empty <code>$favicon_url</code>. Optional <code>?module=</code> / <code>--module=</code> sample.</td>
                     <td>Browser: <a href="verify_favicon_root_cause.php">verify_favicon_root_cause.php</a>. CLI: <code>php scripts/verify_favicon_root_cause.php</code> · sample: <code>--module=employees</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="list_modules_without_share.php" target="_blank" rel="nofollow noreferrer">list_modules_without_share.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Lists <code>modules_registry</code> rows <strong>not</strong> in <code>itm_qr_share_capable_module_slugs()</code> (Share Modules <span class="badge">No share UI</span>). Browser table links each module <strong>name</strong> to <code>modules/{slug}/index.php</code> when the folder exists.</td>
                     <td>
                         <strong>Admin login required.</strong> Open <a href="list_modules_without_share.php" target="_blank" rel="nofollow noreferrer">list_modules_without_share.php</a> or
@@ -1023,10 +1023,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         CLI: <code>php scripts/list_modules_without_share.php</code> · JSON: <code>--json</code> · active only: <code>--active-only</code>
                     </td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="list_modules_not_on_sidebar.php" target="_blank" rel="nofollow noreferrer">list_modules_not_on_sidebar.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Audits <code>modules/*/index.php</code> vs live sidebar <code>match_dir</code> entries from <code>itm_sidebar_structure()</code> (base catalog, filesystem discovery, registry merge). Also lists active <code>modules_registry</code> rows without module folders (policy-hidden vs unexpected).</td>
                     <td>
                         <strong>Admin login required.</strong> Open <a href="list_modules_not_on_sidebar.php" target="_blank" rel="nofollow noreferrer">list_modules_not_on_sidebar.php</a> or
@@ -1034,20 +1034,20 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         CLI: <code>php scripts/list_modules_not_on_sidebar.php</code> · JSON: <code>--json</code> · exit <code>1</code> on unexpected gaps
                     </td>
                 </tr>
-                <tr data-tags="companies">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="list_empty_tables.php" target="_blank" rel="nofollow noreferrer">list_empty_tables.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">companies</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Lists every <code>company_id</code> table with zero live rows for the signed-in session company or a selected company (<code>?company=N</code> dropdown / <code>--company=N</code> on CLI). Links to <code>modules/{table}/index.php</code> in a new tab when the module folder exists.</td>
                     <td>
                         <strong>Admin login required</strong> in browser. Open <a href="list_empty_tables.php" target="_blank" rel="nofollow noreferrer">list_empty_tables.php</a>, filter with <a href="list_empty_tables.php?company=2">?company=2</a>, or <a href="list_empty_tables.php?company=1&amp;format=json">?company=1&amp;format=json</a>.<br>
                         CLI: <code>php scripts/list_empty_tables.php --company=1</code> · JSON: <code>--json</code>
                     </td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_company_empty_sample_data.php" target="_blank" rel="nofollow noreferrer">verify_company_empty_sample_data.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Seeds empty tenant tables that have an <strong>Add sample data</strong> button (16-module allowlist). Uses shared <code>itm_seed_table_from_database_sql()</code>; exits <code>1</code> when any seed leaves the table empty.</td>
                     <td>
                         <strong>Admin login required</strong> in browser.<br>
@@ -1056,10 +1056,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         Single module: <code>--module=monthly_budgets</code> / <code>?module=monthly_budgets</code>
                     </td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="compare_database_sql_modules.php" target="_blank" rel="nofollow noreferrer">compare_database_sql_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Compares every <code>CREATE TABLE</code> in <code>db/</code> split bundle with <code>modules/</code> folders and each module’s <code>$crud_table</code> mapping (matched, missing module, missing table, mismatch).</td>
                     <td>
                         <strong>Log in first.</strong> Open <a href="compare_database_sql_modules.php" target="_blank" rel="nofollow noreferrer">compare_database_sql_modules.php</a> or
@@ -1067,38 +1067,38 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         CLI: <code>php scripts/compare_database_sql_modules.php</code> · JSON: <code>--json</code> · exit code <code>1</code> when gaps exist.
                     </td>
                 </tr>
-                <tr data-tags="floor_plans floor_plan_folders">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="floor_plans_folder_move_test.php" target="_blank" rel="nofollow noreferrer">floor_plans_folder_move_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">floor_plans</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">floor_plan_folders</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>MySQL regression for Floor Plans folder reparenting (<code>fp_move_folder_to_parent</code> in <code>gallery_helpers.php</code>). <strong>Mutates DB:</strong> creates temporary folder hierarchy rows, then removes them.</td>
                     <td>Browser: HTML log with module/table links (needs DB). CLI: <code>php scripts/floor_plans_folder_move_test.php</code> — optional <code>ITM_TEST_COMPANY_ID</code>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="explorer_human_test.php" target="_blank" rel="nofollow noreferrer">explorer_human_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Human-flow regression for Explorer storage, access control, copy/move/delete, database synchronisation, and audit logging. <strong>Mutates DB and filesystem:</strong> creates a temporary company plus isolated <code>files/{company_id}</code> content, then removes them at shutdown.</td>
                     <td>Browser: Admin HTML log. CLI: <code>php scripts/explorer_human_test.php</code> — run after Explorer module changes.</td>
                 </tr>
-                <tr data-tags="floor_designer">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="floor_designer_test.php" target="_blank" rel="nofollow noreferrer">floor_designer_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">floor_designer</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Validates Floor Designer module logic, AJAX endpoints, and schema mapping.</td>
                     <td>Open in browser or run via CLI: <code>php scripts/floor_designer_test.php</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="list_active_and_checkboxes.php" target="_blank" rel="nofollow noreferrer">list_active_and_checkboxes.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Audits <code>active</code> field UI for modules with an <code>active</code> DB column (resolved via <code>$crud_table</code>). Flags forbidden text inputs, non-compliant scaffold checkboxes, and status-driven modules with visible active checkboxes.</td>
                     <td>Browser: HTML report (Admin). CLI: <code>php scripts/list_active_and_checkboxes.php</code> · JSON: <code>--json</code> · list compliant files: <code>--all</code> · exit <code>1</code> on violations</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="fix_scaffold_active_checkbox.php" target="_blank" rel="nofollow noreferrer">fix_scaffold_active_checkbox.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Repairs <code>scaffold_active_checkbox_not_compliant</code> findings (wrap <code>name="active"</code> checkboxes with <code>itm-checkbox-control</code> + <code>itm-check-indicator</code>). Browser module select; CLI <code>--module=</code> / <code>--all</code>. <strong>Default = dry-run</strong>; writes with <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
                     <td>Browser: module dropdown + preview/apply. CLI: <code>php scripts/fix_scaffold_active_checkbox.php --module=idfs</code> then <code>--apply</code>. Re-check: <code>php scripts/list_active_and_checkboxes.php</code>.</td>
                 </tr>
@@ -1133,227 +1133,227 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Batch runner for all Tier 2 static <code>check_*</code> scripts in <code>SCRIPTS_TEST_MATRIX.md</code> (pre-merge static cluster; no DB mutation). Stops on first failure by default; <code>--continue</code> collects all failures.</td>
                     <td>Browser: menu at <a href="run_tier2_checks.php" target="_blank" rel="nofollow noreferrer">run_tier2_checks.php</a>; run with <code>?run=1</code> (optional <code>&amp;continue=1</code>). CLI: <code>php scripts/run_tier2_checks.php</code>, <code>--continue</code>, <code>--list</code>, <code>--only=check_ui_action_emoji.php</code>. Optional <code>PHP_BIN</code> env on Windows Laragon.</td>
                 </tr>
-                <tr data-tags="Mixed Info">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="perform_audit.php" target="_blank" rel="nofollow noreferrer">perform_audit.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Exploratory Tier 1–3 script subprocess audit (excludes Tier 4/5, <code>repro_*</code>, <code>verify_*</code>, <code>_tmp_*</code>). Per-script <code>exit_code</code> + isolated <code>error_log.txt</code> deltas → <code>scripts/php_error_audit_results.json</code>. Allowlist: <code>scripts/data/perform_audit_allowlist.json</code>. Not a CI gate.</td>
                     <td><code>php scripts/perform_audit.php</code> (optional <code>--loop</code> for triage). Windows Laragon: full path to <code>php.exe</code> in parent and child processes.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_standard_crud_delegate_requires.php" target="_blank" rel="nofollow noreferrer">check_standard_crud_delegate_requires.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static scan: <code>modules/*/</code> PHP files must not <code>require __DIR__ . '/../manufacturers/…'</code> (only <code>modules/manufacturers/</code> may host that CRUD tree).</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_standard_crud_delegate_requires.php</code> — run after standard CRUD template or module scaffold changes.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_csrf_coverage.php" target="_blank" rel="nofollow noreferrer">check_csrf_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static scan: POST handlers that mutate data without a known CSRF guard.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_csrf_coverage.php</code> — smoke step 2 / AGENTS.md after CRUD changes.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apply_date_display_format.php" target="_blank" rel="nofollow noreferrer">apply_date_display_format.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>One-time/maintenance: patch duplicated <code>cr_render_cell_value()</code> helpers to call <code>itm_format_cell_scalar_display()</code> (dd/mm/yyyy list/view display). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped module files. Idempotent; re-run when new flattened CRUD modules ship without the date display hook.</td>
                     <td>Browser: <a href="apply_date_display_format.php">dry-run</a> / <a href="apply_date_display_format.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_date_display_format.php</code> then <code>php scripts/apply_date_display_format.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="employees">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apply_crud_hidden_employee_id_alias.php" target="_blank" rel="nofollow noreferrer">apply_crud_hidden_employee_id_alias.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>One-time/maintenance: replace dead <code>'user_id'</code> entries in flattened CRUD <code>$hidden</code> column arrays with <code>'employee_id'</code> under <code>modules/</code>. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped module files. Idempotent; re-run when new scaffolds copy the old hide list.</td>
                     <td>Browser: <a href="apply_crud_hidden_employee_id_alias.php">dry-run</a> / <a href="apply_crud_hidden_employee_id_alias.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_crud_hidden_employee_id_alias.php</code> then <code>php scripts/apply_crud_hidden_employee_id_alias.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apply_crud_fk_label_search.php" target="_blank" rel="nofollow noreferrer">apply_crud_fk_label_search.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>One-time/maintenance: extend flattened CRUD <code>index.php</code> search blocks with <code>itm_crud_fk_label_search_conditions()</code> so Search (all fields) matches FK label tables, not only raw IDs. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped modules (Employees uses <code>includes/itm_employees_search.php</code> instead). Idempotent.</td>
                     <td>Browser: <a href="apply_crud_fk_label_search.php">dry-run</a> / <a href="apply_crud_fk_label_search.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_crud_fk_label_search.php</code> then <code>php scripts/apply_crud_fk_label_search.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apply_display_field_columns_search_alias.php" target="_blank" rel="nofollow noreferrer">apply_display_field_columns_search_alias.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>One-time/maintenance: add <code>$displayFieldColumns = $uiColumns</code> (or <code>$visibleFieldColumns</code>) before module paths so list search does not reference an undefined variable. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped <code>index.php</code> files. Re-run when new flattened CRUD modules omit the alias.</td>
                     <td>Browser: <a href="apply_display_field_columns_search_alias.php">dry-run</a> / <a href="apply_display_field_columns_search_alias.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_display_field_columns_search_alias.php</code> then <code>php scripts/apply_display_field_columns_search_alias.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="Mixed Info">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="apply_script_catalog_tags.php" target="_blank" rel="nofollow noreferrer">apply_script_catalog_tags.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Computes table tags for every <code>scripts/scripts.php</code> catalog row (entry script + transitive <code>scripts/</code> requires + one-level spawn targets). Writes <code>scripts/data/script_catalog_tags.json</code> and patches <code>data-tags</code> + tag badge markup on each card.</td>
                     <td>Browser: <a href="apply_script_catalog_tags.php">dry-run</a> / <a href="apply_script_catalog_tags.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_script_catalog_tags.php</code> then <code>php scripts/apply_script_catalog_tags.php --apply</code>. Re-run after adding catalog rows or changing script SQL.</td>
                 </tr>
-                <tr data-tags="ui_configuration">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apply_head_favicon_link.php" target="_blank" rel="nofollow noreferrer">apply_head_favicon_link.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">ui_configuration</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Maintenance: add <code>itm_render_head_favicon_link($favicon_url ?? null)</code> in module <code>index.php</code>, <code>create.php</code>, <code>edit.php</code>, and <code>view.php</code> <code>&lt;head&gt;</code> so the tab icon matches Settings on first paint. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
                     <td>Browser: <a href="apply_head_favicon_link.php">dry-run</a> / <a href="apply_head_favicon_link.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_head_favicon_link.php</code> then <code>php scripts/apply_head_favicon_link.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="ui_configuration">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apply_list_new_button_style.php" target="_blank" rel="nofollow noreferrer">apply_list_new_button_style.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">ui_configuration</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Maintenance: normalize list-header <code>create.php</code> ➕ controls to <code>btn btn-primary itm-list-new-button</code> with <code>title="Create"</code> (40×40 CSS footprint). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
                     <td>Browser: <a href="apply_list_new_button_style.php">dry-run</a> / <a href="apply_list_new_button_style.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_list_new_button_style.php</code> then <code>php scripts/apply_list_new_button_style.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apply_new_button_position_helper.php" target="_blank" rel="nofollow noreferrer">apply_new_button_position_helper.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Maintenance: replace duplicated <code>new_button_position</code> fallbacks with <code>itm_resolve_new_button_position($ui_config)</code> (default <code>left</code>). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
                     <td>Browser: <a href="apply_new_button_position_helper.php">dry-run</a> / <a href="apply_new_button_position_helper.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_new_button_position_helper.php</code> then <code>php scripts/apply_new_button_position_helper.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apply_itm_actions_cell_markers.php" target="_blank" rel="nofollow noreferrer">apply_itm_actions_cell_markers.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>One-time/maintenance: add <code>class="itm-actions-cell"</code> and <code>data-itm-actions-origin="1"</code> on Actions column header and body cells in module list tables (module browser QA <code>ui_check</code>). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped files under <code>modules/*/index.php</code> and <code>modules/*/includes/partials/render.php</code>.</td>
                     <td>Browser: <a href="apply_itm_actions_cell_markers.php">dry-run</a> / <a href="apply_itm_actions_cell_markers.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_itm_actions_cell_markers.php</code> then <code>php scripts/apply_itm_actions_cell_markers.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apply_ui_action_emoji.php" target="_blank" rel="nofollow noreferrer">apply_ui_action_emoji.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>One-time/maintenance: bulk replace simple NO MIXED markup (emoji + action word) → emoji-only + <code>title</code> on modules and shared UI files. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped files. Skip PHP ternaries / JS templates — fix manually.</td>
                     <td>Browser: <a href="apply_ui_action_emoji.php">dry-run</a> / <a href="apply_ui_action_emoji.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_ui_action_emoji.php</code> then <code>php scripts/apply_ui_action_emoji.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="Markdown">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apply_pagination_emoji_labels.php" target="_blank" rel="nofollow noreferrer">apply_pagination_emoji_labels.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>One-time/maintenance: bulk replace legacy list pagination plain <code>Previous</code>/<code>Next</code> visible labels (and old mixed title attributes) with emoji-only visible text (<code>◀️</code>/<code>▶️</code>) and word-only <code>title</code> (<code>Previous page</code>/<code>Next page</code>). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists changed files.</td>
                     <td>Browser: <a href="apply_pagination_emoji_labels.php">dry-run</a> / <a href="apply_pagination_emoji_labels.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_pagination_emoji_labels.php</code> then <code>php scripts/apply_pagination_emoji_labels.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apply_pagination_first_last.php" target="_blank" rel="nofollow noreferrer">apply_pagination_first_last.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Add **⏮️** first-page and **⏭️** last-page <code>btn-sm</code> anchors beside existing **◀️** / **▶️** list pagination (word-only <code>title</code> attributes). Covers standard <code>?search=&amp;sort=&amp;dir=&amp;page=</code> links plus bespoke builders (<code>pwd_build_list_url</code>, <code>sa_build_query</code>, <code>itm_audit_logs_build_query</code>, tickets <code>show_archived</code>, catalogs <code>$catalogNewProductsQuery</code>, IPAM focused list suffix, ops_report search hits, emails send logs). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Skips files that already include both first and last controls.</td>
                     <td>Browser: <a href="apply_pagination_first_last.php">dry-run</a> / <a href="apply_pagination_first_last.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_pagination_first_last.php</code> then <code>php scripts/apply_pagination_first_last.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="ui_configuration">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_pagination_emoji.php" target="_blank" rel="nofollow noreferrer">check_pagination_emoji.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">ui_configuration</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static audit: list pagination emoji-only visible labels (<code>⏮️</code>/<code>◀️</code>/<code>▶️</code>/<code>⏭️</code>) and word-only <code>title</code> attributes (<code>First page</code> … <code>Last page</code>). Scans module <code>index.php</code> (thin-router merge), <code>list_all.php</code>/<code>view.php</code>/<code>delete.php</code>, IPAM/rack <code>includes/partials/render.php</code>, and <code>tabs/*.php</code>. Uses <code>itm_check_pagination_nav_titles()</code>.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_pagination_emoji.php</code> — exit <code>0</code> when 0 violations. Run after pagination label or first/last control changes.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_source_utf8_mojibake.php" target="_blank" rel="nofollow noreferrer">verify_source_utf8_mojibake.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static audit: tracked <code>modules/</code>, <code>includes/</code>, <code>scripts/</code>, <code>js/</code>, <code>css/</code>, <code>config/</code> source must be valid UTF-8 without mojibake literals (corrupted emoji, accents, or punctuation). Optional scope: <code>?path=modules/patches_updates</code> / <code>--path=…</code>.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/verify_source_utf8_mojibake.php</code> — exit <code>0</code> when 0 violations. Run after encoding or emoji copy/paste changes.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="fix_source_utf8_mojibake.php" target="_blank" rel="nofollow noreferrer">fix_source_utf8_mojibake.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Repair known mojibake literals in tracked source. Browser <strong>selection mode</strong> (Select to Fix → check files → Preview / Fix Selected; Admin for apply). CLI: <code>--path=</code>, <code>--files=</code>, <code>--apply</code>. Default dry-run.</td>
                     <td>Browser: <a href="fix_source_utf8_mojibake.php">selection UI</a>. CLI: <code>php scripts/fix_source_utf8_mojibake.php --files=modules/foo/index.php --apply</code>. Bulk all files: <code>apply_utf8_mojibake_fix.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_codacy_xss_echo.php" target="_blank" rel="nofollow noreferrer">check_codacy_xss_echo.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static audit: Codacy-risky user-input echo patterns in <code>modules/**/*.php</code> — short-echo <code>&lt;?= sanitize($search…)</code> in <code>value</code>/<code>href</code>/<code>&lt;strong&gt;</code>, and <code>echo sanitize(http_build_query(…))</code> inside <code>href</code>.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_codacy_xss_echo.php</code> — default informational (exit <code>0</code>); <code>--strict</code> / <code>?strict=1</code> exits <code>1</code> when violations remain. Run after search form or dynamic <code>href</code> query changes.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_manual_sql_string.php" target="_blank" rel="nofollow noreferrer">check_manual_sql_string.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static audit: manually-constructed SQL strings in <code>modules/**/*.php</code> — SQL keyword literals concatenated/interpolated with variables, or <code>mysqli_query</code>/<code>itm_run_query</code> with user input in the SQL string. Excludes URL <code>http_build_query()</code> / <code>.php?</code> href patterns.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_manual_sql_string.php</code> — default informational (exit <code>0</code>); <code>--strict</code> / <code>?strict=1</code> exits <code>1</code> when violations remain. Optional <code>--include-scripts</code> / <code>?include_scripts=1</code>. Run after dynamic SQL changes; complements <code>check_sql_injection_coverage.php</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_not_operator.php" target="_blank" rel="nofollow noreferrer">check_not_operator.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static audit <strong>[Warning]</strong>: Codacy-style unary <code>!</code> on <code>$variables</code> in <code>modules/</code>, <code>includes/</code>, and <code>config/</code> — flags <code>if (!$ok)</code> patterns for manual review; excludes <code>!is_*()</code>, <code>!function_exists()</code>, and <code>!==</code>. Always informational (exit <code>0</code>) — do not bulk-replace with <code>=== false</code>.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_not_operator.php</code> — always exit <code>0</code> (Warning tier). Optional <code>--include-scripts</code> / <code>?include_scripts=1</code>. Run when reviewing Codacy <code>!</code> findings; fix case-by-case or add <code>itm-not-operator-exempt:</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_ui_action_emoji.php" target="_blank" rel="nofollow noreferrer">check_ui_action_emoji.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static audit: NO MIXED gate on <code>&lt;a&gt;</code>, <code>&lt;button&gt;</code>, <code>&lt;input&gt;</code>, <code>&lt;h1&gt;</code>–<code>&lt;h3&gt;</code> — seven emoji+word regex families, known compound literals, plain-text action outliers, header <code>intentRules</code> drift.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_ui_action_emoji.php</code> — exit <code>0</code> when <strong>0 violations incl. mixed emoji+word</strong>; exit <code>1</code> on any match. Run after UI label changes.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_script_browser_nav_duplicate.php" target="_blank" rel="nofollow noreferrer">check_script_browser_nav_duplicate.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static audit: <code>scripts/*.php</code> must not stack two <strong>← Scripts index</strong> links in one browser response — <code>itm_script_output_begin()</code> already calls <code>itm_script_browser_nav_echo()</code>; custom HTML must not call nav again after <code>close_pre</code> or in the same <code>if (!$isCli)</code> block.</td>
                     <td>Browser: plain-text report in <code>&lt;pre&gt;</code>. CLI: <code>php scripts/check_script_browser_nav_duplicate.php</code> — exit <code>0</code> when no duplicate-nav patterns; exit <code>1</code> with file list. Run after changing script browser shells or <code>script_cli_output.php</code> / <code>script_browser_nav.php</code>.</td>
                 </tr>
-                <tr data-tags="employees">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_fk_label_search_coverage.php" target="_blank" rel="nofollow noreferrer">check_fk_label_search_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static audit: every module with server-side list search must match visible FK/label columns (shared CRUD helper, scalar column helper, EXISTS/JOIN label LIKE, employee JOIN/CONCAT, or scalar-only fields). No per-module allowlist.</td>
                     <td>Browser: plain-text report (Administrator session). CLI: <code>php scripts/check_fk_label_search_coverage.php</code> — smoke step 4 / AGENTS.md after list search changes; exit <code>0</code> on full coverage.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_display_field_columns_search.php" target="_blank" rel="nofollow noreferrer">check_display_field_columns_search.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static audit: every <code>modules/*/index.php</code> that uses <code>foreach ($displayFieldColumns …)</code> must assign <code>$displayFieldColumns</code> first.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_display_field_columns_search.php</code> — run after bulk CRUD/search changes; exit <code>1</code> on failure.</td>
                 </tr>
-                <tr data-tags="Mixed Info">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="check_script_catalog_tags.php" target="_blank" rel="nofollow noreferrer">check_script_catalog_tags.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static gate: every <code>scripts/scripts.php</code> catalog row has correct <code>data-tags</code> and tag badge markup matching the computed scan in <code>scripts/lib/itm_script_catalog_tags.php</code>.</td>
                     <td>Browser: plain-text report (Administrator session). CLI: <code>php scripts/check_script_catalog_tags.php</code> — run after catalog or script SQL changes; exit <code>1</code> on drift.</td>
                 </tr>
-                <tr data-tags="employees notes">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_script_disposable_employees.php" target="_blank" rel="nofollow noreferrer">check_script_disposable_employees.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">notes</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static audit: repro/verify scripts must not hardcode seed user id <code>1</code> for <code>employees</code> / <code>reset_token</code> / notes mutations — use <code>scripts/lib/itm_script_test_employee.php</code>.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_script_disposable_employees.php</code> — run after changing audit repro scripts; exit <code>1</code> on failure.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_sql_injection_coverage.php" target="_blank" rel="nofollow noreferrer">check_sql_injection_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static scan: direct queries near user input without obvious binding/sanitization.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_sql_injection_coverage.php</code> — smoke step 3 / AGENTS.md after PHP/SQL changes.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_stale_user_id_sql.php" target="_blank" rel="nofollow noreferrer">check_stale_user_id_sql.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static audit: fail on stale <code>user_id</code> column SQL or legacy <code>users</code> table references in <code>modules/</code>, <code>includes/</code>, and <code>config/</code> after the employees merge.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_stale_user_id_sql.php</code> — run after auth/session or schema merge changes; exit <code>1</code> on failure.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_stale_user_terminology.php" target="_blank" rel="nofollow noreferrer">check_stale_user_terminology.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static audit: fail on stale <code>Users module</code> / <code>Users Management</code> prose, <code>employee_companies</code> + <code>user_id</code> helper references, session <code>role_name</code> admin checks in <code>modules/</code>, <code>cr_username_for_user_id</code>, and <code>'user_id'</code> inside CRUD <code>$hidden</code> arrays.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_stale_user_terminology.php</code> — run after docs/script copy changes; exit <code>1</code> on failure.</td>
                 </tr>
-                <tr data-tags="idf_ports Info">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="check_multi_tenant_leaks.php" target="_blank" rel="nofollow noreferrer">check_multi_tenant_leaks.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">idf_ports</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static scan: SQL queries and INSERTs on scoped tables missing <code>company_id</code> filters, and improper UI exposure of company identifiers.</td>
                     <td>Browser: HTML report with detailed leak locations. CLI: <code>php scripts/check_multi_tenant_leaks.php</code> — run after CRUD changes to ensure data isolation.</td>
                 </tr>
-                <tr data-tags="Mixed Info">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="check_index_table_compliance.php" target="_blank" rel="nofollow noreferrer">check_index_table_compliance.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>
                         Index list tables: <code>data-itm-db-import-endpoint</code>, <code>data-itm-actions-origin</code>, POST CSRF, form <code>csrf_token</code>.
                         Skips import when <code>data-itm-no-import-excel="1"</code>; skips Actions markers when the index has no Actions column.
@@ -1364,24 +1364,24 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         <code>--strict</code> · <code>--write-baseline</code>
                     </td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apply_bulk_delete_cancel_ux.php" target="_blank" rel="nofollow noreferrer">apply_bulk_delete_cancel_ux.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>One-time maintenance: strip duplicated inline bulk-delete <code>selectionMode</code> scripts from module PHP files after <code>js/bulk-delete-selection.js</code> (shared Cancel button) ships via <code>includes/header.php</code>. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped module files.</td>
                     <td>Browser: <a href="apply_bulk_delete_cancel_ux.php">dry-run</a> / <a href="apply_bulk_delete_cancel_ux.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_bulk_delete_cancel_ux.php</code> then <code>php scripts/apply_bulk_delete_cancel_ux.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="Mixed Info">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="apply_bulk_actions_records_per_page_gate.php" target="_blank" rel="nofollow noreferrer">apply_bulk_actions_records_per_page_gate.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Add <code>records_per_page</code> visibility gate for bulk delete / clear table on module <code>index.php</code> files (<code>$showBulkActions = ($totalRows &gt;= $perPage)</code>). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped module files.</td>
                     <td>Browser: <a href="apply_bulk_actions_records_per_page_gate.php">dry-run</a> / <a href="apply_bulk_actions_records_per_page_gate.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_bulk_actions_records_per_page_gate.php</code> then <code>php scripts/apply_bulk_actions_records_per_page_gate.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="module_clean_tests_qa_runner.php" target="_blank" rel="nofollow noreferrer">module_clean_tests_qa_runner.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Runs the same QA artifact cleanup used by <code>module_browser_qa_runner.php</code>: equipment scaffold folders, legacy template stub modules, MBQA/QA-IMPORT DB rows, sidebar leftovers, then re-ensures canonical <code>modules/is_*</code> facades. Browser <strong>Run QA</strong> already triggers this cleanup silently at start and end; use this page for manual cleanup runs. Includes quick links: <strong>Clean Tests · Open markdown file · Download XLSX · Rebuild report · Re-Run Test · Run QA runner</strong>.</td>
                     <td>
                         Browser: <a href="module_clean_tests_qa_runner.php" target="_blank" rel="nofollow noreferrer">module_clean_tests_qa_runner.php</a> (open page, click <strong>Run Clean Tests</strong>; POST + CSRF required).<br>
@@ -1389,10 +1389,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         Help: <code>php scripts/module_clean_tests_qa_runner.php --help</code>
                     </td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="module_browser_qa_runner.php" target="_blank" rel="nofollow noreferrer">module_browser_qa_runner.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>
                         Full-module QA across all <code>modules/*/index.php</code> entries for companies 1–5: login, then per module <strong>mysql</strong> (<code>db/</code> split bundle INSERT row count), <strong>rotate error_log.txt</strong>, list/<strong>clear</strong>/sample_data, <strong>add</strong>, <strong>bulk_delete</strong>, CRUD/export, <strong>clear_table</strong>, second <strong>clear</strong>, import/<strong>single_delete</strong>, end sample restore + <strong>error_log</strong>. <strong>Mutates DB:</strong> seeds sample data and inserts/imports test rows as part of the flow. Tier lists: <code>$bespokeSmoke</code> / <code>$skipClear</code> in <code>scripts/lib/mbqa_runner_tiers.php</code>. Browser <strong>Run QA</strong> silently runs <code>module_clean_tests_qa_runner.php</code> at start and end. Preflight validation, auto-detected Base URL on Laragon, structured <strong>import_db</strong> JSON parsing, stale AJAX cleanup. Optional browser-only <strong>UI click smoke</strong> (one module + one company) appends <code>bulk_cancel_click</code>, <code>pagination_click</code>, <code>export_xlsx_click</code>, <code>import_excel_click</code>. Writes timestamped <code>qa-reports/module-browser-qa-YYYY-MM-DD-HH-MM-SS.json</code> and matching <code>.xlsx</code> each run.
                     </td>
@@ -1406,10 +1406,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         <code>php scripts/module_browser_qa_runner.php --help</code>
                     </td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="module_browser_qa_build_report.php" target="_blank" rel="nofollow noreferrer">module_browser_qa_build_report.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Builds markdown summary from a timestamped runner JSON: tier reference (<code>$bespokeSmoke</code>, <code>$skipClear</code>), configured step exceptions, per-module results, failure/skip indexes. Re-Run links preserve UI click smoke when set. Writes <code>qa-reports/module-browser-qa.md</code> (overwritten each build).</td>
                     <td>
                         Browser: <a href="module_browser_qa_build_report.php" target="_blank" rel="nofollow noreferrer">module_browser_qa_build_report.php</a> (form; <code>?run=1&amp;date=YYYY-MM-DD</code>)<br>
@@ -1417,48 +1417,48 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         <code>php scripts/module_browser_qa_build_report.php --date=2026-05-20</code>
                     </td>
                 </tr>
-                <tr data-tags="employees">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_employees_clear_table_transaction.php" target="_blank" rel="nofollow noreferrer">check_employees_clear_table_transaction.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static guard: employees <code>clear_table</code> uses soft-delete via <code>employees_delete_record()</code> (detach + transaction + <code>itm_crud_build_soft_delete_sql</code>).</td>
                     <td>Browser: <a href="check_employees_clear_table_transaction.php" target="_blank" rel="nofollow noreferrer">run</a>. CLI: <code>php scripts/check_employees_clear_table_transaction.php</code> — run after employees <code>clear_table</code> changes (AGENTS.md).</td>
                 </tr>
-                <tr data-tags="equipment">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_equipment_clear_table_delete.php" target="_blank" rel="nofollow noreferrer">check_equipment_clear_table_delete.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">equipment</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static guard: equipment <code>clear_table</code> uses soft-delete via <code>equipment_delete_record()</code> (transaction + <code>itm_crud_build_soft_delete_sql</code>).</td>
                     <td>Browser: <a href="check_equipment_clear_table_delete.php" target="_blank" rel="nofollow noreferrer">run</a>. CLI: <code>php scripts/check_equipment_clear_table_delete.php</code> — run after equipment delete/clear-table changes (AGENTS.md).</td>
                 </tr>
-                <tr data-tags="Mixed Info">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="check_ui_configuration_coverage.php" target="_blank" rel="nofollow noreferrer">check_ui_configuration_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>UI configuration hooks: table actions, new button, export toolbar, back/save on forms.</td>
                     <td>Browser: plain-text module list. CLI: <code>php scripts/check_ui_configuration_coverage.php</code> — run manually when module UI/layout changes; exits <code>2</code> only on gated <code>[fail]</code>. Audits table actions, export card, search, Settings <code>records_per_page</code> pagination, bulk Select to Delete / Clear Table, and CRUD entry files. Gate-excluded slugs (<code>scripts/data/ui_configuration_excluded_modules.txt</code>, synced with <code>docs/list_bespoke_UI.txt</code>) and <code>is_*</code> prefixes print every check as <code>[n/a][pass]</code>, <code>[n/a][fail]</code>, or <code>[n/a][n/a]</code>; reviewed lines add <code>[reviewed]</code> via <a href="ui_configuration_reviewed.php" target="_blank" rel="nofollow noreferrer">ui_configuration_reviewed.php</a> · <code>scripts/data/ui_configuration_reviewed.json</code>. Optional <code>--list-excluded</code> / <code>?list_excluded=1</code> prints gate-excluded slug names in the header.</td>
                 </tr>
-                <tr data-tags="audit_logs">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_audit_logs_coverage.php" target="_blank" rel="nofollow noreferrer">check_audit_logs_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">audit_logs</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Audit trail for mutations: <code>itm_run_query</code>, <code>itm_log_audit</code>, bulk helpers, or <code>trg_{table}_audit_*</code> in <code>db/</code> split bundle.</td>
                     <td>
                         Browser: HTML/plain report (PHP 7.4+); query <code>?module=NAME</code> or <code>?json=1</code>. CLI: <code>php scripts/check_audit_logs_coverage.php</code> — exit <code>2</code> on failures.<br>
                         <code>--module=NAME</code> · <code>--json</code>
                     </td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="sql_injection_matrix_test.php" target="_blank" rel="nofollow noreferrer">sql_injection_matrix_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Fixed payload matrix against <code>lib/sql_injection_detector.php</code>.</td>
                     <td>Browser: plain-text results. CLI: <code>php scripts/sql_injection_matrix_test.php</code> — non-zero exit if any case fails.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="db_field_active.php" target="_blank" rel="nofollow noreferrer">db_field_active.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Identifies tables missing the mandatory <code>active</code> column and detects code mismatches where queries expect this field on tables that lack it.</td>
                     <td>Browser: HTML report with detailed mismatch locations. CLI: <code>php scripts/db_field_active.php</code> — run after CRUD changes to ensure schema compliance.</td>
                 </tr>
@@ -1482,24 +1482,24 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
             </thead>
             <tbody>
-                <tr data-tags="modules_registry">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="sync_modules_registry.php" target="_blank" rel="nofollow noreferrer">sync_modules_registry.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">modules_registry</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Upserts <code>modules_registry</code> rows from filesystem module folders and sidebar-excluded slugs; seeds <code>company_module_access</code> for new registry rows. Sidebar discovery also auto-registers new tables/folders on page load — use this script for bulk backfill after deploy or when icons/labels need catalog sync.</td>
                     <td>Browser: <a href="sync_modules_registry.php">sync_modules_registry.php</a>. CLI: <code>php scripts/sync_modules_registry.php</code>. Run after adding module folders; optional when only a new MySQL table was created (sidebar auto-scaffold + register).</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_ops_report.php" target="_blank" rel="nofollow noreferrer">verify_ops_report.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for <code>modules/ops_report/</code>: D-2 edit lock (today/yesterday editable; D-2+ locked unless admin), daily <code>ops_report</code> CRUD, child-row cascade delete, cross-date hit line format, audit triggers on all <code>ops_report*</code> tables, and <code>modules_registry</code> slug <code>ops_report</code>.</td>
                     <td><code>php scripts/verify_ops_report.php</code>. PHPUnit: <code>php scripts/run_tests.php --filter OpsReport</code>. Run when changing <code>modules/ops_report/</code> or <code>ops_report*</code> tables in <code>db/</code> split bundle.</td>
                 </tr>
-                <tr data-tags="ops_report">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_ops_report_sample_data.php" target="_blank" rel="nofollow noreferrer">verify_ops_report_sample_data.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">ops_report</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>
                         MySQL regression for <strong>Add sample data</strong> on all seven <code>ops_report_*</code> child modules when the tenant has no parent <code>ops_report</code> rows. <strong>Mutates DB:</strong> deletes and re-seeds company <code>4</code> ops report tables during the test.
                     </td>
@@ -1507,10 +1507,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         CLI: <code>php scripts/verify_ops_report_sample_data.php</code> — exit <code>1</code> on failure. Run when changing <code>itm_sample_data_prerequisite_map()</code>, <code>itm_seed_ensure_tenant_table_sample_rows()</code>, or child-module sample POST handlers.
                     </td>
                 </tr>
-                <tr data-tags="ops_report ops_report_guest_experience">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="seed_ops_report_search_demo.php" target="_blank" rel="nofollow noreferrer">seed_ops_report_search_demo.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">ops_report</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">ops_report_guest_experience</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Seeds company 1 Ops Report demo rows on two past dates with keyword <code>DemoManager</code> (header + guest experience child) for manual QA and screenshot capture; prints expected cross-date hit lines.</td>
                     <td><code>php scripts/seed_ops_report_search_demo.php</code> — optional <code>--company=</code>, <code>--keyword=</code>. Browser: Admin session required.</td>
                 </tr>
@@ -1521,38 +1521,38 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Seeds demo data, bypass login, captures five human-flow Ops Report search PNGs under <code>qa-reports/ops_report_search/</code> (all-dates hits, section filter, sort, this-day navigation, search bar). Requires Playwright + local Apache.</td>
                     <td><code>python scripts/verify_ops_report_search_screenshot.py</code>. Env: <code>ITM_SCREENSHOT_BASE_URL</code>, <code>ITM_PHP_BIN</code>, <code>ITM_OPS_SEARCH_DEMO_KEYWORD</code>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_bookmarks_import.php" target="_blank" rel="nofollow noreferrer">verify_bookmarks_import.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for <code>modules/bookmarks/import.php</code> HTML folder paths: nested <code>L1/L2</code> placement, duplicate URL skips without orphan empty folders, legacy <code>name_hash</code> folder lookup, CSV folder target, and vault-gated private import. Uses disposable script employee + <code>scripts/data/bookmarks_import_sample.html</code>.</td>
                     <td><code>php scripts/verify_bookmarks_import.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/bookmarks/helpers.php</code> import helpers, <code>import.php</code>, or private folder encryption.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_bookmarks_folder_move.php" target="_blank" rel="nofollow noreferrer">verify_bookmarks_folder_move.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for bookmarks folder drag/move merge: duplicate same-named siblings can reparent without merge or merge bookmarks/subfolders into the existing folder via <code>bkm_move_folder()</code> / <code>bkm_merge_folder_into()</code>.</td>
                     <td><code>php scripts/verify_bookmarks_folder_move.php</code> — exit <code>1</code> on failure. Run when changing folder move/merge helpers or <code>modules/bookmarks/index.php</code> / <code>edit_folder.php</code> move prompts.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_chatbot.php" target="_blank" rel="nofollow noreferrer">verify_chatbot.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for IT Support Chatbot + <code>modules/knowledge_base/chat_api.php</code>: rate limit + CSRF guards, <code>escapeHtml()</code> before message <code>innerHTML</code>, <code>enable_chatbot</code> asset gating, audit triggers, and tenant-scoped <code>knowledge_base</code> search.</td>
                     <td><code>php scripts/verify_chatbot.php</code> — exit <code>1</code> on failure. Run when changing <code>js/chatbot.js</code>, <code>chat_api.php</code>, <code>includes/header.php</code> chatbot toggle, or <code>knowledge_base</code> / <code>it_settings</code> schema.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_request_password.php" target="_blank" rel="nofollow noreferrer">verify_request_password.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for <code>modules/request_password/</code>: RBAC guard, HMAC approval links, list import/Actions markers, creator-only soft-delete guard, audit triggers, and disposable-row delete-authorization check.</td>
                     <td><code>php scripts/verify_request_password.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/request_password/</code> workflow, delete guard, or <code>request_password</code> in <code>db/</code> split bundle. PoC: <code>repro_request_password_bypass.php</code>.</td>
                 </tr>
-                <tr data-tags="modules_registry">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_reports_hub.php" target="_blank" rel="nofollow noreferrer">verify_reports_hub.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">modules_registry</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for <code>modules/reports/</code> Reports Hub: exercises every <code>api/helpers.php</code> chart payload, Hotel Operations MTD metrics (<code>ops_report</code>, <code>ops_report_fb_outlet</code>), budget vs actual / YoY totals, <code>modules_registry</code> slug <code>reports</code>, and core Chart.js canvas ids in <code>index.php</code>. Expects <code>db/</code> split bundle Reports Hub sample seeds.</td>
                     <td>Browser: <a href="verify_reports_hub.php">verify_reports_hub.php</a>. CLI: <code>php scripts/verify_reports_hub.php</code>. Optional <code>ITM_TEST_COMPANY_ID</code> (default 1). Run when changing <code>modules/reports/</code>, helpers, or Reports Hub seeds in <code>db/</code> split bundle.</td>
                 </tr>
@@ -1563,108 +1563,108 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Read-only benchmark for sidebar generation: measures MySQL <code>Questions</code> delta for the live path (<code>itm_sidebar_structure()</code> + <code>has_module_access()</code> filter) vs an uncached legacy N+1 simulation (per-slug registry + admin + CMA queries and per-slug registry ensure). Reports median query count, timing, and reduction percentage. Requires prefetch cache in <code>includes/itm_company_module_access.php</code>.</td>
                     <td>CLI: <code>php scripts/benchmark_sidebar_module_access.php</code> · optional <code>--company=1 --employee=1 --iterations=3 --checks=100</code>. Browser: <a href="benchmark_sidebar_module_access.php">benchmark_sidebar_module_access.php</a> · query params <code>company</code>, <code>employee</code>, <code>iterations</code>, <code>checks</code>. Env thresholds: <code>ITM_BSMA_MAX_FULL_QUERIES</code> (default 45), <code>ITM_BSMA_MIN_REDUCTION_PCT</code> (default 50), plus BOLT journal component vars documented in <code>scripts/SCRIPTS.md</code>. Verifies claims in <code>docs/bolt.md</code>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_company_module_access.php" target="_blank" rel="nofollow noreferrer">verify_company_module_access.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for registry coverage, opt-out deny, sidebar-excluded slugs in the admin matrix, company icon overrides, and disposable sidebar discovery probes: registry-only (no <code>modules/{slug}/</code>), new MySQL table (auto-scaffold), folder-only (<code>index.php</code>), registry + folder (single entry), neither (absent + denied). Uses <code>itm_sidebar_discovery_probe_cleanup()</code> for probe teardown.</td>
                     <td>Browser: <a href="verify_company_module_access.php">verify_company_module_access.php</a>. CLI: <code>php scripts/verify_company_module_access.php</code>. PHPUnit: <code>php scripts/run_tests.php --filter CompanyModuleAccessVerifyTest</code> (subprocess wrapper). Run when changing <code>includes/itm_company_module_access.php</code>, <code>includes/ui_config.php</code> sidebar discovery, or CMA enforcement.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_roles_permissions.php" target="_blank" rel="nofollow noreferrer">verify_roles_permissions.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for <code>modules/roles_permissions/</code>: registry row, module entry + matrix JS, RBAC-exempt slug, Admin <code>ALL</code> wildcard with six flags, seeded roles and <code>role_hierarchy</code> for company 1, <code>can_import</code>/<code>can_export</code> columns, role sidebar <code>active_count</code> (role_id + HR Active).</td>
                     <td>Browser: <a href="verify_roles_permissions.php">verify_roles_permissions.php</a>. CLI: <code>php scripts/verify_roles_permissions.php</code>. Run when changing <code>modules/roles_permissions/</code>, <code>js/roles-permissions-matrix.js</code>, or <code>role_module_permissions</code> / <code>employee_roles</code> schema.</td>
                 </tr>
-                <tr data-tags="employees employee_roles">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_demo_module_restrictions.php" target="_blank" rel="nofollow noreferrer">verify_demo_module_restrictions.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employee_roles</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for demo users <code>demo1</code>–<code>demo5</code> (single-module access + Settings/Dashboard) and seed admins <code>Admin</code>/<code>Admin2</code>–<code>Admin5</code>: <code>password_verify</code>, <code>itm_is_admin()</code>, <code>has_module_access</code>, RBAC <code>can_view</code>, subprocess module <code>index.php</code> probes. Contract: <code>lib/itm_demo_module_restrictions_contract.php</code>.</td>
                     <td>Browser: <a href="verify_demo_module_restrictions.php">verify_demo_module_restrictions.php</a>. CLI: <code>php scripts/verify_demo_module_restrictions.php</code>. Run after seeding demo users in <code>db/02_data.sql</code> or <code>fast_create_acc.php</code>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_employee_contact_email.php" target="_blank" rel="nofollow noreferrer">verify_employee_contact_email.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression: at least one of <code>work_email</code> / <code>personal_email</code> on employee create/edit/import (<code>includes/itm_employee_contact_email.php</code>); helper checks, create/edit wiring, <code>fast_create_acc</code> both email fields, disposable employee create.</td>
                     <td>CLI: <code>php scripts/verify_employee_contact_email.php</code>. Run when changing employee email validation or employees import/create/edit paths.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="fast_create_acc.php" target="_blank" rel="nofollow noreferrer">fast_create_acc.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Admin <strong>Employees</strong> fast-create UI at <code>modules/employees/fast_create_acc.php</code> (🚀 from list toolbar) plus CLI <code>--seed-demo-bundle</code>. Browser entry <code>scripts/fast_create_acc.php</code> redirects to the module page. Shared lib: <code>lib/itm_demo_module_users_seed.php</code>.</td>
                     <td>Browser: <a href="../modules/employees/fast_create_acc.php">modules/employees/fast_create_acc.php</a> (or <a href="fast_create_acc.php">scripts/fast_create_acc.php</a> redirect). CLI: <code>php scripts/fast_create_acc.php --seed-demo-bundle --company=1</code>.</td>
                 </tr>
-                <tr data-tags="employees">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_dashboard_active_employees.php" target="_blank" rel="nofollow noreferrer">verify_dashboard_active_employees.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for <code>admin.php</code> row-2 <strong>Active</strong> and <strong>On Leave</strong> stats: helper call-sites, no leftover join-predicate SQL, soft-delete-aware counts (optional <code>ITM_TEST_COMPANY_ID</code>); employee <code>dashboard.php</code> must not duplicate company counts.</td>
                     <td>Browser: <a href="verify_dashboard_active_employees.php">verify_dashboard_active_employees.php</a>. CLI: <code>php scripts/verify_dashboard_active_employees.php</code>. Run when changing <code>admin.php</code> or Active/On Leave employee count logic.</td>
                 </tr>
-                <tr data-tags="employees">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_dashboard_online_employees.php" target="_blank" rel="nofollow noreferrer">verify_dashboard_online_employees.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for <code>admin.php</code> row-2 <strong>Online now</strong> stat: session presence helper, <code>config/config.php</code> touch hook, count after touch.</td>
                     <td>Browser: <a href="verify_dashboard_online_employees.php">verify_dashboard_online_employees.php</a>. CLI: <code>php scripts/verify_dashboard_online_employees.php</code>. Run when changing online session presence or admin Online now markup.</td>
                 </tr>
-                <tr data-tags="employees">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_employee_dashboard.php" target="_blank" rel="nofollow noreferrer">verify_employee_dashboard.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for employee <code>dashboard.php</code>: hero + grouped stat cards, <code>includes/itm_employee_dashboard.php</code> loader, no company switcher or employment-status counts.</td>
                     <td>Browser: <a href="verify_employee_dashboard.php">verify_employee_dashboard.php</a>. CLI: <code>php scripts/verify_employee_dashboard.php</code>. Run when changing employee dashboard cards or stats loader.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_admin_page_gate.php" target="_blank" rel="nofollow noreferrer">verify_admin_page_gate.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for <code>admin.php</code> admin-only gate: <code>itm_is_admin()</code> and redirect to <code>dashboard.php</code> for non-admins.</td>
                     <td>Browser: <a href="verify_admin_page_gate.php">verify_admin_page_gate.php</a>. CLI: <code>php scripts/verify_admin_page_gate.php</code>. Run when changing admin page access control.</td>
                 </tr>
-                <tr data-tags="companies">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_settings_admin_buttons.php" target="_blank" rel="nofollow noreferrer">verify_settings_admin_buttons.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">companies</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for Settings: admin toolbar (<code>ADMIN</code> → <code>admin.php</code>, <code>SCRIPTS</code> → <code>scripts/scripts.php</code>), <strong>All roles</strong> chatbot block, <strong>System (Admin Role only)</strong> flags, and non-admin save preservation.</td>
                     <td>Browser: <a href="verify_settings_admin_buttons.php">verify_settings_admin_buttons.php</a>. CLI: <code>php scripts/verify_settings_admin_buttons.php</code>. Run when changing Settings admin shortcuts or system-flag layout.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apply_new_company_module_share_capable_seed.php" target="_blank" rel="nofollow noreferrer">apply_new_company_module_share_capable_seed.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Backfills <code>company_module_share</code> for share-capable slugs only (same as <code>db/migrations/company_module_share_capable_seed.sql</code>): DELETE non-capable rows, <code>INSERT IGNORE</code> <code>enabled=1</code> for active companies × capable registry modules. Slugs match <code>itm_qr_share_capable_module_slugs()</code>. Dry-run default.</td>
                     <td>CLI: <code>php scripts/apply_new_company_module_share_capable_seed.php</code> (dry-run), <code>php scripts/apply_new_company_module_share_capable_seed.php --apply</code>, <code>php scripts/apply_new_company_module_share_capable_seed.php --apply --company=3</code>. Browser: <a href="apply_new_company_module_share_capable_seed.php">dry-run</a>, <a href="apply_new_company_module_share_capable_seed.php?apply=1">apply</a> (Admin).</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="seed_company_module_access.php" target="_blank" rel="nofollow noreferrer">seed_company_module_access.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Backfills <code>company_module_access</code> rows as <code>enabled=1</code> for active companies (all modules or one <code>company_id</code>). Calls <code>sync_modules_registry.php</code> first when seeding a single company.</td>
                     <td>CLI: <code>php scripts/seed_company_module_access.php</code> (all companies) or <code>php scripts/seed_company_module_access.php 3</code> (one company). Browser: <a href="seed_company_module_access.php">seed_company_module_access.php</a>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><code><a href="bypass_login.php" target="_blank" rel="nofollow noreferrer">bypass_login.php</a></code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Bypasses the login screen by manually establishing an authenticated Admin session in the database and returning the session ID. Sets up Admin user, TechCorp Global company, and Vault master key.</td>
                     <td><code>php scripts/bypass_login.php</code> — CLI-only Admin session hijack for dev/Playwright (non-admin users rejected via <code>itm_is_admin()</code>). Follow CLI instructions to set <code>PHPSESSID</code> in the browser.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><code><a href="bypass_v2.php" target="_blank" rel="nofollow noreferrer">bypass_v2.php</a></code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>CLI-only Admin session hijack for dev/Playwright (non-admin users rejected via <code>itm_is_admin()</code>). Sets up Admin user, TechCorp Global company, and Vault master key.</td>
                     <td><code>php scripts/bypass_v2.php</code> — CLI-only Admin session hijack for dev/Playwright (non-admin users rejected via <code>itm_is_admin()</code>). Follow CLI instructions to set <code>PHPSESSID</code> in the browser.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="sql_insert.php" target="_blank" rel="nofollow noreferrer">sql_insert.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Allows administrators to paste and execute raw SQL <code>INSERT</code> commands with optional Foreign Key check toggling. Maintains audit logging.</td>
                     <td>Browser: <a href="sql_insert.php">sql_insert.php</a> (form).<br>CLI: <code>php scripts/sql_insert.php --file=path/to/file.sql [--disable-fk]</code></td>
                 </tr>
@@ -1731,101 +1731,101 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Verifies Notes module functionality via Playwright.</td>
                     <td><code>python3 scripts/verify_notes_ui.py</code></td>
                 </tr>
-                <tr data-tags="todo">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_bug.php" target="_blank" rel="nofollow noreferrer">repro_bug.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">todo</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reproduction and verification script for Todo module visibility and security bugs (multi-assignment and IDOR).</td>
                     <td><code>php scripts/repro_bug.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_vulnerabilities.php" target="_blank" rel="nofollow noreferrer">repro_vulnerabilities.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reproduction and verification script for Explorer RCE, User Privilege Escalation, and Unauthorized Access to Role Module Permissions. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
                     <td>Open in browser or run via CLI: <code>php scripts/repro_vulnerabilities.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_bac.php" target="_blank" rel="nofollow noreferrer">repro_bac.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>PoC for Broken Access Control in IDFs API.</td>
                     <td><code>php scripts/repro_bac.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_bac_updated.php" target="_blank" rel="nofollow noreferrer">repro_bac_updated.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Validation for IDFs API BAC fix.</td>
                     <td><code>php scripts/repro_bac_updated.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_rce.php" target="_blank" rel="nofollow noreferrer">repro_rce.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>PoC for RCE in Floor Designer via 'save_as_floor_plan' action.</td>
                     <td><code>php scripts/repro_rce.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_rce_updated.php" target="_blank" rel="nofollow noreferrer">repro_rce_updated.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Validation for Floor Designer RCE fix.</td>
                     <td><code>php scripts/repro_rce_updated.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_sqli.php" target="_blank" rel="nofollow noreferrer">repro_sqli.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>PoC for SQL Injection in Floor Designer via 'dir' parameter.</td>
                     <td><code>php scripts/repro_sqli.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_sqli_updated.php" target="_blank" rel="nofollow noreferrer">repro_sqli_updated.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Validation for Floor Designer SQLi fix.</td>
                     <td><code>php scripts/repro_sqli_updated.php</code></td>
                 </tr>
-                <tr data-tags="request_password">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_request_password_bypass.php" target="_blank" rel="nofollow noreferrer">repro_request_password_bypass.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">request_password</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reproduction script for request_password module bypass (static RBAC string check). Named regression: <a href="verify_request_password.php" target="_blank" rel="nofollow noreferrer">verify_request_password.php</a>.</td>
                     <td><code>php scripts/repro_request_password_bypass.php</code> · <code>php scripts/verify_request_password.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_select_options_rbac.php" target="_blank" rel="nofollow noreferrer">repro_select_options_rbac.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reproduction script for Select Options RBAC bypass.</td>
                     <td><code>php scripts/repro_select_options_rbac.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_equip_issues.php" target="_blank" rel="nofollow noreferrer">repro_equip_issues.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reproduction script for Equipment edit issues. Mocks a POST request to equipment/edit.php.</td>
                     <td><code>php scripts/repro_equip_issues.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_esa_vulnerability.php" target="_blank" rel="nofollow noreferrer">repro_esa_vulnerability.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>PoC for Employee System Access Broken Access Control (non-admin access to edit page).</td>
                     <td><code>php scripts/repro_esa_vulnerability.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="benchmark_stats_optimized.php" target="_blank" rel="nofollow noreferrer">benchmark_stats_optimized.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Benchmark for user-config.php stats gathering optimization. Compares performance of individual queries vs one consolidated query.</td>
                     <td><code>php scripts/benchmark_stats_optimized.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="benchmark_user_config.php" target="_blank" rel="nofollow noreferrer">benchmark_user_config.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Benchmark for user-config.php redundant query removal. Compares performance of individual queries vs consolidated query results.</td>
                     <td><code>php scripts/benchmark_user_config.php</code></td>
                 </tr>
@@ -1844,10 +1844,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
             </thead>
             <tbody>
-                <tr data-tags="modules_registry system_status">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_system_status.php" target="_blank" rel="nofollow noreferrer">verify_system_status.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">modules_registry</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">system_status</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for <code>modules/system_status/</code>: file layout, registry row, native API payloads, storage tree + active DB table reports, <code>information_schema</code> query; Windows also checks <code>is_readable()</code> on each <code>includes/*.ps1</code> and runs <code>test_*.php</code> PowerShell wrappers.</td>
                     <td><code>php scripts/verify_system_status.php</code></td>
                 </tr>
@@ -1858,93 +1858,93 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
 					<td>Admin JSON API dispatcher (<code>?action=system_info</code>, etc.). PHP/MySQL actions always native; Windows hardware uses <code>includes/*.ps1</code> via allowlisted <code>itm_system_status_run_powershell_action()</code>. Invalid <code>action</code> → HTTP 400. Documented in <a href="api.php">api.php</a>.</td>
 					<td>GET <code>scripts/system_status_api.php?action=cpu_usage</code> (Admin session)</td>
 				</tr>
-                <tr data-tags="system_status">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="system_status_phpinfo.php" target="_blank" rel="nofollow noreferrer">system_status_phpinfo.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">system_status</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
 					<td>Admin-only <code>phpinfo()</code> for the active Apache PHP runtime (linked from System Status → PHP Settings).</td><td>GET <code>scripts/system_status_phpinfo.php</code> (Admin session)</td>
 				</tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_system_info.php" target="_blank" rel="nofollow noreferrer">test_system_info.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
 					<td>Tests <code>includes/system_info.ps1</code> JSON output (Windows Laragon).</td>
 					<td><code>php scripts/test_system_info.php</code></td>
 				</tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_cpu_usage.php" target="_blank" rel="nofollow noreferrer">test_cpu_usage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
 					<td>Tests cpu_usage.ps1 output.</td>
 					<td><code>php scripts/test_cpu_usage.php</code></td>
 				</tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_ram_usage.php" target="_blank" rel="nofollow noreferrer">test_ram_usage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
 					<td>Tests ram_usage.ps1 output.</td>
 					<td><code>php scripts/test_ram_usage.php</code></td>
 				</tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_disk_usage.php" target="_blank" rel="nofollow noreferrer">test_disk_usage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
 					<td>Tests disk_usage.ps1 output.</td>
 					<td><code>php scripts/test_disk_usage.php</code></td>
 				</tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_uptime.php" target="_blank" rel="nofollow noreferrer">test_uptime.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
 					<td>Tests uptime.ps1 output.</td>
 					<td><code>php scripts/test_uptime.php</code></td>
 				</tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_php_version.php" target="_blank" rel="nofollow noreferrer">test_php_version.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
 					<td>Tests php_version.ps1 output.</td>
 					<td><code>php scripts/test_php_version.php</code></td>
 				</tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_php_extensions.php" target="_blank" rel="nofollow noreferrer">test_php_extensions.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
 					<td>Tests php_extensions.ps1 output.</td>
 					<td><code>php scripts/test_php_extensions.php</code></td>
 				</tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_php_ini_values.php" target="_blank" rel="nofollow noreferrer">test_php_ini_values.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
 					<td>Tests php_ini_values.ps1 output.</td>
 					<td><code>php scripts/test_php_ini_values.php</code></td>
 				</tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_mysql_status.php" target="_blank" rel="nofollow noreferrer">test_mysql_status.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
 					<td>Tests mysql_status.ps1 output.</td>
 					<td><code>php scripts/test_mysql_status.php</code></td>
 				</tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_mysql_version.php" target="_blank" rel="nofollow noreferrer">test_mysql_version.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
 					<td>Tests mysql_version.ps1 output.</td>
 					<td><code>php scripts/test_mysql_version.php</code></td>
 				</tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_mysql_databases.php" target="_blank" rel="nofollow noreferrer">test_mysql_databases.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
 					<td>Tests mysql_databases.ps1 output.</td>
 					<td><code>php scripts/test_mysql_databases.php</code></td>
 				</tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_mysql_size.php" target="_blank" rel="nofollow noreferrer">test_mysql_size.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
 					<td>Tests mysql_size.ps1 output.</td>
 					<td><code>php scripts/test_mysql_size.php</code></td>
 				</tr>
@@ -1963,248 +1963,248 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
             </thead>
             <tbody>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apitest_tier_free.php" target="_blank" rel="nofollow noreferrer">apitest_tier_free.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression: disposable <code>ui_configuration</code> row on <strong>Free</strong> tier (no <code>api_key</code>) stays unlimited; in-process resolve via disposable test user (<code>itm_script_with_test_session_context()</code>); isolated HTTP probe session (<code>itm_script_publish_isolated_http_session()</code>). Prints keyless probe URL <code>scripts/api.php?rate_limit=1</code>. Browser: Admin login via <code>lib/itm_script_regression_entry.php</code>.</td>
                     <td><code>php scripts/apitest_tier_free.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apitest_tier_basic.php" target="_blank" rel="nofollow noreferrer">apitest_tier_basic.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression: disposable <code>ui_configuration</code> row on <strong>Basic</strong> tier allows the final hourly request then blocks the next. Auto-generates API key and prints browser URL <code>scripts/api.php?rate_limit=1&amp;api_key=…</code>.</td>
                     <td><code>php scripts/apitest_tier_basic.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_select_options_escalation.php" target="_blank" rel="nofollow noreferrer">verify_select_options_escalation.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression check: Select Options API blocks admin employee quick-add via <code>employees</code> table (expects PASS).</td>
                     <td><code>php scripts/verify_select_options_escalation.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_user_idor.php" target="_blank" rel="nofollow noreferrer">verify_user_idor.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>PoC for unauthorized user account deletion via IDOR.</td>
                     <td><code>php scripts/verify_user_idor.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_crud_fk_label_search.php" target="_blank" rel="nofollow noreferrer">verify_crud_fk_label_search.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression: Employees <code>?search=Active</code> matches <code>employee_statuses.name</code>; <code>?search=FNB</code> matches <code>departments.code</code>; equipment <code>?search=FNB</code> matches linked <code>departments.code</code>; license_management search matches <code>license_types.name</code>; shared FK EXISTS helper; bespoke modules (switch_ports, todo, notes, private_contacts, ip_subnets, bookmarks, passwords) label search.</td>
                     <td><code>php scripts/verify_crud_fk_label_search.php</code> — run after changing list search or FK label helpers.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_employees_equipment_search_coverage.php" target="_blank" rel="nofollow noreferrer">verify_employees_equipment_search_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression: dedicated employees + equipment index search probes — <code>first_name</code>, <code>last_name</code>, <code>username</code>, full name, FK codes (<code>FNB</code>, <code>LOC-NY-01</code>, <code>SUP-001</code>, <code>RACK-A</code>), position description, manager username, assignee identity on equipment. Disposable employee + equipment rows; optional <code>ITM_TEST_COMPANY_ID</code> (default <code>1</code>).</td>
                     <td><code>php scripts/verify_employees_equipment_search_coverage.php</code> — run after changing <code>itm_employees_search.php</code>, <code>itm_equipment_search.php</code>, or employees/equipment index search. Covers 34 runtime probes (scalar identity, FK labels, equipment scalars).</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_employees_sensitive_view.php" target="_blank" rel="nofollow noreferrer">verify_employees_sensitive_view.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression check: Employees list/view HTML omits password and reset-token columns (<code>itm_employees_auth_filter_ui_columns()</code>).</td>
                     <td><code>php scripts/verify_employees_sensitive_view.php</code></td>
                 </tr>
-                <tr data-tags="departments">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_department_select_quick_add.php" target="_blank" rel="nofollow noreferrer">check_department_select_quick_add.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">departments</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static audit: every department FK <code>&lt;select&gt;</code> in <code>modules/</code> and <code>scripts/</code> must include trailing <code>&lt;option value="__add_new__"&gt;➕&lt;/option&gt;</code> (per-select block, not file-wide).</td>
                     <td><code>php scripts/check_department_select_quick_add.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_fast_create_acc_select_quick_add.php" target="_blank" rel="nofollow noreferrer">check_fast_create_acc_select_quick_add.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static audit: FK <code>&lt;select&gt;</code> elements in <code>modules/employees/fast_create_acc.php</code> include <code>__add_new__</code> ➕ (exempt <code>module_slugs[]</code>).</td>
                     <td><code>php scripts/check_fast_create_acc_select_quick_add.php</code></td>
                 </tr>
-                <tr data-tags="departments explorer">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_explorer_department_access.php" target="_blank" rel="nofollow noreferrer">verify_explorer_department_access.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">departments</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">explorer</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for Explorer <code>Departments/</code> listing (all code folders visible) and per-code ACL (assigned folders allowed, others blocked). Requires <code>employee_departments</code> migration on live DBs.</td>
                     <td><code>php scripts/verify_explorer_department_access.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="verify_explorer_zip_leak.php" target="_blank" rel="nofollow noreferrer">verify_explorer_zip_leak.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for Explorer <code>downloadZip</code>: Step 1 blocks roots. Step 2 allows only exact <code>Private/{username}_{employee_id}</code>. Step 3 blocks all other paths (own subfolders, <code>Common</code>/<code>Departments</code>, other users). Subprocess uses Laragon CLI <code>php.exe</code> and session before <code>config.php</code>.</td>
                     <td><code>php scripts/verify_explorer_zip_leak.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_company_deletion.php" target="_blank" rel="nofollow noreferrer">verify_company_deletion.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>PoC for unauthorized company deletion by regular employees.</td>
                     <td><code>php scripts/verify_company_deletion.php</code></td>
                 </tr>
-                <tr data-tags="companies">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_auth_bypass_v3.php" target="_blank" rel="nofollow noreferrer">repro_auth_bypass_v3.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">companies</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reproduction script for Auth Bypass v3 vulnerability. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
                     <td><code>php scripts/repro_auth_bypass_v3.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="empty_folders.php" target="_blank" rel="nofollow noreferrer">empty_folders.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Backfill empty <code>index.html</code> on <strong>every</strong> folder under the project root (skips <code>.git</code>, <code>.github</code>, and other dot dirs). Lists only <strong>new or changed</strong> repo-relative <code>path/index.html</code> paths before the summary. Upload paths (<code>images/</code>, <code>tickets_photos/</code>, <code>floor_plans/</code>, <code>backups/</code>, <code>files/</code>) also receive managed <code>.htaccess</code> (idempotent).</td>
                     <td><code>php scripts/empty_folders.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="ensure_files_htaccess_chain.php" target="_blank" rel="nofollow noreferrer">ensure_files_htaccess_chain.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Backfill <code>deny_http</code> managed <code>.htaccess</code> and empty <code>index.html</code> on every directory segment under <code>files/</code> only. Lists only <strong>new or changed</strong> segments before the summary (idempotent).</td>
                     <td><code>php scripts/ensure_files_htaccess_chain.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_explorer_rce_htaccess.php" target="_blank" rel="nofollow noreferrer">verify_explorer_rce_htaccess.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>PoC for .htaccess-based RCE in the Explorer module.</td>
                     <td><code>php scripts/verify_explorer_rce_htaccess.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_explorer_rce_marker.php" target="_blank" rel="nofollow noreferrer">verify_explorer_rce_marker.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>PoC for .htaccess-based RCE in the Explorer module using a specific marker to bypass filters.</td>
                     <td><code>php scripts/verify_explorer_rce_marker.php</code></td>
                 </tr>
-                <tr data-tags="explorer">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="test_explorer_paths.php" target="_blank" rel="nofollow noreferrer">test_explorer_paths.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">explorer</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression tests for Explorer path validation logic including sensitive root folder blocking.</td>
                     <td><code>php scripts/test_explorer_paths.php</code></td>
                 </tr>
-                <tr data-tags="explorer">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="test_explorer_preview.php" target="_blank" rel="nofollow noreferrer">test_explorer_preview.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">explorer</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression tests for Explorer preview routing so JPG/PNG/PDF use <code>file.php</code> and text types use the open API.</td>
                     <td><code>php scripts/test_explorer_preview.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_audit_logs_disclosure.php" target="_blank" rel="nofollow noreferrer">verify_audit_logs_disclosure.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Three-step regression for employees audit disclosure: (1) static <code>db/</code> split bundle trigger scan — <code>trg_employees_audit_*</code> must omit <code>password</code>, <code>vault_key_hash</code>, <code>reset_token*</code>; (2) live disposable employee UPDATE probe via <code>itm_script_test_employee.php</code>; (3) retro scan of last 25 <code>employees</code> audit rows. Prints each step with <code>[PASS]</code>/<code>[FAIL]</code>. Optional env: <code>ITM_TEST_COMPANY_ID</code> (default <code>1</code>).</td>
                     <td><code>php scripts/verify_audit_logs_disclosure.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="auth_register_reset_human_test.php" target="_blank" rel="nofollow noreferrer">auth_register_reset_human_test.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Human-style auth regression: invitation create, register INSERT with tenant Active employment status, login lookup + <code>password_verify</code>, reset-token password change, and <code>mysqli_stmt_bind_param</code> contracts on public auth pages. <strong>Mutates DB:</strong> disposable invitations and <code>script-*</code> employees (teardown on exit).</td>
                     <td><code>php scripts/auth_register_reset_human_test.php</code> — default companies 1–2; <code>php scripts/auth_register_reset_human_test.php --company=2</code>. Run after <code>register.php</code>, <code>login.php</code>, <code>forgot-password.php</code>, or <code>reset-password.php</code> changes.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_password_reset_flow.php" target="_blank" rel="nofollow noreferrer">verify_password_reset_flow.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Password reset token regression: store with MySQL <code>DATE_ADD</code> expiry (24 hours), hash lookup, legacy plain <code>reset_token</code> fallback, and completion UPDATE. <strong>Mutates DB:</strong> disposable script-test employee (teardown on exit).</td>
                     <td><code>php scripts/verify_password_reset_flow.php</code> — run after <code>includes/itm_password_reset.php</code>, <code>forgot-password.php</code>, or <code>reset-password.php</code> changes.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_invitations_escalation.php" target="_blank" rel="nofollow noreferrer">verify_invitations_escalation.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Verification script for authorization bypass and privilege escalation in registration invitations.</td>
                     <td><code>php scripts/verify_invitations_escalation.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="repro_zip_slip.php" target="_blank" rel="nofollow noreferrer">repro_zip_slip.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reproduction script for Zip Slip (path traversal during extraction) vulnerability.</td>
                     <td><code>php scripts/repro_zip_slip.php</code></td>
                 </tr>
-                <tr data-tags="employees notes">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_notes_traversal.php" target="_blank" rel="nofollow noreferrer">repro_notes_traversal.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">notes</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>PoC for Path Traversal and arbitrary file read via Notes ZIP download.</td>
                     <td><code>php scripts/repro_notes_traversal.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_notes_idor.php" target="_blank" rel="nofollow noreferrer">repro_notes_idor.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>PoC for Cross-user IDOR (unauthorized view/delete) in the Notes module.</td>
                     <td><code>php scripts/repro_notes_idor.php</code></td>
                 </tr>
-                <tr data-tags="Markdown">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_metadata_column_cache.php" target="_blank" rel="nofollow noreferrer">verify_metadata_column_cache.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for table-level <code>information_schema</code> caching in <code>itm_table_has_column()</code> and <code>itm_table_column_is_nullable()</code> (<code>includes/bootstrap_helpers.php</code>). Cold batch expects schema <code>Questions</code> delta 1–2; warm repeat expects schema delta 0 (trailing <code>SHOW STATUS</code> excluded from delta). Optional env: <code>ITM_META_CACHE_TABLE</code> (default <code>switch_ports</code>).</td>
                     <td><code>php scripts/verify_metadata_column_cache.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_update_port_zero_row.php" target="_blank" rel="nofollow noreferrer">verify_update_port_zero_row.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for <code>includes/update_port.php</code>: zero-row tenant-scoped UPDATE returns HTTP 404 before any IDF auto-sync (idf_ports row count unchanged). Creates disposable probe equipment in a transaction when the tenant has no switch_ports rows. Subprocess seeds session tenant before <code>config.php</code>, uses <code>ITM_HTTP_ENDPOINT_CONTRACT_TEST</code>, and stubs <code>itm_api_json_response()</code> to capture HTTP status. Optional env: <code>ITM_TEST_COMPANY_ID</code> (default <code>1</code>).</td>
                     <td><code>php scripts/verify_update_port_zero_row.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_notes_ajax_contract.php" target="_blank" rel="nofollow noreferrer">verify_notes_ajax_contract.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for Notes AJAX mutations: blocked single_delete returns HTTP 404 with ok:false when affected_rows is zero.</td>
                     <td><code>php scripts/verify_notes_ajax_contract.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_notes_vault.php" target="_blank" rel="nofollow noreferrer">verify_notes_vault.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for Notes vault encryption: private title/content encrypt at rest, shared notes stay plaintext, label hash helpers, hydrate when vault locked/unlocked. Disposable script employee.</td>
                     <td><code>php scripts/verify_notes_vault.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/notes/notes_vault_helpers.php</code>, persistence in <code>modules/notes/index.php</code>, or <code>itm_vault_reencrypt_notes()</code>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_todo_vault.php" target="_blank" rel="nofollow noreferrer">verify_todo_vault.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for Todo vault encryption: private title/description encrypt at rest, company-global tasks stay plaintext, hydrate when vault locked/unlocked. Disposable script employee.</td>
                     <td><code>php scripts/verify_todo_vault.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/todo/todo_vault_helpers.php</code>, persistence in <code>modules/todo/index.php</code>, or <code>itm_vault_reencrypt_todo()</code>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_events_vault.php" target="_blank" rel="nofollow noreferrer">verify_events_vault.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for Events vault encryption: private title/description/location encrypt at rest, shared events stay plaintext, hydrate when vault locked/unlocked. Disposable script employee.</td>
                     <td><code>php scripts/verify_events_vault.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/events/events_vault_helpers.php</code>, persistence in <code>modules/events/index.php</code>, calendar event hydration, or <code>itm_vault_reencrypt_events()</code>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_private_contacts_vault.php" target="_blank" rel="nofollow noreferrer">verify_private_contacts_vault.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for Private Contacts vault encryption: PII fields encrypt at rest, hydrate when vault unlocked, locked vault hides list fields, legacy plaintext tolerated. Disposable script employee.</td>
                     <td><code>php scripts/verify_private_contacts_vault.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/private_contacts/pc_vault_helpers.php</code>, create/edit persistence, list hydrate/search, or <code>itm_vault_reencrypt_private_contacts()</code>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_notes_share.php" target="_blank" rel="nofollow noreferrer">verify_notes_share.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for Notes QR/code share sessions: create session, token/code lookup, payload snapshot, join URL, asset filename guard. Requires <code>share_sessions</code> in <code>db/</code> split bundle.</td>
                     <td><code>php scripts/verify_notes_share.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Markdown">
                     <td><a href="apply_crud_record_share_modules.php" target="_blank" rel="nofollow noreferrer">apply_crud_record_share_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Maintenance: wire <code>join.php</code>, AJAX <code>create_share_session</code>, view share buttons, and QR modal for CRUD record share rollout modules (<code>includes/itm_crud_record_share.php</code>). Dry-run default; pass <code>--apply</code> to write. Inventory: <code>docs/CRUD_RECORD_SHARE.md</code>.</td>
                     <td><code>php scripts/apply_crud_record_share_modules.php --apply</code></td>
                 </tr>
@@ -2215,122 +2215,122 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Maintenance: append <strong>Share (temporary QR / code)</strong> section to each CRUD record share module <code>AGENT_NOTES.md</code>. Dry-run default; pass <code>--apply</code> to write.</td>
                     <td><code>php scripts/patch_crud_share_agent_notes.php --apply</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="verify_qr_share_modules.php" target="_blank" rel="nofollow noreferrer">verify_qr_share_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for Passwords, Bookmarks, Todo, Events, Private Contacts, Explorer, Floor Plans, Rack Planner, and CRUD record (<code>departments</code>) QR/code share sessions: create session, payload snapshot, token lookup, join URL. Requires unified <code>share_sessions</code> in <code>db/01_schema.sql</code>.</td>
                     <td><code>php scripts/verify_qr_share_modules.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_module_share.php" target="_blank" rel="nofollow noreferrer">verify_module_share.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for <code>company_module_share</code> opt-out matrix and <code>has_module_share_access()</code> used by <code>itm_qr_share_create_session()</code>. Admin UI: <code>modules/share_modules/</code>.</td>
                     <td><code>php scripts/verify_module_share.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_whatsapp_share.php" target="_blank" rel="nofollow noreferrer">verify_whatsapp_share.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for WhatsApp share deep links: message body (join URL + 6-digit code + expiry copy) and <code>wa.me</code> URL encoding via <code>includes/itm_whatsapp_share.php</code>.</td>
                     <td><code>php scripts/verify_whatsapp_share.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_outlook_share.php" target="_blank" rel="nofollow noreferrer">verify_outlook_share.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for Outlook/mail share compose helpers: subject/body text, <code>mailto:</code> URL, and Outlook web compose deep link via <code>includes/itm_outlook_share.php</code>.</td>
                     <td><code>php scripts/verify_outlook_share.php</code></td>
                 </tr>
-                <tr data-tags="catalogs events">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_json_import_validation.php" target="_blank" rel="nofollow noreferrer">verify_json_import_validation.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">catalogs</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">events</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for JSON import: invalid numeric, date/datetime, and enum column values are rejected instead of silent NULL inserts.</td>
                     <td><code>php scripts/verify_json_import_validation.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_maintenance_scripts_rbac.php" target="_blank" rel="nofollow noreferrer">verify_maintenance_scripts_rbac.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for Admin browser gate on maintenance scripts (MBQA runner, compare_database_sql_modules, test_sql_injection).</td>
                     <td><code>php scripts/verify_maintenance_scripts_rbac.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_audit_disclosure.php" target="_blank" rel="nofollow noreferrer">repro_audit_disclosure.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>PoC for Sensitive Information Disclosure (reset tokens) in Audit Logs. Uses a disposable script test user (not seed Admin id 1).</td>
                     <td><code>php scripts/repro_audit_disclosure.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="check_crud_rbac_coverage.php" target="_blank" rel="nofollow noreferrer">check_crud_rbac_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Static audit for server-side CRUD RBAC on flattened <code>modules/*/index.php</code> delete/create/edit handlers. Exit <code>1</code> when guards are missing.</td>
                     <td><code>php scripts/check_crud_rbac_coverage.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="apply_crud_rbac_guards.php" target="_blank" rel="nofollow noreferrer">apply_crud_rbac_guards.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Bulk repair — insert <code>itm_require_crud_role_module_permission()</code> on flattened CRUD index handlers. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped modules (exempt slugs skipped). Idempotent.</td>
                     <td>Browser: <a href="apply_crud_rbac_guards.php">dry-run</a> / <a href="apply_crud_rbac_guards.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_crud_rbac_guards.php</code> then <code>php scripts/apply_crud_rbac_guards.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_rbac_bypass.php" target="_blank" rel="nofollow noreferrer">repro_rbac_bypass.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>PoC for RBAC bypass on Expenses <code>delete.php</code>: read-only role must get HTTP 403 and retain the row. Uses a free <code>cost_centers</code> slot (<code>uq_expenses_company_scope</code>). Subprocess spawn uses <code>escapeshellarg()</code>; do not stub <code>cr_require_valid_csrf_token()</code>.</td>
                     <td><code>php scripts/repro_rbac_bypass.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_employee_companies_leak.php" target="_blank" rel="nofollow noreferrer">repro_employee_companies_leak.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>PoC for Multi-Tenant Data Leak in Employees module. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
                     <td><code>php scripts/repro_employee_companies_leak.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_employee_companies_bac.php" target="_blank" rel="nofollow noreferrer">repro_employee_companies_bac.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>PoC for Broken Access Control in Employees module. Subprocess spawn uses <code>escapeshellarg()</code>.</td>
                     <td><code>php scripts/repro_employee_companies_bac.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_audit_token_leak.php" target="_blank" rel="nofollow noreferrer">repro_audit_token_leak.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Verification for Audit Log Sensitive Data Exposure. Disposable test user; prepared <code>UPDATE employees</code> for <code>reset_token</code> fields.</td>
                     <td><code>php scripts/repro_audit_token_leak.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_destructive_import.php" target="_blank" rel="nofollow noreferrer">repro_destructive_import.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reproduction — destructive employee import scenario for company 1. <strong>Browser + CLI dry-run default</strong>; <code>--apply</code> / <code>?apply=1</code> (Admin) seeds disposable Keep/Delete Me rows, imports only Keep Me, asserts Delete Me survives, tears down disposable rows.</td>
                     <td>Browser: <a href="repro_destructive_import.php">dry-run</a>, <a href="repro_destructive_import.php?apply=1">apply</a>. CLI: <code>php scripts/repro_destructive_import.php</code>, <code>php scripts/repro_destructive_import.php --apply</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_todo_user_leak.php" target="_blank" rel="nofollow noreferrer">repro_todo_user_leak.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reproduction script for multi-tenant username leak in Todo module.</td>
                     <td><code>php scripts/repro_todo_user_leak.php</code></td>
                 </tr>
-                <tr data-tags="employees">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_cross_tenant_admin.php" target="_blank" rel="nofollow noreferrer">repro_cross_tenant_admin.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reproduction script for cross-tenant admin access in Employees module.</td>
                     <td class='scripts-table-cell'><code>php scripts/repro_cross_tenant_admin.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_explorer_path_bypass_v4.php" target="_blank" rel="nofollow noreferrer">repro_explorer_path_bypass_v4.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression — Explorer <code>./Private</code> path bypass blocked after normalization.</td>
                     <td><code>php scripts/repro_explorer_path_bypass_v4.php</code></td>
                 </tr>
@@ -2341,213 +2341,213 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Reproduction script for Explorer Path Traversal vulnerability via 'item' parameter.</td>
                     <td><code>php scripts/repro_explorer_traversal.php</code></td>
                 </tr>
-                <tr data-tags="explorer">
+                <tr data-tags="explorer Info">
                     <td><a href="verify_explorer_fix.php" target="_blank" rel="nofollow noreferrer">verify_explorer_fix.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">explorer</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">explorer</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Verification script for Explorer Path Traversal fix.</td>
                     <td><code>php scripts/verify_explorer_fix.php</code></td>
                 </tr>
-                <tr data-tags="explorer">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="verify_explorer_fix_updated.php" target="_blank" rel="nofollow noreferrer">verify_explorer_fix_updated.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">explorer</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Updated verification script for Explorer Path Traversal fix.</td>
                     <td><code>php scripts/verify_explorer_fix_updated.php</code></td>
                 </tr>
-                <tr data-tags="explorer Markdown">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="verify_explorer_fix_web.php" target="_blank" rel="nofollow noreferrer">verify_explorer_fix_web.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">explorer</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Web-friendly verification for Explorer Path Traversal fix.</td>
                     <td>Open <code>verify_explorer_fix_web.php</code> in browser.</td>
                 </tr>
-                <tr data-tags="explorer">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="verify_explorer_fix_standalone.php" target="_blank" rel="nofollow noreferrer">verify_explorer_fix_standalone.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">explorer</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Standalone verification for Explorer Path Traversal fix (HTML UI).</td>
                     <td>Open <code>verify_explorer_fix_standalone.php</code> in browser.</td>
                 </tr>
-                <tr data-tags="attempts">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_attempts_data_leak_v2.php" target="_blank" rel="nofollow noreferrer">repro_attempts_data_leak_v2.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">attempts</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression — password-like login identifiers redacted in <code>attempts.email</code> (disposable secret per run; checks only the row inserted by this request).</td>
                     <td>Browser: <a href="repro_attempts_data_leak_v2.php">run</a>. CLI: <code>php scripts/repro_attempts_data_leak_v2.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="repro_explorer_zip_slip_v2.php" target="_blank" rel="nofollow noreferrer">repro_explorer_zip_slip_v2.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression — Zip Slip traversal entries blocked during Explorer unzip.</td>
                     <td><code>php scripts/repro_explorer_zip_slip_v2.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_select_options_unauthorized_v2.php" target="_blank" rel="nofollow noreferrer">repro_select_options_unauthorized_v2.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression — <code>companies</code> quick-add blocked for regular employees. Scenario matrix + live API subprocess (browser uses Laragon CLI <code>php.exe</code>, not <code>php-cgi</code>); policy fallback if harness still fails.</td>
                     <td>Browser: <a href="repro_select_options_unauthorized_v2.php">run</a>. CLI: <code>php scripts/repro_select_options_unauthorized_v2.php</code></td>
                 </tr>
-                <tr data-tags="employees password_entries">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_vault_corruption.php" target="_blank" rel="nofollow noreferrer">repro_vault_corruption.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">password_entries</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression — vault master key re-encryption rollback (atomicity).</td>
                     <td><code>php scripts/repro_vault_corruption.php</code></td>
                 </tr>
-				<tr data-tags="Mixed">
+				<tr data-tags="Mixed Markdown">
                     <td><a href="repro_db_integrity.php" target="_blank" rel="nofollow noreferrer">repro_db_integrity.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reproduction — incorrect UNIQUE constraints and trigger errors in db/.</td>
                     <td><code>php scripts/repro_db_integrity.php</code></td>
                 </tr>
-				<tr data-tags="Codebase">
+				<tr data-tags="Mixed Markdown">
                     <td><a href="test_multi_tenant.php" target="_blank" rel="nofollow noreferrer">test_multi_tenant.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
 				    <td>Verifies multi-tenant integrity by checking company_id distribution and foreign keys across all tables.</td>
 				    <td><code>php scripts/test_multi_tenant.php</code></td>
 				</tr>
-				<tr data-tags="Codebase">
+				<tr data-tags="Mixed Markdown">
                     <td><a href="verify_audit_columns.php" target="_blank" rel="nofollow noreferrer">verify_audit_columns.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
 				    <td>Verifies that every table in the database has the mandatory 8 audit columns with correct types and defaults.</td>
 				    <td><code>php scripts/verify_audit_columns.php</code></td>
 				</tr>
-				<tr data-tags="Codebase">
+				<tr data-tags="Mixed Info Markdown">
                     <td><a href="apply_crud_audit_soft_delete.php" target="_blank" rel="nofollow noreferrer">apply_crud_audit_soft_delete.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
 				    <td>Apply soft-delete + audit meta UI patches to scaffold modules in <code>docs/list_soft-delete.txt</code>. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). After counts, lists inventory / skip / missing / patch / compliant modules (real newlines for browser <code>&lt;pre&gt;</code>). Idempotent; skips status-driven modules.</td>
 				    <td>Browser: <a href="apply_crud_audit_soft_delete.php">dry-run</a> / <a href="apply_crud_audit_soft_delete.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_crud_audit_soft_delete.php</code> then <code>php scripts/apply_crud_audit_soft_delete.php --apply</code>.</td>
 				</tr>
-				<tr data-tags="Codebase">
+				<tr data-tags="Info">
                     <td><a href="check_crud_audit_soft_delete.php" target="_blank" rel="nofollow noreferrer">check_crud_audit_soft_delete.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
 				    <td>Static gate for scaffold soft-delete / audit UI contracts (list hide, view columns, not-deleted filter, soft-delete helper).</td>
 				    <td><code>php scripts/check_crud_audit_soft_delete.php</code></td>
 				</tr>
-                <tr data-tags="employees">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_employee_dataloss.php" target="_blank" rel="nofollow noreferrer">repro_employee_dataloss.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression test for employee Excel import. Verifies that columns missing from the import payload are not wiped in the database during update.</td>
                    <td>Browser: open <a href="repro_employee_dataloss.php">repro_employee_dataloss.php</a>. CLI: <code>php scripts/repro_employee_dataloss.php</code> (exit <code>0</code> on pass, non-zero on failure).</td>
                 </tr>
-                <tr data-tags="departments employees">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_import_fix_updated.php" target="_blank" rel="nofollow noreferrer">verify_import_fix_updated.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">departments</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Verification script for Employee Import Department Data Loss Fix.</td>
                     <td><code>php scripts/verify_import_fix_updated.php</code></td>
                 </tr>
-                <tr data-tags="departments">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_generic_dataloss.php" target="_blank" rel="nofollow noreferrer">repro_generic_dataloss.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">departments</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression test for generic table Excel import. Verifies that columns missing from the import payload are not wiped in the database during update.</td>
                     <td>Browser: open <a href="repro_generic_dataloss.php">repro_generic_dataloss.php</a>. CLI: <code>php scripts/repro_generic_dataloss.php</code> (exit <code>0</code> on pass, non-zero on failure).</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_contacts_idor.php" target="_blank" rel="nofollow noreferrer">repro_contacts_idor.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reproduction script for IDOR in contacts API inline edit; disposable employees via shared helper (clears stale audit actor before INSERT).</td>
                     <td><code>php scripts/repro_contacts_idor.php</code> — expects PASS when IDOR is blocked. Clears <code>@app_employee_id</code> before create to avoid <code>audit_logs</code> FK failures.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_select_options.php" target="_blank" rel="nofollow noreferrer">repro_select_options.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reproduction script for RBAC bypass in select options API.</td>
                     <td><code>php scripts/repro_select_options.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_status_leak.php" target="_blank" rel="nofollow noreferrer">repro_status_leak.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reproduction script for employee status cross-tenant leak.</td>
                     <td><code>php scripts/repro_status_leak.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_visitors_bac.php" target="_blank" rel="nofollow noreferrer">repro_visitors_bac.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reproduction script for Broken Access Control in visitors access log.</td>
                     <td><code>php scripts/repro_visitors_bac.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_visitors_sqli.php" target="_blank" rel="nofollow noreferrer">repro_visitors_sqli.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reproduction script for SQL Injection in visitors access log inline edit.</td>
                     <td><code>php scripts/repro_visitors_sqli.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_audit_updated.php" target="_blank" rel="nofollow noreferrer">verify_audit_updated.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Verification script for audit log redaction of sensitive fields.</td>
                     <td><code>php scripts/verify_audit_updated.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_clear_table_fix.php" target="_blank" rel="nofollow noreferrer">verify_clear_table_fix.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Verification script for employees clear-table soft-delete (employee audit row remains; bookmarks detached).</td>
                     <td><code>php scripts/verify_clear_table_fix.php</code></td>
                 </tr>
-                <tr data-tags="explorer">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="verify_explorer_updated.php" target="_blank" rel="nofollow noreferrer">verify_explorer_updated.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">explorer</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Verification script for Explorer file extension whitelisting.</td>
                     <td><code>php scripts/verify_explorer_updated.php</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_rbac_updated.php" target="_blank" rel="nofollow noreferrer">verify_rbac_updated.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Verification script for RBAC protection guards in module handlers.</td>
                     <td><code>php scripts/verify_rbac_updated.php</code></td>
                 </tr>
-                <tr data-tags="visitors_access_log">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_sqli_updated.php" target="_blank" rel="nofollow noreferrer">verify_sqli_updated.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">visitors_access_log</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Verification script for SQL Injection fix in visitors access log.</td>
                     <td><code>php scripts/verify_sqli_updated.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_status_leak_fixed.php" target="_blank" rel="nofollow noreferrer">verify_status_leak_fixed.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Verification script for employee status cross-tenant leak fix.</td>
                     <td><code>php scripts/verify_status_leak_fixed.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_visitors_bac_fix.php" target="_blank" rel="nofollow noreferrer">verify_visitors_bac_fix.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Verification script for Broken Access Control fix in visitors access log.</td>
                     <td><code>php scripts/verify_visitors_bac_fix.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="verify_visitors_sqli_fix.php" target="_blank" rel="nofollow noreferrer">verify_visitors_sqli_fix.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Verification script for SQL Injection fix in visitors access log against fixed files.</td>
                     <td><code>php scripts/verify_visitors_sqli_fix.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="repro_birthdays_resignations_rbac.php" target="_blank" rel="nofollow noreferrer">repro_birthdays_resignations_rbac.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Reproduction & verification script for Birthdays & Resignations RBAC View Bypass vulnerability.</td>
                     <td><code>php scripts/repro_birthdays_resignations_rbac.php</code></td>
                 </tr>
