@@ -14,7 +14,6 @@
       - 2. Browser scripts (`scripts/*.php` opened in the browser)
       - Link creation rules (browser scripts — mandatory)
       - 3. CLI scripts
-      - Fix scripts (`scripts/fix_*.php`)
       - 4. Shared libraries (do not duplicate ad hoc)
       - Equipment-type façade modules (`modules/is_*`) and clear-table tests
       - Smoke tests (CI — `scripts/smoke_test.sh`)
@@ -521,96 +520,9 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 * **Windows Laragon (mandatory for tests):** `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` — always use this full path when running scripts locally; in **PowerShell** prefix with **`&`**; list the exact shell command in PR test plans (see **`AGENTS.md` → Setup & Debugging → PHP CLI tests**).
 * **`PHP_BINARY` for sub-processes:** When a script needs to execute another PHP script, prefer using the **`PHP_BINARY`** constant to ensure the same PHP version is used.
 * **Repo-writing maintenance (`scripts/apply*.php` and peers):** **Browser + CLI** via `scripts/lib/itm_apply_script_bootstrap.php`. Default run is always **dry-run** (no writes; browser dry-run needs a signed-in session only). Writes only with CLI `--apply` or browser `?apply=1` (**Admin** session required for browser apply). Catalog shows **Browser** + **CLI** badges only (dry-run is described in **How to use**, not a separate badge).
-* **Fix scripts (`scripts/fix_*.php`):** same bootstrap contract as **`apply*`** (dry-run default, `--apply` / `?apply=1` for writes). Every **new** `fix_*.php` must use the shared report helpers in **`scripts/lib/itm_fix_script_report.php`** and print the sections below in order. See **Fix scripts (`scripts/fix_*.php`)** (this file).
 * **Static check scripts** (`check_*` audits): **Browser + CLI** via `scripts/lib/itm_script_access_helpers.php` → `itm_check_script_begin_browser_admin()` (Administrator in browser).
 * **Session-mock harnesses** (`test_ajax.php`, `test_edit.php`): **Browser + CLI** — browser Admin form (PHPSESSID + title/note id) or CLI positional args (`<PHPSESSID>`, title, note id for edit). CLI argv harness excluded from **`perform_audit.php`** (same contract as CSRF coverage skip).
 * List exact commands and outcomes in the PR description when checks ran.
-
-#### Fix scripts (`scripts/fix_*.php`)
-
-**Purpose:** one-off or repeatable repairs (schema SQL bundle drift, scaffold markup, UTF-8 mojibake, CRUD share needles). **Not** bulk rollouts — those belong in **`scripts/apply*.php`**.
-
-**Naming:** `scripts/fix_<subject>.php` only. Do not add `repair_*` or `patch_*` siblings without catalog justification; prefer extending an existing `fix_*` or an `apply_*` bulk tool.
-
-**Bootstrap (mandatory for new scripts):**
-
-1. `require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';`
-2. `require_once __DIR__ . '/lib/itm_fix_script_report.php';`
-3. `$boot = itm_apply_script_bootstrap('<Title>', ['skip_db_tests' => false]);` when the fix compares or mutates live MySQL; otherwise `skip_db_tests` may stay default `true`.
-4. Browser + CLI; dry-run default; writes only with `--apply` or `?apply=1` (Admin in browser).
-
-**Dry-run status lines (mandatory — exact wording):**
-
-Print **one** status block immediately before the three list sections (after any mode banner from `itm_apply_script_bootstrap()`):
-
-| Condition | Line(s) to print |
-|-----------|------------------|
-| Nothing to fix, broad SQL scanner (`fix_sql_broad.php` pattern) | `Dry-run: no broad SQL fixes needed.` then `Dry-run complete — nothing to change.` |
-| Nothing to fix, any other `fix_*` | `Dry-run complete — nothing to change.` |
-| Work remains in dry-run | `Dry-run: Still need fixes.` |
-
-Use `itm_fix_script_report_print_dry_run_status($stillNeedsFixes, $nl, ['broad_sql' => true])` for broad SQL tools; omit `broad_sql` for file-only fixes.
-
-When `$stillNeedsFixes` is true, end with `itm_apply_script_finish_hint(false, …, 1, …, 'fix_foo.php')` so CLI/browser show the `--apply` hint. When nothing to fix, do **not** print the re-run hint.
-
-**List sections (mandatory — exact headings):**
-
-Always print these three sections in dry-run and apply modes (use `itm_fix_script_report_print_sections()` or `itm_fix_script_report_finish()`):
-
-| Heading | Content |
-|---------|---------|
-| `List Actual live DB:` | Live MySQL findings (`information_schema`, `SHOW COLUMNS`, row probes). Use `(none)` when empty. Use `itm_fix_script_report_na_item()` when this script does not touch the live DB. |
-| `List db/*.sql data:` | Findings in `db/01_schema.sql`, `db/02_data.sql`, or `db/03_triggers.sql` (table/column/INSERT/trigger drift the fix addresses). `(none)` when empty. Use `itm_fix_script_report_sql_na_item()` when the script only patches PHP trees. |
-| `List Fix:` | Concrete mutations the script would apply (repo-relative paths, `table: action` summaries, INSERT line numbers). `(none)` when nothing would change. |
-
-List lines use real `\n` (via `itm_apply_script_echo_list()`), not browser `<br>` — same rule as **`apply*`** named module lists.
-
-**Aggregator:** `php scripts/fix_all.php` runs every `scripts/fix_*.php` except itself in dry-run and prints a per-script summary. Use after adding a new `fix_*` row to the catalog.
-
-**Current inventory (catalog in `scripts/scripts.php`):**
-
-| Script | Live DB | `db/*.sql` | Notes |
-|--------|---------|------------|-------|
-| `fix_sql.php` | n/a | `01_schema.sql` | `cable_colors`, `switch_port_types` active column + INSERT alignment |
-| `fix_sql_broad.php` | n/a | `01_schema.sql` | Broad `active` column / INSERT / audit-trigger JSON for listed tables; sets `broad_sql` status |
-| `fix_sql_departments.php` | n/a | `01_schema.sql` | `departments` INSERT column-count repair |
-| `fix_scaffold_active_checkbox.php` | audit via `list_active_and_checkboxes.php` | n/a | Requires `--all` or `--module=`; repairs `itm-checkbox-control` markup |
-| `fix_source_utf8_mojibake.php` | n/a | n/a | Tracked source files; browser file picker |
-| `fix_crud_record_share_view_buttons.php` | n/a | n/a | **Legacy CLI-only** — migrate to bootstrap + report contract when next touched |
-
-**Template (new `fix_*` script skeleton):**
-
-```php
-<?php
-require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
-require_once __DIR__ . '/lib/itm_fix_script_report.php';
-
-$boot = itm_apply_script_bootstrap('Fix example');
-$nl = $boot['nl'];
-
-// … compute $liveDbItems, $sqlBundleItems, $fixItems …
-$stillNeedsFixes = $fixItems !== [];
-
-if ($boot['apply']) {
-    // … writes …
-}
-
-itm_fix_script_report_finish(
-    $boot['apply'],
-    $boot['is_cli'],
-    $stillNeedsFixes,
-    $nl,
-    'fix_example.php',
-    $liveDbItems,
-    $sqlBundleItems,
-    $fixItems,
-    ['broad_sql' => false]
-);
-
-itm_script_output_end();
-```
-
-**Pre-merge:** `php -l` on the new script; dry-run must print all three list headings even when every section is `(none)` or `(n/a …)`.
 
 #### 4. Shared libraries (do not duplicate ad hoc)
 
@@ -624,7 +536,6 @@ itm_script_output_end();
 | `scripts/lib/mbqa_report_xlsx.php` | Builds `qa-reports/module-browser-qa.xlsx` (Summary, All steps, Failures sheets) from runner JSON |
 | `scripts/lib/sql_injection_detector.php` | SQLi signature tests (included by matrix / sandbox tools) |
 | `scripts/lib/itm_apply_script_bootstrap.php` | Shared bootstrap for `scripts/apply*.php` and repo/DB writers with dry-run default: browser + CLI, `--apply` / `?apply=1`, `itm_script_require_admin_script_or_exit()` for browser apply only (passes function-local `$conn` from `config.php` — not `$GLOBALS['conn']`), `itm_apply_script_echo_list()` |
-| `scripts/lib/itm_fix_script_report.php` | Mandatory dry-run report contract for `scripts/fix_*.php`: status lines (`Dry-run: …`), `List Actual live DB` / `List db/*.sql data` / `List Fix` sections, `itm_fix_script_discover_slugs()` for `fix_all.php` |
 | `scripts/lib/itm_script_access_helpers.php` | `itm_check_script_begin_browser_admin()` for static `check_*` audits; `itm_script_echo_cli_only_page()` for true CLI-only instruction pages |
 | `scripts/lib/itm_script_bootstrap.php` | Global `scripts/*` contract (loaded from `config.php`): disposable test-session rejection, `itm_script_with_test_session_context()`, isolated HTTP probe sessions, optional Admin browser gate |
 | `scripts/lib/itm_script_cli_entry.php` | Alias for `itm_script_regression_entry.php` |

@@ -866,13 +866,6 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Browser: <a href="fix_sql_broad.php">dry-run</a> / <a href="fix_sql_broad.php?apply=1">apply=1</a>. CLI: <code>php scripts/fix_sql_broad.php</code> then <code>--apply</code>.</td>
                 </tr>
                 <tr data-tags="Codebase">
-                    <td><a href="fix_all.php" target="_blank" rel="nofollow noreferrer">fix_all.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
-                    <td>Runs every <code>scripts/fix_*.php</code> in dry-run and prints per-script status. Contract: <code>SCRIPTS.md</code> → Fix scripts.</td>
-                    <td><code>php scripts/fix_all.php</code> or open <a href="fix_all.php">fix_all.php</a> (dry-run only; does not pass <code>--apply</code> to children).</td>
-                </tr>
-                <tr data-tags="Codebase">
                     <td><a href="schema_report.php" target="_blank" rel="nofollow noreferrer">schema_report.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
