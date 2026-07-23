@@ -2317,8 +2317,14 @@ if (!function_exists('itm_encrypt')) {
 if (!function_exists('itm_decrypt')) {
     function itm_decrypt($data, $key) {
         $cipher = 'aes-256-cbc';
-        $data = base64_decode($data);
+        $data = base64_decode((string)$data, true);
+        if ($data === false) {
+            return false;
+        }
         $iv_len = openssl_cipher_iv_length($cipher);
+        if (strlen($data) <= $iv_len) {
+            return false;
+        }
         $iv = substr($data, 0, $iv_len);
         $encrypted = substr($data, $iv_len);
         return openssl_decrypt($encrypted, $cipher, $key, 0, $iv);
