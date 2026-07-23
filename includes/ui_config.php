@@ -51,6 +51,7 @@ function itm_sidebar_base_structure() {
             'title' => '👤 Employee',
             'items' => [
                 ['id' => 'passwords', 'label' => '🔑 Passwords', 'href' => 'modules/passwords/', 'match_dir' => 'passwords'],
+                ['id' => 'myactivity', 'label' => '🕒 My Activity', 'href' => 'modules/myactivity/', 'match_dir' => 'myactivity'],
                 ['id' => 'contacts', 'label' => '📓 Contacts', 'href' => 'modules/contacts/', 'match_dir' => 'contacts'],
                 ['id' => 'employees', 'label' => '👤 Employees', 'href' => 'modules/employees/', 'match_dir' => 'employees'],
                 ['id' => 'birthdays', 'label' => '🎉 Birthdays', 'href' => 'modules/birthdays/', 'match_dir' => 'birthdays'],
