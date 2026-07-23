@@ -86,6 +86,7 @@ $activeEmoji = (string)($activeSource['emoji'] ?? '📰');
         .news-sidebar-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); }
         .news-content { flex: 1; padding: 24px 32px; overflow-y: auto; }
         .news-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .news-more-footer { margin-top: 12px; text-align: center; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
         @media (max-width: 768px) {
             .news-container { flex-direction: column; height: auto; min-height: calc(100vh - 120px); }
             .news-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
@@ -119,6 +120,9 @@ $activeEmoji = (string)($activeSource['emoji'] ?? '📰');
                         <?php echo sanitize((string)$activeSource['description']); ?>
                     </p>
                     <div class="news-sidebar-actions">
+                        <?php if ((string)($activeSource['site_link'] ?? '') !== ''): ?>
+                            <a href="<?php echo sanitize((string)$activeSource['site_link']); ?>" class="btn btn-sm" title="Source website" target="_blank" rel="noopener noreferrer">Source</a>
+                        <?php endif; ?>
                         <a href="<?php echo sanitize($feedUrl); ?>" class="btn btn-sm" title="RSS feed" target="_blank" rel="noopener noreferrer">📡</a>
                         <form method="POST" style="margin:0;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
@@ -212,6 +216,12 @@ $activeEmoji = (string)($activeSource['emoji'] ?? '📰');
                             </tbody>
                         </table>
                     </div>
+
+                    <?php if ((string)($activeSource['site_link'] ?? '') !== ''): ?>
+                        <div class="news-more-footer">
+                            <a href="<?php echo sanitize((string)$activeSource['site_link']); ?>" class="btn btn-sm" title="More news" target="_blank" rel="noopener noreferrer">More news</a>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
