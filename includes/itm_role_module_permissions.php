@@ -324,6 +324,7 @@ if (!function_exists('itm_crud_rbac_exempt_module_slugs')) {
             'idf_positions',
             'idfs',
             'modules_registry',
+            'myactivity',
             'org_chart',
             'passwords',
             'rack_planner',

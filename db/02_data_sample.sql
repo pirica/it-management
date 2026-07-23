@@ -356,6 +356,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 ("audit_logs", "Audit Logs", 1, 1),
 ("backup_tape_log", "Backup Tape Log File", 0, 1),
 ("birthdays", "Birthdays", 0, 1),
+("myactivity", "My Activity", 0, 1),
 ("bookmark_folders", "Bookmark Folders", 0, 1),
 ("bookmarks", "Bookmarks", 0, 1),
 ("budget_categories", "Budget Categories", 0, 1),
