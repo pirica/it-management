@@ -27,7 +27,7 @@ Read-only **employee-scoped** audit timeline for the signed-in user. Surfaces th
 
 ## 5. UI Behavior Requirements
 
-- **index.php** — filter card + **🕒 Recent Activity** timeline (user-config style) + paginated **Activity list** table with `itm-actions-cell` / View 🔎
+- **index.php** — filter card + **🕒 Recent Activity** timeline (user-config style) + paginated **Activity list** table with `itm-actions-cell` / View 🔎; intro note states private vault modules are **never audited** (no `audit_logs` anywhere — per `AGENTS.md` **Private data — no audit trail**)
 - **view.php** — full event detail (action, module, record id, IP, user agent, old/new JSON payloads)
 - Sidebar: **👤 Employee** section → **🕒 My Activity** (`includes/ui_config.php`)
 - Dynamic browser title via `itm_resolve_module_sidebar_icon()`
@@ -58,7 +58,7 @@ No writes — consumer only.
 
 - Do **not** drop the `employee_id` predicate when adding filters or exports
 - Do not expose other users’ `audit_logs` rows on `view.php?id=`
-- Private modules never appear — expected, not a bug
+- Private-data tables (`passwords`, `notes`, `bookmarks`, `private_contacts`, `todo`, `events`, `emails` send log, etc.) have **no** `audit_logs` rows and **no** audit triggers — they never appear in My Activity or Audit Logs. UI intro copy must say **never audited / 100% private**, not “not listed here”.
 - Registry row lives in `db/02_data.sql`; run `php scripts/sync_modules_registry.php` on existing DBs after deploy
 
 ## 11. Examples of Safe Code Patterns

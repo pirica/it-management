@@ -164,7 +164,7 @@ $crud_title = $cleanTitle;
             <h1 title="My Activity"><?php echo sanitize($resolvedEmoji !== '' ? $resolvedEmoji : '🕒'); ?></h1>
 
             <p style="margin:0 0 16px;color:var(--text-muted, #6b7280);font-size:13px;line-height:1.45;">
-                Your own change history on shared company data. Private modules (passwords, notes, bookmarks, and similar) are not listed here.
+                Your changes to shared company modules (equipment, employees, tickets, and similar). Personal vault modules — passwords, notes, bookmarks, private contacts, to-do, events, and email send logs — are <strong>never audited</strong>: the system does not write them to <code>audit_logs</code> (no database triggers, no PHP audit hooks). They cannot appear here or under Admin → Audit Logs; that data stays 100% private.
             </p>
 
             <div class="card myactivity-filters" style="margin-bottom:16px;" data-itm-no-export-pdf="1" data-itm-no-export-excel="1" data-itm-no-import-excel="1">
