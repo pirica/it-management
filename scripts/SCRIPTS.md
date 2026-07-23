@@ -302,6 +302,12 @@ Repro and verify runners that spawn temporary PHP subprocesses use `escapeshella
 - **Backfill entire project:** `php scripts/empty_folders.php` — repairs empty `index.html` on every project folder; lists only **new or changed** repo-relative `…/index.html` paths before the summary; upload roots also get `.htaccess`.
 - **Backfill `files/` only:** `php scripts/ensure_files_htaccess_chain.php`. See `scripts/AGENT_NOTES.md` for the full module/storage map.
 
+### News module maintenance
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/generate_ms_support_feed_products.php` | Scrapes Microsoft Support [RSS feed picker](https://support.microsoft.com/en-us/rss-feed-picker) product `<option>` GUIDs and regenerates `includes/itm_news_feed_ms_support_products.php` (205 Atom feeds merged into `news_feed_source_catalog()`). |
+
 ### Database Schema validation scripts
 
 | Script | Purpose |

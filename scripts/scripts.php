@@ -900,6 +900,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Generates SQL for missing <code>employee_id</code> foreign keys.</td>
                     <td>Open <a href="generate_FK_employee_id.php">generate_FK_employee_id.php</a> in the browser.</td>
                 </tr>
+                <tr data-tags="news">
+                    <td><a href="generate_ms_support_feed_products.php" target="_blank" rel="nofollow noreferrer">generate_ms_support_feed_products.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="module">news</span></span></td>
+                    <td>Regenerates <code>includes/itm_news_feed_ms_support_products.php</code> from Microsoft Support RSS feed picker (205 Atom product feeds).</td>
+                    <td><code>php scripts/generate_ms_support_feed_products.php</code></td>
+                </tr>
                 <tr data-tags="employees">
                     <td><a href="generate_reassignment.php" target="_blank" rel="nofollow noreferrer">generate_reassignment.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

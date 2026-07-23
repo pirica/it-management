@@ -24,8 +24,8 @@ Registry row: **`modules_registry`** slug `news` (sidebar + company module acces
   - `ms_windows_blog` — `https://blogs.windows.com/feed/`
   - `ms_powershell` — `https://devblogs.microsoft.com/powershell/feed/`
   - `ms_msrc_security` — `https://api.msrc.microsoft.com/update-guide/rss` (CVEs, advisories, Patch Tuesday)
-  - `ms_win10_updates` — Microsoft Support Atom feed for Windows 10 KB/monthly updates
-  - `ms_win11_updates` — Microsoft Support Atom feed for Windows 11 KB/monthly updates
+  - **205 Microsoft Support Atom feeds** from [RSS feed picker](https://support.microsoft.com/en-us/rss-feed-picker) — product list in `includes/itm_news_feed_ms_support_products.php`, merged via `news_microsoft_support_feed_catalog_entries()`; includes `ms_win10_updates` and `ms_win11_updates` (same cache ids as before)
+- Regenerate Support product list: `php scripts/generate_ms_support_feed_products.php` (scrapes feed picker `<option>` GUIDs)
 - **NVD API key:** optional `NVD_API_KEY` or `ITM_NVD_API_KEY` in project root `.env` (see `.env.example`; loaded by `config/config.php`); sent as `apiKey` request header for higher NVD rate limits
 - Feed items are sorted **newest first** by `published` (fallback `last_modified`) in `news_sort_items_newest_first()` before cache save and UI load
 - Cache TTL: **24 hours** per source (`NEWS_CACHE_DURATION`)
