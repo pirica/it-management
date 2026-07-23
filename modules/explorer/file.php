@@ -97,35 +97,45 @@ if (!$relative_path || !file_exists($full_path) || is_dir($full_path)) {
 }
 
 $ext = strtolower(pathinfo($full_path, PATHINFO_EXTENSION));
+$forceDownload = isset($_GET['download']) && (string)$_GET['download'] === '1';
+$downloadName = basename($full_path);
 
-/* -------------------------
-   IMAGES
-------------------------- */
-if (in_array($ext, ['jpg','jpeg','png','gif','webp'])) {
-    header("Content-Type: " . mime_content_type($full_path));
-    readfile($full_path);
-    exit;
+// Why: Serve every Explorer-whitelisted extension with a sensible Content-Type; attachment when requested.
+$contentType = '';
+if (function_exists('mime_content_type')) {
+    $detected = @mime_content_type($full_path);
+    if (is_string($detected) && $detected !== '') {
+        $contentType = $detected;
+    }
+}
+if ($contentType === '') {
+    $serveMap = [
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'gif' => 'image/gif',
+        'webp' => 'image/webp',
+        'pdf' => 'application/pdf',
+        'txt' => 'text/plain; charset=utf-8',
+        'md' => 'text/plain; charset=utf-8',
+        'log' => 'text/plain; charset=utf-8',
+        'json' => 'application/json; charset=utf-8',
+        'xml' => 'application/xml; charset=utf-8',
+        'csv' => 'text/csv; charset=utf-8',
+        'zip' => 'application/zip',
+        'doc' => 'application/msword',
+        'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'xls' => 'application/vnd.ms-excel',
+        'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'ppt' => 'application/vnd.ms-powerpoint',
+        'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    ];
+    $contentType = $serveMap[$ext] ?? 'application/octet-stream';
 }
 
-/* -------------------------
-   PDF
-------------------------- */
-if ($ext === 'pdf') {
-    header("Content-Type: application/pdf");
-    readfile($full_path);
-    exit;
+header('Content-Type: ' . $contentType);
+if ($forceDownload) {
+    header('Content-Disposition: attachment; filename="' . str_replace('"', '', $downloadName) . '"');
 }
-/* -------------------------
-   ZIP
-------------------------- */
-if ($ext === 'zip') {
-    header("Content-Type: application/zip");
-    readfile($full_path);
-    exit;
-}
-/* -------------------------
-   TEXT / CODE
-------------------------- */
-header("Content-Type: text/plain; charset=utf-8");
 readfile($full_path);
 exit;

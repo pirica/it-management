@@ -668,9 +668,12 @@ function appendContextSeparator() {
     ctxMenu.appendChild(hr);
 }
 
-function appendContextAction(label, handler, enabled = true) {
+function appendContextAction(label, handler, enabled = true, title = "") {
     const div = document.createElement("div");
     div.textContent = label;
+    if (title) {
+        div.title = title;
+    }
     if (!enabled) {
         div.style.opacity = "0.5";
         div.style.pointerEvents = "none";
@@ -717,6 +720,9 @@ function showContextMenu(e, item) {
 
     clearContextMenu();
     appendContextAction("Open", () => openItem(item.name, item.type));
+    if (item.type !== "folder" && item.type !== "trash") {
+        appendContextAction("💾", () => downloadItem(item.name), true, "Download");
+    }
 
     if (!isSystemFolder && !inRecycle) {
         appendContextAction("Copy", () => copyItem());
@@ -974,6 +980,11 @@ function downloadZip() {
     }
     const allowed = "Private/" + userPrivateDir;
     window.location = "api.php?downloadZip=1&path=" + encodeURIComponent(allowed);
+}
+
+function downloadItem(name) {
+    const relPath = currentPath ? currentPath + "/" + name : name;
+    window.location = "file.php?path=" + encodeURIComponent(relPath) + "&download=1";
 }
 
 /* CRIAR ESTRUTURAS DE DATA */
