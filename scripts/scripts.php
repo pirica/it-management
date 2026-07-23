@@ -60,6 +60,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         .scripts-badge-tag { background: #eaeef2; color: #24292f; border: 1px solid #d0d7de; }
         .scripts-badge-tag[data-tag-kind="mixed"] { background: #fff1e5; color: #9a6700; border-color: #f0d8b8; }
         .scripts-badge-tag[data-tag-kind="codebase"] { background: #f0f6fc; color: #0550ae; border-color: #c0d8f0; }
+        .scripts-badge-tag[data-tag-kind="python"] { background: #fbefff; color: #5a32a3; border-color: #d8b4fe; }
+        .scripts-badge-tag[data-tag-kind="server"] { background: #fff0f0; color: #9b1c1c; border-color: #f0c4c4; }
         .scripts-tag-filter-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; max-height: 120px; overflow-y: auto; }
         .scripts-tag-chip { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border, #d0d7de); background: var(--bg-primary, #fff); color: var(--text-primary, #24292f); font-size: 0.78rem; cursor: pointer; line-height: 1.4; }
         .scripts-tag-chip:hover { border-color: #0969da; }
@@ -574,15 +576,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Compares <code>CREATE TABLE</code> names in <code>db/</code> split bundle with <code>information_schema</code> for <code>itmanagement</code>. Use after PowerShell/MySQL imports that report success but stop early (e.g. 73 tables instead of 126). Lists missing/extra tables; exit <code>1</code> on mismatch.</td>
                     <td><code>php scripts/verify_database_schema.php</code> — run from repository root after <code>db/</code> split bundle import; check <code>mysql-import.err</code> for the first <code>ERROR</code> line if this fails.</td>
                 </tr>
-                <tr>
+                <tr data-tags="Server">
                     <td>verify_database_sql_import.sh</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="server">Server</span></span></td>
                     <td>Imports the full <code>db/</code> split bundle against a live MySQL 8.0 server and asserts the live <code>itmanagement</code> table count matches <code>CREATE TABLE</code> entries in <code>db/01_schema.sql</code> (currently <strong>126</strong>). Catches INSERT/SELECT column-count mismatches (for example cross-company <code>equipment</code> seed at <code>department_id</code>). Used by CI job <strong>database-import</strong> in <code>.github/workflows/smoke.yml</code>. Split alternative: <code>import_database_split.sh</code>.</td>
                     <td><code>bash scripts/verify_database_sql_import.sh</code> — requires MySQL on <code>127.0.0.1</code>, user <code>root</code>, password <code>itmanagement</code>. Env: <code>MYSQL_HOST</code>, <code>MYSQL_USER</code>, <code>MYSQL_PASSWORD</code>, optional <code>EXPECTED_TABLE_COUNT</code> override.</td>
                 </tr>
-                <tr>
+                <tr data-tags="Server">
                     <td>import_database_split.sh</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="server">Server</span></span></td>
                     <td>Imports <code>db/</code> SQL in one MySQL session: <code>01_schema.sql</code> → <code>02_data.sql</code> → <code>03_triggers.sql</code> (preserves <code>@replicate_source_company_id</code>; loads triggers after seed data). Runs <code>verify_database_schema.php</code> on success.</td>
                     <td><code>bash scripts/import_database_split.sh</code> — same MySQL env vars as <code>verify_database_sql_import.sh</code>. See <code>db/AGENT_NOTES.md</code> for import order.</td>
                 </tr>
@@ -1113,9 +1117,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
             </thead>
             <tbody>
-                <tr>
+                <tr data-tags="Server">
                     <td>smoke_test.sh</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="server">Server</span></span></td>
                     <td>CI/local smoke runner (<code>.github/workflows/smoke.yml</code>): (1) <code>php -l</code> all PHP, (2) CSRF coverage, (3) SQLi coverage, (4) FK label search static audit. Other Tier 2 <code>check_*</code> scripts: use <code>run_tier2_checks.php</code>.</td>
                     <td><code>bash scripts/smoke_test.sh</code> from repository root. Optional: <code>PHP_BIN=/path/to/php</code> on Windows Laragon.</td>
                 </tr>
@@ -1507,9 +1512,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Seeds company 1 Ops Report demo rows on two past dates with keyword <code>DemoManager</code> (header + guest experience child) for manual QA and screenshot capture; prints expected cross-date hit lines.</td>
                     <td><code>php scripts/seed_ops_report_search_demo.php</code> — optional <code>--company=</code>, <code>--keyword=</code>. Browser: Admin session required.</td>
                 </tr>
-                <tr>
+                <tr data-tags="Python">
                     <td>verify_ops_report_search_screenshot.py</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="python">Python</span></span></td>
                     <td>Seeds demo data, bypass login, captures five human-flow Ops Report search PNGs under <code>qa-reports/ops_report_search/</code> (all-dates hits, section filter, sort, this-day navigation, search bar). Requires Playwright + local Apache.</td>
                     <td><code>python scripts/verify_ops_report_search_screenshot.py</code>. Env: <code>ITM_SCREENSHOT_BASE_URL</code>, <code>ITM_PHP_BIN</code>, <code>ITM_OPS_SEARCH_DEMO_KEYWORD</code>.</td>
                 </tr>
@@ -1639,15 +1645,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Backfills <code>company_module_access</code> rows as <code>enabled=1</code> for active companies (all modules or one <code>company_id</code>). Calls <code>sync_modules_registry.php</code> first when seeding a single company.</td>
                     <td>CLI: <code>php scripts/seed_company_module_access.php</code> (all companies) or <code>php scripts/seed_company_module_access.php 3</code> (one company). Browser: <a href="seed_company_module_access.php">seed_company_module_access.php</a>.</td>
                 </tr>
-                <tr>
+                <tr data-tags="Mixed">
                     <td><code><a href="bypass_login.php" target="_blank" rel="nofollow noreferrer">bypass_login.php</a></code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
                     <td>Bypasses the login screen by manually establishing an authenticated Admin session in the database and returning the session ID. Sets up Admin user, TechCorp Global company, and Vault master key.</td>
                     <td><code>php scripts/bypass_login.php</code> — CLI-only Admin session hijack for dev/Playwright (non-admin users rejected via <code>itm_is_admin()</code>). Follow CLI instructions to set <code>PHPSESSID</code> in the browser.</td>
                 </tr>
-                <tr>
+                <tr data-tags="Mixed">
                     <td><code><a href="bypass_v2.php" target="_blank" rel="nofollow noreferrer">bypass_v2.php</a></code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
                     <td>CLI-only Admin session hijack for dev/Playwright (non-admin users rejected via <code>itm_is_admin()</code>). Sets up Admin user, TechCorp Global company, and Vault master key.</td>
                     <td><code>php scripts/bypass_v2.php</code> — CLI-only Admin session hijack for dev/Playwright (non-admin users rejected via <code>itm_is_admin()</code>). Follow CLI instructions to set <code>PHPSESSID</code> in the browser.</td>
                 </tr>
@@ -1658,57 +1666,66 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Allows administrators to paste and execute raw SQL <code>INSERT</code> commands with optional Foreign Key check toggling. Maintains audit logging.</td>
                     <td>Browser: <a href="sql_insert.php">sql_insert.php</a> (form).<br>CLI: <code>php scripts/sql_insert.php --file=path/to/file.sql [--disable-fk]</code></td>
                 </tr>
-                <tr>
+                <tr data-tags="Python">
                     <td><code>take_screenshots_passwords.py</code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="python">Python</span></span></td>
                     <td>Automated UI screenshot utility. Authenticates as Admin and captures key states of Bookmarks and Passwords modules. Requires Playwright.</td>
                     <td><code>python3 scripts/take_screenshots_passwords.py</code></td>
                 </tr>
-                <tr>
+                <tr data-tags="Python">
                     <td><code>take_screenshots_modules.py</code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="python">Python</span></span></td>
                     <td>Playwright screenshots for README module images. Default slugs: <code>todo</code>, <code>notes</code>, <code>roles_permissions</code>, <code>system_status</code>. Uses <code>bypass_login.php</code> + <code>sudo chown www-data</code> on the sess file; cookie domain follows the base URL hostname; waits for <code>#rp-permission-matrix</code> (Roles &amp; Permissions) and <code>#system-info-content</code> (System Status) before saving.</td>
                     <td><code>ITM_SCREENSHOT_ONLY=roles_permissions python3 scripts/take_screenshots_modules.py</code> · <code>ITM_SCREENSHOT_ONLY=system_status python3 scripts/take_screenshots_modules.py</code> · optional <code>ITM_SCREENSHOT_BASE_URL</code>, <code>ITM_SCREENSHOT_MODULES</code> (see <code>scripts/SCRIPTS.md</code>).</td>
                 </tr>
-                <tr>
+                <tr data-tags="Python">
                     <td><code>take_screenshots_modules_all.py</code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="python">Python</span></span></td>
                     <td>Bulk UI screenshot utility for all modules. Requires Playwright.</td>
                     <td><code>python3 scripts/take_screenshots_modules_all.py</code></td>
                 </tr>
-                <tr>
+                <tr data-tags="Python">
                     <td><code>test_notes_human.py</code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="python">Python</span></span></td>
                     <td>Playwright-based human-flow regression for Notes module.</td>
                     <td><code>python3 scripts/test_notes_human.py</code></td>
                 </tr>
-                <tr>
+                <tr data-tags="Python">
                     <td><code>update_display.py</code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="python">Python</span></span></td>
                     <td>Display update utility.</td>
                     <td><code>python3 scripts/update_display.py</code></td>
                 </tr>
-                <tr>
+                <tr data-tags="Python">
                     <td><code>verify_dnd.py</code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="python">Python</span></span></td>
                     <td>Verifies Drag and Drop functionality in UI.</td>
                     <td><code>python3 scripts/verify_dnd.py</code></td>
                 </tr>
-                <tr>
+                <tr data-tags="Python">
                     <td>verify_todo.py</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="python">Python</span></span></td>
                     <td>Verifies Todo module functionality via Playwright.</td>
                     <td><code>python3 scripts/verify_todo.py</code></td>
                 </tr>
-                <tr>
+                <tr data-tags="Python">
                     <td>verify_todo_categories.py</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="python">Python</span></span></td>
                     <td>Verifies Todo categories functionality via Playwright.</td>
                     <td><code>python3 scripts/verify_todo_categories.py</code></td>
                 </tr>
-                <tr>
+                <tr data-tags="Python">
                     <td><code>verify_notes_ui.py</code></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="python">Python</span></span></td>
                     <td>Verifies Notes module functionality via Playwright.</td>
                     <td><code>python3 scripts/verify_notes_ui.py</code></td>
                 </tr>
@@ -2604,6 +2621,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         return Object.keys(tagSet).sort(function (a, b) {
             if (a === 'Codebase') return -1;
             if (b === 'Codebase') return 1;
+            if (a === 'Python') return -1;
+            if (b === 'Python') return 1;
+            if (a === 'Server') return -1;
+            if (b === 'Server') return 1;
             if (a === 'Mixed') return -1;
             if (b === 'Mixed') return 1;
             return a.localeCompare(b);

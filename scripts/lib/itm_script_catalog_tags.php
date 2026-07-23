@@ -356,24 +356,62 @@ if (!function_exists('itm_script_catalog_tags_scan_script')) {
     }
 }
 
-if (!function_exists('itm_script_catalog_tags_for_href')) {
+if (!function_exists('itm_script_catalog_tags_extract_row_slug')) {
     /**
-     * @param array<string, mixed> $overrides manifest entries keyed by basename
+     * Resolve catalog slug from row HTML (plain-text first td, nested <code><a>, or any relative href).
+     */
+    function itm_script_catalog_tags_extract_row_slug(string $rowHtml): ?string
+    {
+        if (preg_match_all('/href=["\']([^"\']+)["\']/i', $rowHtml, $hrefMatches)) {
+            foreach ($hrefMatches[1] as $href) {
+                $href = (string)$href;
+                if (preg_match('#^https?://#i', $href)) {
+                    continue;
+                }
+                $slug = basename(parse_url($href, PHP_URL_PATH) ?: $href);
+                if ($slug !== '') {
+                    return $slug;
+                }
+            }
+        }
+
+        if (preg_match('/<td[^>]*>(.*?)<\/td>/is', $rowHtml, $tdMatch)) {
+            $text = trim(html_entity_decode(strip_tags($tdMatch[1]), ENT_QUOTES, 'UTF-8'));
+            if ($text !== '') {
+                return basename($text);
+            }
+        }
+
+        return null;
+    }
+}
+
+if (!function_exists('itm_script_catalog_tags_for_slug')) {
+    /**
+     * @param array<string, mixed> $overrides
      * @return array{tables: array<int, string>, tags: array<int, string>, slug: string}
      */
-    function itm_script_catalog_tags_for_href(string $href, string $rootPath, array $schemaTables, array $overrides = []): array
+    function itm_script_catalog_tags_for_slug(string $slug, string $rootPath, array $schemaTables, array $overrides = []): array
     {
-        $slug = basename(parse_url($href, PHP_URL_PATH) ?: $href);
         if (isset($overrides[$slug]) && is_array($overrides[$slug]) && !empty($overrides[$slug]['override'])) {
             $tags = $overrides[$slug]['tags'] ?? ['Codebase'];
             if (!is_array($tags)) {
                 $tags = ['Codebase'];
             }
+
             return [
                 'tables' => [],
                 'tags' => array_values($tags),
                 'slug' => $slug,
             ];
+        }
+
+        if (preg_match('/\.py$/i', $slug)) {
+            return ['tables' => [], 'tags' => ['Python'], 'slug' => $slug];
+        }
+
+        if (preg_match('/\.sh$/i', $slug)) {
+            return ['tables' => [], 'tags' => ['Server'], 'slug' => $slug];
         }
 
         if (!preg_match('/\.php$/i', $slug)) {
@@ -395,6 +433,25 @@ if (!function_exists('itm_script_catalog_tags_for_href')) {
     }
 }
 
+if (!function_exists('itm_script_catalog_tags_for_href')) {
+    /**
+     * @param array<string, mixed> $overrides
+     * @return array{tables: array<int, string>, tags: array<int, string>, slug: string}
+     */
+    function itm_script_catalog_tags_for_href(string $href, string $rootPath, array $schemaTables, array $overrides = []): array
+    {
+        if (preg_match('#^https?://#i', $href)) {
+            $slug = basename(parse_url($href, PHP_URL_PATH) ?: $href);
+
+            return ['tables' => [], 'tags' => ['Codebase'], 'slug' => $slug];
+        }
+
+        $slug = basename(parse_url($href, PHP_URL_PATH) ?: $href);
+
+        return itm_script_catalog_tags_for_slug($slug, $rootPath, $schemaTables, $overrides);
+    }
+}
+
 if (!function_exists('itm_script_catalog_tags_render_cell')) {
     /**
      * @param array<int, string> $tags
@@ -409,6 +466,10 @@ if (!function_exists('itm_script_catalog_tags_render_cell')) {
                 $kind = 'mixed';
             } elseif ($tag === 'Codebase') {
                 $kind = 'codebase';
+            } elseif ($tag === 'Python') {
+                $kind = 'python';
+            } elseif ($tag === 'Server') {
+                $kind = 'server';
             }
             $parts[] = '<span class="scripts-badge scripts-badge-tag" data-tag-kind="' . $kind . '">' . $escaped . '</span>';
         }
@@ -485,15 +546,15 @@ if (!function_exists('itm_script_catalog_tags_parse_catalog_rows')) {
             if (strpos($rowHtml, 'scripts-access-cell') === false) {
                 continue;
             }
-            if (!preg_match('/<td[^>]*>\s*<a\s+[^>]*href=["\']([^"\']+)["\']/i', $rowHtml, $hrefMatch)) {
+
+            $slug = itm_script_catalog_tags_extract_row_slug($rowHtml);
+            if ($slug === null || $slug === '') {
                 continue;
             }
 
-            $href = (string)$hrefMatch[1];
-            if (preg_match('#^https?://#i', $href)) {
-                $slug = basename(parse_url($href, PHP_URL_PATH) ?: $href);
-            } else {
-                $slug = basename($href);
+            $href = '';
+            if (preg_match('/href=["\']([^"\']+)["\']/i', $rowHtml, $hrefMatch)) {
+                $href = (string)$hrefMatch[1];
             }
 
             $rows[] = [

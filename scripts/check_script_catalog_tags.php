@@ -29,7 +29,7 @@ $failures = [];
 
 foreach ($rows as $row) {
     $slug = $row['slug'];
-    $result = itm_script_catalog_tags_for_href($row['href'], $root, $schemaTables, $overrides);
+    $result = itm_script_catalog_tags_for_slug($slug, $root, $schemaTables, $overrides);
     $expectedTags = $result['tags'];
 
     if (!preg_match('/\bdata-tags=["\']([^"\']*)["\']/i', $row['full'], $dataMatch)) {

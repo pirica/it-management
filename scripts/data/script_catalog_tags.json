@@ -341,7 +341,7 @@
         ],
         "override": false
     },
-    "phpmyadmin": {
+    "phpMyAdmin": {
         "tags": [
             "Codebase"
         ],
@@ -403,6 +403,20 @@
     "verify_database_schema.php": {
         "tags": [
             "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_database_sql_import.sh": {
+        "tags": [
+            "Server"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "import_database_split.sh": {
+        "tags": [
+            "Server"
         ],
         "tables": [],
         "override": false
@@ -1002,6 +1016,13 @@
         "tables": [],
         "override": false
     },
+    "smoke_test.sh": {
+        "tags": [
+            "Server"
+        ],
+        "tables": [],
+        "override": false
+    },
     "run_tier2_checks.php": {
         "tags": [
             "Mixed"
@@ -1458,6 +1479,13 @@
         ],
         "override": false
     },
+    "verify_ops_report_search_screenshot.py": {
+        "tags": [
+            "Python"
+        ],
+        "tables": [],
+        "override": false
+    },
     "verify_bookmarks_import.php": {
         "tags": [
             "Mixed"
@@ -1669,9 +1697,94 @@
         ],
         "override": false
     },
+    "bypass_login.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "companies",
+            "employees",
+            "employee_roles"
+        ],
+        "override": false
+    },
+    "bypass_v2.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "companies",
+            "employees",
+            "employee_roles"
+        ],
+        "override": false
+    },
     "sql_insert.php": {
         "tags": [
             "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "take_screenshots_passwords.py": {
+        "tags": [
+            "Python"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "take_screenshots_modules.py": {
+        "tags": [
+            "Python"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "take_screenshots_modules_all.py": {
+        "tags": [
+            "Python"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_notes_human.py": {
+        "tags": [
+            "Python"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "update_display.py": {
+        "tags": [
+            "Python"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_dnd.py": {
+        "tags": [
+            "Python"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_todo.py": {
+        "tags": [
+            "Python"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_todo_categories.py": {
+        "tags": [
+            "Python"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_notes_ui.py": {
+        "tags": [
+            "Python"
         ],
         "tables": [],
         "override": false
