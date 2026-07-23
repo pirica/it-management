@@ -27,6 +27,7 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
 - `demo_module_users.sql` — DML only: idempotent seed for `demo1`–`demo5` roles, RBAC rows, employees, `employee_companies`, and `ui_configuration` (company 1; `enable_chatbot = 1`); prefer `php scripts/fast_create_acc.php --seed-demo-bundle` for sidebar prefs refresh
 - `ui_configuration_enable_chatbot_active.sql` — DML only: `UPDATE ui_configuration SET enable_chatbot = 1 WHERE enable_chatbot = 0` (idempotent backfill to schema default)
 - `companies_audit_triggers.sql` — trigger-only: fixes `trg_companies_audit_*` `audit_logs.company_id` fallback (`NEW.id` / `OLD.id`)
+- `employee_departments_audit_triggers.sql` — trigger-only: adds `trg_employee_departments_audit_*` (mirrors `db/03_triggers.sql`; run after `employees_employee_departments.sql` on live DBs)
 - `index.html` — directory listing prevention
 
 ## 12. Module Owner Notes (Optional)
