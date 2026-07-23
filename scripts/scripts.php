@@ -1332,6 +1332,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Scrape <code>scripts/scripts.php</code> and verify catalog filter contract: all rows have <code>data-tags</code>, five-column markup, CSS column mapping, and simulated <code>*.json</code> / <code>*.txt</code> / <code>*.md</code> search plus Info / <code>*.md</code> chip filters.</td>
                     <td>Browser: plain-text report (Administrator session). CLI: <code>php scripts/verify_scripts_catalog_filter.php</code> — run after changing catalog tag CSS/JS; exit <code>1</code> on drift.</td>
                 </tr>
+                <tr data-tags="Python">
+                    <td>verify_scripts_catalog_filter_screenshot.py</td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="python">Python</span></span></td>
+                    <td>Runs <code>verify_scripts_catalog_filter.php</code>, then Playwright captures PNGs under <code>qa-reports/scripts_catalog_filter/</code> and asserts visible row counts for Info / <code>*.json</code> / <code>*.txt</code> / <code>*.md</code> filters on <code>scripts/scripts.php</code>.</td>
+                    <td><code>python scripts/verify_scripts_catalog_filter_screenshot.py</code>. Env: <code>ITM_SCREENSHOT_BASE_URL</code>, <code>ITM_PHP_BIN</code>, <code>ITM_PYTHON_BIN</code> (Playwright + local Apache).</td>
+                </tr>
                 <tr data-tags="employees notes Markdown">
                     <td><a href="check_script_disposable_employees.php" target="_blank" rel="nofollow noreferrer">check_script_disposable_employees.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
@@ -2736,17 +2743,27 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         return false;
     }
 
+    function rowTextMatchesQuery(row, query, tagsAttr) {
+        if (query === '.json' || query === 'json' || query === '*.json') {
+            return tagsAttr.indexOf('info') !== -1;
+        }
+        if (query === '.txt' || query === 'txt' || query === '*.txt') {
+            return tagsAttr.indexOf('info') !== -1;
+        }
+        if (query === '.md' || query === 'md' || query === '*.md') {
+            return tagsAttr.indexOf('markdown') !== -1;
+        }
+        return query === ''
+            || row.textContent.toLowerCase().indexOf(query) !== -1
+            || tagsAttr.indexOf(query) !== -1;
+    }
+
     function updateFilter() {
         var query = filterInput.value.replace(/^\s+|\s+$/g, '').toLowerCase();
         var visible = 0;
         rows.forEach(function (row) {
             var tagsAttr = (row.getAttribute('data-tags') || '').toLowerCase();
-            var textMatch = query === ''
-                || row.textContent.toLowerCase().indexOf(query) !== -1
-                || tagsAttr.indexOf(query) !== -1
-                || (query === '.json' || query === 'json' || query === '*.json') && tagsAttr.indexOf('info') !== -1
-                || (query === '.txt' || query === 'txt' || query === '*.txt') && tagsAttr.indexOf('info') !== -1
-                || (query === '.md' || query === 'md' || query === '*.md') && tagsAttr.indexOf('markdown') !== -1;
+            var textMatch = rowTextMatchesQuery(row, query, tagsAttr);
             var tagMatch = rowMatchesTag(row);
             var match = textMatch && tagMatch;
             row.classList.toggle('scripts-catalog-hidden', !match);

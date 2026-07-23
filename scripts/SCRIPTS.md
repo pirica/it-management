@@ -70,7 +70,7 @@ Each catalog card shows **table tags** derived from static analysis of the linke
 
 **Scan scope:** PHP `$conn` SQL + requires + spawn targets + filename tokens for table tags. `scripts/data/*` and `scripts/*` `.json` / `.txt` / `.md` references set **Info** / **Markdown**; data file contents are **not** mined for `Mixed`. Catalog row copy is scanned for the same path patterns. Text search also matches `data-tags` (typing `.json`, `.txt`, or `Info` finds Info-tagged rows).
 
-**UI:** tag pills on each card (`scripts-badge-tag`), `data-tags` on `<tr>`, chip bar filter (`All` / `Codebase` / `Python` / `Server` / `Info` / `Markdown` / `Mixed` / table names) plus alias chips `*.json`, `*.txt`, `*.md` (map to Info / Markdown). Text search matches row copy and `data-tags`; typing `.json`, `.txt`, `*.json`, `*.txt`, or `Info` finds Info-tagged rows; `.md`, `*.md`, or `Markdown` finds Markdown-tagged rows. Card grid uses five columns (Script, Access, Tags, What, How) — `td:nth-child(4)` / `nth-child(5)` for What/How.
+**UI:** tag pills on each card (`scripts-badge-tag`), `data-tags` on `<tr>`, chip bar filter (`All` / `Codebase` / `Python` / `Server` / `Info` / `Markdown` / `Mixed` / table names) plus alias chips `*.json`, `*.txt`, `*.md` (map to Info / Markdown). Text search matches row copy and `data-tags`; typing `.json`, `.txt`, `*.json`, or `*.txt` matches **Info tag only** (not row copy that mentions those literals); `.md` / `*.md` matches **Markdown tag only**. Card grid uses five columns (Script, Access, Tags, What, How) — `td:nth-child(4)` / `nth-child(5)` for What/How.
 
 **Maintenance:**
 
@@ -79,6 +79,7 @@ Each catalog card shows **table tags** derived from static analysis of the linke
 | `php scripts/apply_script_catalog_tags.php` | Dry-run; `--apply` writes `scripts/data/script_catalog_tags.json` and patches catalog markup |
 | `php scripts/check_script_catalog_tags.php` | Exit `1` when tags drift from computed scan |
 | `php scripts/verify_scripts_catalog_filter.php` | Scrape `scripts/scripts.php`; simulate `*.json` / `*.txt` / `*.md` search and chip filters; fail on CSS column drift |
+| `python scripts/verify_scripts_catalog_filter_screenshot.py` | Playwright human-flow: runs the PHP verifier first, then captures PNGs under `qa-reports/scripts_catalog_filter/` and asserts visible row counts for Info / `*.json` / `*.txt` / `*.md` filters. Env: `ITM_SCREENSHOT_BASE_URL`, `ITM_PHP_BIN`, `ITM_PYTHON_BIN` |
 
 **Overrides:** `scripts/data/script_catalog_tags.json` — set `"override": true` on a slug when static analysis cannot see dynamic table names.
 
