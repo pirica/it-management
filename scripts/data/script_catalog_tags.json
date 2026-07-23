@@ -1,0 +1,2921 @@
+{
+    "_defaults": {
+        "rules": "0 tables=Codebase; 1-2=table names; 3+=Mixed. Scan: entry + transitive scripts/ requires + one-level spawn targets."
+    },
+    "api.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "annual_budgets",
+            "approvals",
+            "approvals_stage",
+            "approver_type",
+            "bookmarks",
+            "bookmark_folders",
+            "catalogs",
+            "companies",
+            "cost_centers",
+            "departments",
+            "employees",
+            "employee_companies",
+            "employee_positions",
+            "employee_roles",
+            "employee_sidebar_preferences",
+            "employee_statuses",
+            "equipment",
+            "equipment_types",
+            "events",
+            "expenses",
+            "forecast_revisions",
+            "forecast_revisions_status",
+            "gl_accounts",
+            "ip_addresses",
+            "ip_subnets",
+            "license_types",
+            "monthly_budgets",
+            "notes",
+            "password_entries",
+            "password_folders",
+            "private_contacts",
+            "role_assignment_rights",
+            "switch_ports",
+            "todo",
+            "todo_categories",
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "pitfalls.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "SCRIPTS.md": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "SCRIPTS_TEST_MATRIX.md": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "DBdesign.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "crud_tables.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "crud_titles.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "crud_actions.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "update_all_created_at.php": {
+        "tags": [
+            "audit_logs"
+        ],
+        "tables": [
+            "audit_logs"
+        ],
+        "override": false
+    },
+    "detect_fk_dropdown_ui_risk_ui.php": {
+        "tags": [
+            "companies"
+        ],
+        "tables": [
+            "companies"
+        ],
+        "override": false
+    },
+    "detect_fk_dropdown_ui_risk.php": {
+        "tags": [
+            "companies"
+        ],
+        "tables": [
+            "companies"
+        ],
+        "override": false
+    },
+    "list_boolean_integer_fields.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "list_enum_fields.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "extract_by_fields.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "debug.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "health.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_form_failed_save_display.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_sql_injection.php": {
+        "tags": [
+            "equipment"
+        ],
+        "tables": [
+            "equipment"
+        ],
+        "override": false
+    },
+    "apply_form_failed_save_display_fix.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_db_error_messages.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "apply_human_friendly_error_display.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_email_forgot.php": {
+        "tags": [
+            "employees"
+        ],
+        "tables": [
+            "employees"
+        ],
+        "override": false
+    },
+    "test_register_mail.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_user_config_profile.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "verify_sidebar_preferences.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "companies",
+            "company_module_share",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_sidebar_preferences",
+            "employee_statuses",
+            "modules_registry",
+            "share_sessions"
+        ],
+        "override": false
+    },
+    "verify_emails_module.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "emails",
+            "equipment",
+            "license_management",
+            "license_types",
+            "modules_registry"
+        ],
+        "override": false
+    },
+    "run_email_alert_rules.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "alerts",
+            "companies",
+            "equipment",
+            "events",
+            "license_management",
+            "notes",
+            "todo"
+        ],
+        "override": false
+    },
+    "itm-user-errors.js": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "run_tests.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "identify_modules.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "generate_tests.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_import_user_samples.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "test_ajax.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_edit.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_session.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_api_coverage.php": {
+        "tags": [
+            "license_types"
+        ],
+        "tables": [
+            "license_types"
+        ],
+        "override": false
+    },
+    "phpmyadmin": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "analyze_database_health.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "force_delete_company.php": {
+        "tags": [
+            "companies"
+        ],
+        "tables": [
+            "companies"
+        ],
+        "override": false
+    },
+    "check_database_sql_company_name_uniques.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "repair_table_from_schema.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "count_db_tables.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_db_migrations.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "companies",
+            "company_module_share",
+            "employees",
+            "employee_roles",
+            "employee_sidebar_preferences",
+            "modules_registry",
+            "share_sessions"
+        ],
+        "override": false
+    },
+    "verify_database_schema.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "employee_fields_missing.php": {
+        "tags": [
+            "employees",
+            "ui_configuration"
+        ],
+        "tables": [
+            "employees",
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "fields_missing.php": {
+        "tags": [
+            "ui_configuration"
+        ],
+        "tables": [
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "fields_missing_reviewed.php": {
+        "tags": [
+            "ui_configuration"
+        ],
+        "tables": [
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "ui_configuration_reviewed.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "debug_equipment_create_rollback_errno.php": {
+        "tags": [
+            "equipment"
+        ],
+        "tables": [
+            "equipment"
+        ],
+        "override": false
+    },
+    "debug_resignations_termination_date.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "employees",
+            "employee_statuses",
+            "employee_type"
+        ],
+        "override": false
+    },
+    "verify_employee_type_resignations.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "departments",
+            "employees",
+            "employee_statuses",
+            "employee_type",
+            "modules_registry"
+        ],
+        "override": false
+    },
+    "normalize_database_sql_created_at.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "apply_module_sample_data_seed.php": {
+        "tags": [
+            "companies"
+        ],
+        "tables": [
+            "companies"
+        ],
+        "override": false
+    },
+    "extract_02_data_sample.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_02_data_sample_coverage.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "dedupe_02_data_per_company_inserts.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_sample_data_seed.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "backup_tape_log",
+            "cable_colors",
+            "companies",
+            "departments",
+            "employee_positions",
+            "equipment",
+            "equipment_rj45",
+            "equipment_statuses",
+            "equipment_types",
+            "switch_ports",
+            "switch_port_types",
+            "switch_status",
+            "workstation_ram"
+        ],
+        "override": false
+    },
+    "export_floor_plan_folders_seed.php": {
+        "tags": [
+            "floor_plan_folders"
+        ],
+        "tables": [
+            "floor_plan_folders"
+        ],
+        "override": false
+    },
+    "check_delimiters.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_duplicates.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_phones.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_sql_errors.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "count_args.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "fix_sql_departments.php": {
+        "tags": [
+            "departments"
+        ],
+        "tables": [
+            "departments"
+        ],
+        "override": false
+    },
+    "list_phone_columns.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_sql.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "fix_sql.php": {
+        "tags": [
+            "cable_colors",
+            "switch_port_types"
+        ],
+        "tables": [
+            "cable_colors",
+            "switch_port_types"
+        ],
+        "override": false
+    },
+    "fix_sql_broad.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "schema_report.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "validate_DB_schema.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_employee_id-foreign_keys.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "validate_delete_employee.php": {
+        "tags": [
+            "employees"
+        ],
+        "tables": [
+            "employees"
+        ],
+        "override": false
+    },
+    "generate_FK_employee_id.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "generate_reassignment.php": {
+        "tags": [
+            "employees"
+        ],
+        "tables": [
+            "employees"
+        ],
+        "override": false
+    },
+    "transfer_data_from_employee.php": {
+        "tags": [
+            "employees"
+        ],
+        "tables": [
+            "employees"
+        ],
+        "override": false
+    },
+    "delete_clone_employee.php": {
+        "tags": [
+            "employees"
+        ],
+        "tables": [
+            "employees"
+        ],
+        "override": false
+    },
+    "idfs_sync_human_test.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "cable_colors",
+            "equipment",
+            "equipment_rj45",
+            "idfs",
+            "idf_device_type",
+            "idf_links",
+            "idf_ports",
+            "idf_positions",
+            "switch_ports",
+            "switch_port_numbering_layout",
+            "switch_port_types",
+            "switch_status"
+        ],
+        "override": false
+    },
+    "idfs_api_payload_dry_run.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "idf_device_port_sort_test.php": {
+        "tags": [
+            "idf_ports",
+            "switch_port_types"
+        ],
+        "tables": [
+            "idf_ports",
+            "switch_port_types"
+        ],
+        "override": false
+    },
+    "ensure_equipment_type_modules.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "companies",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_sidebar_preferences",
+            "employee_statuses",
+            "equipment_types"
+        ],
+        "override": false
+    },
+    "cleanup_equipment_test_module_artifacts.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "companies",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_sidebar_preferences",
+            "employee_statuses",
+            "equipment_types"
+        ],
+        "override": false
+    },
+    "equipment_delete_clear_table_test.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "cable_colors",
+            "companies",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_sidebar_preferences",
+            "employee_statuses",
+            "equipment",
+            "equipment_statuses",
+            "equipment_types",
+            "switch_ports",
+            "switch_port_types",
+            "switch_status"
+        ],
+        "override": false
+    },
+    "tickets_related_equipment_delete_test.php": {
+        "tags": [
+            "equipment",
+            "tickets"
+        ],
+        "tables": [
+            "equipment",
+            "tickets"
+        ],
+        "override": false
+    },
+    "verify_tickets_sample_data.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "employees",
+            "equipment",
+            "tickets",
+            "ticket_categories",
+            "ticket_priorities",
+            "ticket_statuses"
+        ],
+        "override": false
+    },
+    "verify_equipment_triggers.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "audit_logs",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "equipment",
+            "equipment_statuses",
+            "equipment_types"
+        ],
+        "override": false
+    },
+    "employees_delete_clear_table_test.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "approvers",
+            "approver_type",
+            "attempts",
+            "audit_logs",
+            "companies",
+            "departments",
+            "employees",
+            "employee_companies",
+            "employee_positions",
+            "employee_roles",
+            "employee_statuses",
+            "employee_system_access"
+        ],
+        "override": false
+    },
+    "check_points.php": {
+        "tags": [
+            "floor_designer_points",
+            "switch_port_types"
+        ],
+        "tables": [
+            "floor_designer_points",
+            "switch_port_types"
+        ],
+        "override": false
+    },
+    "test_visualizer_v2.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_port_visualizer_layout.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_rack_planner.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "catalogs",
+            "equipment",
+            "equipment_statuses",
+            "equipment_types",
+            "idfs",
+            "idf_device_type",
+            "idf_positions",
+            "modules_registry",
+            "rack_planner"
+        ],
+        "override": false
+    },
+    "titles_list.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "titles_list_show.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_module_page_chrome.php": {
+        "tags": [
+            "ui_configuration"
+        ],
+        "tables": [
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "verify_favicon_root_cause.php": {
+        "tags": [
+            "employees",
+            "ui_configuration"
+        ],
+        "tables": [
+            "employees",
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "list_modules_without_share.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "list_modules_not_on_sidebar.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "list_empty_tables.php": {
+        "tags": [
+            "companies"
+        ],
+        "tables": [
+            "companies"
+        ],
+        "override": false
+    },
+    "verify_company_empty_sample_data.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "companies",
+            "employees",
+            "employee_roles"
+        ],
+        "override": false
+    },
+    "compare_database_sql_modules.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "floor_plans_folder_move_test.php": {
+        "tags": [
+            "floor_plan_folders"
+        ],
+        "tables": [
+            "floor_plan_folders"
+        ],
+        "override": false
+    },
+    "explorer_human_test.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "audit_logs",
+            "companies",
+            "departments",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "explorer"
+        ],
+        "override": false
+    },
+    "floor_designer_test.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "list_active_and_checkboxes.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "fix_scaffold_active_checkbox.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "run_tier2_checks.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "perform_audit.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_standard_crud_delegate_requires.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_csrf_coverage.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "audit_logs",
+            "bookmarks",
+            "bookmark_folders",
+            "companies",
+            "departments",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "equipment",
+            "explorer",
+            "ip_subnets",
+            "license_types",
+            "notes",
+            "password_entries",
+            "password_folders",
+            "private_contacts",
+            "switch_ports",
+            "todo",
+            "todo_categories"
+        ],
+        "override": false
+    },
+    "apply_date_display_format.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "apply_crud_hidden_employee_id_alias.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "apply_crud_fk_label_search.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "apply_display_field_columns_search_alias.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "apply_script_catalog_tags.php": {
+        "tags": [
+            "companies"
+        ],
+        "tables": [
+            "companies"
+        ],
+        "override": false
+    },
+    "apply_head_favicon_link.php": {
+        "tags": [
+            "ui_configuration"
+        ],
+        "tables": [
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "apply_list_new_button_style.php": {
+        "tags": [
+            "ui_configuration"
+        ],
+        "tables": [
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "apply_new_button_position_helper.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "apply_itm_actions_cell_markers.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "apply_ui_action_emoji.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "apply_pagination_emoji_labels.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "apply_pagination_first_last.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_pagination_emoji.php": {
+        "tags": [
+            "ui_configuration"
+        ],
+        "tables": [
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "verify_source_utf8_mojibake.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "fix_source_utf8_mojibake.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_codacy_xss_echo.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_manual_sql_string.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_not_operator.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_ui_action_emoji.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_script_browser_nav_duplicate.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_fk_label_search_coverage.php": {
+        "tags": [
+            "employees"
+        ],
+        "tables": [
+            "employees"
+        ],
+        "override": false
+    },
+    "check_display_field_columns_search.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_script_catalog_tags.php": {
+        "tags": [
+            "companies"
+        ],
+        "tables": [
+            "companies"
+        ],
+        "override": false
+    },
+    "check_script_disposable_employees.php": {
+        "tags": [
+            "employees",
+            "notes"
+        ],
+        "tables": [
+            "employees",
+            "notes"
+        ],
+        "override": false
+    },
+    "check_sql_injection_coverage.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_stale_user_id_sql.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_stale_user_terminology.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_multi_tenant_leaks.php": {
+        "tags": [
+            "idf_ports"
+        ],
+        "tables": [
+            "idf_ports"
+        ],
+        "override": false
+    },
+    "check_index_table_compliance.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "apply_bulk_delete_cancel_ux.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "apply_bulk_actions_records_per_page_gate.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "module_clean_tests_qa_runner.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "companies",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_sidebar_preferences",
+            "employee_statuses",
+            "equipment_types"
+        ],
+        "override": false
+    },
+    "module_browser_qa_runner.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "annual_budgets",
+            "approvals",
+            "approvals_stage",
+            "approver_type",
+            "companies",
+            "cost_centers",
+            "employees",
+            "employee_companies",
+            "employee_positions",
+            "employee_roles",
+            "employee_sidebar_preferences",
+            "employee_statuses",
+            "equipment_types",
+            "expenses",
+            "forecast_revisions",
+            "forecast_revisions_status",
+            "gl_accounts",
+            "ip_addresses",
+            "ip_subnets",
+            "monthly_budgets",
+            "role_assignment_rights",
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "module_browser_qa_build_report.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "annual_budgets",
+            "approvals",
+            "approvals_stage",
+            "approver_type",
+            "companies",
+            "cost_centers",
+            "employees",
+            "employee_companies",
+            "employee_positions",
+            "employee_roles",
+            "employee_sidebar_preferences",
+            "employee_statuses",
+            "equipment_types",
+            "expenses",
+            "forecast_revisions",
+            "forecast_revisions_status",
+            "gl_accounts",
+            "ip_addresses",
+            "ip_subnets",
+            "monthly_budgets",
+            "role_assignment_rights",
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "check_employees_clear_table_transaction.php": {
+        "tags": [
+            "employees"
+        ],
+        "tables": [
+            "employees"
+        ],
+        "override": false
+    },
+    "check_equipment_clear_table_delete.php": {
+        "tags": [
+            "equipment"
+        ],
+        "tables": [
+            "equipment"
+        ],
+        "override": false
+    },
+    "check_ui_configuration_coverage.php": {
+        "tags": [
+            "ui_configuration"
+        ],
+        "tables": [
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "check_audit_logs_coverage.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "sql_injection_matrix_test.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "db_field_active.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "sync_modules_registry.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_ops_report.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "modules_registry",
+            "ops_report",
+            "ops_report_guest_experience",
+            "ops_report_hotel_figure"
+        ],
+        "override": false
+    },
+    "verify_ops_report_sample_data.php": {
+        "tags": [
+            "ops_report"
+        ],
+        "tables": [
+            "ops_report"
+        ],
+        "override": false
+    },
+    "seed_ops_report_search_demo.php": {
+        "tags": [
+            "ops_report",
+            "ops_report_guest_experience"
+        ],
+        "tables": [
+            "ops_report",
+            "ops_report_guest_experience"
+        ],
+        "override": false
+    },
+    "verify_bookmarks_import.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "bookmarks",
+            "bookmark_folders",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "verify_bookmarks_folder_move.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "bookmarks",
+            "bookmark_folders",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "verify_chatbot.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "knowledge_base",
+            "modules_registry",
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "verify_request_password.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "modules_registry",
+            "request_password"
+        ],
+        "override": false
+    },
+    "verify_reports_hub.php": {
+        "tags": [
+            "modules_registry"
+        ],
+        "tables": [
+            "modules_registry"
+        ],
+        "override": false
+    },
+    "benchmark_sidebar_module_access.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "company_module_access",
+            "employees",
+            "employee_roles",
+            "modules_registry"
+        ],
+        "override": false
+    },
+    "verify_company_module_access.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "company_module_access",
+            "modules_registry",
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "verify_roles_permissions.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "companies",
+            "company_module_share",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_sidebar_preferences",
+            "modules_registry",
+            "role_hierarchy",
+            "role_module_permissions",
+            "share_sessions"
+        ],
+        "override": false
+    },
+    "verify_demo_module_restrictions.php": {
+        "tags": [
+            "employees",
+            "employee_roles"
+        ],
+        "tables": [
+            "employees",
+            "employee_roles"
+        ],
+        "override": false
+    },
+    "verify_employee_contact_email.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "fast_create_acc.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "companies",
+            "departments",
+            "employees",
+            "employee_companies",
+            "employee_positions",
+            "employee_roles",
+            "employee_sidebar_preferences",
+            "employee_statuses",
+            "modules_registry",
+            "role_module_permissions",
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "verify_dashboard_active_employees.php": {
+        "tags": [
+            "employees"
+        ],
+        "tables": [
+            "employees"
+        ],
+        "override": false
+    },
+    "verify_dashboard_online_employees.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_employee_dashboard.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_admin_page_gate.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_settings_admin_buttons.php": {
+        "tags": [
+            "companies"
+        ],
+        "tables": [
+            "companies"
+        ],
+        "override": false
+    },
+    "apply_new_company_module_share_capable_seed.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "companies",
+            "company_module_share",
+            "modules_registry"
+        ],
+        "override": false
+    },
+    "seed_company_module_access.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "companies",
+            "company_module_access",
+            "modules_registry"
+        ],
+        "override": false
+    },
+    "sql_insert.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "repro_bug.php": {
+        "tags": [
+            "todo"
+        ],
+        "tables": [
+            "todo"
+        ],
+        "override": false
+    },
+    "repro_vulnerabilities.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "repro_bac.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "idfs",
+            "idf_device_type",
+            "idf_positions"
+        ],
+        "override": false
+    },
+    "repro_bac_updated.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "idfs",
+            "idf_device_type",
+            "idf_positions"
+        ],
+        "override": false
+    },
+    "repro_rce.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "floor_plans"
+        ],
+        "override": false
+    },
+    "repro_rce_updated.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "floor_plans"
+        ],
+        "override": false
+    },
+    "repro_sqli.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "repro_sqli_updated.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "repro_request_password_bypass.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "repro_select_options_rbac.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "repro_equip_issues.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "equipment"
+        ],
+        "override": false
+    },
+    "repro_esa_vulnerability.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "benchmark_stats_optimized.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "benchmark_user_config.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_system_status.php": {
+        "tags": [
+            "modules_registry"
+        ],
+        "tables": [
+            "modules_registry"
+        ],
+        "override": false
+    },
+    "system_status_api.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "system_status_phpinfo.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_system_info.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_cpu_usage.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_ram_usage.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_disk_usage.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_uptime.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_php_version.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_php_extensions.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_php_ini_values.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_mysql_status.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_mysql_version.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_mysql_databases.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_mysql_size.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "apitest_tier_free.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "companies",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "apitest_tier_basic.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "companies",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "verify_select_options_escalation.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "verify_user_idor.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "verify_crud_fk_label_search.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "bookmarks",
+            "bookmark_folders",
+            "departments",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "equipment",
+            "ip_subnets",
+            "license_types",
+            "notes",
+            "password_entries",
+            "password_folders",
+            "private_contacts",
+            "switch_ports",
+            "todo",
+            "todo_categories"
+        ],
+        "override": false
+    },
+    "verify_employees_equipment_search_coverage.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "assignment_types",
+            "departments",
+            "employees",
+            "employee_companies",
+            "employee_positions",
+            "employee_roles",
+            "employee_statuses",
+            "employee_type",
+            "equipment",
+            "equipment_statuses",
+            "equipment_types",
+            "it_locations",
+            "manufacturers",
+            "racks",
+            "suppliers",
+            "workstation_modes"
+        ],
+        "override": false
+    },
+    "verify_employees_sensitive_view.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "check_department_select_quick_add.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_fast_create_acc_select_quick_add.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_explorer_department_access.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_explorer_zip_leak.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "verify_company_deletion.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "companies",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "repro_auth_bypass_v3.php": {
+        "tags": [
+            "companies"
+        ],
+        "tables": [
+            "companies"
+        ],
+        "override": false
+    },
+    "empty_folders.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "ensure_files_htaccess_chain.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_explorer_rce_htaccess.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "verify_explorer_rce_marker.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "test_explorer_paths.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "test_explorer_preview.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_audit_logs_disclosure.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "audit_logs",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "auth_register_reset_human_test.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "attempts",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "registration_invitations"
+        ],
+        "override": false
+    },
+    "verify_password_reset_flow.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "verify_invitations_escalation.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "repro_zip_slip.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "repro_notes_traversal.php": {
+        "tags": [
+            "employees",
+            "notes"
+        ],
+        "tables": [
+            "employees",
+            "notes"
+        ],
+        "override": false
+    },
+    "repro_notes_idor.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "notes"
+        ],
+        "override": false
+    },
+    "verify_metadata_column_cache.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_update_port_zero_row.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "cable_colors",
+            "equipment",
+            "equipment_statuses",
+            "equipment_types",
+            "idf_ports",
+            "switch_ports",
+            "switch_status"
+        ],
+        "override": false
+    },
+    "verify_notes_ajax_contract.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "notes"
+        ],
+        "override": false
+    },
+    "verify_notes_vault.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "notes"
+        ],
+        "override": false
+    },
+    "verify_todo_vault.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "todo"
+        ],
+        "override": false
+    },
+    "verify_events_vault.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "events"
+        ],
+        "override": false
+    },
+    "verify_private_contacts_vault.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "private_contacts"
+        ],
+        "override": false
+    },
+    "verify_notes_share.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "notes",
+            "share_sessions"
+        ],
+        "override": false
+    },
+    "apply_crud_record_share_modules.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "patch_crud_share_agent_notes.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_qr_share_modules.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "bookmarks",
+            "departments",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "events",
+            "floor_plans",
+            "password_entries",
+            "rack_planner",
+            "rack_statuses",
+            "share_sessions",
+            "todo"
+        ],
+        "override": false
+    },
+    "verify_module_share.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "companies",
+            "company_module_share",
+            "modules_registry",
+            "notes",
+            "suppliers"
+        ],
+        "override": false
+    },
+    "verify_whatsapp_share.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_outlook_share.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_json_import_validation.php": {
+        "tags": [
+            "catalogs",
+            "events"
+        ],
+        "tables": [
+            "catalogs",
+            "events"
+        ],
+        "override": false
+    },
+    "verify_maintenance_scripts_rbac.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "repro_audit_disclosure.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "audit_logs",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "check_crud_rbac_coverage.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "apply_crud_rbac_guards.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "repro_rbac_bypass.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "cost_centers",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "expenses",
+            "role_module_permissions"
+        ],
+        "override": false
+    },
+    "repro_employee_companies_leak.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "repro_employee_companies_bac.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "repro_audit_token_leak.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "audit_logs",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "repro_destructive_import.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "repro_todo_user_leak.php": {
+        "tags": [
+            "employees",
+            "employee_companies"
+        ],
+        "tables": [
+            "employees",
+            "employee_companies"
+        ],
+        "override": false
+    },
+    "repro_cross_tenant_admin.php": {
+        "tags": [
+            "employees"
+        ],
+        "tables": [
+            "employees"
+        ],
+        "override": false
+    },
+    "repro_explorer_path_bypass_v4.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "repro_explorer_traversal.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_explorer_fix.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_explorer_fix_updated.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_explorer_fix_web.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_explorer_fix_standalone.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "repro_attempts_data_leak_v2.php": {
+        "tags": [
+            "attempts"
+        ],
+        "tables": [
+            "attempts"
+        ],
+        "override": false
+    },
+    "repro_explorer_zip_slip_v2.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "repro_select_options_unauthorized_v2.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "companies",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "repro_vault_corruption.php": {
+        "tags": [
+            "employees",
+            "password_entries"
+        ],
+        "tables": [
+            "employees",
+            "password_entries"
+        ],
+        "override": false
+    },
+    "repro_db_integrity.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "employees",
+            "employee_assignment_history",
+            "employee_roles",
+            "employee_statuses",
+            "expenses"
+        ],
+        "override": false
+    },
+    "test_multi_tenant.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_audit_columns.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "apply_crud_audit_soft_delete.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_crud_audit_soft_delete.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "repro_employee_dataloss.php": {
+        "tags": [
+            "employees"
+        ],
+        "tables": [
+            "employees"
+        ],
+        "override": false
+    },
+    "verify_import_fix_updated.php": {
+        "tags": [
+            "departments",
+            "employees"
+        ],
+        "tables": [
+            "departments",
+            "employees"
+        ],
+        "override": false
+    },
+    "repro_generic_dataloss.php": {
+        "tags": [
+            "departments"
+        ],
+        "tables": [
+            "departments"
+        ],
+        "override": false
+    },
+    "repro_contacts_idor.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "repro_select_options.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "companies",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "repro_status_leak.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "companies",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "repro_visitors_bac.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "visitors_access_log"
+        ],
+        "override": false
+    },
+    "repro_visitors_sqli.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "visitors_access_log"
+        ],
+        "override": false
+    },
+    "verify_audit_updated.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_clear_table_fix.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "bookmarks",
+            "companies",
+            "employees",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "verify_explorer_updated.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_rbac_updated.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_sqli_updated.php": {
+        "tags": [
+            "visitors_access_log"
+        ],
+        "tables": [
+            "visitors_access_log"
+        ],
+        "override": false
+    },
+    "verify_status_leak_fixed.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
+        ],
+        "override": false
+    },
+    "verify_visitors_bac_fix.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "visitors_access_log"
+        ],
+        "override": false
+    },
+    "verify_visitors_sqli_fix.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "visitors_access_log"
+        ],
+        "override": false
+    },
+    "repro_birthdays_resignations_rbac.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "role_module_permissions"
+        ],
+        "override": false
+    },
+    "verify_auto_scaffolding.php": {
+        "tags": [
+            "ui_configuration"
+        ],
+        "tables": [
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "deletev2.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "reset_git_history.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    }
+}
