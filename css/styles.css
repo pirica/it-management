@@ -658,11 +658,12 @@ tr.ticket-row-colorized:hover {
     font-weight: 500;
 }
 
-/* Employee dashboard (dashboard.php) */
+/* Employee dashboard (dashboard.php) — scrollable sections; no viewport squeeze */
 body.itm-employee-dashboard-page .main-content {
-    height: 100vh;
-    max-height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
+    height: auto;
+    max-height: none;
+    overflow: visible;
 }
 
 body.itm-employee-dashboard-page .content.itm-employee-dashboard {
@@ -672,8 +673,8 @@ body.itm-employee-dashboard-page .content.itm-employee-dashboard {
     flex: 1;
     max-width: none;
     margin: 0;
-    padding: 12px 16px 14px;
-    overflow: hidden;
+    padding: 12px 16px 20px;
+    overflow: visible;
 }
 
 .itm-emp-dash-shell {
@@ -682,13 +683,13 @@ body.itm-employee-dashboard-page .content.itm-employee-dashboard {
     gap: 12px;
     min-height: 0;
     flex: 1;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .itm-emp-dash-body {
-    flex: 1;
+    flex: 0 0 auto;
     min-height: 0;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .itm-emp-dash-hero {
@@ -782,15 +783,20 @@ body.itm-employee-dashboard-page .content.itm-employee-dashboard {
 .itm-emp-dash-sections {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-auto-rows: auto;
     gap: 12px;
-    height: 100%;
+    height: auto;
     min-height: 0;
-    overflow: hidden;
+    overflow: visible;
 }
 
+.itm-emp-dash-section--private,
 .itm-emp-dash-section--activity {
     grid-column: 1 / -1;
+}
+
+.itm-emp-dash-section--private .itm-emp-dash-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
 .itm-emp-dash-section--activity .itm-emp-dash-panel {
@@ -807,7 +813,7 @@ body.itm-employee-dashboard-page .content.itm-employee-dashboard {
     flex-direction: column;
     min-height: 0;
     margin-bottom: 0;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .itm-emp-dash-section-head {
@@ -834,16 +840,14 @@ body.itm-employee-dashboard-page .content.itm-employee-dashboard {
 }
 
 .itm-emp-dash-panel {
-    flex: 1;
+    flex: 0 0 auto;
     min-height: 0;
     background: var(--bg-secondary);
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 10px;
     box-shadow: var(--shadow);
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow: visible;
 }
 
 .itm-emp-dash-grid {
@@ -974,6 +978,7 @@ a.itm-emp-dash-card:hover {
         overflow: visible;
     }
 
+    .itm-emp-dash-section--private,
     .itm-emp-dash-section--activity {
         grid-column: auto;
     }

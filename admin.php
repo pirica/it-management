@@ -155,7 +155,6 @@ if (!empty($dash['reload_required'])) {
     header('Location: ' . BASE_URL . 'admin.php');
     exit;
 }
-$itmDashCardContext = 'admin';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -231,8 +230,8 @@ $itmDashCardContext = 'admin';
                     </div>
                 </div>
 
-                <div class="itm-emp-dash-body" style="margin-bottom:20px;">
-                    <?php include ROOT_PATH . 'includes/itm_employee_dashboard_cards.php'; ?>
+                <div class="itm-admin-dash-cards">
+                    <?php include ROOT_PATH . 'includes/itm_admin_dashboard_cards.php'; ?>
                 </div>
 
                 <div class="card">

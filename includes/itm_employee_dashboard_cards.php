@@ -3,7 +3,6 @@
  * Render employee dashboard stat card sections.
  *
  * Expects variables from itm_employee_dashboard_load_context() in scope.
- * Optional: $itmDashCardContext = 'admin' shows company Audit Logs section.
  *
  * @var mysqli $conn
  * @var int $company_id
@@ -14,8 +13,6 @@ if (!isset($dash) || !is_array($dash)) {
     return;
 }
 
-$itmDashCardContext = (string)($itmDashCardContext ?? 'employee');
-$dashIsAdminContext = ($itmDashCardContext === 'admin');
 $dashEmployeeId = (int)($user_id ?? ($_SESSION['employee_id'] ?? 0));
 
 $dashShownTables = itm_employee_dashboard_card_shown_tables();
@@ -34,9 +31,6 @@ $dashPrivateModuleCounts = is_array($dash['private_module_counts'] ?? null) ? $d
 $dashSystemAccessCount = (int)($dash['system_access_count_1'] ?? 0);
 $dashWorkstation = $dash['workstation'] ?? null;
 $dashAllStats = is_array($dash['all_stats'] ?? null) ? $dash['all_stats'] : [];
-$dashCompanyAuditLogsCount = $dashIsAdminContext
-    ? itm_employee_dashboard_company_audit_logs_count($conn, (int)$company_id)
-    : 0;
 
 /**
  * @param string $href
@@ -89,18 +83,6 @@ $renderDashSection = static function ($title, $subtitle, $renderCards, $sectionC
 ?>
 <div class="itm-emp-dash-sections">
 <?php
-if ($dashIsAdminContext) {
-    $renderDashSection('Company audit', 'Compliance and change history for this tenant', static function ($renderDashCard) use (
-        $conn,
-        $company_id,
-        $dashCompanyAuditLogsCount
-    ) {
-        if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'audit_logs')) {
-            $renderDashCard('modules/audit_logs/index.php', $dashCompanyAuditLogsCount, 'Audit Logs', '📋');
-        }
-    });
-}
-
 $renderDashSection('My work', 'Assets, tickets, and assignments', static function ($renderDashCard) use (
     $conn,
     $company_id,
@@ -208,7 +190,7 @@ $renderDashSection('Private', 'Personal modules with no audit trail', static fun
             $icon
         );
     }
-});
+}, 'itm-emp-dash-section--private');
 
 $renderDashSection('Activity', 'Login history and recent actions', static function ($renderDashCard) use (
     $conn,
