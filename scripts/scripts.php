@@ -55,7 +55,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         .scripts-catalog td { display: block; border: none; padding: 0; text-align: left; vertical-align: top; white-space: normal; line-height: 1.5; font-size: 0.9rem; }
         .scripts-catalog td:first-child { grid-area: title; align-self: center; }
         .scripts-catalog td.scripts-access-cell { grid-area: access; align-self: start; justify-self: end; }
-        .scripts-catalog td.scripts-tags-cell { grid-area: tags; }
+        .scripts-catalog td.scripts-tags-cell { grid-area: tags; color: var(--text-primary, #24292f); }
+        .scripts-catalog td.scripts-tags-cell::before { display: block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary, #57606a); margin-bottom: 6px; content: "Tags"; }
         .scripts-tag-badges { display: flex; flex-wrap: wrap; gap: 4px; }
         .scripts-badge-tag { background: #eaeef2; color: #24292f; border: 1px solid #d0d7de; }
         .scripts-badge-tag[data-tag-kind="mixed"] { background: #fff1e5; color: #9a6700; border-color: #f0d8b8; }
@@ -68,12 +69,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         .scripts-tag-chip { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border, #d0d7de); background: var(--bg-primary, #fff); color: var(--text-primary, #24292f); font-size: 0.78rem; cursor: pointer; line-height: 1.4; }
         .scripts-tag-chip:hover { border-color: #0969da; }
         .scripts-tag-chip.is-active { background: #0969da; color: #fff; border-color: #0969da; }
-        .scripts-catalog td:nth-child(3) { grid-area: what; color: var(--text-primary, #24292f); }
-        .scripts-catalog td:nth-child(4) { grid-area: how; color: var(--text-secondary, #57606a); padding-top: 10px; border-top: 1px dashed var(--border, #d0d7de); }
-        .scripts-catalog td:nth-child(3)::before,
-        .scripts-catalog td:nth-child(4)::before { display: block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary, #57606a); margin-bottom: 6px; }
-        .scripts-catalog td:nth-child(3)::before { content: "What it does"; }
-        .scripts-catalog td:nth-child(4)::before { content: "How to use"; }
+        .scripts-tag-chip-alias { border-style: dashed; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.74rem; }
+        .scripts-catalog td:nth-child(4) { grid-area: what; color: var(--text-primary, #24292f); }
+        .scripts-catalog td:nth-child(5) { grid-area: how; color: var(--text-secondary, #57606a); padding-top: 10px; border-top: 1px dashed var(--border, #d0d7de); }
+        .scripts-catalog td:nth-child(4)::before,
+        .scripts-catalog td:nth-child(5)::before { display: block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary, #57606a); margin-bottom: 6px; }
+        .scripts-catalog td:nth-child(4)::before { content: "What it does"; }
+        .scripts-catalog td:nth-child(5)::before { content: "How to use"; }
         .scripts-catalog td:first-child a { font-weight: 650; font-size: 0.98rem; color: #0969da; text-decoration: none; word-break: break-word; }
         .scripts-catalog td:first-child a:hover { text-decoration: underline; }
         .scripts-catalog code { font-size: 0.86rem; word-break: break-word; background: var(--bg-primary, #fff); border: 1px solid var(--border, #d0d7de); border-radius: 4px; padding: 1px 5px; }
@@ -146,7 +148,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         </p>
         <div class="scripts-intro-tools">
             <div id="scripts-tag-filter-bar" class="scripts-tag-filter-bar" role="group" aria-label="Filter by table tag"></div>
-            <input type="search" id="scripts-catalog-filter" class="scripts-filter" placeholder="Filter by script name, purpose, or command…" autocomplete="off" aria-label="Filter scripts catalog">
+            <input type="search" id="scripts-catalog-filter" class="scripts-filter" placeholder="Filter scripts… (try Info, *.json, *.txt, *.md)" autocomplete="off" aria-label="Filter scripts catalog">
             <span class="scripts-filter-hint" id="scripts-catalog-filter-count" aria-live="polite"></span>
         </div>
         <div class="scripts-cli-hint">
@@ -164,6 +166,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <th>Script</th>
                     <th class="scripts-access-col">Access</th>
+                    <th>Tags</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -207,6 +210,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <th>Script</th>
                     <th class="scripts-access-col">Access</th>
+                    <th>Tags</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -328,6 +332,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <th>Script</th>
                     <th class="scripts-access-col">Access</th>
+                    <th>Tags</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -440,6 +445,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <th>Script</th>
                     <th class="scripts-access-col">Access</th>
+                    <th>Tags</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -517,6 +523,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <th>Script</th>
                     <th class="scripts-access-col">Access</th>
+                    <th>Tags</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -830,6 +837,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <th>Script</th>
                     <th class="scripts-access-col">Access</th>
+                    <th>Tags</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -979,6 +987,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <th>Script</th>
                     <th class="scripts-access-col">Access</th>
+                    <th>Tags</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -1114,6 +1123,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <th>Script</th>
                     <th class="scripts-access-col">Access</th>
+                    <th>Tags</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -1315,6 +1325,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Static gate: every <code>scripts/scripts.php</code> catalog row has correct <code>data-tags</code> and tag badge markup matching the computed scan in <code>scripts/lib/itm_script_catalog_tags.php</code>.</td>
                     <td>Browser: plain-text report (Administrator session). CLI: <code>php scripts/check_script_catalog_tags.php</code> — run after catalog or script SQL changes; exit <code>1</code> on drift.</td>
                 </tr>
+                <tr data-tags="catalogs companies Info Markdown">
+                    <td><a href="verify_scripts_catalog_filter.php" target="_blank" rel="nofollow noreferrer">verify_scripts_catalog_filter.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">catalogs</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">companies</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
+                    <td>Scrape <code>scripts/scripts.php</code> and verify catalog filter contract: all rows have <code>data-tags</code>, five-column markup, CSS column mapping, and simulated <code>*.json</code> / <code>*.txt</code> / <code>*.md</code> search plus Info / <code>*.md</code> chip filters.</td>
+                    <td>Browser: plain-text report (Administrator session). CLI: <code>php scripts/verify_scripts_catalog_filter.php</code> — run after changing catalog tag CSS/JS; exit <code>1</code> on drift.</td>
+                </tr>
                 <tr data-tags="employees notes Markdown">
                     <td><a href="check_script_disposable_employees.php" target="_blank" rel="nofollow noreferrer">check_script_disposable_employees.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
@@ -1477,6 +1494,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <th>Script</th>
                     <th class="scripts-access-col">Access</th>
+                    <th>Tags</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -1839,6 +1857,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <th>Script</th>
                     <th class="scripts-access-col">Access</th>
+                    <th>Tags</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -1958,6 +1977,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <th>Script</th>
                     <th class="scripts-access-col">Access</th>
+                    <th>Tags</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -2568,6 +2588,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 <tr>
                     <th>Script</th>
                     <th class="scripts-access-col">Access</th>
+                    <th>Tags</th>
                     <th>What it does</th>
                     <th>How to use</th>
                 </tr>
@@ -2658,6 +2679,20 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
             tagBar.appendChild(btn);
         });
 
+        [
+            { tag: '*.json', label: '*.json', title: 'Scripts referencing JSON data files (Info tag)' },
+            { tag: '*.txt', label: '*.txt', title: 'Scripts referencing TXT data files (Info tag)' },
+            { tag: '*.md', label: '*.md', title: 'Scripts referencing Markdown docs (Markdown tag)' }
+        ].forEach(function (alias) {
+            var aliasBtn = document.createElement('button');
+            aliasBtn.type = 'button';
+            aliasBtn.className = 'scripts-tag-chip scripts-tag-chip-alias';
+            aliasBtn.setAttribute('data-tag', alias.tag);
+            aliasBtn.setAttribute('title', alias.title);
+            aliasBtn.textContent = alias.label;
+            tagBar.appendChild(aliasBtn);
+        });
+
         tagBar.addEventListener('click', function (event) {
             var chip = event.target;
             if (!chip || !chip.classList || !chip.classList.contains('scripts-tag-chip')) {
@@ -2677,6 +2712,22 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
             return true;
         }
         var tags = (row.getAttribute('data-tags') || '').split(/\s+/);
+        if (activeTag === '*.json' || activeTag === '*.txt') {
+            for (var j = 0; j < tags.length; j++) {
+                if (tags[j] === 'Info') {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (activeTag === '*.md') {
+            for (var k = 0; k < tags.length; k++) {
+                if (tags[k] === 'Markdown') {
+                    return true;
+                }
+            }
+            return false;
+        }
         for (var i = 0; i < tags.length; i++) {
             if (tags[i] === activeTag) {
                 return true;
