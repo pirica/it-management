@@ -19,13 +19,63 @@ if (!defined('NEWS_NVD_LOOKBACK_DAYS')) {
     define('NEWS_NVD_LOOKBACK_DAYS', 120);
 }
 
+require_once __DIR__ . '/itm_news_feed_ms_support_products.php';
+
+if (!function_exists('news_microsoft_support_atom_url')) {
+    function news_microsoft_support_atom_url($guid)
+    {
+        $guid = strtolower(trim((string)$guid));
+
+        return 'https://support.microsoft.com/en-us/feed/atom/' . $guid;
+    }
+}
+
+if (!function_exists('news_microsoft_support_feed_catalog_entries')) {
+    /**
+     * Atom feeds from Microsoft Support RSS feed picker (one entry per product).
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    function news_microsoft_support_feed_catalog_entries()
+    {
+        if (!function_exists('news_microsoft_support_feed_products')) {
+            return [];
+        }
+
+        $siteLink = 'https://support.microsoft.com/en-us/rss-feed-picker';
+        $entries = [];
+        foreach (news_microsoft_support_feed_products() as $product) {
+            $id = (string)($product['id'] ?? '');
+            $label = (string)($product['label'] ?? '');
+            $guid = (string)($product['guid'] ?? '');
+            if ($id === '' || $guid === '') {
+                continue;
+            }
+
+            $entries[$id] = [
+                'id' => $id,
+                'label' => $label,
+                'emoji' => '📦',
+                'type' => 'rss',
+                'url' => news_microsoft_support_atom_url($guid),
+                'site_link' => $siteLink,
+                'description' => $label . ' — Microsoft Support KB and update articles (feed picker)',
+                'show_cvss' => false,
+                'title_column' => 'Title',
+            ];
+        }
+
+        return $entries;
+    }
+}
+
 if (!function_exists('news_feed_source_catalog')) {
     /**
      * @return array<string,array<string,mixed>>
      */
     function news_feed_source_catalog()
     {
-        return [
+        $baseCatalog = [
             'nvd_cve' => [
                 'id' => 'nvd_cve',
                 'label' => 'CVE (NVD)',
@@ -81,29 +131,9 @@ if (!function_exists('news_feed_source_catalog')) {
                 'show_cvss' => false,
                 'title_column' => 'Title',
             ],
-            'ms_win10_updates' => [
-                'id' => 'ms_win10_updates',
-                'label' => 'Windows 10 Updates (KB)',
-                'emoji' => '📦',
-                'type' => 'rss',
-                'url' => 'https://support.microsoft.com/en-us/feed/atom/6ae59d69-36fc-8e4d-23dd-631d98bf74a9',
-                'site_link' => 'https://support.microsoft.com/en-us/rss-feed-picker',
-                'description' => 'Monthly cumulative updates, previews, and known-issue KB articles for Windows 10',
-                'show_cvss' => false,
-                'title_column' => 'Title',
-            ],
-            'ms_win11_updates' => [
-                'id' => 'ms_win11_updates',
-                'label' => 'Windows 11 Updates (KB)',
-                'emoji' => '📦',
-                'type' => 'rss',
-                'url' => 'https://support.microsoft.com/en-us/feed/atom/4ec863cc-2ecd-e187-6cb3-b50c6545db92',
-                'site_link' => 'https://support.microsoft.com/en-us/rss-feed-picker',
-                'description' => 'Monthly cumulative updates, previews, and known-issue KB articles for Windows 11',
-                'show_cvss' => false,
-                'title_column' => 'Title',
-            ],
         ];
+
+        return array_merge($baseCatalog, news_microsoft_support_feed_catalog_entries());
     }
 }
 
