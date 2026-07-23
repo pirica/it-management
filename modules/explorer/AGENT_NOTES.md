@@ -39,7 +39,7 @@ Secure multi-tenant file manager. Physical files under `files/{company_id}/` wit
 - **Recycle view:** breadcrumbs show **Home / Trash**; grid labels show the leaf basename with the full trash-relative path in `title` (e.g. label `24.png`, title `Private/Admin_1/24.png`). Context menu offers **Restore** only.
 - **Hidden system files:** `index.html` and `.htaccess` are always omitted from Explorer listings (`explorer_is_hidden_system_entry()` in `api.php` `list` / `listRecycle`).
 - **Preview routing:** `open` returns `preview: image|pdf|text|unsupported`. Images and PDFs load via `file.php` (not text `file_get_contents`). `.htaccess` `deny_http` blocks direct `/files/` URLs only; `file.php` reads from disk with ACL checks.
-- **File download:** right-click context menu shows **💾** (`title="Download"`) on every file (not folders). Navigates to `file.php?path={relative}&download=1`, which sets `Content-Disposition: attachment` for all Explorer-whitelisted extensions (images, PDF, Office, ZIP, text, CSV, JSON, XML, etc.).
+- **File download:** right-click context menu shows **⬇️** (`title="Download"`) on every file (not folders). Navigates to `file.php?path={relative}&download=1`, which sets `Content-Disposition: attachment` for all Explorer-whitelisted extensions (images, PDF, Office, ZIP, text, CSV, JSON, XML, etc.).
 - **Employee profile photos (`file.php`):** paths matching `Private/*/profile/` are readable by any authenticated user. Storage root is resolved from the **photo owner’s home `company_id`** (parsed from `Private/{username}_{employee_id}/…`), not the tenant-switcher session company — otherwise multi-company admins get 404 after upload. Other `Private/` paths remain owner-scoped under the active session company.
 - **Responsive:** topbar/search/tabs adapt below 768px; file grid uses smaller tiles on mobile (`index.php` inline CSS).
 - **Employee sidebar (index.php):** `🌐 Employees` links to `modules/employees/`; `🎉 Birthdays` links to `modules/birthdays/`; **Profile Storage** opens `Private/{username}_{user_id}/profile` via `openEmployeeProfileFolder()` (employee profile photos from the employees module).
@@ -68,7 +68,7 @@ All actions are POST to `api.php` with `action` parameter (JSON responses unless
 
 `GET api.php?downloadZip=1&path=` — ZIP download **only** when `path` is exactly `Private/{username}_{employee_id}` for the session employee.
 
-`file.php?path=` — authorised download/preview after ACL check. Append `&download=1` to force `Content-Disposition: attachment` (context-menu **💾** action).
+`file.php?path=` — authorised download/preview after ACL check. Append `&download=1` to force `Content-Disposition: attachment` (context-menu **⬇️** action).
 
 - `explorer_storage_helpers.php` — tenant scaffold (`explorer_ensure_tenant_storage_scaffold()`), per-code folder ensure (`explorer_ensure_department_code_folder()` checks `is_dir` first), and `explorer_fetch_user_department_code()`.
 - `explorer_share_helpers.php`, `join.php`, `share_file.php` — temporary QR/code share for scoped folders/files (`explorer_share_sessions`; private paths require vault unlock).
