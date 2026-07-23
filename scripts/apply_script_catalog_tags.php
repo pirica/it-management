@@ -33,7 +33,7 @@ $rows = itm_script_catalog_tags_parse_catalog_rows($catalogHtml);
 $tagCounts = [];
 $newManifest = isset($manifest['_defaults']) ? ['_defaults' => $manifest['_defaults']] : [
     '_defaults' => [
-        'rules' => '0 tables=Codebase; 1-2=table names; 3+=Mixed. Scan: entry + transitive scripts/ requires + one-level spawn targets.',
+        'rules' => '0 tables=Codebase; .py=Python; 1-2=table names; 3+=Mixed. Scan: entry + transitive scripts/ requires + one-level spawn targets.',
     ],
 ];
 $changed = [];
@@ -41,7 +41,7 @@ $unchanged = [];
 $patchedHtml = $catalogHtml;
 
 foreach ($rows as $row) {
-    $result = itm_script_catalog_tags_for_href($row['href'], $root, $schemaTables, $overrides);
+    $result = itm_script_catalog_tags_for_slug($row['slug'], $root, $schemaTables, $overrides);
     $tags = $result['tags'];
     foreach ($tags as $tag) {
         $tagCounts[$tag] = ($tagCounts[$tag] ?? 0) + 1;
