@@ -1,4 +1,4 @@
-﻿# Scripts full test matrix
+# Scripts full test matrix
 
 > Canonical verification map for **cataloged** entries in `scripts/scripts.php`.
 > Do **not** use `perform_audit.php` as a quality gate. Prefer this matrix + existing runners.
