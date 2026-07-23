@@ -721,7 +721,7 @@ function showContextMenu(e, item) {
     clearContextMenu();
     appendContextAction("Open", () => openItem(item.name, item.type));
     if (item.type !== "folder" && item.type !== "trash") {
-        appendContextAction("💾", () => downloadItem(item.name), true, "Download");
+        appendContextAction("⬇️", () => downloadItem(item.name), true, "Download");
     }
 
     if (!isSystemFolder && !inRecycle) {
