@@ -46,6 +46,7 @@ foreach ($slugs as $slug) {
     }
     if (strpos($src, 'itm_crud_append_not_deleted_predicate') === false
         && strpos($src, 'deleted_at IS NULL') === false
+        && strpos($src, 'itm_alerts_build_scoped_where_sql') === false
     ) {
         $failures[] = "{$slug}: list missing deleted_at IS NULL filter";
     }

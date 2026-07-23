@@ -372,6 +372,7 @@ if (!function_exists('itm_database_sql_unique_audit_run')) {
             'bookmarks' => 'Append-only log table; tenant scope UNIQUE not required.',
             'notes' => 'Append-only log table; tenant scope UNIQUE not required.',
             'events' => 'Private calendar rows; duplicate titles allowed; title may be vault-encrypted — no UNIQUE (company_id, title).',
+            'todo' => 'Vault tasks; title is TEXT and may be encrypted — identity is UNIQUE (company_id, created_by, id); no UNIQUE (company_id, title).',
             'private_contacts' => 'Append-only log table; tenant scope UNIQUE not required.',
             // Why: Folder names may duplicate intentionally; identity is PRIMARY KEY (id) only.
             'bookmark_folders' => 'Duplicate folder names allowed; identity is PRIMARY KEY (id) only.',

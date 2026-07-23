@@ -331,9 +331,11 @@ if (!function_exists('itm_verify_db_migrations_report')) {
         ));
 
         // employee_sidebar_preferences_seed_admins.sql
+        // Why: Only seed-admin layout rows are in scope — demo1–demo5 prefs are per-user, not tenant Admin.
         $prefsWrong = itm_verify_db_migrations_scalar_count(
             $conn,
             "SELECT COUNT(*) FROM employee_sidebar_preferences esp
+             INNER JOIN employees e ON e.id = esp.employee_id AND e.username LIKE 'Admin%'
              LEFT JOIN employees admin ON admin.company_id = esp.company_id
                AND admin.username LIKE 'Admin%' AND admin.deleted_at IS NULL
              WHERE esp.employee_id <> COALESCE(admin.id, -1)"
