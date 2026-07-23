@@ -296,6 +296,60 @@ if (!function_exists('itm_script_catalog_tags_resolve_tags')) {
     }
 }
 
+if (!function_exists('itm_script_catalog_tags_tables_from_filename')) {
+    /**
+     * Infer schema tables referenced by the script filename (underscore tokens and singular stems).
+     *
+     * @param array<string, true> $schemaTables
+     * @return array<string, string>
+     */
+    function itm_script_catalog_tags_tables_from_filename(string $slug, array $schemaTables): array
+    {
+        $base = strtolower((string)preg_replace('/\.[^.]+$/', '', $slug));
+        if ($base === '') {
+            return [];
+        }
+
+        $parts = preg_split('/[_-]+/', $base) ?: [];
+        $tables = [];
+
+        foreach ($parts as $part) {
+            if ($part === '' || strlen($part) < 3) {
+                continue;
+            }
+            if (isset($schemaTables[$part])) {
+                $tables[$part] = $part;
+                continue;
+            }
+            $plural = $part . 's';
+            if (isset($schemaTables[$plural])) {
+                $tables[$plural] = $plural;
+            }
+        }
+
+        $tableNames = array_keys($schemaTables);
+        usort($tableNames, static function ($a, $b) {
+            return strlen($b) <=> strlen($a);
+        });
+
+        foreach ($tableNames as $tableName) {
+            $quoted = preg_quote($tableName, '/');
+            if (preg_match('/(?:^|[_-])' . $quoted . '(?:[_-]|$)/', $base)) {
+                $tables[$tableName] = $tableName;
+                continue;
+            }
+            if (substr($tableName, -1) === 's' && strlen($tableName) > 4) {
+                $singular = substr($tableName, 0, -1);
+                if (preg_match('/(?:^|[_-])' . preg_quote($singular, '/') . '(?:[_-]|$)/', $base)) {
+                    $tables[$tableName] = $tableName;
+                }
+            }
+        }
+
+        return $tables;
+    }
+}
+
 if (!function_exists('itm_script_catalog_tags_scan_script')) {
     /**
      * @param array<string, true> $schemaTables
@@ -343,6 +397,10 @@ if (!function_exists('itm_script_catalog_tags_scan_script')) {
                     $tables[$tableName] = $tableName;
                 }
             }
+        }
+
+        foreach (itm_script_catalog_tags_tables_from_filename(basename($entryReal), $schemaTables) as $tableName) {
+            $tables[$tableName] = $tableName;
         }
 
         $tableList = array_values($tables);

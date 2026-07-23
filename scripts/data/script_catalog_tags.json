@@ -197,9 +197,11 @@
     },
     "test_email_forgot.php": {
         "tags": [
+            "emails",
             "employees"
         ],
         "tables": [
+            "emails",
             "employees"
         ],
         "override": false
@@ -262,6 +264,8 @@
         "tables": [
             "alerts",
             "companies",
+            "emails",
+            "email_alert_rules",
             "equipment",
             "events",
             "license_management",
@@ -452,9 +456,11 @@
     },
     "ui_configuration_reviewed.php": {
         "tags": [
-            "Codebase"
+            "ui_configuration"
         ],
-        "tables": [],
+        "tables": [
+            "ui_configuration"
+        ],
         "override": false
     },
     "debug_equipment_create_rollback_errno.php": {
@@ -550,9 +556,11 @@
     },
     "export_floor_plan_folders_seed.php": {
         "tags": [
+            "floor_plans",
             "floor_plan_folders"
         ],
         "tables": [
+            "floor_plans",
             "floor_plan_folders"
         ],
         "override": false
@@ -649,9 +657,11 @@
     },
     "test_employee_id-foreign_keys.php": {
         "tags": [
-            "Codebase"
+            "employees"
         ],
-        "tables": [],
+        "tables": [
+            "employees"
+        ],
         "override": false
     },
     "validate_delete_employee.php": {
@@ -665,9 +675,11 @@
     },
     "generate_FK_employee_id.php": {
         "tags": [
-            "Codebase"
+            "employees"
         ],
-        "tables": [],
+        "tables": [
+            "employees"
+        ],
         "override": false
     },
     "generate_reassignment.php": {
@@ -719,17 +731,19 @@
     },
     "idfs_api_payload_dry_run.php": {
         "tags": [
-            "Codebase"
+            "idfs"
         ],
-        "tables": [],
+        "tables": [
+            "idfs"
+        ],
         "override": false
     },
     "idf_device_port_sort_test.php": {
         "tags": [
-            "idf_ports",
-            "switch_port_types"
+            "Mixed"
         ],
         "tables": [
+            "idfs",
             "idf_ports",
             "switch_port_types"
         ],
@@ -747,6 +761,7 @@
             "employee_roles",
             "employee_sidebar_preferences",
             "employee_statuses",
+            "equipment",
             "equipment_types"
         ],
         "override": false
@@ -763,6 +778,7 @@
             "employee_roles",
             "employee_sidebar_preferences",
             "employee_statuses",
+            "equipment",
             "equipment_types"
         ],
         "override": false
@@ -890,6 +906,7 @@
             "idf_device_type",
             "idf_positions",
             "modules_registry",
+            "racks",
             "rack_planner"
         ],
         "override": false
@@ -971,9 +988,11 @@
     },
     "floor_plans_folder_move_test.php": {
         "tags": [
+            "floor_plans",
             "floor_plan_folders"
         ],
         "tables": [
+            "floor_plans",
             "floor_plan_folders"
         ],
         "override": false
@@ -997,9 +1016,11 @@
     },
     "floor_designer_test.php": {
         "tags": [
-            "Codebase"
+            "floor_designer"
         ],
-        "tables": [],
+        "tables": [
+            "floor_designer"
+        ],
         "override": false
     },
     "list_active_and_checkboxes.php": {
@@ -1088,9 +1109,11 @@
     },
     "apply_crud_hidden_employee_id_alias.php": {
         "tags": [
-            "Codebase"
+            "employees"
         ],
-        "tables": [],
+        "tables": [
+            "employees"
+        ],
         "override": false
     },
     "apply_crud_fk_label_search.php": {
@@ -1109,9 +1132,11 @@
     },
     "apply_script_catalog_tags.php": {
         "tags": [
+            "catalogs",
             "companies"
         ],
         "tables": [
+            "catalogs",
             "companies"
         ],
         "override": false
@@ -1245,9 +1270,11 @@
     },
     "check_script_catalog_tags.php": {
         "tags": [
+            "catalogs",
             "companies"
         ],
         "tables": [
+            "catalogs",
             "companies"
         ],
         "override": false
@@ -1421,9 +1448,11 @@
     },
     "check_audit_logs_coverage.php": {
         "tags": [
-            "Codebase"
+            "audit_logs"
         ],
-        "tables": [],
+        "tables": [
+            "audit_logs"
+        ],
         "override": false
     },
     "sql_injection_matrix_test.php": {
@@ -1442,9 +1471,11 @@
     },
     "sync_modules_registry.php": {
         "tags": [
-            "Codebase"
+            "modules_registry"
         ],
-        "tables": [],
+        "tables": [
+            "modules_registry"
+        ],
         "override": false
     },
     "verify_ops_report.php": {
@@ -1609,6 +1640,7 @@
         ],
         "tables": [
             "access_levels",
+            "emails",
             "employees",
             "employee_companies",
             "employee_roles",
@@ -1647,16 +1679,20 @@
     },
     "verify_dashboard_online_employees.php": {
         "tags": [
-            "Codebase"
+            "employees"
         ],
-        "tables": [],
+        "tables": [
+            "employees"
+        ],
         "override": false
     },
     "verify_employee_dashboard.php": {
         "tags": [
-            "Codebase"
+            "employees"
         ],
-        "tables": [],
+        "tables": [
+            "employees"
+        ],
         "override": false
     },
     "verify_admin_page_gate.php": {
@@ -1899,9 +1935,11 @@
     },
     "repro_request_password_bypass.php": {
         "tags": [
-            "Codebase"
+            "request_password"
         ],
-        "tables": [],
+        "tables": [
+            "request_password"
+        ],
         "override": false
     },
     "repro_select_options_rbac.php": {
@@ -1954,25 +1992,31 @@
     },
     "verify_system_status.php": {
         "tags": [
-            "modules_registry"
+            "modules_registry",
+            "system_status"
         ],
         "tables": [
-            "modules_registry"
+            "modules_registry",
+            "system_status"
         ],
         "override": false
     },
     "system_status_api.php": {
         "tags": [
-            "Codebase"
+            "system_status"
         ],
-        "tables": [],
+        "tables": [
+            "system_status"
+        ],
         "override": false
     },
     "system_status_phpinfo.php": {
         "tags": [
-            "Codebase"
+            "system_status"
         ],
-        "tables": [],
+        "tables": [
+            "system_status"
+        ],
         "override": false
     },
     "test_system_info.php": {
@@ -2181,9 +2225,11 @@
     },
     "check_department_select_quick_add.php": {
         "tags": [
-            "Codebase"
+            "departments"
         ],
-        "tables": [],
+        "tables": [
+            "departments"
+        ],
         "override": false
     },
     "check_fast_create_acc_select_quick_add.php": {
@@ -2195,9 +2241,13 @@
     },
     "verify_explorer_department_access.php": {
         "tags": [
-            "Codebase"
+            "departments",
+            "explorer"
         ],
-        "tables": [],
+        "tables": [
+            "departments",
+            "explorer"
+        ],
         "override": false
     },
     "verify_explorer_zip_leak.php": {
@@ -2209,7 +2259,8 @@
             "employees",
             "employee_companies",
             "employee_roles",
-            "employee_statuses"
+            "employee_statuses",
+            "explorer"
         ],
         "override": false
     },
@@ -2259,7 +2310,8 @@
             "employees",
             "employee_companies",
             "employee_roles",
-            "employee_statuses"
+            "employee_statuses",
+            "explorer"
         ],
         "override": false
     },
@@ -2272,22 +2324,27 @@
             "employees",
             "employee_companies",
             "employee_roles",
-            "employee_statuses"
+            "employee_statuses",
+            "explorer"
         ],
         "override": false
     },
     "test_explorer_paths.php": {
         "tags": [
-            "Codebase"
+            "explorer"
         ],
-        "tables": [],
+        "tables": [
+            "explorer"
+        ],
         "override": false
     },
     "test_explorer_preview.php": {
         "tags": [
-            "Codebase"
+            "explorer"
         ],
-        "tables": [],
+        "tables": [
+            "explorer"
+        ],
         "override": false
     },
     "verify_audit_logs_disclosure.php": {
@@ -2487,9 +2544,11 @@
     },
     "patch_crud_share_agent_notes.php": {
         "tags": [
-            "Codebase"
+            "notes"
         ],
-        "tables": [],
+        "tables": [
+            "notes"
+        ],
         "override": false
     },
     "verify_qr_share_modules.php": {
@@ -2610,6 +2669,7 @@
         ],
         "tables": [
             "access_levels",
+            "companies",
             "employees",
             "employee_companies",
             "employee_roles",
@@ -2623,6 +2683,7 @@
         ],
         "tables": [
             "access_levels",
+            "companies",
             "employees",
             "employee_companies",
             "employee_roles",
@@ -2659,12 +2720,12 @@
     },
     "repro_todo_user_leak.php": {
         "tags": [
-            "employees",
-            "employee_companies"
+            "Mixed"
         ],
         "tables": [
             "employees",
-            "employee_companies"
+            "employee_companies",
+            "todo"
         ],
         "override": false
     },
@@ -2686,43 +2747,54 @@
             "employees",
             "employee_companies",
             "employee_roles",
-            "employee_statuses"
+            "employee_statuses",
+            "explorer"
         ],
         "override": false
     },
     "repro_explorer_traversal.php": {
         "tags": [
-            "Codebase"
+            "explorer"
         ],
-        "tables": [],
+        "tables": [
+            "explorer"
+        ],
         "override": false
     },
     "verify_explorer_fix.php": {
         "tags": [
-            "Codebase"
+            "explorer"
         ],
-        "tables": [],
+        "tables": [
+            "explorer"
+        ],
         "override": false
     },
     "verify_explorer_fix_updated.php": {
         "tags": [
-            "Codebase"
+            "explorer"
         ],
-        "tables": [],
+        "tables": [
+            "explorer"
+        ],
         "override": false
     },
     "verify_explorer_fix_web.php": {
         "tags": [
-            "Codebase"
+            "explorer"
         ],
-        "tables": [],
+        "tables": [
+            "explorer"
+        ],
         "override": false
     },
     "verify_explorer_fix_standalone.php": {
         "tags": [
-            "Codebase"
+            "explorer"
         ],
-        "tables": [],
+        "tables": [
+            "explorer"
+        ],
         "override": false
     },
     "repro_attempts_data_leak_v2.php": {
@@ -2743,7 +2815,8 @@
             "employees",
             "employee_companies",
             "employee_roles",
-            "employee_statuses"
+            "employee_statuses",
+            "explorer"
         ],
         "override": false
     },
@@ -2932,9 +3005,11 @@
     },
     "verify_explorer_updated.php": {
         "tags": [
-            "Codebase"
+            "explorer"
         ],
-        "tables": [],
+        "tables": [
+            "explorer"
+        ],
         "override": false
     },
     "verify_rbac_updated.php": {
