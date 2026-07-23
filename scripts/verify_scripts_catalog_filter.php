@@ -262,6 +262,19 @@ if ($cssNthChildBug) {
     $failures[] = 'CSS maps td:nth-child(3) to "what" but column 3 is scripts-tags-cell (tags misaligned)';
 }
 
+if (strpos($html, 'id="scripts-catalog-search-form"') === false) {
+    $failures[] = 'Missing scripts-catalog-search-form (catalog filter row)';
+}
+if (strpos($html, 'id="scripts-catalog-filter-clear"') === false) {
+    $failures[] = 'Missing scripts-catalog-filter-clear (emoji clear control)';
+}
+if (strpos($html, 'scripts-catalog-section-empty') === false) {
+    $failures[] = 'Missing scripts-catalog-section-empty CSS (hide empty sections while filtering)';
+}
+if (strpos($html, '../admin.php') === false) {
+    $failures[] = 'Missing ← Admin back link in scripts.php sticky nav';
+}
+
 if ($failures !== []) {
     echo 'FAILURES (' . count($failures) . '):' . $nl;
     foreach (array_slice($failures, 0, 25) as $failure) {

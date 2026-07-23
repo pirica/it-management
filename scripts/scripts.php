@@ -41,10 +41,14 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         .scripts-muted strong { color: var(--text-primary, #24292f); }
         h1 { margin: 0 0 10px; font-size: 1.65rem; letter-spacing: -0.02em; }
         h2 { margin: 0 0 16px; font-size: 1.2rem; letter-spacing: -0.01em; padding-bottom: 10px; border-bottom: 1px solid var(--border, #d0d7de); }
-        .scripts-intro-tools { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 0 0 16px; }
-        .scripts-filter { flex: 1 1 220px; max-width: 420px; padding: 9px 12px; border: 1px solid var(--border, #d0d7de); border-radius: 8px; background: var(--bg-primary, #fff); color: var(--text-primary, #24292f); font-size: 0.92rem; }
+        .scripts-intro-tools { display: flex; flex-direction: column; gap: 12px; margin: 0 0 16px; }
+        .scripts-search-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; width: 100%; }
+        .scripts-search-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1 1 280px; }
+        .scripts-filter { flex: 1 1 220px; min-width: 180px; max-width: none; padding: 9px 12px; border: 1px solid var(--border, #d0d7de); border-radius: 8px; background: var(--bg-primary, #fff); color: var(--text-primary, #24292f); font-size: 0.92rem; }
         .scripts-filter:focus { outline: 2px solid #0969da; outline-offset: 1px; border-color: #0969da; }
         .scripts-filter-hint { font-size: 0.82rem; color: var(--text-secondary, #57606a); }
+        .scripts-catalog-empty { margin: 0; padding: 14px 16px; border-radius: 8px; background: var(--bg-secondary, #f6f8fa); border: 1px dashed var(--border, #d0d7de); color: var(--text-secondary, #57606a); font-size: 0.9rem; }
+        .scripts-card.scripts-catalog-section-empty { display: none; }
         .scripts-catalog-grid { margin-bottom: 4px; }
         .scripts-catalog { width: 100%; border-collapse: collapse; border: none; }
         .scripts-catalog thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
@@ -127,6 +131,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
             <li><a href="http://myhome.dynip.sapo.pt/phpmyadmin/" class="scripts-toc-external" target="_blank" rel="noopener noreferrer">phpMyAdmin</a></li>
             <li><a href="https://github.com/pirica/it-management" class="scripts-toc-external" target="_blank" rel="noopener noreferrer">Github</a></li>
         </ul>
+        <a class="scripts-top-nav-home" href="../admin.php" title="Admin overview">← Admin</a>
+        <a class="scripts-top-nav-home" href="../dashboard.php" title="Dashboard">← Dashboard</a>
         <a class="scripts-top-nav-home" href="../index.php">← Home</a>
     </div>
 </nav>
@@ -148,10 +154,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
             <strong>Data mutation quick reference:</strong> these scripts add sample/test rows in the DB: <code>module_browser_qa_runner.php</code>, <code>employees_delete_clear_table_test.php</code>, <code>equipment_delete_clear_table_test.php</code>, <code>explorer_human_test.php</code>, <code>floor_plans_folder_move_test.php</code>, <code>idfs_sync_human_test.php</code>, <code>auth_register_reset_human_test.php</code>, <code>tickets_related_equipment_delete_test.php</code>. Dump-only helper: <code>export_floor_plan_folders_seed.php</code> (prints <code>INSERT</code> SQL to stdout).
         </p>
         <div class="scripts-intro-tools">
+            <div class="scripts-search-row">
+                <form id="scripts-catalog-search-form" class="scripts-search-form" role="search" action="scripts.php" method="get">
+                    <input type="search" id="scripts-catalog-filter" name="q" class="scripts-filter" placeholder="Filter scripts… (%filename%, *.json, *.txt, *.md)" autocomplete="off" aria-label="Filter scripts catalog" value="<?php echo htmlspecialchars(trim((string)($_GET['q'] ?? '')), ENT_QUOTES, 'UTF-8'); ?>">
+                    <button type="submit" class="btn btn-sm">Search</button>
+                    <button type="button" class="btn btn-sm" id="scripts-catalog-filter-clear" title="Clear">🔙</button>
+                </form>
+                <span class="scripts-filter-hint" id="scripts-catalog-filter-count" aria-live="polite"></span>
+            </div>
             <div id="scripts-tag-filter-bar" class="scripts-tag-filter-bar" role="group" aria-label="Filter by table tag"></div>
-            <input type="search" id="scripts-catalog-filter" class="scripts-filter" placeholder="Filter scripts… (%filename%, *.json, *.txt, *.md)" autocomplete="off" aria-label="Filter scripts catalog">
-            <span class="scripts-filter-hint" id="scripts-catalog-filter-count" aria-live="polite"></span>
         </div>
+        <p class="scripts-catalog-empty" id="scripts-catalog-empty" hidden>No scripts match the current filter. Use 🔙 to clear search and tags.</p>
         <div class="scripts-cli-hint">
             <strong>CLI example:</strong>
             <code>C:\&lt;folder&gt;\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\&lt;script&gt;.php [options]</code><br>
@@ -2740,12 +2753,62 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     var filterInput = document.getElementById('scripts-catalog-filter');
     var countEl = document.getElementById('scripts-catalog-filter-count');
     var tagBar = document.getElementById('scripts-tag-filter-bar');
+    var searchForm = document.getElementById('scripts-catalog-search-form');
+    var clearBtn = document.getElementById('scripts-catalog-filter-clear');
+    var emptyEl = document.getElementById('scripts-catalog-empty');
     if (!filterInput) {
         return;
     }
-    var rows = Array.prototype.slice.call(document.querySelectorAll('.scripts-catalog tbody tr'));
+    var rows = Array.prototype.slice.call(document.querySelectorAll('.scripts-card .scripts-catalog tbody tr'));
     var total = rows.length;
     var activeTag = '';
+
+    function syncQueryToUrl() {
+        var query = filterInput.value.replace(/^\s+|\s+$/g, '');
+        var params = new URLSearchParams(window.location.search);
+        if (query === '') {
+            params.delete('q');
+        } else {
+            params.set('q', query);
+        }
+        var next = params.toString();
+        var nextUrl = window.location.pathname + (next ? ('?' + next) : '') + window.location.hash;
+        if (window.history && typeof window.history.replaceState === 'function') {
+            window.history.replaceState(null, '', nextUrl);
+        }
+    }
+
+    function resetTagChips() {
+        if (!tagBar) {
+            return;
+        }
+        var chips = tagBar.querySelectorAll('.scripts-tag-chip');
+        for (var i = 0; i < chips.length; i++) {
+            var chipTag = chips[i].getAttribute('data-tag') || '';
+            chips[i].classList.toggle('is-active', chipTag === '');
+        }
+    }
+
+    function updateSectionVisibility() {
+        var cards = document.querySelectorAll('.scripts-card');
+        for (var i = 0; i < cards.length; i++) {
+            var card = cards[i];
+            var tbody = card.querySelector('.scripts-catalog tbody');
+            if (!tbody) {
+                card.classList.remove('scripts-catalog-section-empty');
+                continue;
+            }
+            var sectionRows = tbody.querySelectorAll('tr');
+            var anyVisible = false;
+            for (var j = 0; j < sectionRows.length; j++) {
+                if (!sectionRows[j].classList.contains('scripts-catalog-hidden')) {
+                    anyVisible = true;
+                    break;
+                }
+            }
+            card.classList.toggle('scripts-catalog-section-empty', !anyVisible);
+        }
+    }
 
     function collectTags() {
         var tagSet = {};
@@ -2945,10 +3008,35 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 ? (total + ' scripts')
                 : (visible + ' of ' + total + ' shown' + suffix);
         }
+        if (emptyEl) {
+            emptyEl.hidden = visible > 0;
+        }
+        updateSectionVisibility();
     }
 
     buildTagBar();
-    filterInput.addEventListener('input', updateFilter);
+    filterInput.addEventListener('input', function () {
+        syncQueryToUrl();
+        updateFilter();
+    });
+    if (searchForm) {
+        searchForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            syncQueryToUrl();
+            updateFilter();
+            filterInput.focus();
+        });
+    }
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+            filterInput.value = '';
+            activeTag = '';
+            resetTagChips();
+            syncQueryToUrl();
+            updateFilter();
+            filterInput.focus();
+        });
+    }
     updateFilter();
 })();
 </script>
