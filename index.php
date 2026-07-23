@@ -1,0 +1,218 @@
+<?php
+/**
+ * Company Selection Page
+ * 
+ * This is the entry point after login. It allows users to select which company
+ * context they want to work in. Admin users can see all active companies,
+ * while regular users only see companies they are assigned to.
+ */
+
+require 'config/config.php';
+
+// Redirect to login if the user is not authenticated
+if (!isset($_SESSION['employee_id'])) {
+    header('Location: login.php');
+    exit();
+}
+
+// Early diagnostics when DB is unavailable (errors already follow ui_configuration via config.php).
+if (!$conn) {
+    error_log('index.php: database connection unavailable after config bootstrap.');
+}
+
+$employeeId = (int)$_SESSION['employee_id'];
+$csrfToken = itm_get_csrf_token();
+$isAdmin = false;
+
+// Check if the current user has administrative privileges
+// We check both the role name and the username for 'admin'
+$adminStmt = mysqli_prepare(
+    $conn,
+    'SELECT 1
+     FROM employees u
+     LEFT JOIN employee_roles ur ON ur.id = u.role_id
+     WHERE u.id = ? AND (LOWER(COALESCE(ur.name, "")) = "admin" OR LOWER(u.username) = "admin")
+     LIMIT 1'
+);
+if ($adminStmt) {
+    mysqli_stmt_bind_param($adminStmt, 'i', $employeeId);
+    mysqli_stmt_execute($adminStmt);
+    $adminRes = mysqli_stmt_get_result($adminStmt);
+    $isAdmin = $adminRes && mysqli_num_rows($adminRes) > 0;
+    mysqli_stmt_close($adminStmt);
+}
+
+// Why: Skip the picker when home tenant + grants resolve to a single active company.
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' && function_exists('itm_try_auto_select_single_company_session')) {
+    if (itm_try_auto_select_single_company_session($conn, $employeeId, $isAdmin)) {
+        header('Location: dashboard.php');
+        exit();
+    }
+}
+
+// Handle company selection
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Validate CSRF token for security
+    itm_require_post_csrf();
+    
+    $company_id = (int)($_POST['company_id'] ?? 0);
+
+    if ($company_id > 0 && function_exists('itm_switch_active_company_session')) {
+        if (itm_switch_active_company_session($conn, $employeeId, $company_id, $isAdmin)) {
+            header('Location: dashboard.php');
+            exit();
+        }
+    }
+}
+
+// Fetch available companies for the selection dropdown
+$accessibleCompanies = function_exists('itm_list_employee_accessible_companies')
+    ? itm_list_employee_accessible_companies($conn, $employeeId, $isAdmin)
+    : [];
+$companies = $accessibleCompanies !== [] ? $accessibleCompanies : false;
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo sanitize($app_name ?? itm_ui_config_app_name()); ?> - Company Selector</title>
+    <?php if (!empty($favicon_url)): ?>
+        <link rel="icon" type="image/x-icon" href="<?php echo sanitize($favicon_url); ?>">
+    <?php endif; ?>
+    <style>
+        :root {
+            --accent: #0969da;
+            --bg: #ffffff;
+            --text: #24292f;
+            --muted: #666;
+        }
+        [data-theme="dark"] {
+            --accent: #58a6ff;
+            --bg: #0d1117;
+            --text: #c9d1d9;
+            --muted: #8b949e;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        .container { background: var(--bg); padding: 40px; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .logo { text-align: center; margin-bottom: 30px; }
+        .logo h1 { color: var(--accent); font-size: 28px; }
+        .logo p { color: var(--muted); font-size: 14px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text); }
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--bg);
+            color: var(--text);
+        }
+        button, .logout-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: auto;
+            padding: 10px 14px;
+            background: rgba(13, 17, 23, 0.82);
+        }
+        .theme-btn { position: absolute; top: 20px; right: 20px; background: var(--bg); border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        @media (max-width: 480px) {
+            body { padding: 12px; }
+            .container { padding: 24px 20px; }
+            .logo h1 { font-size: 24px; }
+            .logout-btn { top: 12px; left: 12px; }
+            .theme-btn { top: 12px; right: 12px; width: 44px; height: 44px; font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Logout form with CSRF protection -->
+    <form method="POST" action="logout.php" style="margin:0;">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+        <button type="submit" class="logout-btn">Logout</button>
+    </form>
+    <button class="theme-btn" onclick="toggleTheme()">🌙</button>
+
+    <div class="container">
+        <div class="logo">
+            <h1><?php echo sanitize($app_name ?? itm_ui_config_app_name()); ?></h1>
+            <p>Select Your Company</p>
+        </div>
+
+        <?php if (is_array($companies) && count($companies) > 0): ?>
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+                <div style="margin-bottom: 20px;">
+                    <label for="company">Company:</label>
+                    <select name="company_id" id="company" required onchange="updateName()">
+                        <option value="">-- Select a Company --</option>
+                        <?php foreach ($companies as $c): ?>
+                            <option value="<?php echo (int)$c['id']; ?>" data-name="<?php echo htmlspecialchars($c['company']); ?>">
+                                <?php echo htmlspecialchars($c['company']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                   <!--     <option value="__add_new__">➕</option> -->
+                    </select>
+                    <input type="hidden" name="company_name" id="company_name">
+                </div>
+                <button type="submit">Enter System</button>
+            </form>
+        <?php elseif ($companies === false): ?>
+            <p style="text-align: center; color: #999;">Unable to load companies. Check the database connection and try again.</p>
+        <?php else: ?>
+            <p style="text-align: center; color: #999;">No companies available for this account.</p>
+        <?php endif; ?>
+    </div>
+
+
+    <script>
+        window.ITM_BASE_URL = <?php echo json_encode(BASE_URL); ?>;
+    </script>
+    <script src="js/select-add-option.js"></script>
+
+    <script>
+        /**
+         * Update the hidden company name input when selection changes
+         */
+        function updateName() {
+            const select = document.getElementById('company');
+            document.getElementById('company_name').value = select.options[select.selectedIndex].getAttribute('data-name');
+        }
+
+        /**
+         * Toggle between light and dark themes
+         */
+        function toggleTheme() {
+            const theme = document.documentElement.getAttribute('data-theme');
+            document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'light' : 'dark');
+            localStorage.setItem('theme', document.documentElement.getAttribute('data-theme'));
+        }
+        
+        // Initialize theme from local storage
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+    </script>
+</body>
+</html>
