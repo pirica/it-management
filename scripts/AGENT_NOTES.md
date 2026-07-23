@@ -130,7 +130,7 @@ Contains utility scripts, database maintenance tools, security audits, and testi
 - Maintenance scripts usually operate across all tenants or allow specifying a `company_id` via CLI arguments.
 
 ## 9. Audit Logging Requirements
-- `check_audit_logs_coverage.php` is used to verify that mutations in other modules are correctly logged.
+- `check_audit_logs_coverage.php` is used to verify that mutations in other modules are correctly logged. Reads `db/01_schema.sql` for tables and `db/03_triggers.sql` for `trg_*_audit_insert` triggers (split bundle).
 
 ## 10. Common Pitfalls
 - Running destructive scripts on the wrong environment. [Cursor-Valid]

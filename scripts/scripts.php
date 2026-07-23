@@ -1561,7 +1561,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="check_audit_logs_coverage.php" target="_blank" rel="nofollow noreferrer">check_audit_logs_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">audit_logs</span></span></td>
-                    <td>Audit trail for mutations: <code>itm_run_query</code>, <code>itm_log_audit</code>, bulk helpers, or <code>trg_{table}_audit_*</code> in <code>db/</code> split bundle.</td>
+                    <td>Audit trail for mutations: <code>itm_run_query</code>, <code>itm_log_audit</code>, bulk helpers, or <code>trg_{table}_audit_*</code> in <code>db/03_triggers.sql</code> (tables from <code>db/01_schema.sql</code>).</td>
                     <td>
                         Browser: HTML/plain report (PHP 7.4+); query <code>?module=NAME</code> or <code>?json=1</code>. CLI: <code>php scripts/check_audit_logs_coverage.php</code> — exit <code>2</code> on failures.<br>
                         <code>--module=NAME</code> · <code>--json</code>
