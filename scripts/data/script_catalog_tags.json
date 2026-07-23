@@ -1340,6 +1340,13 @@
         ],
         "override": false
     },
+    "verify_scripts_catalog_filter_screenshot.py": {
+        "tags": [
+            "Python"
+        ],
+        "tables": [],
+        "override": false
+    },
     "check_script_disposable_employees.php": {
         "tags": [
             "employees",

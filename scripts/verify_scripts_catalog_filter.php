@@ -70,12 +70,18 @@ function verify_catalog_filter_matches(string $dataTags, string $rowText, string
 {
     $tagsAttr = strtolower($dataTags);
     $query = strtolower(trim($query));
-    $textMatch = $query === ''
-        || stripos($rowText, $query) !== false
-        || strpos($tagsAttr, $query) !== false
-        || (($query === '.json' || $query === 'json' || $query === '*.json') && strpos($tagsAttr, 'info') !== false)
-        || (($query === '.txt' || $query === 'txt' || $query === '*.txt') && strpos($tagsAttr, 'info') !== false)
-        || (($query === '.md' || $query === 'md' || $query === '*.md') && strpos($tagsAttr, 'markdown') !== false);
+
+    if ($query === '.json' || $query === 'json' || $query === '*.json') {
+        $textMatch = strpos($tagsAttr, 'info') !== false;
+    } elseif ($query === '.txt' || $query === 'txt' || $query === '*.txt') {
+        $textMatch = strpos($tagsAttr, 'info') !== false;
+    } elseif ($query === '.md' || $query === 'md' || $query === '*.md') {
+        $textMatch = strpos($tagsAttr, 'markdown') !== false;
+    } else {
+        $textMatch = $query === ''
+            || stripos($rowText, $query) !== false
+            || strpos($tagsAttr, $query) !== false;
+    }
 
     if ($activeTag === '') {
         return $textMatch;
@@ -142,6 +148,10 @@ echo 'CSS nth-child(3)=what bug present: ' . ($cssNthChildBug ? 'YES' : 'no') . 
 
 if ($jsonSearchHits < 1 || $infoChipHits < 1) {
     $failures[] = 'Filter simulation: expected at least 1 *.json search hit and 1 Info chip hit';
+}
+if ($jsonSearchHits !== count($infoRows) || $txtSearchHits !== count($infoRows)) {
+    $failures[] = 'Filter simulation: *.json/*.txt search hits must equal Info row count ('
+        . $jsonSearchHits . '/' . $txtSearchHits . ' vs ' . count($infoRows) . ')';
 }
 if ($mdSearchHits < 1 || $mdChipHits < 1) {
     $failures[] = 'Filter simulation: expected at least 1 *.md search hit and 1 *.md chip hit (Markdown tag)';
