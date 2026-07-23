@@ -1,4 +1,4 @@
-﻿# AGENT_NOTES.md - Scripts
+# AGENT_NOTES.md - Scripts
 
 ## 1. Module Purpose
 Contains utility scripts, database maintenance tools, security audits, and testing runners.

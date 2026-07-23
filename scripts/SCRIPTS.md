@@ -1,4 +1,4 @@
-﻿# Table of Contents
+# Table of Contents
 
 - Scripts Development Standards
   - API documentation (`scripts/api.php`)
