@@ -40,8 +40,9 @@ Registry row: **`modules_registry`** slug `news` (sidebar + company module acces
 - **`index.php`** — Todo-style `.news-container` with `.news-sidebar` + `.news-content`
 - Secondary sidebar includes **Source** `<select name="source">` (auto-submit on change) listing all catalog feeds; CVE (NVD) is one option
 - Main table columns adapt: NVD shows Severity + Score; RSS sources show Title only
-- Toolbar: RSS link (`feed.php?source=`), manual refresh POST with CSRF
+- Toolbar: **Source** website link (`site_link`), RSS link (`feed.php?source=`), manual refresh POST with CSRF
 - Actions column: `class="itm-actions-cell"` + `data-itm-actions-origin="1"`
+- Footer below the feed table: **More news** link opens the active source `site_link` in a new tab
 - Dynamic browser title via `itm_resolve_module_sidebar_icon()`
 
 ### Sidebar (app)
