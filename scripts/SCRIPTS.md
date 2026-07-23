@@ -62,13 +62,13 @@ Each catalog card shows **table tags** derived from static analysis of the linke
 | 0 (no schema table references, bash, or external link) | `Codebase` |
 | `.py` catalog entry (Playwright / screenshot utilities) | `Python` |
 | `.sh` catalog entry (bash / CI wrappers) | `Server` |
-| `.json` / `.txt` catalog entry, or any catalog row referencing `scripts/data/*` / `scripts/*` `.json` / `.txt` | `Info` (plus table tags when found) |
-| `.md` catalog entry, or any catalog row referencing `scripts/data/*` / `scripts/*` `.md` | `Markdown` (plus table tags when found) |
+| `.json` / `.txt` catalog entry, or any catalog row referencing `scripts/data/*` / `scripts/*` `.json` / `.txt` | `Info` (exclusive when no PHP `$conn` tables; otherwise `Info` + table name(s) or `Mixed`) |
+| `.md` catalog entry, or any catalog row referencing `scripts/*` `.md` (bare `AGENT_NOTES.md` → `scripts/AGENT_NOTES.md`) | `Markdown` (same exclusivity rule) |
 | 1 | table name (e.g. `employees`) |
 | 2 | both table names |
 | 3+ | `Mixed` |
 
-**Scan scope (most accurate within `scripts/`):** entry file + transitive `require`/`include` under `scripts/` (including `scripts/lib/`) + one-level literal `scripts/*.php` spawn targets + literal `scripts/data/*` and `scripts/*` **`.json` / `.txt` / `.md`** references (plain-text schema table names). Bare filenames such as `AGENT_NOTES.md` resolve to `scripts/AGENT_NOTES.md` when that file exists. **Filename tokens** (`employee` → `employees`, etc.) still apply. Does not scan `config.php`, `includes/`, or `modules/`.
+**Scan scope:** PHP `$conn` SQL + requires + spawn targets + filename tokens for table tags. `scripts/data/*` and `scripts/*` `.json` / `.txt` / `.md` references set **Info** / **Markdown**; data file contents are **not** mined for `Mixed`. Catalog row copy is scanned for the same path patterns. Text search also matches `data-tags` (typing `.json`, `.txt`, or `Info` finds Info-tagged rows).
 
 **UI:** tag pills on each card (`scripts-badge-tag`), `data-tags` on `<tr>`, chip bar filter (`All` / `Codebase` / `Python` / `Server` / `Info` / `Markdown` / `Mixed` / table names) combined with the text search box.
 
