@@ -610,25 +610,6 @@ if (!function_exists('itm_script_catalog_tags_scan_script')) {
             }
         }
 
-        $infoSources = [$entrySource];
-        foreach ($bundle as $file) {
-            $bundleContent = file_get_contents($file);
-            if (is_string($bundleContent)) {
-                $infoSources[] = $bundleContent;
-            }
-        }
-        $hasInfo = false;
-        $hasMarkdown = false;
-        foreach ($infoSources as $infoSource) {
-            $classified = itm_script_catalog_tags_classify_data_refs($infoSource, $scriptsRoot);
-            if ($classified['has_info']) {
-                $hasInfo = true;
-            }
-            if ($classified['has_markdown']) {
-                $hasMarkdown = true;
-            }
-        }
-
         foreach (itm_script_catalog_tags_tables_from_filename(basename($entryReal), $schemaTables) as $tableName) {
             $tables[$tableName] = $tableName;
         }
@@ -638,11 +619,7 @@ if (!function_exists('itm_script_catalog_tags_scan_script')) {
 
         return [
             'tables' => $tableList,
-            'tags' => itm_script_catalog_tags_merge_kind_tags(
-                itm_script_catalog_tags_resolve_tags($tableList),
-                $hasInfo,
-                $hasMarkdown
-            ),
+            'tags' => itm_script_catalog_tags_resolve_tags($tableList),
             'bundle' => $bundle,
         ];
     }
@@ -724,24 +701,10 @@ if (!function_exists('itm_script_catalog_tags_for_slug')) {
         }
 
         $scan = itm_script_catalog_tags_scan_script($scriptPath, $rootPath, $schemaTables);
-        $tags = $scan['tags'];
-
-        if ($rowContext !== '') {
-            $rowText = html_entity_decode(strip_tags($rowContext), ENT_QUOTES, 'UTF-8');
-            $rowClassify = itm_script_catalog_tags_classify_data_refs(
-                $rowText,
-                itm_script_catalog_tags_scripts_root($rootPath)
-            );
-            $tags = itm_script_catalog_tags_merge_kind_tags(
-                $tags,
-                $rowClassify['has_info'],
-                $rowClassify['has_markdown']
-            );
-        }
 
         return [
             'tables' => $scan['tables'],
-            'tags' => $tags,
+            'tags' => $scan['tags'],
             'slug' => $slug,
         ];
     }

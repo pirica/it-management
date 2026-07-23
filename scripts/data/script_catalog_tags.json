@@ -4,8 +4,7 @@
     },
     "api.php": {
         "tags": [
-            "Info",
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -50,7 +49,7 @@
     },
     "pitfalls.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
@@ -69,40 +68,121 @@
         "tables": [],
         "override": false
     },
-    "DBdesign.php": {
+    "AGENT_NOTES.md": {
         "tags": [
             "Markdown"
         ],
         "tables": [],
         "override": false
     },
-    "crud_tables.php": {
+    "crud_tables_skip_modules.txt": {
         "tags": [
             "Info"
         ],
         "tables": [],
         "override": false
     },
+    "fields_missing_reviewed.json": {
+        "tags": [
+            "Info"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "index_table_compliance_baseline.txt": {
+        "tags": [
+            "Info"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "multi_tenant_leak_allowlist.json": {
+        "tags": [
+            "Info"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "perform_audit_allowlist.json": {
+        "tags": [
+            "Info"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "scripts-matrix-destroy-log.md": {
+        "tags": [
+            "Markdown"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "scripts_errors.txt": {
+        "tags": [
+            "Info"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "script_catalog_tags.json": {
+        "tags": [
+            "Info"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "ui_configuration_excluded_modules.txt": {
+        "tags": [
+            "Info"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "ui_configuration_excluded_prefixes.txt": {
+        "tags": [
+            "Info"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "ui_configuration_reviewed.json": {
+        "tags": [
+            "Info"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "DBdesign.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "crud_tables.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
     "crud_titles.php": {
         "tags": [
-            "Info",
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "crud_actions.php": {
         "tags": [
-            "Info",
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "update_all_created_at.php": {
         "tags": [
-            "audit_logs",
-            "Markdown"
+            "audit_logs"
         ],
         "tables": [
             "audit_logs"
@@ -120,8 +200,7 @@
     },
     "detect_fk_dropdown_ui_risk.php": {
         "tags": [
-            "companies",
-            "Markdown"
+            "companies"
         ],
         "tables": [
             "companies"
@@ -144,29 +223,28 @@
     },
     "extract_by_fields.php": {
         "tags": [
-            "Info"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "debug.php": {
         "tags": [
-            "Info",
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "health.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "test_form_failed_save_display.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
@@ -182,21 +260,21 @@
     },
     "apply_form_failed_save_display_fix.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "test_db_error_messages.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "apply_human_friendly_error_display.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
@@ -204,9 +282,7 @@
     "test_email_forgot.php": {
         "tags": [
             "emails",
-            "employees",
-            "Info",
-            "Markdown"
+            "employees"
         ],
         "tables": [
             "emails",
@@ -216,15 +292,14 @@
     },
     "test_register_mail.php": {
         "tags": [
-            "Info",
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "verify_user_config_profile.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -237,7 +312,7 @@
     },
     "verify_sidebar_preferences.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -255,7 +330,7 @@
     },
     "verify_emails_module.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "emails",
@@ -268,7 +343,7 @@
     },
     "run_email_alert_rules.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "alerts",
@@ -292,29 +367,28 @@
     },
     "run_tests.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "identify_modules.php": {
         "tags": [
-            "Info"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "generate_tests.php": {
         "tags": [
-            "Info",
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "test_import_user_samples.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -327,30 +401,28 @@
     },
     "test_ajax.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "test_edit.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "test_session.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "verify_api_coverage.php": {
         "tags": [
-            "license_types",
-            "Info",
-            "Markdown"
+            "license_types"
         ],
         "tables": [
             "license_types"
@@ -366,15 +438,14 @@
     },
     "analyze_database_health.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "force_delete_company.php": {
         "tags": [
-            "companies",
-            "Markdown"
+            "companies"
         ],
         "tables": [
             "companies"
@@ -383,28 +454,28 @@
     },
     "check_database_sql_company_name_uniques.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "repair_table_from_schema.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "count_db_tables.php": {
         "tags": [
-            "Info"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "verify_db_migrations.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "companies",
@@ -419,7 +490,7 @@
     },
     "verify_database_schema.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
@@ -441,9 +512,7 @@
     "employee_fields_missing.php": {
         "tags": [
             "employees",
-            "ui_configuration",
-            "Info",
-            "Markdown"
+            "ui_configuration"
         ],
         "tables": [
             "employees",
@@ -453,9 +522,7 @@
     },
     "fields_missing.php": {
         "tags": [
-            "ui_configuration",
-            "Info",
-            "Markdown"
+            "ui_configuration"
         ],
         "tables": [
             "ui_configuration"
@@ -464,8 +531,7 @@
     },
     "fields_missing_reviewed.php": {
         "tags": [
-            "ui_configuration",
-            "Info"
+            "ui_configuration"
         ],
         "tables": [
             "ui_configuration"
@@ -474,8 +540,7 @@
     },
     "ui_configuration_reviewed.php": {
         "tags": [
-            "ui_configuration",
-            "Info"
+            "ui_configuration"
         ],
         "tables": [
             "ui_configuration"
@@ -484,8 +549,7 @@
     },
     "debug_equipment_create_rollback_errno.php": {
         "tags": [
-            "equipment",
-            "Markdown"
+            "equipment"
         ],
         "tables": [
             "equipment"
@@ -494,7 +558,7 @@
     },
     "debug_resignations_termination_date.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "employees",
@@ -505,7 +569,7 @@
     },
     "verify_employee_type_resignations.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "departments",
@@ -518,15 +582,14 @@
     },
     "normalize_database_sql_created_at.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "apply_module_sample_data_seed.php": {
         "tags": [
-            "companies",
-            "Markdown"
+            "companies"
         ],
         "tables": [
             "companies"
@@ -535,28 +598,28 @@
     },
     "extract_02_data_sample.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "check_02_data_sample_coverage.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "dedupe_02_data_per_company_inserts.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "verify_sample_data_seed.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "backup_tape_log",
@@ -578,8 +641,7 @@
     "export_floor_plan_folders_seed.php": {
         "tags": [
             "floor_plans",
-            "floor_plan_folders",
-            "Markdown"
+            "floor_plan_folders"
         ],
         "tables": [
             "floor_plans",
@@ -589,43 +651,42 @@
     },
     "check_delimiters.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "check_duplicates.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "check_phones.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "check_sql_errors.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "count_args.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "fix_sql_departments.php": {
         "tags": [
-            "departments",
-            "Markdown"
+            "departments"
         ],
         "tables": [
             "departments"
@@ -634,14 +695,14 @@
     },
     "list_phone_columns.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "verify_sql.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
@@ -649,8 +710,7 @@
     "fix_sql.php": {
         "tags": [
             "cable_colors",
-            "switch_port_types",
-            "Markdown"
+            "switch_port_types"
         ],
         "tables": [
             "cable_colors",
@@ -660,7 +720,7 @@
     },
     "fix_sql_broad.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
@@ -674,15 +734,14 @@
     },
     "validate_DB_schema.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "test_employee_id-foreign_keys.php": {
         "tags": [
-            "employees",
-            "Markdown"
+            "employees"
         ],
         "tables": [
             "employees"
@@ -691,8 +750,7 @@
     },
     "validate_delete_employee.php": {
         "tags": [
-            "employees",
-            "Markdown"
+            "employees"
         ],
         "tables": [
             "employees"
@@ -701,8 +759,7 @@
     },
     "generate_FK_employee_id.php": {
         "tags": [
-            "employees",
-            "Markdown"
+            "employees"
         ],
         "tables": [
             "employees"
@@ -711,8 +768,7 @@
     },
     "generate_reassignment.php": {
         "tags": [
-            "employees",
-            "Markdown"
+            "employees"
         ],
         "tables": [
             "employees"
@@ -721,8 +777,7 @@
     },
     "transfer_data_from_employee.php": {
         "tags": [
-            "employees",
-            "Markdown"
+            "employees"
         ],
         "tables": [
             "employees"
@@ -731,8 +786,7 @@
     },
     "delete_clone_employee.php": {
         "tags": [
-            "employees",
-            "Markdown"
+            "employees"
         ],
         "tables": [
             "employees"
@@ -741,7 +795,7 @@
     },
     "idfs_sync_human_test.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "cable_colors",
@@ -761,8 +815,7 @@
     },
     "idfs_api_payload_dry_run.php": {
         "tags": [
-            "idfs",
-            "Info"
+            "idfs"
         ],
         "tables": [
             "idfs"
@@ -771,7 +824,7 @@
     },
     "idf_device_port_sort_test.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "idfs",
@@ -782,7 +835,7 @@
     },
     "ensure_equipment_type_modules.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -799,7 +852,7 @@
     },
     "cleanup_equipment_test_module_artifacts.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -816,7 +869,7 @@
     },
     "equipment_delete_clear_table_test.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -839,8 +892,7 @@
     "tickets_related_equipment_delete_test.php": {
         "tags": [
             "equipment",
-            "tickets",
-            "Markdown"
+            "tickets"
         ],
         "tables": [
             "equipment",
@@ -850,7 +902,7 @@
     },
     "verify_tickets_sample_data.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "employees",
@@ -864,7 +916,7 @@
     },
     "verify_equipment_triggers.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -881,7 +933,7 @@
     },
     "employees_delete_clear_table_test.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -903,8 +955,7 @@
     "check_points.php": {
         "tags": [
             "floor_designer_points",
-            "switch_port_types",
-            "Markdown"
+            "switch_port_types"
         ],
         "tables": [
             "floor_designer_points",
@@ -914,7 +965,7 @@
     },
     "test_visualizer_v2.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
@@ -928,7 +979,7 @@
     },
     "verify_rack_planner.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "catalogs",
@@ -946,23 +997,21 @@
     },
     "titles_list.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "titles_list_show.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "verify_module_page_chrome.php": {
         "tags": [
-            "ui_configuration",
-            "Info",
-            "Markdown"
+            "ui_configuration"
         ],
         "tables": [
             "ui_configuration"
@@ -972,9 +1021,7 @@
     "verify_favicon_root_cause.php": {
         "tags": [
             "employees",
-            "ui_configuration",
-            "Info",
-            "Markdown"
+            "ui_configuration"
         ],
         "tables": [
             "employees",
@@ -984,22 +1031,21 @@
     },
     "list_modules_without_share.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "list_modules_not_on_sidebar.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "list_empty_tables.php": {
         "tags": [
-            "companies",
-            "Markdown"
+            "companies"
         ],
         "tables": [
             "companies"
@@ -1008,7 +1054,7 @@
     },
     "verify_company_empty_sample_data.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "companies",
@@ -1019,7 +1065,7 @@
     },
     "compare_database_sql_modules.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
@@ -1027,8 +1073,7 @@
     "floor_plans_folder_move_test.php": {
         "tags": [
             "floor_plans",
-            "floor_plan_folders",
-            "Markdown"
+            "floor_plan_folders"
         ],
         "tables": [
             "floor_plans",
@@ -1038,7 +1083,7 @@
     },
     "explorer_human_test.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -1055,8 +1100,7 @@
     },
     "floor_designer_test.php": {
         "tags": [
-            "floor_designer",
-            "Markdown"
+            "floor_designer"
         ],
         "tables": [
             "floor_designer"
@@ -1065,14 +1109,14 @@
     },
     "list_active_and_checkboxes.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "fix_scaffold_active_checkbox.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
@@ -1086,7 +1130,7 @@
     },
     "run_tier2_checks.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -1099,21 +1143,21 @@
     },
     "perform_audit.php": {
         "tags": [
-            "Info"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "check_standard_crud_delegate_requires.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "check_csrf_coverage.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -1142,15 +1186,14 @@
     },
     "apply_date_display_format.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "apply_crud_hidden_employee_id_alias.php": {
         "tags": [
-            "employees",
-            "Markdown"
+            "employees"
         ],
         "tables": [
             "employees"
@@ -1159,14 +1202,14 @@
     },
     "apply_crud_fk_label_search.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "apply_display_field_columns_search_alias.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
@@ -1174,8 +1217,7 @@
     "apply_script_catalog_tags.php": {
         "tags": [
             "catalogs",
-            "companies",
-            "Info"
+            "companies"
         ],
         "tables": [
             "catalogs",
@@ -1185,8 +1227,7 @@
     },
     "apply_head_favicon_link.php": {
         "tags": [
-            "ui_configuration",
-            "Markdown"
+            "ui_configuration"
         ],
         "tables": [
             "ui_configuration"
@@ -1195,8 +1236,7 @@
     },
     "apply_list_new_button_style.php": {
         "tags": [
-            "ui_configuration",
-            "Markdown"
+            "ui_configuration"
         ],
         "tables": [
             "ui_configuration"
@@ -1205,43 +1245,42 @@
     },
     "apply_new_button_position_helper.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "apply_itm_actions_cell_markers.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "apply_ui_action_emoji.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "apply_pagination_emoji_labels.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "apply_pagination_first_last.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "check_pagination_emoji.php": {
         "tags": [
-            "ui_configuration",
-            "Markdown"
+            "ui_configuration"
         ],
         "tables": [
             "ui_configuration"
@@ -1250,57 +1289,56 @@
     },
     "verify_source_utf8_mojibake.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "fix_source_utf8_mojibake.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "check_codacy_xss_echo.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "check_manual_sql_string.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "check_not_operator.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "check_ui_action_emoji.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "check_script_browser_nav_duplicate.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "check_fk_label_search_coverage.php": {
         "tags": [
-            "employees",
-            "Markdown"
+            "employees"
         ],
         "tables": [
             "employees"
@@ -1309,7 +1347,7 @@
     },
     "check_display_field_columns_search.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
@@ -1317,9 +1355,7 @@
     "check_script_catalog_tags.php": {
         "tags": [
             "catalogs",
-            "companies",
-            "Info",
-            "Markdown"
+            "companies"
         ],
         "tables": [
             "catalogs",
@@ -1330,9 +1366,7 @@
     "verify_scripts_catalog_filter.php": {
         "tags": [
             "catalogs",
-            "companies",
-            "Info",
-            "Markdown"
+            "companies"
         ],
         "tables": [
             "catalogs",
@@ -1350,8 +1384,7 @@
     "check_script_disposable_employees.php": {
         "tags": [
             "employees",
-            "notes",
-            "Markdown"
+            "notes"
         ],
         "tables": [
             "employees",
@@ -1361,30 +1394,28 @@
     },
     "check_sql_injection_coverage.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "check_stale_user_id_sql.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "check_stale_user_terminology.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "check_multi_tenant_leaks.php": {
         "tags": [
-            "idf_ports",
-            "Info",
-            "Markdown"
+            "idf_ports"
         ],
         "tables": [
             "idf_ports"
@@ -1393,30 +1424,28 @@
     },
     "check_index_table_compliance.php": {
         "tags": [
-            "Info"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "apply_bulk_delete_cancel_ux.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "apply_bulk_actions_records_per_page_gate.php": {
         "tags": [
-            "Info",
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "module_clean_tests_qa_runner.php": {
         "tags": [
-            "Info",
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -1432,7 +1461,7 @@
     },
     "module_browser_qa_runner.php": {
         "tags": [
-            "Info"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -1463,7 +1492,7 @@
     },
     "module_browser_qa_build_report.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -1494,8 +1523,7 @@
     },
     "check_employees_clear_table_transaction.php": {
         "tags": [
-            "employees",
-            "Markdown"
+            "employees"
         ],
         "tables": [
             "employees"
@@ -1504,8 +1532,7 @@
     },
     "check_equipment_clear_table_delete.php": {
         "tags": [
-            "equipment",
-            "Markdown"
+            "equipment"
         ],
         "tables": [
             "equipment"
@@ -1514,8 +1541,7 @@
     },
     "check_ui_configuration_coverage.php": {
         "tags": [
-            "ui_configuration",
-            "Info"
+            "ui_configuration"
         ],
         "tables": [
             "ui_configuration"
@@ -1524,8 +1550,7 @@
     },
     "check_audit_logs_coverage.php": {
         "tags": [
-            "audit_logs",
-            "Markdown"
+            "audit_logs"
         ],
         "tables": [
             "audit_logs"
@@ -1534,22 +1559,21 @@
     },
     "sql_injection_matrix_test.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "db_field_active.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "sync_modules_registry.php": {
         "tags": [
-            "modules_registry",
-            "Markdown"
+            "modules_registry"
         ],
         "tables": [
             "modules_registry"
@@ -1558,7 +1582,7 @@
     },
     "verify_ops_report.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "modules_registry",
@@ -1570,8 +1594,7 @@
     },
     "verify_ops_report_sample_data.php": {
         "tags": [
-            "ops_report",
-            "Markdown"
+            "ops_report"
         ],
         "tables": [
             "ops_report"
@@ -1581,8 +1604,7 @@
     "seed_ops_report_search_demo.php": {
         "tags": [
             "ops_report",
-            "ops_report_guest_experience",
-            "Markdown"
+            "ops_report_guest_experience"
         ],
         "tables": [
             "ops_report",
@@ -1599,7 +1621,7 @@
     },
     "verify_bookmarks_import.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -1614,7 +1636,7 @@
     },
     "verify_bookmarks_folder_move.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -1629,7 +1651,7 @@
     },
     "verify_chatbot.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "knowledge_base",
@@ -1640,7 +1662,7 @@
     },
     "verify_request_password.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -1655,8 +1677,7 @@
     },
     "verify_reports_hub.php": {
         "tags": [
-            "modules_registry",
-            "Markdown"
+            "modules_registry"
         ],
         "tables": [
             "modules_registry"
@@ -1665,7 +1686,7 @@
     },
     "benchmark_sidebar_module_access.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "company_module_access",
@@ -1677,7 +1698,7 @@
     },
     "verify_company_module_access.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "company_module_access",
@@ -1688,7 +1709,7 @@
     },
     "verify_roles_permissions.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "companies",
@@ -1707,8 +1728,7 @@
     "verify_demo_module_restrictions.php": {
         "tags": [
             "employees",
-            "employee_roles",
-            "Markdown"
+            "employee_roles"
         ],
         "tables": [
             "employees",
@@ -1718,7 +1738,7 @@
     },
     "verify_employee_contact_email.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -1732,7 +1752,7 @@
     },
     "fast_create_acc.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -1752,8 +1772,7 @@
     },
     "verify_dashboard_active_employees.php": {
         "tags": [
-            "employees",
-            "Markdown"
+            "employees"
         ],
         "tables": [
             "employees"
@@ -1762,8 +1781,7 @@
     },
     "verify_dashboard_online_employees.php": {
         "tags": [
-            "employees",
-            "Markdown"
+            "employees"
         ],
         "tables": [
             "employees"
@@ -1772,8 +1790,7 @@
     },
     "verify_employee_dashboard.php": {
         "tags": [
-            "employees",
-            "Markdown"
+            "employees"
         ],
         "tables": [
             "employees"
@@ -1782,15 +1799,14 @@
     },
     "verify_admin_page_gate.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "verify_settings_admin_buttons.php": {
         "tags": [
-            "companies",
-            "Markdown"
+            "companies"
         ],
         "tables": [
             "companies"
@@ -1799,7 +1815,7 @@
     },
     "apply_new_company_module_share_capable_seed.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "companies",
@@ -1810,7 +1826,7 @@
     },
     "seed_company_module_access.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "companies",
@@ -1821,7 +1837,7 @@
     },
     "bypass_login.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "companies",
@@ -1832,7 +1848,7 @@
     },
     "bypass_v2.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "companies",
@@ -1843,7 +1859,7 @@
     },
     "sql_insert.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
@@ -1913,8 +1929,7 @@
     },
     "repro_bug.php": {
         "tags": [
-            "todo",
-            "Markdown"
+            "todo"
         ],
         "tables": [
             "todo"
@@ -1923,7 +1938,7 @@
     },
     "repro_vulnerabilities.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -1936,7 +1951,7 @@
     },
     "repro_bac.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -1952,7 +1967,7 @@
     },
     "repro_bac_updated.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -1968,7 +1983,7 @@
     },
     "repro_rce.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -1982,7 +1997,7 @@
     },
     "repro_rce_updated.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -1996,7 +2011,7 @@
     },
     "repro_sqli.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2009,7 +2024,7 @@
     },
     "repro_sqli_updated.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2022,8 +2037,7 @@
     },
     "repro_request_password_bypass.php": {
         "tags": [
-            "request_password",
-            "Markdown"
+            "request_password"
         ],
         "tables": [
             "request_password"
@@ -2032,14 +2046,14 @@
     },
     "repro_select_options_rbac.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "repro_equip_issues.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2053,7 +2067,7 @@
     },
     "repro_esa_vulnerability.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2066,14 +2080,14 @@
     },
     "benchmark_stats_optimized.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "benchmark_user_config.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
@@ -2081,8 +2095,7 @@
     "verify_system_status.php": {
         "tags": [
             "modules_registry",
-            "system_status",
-            "Markdown"
+            "system_status"
         ],
         "tables": [
             "modules_registry",
@@ -2101,8 +2114,7 @@
     },
     "system_status_phpinfo.php": {
         "tags": [
-            "system_status",
-            "Markdown"
+            "system_status"
         ],
         "tables": [
             "system_status"
@@ -2111,91 +2123,91 @@
     },
     "test_system_info.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "test_cpu_usage.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "test_ram_usage.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "test_disk_usage.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "test_uptime.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "test_php_version.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "test_php_extensions.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "test_php_ini_values.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "test_mysql_status.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "test_mysql_version.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "test_mysql_databases.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "test_mysql_size.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "apitest_tier_free.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2210,7 +2222,7 @@
     },
     "apitest_tier_basic.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2225,7 +2237,7 @@
     },
     "verify_select_options_escalation.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2238,7 +2250,7 @@
     },
     "verify_user_idor.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2251,7 +2263,7 @@
     },
     "verify_crud_fk_label_search.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2277,7 +2289,7 @@
     },
     "verify_employees_equipment_search_coverage.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2302,7 +2314,7 @@
     },
     "verify_employees_sensitive_view.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2315,8 +2327,7 @@
     },
     "check_department_select_quick_add.php": {
         "tags": [
-            "departments",
-            "Markdown"
+            "departments"
         ],
         "tables": [
             "departments"
@@ -2325,7 +2336,7 @@
     },
     "check_fast_create_acc_select_quick_add.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
@@ -2333,8 +2344,7 @@
     "verify_explorer_department_access.php": {
         "tags": [
             "departments",
-            "explorer",
-            "Markdown"
+            "explorer"
         ],
         "tables": [
             "departments",
@@ -2344,8 +2354,7 @@
     },
     "verify_explorer_zip_leak.php": {
         "tags": [
-            "Info",
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2359,7 +2368,7 @@
     },
     "verify_company_deletion.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2373,8 +2382,7 @@
     },
     "repro_auth_bypass_v3.php": {
         "tags": [
-            "companies",
-            "Markdown"
+            "companies"
         ],
         "tables": [
             "companies"
@@ -2383,21 +2391,21 @@
     },
     "empty_folders.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "ensure_files_htaccess_chain.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "verify_explorer_rce_htaccess.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2411,7 +2419,7 @@
     },
     "verify_explorer_rce_marker.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2425,8 +2433,7 @@
     },
     "test_explorer_paths.php": {
         "tags": [
-            "explorer",
-            "Markdown"
+            "explorer"
         ],
         "tables": [
             "explorer"
@@ -2435,9 +2442,7 @@
     },
     "test_explorer_preview.php": {
         "tags": [
-            "explorer",
-            "Info",
-            "Markdown"
+            "explorer"
         ],
         "tables": [
             "explorer"
@@ -2446,7 +2451,7 @@
     },
     "verify_audit_logs_disclosure.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2460,7 +2465,7 @@
     },
     "auth_register_reset_human_test.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2475,7 +2480,7 @@
     },
     "verify_password_reset_flow.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2488,15 +2493,14 @@
     },
     "verify_invitations_escalation.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "repro_zip_slip.php": {
         "tags": [
-            "Info",
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
@@ -2504,8 +2508,7 @@
     "repro_notes_traversal.php": {
         "tags": [
             "employees",
-            "notes",
-            "Markdown"
+            "notes"
         ],
         "tables": [
             "employees",
@@ -2515,7 +2518,7 @@
     },
     "repro_notes_idor.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2529,14 +2532,14 @@
     },
     "verify_metadata_column_cache.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "verify_update_port_zero_row.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "cable_colors",
@@ -2551,7 +2554,7 @@
     },
     "verify_notes_ajax_contract.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2565,7 +2568,7 @@
     },
     "verify_notes_vault.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2579,7 +2582,7 @@
     },
     "verify_todo_vault.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2593,7 +2596,7 @@
     },
     "verify_events_vault.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2607,7 +2610,7 @@
     },
     "verify_private_contacts_vault.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2621,7 +2624,7 @@
     },
     "verify_notes_share.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2636,15 +2639,14 @@
     },
     "apply_crud_record_share_modules.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "patch_crud_share_agent_notes.php": {
         "tags": [
-            "notes",
-            "Markdown"
+            "notes"
         ],
         "tables": [
             "notes"
@@ -2653,8 +2655,7 @@
     },
     "verify_qr_share_modules.php": {
         "tags": [
-            "Info",
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2676,7 +2677,7 @@
     },
     "verify_module_share.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "companies",
@@ -2689,14 +2690,14 @@
     },
     "verify_whatsapp_share.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "verify_outlook_share.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
@@ -2704,8 +2705,7 @@
     "verify_json_import_validation.php": {
         "tags": [
             "catalogs",
-            "events",
-            "Markdown"
+            "events"
         ],
         "tables": [
             "catalogs",
@@ -2715,14 +2715,14 @@
     },
     "verify_maintenance_scripts_rbac.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "repro_audit_disclosure.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2737,21 +2737,21 @@
     },
     "check_crud_rbac_coverage.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "apply_crud_rbac_guards.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "repro_rbac_bypass.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2767,7 +2767,7 @@
     },
     "repro_employee_companies_leak.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2781,7 +2781,7 @@
     },
     "repro_employee_companies_bac.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2795,7 +2795,7 @@
     },
     "repro_audit_token_leak.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2809,7 +2809,7 @@
     },
     "repro_destructive_import.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2822,7 +2822,7 @@
     },
     "repro_todo_user_leak.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "employees",
@@ -2833,8 +2833,7 @@
     },
     "repro_cross_tenant_admin.php": {
         "tags": [
-            "employees",
-            "Markdown"
+            "employees"
         ],
         "tables": [
             "employees"
@@ -2843,7 +2842,7 @@
     },
     "repro_explorer_path_bypass_v4.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2866,8 +2865,7 @@
     },
     "verify_explorer_fix.php": {
         "tags": [
-            "explorer",
-            "Info"
+            "explorer"
         ],
         "tables": [
             "explorer"
@@ -2876,9 +2874,7 @@
     },
     "verify_explorer_fix_updated.php": {
         "tags": [
-            "explorer",
-            "Info",
-            "Markdown"
+            "explorer"
         ],
         "tables": [
             "explorer"
@@ -2887,9 +2883,7 @@
     },
     "verify_explorer_fix_web.php": {
         "tags": [
-            "explorer",
-            "Info",
-            "Markdown"
+            "explorer"
         ],
         "tables": [
             "explorer"
@@ -2898,9 +2892,7 @@
     },
     "verify_explorer_fix_standalone.php": {
         "tags": [
-            "explorer",
-            "Info",
-            "Markdown"
+            "explorer"
         ],
         "tables": [
             "explorer"
@@ -2909,8 +2901,7 @@
     },
     "repro_attempts_data_leak_v2.php": {
         "tags": [
-            "attempts",
-            "Markdown"
+            "attempts"
         ],
         "tables": [
             "attempts"
@@ -2919,8 +2910,7 @@
     },
     "repro_explorer_zip_slip_v2.php": {
         "tags": [
-            "Info",
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2934,7 +2924,7 @@
     },
     "repro_select_options_unauthorized_v2.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -2949,8 +2939,7 @@
     "repro_vault_corruption.php": {
         "tags": [
             "employees",
-            "password_entries",
-            "Markdown"
+            "password_entries"
         ],
         "tables": [
             "employees",
@@ -2960,7 +2949,7 @@
     },
     "repro_db_integrity.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "employees",
@@ -2973,36 +2962,35 @@
     },
     "test_multi_tenant.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "verify_audit_columns.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "apply_crud_audit_soft_delete.php": {
         "tags": [
-            "Info"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "check_crud_audit_soft_delete.php": {
         "tags": [
-            "Info"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "repro_employee_dataloss.php": {
         "tags": [
-            "employees",
-            "Markdown"
+            "employees"
         ],
         "tables": [
             "employees"
@@ -3012,8 +3000,7 @@
     "verify_import_fix_updated.php": {
         "tags": [
             "departments",
-            "employees",
-            "Markdown"
+            "employees"
         ],
         "tables": [
             "departments",
@@ -3023,8 +3010,7 @@
     },
     "repro_generic_dataloss.php": {
         "tags": [
-            "departments",
-            "Markdown"
+            "departments"
         ],
         "tables": [
             "departments"
@@ -3033,7 +3019,7 @@
     },
     "repro_contacts_idor.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -3046,7 +3032,7 @@
     },
     "repro_select_options.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -3060,7 +3046,7 @@
     },
     "repro_status_leak.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -3074,7 +3060,7 @@
     },
     "repro_visitors_bac.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -3088,7 +3074,7 @@
     },
     "repro_visitors_sqli.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -3102,14 +3088,14 @@
     },
     "verify_audit_updated.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "verify_clear_table_fix.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "bookmarks",
@@ -3121,9 +3107,7 @@
     },
     "verify_explorer_updated.php": {
         "tags": [
-            "explorer",
-            "Info",
-            "Markdown"
+            "explorer"
         ],
         "tables": [
             "explorer"
@@ -3132,15 +3116,14 @@
     },
     "verify_rbac_updated.php": {
         "tags": [
-            "Markdown"
+            "Codebase"
         ],
         "tables": [],
         "override": false
     },
     "verify_sqli_updated.php": {
         "tags": [
-            "visitors_access_log",
-            "Markdown"
+            "visitors_access_log"
         ],
         "tables": [
             "visitors_access_log"
@@ -3149,7 +3132,7 @@
     },
     "verify_status_leak_fixed.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -3162,7 +3145,7 @@
     },
     "verify_visitors_bac_fix.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -3176,7 +3159,7 @@
     },
     "verify_visitors_sqli_fix.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
@@ -3190,7 +3173,7 @@
     },
     "repro_birthdays_resignations_rbac.php": {
         "tags": [
-            "Markdown"
+            "Mixed"
         ],
         "tables": [
             "access_levels",
