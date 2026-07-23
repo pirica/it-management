@@ -7,7 +7,7 @@ Maintains system-wide configuration, database credentials, path constants, and c
 - Interacts with **companies** for initial tenant resolution.
 
 ## 4. Business Rules (Critical for Agents)
-- **Environment Variables**: Prefer loading secrets from environment variables (e.g., `ITM_DB_HOST`).
+- **Environment Variables**: Prefer loading secrets from environment variables (e.g., `ITM_DB_HOST`). Optional API keys in project root `.env` (see `.env.example`): `IP2WHOIS_API_KEY` / `ITM_IP2WHOIS_API_KEY` (IP Subnets hosted domains), `NVD_API_KEY` / `ITM_NVD_API_KEY` (News module NVD CVE feed).
 - **No PDO**: The system strictly uses `mysqli`.
 - **Zero Dependencies**: Do not introduce external packages (Composer/NPM).
 - **Administrator helpers**: `itm_is_admin()` checks role/username; `itm_require_admin()` enforces admin access (HTTP 403 on POST, redirect on GET).

@@ -19,14 +19,14 @@ Registry row: **`modules_registry`** slug `news` (sidebar + company module acces
 ## 4. Business Rules (Critical for Agents)
 
 - Feed sources defined in `news_feed_source_catalog()` (`includes/itm_news_feed.php`):
-  - `nvd_cve` — NVD REST API 2.0 (shows CVSS severity/score columns)
+  - `nvd_cve` — NVD REST API 2.0 (shows CVSS severity/score columns); fetches CVEs **modified in the last 120 days**, newest first (not `startIndex=0`, which returns 1990s records)
   - `ms_commandline` — `https://devblogs.microsoft.com/commandline/feed/`
   - `ms_windows_blog` — `https://blogs.windows.com/feed/`
   - `ms_powershell` — `https://devblogs.microsoft.com/powershell/feed/`
   - `ms_msrc_security` — `https://api.msrc.microsoft.com/update-guide/rss` (CVEs, advisories, Patch Tuesday)
   - `ms_win10_updates` — Microsoft Support Atom feed for Windows 10 KB/monthly updates
   - `ms_win11_updates` — Microsoft Support Atom feed for Windows 11 KB/monthly updates
-- **NVD API key:** optional `NVD_API_KEY` or `ITM_NVD_API_KEY` in project root `.env` (loaded by `config/config.php`); sent as `apiKey` request header for higher NVD rate limits
+- **NVD API key:** optional `NVD_API_KEY` or `ITM_NVD_API_KEY` in project root `.env` (see `.env.example`; loaded by `config/config.php`); sent as `apiKey` request header for higher NVD rate limits
 - Feed items are sorted **newest first** by `published` (fallback `last_modified`) in `news_sort_items_newest_first()` before cache save and UI load
 - Cache TTL: **24 hours** per source (`NEWS_CACHE_DURATION`)
 - Per-source lock files: `modules/news/cache/{source_id}.lock` (5-minute stale timeout)
