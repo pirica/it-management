@@ -19,7 +19,7 @@ Registry row: **`modules_registry`** slug `news` (sidebar + company module acces
 ## 4. Business Rules (Critical for Agents)
 
 - Feed sources defined in `news_feed_source_catalog()` (`includes/itm_news_feed.php`):
-  - `nvd_cve` — NVD REST API 2.0 (shows CVSS severity/score columns); fetches CVEs **modified in the last 120 days**, newest first (not `startIndex=0`, which returns 1990s records)
+  - `nvd_cve` — NVD REST API 2.0 (shows CVSS severity/score columns); fetches CVEs **published in the last 120 days** via `pubStartDate` / `pubEndDate` (`news_build_nvd_api_query_params()`), newest first — never bare `startIndex=0` (returns 1990s records)
   - `ms_commandline` — `https://devblogs.microsoft.com/commandline/feed/`
   - `ms_windows_blog` — `https://blogs.windows.com/feed/`
   - `ms_powershell` — `https://devblogs.microsoft.com/powershell/feed/`
