@@ -1185,7 +1185,7 @@ php scripts/check_env_vars_in_use.php
 php scripts/check_env_vars_in_use.php --strict   # fail on example-only or undocumented app keys
 ```
 
-Scans PHP (`getenv`, `$_ENV`), Python (`os.environ`), and shell (`${VAR}`) under the repo (excludes `vendor/`, `phpunit/coverage/`, `qa-reports/`). Shared lib: `scripts/lib/itm_env_vars_audit.php`. JSON: `--json` / `?json=1`.
+Scans PHP (`getenv`, `$_ENV`, `foreach ([…] as $x) { getenv($x) }` alias lists), Python (`os.environ`), and shell (`${VAR}`) under the repo (excludes `vendor/`, `phpunit/coverage/`, `qa-reports/`). Shared lib: `scripts/lib/itm_env_vars_audit.php`. JSON: `--json` / `?json=1`.
 
 **UI action emoji (NO MIXED):** after any change to buttons, links, form actions, modals, or page headings (`<h1>`–`<h3>`), run:
 

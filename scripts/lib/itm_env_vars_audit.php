@@ -160,6 +160,31 @@ if (!function_exists('itm_env_vars_audit_collect_from_content')) {
             }
         }
 
+        // Why: Some helpers iterate env name lists then call getenv($var) — e.g. NVD API key aliases.
+        if ($ext === 'php' && preg_match_all(
+            '/foreach\s*\(\s*\[([^\]]+)\]\s+as\s+\$\w+\)\s*\{[^}]*getenv\s*\(\s*\$\w+/s',
+            $content,
+            $foreachMatches
+        ) >= 1) {
+            foreach ($foreachMatches[1] as $arrayLiteral) {
+                if (preg_match_all('/[\'"]([A-Z][A-Z0-9_]*)[\'"]/', (string)$arrayLiteral, $nameMatches) < 1) {
+                    continue;
+                }
+                foreach ($nameMatches[1] as $name) {
+                    $name = (string)$name;
+                    if ($name === '') {
+                        continue;
+                    }
+                    if (!isset($found[$name])) {
+                        $found[$name] = [];
+                    }
+                    if (!in_array($relativePath, $found[$name], true)) {
+                        $found[$name][] = $relativePath;
+                    }
+                }
+            }
+        }
+
         return $found;
     }
 }
