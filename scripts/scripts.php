@@ -169,17 +169,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
             </thead>
             <tbody>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="api.php" target="_blank" rel="nofollow noreferrer">api.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>HTML reference for JSON/AJAX endpoints: Explorer file manager, Switch Port Manager (<code>includes/get_ports.php</code>, <code>includes/update_port.php</code>), IDF APIs, module imports (auto-detected), passwords, notes, todo, System Status API, and shared includes. Switch-port handlers document <code>itm_api_json_response()</code> contracts and mysqlnd-safe fetch helpers.</td>
                     <td>Open <code>scripts/api.php</code> in the browser after API changes. Run <code>php scripts/run_tests.php --filter ApiFunctionsTest</code> when editing collector helpers. After switch-port changes also run <code>php scripts/idfs_sync_human_test.php</code>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="pitfalls.php" target="_blank" rel="nofollow noreferrer">pitfalls.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Aggregated pitfalls and developer traps from every <code>AGENT_NOTES.md</code> in the repository (not only <code>modules/</code>). Backfills missing note files under <code>modules/</code> only. Reviewed empty §10 sections may use <code>[Confirmed] No pitfalls documented</code>. Skips top-level upload roots but still includes <code>modules/floor_plans/</code>.</td>
                     <td>Open <code>scripts/pitfalls.php</code> in the browser (Admin only). CLI: <code>php scripts/pitfalls.php [-module=&lt;slug&#124;path&gt;] [--json]</code></td>                </tr>
                 <tr data-tags="Markdown">
@@ -224,24 +224,24 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         CLI: <code>php scripts/DBdesign.php --mermaid</code> or <code>--json</code>.
                     </td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Info">
                     <td><a href="crud_tables.php" target="_blank" rel="nofollow noreferrer">crud_tables.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Lists each module’s first <code>$crud_table</code> in <code>index.php</code>. Bespoke/exception modules without it show <strong>Skip</strong> (<code>docs/list_bespoke_UI.txt</code> + <code>scripts/data/crud_tables_skip_modules.txt</code>).</td>
                     <td>Browser: HTML report. CLI: <code>php scripts/crud_tables.php</code> (HTML to stdout) or <code>&gt; crud_tables.html</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Info">
                     <td><a href="crud_titles.php" target="_blank" rel="nofollow noreferrer">crud_titles.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Lists each module’s first <code>$crud_title</code> in <code>index.php</code>. <code>is_*</code> modules and bespoke slugs without it show <strong>Skip</strong>.</td>
                     <td>Browser: HTML report. CLI: <code>php scripts/crud_titles.php</code> (HTML to stdout) or <code>&gt; crud_titles.html</code>.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Info">
                     <td><a href="crud_actions.php" target="_blank" rel="nofollow noreferrer">crud_actions.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Lists every module entry file (<code>index.php</code> and CRUD wrappers) and each <code>$crud_action =</code> assignment. Non-standard CRUD modules with no assignment show <strong>Skip</strong>.</td>
                     <td>Browser: HTML report. CLI: <code>php scripts/crud_actions.php</code> (HTML to stdout) or <code>&gt; crud_actions.html</code>.</td>
                 </tr>
@@ -292,10 +292,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         CLI: <code>php scripts/list_enum_fields.php [--source=sql|db|both]</code>
                     </td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info">
                     <td><a href="extract_by_fields.php" target="_blank" rel="nofollow noreferrer">extract_by_fields.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Scans db/ and lists table fields matching keywords (by, to, employee_id, employee).</td>
                     <td>
                         <strong>Log in first.</strong> Open <a href="extract_by_fields.php">extract_by_fields.php</a>.
@@ -309,10 +309,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>System overview (DB, tables, PHP version, extensions, and file permissions).</td>
                     <td>Open in browser for quick troubleshooting.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Markdown">
                     <td><a href="health.php" target="_blank" rel="nofollow noreferrer">health.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Shell bootstrap that provisions a JSON health-check endpoint for monitoring (not a PHP entry script).</td>
                     <td>Deployment host only. Excluded from <code>perform_audit.php</code>. See <code>scripts/SCRIPTS.md</code> → Browser scripts → <code>health.php</code>.</td>
                 </tr>
@@ -445,10 +445,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
             </thead>
             <tbody>
-                <tr data-tags="Codebase">
+                <tr data-tags="Markdown">
                     <td><a href="run_tests.php" target="_blank" rel="nofollow noreferrer">run_tests.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Runs the PHPUnit suite in <code>phpunit/tests/Unit/</code> via <code>phpunit/phpunit.phar</code> and <code>phpunit/phpunit.xml</code>. Browser menu: <strong>Standard</strong> (verbose) or <strong>HTML coverage</strong> (Xdebug/PCOV). Report: <code>phpunit/coverage/html/coverage.html</code>. Skips coverage driver when Xdebug/PCOV missing. <code>processUncoveredFiles="false"</code> in phpunit.xml for reliable report generation. Entry guards: <code>includes/itm_script_entry_guard.php</code>. See <code>scripts/SCRIPTS.md</code> (PHPUnit test runner).</td>
                     <td>
                         Browser menu: <a href="run_tests.php" target="_blank" rel="nofollow noreferrer">run_tests.php</a><br>
@@ -458,17 +458,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                         Skip DB: <code>ITM_SKIP_DB_TESTS=1</code> or browser checkbox
                     </td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info">
                     <td><a href="identify_modules.php" target="_blank" rel="nofollow noreferrer">identify_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Scans the <code>modules/</code> directory to identify and categorize all modules into standard CRUD and bespoke types, saving metadata to <code>scripts/modules_metadata.json</code>.</td>
                     <td>Browser: <a href="identify_modules.php" target="_blank" rel="nofollow noreferrer">JSON preview</a> (Admin) · <a href="identify_modules.php?save=1" target="_blank" rel="nofollow noreferrer">?save=1</a> writes <code>modules_metadata.json</code>. CLI: <code>php scripts/identify_modules.php &gt; scripts/modules_metadata.json</code></td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Mixed Info">
                     <td><a href="generate_tests.php" target="_blank" rel="nofollow noreferrer">generate_tests.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Automatically generates PHPUnit integration tests for all standard CRUD modules identified in the metadata. Creates test files in <code>phpunit/tests/Unit/Modules/</code>.</td>
                     <td>Browser: <a href="generate_tests.php" target="_blank" rel="nofollow noreferrer">dry-run</a> (Admin) · <a href="generate_tests.php?apply=1" target="_blank" rel="nofollow noreferrer">?apply=1</a> writes missing tests only (skips existing <code>*Test.php</code>). CLI: <code>php scripts/generate_tests.php</code></td>
                 </tr>
@@ -500,10 +500,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Verifies session handling and persistence.</td>
                     <td>Browser: <a href="test_session.php" target="_blank" rel="nofollow noreferrer">dump current session</a> (Admin). CLI: <code>php scripts/test_session.php</code> or <code>php scripts/test_session.php &lt;PHPSESSID&gt;</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="verify_api_coverage.php" target="_blank" rel="nofollow noreferrer">verify_api_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Audits import endpoints, bespoke paths, and non-index module JSON handlers (PHP <code>Content-Type: application/json</code> headers only; matches <code>scripts/api.php</code> project + Explorer + IDF api catalogs).</td>
                     <td>Browser: <a href="verify_api_coverage.php" target="_blank" rel="nofollow noreferrer">run</a> (Admin). CLI: <code>php scripts/verify_api_coverage.php</code></td>
                 </tr>
@@ -557,10 +557,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Rebuilds one InnoDB table from <code>db/01_schema.sql</code> when metadata drift causes "doesn't exist in engine" errors. <strong>Destructive</strong> on apply — dry-run validates <code>--table</code> / <code>?table=</code> and shows CREATE excerpt only.</td>
                     <td>Browser: <a href="repair_table_from_schema.php?table=equipment">dry-run</a> / <a href="repair_table_from_schema.php?table=equipment&amp;apply=1">apply=1</a> (Admin). CLI: <code>php scripts/repair_table_from_schema.php --table=table_name</code> then <code>--apply</code> — backup first.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Info">
                     <td><a href="count_db_tables.php" target="_blank" rel="nofollow noreferrer">count_db_tables.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Counts live tables in <code>information_schema</code> for <code>itmanagement</code>, echoes the total as plain text, and overwrites <code>scripts/number_db_tables.txt</code> with the same number (for external monitors). <strong>No login required.</strong></td>
                     <td>Open <a href="count_db_tables.php">count_db_tables.php</a> (plain number response) or run <code>php scripts/count_db_tables.php</code> from the repository root. Output file: <code>scripts/number_db_tables.txt</code>.</td>
                 </tr>
@@ -592,31 +592,31 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Imports <code>db/</code> SQL in one MySQL session: <code>01_schema.sql</code> → <code>02_data.sql</code> → <code>03_triggers.sql</code> (preserves <code>@replicate_source_company_id</code>; loads triggers after seed data). Runs <code>verify_database_schema.php</code> on success.</td>
                     <td><code>bash scripts/import_database_split.sh</code> — same MySQL env vars as <code>verify_database_sql_import.sh</code>. See <code>db/AGENT_NOTES.md</code> for import order.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info">
                     <td><a href="employee_fields_missing.php" target="_blank" rel="nofollow noreferrer">employee_fields_missing.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Compares <code>employees</code> columns in <code>db/</code> split bundle and the live schema with create/edit/view/index coverage in <code>modules/employees/</code>. Fails when critical columns (including <code>termination_date</code>) are missing from the DB or module UI; lists optional gaps as <code>[INFO]</code>. Uses shared lib <code>itm_fields_missing_report.php</code>.</td>
                     <td><code>php scripts/employee_fields_missing.php</code> — run after changing <code>db/</code> split bundle, <code>modules/employees/</code> profile fields, or employee list/import columns. Full multi-module audit: <code>php scripts/fields_missing.php</code>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info Markdown">
                     <td><a href="fields_missing.php" target="_blank" rel="nofollow noreferrer">fields_missing.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>All-module schema/UI audit: <code>db/</code> split bundle columns vs live MySQL vs module screens for every discoverable <code>$crud_table</code> module. Flattened scaffold: <code>[PASS]</code>/<code>[FAIL]</code>; bespoke/status-driven slugs: gated <code>[SKIP][pass]</code>/<code>[SKIP][fail]</code>/<code>[SKIP][fail][reviewed]</code> (page + list UI contract via <code>scripts/lib/itm_ui_list_contract_checks.php</code>). Reviewed exceptions: <a href="fields_missing_reviewed.php" target="_blank" rel="nofollow noreferrer">fields_missing_reviewed.php</a> · <code>scripts/data/fields_missing_reviewed.json</code>. Shared lib: <code>itm_fields_missing_report.php</code>.</td>
                     <td>Browser: optional <code>?module=</code> · <code>?strict_gate=1</code> · <code>?json=1</code>. CLI: <code>php scripts/fields_missing.php</code> · <code>--module=&lt;slug&gt;</code> · <code>--json</code> · <code>--strict-gate</code>. Exit <code>1</code> on actionable <code>[FAIL]</code>; default exit <code>0</code> for bespoke <code>[SKIP][fail]</code> only; <code>--strict-gate</code> also fails on unreviewed bespoke <code>[SKIP][fail]</code>. JSON schema for reviewed exceptions: <code>scripts/SCRIPTS.md</code> → <em>fields_missing reviewed exceptions</em>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info">
                     <td><a href="fields_missing_reviewed.php" target="_blank" rel="nofollow noreferrer">fields_missing_reviewed.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Read-only manifest for reviewed bespoke <code>[SKIP][fail]</code> gate lines consumed by <code>fields_missing.php</code>. Data: <code>scripts/data/fields_missing_reviewed.json</code> (module slug + check label/code + reason).</td>
                     <td><code>php scripts/fields_missing_reviewed.php</code> · <code>--json</code> · exit <code>1</code> on invalid registry JSON.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info">
                     <td><a href="ui_configuration_reviewed.php" target="_blank" rel="nofollow noreferrer">ui_configuration_reviewed.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Read-only manifest for reviewed gate-excluded <code>[n/a][pass|fail|n/a]</code> lines consumed by <code>check_ui_configuration_coverage.php</code>. Data: <code>scripts/data/ui_configuration_reviewed.json</code> (module slug + UI config check label/code + reason).</td>
                     <td><code>php scripts/ui_configuration_reviewed.php</code> · <code>--json</code> · exit <code>1</code> on invalid registry JSON.</td>
                 </tr>
@@ -998,17 +998,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Same scan/summary as <code>titles_list.php</code> with rendered inner title text; non-matching rows prefixed <code>[NOT MATCH]</code>.</td>
                     <td>Browser: HTML report. CLI: <code>php scripts/titles_list_show.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info">
                     <td><a href="verify_module_page_chrome.php" target="_blank" rel="nofollow noreferrer">verify_module_page_chrome.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Cross-check: canonical browser <code>&lt;title&gt;</code> (<code>titles_list.php</code>) and Settings favicon wiring (<code>fields_missing.php</code> bespoke gate) on every <code>modules/**/*.php</code> file with a standalone <code>&lt;head&gt;</code>. Exit <code>1</code> on any title or favicon failure.</td>
                     <td>Browser: <a href="verify_module_page_chrome.php">verify_module_page_chrome.php</a>. CLI: <code>php scripts/verify_module_page_chrome.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info">
                     <td><a href="verify_favicon_root_cause.php" target="_blank" rel="nofollow noreferrer">verify_favicon_root_cause.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Admin diagnostic: <code>ui_configuration</code> favicon path + on-disk <code>.ico</code> (Settings data layer) and module <code>&lt;head&gt;</code> favicon gate counts. Explains why <code>apply_head_favicon_link.php</code> alone does not fix empty <code>$favicon_url</code>. Optional <code>?module=</code> / <code>--module=</code> sample.</td>
                     <td>Browser: <a href="verify_favicon_root_cause.php">verify_favicon_root_cause.php</a>. CLI: <code>php scripts/verify_favicon_root_cause.php</code> · sample: <code>--module=employees</code></td>
                 </tr>
@@ -1126,17 +1126,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>CI/local smoke runner (<code>.github/workflows/smoke.yml</code>): (1) <code>php -l</code> all PHP, (2) CSRF coverage, (3) SQLi coverage, (4) FK label search static audit. Other Tier 2 <code>check_*</code> scripts: use <code>run_tier2_checks.php</code>.</td>
                     <td><code>bash scripts/smoke_test.sh</code> from repository root. Optional: <code>PHP_BIN=/path/to/php</code> on Windows Laragon.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="run_tier2_checks.php" target="_blank" rel="nofollow noreferrer">run_tier2_checks.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Batch runner for all Tier 2 static <code>check_*</code> scripts in <code>SCRIPTS_TEST_MATRIX.md</code> (pre-merge static cluster; no DB mutation). Stops on first failure by default; <code>--continue</code> collects all failures.</td>
                     <td>Browser: menu at <a href="run_tier2_checks.php" target="_blank" rel="nofollow noreferrer">run_tier2_checks.php</a>; run with <code>?run=1</code> (optional <code>&amp;continue=1</code>). CLI: <code>php scripts/run_tier2_checks.php</code>, <code>--continue</code>, <code>--list</code>, <code>--only=check_ui_action_emoji.php</code>. Optional <code>PHP_BIN</code> env on Windows Laragon.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info">
                     <td><a href="perform_audit.php" target="_blank" rel="nofollow noreferrer">perform_audit.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Exploratory Tier 1–3 script subprocess audit (excludes Tier 4/5, <code>repro_*</code>, <code>verify_*</code>, <code>_tmp_*</code>). Per-script <code>exit_code</code> + isolated <code>error_log.txt</code> deltas → <code>scripts/php_error_audit_results.json</code>. Allowlist: <code>scripts/data/perform_audit_allowlist.json</code>. Not a CI gate.</td>
                     <td><code>php scripts/perform_audit.php</code> (optional <code>--loop</code> for triage). Windows Laragon: full path to <code>php.exe</code> in parent and child processes.</td>
                 </tr>
@@ -1182,10 +1182,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>One-time/maintenance: add <code>$displayFieldColumns = $uiColumns</code> (or <code>$visibleFieldColumns</code>) before module paths so list search does not reference an undefined variable. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped <code>index.php</code> files. Re-run when new flattened CRUD modules omit the alias.</td>
                     <td>Browser: <a href="apply_display_field_columns_search_alias.php">dry-run</a> / <a href="apply_display_field_columns_search_alias.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_display_field_columns_search_alias.php</code> then <code>php scripts/apply_display_field_columns_search_alias.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info">
                     <td><a href="apply_script_catalog_tags.php" target="_blank" rel="nofollow noreferrer">apply_script_catalog_tags.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Computes table tags for every <code>scripts/scripts.php</code> catalog row (entry script + transitive <code>scripts/</code> requires + one-level spawn targets). Writes <code>scripts/data/script_catalog_tags.json</code> and patches <code>data-tags</code> + tag badge markup on each card.</td>
                     <td>Browser: <a href="apply_script_catalog_tags.php">dry-run</a> / <a href="apply_script_catalog_tags.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_script_catalog_tags.php</code> then <code>php scripts/apply_script_catalog_tags.php --apply</code>. Re-run after adding catalog rows or changing script SQL.</td>
                 </tr>
@@ -1224,10 +1224,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>One-time/maintenance: bulk replace simple NO MIXED markup (emoji + action word) → emoji-only + <code>title</code> on modules and shared UI files. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped files. Skip PHP ternaries / JS templates — fix manually.</td>
                     <td>Browser: <a href="apply_ui_action_emoji.php">dry-run</a> / <a href="apply_ui_action_emoji.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_ui_action_emoji.php</code> then <code>php scripts/apply_ui_action_emoji.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Markdown">
                     <td><a href="apply_pagination_emoji_labels.php" target="_blank" rel="nofollow noreferrer">apply_pagination_emoji_labels.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>One-time/maintenance: bulk replace legacy list pagination plain <code>Previous</code>/<code>Next</code> visible labels (and old mixed title attributes) with emoji-only visible text (<code>◀️</code>/<code>▶️</code>) and word-only <code>title</code> (<code>Previous page</code>/<code>Next page</code>). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists changed files.</td>
                     <td>Browser: <a href="apply_pagination_emoji_labels.php">dry-run</a> / <a href="apply_pagination_emoji_labels.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_pagination_emoji_labels.php</code> then <code>php scripts/apply_pagination_emoji_labels.php --apply</code>.</td>
                 </tr>
@@ -1308,10 +1308,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Static audit: every <code>modules/*/index.php</code> that uses <code>foreach ($displayFieldColumns …)</code> must assign <code>$displayFieldColumns</code> first.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_display_field_columns_search.php</code> — run after bulk CRUD/search changes; exit <code>1</code> on failure.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info">
                     <td><a href="check_script_catalog_tags.php" target="_blank" rel="nofollow noreferrer">check_script_catalog_tags.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Static gate: every <code>scripts/scripts.php</code> catalog row has correct <code>data-tags</code> and tag badge markup matching the computed scan in <code>scripts/lib/itm_script_catalog_tags.php</code>.</td>
                     <td>Browser: plain-text report (Administrator session). CLI: <code>php scripts/check_script_catalog_tags.php</code> — run after catalog or script SQL changes; exit <code>1</code> on drift.</td>
                 </tr>
@@ -1343,17 +1343,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Static audit: fail on stale <code>Users module</code> / <code>Users Management</code> prose, <code>employee_companies</code> + <code>user_id</code> helper references, session <code>role_name</code> admin checks in <code>modules/</code>, <code>cr_username_for_user_id</code>, and <code>'user_id'</code> inside CRUD <code>$hidden</code> arrays.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_stale_user_terminology.php</code> — run after docs/script copy changes; exit <code>1</code> on failure.</td>
                 </tr>
-                <tr data-tags="idf_ports">
+                <tr data-tags="idf_ports Info">
                     <td><a href="check_multi_tenant_leaks.php" target="_blank" rel="nofollow noreferrer">check_multi_tenant_leaks.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">idf_ports</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">idf_ports</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Static scan: SQL queries and INSERTs on scoped tables missing <code>company_id</code> filters, and improper UI exposure of company identifiers.</td>
                     <td>Browser: HTML report with detailed leak locations. CLI: <code>php scripts/check_multi_tenant_leaks.php</code> — run after CRUD changes to ensure data isolation.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info">
                     <td><a href="check_index_table_compliance.php" target="_blank" rel="nofollow noreferrer">check_index_table_compliance.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>
                         Index list tables: <code>data-itm-db-import-endpoint</code>, <code>data-itm-actions-origin</code>, POST CSRF, form <code>csrf_token</code>.
                         Skips import when <code>data-itm-no-import-excel="1"</code>; skips Actions markers when the index has no Actions column.
@@ -1371,10 +1371,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>One-time maintenance: strip duplicated inline bulk-delete <code>selectionMode</code> scripts from module PHP files after <code>js/bulk-delete-selection.js</code> (shared Cancel button) ships via <code>includes/header.php</code>. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped module files.</td>
                     <td>Browser: <a href="apply_bulk_delete_cancel_ux.php">dry-run</a> / <a href="apply_bulk_delete_cancel_ux.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_bulk_delete_cancel_ux.php</code> then <code>php scripts/apply_bulk_delete_cancel_ux.php --apply</code>.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info">
                     <td><a href="apply_bulk_actions_records_per_page_gate.php" target="_blank" rel="nofollow noreferrer">apply_bulk_actions_records_per_page_gate.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>Add <code>records_per_page</code> visibility gate for bulk delete / clear table on module <code>index.php</code> files (<code>$showBulkActions = ($totalRows &gt;= $perPage)</code>). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped module files.</td>
                     <td>Browser: <a href="apply_bulk_actions_records_per_page_gate.php">dry-run</a> / <a href="apply_bulk_actions_records_per_page_gate.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_bulk_actions_records_per_page_gate.php</code> then <code>php scripts/apply_bulk_actions_records_per_page_gate.php --apply</code>.</td>
                 </tr>
@@ -1431,10 +1431,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Static guard: equipment <code>clear_table</code> uses soft-delete via <code>equipment_delete_record()</code> (transaction + <code>itm_crud_build_soft_delete_sql</code>).</td>
                     <td>Browser: <a href="check_equipment_clear_table_delete.php" target="_blank" rel="nofollow noreferrer">run</a>. CLI: <code>php scripts/check_equipment_clear_table_delete.php</code> — run after equipment delete/clear-table changes (AGENTS.md).</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Info">
                     <td><a href="check_ui_configuration_coverage.php" target="_blank" rel="nofollow noreferrer">check_ui_configuration_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="info">Info</span></span></td>
                     <td>UI configuration hooks: table actions, new button, export toolbar, back/save on forms.</td>
                     <td>Browser: plain-text module list. CLI: <code>php scripts/check_ui_configuration_coverage.php</code> — run manually when module UI/layout changes; exits <code>2</code> only on gated <code>[fail]</code>. Audits table actions, export card, search, Settings <code>records_per_page</code> pagination, bulk Select to Delete / Clear Table, and CRUD entry files. Gate-excluded slugs (<code>scripts/data/ui_configuration_excluded_modules.txt</code>, synced with <code>docs/list_bespoke_UI.txt</code>) and <code>is_*</code> prefixes print every check as <code>[n/a][pass]</code>, <code>[n/a][fail]</code>, or <code>[n/a][n/a]</code>; reviewed lines add <code>[reviewed]</code> via <a href="ui_configuration_reviewed.php" target="_blank" rel="nofollow noreferrer">ui_configuration_reviewed.php</a> · <code>scripts/data/ui_configuration_reviewed.json</code>. Optional <code>--list-excluded</code> / <code>?list_excluded=1</code> prints gate-excluded slug names in the header.</td>
                 </tr>
@@ -1556,10 +1556,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for <code>modules/reports/</code> Reports Hub: exercises every <code>api/helpers.php</code> chart payload, Hotel Operations MTD metrics (<code>ops_report</code>, <code>ops_report_fb_outlet</code>), budget vs actual / YoY totals, <code>modules_registry</code> slug <code>reports</code>, and core Chart.js canvas ids in <code>index.php</code>. Expects <code>db/</code> split bundle Reports Hub sample seeds.</td>
                     <td>Browser: <a href="verify_reports_hub.php">verify_reports_hub.php</a>. CLI: <code>php scripts/verify_reports_hub.php</code>. Optional <code>ITM_TEST_COMPANY_ID</code> (default 1). Run when changing <code>modules/reports/</code>, helpers, or Reports Hub seeds in <code>db/</code> split bundle.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="benchmark_sidebar_module_access.php" target="_blank" rel="nofollow noreferrer">benchmark_sidebar_module_access.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Read-only benchmark for sidebar generation: measures MySQL <code>Questions</code> delta for the live path (<code>itm_sidebar_structure()</code> + <code>has_module_access()</code> filter) vs an uncached legacy N+1 simulation (per-slug registry + admin + CMA queries and per-slug registry ensure). Reports median query count, timing, and reduction percentage. Requires prefetch cache in <code>includes/itm_company_module_access.php</code>.</td>
                     <td>CLI: <code>php scripts/benchmark_sidebar_module_access.php</code> · optional <code>--company=1 --employee=1 --iterations=3 --checks=100</code>. Browser: <a href="benchmark_sidebar_module_access.php">benchmark_sidebar_module_access.php</a> · query params <code>company</code>, <code>employee</code>, <code>iterations</code>, <code>checks</code>. Env thresholds: <code>ITM_BSMA_MAX_FULL_QUERIES</code> (default 45), <code>ITM_BSMA_MIN_REDUCTION_PCT</code> (default 50), plus BOLT journal component vars documented in <code>scripts/SCRIPTS.md</code>. Verifies claims in <code>docs/bolt.md</code>.</td>
                 </tr>
@@ -2145,10 +2145,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>PoC for Cross-user IDOR (unauthorized view/delete) in the Notes module.</td>
                     <td><code>php scripts/repro_notes_idor.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Markdown">
                     <td><a href="verify_metadata_column_cache.php" target="_blank" rel="nofollow noreferrer">verify_metadata_column_cache.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Regression for table-level <code>information_schema</code> caching in <code>itm_table_has_column()</code> and <code>itm_table_column_is_nullable()</code> (<code>includes/bootstrap_helpers.php</code>). Cold batch expects schema <code>Questions</code> delta 1–2; warm repeat expects schema delta 0 (trailing <code>SHOW STATUS</code> excluded from delta). Optional env: <code>ITM_META_CACHE_TABLE</code> (default <code>switch_ports</code>).</td>
                     <td><code>php scripts/verify_metadata_column_cache.php</code></td>
                 </tr>
@@ -2208,10 +2208,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Maintenance: wire <code>join.php</code>, AJAX <code>create_share_session</code>, view share buttons, and QR modal for CRUD record share rollout modules (<code>includes/itm_crud_record_share.php</code>). Dry-run default; pass <code>--apply</code> to write. Inventory: <code>docs/CRUD_RECORD_SHARE.md</code>.</td>
                     <td><code>php scripts/apply_crud_record_share_modules.php --apply</code></td>
                 </tr>
-                <tr data-tags="notes">
+                <tr data-tags="Mixed Markdown">
                     <td><a href="patch_crud_share_agent_notes.php" target="_blank" rel="nofollow noreferrer">patch_crud_share_agent_notes.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">notes</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Maintenance: append <strong>Share (temporary QR / code)</strong> section to each CRUD record share module <code>AGENT_NOTES.md</code>. Dry-run default; pass <code>--apply</code> to write.</td>
                     <td><code>php scripts/patch_crud_share_agent_notes.php --apply</code></td>
                 </tr>
@@ -2355,10 +2355,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Updated verification script for Explorer Path Traversal fix.</td>
                     <td><code>php scripts/verify_explorer_fix_updated.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="explorer Markdown">
                     <td><a href="verify_explorer_fix_web.php" target="_blank" rel="nofollow noreferrer">verify_explorer_fix_web.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">explorer</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="markdown">Markdown</span></span></td>
                     <td>Web-friendly verification for Explorer Path Traversal fix.</td>
                     <td>Open <code>verify_explorer_fix_web.php</code> in browser.</td>
                 </tr>

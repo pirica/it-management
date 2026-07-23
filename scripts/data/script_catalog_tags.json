@@ -4,7 +4,9 @@
     },
     "api.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Info",
+            "Markdown"
         ],
         "tables": [
             "access_levels",
@@ -20,7 +22,6 @@
             "company_module_access",
             "cost_centers",
             "departments",
-            "emails",
             "employees",
             "employee_companies",
             "employee_positions",
@@ -37,7 +38,6 @@
             "gl_accounts",
             "ip_addresses",
             "ip_subnets",
-            "knowledge_base",
             "license_types",
             "modules_registry",
             "monthly_budgets",
@@ -56,7 +56,8 @@
     },
     "pitfalls.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Markdown"
         ],
         "tables": [
             "employee_sidebar_preferences",
@@ -88,21 +89,21 @@
     },
     "crud_tables.php": {
         "tags": [
-            "Codebase"
+            "Info"
         ],
         "tables": [],
         "override": false
     },
     "crud_titles.php": {
         "tags": [
-            "Codebase"
+            "Info"
         ],
         "tables": [],
         "override": false
     },
     "crud_actions.php": {
         "tags": [
-            "Codebase"
+            "Info"
         ],
         "tables": [],
         "override": false
@@ -150,7 +151,8 @@
     },
     "extract_by_fields.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Info"
         ],
         "tables": [
             "access_levels",
@@ -289,7 +291,7 @@
     },
     "health.php": {
         "tags": [
-            "Codebase"
+            "Markdown"
         ],
         "tables": [],
         "override": false
@@ -419,14 +421,15 @@
     },
     "run_tests.php": {
         "tags": [
-            "Codebase"
+            "Markdown"
         ],
         "tables": [],
         "override": false
     },
     "identify_modules.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Info"
         ],
         "tables": [
             "access_levels",
@@ -523,9 +526,100 @@
     },
     "generate_tests.php": {
         "tags": [
-            "Codebase"
+            "Mixed",
+            "Info"
         ],
-        "tables": [],
+        "tables": [
+            "access_levels",
+            "annual_budgets",
+            "approvals",
+            "approvals_stage",
+            "approvers",
+            "approver_type",
+            "assignment_types",
+            "attempts",
+            "audit_logs",
+            "backup_tape_log",
+            "budget_categories",
+            "cable_colors",
+            "catalogs",
+            "companies",
+            "cost_centers",
+            "departments",
+            "employees",
+            "employee_assignment_history",
+            "employee_onboarding_requests",
+            "employee_positions",
+            "employee_statuses",
+            "employee_system_access",
+            "equipment",
+            "equipment_environment",
+            "equipment_fiber",
+            "equipment_fiber_count",
+            "equipment_fiber_patch",
+            "equipment_fiber_rack",
+            "equipment_poe",
+            "equipment_rj45",
+            "equipment_statuses",
+            "equipment_types",
+            "events",
+            "event_categories",
+            "expenses",
+            "explorer",
+            "floor_designer",
+            "floor_designer_points",
+            "floor_plans",
+            "forecast_revisions",
+            "forecast_revisions_status",
+            "gl_accounts",
+            "idfs",
+            "idf_device_type",
+            "idf_links",
+            "idf_ports",
+            "idf_positions",
+            "inventory_categories",
+            "inventory_items",
+            "ip_addresses",
+            "ip_subnets",
+            "it_locations",
+            "location_types",
+            "manufacturers",
+            "monthly_budgets",
+            "ops_report",
+            "patches_updates",
+            "patches_updates_level",
+            "patches_updates_status",
+            "printer_device_types",
+            "racks",
+            "rack_planner",
+            "rack_statuses",
+            "registration_invitations",
+            "rj45_speed",
+            "role_assignment_rights",
+            "role_hierarchy",
+            "role_module_permissions",
+            "suppliers",
+            "supplier_statuses",
+            "switch_ports",
+            "switch_port_numbering_layout",
+            "switch_port_types",
+            "switch_status",
+            "system_access",
+            "tickets",
+            "ticket_categories",
+            "ticket_priorities",
+            "ticket_statuses",
+            "ui_configuration",
+            "visitors_access_log",
+            "vlans",
+            "warranty_types",
+            "workstation_device_types",
+            "workstation_modes",
+            "workstation_office",
+            "workstation_os_types",
+            "workstation_os_versions",
+            "workstation_ram"
+        ],
         "override": false
     },
     "test_import_user_samples.php": {
@@ -564,19 +658,17 @@
     },
     "verify_api_coverage.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Info",
+            "Markdown"
         ],
         "tables": [
             "backup_tape_log",
             "bookmarks",
             "bookmark_folders",
-            "catalogs",
-            "companies",
             "company_module_access",
-            "emails",
             "employees",
             "floor_plan_item_tags",
-            "knowledge_base",
             "license_types",
             "modules_registry",
             "tickets",
@@ -623,7 +715,7 @@
     },
     "count_db_tables.php": {
         "tags": [
-            "Codebase"
+            "Info"
         ],
         "tables": [],
         "override": false
@@ -666,7 +758,8 @@
     },
     "employee_fields_missing.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Info"
         ],
         "tables": [
             "backup_tape_log",
@@ -685,7 +778,9 @@
     },
     "fields_missing.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Info",
+            "Markdown"
         ],
         "tables": [
             "backup_tape_log",
@@ -703,7 +798,8 @@
     },
     "fields_missing_reviewed.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Info"
         ],
         "tables": [
             "backup_tape_log",
@@ -721,7 +817,8 @@
     },
     "ui_configuration_reviewed.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Info"
         ],
         "tables": [
             "alerts",
@@ -1211,7 +1308,8 @@
     },
     "verify_module_page_chrome.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Info"
         ],
         "tables": [
             "backup_tape_log",
@@ -1229,7 +1327,8 @@
     },
     "verify_favicon_root_cause.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Info"
         ],
         "tables": [
             "backup_tape_log",
@@ -1347,25 +1446,22 @@
     },
     "run_tier2_checks.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Markdown"
         ],
         "tables": [
             "access_levels",
-            "catalogs",
-            "companies",
-            "emails",
             "employees",
             "employee_companies",
             "employee_roles",
-            "employee_statuses",
-            "knowledge_base",
-            "modules_registry"
+            "employee_statuses"
         ],
         "override": false
     },
     "perform_audit.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Info"
         ],
         "tables": [
             "bookmark_folders",
@@ -1443,7 +1539,8 @@
     },
     "apply_script_catalog_tags.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Info"
         ],
         "tables": [
             "access_levels",
@@ -1459,6 +1556,7 @@
             "backup_tape_log",
             "bookmarks",
             "bookmark_folders",
+            "budget_categories",
             "cable_colors",
             "catalogs",
             "companies",
@@ -1468,9 +1566,12 @@
             "departments",
             "emails",
             "email_alert_rules",
+            "email_smtp_configurations",
             "employees",
             "employee_assignment_history",
             "employee_companies",
+            "employee_departments",
+            "employee_onboarding_requests",
             "employee_positions",
             "employee_roles",
             "employee_sidebar_preferences",
@@ -1478,16 +1579,25 @@
             "employee_system_access",
             "employee_type",
             "equipment",
+            "equipment_environment",
+            "equipment_fiber",
+            "equipment_fiber_count",
+            "equipment_fiber_patch",
+            "equipment_fiber_rack",
+            "equipment_poe",
             "equipment_rj45",
             "equipment_statuses",
             "equipment_types",
             "events",
+            "event_categories",
             "expenses",
             "explorer",
             "floor_designer",
             "floor_designer_points",
             "floor_plans",
             "floor_plan_folders",
+            "floor_plan_item_tags",
+            "floor_plan_tags",
             "forecast_revisions",
             "forecast_revisions_status",
             "gl_accounts",
@@ -1496,36 +1606,53 @@
             "idf_links",
             "idf_ports",
             "idf_positions",
+            "inventory_categories",
+            "inventory_items",
             "ip_addresses",
             "ip_subnets",
             "it_locations",
+            "it_settings",
             "knowledge_base",
             "license_management",
             "license_types",
+            "location_types",
             "manufacturers",
             "modules_registry",
             "monthly_budgets",
             "notes",
+            "note_labels",
             "ops_report",
+            "ops_report_butler",
+            "ops_report_courtesy_call",
+            "ops_report_fb_outlet",
             "ops_report_guest_experience",
             "ops_report_hotel_figure",
+            "ops_report_night_shift",
+            "ops_report_walk_round",
             "password_entries",
             "password_folders",
+            "patches_updates",
+            "patches_updates_level",
+            "patches_updates_status",
+            "printer_device_types",
             "private_contacts",
             "racks",
             "rack_planner",
             "rack_statuses",
             "registration_invitations",
             "request_password",
+            "rj45_speed",
             "role_assignment_rights",
             "role_hierarchy",
             "role_module_permissions",
             "share_sessions",
             "suppliers",
+            "supplier_statuses",
             "switch_ports",
             "switch_port_numbering_layout",
             "switch_port_types",
             "switch_status",
+            "system_access",
             "system_status",
             "tickets",
             "ticket_categories",
@@ -1535,7 +1662,13 @@
             "todo_categories",
             "ui_configuration",
             "visitors_access_log",
+            "vlans",
+            "warranty_types",
+            "workstation_device_types",
             "workstation_modes",
+            "workstation_office",
+            "workstation_os_types",
+            "workstation_os_versions",
             "workstation_ram"
         ],
         "override": false
@@ -1581,72 +1714,9 @@
     },
     "apply_pagination_emoji_labels.php": {
         "tags": [
-            "Mixed"
+            "Markdown"
         ],
-        "tables": [
-            "alerts",
-            "attempts",
-            "audit_logs",
-            "backup_tape_log",
-            "bookmarks",
-            "bookmark_folders",
-            "budget_categories",
-            "cable_colors",
-            "catalogs",
-            "companies",
-            "company_module_access",
-            "company_module_share",
-            "cost_centers",
-            "departments",
-            "emails",
-            "email_alert_rules",
-            "email_smtp_configurations",
-            "employees",
-            "employee_companies",
-            "employee_departments",
-            "employee_positions",
-            "employee_roles",
-            "employee_sidebar_preferences",
-            "employee_type",
-            "equipment",
-            "equipment_types",
-            "events",
-            "expenses",
-            "explorer",
-            "floor_plans",
-            "floor_plan_folders",
-            "floor_plan_item_tags",
-            "gl_accounts",
-            "idfs",
-            "idf_device_type",
-            "idf_positions",
-            "ip_addresses",
-            "ip_subnets",
-            "knowledge_base",
-            "license_management",
-            "license_types",
-            "manufacturers",
-            "modules_registry",
-            "notes",
-            "note_labels",
-            "ops_report",
-            "ops_report_fb_outlet",
-            "password_entries",
-            "patches_updates",
-            "private_contacts",
-            "rack_planner",
-            "request_password",
-            "role_hierarchy",
-            "role_module_permissions",
-            "share_sessions",
-            "switch_ports",
-            "system_status",
-            "tickets",
-            "todo",
-            "ui_configuration",
-            "visitors_access_log",
-            "workstation_ram"
-        ],
+        "tables": [],
         "override": false
     },
     "apply_pagination_first_last.php": {
@@ -1732,7 +1802,8 @@
     },
     "check_script_catalog_tags.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Info"
         ],
         "tables": [
             "access_levels",
@@ -1748,6 +1819,7 @@
             "backup_tape_log",
             "bookmarks",
             "bookmark_folders",
+            "budget_categories",
             "cable_colors",
             "catalogs",
             "companies",
@@ -1757,9 +1829,12 @@
             "departments",
             "emails",
             "email_alert_rules",
+            "email_smtp_configurations",
             "employees",
             "employee_assignment_history",
             "employee_companies",
+            "employee_departments",
+            "employee_onboarding_requests",
             "employee_positions",
             "employee_roles",
             "employee_sidebar_preferences",
@@ -1767,16 +1842,25 @@
             "employee_system_access",
             "employee_type",
             "equipment",
+            "equipment_environment",
+            "equipment_fiber",
+            "equipment_fiber_count",
+            "equipment_fiber_patch",
+            "equipment_fiber_rack",
+            "equipment_poe",
             "equipment_rj45",
             "equipment_statuses",
             "equipment_types",
             "events",
+            "event_categories",
             "expenses",
             "explorer",
             "floor_designer",
             "floor_designer_points",
             "floor_plans",
             "floor_plan_folders",
+            "floor_plan_item_tags",
+            "floor_plan_tags",
             "forecast_revisions",
             "forecast_revisions_status",
             "gl_accounts",
@@ -1785,36 +1869,53 @@
             "idf_links",
             "idf_ports",
             "idf_positions",
+            "inventory_categories",
+            "inventory_items",
             "ip_addresses",
             "ip_subnets",
             "it_locations",
+            "it_settings",
             "knowledge_base",
             "license_management",
             "license_types",
+            "location_types",
             "manufacturers",
             "modules_registry",
             "monthly_budgets",
             "notes",
+            "note_labels",
             "ops_report",
+            "ops_report_butler",
+            "ops_report_courtesy_call",
+            "ops_report_fb_outlet",
             "ops_report_guest_experience",
             "ops_report_hotel_figure",
+            "ops_report_night_shift",
+            "ops_report_walk_round",
             "password_entries",
             "password_folders",
+            "patches_updates",
+            "patches_updates_level",
+            "patches_updates_status",
+            "printer_device_types",
             "private_contacts",
             "racks",
             "rack_planner",
             "rack_statuses",
             "registration_invitations",
             "request_password",
+            "rj45_speed",
             "role_assignment_rights",
             "role_hierarchy",
             "role_module_permissions",
             "share_sessions",
             "suppliers",
+            "supplier_statuses",
             "switch_ports",
             "switch_port_numbering_layout",
             "switch_port_types",
             "switch_status",
+            "system_access",
             "system_status",
             "tickets",
             "ticket_categories",
@@ -1824,7 +1925,13 @@
             "todo_categories",
             "ui_configuration",
             "visitors_access_log",
+            "vlans",
+            "warranty_types",
+            "workstation_device_types",
             "workstation_modes",
+            "workstation_office",
+            "workstation_os_types",
+            "workstation_os_versions",
             "workstation_ram"
         ],
         "override": false
@@ -1863,7 +1970,8 @@
     },
     "check_multi_tenant_leaks.php": {
         "tags": [
-            "idf_ports"
+            "idf_ports",
+            "Info"
         ],
         "tables": [
             "idf_ports"
@@ -1872,7 +1980,8 @@
     },
     "check_index_table_compliance.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Info"
         ],
         "tables": [
             "access_levels",
@@ -1939,7 +2048,8 @@
     },
     "apply_bulk_actions_records_per_page_gate.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Info"
         ],
         "tables": [
             "attempts",
@@ -2074,7 +2184,8 @@
     },
     "check_ui_configuration_coverage.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Info"
         ],
         "tables": [
             "alerts",
@@ -2253,7 +2364,8 @@
     },
     "benchmark_sidebar_module_access.php": {
         "tags": [
-            "Mixed"
+            "Mixed",
+            "Markdown"
         ],
         "tables": [
             "company_module_access",
@@ -3099,72 +3211,9 @@
     },
     "verify_metadata_column_cache.php": {
         "tags": [
-            "Mixed"
+            "Markdown"
         ],
-        "tables": [
-            "alerts",
-            "attempts",
-            "audit_logs",
-            "backup_tape_log",
-            "bookmarks",
-            "bookmark_folders",
-            "budget_categories",
-            "cable_colors",
-            "catalogs",
-            "companies",
-            "company_module_access",
-            "company_module_share",
-            "cost_centers",
-            "departments",
-            "emails",
-            "email_alert_rules",
-            "email_smtp_configurations",
-            "employees",
-            "employee_companies",
-            "employee_departments",
-            "employee_positions",
-            "employee_roles",
-            "employee_sidebar_preferences",
-            "employee_type",
-            "equipment",
-            "equipment_types",
-            "events",
-            "expenses",
-            "explorer",
-            "floor_plans",
-            "floor_plan_folders",
-            "floor_plan_item_tags",
-            "gl_accounts",
-            "idfs",
-            "idf_device_type",
-            "idf_positions",
-            "ip_addresses",
-            "ip_subnets",
-            "knowledge_base",
-            "license_management",
-            "license_types",
-            "manufacturers",
-            "modules_registry",
-            "notes",
-            "note_labels",
-            "ops_report",
-            "ops_report_fb_outlet",
-            "password_entries",
-            "patches_updates",
-            "private_contacts",
-            "rack_planner",
-            "request_password",
-            "role_hierarchy",
-            "role_module_permissions",
-            "share_sessions",
-            "switch_ports",
-            "system_status",
-            "tickets",
-            "todo",
-            "ui_configuration",
-            "visitors_access_log",
-            "workstation_ram"
-        ],
+        "tables": [],
         "override": false
     },
     "verify_update_port_zero_row.php": {
@@ -3276,10 +3325,13 @@
     },
     "patch_crud_share_agent_notes.php": {
         "tags": [
-            "notes"
+            "Mixed",
+            "Markdown"
         ],
         "tables": [
-            "notes"
+            "employee_sidebar_preferences",
+            "notes",
+            "ui_configuration"
         ],
         "override": false
     },
@@ -3513,71 +3565,11 @@
     },
     "verify_explorer_fix_web.php": {
         "tags": [
-            "Mixed"
+            "explorer",
+            "Markdown"
         ],
         "tables": [
-            "alerts",
-            "attempts",
-            "audit_logs",
-            "backup_tape_log",
-            "bookmarks",
-            "bookmark_folders",
-            "budget_categories",
-            "cable_colors",
-            "catalogs",
-            "companies",
-            "company_module_access",
-            "company_module_share",
-            "cost_centers",
-            "departments",
-            "emails",
-            "email_alert_rules",
-            "email_smtp_configurations",
-            "employees",
-            "employee_companies",
-            "employee_departments",
-            "employee_positions",
-            "employee_roles",
-            "employee_sidebar_preferences",
-            "employee_type",
-            "equipment",
-            "equipment_types",
-            "events",
-            "expenses",
-            "explorer",
-            "floor_plans",
-            "floor_plan_folders",
-            "floor_plan_item_tags",
-            "gl_accounts",
-            "idfs",
-            "idf_device_type",
-            "idf_positions",
-            "ip_addresses",
-            "ip_subnets",
-            "knowledge_base",
-            "license_management",
-            "license_types",
-            "manufacturers",
-            "modules_registry",
-            "notes",
-            "note_labels",
-            "ops_report",
-            "ops_report_fb_outlet",
-            "password_entries",
-            "patches_updates",
-            "private_contacts",
-            "rack_planner",
-            "request_password",
-            "role_hierarchy",
-            "role_module_permissions",
-            "share_sessions",
-            "switch_ports",
-            "system_status",
-            "tickets",
-            "todo",
-            "ui_configuration",
-            "visitors_access_log",
-            "workstation_ram"
+            "explorer"
         ],
         "override": false
     },

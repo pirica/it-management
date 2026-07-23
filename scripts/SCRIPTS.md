@@ -62,8 +62,8 @@ Each catalog card shows **table tags** derived from static analysis of the linke
 | 0 (no schema table references, bash, or external link) | `Codebase` |
 | `.py` catalog entry (Playwright / screenshot utilities) | `Python` |
 | `.sh` catalog entry (bash / CI wrappers) | `Server` |
-| `.json` / `.txt` catalog entry (manifests, allowlists, logs) | `Info` |
-| `.md` catalog entry (standards / matrix docs) | `Markdown` |
+| `.json` / `.txt` catalog entry, or any catalog row referencing `scripts/data/*` / `scripts/*` `.json` / `.txt` | `Info` (plus table tags when found) |
+| `.md` catalog entry, or any catalog row referencing `scripts/data/*` / `scripts/*` `.md` | `Markdown` (plus table tags when found) |
 | 1 | table name (e.g. `employees`) |
 | 2 | both table names |
 | 3+ | `Mixed` |
