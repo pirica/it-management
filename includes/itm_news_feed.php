@@ -245,10 +245,30 @@ if (!function_exists('news_fetch_http_body')) {
     }
 }
 
+if (!function_exists('news_resolve_nvd_api_key')) {
+    function news_resolve_nvd_api_key()
+    {
+        foreach (['NVD_API_KEY', 'ITM_NVD_API_KEY'] as $envName) {
+            $value = getenv($envName);
+            if ($value !== false && trim((string)$value) !== '') {
+                return trim((string)$value);
+            }
+        }
+
+        return '';
+    }
+}
+
 if (!function_exists('news_fetch_nvd_from_api')) {
     function news_fetch_nvd_from_api($url, $limit)
     {
-        $body = news_fetch_http_body($url . '?resultsPerPage=' . (int)$limit . '&startIndex=0', ['Accept: application/json']);
+        $headers = ['Accept: application/json'];
+        $apiKey = news_resolve_nvd_api_key();
+        if ($apiKey !== '') {
+            $headers[] = 'apiKey: ' . $apiKey;
+        }
+
+        $body = news_fetch_http_body($url . '?resultsPerPage=' . (int)$limit . '&startIndex=0', $headers);
         $data = json_decode($body, true);
         if (!isset($data['vulnerabilities']) || !is_array($data['vulnerabilities'])) {
             throw new Exception('Invalid response format from NVD API');
