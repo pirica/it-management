@@ -26,6 +26,7 @@ Registry row: **`modules_registry`** slug `news` (sidebar + company module acces
   - `ms_msrc_security` — `https://api.msrc.microsoft.com/update-guide/rss` (CVEs, advisories, Patch Tuesday)
   - `ms_win10_updates` — Microsoft Support Atom feed for Windows 10 KB/monthly updates
   - `ms_win11_updates` — Microsoft Support Atom feed for Windows 11 KB/monthly updates
+- **NVD API key:** optional `NVD_API_KEY` or `ITM_NVD_API_KEY` in project root `.env` (loaded by `config/config.php`); sent as `apiKey` request header for higher NVD rate limits
 - Feed items are sorted **newest first** by `published` (fallback `last_modified`) in `news_sort_items_newest_first()` before cache save and UI load
 - Cache TTL: **24 hours** per source (`NEWS_CACHE_DURATION`)
 - Per-source lock files: `modules/news/cache/{source_id}.lock` (5-minute stale timeout)
@@ -78,6 +79,7 @@ No database writes — no audit triggers or `audit_logs` rows.
 - Windows Laragon: `news_resolve_php_binary()` falls back to full PHP 7.4.33 path when `PHP_BINARY` is empty
 - Use `news_ensure_cache_dir()` for cache directory (not bare `mkdir()`)
 - Module slug is **`news`** (not `cve`); old `modules/cve/` path is retired
+- NVD fetches without `NVD_API_KEY` still work but hit stricter public rate limits
 
 ## 11. Examples of Safe Code Patterns
 
