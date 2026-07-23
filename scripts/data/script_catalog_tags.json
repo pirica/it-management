@@ -409,14 +409,14 @@
     },
     "verify_database_sql_import.sh": {
         "tags": [
-            "Codebase"
+            "Server"
         ],
         "tables": [],
         "override": false
     },
     "import_database_split.sh": {
         "tags": [
-            "Codebase"
+            "Server"
         ],
         "tables": [],
         "override": false
@@ -1018,7 +1018,7 @@
     },
     "smoke_test.sh": {
         "tags": [
-            "Codebase"
+            "Server"
         ],
         "tables": [],
         "override": false

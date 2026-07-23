@@ -61,6 +61,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         .scripts-badge-tag[data-tag-kind="mixed"] { background: #fff1e5; color: #9a6700; border-color: #f0d8b8; }
         .scripts-badge-tag[data-tag-kind="codebase"] { background: #f0f6fc; color: #0550ae; border-color: #c0d8f0; }
         .scripts-badge-tag[data-tag-kind="python"] { background: #fbefff; color: #5a32a3; border-color: #d8b4fe; }
+        .scripts-badge-tag[data-tag-kind="server"] { background: #fff0f0; color: #9b1c1c; border-color: #f0c4c4; }
         .scripts-tag-filter-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; max-height: 120px; overflow-y: auto; }
         .scripts-tag-chip { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border, #d0d7de); background: var(--bg-primary, #fff); color: var(--text-primary, #24292f); font-size: 0.78rem; cursor: pointer; line-height: 1.4; }
         .scripts-tag-chip:hover { border-color: #0969da; }
@@ -575,17 +576,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Compares <code>CREATE TABLE</code> names in <code>db/</code> split bundle with <code>information_schema</code> for <code>itmanagement</code>. Use after PowerShell/MySQL imports that report success but stop early (e.g. 73 tables instead of 126). Lists missing/extra tables; exit <code>1</code> on mismatch.</td>
                     <td><code>php scripts/verify_database_schema.php</code> — run from repository root after <code>db/</code> split bundle import; check <code>mysql-import.err</code> for the first <code>ERROR</code> line if this fails.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Server">
                     <td>verify_database_sql_import.sh</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="server">Server</span></span></td>
                     <td>Imports the full <code>db/</code> split bundle against a live MySQL 8.0 server and asserts the live <code>itmanagement</code> table count matches <code>CREATE TABLE</code> entries in <code>db/01_schema.sql</code> (currently <strong>126</strong>). Catches INSERT/SELECT column-count mismatches (for example cross-company <code>equipment</code> seed at <code>department_id</code>). Used by CI job <strong>database-import</strong> in <code>.github/workflows/smoke.yml</code>. Split alternative: <code>import_database_split.sh</code>.</td>
                     <td><code>bash scripts/verify_database_sql_import.sh</code> — requires MySQL on <code>127.0.0.1</code>, user <code>root</code>, password <code>itmanagement</code>. Env: <code>MYSQL_HOST</code>, <code>MYSQL_USER</code>, <code>MYSQL_PASSWORD</code>, optional <code>EXPECTED_TABLE_COUNT</code> override.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="Server">
                     <td>import_database_split.sh</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="server">Server</span></span></td>
                     <td>Imports <code>db/</code> SQL in one MySQL session: <code>01_schema.sql</code> → <code>02_data.sql</code> → <code>03_triggers.sql</code> (preserves <code>@replicate_source_company_id</code>; loads triggers after seed data). Runs <code>verify_database_schema.php</code> on success.</td>
                     <td><code>bash scripts/import_database_split.sh</code> — same MySQL env vars as <code>verify_database_sql_import.sh</code>. See <code>db/AGENT_NOTES.md</code> for import order.</td>
                 </tr>
@@ -1116,10 +1117,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
             </thead>
             <tbody>
-                <tr data-tags="Codebase">
+                <tr data-tags="Server">
                     <td>smoke_test.sh</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli-only">CLI-only</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="server">Server</span></span></td>
                     <td>CI/local smoke runner (<code>.github/workflows/smoke.yml</code>): (1) <code>php -l</code> all PHP, (2) CSRF coverage, (3) SQLi coverage, (4) FK label search static audit. Other Tier 2 <code>check_*</code> scripts: use <code>run_tier2_checks.php</code>.</td>
                     <td><code>bash scripts/smoke_test.sh</code> from repository root. Optional: <code>PHP_BIN=/path/to/php</code> on Windows Laragon.</td>
                 </tr>
@@ -2622,6 +2623,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
             if (b === 'Codebase') return 1;
             if (a === 'Python') return -1;
             if (b === 'Python') return 1;
+            if (a === 'Server') return -1;
+            if (b === 'Server') return 1;
             if (a === 'Mixed') return -1;
             if (b === 'Mixed') return 1;
             return a.localeCompare(b);

@@ -410,6 +410,10 @@ if (!function_exists('itm_script_catalog_tags_for_slug')) {
             return ['tables' => [], 'tags' => ['Python'], 'slug' => $slug];
         }
 
+        if (preg_match('/\.sh$/i', $slug)) {
+            return ['tables' => [], 'tags' => ['Server'], 'slug' => $slug];
+        }
+
         if (!preg_match('/\.php$/i', $slug)) {
             return ['tables' => [], 'tags' => ['Codebase'], 'slug' => $slug];
         }
@@ -464,6 +468,8 @@ if (!function_exists('itm_script_catalog_tags_render_cell')) {
                 $kind = 'codebase';
             } elseif ($tag === 'Python') {
                 $kind = 'python';
+            } elseif ($tag === 'Server') {
+                $kind = 'server';
             }
             $parts[] = '<span class="scripts-badge scripts-badge-tag" data-tag-kind="' . $kind . '">' . $escaped . '</span>';
         }

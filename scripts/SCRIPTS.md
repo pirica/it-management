@@ -61,13 +61,14 @@ Each catalog card shows **table tags** derived from static analysis of the linke
 |---|---|
 | 0 (no schema table references, bash/markdown, or external link) | `Codebase` |
 | `.py` catalog entry (Playwright / screenshot utilities) | `Python` |
+| `.sh` catalog entry (bash / CI wrappers) | `Server` |
 | 1 | table name (e.g. `employees`) |
 | 2 | both table names |
 | 3+ | `Mixed` |
 
 **Scan scope (most accurate within `scripts/`):** entry file + transitive `require`/`include` under `scripts/` (including `scripts/lib/`) + one-level literal `scripts/*.php` spawn targets. Does not scan `config.php`, `includes/`, or `modules/`.
 
-**UI:** tag pills on each card (`scripts-badge-tag`), `data-tags` on `<tr>`, chip bar filter (`All` / `Codebase` / `Python` / `Mixed` / table names) combined with the text search box.
+**UI:** tag pills on each card (`scripts-badge-tag`), `data-tags` on `<tr>`, chip bar filter (`All` / `Codebase` / `Python` / `Server` / `Mixed` / table names) combined with the text search box.
 
 **Maintenance:**
 
