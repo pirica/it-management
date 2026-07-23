@@ -248,6 +248,109 @@ if (!function_exists('itm_script_catalog_tags_extract_tables_from_source')) {
     }
 }
 
+if (!function_exists('itm_script_catalog_tags_resolve_scripts_data_path')) {
+    /**
+     * Resolve a data/*.json|txt|md or scripts/* reference to a file under scripts/data/ or scripts/.
+     */
+    function itm_script_catalog_tags_resolve_scripts_data_path(string $relativePath, string $scriptsRoot): ?string
+    {
+        $relativePath = str_replace('\\', '/', trim($relativePath));
+        $relativePath = ltrim($relativePath, '/');
+        if ($relativePath === '') {
+            return null;
+        }
+
+        $scriptsRootReal = realpath($scriptsRoot);
+        if ($scriptsRootReal === false) {
+            return null;
+        }
+
+        $candidates = [];
+        if (stripos($relativePath, 'scripts/data/') === 0) {
+            $candidates[] = $scriptsRootReal . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR
+                . str_replace('/', DIRECTORY_SEPARATOR, substr($relativePath, strlen('scripts/data/')));
+        } elseif (stripos($relativePath, 'data/') === 0) {
+            $candidates[] = $scriptsRootReal . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+        } elseif (preg_match('#^(?:scripts/)?([a-zA-Z0-9_.-]+\.(?:json|txt|md))$#i', $relativePath, $basenameMatch)) {
+            $basename = (string)$basenameMatch[1];
+            $candidates[] = $scriptsRootReal . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . $basename;
+            $candidates[] = $scriptsRootReal . DIRECTORY_SEPARATOR . $basename;
+        } else {
+            return null;
+        }
+
+        $scriptsNorm = str_replace('\\', '/', $scriptsRootReal);
+        foreach ($candidates as $candidate) {
+            $real = realpath($candidate);
+            if ($real === false || !is_file($real)) {
+                continue;
+            }
+            $normalized = str_replace('\\', '/', $real);
+            if (strpos($normalized, $scriptsNorm) === 0) {
+                return $real;
+            }
+        }
+
+        return null;
+    }
+}
+
+if (!function_exists('itm_script_catalog_tags_extract_tables_from_plain_text')) {
+    /**
+     * @param array<string, true> $schemaTables
+     * @return array<string, string>
+     */
+    function itm_script_catalog_tags_extract_tables_from_plain_text(string $text, array $schemaTables): array
+    {
+        $tables = [];
+        $tableNames = array_keys($schemaTables);
+        usort($tableNames, static function ($a, $b) {
+            return strlen($b) <=> strlen($a);
+        });
+
+        foreach ($tableNames as $tableName) {
+            if (preg_match('/\b' . preg_quote($tableName, '/') . '\b/', $text)) {
+                $tables[$tableName] = $tableName;
+            }
+        }
+
+        return $tables;
+    }
+}
+
+if (!function_exists('itm_script_catalog_tags_info_spawn_targets')) {
+    /**
+     * Literal .json / .txt / .md paths referenced in PHP source under scripts/data/ or scripts/.
+     *
+     * @return array<int, string> absolute paths
+     */
+    function itm_script_catalog_tags_info_spawn_targets(string $entrySource, string $scriptsRoot): array
+    {
+        $targets = [];
+        $patterns = [
+            '#(?:scripts[/\\\\]+)?data[/\\\\][a-zA-Z0-9_.-]+\.(?:json|txt|md)#i',
+            '#(?:scripts[/\\\\]+)[a-zA-Z0-9_.-]+\.(?:json|txt|md)#i',
+            '#[\'"]([a-zA-Z0-9_.-]+\.(?:json|txt|md))[\'"]#i',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (!preg_match_all($pattern, $entrySource, $matches)) {
+                continue;
+            }
+            $relativePaths = isset($matches[1]) && $matches[1] !== [] ? $matches[1] : $matches[0];
+            foreach ($relativePaths as $relativePath) {
+                $relativePath = str_replace('\\', '/', (string)$relativePath);
+                $resolved = itm_script_catalog_tags_resolve_scripts_data_path($relativePath, $scriptsRoot);
+                if ($resolved !== null) {
+                    $targets[$resolved] = $resolved;
+                }
+            }
+        }
+
+        return array_values($targets);
+    }
+}
+
 if (!function_exists('itm_script_catalog_tags_spawn_targets')) {
     /**
      * @return array<int, string> absolute paths under scripts/
@@ -399,6 +502,29 @@ if (!function_exists('itm_script_catalog_tags_scan_script')) {
             }
         }
 
+        $infoSources = [$entrySource];
+        foreach ($bundle as $file) {
+            $bundleContent = file_get_contents($file);
+            if (is_string($bundleContent)) {
+                $infoSources[] = $bundleContent;
+            }
+        }
+        $infoPaths = [];
+        foreach ($infoSources as $infoSource) {
+            foreach (itm_script_catalog_tags_info_spawn_targets($infoSource, $scriptsRoot) as $infoPath) {
+                $infoPaths[$infoPath] = $infoPath;
+            }
+        }
+        foreach ($infoPaths as $infoPath) {
+            $infoContent = file_get_contents($infoPath);
+            if (!is_string($infoContent)) {
+                continue;
+            }
+            foreach (itm_script_catalog_tags_extract_tables_from_plain_text($infoContent, $schemaTables) as $tableName) {
+                $tables[$tableName] = $tableName;
+            }
+        }
+
         foreach (itm_script_catalog_tags_tables_from_filename(basename($entryReal), $schemaTables) as $tableName) {
             $tables[$tableName] = $tableName;
         }
@@ -472,6 +598,14 @@ if (!function_exists('itm_script_catalog_tags_for_slug')) {
             return ['tables' => [], 'tags' => ['Server'], 'slug' => $slug];
         }
 
+        if (preg_match('/\.(?:json|txt)$/i', $slug)) {
+            return ['tables' => [], 'tags' => ['Info'], 'slug' => $slug];
+        }
+
+        if (preg_match('/\.md$/i', $slug)) {
+            return ['tables' => [], 'tags' => ['Markdown'], 'slug' => $slug];
+        }
+
         if (!preg_match('/\.php$/i', $slug)) {
             return ['tables' => [], 'tags' => ['Codebase'], 'slug' => $slug];
         }
@@ -528,6 +662,10 @@ if (!function_exists('itm_script_catalog_tags_render_cell')) {
                 $kind = 'python';
             } elseif ($tag === 'Server') {
                 $kind = 'server';
+            } elseif ($tag === 'Info') {
+                $kind = 'info';
+            } elseif ($tag === 'Markdown') {
+                $kind = 'markdown';
             }
             $parts[] = '<span class="scripts-badge scripts-badge-tag" data-tag-kind="' . $kind . '">' . $escaped . '</span>';
         }
