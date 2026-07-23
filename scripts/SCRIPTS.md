@@ -53,6 +53,32 @@ All scripts intended for administrative or developer use must be registered in `
 - Provide a clear, concise usage description.
 - These scripts must support execution via both Browser and CLI and include the standard Navigation Menu (relative back link to `scripts/scripts.php`) using `itm_script_browser_nav_echo()` when viewed in a browser.
 
+### Catalog table tags (scripts.php search)
+
+Each catalog card shows **table tags** derived from static analysis of the linked script:
+
+| Distinct schema tables via `$conn` | Tag(s) |
+|---|---|
+| 0 (no schema table references, or non-PHP / external link) | `Codebase` |
+| 1 | table name (e.g. `employees`) |
+| 2 | both table names |
+| 3+ | `Mixed` |
+
+**Scan scope (most accurate within `scripts/`):** entry file + transitive `require`/`include` under `scripts/` (including `scripts/lib/`) + one-level literal `scripts/*.php` spawn targets. Does not scan `config.php`, `includes/`, or `modules/`.
+
+**UI:** tag pills on each card (`scripts-badge-tag`), `data-tags` on `<tr>`, chip bar filter (`All` / `Codebase` / `Mixed` / table names) combined with the text search box.
+
+**Maintenance:**
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/apply_script_catalog_tags.php` | Dry-run; `--apply` writes `scripts/data/script_catalog_tags.json` and patches catalog markup |
+| `php scripts/check_script_catalog_tags.php` | Exit `1` when tags drift from computed scan |
+
+**Overrides:** `scripts/data/script_catalog_tags.json` — set `"override": true` on a slug when static analysis cannot see dynamic table names.
+
+Re-run **apply** after adding catalog rows or changing script SQL; run **check** in pre-merge verification when `scripts/scripts.php` or `scripts/*.php` SQL changes.
+
 
 ## 2. Cross-Environment Output (Newline Standard)
 To ensure compatibility between CLI and Browser execution, use a conditional newline string. Hardcoded `\n` or `<br>` are discouraged for generic output.
@@ -1137,6 +1163,13 @@ php scripts/check_script_browser_nav_duplicate.php
 ```
 
 Exit `0` when no file stacks `itm_script_browser_nav_echo()` / `itm_script_browser_nav_html()` on top of `itm_script_output_begin()` in the same browser path.
+
+**Catalog table tags:** after changing `scripts/scripts.php` catalog rows or script SQL that affects table usage, run:
+
+```bash
+php scripts/apply_script_catalog_tags.php --apply
+php scripts/check_script_catalog_tags.php
+```
 
 **UI action emoji (NO MIXED):** after any change to buttons, links, form actions, modals, or page headings (`<h1>`–`<h3>`), run:
 
