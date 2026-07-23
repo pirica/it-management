@@ -271,6 +271,13 @@ if (!function_exists('itm_script_catalog_tags_resolve_scripts_data_path')) {
                 . str_replace('/', DIRECTORY_SEPARATOR, substr($relativePath, strlen('scripts/data/')));
         } elseif (stripos($relativePath, 'data/') === 0) {
             $candidates[] = $scriptsRootReal . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+        } elseif (preg_match('#^/data/([a-zA-Z0-9_.-]+\.(?:json|txt|md))$#i', '/' . $relativePath, $dataMatch)) {
+            $candidates[] = $scriptsRootReal . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR
+                . str_replace('/', DIRECTORY_SEPARATOR, (string)$dataMatch[1]);
+        } elseif (preg_match('#^/([a-zA-Z0-9_.-]+\.(?:json|txt|md))$#i', '/' . $relativePath, $rootMatch)) {
+            $basename = (string)$rootMatch[1];
+            $candidates[] = $scriptsRootReal . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . $basename;
+            $candidates[] = $scriptsRootReal . DIRECTORY_SEPARATOR . $basename;
         } elseif (preg_match('#^(?:scripts/)?([a-zA-Z0-9_.-]+\.(?:json|txt|md))$#i', $relativePath, $basenameMatch)) {
             $basename = (string)$basenameMatch[1];
             $candidates[] = $scriptsRootReal . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . $basename;
@@ -318,36 +325,130 @@ if (!function_exists('itm_script_catalog_tags_extract_tables_from_plain_text')) 
     }
 }
 
+if (!function_exists('itm_script_catalog_tags_normalize_data_ref')) {
+    function itm_script_catalog_tags_normalize_data_ref(string $token): string
+    {
+        $token = str_replace('\\', '/', trim($token));
+        if (preg_match('#^(?:scripts/)?data/(.+)$#i', $token, $match)) {
+            return 'data/' . $match[1];
+        }
+        if (preg_match('#^/data/(.+)$#i', $token, $match)) {
+            return 'data/' . $match[1];
+        }
+        if (preg_match('#^scripts/(.+)$#i', $token, $match)) {
+            return $match[1];
+        }
+
+        return ltrim($token, '/');
+    }
+}
+
+if (!function_exists('itm_script_catalog_tags_classify_data_refs')) {
+    /**
+     * Detect scripts/data/* and scripts/* .json / .txt / .md references in source or catalog copy.
+     *
+     * @return array{has_info: bool, has_markdown: bool, paths: array<int, string>}
+     */
+    function itm_script_catalog_tags_classify_data_refs(string $source, string $scriptsRoot): array
+    {
+        $hasInfo = false;
+        $hasMarkdown = false;
+        $paths = [];
+        $patterns = [
+            '#((?:scripts[/\\\\]+)?data[/\\\\][a-zA-Z0-9_.-]+\.(?:json|txt|md))#i',
+            '#((?:scripts[/\\\\]+)[a-zA-Z0-9_.-]+\.(?:json|txt|md))#i',
+            '#(/data/[a-zA-Z0-9_.-]+\.(?:json|txt|md))#i',
+            '#[\'"](/[a-zA-Z0-9_.-]+\.(?:json|txt|md))[\'"]#i',
+            '#[\'"]([a-zA-Z0-9_.-]+\.(?:json|txt|md))[\'"]#i',
+            '#\b([a-zA-Z0-9_.-]+\.(?:json|txt|md))\b#i',
+        ];
+
+        $tokens = [];
+        foreach ($patterns as $pattern) {
+            if (!preg_match_all($pattern, $source, $matches)) {
+                continue;
+            }
+            $found = isset($matches[1]) && $matches[1] !== [] ? $matches[1] : $matches[0];
+            foreach ($found as $token) {
+                $tokens[str_replace('\\', '/', (string)$token)] = true;
+            }
+        }
+
+        foreach (array_keys($tokens) as $token) {
+            $normalized = itm_script_catalog_tags_normalize_data_ref($token);
+            $resolved = itm_script_catalog_tags_resolve_scripts_data_path($normalized, $scriptsRoot);
+            $ext = strtolower((string)pathinfo($resolved !== null ? $resolved : $normalized, PATHINFO_EXTENSION));
+
+            $scoped = $resolved !== null
+                || (bool)preg_match('#(?:scripts/)?data/[a-zA-Z0-9_.-]+\.(?:json|txt|md)#i', $token)
+                || (bool)preg_match('#scripts/[a-zA-Z0-9_.-]+\.(?:json|txt|md)#i', $token)
+                || (bool)preg_match('#^[^/]+\.(?:json|txt|md)$#i', $normalized);
+
+            if (!$scoped) {
+                continue;
+            }
+
+            if ($resolved !== null) {
+                $paths[$resolved] = $resolved;
+            }
+
+            if (in_array($ext, ['json', 'txt'], true)) {
+                $hasInfo = true;
+            } elseif ($ext === 'md') {
+                $hasMarkdown = true;
+            }
+        }
+
+        return [
+            'has_info' => $hasInfo,
+            'has_markdown' => $hasMarkdown,
+            'paths' => array_values($paths),
+        ];
+    }
+}
+
 if (!function_exists('itm_script_catalog_tags_info_spawn_targets')) {
     /**
-     * Literal .json / .txt / .md paths referenced in PHP source under scripts/data/ or scripts/.
-     *
      * @return array<int, string> absolute paths
      */
     function itm_script_catalog_tags_info_spawn_targets(string $entrySource, string $scriptsRoot): array
     {
-        $targets = [];
-        $patterns = [
-            '#(?:scripts[/\\\\]+)?data[/\\\\][a-zA-Z0-9_.-]+\.(?:json|txt|md)#i',
-            '#(?:scripts[/\\\\]+)[a-zA-Z0-9_.-]+\.(?:json|txt|md)#i',
-            '#[\'"]([a-zA-Z0-9_.-]+\.(?:json|txt|md))[\'"]#i',
-        ];
+        return itm_script_catalog_tags_classify_data_refs($entrySource, $scriptsRoot)['paths'];
+    }
+}
 
-        foreach ($patterns as $pattern) {
-            if (!preg_match_all($pattern, $entrySource, $matches)) {
-                continue;
-            }
-            $relativePaths = isset($matches[1]) && $matches[1] !== [] ? $matches[1] : $matches[0];
-            foreach ($relativePaths as $relativePath) {
-                $relativePath = str_replace('\\', '/', (string)$relativePath);
-                $resolved = itm_script_catalog_tags_resolve_scripts_data_path($relativePath, $scriptsRoot);
-                if ($resolved !== null) {
-                    $targets[$resolved] = $resolved;
-                }
+if (!function_exists('itm_script_catalog_tags_merge_kind_tags')) {
+    /**
+     * @param array<int, string> $tags
+     * @return array<int, string>
+     */
+    function itm_script_catalog_tags_merge_kind_tags(array $tags, bool $hasInfo, bool $hasMarkdown): array
+    {
+        $kindTags = [];
+        if ($hasInfo) {
+            $kindTags[] = 'Info';
+        }
+        if ($hasMarkdown) {
+            $kindTags[] = 'Markdown';
+        }
+        if ($kindTags === []) {
+            return $tags;
+        }
+
+        $merged = array_values(array_filter($tags, static function ($tag) {
+            return $tag !== 'Codebase';
+        }));
+        if ($merged === []) {
+            return $kindTags;
+        }
+
+        foreach ($kindTags as $kindTag) {
+            if (!in_array($kindTag, $merged, true)) {
+                $merged[] = $kindTag;
             }
         }
 
-        return array_values($targets);
+        return $merged;
     }
 }
 
@@ -509,9 +610,18 @@ if (!function_exists('itm_script_catalog_tags_scan_script')) {
                 $infoSources[] = $bundleContent;
             }
         }
+        $hasInfo = false;
+        $hasMarkdown = false;
         $infoPaths = [];
         foreach ($infoSources as $infoSource) {
-            foreach (itm_script_catalog_tags_info_spawn_targets($infoSource, $scriptsRoot) as $infoPath) {
+            $classified = itm_script_catalog_tags_classify_data_refs($infoSource, $scriptsRoot);
+            if ($classified['has_info']) {
+                $hasInfo = true;
+            }
+            if ($classified['has_markdown']) {
+                $hasMarkdown = true;
+            }
+            foreach ($classified['paths'] as $infoPath) {
                 $infoPaths[$infoPath] = $infoPath;
             }
         }
@@ -534,7 +644,11 @@ if (!function_exists('itm_script_catalog_tags_scan_script')) {
 
         return [
             'tables' => $tableList,
-            'tags' => itm_script_catalog_tags_resolve_tags($tableList),
+            'tags' => itm_script_catalog_tags_merge_kind_tags(
+                itm_script_catalog_tags_resolve_tags($tableList),
+                $hasInfo,
+                $hasMarkdown
+            ),
             'bundle' => $bundle,
         ];
     }
@@ -575,7 +689,7 @@ if (!function_exists('itm_script_catalog_tags_for_slug')) {
      * @param array<string, mixed> $overrides
      * @return array{tables: array<int, string>, tags: array<int, string>, slug: string}
      */
-    function itm_script_catalog_tags_for_slug(string $slug, string $rootPath, array $schemaTables, array $overrides = []): array
+    function itm_script_catalog_tags_for_slug(string $slug, string $rootPath, array $schemaTables, array $overrides = [], string $rowContext = ''): array
     {
         if (isset($overrides[$slug]) && is_array($overrides[$slug]) && !empty($overrides[$slug]['override'])) {
             $tags = $overrides[$slug]['tags'] ?? ['Codebase'];
@@ -616,10 +730,24 @@ if (!function_exists('itm_script_catalog_tags_for_slug')) {
         }
 
         $scan = itm_script_catalog_tags_scan_script($scriptPath, $rootPath, $schemaTables);
+        $tags = $scan['tags'];
+
+        if ($rowContext !== '') {
+            $rowText = html_entity_decode(strip_tags($rowContext), ENT_QUOTES, 'UTF-8');
+            $rowClassify = itm_script_catalog_tags_classify_data_refs(
+                $rowText,
+                itm_script_catalog_tags_scripts_root($rootPath)
+            );
+            $tags = itm_script_catalog_tags_merge_kind_tags(
+                $tags,
+                $rowClassify['has_info'],
+                $rowClassify['has_markdown']
+            );
+        }
 
         return [
             'tables' => $scan['tables'],
-            'tags' => $scan['tags'],
+            'tags' => $tags,
             'slug' => $slug,
         ];
     }
