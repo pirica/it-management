@@ -133,3 +133,36 @@ if (!function_exists('myactivity_action_chip_class')) {
         return 'update';
     }
 }
+
+if (!function_exists('myactivity_private_audit_exempt_labels')) {
+    /**
+     * User-facing modules/data with no audit trail (AGENTS.md → Private data — no audit trail;
+     * keep aligned with audit_logs_private_data_tables() in scripts/check_audit_logs_coverage.php).
+     *
+     * @return string[]
+     */
+    function myactivity_private_audit_exempt_labels()
+    {
+        return [
+            'Passwords',
+            'Private Contacts',
+            'Notes',
+            'Bookmarks',
+            'Bookmark Folders',
+            'To-Do',
+            'Events',
+            'Emails (send log only)',
+            'Temporary share sessions (QR / code shares)',
+        ];
+    }
+}
+
+if (!function_exists('myactivity_private_audit_exempt_note')) {
+    /**
+     * Clarify audited Email Management areas excluded from the private list above.
+     */
+    function myactivity_private_audit_exempt_note()
+    {
+        return 'Email Management SMTP configurations and alert rules are not private — those changes are still audited.';
+    }
+}
