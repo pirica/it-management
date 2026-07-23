@@ -1,10 +1,17 @@
 <?php
 /**
+ * Repair CRUD record share buttons on scaffold index.php inline view blocks.
+ *
+ * Browser: dry-run by default; ?apply=1 (Admin) writes module files.
  * CLI: php scripts/fix_crud_record_share_view_buttons.php [--apply]
  */
-define('ITM_CLI_SCRIPT', true);
-$repoRoot = dirname(__DIR__);
-$apply = in_array('--apply', $argv ?? [], true);
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
+require_once __DIR__ . '/lib/itm_fix_script_report.php';
+
+$boot = itm_apply_script_bootstrap('Fix CRUD record share view buttons');
+$apply = $boot['apply'];
+$nl = $boot['nl'];
+$repoRoot = rtrim($boot['root'], '/\\');
 
 $modules = [
     'departments' => 'department',
@@ -28,9 +35,13 @@ $modules = [
     'monthly_budgets' => 'monthly budget',
 ];
 
-$changes = 0;
+$sqlBundleItems = [itm_fix_script_report_sql_na_item()];
+$liveDbItems = [itm_fix_script_report_na_item()];
+$fixItems = [];
+
 foreach ($modules as $slug => $label) {
     $path = $repoRoot . '/modules/' . $slug . '/index.php';
+    $relativePath = 'modules/' . $slug . '/index.php';
     if (!is_file($path)) {
         continue;
     }
@@ -53,12 +64,22 @@ foreach ($modules as $slug => $label) {
         }
     }
     if ($newBody !== $body) {
-        echo ($apply ? '[PATCH]' : '[DRY]') . " {$path}\n";
+        $fixItems[] = $relativePath . ': insert itm_crud_record_share_render_action_buttons() on inline view block';
         if ($apply) {
             file_put_contents($path, $newBody);
         }
-        $changes++;
     }
 }
 
-echo ($apply ? "Patched {$changes} file(s).\n" : "Dry run: {$changes} file(s).\n");
+itm_fix_script_report_finish(
+    $apply,
+    $boot['is_cli'],
+    $fixItems !== [],
+    $nl,
+    'fix_crud_record_share_view_buttons.php',
+    $liveDbItems,
+    $sqlBundleItems,
+    $fixItems
+);
+
+itm_script_output_end();

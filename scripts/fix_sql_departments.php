@@ -9,6 +9,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
+require_once __DIR__ . '/lib/itm_fix_script_report.php';
 require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 $boot = itm_apply_script_bootstrap('Fix SQL Departments');
@@ -57,12 +58,20 @@ function parseValues($valuesPart) {
 
 $newLines = [];
 $fixedCount = 0;
+$sqlBundleItems = [];
+$fixItems = [];
+$lineNumber = 0;
+
 foreach ($lines as $line) {
+    $lineNumber++;
     if (preg_match('/^INSERT INTO `departments` \(`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`\) VALUES \((.+)\);$/', trim($line), $matches)) {
         $valuesPart = $matches[1];
         $values = parseValues($valuesPart);
 
         if (count($values) !== 11) {
+            $sqlBundleItems[] = 'db/01_schema.sql line ' . $lineNumber . ': departments INSERT has '
+                . count($values) . ' values (expected 11)';
+            $fixItems[] = 'db/01_schema.sql line ' . $lineNumber . ': normalize departments INSERT column count';
             $newValues = [
                 $values[0],
                 $values[1],
@@ -83,16 +92,19 @@ foreach ($lines as $line) {
     $newLines[] = $line;
 }
 
-if ($fixedCount > 0) {
-    if ($boot['apply']) {
-        file_put_contents($sqlFile, implode("\n", $newLines));
-        echo "Fixed {$fixedCount} departments INSERT line(s) in db/01_schema.sql." . $nl;
-    } else {
-        echo "Would fix {$fixedCount} departments INSERT line(s) in db/01_schema.sql." . $nl;
-    }
-} else {
-    echo 'No departments INSERT lines needed fixing.' . $nl;
+if ($fixedCount > 0 && $boot['apply']) {
+    file_put_contents($sqlFile, implode("\n", $newLines));
 }
 
-itm_apply_script_finish_hint($boot['apply'], $boot['is_cli'], $fixedCount, $nl, 'fix_sql_departments.php');
+itm_fix_script_report_finish(
+    $boot['apply'],
+    $boot['is_cli'],
+    $fixedCount > 0,
+    $nl,
+    'fix_sql_departments.php',
+    [itm_fix_script_report_na_item()],
+    $sqlBundleItems,
+    $fixItems
+);
+
 itm_script_output_end();

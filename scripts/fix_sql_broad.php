@@ -6,6 +6,7 @@
  * CLI: php scripts/fix_sql_broad.php then php scripts/fix_sql_broad.php --apply
  */
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
+require_once __DIR__ . '/lib/itm_fix_script_report.php';
 require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 $boot = itm_apply_script_bootstrap('Fix SQL Broad');
@@ -56,7 +57,8 @@ $tablesToFix = [
     'floor_plan_item_tags',
 ];
 
-$logLines = [];
+$sqlBundleItems = [];
+$fixItems = [];
 
 foreach ($tablesToFix as $table) {
     $tableLog = [];
@@ -128,26 +130,27 @@ foreach ($tablesToFix as $table) {
     );
 
     if ($tableLog !== []) {
-        $logLines[] = $table . ': ' . implode('; ', $tableLog);
+        $sqlBundleItems[] = 'db/01_schema.sql: ' . $table . ' — ' . implode('; ', $tableLog);
+        $fixItems[] = 'db/01_schema.sql: ' . $table . ' — ' . implode('; ', $tableLog);
     }
 }
 
 $changed = ($content !== $original);
 
-if ($logLines !== []) {
-    itm_apply_script_echo_list($boot['apply'] ? 'Changes applied' : 'Would change', $logLines);
-} else {
-    echo ($boot['apply'] ? 'No tables needed updates.' : 'Dry-run: no broad SQL fixes needed.') . $nl;
+if ($boot['apply'] && $changed) {
+    file_put_contents($sqlPath, $content);
 }
 
-if ($boot['apply']) {
-    if ($changed) {
-        file_put_contents($sqlPath, $content);
-        echo 'Completed broad update of db/01_schema.sql.' . $nl;
-    }
-} elseif ($changed) {
-    echo 'Re-run with --apply or ?apply=1 to write db/01_schema.sql.' . $nl;
-}
+itm_fix_script_report_finish(
+    $boot['apply'],
+    $boot['is_cli'],
+    $changed,
+    $nl,
+    'fix_sql_broad.php',
+    [itm_fix_script_report_na_item()],
+    $sqlBundleItems,
+    $fixItems,
+    ['broad_sql' => true]
+);
 
-itm_apply_script_finish_hint($boot['apply'], $boot['is_cli'], $changed ? 1 : 0, $nl, 'fix_sql_broad.php');
 itm_script_output_end();

@@ -16,6 +16,7 @@ require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/lib/itm_list_active_and_checkboxes_report.php';
 require_once __DIR__ . '/lib/itm_active_checkbox_fix.php';
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
+require_once __DIR__ . '/lib/itm_fix_script_report.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 
 itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
@@ -55,6 +56,62 @@ $violations = itm_active_checkbox_fix_filter_violations(
     $moduleFilter !== '' ? $moduleFilter : null
 );
 
+/**
+ * @param array<int,array<string,mixed>> $rows
+ * @return array<int,string>
+ */
+function itm_fix_scaffold_active_checkbox_live_db_items(array $rows, array $moduleSlugs)
+{
+    if ($rows !== []) {
+        $items = [];
+        foreach ($rows as $row) {
+            $file = (string)($row['file'] ?? '');
+            $rule = (string)($row['rule'] ?? 'scaffold_active_checkbox_not_compliant');
+            if ($file !== '') {
+                $items[] = $file . ': ' . $rule;
+            }
+        }
+        return $items;
+    }
+    if ($moduleSlugs === []) {
+        return ['list_active_and_checkboxes.php: no scaffold_active_checkbox_not_compliant violations'];
+    }
+    $items = [];
+    foreach ($moduleSlugs as $slug) {
+        $items[] = 'modules/' . $slug . ': pending scaffold active checkbox audit';
+    }
+    return $items;
+}
+
+/**
+ * @param bool $apply
+ * @param bool $isCli
+ * @param bool $stillNeedsFixes
+ * @param string $nl
+ * @param array<int,string> $liveDbItems
+ * @param array<int,string> $fixItems
+ * @return void
+ */
+function itm_fix_scaffold_active_checkbox_finish_report(
+    $apply,
+    $isCli,
+    $stillNeedsFixes,
+    $nl,
+    array $liveDbItems,
+    array $fixItems
+) {
+    itm_fix_script_report_finish(
+        $apply,
+        $isCli,
+        $stillNeedsFixes,
+        $nl,
+        'fix_scaffold_active_checkbox.php',
+        $liveDbItems,
+        [itm_fix_script_report_sql_na_item()],
+        $fixItems
+    );
+}
+
 if (!$itmIsCli) {
     itm_script_output_close_pre();
     echo '<h1>Fix scaffold active checkbox</h1>';
@@ -90,7 +147,14 @@ if ($itmIsCli && !$runRequested) {
     echo '  php scripts/fix_scaffold_active_checkbox.php --all' . $nl;
     echo '  php scripts/fix_scaffold_active_checkbox.php --module=idfs' . $nl;
     echo '  php scripts/fix_scaffold_active_checkbox.php --module=idfs --apply' . $nl . $nl;
-    echo 'Modules with scaffold violations: ' . ($moduleSlugs === [] ? '(none)' : implode(', ', $moduleSlugs)) . $nl;
+    itm_fix_scaffold_active_checkbox_finish_report(
+        false,
+        $itmIsCli,
+        $moduleSlugs !== [],
+        $nl,
+        itm_fix_scaffold_active_checkbox_live_db_items($allViolations, $moduleSlugs),
+        []
+    );
     itm_script_output_end();
     exit(0);
 }
@@ -103,6 +167,14 @@ if ($moduleFilter !== '') {
 
 if ($violations === []) {
     echo colorText('[PASS] No scaffold_active_checkbox_not_compliant violations for this selection.', 'pass') . $nl;
+    itm_fix_scaffold_active_checkbox_finish_report(
+        $apply,
+        $itmIsCli,
+        false,
+        $nl,
+        itm_fix_scaffold_active_checkbox_live_db_items([], $moduleSlugs),
+        []
+    );
     itm_script_output_end();
     exit(0);
 }
@@ -130,12 +202,9 @@ foreach ($violations as $row) {
 }
 
 echo $nl;
+$fixItems = $changedFiles;
 if ($changedFiles === []) {
     echo 'No automatic replacements matched (manual edit may be required).' . $nl;
-} else {
-    $modeLabel = $apply ? 'Applied' : 'Would change';
-    echo $modeLabel . ': ' . count($changedFiles) . ' file(s), ' . $totalReplacements . ' replacement(s).' . $nl . $nl;
-    itm_apply_script_echo_list($modeLabel . ' files', $changedFiles);
 }
 
 if ($apply && $changedFiles !== []) {
@@ -146,18 +215,22 @@ if ($apply && $changedFiles !== []) {
     );
     if ($remaining === []) {
         echo colorText('[PASS] No remaining scaffold violations for this selection.', 'pass') . $nl;
+        $stillNeedsFixes = false;
     } else {
         echo colorText('[WARN] ' . count($remaining) . ' file(s) still violate — re-run list_active_and_checkboxes.php.', 'fail') . $nl;
+        $stillNeedsFixes = true;
     }
+} else {
+    $stillNeedsFixes = $fixItems !== [] || ($violations !== [] && $changedFiles === []);
 }
 
-itm_apply_script_finish_hint(
+itm_fix_scaffold_active_checkbox_finish_report(
     $apply,
     $itmIsCli,
-    count($changedFiles),
+    $stillNeedsFixes,
     $nl,
-    'fix_scaffold_active_checkbox.php',
-    'Re-check: php scripts/list_active_and_checkboxes.php'
+    itm_fix_scaffold_active_checkbox_live_db_items($violations, $moduleSlugs),
+    $fixItems
 );
 
 itm_script_output_end();

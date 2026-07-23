@@ -9,6 +9,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
+require_once __DIR__ . '/lib/itm_fix_script_report.php';
 require_once __DIR__ . '/lib/itm_mojibake_audit.php';
 
 $boot = itm_apply_script_bootstrap('Fix UTF-8 / mojibake');
@@ -73,6 +74,45 @@ foreach ($candidates as $row) {
     $candidateMap[(string)$row['file']] = $row;
 }
 
+/**
+ * @param array<int,array<string,mixed>>|array<int,string> $rows
+ * @return array<int,string>
+ */
+function itm_fix_mojibake_fix_items_from_rows(array $rows)
+{
+    $items = [];
+    foreach ($rows as $row) {
+        if (is_array($row)) {
+            $items[] = (string)$row['file'] . ' (' . (int)($row['replacement_count'] ?? 0) . ' replacement(s))';
+            continue;
+        }
+        $items[] = (string)$row;
+    }
+    return $items;
+}
+
+/**
+ * @param bool $apply
+ * @param bool $isCli
+ * @param bool $stillNeedsFixes
+ * @param string $nl
+ * @param array<int,string> $fixItems
+ * @return void
+ */
+function itm_fix_mojibake_finish_report($apply, $isCli, $stillNeedsFixes, $nl, array $fixItems)
+{
+    itm_fix_script_report_finish(
+        $apply,
+        $isCli,
+        $stillNeedsFixes,
+        $nl,
+        'fix_source_utf8_mojibake.php',
+        [itm_fix_script_report_na_item()],
+        [itm_fix_script_report_sql_na_item()],
+        $fixItems
+    );
+}
+
 if ($selectedFromPost !== []) {
     $targets = [];
     foreach ($selectedFromPost as $file) {
@@ -83,25 +123,20 @@ if ($selectedFromPost !== []) {
     $result = itm_mojibake_repair_repo_files($root, $targets, $apply);
     $mode = $apply ? 'APPLY' : 'PREVIEW';
     echo $mode . ': selected mojibake repair (' . count($targets) . ' file(s))' . $nl;
-    if ($result['preview'] !== []) {
-        itm_apply_script_echo_list($apply ? 'Changed' : 'Would change', $result['preview']);
-    }
-    if ($result['changed'] !== []) {
-        itm_apply_script_echo_list('Changed', $result['changed']);
-    }
-    if ($result['skipped'] !== []) {
-        itm_apply_script_echo_list('Skipped', $result['skipped']);
-    }
-    if (!$apply && $result['preview'] === [] && $result['skipped'] === []) {
-        echo 'No repairable literals in the selected file(s).' . $nl;
+    $fixItems = itm_fix_mojibake_fix_items_from_rows($apply ? $result['changed'] : $result['preview']);
+    if ($fixItems === [] && $result['skipped'] !== []) {
+        foreach ($result['skipped'] as $skipped) {
+            $fixItems[] = (string)$skipped;
+        }
     }
     if ($apply && $result['changed'] !== []) {
         echo colorText('[PASS] Selected files repaired. Re-run verify_source_utf8_mojibake.php.', 'pass') . $nl;
         $candidates = itm_mojibake_collect_repair_candidates($root, $scanRoots);
-    } elseif (!$apply && $result['preview'] !== []) {
-        echo colorText('[INFO] POST again with apply=1 (Admin) to write selected files.', 'info') . $nl;
     }
     echo $nl;
+    itm_fix_mojibake_finish_report($apply, $isCli, $fixItems !== [], $nl, $fixItems);
+    itm_script_output_end();
+    exit(0);
 }
 
 if ($isCli) {
@@ -116,30 +151,15 @@ if ($isCli) {
         $result = itm_mojibake_repair_repo_files($root, $cliTargets, $apply);
         echo ($apply ? 'APPLY' : 'DRY-RUN') . ': mojibake repair' . $nl;
         echo 'Roots: ' . implode(', ', $scanRoots) . $nl;
-        itm_apply_script_echo_list($apply ? 'Changed' : 'Would change', $apply ? $result['changed'] : $result['preview']);
-        itm_apply_script_echo_list('Skipped', $result['skipped']);
-        if (!$apply && ($result['preview'] !== [] || $result['skipped'] !== [])) {
-            echo colorText('[INFO] Re-run with --apply to write files.', 'info') . $nl;
-        }
+        $fixItems = itm_fix_mojibake_fix_items_from_rows($apply ? $result['changed'] : $result['preview']);
+        itm_fix_mojibake_finish_report($apply, $isCli, $fixItems !== [], $nl, $fixItems);
         itm_script_output_end();
         exit(0);
     }
 
-    echo 'Repair candidates: ' . count($candidates) . ' file(s)' . $nl;
     echo 'Roots: ' . implode(', ', $scanRoots) . $nl;
-    if ($candidates === []) {
-        echo colorText('[PASS] No known mojibake literals to repair.', 'pass') . $nl;
-        itm_script_output_end();
-        exit(0);
-    }
-    foreach ($candidates as $row) {
-        echo '  - ' . (string)$row['file']
-            . ' (' . (int)$row['replacement_count'] . ' replacement(s), '
-            . (int)$row['violation_count'] . ' verify hit(s))' . $nl;
-    }
-    echo $nl;
-    echo colorText('[INFO] Fix all: php scripts/fix_source_utf8_mojibake.php --apply', 'info') . $nl;
-    echo colorText('[INFO] Fix subset: php scripts/fix_source_utf8_mojibake.php --files=modules/foo/index.php --apply', 'info') . $nl;
+    $fixItems = itm_fix_mojibake_fix_items_from_rows($candidates);
+    itm_fix_mojibake_finish_report(false, $isCli, $fixItems !== [], $nl, $fixItems);
     itm_script_output_end();
     exit(0);
 }
@@ -148,8 +168,9 @@ echo 'Repair candidates: ' . count($candidates) . ' file(s) under ' . implode(',
 if ($pathFilter !== '') {
     echo '[INFO] Scoped scan: ' . $pathFilter . $nl;
 }
+$fixItems = itm_fix_mojibake_fix_items_from_rows($candidates);
+itm_fix_mojibake_finish_report(false, $isCli, $fixItems !== [], $nl, $fixItems);
 if ($candidates === []) {
-    echo colorText('[PASS] No known mojibake literals to repair.', 'pass') . $nl;
     itm_script_output_end();
     exit(0);
 }

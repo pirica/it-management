@@ -6,16 +6,40 @@
  * CLI: php scripts/fix_sql.php then php scripts/fix_sql.php --apply
  */
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
+require_once __DIR__ . '/lib/itm_fix_script_report.php';
 require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 $boot = itm_apply_script_bootstrap('Fix SQL (Cable Colors & Switch Port Types)');
 $nl = $boot['nl'];
 
 $sqlPath = itm_database_sql_schema_path();
-$content = file_get_contents($sqlPath);
-$original = $content;
+$original = file_get_contents($sqlPath);
+$content = $original;
 
-// Fix cable_colors table structure if already updated
+$sqlBundleItems = [];
+
+if (strpos($original, 'CREATE TABLE `cable_colors`') !== false) {
+    if (preg_match('/CREATE TABLE `cable_colors` \(.*?\) ENGINE=/s', $original, $matches)
+        && strpos($matches[0], '`active`') === false
+    ) {
+        $sqlBundleItems[] = 'db/01_schema.sql: cable_colors CREATE TABLE missing `active`';
+    }
+    if (strpos($original, 'INSERT INTO `cable_colors` (`company_id`, `id`, `color_name`, `hex_color`, `comments`, `created_at`)') !== false) {
+        $sqlBundleItems[] = 'db/01_schema.sql: cable_colors INSERT column list missing `active`';
+    }
+}
+
+if (strpos($original, 'CREATE TABLE `switch_port_types`') !== false) {
+    if (preg_match('/CREATE TABLE `switch_port_types` \(.*?\) ENGINE=/s', $original, $matches)
+        && strpos($matches[0], '`active`') === false
+    ) {
+        $sqlBundleItems[] = 'db/01_schema.sql: switch_port_types CREATE TABLE missing `active`';
+    }
+    if (strpos($original, 'INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`)') !== false) {
+        $sqlBundleItems[] = 'db/01_schema.sql: switch_port_types INSERT column list missing `active`';
+    }
+}
+
 if (strpos($content, 'CREATE TABLE `cable_colors`') !== false) {
     if (strpos($content, '`active` tinyint NOT NULL DEFAULT \'1\'') === false) {
         $content = preg_replace(
@@ -63,19 +87,29 @@ if (strpos($content, 'CREATE TABLE `switch_port_types`') !== false) {
 }
 
 $changed = ($content !== $original);
+$stillNeedsFixes = $changed;
+$fixItems = [];
 
-if ($boot['apply']) {
-    if ($changed) {
-        file_put_contents($sqlPath, $content);
-        echo 'Updated db/01_schema.sql for cable_colors and switch_port_types.' . $nl;
-    } else {
-        echo 'Nothing to change in db/01_schema.sql.' . $nl;
-    }
-} elseif ($changed) {
-    echo 'Would update db/01_schema.sql for cable_colors and switch_port_types.' . $nl;
-} else {
-    echo 'Dry-run: db/01_schema.sql already compliant for cable_colors and switch_port_types.' . $nl;
+if ($changed && $sqlBundleItems === []) {
+    $sqlBundleItems[] = 'db/01_schema.sql: cable_colors and/or switch_port_types active column or INSERT alignment drift';
 }
 
-itm_apply_script_finish_hint($boot['apply'], $boot['is_cli'], $changed ? 1 : 0, $nl, 'fix_sql.php');
+if ($changed) {
+    $fixItems[] = 'db/01_schema.sql: patch cable_colors and switch_port_types `active` column + INSERT alignment';
+    if ($boot['apply']) {
+        file_put_contents($sqlPath, $content);
+    }
+}
+
+itm_fix_script_report_finish(
+    $boot['apply'],
+    $boot['is_cli'],
+    $stillNeedsFixes,
+    $nl,
+    'fix_sql.php',
+    [itm_fix_script_report_na_item()],
+    $sqlBundleItems,
+    $fixItems
+);
+
 itm_script_output_end();
