@@ -419,6 +419,8 @@ if (!function_exists('itm_script_catalog_tags_info_spawn_targets')) {
 
 if (!function_exists('itm_script_catalog_tags_merge_kind_tags')) {
     /**
+     * Kind tags (Info / Markdown) mirror Python / Server: exclusive when no PHP $conn tables.
+     *
      * @param array<int, string> $tags
      * @return array<int, string>
      */
@@ -435,20 +437,25 @@ if (!function_exists('itm_script_catalog_tags_merge_kind_tags')) {
             return $tags;
         }
 
-        $merged = array_values(array_filter($tags, static function ($tag) {
-            return $tag !== 'Codebase';
+        $tableTags = array_values(array_filter($tags, static function ($tag) {
+            return !in_array($tag, ['Codebase', 'Mixed', 'Info', 'Markdown', 'Python', 'Server'], true);
         }));
-        if ($merged === []) {
+
+        if ($tableTags === []) {
             return $kindTags;
         }
 
+        if (count($tableTags) > 2) {
+            $tableTags = ['Mixed'];
+        }
+
         foreach ($kindTags as $kindTag) {
-            if (!in_array($kindTag, $merged, true)) {
-                $merged[] = $kindTag;
+            if (!in_array($kindTag, $tableTags, true)) {
+                $tableTags[] = $kindTag;
             }
         }
 
-        return $merged;
+        return $tableTags;
     }
 }
 
@@ -612,7 +619,6 @@ if (!function_exists('itm_script_catalog_tags_scan_script')) {
         }
         $hasInfo = false;
         $hasMarkdown = false;
-        $infoPaths = [];
         foreach ($infoSources as $infoSource) {
             $classified = itm_script_catalog_tags_classify_data_refs($infoSource, $scriptsRoot);
             if ($classified['has_info']) {
@@ -620,18 +626,6 @@ if (!function_exists('itm_script_catalog_tags_scan_script')) {
             }
             if ($classified['has_markdown']) {
                 $hasMarkdown = true;
-            }
-            foreach ($classified['paths'] as $infoPath) {
-                $infoPaths[$infoPath] = $infoPath;
-            }
-        }
-        foreach ($infoPaths as $infoPath) {
-            $infoContent = file_get_contents($infoPath);
-            if (!is_string($infoContent)) {
-                continue;
-            }
-            foreach (itm_script_catalog_tags_extract_tables_from_plain_text($infoContent, $schemaTables) as $tableName) {
-                $tables[$tableName] = $tableName;
             }
         }
 
