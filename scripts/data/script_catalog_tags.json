@@ -1327,6 +1327,19 @@
         ],
         "override": false
     },
+    "verify_scripts_catalog_filter.php": {
+        "tags": [
+            "catalogs",
+            "companies",
+            "Info",
+            "Markdown"
+        ],
+        "tables": [
+            "catalogs",
+            "companies"
+        ],
+        "override": false
+    },
     "check_script_disposable_employees.php": {
         "tags": [
             "employees",
