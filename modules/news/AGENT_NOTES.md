@@ -2,7 +2,7 @@
 
 ## 1. Module Purpose
 
-Multi-source news and security feed reader for signed-in IT Management users. Shows cached items from NVD CVE advisories and external RSS feeds (Microsoft Command Line blog, Windows Blog) inside a dual-pane layout with a source **Select** in the secondary sidebar (Todo-style). No cron — first visitor of the day triggers refresh; stale cache served while background worker updates.
+Multi-source news and security feed reader for signed-in IT Management users. Shows cached items from NVD CVE advisories and external RSS/Atom feeds (Microsoft blogs, MSRC Security Update Guide, Windows 10/11 KB update feeds) inside a dual-pane layout with a source **Select** in the secondary sidebar (Todo-style). No cron — first visitor of the day triggers refresh; stale cache served while background worker updates.
 
 ## 2. Key Tables
 
@@ -22,6 +22,10 @@ Registry row: **`modules_registry`** slug `news` (sidebar + company module acces
   - `nvd_cve` — NVD REST API 2.0 (shows CVSS severity/score columns)
   - `ms_commandline` — `https://devblogs.microsoft.com/commandline/feed/`
   - `ms_windows_blog` — `https://blogs.windows.com/feed/`
+  - `ms_powershell` — `https://devblogs.microsoft.com/powershell/feed/`
+  - `ms_msrc_security` — `https://api.msrc.microsoft.com/update-guide/rss` (CVEs, advisories, Patch Tuesday)
+  - `ms_win10_updates` — Microsoft Support Atom feed for Windows 10 KB/monthly updates
+  - `ms_win11_updates` — Microsoft Support Atom feed for Windows 11 KB/monthly updates
 - Cache TTL: **24 hours** per source (`NEWS_CACHE_DURATION`)
 - Per-source lock files: `modules/news/cache/{source_id}.lock` (5-minute stale timeout)
 - **RBAC exempt:** slug `news` in `itm_crud_rbac_exempt_module_slugs()` — no `role_module_permissions` row required
