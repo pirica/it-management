@@ -27,7 +27,7 @@ Read-only **employee-scoped** audit timeline for the signed-in user. Surfaces th
 
 ## 5. UI Behavior Requirements
 
-- **index.php** — filter card + **🕒 Recent Activity** timeline (user-config style) + paginated **Activity list** table with `itm-actions-cell` / View 🔎; intro note states private vault modules are **never audited** (no `audit_logs` anywhere — per `AGENTS.md` **Private data — no audit trail**)
+- **index.php** — intro explains shared vs private scope first, then heading **The following are 100% private and never audited:** with bullet list from `myactivity_private_audit_exempt_labels()` (do not phrase the list as part of Admin → Audit Logs)
 - **view.php** — full event detail (action, module, record id, IP, user agent, old/new JSON payloads)
 - Sidebar: **👤 Employee** section → **🕒 My Activity** (`includes/ui_config.php`)
 - Dynamic browser title via `itm_resolve_module_sidebar_icon()`
@@ -42,7 +42,7 @@ None.
 - **index.php** — filtered list + timeline + export table
 - **view.php** — single audit row detail
 - **index.html** — directory listing guard
-- **includes/itm_myactivity.php** — shared query/filter helpers, `myactivity_private_audit_exempt_labels()` (canonical private-module list for UI copy), module href resolver
+- **includes/itm_myactivity.php** — shared query/filter helpers, `myactivity_private_audit_exempt_labels()`, module href resolver
 
 ## 8. Multi-Tenant Rules
 
@@ -58,7 +58,7 @@ No writes — consumer only.
 
 - Do **not** drop the `employee_id` predicate when adding filters or exports
 - Do not expose other users’ `audit_logs` rows on `view.php?id=`
-- Private-data scope is defined in `myactivity_private_audit_exempt_labels()` (`includes/itm_myactivity.php`) — keep aligned with `AGENTS.md` **Private data — no audit trail** and `audit_logs_private_data_tables()` in `scripts/check_audit_logs_coverage.php`. UI shows the **full list** as bullets (never audited anywhere).
+- Private-data scope is defined in `myactivity_private_audit_exempt_labels()` — keep aligned with `AGENTS.md` and `audit_logs_private_data_tables()`. Intro copy: shared scope first, then **The following are 100% private and never audited:** (not as an Audit Logs list).
 - Registry row lives in `db/02_data.sql`; run `php scripts/sync_modules_registry.php` on existing DBs after deploy
 
 ## 11. Examples of Safe Code Patterns

@@ -163,6 +163,6 @@ if (!function_exists('myactivity_private_audit_exempt_note')) {
      */
     function myactivity_private_audit_exempt_note()
     {
-        return 'Email Management SMTP configurations and alert rules are not private — those changes are still audited.';
+        return 'Within Email Management, only the send log is private; SMTP configurations and alert rules are audited like other shared settings.';
     }
 }
