@@ -42,7 +42,7 @@ None.
 - **index.php** — filtered list + timeline + export table
 - **view.php** — single audit row detail
 - **index.html** — directory listing guard
-- **includes/itm_myactivity.php** — shared query/filter helpers and module href resolver
+- **includes/itm_myactivity.php** — shared query/filter helpers, `myactivity_private_audit_exempt_labels()` (canonical private-module list for UI copy), module href resolver
 
 ## 8. Multi-Tenant Rules
 
@@ -58,7 +58,7 @@ No writes — consumer only.
 
 - Do **not** drop the `employee_id` predicate when adding filters or exports
 - Do not expose other users’ `audit_logs` rows on `view.php?id=`
-- Private-data tables (`passwords`, `notes`, `bookmarks`, `private_contacts`, `todo`, `events`, `emails` send log, etc.) have **no** `audit_logs` rows and **no** audit triggers — they never appear in My Activity or Audit Logs. UI intro copy must say **never audited / 100% private**, not “not listed here”.
+- Private-data scope is defined in `myactivity_private_audit_exempt_labels()` (`includes/itm_myactivity.php`) — keep aligned with `AGENTS.md` **Private data — no audit trail** and `audit_logs_private_data_tables()` in `scripts/check_audit_logs_coverage.php`. UI shows the **full list** as bullets (never audited anywhere).
 - Registry row lives in `db/02_data.sql`; run `php scripts/sync_modules_registry.php` on existing DBs after deploy
 
 ## 11. Examples of Safe Code Patterns
