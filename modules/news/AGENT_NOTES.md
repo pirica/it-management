@@ -26,6 +26,7 @@ Registry row: **`modules_registry`** slug `news` (sidebar + company module acces
   - `ms_msrc_security` — `https://api.msrc.microsoft.com/update-guide/rss` (CVEs, advisories, Patch Tuesday)
   - `ms_win10_updates` — Microsoft Support Atom feed for Windows 10 KB/monthly updates
   - `ms_win11_updates` — Microsoft Support Atom feed for Windows 11 KB/monthly updates
+- Feed items are sorted **newest first** by `published` (fallback `last_modified`) in `news_sort_items_newest_first()` before cache save and UI load
 - Cache TTL: **24 hours** per source (`NEWS_CACHE_DURATION`)
 - Per-source lock files: `modules/news/cache/{source_id}.lock` (5-minute stale timeout)
 - **RBAC exempt:** slug `news` in `itm_crud_rbac_exempt_module_slugs()` — no `role_module_permissions` row required

@@ -258,6 +258,48 @@ if (!function_exists('news_fetch_nvd_from_api')) {
     }
 }
 
+if (!function_exists('news_item_published_timestamp')) {
+    function news_item_published_timestamp(array $item)
+    {
+        $candidates = [
+            $item['published'] ?? '',
+            $item['last_modified'] ?? '',
+        ];
+
+        foreach ($candidates as $raw) {
+            $raw = trim((string)$raw);
+            if ($raw === '') {
+                continue;
+            }
+
+            $timestamp = strtotime($raw);
+            if ($timestamp !== false) {
+                return (int)$timestamp;
+            }
+        }
+
+        return 0;
+    }
+}
+
+if (!function_exists('news_sort_items_newest_first')) {
+    function news_sort_items_newest_first(array $items)
+    {
+        usort($items, function (array $left, array $right) {
+            $rightTs = news_item_published_timestamp($right);
+            $leftTs = news_item_published_timestamp($left);
+
+            if ($rightTs === $leftTs) {
+                return strcmp((string)($right['title'] ?? ''), (string)($left['title'] ?? ''));
+            }
+
+            return $rightTs <=> $leftTs;
+        });
+
+        return $items;
+    }
+}
+
 if (!function_exists('news_strip_html_excerpt')) {
     function news_strip_html_excerpt($html, $maxLength = 220)
     {
@@ -323,10 +365,11 @@ if (!function_exists('news_parse_rss_items')) {
                 'severity' => '',
                 'cvss_label' => '',
             ];
+        }
 
-            if (count($items) >= (int)$limit) {
-                break;
-            }
+        $items = news_sort_items_newest_first($items);
+        if ((int)$limit > 0 && count($items) > (int)$limit) {
+            $items = array_slice($items, 0, (int)$limit);
         }
 
         return $items;
@@ -419,7 +462,7 @@ if (!function_exists('news_normalize_nvd_items')) {
             ];
         }
 
-        return $items;
+        return news_sort_items_newest_first($items);
     }
 }
 
@@ -455,7 +498,23 @@ if (!function_exists('news_generate_nvd_rss_feed')) {
         $selfLink->setAttribute('type', 'application/rss+xml');
         $channel->appendChild($selfLink);
 
-        foreach ($cves as $cveData) {
+        $sortedCves = $cves;
+        usort($sortedCves, function (array $left, array $right) {
+            $leftPublished = (string)($left['cve']['published'] ?? $left['cve']['lastModified'] ?? '');
+            $rightPublished = (string)($right['cve']['published'] ?? $right['cve']['lastModified'] ?? '');
+            $leftTs = $leftPublished !== '' ? strtotime($leftPublished) : 0;
+            $rightTs = $rightPublished !== '' ? strtotime($rightPublished) : 0;
+            if ($leftTs === false) {
+                $leftTs = 0;
+            }
+            if ($rightTs === false) {
+                $rightTs = 0;
+            }
+
+            return (int)$rightTs <=> (int)$leftTs;
+        });
+
+        foreach ($sortedCves as $cveData) {
             if (!isset($cveData['cve']) || !is_array($cveData['cve'])) {
                 continue;
             }
@@ -573,7 +632,7 @@ if (!function_exists('news_load_cached_items')) {
             return [];
         }
 
-        return $decoded;
+        return news_sort_items_newest_first($decoded);
     }
 }
 
