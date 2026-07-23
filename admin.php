@@ -125,6 +125,37 @@ if ($userDisplayName !== '' && $userEmail !== '') {
 } elseif ($userEmail !== '') {
     $welcomeMessage .= ' - (' . $userEmail . ')';
 }
+
+require_once ROOT_PATH . 'includes/itm_employee_dashboard.php';
+
+$current_user = null;
+$userStmt = mysqli_prepare(
+    $conn,
+    'SELECT e.*, ep.name AS position_name, d.name AS department_name, es.name AS status_name
+     FROM employees e
+     LEFT JOIN employee_positions ep ON e.employee_position_id = ep.id
+     LEFT JOIN departments d ON e.department_id = d.id
+     LEFT JOIN employee_statuses es ON e.employment_status_id = es.id
+     WHERE e.id = ? AND e.deleted_at IS NULL
+     LIMIT 1'
+);
+if ($userStmt) {
+    mysqli_stmt_bind_param($userStmt, 'i', $employeeId);
+    if (mysqli_stmt_execute($userStmt)) {
+        $userRes = mysqli_stmt_get_result($userStmt);
+        $current_user = $userRes ? mysqli_fetch_assoc($userRes) : null;
+    }
+    mysqli_stmt_close($userStmt);
+}
+
+$user_id = $employeeId;
+$company_id = $companyId;
+$dash = itm_employee_dashboard_load_context($conn, $employeeId, $companyId, is_array($current_user) ? $current_user : []);
+if (!empty($dash['reload_required'])) {
+    header('Location: ' . BASE_URL . 'admin.php');
+    exit;
+}
+$itmDashCardContext = 'admin';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -193,8 +224,15 @@ if ($userDisplayName !== '' && $userEmail !== '') {
                     <div class="card-header"><h2>Settings</h2></div>
                     <div class="card-body">
                         <p>Manage backups and system maintenance options from one page.</p>
-                        <a class="btn btn-primary" href="<?php echo BASE_URL; ?>modules/settings/">Open Settings</a>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                            <a class="btn btn-primary" href="<?php echo BASE_URL; ?>modules/settings/" title="Open Settings">Open Settings</a>
+                            <a class="btn" href="<?php echo BASE_URL; ?>scripts/scripts.php" title="Scripts catalog">Scripts</a>
+                        </div>
                     </div>
+                </div>
+
+                <div class="itm-emp-dash-body" style="margin-bottom:20px;">
+                    <?php include ROOT_PATH . 'includes/itm_employee_dashboard_cards.php'; ?>
                 </div>
 
                 <div class="card">

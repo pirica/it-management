@@ -58,6 +58,24 @@ if (strpos($adminSource, 'admin.php') === false) {
     apg_verify_pass('admin.php references admin.php for post-switch redirect');
 }
 
+if (strpos($adminSource, 'scripts/scripts.php') === false) {
+    apg_verify_fail('admin.php Settings card must link to scripts/scripts.php');
+} else {
+    apg_verify_pass('admin.php Settings card links to Scripts catalog');
+}
+
+if (strpos($adminSource, 'itm_employee_dashboard_cards.php') === false) {
+    apg_verify_fail('admin.php must include employee dashboard cards');
+} else {
+    apg_verify_pass('admin.php includes employee dashboard cards');
+}
+
+if (strpos($adminSource, "itmDashCardContext = 'admin'") === false) {
+    apg_verify_fail('admin.php must set admin dashboard card context');
+} else {
+    apg_verify_pass('admin.php sets admin dashboard card context');
+}
+
 if ($failures > 0) {
     echo $nl . colorText('Verification failed with ' . $failures . ' issue(s).', 'fail') . $nl;
     itm_script_output_end();

@@ -130,6 +130,32 @@ if (strpos($cardsSource, 'itm-emp-dash-section--activity') === false) {
     ed_verify_pass('Activity section uses bottom row layout');
 }
 
+if (strpos($cardsSource, 'modules/myactivity/index.php') === false) {
+    ed_verify_fail('Employee dashboard My Activity card must link to modules/myactivity/');
+} else {
+    ed_verify_pass('Employee dashboard My Activity links to myactivity module');
+}
+
+if (strpos($cardsSource, 'modules/audit_logs/index.php') === false) {
+    ed_verify_pass('Audit Logs card is gated to admin dashboard context');
+} elseif (strpos($cardsSource, '$dashIsAdminContext') !== false || strpos($cardsSource, "itmDashCardContext === 'admin'") !== false) {
+    ed_verify_pass('Audit Logs card is gated to admin dashboard context');
+} else {
+    ed_verify_fail('Audit Logs card must only render when admin dashboard context is active');
+}
+
+if (strpos($cardsSource, 'Sidebar Prefs') !== false) {
+    ed_verify_fail('Employee dashboard must not render Sidebar Prefs card');
+} else {
+    ed_verify_pass('Employee dashboard has no Sidebar Prefs card');
+}
+
+if (strpos($cardsSource, "'Private'") === false && strpos($cardsSource, '"Private"') === false) {
+    ed_verify_fail('Employee dashboard cards must include Private module section');
+} else {
+    ed_verify_pass('Employee dashboard includes Private module section');
+}
+
 if (strpos($stylesSource, 'itm-emp-dash-section--activity .itm-emp-dash-grid') === false
     || strpos($stylesSource, 'repeat(3') === false) {
     ed_verify_fail('Activity section CSS must use a three-column single-row card grid');
