@@ -415,6 +415,8 @@ if (!function_exists('itm_vault_reencrypt_events')) {
             return ['ok' => false, 'message' => 'Database connection unavailable.'];
         }
 
+        require_once ROOT_PATH . 'modules/events/events_vault_helpers.php';
+
         $employeeId = (int)$employeeId;
         if ($employeeId <= 0) {
             return ['ok' => false, 'message' => 'Invalid employee.'];
@@ -460,15 +462,11 @@ if (!function_exists('itm_vault_reencrypt_events')) {
                 if ($stored === '') {
                     continue;
                 }
-                $plain = itm_decrypt($stored, $oldKeySession);
-                if ($plain === false || $plain === '') {
-                    if ($field === 'title' && strlen($stored) <= 255) {
-                        $plain = $stored;
-                    } elseif ($field === 'description' && strlen($stored) <= 64 && base64_decode($stored, true) === false) {
-                        $plain = $stored;
-                    } elseif ($field === 'location' && strlen($stored) <= 255) {
-                        $plain = $stored;
-                    } else {
+                if (events_private_text_legacy_plaintext_check($stored)) {
+                    $plain = $stored;
+                } else {
+                    $plain = itm_decrypt($stored, $oldKeySession);
+                    if ($plain === false) {
                         mysqli_stmt_close($upd_stmt);
                         mysqli_stmt_close($sel_stmt);
                         return ['ok' => false, 'message' => 'Failed to re-encrypt events. Please try again.'];

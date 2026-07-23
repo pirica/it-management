@@ -7,6 +7,7 @@
 define('ITM_CLI_SCRIPT', true);
 require_once dirname(__DIR__) . '/config/config.php';
 require_once ROOT_PATH . 'modules/events/events_vault_helpers.php';
+require_once ROOT_PATH . 'includes/itm_vault_master_key.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
@@ -131,6 +132,71 @@ if ($rowLocked['title'] !== '' || empty($rowLocked['title_locked'])) {
     events_vault_fail('Locked vault should hide private event text.');
 } else {
     events_vault_pass('Locked vault hides private event text.');
+}
+
+$legacyTitle = 'Legacy standup';
+$legacyDescription = 'Pre-vault plaintext description row';
+$legacyLocation = 'Room A';
+$legacyIns = $conn->prepare(
+    'INSERT INTO events (company_id, employee_id, title, title_hash, description, location, start_datetime, end_datetime, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+);
+$legacyHash = events_text_hash($legacyTitle);
+$legacyIns->bind_param(
+    'iissssssi',
+    $companyId,
+    $employeeId,
+    $legacyTitle,
+    $legacyHash,
+    $legacyDescription,
+    $legacyLocation,
+    $start,
+    $end,
+    $employeeId
+);
+if (!$legacyIns->execute()) {
+    events_vault_fail('Could not insert legacy plaintext event row.');
+} else {
+    $legacyEventId = (int)$conn->insert_id;
+    $legacyIns->close();
+
+    $newMasterKey = 'EventsVaultRotate-' . bin2hex(random_bytes(4));
+    $newVaultSession = hash('sha256', $newMasterKey);
+    $reencrypt = itm_vault_reencrypt_events($conn, $employeeId, $vaultSession, $newVaultSession);
+    if (empty($reencrypt['ok'])) {
+        events_vault_fail('Master key re-encrypt failed for legacy plaintext events: ' . ($reencrypt['message'] ?? 'unknown'));
+    } else {
+        $_SESSION['vault_key'] = $newVaultSession;
+        $legacyRow = [
+            'id' => $legacyEventId,
+            'employee_id' => $employeeId,
+            'title' => '',
+            'description' => '',
+            'location' => '',
+            'shared_with_json' => null,
+        ];
+        $legacySel = $conn->prepare('SELECT title, description, location FROM events WHERE id = ? AND employee_id = ?');
+        $legacySel->bind_param('ii', $legacyEventId, $employeeId);
+        $legacySel->execute();
+        $legacyDb = $legacySel->get_result()->fetch_assoc();
+        $legacySel->close();
+        if (!$legacyDb) {
+            events_vault_fail('Legacy event row missing after re-encrypt.');
+        } else {
+            $legacyRow['title'] = (string)$legacyDb['title'];
+            $legacyRow['description'] = (string)($legacyDb['description'] ?? '');
+            $legacyRow['location'] = (string)($legacyDb['location'] ?? '');
+            events_hydrate_event_row($legacyRow, $employeeId);
+            if ($legacyRow['title'] !== $legacyTitle
+                || $legacyRow['description'] !== $legacyDescription
+                || $legacyRow['location'] !== $legacyLocation) {
+                events_vault_fail('Legacy plaintext event fields did not survive master key re-encrypt.');
+            } else {
+                events_vault_pass('Legacy plaintext private events re-encrypt during master key change.');
+            }
+        }
+    }
+    $conn->query('DELETE FROM events WHERE id = ' . (int)$legacyEventId);
 }
 
 $conn->query('DELETE FROM events WHERE id = ' . (int)$eventId);

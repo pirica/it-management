@@ -19,7 +19,7 @@ Manages scheduled events, meetings, and maintenance windows. Private events (no 
 - **Vault lock UI**: List/create and owner private edit/view require vault unlock (`events_vault_bootstrap.php` → `includes/itm_vault_unlock.php`, `events_ui_requires_vault_lock_screen()`). Shared events remain readable when vault is locked. Optional 6-digit TOTP when `employees.totp_enabled = 1`.
 - **Search / sort / pagination**: In-memory via `events_query_events_for_list()` after hydrate (`events_row_matches_search()`, `events_compare_event_rows()`); list UI contract checks detect this helper like notes/bookmarks. Static audit: `scripts/check_fk_label_search_coverage.php` scans `events_vault_helpers.php`.
 - **Add sample data:** empty-state uses visibility-scoped live rows (`events_count_visible_live_events()` — not raw `company_id` counts); seed via `itm_seed_insert_events_sample_rows()` stamps `employee_id` / `created_by` for the signed-in user and seeds `event_categories` when missing.
-- **Master key change**: `itm_vault_reencrypt_events()` in `includes/itm_vault_master_key.php` (called from `user-config.php`).
+- **Master key change**: `itm_vault_reencrypt_events()` in `includes/itm_vault_master_key.php` (called from `user-config.php`); uses `events_private_text_legacy_plaintext_check()` before decrypt so pre-vault plaintext rows rotate without openssl IV warnings.
 
 ## 5. UI Behavior Requirements
 - **Standard flattened CRUD**: search across visible columns (`$displayFieldColumns` alias), sort (ASC/DESC ▲/▼), server-side pagination (`records_per_page`), bulk delete/clear when `$totalRows >= $perPage`, Export Excel/PDF, Import Excel via `table-tools.js`.
