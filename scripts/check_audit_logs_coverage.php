@@ -4,8 +4,8 @@
  *
  * Why: AGENTS.md requires INSERT/UPDATE/DELETE traceability in audit_logs when enabled.
  * Modules can satisfy that via PHP helpers (itm_run_query / itm_log_audit / bulk helpers)
- * or database triggers defined in db/ (trg_{table}_audit_*).
- * Also compares every CREATE TABLE in db/ against trg_{table}_audit_insert
+ * or database triggers defined in db/03_triggers.sql (trg_{table}_audit_*).
+ * Also compares every CREATE TABLE in db/01_schema.sql against trg_{table}_audit_insert
  * (audit_logs and private-data tables per AGENTS.md are exempt) and exits non-zero
  * when other schema tables are missing triggers.
  *
@@ -36,7 +36,8 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 $modulesDir = $root . DIRECTORY_SEPARATOR . 'modules';
-$databaseSqlPath = itm_database_sql_schema_path();
+$schemaSqlPath = itm_database_sql_schema_path();
+$triggersSqlPath = itm_database_sql_triggers_path();
 
 $options = [
     'json' => false,
@@ -85,27 +86,30 @@ if ($options['help']) {
 /**
  * @return array{triggers: array<string, bool>, schema_tables: array<string, bool>}
  */
-function audit_logs_load_database_sql_maps(string $databaseSqlPath): array
+function audit_logs_load_database_sql_maps(string $schemaSqlPath, string $triggersSqlPath): array
 {
     $triggers = [];
     $schemaTables = [];
 
-    if (!is_readable($databaseSqlPath)) {
-        return ['triggers' => $triggers, 'schema_tables' => $schemaTables];
-    }
-
-    $sql = file_get_contents($databaseSqlPath);
-    if (!is_string($sql)) {
-        return ['triggers' => $triggers, 'schema_tables' => $schemaTables];
-    }
-
-    if (preg_match_all('/CREATE TABLE `([^`]+)`/i', $sql, $tableMatches)) {
-        foreach ($tableMatches[1] as $tableName) {
-            $schemaTables[(string)$tableName] = true;
+    if (is_readable($schemaSqlPath)) {
+        $schemaSql = file_get_contents($schemaSqlPath);
+        if (is_string($schemaSql) && preg_match_all('/CREATE TABLE `([^`]+)`/i', $schemaSql, $tableMatches)) {
+            foreach ($tableMatches[1] as $tableName) {
+                $schemaTables[(string)$tableName] = true;
+            }
         }
     }
 
-    if (preg_match_all('/CREATE TRIGGER `trg_([a-zA-Z0-9_]+)_audit_insert`/i', $sql, $matches)) {
+    // Why: audit triggers live in db/03_triggers.sql after the db/ split bundle — not in 01_schema.sql.
+    $triggerSql = '';
+    if (is_readable($triggersSqlPath)) {
+        $triggerSql = file_get_contents($triggersSqlPath);
+    }
+    if (!is_string($triggerSql) || $triggerSql === '') {
+        $triggerSql = is_readable($schemaSqlPath) ? (string)file_get_contents($schemaSqlPath) : '';
+    }
+
+    if ($triggerSql !== '' && preg_match_all('/CREATE TRIGGER `trg_([a-zA-Z0-9_]+)_audit_insert`/i', $triggerSql, $matches)) {
         foreach ($matches[1] as $tableName) {
             $triggers[(string)$tableName] = true;
         }
@@ -518,7 +522,7 @@ function audit_logs_assess_module(
     ];
 }
 
-$dbMaps = audit_logs_load_database_sql_maps($databaseSqlPath);
+$dbMaps = audit_logs_load_database_sql_maps($schemaSqlPath, $triggersSqlPath);
 $triggerTables = $dbMaps['triggers'];
 $schemaTables = $dbMaps['schema_tables'];
 $schemaTablesMissingTriggers = audit_logs_schema_tables_missing_triggers($schemaTables, $triggerTables);
@@ -547,7 +551,8 @@ if ($options['json']) {
     }
     echo json_encode(
         [
-            'database_sql' => $databaseSqlPath,
+            'database_schema_sql' => $schemaSqlPath,
+            'database_triggers_sql' => $triggersSqlPath,
             'schema_table_count' => count($schemaTables),
             'trigger_table_count' => count($triggerTables),
             'schema_tables_missing_triggers' => $schemaTablesMissingTriggers,
@@ -565,8 +570,10 @@ $nl = itm_script_output_nl();
 
 echo "Audit Logs Coverage Check" . $nl;
 echo "Root: {$root}" . $nl;
-echo 'Schema tables in db/: ' . count($schemaTables) . $nl;
-echo 'Tables with trg_*_audit_insert in db/: ' . count($triggerTables) . $nl;
+echo 'Schema SQL: ' . $schemaSqlPath . $nl;
+echo 'Triggers SQL: ' . $triggersSqlPath . $nl;
+echo 'Schema tables in db/01_schema.sql: ' . count($schemaTables) . $nl;
+echo 'Tables with trg_*_audit_insert in db/03_triggers.sql: ' . count($triggerTables) . $nl;
 if (!empty($schemaTablesMissingTriggers)) {
     echo 'Schema tables missing audit triggers: ' . implode(', ', $schemaTablesMissingTriggers) . $nl;
 } else {
