@@ -15,6 +15,9 @@ if (!defined('NEWS_CACHE_DURATION')) {
 if (!defined('NEWS_LOCK_TIMEOUT')) {
     define('NEWS_LOCK_TIMEOUT', 300);
 }
+if (!defined('NEWS_NVD_LOOKBACK_DAYS')) {
+    define('NEWS_NVD_LOOKBACK_DAYS', 120);
+}
 
 if (!function_exists('news_feed_source_catalog')) {
     /**
@@ -259,6 +262,27 @@ if (!function_exists('news_resolve_nvd_api_key')) {
     }
 }
 
+if (!function_exists('news_build_nvd_api_query_params')) {
+    /**
+     * Why: NVD returns 1990s CVEs at startIndex=0 without a date window; API allows max 120-day ranges.
+     *
+     * @return array<string,string|int>
+     */
+    function news_build_nvd_api_query_params($limit, $lookbackDays = NEWS_NVD_LOOKBACK_DAYS)
+    {
+        $lookbackDays = max(1, min(120, (int)$lookbackDays));
+        $end = gmdate('Y-m-d\TH:i:s.000\Z');
+        $start = gmdate('Y-m-d\TH:i:s.000\Z', strtotime('-' . $lookbackDays . ' days'));
+
+        return [
+            'resultsPerPage' => max(1, (int)$limit),
+            'startIndex' => 0,
+            'pubStartDate' => $start,
+            'pubEndDate' => $end,
+        ];
+    }
+}
+
 if (!function_exists('news_fetch_nvd_from_api')) {
     function news_fetch_nvd_from_api($url, $limit)
     {
@@ -268,7 +292,13 @@ if (!function_exists('news_fetch_nvd_from_api')) {
             $headers[] = 'apiKey: ' . $apiKey;
         }
 
-        $body = news_fetch_http_body($url . '?resultsPerPage=' . (int)$limit . '&startIndex=0', $headers);
+        $query = http_build_query(
+            news_build_nvd_api_query_params($limit),
+            '',
+            '&',
+            PHP_QUERY_RFC3986
+        );
+        $body = news_fetch_http_body(rtrim((string)$url, '?') . '?' . $query, $headers);
         $data = json_decode($body, true);
         if (!isset($data['vulnerabilities']) || !is_array($data['vulnerabilities'])) {
             throw new Exception('Invalid response format from NVD API');
