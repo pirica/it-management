@@ -56,7 +56,7 @@ WHERE e.`username` IN ('demo1', 'demo2', 'demo3', 'demo4', 'demo5')
   );
 
 INSERT INTO `ui_configuration` (`company_id`, `employee_id`, `table_actions_position`, `new_button_position`, `export_buttons_position`, `back_save_position`, `enable_all_error_reporting`, `enable_audit_logs`, `enable_chatbot`, `enable_auto_scaffolding`, `records_per_page`, `app_name`, `favicon_path`, `equipment_type_sidebar_visibility`, `created_at`, `updated_at`)
-SELECT e.`company_id`, e.`id`, 'left', 'left', 'left', 'left', 1, 1, 0, 0, '25', '⚙️ IT Controls', 'images/favicons/company_1.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', NOW(), NULL
+SELECT e.`company_id`, e.`id`, 'left', 'left', 'left', 'left', 1, 1, 1, 0, '25', '⚙️ IT Controls', 'images/favicons/company_1.ico', '{"is_access_point":1, "is_cctv":1, "is_firewall":1, "is_other":1, "is_phone":1, "is_port_patch_panel":1, "is_printer":1, "is_router":1, "is_server":1, "is_switch":1, "is_workstation":1}', NOW(), NULL
 FROM `employees` e
 WHERE e.`username` IN ('demo1', 'demo2', 'demo3', 'demo4', 'demo5')
   AND NOT EXISTS (
