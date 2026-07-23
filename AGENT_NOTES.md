@@ -32,7 +32,7 @@ The IT Management System is a multi-tenant legacy PHP application (PHP 7.4) desi
 ## 7. File Structure (high level)
 - **config/**, **includes/**, **modules/**, **scripts/** — application code.
 - **login.php** — authentication; regenerates the session id on success; Admin login calls `itm_switch_active_company_session()` for the initial company so welcome email/username match the tenant (not only after manual company switch).
-- **index.php** — company selection after login (no forced error display).
+- **index.php** — company selection after login (no forced error display); skipped automatically when `itm_try_auto_select_single_company_session()` finds exactly one accessible tenant (also applied from `login.php` for non-admins).
 - **dashboard.php** — employee landing: personal stat cards (hero + grouped sections) via `includes/itm_employee_dashboard.php` / `itm_employee_dashboard_cards.php`; module cards respect `has_module_access()`. Regression: `php scripts/verify_employee_dashboard.php`.
 - **admin.php** — admin-only company overview: row 1 module totals (Equipment, Tickets, Employees) exclude soft-deleted rows; row 2 **Active** / **On Leave** via `itm_employee_count_by_employment_status_name()`; **Online now** via session presence; company switcher for admins; non-admins redirect to `dashboard.php`. Regression: `php scripts/verify_dashboard_active_employees.php`, `php scripts/verify_admin_page_gate.php`.
 - **css/styles.css** — global stylesheet with responsive breakpoints and shared layout utilities (see **`css/AGENT_NOTES.md`**).

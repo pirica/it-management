@@ -42,6 +42,14 @@ if ($adminStmt) {
     mysqli_stmt_close($adminStmt);
 }
 
+// Why: Skip the picker when home tenant + grants resolve to a single active company.
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' && function_exists('itm_try_auto_select_single_company_session')) {
+    if (itm_try_auto_select_single_company_session($conn, $employeeId, $isAdmin)) {
+        header('Location: dashboard.php');
+        exit();
+    }
+}
+
 // Handle company selection
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Validate CSRF token for security
@@ -58,17 +66,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 // Fetch available companies for the selection dropdown
-if ($isAdmin) {
-    $companies = mysqli_query($conn, 'SELECT c.* FROM companies c WHERE c.active = 1 ORDER BY c.company');
-} else {
-    $stmtCompanies = mysqli_prepare($conn, 'SELECT c.* FROM companies c INNER JOIN employee_companies uc ON uc.company_id = c.id WHERE c.active = 1 AND uc.employee_id = ? ORDER BY c.company');
-    $companies = false;
-    if ($stmtCompanies) {
-        mysqli_stmt_bind_param($stmtCompanies, 'i', $employeeId);
-        mysqli_stmt_execute($stmtCompanies);
-        $companies = mysqli_stmt_get_result($stmtCompanies);
-    }
-}
+$accessibleCompanies = function_exists('itm_list_employee_accessible_companies')
+    ? itm_list_employee_accessible_companies($conn, $employeeId, $isAdmin)
+    : [];
+$companies = $accessibleCompanies !== [] ? $accessibleCompanies : false;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -161,18 +162,18 @@ if ($isAdmin) {
             <p>Select Your Company</p>
         </div>
 
-        <?php if ($companies && mysqli_num_rows($companies) > 0): ?>
+        <?php if (is_array($companies) && count($companies) > 0): ?>
             <form method="POST">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
                 <div style="margin-bottom: 20px;">
                     <label for="company">Company:</label>
                     <select name="company_id" id="company" required onchange="updateName()">
                         <option value="">-- Select a Company --</option>
-                        <?php while ($c = mysqli_fetch_assoc($companies)): ?>
-                            <option value="<?php echo $c['id']; ?>" data-name="<?php echo htmlspecialchars($c['company']); ?>">
+                        <?php foreach ($companies as $c): ?>
+                            <option value="<?php echo (int)$c['id']; ?>" data-name="<?php echo htmlspecialchars($c['company']); ?>">
                                 <?php echo htmlspecialchars($c['company']); ?>
                             </option>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                    <!--     <option value="__add_new__">➕</option> -->
                     </select>
                     <input type="hidden" name="company_name" id="company_name">

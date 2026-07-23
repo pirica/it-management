@@ -221,6 +221,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit();
             }
 
+            // Why: One-tenant employees should land on the dashboard without an extra picker step.
+            if (function_exists('itm_try_auto_select_single_company_session')
+                && itm_try_auto_select_single_company_session($conn, $employeeId, false)) {
+                header('Location: dashboard.php');
+                exit();
+            }
+
             header('Location: index.php');
             exit();
         }
