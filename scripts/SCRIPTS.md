@@ -70,7 +70,7 @@ Each catalog card shows **table tags** derived from static analysis of the linke
 
 **Scan scope:** PHP `$conn` SQL + requires + spawn targets + filename tokens for `*.php` rows. **Info / Markdown apply to documentation file rows only** (not inferred from PHP references). Auto-list data/docs files with `apply_script_catalog_documentation_files.php`.
 
-**UI:** Extension search/chips (`*.json`, `*.txt`, `*.md`, `Info`, `Markdown`) match catalog hrefs ending in `.json`, `.txt`, or `.md` inside **Documentation** (`#docs`).
+**UI:** Extension search/chips (`*.json`, `*.txt`, `*.md`, `Info`, `Markdown`) match catalog hrefs ending in `.json`, `.txt`, or `.md` inside **Documentation** (`#docs`). General search matches filename/href substring; SQL-style `%` / `_` wildcards match the catalog link path (e.g. `%scripts_errors%`, `verify_%`).
 
 **Maintenance:**
 

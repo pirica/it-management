@@ -149,7 +149,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         </p>
         <div class="scripts-intro-tools">
             <div id="scripts-tag-filter-bar" class="scripts-tag-filter-bar" role="group" aria-label="Filter by table tag"></div>
-            <input type="search" id="scripts-catalog-filter" class="scripts-filter" placeholder="Filter scripts… (try Info, *.json, *.txt, *.md)" autocomplete="off" aria-label="Filter scripts catalog">
+            <input type="search" id="scripts-catalog-filter" class="scripts-filter" placeholder="Filter scripts… (%filename%, *.json, *.txt, *.md)" autocomplete="off" aria-label="Filter scripts catalog">
             <span class="scripts-filter-hint" id="scripts-catalog-filter-count" aria-live="polite"></span>
         </div>
         <div class="scripts-cli-hint">
@@ -2858,17 +2858,56 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         return false;
     }
 
+    function rowCatalogFilename(row) {
+        var href = rowCatalogHref(row);
+        if (href === '') {
+            return '';
+        }
+        var parts = href.split('/');
+        return parts[parts.length - 1];
+    }
+
+    function catalogLikePatternToRegExp(pattern) {
+        if (pattern.indexOf('%') === -1 && pattern.indexOf('_') === -1) {
+            return null;
+        }
+        var escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        escaped = escaped.replace(/%/g, '.*').replace(/_/g, '.');
+        return new RegExp('^' + escaped + '$', 'i');
+    }
+
+    function rowMatchesLikePattern(row, pattern) {
+        var likeRe = catalogLikePatternToRegExp(pattern);
+        if (!likeRe) {
+            return false;
+        }
+        var href = rowCatalogHref(row);
+        var filename = rowCatalogFilename(row);
+        var link = row.querySelector('td:first-child a');
+        var linkText = link ? (link.textContent || '').replace(/^\s+|\s+$/g, '').toLowerCase() : '';
+        return likeRe.test(href) || likeRe.test(filename) || likeRe.test(linkText);
+    }
+
     function rowTextMatchesQuery(row, query, tagsAttr) {
-        if (query === '.json' || query === 'json' || query === '*.json') {
+        if (query === '*.json' || query === '.json') {
             return rowHasExtension(row, '.json');
         }
-        if (query === '.txt' || query === 'txt' || query === '*.txt') {
+        if (query === '*.txt' || query === '.txt') {
             return rowHasExtension(row, '.txt');
         }
-        if (query === '.md' || query === 'md' || query === '*.md') {
+        if (query === '*.md' || query === '.md') {
             return rowHasExtension(row, '.md');
         }
-        return query === ''
+        if (query === '') {
+            return true;
+        }
+        if (query.indexOf('%') !== -1 || query.indexOf('_') !== -1) {
+            return rowMatchesLikePattern(row, query);
+        }
+        var href = rowCatalogHref(row);
+        var filename = rowCatalogFilename(row);
+        return href.indexOf(query) !== -1
+            || filename.indexOf(query) !== -1
             || row.textContent.toLowerCase().indexOf(query) !== -1
             || tagsAttr.indexOf(query) !== -1;
     }

@@ -91,21 +91,54 @@ function verify_catalog_row_has_ext(string $href, string $ext): bool
     return $ext !== '' && strlen($href) >= strlen($ext) && substr($href, -strlen($ext)) === $ext;
 }
 
-// Simulate JS filter for *.json / *.txt / *.md documentation files.
+function verify_catalog_row_filename(string $href): string
+{
+    if ($href === '') {
+        return '';
+    }
+    $parts = explode('/', $href);
+
+    return (string)end($parts);
+}
+
+function verify_catalog_like_matches(string $pattern, string $href, string $filename, string $linkText): bool
+{
+    if (strpos($pattern, '%') === false && strpos($pattern, '_') === false) {
+        return false;
+    }
+    $regex = '/^' . str_replace(
+        ['\\', '.', '%', '_'],
+        ['\\\\', '\\.', '.*', '.'],
+        $pattern
+    ) . '$/i';
+
+    return (bool) preg_match($regex, $href)
+        || (bool) preg_match($regex, $filename)
+        || (bool) preg_match($regex, $linkText);
+}
+
+// Simulate JS filter for *.json / *.txt / *.md documentation files and %LIKE% filename search.
 function verify_catalog_filter_matches(string $href, string $dataTags, string $rowText, string $query, string $activeTag): bool
 {
     $tagsAttr = strtolower($dataTags);
     $query = strtolower(trim($query));
     $href = strtolower($href);
+    $filename = verify_catalog_row_filename($href);
+    $linkText = strtolower(trim((string)preg_replace('/\s+/', ' ', $rowText)));
 
-    if ($query === '.json' || $query === 'json' || $query === '*.json') {
+    if ($query === '*.json' || $query === '.json') {
         $textMatch = verify_catalog_row_has_ext($href, '.json');
-    } elseif ($query === '.txt' || $query === 'txt' || $query === '*.txt') {
+    } elseif ($query === '*.txt' || $query === '.txt') {
         $textMatch = verify_catalog_row_has_ext($href, '.txt');
-    } elseif ($query === '.md' || $query === 'md' || $query === '*.md') {
+    } elseif ($query === '*.md' || $query === '.md') {
         $textMatch = verify_catalog_row_has_ext($href, '.md');
+    } elseif ($query === '') {
+        $textMatch = true;
+    } elseif (strpos($query, '%') !== false || strpos($query, '_') !== false) {
+        $textMatch = verify_catalog_like_matches($query, $href, $filename, $linkText);
     } else {
-        $textMatch = $query === ''
+        $textMatch = strpos($href, $query) !== false
+            || strpos($filename, $query) !== false
             || stripos($rowText, $query) !== false
             || strpos($tagsAttr, $query) !== false;
     }
@@ -137,12 +170,16 @@ $txtSearchHits = 0;
 $mdSearchHits = 0;
 $infoChipHits = 0;
 $mdChipHits = 0;
+$likeHits = 0;
 foreach ($rows as $row) {
     if (!preg_match('/\bdata-tags=["\']([^"\']*)["\']/i', $row['full'], $tagMatch)) {
         continue;
     }
     $plain = html_entity_decode(strip_tags($row['full']), ENT_QUOTES, 'UTF-8');
     $href = verify_catalog_row_href($row['full']);
+    if (verify_catalog_filter_matches($href, $tagMatch[1], $plain, '%scripts_errors%', '')) {
+        $likeHits++;
+    }
     if (verify_catalog_filter_matches($href, $tagMatch[1], $plain, '*.json', '')) {
         $jsonSearchHits++;
     }
@@ -179,7 +216,12 @@ echo 'Simulated search *.txt hits: ' . $txtSearchHits . $nl;
 echo 'Simulated search *.md hits: ' . $mdSearchHits . $nl;
 echo 'Simulated Info chip hits: ' . $infoChipHits . $nl;
 echo 'Simulated *.md chip hits: ' . $mdChipHits . $nl;
+echo 'Simulated %scripts_errors% LIKE hits: ' . $likeHits . $nl;
 echo 'CSS nth-child(3)=what bug present: ' . ($cssNthChildBug ? 'YES' : 'no') . $nl . $nl;
+
+if ($likeHits < 1) {
+    $failures[] = 'Filter simulation: expected at least 1 hit for %scripts_errors% filename LIKE search';
+}
 
 $expectedDocs = itm_script_catalog_documentation_files_discover($root . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR);
 $expectedJson = 0;
