@@ -62,20 +62,21 @@ Each catalog card shows **table tags** derived from static analysis of the linke
 | 0 (no schema table references, bash, or external link) | `Codebase` |
 | `.py` catalog entry (Playwright / screenshot utilities) | `Python` |
 | `.sh` catalog entry (bash / CI wrappers) | `Server` |
-| `.json` / `.txt` catalog entry, or any catalog row referencing `scripts/data/*` / `scripts/*` `.json` / `.txt` | `Info` (exclusive when no PHP `$conn` tables; otherwise `Info` + table name(s) or `Mixed`) |
-| `.md` catalog entry, or any catalog row referencing `scripts/*` `.md` (bare `AGENT_NOTES.md` → `scripts/AGENT_NOTES.md`) | `Markdown` (same exclusivity rule) |
+| `.json` / `.txt` row under **Documentation** (`scripts/data/*` or companion data files) | `Info` |
+| `.md` row under **Documentation** (`scripts/*.md`, `scripts/data/*.md`) | `Markdown` |
 | 1 | table name (e.g. `employees`) |
 | 2 | both table names |
 | 3+ | `Mixed` |
 
-**Scan scope:** PHP `$conn` SQL + requires + spawn targets + filename tokens for table tags. `scripts/data/*` and `scripts/*` `.json` / `.txt` / `.md` references set **Info** / **Markdown**; data file contents are **not** mined for `Mixed`. Catalog row copy is scanned for the same path patterns. Text search also matches `data-tags` (typing `.json`, `.txt`, or `Info` finds Info-tagged rows).
+**Scan scope:** PHP `$conn` SQL + requires + spawn targets + filename tokens for `*.php` rows. **Info / Markdown apply to documentation file rows only** (not inferred from PHP references). Auto-list data/docs files with `apply_script_catalog_documentation_files.php`.
 
-**UI:** tag pills on each card (`scripts-badge-tag`), `data-tags` on `<tr>`, chip bar filter (`All` / `Codebase` / `Python` / `Server` / `Info` / `Markdown` / `Mixed` / table names) plus alias chips `*.json`, `*.txt`, `*.md` (map to Info / Markdown). Text search matches row copy and `data-tags`; typing `.json`, `.txt`, `*.json`, or `*.txt` matches **Info tag only** (not row copy that mentions those literals); `.md` / `*.md` matches **Markdown tag only**. Card grid uses five columns (Script, Access, Tags, What, How) — `td:nth-child(4)` / `nth-child(5)` for What/How.
+**UI:** Extension search/chips (`*.json`, `*.txt`, `*.md`, `Info`, `Markdown`) match catalog hrefs ending in `.json`, `.txt`, or `.md` inside **Documentation** (`#docs`).
 
 **Maintenance:**
 
 | Script | Purpose |
 |--------|---------|
+| `php scripts/apply_script_catalog_documentation_files.php` | Dry-run; `--apply` inserts `scripts/data/*.{json,txt,md}` + `scripts/*.md` under **Documentation** |
 | `php scripts/apply_script_catalog_tags.php` | Dry-run; `--apply` writes `scripts/data/script_catalog_tags.json` and patches catalog markup |
 | `php scripts/check_script_catalog_tags.php` | Exit `1` when tags drift from computed scan |
 | `php scripts/verify_scripts_catalog_filter.php` | Scrape `scripts/scripts.php`; simulate `*.json` / `*.txt` / `*.md` search and chip filters; fail on CSS column drift |

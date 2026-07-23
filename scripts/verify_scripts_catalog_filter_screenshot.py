@@ -57,11 +57,12 @@ def parse_verify_counts(output):
     """Read expected totals from verify_scripts_catalog_filter.php stdout."""
     patterns = {
         'total': r'Catalog rows parsed:\s*(\d+)',
-        'info': r'Rows with Info tag:\s*(\d+)',
-        'markdown': r'Rows with Markdown tag:\s*(\d+)',
         'json_hits': r'Simulated search \*\.json hits:\s*(\d+)',
         'txt_hits': r'Simulated search \*\.txt hits:\s*(\d+)',
         'md_hits': r'Simulated search \*\.md hits:\s*(\d+)',
+        'json_files': r'Documentation \.json rows:\s*(\d+)',
+        'txt_files': r'Documentation \.txt rows:\s*(\d+)',
+        'md_files': r'Documentation \.md rows:\s*(\d+)',
     }
     counts = {}
     for key, pattern in patterns.items():
@@ -71,6 +72,7 @@ def parse_verify_counts(output):
         counts[key] = int(match.group(1))
     if 'PASS' not in output:
         raise RuntimeError('verify_scripts_catalog_filter.php did not PASS before screenshots')
+    counts['info'] = counts['json_files'] + counts['txt_files']
     return counts
 
 
@@ -154,20 +156,38 @@ def assert_tags_column_label(page):
     )
 
 
-def assert_first_visible_has_tag_kind(page, kind):
+def assert_first_visible_info_data_file(page):
     page.wait_for_function(
-        f"""() => {{
+        """() => {
             const row = document.querySelector('.scripts-catalog tbody tr:not(.scripts-catalog-hidden)');
             if (!row) return false;
-            return row.querySelector('.scripts-badge-tag[data-tag-kind="{kind}"]') !== null;
+            const link = row.querySelector('td:first-child a');
+            if (!link) return false;
+            const href = (link.getAttribute('href') || '').toLowerCase();
+            return href.endsWith('.json') || href.endsWith('.txt');
+        }""",
+        timeout=10000,
+    )
+
+
+def assert_first_visible_href_ends_with(page, ext):
+    page.wait_for_function(
+        f"""() => {{
+            const row = document.querySelector('#docs .scripts-catalog tbody tr:not(.scripts-catalog-hidden)');
+            if (!row) return false;
+            const link = row.querySelector('td:first-child a');
+            if (!link) return false;
+            const href = (link.getAttribute('href') || '').toLowerCase();
+            return href.endsWith({ext!r});
         }}""",
         timeout=10000,
     )
 
 
-def screenshot_catalog_region(page, path):
-    wrap = page.locator('.scripts-wrap').first
-    wrap.screenshot(path=path)
+def screenshot_docs_section(page, path):
+    page.locator('#docs').scroll_into_view_if_needed()
+    time.sleep(0.3)
+    page.locator('#docs').screenshot(path=path)
 
 
 def capture_default(page, base_url, path, counts):
@@ -178,47 +198,49 @@ def capture_default(page, base_url, path, counts):
     reset_filters(page)
     assert_visible_count(page, counts['total'], 'default view')
     assert_tags_column_label(page)
-    screenshot_catalog_region(page, path)
+    page.locator('#docs').scroll_into_view_if_needed()
+    time.sleep(0.3)
+    page.locator('#docs').screenshot(path=path)
 
 
 def capture_chip_info(page, base_url, path, counts):
     reset_filters(page)
     click_tag_chip(page, 'Info')
     assert_visible_count(page, counts['info'], 'Info chip')
-    assert_first_visible_has_tag_kind(page, 'info')
-    screenshot_catalog_region(page, path)
+    assert_first_visible_info_data_file(page)
+    screenshot_docs_section(page, path)
 
 
 def capture_search_json(page, base_url, path, counts):
     reset_filters(page)
     set_search(page, '*.json')
     assert_visible_count(page, counts['json_hits'], 'search *.json')
-    assert_first_visible_has_tag_kind(page, 'info')
-    screenshot_catalog_region(page, path)
+    assert_first_visible_href_ends_with(page, '.json')
+    screenshot_docs_section(page, path)
 
 
 def capture_search_txt(page, base_url, path, counts):
     reset_filters(page)
     set_search(page, '*.txt')
     assert_visible_count(page, counts['txt_hits'], 'search *.txt')
-    assert_first_visible_has_tag_kind(page, 'info')
-    screenshot_catalog_region(page, path)
+    assert_first_visible_href_ends_with(page, '.txt')
+    screenshot_docs_section(page, path)
 
 
 def capture_search_md(page, base_url, path, counts):
     reset_filters(page)
     set_search(page, '*.md')
     assert_visible_count(page, counts['md_hits'], 'search *.md')
-    assert_first_visible_has_tag_kind(page, 'markdown')
-    screenshot_catalog_region(page, path)
+    assert_first_visible_href_ends_with(page, '.md')
+    screenshot_docs_section(page, path)
 
 
 def capture_chip_md(page, base_url, path, counts):
     reset_filters(page)
     click_tag_chip(page, '*.md')
     assert_visible_count(page, counts['md_hits'], '*.md chip')
-    assert_first_visible_has_tag_kind(page, 'markdown')
-    screenshot_catalog_region(page, path)
+    assert_first_visible_href_ends_with(page, '.md')
+    screenshot_docs_section(page, path)
 
 
 CAPTURES = {
