@@ -163,8 +163,19 @@ $crud_title = $cleanTitle;
         <div class="content">
             <h1 title="My Activity"><?php echo sanitize($resolvedEmoji !== '' ? $resolvedEmoji : '🕒'); ?></h1>
 
-            <p style="margin:0 0 16px;color:var(--text-muted, #6b7280);font-size:13px;line-height:1.45;">
-                Your changes to shared company modules (equipment, employees, tickets, and similar). Personal vault modules — passwords, notes, bookmarks, private contacts, to-do, events, and email send logs — are <strong>never audited</strong>: the system does not write them to <code>audit_logs</code> (no database triggers, no PHP audit hooks). They cannot appear here or under Admin → Audit Logs; that data stays 100% private.
+            <p style="margin:0 0 12px;color:var(--text-muted, #6b7280);font-size:13px;line-height:1.45;">
+                Your changes to shared company modules (equipment, employees, tickets, and similar). The system does not write <code>audit_logs</code> for your private information (no database triggers, no PHP audit hooks). They cannot appear here or under Admin → Audit Logs.
+            </p>
+            <p style="margin:0 0 8px;color:var(--text-muted, #6b7280);font-size:13px;line-height:1.45;">
+                <strong>The following are 100% private and never audited:</strong>
+            </p>
+            <ul style="margin:0 0 12px 18px;color:var(--text-muted, #6b7280);font-size:13px;line-height:1.5;">
+                <?php foreach (myactivity_private_audit_exempt_labels() as $privateLabel): ?>
+                    <li><?php echo sanitize($privateLabel); ?></li>
+                <?php endforeach; ?>
+            </ul>
+            <p style="margin:0 0 16px;color:var(--text-muted, #6b7280);font-size:12px;line-height:1.45;">
+                <?php echo sanitize(myactivity_private_audit_exempt_note()); ?>
             </p>
 
             <div class="card myactivity-filters" style="margin-bottom:16px;" data-itm-no-export-pdf="1" data-itm-no-export-excel="1" data-itm-no-import-excel="1">
