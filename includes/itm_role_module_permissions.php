@@ -313,6 +313,7 @@ if (!function_exists('itm_crud_rbac_exempt_module_slugs')) {
             'calendar',
             'company_module_access',
             'contacts',
+            'cve',
             'employee_system_access',
             'employees',
             'equipment',
