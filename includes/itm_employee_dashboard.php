@@ -263,6 +263,23 @@ if (!function_exists('itm_employee_dashboard_load_context')) {
         });
         $activityList = array_slice($activityList, 0, 10);
 
+        $myActivityCount = 0;
+        $myActivityStmt = mysqli_prepare(
+            $conn,
+            'SELECT COUNT(*) AS cnt FROM audit_logs WHERE employee_id = ? AND company_id = ?'
+        );
+        if ($myActivityStmt) {
+            mysqli_stmt_bind_param($myActivityStmt, 'ii', $userId, $companyId);
+            if (mysqli_stmt_execute($myActivityStmt)) {
+                $myActivityRes = mysqli_stmt_get_result($myActivityStmt);
+                $myActivityRow = $myActivityRes ? mysqli_fetch_assoc($myActivityRes) : null;
+                if (is_array($myActivityRow)) {
+                    $myActivityCount = (int)($myActivityRow['cnt'] ?? 0);
+                }
+            }
+            mysqli_stmt_close($myActivityStmt);
+        }
+
         return [
             'reload_required' => false,
             'file_count' => (int)$fileCount,
@@ -278,7 +295,97 @@ if (!function_exists('itm_employee_dashboard_load_context')) {
             'system_access_count_1' => $systemAccessCount1,
             'workstation' => $workstation,
             'activity_list' => $activityList,
+            'my_activity_count' => $myActivityCount,
+            'private_module_counts' => itm_employee_dashboard_fetch_private_module_counts($conn, $userId, $companyId),
         ];
+    }
+}
+
+if (!function_exists('itm_employee_dashboard_private_module_definitions')) {
+    /**
+     * Private-data module cards (AGENTS.md → Private data — no audit trail).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    function itm_employee_dashboard_private_module_definitions()
+    {
+        return [
+            ['slug' => 'passwords', 'label' => 'Passwords', 'icon' => '🔑', 'table' => 'password_entries', 'field' => 'employee_id'],
+            ['slug' => 'private_contacts', 'label' => 'Private Contacts', 'icon' => '👤', 'table' => 'private_contacts', 'field' => 'employee_id'],
+            ['slug' => 'notes', 'label' => 'Notes', 'icon' => '📋', 'table' => 'notes', 'field' => 'employee_id'],
+            ['slug' => 'bookmarks', 'label' => 'Bookmarks', 'icon' => '🔗', 'table' => 'bookmarks', 'field' => 'employee_id'],
+            ['slug' => 'todo', 'label' => 'To-Do', 'icon' => '📝', 'table' => 'todo', 'field' => 'created_by'],
+            ['slug' => 'events', 'label' => 'Events', 'icon' => '📅', 'table' => 'events', 'field' => 'created_by'],
+            ['slug' => 'emails', 'label' => 'Emails', 'icon' => '📧', 'table' => 'emails', 'field' => 'created_by'],
+        ];
+    }
+}
+
+if (!function_exists('itm_employee_dashboard_fetch_private_module_counts')) {
+    /**
+     * @return array<string, int>
+     */
+    function itm_employee_dashboard_fetch_private_module_counts($conn, $userId, $companyId)
+    {
+        $userId = (int)$userId;
+        $companyId = (int)$companyId;
+        $counts = [];
+
+        foreach (itm_employee_dashboard_private_module_definitions() as $def) {
+            $slug = (string)($def['slug'] ?? '');
+            $table = (string)($def['table'] ?? '');
+            $field = (string)($def['field'] ?? '');
+            if ($slug === '' || $table === '' || $field === ''
+                || !function_exists('itm_is_safe_identifier')
+                || !itm_is_safe_identifier($table)
+                || !itm_is_safe_identifier($field)) {
+                continue;
+            }
+
+            $sql = 'SELECT COUNT(*) AS cnt FROM `' . $table . '` WHERE `' . $field . '` = ? AND `company_id` = ? AND `deleted_at` IS NULL';
+            $stmt = mysqli_prepare($conn, $sql);
+            if (!$stmt) {
+                $counts[$slug] = 0;
+                continue;
+            }
+            mysqli_stmt_bind_param($stmt, 'ii', $userId, $companyId);
+            if (mysqli_stmt_execute($stmt)) {
+                $res = mysqli_stmt_get_result($stmt);
+                $row = $res ? mysqli_fetch_assoc($res) : null;
+                $counts[$slug] = is_array($row) ? (int)($row['cnt'] ?? 0) : 0;
+            } else {
+                $counts[$slug] = 0;
+            }
+            mysqli_stmt_close($stmt);
+        }
+
+        return $counts;
+    }
+}
+
+if (!function_exists('itm_employee_dashboard_company_audit_logs_count')) {
+    function itm_employee_dashboard_company_audit_logs_count($conn, $companyId)
+    {
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            return 0;
+        }
+
+        $count = 0;
+        $stmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS cnt FROM audit_logs WHERE company_id = ?');
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $companyId);
+            if (mysqli_stmt_execute($stmt)) {
+                $res = mysqli_stmt_get_result($stmt);
+                $row = $res ? mysqli_fetch_assoc($res) : null;
+                if (is_array($row)) {
+                    $count = (int)($row['cnt'] ?? 0);
+                }
+            }
+            mysqli_stmt_close($stmt);
+        }
+
+        return $count;
     }
 }
 
@@ -290,7 +397,23 @@ if (!function_exists('itm_employee_dashboard_card_shown_tables')) {
      */
     function itm_employee_dashboard_card_shown_tables()
     {
-        return ['equipment', 'tickets', 'password_entries', 'attempts'];
+        return [
+            'equipment',
+            'tickets',
+            'password_entries',
+            'password_folders',
+            'attempts',
+            'employee_sidebar_preferences',
+            'private_contacts',
+            'notes',
+            'note_labels',
+            'bookmarks',
+            'bookmark_folders',
+            'todo',
+            'todo_categories',
+            'events',
+            'emails',
+        ];
     }
 }
 

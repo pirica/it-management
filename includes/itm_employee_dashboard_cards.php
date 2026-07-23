@@ -3,14 +3,20 @@
  * Render employee dashboard stat card sections.
  *
  * Expects variables from itm_employee_dashboard_load_context() in scope.
+ * Optional: $itmDashCardContext = 'admin' shows company Audit Logs section.
  *
  * @var mysqli $conn
  * @var int $company_id
+ * @var int $user_id
  */
 
 if (!isset($dash) || !is_array($dash)) {
     return;
 }
+
+$itmDashCardContext = (string)($itmDashCardContext ?? 'employee');
+$dashIsAdminContext = ($itmDashCardContext === 'admin');
+$dashEmployeeId = (int)($user_id ?? ($_SESSION['employee_id'] ?? 0));
 
 $dashShownTables = itm_employee_dashboard_card_shown_tables();
 $dashAssignedAssets = (int)($dash['assigned_assets_count'] ?? 0);
@@ -23,10 +29,14 @@ $dashAlertsForMe = (int)($dash['total_alerts_forme'] ?? 0);
 $dashVaultCount = (int)($dash['vault_entries_count'] ?? 0);
 $dashLastLogin = $dash['last_login_row']['created_at'] ?? null;
 $dashJoinedAt = (string)($current_user['created_at'] ?? '');
-$dashWorkstation = $dash['workstation'] ?? null;
-$dashActivityCount = count($dash['activity_list'] ?? []);
+$dashMyActivityCount = (int)($dash['my_activity_count'] ?? 0);
+$dashPrivateModuleCounts = is_array($dash['private_module_counts'] ?? null) ? $dash['private_module_counts'] : [];
 $dashSystemAccessCount = (int)($dash['system_access_count_1'] ?? 0);
+$dashWorkstation = $dash['workstation'] ?? null;
 $dashAllStats = is_array($dash['all_stats'] ?? null) ? $dash['all_stats'] : [];
+$dashCompanyAuditLogsCount = $dashIsAdminContext
+    ? itm_employee_dashboard_company_audit_logs_count($conn, (int)$company_id)
+    : 0;
 
 /**
  * @param string $href
@@ -79,6 +89,18 @@ $renderDashSection = static function ($title, $subtitle, $renderCards, $sectionC
 ?>
 <div class="itm-emp-dash-sections">
 <?php
+if ($dashIsAdminContext) {
+    $renderDashSection('Company audit', 'Compliance and change history for this tenant', static function ($renderDashCard) use (
+        $conn,
+        $company_id,
+        $dashCompanyAuditLogsCount
+    ) {
+        if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'audit_logs')) {
+            $renderDashCard('modules/audit_logs/index.php', $dashCompanyAuditLogsCount, 'Audit Logs', '📋');
+        }
+    });
+}
+
 $renderDashSection('My work', 'Assets, tickets, and assignments', static function ($renderDashCard) use (
     $conn,
     $company_id,
@@ -119,7 +141,8 @@ $renderDashSection('My work', 'Assets, tickets, and assignments', static functio
         );
     }
     if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'equipment')) {
-        $renderDashCard('modules/equipment/index.php', $dashWorkstation ? '1' : '0', 'My Hardware', '💻');
+        $workstation = $dashWorkstation ?? null;
+        $renderDashCard('modules/equipment/index.php', $workstation ? '1' : '0', 'My Hardware', '💻');
     }
     if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'employee_system_access')) {
         $renderDashCard('modules/employee_system_access/index.php', $dashSystemAccessCount, 'System Access', '🔑');
@@ -160,19 +183,46 @@ $renderDashSection('Personal', 'Files, vault, and your modules', static function
     }
 });
 
+$renderDashSection('Private', 'Personal modules with no audit trail', static function ($renderDashCard) use (
+    $conn,
+    $company_id,
+    $dashEmployeeId,
+    $dashPrivateModuleCounts
+) {
+    foreach (itm_employee_dashboard_private_module_definitions() as $privateDef) {
+        $slug = (string)($privateDef['slug'] ?? '');
+        if ($slug === '' || !itm_employee_dashboard_module_slug_allowed($conn, $company_id, $slug)) {
+            continue;
+        }
+        $icon = (string)($privateDef['icon'] ?? '📊');
+        if (function_exists('itm_resolve_module_sidebar_icon')) {
+            $resolvedIcon = trim((string)itm_resolve_module_sidebar_icon($conn, (int)$company_id, $dashEmployeeId, $slug));
+            if ($resolvedIcon !== '') {
+                $icon = $resolvedIcon;
+            }
+        }
+        $renderDashCard(
+            'modules/' . $slug . '/index.php',
+            (int)($dashPrivateModuleCounts[$slug] ?? 0),
+            (string)($privateDef['label'] ?? $slug),
+            $icon
+        );
+    }
+});
+
 $renderDashSection('Activity', 'Login history and recent actions', static function ($renderDashCard) use (
     $conn,
     $company_id,
     $dashLastLogin,
     $dashJoinedAt,
-    $dashActivityCount
+    $dashMyActivityCount
 ) {
     $lastLoginDisplay = $dashLastLogin ? date('d/m/y', strtotime((string)$dashLastLogin)) : 'Never';
     $joinedDisplay = $dashJoinedAt !== '' ? date('d/m/y', strtotime($dashJoinedAt)) : '—';
     $renderDashCard('#', $lastLoginDisplay, 'Last Login', '🕒', false);
     $renderDashCard('#', $joinedDisplay, 'Joined Date', '📅', false);
-    if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'audit_logs')) {
-        $renderDashCard('modules/audit_logs/index.php', $dashActivityCount, 'My Activity', '🕒');
+    if (itm_employee_dashboard_module_slug_allowed($conn, $company_id, 'myactivity')) {
+        $renderDashCard('modules/myactivity/index.php', $dashMyActivityCount, 'My Activity', '🕒');
     }
 }, 'itm-emp-dash-section--activity');
 ?>

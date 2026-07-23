@@ -25,7 +25,6 @@ if (!function_exists('itm_user_config_stat_definitions')) {
             ['table' => 'employee_companies', 'field' => 'employee_id', 'label' => 'Companies', 'slug' => 'employee_companies', 'use_company' => true, 'use_active' => true],
             ['table' => 'employee_companies', 'field' => 'granted_by_employee_id', 'label' => 'Companies Access Granted', 'slug' => 'employee_companies', 'use_company' => true, 'use_active' => true],
             ['table' => 'employee_onboarding_requests', 'field' => 'employee_id', 'label' => 'Onboarding Req', 'slug' => 'employee_onboarding_requests', 'use_company' => true, 'use_active' => true],
-            ['table' => 'employee_sidebar_preferences', 'field' => 'employee_id', 'label' => 'Sidebar Prefs', 'slug' => 'employee_sidebar_preferences', 'use_company' => true, 'use_active' => true],
             ['table' => 'equipment', 'field' => 'assigned_to_employee_id', 'label' => 'Assigned Equiments', 'slug' => 'equipment', 'use_company' => true, 'use_active' => true],
             ['table' => 'events', 'field' => 'assigned_to_employee_id', 'label' => 'Events for Me', 'slug' => 'events', 'use_company' => true, 'use_active' => true],
             ['table' => 'events', 'field' => 'created_by', 'label' => 'Events Created', 'slug' => 'events', 'use_company' => true, 'use_active' => true],
