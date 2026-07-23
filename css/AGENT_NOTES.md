@@ -4,7 +4,7 @@
 Contains the global application stylesheet for the IT Management system.
 
 ## 7. File Structure
-| `styles.css` | Global layout, forms, tables, badges, switch-port manager, floor-plan gallery, responsive breakpoints. List-header ➕ controls (`[data-itm-new-button-managed="server"]`, `.itm-new-button-bar`, `.itm-list-new-button`) use a fixed **40×40 px** square footprint with canonical `btn btn-primary` styling. |
+| `styles.css` | Global layout, forms, tables, badges, switch-port manager, floor-plan gallery, responsive breakpoints. List-header ➕ controls (`[data-itm-new-button-managed="server"]`, `.itm-new-button-bar`, `.itm-list-new-button`) use a fixed **40×40 px** square footprint with canonical `btn btn-primary` styling. Employee `dashboard.php` uses `.itm-emp-dash-*` scrollable auto-height sections (My work / Personal side-by-side; Private + Activity full width with `auto-fit` card grids). |
 | `chatbot.css` | Floating IT Support Assistant widget (`#itmChatbotToggle`, `#itmChatbotContainer`). Fixed bottom-right with `bottom: 72px` so the toggle sits just above list pagination controls. |
 - **Module inline `<style>` blocks** — some modules (calendar, todo, explorer, system_status, rack planner, etc.) add page-specific CSS in their entry PHP files. Prefer shared utilities in `styles.css` for patterns reused across modules.
 

@@ -64,16 +64,16 @@ if (strpos($adminSource, 'scripts/scripts.php') === false) {
     apg_verify_pass('admin.php Settings card links to Scripts catalog');
 }
 
-if (strpos($adminSource, 'itm_employee_dashboard_cards.php') === false) {
-    apg_verify_fail('admin.php must include employee dashboard cards');
+if (strpos($adminSource, 'itm_admin_dashboard_cards.php') === false) {
+    apg_verify_fail('admin.php must include admin dashboard cards');
 } else {
-    apg_verify_pass('admin.php includes employee dashboard cards');
+    apg_verify_pass('admin.php includes admin dashboard cards');
 }
 
-if (strpos($adminSource, "itmDashCardContext = 'admin'") === false) {
-    apg_verify_fail('admin.php must set admin dashboard card context');
+if (strpos($adminSource, 'itm_employee_dashboard_cards.php') !== false) {
+    apg_verify_fail('admin.php must not include employee dashboard viewport cards');
 } else {
-    apg_verify_pass('admin.php sets admin dashboard card context');
+    apg_verify_pass('admin.php uses separate admin card layout');
 }
 
 if ($failures > 0) {

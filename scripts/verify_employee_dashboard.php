@@ -136,12 +136,16 @@ if (strpos($cardsSource, 'modules/myactivity/index.php') === false) {
     ed_verify_pass('Employee dashboard My Activity links to myactivity module');
 }
 
-if (strpos($cardsSource, 'modules/audit_logs/index.php') === false) {
-    ed_verify_pass('Audit Logs card is gated to admin dashboard context');
-} elseif (strpos($cardsSource, '$dashIsAdminContext') !== false || strpos($cardsSource, "itmDashCardContext === 'admin'") !== false) {
-    ed_verify_pass('Audit Logs card is gated to admin dashboard context');
+if (strpos($cardsSource, 'modules/audit_logs/index.php') !== false) {
+    ed_verify_fail('Employee dashboard cards must not link Audit Logs');
 } else {
-    ed_verify_fail('Audit Logs card must only render when admin dashboard context is active');
+    ed_verify_pass('Employee dashboard has no Audit Logs card');
+}
+
+if (strpos($cardsSource, 'itm-emp-dash-section--private') === false) {
+    ed_verify_fail('Private section must use full-width dashboard row (itm-emp-dash-section--private)');
+} else {
+    ed_verify_pass('Private section uses full-width dashboard row');
 }
 
 if (strpos($cardsSource, 'Sidebar Prefs') !== false) {
@@ -154,6 +158,20 @@ if (strpos($cardsSource, "'Private'") === false && strpos($cardsSource, '"Privat
     ed_verify_fail('Employee dashboard cards must include Private module section');
 } else {
     ed_verify_pass('Employee dashboard includes Private module section');
+}
+
+if (strpos($stylesSource, 'itm-emp-dash-section--private .itm-emp-dash-grid') === false) {
+    ed_verify_fail('Private section CSS must use responsive auto-fit card grid');
+} else {
+    ed_verify_pass('Private section uses responsive card grid');
+}
+
+if (strpos($stylesSource, 'grid-auto-rows: auto') === false
+    || strpos($stylesSource, 'body.itm-employee-dashboard-page .main-content') === false
+    || strpos($stylesSource, 'overflow: visible') === false) {
+    ed_verify_fail('Employee dashboard CSS must use scrollable auto-height sections');
+} else {
+    ed_verify_pass('Employee dashboard uses scrollable auto-height layout');
 }
 
 if (strpos($stylesSource, 'itm-emp-dash-section--activity .itm-emp-dash-grid') === false
