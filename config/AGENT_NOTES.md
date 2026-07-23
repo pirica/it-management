@@ -7,7 +7,7 @@ Maintains system-wide configuration, database credentials, path constants, and c
 - Interacts with **companies** for initial tenant resolution.
 
 ## 4. Business Rules (Critical for Agents)
-- **Environment Variables**: Prefer loading secrets from environment variables (e.g., `ITM_DB_HOST`). Optional API keys in project root `.env` (see `.env.example`): `IP2WHOIS_API_KEY` / `ITM_IP2WHOIS_API_KEY` (IP Subnets hosted domains), `NVD_API_KEY` / `ITM_NVD_API_KEY` (News module NVD CVE feed). Drift audit: `php scripts/check_env_vars_in_use.php` (catalog: `scripts/scripts.php`).
+- **Environment Variables**: Prefer loading secrets from environment variables. Optional keys in project root `.env` (see `.env.example`; drift audit: `php scripts/check_env_vars_in_use.php`): **Database** — `DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME`; **Deployment** — `ITM_APP_URL`, `ITM_ALLOWED_HOSTS`, `ITM_MAINTENANCE_TOKEN`, `SYSTEM_STATUS_DISABLE_TENANT_FALLBACK`; **IP2WHOIS** — `IP2WHOIS_API_KEY` / `ITM_IP2WHOIS_API_KEY` (IP Subnets hosted domains); **NVD** — `NVD_API_KEY` / `ITM_NVD_API_KEY` (News module); **Resend** — `RESEND_API_KEY` (SMTP fallback in `includes/itm_email.php`). Tooling-only vars (`ITM_SKIP_DB_TESTS`, `PHP_BIN`, screenshot env, etc.) are not listed in `.env.example`.
 - **No PDO**: The system strictly uses `mysqli`.
 - **Zero Dependencies**: Do not introduce external packages (Composer/NPM).
 - **Administrator helpers**: `itm_is_admin()` checks role/username; `itm_require_admin()` enforces admin access (HTTP 403 on POST, redirect on GET).
