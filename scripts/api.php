@@ -324,10 +324,10 @@ function itmDocExplorerDownloadEndpoints(): array
         ],
         [
             'method' => 'GET',
-            'path' => 'modules/explorer/file.php?path={relative_path}',
-            'params' => 'path (session cookie)',
-            'response' => 'File bytes (image, PDF, text, or attachment)',
-            'purpose' => 'Serve authorised files from files/{company_id}/ after ACL checks (deny_http bypass).',
+            'path' => 'modules/explorer/file.php?path={relative_path}&download=1',
+            'params' => 'path (session cookie); optional download=1 for Content-Disposition attachment',
+            'response' => 'File bytes (image, PDF, text, Office, ZIP, or attachment)',
+            'purpose' => 'Serve authorised files from files/{company_id}/ after ACL checks (deny_http bypass). Explorer context menu Download uses download=1.',
         ],
     ];
 }
