@@ -1413,6 +1413,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Static audit: every <code>modules/*/index.php</code> that uses <code>foreach ($displayFieldColumns …)</code> must assign <code>$displayFieldColumns</code> first.</td>
                     <td>Browser: plain-text report. CLI: <code>php scripts/check_display_field_columns_search.php</code> — run after bulk CRUD/search changes; exit <code>1</code> on failure.</td>
                 </tr>
+                <tr data-tags="Codebase">
+                    <td><a href="check_env_vars_in_use.php" target="_blank" rel="nofollow noreferrer">check_env_vars_in_use.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Static audit: scans PHP, Python, and shell sources for <code>getenv()</code>, <code>$_ENV</code>, <code>os.environ</code>, and <code>${VAR}</code> reads; compares against <code>.env.example</code>. Reports matched keys, example-only placeholders, and undocumented app/tooling/OS vars.</td>
+                    <td>Browser: plain-text report (Administrator session). CLI: <code>php scripts/check_env_vars_in_use.php</code> — default informational (exit <code>0</code>); <code>--strict</code> / <code>?strict=1</code> exits <code>1</code> on example-only or undocumented app drift. JSON: <code>--json</code> / <code>?json=1</code>. Run when changing <code>.env.example</code>, <code>config/config.php</code>, or integration env reads.</td>
+                </tr>
                 <tr data-tags="catalogs companies">
                     <td><a href="check_script_catalog_tags.php" target="_blank" rel="nofollow noreferrer">check_script_catalog_tags.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
