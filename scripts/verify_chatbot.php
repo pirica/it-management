@@ -143,6 +143,21 @@ if (!$uiColRes || mysqli_num_rows($uiColRes) === 0) {
     chat_verify_fail('ui_configuration.enable_chatbot column missing.');
 } else {
     chat_verify_pass('ui_configuration.enable_chatbot column exists.');
+    $defaultRow = mysqli_fetch_assoc(mysqli_query($conn, "SHOW COLUMNS FROM ui_configuration LIKE 'enable_chatbot'"));
+    $columnDefault = (string)($defaultRow['Default'] ?? '');
+    if ($columnDefault !== '1') {
+        chat_verify_fail('ui_configuration.enable_chatbot column default must be 1.');
+    } else {
+        chat_verify_pass('ui_configuration.enable_chatbot column default is 1.');
+    }
+}
+
+$demoSeedPath = ROOT_PATH . 'scripts/lib/itm_demo_module_users_seed.php';
+$demoSeedSource = is_file($demoSeedPath) ? (string)file_get_contents($demoSeedPath) : '';
+if ($demoSeedSource === '' || strpos($demoSeedSource, "1, 1, 0, 0, '25'") !== false || strpos($demoSeedSource, '1, 1, 0, 0, \\\'25\\\'') !== false) {
+    chat_verify_fail('Demo ui_configuration seed must set enable_chatbot = 1.');
+} elseif ($demoSeedSource !== '') {
+    chat_verify_pass('Demo ui_configuration seed sets enable_chatbot = 1.');
 }
 
 chat_verify_audit_triggers($conn, 'knowledge_base');

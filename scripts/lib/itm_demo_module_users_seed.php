@@ -380,7 +380,7 @@ if (!function_exists('itm_demo_module_users_ensure_ui_configuration')) {
              (company_id, employee_id, table_actions_position, new_button_position, export_buttons_position,
               back_save_position, enable_all_error_reporting, enable_audit_logs, enable_chatbot,
               enable_auto_scaffolding, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, active)
-             VALUES (?, ?, \'left\', \'left\', \'left\', \'left\', 1, 1, 0, 0, \'25\', \'⚙️ IT Controls\', ?, ?, 1)
+             VALUES (?, ?, \'left\', \'left\', \'left\', \'left\', 1, 1, 1, 0, \'25\', \'⚙️ IT Controls\', ?, ?, 1)
              ON DUPLICATE KEY UPDATE employee_id = employee_id'
         );
         if (!$stmt) {
