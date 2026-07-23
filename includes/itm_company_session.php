@@ -127,6 +127,93 @@ if (!function_exists('itm_apply_company_context_employee_session')) {
     }
 }
 
+if (!function_exists('itm_list_employee_accessible_companies')) {
+    /**
+     * Active companies the signed-in employee may choose after login.
+     *
+     * Non-admins: home tenant plus active employee_companies grants. Admins: all active companies.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    function itm_list_employee_accessible_companies(mysqli $conn, int $employeeId, $isAdmin = null): array
+    {
+        if ($employeeId <= 0) {
+            return [];
+        }
+
+        if ($isAdmin === null && function_exists('itm_is_admin')) {
+            $isAdmin = itm_is_admin($conn, $employeeId);
+        }
+
+        if ($isAdmin) {
+            $res = mysqli_query($conn, 'SELECT c.* FROM companies c WHERE c.active = 1 ORDER BY c.company');
+            if (!$res) {
+                return [];
+            }
+            $rows = [];
+            while ($row = mysqli_fetch_assoc($res)) {
+                $rows[] = $row;
+            }
+            mysqli_free_result($res);
+
+            return $rows;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT DISTINCT c.*
+             FROM companies c
+             WHERE c.active = 1
+               AND (
+                 EXISTS (
+                   SELECT 1 FROM employees e
+                   WHERE e.id = ? AND e.company_id = c.id AND e.deleted_at IS NULL
+                 )
+                 OR EXISTS (
+                   SELECT 1 FROM employee_companies ec
+                   WHERE ec.employee_id = ? AND ec.company_id = c.id AND ec.active = 1
+                 )
+               )
+             ORDER BY c.company'
+        );
+        if (!$stmt) {
+            return [];
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $employeeId, $employeeId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $rows = [];
+        if ($res) {
+            while ($row = mysqli_fetch_assoc($res)) {
+                $rows[] = $row;
+            }
+        }
+        mysqli_stmt_close($stmt);
+
+        return $rows;
+    }
+}
+
+if (!function_exists('itm_try_auto_select_single_company_session')) {
+    /**
+     * When exactly one tenant is available, apply itm_switch_active_company_session and return true.
+     */
+    function itm_try_auto_select_single_company_session(mysqli $conn, int $employeeId, $isAdmin = null): bool
+    {
+        $companies = itm_list_employee_accessible_companies($conn, $employeeId, $isAdmin);
+        if (count($companies) !== 1) {
+            return false;
+        }
+
+        $onlyCompanyId = (int)($companies[0]['id'] ?? 0);
+        if ($onlyCompanyId <= 0 || !function_exists('itm_switch_active_company_session')) {
+            return false;
+        }
+
+        return itm_switch_active_company_session($conn, $employeeId, $onlyCompanyId, $isAdmin);
+    }
+}
+
 if (!function_exists('itm_employee_has_company_access')) {
     /**
      * Whether the signed-in employee may work in the requested tenant company.

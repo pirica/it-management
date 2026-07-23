@@ -103,6 +103,36 @@ class CompanySessionTest extends TestCase
         $this->assertTrue(itm_employee_has_company_access($this->conn, $employeeId, $companyId, false));
     }
 
+    public function testListAccessibleCompaniesIncludesHomeTenantWithoutGrant(): void
+    {
+        require_once __DIR__ . '/../../../../scripts/lib/itm_script_test_employee.php';
+
+        $companyId = 1;
+        $testUser = itm_script_test_employee_create($this->conn, $companyId, [
+            'script_slug' => 'company-session-test',
+        ]);
+        if (!is_array($testUser) || (int)($testUser['id'] ?? 0) <= 0) {
+            $this->fail('Failed to create disposable test employee.');
+        }
+        $employeeId = (int)$testUser['id'];
+
+        $companies = itm_list_employee_accessible_companies($this->conn, $employeeId, false);
+        $this->assertCount(1, $companies);
+        $this->assertSame($companyId, (int)($companies[0]['id'] ?? 0));
+
+        $_SESSION['employee_id'] = $employeeId;
+        $_SESSION['login_employee_id'] = $employeeId;
+        unset($_SESSION['company_id'], $_SESSION['company_name']);
+
+        $this->assertTrue(
+            itm_try_auto_select_single_company_session($this->conn, $employeeId, false),
+            'Single home tenant should auto-select into session.'
+        );
+        $this->assertSame($companyId, (int)$_SESSION['company_id']);
+
+        itm_script_test_employee_delete($this->conn, $employeeId);
+    }
+
     private function createTempCompany(string $name): int
     {
         $incode = strtoupper(substr(md5($name), 0, 6));
