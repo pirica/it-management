@@ -2316,6 +2316,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><code>php scripts/verify_notes_ajax_contract.php</code></td>
                 </tr>
                 <tr data-tags="Mixed">
+                    <td><a href="verify_live_chat.php" target="_blank" rel="nofollow noreferrer">verify_live_chat.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Regression for Live Chat: schema tables, SLA on ticket create, chat_with ACL, employee notifications, ticket activity/comments helpers.</td>
+                    <td><code>php scripts/verify_live_chat.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/live_chat/</code>, <code>includes/itm_live_chat_*.php</code>, or ticket SLA/comment helpers.</td>
+                </tr>
+                <tr data-tags="Mixed">
                     <td><a href="verify_notes_vault.php" target="_blank" rel="nofollow noreferrer">verify_notes_vault.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>

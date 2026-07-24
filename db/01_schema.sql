@@ -1022,6 +1022,34 @@ CREATE TABLE `employees` (
   CONSTRAINT `employees_ibfk_workstation_mode` FOREIGN KEY (`workstation_mode_id`) REFERENCES `workstation_modes` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Table structure for `employee_notifications`
+DROP TABLE IF EXISTS `employee_notifications`;
+
+CREATE TABLE `employee_notifications` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `employee_id` int NOT NULL,
+  `module_slug` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `record_id` int DEFAULT NULL,
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `body` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `action_url` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_read` tinyint(1) NOT NULL DEFAULT '0',
+  `read_at` timestamp NULL DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_employee_notifications_inbox` (`company_id`,`employee_id`,`is_read`,`created_at`),
+  KEY `idx_employee_notifications_module` (`company_id`,`module_slug`,`record_id`),
+  CONSTRAINT `fk_employee_notifications_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`),
+  CONSTRAINT `fk_employee_notifications_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Table structure for `equipment`
 DROP TABLE IF EXISTS `equipment`;
 
@@ -2232,6 +2260,10 @@ CREATE TABLE `tickets` (
   `assigned_to_employee_id` int DEFAULT NULL,
   `equipment_id` int DEFAULT NULL,
   `due_date` date DEFAULT NULL,
+  `first_response_at` timestamp NULL DEFAULT NULL,
+  `resolved_at` timestamp NULL DEFAULT NULL,
+  `sla_response_due_at` timestamp NULL DEFAULT NULL,
+  `sla_resolve_due_at` timestamp NULL DEFAULT NULL,
   `is_archived` tinyint(1) NOT NULL DEFAULT '0',
   `tickets_photos` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `active` tinyint(1) DEFAULT '1',
@@ -2257,6 +2289,175 @@ CREATE TABLE `tickets` (
   CONSTRAINT `tickets_ibfk_5` FOREIGN KEY (`created_by_employee_id`) REFERENCES `employees` (`id`),
   CONSTRAINT `tickets_ibfk_6` FOREIGN KEY (`assigned_to_employee_id`) REFERENCES `employees` (`id`),
   CONSTRAINT `tickets_ibfk_7` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `ticket_activity`
+DROP TABLE IF EXISTS `ticket_activity`;
+
+CREATE TABLE `ticket_activity` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `ticket_id` int NOT NULL,
+  `actor_employee_id` int DEFAULT NULL,
+  `event_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload_json` json DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ticket_activity_ticket` (`company_id`,`ticket_id`,`created_at`),
+  KEY `idx_ticket_activity_type` (`company_id`,`event_type`),
+  CONSTRAINT `fk_ticket_activity_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`),
+  CONSTRAINT `fk_ticket_activity_ticket` FOREIGN KEY (`ticket_id`) REFERENCES `tickets` (`id`),
+  CONSTRAINT `fk_ticket_activity_actor` FOREIGN KEY (`actor_employee_id`) REFERENCES `employees` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `ticket_comments`
+DROP TABLE IF EXISTS `ticket_comments`;
+
+CREATE TABLE `ticket_comments` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `ticket_id` int NOT NULL,
+  `employee_id` int NOT NULL,
+  `body` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `is_internal` tinyint(1) NOT NULL DEFAULT '0',
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ticket_comments_ticket` (`company_id`,`ticket_id`,`created_at`),
+  CONSTRAINT `fk_ticket_comments_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`),
+  CONSTRAINT `fk_ticket_comments_ticket` FOREIGN KEY (`ticket_id`) REFERENCES `tickets` (`id`),
+  CONSTRAINT `fk_ticket_comments_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `ticket_sla_policies`
+DROP TABLE IF EXISTS `ticket_sla_policies`;
+
+CREATE TABLE `ticket_sla_policies` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `priority_id` int NOT NULL,
+  `response_minutes` int NOT NULL,
+  `resolve_minutes` int NOT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ticket_sla_policies_company_priority` (`company_id`,`priority_id`),
+  CONSTRAINT `fk_ticket_sla_policies_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`),
+  CONSTRAINT `fk_ticket_sla_policies_priority` FOREIGN KEY (`priority_id`) REFERENCES `ticket_priorities` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `live_chat_conversations`
+DROP TABLE IF EXISTS `live_chat_conversations`;
+
+CREATE TABLE `live_chat_conversations` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `conversation_type` enum('live_agent','chat_with') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ticket_id` int DEFAULT NULL,
+  `requester_employee_id` int DEFAULT NULL,
+  `assigned_to_employee_id` int DEFAULT NULL,
+  `status` enum('waiting','active','closed') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'waiting',
+  `rating` tinyint unsigned DEFAULT NULL,
+  `storage_rel_path` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_live_chat_conv_company` (`company_id`,`status`,`created_at`),
+  KEY `idx_live_chat_conv_ticket` (`company_id`,`ticket_id`),
+  KEY `requester_employee_id` (`requester_employee_id`),
+  KEY `assigned_to_employee_id` (`assigned_to_employee_id`),
+  CONSTRAINT `fk_live_chat_conv_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`),
+  CONSTRAINT `fk_live_chat_conv_ticket` FOREIGN KEY (`ticket_id`) REFERENCES `tickets` (`id`),
+  CONSTRAINT `fk_live_chat_conv_requester` FOREIGN KEY (`requester_employee_id`) REFERENCES `employees` (`id`),
+  CONSTRAINT `fk_live_chat_conv_assigned` FOREIGN KEY (`assigned_to_employee_id`) REFERENCES `employees` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `live_chat_participants`
+DROP TABLE IF EXISTS `live_chat_participants`;
+
+CREATE TABLE `live_chat_participants` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `conversation_id` int NOT NULL,
+  `employee_id` int NOT NULL,
+  `role` enum('requester','agent','peer') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'peer',
+  `last_read_at` timestamp NULL DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_live_chat_participant` (`conversation_id`,`employee_id`),
+  KEY `idx_live_chat_part_employee` (`company_id`,`employee_id`),
+  CONSTRAINT `fk_live_chat_part_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`),
+  CONSTRAINT `fk_live_chat_part_conv` FOREIGN KEY (`conversation_id`) REFERENCES `live_chat_conversations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_live_chat_part_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `live_chat_messages`
+DROP TABLE IF EXISTS `live_chat_messages`;
+
+CREATE TABLE `live_chat_messages` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `conversation_id` int NOT NULL,
+  `sender_employee_id` int NOT NULL,
+  `body` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `attachments_json` json DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_live_chat_msg_conv` (`conversation_id`,`created_at`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `fk_live_chat_msg_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`),
+  CONSTRAINT `fk_live_chat_msg_conv` FOREIGN KEY (`conversation_id`) REFERENCES `live_chat_conversations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_live_chat_msg_sender` FOREIGN KEY (`sender_employee_id`) REFERENCES `employees` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `live_chat_typing`
+DROP TABLE IF EXISTS `live_chat_typing`;
+
+CREATE TABLE `live_chat_typing` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `conversation_id` int NOT NULL,
+  `employee_id` int NOT NULL,
+  `expires_at` timestamp NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_live_chat_typing` (`conversation_id`,`employee_id`),
+  KEY `idx_live_chat_typing_expires` (`expires_at`),
+  CONSTRAINT `fk_live_chat_typing_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`),
+  CONSTRAINT `fk_live_chat_typing_conv` FOREIGN KEY (`conversation_id`) REFERENCES `live_chat_conversations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_live_chat_typing_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `ui_configuration`
 DROP TABLE IF EXISTS `ui_configuration`;

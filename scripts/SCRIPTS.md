@@ -1111,6 +1111,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_outlook_share.php` — Outlook/mail compose helpers (`includes/itm_outlook_share.php`, `js/itm-outlook-share.js`)
 - `php scripts/verify_request_password.php` — `modules/request_password/` workflow + delete guard
 - `php scripts/verify_chatbot.php` — `js/chatbot.js`, `chat_api.php`, `knowledge_base` tenant scope
+- `php scripts/verify_live_chat.php` — Live Chat schema, SLA, ACL, notifications, ticket activity/comments helpers
 
 ### Performance benchmarks
 

@@ -74,6 +74,22 @@ if ($id > 0) {
         mysqli_stmt_close($stmt);
     }
 }
+
+$ticketCommentFlash = '';
+$isSupportAgent = itm_live_chat_is_support_agent($conn, (int)($_SESSION['employee_id'] ?? 0));
+if ($item && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ticket_comment'])) {
+    itm_require_post_csrf();
+    $commentBody = trim((string)($_POST['comment_body'] ?? ''));
+    $isInternal = !empty($_POST['is_internal']) && $isSupportAgent ? 1 : 0;
+    if ($commentBody !== '') {
+        $cid = itm_ticket_comment_create($conn, (int)$company_id, (int)$item['id'], (int)$_SESSION['employee_id'], $commentBody, $isInternal);
+        $ticketCommentFlash = $cid ? 'Comment added.' : 'Failed to add comment.';
+    }
+}
+if ($item && !empty($item['id'])) {
+    itm_ticket_sla_check_breaches($conn, (int)$company_id, (int)$item['id'], (int)$_SESSION['employee_id']);
+}
+$ticketComments = $item ? itm_ticket_comments_for_ticket($conn, (int)$company_id, (int)$item['id'], (int)$_SESSION['employee_id'], $isSupportAgent) : [];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -112,7 +128,9 @@ if (!isset($crud_title)) {
                             'description' => 'Description', 'category_id' => 'Category', 'status_id' => 'Status',
                             'priority_id' => 'Priority', 'created_by_employee_id' => 'Created By',
                             'assigned_to_employee_id' => 'Assigned To', 'equipment_id' => 'Related Equipment',
-                            'due_date' => 'Due Date', 'is_archived' => 'Archived', 'tickets_photos' => 'Photos',
+                            'due_date' => 'Due Date', 'first_response_at' => 'First Response', 'resolved_at' => 'Resolved At',
+                            'sla_response_due_at' => 'SLA Response Due', 'sla_resolve_due_at' => 'SLA Resolve Due',
+                            'is_archived' => 'Archived', 'tickets_photos' => 'Photos',
                             'created_by' => 'Created By (Audit)', 'created_at' => 'Created At',
                             'updated_by' => 'Updated By', 'updated_at' => 'Updated At',
                             'deleted_by' => 'Deleted By', 'deleted_at' => 'Deleted At',
@@ -187,6 +205,40 @@ if (!isset($crud_title)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
+                <?php endif; ?>
+
+                <?php if ($item): ?>
+                    <?php if ($ticketCommentFlash !== ''): ?>
+                        <div class="alert alert-info"><?php echo sanitize($ticketCommentFlash); ?></div>
+                    <?php endif; ?>
+                    <div class="card" style="margin-top:16px;">
+                        <h3 title="Comments">💬</h3>
+                        <?php if (empty($ticketComments)): ?>
+                            <p>No comments yet.</p>
+                        <?php else: ?>
+                            <ul>
+                                <?php foreach ($ticketComments as $tc): ?>
+                                    <li style="margin-bottom:12px;">
+                                        <strong><?php echo sanitize(trim(($tc['first_name'] ?? '') . ' ' . ($tc['last_name'] ?? '')) ?: ($tc['username'] ?? '')); ?></strong>
+                                        <?php if ((int)$tc['is_internal'] === 1): ?><span class="badge">Internal</span><?php endif; ?>
+                                        <div><?php echo nl2br(sanitize($tc['body'])); ?></div>
+                                        <small><?php echo sanitize(itm_format_audit_timestamp_display($tc['created_at'] ?? '')); ?></small>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
+                        <form method="POST" style="margin-top:12px;">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                            <textarea name="comment_body" class="form-control" rows="3" required></textarea>
+                            <?php if ($isSupportAgent): ?>
+                                <label class="itm-checkbox-control" style="margin-top:8px;">
+                                    <input type="checkbox" name="is_internal" value="1">
+                                    <span>Internal note</span>
+                                </label>
+                            <?php endif; ?>
+                            <button type="submit" name="add_ticket_comment" value="1" class="btn btn-primary" title="Save" style="margin-top:8px;">💾</button>
+                        </form>
+                    </div>
                 <?php endif; ?>
                 
                 <div style="display:flex;gap:10px;margin-top:20px;">
