@@ -77,6 +77,13 @@ if ($orderFields[0] !== 'supplier_id' || $orderFields[1] !== 'posting_date' || $
     itm_verify_ap_pass('Expenses form field order helper.');
 }
 
+$recurrenceOpts = itm_expenses_recurrence_source_option_rows($conn, $companyId, 0);
+if (count($recurrenceOpts) < 1) {
+    itm_verify_ap_fail('Expected at least one recurrence source expense option for company 1.');
+} else {
+    itm_verify_ap_pass('Recurrence source expense FK options load from DB.');
+}
+
 $ccRes = mysqli_query($conn, "SELECT cc.id FROM cost_centers cc LEFT JOIN expenses e ON e.cost_center_id = cc.id AND e.company_id = cc.company_id WHERE cc.company_id = {$companyId} AND e.id IS NULL LIMIT 1");
 $ccRow = $ccRes ? mysqli_fetch_assoc($ccRes) : null;
 $glRes = mysqli_query($conn, "SELECT id FROM gl_accounts WHERE company_id = {$companyId} LIMIT 1");
