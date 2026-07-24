@@ -653,6 +653,30 @@ if (
     exit;
 }
 
+// Post invoice header to expenses (manual action from invoice view).
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST'
+    && $crud_action === 'view'
+    && isset($_POST['post_to_expenses'])
+) {
+    itm_require_crud_role_module_permission($conn, 'create', 'expenses');
+    cr_require_valid_csrf_token();
+    $invoiceId = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
+    if ($invoiceId <= 0 || !$hasCompany || $company_id <= 0) {
+        $_SESSION['crud_error'] = 'Invalid invoice for posting.';
+        header('Location: ' . $listUrl);
+        exit;
+    }
+    $postResult = itm_expenses_post_from_invoice($conn, (int) $company_id, $invoiceId, (int) ($_SESSION['employee_id'] ?? 0));
+    if (empty($postResult['ok'])) {
+        $_SESSION['crud_error'] = (string) ($postResult['error'] ?? 'Could not post invoice to expenses.');
+        header('Location: view.php?id=' . $invoiceId);
+        exit;
+    }
+    header('Location: ../expenses/view.php?id=' . (int) ($postResult['expense_id'] ?? 0));
+    exit;
+}
+
 // HANDLE FETCH FOR EDIT/VIEW
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -677,10 +701,24 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
 $financeDocumentLines = [];
 $financePaymentAllocations = [];
 $financeAmountDue = 0.0;
+$invoicePostedExpenseId = null;
+$canPostInvoiceToExpenses = false;
 if (!empty($data) && in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $financeDocumentLines = itm_finance_load_document_lines($conn, (int) $company_id, $crud_table, $editId);
     $financePaymentAllocations = itm_finance_load_payment_allocations($conn, (int) $company_id, $crud_table, $editId);
     $financeAmountDue = (float) ($data['amount_due'] ?? 0);
+    if ($crud_action === 'view' && (int) ($data['id'] ?? 0) > 0) {
+        $invoicePostedExpenseId = itm_expenses_find_id_by_invoice_id($conn, (int) $company_id, (int) $data['id']);
+        if (function_exists('itm_user_has_role_module_permission')) {
+            $canPostInvoiceToExpenses = itm_user_has_role_module_permission(
+                $conn,
+                (int) ($_SESSION['employee_id'] ?? 0),
+                (int) $company_id,
+                'Expenses',
+                'create'
+            );
+        }
+    }
 }
 
 // HANDLE FORM SUBMISSION (CREATE/EDIT)
@@ -1259,8 +1297,17 @@ if (!isset($crud_title)) {
                     <?php itm_finance_render_document_lines_view($financeDocumentLines); ?>
                     <?php itm_finance_render_payment_allocations_view($conn, (int) $company_id, $financePaymentAllocations, $financeAmountDue); ?>
                     <p style="margin-top:16px;">
-                        <a href="index.php" class="btn">🔙</a> 
-                        <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a>
+                        <a href="index.php" class="btn" title="Back">🔙</a>
+                        <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>" title="Edit">✏️</a>
+                        <?php if ($invoicePostedExpenseId !== null): ?>
+                            <a class="btn btn-sm" href="../expenses/view.php?id=<?php echo (int) $invoicePostedExpenseId; ?>" title="View posted expense">🔎</a>
+                        <?php elseif ($canPostInvoiceToExpenses && (int) ($data['id'] ?? 0) > 0): ?>
+                            <form method="POST" action="view.php?id=<?php echo (int) ($data['id'] ?? 0); ?>" style="display:inline;" onsubmit="return confirm('Post this invoice to expenses with Posted status?');">
+                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                <input type="hidden" name="id" value="<?php echo (int) ($data['id'] ?? 0); ?>">
+                                <button type="submit" name="post_to_expenses" value="1" class="btn btn-primary" title="Post to expenses">📤</button>
+                            </form>
+                        <?php endif; ?>
                     </p>
                 </div>
             <?php endif; ?>

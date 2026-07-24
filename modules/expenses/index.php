@@ -492,7 +492,7 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
 $displayFieldColumns = $uiColumns;
 
 if ($crud_table === 'expenses') {
-    $expensesListHidden = ['tax_rate_snapshot', 'exchange_rate', 'bill_id', 'deleted_by', 'deleted_at', 'created_by', 'created_at', 'updated_by', 'updated_at'];
+    $expensesListHidden = ['tax_rate_snapshot', 'exchange_rate', 'bill_id', 'invoice_id', 'deleted_by', 'deleted_at', 'created_by', 'created_at', 'updated_by', 'updated_at'];
     $uiColumns = array_values(array_filter($uiColumns, function ($col) use ($expensesListHidden) {
         return !in_array((string) ($col['Field'] ?? ''), $expensesListHidden, true);
     }));

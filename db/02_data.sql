@@ -1244,8 +1244,8 @@ INSERT INTO `bill_line_items` (`id`, `company_id`, `bill_id`, `line_number`, `ta
 (1, 1, 1, 1, 3, 23.00, 1, 'Network cables bulk pack', 10.0000, 50.00, 500.00, 115.00, 615.00, 1, '2026-01-01 00:00:01'),
 (2, 1, 1, 2, 3, 23.00, 1, 'Rack mounting kit', 5.0000, 100.00, 500.00, 115.00, 615.00, 1, '2026-01-01 00:00:01');
 
-INSERT INTO `invoices` (`id`, `company_id`, `document_number`, `contact_name`, `platform_contact_id`, `customer_id`, `posted_date`, `due_date`, `currency_code`, `exchange_rate`, `paid_status_id`, `total_amount`, `sub_total`, `tax_amount`, `amount_due`, `memo`, `active`, `created_at`) VALUES
-(1, 1, 'INV-AR-2026-0001', 'Acme Hospitality Ltd', 'rootfi-contact-demo-1', 1, '2026-02-01', '2026-03-01', 'EUR', 1.000000, 3, 615.00, 500.00, 115.00, 615.00, 'Sample AR invoice', 1, '2026-01-01 00:00:01');
+INSERT INTO `invoices` (`id`, `company_id`, `document_number`, `contact_name`, `customer_id`, `posted_date`, `due_date`, `currency_code`, `exchange_rate`, `paid_status_id`, `total_amount`, `sub_total`, `tax_amount`, `amount_due`, `memo`, `cost_center_id`, `gl_account_id`, `active`, `created_at`) VALUES
+(1, 1, 'INV-AR-2026-0001', 'Acme Hospitality Ltd', 1, '2026-02-01', '2026-03-01', 'EUR', 1.000000, 3, 615.00, 500.00, 115.00, 615.00, 'Sample AR invoice', 1, 1, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `invoice_line_items` (`id`, `company_id`, `invoice_id`, `line_number`, `tax_rate_id`, `tax_rate_snapshot`, `integration_account_id`, `description`, `quantity`, `unit_amount`, `sub_total`, `tax_amount`, `total_amount`, `active`, `created_at`) VALUES
 (1, 1, 1, 1, 3, 23.00, 1, 'Managed Wi-Fi monthly', 1.0000, 500.00, 500.00, 115.00, 615.00, 1, '2026-01-01 00:00:01');

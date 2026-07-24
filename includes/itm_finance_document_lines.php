@@ -142,9 +142,8 @@ function itm_finance_save_document_lines_from_post(
         $integrationAccountId = $integrationAccountId > 0 ? $integrationAccountId : null;
         $glAccountId = (int) ($_POST['line_gl_account_id'][$idx] ?? 0);
         $glAccountId = $glAccountId > 0 ? $glAccountId : null;
-        $platformItemId = trim((string) ($_POST['line_platform_item_id'][$idx] ?? ''));
 
-        $insertSql = 'INSERT INTO `' . $lineTable . '` (company_id, `' . $parentFk . '`, line_number, platform_item_id, tax_rate_id, tax_rate_snapshot, integration_account_id, gl_account_id, description, quantity, unit_amount, sub_total, total_amount, tax_amount, total_discount, active, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?)';
+        $insertSql = 'INSERT INTO `' . $lineTable . '` (company_id, `' . $parentFk . '`, line_number, tax_rate_id, tax_rate_snapshot, integration_account_id, gl_account_id, description, quantity, unit_amount, sub_total, total_amount, tax_amount, total_discount, active, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?)';
         $stmt = mysqli_prepare($conn, $insertSql);
         if (!$stmt) {
             mysqli_rollback($conn);
@@ -161,11 +160,10 @@ function itm_finance_save_document_lines_from_post(
         $discF = (float) $lineDiscount;
         mysqli_stmt_bind_param(
             $stmt,
-            'iiisssssddddddi',
+            'iiisssssdddddi',
             $companyId,
             $parentId,
             $lineNum,
-            $platformItemId,
             $taxRateIdStr,
             $taxSnapshot,
             $iaStr,
@@ -223,7 +221,7 @@ function itm_finance_save_document_lines_from_post(
 function itm_finance_render_document_lines_editor(mysqli $conn, int $companyId, string $parentTable, array $lines): void
 {
     if (empty($lines)) {
-        $lines = [['description' => '', 'quantity' => '1', 'unit_amount' => '0', 'sub_total' => '0', 'tax_amount' => '0', 'total_amount' => '0', 'total_discount' => '0', 'tax_rate_id' => '', 'integration_account_id' => '', 'gl_account_id' => '', 'platform_item_id' => '']];
+        $lines = [['description' => '', 'quantity' => '1', 'unit_amount' => '0', 'sub_total' => '0', 'tax_amount' => '0', 'total_amount' => '0', 'total_discount' => '0', 'tax_rate_id' => '', 'integration_account_id' => '', 'gl_account_id' => '']];
     }
     echo '<div class="card" style="margin-top:16px;"><h3 title="Line items">📋</h3>';
     echo '<table class="table" id="itm-finance-lines-table"><thead><tr>';
@@ -240,7 +238,6 @@ function itm_finance_render_document_lines_editor(mysqli $conn, int $companyId, 
         echo '<input type="hidden" name="line_tax_rate_id[]" value="' . htmlspecialchars((string) ($line['tax_rate_id'] ?? ''), ENT_QUOTES, 'UTF-8') . '">';
         echo '<input type="hidden" name="line_integration_account_id[]" value="' . htmlspecialchars((string) ($line['integration_account_id'] ?? ''), ENT_QUOTES, 'UTF-8') . '">';
         echo '<input type="hidden" name="line_gl_account_id[]" value="' . htmlspecialchars((string) ($line['gl_account_id'] ?? ''), ENT_QUOTES, 'UTF-8') . '">';
-        echo '<input type="hidden" name="line_platform_item_id[]" value="' . htmlspecialchars((string) ($line['platform_item_id'] ?? ''), ENT_QUOTES, 'UTF-8') . '">';
         echo '<button type="button" class="btn btn-sm itm-finance-line-remove" title="Remove row">🗑️</button></td>';
         echo '</tr>';
     }
