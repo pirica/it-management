@@ -14,7 +14,14 @@ if (!function_exists('itm_sample_data_prerequisite_map')) {
     function itm_sample_data_prerequisite_map(): array
     {
         return [
-            'expenses' => ['departments', 'budget_categories', 'cost_centers', 'gl_accounts'],
+            'expenses' => ['departments', 'budget_categories', 'cost_centers', 'gl_accounts', 'paid_statuses', 'tax_rates', 'payment_modes'],
+            'bills' => ['suppliers', 'cost_centers', 'gl_accounts', 'paid_statuses', 'tax_rates'],
+            'bill_line_items' => ['bills', 'tax_rates', 'integration_accounts'],
+            'invoices' => ['customers', 'cost_centers', 'gl_accounts', 'paid_statuses', 'tax_rates'],
+            'invoice_line_items' => ['invoices', 'tax_rates', 'integration_accounts'],
+            'customers' => ['customer_statuses'],
+            'bank_accounts' => [],
+            'integration_accounts' => ['gl_accounts'],
             'employee_positions' => ['departments'],
             'employee_onboarding_requests' => ['departments', 'employee_positions'],
             'approvers' => ['departments', 'employee_positions', 'approver_type'],
@@ -1627,6 +1634,15 @@ if (!function_exists('itm_seed_fill_scalar_fallback_value')) {
         $suffix = substr(md5($tableName . '-' . $name . '-' . microtime(true)), 0, 8);
         $lower = strtolower($name);
 
+        if ($name === 'currency_code') {
+            return itm_seed_finance_currency_sql_literal('');
+        }
+        if (preg_match('/^char\((\d+)\)/i', $type, $charMatch)) {
+            $charLen = (int) ($charMatch[1] ?? 0);
+            if ($charLen > 0 && $charLen <= 3) {
+                return itm_seed_finance_currency_sql_literal('');
+            }
+        }
         if ($name === 'active') {
             return '1';
         }
@@ -1892,46 +1908,62 @@ if (!function_exists('itm_seed_insert_ui_configuration_sample_row')) {
     }
 }
 
-if (!function_exists('itm_seed_apply_expenses_sample_row_defaults')) {
+if (!function_exists('itm_seed_finance_currency_sql_literal')) {
     /**
-     * Why: Legacy sample templates omitted NOT NULL AP columns (posting_date, paid_status_id, currency).
+     * SQL VALUES token for char(3) currency columns (never use long "Sample …" placeholders).
+     */
+    function itm_seed_finance_currency_sql_literal(string $rawToken = ''): string
+    {
+        $code = strtoupper(trim($rawToken, "'\" \t"));
+        if (strlen($code) === 3 && ctype_alpha($code)) {
+            return "'" . $code . "'";
+        }
+
+        return "'EUR'";
+    }
+}
+
+if (!function_exists('itm_seed_apply_finance_row_defaults')) {
+    /**
+     * Backfill/normalize AP/finance document columns on sample INSERT rows.
      *
      * @param array<int, string> $targetColumns
-     * @param array<int, string> $targetValues SQL literal tokens
+     * @param array<int, string> $targetValues
      */
-    function itm_seed_apply_expenses_sample_row_defaults(mysqli $conn, int $companyId, array &$targetColumns, array &$targetValues): void
-    {
-        $literalDate = null;
-        foreach (['date', 'posting_date', 'invoice_date'] as $dateColumn) {
-            $idx = array_search('`' . $dateColumn . '`', $targetColumns, true);
-            if ($idx === false) {
-                continue;
-            }
-            $token = trim((string) $targetValues[$idx], "'\"");
-            if ($token !== '' && strtoupper($token) !== 'NULL') {
-                $literalDate = $token;
-                break;
-            }
-        }
-        if ($literalDate === null || $literalDate === '') {
-            $literalDate = date('Y-m-d');
-        }
-        $quotedDate = "'" . mysqli_real_escape_string($conn, $literalDate) . "'";
-
-        $ensureLiteral = static function (string $column, string $literal) use (&$targetColumns, &$targetValues): void {
+    function itm_seed_apply_finance_row_defaults(
+        mysqli $conn,
+        int $companyId,
+        string $tableName,
+        array &$targetColumns,
+        array &$targetValues
+    ): void {
+        $setLiteral = static function (string $column, string $literal) use (&$targetColumns, &$targetValues): void {
             $columnToken = '`' . $column . '`';
-            if (array_search($columnToken, $targetColumns, true) !== false) {
+            $idx = array_search($columnToken, $targetColumns, true);
+            if ($idx !== false) {
+                $targetValues[$idx] = $literal;
                 return;
             }
             $targetColumns[] = $columnToken;
             $targetValues[] = $literal;
         };
 
-        $ensureLiteral('posting_date', $quotedDate);
-        $ensureLiteral('date', $quotedDate);
-        $ensureLiteral('invoice_date', $quotedDate);
+        $currencyIdx = array_search('`currency_code`', $targetColumns, true);
+        if ($currencyIdx !== false) {
+            $targetValues[$currencyIdx] = itm_seed_finance_currency_sql_literal((string) $targetValues[$currencyIdx]);
+        } elseif (in_array($tableName, ['expenses', 'bills', 'invoices', 'bank_accounts', 'integration_accounts'], true)) {
+            $setLiteral('currency_code', itm_seed_finance_currency_sql_literal(''));
+        }
 
-        if (array_search('`paid_status_id`', $targetColumns, true) === false) {
+        $fxIdx = array_search('`exchange_rate`', $targetColumns, true);
+        if ($fxIdx !== false) {
+            $targetValues[$fxIdx] = '1.000000';
+        } elseif (in_array($tableName, ['expenses', 'bills', 'invoices'], true)) {
+            $setLiteral('exchange_rate', '1.000000');
+        }
+
+        if (array_search('`paid_status_id`', $targetColumns, true) === false
+            && in_array($tableName, ['expenses', 'bills', 'invoices'], true)) {
             $paidId = 0;
             if (function_exists('itm_expenses_resolve_default_paid_status_id')) {
                 $resolved = itm_expenses_resolve_default_paid_status_id($conn, $companyId, 'Posted');
@@ -1944,12 +1976,53 @@ if (!function_exists('itm_seed_apply_expenses_sample_row_defaults')) {
                 $paidId = itm_first_tenant_row_id($conn, 'paid_statuses', $companyId);
             }
             if ($paidId > 0) {
-                $ensureLiteral('paid_status_id', (string) $paidId);
+                $setLiteral('paid_status_id', (string) $paidId);
             }
         }
 
-        $ensureLiteral('currency_code', "'EUR'");
-        $ensureLiteral('exchange_rate', '1.000000');
+        if ($tableName === 'expenses') {
+            $literalDate = null;
+            foreach (['date', 'posting_date', 'invoice_date'] as $dateColumn) {
+                $idx = array_search('`' . $dateColumn . '`', $targetColumns, true);
+                if ($idx === false) {
+                    continue;
+                }
+                $token = trim((string) $targetValues[$idx], "'\"");
+                if ($token !== '' && strtoupper($token) !== 'NULL') {
+                    $literalDate = $token;
+                    break;
+                }
+            }
+            if ($literalDate === null || $literalDate === '') {
+                $literalDate = date('Y-m-d');
+            }
+            $quotedDate = "'" . mysqli_real_escape_string($conn, $literalDate) . "'";
+            $setLiteral('posting_date', $quotedDate);
+            $setLiteral('date', $quotedDate);
+            $setLiteral('invoice_date', $quotedDate);
+        }
+
+        if ($tableName === 'bills' || $tableName === 'invoices') {
+            foreach (['total_amount', 'sub_total', 'tax_amount', 'amount_due'] as $amountColumn) {
+                $idx = array_search('`' . $amountColumn . '`', $targetColumns, true);
+                if ($idx !== false && trim((string) $targetValues[$idx], "'\"") === '') {
+                    $targetValues[$idx] = '0.00';
+                }
+            }
+        }
+    }
+}
+
+if (!function_exists('itm_seed_apply_expenses_sample_row_defaults')) {
+    /**
+     * Why: Legacy sample templates omitted NOT NULL AP columns (posting_date, paid_status_id, currency).
+     *
+     * @param array<int, string> $targetColumns
+     * @param array<int, string> $targetValues SQL literal tokens
+     */
+    function itm_seed_apply_expenses_sample_row_defaults(mysqli $conn, int $companyId, array &$targetColumns, array &$targetValues): void
+    {
+        itm_seed_apply_finance_row_defaults($conn, $companyId, 'expenses', $targetColumns, $targetValues);
     }
 }
 
@@ -2717,6 +2790,10 @@ if (!function_exists('itm_seed_normalize_template_value_token')) {
             return 'NULL';
         }
 
+        if ($columnName === 'currency_code' || ($tableName === 'bank_accounts' && $columnName === 'currency_code')) {
+            return itm_seed_finance_currency_sql_literal($unquoted);
+        }
+
         if ($isSamplePlaceholder && in_array($columnName, ['stored_filename', 'display_name'], true)
             && $tableName === 'floor_plans') {
             return "'" . substr(str_replace("'", '', $unquoted), 0, 64) . "'";
@@ -3252,6 +3329,11 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
 
             if ($tableName === 'expenses' && function_exists('itm_seed_apply_expenses_sample_row_defaults')) {
                 itm_seed_apply_expenses_sample_row_defaults($conn, $companyId, $targetColumns, $targetValues);
+            }
+
+            if (in_array($tableName, ['bills', 'invoices', 'bank_accounts', 'integration_accounts'], true)
+                && function_exists('itm_seed_apply_finance_row_defaults')) {
+                itm_seed_apply_finance_row_defaults($conn, $companyId, $tableName, $targetColumns, $targetValues);
             }
 
             $insertSql = 'INSERT INTO `' . str_replace('`', '``', $tableName) . '` (' . implode(',', $targetColumns) . ') VALUES (' . implode(',', $targetValues) . ')';

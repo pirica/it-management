@@ -650,6 +650,33 @@
         ],
         "override": false
     },
+    "verify_finance_sample_data_seed.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "annual_budgets",
+            "bank_accounts",
+            "bill_line_items",
+            "bills",
+            "budget_categories",
+            "cost_centers",
+            "customer_statuses",
+            "customers",
+            "expense_recurrence",
+            "expenses",
+            "gl_accounts",
+            "integration_accounts",
+            "invoice_line_items",
+            "invoices",
+            "monthly_budgets",
+            "paid_statuses",
+            "payment_modes",
+            "suppliers",
+            "tax_rates"
+        ],
+        "override": false
+    },
     "export_floor_plan_folders_seed.php": {
         "tags": [
             "floor_plans",
