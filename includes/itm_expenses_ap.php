@@ -191,3 +191,108 @@ function itm_expenses_ap_apply_post_normalization(
         $sqlValues['date'] = "'" . mysqli_real_escape_string($conn, $legacyDate) . "'";
     }
 }
+
+/**
+ * RootFi / Excel header aliases → expenses column names.
+ *
+ * @return array<string, string> normalized header key => field name
+ */
+function itm_expenses_import_header_aliases(): array
+{
+    return [
+        'posted date' => 'posting_date',
+        'posted_date' => 'posting_date',
+        'document number' => 'invoice_number',
+        'document_number' => 'invoice_number',
+        'invoice number' => 'invoice_number',
+        'contact' => '__supplier_contact__',
+        'supplier' => '__supplier_contact__',
+        'supplier name' => '__supplier_contact__',
+        'net amount' => 'net_amount',
+        'vat amount' => 'vat_amount',
+        'tax amount' => 'vat_amount',
+        'total amount' => 'amount',
+        'gross amount' => 'amount',
+        'currency' => 'currency_code',
+        'currency code' => 'currency_code',
+        'exchange rate' => 'exchange_rate',
+        'payment mode' => 'payment_mode_id',
+        'paid status' => 'paid_status_id',
+        'tax rate' => 'tax_rate_id',
+    ];
+}
+
+function itm_expenses_resolve_supplier_id_by_contact_label(mysqli $conn, int $companyId, string $label): ?int
+{
+    $label = trim($label);
+    if ($label === '' || $companyId <= 0) {
+        return null;
+    }
+    $sql = 'SELECT id FROM suppliers WHERE company_id = ? AND deleted_at IS NULL AND (name = ? OR supplier_code = ?) LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return null;
+    }
+    mysqli_stmt_bind_param($stmt, 'iss', $companyId, $label, $label);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    return $row ? (int) $row['id'] : null;
+}
+
+/**
+ * Apply AP defaults to one import row (SQL fragment values in $rowData).
+ *
+ * @param array<string, string> $rowData
+ */
+function itm_expenses_ap_normalize_import_row(mysqli $conn, int $companyId, array &$rowData): void
+{
+    if ($companyId <= 0) {
+        return;
+    }
+
+    if (($rowData['posting_date'] ?? 'NULL') === 'NULL' && ($rowData['date'] ?? 'NULL') !== 'NULL') {
+        $rowData['posting_date'] = $rowData['date'];
+    }
+    if (($rowData['date'] ?? 'NULL') === 'NULL' && ($rowData['posting_date'] ?? 'NULL') !== 'NULL') {
+        $rowData['date'] = $rowData['posting_date'];
+    }
+
+    if (($rowData['currency_code'] ?? 'NULL') === 'NULL') {
+        $rowData['currency_code'] = "'EUR'";
+    }
+    if (($rowData['exchange_rate'] ?? 'NULL') === 'NULL') {
+        $rowData['exchange_rate'] = '1.000000';
+    }
+
+    if (($rowData['paid_status_id'] ?? 'NULL') === 'NULL') {
+        $draftId = itm_expenses_resolve_default_paid_status_id($conn, $companyId, 'Draft');
+        if ($draftId !== null) {
+            $rowData['paid_status_id'] = (string) $draftId;
+        }
+    }
+
+    $taxRateId = null;
+    if (($rowData['tax_rate_id'] ?? 'NULL') !== 'NULL') {
+        $taxRateId = (int) $rowData['tax_rate_id'];
+    }
+    $snapshot = itm_expenses_stamp_tax_rate_snapshot($conn, $companyId, $taxRateId);
+    if ($snapshot !== null) {
+        $rowData['tax_rate_snapshot'] = $snapshot;
+    }
+
+    $legacyParts = [];
+    foreach (['posting_date', 'invoice_date', 'date'] as $df) {
+        $v = $rowData[$df] ?? 'NULL';
+        if ($v !== 'NULL' && $v !== '') {
+            $legacyParts[$df] = trim($v, "'");
+        }
+    }
+    if (!empty($legacyParts)) {
+        $synced = itm_expenses_sync_legacy_date($legacyParts);
+        if ($synced !== '') {
+            $rowData['date'] = "'" . mysqli_real_escape_string($conn, $synced) . "'";
+        }
+    }
+}

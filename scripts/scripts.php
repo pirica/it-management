@@ -1650,6 +1650,34 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for extended <code>expenses</code> AP fields, <code>includes/itm_expenses_ap.php</code>, and Posted/Paid budget-actual filter semantics.</td>
                     <td><code>php scripts/verify_expenses_ap.php</code>. Run when changing <code>modules/expenses/</code>, finance lookups, or <code>modules/budget_report/</code> actuals SQL.</td>
                 </tr>
+                <tr data-tags="bills">
+                    <td><a href="verify_bills.php" target="_blank" rel="nofollow noreferrer">verify_bills.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">bills</span></span></td>
+                    <td>Seed bill header/lines rollup and supplier FK label.</td>
+                    <td><code>php scripts/verify_bills.php</code></td>
+                </tr>
+                <tr data-tags="invoices">
+                    <td><a href="verify_invoices.php" target="_blank" rel="nofollow noreferrer">verify_invoices.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">invoices</span></span></td>
+                    <td>Seed invoice header/lines rollup.</td>
+                    <td><code>php scripts/verify_invoices.php</code></td>
+                </tr>
+                <tr data-tags="integration_accounts">
+                    <td><a href="verify_integration_accounts.php" target="_blank" rel="nofollow noreferrer">verify_integration_accounts.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">integration_accounts</span></span></td>
+                    <td>Light insert probe for integration_accounts.</td>
+                    <td><code>php scripts/verify_integration_accounts.php</code></td>
+                </tr>
+                <tr data-tags="bank_accounts">
+                    <td><a href="verify_bank_accounts.php" target="_blank" rel="nofollow noreferrer">verify_bank_accounts.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">bank_accounts</span></span></td>
+                    <td>Light insert probe for bank_accounts.</td>
+                    <td><code>php scripts/verify_bank_accounts.php</code></td>
+                </tr>
                 <tr data-tags="ops_report">
                     <td><a href="verify_ops_report_sample_data.php" target="_blank" rel="nofollow noreferrer">verify_ops_report_sample_data.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

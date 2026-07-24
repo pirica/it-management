@@ -57,6 +57,13 @@ if ($snapshot !== '23.00') {
     itm_verify_ap_pass('tax_rate_snapshot stamping.');
 }
 
+$supplierId = itm_expenses_resolve_supplier_id_by_contact_label($conn, $companyId, 'Global IT Supply');
+if ($supplierId !== 1) {
+    itm_verify_ap_fail('Supplier contact alias resolution expected id 1.');
+} else {
+    itm_verify_ap_pass('Supplier contact label resolves to supplier_id.');
+}
+
 $ccRes = mysqli_query($conn, "SELECT cc.id FROM cost_centers cc LEFT JOIN expenses e ON e.cost_center_id = cc.id AND e.company_id = cc.company_id WHERE cc.company_id = {$companyId} AND e.id IS NULL LIMIT 1");
 $ccRow = $ccRes ? mysqli_fetch_assoc($ccRes) : null;
 $glRes = mysqli_query($conn, "SELECT id FROM gl_accounts WHERE company_id = {$companyId} LIMIT 1");

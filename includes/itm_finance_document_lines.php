@@ -150,26 +150,26 @@ function itm_finance_save_document_lines_from_post(
             mysqli_rollback($conn);
             return ['ok' => false, 'error' => mysqli_error($conn)];
         }
+        $taxRateIdStr = $taxRateId === null ? null : (string) $taxRateId;
+        $iaStr = $integrationAccountId === null ? null : (string) $integrationAccountId;
+        $glStr = $glAccountId === null ? null : (string) $glAccountId;
         $qtyF = (float) $qty;
         $unitF = (float) $unit;
         $subF = (float) $sub;
         $taxF = (float) $taxAmt;
         $totalF = (float) $lineTotal;
         $discF = (float) $lineDiscount;
-        $taxRateIdParam = $taxRateId;
-        $iaParam = $integrationAccountId;
-        $glParam = $glAccountId;
         mysqli_stmt_bind_param(
             $stmt,
-            'iiisssiissddddddi',
+            'iiisssssddddddi',
             $companyId,
             $parentId,
             $lineNum,
             $platformItemId,
-            $taxRateIdParam,
+            $taxRateIdStr,
             $taxSnapshot,
-            $iaParam,
-            $glParam,
+            $iaStr,
+            $glStr,
             $desc,
             $qtyF,
             $unitF,
