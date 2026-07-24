@@ -45,7 +45,16 @@ class ExpensesTest extends TestCase
             $this->markTestSkipped('Required dependency gl_accounts not found in database.');
         }
 
-        $sql = "INSERT INTO `expenses` (company_id, `cost_center_id`, `gl_account_id`, `date`, `amount`, `active`) VALUES (?, ?, ?, ?, ?, ?)";
+        $resPaid = mysqli_query($this->conn, "SELECT id FROM paid_statuses WHERE company_id = {$this->companyId} AND name = 'Posted' LIMIT 1");
+        $rowPaid = $resPaid ? mysqli_fetch_assoc($resPaid) : null;
+        if (!$rowPaid) {
+            $this->markTestSkipped('Required paid_statuses Posted row not found.');
+        }
+        $data['posting_date'] = $data['date'];
+        $data['paid_status_id'] = (int) $rowPaid['id'];
+        $data['currency_code'] = 'EUR';
+
+        $sql = "INSERT INTO `expenses` (company_id, `cost_center_id`, `gl_account_id`, `date`, `posting_date`, `amount`, `paid_status_id`, `currency_code`, `active`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($this->conn, $sql);
         $this->assertNotFalse($stmt, 'Prepare failed: ' . mysqli_error($this->conn));
         
@@ -54,9 +63,12 @@ class ExpensesTest extends TestCase
         $bindValues[] = $data['cost_center_id'];
         $bindValues[] = $data['gl_account_id'];
         $bindValues[] = $data['date'];
+        $bindValues[] = $data['posting_date'];
         $bindValues[] = $data['amount'];
+        $bindValues[] = $data['paid_status_id'];
+        $bindValues[] = $data['currency_code'];
         $bindValues[] = $data['active'];
-        $bindTypes = 'iiisdi';
+        $bindTypes = 'iiissdisi';
         mysqli_stmt_bind_param($stmt, $bindTypes, ...$bindValues);
         
         $this->assertTrue(mysqli_stmt_execute($stmt), 'Execute failed: ' . mysqli_stmt_error($stmt));

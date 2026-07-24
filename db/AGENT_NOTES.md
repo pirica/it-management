@@ -38,7 +38,13 @@ cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
 
 Do **not** run schema, data, and triggers as three separate `mysql` CLI imports.
 
-**Verify after import:** `php scripts/verify_database_schema.php` — compares live `information_schema` to `CREATE TABLE` names in `db/01_schema.sql` (currently **126** tables).
+**Verify after import:** `php scripts/verify_database_schema.php` — compares live `information_schema` to `CREATE TABLE` names in `db/01_schema.sql` (currently **144** tables).
+
+## Finance tables (RootFi-aligned)
+- Lookups: `tax_rates`, `paid_statuses`, `payment_modes` (tenant-scoped; replicated from company 1 in `02_data.sql`).
+- Integration: `integration_accounts` (optional `gl_account_id` bridge), `bank_accounts`.
+- AP/AR documents: `bills` + `bill_line_items`, `invoices` + `invoice_line_items`.
+- **Budget actuals:** extended `expenses` (`posting_date`, `paid_status_id`, EUR `currency_code`, optional `bill_id`); `modules/budget_report/` sums Posted/Paid only via `COALESCE(posting_date, date)`.
 
 ## 10. Common Pitfalls
 - Importing `03_triggers.sql` before `02_data.sql` fills `audit_logs` during seed load. [Cursor-Valid]

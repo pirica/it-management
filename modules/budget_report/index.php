@@ -140,6 +140,13 @@ if ($glAccountStmt) {
 if ($reportCompanyId <= 0) {
     $reportError = 'Please select an active company before generating the report.';
 } else {
+    $expenseActualFilterSql = '';
+    $actualPaidIds = itm_expenses_paid_status_ids_for_actuals($conn, $reportCompanyId);
+    if ($actualPaidIds !== []) {
+        $expenseActualFilterSql = ' AND paid_status_id IN (' . implode(',', array_map('intval', $actualPaidIds)) . ')';
+    }
+    $expenseSoftDeleteSql = ' AND deleted_at IS NULL';
+
     if ($isMonthMode) {
         $reportSql = "SELECT
                 cc.name AS cost_center,
@@ -154,10 +161,12 @@ if ($reportCompanyId <= 0) {
                 SELECT e.cost_center_id, e.gl_account_id
                 FROM expenses e
                 WHERE e.company_id = ?
+                  AND e.deleted_at IS NULL
+                  {$expenseActualFilterSql}
                   AND (
-                        (YEAR(e.date) = ? AND MONTH(e.date) = ?)
-                     OR (YEAR(e.date) = ? AND MONTH(e.date) = ?)
-                     OR (YEAR(e.date) = ? AND MONTH(e.date) = ?)
+                        (YEAR(COALESCE(e.posting_date, e.date)) = ? AND MONTH(COALESCE(e.posting_date, e.date)) = ?)
+                     OR (YEAR(COALESCE(e.posting_date, e.date)) = ? AND MONTH(COALESCE(e.posting_date, e.date)) = ?)
+                     OR (YEAR(COALESCE(e.posting_date, e.date)) = ? AND MONTH(COALESCE(e.posting_date, e.date)) = ?)
                   )
                 GROUP BY e.cost_center_id, e.gl_account_id
                 UNION
@@ -187,7 +196,7 @@ if ($reportCompanyId <= 0) {
             LEFT JOIN (
                 SELECT company_id, cost_center_id, gl_account_id, SUM(amount) AS amount
                 FROM expenses
-                WHERE company_id = ? AND YEAR(date) = ? AND MONTH(date) = ?
+                WHERE company_id = ? AND deleted_at IS NULL{$expenseActualFilterSql} AND YEAR(COALESCE(posting_date, date)) = ? AND MONTH(COALESCE(posting_date, date)) = ?
                 GROUP BY company_id, cost_center_id, gl_account_id
             ) a_cur
                 ON a_cur.company_id = cc.company_id
@@ -196,7 +205,7 @@ if ($reportCompanyId <= 0) {
             LEFT JOIN (
                 SELECT company_id, cost_center_id, gl_account_id, SUM(amount) AS amount
                 FROM expenses
-                WHERE company_id = ? AND YEAR(date) = ? AND MONTH(date) = ?
+                WHERE company_id = ? AND deleted_at IS NULL{$expenseActualFilterSql} AND YEAR(COALESCE(posting_date, date)) = ? AND MONTH(COALESCE(posting_date, date)) = ?
                 GROUP BY company_id, cost_center_id, gl_account_id
             ) a_prev
                 ON a_prev.company_id = cc.company_id
@@ -205,7 +214,7 @@ if ($reportCompanyId <= 0) {
             LEFT JOIN (
                 SELECT company_id, cost_center_id, gl_account_id, SUM(amount) AS amount
                 FROM expenses
-                WHERE company_id = ? AND YEAR(date) = ? AND MONTH(date) = ?
+                WHERE company_id = ? AND deleted_at IS NULL{$expenseActualFilterSql} AND YEAR(COALESCE(posting_date, date)) = ? AND MONTH(COALESCE(posting_date, date)) = ?
                 GROUP BY company_id, cost_center_id, gl_account_id
             ) a_prev_year_month
                 ON a_prev_year_month.company_id = cc.company_id
@@ -251,7 +260,9 @@ if ($reportCompanyId <= 0) {
                 SELECT e.cost_center_id, e.gl_account_id
                 FROM expenses e
                 WHERE e.company_id = ?
-                  AND YEAR(e.date) IN (?, ?)
+                  AND e.deleted_at IS NULL
+                  {$expenseActualFilterSql}
+                  AND YEAR(COALESCE(e.posting_date, e.date)) IN (?, ?)
                 GROUP BY e.cost_center_id, e.gl_account_id
                 UNION
                 SELECT fr.cost_center_id, fr.gl_account_id
@@ -275,7 +286,7 @@ if ($reportCompanyId <= 0) {
             LEFT JOIN (
                 SELECT company_id, cost_center_id, gl_account_id, SUM(amount) AS amount
                 FROM expenses
-                WHERE company_id = ? AND YEAR(date) = ?
+                WHERE company_id = ? AND deleted_at IS NULL{$expenseActualFilterSql} AND YEAR(COALESCE(posting_date, date)) = ?
                 GROUP BY company_id, cost_center_id, gl_account_id
             ) a_cur
                 ON a_cur.company_id = cc.company_id
@@ -284,7 +295,7 @@ if ($reportCompanyId <= 0) {
             LEFT JOIN (
                 SELECT company_id, cost_center_id, gl_account_id, SUM(amount) AS amount
                 FROM expenses
-                WHERE company_id = ? AND YEAR(date) = ?
+                WHERE company_id = ? AND deleted_at IS NULL{$expenseActualFilterSql} AND YEAR(COALESCE(posting_date, date)) = ?
                 GROUP BY company_id, cost_center_id, gl_account_id
             ) a_prev
                 ON a_prev.company_id = cc.company_id

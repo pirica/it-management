@@ -1,0 +1,15 @@
+# AGENT_NOTES.md - bills
+
+## 1. Module Purpose
+RootFi-aligned AP bill headers with line items on create/edit/view.
+
+## 2. Key Tables
+- **bills** — document header (`document_number`, totals, `paid_status_id`, `supplier_id`).
+- **bill_line_items** — lines saved via `includes/itm_finance_document_lines.php` (no standalone CRUD module).
+
+## 4. Business Rules
+- Line grid on edit/create; totals rolled up to header on save.
+- Optional future link: `expenses.bill_id`.
+
+## 8. Multi-Tenant Rules
+- `company_id` scoped; hidden in UI.

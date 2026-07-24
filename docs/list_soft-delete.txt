@@ -40,6 +40,15 @@ equipment_types
 event_categories
 events
 expenses
+tax_rates
+paid_statuses
+payment_modes
+integration_accounts
+bank_accounts
+bills
+bill_line_items
+invoices
+invoice_line_items
 floor_designer
 floor_designer_points
 floor_plans
