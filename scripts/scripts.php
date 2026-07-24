@@ -1643,6 +1643,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for <code>modules/ops_report/</code>: D-2 edit lock (today/yesterday editable; D-2+ locked unless admin), daily <code>ops_report</code> CRUD, child-row cascade delete, cross-date hit line format, audit triggers on all <code>ops_report*</code> tables, and <code>modules_registry</code> slug <code>ops_report</code>.</td>
                     <td><code>php scripts/verify_ops_report.php</code>. PHPUnit: <code>php scripts/run_tests.php --filter OpsReport</code>. Run when changing <code>modules/ops_report/</code> or <code>ops_report*</code> tables in <code>db/</code> split bundle.</td>
                 </tr>
+                <tr data-tags="expenses">
+                    <td><a href="verify_expenses_ap.php" target="_blank" rel="nofollow noreferrer">verify_expenses_ap.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">expenses</span></span></td>
+                    <td>Regression for extended <code>expenses</code> AP fields, <code>includes/itm_expenses_ap.php</code>, and Posted/Paid budget-actual filter semantics.</td>
+                    <td><code>php scripts/verify_expenses_ap.php</code>. Run when changing <code>modules/expenses/</code>, finance lookups, or <code>modules/budget_report/</code> actuals SQL.</td>
+                </tr>
                 <tr data-tags="ops_report">
                     <td><a href="verify_ops_report_sample_data.php" target="_blank" rel="nofollow noreferrer">verify_ops_report_sample_data.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

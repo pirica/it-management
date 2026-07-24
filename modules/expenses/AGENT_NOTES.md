@@ -4,16 +4,22 @@
 Tracks actual financial expenditures against budgets.
 
 ## 2. Key Tables
-- **expenses** — stores individual expense records.
+- **expenses** — budget actuals (gross `amount` incl. VAT); AP header fields aligned with RootFi Bills.
+- **tax_rates**, **paid_statuses**, **payment_modes** — tenant lookups (FK from expenses).
+- **bills** / **bill_line_items** — optional source document (`expenses.bill_id`).
 
 ## 3. Required Relationships
 - **expenses** → depends on **companies**.
 - **expenses** → depends on **cost_centers**.
 - **expenses** → depends on **gl_accounts**.
+- **expenses** → **paid_statuses** (required); **tax_rates**, **payment_modes**, **suppliers**, **bills** (optional).
 
 ## 4. Business Rules (Critical for Agents)
 - **Decimal Precision**: Amounts must be handled with 2-decimal precision.
-- **Reporting Period**: Each expense has a `date` which determines which budget month/year it impacts.
+- **Reporting Period**: **Budget report** uses `COALESCE(posting_date, date)` and only **Posted** + **Paid** `paid_status_id` rows (`itm_expenses_paid_status_ids_for_actuals()`).
+- **Legacy `date`**: On save, synced from `posting_date` (fallback `invoice_date`) via `itm_expenses_ap_apply_post_normalization()`.
+- **Currency**: Default **EUR** (`currency_code`, `exchange_rate` default 1).
+- **Tax snapshot**: `tax_rate_snapshot` stamped from `tax_rates.rate_percent` on save.
 - **RBAC (delete)**: POST delete handlers call `itm_require_role_module_permission(..., 'Expenses', 'delete')` before CSRF/delete SQL so read-only roles cannot bypass UI-hidden delete buttons.
 
 ## 5. UI Behavior Requirements

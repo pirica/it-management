@@ -472,18 +472,49 @@ INNER JOIN `annual_budgets` ab
  AND ab.`year` = seed.`year`
 ORDER BY seed.`sort_key`;
 
-INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`, `created_at`, `updated_at`) VALUES
-(NULL, 1, 1, 1, '2026-01-15', 3890.00, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 1, 1, '2026-01-01 00:00:01', NULL),
-(NULL, 1, 1, 1, '2026-02-12', 2450.00, 'Network switch refresh spares', 'INV-IT-2026-0002', 1, 1, '2026-02-01 00:00:01', NULL),
-(NULL, 1, 1, 1, '2026-03-18', 3125.50, 'Endpoint security subscription', 'INV-IT-2026-0003', 1, 1, '2026-03-01 00:00:01', NULL),
-(NULL, 1, 1, 1, '2026-04-09', 1980.00, 'UPS battery replacement', 'INV-IT-2026-0004', 1, 1, '2026-04-01 00:00:01', NULL),
-(NULL, 1, 1, 1, '2026-05-22', 4275.00, 'Wi-Fi controller licence renewal', 'INV-IT-2026-0005', 1, 1, '2026-05-01 00:00:01', NULL),
-(NULL, 1, 1, 1, '2026-06-11', 2650.00, 'Helpdesk tooling annual fee', 'INV-IT-2026-0006', 1, 1, '2026-06-01 00:00:01', NULL),
-(NULL, 1, 1, 1, '2026-07-08', 3510.00, 'Server rack PDU upgrade', 'INV-IT-2026-0007', 1, 1, '2026-07-01 00:00:01', NULL),
-(NULL, 1, 1, 1, '2025-07-14', 2990.00, 'Prior-year July infrastructure spend', 'INV-IT-2025-0007', 1, 1, '2025-07-01 00:00:01', NULL);
+INSERT INTO `tax_rates` (`id`, `company_id`, `name`, `rate_percent`, `active`, `created_at`) VALUES
+(1, 1, 'VAT 6%', 6.00, 1, '2026-01-01 00:00:01'),
+(2, 1, 'VAT 13%', 13.00, 1, '2026-01-01 00:00:01'),
+(3, 1, 'VAT 23%', 23.00, 1, '2026-01-01 00:00:01');
 
-INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `amount`, `description`, `invoice_number`, `created_by`, `active`, `created_at`, `updated_at`)
-SELECT NULL, seed.`company_id`, cc.`id`, ga.`id`, seed.`expense_date`, seed.`amount`, seed.`description`, seed.`invoice_number`, NULL, 1, seed.`created_at`, NULL
+INSERT INTO `paid_statuses` (`id`, `company_id`, `name`, `sort_order`, `active`, `created_at`) VALUES
+(1, 1, 'Draft', 1, 1, '2026-01-01 00:00:01'),
+(2, 1, 'Approved', 2, 1, '2026-01-01 00:00:01'),
+(3, 1, 'Posted', 3, 1, '2026-01-01 00:00:01'),
+(4, 1, 'Paid', 4, 1, '2026-01-01 00:00:01'),
+(5, 1, 'Voided', 5, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `payment_modes` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES
+(1, 1, 'Bank transfer', 1, '2026-01-01 00:00:01'),
+(2, 1, 'Card', 1, '2026-01-01 00:00:01'),
+(3, 1, 'Cash', 1, '2026-01-01 00:00:01'),
+(4, 1, 'Direct debit', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `integration_accounts` (`id`, `company_id`, `nominal_code`, `name`, `currency_code`, `current_balance`, `gl_account_id`, `active`, `created_at`) VALUES
+(1, 1, '6100', 'IT Operating Expense (integration)', 'EUR', 0.00, 1, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `bank_accounts` (`id`, `company_id`, `institution_name`, `account_name`, `balance`, `currency_code`, `account_number`, `category`, `active`, `created_at`) VALUES
+(1, 1, 'Sample Bank', 'Operating EUR', 12500.00, 'EUR', '****4521', 'Operating', 1, '2026-01-01 00:00:01'),
+(2, 1, 'Sample Bank', 'Payroll EUR', 45000.00, 'EUR', '****4522', 'Payroll', 1, '2026-01-01 00:00:01');
+
+INSERT IGNORE INTO `tax_rates` (`company_id`, `name`, `rate_percent`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`rate_percent`, t.`active`, '2026-01-01 00:00:01' FROM `tax_rates` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+
+INSERT IGNORE INTO `paid_statuses` (`company_id`, `name`, `sort_order`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`sort_order`, t.`active`, '2026-01-01 00:00:01' FROM `paid_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+
+INSERT IGNORE INTO `payment_modes` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `payment_modes` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+
+INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `posting_date`, `invoice_date`, `amount`, `net_amount`, `vat_amount`, `tax_rate_id`, `tax_rate_snapshot`, `paid_status_id`, `currency_code`, `exchange_rate`, `description`, `invoice_number`, `created_by`, `active`, `created_at`, `updated_at`) VALUES
+(NULL, 1, 1, 1, '2026-01-15', '2026-01-15', '2026-01-15', 3890.00, 3162.60, 727.40, 3, 23.00, 3, 'EUR', 1.000000, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 1, 1, '2026-01-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-02-12', '2026-02-12', '2026-02-12', 2450.00, 1991.87, 458.13, 3, 23.00, 3, 'EUR', 1.000000, 'Network switch refresh spares', 'INV-IT-2026-0002', 1, 1, '2026-02-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-03-18', '2026-03-18', '2026-03-18', 3125.50, 2541.06, 584.44, 3, 23.00, 3, 'EUR', 1.000000, 'Endpoint security subscription', 'INV-IT-2026-0003', 1, 1, '2026-03-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-04-09', '2026-04-09', '2026-04-09', 1980.00, 1609.76, 370.24, 3, 23.00, 3, 'EUR', 1.000000, 'UPS battery replacement', 'INV-IT-2026-0004', 1, 1, '2026-04-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-05-22', '2026-05-22', '2026-05-22', 4275.00, 3475.61, 799.39, 3, 23.00, 3, 'EUR', 1.000000, 'Wi-Fi controller licence renewal', 'INV-IT-2026-0005', 1, 1, '2026-05-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-06-11', '2026-06-11', '2026-06-11', 2650.00, 2154.47, 495.53, 3, 23.00, 3, 'EUR', 1.000000, 'Helpdesk tooling annual fee', 'INV-IT-2026-0006', 1, 1, '2026-06-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-07-08', '2026-07-08', '2026-07-08', 3510.00, 2853.66, 656.34, 3, 23.00, 3, 'EUR', 1.000000, 'Server rack PDU upgrade', 'INV-IT-2026-0007', 1, 1, '2026-07-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2025-07-14', '2025-07-14', '2025-07-14', 2990.00, 2422.76, 567.24, 3, 23.00, 3, 'EUR', 1.000000, 'Prior-year July infrastructure spend', 'INV-IT-2025-0007', 1, 1, '2025-07-01 00:00:01', NULL);
+
+INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `posting_date`, `invoice_date`, `amount`, `paid_status_id`, `currency_code`, `exchange_rate`, `description`, `invoice_number`, `created_by`, `active`, `created_at`, `updated_at`)
+SELECT NULL, seed.`company_id`, cc.`id`, ga.`id`, seed.`expense_date`, seed.`expense_date`, seed.`expense_date`, seed.`amount`, ps.`id`, 'EUR', 1.000000, seed.`description`, seed.`invoice_number`, NULL, 1, seed.`created_at`, NULL
 FROM (
   SELECT 1 AS `sort_key`, 2 AS `company_id`, 'Infrastructure' AS `cost_center_name`, 'CC-IT-INFRA' AS `cost_center_code`, '6100' AS `account_code`, '2026-01-15' AS `expense_date`, 3890.00 AS `amount`, 'Quarterly preventive maintenance contract renewal' AS `description`, 'INV-IT-2026-0001' AS `invoice_number`, 'Admin2' AS `created_username`, '2026-01-01 00:00:01' AS `created_at`
   UNION ALL SELECT 2, 3, 'Infrastructure', 'CC-IT-INFRA', '6100', '2026-01-15', 3890.00, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 'Admin3', '2026-01-01 00:00:01'
@@ -497,6 +528,9 @@ INNER JOIN `cost_centers` cc
 INNER JOIN `gl_accounts` ga
   ON ga.`company_id` = seed.`company_id`
  AND ga.`account_code` = seed.`account_code`
+INNER JOIN `paid_statuses` ps
+  ON ps.`company_id` = seed.`company_id`
+ AND ps.`name` = 'Posted'
 ORDER BY seed.`sort_key`;
 
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES (NULL, '1', NULL, 'General', '1', '2026-01-01 00:00:01');
@@ -1171,6 +1205,19 @@ INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUE
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES ('1', '3', 'Preferred', '2026-01-01 00:00:01');
 
 INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`) VALUES ('1', '1', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '1', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `bills` (`id`, `company_id`, `document_number`, `memo`, `posted_date`, `due_date`, `currency_code`, `exchange_rate`, `paid_status_id`, `total_amount`, `sub_total`, `tax_amount`, `supplier_id`, `cost_center_id`, `gl_account_id`, `active`, `created_at`) VALUES
+(1, 1, 'BILL-2026-0001', 'Sample AP bill for IT supplies', '2026-01-10', '2026-02-10', 'EUR', 1.000000, 3, 1230.00, 1000.00, 230.00, 1, 1, 1, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `bill_line_items` (`id`, `company_id`, `bill_id`, `line_number`, `tax_rate_id`, `tax_rate_snapshot`, `integration_account_id`, `description`, `quantity`, `unit_amount`, `sub_total`, `tax_amount`, `total_amount`, `active`, `created_at`) VALUES
+(1, 1, 1, 1, 3, 23.00, 1, 'Network cables bulk pack', 10.0000, 50.00, 500.00, 115.00, 615.00, 1, '2026-01-01 00:00:01'),
+(2, 1, 1, 2, 3, 23.00, 1, 'Rack mounting kit', 5.0000, 100.00, 500.00, 115.00, 615.00, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `invoices` (`id`, `company_id`, `document_number`, `contact_name`, `platform_contact_id`, `posted_date`, `due_date`, `currency_code`, `exchange_rate`, `paid_status_id`, `total_amount`, `sub_total`, `tax_amount`, `memo`, `active`, `created_at`) VALUES
+(1, 1, 'INV-AR-2026-0001', 'Acme Hospitality Ltd', 'rootfi-contact-demo-1', '2026-02-01', '2026-03-01', 'EUR', 1.000000, 3, 615.00, 500.00, 115.00, 'Sample AR invoice', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `invoice_line_items` (`id`, `company_id`, `invoice_id`, `line_number`, `tax_rate_id`, `tax_rate_snapshot`, `integration_account_id`, `description`, `quantity`, `unit_amount`, `sub_total`, `tax_amount`, `total_amount`, `active`, `created_at`) VALUES
+(1, 1, 1, 1, 3, 23.00, 1, 'Managed Wi-Fi monthly', 1.0000, 500.00, 500.00, 115.00, 615.00, 1, '2026-01-01 00:00:01');
 
 -- Why: Relative expiry dates keep license alert seeds inside the default 30-day runner window after import.
 INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('1', '1', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '1', '1', '1', '2025-01-15', DATE_ADD(CURDATE(), INTERVAL 20 DAY), '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
