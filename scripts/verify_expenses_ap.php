@@ -64,6 +64,19 @@ if ($supplierId !== 1) {
     itm_verify_ap_pass('Supplier contact label resolves to supplier_id.');
 }
 
+$orderFields = array_map(static function ($col) {
+    return (string) ($col['Field'] ?? '');
+}, itm_expenses_reorder_form_field_columns([
+    ['Field' => 'gl_account_id'],
+    ['Field' => 'supplier_id'],
+    ['Field' => 'posting_date'],
+]));
+if ($orderFields[0] !== 'supplier_id' || $orderFields[1] !== 'posting_date' || $orderFields[2] !== 'gl_account_id') {
+    itm_verify_ap_fail('Expenses form field order helper unexpected sort.');
+} else {
+    itm_verify_ap_pass('Expenses form field order helper.');
+}
+
 $ccRes = mysqli_query($conn, "SELECT cc.id FROM cost_centers cc LEFT JOIN expenses e ON e.cost_center_id = cc.id AND e.company_id = cc.company_id WHERE cc.company_id = {$companyId} AND e.id IS NULL LIMIT 1");
 $ccRow = $ccRes ? mysqli_fetch_assoc($ccRes) : null;
 $glRes = mysqli_query($conn, "SELECT id FROM gl_accounts WHERE company_id = {$companyId} LIMIT 1");

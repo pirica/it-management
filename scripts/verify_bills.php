@@ -70,5 +70,31 @@ if ($failures > 0) {
     exit(1);
 }
 
+$postedExpenseId = itm_expenses_find_id_by_bill_id($conn, $companyId, $billId);
+if ($postedExpenseId !== null) {
+    mysqli_query($conn, 'DELETE FROM expenses WHERE id = ' . (int) $postedExpenseId . ' AND company_id = ' . $companyId);
+}
+
+$postResult = itm_expenses_post_from_bill($conn, $companyId, $billId, 1);
+if (empty($postResult['ok']) || (int) ($postResult['expense_id'] ?? 0) <= 0) {
+    itm_verify_bills_fail('itm_expenses_post_from_bill failed for seed bill.');
+} else {
+    $newExpenseId = (int) $postResult['expense_id'];
+    $expRes = mysqli_query($conn, 'SELECT bill_id, paid_status_id, invoice_number FROM expenses WHERE id = ' . $newExpenseId . ' LIMIT 1');
+    $expRow = $expRes ? mysqli_fetch_assoc($expRes) : null;
+    if (!$expRow || (int) ($expRow['bill_id'] ?? 0) !== $billId) {
+        itm_verify_bills_fail('Posted expense missing bill_id link.');
+    } else {
+        itm_verify_bills_pass('Post to expenses creates linked expense row.');
+    }
+    $dupResult = itm_expenses_post_from_bill($conn, $companyId, $billId, 1);
+    if (!empty($dupResult['ok'])) {
+        itm_verify_bills_fail('Duplicate post to expenses should be rejected.');
+    } else {
+        itm_verify_bills_pass('Duplicate post to expenses is blocked.');
+    }
+    mysqli_query($conn, 'DELETE FROM expenses WHERE id = ' . $newExpenseId . ' AND company_id = ' . $companyId);
+}
+
 echo $nl . colorText('All bills checks passed.', 'pass') . $nl;
 exit(0);
