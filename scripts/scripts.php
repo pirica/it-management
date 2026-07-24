@@ -1664,6 +1664,27 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Seed invoice header/lines rollup.</td>
                     <td><code>php scripts/verify_invoices.php</code></td>
                 </tr>
+                <tr data-tags="finance_payment_allocations">
+                    <td><a href="verify_finance_payment_allocations.php" target="_blank" rel="nofollow noreferrer">verify_finance_payment_allocations.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">finance_payment_allocations</span></span></td>
+                    <td>Payment allocation insert and <code>amount_due</code> rollup on seed bill.</td>
+                    <td><code>php scripts/verify_finance_payment_allocations.php</code></td>
+                </tr>
+                <tr data-tags="expense_recurrence">
+                    <td><a href="verify_expense_recurrence.php" target="_blank" rel="nofollow noreferrer">verify_expense_recurrence.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">expense_recurrence</span></span></td>
+                    <td>Recurrence lookup seeds and <code>itm_expense_recurrence_advance_date</code>.</td>
+                    <td><code>php scripts/verify_expense_recurrence.php</code>; schedule <code>php scripts/run_expense_recurrence.php</code></td>
+                </tr>
+                <tr data-tags="customers">
+                    <td><a href="verify_customers.php" target="_blank" rel="nofollow noreferrer">verify_customers.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">customers</span></span></td>
+                    <td>Seed customer and invoice <code>customer_id</code> link.</td>
+                    <td><code>php scripts/verify_customers.php</code></td>
+                </tr>
                 <tr data-tags="integration_accounts">
                     <td><a href="verify_integration_accounts.php" target="_blank" rel="nofollow noreferrer">verify_integration_accounts.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

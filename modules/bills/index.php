@@ -620,6 +620,42 @@ if ($crud_table === 'catalogs' && $crud_action === 'create') {
 // Post bill header to expenses (manual action from bill view).
 if (
     $_SERVER['REQUEST_METHOD'] === 'POST'
+    && $crud_action === 'edit'
+    && isset($_POST['save_payment_allocation'])
+) {
+    cr_require_valid_csrf_token();
+    $billId = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
+    if ($billId <= 0 || !$hasCompany || $company_id <= 0) {
+        $_SESSION['crud_error'] = 'Invalid bill for payment.';
+        header('Location: ' . $listUrl);
+        exit;
+    }
+    $payResult = itm_finance_save_payment_allocation_from_post($conn, (int) $company_id, 'bills', $billId, (int) ($_SESSION['employee_id'] ?? 0));
+    if (empty($payResult['ok'])) {
+        $_SESSION['crud_error'] = (string) ($payResult['error'] ?? 'Could not save payment.');
+    }
+    header('Location: edit.php?id=' . $billId);
+    exit;
+}
+
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST'
+    && $crud_action === 'edit'
+    && isset($_POST['delete_payment_allocation_id'])
+) {
+    cr_require_valid_csrf_token();
+    $billId = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
+    $allocId = (int) ($_POST['delete_payment_allocation_id'] ?? 0);
+    if ($billId > 0 && $allocId > 0 && $hasCompany && $company_id > 0) {
+        itm_finance_soft_delete_payment_allocation($conn, (int) $company_id, 'bills', $billId, $allocId, (int) ($_SESSION['employee_id'] ?? 0));
+    }
+    header('Location: edit.php?id=' . $billId);
+    exit;
+}
+
+// Post bill header to expenses (manual action from bill view).
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST'
     && $crud_action === 'view'
     && isset($_POST['post_to_expenses'])
 ) {
@@ -663,10 +699,14 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
 }
 
 $financeDocumentLines = [];
+$financePaymentAllocations = [];
+$financeAmountDue = 0.0;
 $billPostedExpenseId = null;
 $canPostBillToExpenses = false;
 if (!empty($data) && in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $financeDocumentLines = itm_finance_load_document_lines($conn, (int) $company_id, $crud_table, $editId);
+    $financePaymentAllocations = itm_finance_load_payment_allocations($conn, (int) $company_id, $crud_table, $editId);
+    $financeAmountDue = (float) ($data['amount_due'] ?? 0);
     if ($crud_action === 'view' && (int) ($data['id'] ?? 0) > 0) {
         $billPostedExpenseId = itm_expenses_find_id_by_bill_id($conn, (int) $company_id, (int) $data['id']);
         if (function_exists('itm_user_has_role_module_permission')) {
@@ -1229,6 +1269,10 @@ if (!isset($crud_title)) {
                     <?php if (in_array($crud_action, ['create', 'edit'], true)) {
                         itm_finance_render_document_lines_editor($conn, (int) $company_id, $crud_table, $financeDocumentLines);
                     } ?>
+                    <?php if ($crud_action === 'edit' && $editId > 0) {
+                        echo '<input type="hidden" name="id" value="' . (int) $editId . '">';
+                        itm_finance_render_payment_allocations_editor($conn, (int) $company_id, $crud_table, $editId, $financePaymentAllocations, $financeAmountDue);
+                    } ?>
                     <div class="form-actions">
                         <button class="btn btn-primary" type="submit">💾</button>
                         <a href="index.php" class="btn">🔙</a>
@@ -1251,6 +1295,7 @@ if (!isset($crud_title)) {
                     </table>
                     <h3 title="Line items">📋</h3>
                     <?php itm_finance_render_document_lines_view($financeDocumentLines); ?>
+                    <?php itm_finance_render_payment_allocations_view($conn, (int) $company_id, $financePaymentAllocations, $financeAmountDue); ?>
                     <p style="margin-top:16px;">
                         <a href="index.php" class="btn" title="Back">🔙</a>
                         <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>" title="Edit">✏️</a>

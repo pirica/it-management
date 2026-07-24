@@ -191,6 +191,50 @@ function itm_expenses_ap_apply_post_normalization(
         $data['date'] = $legacyDate;
         $sqlValues['date'] = "'" . mysqli_real_escape_string($conn, $legacyDate) . "'";
     }
+
+    $isRecursive = !empty($_POST['is_recursive']) || (isset($data['is_recursive']) && (int) $data['is_recursive'] === 1);
+    $data['is_recursive'] = $isRecursive ? '1' : '0';
+    $sqlValues['is_recursive'] = $isRecursive ? '1' : '0';
+    foreach (['next_run_date', 'recurrence_end_date'] as $recDateField) {
+        if (!array_key_exists($recDateField, $data) && !isset($_POST[$recDateField])) {
+            continue;
+        }
+        $parsedRec = itm_parse_date_input((string) ($_POST[$recDateField] ?? $data[$recDateField] ?? ''));
+        if ($parsedRec !== null) {
+            $data[$recDateField] = $parsedRec;
+            $sqlValues[$recDateField] = "'" . mysqli_real_escape_string($conn, $parsedRec) . "'";
+        } elseif (array_key_exists($recDateField, $sqlValues)) {
+            $data[$recDateField] = '';
+            $sqlValues[$recDateField] = 'NULL';
+        }
+    }
+    if ($isRecursive) {
+        $recId = (int) ($data['expense_recurrence_id'] ?? $_POST['expense_recurrence_id'] ?? 0);
+        if ($recId <= 0) {
+            $errors[] = 'Recurrence interval is required when recurring expense is enabled.';
+        }
+        $nextRun = $data['next_run_date'] ?? '';
+        if ($nextRun === '' || $nextRun === 'NULL') {
+            $errors[] = 'Next run date is required for recurring expenses.';
+        }
+        $endRun = $data['recurrence_end_date'] ?? '';
+        if ($endRun !== '' && $endRun !== 'NULL' && $nextRun !== '' && $endRun < $nextRun) {
+            $errors[] = 'Recurrence end date must be on or after next run date.';
+        }
+    } else {
+        if (array_key_exists('expense_recurrence_id', $sqlValues)) {
+            $data['expense_recurrence_id'] = '';
+            $sqlValues['expense_recurrence_id'] = 'NULL';
+        }
+        if (array_key_exists('next_run_date', $sqlValues)) {
+            $data['next_run_date'] = '';
+            $sqlValues['next_run_date'] = 'NULL';
+        }
+        if (array_key_exists('recurrence_end_date', $sqlValues)) {
+            $data['recurrence_end_date'] = '';
+            $sqlValues['recurrence_end_date'] = 'NULL';
+        }
+    }
 }
 
 /**
@@ -326,6 +370,10 @@ function itm_expenses_ap_form_field_order(): array
         'gl_account_id',
         'description',
         'invoice_number',
+        'expense_recurrence_id',
+        'is_recursive',
+        'next_run_date',
+        'recurrence_end_date',
         'date',
         'active',
     ];
@@ -556,4 +604,168 @@ function itm_expenses_post_from_bill(mysqli $conn, int $companyId, int $billId, 
     mysqli_stmt_close($ins);
 
     return ['ok' => true, 'expense_id' => $expenseId];
+}
+
+/**
+ * Advance recurrence schedule from interval code.
+ */
+function itm_expense_recurrence_advance_date(string $code, string $fromYmd): ?string
+{
+    $code = strtolower(trim($code));
+    if ($fromYmd === '') {
+        return null;
+    }
+    $ts = strtotime($fromYmd);
+    if ($ts === false) {
+        return null;
+    }
+    switch ($code) {
+        case 'hourly':
+            return date('Y-m-d', strtotime('+1 hour', $ts));
+        case 'daily':
+            return date('Y-m-d', strtotime('+1 day', $ts));
+        case 'weekly':
+            return date('Y-m-d', strtotime('+1 week', $ts));
+        case 'monthly':
+            return date('Y-m-d', strtotime('+1 month', $ts));
+        case 'quarterly':
+            return date('Y-m-d', strtotime('+3 months', $ts));
+        case 'yearly':
+            return date('Y-m-d', strtotime('+1 year', $ts));
+        case 'every_2_years':
+            return date('Y-m-d', strtotime('+2 years', $ts));
+        case 'every_3_years':
+            return date('Y-m-d', strtotime('+3 years', $ts));
+        case 'every_4_years':
+            return date('Y-m-d', strtotime('+4 years', $ts));
+        case 'every_5_years':
+            return date('Y-m-d', strtotime('+5 years', $ts));
+        default:
+            return null;
+    }
+}
+
+/**
+ * Run due recurring expense templates for one company (CLI).
+ *
+ * @return array{created:int, skipped:int, errors:list<string>}
+ */
+function itm_expense_recurrence_run_for_company(mysqli $conn, int $companyId, int $employeeId): array
+{
+    $created = 0;
+    $skipped = 0;
+    $errors = [];
+    if ($companyId <= 0) {
+        return ['created' => 0, 'skipped' => 0, 'errors' => ['Invalid company.']];
+    }
+    $today = date('Y-m-d');
+    $sql = 'SELECT e.*, er.code AS recurrence_code FROM expenses e INNER JOIN expense_recurrence er ON er.id = e.expense_recurrence_id AND er.company_id = e.company_id WHERE e.company_id = ? AND e.is_recursive = 1 AND e.deleted_at IS NULL AND e.next_run_date IS NOT NULL AND e.next_run_date <= ?';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return ['created' => 0, 'skipped' => 0, 'errors' => [mysqli_error($conn)]];
+    }
+    mysqli_stmt_bind_param($stmt, 'is', $companyId, $today);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $templates = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $templates[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+
+    foreach ($templates as $template) {
+        $templateId = (int) ($template['id'] ?? 0);
+        $runDate = (string) ($template['next_run_date'] ?? '');
+        $endDate = (string) ($template['recurrence_end_date'] ?? '');
+        if ($endDate !== '' && $runDate > $endDate) {
+            $skipped++;
+            continue;
+        }
+        $dupSql = 'SELECT id FROM expenses WHERE company_id = ? AND recurrence_source_expense_id = ? AND posting_date = ? AND deleted_at IS NULL LIMIT 1';
+        $dup = mysqli_prepare($conn, $dupSql);
+        if ($dup) {
+            mysqli_stmt_bind_param($dup, 'iis', $companyId, $templateId, $runDate);
+            mysqli_stmt_execute($dup);
+            $dupRes = mysqli_stmt_get_result($dup);
+            $exists = $dupRes && mysqli_fetch_assoc($dupRes);
+            mysqli_stmt_close($dup);
+            if ($exists) {
+                $skipped++;
+                continue;
+            }
+        }
+        $child = $template;
+        unset($child['recurrence_code']);
+        $child['is_recursive'] = 0;
+        $child['recurrence_source_expense_id'] = $templateId;
+        $child['expense_recurrence_id'] = null;
+        $child['next_run_date'] = null;
+        $child['recurrence_end_date'] = null;
+        $child['posting_date'] = $runDate;
+        $child['date'] = $runDate;
+        $child['invoice_date'] = $runDate;
+        $child['created_by'] = $employeeId > 0 ? $employeeId : ($template['created_by'] ?? null);
+
+        $insertCols = [];
+        $placeholders = [];
+        $types = '';
+        $params = [];
+        $skipCols = ['id', 'created_at', 'updated_at', 'updated_by', 'deleted_by', 'deleted_at'];
+        foreach ($child as $col => $val) {
+            if (in_array($col, $skipCols, true)) {
+                continue;
+            }
+            if (!itm_is_safe_identifier($col)) {
+                continue;
+            }
+            $insertCols[] = '`' . $col . '`';
+            $placeholders[] = '?';
+            if ($val === null || $val === '') {
+                $types .= 's';
+                $params[] = null;
+            } elseif (is_int($val) || (is_string($val) && ctype_digit($val))) {
+                $types .= 'i';
+                $params[] = (int) $val;
+            } elseif (is_float($val) || is_numeric($val)) {
+                $types .= 'd';
+                $params[] = (float) $val;
+            } else {
+                $types .= 's';
+                $params[] = (string) $val;
+            }
+        }
+        $insSql = 'INSERT INTO expenses (' . implode(',', $insertCols) . ') VALUES (' . implode(',', $placeholders) . ')';
+        $ins = mysqli_prepare($conn, $insSql);
+        if (!$ins) {
+            $errors[] = 'Insert failed for template ' . $templateId;
+            continue;
+        }
+        $bind = [$types];
+        foreach ($params as $k => $v) {
+            $bind[] = &$params[$k];
+        }
+        call_user_func_array([$ins, 'bind_param'], $bind);
+        if (!mysqli_stmt_execute($ins)) {
+            $errors[] = 'Template ' . $templateId . ': ' . mysqli_stmt_error($ins);
+            mysqli_stmt_close($ins);
+            continue;
+        }
+        mysqli_stmt_close($ins);
+        $created++;
+
+        $code = (string) ($template['recurrence_code'] ?? '');
+        $next = itm_expense_recurrence_advance_date($code, $runDate);
+        if ($next === null) {
+            $errors[] = 'Could not advance recurrence for template ' . $templateId;
+            continue;
+        }
+        $upd = mysqli_prepare($conn, 'UPDATE expenses SET next_run_date = ? WHERE id = ? AND company_id = ? LIMIT 1');
+        if ($upd) {
+            mysqli_stmt_bind_param($upd, 'sii', $next, $templateId, $companyId);
+            mysqli_stmt_execute($upd);
+            mysqli_stmt_close($upd);
+        }
+    }
+
+    return ['created' => $created, 'skipped' => $skipped, 'errors' => $errors];
 }

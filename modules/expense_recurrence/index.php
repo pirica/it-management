@@ -14,8 +14,8 @@
  * - Global Search & Pagination: Scopes queries by `company_id` for multi-tenancy.
  */
 
-$crud_table = 'invoices';
-$crud_title = 'Invoices';
+$crud_table = 'expense_recurrence';
+$crud_title = 'Expense Recurrence';
 $crud_action = $crud_action ?? 'index';
 ?>
 <?php
@@ -324,7 +324,7 @@ foreach ($fieldColumns as $c) {
 }
 
 
-$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'catalogs', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'invoices', 'employees', 'departments'];
+$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'catalogs', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'expense_recurrence', 'employees', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     $fieldName = (string)($col['Field'] ?? '');
     if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
@@ -617,42 +617,6 @@ if ($crud_table === 'catalogs' && $crud_action === 'create') {
     }
 }
 
-// Payment allocations (invoice edit).
-if (
-    $_SERVER['REQUEST_METHOD'] === 'POST'
-    && $crud_action === 'edit'
-    && isset($_POST['save_payment_allocation'])
-) {
-    cr_require_valid_csrf_token();
-    $invoiceId = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
-    if ($invoiceId <= 0 || !$hasCompany || $company_id <= 0) {
-        $_SESSION['crud_error'] = 'Invalid invoice for payment.';
-        header('Location: ' . $listUrl);
-        exit;
-    }
-    $payResult = itm_finance_save_payment_allocation_from_post($conn, (int) $company_id, 'invoices', $invoiceId, (int) ($_SESSION['employee_id'] ?? 0));
-    if (empty($payResult['ok'])) {
-        $_SESSION['crud_error'] = (string) ($payResult['error'] ?? 'Could not save payment.');
-    }
-    header('Location: edit.php?id=' . $invoiceId);
-    exit;
-}
-
-if (
-    $_SERVER['REQUEST_METHOD'] === 'POST'
-    && $crud_action === 'edit'
-    && isset($_POST['delete_payment_allocation_id'])
-) {
-    cr_require_valid_csrf_token();
-    $invoiceId = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
-    $allocId = (int) ($_POST['delete_payment_allocation_id'] ?? 0);
-    if ($invoiceId > 0 && $allocId > 0 && $hasCompany && $company_id > 0) {
-        itm_finance_soft_delete_payment_allocation($conn, (int) $company_id, 'invoices', $invoiceId, $allocId, (int) ($_SESSION['employee_id'] ?? 0));
-    }
-    header('Location: edit.php?id=' . $invoiceId);
-    exit;
-}
-
 // HANDLE FETCH FOR EDIT/VIEW
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -672,15 +636,6 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     }
     
     if (!$data) { $errors[] = 'Record not found.'; }
-}
-
-$financeDocumentLines = [];
-$financePaymentAllocations = [];
-$financeAmountDue = 0.0;
-if (!empty($data) && in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
-    $financeDocumentLines = itm_finance_load_document_lines($conn, (int) $company_id, $crud_table, $editId);
-    $financePaymentAllocations = itm_finance_load_payment_allocations($conn, (int) $company_id, $crud_table, $editId);
-    $financeAmountDue = (float) ($data['amount_due'] ?? 0);
 }
 
 // HANDLE FORM SUBMISSION (CREATE/EDIT)
@@ -862,19 +817,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, $types, ...$params);
                 if (mysqli_stmt_execute($stmt)) {
-                    $savedParentId = (int) mysqli_insert_id($conn);
                     mysqli_stmt_close($stmt);
-                    $lineSave = itm_finance_save_document_lines_from_post($conn, (int) $company_id, $crud_table, $savedParentId, (int) ($_SESSION['employee_id'] ?? 0));
-                    if (!$lineSave['ok']) {
-                        $errors[] = $lineSave['error'];
-                    } else {
-                        header('Location: ' . $listUrl);
-                        exit;
-                    }
-                } else {
-                    $errors[] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
-                    mysqli_stmt_close($stmt);
+                    header('Location: ' . $listUrl);
+                    exit;
                 }
+                $errors[] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
+                mysqli_stmt_close($stmt);
             }
         } else {
             $sets = [];
@@ -894,19 +842,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 }
                 mysqli_stmt_bind_param($stmt, $types, ...$params);
                 if (mysqli_stmt_execute($stmt)) {
-                    $savedParentId = $editId;
                     mysqli_stmt_close($stmt);
-                    $lineSave = itm_finance_save_document_lines_from_post($conn, (int) $company_id, $crud_table, $savedParentId, (int) ($_SESSION['employee_id'] ?? 0));
-                    if (!$lineSave['ok']) {
-                        $errors[] = $lineSave['error'];
-                    } else {
-                        header('Location: ' . $listUrl);
-                        exit;
-                    }
-                } else {
-                    $errors[] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
-                    mysqli_stmt_close($stmt);
+                    header('Location: ' . $listUrl);
+                    exit;
                 }
+                $errors[] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
+                mysqli_stmt_close($stmt);
             }
         }
     }
@@ -982,7 +923,7 @@ if (!isset($currentUiConfig)) {
     $currentUiConfig = $ui_config ?? [];
 }
 if (!isset($crud_title)) {
-    $crud_title = 'Invoices';
+    $crud_title = 'Expense Recurrence';
 }
 ?>
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
@@ -1228,13 +1169,6 @@ if (!isset($crud_title)) {
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
-                    <?php if (in_array($crud_action, ['create', 'edit'], true)) {
-                        itm_finance_render_document_lines_editor($conn, (int) $company_id, $crud_table, $financeDocumentLines);
-                    } ?>
-                    <?php if ($crud_action === 'edit' && $editId > 0) {
-                        echo '<input type="hidden" name="id" value="' . (int) $editId . '">';
-                        itm_finance_render_payment_allocations_editor($conn, (int) $company_id, $crud_table, $editId, $financePaymentAllocations, $financeAmountDue);
-                    } ?>
                     <div class="form-actions">
                         <button class="btn btn-primary" type="submit">💾</button>
                         <a href="index.php" class="btn">🔙</a>
@@ -1255,9 +1189,6 @@ if (!isset($crud_title)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <h3 title="Line items">📋</h3>
-                    <?php itm_finance_render_document_lines_view($financeDocumentLines); ?>
-                    <?php itm_finance_render_payment_allocations_view($conn, (int) $company_id, $financePaymentAllocations, $financeAmountDue); ?>
                     <p style="margin-top:16px;">
                         <a href="index.php" class="btn">🔙</a> 
                         <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a>

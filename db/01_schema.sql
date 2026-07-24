@@ -520,6 +520,86 @@ CREATE TABLE `bill_line_items` (
   CONSTRAINT `bill_line_items_ibfk_gl_account` FOREIGN KEY (`gl_account_id`) REFERENCES `gl_accounts` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Table structure for `finance_payment_allocations`
+DROP TABLE IF EXISTS `finance_payment_allocations`;
+
+CREATE TABLE `finance_payment_allocations` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `bank_account_id` int DEFAULT NULL,
+  `bill_id` int DEFAULT NULL,
+  `invoice_id` int DEFAULT NULL,
+  `payment_mode_id` int DEFAULT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `payment_date` date NOT NULL,
+  `reference` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `memo` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `bank_account_id` (`bank_account_id`),
+  KEY `bill_id` (`bill_id`),
+  KEY `invoice_id` (`invoice_id`),
+  KEY `payment_mode_id` (`payment_mode_id`),
+  CONSTRAINT `finance_payment_allocations_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `finance_payment_allocations_ibfk_bank` FOREIGN KEY (`bank_account_id`) REFERENCES `bank_accounts` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `finance_payment_allocations_ibfk_bill` FOREIGN KEY (`bill_id`) REFERENCES `bills` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `finance_payment_allocations_ibfk_invoice` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `finance_payment_allocations_ibfk_payment_mode` FOREIGN KEY (`payment_mode_id`) REFERENCES `payment_modes` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `customer_statuses`
+DROP TABLE IF EXISTS `customers`;
+
+DROP TABLE IF EXISTS `customer_statuses`;
+
+CREATE TABLE `customer_statuses` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_customer_statuses_company_name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `customer_statuses_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `customers` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `customer_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `contact_person` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status_id` int NOT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_customers_company_name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  KEY `status_id` (`status_id`),
+  CONSTRAINT `customers_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `customers_ibfk_status` FOREIGN KEY (`status_id`) REFERENCES `customer_statuses` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Table structure for `invoices`
 DROP TABLE IF EXISTS `invoices`;
 
@@ -528,6 +608,7 @@ CREATE TABLE `invoices` (
   `company_id` int NOT NULL,
   `platform_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `platform_contact_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `customer_id` int DEFAULT NULL,
   `supplier_id` int DEFAULT NULL,
   `contact_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `sales_order_ids_json` json DEFAULT NULL,
@@ -560,11 +641,13 @@ CREATE TABLE `invoices` (
   KEY `company_id` (`company_id`),
   KEY `paid_status_id` (`paid_status_id`),
   KEY `supplier_id` (`supplier_id`),
+  KEY `customer_id` (`customer_id`),
   KEY `cost_center_id` (`cost_center_id`),
   KEY `gl_account_id` (`gl_account_id`),
   CONSTRAINT `invoices_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `invoices_ibfk_paid_status` FOREIGN KEY (`paid_status_id`) REFERENCES `paid_statuses` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `invoices_ibfk_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `invoices_ibfk_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE SET NULL,
   CONSTRAINT `invoices_ibfk_cost_center` FOREIGN KEY (`cost_center_id`) REFERENCES `cost_centers` (`id`) ON DELETE SET NULL,
   CONSTRAINT `invoices_ibfk_gl_account` FOREIGN KEY (`gl_account_id`) REFERENCES `gl_accounts` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -611,9 +694,31 @@ CREATE TABLE `invoice_line_items` (
   CONSTRAINT `invoice_line_items_ibfk_gl_account` FOREIGN KEY (`gl_account_id`) REFERENCES `gl_accounts` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Table structure for `expenses`
+-- Table structure for `expense_recurrence`
 DROP TABLE IF EXISTS `expenses`;
 
+DROP TABLE IF EXISTS `expense_recurrence`;
+
+CREATE TABLE `expense_recurrence` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sort_order` tinyint NOT NULL DEFAULT '0',
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_expense_recurrence_company_code` (`company_id`,`code`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `expense_recurrence_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `expenses`
 CREATE TABLE `expenses` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
@@ -640,6 +745,11 @@ CREATE TABLE `expenses` (
   `amount` decimal(12,2) NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `invoice_number` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `expense_recurrence_id` int DEFAULT NULL,
+  `is_recursive` tinyint(1) NOT NULL DEFAULT '0',
+  `next_run_date` date DEFAULT NULL,
+  `recurrence_end_date` date DEFAULT NULL,
+  `recurrence_source_expense_id` int DEFAULT NULL,
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -657,6 +767,8 @@ CREATE TABLE `expenses` (
   KEY `paid_status_id` (`paid_status_id`),
   KEY `bill_id` (`bill_id`),
   KEY `supplier_id` (`supplier_id`),
+  KEY `expense_recurrence_id` (`expense_recurrence_id`),
+  KEY `recurrence_source_expense_id` (`recurrence_source_expense_id`),
   CONSTRAINT `expenses_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `expenses_ibfk_cost_center` FOREIGN KEY (`cost_center_id`) REFERENCES `cost_centers` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `expenses_ibfk_gl_account` FOREIGN KEY (`gl_account_id`) REFERENCES `gl_accounts` (`id`) ON DELETE RESTRICT,
@@ -664,7 +776,9 @@ CREATE TABLE `expenses` (
   CONSTRAINT `expenses_ibfk_payment_mode` FOREIGN KEY (`payment_mode_id`) REFERENCES `payment_modes` (`id`) ON DELETE SET NULL,
   CONSTRAINT `expenses_ibfk_paid_status` FOREIGN KEY (`paid_status_id`) REFERENCES `paid_statuses` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `expenses_ibfk_bill` FOREIGN KEY (`bill_id`) REFERENCES `bills` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `expenses_ibfk_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE SET NULL
+  CONSTRAINT `expenses_ibfk_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `expenses_ibfk_expense_recurrence` FOREIGN KEY (`expense_recurrence_id`) REFERENCES `expense_recurrence` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `expenses_ibfk_recurrence_source` FOREIGN KEY (`recurrence_source_expense_id`) REFERENCES `expenses` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `floor_plan_folders`

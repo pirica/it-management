@@ -38,12 +38,15 @@ cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
 
 Do **not** run schema, data, and triggers as three separate `mysql` CLI imports.
 
-**Verify after import:** `php scripts/verify_database_schema.php` — compares live `information_schema` to `CREATE TABLE` names in `db/01_schema.sql` (currently **144** tables).
+**Verify after import:** `php scripts/verify_database_schema.php` — compares live `information_schema` to `CREATE TABLE` names in `db/01_schema.sql` (currently **148** tables).
 
 ## Finance tables (RootFi-aligned field shapes)
 - Lookups: `tax_rates`, `paid_statuses`, `payment_modes` (tenant-scoped; replicated from company 1 in `02_data.sql`).
 - Integration: `integration_accounts` (optional `gl_account_id` bridge), `bank_accounts`.
-- AP/AR documents: `bills` + `bill_line_items`, `invoices` + `invoice_line_items`.
+- AP/AR documents: `bills` + `bill_line_items`, `invoices` + `invoice_line_items` (`invoices.customer_id` → `customers`, optional).
+- **Customers:** `customer_statuses` + `customers` (AR master; separate from `suppliers`).
+- **Payments:** `finance_payment_allocations` links `bank_accounts` / `payment_modes` to exactly one of `bill_id` or `invoice_id`; `amount_due` on bill/invoice headers is recomputed in PHP (`includes/itm_finance_payments.php`).
+- **Expense recurrence:** `expense_recurrence` lookup; `expenses` columns `is_recursive`, `next_run_date`, `recurrence_end_date`, `recurrence_source_expense_id`; runner `php scripts/run_expense_recurrence.php`.
 - **Budget actuals:** extended `expenses` (`posting_date`, `paid_status_id`, EUR `currency_code`, optional `bill_id`); `modules/budget_report/` sums Posted/Paid only via `COALESCE(posting_date, date)`.
 - **No live RootFi integration:** ITM does **not** implement RootFi (or other) **sync webhooks**, inbound sync APIs, or automated upsert jobs. Finance data is maintained via module CRUD and Excel import (expenses AP aliases in `includes/itm_expenses_ap.php`).
 - **Optional platform metadata:** `platform_id`, `platform_parent_id`, `platform_item_id`, `platform_contact_id`, `platform_status`, and `platform_updated_at` are **optional** columns for manual reference or import spreadsheets (external system IDs, status labels, timestamps). Leave NULL when unused. Unique keys on `(company_id, platform_id)` apply only when `platform_id` is set; they are not driven by background sync.

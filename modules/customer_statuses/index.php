@@ -1,41 +1,26 @@
 ﻿<?php
-/**
- *
- *
- * Features:
- * - Dynamic Schema Detection: Uses `DESCRIBE` and `information_schema` to build forms 
- *   and tables without hardcoding columns.
- * - CSRF & Prepared Statements: Hardened against common web vulnerabilities.
- * - Foreign Key Integration: Automatically maps ID columns to their parent tables, 
- *   heuristically selecting display labels (e.g., 'name', 'title').
- * - Inline Reference Addition: Allows users to create parent records (like a new 
- *   category) directly from a child record's dropdown via JS.
- * - Bulk Operations: Supports multi-row deletion and table clearing.
- * - Global Search & Pagination: Scopes queries by `company_id` for multi-tenancy.
- */
-
-$crud_table = 'invoices';
-$crud_title = 'Invoices';
+$crud_table = 'customer_statuses';
+$crud_title = 'Customer Statuses';
 $crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require '../../config/config.php';
 require_once '../../includes/itm_crud_fk_label_search.php';
+
+if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
+    die('Invalid table configuration');
+}
+
+$crud_title = ucwords(str_replace('_', ' ', $crud_table));
+$crud_action = $crud_action ?? 'index';
 $pk = 'id';
 
-/**
- * Escapes a MySQL identifier (table/column name).
- */
 function cr_escape_identifier($name) {
     return '`' . str_replace('`', '``', $name) . '`';
 }
 
-/**
- * Fetches column definitions for the target table.
- */
 function cr_table_columns($conn, $table) {
     $cols = [];
-    if (!itm_is_safe_identifier($table)) return $cols;
     $res = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $cols[] = $row;
@@ -43,70 +28,43 @@ function cr_table_columns($conn, $table) {
     return $cols;
 }
 
-/**
- * Detects foreign key relationships for the table to enable dropdown selection.
- */
 function cr_fk_map($conn, $table) {
-    $map = [];
-    if (!itm_is_safe_identifier($table)) return $map;
+    $tableEsc = mysqli_real_escape_string($conn, $table);
     $sql = "SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
             FROM information_schema.KEY_COLUMN_USAGE
             WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = ?
+              AND TABLE_NAME = '{$tableEsc}'
               AND REFERENCED_TABLE_NAME IS NOT NULL";
-    $stmt = mysqli_prepare($conn, $sql);
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 's', $table);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        while ($res && ($row = mysqli_fetch_assoc($res))) {
-            $map[$row['COLUMN_NAME']] = $row;
-        }
-        mysqli_stmt_close($stmt);
+    $map = [];
+    $res = mysqli_query($conn, $sql);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $map[$row['COLUMN_NAME']] = $row;
     }
     return $map;
 }
 
-/**
- * Retrieves the list of valid options for a foreign key dropdown.
- */
 function cr_fk_options($conn, $fk, $company_id) {
     $table = $fk['REFERENCED_TABLE_NAME'];
     $col = $fk['REFERENCED_COLUMN_NAME'];
-    $rows = [];
-
-    if (!itm_is_safe_identifier($table) || !itm_is_safe_identifier($col)) {
-        return $rows;
-    }
 
     $fkMeta = cr_fk_metadata($conn, $table);
     $labelCol = $fkMeta['label_col'];
     $available = $fkMeta['available'];
 
-    // Multi-tenant check: filter options by company if the parent table is scoped.
-    $hasCompany = (in_array('company_id', $available, true) && $company_id > 0);
-    $where = $hasCompany ? ' WHERE company_id=?' : '';
+    $where = '';
+    if (in_array('company_id', $available, true) && $company_id > 0) {
+        $where = ' WHERE company_id=' . (int)$company_id;
+    }
 
     $sql = 'SELECT ' . cr_escape_identifier($col) . ' AS id, ' . cr_escape_identifier($labelCol) . " AS label FROM " . cr_escape_identifier($table) . $where . ' ORDER BY label';
-    
-    $stmt = mysqli_prepare($conn, $sql);
-    if ($stmt) {
-        if ($hasCompany) {
-            mysqli_stmt_bind_param($stmt, 'i', $company_id);
-        }
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        while ($res && ($row = mysqli_fetch_assoc($res))) {
-            $rows[] = $row;
-        }
-        mysqli_stmt_close($stmt);
+    $rows = [];
+    $res = mysqli_query($conn, $sql);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $rows[] = $row;
     }
     return $rows;
 }
 
-/**
- * Heuristically finds the best column to use as a display label for a reference table.
- */
 function cr_fk_metadata($conn, $table) {
     $labelCol = 'name';
     $des = mysqli_query($conn, 'DESCRIBE ' . cr_escape_identifier($table));
@@ -114,7 +72,6 @@ function cr_fk_metadata($conn, $table) {
     while ($des && ($d = mysqli_fetch_assoc($des))) {
         $available[] = $d['Field'];
     }
-    // Preferred candidate labels in order of priority.
     foreach (['name', 'title', 'username', 'code', 'mode_name'] as $candidate) {
         if (in_array($candidate, $available, true)) {
             $labelCol = $candidate;
@@ -127,9 +84,6 @@ function cr_fk_metadata($conn, $table) {
     ];
 }
 
-/**
- * Removes internal/automatic columns from the manageable field set.
- */
 function cr_manageable_columns($columns) {
     // Why: Keep audit meta available for view/hidden forms/POST; list hides via itm_crud_is_list_hidden_audit_field.
     return array_values(array_filter($columns, function ($c) {
@@ -137,12 +91,14 @@ function cr_manageable_columns($columns) {
     }));
 }
 
-/**
- * Converts DB column names to user-friendly titles.
- */
+function cr_form_display_value($value) {
+    return itm_cr_form_display_value($value);
+}
 function cr_humanize_field($field) {
     $label = trim((string)$field);
-    if ($label === '') { return ''; }
+    if ($label === '') {
+        return '';
+    }
 
     $map = [
         'department_id' => 'Department Name',
@@ -152,26 +108,28 @@ function cr_humanize_field($field) {
         'hu_the_lobby' => 'HU & The Lobby',
     ];
 
-    if (isset($map[$label])) { return $map[$label]; }
-    if ($label === 'id') { return 'ID'; }
+    if (isset($map[$label])) {
+        return $map[$label];
+    }
+
+    if ($label === 'id') {
+        return 'ID';
+    }
 
     $label = preg_replace('/_id$/', '', $label);
     $label = str_replace('_', ' ', (string)$label);
     return ucwords($label);
 }
 
-/**
- * Privacy filter for employee-related modules.
- */
 function cr_is_hidden_employee_field($field) {
-    if (($GLOBALS['crud_table'] ?? '') !== 'employees') { return false; }
+    if (($GLOBALS['crud_table'] ?? '') !== 'employees') {
+        return false;
+    }
+
     $hidden = ['company_id', 'employee_id', 'location_id', 'phone', 'location', 'employee_code'];
     return in_array($field, $hidden, true);
 }
 
-/**
- * Formats database values for UI display (badges, icons, clickable links).
- */
 function cr_render_cell_value($table, $field, $value) {
     if (function_exists('itm_crud_render_audit_cell_value')) {
         $auditHtml = itm_crud_render_audit_cell_value($GLOBALS['conn'] ?? null, (int)($GLOBALS['company_id'] ?? 0), $field, $value);
@@ -179,13 +137,11 @@ function cr_render_cell_value($table, $field, $value) {
             return $auditHtml;
         }
     }
-// Status badges for the 'active' flag.
-    if ($field === 'active') {
+if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
 
-    // Special boolean mapping for Employee Access module.
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
@@ -194,12 +150,6 @@ function cr_render_cell_value($table, $field, $value) {
     }
 
     $text = (string)($value ?? '');
-    if ($table === 'catalogs' && in_array($field, ['weblink', 'source_url'], true) && $text !== '') {
-        $safeUrl = filter_var($text, FILTER_VALIDATE_URL) ? $text : ('https://' . ltrim($text, '/'));
-        return '<a href="' . sanitize($safeUrl) . '" target="_blank" rel="noopener noreferrer">🔗 Open</a>';
-    }
-
-    // Interactive email links with Outlook deep-link support.
     if ($table === 'employees' && $field === 'email' && $text !== '') {
         $safeEmail = sanitize($text);
         $mailto = 'mailto:' . $text;
@@ -212,17 +162,6 @@ function cr_render_cell_value($table, $field, $value) {
     }
 
     return sanitize($text);
-}
-
-/**
- * Builds a safe external search link for catalog product lookups.
- */
-function cr_catalog_search_url($query) {
-    $trimmed = trim((string)$query);
-    if ($trimmed === '') {
-        return '';
-    }
-    return 'https://www.google.com/search?q=' . rawurlencode($trimmed);
 }
 
 
@@ -238,7 +177,8 @@ function cr_require_valid_csrf_token() {
     $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
     if ($token === '' || $sessionToken === '' || !hash_equals($sessionToken, $token)) {
         http_response_code(403);
-        exit('Forbidden: invalid CSRF token.');
+        echo 'Forbidden: invalid CSRF token.';
+        exit;
     }
 }
 
@@ -246,9 +186,6 @@ function cr_numeric_validation_error($field, $message) {
     return cr_humanize_field($field) . ' ' . $message . '.';
 }
 
-/**
- * Validates inputs against strict MySQL numeric ranges (e.g. tinyint vs bigint).
- */
 function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedValue, &$error) {
     $type = strtolower((string)$column['Type']);
     $isUnsigned = str_contains($type, 'unsigned');
@@ -311,7 +248,6 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
     return false;
 }
 
-// DATA LOADING & INITIALIZATION
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
@@ -324,7 +260,7 @@ foreach ($fieldColumns as $c) {
 }
 
 
-$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'catalogs', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'invoices', 'employees', 'departments'];
+$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'customer_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     $fieldName = (string)($col['Field'] ?? '');
     if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
@@ -488,12 +424,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
     }
 }
 
-// HANDLE DELETIONS (via POST)
 if ($crud_action === 'delete') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         http_response_code(405);
         header('Allow: POST');
-        exit('Method not allowed.');
+        echo 'Method not allowed.';
+        exit;
     }
 
     // Why: Server-side RBAC before CSRF/delete SQL (UI-only hiding is not enough).
@@ -502,58 +438,50 @@ if ($crud_action === 'delete') {
     cr_require_valid_csrf_token();
 
     $bulkAction = (string)($_POST['bulk_action'] ?? 'single_delete');
-    
-    // Clear whole table (scoped by company)
+    $dbErrorCode = 0;
+    $dbErrorMessage = '';
+
     if ($bulkAction === 'clear_table') {
-        $hasCompanyFilter = ($hasCompany && $company_id > 0);
-        $where = $hasCompanyFilter ? ' WHERE company_id=?' : '';
+        $where = '';
+        if ($hasCompany && $company_id > 0) {
+            $where = ' WHERE company_id=' . (int)$company_id;
+        }
+        if (function_exists('itm_crud_append_not_deleted_predicate')) {
+            $where = itm_crud_append_not_deleted_predicate($where);
+        }
         $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
         ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
         : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
-        
-        $stmt = mysqli_prepare($conn, $deleteSql);
-        if ($stmt) {
-            if ($hasCompanyFilter) { mysqli_stmt_bind_param($stmt, 'i', $company_id); }
-            if (!mysqli_stmt_execute($stmt)) {
-                $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
-            }
-            mysqli_stmt_close($stmt);
+        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
         header('Location: ' . $listUrl);
         exit;
     }
 
-    // Bulk delete selected IDs
     if ($bulkAction === 'bulk_delete') {
         $ids = $_POST['ids'] ?? [];
-        if (!is_array($ids)) { $ids = []; }
+        if (!is_array($ids)) {
+            $ids = [];
+        }
         $idList = [];
         foreach ($ids as $rawId) {
             $id = (int)$rawId;
-            if ($id > 0) { $idList[] = $id; }
+            if ($id > 0) {
+                $idList[$id] = $id;
+            }
         }
 
         if (!empty($idList)) {
-            $placeholders = implode(',', array_fill(0, count($idList), '?'));
-            $hasCompanyFilter = ($hasCompany && $company_id > 0);
-            $where = ' WHERE id IN (' . $placeholders . ')';
-            if ($hasCompanyFilter) { $where .= ' AND company_id=?'; }
+            $where = ' WHERE id IN (' . implode(',', array_values($idList)) . ')';
+            if ($hasCompany && $company_id > 0) {
+                $where .= ' AND company_id=' . (int)$company_id;
+            }
             $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
         ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
         : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
-            
-            $stmt = mysqli_prepare($conn, $deleteSql);
-            if ($stmt) {
-                $types = str_repeat('i', count($idList));
-                if ($hasCompanyFilter) {
-                    $types .= 'i';
-                    $idList[] = (int)$company_id;
-                }
-                mysqli_stmt_bind_param($stmt, $types, ...$idList);
-                if (!mysqli_stmt_execute($stmt)) {
-                    $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
-                }
-                mysqli_stmt_close($stmt);
+            if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+                $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             }
         } else {
             $_SESSION['crud_error'] = 'No records selected for deletion.';
@@ -562,24 +490,17 @@ if ($crud_action === 'delete') {
         exit;
     }
 
-    // Single row delete
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id > 0) {
-        $hasCompanyFilter = ($hasCompany && $company_id > 0);
-        $where = ' WHERE id=?';
-        if ($hasCompanyFilter) { $where .= ' AND company_id=?'; }
+        $where = ' WHERE id=' . $id;
+        if ($hasCompany && $company_id > 0) {
+            $where .= ' AND company_id=' . (int)$company_id;
+        }
         $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
         ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0)) . ''
         : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
-        
-        $stmt = mysqli_prepare($conn, $deleteSql);
-        if ($stmt) {
-            if ($hasCompanyFilter) { mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id); }
-            else { mysqli_stmt_bind_param($stmt, 'i', $id); }
-            if (!mysqli_stmt_execute($stmt)) {
-                $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
-            }
-            mysqli_stmt_close($stmt);
+        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+            $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
     }
     header('Location: ' . $listUrl);
@@ -592,98 +513,24 @@ if (!empty($_SESSION['crud_error'])) {
     unset($_SESSION['crud_error']);
 }
 $data = [];
-foreach ($fieldColumns as $col) { $data[$col['Field']] = ''; }
-if ($crud_action === 'create') {
-    $data['active'] = 1;
+foreach ($fieldColumns as $col) {
+    $data[$col['Field']] = '';
 }
 
-if ($crud_table === 'catalogs' && $crud_action === 'create') {
-    $catalogPrefillMap = [
-        'model' => 'online_query',
-        'supplier' => 'online_supplier',
-        'equipment_type' => 'online_type',
-        'weblink' => 'online_weblink',
-        'source_url' => 'online_weblink',
-    ];
-    foreach ($catalogPrefillMap as $columnName => $queryKey) {
-        if (!array_key_exists($columnName, $data)) {
-            continue;
-        }
-        $prefillValue = trim((string)($_GET[$queryKey] ?? ''));
-        if ($prefillValue === '') {
-            continue;
-        }
-        $data[$columnName] = $prefillValue;
-    }
-}
-
-// Payment allocations (invoice edit).
-if (
-    $_SERVER['REQUEST_METHOD'] === 'POST'
-    && $crud_action === 'edit'
-    && isset($_POST['save_payment_allocation'])
-) {
-    cr_require_valid_csrf_token();
-    $invoiceId = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
-    if ($invoiceId <= 0 || !$hasCompany || $company_id <= 0) {
-        $_SESSION['crud_error'] = 'Invalid invoice for payment.';
-        header('Location: ' . $listUrl);
-        exit;
-    }
-    $payResult = itm_finance_save_payment_allocation_from_post($conn, (int) $company_id, 'invoices', $invoiceId, (int) ($_SESSION['employee_id'] ?? 0));
-    if (empty($payResult['ok'])) {
-        $_SESSION['crud_error'] = (string) ($payResult['error'] ?? 'Could not save payment.');
-    }
-    header('Location: edit.php?id=' . $invoiceId);
-    exit;
-}
-
-if (
-    $_SERVER['REQUEST_METHOD'] === 'POST'
-    && $crud_action === 'edit'
-    && isset($_POST['delete_payment_allocation_id'])
-) {
-    cr_require_valid_csrf_token();
-    $invoiceId = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
-    $allocId = (int) ($_POST['delete_payment_allocation_id'] ?? 0);
-    if ($invoiceId > 0 && $allocId > 0 && $hasCompany && $company_id > 0) {
-        itm_finance_soft_delete_payment_allocation($conn, (int) $company_id, 'invoices', $invoiceId, $allocId, (int) ($_SESSION['employee_id'] ?? 0));
-    }
-    header('Location: edit.php?id=' . $invoiceId);
-    exit;
-}
-
-// HANDLE FETCH FOR EDIT/VIEW
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
-    $hasCompanyFilter = ($hasCompany && $company_id > 0);
-    $where = ' WHERE id=?';
-    if ($hasCompanyFilter) { $where .= ' AND company_id=?'; }
-    $sql = 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
-    $stmt = mysqli_prepare($conn, $sql);
-    if ($stmt) {
-        if ($hasCompanyFilter) { mysqli_stmt_bind_param($stmt, 'ii', $editId, $company_id); }
-        else { mysqli_stmt_bind_param($stmt, 'i', $editId); }
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        $data = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : [];
-        mysqli_stmt_close($stmt);
+    $where = ' WHERE id=' . $editId;
+    if ($hasCompany && $company_id > 0) {
+        $where .= ' AND company_id=' . (int)$company_id;
     }
-    
-    if (!$data) { $errors[] = 'Record not found.'; }
+    $q = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
+    $data = ($q && mysqli_num_rows($q) === 1) ? mysqli_fetch_assoc($q) : [];
+    if (!$data) {
+        $errors[] = 'Record not found.';
+    }
 }
 
-$financeDocumentLines = [];
-$financePaymentAllocations = [];
-$financeAmountDue = 0.0;
-if (!empty($data) && in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
-    $financeDocumentLines = itm_finance_load_document_lines($conn, (int) $company_id, $crud_table, $editId);
-    $financePaymentAllocations = itm_finance_load_payment_allocations($conn, (int) $company_id, $crud_table, $editId);
-    $financeAmountDue = (float) ($data['amount_due'] ?? 0);
-}
-
-// HANDLE FORM SUBMISSION (CREATE/EDIT)
 
 // Handle sample data seeding for empty companies in list view
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && isset($_POST['add_sample_data'])) {
@@ -723,215 +570,161 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     // Why: Server-side RBAC before CSRF persistence (UI-only hiding is not enough).
     itm_require_crud_role_module_permission($conn, $crud_action, $crud_table);
     cr_require_valid_csrf_token();
+    $sqlValues = [];
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
-        $isBooleanToggle = $isTinyInt || $name === 'active';
-        
-        // Logical Booleans
-        if ($isBooleanToggle) {
+        if ($isTinyInt || $name === 'active') {
             $data[$name] = isset($_POST[$name]) ? 1 : 0;
+            $sqlValues[$name] = (string) (int) $data[$name];
             continue;
         }
 
-        // Auto-assign company ownership
         if ($name === 'company_id' && $company_id > 0) {
-            $data[$name] = (int)$company_id;
+            $data[$name] = (int) $company_id;
+            $sqlValues[$name] = (string) (int) $company_id;
             continue;
         }
 
-        // Handle Foreign Keys with inline "add new parent" support
         if (isset($fkMap[$name])) {
             $value = $_POST[$name] ?? null;
             $newKey = $name . '__new_value';
-            $newValueRaw = trim((string)($_POST[$newKey] ?? ''));
+            $newValueRaw = trim((string) ($_POST[$newKey] ?? ''));
 
             if ($value === '__add_new__') {
                 $errors[] = 'Please wait for the new value to be created before saving.';
-                $data[$name] = null;
+                $data[$name] = '';
+                $sqlValues[$name] = 'NULL';
                 continue;
             }
 
             if ($value === '__new__' && $newValueRaw !== '') {
-                // The JS bridge requested an inline insert of a missing reference.
                 $fk = $fkMap[$name];
                 $fkTable = $fk['REFERENCED_TABLE_NAME'];
                 $fkCol = $fk['REFERENCED_COLUMN_NAME'];
                 $meta = cr_fk_metadata($conn, $fkTable);
                 $labelCol = $meta['label_col'];
                 $available = $meta['available'];
+                $newValueEsc = mysqli_real_escape_string($conn, $newValueRaw);
 
-                $hasCompanyFilter = (in_array('company_id', $available, true) && $company_id > 0);
                 $findSql = 'SELECT ' . cr_escape_identifier($fkCol) . ' AS id FROM ' . cr_escape_identifier($fkTable)
-                    . ' WHERE ' . cr_escape_identifier($labelCol) . "=?";
-                if ($hasCompanyFilter) { $findSql .= ' AND company_id=?'; }
-                $findSql .= ' LIMIT 1';
-                
-                $stmtFind = mysqli_prepare($conn, $findSql);
-                $existingId = null;
-                if ($stmtFind) {
-                    if ($hasCompanyFilter) { mysqli_stmt_bind_param($stmtFind, 'si', $newValueRaw, $company_id); }
-                    else { mysqli_stmt_bind_param($stmtFind, 's', $newValueRaw); }
-                    mysqli_stmt_execute($stmtFind);
-                    $resEx = mysqli_stmt_get_result($stmtFind);
-                    if ($resEx && mysqli_num_rows($resEx) > 0) {
-                        $row = mysqli_fetch_assoc($resEx);
-                        $existingId = (int)$row['id'];
-                    }
-                    mysqli_stmt_close($stmtFind);
+                    . ' WHERE ' . cr_escape_identifier($labelCol) . "='" . $newValueEsc . "'";
+                if (in_array('company_id', $available, true) && $company_id > 0) {
+                    $findSql .= ' AND company_id=' . (int) $company_id;
                 }
-
-                if ($existingId !== null) {
-                    $data[$name] = $existingId;
+                $findSql .= ' LIMIT 1';
+                $existing = mysqli_query($conn, $findSql);
+                if ($existing && mysqli_num_rows($existing) > 0) {
+                    $row = mysqli_fetch_assoc($existing);
+                    $data[$name] = (string) (int) $row['id'];
+                    $sqlValues[$name] = (string) (int) $row['id'];
                 } else {
                     $insertFields = [cr_escape_identifier($labelCol)];
-                    $placeholders = ['?'];
-                    $params = [$newValueRaw];
-                    $types = 's';
-                    if ($hasCompanyFilter) {
+                    $insertValues = ["'" . $newValueEsc . "'"];
+                    if (in_array('company_id', $available, true) && $company_id > 0) {
                         $insertFields[] = '`company_id`';
-                        $placeholders[] = '?';
-                        $params[] = (int)$company_id;
-                        $types .= 'i';
+                        $insertValues[] = (string) (int) $company_id;
                     }
                     $insertSql = 'INSERT INTO ' . cr_escape_identifier($fkTable)
-                        . ' (' . implode(',', $insertFields) . ') VALUES (' . implode(',', $placeholders) . ')';
-                    
-                    $stmtIns = mysqli_prepare($conn, $insertSql);
-                    if ($stmtIns) {
-                        mysqli_stmt_bind_param($stmtIns, $types, ...$params);
-                        if (mysqli_stmt_execute($stmtIns)) {
-                            $data[$name] = (int)mysqli_insert_id($conn);
-                        } else {
-                            $errors[] = 'Could not add related value for ' . $name . '. ' . itm_format_db_constraint_error(mysqli_stmt_errno($stmtIns), mysqli_stmt_error($stmtIns));
-                            $data[$name] = null;
-                        }
-                        mysqli_stmt_close($stmtIns);
+                        . ' (' . implode(',', $insertFields) . ') VALUES (' . implode(',', $insertValues) . ')';
+                    $dbErrorCode = 0;
+                    $dbErrorMessage = '';
+                    if (itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage)) {
+                        $resolvedId = (string) (int) mysqli_insert_id($conn);
+                        $data[$name] = $resolvedId;
+                        $sqlValues[$name] = $resolvedId;
+                    } else {
+                        $errors[] = 'Could not add related value for ' . $name . '. ' . itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+                        $data[$name] = '';
+                        $sqlValues[$name] = 'NULL';
                     }
                 }
                 continue;
             }
         }
 
-        // Generic value processing and numeric validation
         $value = $_POST[$name] ?? null;
         if ($value === '' || $value === null) {
-            $data[$name] = null;
+            $data[$name] = '';
+            $sqlValues[$name] = 'NULL';
         } elseif (preg_match('/int|decimal|float|double/', $col['Type'])) {
-            $normalizedNumeric = null; $numericError = '';
+            $normalizedNumeric = null;
+            $numericError = '';
             if (!cr_validate_numeric_value($value, $col, $name, $normalizedNumeric, $numericError)) {
                 $errors[] = $numericError;
-                $data[$name] = null;
+                $data[$name] = '';
+                $sqlValues[$name] = 'NULL';
             } else {
                 $data[$name] = $normalizedNumeric;
+                $sqlValues[$name] = $normalizedNumeric;
             }
         } else {
-            $data[$name] = (string)$value;
+            $data[$name] = (string) $value;
+            $sqlValues[$name] = "'" . mysqli_real_escape_string($conn, $value) . "'";
         }
     }
 
-    // PERSISTENCE (Prepared Statements)
     if (empty($errors)) {
-        if ($crud_action === 'create' && function_exists('itm_crud_stamp_create_audit')) {
-            $sqlValuesStamp = null;
-            itm_crud_stamp_create_audit($data, $sqlValuesStamp);
-        } elseif ($crud_action === 'edit' && function_exists('itm_crud_stamp_update_audit')) {
-            $sqlValuesStamp = null;
-            itm_crud_stamp_update_audit($data, $sqlValuesStamp, $data);
-        }
-        $fields = []; $placeholders = []; $params = []; $types = '';
-
-        foreach ($fieldColumns as $col) {
-            $name = $col['Field'];
-            $fields[] = cr_escape_identifier($name);
-            $placeholders[] = '?';
-            $params[] = $data[$name];
-            
-            $colType = strtolower($col['Type']);
-            if (str_contains($colType, 'int') || str_contains($colType, 'decimal') || str_contains($colType, 'float') || str_contains($colType, 'double')) {
-                $types .= ($data[$name] === null) ? 's' : (str_contains($colType, 'int') ? 'i' : 'd');
-            } else {
-                $types .= 's';
-            }
-        }
-
         if ($crud_action === 'create') {
-            $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $placeholders) . ')';
-            $stmt = mysqli_prepare($conn, $sql);
-            if ($stmt) {
-                mysqli_stmt_bind_param($stmt, $types, ...$params);
-                if (mysqli_stmt_execute($stmt)) {
-                    $savedParentId = (int) mysqli_insert_id($conn);
-                    mysqli_stmt_close($stmt);
-                    $lineSave = itm_finance_save_document_lines_from_post($conn, (int) $company_id, $crud_table, $savedParentId, (int) ($_SESSION['employee_id'] ?? 0));
-                    if (!$lineSave['ok']) {
-                        $errors[] = $lineSave['error'];
-                    } else {
-                        header('Location: ' . $listUrl);
-                        exit;
-                    }
-                } else {
-                    $errors[] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
-                    mysqli_stmt_close($stmt);
-                }
+            if (function_exists('itm_crud_stamp_create_audit')) {
+                itm_crud_stamp_create_audit($data, $sqlValues);
             }
+            $fields = [];
+            $values = [];
+            foreach ($fieldColumns as $col) {
+                $name = $col['Field'];
+                $fields[] = cr_escape_identifier($name);
+                $values[] = $sqlValues[$name] ?? 'NULL';
+            }
+            $sql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $values) . ')';
         } else {
-            $sets = [];
-            foreach ($fields as $f) { $sets[] = $f . '=?'; }
-            $hasCompanyFilter = ($hasCompany && $company_id > 0);
-            $where = ' WHERE id=?';
-            if ($hasCompanyFilter) { $where .= ' AND company_id=?'; }
-            $sql = 'UPDATE ' . cr_escape_identifier($crud_table) . ' SET ' . implode(',', $sets) . $where . ' LIMIT 1';
-            
-            $stmt = mysqli_prepare($conn, $sql);
-            if ($stmt) {
-                $types .= 'i';
-                $params[] = $editId;
-                if ($hasCompanyFilter) {
-                    $types .= 'i';
-                    $params[] = $company_id;
-                }
-                mysqli_stmt_bind_param($stmt, $types, ...$params);
-                if (mysqli_stmt_execute($stmt)) {
-                    $savedParentId = $editId;
-                    mysqli_stmt_close($stmt);
-                    $lineSave = itm_finance_save_document_lines_from_post($conn, (int) $company_id, $crud_table, $savedParentId, (int) ($_SESSION['employee_id'] ?? 0));
-                    if (!$lineSave['ok']) {
-                        $errors[] = $lineSave['error'];
-                    } else {
-                        header('Location: ' . $listUrl);
-                        exit;
-                    }
-                } else {
-                    $errors[] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
-                    mysqli_stmt_close($stmt);
-                }
+            if (function_exists('itm_crud_stamp_update_audit')) {
+                itm_crud_stamp_update_audit($data, $sqlValues, $data);
             }
+            $sets = [];
+            foreach ($fieldColumns as $col) {
+                $name = $col['Field'];
+                $sets[] = cr_escape_identifier($name) . '=' . ($sqlValues[$name] ?? 'NULL');
+            }
+            $where = ' WHERE id=' . $editId;
+            if ($hasCompany && $company_id > 0) {
+                $where .= ' AND company_id=' . (int)$company_id;
+            }
+            $sql = 'UPDATE ' . cr_escape_identifier($crud_table) . ' SET ' . implode(',', $sets) . $where . ' LIMIT 1';
         }
+
+        $dbErrorCode = 0;
+        $dbErrorMessage = '';
+        if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+            header('Location: ' . $listUrl);
+            exit;
+        }
+        $errors[] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 }
 
-// FETCH LIST DATA (Pagination, Search, and Sort)
 $where = '';
-if ($hasCompany && $company_id > 0) { $where = ' WHERE company_id=' . (int)$company_id; }
-if (function_exists('itm_crud_append_not_deleted_predicate')) {
-    $where = itm_crud_append_not_deleted_predicate($where);
+if ($hasCompany && $company_id > 0) {
+    $where = ' WHERE company_id=' . (int)$company_id;
 }
 
-// SEARCH
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
     $searchConditions = ["CAST(`id` AS CHAR) LIKE '{$searchEsc}'"];
-    foreach ($fieldColumns as $col) {
+    foreach ($uiColumns as $col) {
         $fieldName = (string)($col['Field'] ?? '');
-        if ($fieldName === '') { continue; }
+        if ($fieldName === '') {
+            continue;
+        }
         $searchConditions[] = 'CAST(' . cr_escape_identifier($fieldName) . " AS CHAR) LIKE '{$searchEsc}'";
     }
+
+    
     $itmFkSearchFields = [];
-    foreach ($fieldColumns as $col) {
+    foreach ($uiColumns as $col) {
         $itmFkFieldName = (string)($col['Field'] ?? '');
         if ($itmFkFieldName !== '') {
             $itmFkSearchFields[] = $itmFkFieldName;
@@ -943,29 +736,41 @@ if ($searchRaw !== '') {
             $searchConditions = array_merge($searchConditions, $itmFkLabelSearch);
         }
     }
-    if (!empty($searchConditions)) {
+
+if (!empty($searchConditions)) {
         $where .= ($where === '' ? ' WHERE ' : ' AND ') . '(' . implode(' OR ', $searchConditions) . ')';
     }
 }
 
-// SORTING
-$sortableColumns = array_map(static function ($col) { return $col['Field']; }, $fieldColumns);
+$sortableColumns = array_map(static function ($col) {
+    return $col['Field'];
+}, $uiColumns);
+
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
-if (!in_array($sort, $sortableColumns, true)) { $sort = 'id'; }
-if (!in_array($dir, ['ASC', 'DESC'], true)) { $dir = 'DESC'; }
+if (!in_array($sort, $sortableColumns, true)) {
+    $sort = 'id';
+}
+if (!in_array($dir, ['ASC', 'DESC'], true)) {
+    $dir = 'DESC';
+}
 $sortSql = cr_escape_identifier($sort) . ' ' . $dir;
 
-// PAGINATION
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
 $countResult = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where);
 $totalRows = 0;
-if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) { $totalRows = (int)($countRow['total_rows'] ?? 0); }
+if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
+    $totalRows = (int)($countRow['total_rows'] ?? 0);
+}
 $totalPages = max(1, (int)ceil($totalRows / $perPage));
 $showBulkActions = ($totalRows >= $perPage);
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-if ($page < 1) { $page = 1; }
-if ($page > $totalPages) { $page = $totalPages; }
+if ($page < 1) {
+    $page = 1;
+}
+if ($page > $totalPages) {
+    $page = $totalPages;
+}
 $offset = ($page - 1) * $perPage;
 
 $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
@@ -982,7 +787,7 @@ if (!isset($currentUiConfig)) {
     $currentUiConfig = $ui_config ?? [];
 }
 if (!isset($crud_title)) {
-    $crud_title = 'Invoices';
+    $crud_title = 'Customer Statuses';
 }
 ?>
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
@@ -998,39 +803,32 @@ if (!isset($crud_title)) {
             <?php echo itm_render_alert_errors($errors); ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
-                <!-- LIST VIEW -->
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                     <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
-                        <div style="display:flex;gap:8px;">
-                            <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
-                        </div>
+                        <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
                     <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                     <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
-                        <div style="display:flex;gap:8px;">
-                            <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
-                        </div>
+                        <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
                 </div>
-
-                <?php if ($showBulkActions): ?>
-                <!-- TABLE MAINTENANCE -->
-                <div class="card" style="margin-bottom:16px;">
-                    <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
-                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        
+            <?php if ($showBulkActions): ?>
+            <div class="card" style="margin-bottom:16px;">
+                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    
                                                                                 <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
 <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
-                        <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
-                    </form>
-                </div>
-                <?php endif; ?>
+                    <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger" onclick="return confirm('Clear all records in this table? This cannot be undone.');">Clear Table</button>
+                </form>
+            </div>
+            <?php endif; ?>
 
-                <!-- SEARCH BAR -->
+
                 <div class="card" style="margin-bottom:16px;">
                     <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
                         <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
@@ -1046,49 +844,6 @@ if (!isset($crud_title)) {
                         </div>
                     </form>
                 </div>
-
-                <?php if ($crud_table === 'catalogs'): ?>
-                    <?php
-                        $catalogOnlineQuery = trim((string)($_GET['online_query'] ?? ''));
-                        $catalogOnlineSupplier = trim((string)($_GET['online_supplier'] ?? ''));
-                        $catalogOnlineType = trim((string)($_GET['online_type'] ?? ''));
-                        $catalogOnlineSearchUrl = cr_catalog_search_url($catalogOnlineQuery);
-                        $catalogAddProductHref = htmlspecialchars(
-                            'create.php?online_query=' . rawurlencode($catalogOnlineQuery)
-                            . '&online_supplier=' . rawurlencode($catalogOnlineSupplier)
-                            . '&online_type=' . rawurlencode($catalogOnlineType)
-                            . '&online_weblink=' . rawurlencode($catalogOnlineSearchUrl),
-                            ENT_QUOTES,
-                            'UTF-8'
-                        );
-                    ?>
-                    <div class="card" style="margin-bottom:16px;">
-                        <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
-                            <div class="form-group" style="margin:0;min-width:260px;flex:1;">
-                                <label for="catalogOnlineQuery">Search Online</label>
-                                <input type="text" id="catalogOnlineQuery" name="online_query" value="<?php echo sanitize($catalogOnlineQuery); ?>" placeholder="Type a product model to search online...">
-                            </div>
-                            <div class="form-group" style="margin:0;min-width:180px;">
-                                <label for="catalogOnlineSupplier">Supplier</label>
-                                <input type="text" id="catalogOnlineSupplier" name="online_supplier" value="<?php echo sanitize($catalogOnlineSupplier); ?>" placeholder="Optional supplier">
-                            </div>
-                            <div class="form-group" style="margin:0;min-width:180px;">
-                                <label for="catalogOnlineType">Equipment Type</label>
-                                <input type="text" id="catalogOnlineType" name="online_type" value="<?php echo sanitize($catalogOnlineType); ?>" placeholder="Optional type">
-                            </div>
-                            <div class="form-actions" style="margin:0;display:flex;gap:8px;align-items:center;">
-                                <?php if ($catalogOnlineSearchUrl !== ''): ?>
-                                    <a href="<?php echo sanitize($catalogOnlineSearchUrl); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm">Search Online</a>
-                                    <a href="<?php echo $catalogAddProductHref; ?>" class="btn btn-primary">Add Product to Catalogs</a>
-                                <?php else: ?>
-                                    <button type="submit" class="btn btn-primary">Prepare Search</button>
-                                <?php endif; ?>
-                            </div>
-                        </form>
-                    </div>
-                <?php endif; ?>
-
-                <!-- DATA TABLE -->
                 <div class="card" style="overflow:auto;">
                     <table data-itm-db-import-endpoint="index.php">
                         <thead>
@@ -1100,7 +855,9 @@ if (!isset($crud_title)) {
                                 <th>
                                     <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize(cr_humanize_field($field)); ?>
-                                        <?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
+                                        <?php if ($sort === $field): ?>
+                                            <?php echo $dir === 'ASC' ? '▲' : '▼'; ?>
+                                        <?php endif; ?>
                                     </a>
                                 </th>
                             <?php endforeach; ?>
@@ -1114,24 +871,22 @@ if (!isset($crud_title)) {
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td>
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
-                                            <span title="<?php echo sanitize((string)$row[$f]); ?>">💬</span>
+                                            <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                         <?php else: ?>
                                             <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
                                         <?php endif; ?>
                                     </td>
                                 <?php endforeach; ?>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
-                                    <div class="itm-actions-wrap">
-                                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
-                                        <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
-                                        <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
-                                            <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
-                                            <input type="hidden" name="bulk_action" value="single_delete">
-                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
+                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
+                                        <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                        <input type="hidden" name="bulk_action" value="single_delete">
+                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                         <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) { itm_crud_render_delete_hidden_audit_inputs(); } ?>
-                                            <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
-                                        </form>
-                                    </div>
+                                        <button class="btn btn-sm btn-danger" type="submit">🗑️</button>
+                                    </form>
                                 </td>
                             </tr>
                         <?php endwhile; else: ?>
@@ -1154,8 +909,6 @@ if (!isset($crud_title)) {
                         </form>
                     </div>
                 <?php endif; ?>
-
-                <!-- PAGINATION -->
                 <?php if ($totalRows > $perPage): ?>
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
                         <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
@@ -1174,24 +927,28 @@ if (!isset($crud_title)) {
                 <?php endif; ?>
 
             <?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>
-                <!-- EDIT/CREATE VIEW -->
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($uiColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
-                        $isBooleanToggle = $isTinyInt || $name === 'active';
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');
                         $isText = str_contains($col['Type'], 'text');
-                        $val = $data[$name] ?? '';
-                        $displayVal = ($val === null) ? '' : (string)$val;
+                        $displayVal = cr_form_display_value($data[$name] ?? '');
                     ?>
+                        <?php
+                        // Why: Audit meta is stamped via hidden inputs; never show as editable widgets.
+                        if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($name)) {
+                            continue;
+                        }
+                        ?>
+
                         <div class="form-group">
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                             <?php if ($name === 'company_id' && $company_id > 0): ?>
                                 <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
-                            <?php elseif ($isBooleanToggle): ?>
+                            <?php elseif ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
@@ -1228,13 +985,6 @@ if (!isset($crud_title)) {
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
-                    <?php if (in_array($crud_action, ['create', 'edit'], true)) {
-                        itm_finance_render_document_lines_editor($conn, (int) $company_id, $crud_table, $financeDocumentLines);
-                    } ?>
-                    <?php if ($crud_action === 'edit' && $editId > 0) {
-                        echo '<input type="hidden" name="id" value="' . (int) $editId . '">';
-                        itm_finance_render_payment_allocations_editor($conn, (int) $company_id, $crud_table, $editId, $financePaymentAllocations, $financeAmountDue);
-                    } ?>
                     <div class="form-actions">
                         <button class="btn btn-primary" type="submit">💾</button>
                         <a href="index.php" class="btn">🔙</a>
@@ -1242,7 +992,6 @@ if (!isset($crud_title)) {
                 </form>
 
             <?php elseif ($crud_action === 'view'): ?>
-                <!-- VIEW (DETAILS) -->
                 <h1>View <?php echo sanitize($crud_title); ?></h1>
                 <div class="card">
                     <table>
@@ -1255,37 +1004,36 @@ if (!isset($crud_title)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <h3 title="Line items">📋</h3>
-                    <?php itm_finance_render_document_lines_view($financeDocumentLines); ?>
-                    <?php itm_finance_render_payment_allocations_view($conn, (int) $company_id, $financePaymentAllocations, $financeAmountDue); ?>
-                    <p style="margin-top:16px;">
-                        <a href="index.php" class="btn">🔙</a> 
-                        <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a>
-                    </p>
+                    <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
                 </div>
             <?php endif; ?>
         </div>
     </div>
 </div>
-
 <script src="../../js/theme.js"></script>
-<script> window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>; </script>
-<script src="../../js/select-add-option.js"></script>
 <script>
-/**
- * Helper to handle Outlook mailto links and dynamic checkbox visual indicators.
- */
+window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
+</script>
+<script src="../../js/select-add-option.js"></script>
+
+<script>
 document.addEventListener('click', function (event) {
     const link = event.target.closest('a[data-outlook-link="1"]');
     if (!link) return;
     const outlookHref = link.getAttribute('data-outlook-href');
-    if (outlookHref) { window.location.href = outlookHref; }
+    if (outlookHref) {
+        window.location.href = outlookHref;
+    }
 });
+
 document.addEventListener('change', function (event) {
     if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
-    if (indicator) { indicator.textContent = event.target.checked ? '✅' : '❌'; }
+    if (indicator) {
+        indicator.textContent = event.target.checked ? '✅' : '❌';
+    }
 });
 </script>
+
 </body>
 </html>
