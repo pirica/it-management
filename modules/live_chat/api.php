@@ -341,6 +341,15 @@ switch ($action) {
                 lc_json(['error' => 'Failed to create ticket'], 500);
             }
             $existingTicket = false;
+        } elseif ($ticketMode === 'reopen') {
+            if ($ticketId <= 0) {
+                lc_json(['error' => 'Ticket id required'], 400);
+            }
+            $reopened = itm_live_chat_reopen_ticket($conn, $companyId, $ticketId, $employeeId, $isSupportAgent);
+            if ($reopened === false) {
+                lc_json(['error' => 'Ticket is not closed or cannot be reopened'], 400);
+            }
+            $existingTicket = true;
         } else {
             if ($ticketId <= 0) {
                 lc_json(['error' => 'Ticket id required'], 400);
@@ -377,6 +386,7 @@ switch ($action) {
             'conversation_id' => $conversationId,
             'ticket_id' => $ticketId,
             'existing_ticket' => $existingTicket,
+            'ticket_mode' => $ticketMode,
         ]);
         itm_live_chat_notify_support_agents_waiting($conn, $companyId, $conversationId, 'Live Agent waiting', 'A new live agent chat is waiting');
         lc_json(['success' => true, 'conversation_id' => $conversationId]);
@@ -655,6 +665,29 @@ switch ($action) {
             $sql .= ' AND created_by_employee_id = ' . (int)$employeeId;
         }
         $sql .= ' ORDER BY id DESC LIMIT 50';
+        $stmt = mysqli_prepare($conn, $sql);
+        $tickets = [];
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $companyId);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            while ($res && ($row = mysqli_fetch_assoc($res))) {
+                $tickets[] = ['id' => (int)$row['id'], 'title' => $row['title']];
+            }
+            mysqli_stmt_close($stmt);
+        }
+        lc_json(['tickets' => $tickets]);
+        break;
+
+    case 'list_closed_tickets':
+        $sql = 'SELECT t.id, t.title
+                FROM tickets t
+                INNER JOIN ticket_statuses ts ON ts.id = t.status_id AND ts.company_id = t.company_id
+                WHERE t.company_id = ? AND t.deleted_at IS NULL AND t.active = 1 AND ts.is_closed = 1';
+        if (!$isSupportAgent) {
+            $sql .= ' AND t.created_by_employee_id = ' . (int)$employeeId;
+        }
+        $sql .= ' ORDER BY t.id DESC LIMIT 50';
         $stmt = mysqli_prepare($conn, $sql);
         $tickets = [];
         if ($stmt) {

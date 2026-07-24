@@ -234,6 +234,7 @@
             return;
         }
         if (opt.id === 'start_chat') showLiveAgentWizard();
+        if (opt.id === 'reopen_ticket') showReopenTicketWizard();
         if (opt.id === 'message_colleague') showChatWithWizard();
     }
 
@@ -287,6 +288,31 @@
                     description: document.getElementById('lc-ticket-desc').value
                 }).then(function (r) {
                     if (r.conversation_id) openConversation(r.conversation_id);
+                });
+            });
+        });
+    }
+
+    function showReopenTicketWizard() {
+        el.options.classList.add('hidden');
+        el.wizard.classList.remove('hidden');
+        apiGet('list_closed_tickets').then(function (data) {
+            var tickets = data.tickets || [];
+            if (!tickets.length) {
+                el.wizard.innerHTML = '<div class="card"><p>No closed tickets available to reopen.</p></div>';
+                return;
+            }
+            var html = '<div class="card"><label>Closed ticket</label><select id="lc-reopen-ticket-select" class="form-control">';
+            tickets.forEach(function (t) {
+                html += '<option value="' + t.id + '">#' + t.id + ' — ' + escapeHtml(t.title) + '</option>';
+            });
+            html += '</select><button type="button" class="btn btn-primary" id="lc-start-reopen" title="Re-open ticket">🔓</button></div>';
+            el.wizard.innerHTML = html;
+            document.getElementById('lc-start-reopen').addEventListener('click', function () {
+                var tid = parseInt(document.getElementById('lc-reopen-ticket-select').value, 10);
+                apiPost('start_live_agent', { ticket_mode: 'reopen', ticket_id: tid }).then(function (r) {
+                    if (r.conversation_id) openConversation(r.conversation_id);
+                    else if (r.error) alert(r.error);
                 });
             });
         });
@@ -400,5 +426,22 @@
     });
 
     loadConversations();
-    if (state.conversationId > 0) openConversation(state.conversationId);
+    if (state.conversationId > 0) {
+        openConversation(state.conversationId);
+    } else {
+        var flowParam = new URLSearchParams(window.location.search).get('flow');
+        if (flowParam === 'live_agent') {
+            document.getElementById('lc-btn-live-agent').click();
+        } else if (flowParam === 'chat_with') {
+            document.getElementById('lc-btn-chat-with').click();
+        } else if (flowParam === 'reopen_ticket') {
+            document.getElementById('lc-btn-live-agent').click();
+            apiGet('launch_options_live_agent').then(function (data) {
+                var reopenOpt = (data.options || []).find(function (o) { return o.id === 'reopen_ticket'; });
+                if (reopenOpt) {
+                    handleLaunchOption(reopenOpt);
+                }
+            });
+        }
+    }
 })();

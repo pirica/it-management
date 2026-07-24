@@ -58,14 +58,14 @@ Default launch options:
 
 | Flow | Options |
 |------|---------|
-| Live Agent | Start live chat, Knowledge Base, List all (knowledge-base), Create ticket, Email IT |
+| Live Agent | Start live chat, Knowledge Base, List all (knowledge-base), Create ticket, Re-open ticket, Email IT |
 | Chat with | Message colleague, List all (knowledge-base), Company contacts, Org chart |
 
 Polling via `api.php?action=poll` (not WebSockets). CSRF on all mutating POSTs.
 
 ## 6. API (`modules/live_chat/api.php`)
 
-Actions: `list_conversations`, `get_conversation`, `get_messages`, `send_message`, `upload_attachment`, `delete_attachment`, `set_typing`, `poll`, `start_live_agent`, `start_chat_with`, `claim_conversation`, `rate_conversation`, `close_conversation`, `list_notifications`, `mark_notification_read`, `list_open_tickets`, `list_employees`, launch-option helpers.
+Actions: `list_conversations`, `get_conversation`, `get_messages`, `send_message`, `upload_attachment`, `delete_attachment`, `set_typing`, `poll`, `start_live_agent` (`ticket_mode`: `new`, `existing`, `reopen`), `start_chat_with`, `claim_conversation`, `rate_conversation`, `close_conversation`, `list_notifications`, `mark_notification_read`, `list_open_tickets`, `list_closed_tickets`, `list_employees`, launch-option helpers.
 
 Rate limit: `itm_api_enforce_rate_limit_or_exit($conn)` on every request.
 
