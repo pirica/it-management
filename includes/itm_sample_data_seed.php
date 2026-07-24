@@ -1892,6 +1892,67 @@ if (!function_exists('itm_seed_insert_ui_configuration_sample_row')) {
     }
 }
 
+if (!function_exists('itm_seed_apply_expenses_sample_row_defaults')) {
+    /**
+     * Why: Legacy sample templates omitted NOT NULL AP columns (posting_date, paid_status_id, currency).
+     *
+     * @param array<int, string> $targetColumns
+     * @param array<int, string> $targetValues SQL literal tokens
+     */
+    function itm_seed_apply_expenses_sample_row_defaults(mysqli $conn, int $companyId, array &$targetColumns, array &$targetValues): void
+    {
+        $literalDate = null;
+        foreach (['date', 'posting_date', 'invoice_date'] as $dateColumn) {
+            $idx = array_search('`' . $dateColumn . '`', $targetColumns, true);
+            if ($idx === false) {
+                continue;
+            }
+            $token = trim((string) $targetValues[$idx], "'\"");
+            if ($token !== '' && strtoupper($token) !== 'NULL') {
+                $literalDate = $token;
+                break;
+            }
+        }
+        if ($literalDate === null || $literalDate === '') {
+            $literalDate = date('Y-m-d');
+        }
+        $quotedDate = "'" . mysqli_real_escape_string($conn, $literalDate) . "'";
+
+        $ensureLiteral = static function (string $column, string $literal) use (&$targetColumns, &$targetValues): void {
+            $columnToken = '`' . $column . '`';
+            if (array_search($columnToken, $targetColumns, true) !== false) {
+                return;
+            }
+            $targetColumns[] = $columnToken;
+            $targetValues[] = $literal;
+        };
+
+        $ensureLiteral('posting_date', $quotedDate);
+        $ensureLiteral('date', $quotedDate);
+        $ensureLiteral('invoice_date', $quotedDate);
+
+        if (array_search('`paid_status_id`', $targetColumns, true) === false) {
+            $paidId = 0;
+            if (function_exists('itm_expenses_resolve_default_paid_status_id')) {
+                $resolved = itm_expenses_resolve_default_paid_status_id($conn, $companyId, 'Posted');
+                if ($resolved === null) {
+                    $resolved = itm_expenses_resolve_default_paid_status_id($conn, $companyId, 'Draft');
+                }
+                $paidId = (int) $resolved;
+            }
+            if ($paidId <= 0 && function_exists('itm_first_tenant_row_id')) {
+                $paidId = itm_first_tenant_row_id($conn, 'paid_statuses', $companyId);
+            }
+            if ($paidId > 0) {
+                $ensureLiteral('paid_status_id', (string) $paidId);
+            }
+        }
+
+        $ensureLiteral('currency_code', "'EUR'");
+        $ensureLiteral('exchange_rate', '1.000000');
+    }
+}
+
 if (!function_exists('itm_seed_apply_tickets_sample_row_defaults')) {
     /**
      * Why: Sample tickets must appear on the default list (is_archived = 0) and use a tenant-safe creator.
@@ -3187,6 +3248,10 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
 
             if ($tableName === 'tickets' && function_exists('itm_seed_apply_tickets_sample_row_defaults')) {
                 itm_seed_apply_tickets_sample_row_defaults($conn, $companyId, $targetColumns, $targetValues);
+            }
+
+            if ($tableName === 'expenses' && function_exists('itm_seed_apply_expenses_sample_row_defaults')) {
+                itm_seed_apply_expenses_sample_row_defaults($conn, $companyId, $targetColumns, $targetValues);
             }
 
             $insertSql = 'INSERT INTO `' . str_replace('`', '``', $tableName) . '` (' . implode(',', $targetColumns) . ') VALUES (' . implode(',', $targetValues) . ')';

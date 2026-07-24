@@ -196,6 +196,37 @@ if (!function_exists('itm_seed_insert_random_fallback_row')) {
     }
 }
 
+// expenses: AP columns required (posting_date NOT NULL).
+$companyD = vss_create_disposable_company($conn, 'D');
+if ($companyD <= 0) {
+    echo '[FAIL] Could not create disposable company D for expenses sample seed.' . $nl;
+    $failures++;
+} else {
+    $disposableIds[] = $companyD;
+    vss_purge_company_table($conn, 'expenses', $companyD);
+    $seedErr = '';
+    $expenseInserted = itm_seed_table_from_database_sql($conn, 'expenses', $companyD, $seedErr);
+    if ($expenseInserted < 1) {
+        echo '[FAIL] expenses sample seed for company D (' . $companyD . '): ' . $seedErr . $nl;
+        $failures++;
+    } else {
+        $expRes = mysqli_query(
+            $conn,
+            'SELECT posting_date, paid_status_id, currency_code FROM expenses WHERE company_id = ' . (int) $companyD . ' LIMIT 1'
+        );
+        $expRow = $expRes ? mysqli_fetch_assoc($expRes) : null;
+        if (!is_array($expRow) || ($expRow['posting_date'] ?? '') === '' || (int) ($expRow['paid_status_id'] ?? 0) <= 0) {
+            echo '[FAIL] expenses sample row missing posting_date or paid_status_id for company D.' . $nl;
+            $failures++;
+        } elseif (strtoupper((string) ($expRow['currency_code'] ?? '')) !== 'EUR') {
+            echo '[FAIL] expenses sample row expected EUR currency for company D.' . $nl;
+            $failures++;
+        } else {
+            echo '[PASS] expenses sample seed includes AP columns for company D (' . $companyD . ').' . $nl;
+        }
+    }
+}
+
 // backup_tape_log: ensure Server equipment exists (re-type wrong-type row or minimal insert).
 $companyC = vss_create_disposable_company($conn, 'C');
 if ($companyC <= 0) {
