@@ -34,7 +34,7 @@ The floating knowledge-base chatbot (`js/chatbot.js`, `enable_chatbot`) is **not
 ## 4. Business Rules (Critical for Agents)
 
 - All queries scoped by `company_id`.
-- **Chat with** peers: `it_settings.chat_same_tenant` (default **1**, toggled in **Settings → All roles**). When **1**, `itm_live_chat_peer_eligible_for_company()` requires home `employees.company_id`; when **0**, `employee_companies` grants may appear in the peer list (`itm_user_options_for_company()`).
+- **Chat with** peers: `it_settings.chat_same_tenant` (default **1**, toggled in **Settings → All roles**). When **1**, peers must be homed in the active `company_id`. When **0**, peers include employees homed in any company the signed-in user may access (`itm_list_employee_accessible_companies`) plus inbound `employee_companies` grants to the active tenant.
 - **Live Agent** requires a ticket (existing or created via `start_live_agent`).
 - **Chat with** has no ticket; ACL is participant-only — `itm_live_chat_can_view_conversation()` enforces this.
 - Support agents: employees in the IT department (`itm_live_chat_is_support_agent()`).

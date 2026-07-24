@@ -244,7 +244,7 @@ $crossTenantAdminId = $crossTenantAdminRow ? (int)$crossTenantAdminRow['id'] : 0
 $companyFourId = 4;
 if ($crossTenantAdminId > 0) {
     itm_it_settings_save_chat_same_tenant($conn, $companyFourId, 0, $employees[0]);
-    $loosePeers = itm_live_chat_peer_options_for_company($conn, $companyFourId);
+    $loosePeers = itm_live_chat_peer_options_for_company($conn, $companyFourId, $employees[0]);
     $foundCrossGrant = false;
     foreach ($loosePeers as $peerOpt) {
         if ((int)($peerOpt['id'] ?? 0) === $crossTenantAdminId) {
@@ -252,7 +252,7 @@ if ($crossTenantAdminId > 0) {
             break;
         }
     }
-    $eligibleWhenLoose = itm_live_chat_peer_eligible_for_company($conn, $crossTenantAdminId, $companyFourId);
+    $eligibleWhenLoose = itm_live_chat_peer_eligible_for_company($conn, $crossTenantAdminId, $companyFourId, $employees[0]);
     itm_it_settings_save_chat_same_tenant($conn, $companyFourId, 1, $employees[0]);
     if (!$foundCrossGrant) {
         lc_verify_fail('With chat_same_tenant=0, cross-grant employees should appear in company 4 peer list');

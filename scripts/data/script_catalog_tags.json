@@ -603,6 +603,18 @@
         "tables": [],
         "override": false
     },
+    "_debug_peer_options.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "employees",
+            "employee_companies",
+            "it_settings",
+            "companies"
+        ],
+        "override": false
+    },
     "check_02_data_sample_coverage.php": {
         "tags": [
             "Codebase"

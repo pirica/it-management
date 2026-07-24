@@ -397,7 +397,7 @@ switch ($action) {
         if ($peerId <= 0 || $peerId === $employeeId) {
             lc_json(['error' => 'Invalid peer'], 400);
         }
-        if (!itm_live_chat_peer_eligible_for_company($conn, $peerId, $companyId)) {
+        if (!itm_live_chat_peer_eligible_for_company($conn, $peerId, $companyId, $employeeId)) {
             lc_json(['error' => 'Peer is not eligible for the active company'], 403);
         }
         $sqlFind = 'SELECT c.id FROM live_chat_conversations c
@@ -706,7 +706,7 @@ switch ($action) {
         break;
 
     case 'list_employees':
-        $options = itm_live_chat_peer_options_for_company($conn, $companyId);
+        $options = itm_live_chat_peer_options_for_company($conn, $companyId, $employeeId);
         $out = [];
         foreach ($options as $opt) {
             if ((int)$opt['id'] === $employeeId) {

@@ -28,36 +28,17 @@ if (!function_exists('itm_live_chat_employee_homed_in_company')) {
     }
 }
 
-if (!function_exists('itm_live_chat_peer_eligible_for_company')) {
-    function itm_live_chat_peer_eligible_for_company($conn, $employeeId, $companyId)
-    {
-        $employeeId = (int)$employeeId;
-        $companyId = (int)$companyId;
-        if ($employeeId <= 0 || $companyId <= 0) {
-            return false;
-        }
-        if (itm_it_settings_chat_same_tenant_enabled($conn, $companyId)) {
-            return itm_live_chat_employee_homed_in_company($conn, $employeeId, $companyId);
-        }
-        $label = itm_user_label_by_id_for_company($conn, $companyId, $employeeId);
-        return $label !== '';
-    }
-}
-
-if (!function_exists('itm_live_chat_peer_options_for_company')) {
+if (!function_exists('itm_live_chat_homed_peer_options_for_company')) {
     /**
      * @return array<int, array{id:int,label:string}>
      */
-    function itm_live_chat_peer_options_for_company($conn, $companyId)
+    function itm_live_chat_homed_peer_options_for_company($conn, $companyId)
     {
         $companyId = (int)$companyId;
-        if ($companyId <= 0) {
-            return [];
-        }
-        if (!itm_it_settings_chat_same_tenant_enabled($conn, $companyId)) {
-            return itm_user_options_for_company($conn, $companyId);
-        }
         $options = [];
+        if ($companyId <= 0 || !$conn instanceof mysqli) {
+            return $options;
+        }
         $sql = 'SELECT id, username, first_name, last_name FROM employees
                 WHERE company_id = ? AND deleted_at IS NULL AND active = 1
                 ORDER BY first_name ASC, last_name ASC, username ASC';
@@ -74,6 +55,81 @@ if (!function_exists('itm_live_chat_peer_options_for_company')) {
             $options[] = ['id' => (int)$row['id'], 'label' => $label];
         }
         mysqli_stmt_close($stmt);
+        return $options;
+    }
+}
+
+if (!function_exists('itm_live_chat_peer_eligible_for_company')) {
+    function itm_live_chat_peer_eligible_for_company($conn, $employeeId, $companyId, $sessionEmployeeId = 0)
+    {
+        $employeeId = (int)$employeeId;
+        $companyId = (int)$companyId;
+        $sessionEmployeeId = (int)$sessionEmployeeId;
+        if ($employeeId <= 0 || $companyId <= 0) {
+            return false;
+        }
+        if (itm_it_settings_chat_same_tenant_enabled($conn, $companyId)) {
+            return itm_live_chat_employee_homed_in_company($conn, $employeeId, $companyId);
+        }
+        if (itm_live_chat_employee_homed_in_company($conn, $employeeId, $companyId)) {
+            return true;
+        }
+        if (itm_user_label_by_id_for_company($conn, $companyId, $employeeId) !== '') {
+            return true;
+        }
+        if ($sessionEmployeeId > 0 && function_exists('itm_list_employee_accessible_companies')) {
+            foreach (itm_list_employee_accessible_companies($conn, $sessionEmployeeId) as $companyRow) {
+                $accessibleCompanyId = (int)($companyRow['id'] ?? 0);
+                if ($accessibleCompanyId > 0 && itm_live_chat_employee_homed_in_company($conn, $employeeId, $accessibleCompanyId)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+}
+
+if (!function_exists('itm_live_chat_peer_options_for_company')) {
+    /**
+     * @return array<int, array{id:int,label:string}>
+     */
+    function itm_live_chat_peer_options_for_company($conn, $companyId, $sessionEmployeeId = 0)
+    {
+        $companyId = (int)$companyId;
+        $sessionEmployeeId = (int)$sessionEmployeeId;
+        if ($companyId <= 0) {
+            return [];
+        }
+        if (itm_it_settings_chat_same_tenant_enabled($conn, $companyId)) {
+            return itm_live_chat_homed_peer_options_for_company($conn, $companyId);
+        }
+
+        $byId = [];
+        $mergeOption = static function (array $opt) use (&$byId) {
+            $id = (int)($opt['id'] ?? 0);
+            if ($id > 0) {
+                $byId[$id] = $opt;
+            }
+        };
+        foreach (itm_user_options_for_company($conn, $companyId) as $opt) {
+            $mergeOption($opt);
+        }
+        if ($sessionEmployeeId > 0 && function_exists('itm_list_employee_accessible_companies')) {
+            foreach (itm_list_employee_accessible_companies($conn, $sessionEmployeeId) as $companyRow) {
+                $accessibleCompanyId = (int)($companyRow['id'] ?? 0);
+                if ($accessibleCompanyId <= 0) {
+                    continue;
+                }
+                foreach (itm_live_chat_homed_peer_options_for_company($conn, $accessibleCompanyId) as $opt) {
+                    $mergeOption($opt);
+                }
+            }
+        }
+        $options = array_values($byId);
+        usort($options, static function ($a, $b) {
+            return strcasecmp((string)($a['label'] ?? ''), (string)($b['label'] ?? ''));
+        });
+
         return $options;
     }
 }
