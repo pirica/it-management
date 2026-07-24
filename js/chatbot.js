@@ -12,6 +12,11 @@
             <div class="itm-chatbot-messages" id="itmChatbotMessages">
                 <div class="itm-chat-msg bot">Hello! I am your IT Support Assistant. How can I help you today?</div>
             </div>
+            <div class="itm-chatbot-shortcuts" id="itmChatbotShortcuts">
+                <a class="itm-chatbot-shortcut-btn" id="itmChatbotShortcutLiveAgent" href="#" title="Live Agent">Live Agent</a>
+                <a class="itm-chatbot-shortcut-btn" id="itmChatbotShortcutChatWith" href="#" title="Chat with">Chat with</a>
+                <a class="itm-chatbot-shortcut-btn" id="itmChatbotShortcutKbList" href="#" title="List all (knowledge-base)" target="_blank" rel="noopener noreferrer">List all</a>
+            </div>
             <div class="itm-chatbot-input-area">
                 <input type="text" id="itmChatbotInput" placeholder="Type your message..." autocomplete="off">
                 <button id="itmChatbotSend">Send</button>
@@ -28,6 +33,20 @@
     const input = document.getElementById('itmChatbotInput');
     const sendBtn = document.getElementById('itmChatbotSend');
     const messages = document.getElementById('itmChatbotMessages');
+    const baseUrl = (window.ITM_BASE_URL || '/').replace(/\/?$/, '/');
+
+    const shortcutLiveAgent = document.getElementById('itmChatbotShortcutLiveAgent');
+    const shortcutChatWith = document.getElementById('itmChatbotShortcutChatWith');
+    const shortcutKbList = document.getElementById('itmChatbotShortcutKbList');
+    if (shortcutLiveAgent) {
+        shortcutLiveAgent.href = baseUrl + 'modules/live_chat/?flow=live_agent';
+    }
+    if (shortcutChatWith) {
+        shortcutChatWith.href = baseUrl + 'modules/live_chat/?flow=chat_with';
+    }
+    if (shortcutKbList) {
+        shortcutKbList.href = baseUrl + 'modules/knowledge_base/list_all.php';
+    }
 
     toggle.addEventListener('click', () => {
         container.classList.remove('hidden');

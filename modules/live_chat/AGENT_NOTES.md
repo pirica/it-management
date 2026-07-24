@@ -79,6 +79,7 @@ Rate limit: `itm_api_enforce_rate_limit_or_exit($conn)` on every request.
 
 - `modules/tickets/view.php` — SLA fields in detail view; comments list + add form
 - `includes/ui_config.php` — sidebar entry 💬 Live Chat
+- `js/chatbot.js` — widget shortcuts: Live Agent, Chat with, List all (knowledge-base)
 - `db/02_data.sql` — `modules_registry` row; `ticket_sla_policies` seeds + cross-company replication
 
 ## 9. Regression
