@@ -51,5 +51,11 @@ if ($isCli) {
     exit(0);
 }
 
-header('Location: ' . rtrim(BASE_URL, '/') . '/modules/employees/fast_create_acc.php');
-exit;
+if (!$isCli) {
+    $appBase = rtrim(BASE_URL, '/');
+    if (preg_match('#/scripts$#', $appBase)) {
+        $appBase = preg_replace('#/scripts$#', '', $appBase);
+    }
+    header('Location: ' . $appBase . '/modules/employees/fast_create_acc.php');
+    exit;
+}

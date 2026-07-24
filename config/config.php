@@ -201,6 +201,12 @@ if ($itm_documentRoot && $itm_projectRoot && strpos($itm_projectRoot, $itm_docum
         $itm_basePath = substr($itm_scriptName, 0, $itm_modulesPos);
     } else {
         $itm_basePath = str_replace('\\', '/', dirname($itm_scriptName));
+        // Why: scripts/*.php must not set BASE_URL to .../scripts/ — app root is one level up.
+        $itm_scriptsSuffix = '/scripts';
+        if ($itm_scriptsSuffix !== '' && strlen($itm_basePath) >= strlen($itm_scriptsSuffix)
+            && substr($itm_basePath, -strlen($itm_scriptsSuffix)) === $itm_scriptsSuffix) {
+            $itm_basePath = substr($itm_basePath, 0, -strlen($itm_scriptsSuffix));
+        }
     }
 }
 
