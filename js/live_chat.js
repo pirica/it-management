@@ -400,5 +400,14 @@
     });
 
     loadConversations();
-    if (state.conversationId > 0) openConversation(state.conversationId);
+    if (state.conversationId > 0) {
+        openConversation(state.conversationId);
+    } else {
+        var flowParam = new URLSearchParams(window.location.search).get('flow');
+        if (flowParam === 'live_agent') {
+            document.getElementById('lc-btn-live-agent').click();
+        } else if (flowParam === 'chat_with') {
+            document.getElementById('lc-btn-chat-with').click();
+        }
+    }
 })();

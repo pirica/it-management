@@ -128,6 +128,12 @@ if ($chatbotJs === '') {
     } else {
         chat_verify_pass('js/chatbot.js sends CSRF header on chat API fetch.');
     }
+    foreach (['flow=live_agent', 'flow=chat_with', 'modules/knowledge_base/list_all.php'] as $shortcutNeedle) {
+        if (strpos($chatbotJs, $shortcutNeedle) === false) {
+            chat_verify_fail('js/chatbot.js missing chatbot shortcut link: ' . $shortcutNeedle);
+        }
+    }
+    chat_verify_pass('js/chatbot.js exposes Live Agent, Chat with, and List all shortcuts.');
 }
 
 $headerPath = ROOT_PATH . 'includes/header.php';
