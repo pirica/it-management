@@ -1,6 +1,7 @@
 <?php
 /**
- * Why: AP field normalization for expenses (RootFi-aligned headers, EUR defaults, budget actuals).
+ * Why: AP field normalization for expenses (RootFi-shaped import headers, EUR defaults, budget actuals).
+ * No inbound RootFi/webhook sync — platform_* DB columns elsewhere are optional manual metadata only.
  */
 
 require_once __DIR__ . '/itm_date_format.php';

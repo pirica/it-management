@@ -8,6 +8,7 @@ RootFi-aligned AP bill headers with line items on create/edit/view.
 - **bill_line_items** — lines saved via `includes/itm_finance_document_lines.php` (no standalone CRUD module).
 
 ## 4. Business Rules
+- **No platform sync:** RootFi webhooks are not in scope; optional `platform_id` / `platform_updated_at` / `platform_status` on headers are manual metadata only.
 - Line grid on edit/create; totals rolled up to header on save.
 - Optional future link: `expenses.bill_id`.
 

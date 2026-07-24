@@ -8,6 +8,7 @@ RootFi-aligned AR invoice headers with line items on create/edit/view.
 - **invoice_line_items** — lines via `includes/itm_finance_document_lines.php`.
 
 ## 4. Business Rules
+- **No platform sync:** RootFi webhooks are not in scope; optional `platform_id`, `platform_contact_id`, `platform_updated_at`, `platform_status` are manual metadata only.
 - Does not feed budget_report in v1 (AR store only).
 
 ## 8. Multi-Tenant Rules
