@@ -65,7 +65,7 @@ The central module for managing employee records, including contact info, hierar
 
 ## 7. File Structure
 - Standard CRUD structure + `delete_clear_table.php`, `delete_functions.php`.
-- **fast_create_acc.php** — module entry (🚀 toolbar); **fast_create_acc_browser.php** — shared form markup; **scripts/fast_create_acc.php** — catalog + CLI.
+- **fast_create_acc.php** — module entry (🚀 toolbar); **fast_create_acc_browser.php** — shared form markup (include); **scripts/fast_create_acc.php** — catalog + CLI; **scripts/fast_create_acc_browser.php** — browser alias to catalog entry.
 - **includes/profile_fields.php** — shared profile photo drag-and-drop for create/edit.
 - **includes/profile_employee_code_field.php** — optional employee code text field.
 - **includes/profile_location_field.php** — optional IT location FK select.
