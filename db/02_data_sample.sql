@@ -223,17 +223,34 @@ INSERT INTO `events` (`company_id`, `employee_id`, `assigned_to_employee_id`, `c
 (1, 1, NULL, NULL, 'Team Lunch', 'af65330d1edc5952b1f4283b470c6d2a5b8a14f334a785016235f16c45986610', 'Monthly team building lunch', '2026-05-20 12:00:00', '2026-05-20 13:30:00', 'Local Restaurant', 4, 1);
 
 INSERT INTO `tax_rates` (`id`, `company_id`, `name`, `rate_percent`, `active`, `created_at`) VALUES
+('1', '1', 'VAT 6%', '6.00', '1', '2026-01-01 00:00:01'),
+('2', '1', 'VAT 13%', '13.00', '1', '2026-01-01 00:00:01'),
 ('3', '1', 'VAT 23%', '23.00', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `paid_statuses` (`id`, `company_id`, `name`, `sort_order`, `active`, `created_at`) VALUES
 ('1', '1', 'Draft', '1', '1', '2026-01-01 00:00:01'),
-('3', '1', 'Posted', '3', '1', '2026-01-01 00:00:01');
+('2', '1', 'Approved', '2', '1', '2026-01-01 00:00:01'),
+('3', '1', 'Posted', '3', '1', '2026-01-01 00:00:01'),
+('4', '1', 'Paid', '4', '1', '2026-01-01 00:00:01'),
+('5', '1', 'Voided', '5', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `payment_modes` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES
-('1', '1', 'Bank transfer', '1', '2026-01-01 00:00:01');
+('1', '1', 'Bank transfer', '1', '2026-01-01 00:00:01'),
+('2', '1', 'Card', '1', '2026-01-01 00:00:01'),
+('3', '1', 'Cash', '1', '2026-01-01 00:00:01'),
+('4', '1', 'Direct debit', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `expense_recurrence` (`id`, `company_id`, `name`, `code`, `sort_order`, `active`, `created_at`) VALUES
-('1', '1', 'Monthly', 'monthly', '1', '1', '2026-01-01 00:00:01');
+('1', '1', 'Hourly', 'hourly', '1', '1', '2026-01-01 00:00:01'),
+('2', '1', 'Daily', 'daily', '2', '1', '2026-01-01 00:00:01'),
+('3', '1', 'Weekly', 'weekly', '3', '1', '2026-01-01 00:00:01'),
+('4', '1', 'Monthly', 'monthly', '4', '1', '2026-01-01 00:00:01'),
+('5', '1', 'Quarterly', 'quarterly', '5', '1', '2026-01-01 00:00:01'),
+('6', '1', 'Yearly', 'yearly', '6', '1', '2026-01-01 00:00:01'),
+('7', '1', 'Every 2 years', 'every_2_years', '7', '1', '2026-01-01 00:00:01'),
+('8', '1', 'Every 3 years', 'every_3_years', '8', '1', '2026-01-01 00:00:01'),
+('9', '1', 'Every 4 years', 'every_4_years', '9', '1', '2026-01-01 00:00:01'),
+('10', '1', 'Every 5 years', 'every_5_years', '10', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `customer_statuses` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES
 ('1', '1', 'Active', '1', '2026-01-01 00:00:01');

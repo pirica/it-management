@@ -3091,6 +3091,177 @@ if (!function_exists('itm_seed_insert_idf_links_sample_rows')) {
     }
 }
 
+if (!function_exists('itm_seed_finance_lookup_copy_tables')) {
+    /**
+     * Finance lookup tables seeded with the full company-1 catalog from db/02_data.sql.
+     *
+     * @return string[]
+     */
+    function itm_seed_finance_lookup_copy_tables(): array
+    {
+        return ['tax_rates', 'paid_statuses', 'payment_modes', 'expense_recurrence'];
+    }
+}
+
+if (!function_exists('itm_seed_finance_lookup_template_company_id')) {
+    function itm_seed_finance_lookup_template_company_id(): int
+    {
+        return defined('ITM_SAMPLE_SQL_TEMPLATE_COMPANY_ID')
+            ? (int) ITM_SAMPLE_SQL_TEMPLATE_COMPANY_ID
+            : 1;
+    }
+}
+
+if (!function_exists('itm_seed_copy_finance_lookup_rows_from_template_company')) {
+    /**
+     * Copy live lookup rows from the template tenant (same data as db/02_data.sql seeds).
+     *
+     * @return int Rows inserted, or -1 when not handled / template empty (caller uses 02_data_sample.sql).
+     */
+    function itm_seed_copy_finance_lookup_rows_from_template_company(
+        mysqli $conn,
+        string $tableName,
+        int $companyId,
+        &$error = ''
+    ): int {
+        $error = '';
+        if (!in_array($tableName, itm_seed_finance_lookup_copy_tables(), true)) {
+            return -1;
+        }
+        if ($companyId <= 0 || !itm_is_safe_identifier($tableName)) {
+            $error = 'Invalid finance lookup sample seed request.';
+            return 0;
+        }
+
+        $templateCompanyId = itm_seed_finance_lookup_template_company_id();
+        if ($templateCompanyId <= 0) {
+            return -1;
+        }
+
+        $deletedFilter = '';
+        if (function_exists('itm_table_has_column') && itm_table_has_column($conn, $tableName, 'deleted_at')) {
+            $deletedFilter = ' AND deleted_at IS NULL';
+        }
+
+        $orderBy = 'id ASC';
+        if ($tableName === 'paid_statuses' || $tableName === 'expense_recurrence') {
+            $orderBy = 'sort_order ASC, id ASC';
+        }
+
+        $selectSql = 'SELECT * FROM `' . str_replace('`', '``', $tableName) . '` WHERE company_id = ?'
+            . $deletedFilter . ' ORDER BY ' . $orderBy;
+        $selectStmt = mysqli_prepare($conn, $selectSql);
+        if (!$selectStmt) {
+            $error = 'Could not read template finance lookup rows.';
+            return 0;
+        }
+        mysqli_stmt_bind_param($selectStmt, 'i', $templateCompanyId);
+        mysqli_stmt_execute($selectStmt);
+        $result = mysqli_stmt_get_result($selectStmt);
+        $templateRows = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $templateRows[] = $row;
+            }
+        }
+        mysqli_stmt_close($selectStmt);
+
+        if ($templateRows === []) {
+            return -1;
+        }
+
+        $columnMetas = function_exists('itm_seed_table_column_metas')
+            ? itm_seed_table_column_metas($conn, $tableName)
+            : [];
+        if ($columnMetas === []) {
+            $error = 'Could not resolve columns for finance lookup copy.';
+            return 0;
+        }
+
+        $insertCount = 0;
+        foreach ($templateRows as $sourceRow) {
+            $rowAssoc = [];
+            foreach ($columnMetas as $meta) {
+                $col = (string) ($meta['Field'] ?? '');
+                if ($col === '' || $col === 'id') {
+                    continue;
+                }
+                if (!array_key_exists($col, $sourceRow)) {
+                    continue;
+                }
+                $rowAssoc[$col] = $sourceRow[$col];
+            }
+            $rowAssoc['company_id'] = (string) $companyId;
+
+            if (function_exists('itm_seed_table_row_exists_for_tenant')
+                && itm_seed_table_row_exists_for_tenant($conn, $tableName, $companyId, $rowAssoc)) {
+                continue;
+            }
+
+            $targetColumns = [];
+            $targetValues = [];
+            foreach ($columnMetas as $meta) {
+                $col = (string) ($meta['Field'] ?? '');
+                if ($col === '' || $col === 'id' || !itm_is_safe_identifier($col)) {
+                    continue;
+                }
+                if (!array_key_exists($col, $rowAssoc)) {
+                    continue;
+                }
+                $value = $rowAssoc[$col];
+                $colType = strtolower((string) ($meta['Type'] ?? ''));
+                if ($col === 'company_id') {
+                    $targetColumns[] = '`company_id`';
+                    $targetValues[] = (string) $companyId;
+                    continue;
+                }
+                if ($value === null || $value === '') {
+                    if (strpos($colType, 'int') !== false
+                        || strpos($colType, 'decimal') !== false
+                        || strpos($colType, 'float') !== false
+                        || strpos($colType, 'double') !== false) {
+                        continue;
+                    }
+                    $targetColumns[] = '`' . str_replace('`', '``', $col) . '`';
+                    $targetValues[] = 'NULL';
+                    continue;
+                }
+                if (is_numeric($value)
+                    && strpos($colType, 'char') === false
+                    && strpos($colType, 'text') === false
+                    && strpos($colType, 'date') === false
+                    && strpos($colType, 'time') === false) {
+                    $targetColumns[] = '`' . str_replace('`', '``', $col) . '`';
+                    $targetValues[] = (string) $value;
+                    continue;
+                }
+                $targetColumns[] = '`' . str_replace('`', '``', $col) . '`';
+                $targetValues[] = "'" . mysqli_real_escape_string($conn, (string) $value) . "'";
+            }
+
+            if ($targetColumns === []) {
+                continue;
+            }
+
+            $insertSql = 'INSERT INTO `' . str_replace('`', '``', $tableName) . '` ('
+                . implode(',', $targetColumns) . ') VALUES (' . implode(',', $targetValues) . ')';
+            $dbErrorCode = 0;
+            $dbErrorMessage = '';
+            if (itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage) === false) {
+                if (function_exists('itm_seed_insert_row_is_unique_violation')
+                    && itm_seed_insert_row_is_unique_violation($dbErrorCode, $dbErrorMessage)) {
+                    continue;
+                }
+                $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+                return $insertCount;
+            }
+            $insertCount++;
+        }
+
+        return $insertCount;
+    }
+}
+
 if (!function_exists('itm_seed_table_from_database_sql')) {
     /**
      * Inserts sample rows for a module table from db/02_data_sample.sql for any tenant company_id.
@@ -3109,6 +3280,16 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
         if ($companyId <= 0) {
             $error = 'A company must be selected before adding sample data.';
             return 0;
+        }
+
+        if (in_array($tableName, itm_seed_finance_lookup_copy_tables(), true)) {
+            $copied = itm_seed_copy_finance_lookup_rows_from_template_company($conn, $tableName, $companyId, $error);
+            if ($copied > 0) {
+                return $copied;
+            }
+            if ($copied === 0 && $error !== '') {
+                return 0;
+            }
         }
 
         $backupTapeServerId = 0;

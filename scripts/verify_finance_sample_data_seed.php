@@ -123,6 +123,21 @@ foreach ($financeTables as $table) {
     vfs_pass($table . ' seeded (' . $inserted . ' row(s)).');
 }
 
+$lookupCatalogCounts = [
+    'tax_rates' => 3,
+    'paid_statuses' => 5,
+    'payment_modes' => 4,
+    'expense_recurrence' => 10,
+];
+foreach ($lookupCatalogCounts as $lookupTable => $expectedCount) {
+    $live = itm_seed_tenant_row_count($conn, $lookupTable, $companyId);
+    if ($live < $expectedCount) {
+        vfs_fail($lookupTable . ' expected at least ' . $expectedCount . ' catalog rows (got ' . $live . ').');
+    } else {
+        vfs_pass($lookupTable . ' catalog matches db/02_data.sql (' . $live . ' rows).');
+    }
+}
+
 $currencyCheck = mysqli_query(
     $conn,
     "SELECT currency_code, CHAR_LENGTH(currency_code) AS len FROM expenses WHERE company_id = {$companyId} LIMIT 1"
