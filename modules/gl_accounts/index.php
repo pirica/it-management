@@ -746,13 +746,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         exit;
     }
 
-    $where = ' WHERE company_id=' . (int)$company_id;
-    $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where;
-    $countResult = mysqli_query($conn, $countSql);
-    $existingRows = 0;
-    if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
-        $existingRows = (int)($countRow['total_rows'] ?? 0);
-    }
+    // Why: List uses deleted_at IS NULL; sample gate must match live tenant rows (itm_seed_tenant_row_count).
+    $existingRows = function_exists('itm_seed_tenant_row_count')
+        ? itm_seed_tenant_row_count($conn, $crud_table, (int)$company_id)
+        : 0;
 
     if ($existingRows > 0) {
         $_SESSION['crud_error'] = 'Sample data can only be added when no records exist.';
