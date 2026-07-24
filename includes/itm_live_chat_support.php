@@ -3,6 +3,62 @@
  * Live chat support-agent detection and conversation ACL.
  */
 
+if (!function_exists('itm_live_chat_employee_homed_in_company')) {
+    /**
+     * Why: Chat-with peers must belong to the active tenant (home company_id), not cross-grant visitors.
+     */
+    function itm_live_chat_employee_homed_in_company($conn, $employeeId, $companyId)
+    {
+        $employeeId = (int)$employeeId;
+        $companyId = (int)$companyId;
+        if (!$conn instanceof mysqli || $employeeId <= 0 || $companyId <= 0) {
+            return false;
+        }
+        $sql = 'SELECT 1 FROM employees WHERE id = ? AND company_id = ? AND deleted_at IS NULL AND active = 1 LIMIT 1';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $employeeId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $ok = $res && mysqli_num_rows($res) > 0;
+        mysqli_stmt_close($stmt);
+        return $ok;
+    }
+}
+
+if (!function_exists('itm_live_chat_peer_options_for_company')) {
+    /**
+     * @return array<int, array{id:int,label:string}>
+     */
+    function itm_live_chat_peer_options_for_company($conn, $companyId)
+    {
+        $companyId = (int)$companyId;
+        $options = [];
+        if ($companyId <= 0) {
+            return $options;
+        }
+        $sql = 'SELECT id, username, first_name, last_name FROM employees
+                WHERE company_id = ? AND deleted_at IS NULL AND active = 1
+                ORDER BY first_name ASC, last_name ASC, username ASC';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return $options;
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
+            $label = $fullName !== '' ? $fullName : (trim((string)($row['username'] ?? '')) ?: ('User #' . (int)$row['id']));
+            $options[] = ['id' => (int)$row['id'], 'label' => $label];
+        }
+        mysqli_stmt_close($stmt);
+        return $options;
+    }
+}
+
 if (!function_exists('itm_live_chat_employee_in_it_department')) {
     function itm_live_chat_employee_in_it_department($conn, $employeeId, $companyId)
     {

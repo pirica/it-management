@@ -200,6 +200,38 @@ if ($ticketId > 0) {
     }
 }
 
+$foreignRes = mysqli_query($conn, 'SELECT id FROM employees WHERE company_id = 4 AND active = 1 ORDER BY id ASC LIMIT 1');
+$foreignRow = $foreignRes ? mysqli_fetch_assoc($foreignRes) : null;
+$foreignEmployeeId = $foreignRow ? (int)$foreignRow['id'] : 0;
+if ($foreignEmployeeId <= 0) {
+    lc_verify_fail('Need an employee in company 4 for tenant isolation test');
+} elseif (itm_live_chat_employee_homed_in_company($conn, $foreignEmployeeId, $companyId)) {
+    lc_verify_fail('Cross-tenant employee must not pass homed_in_company for company 1');
+} else {
+    lc_verify_pass('itm_live_chat_employee_homed_in_company blocks cross-tenant peers');
+}
+
+$peerOptions = itm_live_chat_peer_options_for_company($conn, $companyId);
+$leakedPeer = false;
+foreach ($peerOptions as $peerOpt) {
+    if ((int)($peerOpt['id'] ?? 0) === $foreignEmployeeId) {
+        $leakedPeer = true;
+        break;
+    }
+}
+if ($leakedPeer) {
+    lc_verify_fail('Peer options for company 1 must not list employees homed in company 4');
+} else {
+    lc_verify_pass('Peer options are tenant-scoped to home company_id');
+}
+
+$apiPhp = file_get_contents(__DIR__ . '/../modules/live_chat/api.php');
+if ($apiPhp === false || strpos($apiPhp, 'itm_live_chat_employee_homed_in_company') === false) {
+    lc_verify_fail('start_chat_with must validate peer home company');
+} else {
+    lc_verify_pass('start_chat_with enforces peer home company');
+}
+
 // Cleanup test rows
 if ($convId > 0) {
     mysqli_query($conn, "DELETE FROM live_chat_messages WHERE conversation_id = {$convId}");

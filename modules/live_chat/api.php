@@ -126,10 +126,10 @@ switch ($action) {
         foreach ($rows as $row) {
             $labelEmployeeId = (int)($row['requester_employee_id'] ?: 0);
             if ((string)$row['conversation_type'] === 'chat_with') {
-                $sqlP = 'SELECT employee_id FROM live_chat_participants WHERE conversation_id = ? AND employee_id <> ? LIMIT 1';
+                $sqlP = 'SELECT employee_id FROM live_chat_participants WHERE conversation_id = ? AND company_id = ? AND employee_id <> ? AND deleted_at IS NULL LIMIT 1';
                 $stmtP = mysqli_prepare($conn, $sqlP);
                 if ($stmtP) {
-                    mysqli_stmt_bind_param($stmtP, 'ii', $row['id'], $employeeId);
+                    mysqli_stmt_bind_param($stmtP, 'iii', $row['id'], $companyId, $employeeId);
                     mysqli_stmt_execute($stmtP);
                     $resP = mysqli_stmt_get_result($stmtP);
                     $pRow = $resP ? mysqli_fetch_assoc($resP) : null;
@@ -159,10 +159,10 @@ switch ($action) {
         itm_live_chat_mark_read($conn, $companyId, $conversationId, $employeeId);
         $detailEmployeeId = (int)($conv['requester_employee_id'] ?: 0);
         if ((string)$conv['conversation_type'] === 'chat_with') {
-            $sqlP = 'SELECT employee_id FROM live_chat_participants WHERE conversation_id = ? AND employee_id <> ? LIMIT 1';
+            $sqlP = 'SELECT employee_id FROM live_chat_participants WHERE conversation_id = ? AND company_id = ? AND employee_id <> ? AND deleted_at IS NULL LIMIT 1';
             $stmtP = mysqli_prepare($conn, $sqlP);
             if ($stmtP) {
-                mysqli_stmt_bind_param($stmtP, 'ii', $conversationId, $employeeId);
+                mysqli_stmt_bind_param($stmtP, 'iii', $conversationId, $companyId, $employeeId);
                 mysqli_stmt_execute($stmtP);
                 $resP = mysqli_stmt_get_result($stmtP);
                 $pRow = $resP ? mysqli_fetch_assoc($resP) : null;
@@ -396,6 +396,9 @@ switch ($action) {
         $peerId = (int)($_POST['peer_employee_id'] ?? 0);
         if ($peerId <= 0 || $peerId === $employeeId) {
             lc_json(['error' => 'Invalid peer'], 400);
+        }
+        if (!itm_live_chat_employee_homed_in_company($conn, $peerId, $companyId)) {
+            lc_json(['error' => 'Peer must belong to the active company'], 403);
         }
         $sqlFind = 'SELECT c.id FROM live_chat_conversations c
                     INNER JOIN live_chat_participants p1 ON p1.conversation_id = c.id AND p1.employee_id = ?
@@ -703,7 +706,7 @@ switch ($action) {
         break;
 
     case 'list_employees':
-        $options = itm_user_options_for_company($conn, $companyId);
+        $options = itm_live_chat_peer_options_for_company($conn, $companyId);
         $out = [];
         foreach ($options as $opt) {
             if ((int)$opt['id'] === $employeeId) {

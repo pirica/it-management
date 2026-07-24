@@ -5,7 +5,7 @@
 Real-time messaging with two entry flows:
 
 - **Live Agent** (`conversation_type = live_agent`) — IT support queue tied to a ticket; support agents see all company conversations; employees see their own.
-- **Chat with** (`conversation_type = chat_with`) — peer messaging between employees; only participants can view the thread (IT cannot see unless they are a participant).
+- **Chat with** (`conversation_type = chat_with`) — peer messaging between employees **homed in the active `company_id` only** (not `employee_companies` cross-grant visitors); only participants can view the thread (IT cannot see unless they are a participant).
 
 The floating knowledge-base chatbot (`js/chatbot.js`, `enable_chatbot`) is **not** replaced by this module.
 
@@ -34,6 +34,7 @@ The floating knowledge-base chatbot (`js/chatbot.js`, `enable_chatbot`) is **not
 ## 4. Business Rules (Critical for Agents)
 
 - All queries scoped by `company_id`.
+- **Chat with** peers: `itm_live_chat_employee_homed_in_company()` + `itm_live_chat_peer_options_for_company()` — home `employees.company_id` must match session tenant; `start_chat_with` rejects cross-tenant employee IDs.
 - **Live Agent** requires a ticket (existing or created via `start_live_agent`).
 - **Chat with** has no ticket; ACL is participant-only — `itm_live_chat_can_view_conversation()` enforces this.
 - Support agents: employees in the IT department (`itm_live_chat_is_support_agent()`).
