@@ -137,6 +137,7 @@ if ($settingsUserId > 0) {
     itm_ui_config_sync_favicon_path_from_disk($conn, (int) $company_id, $settingsUserId);
     $currentUiConfig = itm_get_ui_configuration($conn, $company_id);
 }
+$settingsChatSameTenant = itm_it_settings_chat_same_tenant_enabled($conn, (int)$company_id) ? 1 : 0;
 
 // Why: Backup import/export can alter or exfiltrate the full database, so we enforce
 // an explicit per-request admin check here instead of relying only on menu visibility.
@@ -421,6 +422,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $newConfig[$key] = $_POST[$key] ?? '';
         }
         $newConfig['enable_chatbot'] = isset($_POST['enable_chatbot']) ? 1 : 0;
+        $saveChatSameTenant = isset($_POST['chat_same_tenant']) ? 1 : 0;
         if ($settingsIsAdmin) {
             $newConfig['enable_all_error_reporting'] = isset($_POST['enable_all_error_reporting']) ? 1 : 0;
             $newConfig['enable_audit_logs'] = isset($_POST['enable_audit_logs']) ? 1 : 0;
@@ -524,6 +526,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Unable to save UI configuration: your session user is missing. Please sign in again.';
         } elseif (!itm_save_ui_configuration($conn, $company_id, $newConfig, $settingsUserId)) {
             $error = 'Unable to save UI configuration.';
+        } elseif (!itm_it_settings_save_chat_same_tenant($conn, (int)$company_id, $saveChatSameTenant, $settingsUserId)) {
+            $error = 'Unable to save Live Chat tenant setting.';
         } else {
             if ($hasEquipmentTypeEditEmoji) {
                 $emojiUpdateStmt = mysqli_prepare($conn, 'UPDATE equipment_types SET field_edit_emoji = ? WHERE id = ? LIMIT 1');
@@ -1030,6 +1034,13 @@ if (!isset($crud_title)) {
                                         <input type="checkbox" id="enable_chatbot" name="enable_chatbot" value="1" <?php echo ((int) ($currentUiConfig['enable_chatbot'] ?? 1) === 1) ? 'checked' : ''; ?>>
                                         <span>Enable IT Support Chatbot</span>
                                     </label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="role-flag-option" for="chat_same_tenant">
+                                        <input type="checkbox" id="chat_same_tenant" name="chat_same_tenant" value="1" <?php echo ((int)$settingsChatSameTenant === 1) ? 'checked' : ''; ?>>
+                                        <span>Live Chat: same-tenant peers only</span>
+                                    </label>
+                                    <p class="form-hint" style="margin:6px 0 0;">When enabled, Chat with lists only employees homed in this company. When disabled, employees with access to this company may also appear.</p>
                                 </div>
                             </div>
                             <?php if ($settingsIsAdmin): ?>

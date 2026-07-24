@@ -3840,6 +3840,7 @@ CREATE TABLE `it_settings` (
   `contact_phone` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `hours_of_operation` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `escalation_procedure` text COLLATE utf8mb4_unicode_ci,
+  `chat_same_tenant` tinyint(1) NOT NULL DEFAULT '1',
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
