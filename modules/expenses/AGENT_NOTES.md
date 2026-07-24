@@ -33,7 +33,7 @@ Tracks actual financial expenditures against budgets.
 - **Formatted Currency**: Display amounts with currency symbols/formatting.
 
 ## 6. API Actions (If Applicable)
-- **import_excel_rows** — JSON POST to `index.php`; bulk import from 📥 Import Excel (`table-tools.js` save-to-database flow).
+- **import_excel_rows** — JSON POST to `index.php`; bulk import from 📥 Import Excel (`table-tools.js` save-to-database flow). Headers: RootFi aliases (`posted date`, `document number` → `invoice_number`, `contact`/`supplier` → `supplier_id` by name); rows normalized via `itm_expenses_ap_normalize_import_row()` (EUR, Draft `paid_status_id`, posting/date sync, tax snapshot).
 
 ## 7. File Structure
 - Standard CRUD structure.
