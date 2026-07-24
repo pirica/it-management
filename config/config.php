@@ -303,6 +303,14 @@ require_once ROOT_PATH . 'includes/itm_vault_unlock.php';
 require_once ROOT_PATH . 'includes/itm_role_module_permissions.php';
 require_once ROOT_PATH . 'includes/itm_company_session.php';
 require_once ROOT_PATH . 'includes/equipment_poe_helpers.php';
+require_once ROOT_PATH . 'includes/itm_ticket_activity.php';
+require_once ROOT_PATH . 'includes/itm_ticket_comments.php';
+require_once ROOT_PATH . 'includes/itm_ticket_sla.php';
+require_once ROOT_PATH . 'includes/itm_employee_notifications.php';
+require_once ROOT_PATH . 'includes/itm_live_chat_support.php';
+require_once ROOT_PATH . 'includes/itm_live_chat_storage.php';
+require_once ROOT_PATH . 'includes/itm_live_chat_launch_options.php';
+require_once ROOT_PATH . 'includes/itm_live_chat_ticket.php';
 
 // Establish Database Connection
 if (!function_exists('mysqli_connect')) {

@@ -137,6 +137,7 @@ function audit_logs_private_data_tables(): array
         'events' => true,
         'note_labels' => true,
         'share_sessions' => true,
+        'live_chat_messages' => true,
         'bookmark_folders' => true,
         'bookmarks' => true,
     ];
@@ -148,7 +149,7 @@ function audit_logs_private_data_tables(): array
 function audit_logs_trigger_exempt_tables(): array
 {
     return array_merge(
-        ['audit_logs' => true],
+        ['audit_logs' => true, 'live_chat_typing' => true],
         audit_logs_private_data_tables()
     );
 }
@@ -160,6 +161,15 @@ function audit_logs_trigger_exempt_tables(): array
 function audit_logs_table_is_private_data_exempt(string $tableName): bool
 {
     return !empty(audit_logs_private_data_tables()[$tableName]);
+}
+
+/**
+ * @param string $tableName
+ * @return bool
+ */
+function audit_logs_table_is_trigger_exempt(string $tableName): bool
+{
+    return !empty(audit_logs_trigger_exempt_tables()[$tableName]);
 }
 
 /**
@@ -400,7 +410,7 @@ function audit_logs_assess_module(
 
     $uncoveredTables = [];
     foreach ($mutatedTables as $tableName) {
-        if ($tableName === 'audit_logs' || audit_logs_table_is_private_data_exempt($tableName)) {
+        if ($tableName === 'audit_logs' || audit_logs_table_is_trigger_exempt($tableName)) {
             continue;
         }
         if (empty($triggerTables[$tableName])) {
@@ -445,7 +455,7 @@ function audit_logs_assess_module(
     }
 
     $tablesNeedingTriggers = array_values(array_filter($mutatedTables, static function ($tableName) {
-        return $tableName !== 'audit_logs' && !audit_logs_table_is_private_data_exempt($tableName);
+        return $tableName !== 'audit_logs' && !audit_logs_table_is_trigger_exempt($tableName);
     }));
 
     if ($hasMutations && empty($tablesNeedingTriggers) && !empty($mutatedTables)) {

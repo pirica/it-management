@@ -96,6 +96,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'patches_updates', 'label' => '🛠️ Patches Updates', 'href' => 'modules/patches_updates/', 'match_dir' => 'patches_updates'],
                 ['id' => 'news', 'label' => '📰 News', 'href' => 'modules/news/', 'match_dir' => 'news'],
                 ['id' => 'knowledge_base', 'label' => '🧩 Knowledge Base', 'href' => 'modules/knowledge_base/', 'match_dir' => 'knowledge_base'],
+                ['id' => 'live_chat', 'label' => '💬 Live Chat', 'href' => 'modules/live_chat/', 'match_dir' => 'live_chat'],
             ],
         ],
         [
@@ -198,6 +199,7 @@ function itm_sidebar_module_default_label($moduleName) {
         'emails' => '📧 Email Management',
         'import' => '📥 Bulk Import',
         'knowledge_base' => '🧩 Knowledge Base',
+        'live_chat' => '💬 Live Chat',
         'it_settings' => '⚙️ IT Settings',
         'request_password' => '🔑 Request Password',
         'license_management' => '📄 License Management',

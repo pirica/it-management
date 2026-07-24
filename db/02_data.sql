@@ -192,6 +192,8 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("license_management", "License Management", 0, 1);
 
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("live_chat", "Live Chat", 0, 1, "💬");
+
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("it_locations", "It Locations", 0, 1);
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("location_types", "Location Types", 0, 1);
@@ -1289,6 +1291,13 @@ INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `
 
 INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('1', '5', 'Critical', '5', '#8B0000', '1', '2026-01-01 00:00:01');
 
+INSERT INTO `ticket_sla_policies` (`company_id`, `priority_id`, `response_minutes`, `resolve_minutes`, `active`, `created_at`) VALUES
+('1', 1, 480, 2880, 1, '2026-01-01 00:00:01'),
+('1', 2, 240, 1440, 1, '2026-01-01 00:00:01'),
+('1', 3, 60, 480, 1, '2026-01-01 00:00:01'),
+('1', 4, 30, 240, 1, '2026-01-01 00:00:01'),
+('1', 5, 15, 120, 1, '2026-01-01 00:00:01');
+
 INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('1', '1', 'Open', '#FF0000', '0', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('1', '2', 'In Progress', '#FFA500', '0', '1', '2026-01-01 00:00:01');
@@ -1662,6 +1671,14 @@ INSERT IGNORE INTO `switch_status` (`company_id`, `status`, `created_at`) SELECT
 INSERT IGNORE INTO `ticket_categories` (`company_id`, `name`, `code`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`code`, t.`active`, '2026-01-01 00:00:01' FROM `ticket_categories` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `ticket_priorities` (`company_id`, `name`, `level`, `color`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`level`, t.`color`, t.`active`, '2026-01-01 00:00:01' FROM `ticket_priorities` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+
+INSERT IGNORE INTO `ticket_sla_policies` (`company_id`, `priority_id`, `response_minutes`, `resolve_minutes`, `active`, `created_at`)
+SELECT c.`id`, tp_target.`id`, t.`response_minutes`, t.`resolve_minutes`, t.`active`, '2026-01-01 00:00:01'
+FROM `ticket_sla_policies` t
+INNER JOIN `ticket_priorities` tp_src ON tp_src.`company_id` = t.`company_id` AND tp_src.`id` = t.`priority_id`
+INNER JOIN `companies` c ON c.`id` <> t.`company_id`
+INNER JOIN `ticket_priorities` tp_target ON tp_target.`company_id` = c.`id` AND tp_target.`level` = tp_src.`level`
+WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `ticket_statuses` (`company_id`, `name`, `color`, `is_closed`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`color`, t.`is_closed`, t.`active`, '2026-01-01 00:00:01' FROM `ticket_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
