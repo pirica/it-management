@@ -71,6 +71,14 @@ function cr_fk_map($conn, $table) {
  * Fetches available options for a foreign key dropdown, scoped by company.
  */
 function cr_fk_options($conn, $fk, $company_id) {
+    if (($GLOBALS['crud_table'] ?? '') === 'expenses'
+        && ($fk['COLUMN_NAME'] ?? '') === 'recurrence_source_expense_id'
+        && function_exists('itm_expenses_recurrence_source_option_rows')) {
+        $excludeId = (int) ($GLOBALS['expenses_crud_exclude_recurrence_self_id'] ?? 0);
+
+        return itm_expenses_recurrence_source_option_rows($conn, (int) $company_id, $excludeId);
+    }
+
     $table = $fk['REFERENCED_TABLE_NAME'];
     $col = $fk['REFERENCED_COLUMN_NAME'];
 
@@ -98,6 +106,12 @@ function cr_fk_options($conn, $fk, $company_id) {
 function cr_fk_label_by_id($conn, $fk, $company_id, $rawId) {
     $id = (int)$rawId;
     if ($id <= 0) { return ''; }
+
+    if (($GLOBALS['crud_table'] ?? '') === 'expenses'
+        && ($fk['COLUMN_NAME'] ?? '') === 'recurrence_source_expense_id'
+        && function_exists('itm_expenses_recurrence_source_label_by_id')) {
+        return itm_expenses_recurrence_source_label_by_id($conn, (int) $company_id, $id);
+    }
 
     $fkTable = (string)$fk['REFERENCED_TABLE_NAME'];
     $fkCol = (string)$fk['REFERENCED_COLUMN_NAME'];
@@ -337,6 +351,17 @@ if ($field === 'active') {
         $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
             return ((int)$value === 1) ? '✅' : '❌';
+        }
+    }
+
+    if (($GLOBALS['crud_table'] ?? '') === 'expenses' && $field === 'recurrence_source_expense_id' && (int) $value > 0) {
+        $resolvedLabel = itm_expenses_recurrence_source_label_by_id(
+            $GLOBALS['conn'],
+            (int) ($GLOBALS['company_id'] ?? 0),
+            (int) $value
+        );
+        if ($resolvedLabel !== '') {
+            return sanitize($resolvedLabel);
         }
     }
 
@@ -782,6 +807,7 @@ foreach ($fieldColumns as $col) {
 
 // HANDLE FETCH FOR EDIT/VIEW
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$GLOBALS['expenses_crud_exclude_recurrence_self_id'] = ($crud_action === 'edit' && $editId > 0) ? $editId : 0;
 
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $where = ' WHERE id=' . $editId;
@@ -1258,14 +1284,26 @@ if (!isset($crud_title)) {
                                 <?php
                                     $fkRow = $fkMap[$name];
                                     $fkSelectedId = (int)$displayVal;
-                                    if ($fkSelectedId > 0 && (int)$company_id > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+                                    if ($name !== 'recurrence_source_expense_id'
+                                        && $fkSelectedId > 0
+                                        && (int)$company_id > 0
+                                        && function_exists('itm_fk_resolve_company_equivalent_id')) {
                                         $fkSelectedId = itm_fk_resolve_company_equivalent_id($conn, $fkRow, (int)$company_id, $fkSelectedId);
                                     }
                                     $opts = cr_fk_options($conn, $fkRow, (int)$company_id);
                                     $opts = cr_append_selected_fk_option($conn, $fkRow, (int)$company_id, $opts, $fkSelectedId);
                                     $fkMeta = cr_fk_metadata($conn, $fkRow['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
+                                    $isRecurrenceSourceFk = ($name === 'recurrence_source_expense_id');
                                 ?>
+                                <?php if ($isRecurrenceSourceFk): ?>
+                                <select name="<?php echo sanitize($name); ?>">
+                                    <option value="">-- Select --</option>
+                                    <?php foreach ($opts as $opt): ?>
+                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ($fkSelectedId > 0 && $fkSelectedId === (int)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <?php else: ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
                                     data-addable-select="1"
@@ -1281,6 +1319,7 @@ if (!isset($crud_title)) {
                                     <?php endforeach; ?>
                                     <option value="__add_new__">➕</option>
                                 </select>
+                                <?php endif; ?>
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
                             <?php elseif ($isDate): ?>

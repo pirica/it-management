@@ -859,6 +859,116 @@ function itm_expense_recurrence_advance_date(string $code, string $fromYmd): ?st
 }
 
 /**
+ * Human-readable label for recurrence source expense FK (list/view/dropdown).
+ */
+function itm_expenses_format_recurrence_source_label(array $row): string
+{
+    $id = (int) ($row['id'] ?? 0);
+    $invoiceNumber = trim((string) ($row['invoice_number'] ?? ''));
+    $description = trim((string) ($row['description'] ?? ''));
+    $postingDate = trim((string) ($row['posting_date'] ?? ''));
+
+    if ($invoiceNumber !== '') {
+        $label = $invoiceNumber;
+    } elseif ($description !== '') {
+        $label = $description;
+    } else {
+        $label = 'Expense #' . $id;
+    }
+
+    if ($postingDate !== '') {
+        $dateLabel = function_exists('itm_format_date_display')
+            ? itm_format_date_display($postingDate)
+            : $postingDate;
+        if ($dateLabel !== '') {
+            $label .= ' (' . $dateLabel . ')';
+        }
+    }
+
+    return $label;
+}
+
+/**
+ * Dropdown rows for expenses.recurrence_source_expense_id (self-FK).
+ *
+ * @return array<int, array{id:int, label:string}>
+ */
+function itm_expenses_recurrence_source_option_rows(mysqli $conn, int $companyId, int $excludeExpenseId = 0): array
+{
+    if ($companyId <= 0) {
+        return [];
+    }
+
+    $sql = 'SELECT id, invoice_number, posting_date, description
+            FROM expenses
+            WHERE company_id = ? AND deleted_at IS NULL';
+    if ($excludeExpenseId > 0) {
+        $sql .= ' AND id <> ?';
+    }
+    $sql .= ' ORDER BY posting_date DESC, id DESC';
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return [];
+    }
+
+    if ($excludeExpenseId > 0) {
+        mysqli_stmt_bind_param($stmt, 'ii', $companyId, $excludeExpenseId);
+    } else {
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    }
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $out = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $out[] = [
+            'id' => (int) ($row['id'] ?? 0),
+            'label' => itm_expenses_format_recurrence_source_label($row),
+        ];
+    }
+    mysqli_stmt_close($stmt);
+
+    return $out;
+}
+
+function itm_expenses_recurrence_source_label_by_id(mysqli $conn, int $companyId, int $expenseId): string
+{
+    $expenseId = (int) $expenseId;
+    if ($expenseId <= 0) {
+        return '';
+    }
+
+    $sql = 'SELECT id, invoice_number, posting_date, description
+            FROM expenses
+            WHERE id = ? AND deleted_at IS NULL';
+    if ($companyId > 0) {
+        $sql .= ' AND company_id = ?';
+    }
+    $sql .= ' LIMIT 1';
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return '';
+    }
+
+    if ($companyId > 0) {
+        mysqli_stmt_bind_param($stmt, 'ii', $expenseId, $companyId);
+    } else {
+        mysqli_stmt_bind_param($stmt, 'i', $expenseId);
+    }
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+
+    if (!$row) {
+        return '';
+    }
+
+    return itm_expenses_format_recurrence_source_label($row);
+}
+
+/**
  * Run due recurring expense templates for one company (CLI).
  *
  * @return array{created:int, skipped:int, errors:list<string>}

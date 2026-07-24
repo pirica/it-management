@@ -31,6 +31,7 @@ Tracks actual financial expenditures against budgets.
 - **Actions column**: `class="itm-actions-cell"` and `data-itm-actions-origin="1"` on Actions header and body cells.
 - **Import endpoint**: `data-itm-db-import-endpoint="index.php"` on the index list table.
 - **Add sample data**: `db/02_data_sample.sql` expense template includes `posting_date`, `paid_status_id`, and `currency_code`; `itm_seed_apply_expenses_sample_row_defaults()` backfills those when missing.
+- **Expense recurrence:** `expense_recurrence_id`, `is_recursive`, `next_run_date`, `recurrence_end_date`, `recurrence_source_expense_id` (self-FK; options via `itm_expenses_recurrence_source_option_rows()` — invoice/description + posting date, no quick-add ➕).
 - **`active` field**: list/view use `badge-success` / `badge-danger` (no emoji); create/edit use `itm-checkbox-control` with ✅/❌.
 
 - **Formatted Currency**: Display amounts with currency symbols/formatting.
