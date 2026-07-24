@@ -12,10 +12,27 @@ if (!isset($itm_fast_create_acc_back_href) || $itm_fast_create_acc_back_href ===
     $itm_fast_create_acc_back_href = BASE_URL . 'modules/employees/index.php';
 }
 
-$selectedCompanyId = (int)($company_id ?? 0);
-if ($selectedCompanyId <= 0) {
-    $selectedCompanyId = (int)($_SESSION['company_id'] ?? 1);
+$authEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
+if (function_exists('itm_script_get_browser_authorization_employee_id')) {
+    $authorizedId = itm_script_get_browser_authorization_employee_id();
+    if ($authorizedId > 0) {
+        $authEmployeeId = $authorizedId;
+    }
 }
+
+if (isset($itm_fast_create_acc_company_id) && (int)$itm_fast_create_acc_company_id > 0) {
+    $selectedCompanyId = (int)$itm_fast_create_acc_company_id;
+} else {
+    $selectedCompanyId = itm_fast_create_acc_resolve_company_id($conn, $authEmployeeId);
+}
+
+if ($selectedCompanyId <= 0) {
+    header('Location: ' . BASE_URL . 'index.php');
+    exit;
+}
+
+global $company_id;
+$company_id = $selectedCompanyId;
 
 $fkOptions = itm_demo_module_users_fetch_fk_options($conn, $selectedCompanyId);
 $grantedByEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
@@ -117,6 +134,17 @@ foreach ($fkOptions['employee_roles'] as $roleRow) {
 $selectedRoleId = (int)$form['role_id'];
 $selectedDepartmentIds = is_array($form['department_ids']) ? $form['department_ids'] : [];
 
+$fastCreateCompanyLabel = '';
+foreach ($fkOptions['companies'] as $companyRow) {
+    if ((int)($companyRow['id'] ?? 0) === $selectedCompanyId) {
+        $fastCreateCompanyLabel = trim((string)($companyRow['company'] ?? ''));
+        if ($fastCreateCompanyLabel === '' && !empty($companyRow['incode'])) {
+            $fastCreateCompanyLabel = (string)$companyRow['incode'];
+        }
+        break;
+    }
+}
+
 $crud_title = 'Fast Create Account';
 ?>
 <!DOCTYPE html>
@@ -153,6 +181,12 @@ $crud_title = 'Fast Create Account';
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="company_id" value="<?php echo (int)$selectedCompanyId; ?>">
+
+                    <p style="margin:0 0 12px;">
+                        <strong>Company:</strong>
+                        <?php echo sanitize($fastCreateCompanyLabel !== '' ? $fastCreateCompanyLabel : ('#' . $selectedCompanyId)); ?>
+                        <span class="text-muted">(ID <?php echo (int)$selectedCompanyId; ?>)</span>
+                    </p>
 
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
                         <div class="form-group full" style="grid-column:1 / -1;">

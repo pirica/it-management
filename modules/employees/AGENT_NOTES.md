@@ -58,7 +58,7 @@ The central module for managing employee records, including contact info, hierar
 - **View:** Profile thumbnail when `photo` + linked user exist; birthday respects `hide_year`.
 - **Hierarchy Mapping**: Edit form should allow selecting a manager from other employees in the same company.
 - **Departments (multi):** create/edit use `department_ids[]` multi-select (`multiple size="5"`) with `data-addable-select="1"` and trailing `<option value="__add_new__">➕</option>` (departments quick-add). POST syncs `employee_departments` via `itm_employee_sync_department_assignments()`; `__add_new__` is ignored server-side.
-- **Fast create account:** `fast_create_acc.php` (wrapper) + `fast_create_acc_browser.php` — demo employee + module RBAC form (active session `company_id`). List toolbar 🚀 opens module URL; `scripts/fast_create_acc.php` serves the same UI in the catalog (no redirect). CLI `--seed-demo-bundle` stays under `scripts/`.
+- **Fast create account:** `fast_create_acc.php` + `fast_create_acc_browser.php` — resolves active `company_id` via `itm_fast_create_acc_resolve_company_id()` (no silent default to company 1); shows **Company:** label on form. Catalog `scripts/fast_create_acc.php` keeps real session (isolation exempt). CLI `--seed-demo-bundle` under `scripts/`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import with auto-lookup resolution for departments and positions.
