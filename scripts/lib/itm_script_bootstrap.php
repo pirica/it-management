@@ -65,6 +65,7 @@ if (!function_exists('itm_script_browser_isolation_exempt_basenames')) {
             'scripts.php',
             'api.php',
             'fast_create_acc.php',
+            'fast_create_acc_browser.php',
             'module_browser_qa_runner.php',
             'run_tests.php',
         ];

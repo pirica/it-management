@@ -3,7 +3,7 @@
  * Fast account creator for demo employees with module-scoped RBAC.
  *
  * CLI: php scripts/fast_create_acc.php --seed-demo-bundle [--company=1]
- * Browser: same URL (scripts catalog) — admin fast-create UI for active company.
+ * Browser: scripts/fast_create_acc.php or scripts/fast_create_acc_browser.php (alias); modules/employees/fast_create_acc.php (Employees 🚀).
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ if ($isCli) {
 
     echo 'Usage:' . $nl;
     echo '  php scripts/fast_create_acc.php --seed-demo-bundle [--company=1]' . $nl;
-    echo 'Browser UI: scripts/fast_create_acc.php (catalog) or modules/employees/fast_create_acc.php (Employees list 🚀)' . $nl;
+    echo 'Browser UI: scripts/fast_create_acc.php or scripts/fast_create_acc_browser.php (catalog); modules/employees/fast_create_acc.php (Employees list 🚀)' . $nl;
     exit(0);
 }
 
