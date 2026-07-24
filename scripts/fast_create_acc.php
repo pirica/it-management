@@ -16,6 +16,7 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../includes/itm_fk_option_labels.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_demo_module_users_seed.php';
+require_once dirname(__DIR__) . '/includes/itm_company_session.php';
 
 $conn = $GLOBALS['conn'] ?? null;
 $nl = itm_script_output_nl();
@@ -52,5 +53,13 @@ if ($isCli) {
 }
 
 itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
+$authEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
+$itm_fast_create_acc_company_id = itm_fast_create_acc_resolve_company_id($conn, $authEmployeeId);
+if ($itm_fast_create_acc_company_id <= 0) {
+    header('Location: ' . BASE_URL . 'index.php');
+    exit;
+}
+global $company_id;
+$company_id = $itm_fast_create_acc_company_id;
 $itm_fast_create_acc_back_href = BASE_URL . 'scripts/scripts.php';
 require dirname(__DIR__) . '/modules/employees/fast_create_acc_browser.php';

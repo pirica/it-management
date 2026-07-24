@@ -683,6 +683,44 @@ if (!function_exists('itm_demo_module_users_seed_bundle')) {
     }
 }
 
+if (!function_exists('itm_fast_create_acc_resolve_company_id')) {
+    /**
+     * Active tenant for fast-create UI (session, config global, or vetted POST/GET company_id).
+     */
+    function itm_fast_create_acc_resolve_company_id(mysqli $conn, int $authEmployeeId): int
+    {
+        global $company_id;
+
+        $resolved = 0;
+        if (function_exists('itm_resolve_active_company_id')) {
+            $resolved = itm_resolve_active_company_id((int)($company_id ?? 0));
+            if ($resolved <= 0) {
+                $resolved = itm_resolve_active_company_id((int)($_SESSION['company_id'] ?? 0));
+            }
+        } else {
+            $resolved = (int)($company_id ?? 0);
+            if ($resolved <= 0) {
+                $resolved = (int)($_SESSION['company_id'] ?? 0);
+            }
+        }
+
+        $requested = (int)($_GET['company_id'] ?? 0);
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+            $postedCompanyId = (int)($_POST['company_id'] ?? 0);
+            if ($postedCompanyId > 0) {
+                $requested = $postedCompanyId;
+            }
+        }
+
+        if ($requested > 0 && $authEmployeeId > 0 && function_exists('itm_employee_has_company_access')
+            && itm_employee_has_company_access($conn, $authEmployeeId, $requested)) {
+            return $requested;
+        }
+
+        return $resolved > 0 ? $resolved : 0;
+    }
+}
+
 if (!function_exists('itm_demo_module_users_fetch_fk_options')) {
     /**
      * @return array<string,array<int,array<string,mixed>>>
