@@ -15,6 +15,7 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 
 ## 7. File Structure
 - **alerts_visibility.php** — centralized visibility logic for global/private alerts.
+- **itm_finance_attachments.php** — finance module file attachments (multi-upload, `finance/{company_id}/{module}/{document_key}/`, 5 MB, allowed extensions); loaded from `config/config.php`.
 - **notes_visibility.php** — owner + `shared_with_json` filter for Notes module; `itm_notes_fetch_visible_by_id()` for single-record view/edit load; `itm_notes_private_images_dir()`, `itm_notes_normalize_image_filename()`, and `itm_notes_resolve_image_path()` confine note attachment ZIP downloads to `files/{company_id}/Private/{username}_{employee_id}/notes/`; `itm_notes_json_mutation_response()` standardises AJAX mutation JSON (404 when zero rows affected).
 - **events_visibility.php** — owner + `shared_with_json` filter for Events module; `itm_events_fetch_visible_by_id()` for single-record view/edit/export load.
 - **itm_api_json_response.php** — shared `itm_api_json_response()` and `itm_api_mutation_requires_rows()` for Org Chart, Rack Planner, and other single-step mutation endpoints. Switch-port **`update_port.php`** uses a manual zero-row `404` check before To IDF auto-sync (cannot call `itm_api_mutation_requires_rows()` mid-flow because that helper exits on success).

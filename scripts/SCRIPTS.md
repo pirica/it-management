@@ -991,6 +991,7 @@ Catalog: `scripts/scripts.php`.
 | `php scripts/verify_bills.php` | Seed bill + line rollups, supplier FK, `itm_expenses_post_from_bill()` (bill_id + invoice_number) and duplicate-post guard |
 | `php scripts/verify_invoices.php` | Seed invoice + line rollups, `itm_expenses_post_from_invoice()` (invoice_id + invoice_number) and duplicate-post guard |
 | `php scripts/verify_finance_payment_allocations.php` | Payment allocations and `amount_due` on bills |
+| `php scripts/verify_finance_attachments.php` | Finance attachments table, path helpers, allowed types |
 | `php scripts/verify_expense_recurrence.php` | `expense_recurrence` seeds and advance-date helper |
 | `php scripts/run_expense_recurrence.php` | CLI runner for due recurring expense templates (`--company=1`) |
 | `php scripts/verify_customers.php` | Seed customer and invoice `customer_id` |

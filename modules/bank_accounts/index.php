@@ -638,6 +638,11 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     if (!$data) { $errors[] = 'Record not found.'; }
 }
 
+$financeAttachments = [];
+if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0 && !empty($data)) {
+    $financeAttachments = itm_finance_attachment_load_for_parent($conn, (int) $company_id, $crud_table, $editId);
+}
+
 // HANDLE FORM SUBMISSION (CREATE/EDIT)
 
 // Handle sample data seeding for empty companies in list view
@@ -814,9 +819,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, $types, ...$params);
                 if (mysqli_stmt_execute($stmt)) {
+                    $savedParentId = (int) mysqli_insert_id($conn);
                     mysqli_stmt_close($stmt);
+                    $attachSave = itm_finance_attachment_after_parent_save($conn, (int) $company_id, $crud_table, $savedParentId);
+                    if (!$attachSave['ok']) {
+                        $errors[] = $attachSave['error'];
+                    } else {
                     header('Location: ' . $listUrl);
                     exit;
+                    }
                 }
                 $errors[] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
                 mysqli_stmt_close($stmt);
@@ -839,9 +850,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 }
                 mysqli_stmt_bind_param($stmt, $types, ...$params);
                 if (mysqli_stmt_execute($stmt)) {
+                    $savedParentId = $editId;
                     mysqli_stmt_close($stmt);
+                    $attachSave = itm_finance_attachment_after_parent_save($conn, (int) $company_id, $crud_table, $savedParentId);
+                    if (!$attachSave['ok']) {
+                        $errors[] = $attachSave['error'];
+                    } else {
                     header('Location: ' . $listUrl);
                     exit;
+                    }
                 }
                 $errors[] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
                 mysqli_stmt_close($stmt);
@@ -1114,7 +1131,7 @@ if (!isset($crud_title)) {
             <?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>
                 <!-- EDIT/CREATE VIEW -->
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
-                <form method="POST" class="form-grid" style="max-width:980px;">
+                <form method="POST" enctype="multipart/form-data" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($uiColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
@@ -1166,6 +1183,7 @@ if (!isset($crud_title)) {
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
+                    <?php itm_finance_render_attachments_editor($financeAttachments); ?>
                     <div class="form-actions">
                         <button class="btn btn-primary" type="submit">💾</button>
                         <a href="index.php" class="btn">🔙</a>
@@ -1186,6 +1204,7 @@ if (!isset($crud_title)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <?php itm_finance_render_attachments_view($financeAttachments); ?>
                     <p style="margin-top:16px;">
                         <a href="index.php" class="btn">🔙</a> 
                         <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a>
@@ -1215,5 +1234,8 @@ document.addEventListener('change', function (event) {
     if (indicator) { indicator.textContent = event.target.checked ? '✅' : '❌'; }
 });
 </script>
+<?php if (in_array($crud_action, ['create', 'edit'], true)) {
+    itm_finance_render_attachments_form_scripts();
+} ?>
 </body>
 </html>

@@ -247,6 +247,7 @@ define('DUPLICATE_BACKUP_PATH', dirname(rtrim(ROOT_PATH, '/\\')) . DIRECTORY_SEP
 define('BACKUP_URL', BASE_URL . 'backups/');
 define('FLOOR_PLAN_UPLOAD_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'floor_plans'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
 define('FLOOR_PLAN_UPLOAD_URL', BASE_URL . 'floor_plans/');
+define('FINANCE_UPLOAD_PATH', rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ROOT_PATH . 'finance'), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
 define('FLOOR_PLAN_MAX_FILE_SIZE', 20971520);
 define('FLOOR_PLAN_ALLOWED_TYPES', [
     'image/jpeg',
@@ -280,6 +281,7 @@ require_once ROOT_PATH . 'includes/itm_date_format.php';
 require_once ROOT_PATH . 'includes/itm_expenses_ap.php';
 require_once ROOT_PATH . 'includes/itm_finance_document_lines.php';
 require_once ROOT_PATH . 'includes/itm_finance_payments.php';
+require_once ROOT_PATH . 'includes/itm_finance_attachments.php';
 require_once ROOT_PATH . 'includes/itm_crud_audit_fields.php';
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 require_once ROOT_PATH . 'includes/itm_employee_contact_email.php';
@@ -296,6 +298,7 @@ itm_ensure_upload_directory(UPLOAD_PATH, 'upload');
 itm_ensure_upload_directory(TICKET_UPLOAD_PATH, 'upload');
 itm_ensure_upload_directory(BACKUP_PATH, 'deny_all');
 itm_ensure_upload_directory(FLOOR_PLAN_UPLOAD_PATH, 'upload');
+itm_ensure_upload_directory(FINANCE_UPLOAD_PATH, 'deny_all');
 itm_ensure_upload_directory(itm_files_storage_root(), 'deny_http');
 
 // Load secondary configuration and library files

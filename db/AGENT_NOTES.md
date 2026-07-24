@@ -46,6 +46,7 @@ Do **not** run schema, data, and triggers as three separate `mysql` CLI imports.
 - AP/AR documents: `bills` + `bill_line_items`, `invoices` + `invoice_line_items` (`invoices.customer_id` → `customers`, optional).
 - **Customers:** `customer_statuses` + `customers` (AR master; separate from `suppliers`).
 - **Payments:** `finance_payment_allocations` links `bank_accounts` / `payment_modes` to exactly one of `bill_id` or `invoice_id`; `amount_due` on bill/invoice headers is recomputed in PHP (`includes/itm_finance_payments.php`).
+- **Attachments:** `finance_attachments` metadata; files on disk under `finance/{company_id}/{parent_table}/{document_key}/` (`deny_all` via `FINANCE_UPLOAD_PATH`); served through each module’s `attachment.php`. Helpers: `includes/itm_finance_attachments.php`. Migration: `db/migrations/finance_attachments.sql`.
 - **Expense recurrence:** `expense_recurrence` lookup; `expenses` columns `is_recursive`, `next_run_date`, `recurrence_end_date`, `recurrence_source_expense_id`; runner `php scripts/run_expense_recurrence.php`.
 - **Budget actuals:** extended `expenses` (`posting_date`, `paid_status_id`, EUR `currency_code`, optional `bill_id` and `invoice_id`; `invoice_number` stores the source document number when posted); `modules/budget_report/` sums Posted/Paid only via `COALESCE(posting_date, date)`.
 - Finance data is maintained via module CRUD, bill/invoice **Post to expenses**, and Excel import (expenses AP aliases in `includes/itm_expenses_ap.php`). No automated external sync webhooks.
