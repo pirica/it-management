@@ -30,6 +30,7 @@ Tracks actual financial expenditures against budgets.
 - **Hide `company_id`** from list, view, and create/edit forms.
 - **Actions column**: `class="itm-actions-cell"` and `data-itm-actions-origin="1"` on Actions header and body cells.
 - **Import endpoint**: `data-itm-db-import-endpoint="index.php"` on the index list table.
+- **Add sample data**: `db/02_data_sample.sql` expense template includes `posting_date`, `paid_status_id`, and `currency_code`; `itm_seed_apply_expenses_sample_row_defaults()` backfills those when missing.
 - **`active` field**: list/view use `badge-success` / `badge-danger` (no emoji); create/edit use `itm-checkbox-control` with ✅/❌.
 
 - **Formatted Currency**: Display amounts with currency symbols/formatting.

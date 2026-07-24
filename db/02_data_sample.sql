@@ -222,8 +222,8 @@ INSERT INTO `events` (`company_id`, `employee_id`, `assigned_to_employee_id`, `c
 (1, 1, NULL, NULL, 'Server Maintenance', 'f78625785dce5adc93b013e1962ff81f09c6f4908c1277469c95d5cfc02c96cd', 'Monthly server updates and backup verification', '2026-05-15 22:00:00', '2026-05-16 02:00:00', 'Data Center', 2, 1),
 (1, 1, NULL, NULL, 'Team Lunch', 'af65330d1edc5952b1f4283b470c6d2a5b8a14f334a785016235f16c45986610', 'Monthly team building lunch', '2026-05-20 12:00:00', '2026-05-20 13:30:00', 'Local Restaurant', 4, 1);
 
-INSERT INTO `expenses` (`company_id`, `gl_account_id`, `cost_center_id`, `date`, `amount`, `description`, `invoice_number`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
-(1, '1', '1', '2026-01-15', '3890.00', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', NULL, NULL, '1', '2026-01-01 00:00:01', NULL, NULL);
+INSERT INTO `expenses` (`company_id`, `gl_account_id`, `cost_center_id`, `date`, `posting_date`, `invoice_date`, `amount`, `paid_status_id`, `currency_code`, `exchange_rate`, `description`, `invoice_number`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
+(1, '1', '1', '2026-01-15', '2026-01-15', '2026-01-15', '3890.00', '3', 'EUR', '1.000000', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', NULL, NULL, '1', '2026-01-01 00:00:01', NULL, NULL);
 
 INSERT INTO `explorer` (`company_id`, `employee_id`, `department_id`, `folder_path`, `file_name`, `file_type`, `is_favorite`, `is_private`, `active`) VALUES
 (1, 1, 1, 'Sample 91ad19f8', 'Sample f5b13182', 'Sample 21373015', 1, 1, 1);
