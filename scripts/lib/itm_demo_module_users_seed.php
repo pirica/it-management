@@ -629,7 +629,22 @@ if (!function_exists('itm_demo_module_users_upsert_employee')) {
         }
 
         $result['employee_id'] = $employeeId;
-        itm_demo_module_users_ensure_company_grant($conn, $employeeId, $companyId, $grantedByEmployeeId);
+        $grantCompanyIds = [$companyId];
+        if (isset($spec['company_ids']) && is_array($spec['company_ids'])) {
+            $grantCompanyIds = [];
+            foreach ($spec['company_ids'] as $grantCompanyId) {
+                $grantCompanyId = (int)$grantCompanyId;
+                if ($grantCompanyId > 0 && !in_array($grantCompanyId, $grantCompanyIds, true)) {
+                    $grantCompanyIds[] = $grantCompanyId;
+                }
+            }
+            if ($grantCompanyIds === []) {
+                $grantCompanyIds = [$companyId];
+            }
+        }
+        foreach ($grantCompanyIds as $grantCompanyId) {
+            itm_demo_module_users_ensure_company_grant($conn, $employeeId, $grantCompanyId, $grantedByEmployeeId);
+        }
         itm_demo_module_users_ensure_ui_configuration($conn, $companyId, $employeeId);
         itm_demo_module_users_save_sidebar_prefs($conn, $companyId, $employeeId, $moduleSlugs);
 
@@ -718,6 +733,87 @@ if (!function_exists('itm_fast_create_acc_resolve_company_id')) {
         }
 
         return $resolved > 0 ? $resolved : 0;
+    }
+}
+
+if (!function_exists('itm_fast_create_acc_list_all_companies')) {
+    /**
+     * Active companies for admin fast-create multi-select (all tenants).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    function itm_fast_create_acc_list_all_companies(mysqli $conn): array
+    {
+        $rows = [];
+        $res = mysqli_query($conn, 'SELECT id, company, incode FROM companies WHERE active = 1 ORDER BY company ASC');
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $rows[] = $row;
+        }
+        if ($res) {
+            mysqli_free_result($res);
+        }
+
+        return $rows;
+    }
+}
+
+if (!function_exists('itm_fast_create_acc_active_company_id_map')) {
+    /**
+     * @return array<int, true>
+     */
+    function itm_fast_create_acc_active_company_id_map(mysqli $conn): array
+    {
+        $map = [];
+        foreach (itm_fast_create_acc_list_all_companies($conn) as $row) {
+            $id = (int)($row['id'] ?? 0);
+            if ($id > 0) {
+                $map[$id] = true;
+            }
+        }
+
+        return $map;
+    }
+}
+
+if (!function_exists('itm_fast_create_acc_normalize_company_ids')) {
+    /**
+     * @param array<int|string> $rawIds
+     * @return int[]
+     */
+    function itm_fast_create_acc_normalize_company_ids(mysqli $conn, int $authEmployeeId, array $rawIds, int $fallbackPrimary = 0): array
+    {
+        unset($authEmployeeId);
+        $activeMap = itm_fast_create_acc_active_company_id_map($conn);
+        $ids = [];
+        foreach ($rawIds as $raw) {
+            $id = (int)$raw;
+            if ($id <= 0 || in_array($id, $ids, true) || !isset($activeMap[$id])) {
+                continue;
+            }
+            $ids[] = $id;
+        }
+
+        if ($ids === [] && $fallbackPrimary > 0 && isset($activeMap[$fallbackPrimary])) {
+            $ids[] = $fallbackPrimary;
+        }
+
+        return $ids;
+    }
+}
+
+if (!function_exists('itm_fast_create_acc_company_option_label')) {
+    function itm_fast_create_acc_company_option_label(array $row): string
+    {
+        $label = trim((string)($row['company'] ?? ''));
+        $incode = trim((string)($row['incode'] ?? ''));
+        if ($label === '' && $incode !== '') {
+            return $incode;
+        }
+        if ($incode !== '' && stripos($label, $incode) === false) {
+            return $label . ' (' . $incode . ')';
+        }
+
+        return $label !== '' ? $label : ('#' . (int)($row['id'] ?? 0));
     }
 }
 

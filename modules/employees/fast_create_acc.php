@@ -14,9 +14,9 @@ require_once ROOT_PATH . 'scripts/lib/itm_demo_module_users_seed.php';
 require_once '../../includes/itm_company_session.php';
 $authEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
 $itm_fast_create_acc_company_id = itm_fast_create_acc_resolve_company_id($conn, $authEmployeeId);
-if ($itm_fast_create_acc_company_id <= 0) {
-    header('Location: ' . BASE_URL . 'index.php');
-    exit;
+if ($itm_fast_create_acc_company_id > 0) {
+    global $company_id;
+    $company_id = $itm_fast_create_acc_company_id;
 }
 $itm_fast_create_acc_back_href = 'index.php';
 require __DIR__ . '/fast_create_acc_browser.php';
