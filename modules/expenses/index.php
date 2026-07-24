@@ -499,6 +499,11 @@ if ($crud_table === 'expenses') {
     $displayFieldColumns = $uiColumns;
 }
 
+$formUiColumns = $uiColumns;
+if ($crud_table === 'expenses') {
+    $formUiColumns = itm_expenses_reorder_form_field_columns($uiColumns);
+}
+
 // Why: View shows create/update/delete audit stamps while list hides them.
 $viewColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     $fieldName = (string)($col['Field'] ?? '');
@@ -1215,7 +1220,7 @@ if (!isset($crud_title)) {
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <?php foreach ($uiColumns as $col): $name = $col['Field'];
+                    <?php foreach ($formUiColumns as $col): $name = $col['Field'];
                         $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
                         $isDate = str_starts_with($col['Type'], 'date');
                         $isDateTime = str_starts_with($col['Type'], 'datetime');

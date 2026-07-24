@@ -297,3 +297,263 @@ function itm_expenses_ap_normalize_import_row(mysqli $conn, int $companyId, arra
         }
     }
 }
+
+/**
+ * Plan field order for expenses create/edit forms (AP header flow).
+ *
+ * @return list<string>
+ */
+function itm_expenses_ap_form_field_order(): array
+{
+    return [
+        'supplier_id',
+        'invoice_date',
+        'posting_date',
+        'payment_date',
+        'due_date',
+        'purchase_order',
+        'purchase_order_accepted',
+        'net_amount',
+        'vat_amount',
+        'total_discount',
+        'amount',
+        'tax_rate_id',
+        'currency_code',
+        'exchange_rate',
+        'payment_mode_id',
+        'paid_status_id',
+        'cost_center_id',
+        'gl_account_id',
+        'description',
+        'invoice_number',
+        'date',
+        'active',
+    ];
+}
+
+/**
+ * @param array<int, array<string, mixed>> $columns DESCRIBE-style column rows
+ * @return array<int, array<string, mixed>>
+ */
+function itm_expenses_reorder_form_field_columns(array $columns): array
+{
+    $rank = array_flip(itm_expenses_ap_form_field_order());
+    usort($columns, static function ($a, $b) use ($rank) {
+        $fa = (string) ($a['Field'] ?? '');
+        $fb = (string) ($b['Field'] ?? '');
+        $ra = $rank[$fa] ?? 9999;
+        $rb = $rank[$fb] ?? 9999;
+        if ($ra === $rb) {
+            return strcmp($fa, $fb);
+        }
+        return $ra <=> $rb;
+    });
+
+    return array_values($columns);
+}
+
+/**
+ * Live expense row already linked to this bill (soft-delete aware).
+ */
+function itm_expenses_find_id_by_bill_id(mysqli $conn, int $companyId, int $billId): ?int
+{
+    if ($companyId <= 0 || $billId <= 0) {
+        return null;
+    }
+    $sql = 'SELECT id FROM expenses WHERE company_id = ? AND bill_id = ? AND deleted_at IS NULL LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return null;
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $billId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    if (!$row) {
+        return null;
+    }
+
+    return (int) $row['id'];
+}
+
+/**
+ * Create one budget expense from a bill header (Posted status, bill_id link).
+ *
+ * @return array{ok: bool, expense_id?: int, error?: string}
+ */
+function itm_expenses_post_from_bill(mysqli $conn, int $companyId, int $billId, int $employeeId): array
+{
+    if ($companyId <= 0 || $billId <= 0) {
+        return ['ok' => false, 'error' => 'Invalid company or bill.'];
+    }
+
+    $existingId = itm_expenses_find_id_by_bill_id($conn, $companyId, $billId);
+    if ($existingId !== null) {
+        return ['ok' => false, 'error' => 'This bill was already posted to expenses.', 'expense_id' => $existingId];
+    }
+
+    $sql = 'SELECT * FROM bills WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return ['ok' => false, 'error' => 'Could not load bill.'];
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $billId, $companyId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $bill = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    if (!$bill) {
+        return ['ok' => false, 'error' => 'Bill not found.'];
+    }
+
+    $costCenterId = (int) ($bill['cost_center_id'] ?? 0);
+    $glAccountId = (int) ($bill['gl_account_id'] ?? 0);
+    if ($costCenterId <= 0 || $glAccountId <= 0) {
+        return ['ok' => false, 'error' => 'Set cost center and GL account on the bill before posting to expenses.'];
+    }
+
+    $postedStatusId = itm_expenses_resolve_default_paid_status_id($conn, $companyId, 'Posted');
+    if ($postedStatusId === null) {
+        return ['ok' => false, 'error' => 'Posted paid status is not configured for this company.'];
+    }
+
+    $postingDate = (string) ($bill['posted_date'] ?? '');
+    if ($postingDate === '' || $postingDate === '0000-00-00') {
+        $postingDate = date('Y-m-d');
+    }
+    $invoiceDate = (string) ($bill['posted_date'] ?? '');
+    if ($invoiceDate === '' || $invoiceDate === '0000-00-00') {
+        $invoiceDate = $postingDate;
+    }
+    $legacyDate = itm_expenses_sync_legacy_date([
+        'posting_date' => $postingDate,
+        'invoice_date' => $invoiceDate,
+    ]);
+
+    $invoiceNumber = trim((string) ($bill['document_number'] ?? ''));
+    if ($invoiceNumber === '') {
+        return ['ok' => false, 'error' => 'Bill document number is required to post to expenses.'];
+    }
+
+    $amount = (string) ($bill['total_amount'] ?? '0');
+    $netAmount = isset($bill['sub_total']) ? (string) $bill['sub_total'] : null;
+    $vatAmount = isset($bill['tax_amount']) ? (string) $bill['tax_amount'] : null;
+    $totalDiscount = (string) ($bill['total_discount'] ?? '0');
+    $currencyCode = strtoupper(trim((string) ($bill['currency_code'] ?? 'EUR')));
+    if ($currencyCode === '') {
+        $currencyCode = 'EUR';
+    }
+    $exchangeRate = (string) ($bill['exchange_rate'] ?? '1.000000');
+    $supplierId = isset($bill['supplier_id']) && (int) $bill['supplier_id'] > 0 ? (int) $bill['supplier_id'] : null;
+    $description = trim((string) ($bill['memo'] ?? ''));
+    $dueDate = (string) ($bill['due_date'] ?? '');
+    if ($dueDate === '' || $dueDate === '0000-00-00') {
+        $dueDate = null;
+    }
+
+    $taxRateId = null;
+    $taxSnapshot = null;
+    $lineSql = 'SELECT tax_rate_id FROM bill_line_items WHERE company_id = ? AND bill_id = ? AND deleted_at IS NULL ORDER BY line_number ASC LIMIT 1';
+    $lineStmt = mysqli_prepare($conn, $lineSql);
+    if ($lineStmt) {
+        mysqli_stmt_bind_param($lineStmt, 'ii', $companyId, $billId);
+        mysqli_stmt_execute($lineStmt);
+        $lineRes = mysqli_stmt_get_result($lineStmt);
+        $lineRow = $lineRes ? mysqli_fetch_assoc($lineRes) : null;
+        mysqli_stmt_close($lineStmt);
+        if ($lineRow && (int) ($lineRow['tax_rate_id'] ?? 0) > 0) {
+            $taxRateId = (int) $lineRow['tax_rate_id'];
+            $taxSnapshot = itm_expenses_stamp_tax_rate_snapshot($conn, $companyId, $taxRateId);
+        }
+    }
+
+    $insertCols = [
+        'company_id', 'cost_center_id', 'gl_account_id', 'date', 'posting_date', 'invoice_date',
+        'total_discount', 'paid_status_id', 'bill_id', 'currency_code', 'exchange_rate', 'amount',
+        'description', 'invoice_number', 'purchase_order_accepted', 'active',
+    ];
+    $insertTypes = 'iiisssdiisddssii';
+    $insertParams = [
+        $companyId,
+        $costCenterId,
+        $glAccountId,
+        $legacyDate,
+        $postingDate,
+        $invoiceDate,
+        $totalDiscount,
+        $postedStatusId,
+        $billId,
+        $currencyCode,
+        $exchangeRate,
+        $amount,
+        $description,
+        $invoiceNumber,
+        1,
+        1,
+    ];
+
+    if ($dueDate !== null) {
+        array_splice($insertCols, 6, 0, ['due_date']);
+        $insertTypes = substr($insertTypes, 0, 6) . 's' . substr($insertTypes, 6);
+        array_splice($insertParams, 6, 0, [$dueDate]);
+    }
+    if ($netAmount !== null && $netAmount !== '') {
+        $insertCols[] = 'net_amount';
+        $insertTypes .= 'd';
+        $insertParams[] = $netAmount;
+    }
+    if ($vatAmount !== null && $vatAmount !== '') {
+        $insertCols[] = 'vat_amount';
+        $insertTypes .= 'd';
+        $insertParams[] = $vatAmount;
+    }
+    if ($taxRateId !== null && $taxRateId > 0) {
+        $insertCols[] = 'tax_rate_id';
+        $insertCols[] = 'tax_rate_snapshot';
+        $insertTypes .= 'id';
+        $insertParams[] = $taxRateId;
+        $insertParams[] = $taxSnapshot;
+    }
+    if ($supplierId !== null && $supplierId > 0) {
+        $insertCols[] = 'supplier_id';
+        $insertTypes .= 'i';
+        $insertParams[] = $supplierId;
+    }
+    if ($employeeId > 0) {
+        $insertCols[] = 'created_by';
+        $insertCols[] = 'updated_by';
+        $insertTypes .= 'ii';
+        $insertParams[] = $employeeId;
+        $insertParams[] = $employeeId;
+    }
+
+    $placeholders = implode(',', array_fill(0, count($insertCols), '?'));
+    $colList = implode(',', array_map(static function ($c) {
+        return '`' . str_replace('`', '``', $c) . '`';
+    }, $insertCols));
+    $insertSql = 'INSERT INTO expenses (' . $colList . ') VALUES (' . $placeholders . ')';
+
+    $ins = mysqli_prepare($conn, $insertSql);
+    if (!$ins) {
+        return ['ok' => false, 'error' => 'Could not prepare expense insert.'];
+    }
+
+    $bind = [$insertTypes];
+    foreach ($insertParams as $key => $value) {
+        $bind[] = &$insertParams[$key];
+    }
+    call_user_func_array([$ins, 'bind_param'], $bind);
+
+    if (!mysqli_stmt_execute($ins)) {
+        $err = itm_format_db_constraint_error(mysqli_stmt_errno($ins), mysqli_stmt_error($ins));
+        mysqli_stmt_close($ins);
+
+        return ['ok' => false, 'error' => $err];
+    }
+
+    $expenseId = (int) mysqli_insert_id($conn);
+    mysqli_stmt_close($ins);
+
+    return ['ok' => true, 'expense_id' => $expenseId];
+}

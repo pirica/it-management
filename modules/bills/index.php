@@ -617,6 +617,30 @@ if ($crud_table === 'catalogs' && $crud_action === 'create') {
     }
 }
 
+// Post bill header to expenses (manual action from bill view).
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST'
+    && $crud_action === 'view'
+    && isset($_POST['post_to_expenses'])
+) {
+    itm_require_crud_role_module_permission($conn, 'create', 'expenses');
+    cr_require_valid_csrf_token();
+    $billId = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
+    if ($billId <= 0 || !$hasCompany || $company_id <= 0) {
+        $_SESSION['crud_error'] = 'Invalid bill for posting.';
+        header('Location: ' . $listUrl);
+        exit;
+    }
+    $postResult = itm_expenses_post_from_bill($conn, (int) $company_id, $billId, (int) ($_SESSION['employee_id'] ?? 0));
+    if (empty($postResult['ok'])) {
+        $_SESSION['crud_error'] = (string) ($postResult['error'] ?? 'Could not post bill to expenses.');
+        header('Location: view.php?id=' . $billId);
+        exit;
+    }
+    header('Location: ../expenses/view.php?id=' . (int) ($postResult['expense_id'] ?? 0));
+    exit;
+}
+
 // HANDLE FETCH FOR EDIT/VIEW
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -639,8 +663,22 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
 }
 
 $financeDocumentLines = [];
+$billPostedExpenseId = null;
+$canPostBillToExpenses = false;
 if (!empty($data) && in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $financeDocumentLines = itm_finance_load_document_lines($conn, (int) $company_id, $crud_table, $editId);
+    if ($crud_action === 'view' && (int) ($data['id'] ?? 0) > 0) {
+        $billPostedExpenseId = itm_expenses_find_id_by_bill_id($conn, (int) $company_id, (int) $data['id']);
+        if (function_exists('itm_user_has_role_module_permission')) {
+            $canPostBillToExpenses = itm_user_has_role_module_permission(
+                $conn,
+                (int) ($_SESSION['employee_id'] ?? 0),
+                (int) $company_id,
+                'Expenses',
+                'create'
+            );
+        }
+    }
 }
 
 // HANDLE FORM SUBMISSION (CREATE/EDIT)
@@ -1214,8 +1252,17 @@ if (!isset($crud_title)) {
                     <h3 title="Line items">📋</h3>
                     <?php itm_finance_render_document_lines_view($financeDocumentLines); ?>
                     <p style="margin-top:16px;">
-                        <a href="index.php" class="btn">🔙</a> 
-                        <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a>
+                        <a href="index.php" class="btn" title="Back">🔙</a>
+                        <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>" title="Edit">✏️</a>
+                        <?php if ($billPostedExpenseId !== null): ?>
+                            <a class="btn btn-sm" href="../expenses/view.php?id=<?php echo (int) $billPostedExpenseId; ?>" title="View posted expense">🔎</a>
+                        <?php elseif ($canPostBillToExpenses && (int) ($data['id'] ?? 0) > 0): ?>
+                            <form method="POST" action="view.php?id=<?php echo (int) ($data['id'] ?? 0); ?>" style="display:inline;" onsubmit="return confirm('Post this bill to expenses with Posted status?');">
+                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                <input type="hidden" name="id" value="<?php echo (int) ($data['id'] ?? 0); ?>">
+                                <button type="submit" name="post_to_expenses" value="1" class="btn btn-primary" title="Post to expenses">📤</button>
+                            </form>
+                        <?php endif; ?>
                     </p>
                 </div>
             <?php endif; ?>
