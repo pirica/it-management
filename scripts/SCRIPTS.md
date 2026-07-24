@@ -1112,7 +1112,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_request_password.php` — `modules/request_password/` workflow + delete guard
 - `php scripts/verify_chatbot.php` — `js/chatbot.js`, `chat_api.php`, `knowledge_base` tenant scope
 - `php scripts/verify_live_chat.php` — Live Chat schema, SLA, ACL, notifications, ticket activity/comments helpers
-- `php scripts/_debug_peer_options.php` — Debug Chat-with peer picker: `it_settings.chat_same_tenant`, accessible companies, merged peer options vs `list_employees` (CLI `--company_id=` `--employee_id=`; browser query params)
+- `php scripts/debug_peer_options.php` — Debug Chat-with peer picker: `it_settings.chat_same_tenant`, accessible companies, merged peer options vs `list_employees` (CLI `--company_id=` `--employee_id=`; browser query params)
 
 ### Performance benchmarks
 

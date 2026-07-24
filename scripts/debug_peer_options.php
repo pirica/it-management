@@ -5,8 +5,8 @@
  * Prints it_settings.chat_same_tenant, accessible companies for the session employee,
  * and merged peer options (same helpers as modules/live_chat/api.php list_employees).
  *
- * Browser: scripts/_debug_peer_options.php?company_id=4&employee_id=4
- * CLI: php scripts/_debug_peer_options.php --company_id=4 --employee_id=4
+ * Browser: scripts/debug_peer_options.php?company_id=4&employee_id=4
+ * CLI: php scripts/debug_peer_options.php --company_id=4 --employee_id=4
  */
 declare(strict_types=1);
 

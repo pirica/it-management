@@ -2316,11 +2316,11 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><code>php scripts/verify_notes_ajax_contract.php</code></td>
                 </tr>
                 <tr data-tags="Mixed">
-                    <td><a href="_debug_peer_options.php" target="_blank" rel="nofollow noreferrer">_debug_peer_options.php</a></td>
+                    <td><a href="debug_peer_options.php" target="_blank" rel="nofollow noreferrer">debug_peer_options.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
                     <td>Debug Live Chat Chat-with peer list: <code>chat_same_tenant</code>, accessible companies, merged <code>list_employees</code> options (excludes self).</td>
-                    <td><code>php scripts/_debug_peer_options.php --company_id=4 --employee_id=4</code> — browser <code>?company_id=4&amp;employee_id=4</code>. Run when peer picker looks wrong vs Settings same-tenant toggle.</td>
+                    <td><code>php scripts/debug_peer_options.php --company_id=4 --employee_id=4</code> — browser <code>?company_id=4&amp;employee_id=4</code>. Run when peer picker looks wrong vs Settings same-tenant toggle.</td>
                 </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_live_chat.php" target="_blank" rel="nofollow noreferrer">verify_live_chat.php</a></td>

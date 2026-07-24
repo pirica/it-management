@@ -603,7 +603,7 @@
         "tables": [],
         "override": false
     },
-    "_debug_peer_options.php": {
+    "debug_peer_options.php": {
         "tags": [
             "Mixed"
         ],
