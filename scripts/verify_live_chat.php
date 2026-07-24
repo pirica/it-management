@@ -226,10 +226,41 @@ if ($leakedPeer) {
 }
 
 $apiPhp = file_get_contents(__DIR__ . '/../modules/live_chat/api.php');
-if ($apiPhp === false || strpos($apiPhp, 'itm_live_chat_employee_homed_in_company') === false) {
-    lc_verify_fail('start_chat_with must validate peer home company');
+if ($apiPhp === false || strpos($apiPhp, 'itm_live_chat_peer_eligible_for_company') === false) {
+    lc_verify_fail('start_chat_with must validate peer eligibility');
 } else {
-    lc_verify_pass('start_chat_with enforces peer home company');
+    lc_verify_pass('start_chat_with enforces peer eligibility');
+}
+
+if (!itm_it_settings_chat_same_tenant_enabled($conn, $companyId)) {
+    lc_verify_fail('chat_same_tenant should default to enabled for company 1');
+} else {
+    lc_verify_pass('chat_same_tenant defaults to enabled');
+}
+
+$crossTenantAdminRes = mysqli_query($conn, "SELECT id FROM employees WHERE company_id = 1 AND username = 'Admin' AND active = 1 LIMIT 1");
+$crossTenantAdminRow = $crossTenantAdminRes ? mysqli_fetch_assoc($crossTenantAdminRes) : null;
+$crossTenantAdminId = $crossTenantAdminRow ? (int)$crossTenantAdminRow['id'] : 0;
+$companyFourId = 4;
+if ($crossTenantAdminId > 0) {
+    itm_it_settings_save_chat_same_tenant($conn, $companyFourId, 0, $employees[0]);
+    $loosePeers = itm_live_chat_peer_options_for_company($conn, $companyFourId);
+    $foundCrossGrant = false;
+    foreach ($loosePeers as $peerOpt) {
+        if ((int)($peerOpt['id'] ?? 0) === $crossTenantAdminId) {
+            $foundCrossGrant = true;
+            break;
+        }
+    }
+    $eligibleWhenLoose = itm_live_chat_peer_eligible_for_company($conn, $crossTenantAdminId, $companyFourId);
+    itm_it_settings_save_chat_same_tenant($conn, $companyFourId, 1, $employees[0]);
+    if (!$foundCrossGrant) {
+        lc_verify_fail('With chat_same_tenant=0, cross-grant employees should appear in company 4 peer list');
+    } elseif (!$eligibleWhenLoose) {
+        lc_verify_fail('With chat_same_tenant=0, cross-grant peer should be eligible');
+    } else {
+        lc_verify_pass('chat_same_tenant=0 allows employee_companies peers');
+    }
 }
 
 // Cleanup test rows

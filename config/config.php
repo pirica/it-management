@@ -279,6 +279,7 @@ require_once ROOT_PATH . 'includes/ui_alert_helpers.php';
 require_once ROOT_PATH . 'includes/itm_user_forbidden.php';
 require_once ROOT_PATH . 'includes/fk_dropdown_helpers.php';
 require_once ROOT_PATH . 'includes/employee_dropdown_helpers.php';
+require_once ROOT_PATH . 'includes/itm_it_settings.php';
 require_once ROOT_PATH . 'includes/itm_ui_action_labels.php';
 
 // Ensure required upload and backup directories exist (writable, non-executable over HTTP)

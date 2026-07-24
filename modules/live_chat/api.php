@@ -397,8 +397,8 @@ switch ($action) {
         if ($peerId <= 0 || $peerId === $employeeId) {
             lc_json(['error' => 'Invalid peer'], 400);
         }
-        if (!itm_live_chat_employee_homed_in_company($conn, $peerId, $companyId)) {
-            lc_json(['error' => 'Peer must belong to the active company'], 403);
+        if (!itm_live_chat_peer_eligible_for_company($conn, $peerId, $companyId)) {
+            lc_json(['error' => 'Peer is not eligible for the active company'], 403);
         }
         $sqlFind = 'SELECT c.id FROM live_chat_conversations c
                     INNER JOIN live_chat_participants p1 ON p1.conversation_id = c.id AND p1.employee_id = ?

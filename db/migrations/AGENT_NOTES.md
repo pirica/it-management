@@ -28,7 +28,7 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
 - `ui_configuration_enable_chatbot_active.sql` — DML only: `UPDATE ui_configuration SET enable_chatbot = 1 WHERE enable_chatbot = 0` (idempotent backfill to schema default)
 - `companies_audit_triggers.sql` — trigger-only: fixes `trg_companies_audit_*` `audit_logs.company_id` fallback (`NEW.id` / `OLD.id`)
 - `employee_departments_audit_triggers.sql` — trigger-only: adds `trg_employee_departments_audit_*` (mirrors `db/03_triggers.sql`; run after `employees_employee_departments.sql` on live DBs)
-- `live_chat.sql` — Live Chat tables + `employee_notifications` (`DROP TABLE` + full `CREATE TABLE`; commented `ALTER` notes for `tickets` SLA columns on legacy DBs)
+- `it_settings_chat_same_tenant.sql` — `it_settings` with `chat_same_tenant` (`TINYINT(1) NOT NULL DEFAULT 1`; destructive — includes seed INSERT for companies 1–5)
 - `index.html` — directory listing prevention
 
 ## 12. Module Owner Notes (Optional)

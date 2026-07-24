@@ -18,6 +18,7 @@ Manage IT department contact information, hours, and escalation rules for the or
 
 ## 5. Business Rules
 - This information is used by the IT Support Chatbot for providing contact details and escalation instructions.
+- **`chat_same_tenant`** (TINYINT, default **1**): when enabled, Live Chat **Chat with** lists only employees homed in this company; when disabled, employees with `employee_companies` access may also be messaged. Editable in **Settings → All roles** (not this CRUD module).
 
 ## 6. UI / Layout
 - Standard flattened CRUD module (independent). Action wrappers (`create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`) set `$crud_action` and invoke `index.php` for consolidated logic.
