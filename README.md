@@ -382,9 +382,78 @@ For an existing database, apply the Floor Plans tables from `db/01_schema.sql` (
 | Annual / Monthly Budgets | `modules/annual_budgets/`, `monthly_budgets/` | Budget planning by period |
 | Budget Categories / Cost Centers / GL Accounts | `budget_categories/`, `cost_centers/`, `gl_accounts/` | Financial reference data |
 | Forecast Revisions | `forecast_revisions/`, `forecast_revisions_status/` | Forecast versioning |
-| Expenses | `modules/expenses/` | Expense tracking |
+| Expenses | `modules/expenses/` | Budget actuals; optional `bill_id` / `invoice_id` links and `invoice_number` for uniqueness |
+| Bills / Invoices | `modules/bills/`, `modules/invoices/` | AP/AR documents with line items, payments, and manual post to expenses |
+| Suppliers / Customers | `modules/suppliers/`, `modules/customers/` | AP vendor master and AR customer master |
+| Tax / paid / payment lookups | `tax_rates/`, `paid_statuses/`, `payment_modes/` | Tenant finance reference data |
+| Integration / bank | `integration_accounts/`, `bank_accounts/` | Chart bridge rows and bank register for payment allocations |
+| Expense recurrence | `modules/expense_recurrence/` | Recurring expense templates (`run_expense_recurrence.php`) |
 | Approvals workflow | `approvals/`, `approvals_stage/`, `approvers/`, `approver_type/` | Multi-stage approval for forecast revisions |
 | Budget Report | `modules/budget_report/` | Read-only budget reporting view |
+
+#### Finance data wiring (tables and modules)
+
+All finance rows are scoped by `company_id`. Budget actuals in **`expenses`** use **`posting_date`** (and legacy **`date`**) with **`paid_status_id`** in Posted/Paid for **`budget_report`** totals. Document numbers on bills/invoices map to **`expenses.invoice_number`** when posted (unique per company with GL account and posting date).
+
+```mermaid
+flowchart TB
+  subgraph lookups["Lookups"]
+    tax_rates["tax_rates"]
+    paid_statuses["paid_statuses"]
+    payment_modes["payment_modes"]
+  end
+  subgraph masters["Masters"]
+    suppliers["suppliers"]
+    customers["customers"]
+    gl_accounts["gl_accounts"]
+    cost_centers["cost_centers"]
+  end
+  subgraph ap["Accounts payable"]
+    bills["bills"]
+    bill_lines["bill_line_items"]
+    bills --> bill_lines
+    suppliers --> bills
+  end
+  subgraph ar["Accounts receivable"]
+    invoices["invoices"]
+    invoice_lines["invoice_line_items"]
+    invoices --> invoice_lines
+    customers --> invoices
+  end
+  subgraph actuals["Budget actuals"]
+    expenses["expenses"]
+  end
+  subgraph pay["Payments"]
+    bank_accounts["bank_accounts"]
+    finance_payment_allocations["finance_payment_allocations"]
+    finance_payment_allocations --> bank_accounts
+    finance_payment_allocations --> payment_modes
+    finance_payment_allocations --> bills
+    finance_payment_allocations --> invoices
+  end
+  bills -->|"Post to expenses (bill_id)"| expenses
+  invoices -->|"Post to expenses (invoice_id + invoice_number)"| expenses
+  cost_centers --> expenses
+  gl_accounts --> expenses
+  paid_statuses --> expenses
+  paid_statuses --> bills
+  paid_statuses --> invoices
+  tax_rates --> bill_lines
+  tax_rates --> invoice_lines
+```
+
+**Manual post to expenses**
+
+| Source | Module action | Expense fields set |
+| --- | --- | --- |
+| Bill | `modules/bills/` view → 📤 Post to expenses | `bill_id`, `invoice_number` = bill `document_number`, Posted status, header cost center / GL / amounts |
+| Invoice | `modules/invoices/` view → 📤 Post to expenses | `invoice_id`, `invoice_number` = invoice `document_number`, Posted status, header cost center / GL / amounts |
+
+**Payments:** On bill/invoice **edit**, payment rows in **`finance_payment_allocations`** reduce **`amount_due`** on the header (`includes/itm_finance_payments.php`). Each allocation targets exactly one `bill_id` or `invoice_id`.
+
+**Recurrence:** **`expense_recurrence`** defines intervals; recursive **`expenses`** rows use **`is_recursive`**, **`next_run_date`**, and **`php scripts/run_expense_recurrence.php`** to spawn child rows.
+
+**Regression scripts:** `php scripts/verify_bills.php`, `php scripts/verify_invoices.php`, `php scripts/verify_finance_payment_allocations.php`, `php scripts/verify_expense_recurrence.php`, `php scripts/verify_customers.php` (see `scripts/SCRIPTS.md`).
 
 <h3 align="center">Tickets, alerts, and operations</h3>
 

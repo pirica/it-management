@@ -4,18 +4,18 @@
 Tracks actual financial expenditures against budgets.
 
 ## 2. Key Tables
-- **expenses** — budget actuals (gross `amount` incl. VAT); AP header fields aligned with RootFi Bills.
+- **expenses** — budget actuals (gross `amount` incl. VAT); AP-style header fields and document links.
 - **tax_rates**, **paid_statuses**, **payment_modes** — tenant lookups (FK from expenses).
-- **bills** / **bill_line_items** — optional source document (`expenses.bill_id`).
+- **bills** / **bill_line_items** — optional AP source (`expenses.bill_id`).
+- **invoices** / **invoice_line_items** — optional AR source (`expenses.invoice_id`; `invoice_number` = invoice `document_number` when posted).
 
 ## 3. Required Relationships
 - **expenses** → depends on **companies**.
 - **expenses** → depends on **cost_centers**.
 - **expenses** → depends on **gl_accounts**.
-- **expenses** → **paid_statuses** (required); **tax_rates**, **payment_modes**, **suppliers**, **bills** (optional).
+- **expenses** → **paid_statuses** (required); **tax_rates**, **payment_modes**, **suppliers**, **bills**, **invoices** (optional).
 
 ## 4. Business Rules (Critical for Agents)
-- **External integration:** No RootFi sync webhooks or automated platform sync. `platform_*` fields on related finance tables are optional metadata only (see `db/AGENT_NOTES.md` → Finance tables).
 - **Create/edit field order:** `itm_expenses_reorder_form_field_columns()` — supplier → dates → PO → amounts → tax → currency → payment mode → status → cost center / GL / description / invoice (`includes/itm_expenses_ap.php`).
 - **Decimal Precision**: Amounts must be handled with 2-decimal precision.
 - **Reporting Period**: **Budget report** uses `COALESCE(posting_date, date)` and only **Posted** + **Paid** `paid_status_id` rows (`itm_expenses_paid_status_ids_for_actuals()`).
@@ -35,7 +35,7 @@ Tracks actual financial expenditures against budgets.
 - **Formatted Currency**: Display amounts with currency symbols/formatting.
 
 ## 6. API Actions (If Applicable)
-- **import_excel_rows** — JSON POST to `index.php`; bulk import from 📥 Import Excel (`table-tools.js` save-to-database flow). Headers: RootFi aliases (`posted date`, `document number` → `invoice_number`, `contact`/`supplier` → `supplier_id` by name); rows normalized via `itm_expenses_ap_normalize_import_row()` (EUR, Draft `paid_status_id`, posting/date sync, tax snapshot).
+- **import_excel_rows** — JSON POST to `index.php`; bulk import from 📥 Import Excel (`table-tools.js` save-to-database flow). Headers include aliases such as `posted date`, `document number` → `invoice_number`, `contact`/`supplier` → `supplier_id` by name; rows normalized via `itm_expenses_ap_normalize_import_row()` (EUR, Draft `paid_status_id`, posting/date sync, tax snapshot).
 
 ## 7. File Structure
 - Standard CRUD structure.
