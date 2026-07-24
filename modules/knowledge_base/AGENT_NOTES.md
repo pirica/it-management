@@ -27,7 +27,7 @@ Manage IT support articles, manuals, and procedures for the organization.
 
 ## 7. API & AJAX
 - `chat_api.php`: JSON endpoint for Chatbot search queries. Requires session and CSRF token.
-- Floating widget (`js/chatbot.js`): shortcut bar with **Live Agent** → `modules/live_chat/?flow=live_agent`, **Chat with** → `?flow=chat_with`, **List all** → `list_all.php` (new tab).
+- Floating widget (`js/chatbot.js`): welcome bubble includes inline **Live Chat**, **Chat With**, **List all**, and **Re-open ticket** buttons; live-chat phrases (e.g. “live agent”) re-show the same actions instead of KB fallback.
 
 ## 8. Search & Filtering
 - Standard text search on title and content.
