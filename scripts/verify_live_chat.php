@@ -78,15 +78,24 @@ if (count($employees) < 2) {
 
 $options = itm_live_chat_launch_options_live_agent($conn, $companyId);
 $hasListAll = false;
+$hasReopen = false;
 foreach ($options as $opt) {
     if (($opt['id'] ?? '') === 'knowledge_base_list_all') {
         $hasListAll = true;
+    }
+    if (($opt['id'] ?? '') === 'reopen_ticket') {
+        $hasReopen = true;
     }
 }
 if (!$hasListAll) {
     lc_verify_fail('Live Agent launch options missing knowledge_base_list_all');
 } else {
     lc_verify_pass('Launch options include List all (knowledge-base)');
+}
+if (!$hasReopen) {
+    lc_verify_fail('Live Agent launch options missing reopen_ticket');
+} else {
+    lc_verify_pass('Launch options include Re-open ticket');
 }
 
 $_SESSION['company_id'] = $companyId;
@@ -163,6 +172,31 @@ if ($ticketId > 0) {
         lc_verify_fail('ticket_comment_create failed');
     } else {
         lc_verify_pass('ticket_comment created');
+    }
+}
+
+if ($ticketId > 0) {
+    $closedStatusId = 0;
+    $closedRes = mysqli_query($conn, "SELECT id FROM ticket_statuses WHERE company_id = {$companyId} AND is_closed = 1 AND active = 1 ORDER BY id ASC LIMIT 1");
+    if ($closedRes && ($closedRow = mysqli_fetch_assoc($closedRes))) {
+        $closedStatusId = (int)$closedRow['id'];
+    }
+    if ($closedStatusId <= 0) {
+        lc_verify_fail('No closed ticket_status for reopen test');
+    } else {
+        mysqli_query($conn, "UPDATE tickets SET status_id = {$closedStatusId}, resolved_at = NOW() WHERE id = {$ticketId}");
+        $reopened = itm_live_chat_reopen_ticket($conn, $companyId, $ticketId, $employees[0], false);
+        if ($reopened === false) {
+            lc_verify_fail('itm_live_chat_reopen_ticket failed');
+        } else {
+            $openCheck = mysqli_query($conn, "SELECT ts.is_closed FROM tickets t INNER JOIN ticket_statuses ts ON ts.id = t.status_id AND ts.company_id = t.company_id WHERE t.id = {$ticketId} LIMIT 1");
+            $openRow = $openCheck ? mysqli_fetch_assoc($openCheck) : null;
+            if (!$openRow || (int)$openRow['is_closed'] === 1) {
+                lc_verify_fail('Ticket still closed after reopen');
+            } else {
+                lc_verify_pass('itm_live_chat_reopen_ticket reopened closed ticket');
+            }
+        }
     }
 }
 

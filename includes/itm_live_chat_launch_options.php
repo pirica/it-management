@@ -58,6 +58,14 @@ if (!function_exists('itm_live_chat_launch_options_live_agent')) {
                 'open_mode' => 'browser_tab',
                 'url' => BASE_URL . 'modules/tickets/create.php',
             ],
+            [
+                'id' => 'reopen_ticket',
+                'label' => 'Re-open ticket',
+                'description' => 'Reopen a closed ticket and start live chat',
+                'icon' => '🔓',
+                'open_mode' => 'in_app',
+                'url' => null,
+            ],
         ];
         $email = itm_live_chat_launch_options_it_email($conn, $companyId);
         if ($email !== '') {
