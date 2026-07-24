@@ -263,6 +263,10 @@ function itm_expenses_import_header_aliases(): array
         'payment mode' => 'payment_mode_id',
         'paid status' => 'paid_status_id',
         'tax rate' => 'tax_rate_id',
+        'purchase order' => 'purchase_order',
+        'purchase_order' => 'purchase_order',
+        'quotation order' => 'quotation_order',
+        'quotation_order' => 'quotation_order',
     ];
 }
 
@@ -356,6 +360,8 @@ function itm_expenses_ap_form_field_order(): array
         'due_date',
         'purchase_order',
         'purchase_order_accepted',
+        'quotation_order',
+        'quotation_order_accepted',
         'net_amount',
         'vat_amount',
         'total_discount',
@@ -518,9 +524,9 @@ function itm_expenses_post_from_bill(mysqli $conn, int $companyId, int $billId, 
     $insertCols = [
         'company_id', 'cost_center_id', 'gl_account_id', 'date', 'posting_date', 'invoice_date',
         'total_discount', 'paid_status_id', 'bill_id', 'currency_code', 'exchange_rate', 'amount',
-        'description', 'invoice_number', 'purchase_order_accepted', 'active',
+        'description', 'invoice_number', 'purchase_order_accepted', 'quotation_order_accepted', 'active',
     ];
-    $insertTypes = 'iiisssdiisddssii';
+    $insertTypes = 'iiisssdiisddssiii';
     $insertParams = [
         $companyId,
         $costCenterId,
@@ -536,6 +542,7 @@ function itm_expenses_post_from_bill(mysqli $conn, int $companyId, int $billId, 
         $amount,
         $description,
         $invoiceNumber,
+        1,
         1,
         1,
     ];
@@ -724,9 +731,9 @@ function itm_expenses_post_from_invoice(mysqli $conn, int $companyId, int $invoi
     $insertCols = [
         'company_id', 'cost_center_id', 'gl_account_id', 'date', 'posting_date', 'invoice_date',
         'total_discount', 'paid_status_id', 'invoice_id', 'currency_code', 'exchange_rate', 'amount',
-        'description', 'invoice_number', 'purchase_order_accepted', 'active',
+        'description', 'invoice_number', 'purchase_order_accepted', 'quotation_order_accepted', 'active',
     ];
-    $insertTypes = 'iiisssdiisddssii';
+    $insertTypes = 'iiisssdiisddssiii';
     $insertParams = [
         $companyId,
         $costCenterId,
@@ -742,6 +749,7 @@ function itm_expenses_post_from_invoice(mysqli $conn, int $companyId, int $invoi
         $amount,
         $description,
         $invoiceNumber,
+        1,
         1,
         1,
     ];

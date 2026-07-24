@@ -16,7 +16,7 @@ Tracks actual financial expenditures against budgets.
 - **expenses** → **paid_statuses** (required); **tax_rates**, **payment_modes**, **suppliers**, **bills**, **invoices** (optional).
 
 ## 4. Business Rules (Critical for Agents)
-- **Create/edit field order:** `itm_expenses_reorder_form_field_columns()` — supplier → dates → PO → amounts → tax → currency → payment mode → status → cost center / GL / description / invoice (`includes/itm_expenses_ap.php`).
+- **Create/edit field order:** `itm_expenses_reorder_form_field_columns()` — supplier → dates → PO → PO accepted → quotation order → quotation accepted → amounts → tax → currency → payment mode → status → cost center / GL / description / invoice (`includes/itm_expenses_ap.php`).
 - **Decimal Precision**: Amounts must be handled with 2-decimal precision.
 - **Reporting Period**: **Budget report** uses `COALESCE(posting_date, date)` and only **Posted** + **Paid** `paid_status_id` rows (`itm_expenses_paid_status_ids_for_actuals()`).
 - **Legacy `date`**: On save, synced from `posting_date` (fallback `invoice_date`) via `itm_expenses_ap_apply_post_normalization()`.
