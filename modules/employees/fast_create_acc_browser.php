@@ -21,15 +21,35 @@ if (function_exists('itm_script_get_browser_authorization_employee_id')) {
 }
 
 if (isset($itm_fast_create_acc_company_id) && (int)$itm_fast_create_acc_company_id > 0) {
-    $selectedCompanyId = (int)$itm_fast_create_acc_company_id;
+    $sessionPrimary = (int)$itm_fast_create_acc_company_id;
 } else {
-    $selectedCompanyId = itm_fast_create_acc_resolve_company_id($conn, $authEmployeeId);
+    $sessionPrimary = itm_fast_create_acc_resolve_company_id($conn, $authEmployeeId);
 }
 
-if ($selectedCompanyId <= 0) {
+$fastCreateAllCompanies = itm_fast_create_acc_list_all_companies($conn);
+if ($fastCreateAllCompanies === []) {
     header('Location: ' . BASE_URL . 'index.php');
     exit;
 }
+
+$selectedCompanyIds = itm_fast_create_acc_normalize_company_ids(
+    $conn,
+    $authEmployeeId,
+    $sessionPrimary > 0 ? [$sessionPrimary] : [],
+    $sessionPrimary
+);
+if ($selectedCompanyIds === []) {
+    $selectedCompanyIds = [(int)($fastCreateAllCompanies[0]['id'] ?? 0)];
+}
+$selectedCompanyIds = array_values(array_filter($selectedCompanyIds, static function ($id) {
+    return (int)$id > 0;
+}));
+if ($selectedCompanyIds === []) {
+    header('Location: ' . BASE_URL . 'index.php');
+    exit;
+}
+
+$selectedCompanyId = (int)$selectedCompanyIds[0];
 
 global $company_id;
 $company_id = $selectedCompanyId;
@@ -42,6 +62,7 @@ $errors = [];
 
 $form = [
     'company_id' => $selectedCompanyId,
+    'company_ids' => $selectedCompanyIds,
     'username' => '',
     'password' => '',
     'first_name' => '',
@@ -61,6 +82,26 @@ $form = [
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 
+    $postedCompanyIds = $_POST['company_ids'] ?? [];
+    if (!is_array($postedCompanyIds)) {
+        $postedCompanyIds = [];
+    }
+    $selectedCompanyIds = itm_fast_create_acc_normalize_company_ids(
+        $conn,
+        $authEmployeeId,
+        $postedCompanyIds,
+        $sessionPrimary
+    );
+    if ($selectedCompanyIds === []) {
+        $errors[] = 'Select at least one company.';
+    } else {
+        $selectedCompanyId = (int)$selectedCompanyIds[0];
+        $company_id = $selectedCompanyId;
+        $fkOptions = itm_demo_module_users_fetch_fk_options($conn, $selectedCompanyId);
+    }
+    $form['company_ids'] = $selectedCompanyIds;
+    $form['company_id'] = $selectedCompanyId;
+
     $postedModuleSlugs = $_POST['module_slugs'] ?? [];
     if (!is_array($postedModuleSlugs)) {
         $postedModuleSlugs = [];
@@ -68,7 +109,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $form['module_slugs'] = array_values(array_filter(array_map('trim', $postedModuleSlugs)));
     $form['department_ids'] = itm_employee_normalize_department_ids($_POST['department_ids'] ?? []);
     $form['department_id'] = (int)($form['department_ids'][0] ?? 0);
-    $form['company_id'] = $selectedCompanyId;
 
     foreach (['role_id', 'employment_status_id', 'access_level_id', 'employee_position_id'] as $intFkField) {
         if (isset($_POST[$intFkField]) && (string)$_POST[$intFkField] === '__add_new__') {
@@ -86,6 +126,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($form['module_slugs'] === []) {
         $errors[] = 'Select at least one module.';
     }
+    if ($selectedCompanyIds === []) {
+        $errors[] = 'Select at least one company.';
+    }
     if ($form['username'] === '') {
         $errors[] = 'Username is required.';
     }
@@ -100,6 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($errors === []) {
         $payload = [
             'company_id' => $selectedCompanyId,
+            'company_ids' => $selectedCompanyIds,
             'username' => $form['username'],
             'password' => $form['password'],
             'first_name' => $form['first_name'],
@@ -133,17 +177,7 @@ foreach ($fkOptions['employee_roles'] as $roleRow) {
 }
 $selectedRoleId = (int)$form['role_id'];
 $selectedDepartmentIds = is_array($form['department_ids']) ? $form['department_ids'] : [];
-
-$fastCreateCompanyLabel = '';
-foreach ($fkOptions['companies'] as $companyRow) {
-    if ((int)($companyRow['id'] ?? 0) === $selectedCompanyId) {
-        $fastCreateCompanyLabel = trim((string)($companyRow['company'] ?? ''));
-        if ($fastCreateCompanyLabel === '' && !empty($companyRow['incode'])) {
-            $fastCreateCompanyLabel = (string)$companyRow['incode'];
-        }
-        break;
-    }
-}
+$selectedCompanyIdsForm = is_array($form['company_ids'] ?? null) ? $form['company_ids'] : $selectedCompanyIds;
 
 $crud_title = 'Fast Create Account';
 ?>
@@ -182,13 +216,23 @@ $crud_title = 'Fast Create Account';
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="company_id" value="<?php echo (int)$selectedCompanyId; ?>">
 
-                    <p style="margin:0 0 12px;">
-                        <strong>Company:</strong>
-                        <?php echo sanitize($fastCreateCompanyLabel !== '' ? $fastCreateCompanyLabel : ('#' . $selectedCompanyId)); ?>
-                        <span class="text-muted">(ID <?php echo (int)$selectedCompanyId; ?>)</span>
-                    </p>
-
                     <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+                        <div class="form-group full" style="grid-column:1 / -1;">
+                            <label for="company_ids">Companies *</label>
+                            <select name="company_ids[]" id="company_ids" multiple required size="6" title="Home tenant is the first selected company (role, departments, employee row). Additional selections add employee_companies grants.">
+                                <?php foreach ($fastCreateAllCompanies as $companyRow): ?>
+                                    <?php
+                                    $companyOptionId = (int)($companyRow['id'] ?? 0);
+                                    $isCompanySelected = in_array($companyOptionId, $selectedCompanyIdsForm, true);
+                                    ?>
+                                    <option value="<?php echo $companyOptionId; ?>"<?php echo $isCompanySelected ? ' selected' : ''; ?>>
+                                        <?php echo sanitize(itm_fast_create_acc_company_option_label($companyRow)); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="text-muted" style="margin:8px 0 0;font-size:13px;">First selected company is the home tenant (role, departments, employee record). Other selections add tenant access grants.</p>
+                        </div>
+
                         <div class="form-group full" style="grid-column:1 / -1;">
                             <label for="module_slugs">Modules *</label>
                             <select name="module_slugs[]" id="module_slugs" multiple required style="min-height:220px;">
