@@ -58,7 +58,7 @@ The central module for managing employee records, including contact info, hierar
 - **View:** Profile thumbnail when `photo` + linked user exist; birthday respects `hide_year`.
 - **Hierarchy Mapping**: Edit form should allow selecting a manager from other employees in the same company.
 - **Departments (multi):** create/edit use `department_ids[]` multi-select (`multiple size="5"`) with `data-addable-select="1"` and trailing `<option value="__add_new__">➕</option>` (departments quick-add). POST syncs `employee_departments` via `itm_employee_sync_department_assignments()`; `__add_new__` is ignored server-side.
-- **Fast create account:** `fast_create_acc.php` + `fast_create_acc_browser.php` — **Companies** multi-select lists **all active companies**; first selected is home tenant (FK fields); additional IDs get `employee_companies` grants. Catalog `scripts/fast_create_acc.php` uses real session (isolation exempt). CLI `--seed-demo-bundle` under `scripts/`.
+- **Fast create account:** `fast_create_acc.php` + `fast_create_acc_browser.php` — **Demo templates** card (demo1–demo5 from `itm_demo_module_restrictions_contract.php`): fill form, per-user **Create now**, or **Seed all** (CLI-equivalent bundle). **Companies** multi-select lists **all active companies**; first selected is home tenant (FK fields); additional IDs get `employee_companies` grants. Catalog `scripts/fast_create_acc.php` uses real session (isolation exempt). CLI `--seed-demo-bundle` under `scripts/`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import with auto-lookup resolution for departments and positions.

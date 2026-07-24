@@ -698,6 +698,89 @@ if (!function_exists('itm_demo_module_users_seed_bundle')) {
     }
 }
 
+if (!function_exists('itm_fast_create_acc_demo_template_label')) {
+    function itm_fast_create_acc_demo_template_label(array $demoSpec): string
+    {
+        $username = trim((string)($demoSpec['username'] ?? ''));
+        $slug = trim((string)($demoSpec['primary_slug'] ?? ''));
+        if ($slug === '') {
+            return $username;
+        }
+
+        return $username . ' — ' . str_replace('_', ' ', $slug);
+    }
+}
+
+if (!function_exists('itm_fast_create_acc_build_form_from_demo_template')) {
+    /**
+     * Map canonical demo1–demo5 contract row onto fast-create form defaults.
+     *
+     * @param int[] $companyIds
+     * @return array<string,mixed>
+     */
+    function itm_fast_create_acc_build_form_from_demo_template(mysqli $conn, array $demoSpec, int $homeCompanyId, array $companyIds): array
+    {
+        $username = trim((string)($demoSpec['username'] ?? ''));
+        $password = (string)($demoSpec['password'] ?? $username);
+        $roleName = trim((string)($demoSpec['role_name'] ?? ''));
+        $templateCompanyId = (int)($demoSpec['company_id'] ?? 0);
+        $activeMap = itm_fast_create_acc_active_company_id_map($conn);
+
+        if ($templateCompanyId > 0 && isset($activeMap[$templateCompanyId])) {
+            $homeCompanyId = $templateCompanyId;
+            $companyIds = [$templateCompanyId];
+        } elseif ($homeCompanyId <= 0 && $companyIds !== []) {
+            $homeCompanyId = (int)$companyIds[0];
+        }
+
+        $roleId = 0;
+        if ($roleName !== '' && $homeCompanyId > 0) {
+            $roleId = (int)itm_demo_module_users_lookup_role_id_by_name($conn, $homeCompanyId, $roleName);
+        }
+
+        $moduleSlugs = itm_demo_module_restrictions_module_slugs_for_user($demoSpec);
+
+        return [
+            'company_id' => $homeCompanyId,
+            'company_ids' => $companyIds,
+            'username' => $username,
+            'password' => $password,
+            'first_name' => $username !== '' ? ucfirst($username) : '',
+            'last_name' => 'Demo',
+            'work_email' => $username !== '' ? strtolower($username) . '@demo.example.com' : '',
+            'personal_email' => '',
+            'role_id' => $roleId,
+            'role_name' => $roleName,
+            'module_slugs' => $moduleSlugs,
+            'access_level_id' => 0,
+            'employment_status_id' => 0,
+            'department_id' => 0,
+            'department_ids' => [],
+            'employee_position_id' => 0,
+        ];
+    }
+}
+
+if (!function_exists('itm_fast_create_acc_find_demo_template_by_username')) {
+    /**
+     * @return array<string,mixed>|null
+     */
+    function itm_fast_create_acc_find_demo_template_by_username(string $username)
+    {
+        $username = strtolower(trim($username));
+        if ($username === '') {
+            return null;
+        }
+        foreach (itm_demo_module_restrictions_demo_users() as $demoSpec) {
+            if (strtolower((string)($demoSpec['username'] ?? '')) === $username) {
+                return $demoSpec;
+            }
+        }
+
+        return null;
+    }
+}
+
 if (!function_exists('itm_fast_create_acc_resolve_company_id')) {
     /**
      * Active tenant for fast-create UI (session, config global, or vetted POST/GET company_id).

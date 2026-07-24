@@ -79,9 +79,58 @@ $form = [
     'employee_position_id' => 0,
 ];
 
+$fastCreateDemoTemplates = itm_demo_module_restrictions_demo_users();
+$fastCreateDemoBundleCompanyId = $selectedCompanyId > 0 ? $selectedCompanyId : (int)($fastCreateAllCompanies[0]['id'] ?? 1);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 
+    if (!empty($_POST['fast_create_seed_demo_bundle'])) {
+        $bundleCompanyId = (int)($_POST['bundle_company_id'] ?? 0);
+        $activeMap = itm_fast_create_acc_active_company_id_map($conn);
+        if ($bundleCompanyId <= 0 || !isset($activeMap[$bundleCompanyId])) {
+            $errors[] = 'Select a valid company for the demo bundle.';
+        } else {
+            $summary = itm_demo_module_users_seed_bundle($conn, $bundleCompanyId, $grantedByEmployeeId);
+            $messages = array_merge($messages, $summary['messages']);
+            $errors = array_merge($errors, $summary['errors']);
+            $selectedCompanyId = $bundleCompanyId;
+            $selectedCompanyIds = [$bundleCompanyId];
+            $company_id = $bundleCompanyId;
+            $fkOptions = itm_demo_module_users_fetch_fk_options($conn, $selectedCompanyId);
+            $form['company_id'] = $selectedCompanyId;
+            $form['company_ids'] = $selectedCompanyIds;
+            $fastCreateDemoBundleCompanyId = $bundleCompanyId;
+        }
+    } elseif (!empty($_POST['fast_create_seed_demo_user'])) {
+        $demoUsername = strtolower(trim((string)$_POST['fast_create_seed_demo_user']));
+        $demoSpec = itm_fast_create_acc_find_demo_template_by_username($demoUsername);
+        $bundleCompanyId = (int)($_POST['bundle_company_id'] ?? 0);
+        $activeMap = itm_fast_create_acc_active_company_id_map($conn);
+        if ($demoSpec === null) {
+            $errors[] = 'Unknown demo template.';
+        } elseif ($bundleCompanyId <= 0 || !isset($activeMap[$bundleCompanyId])) {
+            $errors[] = 'Select a valid company for the demo account.';
+        } else {
+            $payload = $demoSpec;
+            $payload['company_id'] = $bundleCompanyId;
+            $payload['company_ids'] = [$bundleCompanyId];
+            $payload['module_slugs'] = itm_demo_module_restrictions_module_slugs_for_user($demoSpec);
+            $payload['granted_by_employee_id'] = $grantedByEmployeeId;
+            $payload['first_name'] = ucfirst((string)$demoSpec['username']);
+            $payload['last_name'] = 'Demo';
+            $payload['work_email'] = strtolower((string)$demoSpec['username']) . '@demo.example.com';
+            $upsert = itm_demo_module_users_upsert_employee($conn, $payload);
+            $messages = array_merge($messages, $upsert['messages']);
+            $errors = array_merge($errors, $upsert['errors']);
+            $selectedCompanyId = $bundleCompanyId;
+            $selectedCompanyIds = [$bundleCompanyId];
+            $company_id = $bundleCompanyId;
+            $fkOptions = itm_demo_module_users_fetch_fk_options($conn, $selectedCompanyId);
+            $form = itm_fast_create_acc_build_form_from_demo_template($conn, $demoSpec, $bundleCompanyId, [$bundleCompanyId]);
+            $fastCreateDemoBundleCompanyId = $bundleCompanyId;
+        }
+    } else {
     $postedCompanyIds = $_POST['company_ids'] ?? [];
     if (!is_array($postedCompanyIds)) {
         $postedCompanyIds = [];
@@ -166,6 +215,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors = array_merge($errors, $upsert['errors']);
         $fkOptions = itm_demo_module_users_fetch_fk_options($conn, $selectedCompanyId);
     }
+    }
+} elseif ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $demoTemplateKey = strtolower(trim((string)($_GET['demo_template'] ?? '')));
+    if ($demoTemplateKey !== '') {
+        $demoSpec = itm_fast_create_acc_find_demo_template_by_username($demoTemplateKey);
+        if ($demoSpec !== null) {
+            $form = itm_fast_create_acc_build_form_from_demo_template(
+                $conn,
+                $demoSpec,
+                $selectedCompanyId,
+                $selectedCompanyIds
+            );
+            $selectedCompanyIds = is_array($form['company_ids']) ? $form['company_ids'] : $selectedCompanyIds;
+            $selectedCompanyId = (int)($form['company_id'] ?? $selectedCompanyId);
+            $company_id = $selectedCompanyId;
+            $fkOptions = itm_demo_module_users_fetch_fk_options($conn, $selectedCompanyId);
+            $fastCreateDemoBundleCompanyId = $selectedCompanyId > 0 ? $selectedCompanyId : $fastCreateDemoBundleCompanyId;
+            $messages[] = 'Demo template ' . (string)$demoSpec['username'] . ' applied to the form below.';
+        }
+    }
 }
 
 $roleLookup = [];
@@ -210,6 +279,43 @@ $crud_title = 'Fast Create Account';
             <?php foreach ($messages as $message): ?>
                 <div class="alert alert-success"><?php echo sanitize($message); ?></div>
             <?php endforeach; ?>
+
+            <div class="card" style="margin-bottom:16px;">
+                <h2 style="margin-top:0;font-size:1.1rem;" title="Demo templates demo1 through demo5">Demo templates</h2>
+                <p class="text-muted" style="margin:0 0 12px;font-size:13px;">
+                    Canonical demo1–demo5 accounts (single-module RBAC). <strong>Fill form</strong> loads the template into the fields below;
+                    <strong>Create now</strong> upserts immediately. Bundle seeds all five for one company (same as CLI
+                    <code>php scripts/fast_create_acc.php --seed-demo-bundle --company=N</code>).
+                </p>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;">
+                    <?php foreach ($fastCreateDemoTemplates as $demoRow): ?>
+                        <?php
+                        $demoUsername = (string)($demoRow['username'] ?? '');
+                        $demoLabel = itm_fast_create_acc_demo_template_label($demoRow);
+                        ?>
+                        <a class="btn btn-sm" href="?demo_template=<?php echo urlencode($demoUsername); ?>" title="Fill form: <?php echo sanitize($demoLabel); ?>"><?php echo sanitize($demoLabel); ?></a>
+                    <?php endforeach; ?>
+                </div>
+                <form method="POST" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <div class="form-group" style="margin:0;">
+                        <label for="bundle_company_id">Company for demo actions</label>
+                        <select name="bundle_company_id" id="bundle_company_id" required>
+                            <?php foreach ($fastCreateAllCompanies as $companyRow): ?>
+                                <?php $bundleCid = (int)($companyRow['id'] ?? 0); ?>
+                                <option value="<?php echo $bundleCid; ?>"<?php echo $bundleCid === (int)$fastCreateDemoBundleCompanyId ? ' selected' : ''; ?>>
+                                    <?php echo sanitize(itm_fast_create_acc_company_option_label($companyRow)); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <?php foreach ($fastCreateDemoTemplates as $demoRow): ?>
+                        <?php $demoUsername = (string)($demoRow['username'] ?? ''); ?>
+                        <button type="submit" class="btn btn-sm" name="fast_create_seed_demo_user" value="<?php echo sanitize($demoUsername); ?>" title="Create or update <?php echo sanitize($demoUsername); ?> now"><?php echo sanitize($demoUsername); ?></button>
+                    <?php endforeach; ?>
+                    <button type="submit" class="btn btn-sm btn-primary" name="fast_create_seed_demo_bundle" value="1" title="Seed all demo1 through demo5 for selected company">🌱</button>
+                </form>
+            </div>
 
             <div class="card">
                 <form method="POST">
