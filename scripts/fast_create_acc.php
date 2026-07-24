@@ -3,7 +3,7 @@
  * Fast account creator for demo employees with module-scoped RBAC.
  *
  * CLI: php scripts/fast_create_acc.php --seed-demo-bundle [--company=1]
- * Browser: redirects to modules/employees/fast_create_acc.php (active company UI).
+ * Browser: same URL (scripts catalog) — admin fast-create UI for active company.
  */
 
 declare(strict_types=1);
@@ -47,15 +47,10 @@ if ($isCli) {
 
     echo 'Usage:' . $nl;
     echo '  php scripts/fast_create_acc.php --seed-demo-bundle [--company=1]' . $nl;
-    echo 'Browser UI: modules/employees/fast_create_acc.php' . $nl;
+    echo 'Browser UI: scripts/fast_create_acc.php (catalog) or modules/employees/fast_create_acc.php (Employees list 🚀)' . $nl;
     exit(0);
 }
 
-if (!$isCli) {
-    $appBase = rtrim(BASE_URL, '/');
-    if (preg_match('#/scripts$#', $appBase)) {
-        $appBase = preg_replace('#/scripts$#', '', $appBase);
-    }
-    header('Location: ' . $appBase . '/modules/employees/fast_create_acc.php');
-    exit;
-}
+itm_require_admin($conn, $_SESSION['employee_id'] ?? 0);
+$itm_fast_create_acc_back_href = BASE_URL . 'scripts/scripts.php';
+require dirname(__DIR__) . '/modules/employees/fast_create_acc_browser.php';

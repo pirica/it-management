@@ -120,18 +120,18 @@ if (strpos($editSource, 'itm_employee_validate_contact_email_or_error') !== fals
     vece_fail('employees/edit.php missing shared contact email validator.');
 }
 
-$fastAccPath = __DIR__ . '/../modules/employees/fast_create_acc.php';
+$fastAccPath = __DIR__ . '/../modules/employees/fast_create_acc_browser.php';
 $fastAccSource = is_file($fastAccPath) ? (string)file_get_contents($fastAccPath) : '';
 if (strpos($fastAccSource, 'name="personal_email"') !== false && strpos($fastAccSource, 'name="work_email"') !== false) {
-    vece_pass('modules/employees/fast_create_acc.php exposes work_email and personal_email fields.');
+    vece_pass('modules/employees/fast_create_acc_browser.php exposes work_email and personal_email fields.');
 } else {
-    vece_fail('modules/employees/fast_create_acc.php must expose both email fields.');
+    vece_fail('modules/employees/fast_create_acc_browser.php must expose both email fields.');
 }
 if (strpos($fastAccSource, 'itm_department_option_label') !== false) {
-    if (strpos($fastAccSource, 'itm_fk_option_labels.php') !== false) {
-        vece_pass('fast_create_acc.php loads itm_fk_option_labels for department labels.');
+    if (strpos($fastAccSource, 'itm_fk_option_labels.php') !== false || strpos((string)file_get_contents(__DIR__ . '/../modules/employees/fast_create_acc.php'), 'itm_fk_option_labels.php') !== false) {
+        vece_pass('fast_create_acc entry loads itm_fk_option_labels for department labels.');
     } else {
-        vece_fail('fast_create_acc.php calls itm_department_option_label() without requiring itm_fk_option_labels.php.');
+        vece_fail('fast_create_acc calls itm_department_option_label() without requiring itm_fk_option_labels.php.');
     }
 }
 

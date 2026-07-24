@@ -1,6 +1,6 @@
 <?php
 /**
- * Static audit: employees fast_create_acc.php FK selects must include __add_new__ quick-add.
+ * Static audit: employees fast_create_acc_browser.php FK selects must include __add_new__ quick-add.
  *
  * Exempt: module_slugs[] (registry catalog).
  *
@@ -16,11 +16,11 @@ if (PHP_SAPI === 'cli') {
 require_once __DIR__ . '/lib/script_cli_output.php';
 
 $nl = itm_script_output_nl();
-$path = dirname(__DIR__) . '/modules/employees/fast_create_acc.php';
+$path = dirname(__DIR__) . '/modules/employees/fast_create_acc_browser.php';
 $contents = is_file($path) ? (string)file_get_contents($path) : '';
 
 if ($contents === '') {
-    echo colorText('[FAIL] modules/employees/fast_create_acc.php not found.', 'fail') . $nl;
+    echo colorText('[FAIL] modules/employees/fast_create_acc_browser.php not found.', 'fail') . $nl;
     exit(1);
 }
 
@@ -28,7 +28,7 @@ $failures = [];
 $exemptNamePattern = '/\bname=(["\'])module_slugs\[\]\1/';
 
 if (!preg_match_all('/<select\b[^>]*>.*?<\/select>/is', $contents, $matches, PREG_OFFSET_CAPTURE)) {
-    echo colorText('[FAIL] No <select> elements found in modules/employees/fast_create_acc.php.', 'fail') . $nl;
+    echo colorText('[FAIL] No <select> elements found in modules/employees/fast_create_acc_browser.php.', 'fail') . $nl;
     exit(1);
 }
 
@@ -43,16 +43,22 @@ foreach ($matches[0] as $match) {
     if (strpos($selectHtml, '__add_new__') === false) {
         $offset = (int)($match[1] ?? 0);
         $line = substr_count(substr($contents, 0, $offset), "\n") + 1;
-        $failures[] = 'modules/employees/fast_create_acc.php:' . $line;
+        $failures[] = 'modules/employees/fast_create_acc_browser.php:' . $line;
     }
 }
 
-if (strpos($contents, 'itm_department_option_label') !== false && strpos($contents, 'itm_fk_option_labels.php') === false) {
-    $failures[] = 'modules/employees/fast_create_acc.php: missing require for includes/itm_fk_option_labels.php';
+if (strpos($contents, 'itm_department_option_label') !== false) {
+    $entryPath = dirname(__DIR__) . '/modules/employees/fast_create_acc.php';
+    $scriptsEntryPath = __DIR__ . '/fast_create_acc.php';
+    $entrySource = (is_file($entryPath) ? (string)file_get_contents($entryPath) : '')
+        . (is_file($scriptsEntryPath) ? (string)file_get_contents($scriptsEntryPath) : '');
+    if (strpos($entrySource, 'itm_fk_option_labels.php') === false) {
+        $failures[] = 'modules/employees/fast_create_acc_browser.php: missing require for includes/itm_fk_option_labels.php in entry scripts';
+    }
 }
 
 if ($failures === []) {
-    echo colorText('[PASS] modules/employees/fast_create_acc.php FK selects include __add_new__ quick-add.', 'pass') . $nl;
+    echo colorText('[PASS] modules/employees/fast_create_acc_browser.php FK selects include __add_new__ quick-add.', 'pass') . $nl;
     exit(0);
 }
 
