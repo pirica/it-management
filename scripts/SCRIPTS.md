@@ -643,6 +643,7 @@ Module seed expansion in `db/02_data.sql` (repo write, no DB mutation): `php scr
 | `php scripts/check_02_data_sample_coverage.php` | Static gate: every tenant-scoped table (schema `company_id`, minus exempt list) has ≥1 company `1` marker row in `db/02_data_sample.sql`. Exit `1` when missing. |
 | `php scripts/dedupe_02_data_per_company_inserts.php` | **Browser + CLI.** Lists/removes redundant companies `2–5` single-row INSERTs when `@replicate_source_company_id` replication exists. Dry-run default; `--apply` edits `db/02_data.sql`. |
 | `php scripts/verify_sample_data_seed.php` | **Browser + CLI.** Regression: seeds arbitrary disposable companies from `db/02_data_sample.sql` (`workstation_ram`, FK parent chain, duplicate skip, random fallback, `backup_tape_log`, `switch_ports`, `equipment`). Browser (Admin): `scripts/verify_sample_data_seed.php`. CLI: `php scripts/verify_sample_data_seed.php`. |
+| `php scripts/verify_finance_sample_data_seed.php` | **CLI.** Regression: Add sample data for finance tables (`expenses`, `bills`, `invoices`, lookups, budgets) on a disposable company; asserts `currency_code` stays within `char(3)`. Run when changing `db/02_data_sample.sql` finance templates or `includes/itm_sample_data_seed.php` finance defaults. |
 
 #### PHPUnit test runner (`scripts/run_tests.php`)
 

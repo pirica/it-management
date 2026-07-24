@@ -1644,6 +1644,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><code>php scripts/verify_ops_report.php</code>. PHPUnit: <code>php scripts/run_tests.php --filter OpsReport</code>. Run when changing <code>modules/ops_report/</code> or <code>ops_report*</code> tables in <code>db/</code> split bundle.</td>
                 </tr>
                 <tr data-tags="expenses">
+                    <td><a href="verify_finance_sample_data_seed.php" target="_blank" rel="nofollow noreferrer">verify_finance_sample_data_seed.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">expenses</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">bills</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">invoices</span></span></td>
+                    <td>Add sample data regression for finance modules on a disposable tenant (AP/AR headers, lookups, budgets, <code>currency_code</code> length).</td>
+                    <td><code>php scripts/verify_finance_sample_data_seed.php</code>. Run when changing <code>db/02_data_sample.sql</code> finance rows or <code>itm_seed_apply_finance_row_defaults()</code>.</td>
+                </tr>
+                <tr data-tags="expenses">
                     <td><a href="verify_expenses_ap.php" target="_blank" rel="nofollow noreferrer">verify_expenses_ap.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">expenses</span></span></td>

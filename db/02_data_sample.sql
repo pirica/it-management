@@ -222,6 +222,43 @@ INSERT INTO `events` (`company_id`, `employee_id`, `assigned_to_employee_id`, `c
 (1, 1, NULL, NULL, 'Server Maintenance', 'f78625785dce5adc93b013e1962ff81f09c6f4908c1277469c95d5cfc02c96cd', 'Monthly server updates and backup verification', '2026-05-15 22:00:00', '2026-05-16 02:00:00', 'Data Center', 2, 1),
 (1, 1, NULL, NULL, 'Team Lunch', 'af65330d1edc5952b1f4283b470c6d2a5b8a14f334a785016235f16c45986610', 'Monthly team building lunch', '2026-05-20 12:00:00', '2026-05-20 13:30:00', 'Local Restaurant', 4, 1);
 
+INSERT INTO `tax_rates` (`id`, `company_id`, `name`, `rate_percent`, `active`, `created_at`) VALUES
+('3', '1', 'VAT 23%', '23.00', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `paid_statuses` (`id`, `company_id`, `name`, `sort_order`, `active`, `created_at`) VALUES
+('1', '1', 'Draft', '1', '1', '2026-01-01 00:00:01'),
+('3', '1', 'Posted', '3', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `payment_modes` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES
+('1', '1', 'Bank transfer', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `expense_recurrence` (`id`, `company_id`, `name`, `code`, `sort_order`, `active`, `created_at`) VALUES
+('1', '1', 'Monthly', 'monthly', '1', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `customer_statuses` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES
+('1', '1', 'Active', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `customers` (`id`, `company_id`, `name`, `customer_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`) VALUES
+('1', '1', 'Acme Hospitality Ltd', 'CUST-001', 'Accounts Payable', 'ap@acme-hospitality.example', '+1-555-0200', '1', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `integration_accounts` (`id`, `company_id`, `nominal_code`, `name`, `currency_code`, `current_balance`, `gl_account_id`, `active`, `created_at`) VALUES
+('1', '1', '6100', 'IT Operating Expense (integration)', 'EUR', '0.00', '1', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `bank_accounts` (`id`, `company_id`, `institution_name`, `account_name`, `balance`, `currency_code`, `account_number`, `category`, `active`, `created_at`) VALUES
+('1', '1', 'Sample Bank', 'Operating Account', '10000.00', 'EUR', 'SAMPLE-0001', 'Operating', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `bills` (`id`, `company_id`, `document_number`, `memo`, `posted_date`, `due_date`, `currency_code`, `exchange_rate`, `paid_status_id`, `total_amount`, `sub_total`, `tax_amount`, `amount_due`, `supplier_id`, `cost_center_id`, `gl_account_id`, `active`, `created_at`) VALUES
+('1', '1', 'BILL-2026-0001', 'Sample AP bill for IT supplies', '2026-01-10', '2026-02-10', 'EUR', '1.000000', '3', '1230.00', '1000.00', '230.00', '1230.00', '1', '1', '1', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `bill_line_items` (`id`, `company_id`, `bill_id`, `line_number`, `tax_rate_id`, `tax_rate_snapshot`, `integration_account_id`, `description`, `quantity`, `unit_amount`, `sub_total`, `tax_amount`, `total_amount`, `active`, `created_at`) VALUES
+('1', '1', '1', '1', '3', '23.00', '1', 'Network cables bulk pack', '10.0000', '50.00', '500.00', '115.00', '615.00', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `invoices` (`id`, `company_id`, `document_number`, `contact_name`, `customer_id`, `posted_date`, `due_date`, `currency_code`, `exchange_rate`, `paid_status_id`, `total_amount`, `sub_total`, `tax_amount`, `amount_due`, `memo`, `cost_center_id`, `gl_account_id`, `active`, `created_at`) VALUES
+('1', '1', 'INV-AR-2026-0001', 'Acme Hospitality Ltd', '1', '2026-02-01', '2026-03-01', 'EUR', '1.000000', '3', '615.00', '500.00', '115.00', '615.00', 'Sample AR invoice', '1', '1', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `invoice_line_items` (`id`, `company_id`, `invoice_id`, `line_number`, `tax_rate_id`, `tax_rate_snapshot`, `integration_account_id`, `description`, `quantity`, `unit_amount`, `sub_total`, `tax_amount`, `total_amount`, `active`, `created_at`) VALUES
+('1', '1', '1', '1', '3', '23.00', '1', 'Managed Wi-Fi monthly', '1.0000', '500.00', '500.00', '115.00', '615.00', '1', '2026-01-01 00:00:01');
+
 INSERT INTO `expenses` (`company_id`, `gl_account_id`, `cost_center_id`, `date`, `posting_date`, `invoice_date`, `amount`, `paid_status_id`, `currency_code`, `exchange_rate`, `description`, `invoice_number`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
 (1, '1', '1', '2026-01-15', '2026-01-15', '2026-01-15', '3890.00', '3', 'EUR', '1.000000', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', NULL, NULL, '1', '2026-01-01 00:00:01', NULL, NULL);
 
