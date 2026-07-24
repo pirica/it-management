@@ -177,7 +177,23 @@ if (!empty($dash['reload_required'])) {
                     <p style="margin: 0;"><a href="<?php echo BASE_URL; ?>user-config.php" style="color: var(--text-secondary); text-decoration: none;"><?php echo sanitize($welcomeMessage); ?></a></p>
                 </div>
 
-                <div class="stats-grid">
+                <div class="card">
+                    <div class="card-header"><h2>Settings</h2></div>
+                    <div class="card-body">
+                        <p>Manage backups and system maintenance options from one page.</p>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                            <a class="btn btn-primary" href="<?php echo BASE_URL; ?>modules/settings/" title="Open Settings">Open Settings</a>
+                            <a class="btn" href="<?php echo BASE_URL; ?>scripts/scripts.php" title="Scripts catalog">Scripts</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="itm-admin-dash-cards">
+                    <?php include ROOT_PATH . 'includes/itm_admin_dashboard_cards.php'; ?>
+                </div>
+
+                <?php if ($companyId > 0): ?>
+                    <?php ob_start(); ?>
                     <?php if (has_module_access($conn, $companyId, 'equipment')): ?>
                     <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/equipment/">
                         <div class="stat-label">Equipment</div>
@@ -195,44 +211,36 @@ if (!empty($dash['reload_required'])) {
                         <div class="stat-label">Employees</div>
                         <div class="stat-number"><?php echo $employees_count; ?></div>
                     </a>
-                    <?php endif; ?>
-                </div>
-
-                <?php if ($companyId > 0): ?>
-                <div class="stats-grid">
-                    <?php if (has_module_access($conn, $companyId, 'employees')): ?>
                     <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/employees/" title="Active employees for this company">
                         <div class="stat-label">Active</div>
                         <div class="stat-number"><?php echo (int)$active_employees_count; ?></div>
                     </a>
-                    <?php endif; ?>
                     <div class="stat-card" title="Employees currently signed in for this company">
                         <div class="stat-label">Online now</div>
                         <div class="stat-number"><?php echo (int)$online_now_count; ?></div>
                     </div>
-                    <?php if (has_module_access($conn, $companyId, 'employees')): ?>
                     <a class="stat-card stat-card-link" href="<?php echo BASE_URL; ?>modules/employees/" title="Employees on leave for this company">
                         <div class="stat-label">On Leave</div>
                         <div class="stat-number"><?php echo (int)$on_leave_count; ?></div>
                     </a>
                     <?php endif; ?>
-                </div>
-                <?php endif; ?>
-
-                <div class="card">
-                    <div class="card-header"><h2>Settings</h2></div>
+                    <?php
+                    $adminCompanyOverviewCards = trim((string)ob_get_clean());
+                    if ($adminCompanyOverviewCards !== ''):
+                    ?>
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <h2>Company overview</h2>
+                    </div>
                     <div class="card-body">
-                        <p>Manage backups and system maintenance options from one page.</p>
-                        <div style="display:flex;gap:12px;flex-wrap:wrap;">
-                            <a class="btn btn-primary" href="<?php echo BASE_URL; ?>modules/settings/" title="Open Settings">Open Settings</a>
-                            <a class="btn" href="<?php echo BASE_URL; ?>scripts/scripts.php" title="Scripts catalog">Scripts</a>
+                        <p style="margin:0 0 16px;color:var(--text-secondary);">Tenant-wide totals for the selected company</p>
+                        <div class="stats-grid" style="margin-bottom:0;">
+                            <?php echo $adminCompanyOverviewCards; ?>
                         </div>
                     </div>
                 </div>
-
-                <div class="itm-admin-dash-cards">
-                    <?php include ROOT_PATH . 'includes/itm_admin_dashboard_cards.php'; ?>
-                </div>
+                    <?php endif; ?>
+                <?php endif; ?>
 
                 <div class="card">
                     <div class="card-header">
