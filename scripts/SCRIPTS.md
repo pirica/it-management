@@ -985,8 +985,8 @@ Catalog: `scripts/scripts.php`.
 |--------|---------|
 | `php scripts/verify_ops_report.php` | Regression: D-2 edit lock, `ops_report` CRUD, child cascade delete, cross-date hit line format (`keyword \| day — sections`), audit triggers on all `ops_report*` tables, `modules_registry` row; PHPUnit: `OpsReportTest`, `OpsReportPermissionsTest` |
 | `php scripts/verify_expenses_ap.php` | Regression: AP lookups seeds, tax snapshot, Draft vs Posted budget-actual filter, EUR expense insert probe |
-| `php scripts/verify_bills.php` | Seed bill + line rollups and supplier FK |
-| `php scripts/verify_invoices.php` | Seed invoice + line rollups |
+| `php scripts/verify_bills.php` | Seed bill + line rollups, supplier FK, `itm_expenses_post_from_bill()` (bill_id + invoice_number) and duplicate-post guard |
+| `php scripts/verify_invoices.php` | Seed invoice + line rollups, `itm_expenses_post_from_invoice()` (invoice_id + invoice_number) and duplicate-post guard |
 | `php scripts/verify_finance_payment_allocations.php` | Payment allocations and `amount_due` on bills |
 | `php scripts/verify_expense_recurrence.php` | `expense_recurrence` seeds and advance-date helper |
 | `php scripts/run_expense_recurrence.php` | CLI runner for due recurring expense templates (`--company=1`) |
