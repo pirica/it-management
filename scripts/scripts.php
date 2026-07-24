@@ -1654,15 +1654,15 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_bills.php" target="_blank" rel="nofollow noreferrer">verify_bills.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">bills</span></span></td>
-                    <td>Seed bill header/lines rollup and supplier FK label.</td>
-                    <td><code>php scripts/verify_bills.php</code></td>
+                    <td>Seed bill header/lines rollup, supplier FK, post-to-expenses (`bill_id`, `invoice_number`), duplicate-post guard.</td>
+                    <td><code>php scripts/verify_bills.php</code>. Run when changing <code>modules/bills/</code>, <code>includes/itm_expenses_ap.php</code> post-from-bill, or bill seeds.</td>
                 </tr>
                 <tr data-tags="invoices">
                     <td><a href="verify_invoices.php" target="_blank" rel="nofollow noreferrer">verify_invoices.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">invoices</span></span></td>
-                    <td>Seed invoice header/lines rollup.</td>
-                    <td><code>php scripts/verify_invoices.php</code></td>
+                    <td>Seed invoice header/lines rollup, post-to-expenses (`invoice_id`, `invoice_number`), duplicate-post guard.</td>
+                    <td><code>php scripts/verify_invoices.php</code>. Run when changing <code>modules/invoices/</code>, <code>includes/itm_expenses_ap.php</code> post-from-invoice, or invoice seeds.</td>
                 </tr>
                 <tr data-tags="finance_payment_allocations">
                     <td><a href="verify_finance_payment_allocations.php" target="_blank" rel="nofollow noreferrer">verify_finance_payment_allocations.php</a></td>

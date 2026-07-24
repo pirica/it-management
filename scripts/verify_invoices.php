@@ -1,6 +1,6 @@
 <?php
 /**
- * Invoices + invoice_line_items regression (seed rollups).
+ * Invoices + invoice_line_items regression (seed rollups, post to expenses).
  *
  * CLI: php scripts/verify_invoices.php
  */

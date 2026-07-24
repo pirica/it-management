@@ -1,6 +1,6 @@
 <?php
 /**
- * Bills + bill_line_items regression (seed rollups, FK labels).
+ * Bills + bill_line_items regression (seed rollups, FK labels, post to expenses).
  *
  * CLI: php scripts/verify_bills.php
  */
