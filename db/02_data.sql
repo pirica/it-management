@@ -78,6 +78,10 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("contacts", "Contacts", 0, 1);
 
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("customer_statuses", "Customer Statuses", 0, 1);
+
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("customers", "Customers", 0, 1);
+
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("news", "News", 0, 1, "📰");
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("cost_centers", "Cost Centers", 0, 1);
@@ -125,6 +129,8 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("events", "Events", 0, 1);
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("expenses", "Expenses", 0, 1);
+
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("expense_recurrence", "Expense Recurrence", 0, 1);
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("expiring", "Expiring", 0, 1);
 
@@ -502,6 +508,31 @@ INSERT IGNORE INTO `tax_rates` (`company_id`, `name`, `rate_percent`, `active`, 
 INSERT IGNORE INTO `paid_statuses` (`company_id`, `name`, `sort_order`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`sort_order`, t.`active`, '2026-01-01 00:00:01' FROM `paid_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 
 INSERT IGNORE INTO `payment_modes` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `payment_modes` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+
+INSERT INTO `expense_recurrence` (`id`, `company_id`, `name`, `code`, `sort_order`, `active`, `created_at`) VALUES
+(1, 1, 'Hourly', 'hourly', 1, 1, '2026-01-01 00:00:01'),
+(2, 1, 'Daily', 'daily', 2, 1, '2026-01-01 00:00:01'),
+(3, 1, 'Weekly', 'weekly', 3, 1, '2026-01-01 00:00:01'),
+(4, 1, 'Monthly', 'monthly', 4, 1, '2026-01-01 00:00:01'),
+(5, 1, 'Quarterly', 'quarterly', 5, 1, '2026-01-01 00:00:01'),
+(6, 1, 'Yearly', 'yearly', 6, 1, '2026-01-01 00:00:01'),
+(7, 1, 'Every 2 years', 'every_2_years', 7, 1, '2026-01-01 00:00:01'),
+(8, 1, 'Every 3 years', 'every_3_years', 8, 1, '2026-01-01 00:00:01'),
+(9, 1, 'Every 4 years', 'every_4_years', 9, 1, '2026-01-01 00:00:01'),
+(10, 1, 'Every 5 years', 'every_5_years', 10, 1, '2026-01-01 00:00:01');
+
+INSERT IGNORE INTO `expense_recurrence` (`company_id`, `name`, `code`, `sort_order`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`code`, t.`sort_order`, t.`active`, '2026-01-01 00:00:01' FROM `expense_recurrence` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+
+INSERT INTO `customer_statuses` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES
+(1, 1, 'Active', 1, '2026-01-01 00:00:01'),
+(2, 1, 'Inactive', 1, '2026-01-01 00:00:01');
+
+INSERT IGNORE INTO `customer_statuses` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `customer_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+
+INSERT INTO `customers` (`id`, `company_id`, `name`, `customer_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`) VALUES
+(1, 1, 'Acme Hospitality Ltd', 'CUST-001', 'Accounts Payable', 'ap@acme-hospitality.example', '+1-555-0200', 1, 1, '2026-01-01 00:00:01');
+
+INSERT IGNORE INTO `customers` (`company_id`, `name`, `customer_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`customer_code`, t.`contact_person`, t.`email`, t.`phone`, cs.`id`, t.`active`, '2026-01-01 00:00:01' FROM `customers` t JOIN `companies` c ON c.`id` <> t.`company_id` JOIN `customer_statuses` cs ON cs.`company_id` = c.`id` AND cs.`name` = 'Active' WHERE t.`company_id` = 1;
 
 INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `posting_date`, `invoice_date`, `amount`, `net_amount`, `vat_amount`, `tax_rate_id`, `tax_rate_snapshot`, `paid_status_id`, `currency_code`, `exchange_rate`, `description`, `invoice_number`, `created_by`, `active`, `created_at`, `updated_at`) VALUES
 (NULL, 1, 1, 1, '2026-01-15', '2026-01-15', '2026-01-15', 3890.00, 3162.60, 727.40, 3, 23.00, 3, 'EUR', 1.000000, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 1, 1, '2026-01-01 00:00:01', NULL),
@@ -1206,15 +1237,15 @@ INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUE
 
 INSERT INTO `suppliers` (`id`, `company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`) VALUES ('1', '1', 'Global IT Supply', 'SUP-001', 'Jane Doe', 'sales@globalit.example', '+1-555-0100', '1', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `bills` (`id`, `company_id`, `document_number`, `memo`, `posted_date`, `due_date`, `currency_code`, `exchange_rate`, `paid_status_id`, `total_amount`, `sub_total`, `tax_amount`, `supplier_id`, `cost_center_id`, `gl_account_id`, `active`, `created_at`) VALUES
-(1, 1, 'BILL-2026-0001', 'Sample AP bill for IT supplies', '2026-01-10', '2026-02-10', 'EUR', 1.000000, 3, 1230.00, 1000.00, 230.00, 1, 1, 1, 1, '2026-01-01 00:00:01');
+INSERT INTO `bills` (`id`, `company_id`, `document_number`, `memo`, `posted_date`, `due_date`, `currency_code`, `exchange_rate`, `paid_status_id`, `total_amount`, `sub_total`, `tax_amount`, `amount_due`, `supplier_id`, `cost_center_id`, `gl_account_id`, `active`, `created_at`) VALUES
+(1, 1, 'BILL-2026-0001', 'Sample AP bill for IT supplies', '2026-01-10', '2026-02-10', 'EUR', 1.000000, 3, 1230.00, 1000.00, 230.00, 1230.00, 1, 1, 1, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `bill_line_items` (`id`, `company_id`, `bill_id`, `line_number`, `tax_rate_id`, `tax_rate_snapshot`, `integration_account_id`, `description`, `quantity`, `unit_amount`, `sub_total`, `tax_amount`, `total_amount`, `active`, `created_at`) VALUES
 (1, 1, 1, 1, 3, 23.00, 1, 'Network cables bulk pack', 10.0000, 50.00, 500.00, 115.00, 615.00, 1, '2026-01-01 00:00:01'),
 (2, 1, 1, 2, 3, 23.00, 1, 'Rack mounting kit', 5.0000, 100.00, 500.00, 115.00, 615.00, 1, '2026-01-01 00:00:01');
 
-INSERT INTO `invoices` (`id`, `company_id`, `document_number`, `contact_name`, `platform_contact_id`, `posted_date`, `due_date`, `currency_code`, `exchange_rate`, `paid_status_id`, `total_amount`, `sub_total`, `tax_amount`, `memo`, `active`, `created_at`) VALUES
-(1, 1, 'INV-AR-2026-0001', 'Acme Hospitality Ltd', 'rootfi-contact-demo-1', '2026-02-01', '2026-03-01', 'EUR', 1.000000, 3, 615.00, 500.00, 115.00, 'Sample AR invoice', 1, '2026-01-01 00:00:01');
+INSERT INTO `invoices` (`id`, `company_id`, `document_number`, `contact_name`, `platform_contact_id`, `customer_id`, `posted_date`, `due_date`, `currency_code`, `exchange_rate`, `paid_status_id`, `total_amount`, `sub_total`, `tax_amount`, `amount_due`, `memo`, `active`, `created_at`) VALUES
+(1, 1, 'INV-AR-2026-0001', 'Acme Hospitality Ltd', 'rootfi-contact-demo-1', 1, '2026-02-01', '2026-03-01', 'EUR', 1.000000, 3, 615.00, 500.00, 115.00, 615.00, 'Sample AR invoice', 1, '2026-01-01 00:00:01');
 
 INSERT INTO `invoice_line_items` (`id`, `company_id`, `invoice_id`, `line_number`, `tax_rate_id`, `tax_rate_snapshot`, `integration_account_id`, `description`, `quantity`, `unit_amount`, `sub_total`, `tax_amount`, `total_amount`, `active`, `created_at`) VALUES
 (1, 1, 1, 1, 3, 23.00, 1, 'Managed Wi-Fi monthly', 1.0000, 500.00, 500.00, 115.00, 615.00, 1, '2026-01-01 00:00:01');

@@ -16,6 +16,8 @@ attempts
 budget_categories
 catalogs
 cost_centers
+customer_statuses
+customers
 departments
 email_alert_rules
 email_smtp_configurations
@@ -40,6 +42,7 @@ equipment_types
 event_categories
 events
 expenses
+expense_recurrence
 tax_rates
 paid_statuses
 payment_modes

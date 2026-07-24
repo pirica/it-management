@@ -214,6 +214,9 @@ function itm_finance_save_document_lines_from_post(
     }
     mysqli_stmt_close($uStmt);
     mysqli_commit($conn);
+    if (function_exists('itm_finance_recompute_amount_due')) {
+        itm_finance_recompute_amount_due($conn, $companyId, $parentTable, $parentId);
+    }
     return ['ok' => true, 'error' => ''];
 }
 

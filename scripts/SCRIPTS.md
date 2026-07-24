@@ -987,6 +987,10 @@ Catalog: `scripts/scripts.php`.
 | `php scripts/verify_expenses_ap.php` | Regression: AP lookups seeds, tax snapshot, Draft vs Posted budget-actual filter, EUR expense insert probe |
 | `php scripts/verify_bills.php` | Seed bill + line rollups and supplier FK |
 | `php scripts/verify_invoices.php` | Seed invoice + line rollups |
+| `php scripts/verify_finance_payment_allocations.php` | Payment allocations and `amount_due` on bills |
+| `php scripts/verify_expense_recurrence.php` | `expense_recurrence` seeds and advance-date helper |
+| `php scripts/run_expense_recurrence.php` | CLI runner for due recurring expense templates (`--company=1`) |
+| `php scripts/verify_customers.php` | Seed customer and invoice `customer_id` |
 | `php scripts/verify_integration_accounts.php` | integration_accounts seed + insert probe |
 | `php scripts/verify_bank_accounts.php` | bank_accounts seed + insert probe |
 | `php scripts/verify_ops_report_sample_data.php` | Empty-tenant **Add sample data** for all seven `ops_report_*` child modules (`ops_report_id` parent seed). Mutates company `4` test rows. |
