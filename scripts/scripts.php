@@ -1647,11 +1647,24 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_finance_sample_data_seed.php" target="_blank" rel="nofollow noreferrer">verify_finance_sample_data_seed.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">expenses</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">bills</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">invoices</span></span></td>
-                    <td>Add sample data regression for finance modules on a disposable tenant (AP/AR headers, lookups, budgets, <code>currency_code</code> length).</td>
+                    <td>Add sample data regression for finance modules on a disposable tenant (AP/AR headers, lookups, budgets, <code>currency_code</code> length, sidebar <code>finance</code> section map).</td>
                     <td><code>php scripts/verify_finance_sample_data_seed.php</code>. Run when changing <code>db/02_data_sample.sql</code> finance rows or <code>itm_seed_apply_finance_row_defaults()</code>.</td>
                 </tr>
                 <tr data-tags="expenses">
-                    <td><a href="verify_expenses_ap.php" target="_blank" rel="nofollow noreferrer">verify_expenses_ap.php</a></td>
+                    <td><a href="check_crud_sample_data_live_row_gate.php" target="_blank" rel="nofollow noreferrer">check_crud_sample_data_live_row_gate.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">tax_rates</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">expenses</span></span></td>
+                    <td>Static gate: finance modules must use <code>itm_seed_tenant_row_count()</code> for Add sample data (matches list soft-delete filter).</td>
+                    <td><code>php scripts/check_crud_sample_data_live_row_gate.php</code>. Run after editing finance <code>index.php</code> sample-data handlers.</td>
+                </tr>
+                <tr data-tags="Codebase">
+                    <td><a href="apply_crud_sample_data_live_row_gate.php" target="_blank" rel="nofollow noreferrer">apply_crud_sample_data_live_row_gate.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-browser">Browser</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="tag">Codebase</span></span></td>
+                    <td>Maintenance: patch legacy Add sample data <code>COUNT(*)</code> blocks to <code>itm_seed_tenant_row_count()</code>.</td>
+                    <td><code>php scripts/apply_crud_sample_data_live_row_gate.php --apply --finance-only</code> (dry-run without <code>--apply</code>).</td>
+                </tr>
+                <tr data-tags="expenses">
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">expenses</span></span></td>
                     <td>Regression for extended <code>expenses</code> AP fields, <code>includes/itm_expenses_ap.php</code>, and Posted/Paid budget-actual filter semantics.</td>

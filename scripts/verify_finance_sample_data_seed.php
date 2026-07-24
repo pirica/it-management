@@ -51,6 +51,46 @@ if ($companyId <= 0) {
 
 mysqli_query($conn, 'SET @app_company_id = ' . $companyId);
 
+// Soft-deleted rows must not block Add sample data when the list is empty.
+$softCompanyName = 'FinanceSampleSoftDel-' . bin2hex(random_bytes(3));
+$softIncode = strtoupper(substr(md5($softCompanyName), 0, 6));
+$stmtSoftCo = mysqli_prepare($conn, 'INSERT INTO companies (company, incode, active) VALUES (?, ?, 1)');
+mysqli_stmt_bind_param($stmtSoftCo, 'ss', $softCompanyName, $softIncode);
+mysqli_stmt_execute($stmtSoftCo);
+$softCompanyId = (int) mysqli_insert_id($conn);
+mysqli_stmt_close($stmtSoftCo);
+
+if ($softCompanyId > 0) {
+  $taxName = 'SoftDeleted VAT Gate';
+  $rate = '23.00';
+  $delBy = 1;
+  $insSoft = mysqli_prepare(
+      $conn,
+      'INSERT INTO tax_rates (company_id, name, rate_percent, active, deleted_by, deleted_at) VALUES (?, ?, ?, 0, ?, NOW())'
+  );
+  mysqli_stmt_bind_param($insSoft, 'isdi', $softCompanyId, $taxName, $rate, $delBy);
+  mysqli_stmt_execute($insSoft);
+  mysqli_stmt_close($insSoft);
+
+  $rawCountRes = mysqli_query($conn, 'SELECT COUNT(*) AS c FROM tax_rates WHERE company_id = ' . $softCompanyId);
+  $rawCount = $rawCountRes ? (int) (mysqli_fetch_assoc($rawCountRes)['c'] ?? 0) : 0;
+  $liveCount = itm_seed_tenant_row_count($conn, 'tax_rates', $softCompanyId);
+
+  if ($rawCount < 1 || $liveCount !== 0) {
+      vfs_fail('tax_rates soft-delete fixture: expected raw>0 and live=0 (raw=' . $rawCount . ', live=' . $liveCount . ').');
+  } else {
+      $softErr = '';
+      $softInserted = itm_seed_table_from_database_sql($conn, 'tax_rates', $softCompanyId, $softErr);
+      $afterLive = itm_seed_tenant_row_count($conn, 'tax_rates', $softCompanyId);
+      if ($softInserted < 1 || $afterLive < 1) {
+          vfs_fail('tax_rates sample seed with only soft-deleted rows: ' . ($softErr !== '' ? $softErr : 'no live row after seed'));
+      } else {
+          vfs_pass('tax_rates Add sample data allowed when only soft-deleted rows exist.');
+      }
+  }
+  mysqli_query($conn, 'DELETE FROM companies WHERE id = ' . $softCompanyId);
+}
+
 $financeTables = [
     'tax_rates',
     'paid_statuses',
@@ -104,6 +144,32 @@ foreach (['bills', 'invoices', 'bank_accounts'] as $currencyTable) {
         vfs_fail($currencyTable . '.currency_code invalid after sample seed.');
     } else {
         vfs_pass($currencyTable . '.currency_code OK.');
+    }
+}
+
+require_once ROOT_PATH . 'includes/ui_config.php';
+$financeSidebarSlugs = [
+    'expenses',
+    'bills',
+    'invoices',
+    'customers',
+    'bank_accounts',
+    'suppliers',
+    'supplier_statuses',
+    'tax_rates',
+    'paid_statuses',
+    'payment_modes',
+    'expense_recurrence',
+    'customer_statuses',
+    'integration_accounts',
+];
+$parentMap = itm_sidebar_default_item_parent_map();
+foreach ($financeSidebarSlugs as $slug) {
+    $section = (string) ($parentMap[$slug] ?? '');
+    if ($section !== 'finance') {
+        vfs_fail('Sidebar: ' . $slug . ' must be under finance section (got ' . ($section !== '' ? $section : 'missing') . ').');
+    } else {
+        vfs_pass('Sidebar finance section includes ' . $slug . '.');
     }
 }
 

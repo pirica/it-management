@@ -677,6 +677,25 @@
         ],
         "override": false
     },
+    "check_crud_sample_data_live_row_gate.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "expenses",
+            "tax_rates",
+            "bills",
+            "invoices"
+        ],
+        "override": false
+    },
+    "apply_crud_sample_data_live_row_gate.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
     "export_floor_plan_folders_seed.php": {
         "tags": [
             "floor_plans",
