@@ -29,6 +29,7 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
 - `companies_audit_triggers.sql` — trigger-only: fixes `trg_companies_audit_*` `audit_logs.company_id` fallback (`NEW.id` / `OLD.id`)
 - `employee_departments_audit_triggers.sql` — trigger-only: adds `trg_employee_departments_audit_*` (mirrors `db/03_triggers.sql`; run after `employees_employee_departments.sql` on live DBs)
 - `it_settings_chat_same_tenant.sql` — `it_settings` with `chat_same_tenant` (`TINYINT(1) NOT NULL DEFAULT 1`; destructive — includes seed INSERT for companies 1–5)
+- `expenses_quotation_order.sql` — `expenses` with `quotation_order` + `quotation_order_accepted` after PO fields (mirrors `db/01_schema.sql`; destructive — re-seed or restore expenses after apply)
 - `index.html` — directory listing prevention
 
 ## 12. Module Owner Notes (Optional)

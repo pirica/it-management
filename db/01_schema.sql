@@ -713,6 +713,8 @@ CREATE TABLE `expenses` (
   `due_date` date DEFAULT NULL,
   `purchase_order` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `purchase_order_accepted` tinyint(1) NOT NULL DEFAULT '1',
+  `quotation_order` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `quotation_order_accepted` tinyint(1) NOT NULL DEFAULT '1',
   `net_amount` decimal(12,2) DEFAULT NULL,
   `vat_amount` decimal(12,2) DEFAULT NULL,
   `total_discount` decimal(12,2) DEFAULT '0.00',
