@@ -532,6 +532,11 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     }
 }
 
+$financeAttachments = [];
+if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0 && !empty($data)) {
+    $financeAttachments = itm_finance_attachment_load_for_parent($conn, (int) $company_id, $crud_table, $editId);
+}
+
 
 // Handle sample data seeding for empty companies in list view
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && isset($_POST['add_sample_data'])) {
@@ -695,8 +700,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $dbErrorCode = 0;
         $dbErrorMessage = '';
         if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+            $savedParentId = ($crud_action === 'create') ? (int) mysqli_insert_id($conn) : $editId;
+            $attachSave = itm_finance_attachment_after_parent_save($conn, (int) $company_id, $crud_table, $savedParentId);
+            if (!$attachSave['ok']) {
+                $errors[] = $attachSave['error'];
+            } else {
             header('Location: ' . $listUrl);
             exit;
+            }
         }
         $errors[] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
@@ -926,7 +937,7 @@ if (!isset($crud_title)) {
 
             <?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
-                <form method="POST" class="form-grid" style="max-width:980px;">
+                <form method="POST" enctype="multipart/form-data" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($uiColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
@@ -983,6 +994,7 @@ if (!isset($crud_title)) {
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
+                    <?php itm_finance_render_attachments_editor($financeAttachments); ?>
                     <div class="form-actions">
                         <button class="btn btn-primary" type="submit">💾</button>
                         <a href="index.php" class="btn">🔙</a>
@@ -1002,6 +1014,7 @@ if (!isset($crud_title)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <?php itm_finance_render_attachments_view($financeAttachments); ?>
                     <p style="margin-top:16px;">
                         <a href="index.php" class="btn" title="Back">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>" title="Edit">✏️</a></p>
                 </div>
@@ -1033,6 +1046,9 @@ document.addEventListener('change', function (event) {
     }
 });
 </script>
+<?php if (in_array($crud_action, ['create', 'edit'], true)) {
+    itm_finance_render_attachments_form_scripts();
+} ?>
 
 </body>
 </html>

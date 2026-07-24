@@ -701,12 +701,14 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
 $financeDocumentLines = [];
 $financePaymentAllocations = [];
 $financeAmountDue = 0.0;
+$financeAttachments = [];
 $billPostedExpenseId = null;
 $canPostBillToExpenses = false;
 if (!empty($data) && in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $financeDocumentLines = itm_finance_load_document_lines($conn, (int) $company_id, $crud_table, $editId);
     $financePaymentAllocations = itm_finance_load_payment_allocations($conn, (int) $company_id, $crud_table, $editId);
     $financeAmountDue = (float) ($data['amount_due'] ?? 0);
+    $financeAttachments = itm_finance_attachment_load_for_parent($conn, (int) $company_id, $crud_table, $editId);
     if ($crud_action === 'view' && (int) ($data['id'] ?? 0) > 0) {
         $billPostedExpenseId = itm_expenses_find_id_by_bill_id($conn, (int) $company_id, (int) $data['id']);
         if (function_exists('itm_user_has_role_module_permission')) {
@@ -903,8 +905,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                     if (!$lineSave['ok']) {
                         $errors[] = $lineSave['error'];
                     } else {
+                        $attachSave = itm_finance_attachment_after_parent_save($conn, (int) $company_id, $crud_table, $savedParentId);
+                        if (!$attachSave['ok']) {
+                            $errors[] = $attachSave['error'];
+                        } else {
                         header('Location: ' . $listUrl);
                         exit;
+                        }
                     }
                 } else {
                     $errors[] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
@@ -935,8 +942,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                     if (!$lineSave['ok']) {
                         $errors[] = $lineSave['error'];
                     } else {
+                        $attachSave = itm_finance_attachment_after_parent_save($conn, (int) $company_id, $crud_table, $savedParentId);
+                        if (!$attachSave['ok']) {
+                            $errors[] = $attachSave['error'];
+                        } else {
                         header('Location: ' . $listUrl);
                         exit;
+                        }
                     }
                 } else {
                     $errors[] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
@@ -1211,7 +1223,7 @@ if (!isset($crud_title)) {
             <?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>
                 <!-- EDIT/CREATE VIEW -->
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
-                <form method="POST" class="form-grid" style="max-width:980px;">
+                <form method="POST" enctype="multipart/form-data" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <?php foreach ($uiColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
@@ -1270,6 +1282,7 @@ if (!isset($crud_title)) {
                         echo '<input type="hidden" name="id" value="' . (int) $editId . '">';
                         itm_finance_render_payment_allocations_editor($conn, (int) $company_id, $crud_table, $editId, $financePaymentAllocations, $financeAmountDue);
                     } ?>
+                    <?php itm_finance_render_attachments_editor($financeAttachments); ?>
                     <div class="form-actions">
                         <button class="btn btn-primary" type="submit">💾</button>
                         <a href="index.php" class="btn">🔙</a>
@@ -1293,6 +1306,7 @@ if (!isset($crud_title)) {
                     <h3 title="Line items">📋</h3>
                     <?php itm_finance_render_document_lines_view($financeDocumentLines); ?>
                     <?php itm_finance_render_payment_allocations_view($conn, (int) $company_id, $financePaymentAllocations, $financeAmountDue); ?>
+                    <?php itm_finance_render_attachments_view($financeAttachments); ?>
                     <p style="margin-top:16px;">
                         <a href="index.php" class="btn" title="Back">🔙</a>
                         <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>" title="Edit">✏️</a>
@@ -1331,5 +1345,8 @@ document.addEventListener('change', function (event) {
     if (indicator) { indicator.textContent = event.target.checked ? '✅' : '❌'; }
 });
 </script>
+<?php if (in_array($crud_action, ['create', 'edit'], true)) {
+    itm_finance_render_attachments_form_scripts();
+} ?>
 </body>
 </html>

@@ -1684,6 +1684,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Seed invoice header/lines rollup, post-to-expenses (`invoice_id`, `invoice_number`), duplicate-post guard.</td>
                     <td><code>php scripts/verify_invoices.php</code>. Run when changing <code>modules/invoices/</code>, <code>includes/itm_expenses_ap.php</code> post-from-invoice, or invoice seeds.</td>
                 </tr>
+                <tr data-tags="finance_attachments">
+                    <td><a href="verify_finance_attachments.php" target="_blank" rel="nofollow noreferrer">verify_finance_attachments.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">finance_attachments</span></span></td>
+                    <td>Finance module multi-file attachments (storage path, allowed types, table presence).</td>
+                    <td><code>php scripts/verify_finance_attachments.php</code>. Run when changing <code>includes/itm_finance_attachments.php</code> or finance attachment UI on invoices, bills, expenses, customers, bank_accounts.</td>
+                </tr>
                 <tr data-tags="finance_payment_allocations">
                     <td><a href="verify_finance_payment_allocations.php" target="_blank" rel="nofollow noreferrer">verify_finance_payment_allocations.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

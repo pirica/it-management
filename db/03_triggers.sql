@@ -1907,6 +1907,25 @@ CREATE TRIGGER `trg_finance_payment_allocations_audit_delete` AFTER DELETE ON `f
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'finance_payment_allocations', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'amount', OLD.`amount`), NULL, @app_ip_address, @app_user_agent);
 END$$
 
+DROP TRIGGER IF EXISTS `trg_finance_attachments_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_finance_attachments_audit_update`;
+DROP TRIGGER IF EXISTS `trg_finance_attachments_audit_delete`;
+
+CREATE TRIGGER `trg_finance_attachments_audit_insert` AFTER INSERT ON `finance_attachments` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'finance_attachments', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'parent_table', NEW.`parent_table`, 'parent_id', NEW.`parent_id`, 'original_filename', NEW.`original_filename`, 'file_size', NEW.`file_size`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_finance_attachments_audit_update` AFTER UPDATE ON `finance_attachments` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'finance_attachments', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'original_filename', OLD.`original_filename`), JSON_OBJECT('id', NEW.`id`, 'original_filename', NEW.`original_filename`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_finance_attachments_audit_delete` AFTER DELETE ON `finance_attachments` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'finance_attachments', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'original_filename', OLD.`original_filename`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
 DELIMITER ;
 
 DROP TRIGGER IF EXISTS `trg_cable_colors_audit_insert`;
