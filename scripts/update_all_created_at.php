@@ -257,11 +257,6 @@ if ($itmIsCli) {
 
     try {
         require_once dirname(__DIR__) . '/config/config.php';
-require_once __DIR__ . '/lib/script_cli_output.php';
-itm_script_output_begin();
-
-$nl = itm_script_output_nl();
-
     } catch (Throwable $e) {
         fwrite(STDERR, 'Unable to bootstrap application config/db connection: ' . $e->getMessage() . "\n");
         exit(1);
@@ -420,5 +415,3 @@ require_once __DIR__ . '/lib/script_browser_nav.php';
 </div>
 </body>
 </html>
-
-itm_script_output_end();

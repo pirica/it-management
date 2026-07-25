@@ -79,6 +79,21 @@ function itm_check_script_nav_duplicate_issues(string $content): array
 }
 
 /**
+ * Migration mistake: itm_script_output_end() left as raw text after a full HTML document.
+ *
+ * @return array<int, string>
+ */
+function itm_check_script_stray_output_end_issues(string $content): array
+{
+    $issues = [];
+    if (preg_match('/<\/html>\s*\R\s*itm_script_output_end\s*\(\s*\)\s*;/', $content)) {
+        $issues[] = 'raw itm_script_output_end() after </html> (outside <?php — remove or pair with itm_script_output_begin())';
+    }
+
+    return $issues;
+}
+
+/**
  * @return array<int, string>
  */
 function itm_check_script_nav_duplicate_collect_failures(string $scriptsRoot): array
@@ -110,6 +125,7 @@ function itm_check_script_nav_duplicate_collect_failures(string $scriptsRoot): a
         }
 
         $issues = itm_check_script_nav_duplicate_issues($content);
+        $issues = array_merge($issues, itm_check_script_stray_output_end_issues($content));
         if ($issues === []) {
             continue;
         }
