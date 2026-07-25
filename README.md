@@ -607,7 +607,7 @@ RESEND_API_KEY=re_xxxxxxxxx
 
 ```apache
 SetEnv DB_HOST 127.0.0.1
-SetEnv DB_PORT 3306
+SetEnv DB_PORT 3307
 SetEnv DB_USER root
 SetEnv DB_PASS change_me
 SetEnv DB_NAME itmanagement
