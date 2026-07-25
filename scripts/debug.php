@@ -62,6 +62,5 @@ echo "  config/: " . (is_writable($root . '/config') ? '✅ Writable' : '❌ Not
 echo "  tickets_photos/: " . (is_writable($root . '/tickets_photos') ? '✅ Writable' : '❌ Not Writable') . PHP_EOL;
 echo "  images/: " . (is_writable($root . '/images') ? '✅ Writable' : '❌ Not Writable') . PHP_EOL;
 echo "  backups/: " . (is_writable($root . '/backups') ? '✅ Writable' : '❌ Not Writable') . PHP_EOL;
-?>
 
 itm_script_output_end();

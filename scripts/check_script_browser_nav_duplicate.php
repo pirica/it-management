@@ -89,6 +89,9 @@ function itm_check_script_stray_output_end_issues(string $content): array
     if (preg_match('/<\/html>\s*\R\s*itm_script_output_end\s*\(\s*\)\s*;/', $content)) {
         $issues[] = 'raw itm_script_output_end() after </html> (outside <?php — remove or pair with itm_script_output_begin())';
     }
+    if (preg_match('/\?>\s*\R\s*itm_script_output_end\s*\(\s*\)\s*;/', $content)) {
+        $issues[] = 'raw itm_script_output_end() after closing ?> (keep output_end inside PHP)';
+    }
 
     return $issues;
 }
