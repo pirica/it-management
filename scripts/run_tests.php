@@ -34,6 +34,7 @@ $nl = itm_script_output_nl();
 
 require_once ROOT_PATH . 'scripts/lib/script_browser_nav.php';
 require_once ROOT_PATH . 'scripts/lib/script_cli_output.php';
+require_once ROOT_PATH . 'includes/itm_cli_binary.php';
 
 /**
  * Why: Browser users pick standard vs coverage on a menu; CLI uses flags/env.
@@ -69,8 +70,12 @@ function itm_run_tests_h($value)
 /**
  * Why: PHPUnit needs Xdebug or PCOV; without them --coverage-html only prints a warning.
  */
-function itm_run_tests_has_coverage_driver()
+function itm_run_tests_has_coverage_driver($phpBin = null)
 {
+    if ($phpBin !== null && $phpBin !== '') {
+        return itm_cli_php_binary_has_coverage_driver((string) $phpBin);
+    }
+
     return extension_loaded('xdebug') || extension_loaded('pcov');
 }
 
@@ -138,7 +143,7 @@ function itm_run_tests_render_browser_menu($dbAvailable, $coverageReportPath)
     $skipDbChecked = (($_GET['skip_db'] ?? '') === '1') ? ' checked' : '';
     $modeStandard = (($_GET['mode'] ?? 'standard') !== 'coverage') ? ' checked' : '';
     $modeCoverage = (($_GET['mode'] ?? '') === 'coverage') ? ' checked' : '';
-    $coverageDriverOk = itm_run_tests_has_coverage_driver();
+    $coverageDriverOk = itm_run_tests_has_coverage_driver(itm_resolve_phpunit_cli_binary());
 
     itm_script_output_begin('PHPUnit Test Suite');
     echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
@@ -206,17 +211,33 @@ if ($db_available && !$user_wants_skip) {
 }
 
 $want_coverage = itm_run_tests_want_coverage($isCli);
-$coverage_driver_ok = itm_run_tests_has_coverage_driver();
+$php_bin = itm_resolve_phpunit_cli_binary();
+$phpunit_missing_ext = itm_cli_php_binary_missing_extensions($php_bin, itm_phpunit_required_extensions());
+if ($phpunit_missing_ext !== []) {
+    $hint = 'Enable PHP extensions (mbstring, …) on the CLI binary. Dunebox: powershell -ExecutionPolicy Bypass -File scripts/setup_dunebox_php_from_laragon.ps1 (copies Xdebug from Laragon portable into D:\\dunebox-v1.0.6).';
+    $msg = 'PHPUnit requires extensions: ' . implode(', ', $phpunit_missing_ext) . '. Using: ' . $php_bin . '. ' . $hint;
+    if ($isCli) {
+        fwrite(STDERR, $msg . $nl);
+        exit(1);
+    }
+    itm_script_output_begin('PHPUnit Test Suite');
+    echo '<main style="max-width:720px;margin:16px;font-family:sans-serif;">';
+    echo '<h1>PHPUnit Test Suite</h1>';
+    echo '<p><a href="run_tests.php">← Choose another run mode</a></p>';
+    echo '<p style="color:#cf222e;"><strong>' . itm_run_tests_h($msg) . '</strong></p>';
+    echo '</main>';
+    itm_script_output_end();
+    exit;
+}
+
+$coverage_driver_ok = itm_run_tests_has_coverage_driver($php_bin);
 $coverage_skipped_no_driver = ($want_coverage && !$coverage_driver_ok);
 $run_coverage_html = ($want_coverage && $coverage_driver_ok);
 
 $phpunit_bin = ROOT_PATH . 'phpunit/phpunit.phar';
 $phpunit_xml = ROOT_PATH . 'phpunit/phpunit.xml';
 
-$php_bin = defined('PHP_BINARY') && PHP_BINARY ? PHP_BINARY : 'php';
-if (strpos($php_bin, 'php-cgi') !== false) {
-    $php_bin = str_replace('php-cgi', 'php', $php_bin);
-}
+// Why: Browser SAPI (php-cgi) often lacks mbstring; PHPUnit runs in a CLI subprocess with PHP_EXE / Dunebox php.ini.
 
 // Why: Inline environment variables (VAR=val cmd) are not supported by Windows cmd.exe.
 // We rely on putenv('ITM_SKIP_DB_TESTS=1') called earlier in this script.
