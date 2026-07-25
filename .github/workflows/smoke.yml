@@ -30,6 +30,11 @@ jobs:
 
   database-import:
     runs-on: ubuntu-latest
+    # Why: GHA MySQL service listens on 3306; import_database_split.sh defaults to 3307 (Dunebox).
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_PASSWORD: itmanagement
     services:
       mysql:
         image: mysql:8.0
@@ -55,13 +60,7 @@ jobs:
 
       # CI uses monolith db/; local dev may use bash scripts/import_database_split.sh (db/01→02→03).
       - name: Import db/ split bundle
-        env:
-          MYSQL_HOST: 127.0.0.1
-          MYSQL_PASSWORD: itmanagement
         run: bash scripts/verify_database_sql_import.sh
 
       - name: Verify FK label search regression
-        env:
-          MYSQL_HOST: 127.0.0.1
-          MYSQL_PASSWORD: itmanagement
         run: php scripts/verify_crud_fk_label_search.php
