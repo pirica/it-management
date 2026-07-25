@@ -1984,7 +1984,79 @@ LEFT JOIN `idf_device_type` dt_target ON dt_target.`company_id` = c.`id` AND dt_
 WHERE t.`company_id` = @replicate_source_company_id
   AND dt_target.`id` IS NOT NULL;
 
-INSERT IGNORE INTO `idfs` (`company_id`, `location_id`, `name`, `idf_code`, `notes`, `created_at`) SELECT c.`id`, t.`location_id`, t.`name`, t.`idf_code`, t.`notes`, '2026-01-01 00:00:01' FROM `idfs` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+-- Why: location_types are replicated per tenant with new ids; map type_id by name (same pattern as equipment FK remap).
+INSERT IGNORE INTO `it_locations` (`company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`)
+SELECT
+    c.`id`,
+    t.`name`,
+    t.`location_code`,
+    t.`address`,
+    t.`city`,
+    t.`state`,
+    t.`country`,
+    t.`postal_code`,
+    t.`phone`,
+    lt_target.`id`,
+    t.`active`,
+    '2026-01-01 00:00:01'
+FROM `it_locations` t
+JOIN `companies` c ON c.`id` <> t.`company_id`
+LEFT JOIN `location_types` lt_source ON lt_source.`id` = t.`type_id`
+LEFT JOIN `location_types` lt_target ON lt_target.`company_id` = c.`id` AND lt_target.`name` = lt_source.`name`
+WHERE t.`company_id` = @replicate_source_company_id;
+
+-- Why: rack_statuses and it_locations are tenant-scoped; resolve location_id and status_id on the target company.
+INSERT IGNORE INTO `racks` (`company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`, `created_at`)
+SELECT
+    c.`id`,
+    l_target.`id`,
+    t.`name`,
+    t.`rack_code`,
+    rs_target.`id`,
+    t.`active`,
+    '2026-01-01 00:00:01'
+FROM `racks` t
+JOIN `companies` c ON c.`id` <> t.`company_id`
+LEFT JOIN `it_locations` l_source ON l_source.`id` = t.`location_id`
+LEFT JOIN `it_locations` l_target ON l_target.`company_id` = c.`id` AND l_target.`name` = l_source.`name`
+LEFT JOIN `rack_statuses` rs_source ON rs_source.`id` = t.`status_id`
+LEFT JOIN `rack_statuses` rs_target ON rs_target.`company_id` = c.`id` AND rs_target.`name` = rs_source.`name`
+WHERE t.`company_id` = @replicate_source_company_id;
+
+INSERT IGNORE INTO `suppliers` (`company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`)
+SELECT
+    c.`id`,
+    t.`name`,
+    t.`supplier_code`,
+    t.`contact_person`,
+    t.`email`,
+    t.`phone`,
+    ss_target.`id`,
+    t.`active`,
+    '2026-01-01 00:00:01'
+FROM `suppliers` t
+JOIN `companies` c ON c.`id` <> t.`company_id`
+LEFT JOIN `supplier_statuses` ss_source ON ss_source.`id` = t.`status_id`
+LEFT JOIN `supplier_statuses` ss_target ON ss_target.`company_id` = c.`id` AND ss_target.`name` = ss_source.`name`
+WHERE t.`company_id` = @replicate_source_company_id;
+
+-- Why: runs after tenant it_locations/racks exist so location_id and rack_id remap by business key.
+INSERT IGNORE INTO `idfs` (`company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `created_at`)
+SELECT
+    c.`id`,
+    l_target.`id`,
+    r_target.`id`,
+    t.`name`,
+    t.`idf_code`,
+    t.`notes`,
+    '2026-01-01 00:00:01'
+FROM `idfs` t
+JOIN `companies` c ON c.`id` <> t.`company_id`
+LEFT JOIN `it_locations` l_source ON l_source.`id` = t.`location_id`
+LEFT JOIN `it_locations` l_target ON l_target.`company_id` = c.`id` AND l_target.`name` = l_source.`name`
+LEFT JOIN `racks` r_source ON r_source.`id` = t.`rack_id`
+LEFT JOIN `racks` r_target ON r_target.`company_id` = c.`id` AND r_target.`name` = r_source.`name`
+WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `inventory_items` (`company_id`, `name`, `item_code`, `serial`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `last_employee_id`, `last_employee_manual`, `comments`, `location_id`, `supplier_id`, `active`, `created_at`)
 SELECT
@@ -2015,12 +2087,6 @@ LEFT JOIN `it_locations` l_target ON l_target.`company_id` = c.`id` AND l_target
 LEFT JOIN `suppliers` s_source ON s_source.`id` = t.`supplier_id`
 LEFT JOIN `suppliers` s_target ON s_target.`company_id` = c.`id` AND s_target.`name` = s_source.`name`
 WHERE t.`company_id` = @replicate_source_company_id;
-
-INSERT IGNORE INTO `it_locations` (`company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`location_code`, t.`address`, t.`city`, t.`state`, t.`country`, t.`postal_code`, t.`phone`, t.`type_id`, t.`active`, '2026-01-01 00:00:01' FROM `it_locations` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
-
-INSERT IGNORE INTO `racks` (`company_id`, `location_id`, `name`, `rack_code`, `status_id`, `active`, `created_at`) SELECT c.`id`, t.`location_id`, t.`name`, t.`rack_code`, t.`status_id`, t.`active`, '2026-01-01 00:00:01' FROM `racks` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
-
-INSERT IGNORE INTO `suppliers` (`company_id`, `name`, `supplier_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`supplier_code`, t.`contact_person`, t.`email`, t.`phone`, t.`status_id`, t.`active`, '2026-01-01 00:00:01' FROM `suppliers` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `switch_ports` (`company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `to_patch_port`, `status_id`, `color_id`, `vlan_id`, `fiber_port_id`, `fiber_patch_id`, `fiber_rack_id`, `idf_id`, `comments`, `created_at`, `updated_at`)
 SELECT

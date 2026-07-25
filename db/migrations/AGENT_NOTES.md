@@ -25,6 +25,7 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
 - `employees_employee_departments.sql` — adds `employee_departments` junction table + backfill from `employees.department_id` (mirrors `db/01_schema.sql`)
 - `employee_sidebar_preferences_seed_admins.sql` — DML only: reassigns sidebar layout rows to each company's seed admin employee (`username LIKE 'Admin%'`)
 - `demo_module_users.sql` — DML only: idempotent seed for `demo1`–`demo5` roles, RBAC rows, employees, `employee_companies`, and `ui_configuration` (company 1; `enable_chatbot = 1`); prefer `php scripts/fast_create_acc.php --seed-demo-bundle` for sidebar prefs refresh
+- `seed_replicate_location_rack_supplier_fk_remap.sql` — DML only: remaps cross-tenant `type_id` / `location_id` / `status_id` / `rack_id` on companies 2–5 for `it_locations`, `racks`, `suppliers`, `idfs` (pairs with fixed `@replicate_source_company_id` block in `db/02_data.sql`)
 - `ui_configuration_enable_chatbot_active.sql` — DML only: `UPDATE ui_configuration SET enable_chatbot = 1 WHERE enable_chatbot = 0` (idempotent backfill to schema default)
 - `companies_audit_triggers.sql` — trigger-only: fixes `trg_companies_audit_*` `audit_logs.company_id` fallback (`NEW.id` / `OLD.id`)
 - `employee_departments_audit_triggers.sql` — trigger-only: adds `trg_employee_departments_audit_*` (mirrors `db/03_triggers.sql`; run after `employees_employee_departments.sql` on live DBs)
