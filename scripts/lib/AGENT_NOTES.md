@@ -6,7 +6,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 ## 7. File Structure
 | File | Role |
 |------|------|
-| `script_browser_nav.php` | ← Scripts index, relative module links, table→module links, `itm_script_format_modules_file_link()` for `modules/<slug>/…` paths in audit output; `itm_script_format_table_link($table, '', true)` links expected module paths when the folder is absent |
+| `script_browser_nav.php` | ← Scripts index, relative module links, table→module links, `itm_script_format_modules_file_link()` for `modules/<slug>/…` paths in audit output; `itm_script_format_modules_file_local_dev_link()` / `itm_script_modules_repo_path_to_local_url()` for `http://localhost/it-management/modules/…` (new tab); `itm_script_format_table_link($table, '', true)` links expected module paths when the folder is absent |
 | `script_cli_output.php` | Browser `<pre>` wrapper + nav for CLI-style audits; `itm_script_output_begin()` runs the usage landing gate then calls `itm_script_browser_nav_echo()` once — do not echo nav again in the same browser response (gate: `check_script_browser_nav_duplicate.php`) |
 | `itm_script_browser_usage.php` | Browser landing: dodgerblue **How to use**, `run=1` gate, Dry-run / Continue links; `itm_script_browser_how_to_use()` per script; exempt list `itm_script_browser_usage_exempt_basenames()` |
 | `itm_script_catalog_usage_migrate.php` | Parse/patch catalog column 5; inject `itm_script_browser_how_to_use()` into `scripts/*.php` (`apply_script_catalog_usage_to_php.php`) |

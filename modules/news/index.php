@@ -3,6 +3,7 @@
  * News module — multi-source feed reader (NVD CVE, Microsoft blogs).
  */
 
+require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/news_feed_bootstrap.php';
 
 $crud_title = 'News';
@@ -64,7 +65,8 @@ if ($cacheAgeSeconds !== null) {
 $moduleSlug = basename(dirname($_SERVER['PHP_SELF']));
 $resolvedModuleIcon = itm_resolve_module_sidebar_icon($conn, $company_id, $employee_id, $moduleSlug);
 $cleanTitle = itm_module_access_strip_catalog_label_prefix($crud_title);
-$page_title = trim($resolvedModuleIcon . ' ' . $cleanTitle);
+$crud_title = trim($resolvedModuleIcon . ' ' . $cleanTitle);
+$currentUiConfig = $uiConfig ?? [];
 $feedUrl = news_feed_self_url($sourceId);
 $activeEmoji = (string)($activeSource['emoji'] ?? '📰');
 ?>
@@ -73,7 +75,7 @@ $activeEmoji = (string)($activeSource['emoji'] ?? '📰');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo sanitize($page_title); ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($uiConfig)); ?></title>
+    <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
