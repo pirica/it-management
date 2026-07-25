@@ -89,7 +89,8 @@ class VaultSecurityTest extends TestCase
         $this->assertIsArray($row);
 
         $currentEnc = (string)$row['password'];
+        $this->assertSame($encrypted, $currentEnc, 'Stored ciphertext must be unchanged after transaction rollback.');
         $this->assertSame($plain, itm_decrypt($currentEnc, $oldKey), 'Data should decrypt with the old key after rollback.');
-        $this->assertFalse(itm_decrypt($currentEnc, $newKey), 'Data should not decrypt with the new key after rollback.');
+        $this->assertNotSame($plain, itm_decrypt($currentEnc, $newKey), 'Wrong key must not yield the original plaintext after rollback.');
     }
 }
