@@ -1359,6 +1359,20 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="ui_configuration">
+                    <td><a href="apply_crud_browser_title_module_icon.php" target="_blank" rel="nofollow noreferrer">apply_crud_browser_title_module_icon.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Maintenance: inject <code>itm_crud_apply_module_icon_to_browser_title()</code> before canonical <code>&lt;title&gt;</code> in <code>modules/**/*.php</code> (sidebar icon in browser tab). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="ui_configuration">
+                    <td><a href="check_crud_browser_title_module_icon.php" target="_blank" rel="nofollow noreferrer">check_crud_browser_title_module_icon.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Static gate: every canonical module <code>&lt;title&gt;</code> must call <code>itm_crud_apply_module_icon_to_browser_title()</code>. Exit <code>1</code> on missing helper.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="ui_configuration">
                     <td><a href="apply_list_new_button_style.php" target="_blank" rel="nofollow noreferrer">apply_list_new_button_style.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">ui_configuration</span></span></td>

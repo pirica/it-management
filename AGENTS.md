@@ -877,10 +877,9 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
 
 * **Dynamic Selects:** Enable quick-add functionality: `<option value="__add_new__">➕</option>`.
 * **Dynamic Module-Title Emojis (Mandatory):** Browser `<title>` tags for individual module views must dynamically prepend the employee-selected custom emoji (or fallback company/system icon) to the page title.
-  - Retrieve the current company, employee session, and directory-derived module slug.
-  - Resolve the icon using `itm_resolve_module_sidebar_icon($conn, $company_id, $employee_id, $module_slug)`.
-  - Strip any hardcoded prefix emojis from the static `$crud_title` using `itm_module_access_strip_catalog_label_prefix($crud_title)` before prepending.
-  - Construct the dynamic title: `trim($resolved_emoji . ' ' . $clean_title)`.
+  - Canonical `<title>` markup stays `<?= sanitize($crud_title) ?> - …`; **do not** hardcode emoji inside the tag.
+  - Immediately before `<title>`, call **`itm_crud_apply_module_icon_to_browser_title($conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0), basename(dirname($_SERVER['PHP_SELF'])), (string)($crud_title ?? ''))`** from `includes/itm_crud_browser_title.php` (bulk: `php scripts/apply_crud_browser_title_module_icon.php --apply`; gate: `php scripts/check_crud_browser_title_module_icon.php`).
+  - Resolution order matches the sidebar: `itm_resolve_module_sidebar_icon()` (user overrides → company matrix → registry → catalog).
 * **Color Fields:** Use color picker UI: `<input type="color" name="hex_color" id="cable-hex-color-picker" value="#008000">`.
 * **Date Fields:** Show date picker UI.
 

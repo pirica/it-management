@@ -606,7 +606,9 @@ if (!isset($currentUiConfig)) {
 if (!isset($crud_title)) {
     $crud_title = 'Paid Statuses';
 }
-?>
+    require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
+        $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0), basename(dirname($_SERVER['PHP_SELF'])), (string)($crud_title ?? ''));
+    ?>
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
     <link rel="stylesheet" href="../../css/styles.css">

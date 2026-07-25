@@ -130,7 +130,9 @@ $cleanTitle = itm_module_access_strip_catalog_label_prefix('My Activity');
 $pageHeading = trim($resolvedEmoji . ' ' . $cleanTitle);
 $crud_title = $pageHeading;
 $currentUiConfig = $ui_config ?? [];
-?>
+    require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
+        $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0), basename(dirname($_SERVER['PHP_SELF'])), (string)($crud_title ?? ''));
+    ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
