@@ -35,57 +35,95 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     <link rel="stylesheet" href="../css/styles.css">
     <style>
         body { padding: 0; margin: 0; background-color: var(--bg-secondary, #f6f8fa); color: var(--text-primary, #24292f); }
-        .scripts-wrap { max-width: 1280px; width: min(95%, 100%); margin: 0 auto; padding: 24px 20px 48px; min-height: calc(100vh - 60px); }
-        .scripts-card { background: var(--bg-primary, #fff); border: 1px solid var(--border, #d0d7de); border-radius: 10px; margin-bottom: 20px; padding: 20px 22px; box-shadow: 0 1px 2px rgba(27, 31, 36, 0.04); }
-        .scripts-muted { color: var(--text-secondary, #57606a); margin: 0 0 12px; line-height: 1.55; font-size: 0.92rem; }
+        .scripts-wrap { --scripts-edge-pad: 10px; max-width: none; width: 100%; margin: 0; padding: 10px var(--scripts-edge-pad) 32px; min-height: calc(100vh - 60px); box-sizing: border-box; }
+        .scripts-intro { margin-bottom: 4px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #d0d7de); max-width: 56rem; }
+        .scripts-section { margin-bottom: 20px; scroll-margin-top: 88px; width: 100%; }
+        .scripts-section.scripts-catalog-section-empty { display: none; }
+        .scripts-footer { margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--border, #d0d7de); font-size: 0.88rem; }
+        .scripts-muted { color: var(--text-secondary, #57606a); margin: 0 0 10px; line-height: 1.5; font-size: 0.86rem; }
         .scripts-muted strong { color: var(--text-primary, #24292f); }
-        h1 { margin: 0 0 10px; font-size: 1.65rem; letter-spacing: -0.02em; }
-        h2 { margin: 0 0 16px; font-size: 1.2rem; letter-spacing: -0.01em; padding-bottom: 10px; border-bottom: 1px solid var(--border, #d0d7de); }
-        .scripts-intro-tools { display: flex; flex-direction: column; gap: 12px; margin: 0 0 16px; }
-        .scripts-search-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; width: 100%; }
-        .scripts-search-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1 1 280px; }
-        .scripts-filter { flex: 1 1 220px; min-width: 180px; max-width: none; padding: 9px 12px; border: 1px solid var(--border, #d0d7de); border-radius: 8px; background: var(--bg-primary, #fff); color: var(--text-primary, #24292f); font-size: 0.92rem; }
+        .scripts-lede { margin: 0 0 10px; font-size: 0.9rem; line-height: 1.45; color: var(--text-secondary, #57606a); }
+        .scripts-intro-details { margin: 0 0 8px; font-size: 0.86rem; line-height: 1.5; color: var(--text-secondary, #57606a); }
+        .scripts-intro-details summary { cursor: pointer; font-weight: 600; color: var(--text-primary, #24292f); margin-bottom: 6px; }
+        .scripts-intro-details[open] summary { margin-bottom: 8px; }
+        h1 { margin: 0 0 6px; font-size: 1.45rem; letter-spacing: -0.02em; }
+        .scripts-section > h2 { margin: 0 0 6px; font-size: 0.95rem; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-secondary, #57606a); padding: 0; border: none; }
+        .scripts-toolbar { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 8px; padding: 10px 0; background: var(--bg-secondary, #f6f8fa); }
+        .scripts-toolbar-sticky { position: sticky; top: 46px; z-index: 90; border-bottom: 1px solid var(--border, #d0d7de); }
+        .scripts-search-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; width: 100%; }
+        .scripts-search-form { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; flex: 1 1 240px; }
+        .scripts-filter { flex: 1 1 200px; min-width: 160px; padding: 7px 10px; border: 1px solid var(--border, #d0d7de); border-radius: 6px; background: var(--bg-primary, #fff); color: var(--text-primary, #24292f); font-size: 0.88rem; }
         .scripts-filter:focus { outline: 2px solid #0969da; outline-offset: 1px; border-color: #0969da; }
-        .scripts-filter-hint { font-size: 0.82rem; color: var(--text-secondary, #57606a); }
-        .scripts-catalog-empty { margin: 0; padding: 14px 16px; border-radius: 8px; background: var(--bg-secondary, #f6f8fa); border: 1px dashed var(--border, #d0d7de); color: var(--text-secondary, #57606a); font-size: 0.9rem; }
-        .scripts-card.scripts-catalog-section-empty { display: none; }
-        .scripts-catalog-grid { margin-bottom: 4px; }
-        .scripts-catalog { width: 100%; border-collapse: collapse; border: none; }
-        .scripts-catalog thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-        .scripts-catalog tbody { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 14px; }
-        .scripts-catalog tr { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "title access" "tags tags" "what what" "how how"; gap: 8px 12px; margin: 0; padding: 16px 18px; border: 1px solid var(--border, #d0d7de); border-radius: 10px; background: var(--bg-secondary, #f6f8fa); box-shadow: 0 1px 2px rgba(27, 31, 36, 0.05); transition: border-color 0.15s ease, box-shadow 0.15s ease; }
-        .scripts-catalog tr:hover { border-color: #0969da; box-shadow: 0 2px 8px rgba(9, 105, 218, 0.08); }
+        .scripts-filter-hint { font-size: 0.8rem; color: var(--text-secondary, #57606a); white-space: nowrap; }
+        .scripts-filter-row-2 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+        .scripts-table-tag-select { min-width: 200px; max-width: 100%; flex: 1 1 220px; padding: 6px 8px; border: 1px solid var(--border, #d0d7de); border-radius: 6px; background: var(--bg-primary, #fff); font-size: 0.82rem; }
+        .scripts-catalog-empty { margin: 8px 0 0; padding: 10px 12px; border-radius: 6px; background: var(--bg-primary, #fff); border: 1px dashed var(--border, #d0d7de); color: var(--text-secondary, #57606a); font-size: 0.86rem; }
+        .scripts-catalog-grid { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+        .scripts-catalog { width: 100%; min-width: 52rem; border-collapse: collapse; table-layout: fixed; font-size: 0.82rem; line-height: 1.4; background: var(--bg-primary, #fff); border: 1px solid var(--border, #d0d7de); }
+        .scripts-catalog col.scripts-col-script { width: 20rem; }
+        .scripts-catalog col.scripts-col-access { width: 4.75rem; }
+        .scripts-catalog col.scripts-col-tags { width: 7rem; }
+        .scripts-catalog col.scripts-col-what { width: auto; }
+        .scripts-catalog col.scripts-col-how { width: 0; }
+        .scripts-catalog thead th { text-align: left; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary, #57606a); padding: 6px 8px; background: var(--bg-secondary, #f6f8fa); border-bottom: 2px solid var(--border, #d0d7de); white-space: nowrap; }
+        .scripts-catalog tbody tr { border-bottom: 1px solid var(--border, #d0d7de); }
+        .scripts-catalog tbody tr:nth-child(even) { background: rgba(246, 248, 250, 0.65); }
+        .scripts-catalog tbody tr:hover { background: #eef6ff; }
         .scripts-catalog tr.scripts-catalog-hidden { display: none; }
-        .scripts-catalog td { display: block; border: none; padding: 0; text-align: left; vertical-align: top; white-space: normal; line-height: 1.5; font-size: 0.9rem; }
-        .scripts-catalog td:first-child { grid-area: title; align-self: center; }
-        .scripts-catalog td.scripts-access-cell { grid-area: access; align-self: start; justify-self: end; }
-        .scripts-catalog td.scripts-tags-cell { grid-area: tags; color: var(--text-primary, #24292f); }
-        .scripts-catalog td.scripts-tags-cell::before { display: block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary, #57606a); margin-bottom: 6px; content: "Tags"; }
-        .scripts-tag-badges { display: flex; flex-wrap: wrap; gap: 4px; }
-        .scripts-badge-tag { background: #eaeef2; color: #24292f; border: 1px solid #d0d7de; }
+        .scripts-catalog td { padding: 5px 8px; vertical-align: top; text-align: left; }
+        .scripts-catalog thead th:nth-child(5),
+        .scripts-catalog tbody td:nth-child(5) { display: none; }
+        .scripts-catalog td.scripts-cell-script,
+        .scripts-catalog td:first-child { white-space: nowrap; vertical-align: top; }
+        .scripts-catalog td.scripts-tags-cell { color: var(--text-primary, #24292f); overflow: hidden; }
+        .scripts-catalog td.scripts-access-cell { overflow: hidden; vertical-align: top; }
+        .scripts-tag-badges { display: flex; flex-wrap: wrap; gap: 3px; }
+        .scripts-badge-tag { background: #eaeef2; color: #24292f; border: 1px solid #d0d7de; font-size: 0.68rem; padding: 1px 5px; }
         .scripts-badge-tag[data-tag-kind="mixed"] { background: #fff1e5; color: #9a6700; border-color: #f0d8b8; }
         .scripts-badge-tag[data-tag-kind="codebase"] { background: #f0f6fc; color: #0550ae; border-color: #c0d8f0; }
         .scripts-badge-tag[data-tag-kind="python"] { background: #fbefff; color: #5a32a3; border-color: #d8b4fe; }
         .scripts-badge-tag[data-tag-kind="server"] { background: #fff0f0; color: #9b1c1c; border-color: #f0c4c4; }
         .scripts-badge-tag[data-tag-kind="info"] { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
         .scripts-badge-tag[data-tag-kind="markdown"] { background: #fff8c5; color: #6a5f00; border-color: #f0e6a8; }
-        .scripts-tag-filter-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; max-height: 120px; overflow-y: auto; }
-        .scripts-tag-chip { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border, #d0d7de); background: var(--bg-primary, #fff); color: var(--text-primary, #24292f); font-size: 0.78rem; cursor: pointer; line-height: 1.4; }
+        .scripts-tag-filter-bar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+        .scripts-tag-chip { padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border, #d0d7de); background: var(--bg-primary, #fff); color: var(--text-primary, #24292f); font-size: 0.74rem; cursor: pointer; line-height: 1.35; }
         .scripts-tag-chip:hover { border-color: #0969da; }
         .scripts-tag-chip.is-active { background: #0969da; color: #fff; border-color: #0969da; }
-        .scripts-tag-chip-alias { border-style: dashed; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.74rem; }
-        .scripts-catalog td:nth-child(4) { grid-area: what; color: var(--text-primary, #24292f); }
-        .scripts-catalog td:nth-child(5) { grid-area: how; color: var(--text-secondary, #57606a); padding-top: 10px; border-top: 1px dashed var(--border, #d0d7de); }
-        .scripts-catalog td:nth-child(4)::before,
-        .scripts-catalog td:nth-child(5)::before { display: block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary, #57606a); margin-bottom: 6px; }
-        .scripts-catalog td:nth-child(4)::before { content: "What it does"; }
-        .scripts-catalog td:nth-child(5)::before { content: "How to use"; }
-        .scripts-catalog td.scripts-catalog-how-stub { grid-area: how; color: var(--text-secondary, #57606a); font-size: 0.85rem; padding-top: 0; border-top: none; }
-        .scripts-catalog td.scripts-catalog-how-stub::before { content: none; }
-        .scripts-catalog td:first-child a { font-weight: 650; font-size: 0.98rem; color: #0969da; text-decoration: none; word-break: break-word; }
+        .scripts-tag-chip-alias { border-style: dashed; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.7rem; }
+        .scripts-catalog td.scripts-cell-what { color: var(--text-primary, #24292f); overflow: hidden; min-width: 0; height: 1px; }
+        .scripts-catalog td.scripts-cell-how { color: var(--text-secondary, #57606a); font-size: 0.78rem; }
+        .scripts-cell-clamp { word-break: break-word; min-width: 0; }
+        .scripts-cell-clamp.scripts-cell-what-inner {
+            display: block;
+            width: 100%;
+            max-height: 6.5rem;
+            overflow-x: hidden;
+            overflow-y: auto;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            white-space: normal;
+            box-sizing: border-box;
+            scrollbar-gutter: stable;
+            scrollbar-width: thin;
+            scrollbar-color: #8c959f #f6f8fa;
+            padding-right: 4px;
+        }
+        .scripts-cell-clamp.scripts-cell-what-inner::-webkit-scrollbar { width: 6px; }
+        .scripts-cell-clamp.scripts-cell-what-inner::-webkit-scrollbar-thumb { background: #8c959f; border-radius: 4px; }
+        .scripts-cell-clamp.scripts-cell-what-inner::-webkit-scrollbar-track { background: #f6f8fa; }
+        .scripts-cell-clamp.scripts-cell-how-inner {
+            display: block;
+            max-height: 3.25rem;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+        }
+        .scripts-catalog-how-inline { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border, #d0d7de); font-size: 0.78rem; color: var(--text-secondary, #57606a); }
+        .scripts-catalog-how-inline::before { content: "How: "; font-weight: 600; color: var(--text-primary, #24292f); }
+        .scripts-catalog td:first-child a { font-weight: 600; font-size: 0.82rem; color: #0969da; text-decoration: none; }
         .scripts-catalog td:first-child a:hover { text-decoration: underline; }
-        .scripts-catalog code { font-size: 0.86rem; word-break: break-word; background: var(--bg-primary, #fff); border: 1px solid var(--border, #d0d7de); border-radius: 4px; padding: 1px 5px; }
-        .scripts-access-badges { display: inline-flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+        .scripts-catalog code { font-size: 0.78rem; word-break: break-word; background: var(--bg-secondary, #f6f8fa); border: 1px solid var(--border, #d0d7de); border-radius: 3px; padding: 0 4px; }
+        .scripts-access-badges { display: flex; flex-direction: column; align-items: flex-start; flex-wrap: nowrap; gap: 3px; }
         .scripts-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; line-height: 1.4; }
         .scripts-badge-web { background: #ddf4ff; color: #0969da; border: 1px solid #c0e6ff; }
         .scripts-badge-cli { background: #f6f8fa; color: #24292f; border: 1px solid #d0d7de; }
@@ -96,10 +134,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         .scripts-toc a { color: #0969da; text-decoration: none; }
         .scripts-toc a:hover { text-decoration: underline; }
         .scripts-toc a.scripts-toc-external::after { content: " ↗"; font-size: 0.85em; }
-        .scripts-cli-hint { margin-top: 16px; padding: 14px 16px; border-radius: 8px; background: var(--bg-secondary, #f6f8fa); border: 1px solid var(--border, #d0d7de); font-size: 0.88rem; line-height: 1.55; }
-        .scripts-cli-hint code { display: inline-block; margin-top: 4px; }
-        .scripts-top-nav { position: sticky; top: 0; z-index: 100; margin: 0 0 16px; padding: 10px 20px; background: var(--bg-primary, #fff); border-bottom: 1px solid var(--border, #d0d7de); box-shadow: 0 1px 3px rgba(27, 31, 36, 0.08); }
-        .scripts-top-nav-inner { max-width: 1280px; width: min(95%, 100%); margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+        .scripts-cli-hint { margin: 0; padding: 8px 0 0; font-size: 0.8rem; line-height: 1.45; }
+        .scripts-cli-hint code { font-size: 0.78rem; }
+        .scripts-top-nav { position: sticky; top: 0; z-index: 100; margin: 0 0 12px; padding: 8px 10px; background: var(--bg-primary, #fff); border-bottom: 1px solid var(--border, #d0d7de); box-shadow: 0 1px 3px rgba(27, 31, 36, 0.08); box-sizing: border-box; }
+        .scripts-top-nav-inner { max-width: none; width: 100%; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; box-sizing: border-box; }
         .scripts-top-nav-brand { font-weight: 700; color: var(--text-primary, #24292f); text-decoration: none; white-space: nowrap; }
         .scripts-top-nav-brand:hover { text-decoration: underline; }
         .scripts-top-nav-links { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 0; padding: 0; list-style: none; flex: 1 1 auto; }
@@ -108,11 +146,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         .scripts-top-nav-links a.scripts-toc-external::after { content: " ↗"; font-size: 0.85em; }
         .scripts-top-nav-home { color: #0969da; text-decoration: none; font-size: 0.9rem; white-space: nowrap; margin-left: auto; }
         .scripts-top-nav-home:hover { text-decoration: underline; }
-        @media (max-width: 640px) {
-            .scripts-catalog tbody { grid-template-columns: 1fr; }
-            .scripts-catalog tr { grid-template-columns: 1fr; grid-template-areas: "title" "access" "tags" "what" "how"; }
-            .scripts-catalog td.scripts-access-cell { justify-self: start; }
-            .scripts-access-badges { justify-content: flex-start; }
+        @media (min-width: 1200px) {
+            .scripts-wrap { --scripts-edge-pad: 16px; }
         }
     </style>
 </head>
@@ -139,45 +174,69 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     </div>
 </nav>
 <div class="scripts-wrap">
-    <div class="scripts-card">
+    <div class="scripts-intro">
         <h1>Scripts directory</h1>
-        <p class="scripts-muted">
-            <strong>Canonical catalog:</strong> this page is the single source of truth for every script’s <em>What it does</em> and Browser/CLI access. For <code>scripts/*.php</code>, <em>How to use</em> is shown on the script’s browser landing page (dodgerblue info) before you choose dry-run or continue (<code>run=1</code>). Non-PHP documentation rows keep <em>How to use</em> here. Standards and behavioral contracts (smoke tiers, shared libs, JSON schemas) live in <code>scripts/SCRIPTS.md</code> — do not duplicate full catalog rows there.
-            Maintenance, audits, and developer tools for the IT Management System.
-            <strong>Browser</strong> = open the script URL (HTML UI when built; otherwise a plain-text report). Access requires login OR authorized source (IP <code>127.0.0.1</code> / <code>::1</code>, or <code>ITM_MAINTENANCE_TOKEN</code> via <code>?token=</code> or <code>X-ITM-Maintenance-Token</code> header). Every browser script must show <strong>← Scripts index</strong> back to this page (use <code>scripts/lib/script_browser_nav.php</code>, <code>lib/utf8_file.php</code> (UTF-8 BOM file I/O), <code>lib/mbqa_import_helpers.php</code> (QA import resolution), <code>lib/mbqa_report_paths.php</code> (QA report naming), <code>lib/mbqa_step_display.php</code> (QA result display)).
-            <strong>CLI</strong> = terminal or CI from the project root with PHP 7.4+ (preferred for exit codes and long scans).
-            <strong>CLI-only</strong> = bash wrappers (<code>smoke_test.sh</code>, <code>*.sh</code>), Python utilities, session hijack helpers (<code>bypass_login.php</code>), or tools that must not run in a browser. Badge: <span class="scripts-badge scripts-badge-cli-only">CLI-only</span>.
-            Most <code>scripts/*.php</code> rows show <span class="scripts-badge scripts-badge-web">Browser</span> + <span class="scripts-badge scripts-badge-cli">CLI</span> — maintenance scripts default to dry-run in the browser/CLI; use <code>--apply</code> or <code>?apply=1</code> (Admin) to write.
+        <p class="scripts-lede">
+            <strong>Canonical catalog</strong> — every script’s <em>What it does</em> and Browser/CLI access.
+            For <code>scripts/*.php</code>, <em>How to use</em> is on the script’s browser landing page before <code>run=1</code>.
+            Standards live in <code>scripts/SCRIPTS.md</code>.
         </p>
-        <p class="scripts-muted">
-            <strong>New script checklist (see <code>AGENTS.md</code> § Scripts directory):</strong> catalog row (what + how + Browser/CLI), <strong>← Scripts index</strong> on every HTML report, human-readable results, <code>target="_blank"</code> relative links to <code>../modules/…</code> when a module folder exists, and table names linked only when <code>modules/&lt;table&gt;/</code> exists. <strong>phpMyAdmin</strong> (<code>http://localhost/phpmyadmin/</code>) is linked from this catalog page only—not inside other scripts.
-        </p>
-        <p class="scripts-muted">
-            <strong>Data mutation quick reference:</strong> these scripts add sample/test rows in the DB: <code>module_browser_qa_runner.php</code>, <code>employees_delete_clear_table_test.php</code>, <code>equipment_delete_clear_table_test.php</code>, <code>explorer_human_test.php</code>, <code>floor_plans_folder_move_test.php</code>, <code>idfs_sync_human_test.php</code>, <code>auth_register_reset_human_test.php</code>, <code>tickets_related_equipment_delete_test.php</code>. Dump-only helper: <code>export_floor_plan_folders_seed.php</code> (prints <code>INSERT</code> SQL to stdout).
-        </p>
-        <div class="scripts-intro-tools">
+        <details class="scripts-intro-details">
+            <summary>Access, badges, and new-script checklist</summary>
+            <p class="scripts-muted">
+                <strong>Browser</strong> = open the script URL (HTML UI or plain-text report). Login or authorized source (IP <code>127.0.0.1</code> / <code>::1</code>, or <code>ITM_MAINTENANCE_TOKEN</code>).
+                Every browser script shows <strong>← Scripts index</strong> (<code>scripts/lib/script_browser_nav.php</code>).
+                <strong>CLI</strong> = project root, PHP 7.4+.
+                <strong>CLI-only</strong> = bash/Python/session helpers — badge <span class="scripts-badge scripts-badge-cli-only">CLI-only</span>.
+                Most PHP rows: <span class="scripts-badge scripts-badge-web">Browser</span> + <span class="scripts-badge scripts-badge-cli">CLI</span>; maintenance defaults to dry-run — <code>--apply</code> / <code>?apply=1</code> (Admin) to write.
+            </p>
+            <p class="scripts-muted">
+                <strong>New script checklist (<code>AGENTS.md</code>):</strong> catalog row, ← Scripts index, human-readable results, module links when <code>modules/&lt;slug&gt;/</code> exists.
+                <strong>phpMyAdmin</strong> is linked from this page only.
+            </p>
+        </details>
+        <details class="scripts-intro-details">
+            <summary>Data mutation quick reference &amp; CLI paths</summary>
+            <p class="scripts-muted">
+                <strong>DB sample/test scripts:</strong>
+                <code>module_browser_qa_runner.php</code>, <code>employees_delete_clear_table_test.php</code>, <code>equipment_delete_clear_table_test.php</code>, <code>explorer_human_test.php</code>, <code>floor_plans_folder_move_test.php</code>, <code>idfs_sync_human_test.php</code>, <code>auth_register_reset_human_test.php</code>, <code>tickets_related_equipment_delete_test.php</code>.
+                Dump-only: <code>export_floor_plan_folders_seed.php</code>.
+            </p>
+            <div class="scripts-cli-hint">
+                <strong>CLI:</strong>
+                <code>D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\&lt;script&gt;.php</code>
+                · <code>php scripts/&lt;script&gt;.php [options]</code> from project root
+            </div>
+        </details>
+        <div class="scripts-toolbar scripts-toolbar-sticky">
             <div class="scripts-search-row">
                 <form id="scripts-catalog-search-form" class="scripts-search-form" role="search" action="scripts.php" method="get">
-                    <input type="search" id="scripts-catalog-filter" name="q" class="scripts-filter" placeholder="Filter scripts… (%filename%, *.json, *.txt, *.md)" autocomplete="off" aria-label="Filter scripts catalog" value="<?php echo htmlspecialchars(trim((string)($_GET['q'] ?? '')), ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="search" id="scripts-catalog-filter" name="q" class="scripts-filter" placeholder="Search name, description, tag… (%wildcards, *.json, *.md)" autocomplete="off" aria-label="Filter scripts catalog" value="<?php echo htmlspecialchars(trim((string)($_GET['q'] ?? '')), ENT_QUOTES, 'UTF-8'); ?>">
                     <button type="submit" class="btn btn-sm">Search</button>
                     <button type="button" class="btn btn-sm" id="scripts-catalog-filter-clear" title="Clear">🔙</button>
                 </form>
                 <span class="scripts-filter-hint" id="scripts-catalog-filter-count" aria-live="polite"></span>
             </div>
-            <div id="scripts-tag-filter-bar" class="scripts-tag-filter-bar" role="group" aria-label="Filter by table tag"></div>
+            <div class="scripts-filter-row-2">
+                <div id="scripts-tag-filter-bar" class="scripts-tag-filter-bar" role="group" aria-label="Filter by tag kind"></div>
+                <select id="scripts-table-tag-select" class="scripts-table-tag-select" aria-label="Filter by table or scope tag">
+                    <option value="">All table / scope tags</option>
+                </select>
+            </div>
         </div>
         <p class="scripts-catalog-empty" id="scripts-catalog-empty" hidden>No scripts match the current filter. Use 🔙 to clear search and tags.</p>
-        <div class="scripts-cli-hint">
-            <strong>CLI example:</strong>
-            <code>C:\&lt;folder&gt;\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\&lt;script&gt;.php [options]</code><br>
-            <code>D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\apply_module_sample_data_seed.php</code><br>
-            <strong>From project root:</strong> <code>php scripts/&lt;script&gt;.php [options]</code>
-        </div>
     </div>
 
-    <div class="scripts-card" id="docs">
+    <div class="scripts-section scripts-catalog-section" id="docs">
         <h2>Documentation</h2>
         <div class="scripts-catalog-grid"><table class="scripts-catalog">
+            <colgroup>
+                <col class="scripts-col-script">
+                <col class="scripts-col-access">
+                <col class="scripts-col-tags">
+                <col class="scripts-col-what">
+                <col class="scripts-col-how">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Script</th>
@@ -313,9 +372,16 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         </table></div>
     </div>
 
-    <div class="scripts-card" id="browser">
+    <div class="scripts-section scripts-catalog-section" id="browser">
         <h2>Browser tools</h2>
         <div class="scripts-catalog-grid"><table class="scripts-catalog">
+            <colgroup>
+                <col class="scripts-col-script">
+                <col class="scripts-col-access">
+                <col class="scripts-col-tags">
+                <col class="scripts-col-what">
+                <col class="scripts-col-how">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Script</th>
@@ -414,10 +480,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         </table></div>
     </div>
 
-    <div class="scripts-card" id="security">
+    <div class="scripts-section scripts-catalog-section" id="security">
         <h2>Security (interactive)</h2>
         <p class="scripts-muted">Browser-first sandboxes and form tests. Repo-wide static scanners are under <a href="#ci">CI &amp; static analysis</a>.</p>
         <div class="scripts-catalog-grid"><table class="scripts-catalog">
+            <colgroup>
+                <col class="scripts-col-script">
+                <col class="scripts-col-access">
+                <col class="scripts-col-tags">
+                <col class="scripts-col-what">
+                <col class="scripts-col-how">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Script</th>
@@ -515,9 +588,16 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
             </tbody>
         </table></div>
     </div>
-<div class="scripts-card" id="tests">
+<div class="scripts-section scripts-catalog-section" id="tests">
         <h2>PHPUnit</h2>
         <div class="scripts-catalog-grid"><table class="scripts-catalog">
+            <colgroup>
+                <col class="scripts-col-script">
+                <col class="scripts-col-access">
+                <col class="scripts-col-tags">
+                <col class="scripts-col-what">
+                <col class="scripts-col-how">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Script</th>
@@ -587,9 +667,16 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
             </tbody>
         </table></div>
     </div>
-    <div class="scripts-card" id="database">
+    <div class="scripts-section scripts-catalog-section" id="database">
         <h2>Database</h2>
         <div class="scripts-catalog-grid"><table class="scripts-catalog">
+            <colgroup>
+                <col class="scripts-col-script">
+                <col class="scripts-col-access">
+                <col class="scripts-col-tags">
+                <col class="scripts-col-what">
+                <col class="scripts-col-how">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Script</th>
@@ -905,9 +992,16 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         </table></div>
     </div>
 
-    <div class="scripts-card" id="idf">
+    <div class="scripts-section scripts-catalog-section" id="idf">
         <h2>IDF &amp; equipment</h2>
         <div class="scripts-catalog-grid"><table class="scripts-catalog">
+            <colgroup>
+                <col class="scripts-col-script">
+                <col class="scripts-col-access">
+                <col class="scripts-col-tags">
+                <col class="scripts-col-what">
+                <col class="scripts-col-how">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Script</th>
@@ -1030,9 +1124,16 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         </table></div>
     </div>
 
-    <div class="scripts-card" id="ui-modules">
+    <div class="scripts-section scripts-catalog-section" id="ui-modules">
         <h2>UI &amp; modules</h2>
         <div class="scripts-catalog-grid"><table class="scripts-catalog">
+            <colgroup>
+                <col class="scripts-col-script">
+                <col class="scripts-col-access">
+                <col class="scripts-col-tags">
+                <col class="scripts-col-what">
+                <col class="scripts-col-how">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Script</th>
@@ -1145,10 +1246,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         </table></div>
     </div>
 
-    <div class="scripts-card" id="ci">
+    <div class="scripts-section scripts-catalog-section" id="ci">
         <h2>CI &amp; static analysis</h2>
         <p class="scripts-muted">PHP scanners support <strong>Browser</strong> (plain-text) and <strong>CLI</strong> (recommended for CI). Bash wrappers (<code>smoke_test.sh</code>, <code>import_database_split.sh</code>, …) and a few session helpers remain <strong>CLI-only</strong>.</p>
         <div class="scripts-catalog-grid"><table class="scripts-catalog">
+            <colgroup>
+                <col class="scripts-col-script">
+                <col class="scripts-col-access">
+                <col class="scripts-col-tags">
+                <col class="scripts-col-what">
+                <col class="scripts-col-how">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Script</th>
@@ -1523,9 +1631,16 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     </div>
 
 
-    <div class="scripts-card" id="admin-tools">
+    <div class="scripts-section scripts-catalog-section" id="admin-tools">
         <h2>Administrative Tools</h2>
         <div class="scripts-catalog-grid"><table class="scripts-catalog">
+            <colgroup>
+                <col class="scripts-col-script">
+                <col class="scripts-col-access">
+                <col class="scripts-col-tags">
+                <col class="scripts-col-what">
+                <col class="scripts-col-how">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Script</th>
@@ -1968,9 +2083,16 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
             </tbody>
         </table></div>
     </div>
-    <div class="scripts-card" id="system-status">
+    <div class="scripts-section scripts-catalog-section" id="system-status">
         <h2>System Status</h2>
         <div class="scripts-catalog-grid"><table class="scripts-catalog">
+            <colgroup>
+                <col class="scripts-col-script">
+                <col class="scripts-col-access">
+                <col class="scripts-col-tags">
+                <col class="scripts-col-what">
+                <col class="scripts-col-how">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Script</th>
@@ -2088,9 +2210,16 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
             </tbody>
         </table></div>
     </div>
-    <div class="scripts-card" id="verification">
+    <div class="scripts-section scripts-catalog-section" id="verification">
         <h2>Verification</h2>
         <div class="scripts-catalog-grid"><table class="scripts-catalog">
+            <colgroup>
+                <col class="scripts-col-script">
+                <col class="scripts-col-access">
+                <col class="scripts-col-tags">
+                <col class="scripts-col-what">
+                <col class="scripts-col-how">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Script</th>
@@ -2713,9 +2842,16 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
             </tbody>
         </table></div>
     </div>
-    <div class="scripts-card" id="deployment">
+    <div class="scripts-section scripts-catalog-section" id="deployment">
         <h2>Deployment &amp; Git</h2>
         <div class="scripts-catalog-grid"><table class="scripts-catalog">
+            <colgroup>
+                <col class="scripts-col-script">
+                <col class="scripts-col-access">
+                <col class="scripts-col-tags">
+                <col class="scripts-col-what">
+                <col class="scripts-col-how">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Script</th>
@@ -2744,7 +2880,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         </table></div>
     </div>
 
-    <div class="scripts-card">
+    <div class="scripts-footer">
         <p class="scripts-muted" style="margin:0;">
             Back to app: <a href="../index.php">Home</a> ·
             Catalog: <a href="scripts.php">scripts.php</a>
@@ -2753,18 +2889,56 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
 </div>
 <script>
 (function () {
+    var rows = Array.prototype.slice.call(document.querySelectorAll('.scripts-catalog-section .scripts-catalog tbody tr'));
+
+    function wrapCatalogCellClamp(cell, innerClass) {
+        if (!cell || cell.querySelector('.scripts-cell-clamp')) {
+            return;
+        }
+        var wrap = document.createElement('div');
+        wrap.className = 'scripts-cell-clamp ' + innerClass;
+        while (cell.firstChild) {
+            wrap.appendChild(cell.firstChild);
+        }
+        cell.appendChild(wrap);
+    }
+
+    rows.forEach(function (row) {
+        var cells = row.querySelectorAll('td');
+        if (cells.length >= 4) {
+            cells[0].classList.add('scripts-cell-script');
+            cells[3].classList.add('scripts-cell-what');
+            wrapCatalogCellClamp(cells[3], 'scripts-cell-what-inner');
+            if (cells[4] && !cells[4].classList.contains('scripts-catalog-how-stub')) {
+                var whatWrap = cells[3].querySelector('.scripts-cell-clamp');
+                if (whatWrap && cells[4].textContent.replace(/\s+/g, ' ').trim() !== '') {
+                    var howInline = document.createElement('div');
+                    howInline.className = 'scripts-catalog-how-inline';
+                    howInline.innerHTML = cells[4].innerHTML;
+                    whatWrap.appendChild(howInline);
+                }
+            }
+        }
+    });
+
+    document.querySelectorAll('.scripts-catalog').forEach(function (table) {
+        table.classList.add('scripts-catalog-hide-how-col');
+    });
+
     var filterInput = document.getElementById('scripts-catalog-filter');
     var countEl = document.getElementById('scripts-catalog-filter-count');
     var tagBar = document.getElementById('scripts-tag-filter-bar');
+    var tableTagSelect = document.getElementById('scripts-table-tag-select');
     var searchForm = document.getElementById('scripts-catalog-search-form');
     var clearBtn = document.getElementById('scripts-catalog-filter-clear');
     var emptyEl = document.getElementById('scripts-catalog-empty');
+    var KIND_TAGS = { Codebase: 1, Python: 1, Server: 1, Info: 1, Markdown: 1, Mixed: 1 };
     if (!filterInput) {
         return;
     }
-    var rows = Array.prototype.slice.call(document.querySelectorAll('.scripts-card .scripts-catalog tbody tr'));
     var total = rows.length;
     var activeTag = '';
+    var activeTableTag = '';
 
     function syncQueryToUrl() {
         var query = filterInput.value.replace(/^\s+|\s+$/g, '');
@@ -2793,12 +2967,12 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     }
 
     function updateSectionVisibility() {
-        var cards = document.querySelectorAll('.scripts-card');
-        for (var i = 0; i < cards.length; i++) {
-            var card = cards[i];
-            var tbody = card.querySelector('.scripts-catalog tbody');
+        var sections = document.querySelectorAll('.scripts-catalog-section');
+        for (var i = 0; i < sections.length; i++) {
+            var section = sections[i];
+            var tbody = section.querySelector('.scripts-catalog tbody');
             if (!tbody) {
-                card.classList.remove('scripts-catalog-section-empty');
+                section.classList.remove('scripts-catalog-section-empty');
                 continue;
             }
             var sectionRows = tbody.querySelectorAll('tr');
@@ -2809,33 +2983,21 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     break;
                 }
             }
-            card.classList.toggle('scripts-catalog-section-empty', !anyVisible);
+            section.classList.toggle('scripts-catalog-section-empty', !anyVisible);
         }
     }
 
-    function collectTags() {
+    function collectTableTags() {
         var tagSet = {};
         rows.forEach(function (row) {
             var raw = row.getAttribute('data-tags') || '';
             raw.split(/\s+/).forEach(function (tag) {
-                if (tag) {
+                if (tag && !KIND_TAGS[tag]) {
                     tagSet[tag] = true;
                 }
             });
         });
         return Object.keys(tagSet).sort(function (a, b) {
-            if (a === 'Codebase') return -1;
-            if (b === 'Codebase') return 1;
-            if (a === 'Python') return -1;
-            if (b === 'Python') return 1;
-            if (a === 'Server') return -1;
-            if (b === 'Server') return 1;
-            if (a === 'Info') return -1;
-            if (b === 'Info') return 1;
-            if (a === 'Markdown') return -1;
-            if (b === 'Markdown') return 1;
-            if (a === 'Mixed') return -1;
-            if (b === 'Mixed') return 1;
             return a.localeCompare(b);
         });
     }
@@ -2852,7 +3014,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         allBtn.textContent = 'All';
         tagBar.appendChild(allBtn);
 
-        collectTags().forEach(function (tag) {
+        ['Codebase', 'Python', 'Server', 'Info', 'Markdown', 'Mixed'].forEach(function (tag) {
             var btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'scripts-tag-chip';
@@ -2889,6 +3051,22 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         });
     }
 
+    function buildTableTagSelect() {
+        if (!tableTagSelect) {
+            return;
+        }
+        collectTableTags().forEach(function (tag) {
+            var opt = document.createElement('option');
+            opt.value = tag;
+            opt.textContent = tag;
+            tableTagSelect.appendChild(opt);
+        });
+        tableTagSelect.addEventListener('change', function () {
+            activeTableTag = tableTagSelect.value || '';
+            updateFilter();
+        });
+    }
+
     function rowCatalogHref(row) {
         var link = row.querySelector('td:first-child a');
         if (!link) {
@@ -2911,6 +3089,19 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     }
 
     function rowMatchesTag(row) {
+        if (activeTableTag) {
+            var tableTags = (row.getAttribute('data-tags') || '').split(/\s+/);
+            var tableHit = false;
+            for (var t = 0; t < tableTags.length; t++) {
+                if (tableTags[t] === activeTableTag) {
+                    tableHit = true;
+                    break;
+                }
+            }
+            if (!tableHit) {
+                return false;
+            }
+        }
         if (!activeTag) {
             return true;
         }
@@ -3006,8 +3197,14 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
             }
         });
         if (countEl) {
-            var suffix = activeTag ? (' (tag: ' + activeTag + ')') : '';
-            countEl.textContent = query === '' && !activeTag
+            var suffix = '';
+            if (activeTag) {
+                suffix += ' (kind: ' + activeTag + ')';
+            }
+            if (activeTableTag) {
+                suffix += ' (table: ' + activeTableTag + ')';
+            }
+            countEl.textContent = query === '' && !activeTag && !activeTableTag
                 ? (total + ' scripts')
                 : (visible + ' of ' + total + ' shown' + suffix);
         }
@@ -3018,6 +3215,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     }
 
     buildTagBar();
+    buildTableTagSelect();
     filterInput.addEventListener('input', function () {
         syncQueryToUrl();
         updateFilter();
@@ -3034,6 +3232,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         clearBtn.addEventListener('click', function () {
             filterInput.value = '';
             activeTag = '';
+            activeTableTag = '';
+            if (tableTagSelect) {
+                tableTagSelect.value = '';
+            }
             resetTagChips();
             syncQueryToUrl();
             updateFilter();
