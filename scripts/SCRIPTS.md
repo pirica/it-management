@@ -651,6 +651,22 @@ Module seed expansion in `db/02_data.sql` (repo write, no DB mutation): `php scr
 
 Central runner for the suite under `phpunit/tests/Unit/` using `phpunit/phpunit.phar` and `phpunit/phpunit.xml`. Catalog row: **`scripts/scripts.php`**.
 
+**PHP extensions (mandatory — every run):** PHPUnit 9 exits immediately unless the **CLI** `php.exe` subprocess loads **all** of:
+
+`dom`, `json`, `libxml`, `mbstring`, `tokenizer`, `xml`, `xmlwriter`
+
+If any are missing, PHPUnit prints: *PHPUnit requires the "dom", "json", … extensions, but the "mbstring" extension is not available.* (first missing extension named). The runner resolves CLI PHP via `itm_resolve_phpunit_cli_binary()` — **not** Apache `php-cgi`. Canonical list: `itm_phpunit_required_extensions()` in `includes/itm_cli_binary.php`.
+
+**HTML coverage (additional):** `--coverage-html` needs **Xdebug** or **PCOV** with coverage enabled (`xdebug.mode` must include `coverage` for Xdebug). Without a driver, `run_tests.php` runs **Standard** mode with `--no-coverage` and shows a note. **Xdebug** is the usual choice on Windows Dunebox after `setup_dunebox_php_from_laragon.ps1`.
+
+Verify on the same binary as `.env` **`PHP_EXE`** (or the path shown on the `run_tests.php` menu):
+
+```powershell
+& "D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" -m
+```
+
+Expect **mbstring** plus **xdebug** (or **pcov**) before running **HTML coverage**.
+
 | Mode | Browser | CLI |
 |------|---------|-----|
 | **Standard** (verbose, no coverage) | Open `scripts/run_tests.php` → **Standard** | `php scripts/run_tests.php` |
@@ -668,7 +684,15 @@ Central runner for the suite under `phpunit/tests/Unit/` using `phpunit/phpunit.
 | HTML coverage | `scripts/run_tests.php?run=1&mode=coverage` |
 | Skip DB + coverage | `scripts/run_tests.php?run=1&mode=coverage&skip_db=1` |
 
-**Coverage driver:** `run_tests.php` checks `extension_loaded('xdebug') || extension_loaded('pcov')` before passing `--coverage-html`. Without a driver it runs with `--no-coverage` and shows a note (avoids PHPUnit’s “No code coverage driver available” warning). On Laragon: Menu → PHP → Extensions → enable Xdebug or PCOV, restart Apache.
+**Coverage driver:** `run_tests.php` resolves a **CLI** `php.exe` via `itm_resolve_phpunit_cli_binary()` (`includes/itm_cli_binary.php` — honours `.env` **`PHP_EXE`**, Dunebox default under **`D:\dunebox-v1.0.6`**, then Laragon portable `bin/php/php-7.4.33-…/php.exe`). It checks that subprocess for Xdebug/PCOV before `--coverage-html`. Stock Dunebox PHP has no `php.ini` (no **mbstring** / Xdebug) until you run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup_dunebox_php_from_laragon.ps1
+```
+
+That copies **`php_xdebug.dll`** (and optional ext DLLs) from **Laragon portable** into **`D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\ext`** and writes **`php.ini`** beside `php.exe`. Override sources with **`ITM_LARAGON_PHP_ROOT`** / **`ITM_DUNEBOX_PHP_ROOT`**. Template: `scripts/data/php.ini.dunebox-7.4.template`.
+
+Without a driver, the runner uses `--no-coverage` and shows a note (avoids PHPUnit’s “No code coverage driver available” warning).
 
 **Windows Laragon (PowerShell):**
 

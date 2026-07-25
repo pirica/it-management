@@ -298,6 +298,10 @@ Full API documentation is available in the `scripts/api.php` file (viewable in t
 7. Create a `floor_plans/` directory for floor plan file uploads (company subfolders are created automatically).
 8. Open `http://localhost/it-management/` in your browser.
 
+<h3 align="center">Developer testing (PHPUnit)</h3>
+
+<p align="center">Run the suite via <code>scripts/run_tests.php</code> (browser menu or CLI). PHPUnit <strong>requires</strong> these PHP extensions on the <strong>CLI</strong> <code>php.exe</code>: <code>dom</code>, <code>json</code>, <code>libxml</code>, <code>mbstring</code>, <code>tokenizer</code>, <code>xml</code>, <code>xmlwriter</code>. <strong>HTML coverage</strong> additionally needs <strong>Xdebug</strong> or <strong>PCOV</strong>. On Dunebox (<code>D:\dunebox-v1.0.6</code>), run once: <code>powershell -ExecutionPolicy Bypass -File scripts/setup_dunebox_php_from_laragon.ps1</code> (copies Xdebug from Laragon portable). Details: <code>scripts/SCRIPTS.md</code> → PHPUnit test runner.</p>
+
 For an existing database, apply the Floor Plans tables from `db/01_schema.sql` (`floor_plan_folders`, `floor_plan_tags`, `floor_plans`, `floor_plan_item_tags`) if they are not already present.
 
 <h2 align="center">Modules</h2>

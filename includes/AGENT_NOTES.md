@@ -15,6 +15,7 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 
 ## 7. File Structure
 - **bootstrap_helpers.php** — shared bootstrap utilities including `itm_mysqli_connect()` (MySQL port / `host:port` parsing for `.env` `DB_PORT`).
+- **itm_cli_binary.php** — `itm_resolve_cli_php_binary()` / `itm_resolve_cli_mysql_binary()` (`.env` `PHP_EXE`, `MYSQL_EXE`); `itm_resolve_phpunit_cli_binary()` picks the first CLI `php.exe` with PHPUnit extensions (Dunebox under `D:\dunebox-v1.0.6`, Laragon portable sibling, or `PHP_BINARY`).
 - **alerts_visibility.php** — centralized visibility logic for global/private alerts.
 - **itm_finance_attachments.php** — finance module file attachments (multi-upload, `finance/{company_id}/{module}/{document_key}/`, 5 MB, allowed extensions); loaded from `config/config.php`.
 - **notes_visibility.php** — owner + `shared_with_json` filter for Notes module; `itm_notes_fetch_visible_by_id()` for single-record view/edit load; `itm_notes_private_images_dir()`, `itm_notes_normalize_image_filename()`, and `itm_notes_resolve_image_path()` confine note attachment ZIP downloads to `files/{company_id}/Private/{username}_{employee_id}/notes/`; `itm_notes_json_mutation_response()` standardises AJAX mutation JSON (404 when zero rows affected).
