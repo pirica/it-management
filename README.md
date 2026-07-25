@@ -290,8 +290,8 @@ Full API documentation is available in the `scripts/api.php` file (viewable in t
 <h2 align="center">Installation</h2>
 
 1. Extract the project files into your web root.
-2. Import `db/` into MySQL (or run `bash scripts/import_database_split.sh` for the generated `db/` split — see `db/AGENT_NOTES.md`).
-3. Copy `.env.example` to `.env` and set `DB_HOST`, optional `DB_PORT` (default 3306), `DB_USER`, `DB_PASS`, and `DB_NAME` (see `.env.example`).
+2. Import the database: `bash scripts/verify_database_sql_import.sh` (wraps `import_database_split.sh`) or run the split import directly. Both honour **`MYSQL_PORT`** — default **3307** (Dunebox); use `MYSQL_PORT=3306` when MySQL listens on the standard port (for example Laragon). See `db/AGENT_NOTES.md`.
+3. Copy `.env.example` to `.env` and set `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, and `DB_NAME` (Dunebox: **`DB_PORT=3307`**; Laragon / many local installs: **3306** — see `.env.example`).
 4. Create an `images/` directory for equipment uploads.
 5. Create a `tickets_photos/` directory for ticket uploads.
 6. Create a `backups/` directory for backup files.
@@ -592,7 +592,8 @@ Move secrets out of source control. Use a project-root `.env` file (from `.env.e
 
 ```env
 DB_HOST=127.0.0.1
-DB_PORT=3306
+# Dunebox MySQL 8.0: 3307 — Laragon / standard MySQL: 3306 (must match MYSQL_PORT for CLI db import)
+DB_PORT=3307
 DB_USER=root
 DB_PASS=change_me
 DB_NAME=itmanagement
@@ -600,7 +601,7 @@ IP2WHOIS_API_KEY=your_ip2whois_key
 RESEND_API_KEY=re_xxxxxxxxx
 ```
 
-`config/config.php` loads `.env` on startup and defines `DB_*` constants. Connections use `itm_mysqli_connect()` (honours `DB_PORT` and `host:port` in `DB_HOST`).
+`config/config.php` loads `.env` on startup and defines `DB_*` constants. Connections use `itm_mysqli_connect()` (honours `DB_PORT` and `host:port` in `DB_HOST`). When `DB_PORT` is empty, PHP falls back to **3306** — set an explicit port in `.env` for Dunebox (**3307**).
 
 ### Example: Apache `SetEnv`
 
