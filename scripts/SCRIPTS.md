@@ -670,7 +670,9 @@ Expect **mbstring** plus **xdebug** (or **pcov**) before running **HTML coverage
 | Mode | Browser | CLI |
 |------|---------|-----|
 | **Standard** (verbose, no coverage) | Open `scripts/run_tests.php` → **Standard** | `php scripts/run_tests.php` |
-| **HTML coverage** | **HTML coverage** (needs Xdebug or PCOV) | `php scripts/run_tests.php --coverage` or `ITM_COVERAGE=1` |
+| **HTML coverage** | **HTML coverage** (background CLI — `coverage_job` log page; avoids gateway timeout) | `php scripts/run_tests.php --coverage` or `ITM_COVERAGE=1` |
+
+**Browser gateway timeout (504):** do **not** run the full Xdebug suite inside Apache. `run=1&mode=coverage` shows a **Start background coverage run** page that spawns `php scripts/run_tests.php --coverage` detached and tracks **`qa-reports/run_tests_browser_coverage.log`**. Monitor at `scripts/run_tests.php?coverage_job=1`. **Standard** browser mode still streams output inline (~25s); use CLI if that times out too.
 | **Skip DB tests** | Checkbox **Skip database tests** | `ITM_SKIP_DB_TESTS=1 php scripts/run_tests.php` |
 
 **Coverage report:** after a successful HTML coverage run, open **`phpunit/coverage/html/coverage.html`** (PHPUnit writes `index.html`; `run_tests.php` renames it to `coverage.html`). The browser menu and post-run output link to this path when the file exists.
@@ -681,7 +683,8 @@ Expect **mbstring** plus **xdebug** (or **pcov**) before running **HTML coverage
 |--------|-----|
 | Choose run mode | `scripts/run_tests.php` |
 | Standard verbose run | `scripts/run_tests.php?run=1&mode=standard` |
-| HTML coverage | `scripts/run_tests.php?run=1&mode=coverage` |
+| HTML coverage | `scripts/run_tests.php?run=1&mode=coverage` (intro → background job) |
+| Coverage job log | `scripts/run_tests.php?coverage_job=1` |
 | Skip DB + coverage | `scripts/run_tests.php?run=1&mode=coverage&skip_db=1` |
 
 **Coverage driver:** `run_tests.php` resolves a **CLI** `php.exe` via `itm_resolve_phpunit_cli_binary()` (`includes/itm_cli_binary.php` — honours `.env` **`PHP_EXE`**, Dunebox default under **`D:\dunebox-v1.0.6`**, then Laragon portable `bin/php/php-7.4.33-…/php.exe`). It checks that subprocess for Xdebug/PCOV before `--coverage-html`. Stock Dunebox PHP has no `php.ini` (no **mbstring** / Xdebug) until you run:

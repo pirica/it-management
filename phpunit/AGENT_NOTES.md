@@ -31,7 +31,7 @@ php scripts/run_tests.php --coverage
 
 ### Browser
 - Menu: `http://localhost/it-management/scripts/run_tests.php`
-- HTML coverage: `scripts/run_tests.php?run=1&mode=coverage`
+- HTML coverage: `scripts/run_tests.php?run=1&mode=coverage` (intro → detached CLI job; log at `scripts/run_tests.php?coverage_job=1`, file `qa-reports/run_tests_browser_coverage.log`)
 
 ### Run PHPUnit PHAR directly
 ```bash
