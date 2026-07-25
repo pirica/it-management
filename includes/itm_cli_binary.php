@@ -27,6 +27,10 @@ if (!function_exists('itm_is_cli_php_binary_path')) {
         if (strpos($normalized, 'php-cgi') !== false) {
             return false;
         }
+        // Why: Dunebox php74.cmd loads config/php/php-7.4.ini; subprocess must target php.exe (or a real binary).
+        if (preg_match('~\.(cmd|bat)$~', $normalized)) {
+            return false;
+        }
         if (substr($normalized, -4) === '.dll') {
             return false;
         }
@@ -176,15 +180,16 @@ if (!function_exists('itm_phpunit_cli_binary_candidates')) {
             $list[] = $path;
         };
 
+        // Why: Prefer Dunebox/Laragon php.exe before .env shims (php74.cmd is not a subprocess binary).
+        $push(itm_default_php_cli_binary());
+        $push(itm_laragon_portable_php_cli_candidate());
+
         foreach (['PHP_EXE', 'PHP_BIN', 'ITM_PHP_BIN'] as $envKey) {
             $candidate = getenv($envKey);
             if (is_string($candidate)) {
                 $push($candidate);
             }
         }
-
-        $push(itm_default_php_cli_binary());
-        $push(itm_laragon_portable_php_cli_candidate());
 
         if (defined('PHP_BINARY') && PHP_BINARY !== '') {
             $push((string) PHP_BINARY);
@@ -197,13 +202,27 @@ if (!function_exists('itm_phpunit_cli_binary_candidates')) {
 }
 
 if (!function_exists('itm_resolve_phpunit_cli_binary')) {
-    function itm_resolve_phpunit_cli_binary(): string
+    function itm_resolve_phpunit_cli_binary(bool $requireCoverageDriver = false): string
     {
         $required = itm_phpunit_required_extensions();
+        $fallback = '';
         foreach (itm_phpunit_cli_binary_candidates() as $candidate) {
-            if (itm_cli_php_binary_missing_extensions($candidate, $required) === []) {
+            if (itm_cli_php_binary_missing_extensions($candidate, $required) !== []) {
+                continue;
+            }
+            if (!$requireCoverageDriver) {
                 return $candidate;
             }
+            if (itm_cli_php_binary_has_coverage_driver($candidate)) {
+                return $candidate;
+            }
+            if ($fallback === '') {
+                $fallback = $candidate;
+            }
+        }
+
+        if ($fallback !== '') {
+            return $fallback;
         }
 
         return itm_resolve_cli_php_binary();

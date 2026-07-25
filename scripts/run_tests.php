@@ -143,8 +143,8 @@ function itm_run_tests_render_browser_menu($dbAvailable, $coverageReportPath)
     $skipDbChecked = (($_GET['skip_db'] ?? '') === '1') ? ' checked' : '';
     $modeStandard = (($_GET['mode'] ?? 'standard') !== 'coverage') ? ' checked' : '';
     $modeCoverage = (($_GET['mode'] ?? '') === 'coverage') ? ' checked' : '';
-    $coverageDriverOk = itm_run_tests_has_coverage_driver(itm_resolve_phpunit_cli_binary());
-    $phpunitPhpBin = itm_resolve_phpunit_cli_binary();
+    $coverageDriverOk = itm_run_tests_has_coverage_driver(itm_resolve_phpunit_cli_binary(true));
+    $phpunitPhpBin = itm_resolve_phpunit_cli_binary(false);
     $phpunitMissingExt = itm_cli_php_binary_missing_extensions($phpunitPhpBin, itm_phpunit_required_extensions());
 
     itm_script_output_begin('PHPUnit Test Suite');
@@ -221,7 +221,7 @@ if ($db_available && !$user_wants_skip) {
 }
 
 $want_coverage = itm_run_tests_want_coverage($isCli);
-$php_bin = itm_resolve_phpunit_cli_binary();
+$php_bin = itm_resolve_phpunit_cli_binary($want_coverage);
 $phpunit_missing_ext = itm_cli_php_binary_missing_extensions($php_bin, itm_phpunit_required_extensions());
 if ($phpunit_missing_ext !== []) {
     $hint = 'PHPUnit requires extensions: dom, json, libxml, mbstring, tokenizer, xml, xmlwriter. Missing on this binary: '
