@@ -532,5 +532,3 @@ $itmCompareBaseUrl = defined('BASE_URL') ? (string)BASE_URL : '../';
 </div>
 </body>
 </html>
-
-itm_script_output_end();
