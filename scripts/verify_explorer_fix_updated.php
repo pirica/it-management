@@ -1,0 +1,67 @@
+<?php
+/**
+ * Verification script for Explorer Path Traversal fix (Updated)
+ */
+
+define('ITM_CLI_SCRIPT', true);
+putenv('ITM_SKIP_DB_TESTS=1');
+define('ITM_VERIFY_SKIP_ROUTER', true);
+
+// Mock server vars for config.php
+$_SERVER['HTTP_HOST'] = 'localhost';
+$_SERVER['REQUEST_URI'] = '/verify_explorer_fix_updated.php';
+$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+
+// Setup paths
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+
+itm_script_output_begin('Verify: Explorer Fix (Updated)');
+$nl = itm_script_output_nl();
+
+// Mock session
+$_SESSION['employee_id'] = 123;
+$_SESSION['company_id'] = 1;
+$_SESSION['username'] = 'attacker';
+$_SESSION['csrf_token'] = 'test_token';
+
+require_once ROOT_PATH . 'includes/itm_explorer_paths.php';
+
+// Include the LIVE file logic
+require_once ROOT_PATH . 'modules/explorer/api.php';
+
+echo colorText("Testing Explorer API Fix (Updated)", 'info') . $nl;
+echo "--------------------------" . $nl;
+
+// Case 1: Attempt traversal with item=..
+$_POST['item'] = '..';
+
+echo "Action: zip, Item: .." . $nl;
+$safe_item = get_safe_post_item();
+if ($safe_item === null) {
+    echo itm_script_format_status_line("[PASS] Path Traversal '..' correctly blocked by get_safe_post_item().") . $nl;
+} else {
+    echo itm_script_format_status_line("[FAIL] Path Traversal '..' allowed! Item: $safe_item") . $nl;
+}
+
+// Case 2: Attempt traversal with item=sub/../../
+$_POST['item'] = 'sub/../../';
+echo "Action: zip, Item: sub/../../" . $nl;
+$safe_item = get_safe_post_item();
+if ($safe_item === null) {
+    echo itm_script_format_status_line("[PASS] Path Traversal with separators correctly blocked.") . $nl;
+} else {
+    echo itm_script_format_status_line("[FAIL] Path Traversal with separators allowed! Item: $safe_item") . $nl;
+}
+
+// Case 3: Valid item
+$_POST['item'] = 'valid_file.txt';
+echo "Action: zip, Item: valid_file.txt" . $nl;
+$safe_item = get_safe_post_item();
+if ($safe_item === 'valid_file.txt') {
+    echo itm_script_format_status_line("[PASS] Valid item correctly allowed.") . $nl;
+} else {
+    echo itm_script_format_status_line("[FAIL] Valid item incorrectly blocked! Item: " . var_export($safe_item, true)) . $nl;
+}
+
+itm_script_output_end();
