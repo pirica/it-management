@@ -11,9 +11,13 @@ Houses the PHPUnit runner, configuration, and the full unit/integration test tre
 - **tests/Unit/Includes/** — helper coverage tests mapped to `includes/*.php` (see `tests/Unit/Includes/AGENT_NOTES.md`).
 - **tests/Unit/Scripts/** — CLI audit script tests; disposable user helper coverage (`ItmScriptTestUserTest`, `ReproAuditDisclosureTest`, `check_script_disposable_employees.unittest.php`).
 
+## 4. Business Rules (Critical for Agents)
+- **PHP runtime (CLI):** PHPUnit 9 requires extensions `dom`, `json`, `libxml`, `mbstring`, `tokenizer`, `xml`, `xmlwriter` on the **CLI** binary used by `scripts/run_tests.php` (see `itm_phpunit_required_extensions()`). **HTML coverage** requires **Xdebug** or **PCOV** with coverage enabled — see **`scripts/SCRIPTS.md` → PHPUnit test runner**.
+- **Disposable script test users:** when tests INSERT/UPDATE `employees` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_employee.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users.
+
 ## 10. Common Pitfalls
-- **Disposable script test users:** when tests INSERT/UPDATE `employees` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_employee.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users. [Cursor-Valid]
 - Running **`phpunit.phar` directly** without `--no-coverage` when no Xdebug/PCOV — prefer **`scripts/run_tests.php`** (driver check + menu). [Cursor-Valid]
+- **Missing mbstring / dom / xmlwriter** — browser Apache PHP often lacks extensions; the runner subprocess must use Dunebox or Laragon **CLI** `php.exe` with `php.ini` (Dunebox: `scripts/setup_dunebox_php_from_laragon.ps1`). [Cursor-Valid]
 - **Coverage paths in docs** must say `phpunit/coverage/html/coverage.html`, not `index.html`. [Cursor-Valid]
 - **Interpreting low totals (~0.4% lines)** — expected with wide `<coverage><include>` and DB-only module tests; see **`scripts/SCRIPTS.md` → Interpreting HTML coverage percentages**. [Cursor-Valid]
 

@@ -144,19 +144,29 @@ function itm_run_tests_render_browser_menu($dbAvailable, $coverageReportPath)
     $modeStandard = (($_GET['mode'] ?? 'standard') !== 'coverage') ? ' checked' : '';
     $modeCoverage = (($_GET['mode'] ?? '') === 'coverage') ? ' checked' : '';
     $coverageDriverOk = itm_run_tests_has_coverage_driver(itm_resolve_phpunit_cli_binary());
+    $phpunitPhpBin = itm_resolve_phpunit_cli_binary();
+    $phpunitMissingExt = itm_cli_php_binary_missing_extensions($phpunitPhpBin, itm_phpunit_required_extensions());
 
     itm_script_output_begin('PHPUnit Test Suite');
     echo '<main style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;max-width:720px;margin:16px;">';
     echo '<h1>PHPUnit Test Suite</h1>';
     echo '<p>Choose how to run tests from <code>phpunit/tests/Unit/</code>. Output is verbose (test names and details).</p>';
-    echo '<p style="font-size:0.95rem;color:#57606a;">Database: '
+    echo '<p style="font-size:0.95rem;color:#57606a;">CLI PHP: <code>' . itm_run_tests_h($phpunitPhpBin) . '</code><br>';
+    echo 'PHPUnit extensions (required): <code>dom</code>, <code>json</code>, <code>libxml</code>, <code>mbstring</code>, <code>tokenizer</code>, <code>xml</code>, <code>xmlwriter</code> — ';
+    if ($phpunitMissingExt === []) {
+        echo '<strong style="color:#1a7f37;">all loaded</strong>';
+    } else {
+        echo '<strong style="color:#cf222e;">missing: ' . itm_run_tests_h(implode(', ', $phpunitMissingExt)) . '</strong>';
+        echo ' — run <code>powershell -ExecutionPolicy Bypass -File scripts/setup_dunebox_php_from_laragon.ps1</code> (Dunebox) or enable extensions in <code>php.ini</code>.';
+    }
+    echo '<br>Database: '
         . ($dbAvailable
             ? '<strong style="color:#1a7f37;">connected</strong> — full suite including DB tests.'
             : '<strong style="color:#9a6700;">unavailable</strong> — DB-dependent tests will be skipped unless you fix MySQL and reload.')
         . '<br>Coverage driver: '
         . ($coverageDriverOk
-            ? '<strong style="color:#1a7f37;">Xdebug/PCOV available</strong>'
-            : '<strong style="color:#9a6700;">not available</strong> — HTML coverage needs Xdebug or PCOV.')
+            ? '<strong style="color:#1a7f37;">Xdebug/PCOV available</strong> (HTML coverage)'
+            : '<strong style="color:#9a6700;">not available</strong> — HTML coverage needs <strong>Xdebug</strong> or <strong>PCOV</strong> with coverage mode on the CLI binary above.')
         . '</p>';
 
     if (is_file($coverageReportPath)) {
@@ -174,7 +184,7 @@ function itm_run_tests_render_browser_menu($dbAvailable, $coverageReportPath)
     echo '<label style="display:block;cursor:pointer;">';
     echo '<input type="radio" name="mode" value="coverage"' . $modeCoverage . '> ';
     echo '<strong>HTML coverage</strong> — verbose run + report at <code>phpunit/coverage/html/coverage.html</code>';
-    echo ' <span style="color:#57606a;">(requires Xdebug or PCOV)</span></label>';
+    echo ' <span style="color:#57606a;">(requires Xdebug or PCOV on CLI PHP)</span></label>';
     echo '</fieldset>';
     echo '<label style="cursor:pointer;"><input type="checkbox" name="skip_db" value="1"' . $skipDbChecked . '> ';
     echo 'Skip database tests (<code>ITM_SKIP_DB_TESTS=1</code>)</label>';
@@ -214,8 +224,11 @@ $want_coverage = itm_run_tests_want_coverage($isCli);
 $php_bin = itm_resolve_phpunit_cli_binary();
 $phpunit_missing_ext = itm_cli_php_binary_missing_extensions($php_bin, itm_phpunit_required_extensions());
 if ($phpunit_missing_ext !== []) {
-    $hint = 'Enable PHP extensions (mbstring, …) on the CLI binary. Dunebox: powershell -ExecutionPolicy Bypass -File scripts/setup_dunebox_php_from_laragon.ps1 (copies Xdebug from Laragon portable into D:\\dunebox-v1.0.6).';
-    $msg = 'PHPUnit requires extensions: ' . implode(', ', $phpunit_missing_ext) . '. Using: ' . $php_bin . '. ' . $hint;
+    $hint = 'PHPUnit requires extensions: dom, json, libxml, mbstring, tokenizer, xml, xmlwriter. Missing on this binary: '
+        . implode(', ', $phpunit_missing_ext) . '. CLI: ' . $php_bin
+        . '. Dunebox: powershell -ExecutionPolicy Bypass -File scripts/setup_dunebox_php_from_laragon.ps1'
+        . ' (copies Xdebug from Laragon portable into D:\\dunebox-v1.0.6). See scripts/SCRIPTS.md → PHPUnit test runner.';
+    $msg = $hint;
     if ($isCli) {
         fwrite(STDERR, $msg . $nl);
         exit(1);

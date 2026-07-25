@@ -651,6 +651,22 @@ Module seed expansion in `db/02_data.sql` (repo write, no DB mutation): `php scr
 
 Central runner for the suite under `phpunit/tests/Unit/` using `phpunit/phpunit.phar` and `phpunit/phpunit.xml`. Catalog row: **`scripts/scripts.php`**.
 
+**PHP extensions (mandatory — every run):** PHPUnit 9 exits immediately unless the **CLI** `php.exe` subprocess loads **all** of:
+
+`dom`, `json`, `libxml`, `mbstring`, `tokenizer`, `xml`, `xmlwriter`
+
+If any are missing, PHPUnit prints: *PHPUnit requires the "dom", "json", … extensions, but the "mbstring" extension is not available.* (first missing extension named). The runner resolves CLI PHP via `itm_resolve_phpunit_cli_binary()` — **not** Apache `php-cgi`. Canonical list: `itm_phpunit_required_extensions()` in `includes/itm_cli_binary.php`.
+
+**HTML coverage (additional):** `--coverage-html` needs **Xdebug** or **PCOV** with coverage enabled (`xdebug.mode` must include `coverage` for Xdebug). Without a driver, `run_tests.php` runs **Standard** mode with `--no-coverage` and shows a note. **Xdebug** is the usual choice on Windows Dunebox after `setup_dunebox_php_from_laragon.ps1`.
+
+Verify on the same binary as `.env` **`PHP_EXE`** (or the path shown on the `run_tests.php` menu):
+
+```powershell
+& "D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" -m
+```
+
+Expect **mbstring** plus **xdebug** (or **pcov**) before running **HTML coverage**.
+
 | Mode | Browser | CLI |
 |------|---------|-----|
 | **Standard** (verbose, no coverage) | Open `scripts/run_tests.php` → **Standard** | `php scripts/run_tests.php` |
