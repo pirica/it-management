@@ -791,9 +791,15 @@ if (!function_exists('itm_check_module_browser_title')) {
         }
 
         if (itm_titles_list_title_matches_canonical($titleBlock)) {
+            $hasHelper = stripos($indexContent, 'itm_crud_apply_module_icon_to_browser_title') !== false;
+            $details = 'Canonical browser title uses sanitize($crud_title) and app name suffix';
+            if ($hasHelper) {
+                $details .= '; module icon via itm_crud_apply_module_icon_to_browser_title()';
+            }
+
             return [
                 'status' => 'pass',
-                'details' => 'Canonical browser title uses sanitize($crud_title) and app name suffix',
+                'details' => $details,
             ];
         }
 

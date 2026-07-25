@@ -139,6 +139,7 @@ if (!function_exists('itm_titles_list_echo_summary')) {
             'No <title>: ' . (int) $stats['no_title'],
             'Match canonical title: ' . (int) $stats['match'],
             'Not match canonical title: ' . (int) $stats['not_match'],
+            'Runtime module emoji: prepend via itm_crud_apply_module_icon_to_browser_title() before <title> (gate: php scripts/check_crud_browser_title_module_icon.php)',
             'Expected title: ' . $expected,
             '---------------',
         ];

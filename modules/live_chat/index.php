@@ -12,7 +12,9 @@ $ui_config = itm_get_ui_configuration($conn, $companyId, $employeeId);
 $currentUiConfig = $ui_config ?? [];
 $initialConversationId = (int)($_GET['conversation_id'] ?? 0);
 $csrfToken = itm_get_csrf_token();
-?>
+    require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
+        $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0), basename(dirname($_SERVER['PHP_SELF'])), (string)($crud_title ?? ''));
+    ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
