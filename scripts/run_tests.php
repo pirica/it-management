@@ -182,10 +182,7 @@ function itm_run_tests_render_browser_menu($dbAvailable, $coverageReportPath)
 
 $db_available = false;
 if (!$user_wants_skip) {
-    $probe_conn = @mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-    if (!$probe_conn && DB_HOST === 'localhost') {
-        $probe_conn = @mysqli_connect('127.0.0.1', DB_USER, DB_PASS, DB_NAME);
-    }
+    $probe_conn = itm_mysqli_connect();
     if ($probe_conn) {
         $db_available = true;
         mysqli_close($probe_conn);

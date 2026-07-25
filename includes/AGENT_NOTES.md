@@ -14,6 +14,7 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 - **Security Functions**: Use `itm_is_safe_identifier` for dynamic SQL identifiers.
 
 ## 7. File Structure
+- **bootstrap_helpers.php** — shared bootstrap utilities including `itm_mysqli_connect()` (MySQL port / `host:port` parsing for `.env` `DB_PORT`).
 - **alerts_visibility.php** — centralized visibility logic for global/private alerts.
 - **itm_finance_attachments.php** — finance module file attachments (multi-upload, `finance/{company_id}/{module}/{document_key}/`, 5 MB, allowed extensions); loaded from `config/config.php`.
 - **notes_visibility.php** — owner + `shared_with_json` filter for Notes module; `itm_notes_fetch_visible_by_id()` for single-record view/edit load; `itm_notes_private_images_dir()`, `itm_notes_normalize_image_filename()`, and `itm_notes_resolve_image_path()` confine note attachment ZIP downloads to `files/{company_id}/Private/{username}_{employee_id}/notes/`; `itm_notes_json_mutation_response()` standardises AJAX mutation JSON (404 when zero rows affected).

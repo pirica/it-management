@@ -57,11 +57,18 @@ define('MAILERLITE_API_KEY', 'YOUR_MAILERLITE_API_KEY_HERE');
 
 ### Environment variables (recommended)
 
-The application reads optional settings from a project-root `.env` file (see `itm_load_dotenv_file()` in `config/config.php`) and from the process environment. Database credentials are still defined as constants in `config/config.php` unless you customize that file for your deployment.
+The application reads optional settings from a project-root `.env` file (see `itm_load_dotenv_file()` in `config/config.php`) and from the process environment. Database credentials are loaded into `DB_HOST`, `DB_PORT` (default `3306`), `DB_USER`, `DB_PASS`, and `DB_NAME`, then used by `itm_mysqli_connect()`.
+
+Copy `.env.example` to `.env` and set database keys there (do not commit `.env`). `DB_CONNECTION` is not used.
 
 Set in Apache vhost (or systemd/container runtime) when needed:
 
 ```apache
+SetEnv DB_HOST 127.0.0.1
+SetEnv DB_PORT 3306
+SetEnv DB_USER root
+SetEnv DB_PASS change_me
+SetEnv DB_NAME itmanagement
 SetEnv ITM_APP_URL https://itm.example.com/app/
 SetEnv ITM_ALLOWED_HOSTS itm.example.com,www.itm.example.com
 SetEnv IP2WHOIS_API_KEY your_ip2whois_key
@@ -73,7 +80,7 @@ Optional IP2WHOIS alias:
 SetEnv ITM_IP2WHOIS_API_KEY your_ip2whois_key
 ```
 
-`config/config.php` already consumes `ITM_APP_URL`, `ITM_ALLOWED_HOSTS`, and `IP2WHOIS_API_KEY` / `ITM_IP2WHOIS_API_KEY` for URL hardening and Network Discovery. There is no `ITM_API_KEY` or `ITM_DB_*` loader in the current runtime—do not document or require those names unless you add matching code first.
+`config/config.php` already consumes `DB_*`, `ITM_APP_URL`, `ITM_ALLOWED_HOSTS`, and `IP2WHOIS_API_KEY` / `ITM_IP2WHOIS_API_KEY` for database access, URL hardening, and Network Discovery. CLI scripts may use separate `ITM_DB_*` overrides (see `scripts/idfs_sync_human_test.php`); the web app uses `DB_*` from `.env`.
 
 ### Alternative: server-local config file
 

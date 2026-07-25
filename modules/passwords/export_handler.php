@@ -13,7 +13,7 @@ if (!itm_validate_csrf_token($_GET['csrf_token'] ?? '')) {
     die("Invalid CSRF token");
 }
 
-$conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+$conn = itm_mysqli_connect();
 if (!$conn) { die('Connection failed'); }
 
 $user_id = (int)$_SESSION['employee_id'];

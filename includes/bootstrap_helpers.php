@@ -542,3 +542,56 @@ if (!function_exists('itm_files_serve_url')) {
         return rtrim((string) $moduleRelativePrefix, '?') . '?path=' . rawurlencode($relativePath);
     }
 }
+
+/**
+ * Why: Local stacks often run MySQL on non-default ports; mysqli needs an explicit port or host:port parsing.
+ *
+ * @param string|null $host
+ * @param string|null $user
+ * @param string|null $password
+ * @param string|null $database
+ * @param int|null    $port When null, uses DB_PORT when defined, else 3306.
+ * @return mysqli|false
+ */
+if (!function_exists('itm_mysqli_connect')) {
+    function itm_mysqli_connect($host = null, $user = null, $password = null, $database = null, $port = null)
+    {
+        if (!function_exists('mysqli_connect')) {
+            return false;
+        }
+
+        $host = $host ?? (defined('DB_HOST') ? DB_HOST : '');
+        $user = $user ?? (defined('DB_USER') ? DB_USER : '');
+        $password = $password ?? (defined('DB_PASS') ? DB_PASS : '');
+        $database = $database ?? (defined('DB_NAME') ? DB_NAME : '');
+
+        $resolvedPort = $port;
+        if ($resolvedPort === null && defined('DB_PORT')) {
+            $resolvedPort = DB_PORT;
+        }
+        if ($resolvedPort === null || $resolvedPort === '' || $resolvedPort === false) {
+            $resolvedPort = 3306;
+        } else {
+            $resolvedPort = (int) $resolvedPort;
+        }
+
+        $hostStr = (string) $host;
+        if (
+            $port === null
+            && strpos($hostStr, '[') !== 0
+            && preg_match('/^(.+):(\d+)$/', $hostStr, $hostPortMatch) === 1
+        ) {
+            $hostStr = $hostPortMatch[1];
+            $resolvedPort = (int) $hostPortMatch[2];
+        }
+
+        $conn = @mysqli_connect($hostStr, $user, $password, $database, $resolvedPort);
+
+        if (!$conn && $hostStr === 'localhost') {
+            // Why: Some local stacks disable the MySQL socket path used by localhost but still accept TCP on 127.0.0.1.
+            $conn = @mysqli_connect('127.0.0.1', $user, $password, $database, $resolvedPort);
+        }
+
+        return $conn;
+    }
+}

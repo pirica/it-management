@@ -14,12 +14,14 @@
    - Set permissions: chmod 755 equipment/
 
 3. CONFIGURATION
-   - Edit config/config.php
-   - Update database credentials if needed:
-     * DB_HOST: localhost
+   - Copy .env.example to .env in the project root (recommended).
+   - Set database credentials in .env (loaded by config/config.php):
+     * DB_HOST: 127.0.0.1 (or host:port, e.g. 127.0.0.1:3307)
+     * DB_PORT: 3306 (optional; default 3306 when empty)
      * DB_USER: root
-     * DB_PASS: (your password)
+     * DB_PASS: (your password — Laragon default: itmanagement)
      * DB_NAME: itmanagement
+   - Or set the same keys via server environment variables.
 
 4. ACCESS SYSTEM
    - Open browser

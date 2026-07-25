@@ -291,7 +291,7 @@ Full API documentation is available in the `scripts/api.php` file (viewable in t
 
 1. Extract the project files into your web root.
 2. Import `db/` into MySQL (or run `bash scripts/import_database_split.sh` for the generated `db/` split — see `db/AGENT_NOTES.md`).
-3. Update database credentials in `config/config.php`.
+3. Copy `.env.example` to `.env` and set `DB_HOST`, optional `DB_PORT` (default 3306), `DB_USER`, `DB_PASS`, and `DB_NAME` (see `.env.example`).
 4. Create an `images/` directory for equipment uploads.
 5. Create a `tickets_photos/` directory for ticket uploads.
 6. Create a `backups/` directory for backup files.
@@ -586,38 +586,31 @@ Register / plans: [IP2WHOIS](https://www.ip2whois.com/register) — free tier li
 
 <h2 align="center">Secrets Management (Required)</h2>
 
-Move secrets out of source control immediately. `config/config.php` currently defines DB credentials and API key constants inline, which is risky for leaks and difficult rotation. Use environment variables (or a server-local config file excluded from git) and fail fast when missing.
+Move secrets out of source control. Use a project-root `.env` file (from `.env.example`) or server environment variables; do not commit `.env`.
 
-```php
-define('RESEND_API_KEY', 're_xxxxxxxxx');
+### Example: `.env` (recommended)
+
+```env
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=root
+DB_PASS=change_me
+DB_NAME=itmanagement
+IP2WHOIS_API_KEY=your_ip2whois_key
+RESEND_API_KEY=re_xxxxxxxxx
 ```
 
-### Example: environment variables (recommended)
+`config/config.php` loads `.env` on startup and defines `DB_*` constants. Connections use `itm_mysqli_connect()` (honours `DB_PORT` and `host:port` in `DB_HOST`).
 
-Set environment variables in Apache vhost (or systemd/container runtime):
+### Example: Apache `SetEnv`
 
 ```apache
-SetEnv ITM_DB_HOST localhost
-SetEnv ITM_DB_NAME itmanagement
-SetEnv ITM_DB_USER root
-SetEnv ITM_DB_PASS change_me
-SetEnv ITM_API_KEY change_me
+SetEnv DB_HOST 127.0.0.1
+SetEnv DB_PORT 3306
+SetEnv DB_USER root
+SetEnv DB_PASS change_me
+SetEnv DB_NAME itmanagement
 SetEnv IP2WHOIS_API_KEY your_ip2whois_key
-```
-
-Then load and validate them in `config/config.php`:
-
-```php
-$itmDbHost = getenv('ITM_DB_HOST') ?: '';
-$itmDbName = getenv('ITM_DB_NAME') ?: '';
-$itmDbUser = getenv('ITM_DB_USER') ?: '';
-$itmDbPass = getenv('ITM_DB_PASS') ?: '';
-$itmApiKey = getenv('ITM_API_KEY') ?: '';
-
-if ($itmDbHost === '' || $itmDbName === '' || $itmDbUser === '' || $itmApiKey === '') {
-    http_response_code(500);
-    exit('Configuration error: required environment variables are missing.');
-}
 ```
 
 ### Alternative: server-local config file
