@@ -1,4 +1,14 @@
 <?php
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/repro_select_options.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 // CSRF: itm_validate_csrf_token()
 /**
  * Repro script for RBAC bypass in modules/select_options_api.php

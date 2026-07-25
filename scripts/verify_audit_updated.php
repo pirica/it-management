@@ -5,6 +5,16 @@
  * Verifies that the fixed audit_functions.php correctly redacts sensitive fields.
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_audit_updated.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once __DIR__ . '/../includes/audit_functions.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 

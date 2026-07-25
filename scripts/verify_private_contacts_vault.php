@@ -4,6 +4,16 @@
  * Verifies private contacts vault encryption (encrypt on write, decrypt on read, legacy plaintext).
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_private_contacts_vault.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/private_contacts/pc_vault_helpers.php</code>, create/edit persistence, list hydrate/search, or <code>itm_vault_reencrypt_private_contacts()</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 require_once dirname(__DIR__) . '/config/config.php';
 require_once ROOT_PATH . 'modules/private_contacts/pc_vault_helpers.php';

@@ -9,8 +9,18 @@
  *   Browser: scripts/test_db_error_messages.php
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="test_db_error_messages.php">run</a>. CLI: <code>php scripts/test_db_error_messages.php</code> — exit <code>1</code> on any failed assertion. Run after changing <code>config/config.php</code>, <code>includes/ui_alert_helpers.php</code>, or IDF/header flash paths.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 if ($itmIsCli) {
     define('ITM_CLI_SCRIPT', true);

@@ -9,8 +9,18 @@
  * Browser: scripts/verify_db_migrations.php
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_db_migrations.php</code> or <a href="verify_db_migrations.php">browser</a> (Admin). JSON: <code>--json</code> or <code>?format=json</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (!defined('ITM_CLI_SCRIPT')) {
     define('ITM_CLI_SCRIPT', true);
 }

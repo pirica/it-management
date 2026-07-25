@@ -10,8 +10,18 @@
  * Browser access requires administrator privileges.
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Open <code>scripts/pitfalls.php</code> in the browser (Admin only). CLI: <code>php scripts/pitfalls.php [-module=&lt;slug&#124;path&gt;] [--json]</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $root_dir = dirname(__DIR__);
 $modules_dir = $root_dir . DIRECTORY_SEPARATOR . 'modules';
 $template_path = $root_dir . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'AGENT_NOTES.md';

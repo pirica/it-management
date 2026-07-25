@@ -13,8 +13,18 @@
  * Bare CLI (no employee id): prints usage and exits 0 (perform_audit.php safe).
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Open <a href="generate_reassignment.php">generate_reassignment.php</a> — <code>?employee_id=N</code> preview or <code>?from=N&amp;to=M</code> for apply SQL.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 
 if ($itmIsCli) {

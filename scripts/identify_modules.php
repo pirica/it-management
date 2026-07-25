@@ -5,6 +5,16 @@
  * Browser: Admin JSON preview; optional ?save=1 writes scripts/modules_metadata.json.
  * CLI: php scripts/identify_modules.php > scripts/modules_metadata.json
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="identify_modules.php" target="_blank" rel="nofollow noreferrer">JSON preview</a> (Admin) · <a href="identify_modules.php?save=1" target="_blank" rel="nofollow noreferrer">?save=1</a> writes <code>modules_metadata.json</code>. CLI: <code>php scripts/identify_modules.php &gt; scripts/modules_metadata.json</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
 if ($itmIsCli) {
     define('ITM_CLI_SCRIPT', true);

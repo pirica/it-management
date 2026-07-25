@@ -9,6 +9,16 @@
  * CLI: php scripts/list_enum_fields.php [--source=sql|db|both]
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<strong>Log in first.</strong> Open <a href="list_enum_fields.php">list_enum_fields.php</a>. CLI: <code>php scripts/list_enum_fields.php [--source=sql|db|both]</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 require_once dirname(__DIR__) . '/config/config.php';
 require_once ROOT_PATH . 'scripts/lib/script_cli_output.php';

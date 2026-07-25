@@ -23,8 +23,18 @@
  * Remove a module from scripts/data/index_table_compliance_baseline.txt when it passes.
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: HTML-escaped report in <code>&lt;pre&gt;</code> (vertical list). CLI: <code>php scripts/check_index_table_compliance.php</code> — run manually when index-table contract changes; exit <code>1</code> on new violations.<br><code>--strict</code> · <code>--write-baseline</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $root = realpath(__DIR__ . '/..');
 if ($root === false) {
     fwrite(STDERR, "Unable to resolve project root.\n");

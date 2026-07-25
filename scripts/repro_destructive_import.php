@@ -8,6 +8,16 @@
  * runs import, asserts rows missing from payload survive, then tears down disposable rows.
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="repro_destructive_import.php">dry-run</a>, <a href="repro_destructive_import.php?apply=1">apply</a>. CLI: <code>php scripts/repro_destructive_import.php</code>, <code>php scripts/repro_destructive_import.php --apply</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 if ($itmIsCli) {
     define('ITM_CLI_SCRIPT', true);

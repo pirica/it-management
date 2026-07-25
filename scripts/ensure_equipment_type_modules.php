@@ -8,6 +8,16 @@
  * Does not remove anything; only creates missing is_workstation, is_switch, … wrappers.
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="ensure_equipment_type_modules.php">dry-run</a> / <a href="ensure_equipment_type_modules.php?apply=1">apply=1</a>. CLI: <code>php scripts/ensure_equipment_type_modules.php</code> then <code>--apply</code>. Exit <code>1</code> if any canonical <code>index.php</code> is missing after apply.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 require_once __DIR__ . '/lib/equipment_type_modules.php';
 

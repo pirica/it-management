@@ -9,6 +9,16 @@
  * - Needs review (context-validated?): no direct tenant predicate, but nearby/context hints suggest another guard.
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: HTML report with detailed leak locations. CLI: <code>php scripts/check_multi_tenant_leaks.php</code> — run after CRUD changes to ensure data isolation.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 
 $modules_dir = __DIR__ . '/../modules';

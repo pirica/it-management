@@ -8,8 +8,18 @@
  *
  * Why: SCRIPTS_TEST_MATRIX.md Tier 2 lists ~20 static gates not covered by smoke_test.sh.
  */
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: menu at <a href="run_tier2_checks.php" target="_blank" rel="nofollow noreferrer">run_tier2_checks.php</a>; run with <code>?run=1</code> (optional <code>&amp;continue=1</code>). CLI: <code>php scripts/run_tier2_checks.php</code>, <code>--continue</code>, <code>--list</code>, <code>--only=check_ui_action_emoji.php</code>. Optional <code>PHP_BIN</code> env on Windows Laragon.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $isCli = (PHP_SAPI === 'cli');
 $argvList = $GLOBALS['argv'] ?? [];
 

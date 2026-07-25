@@ -24,8 +24,18 @@
  * After login, POSTs to index.php to set session company_id (Admin login otherwise picks the first active company).
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+CLI (recommended): <code>php scripts/idfs_sync_human_test.php</code><br> Optional env: <code>ITM_BASE_URL</code>, <code>ITM_USER</code>, <code>ITM_PASS</code>, <code>ITM_COMPANY_ID</code>, <code>ITM_IDF_ID</code> (auto-resolved when the pair is missing).<br> Browser: HTML log with <strong>← Scripts index</strong> and module/table links (debugging). Required before IDF-related PRs per AGENTS.md.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once __DIR__ . '/lib/script_cli_output.php';
 itm_script_output_begin();
 

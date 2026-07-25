@@ -6,8 +6,18 @@
  *
  * Browser: scripts/ui_configuration_reviewed.php (Admin). CLI: php scripts/ui_configuration_reviewed.php [--json]
  */
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/ui_configuration_reviewed.php</code> · <code>--json</code> · exit <code>1</code> on invalid registry JSON.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
 if ($itmIsCli) {
     define('ITM_CLI_SCRIPT', true);

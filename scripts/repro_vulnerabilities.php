@@ -3,6 +3,16 @@
  * Reproduction script for identified security vulnerabilities.
  * Browser + CLI. Uses isolated CLI subprocesses (Laragon php.exe) and script_cli_output contract.
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Open in browser or run via CLI: <code>php scripts/repro_vulnerabilities.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 if ($itmIsCli) {
     define('ITM_CLI_SCRIPT', true);

@@ -4,6 +4,16 @@
  * Compares N individual COUNT queries vs 1 consolidated query (same SQL/filters).
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/benchmark_stats_optimized.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 require __DIR__ . '/../config/config.php';
 require_once ROOT_PATH . 'includes/itm_user_config_stats.php';

@@ -45,6 +45,22 @@ if (!function_exists('itm_apply_script_bootstrap')) {
             require_once dirname(__DIR__) . '/../config/config.php';
         }
 
+        // Why: Browser shows How to use landing before run=1; apply scripts default to dry-run until apply=1.
+        if (!$isCli) {
+            require_once __DIR__ . '/itm_script_browser_usage.php';
+            $usageGateOpts = ['supports_apply' => true];
+            if (isset($options['supports_apply'])) {
+                $usageGateOpts['supports_apply'] = !empty($options['supports_apply']);
+            }
+            if (!empty($options['usage_gate_title'])) {
+                $usageGateOpts['title'] = (string)$options['usage_gate_title'];
+            }
+            if (!empty($options['usage_gate_exempt'])) {
+                $usageGateOpts['exempt'] = true;
+            }
+            itm_script_browser_usage_maybe_gate($usageGateOpts);
+        }
+
         // Why: config.php sets $conn in the including scope; inside this function that is local,
         // not $GLOBALS['conn'] — admin gates need the mysqli instance from the require above.
         $itmApplyScriptConn = (isset($conn) && $conn instanceof mysqli) ? $conn : null;

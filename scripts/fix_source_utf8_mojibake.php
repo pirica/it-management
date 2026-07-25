@@ -6,8 +6,18 @@
  * CLI: php scripts/fix_source_utf8_mojibake.php [--path=modules/patches_updates]
  *       php scripts/fix_source_utf8_mojibake.php --files=modules/a.php,modules/b.php [--apply]
  */
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="fix_source_utf8_mojibake.php">selection UI</a>. CLI: <code>php scripts/fix_source_utf8_mojibake.php --files=modules/foo/index.php --apply</code>. Bulk all files: <code>apply_utf8_mojibake_fix.php --apply</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 require_once __DIR__ . '/lib/itm_mojibake_audit.php';
 

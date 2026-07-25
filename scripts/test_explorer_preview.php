@@ -6,6 +6,16 @@
  * .htaccess blocking direct /files/ HTTP access is unrelated to preview classification.
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/test_explorer_preview.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (!function_exists('explorer_resolve_preview_mode_logic')) {
     function explorer_resolve_preview_mode_logic($filename) {
         $ext = strtolower(pathinfo((string)$filename, PATHINFO_EXTENSION));

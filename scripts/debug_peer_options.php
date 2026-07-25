@@ -8,8 +8,18 @@
  * Browser: scripts/debug_peer_options.php?company_id=4&employee_id=4
  * CLI: php scripts/debug_peer_options.php --company_id=4 --employee_id=4
  */
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/debug_peer_options.php --company_id=4 --employee_id=4</code> — browser <code>?company_id=4&amp;employee_id=4</code>. Run when peer picker looks wrong vs Settings same-tenant toggle.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';

@@ -9,8 +9,18 @@
  * Optional: php scripts/auth_register_reset_human_test.php --company=2
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/auth_register_reset_human_test.php</code> — default companies 1–2; <code>php scripts/auth_register_reset_human_test.php --company=2</code>. Run after <code>register.php</code>, <code>login.php</code>, <code>forgot-password.php</code>, or <code>reset-password.php</code> changes.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../includes/itm_employee_employment_status.php';

@@ -4,8 +4,18 @@
  *
  * Why: Standard UI actions use emoji-only visible text; full phrases live in title/aria-label.
  */
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: plain-text report. CLI: <code>php scripts/check_ui_action_emoji.php</code> — exit <code>0</code> when <strong>0 violations incl. mixed emoji+word</strong>; exit <code>1</code> on any match. Run after UI label changes.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $root = dirname(__DIR__);
 require_once $root . '/includes/itm_ui_action_labels.php';
 require_once __DIR__ . '/lib/script_cli_output.php';

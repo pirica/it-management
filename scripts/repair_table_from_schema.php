@@ -10,6 +10,16 @@
  * CLI: php scripts/repair_table_from_schema.php --table=table_name [--apply]
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="repair_table_from_schema.php?table=equipment">dry-run</a> / <a href="repair_table_from_schema.php?table=equipment&amp;apply=1">apply=1</a> (Admin). CLI: <code>php scripts/repair_table_from_schema.php --table=table_name</code> then <code>--apply</code> — backup first.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 

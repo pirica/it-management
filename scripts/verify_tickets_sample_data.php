@@ -4,6 +4,16 @@
  * Verifies tickets Add sample data on empty tenants (including zero local employees).
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+CLI: <code>php scripts/verify_tickets_sample_data.php</code> — exit <code>1</code> on failure. Run when changing <code>itm_seed_insert_tickets_sample_row()</code>, <code>modules/tickets/sample_seed_helpers.php</code>, or tickets sample POST in <code>index.php</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 require_once dirname(__DIR__) . '/config/config.php';
 require_once ROOT_PATH . 'modules/tickets/sample_seed_helpers.php';

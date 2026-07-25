@@ -9,8 +9,18 @@
  * CLI: php scripts/test_employee_id-foreign_keys.php
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Open <a href="test_employee_id-foreign_keys.php">test_employee_id-foreign_keys.php</a> in the browser.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (PHP_SAPI === 'cli') {
     define('ITM_CLI_SCRIPT', true);
 }

@@ -10,8 +10,18 @@
  * CLI: php scripts/list_modules_not_on_sidebar.php [--json]
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<strong>Admin login required.</strong> Open <a href="list_modules_not_on_sidebar.php" target="_blank" rel="nofollow noreferrer">list_modules_not_on_sidebar.php</a> or <a href="list_modules_not_on_sidebar.php?format=json">?format=json</a>.<br> CLI: <code>php scripts/list_modules_not_on_sidebar.php</code> · JSON: <code>--json</code> · exit <code>1</code> on unexpected gaps
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = PHP_SAPI === 'cli';
 
 if ($itmIsCli) {

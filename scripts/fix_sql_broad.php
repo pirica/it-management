@@ -5,6 +5,16 @@
  * Browser: dry-run by default; ?apply=1 (Admin) writes db/01_schema.sql.
  * CLI: php scripts/fix_sql_broad.php then php scripts/fix_sql_broad.php --apply
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="fix_sql_broad.php">dry-run</a> / <a href="fix_sql_broad.php?apply=1">apply=1</a>. CLI: <code>php scripts/fix_sql_broad.php</code> then <code>--apply</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 

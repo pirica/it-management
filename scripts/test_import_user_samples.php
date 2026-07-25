@@ -8,6 +8,16 @@
  * Browser: scripts/test_import_user_samples.php (Admin). CLI: php scripts/test_import_user_samples.php
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="test_import_user_samples.php" target="_blank" rel="nofollow noreferrer">run</a> (Admin). CLI: <code>php scripts/test_import_user_samples.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 

@@ -24,8 +24,18 @@
  * Browser: ?list_excluded=1 prints gate-excluded slug names in the header.
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: plain-text module list. CLI: <code>php scripts/check_ui_configuration_coverage.php</code> — run manually when module UI/layout changes; exits <code>2</code> only on gated <code>[fail]</code>. Audits table actions, export card, search, Settings <code>records_per_page</code> pagination, bulk Select to Delete / Clear Table, and CRUD entry files. Gate-excluded slugs (<code>scripts/data/ui_configuration_excluded_modules.txt</code>, synced with <code>docs/list_bespoke_UI.txt</code>) and <code>is_*</code> prefixes print every check as <code>[n/a][pass]</code>, <code>[n/a][fail]</code>, or <code>[n/a][n/a]</code>; reviewed lines add <code>[reviewed]</code> via <a href="ui_configuration_reviewed.php" target="_blank" rel="nofollow noreferrer">ui_configuration_reviewed.php</a> · <code>scripts/data/ui_configuration_reviewed.json</code>. Optional <code>--list-excluded</code> / <code>?list_excluded=1</code> prints gate-excluded slug names in the header.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $root = dirname(__DIR__);
 $modulesDir = $root . '/modules';
 

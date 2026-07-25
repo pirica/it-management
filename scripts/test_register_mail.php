@@ -9,8 +9,18 @@
  * CLI: php scripts/test_register_mail.php email=test@example.com [--company=1]
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<strong>Log in first.</strong> Open <a href="test_register_mail.php" target="_blank" rel="nofollow noreferrer">test_register_mail.php</a>. CLI: <code>php scripts/test_register_mail.php email=test@example.com</code> or <code>php scripts/test_register_mail.php email=test@example.com --company=1</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (PHP_SAPI !== 'cli') {
     require_once dirname(__DIR__) . '/config/config.php';
     require_once __DIR__ . '/lib/script_browser_nav.php';

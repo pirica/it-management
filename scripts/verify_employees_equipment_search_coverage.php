@@ -6,6 +6,16 @@
  * Optional env: ITM_TEST_COMPANY_ID (default 1)
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_employees_equipment_search_coverage.php</code> — run after changing <code>itm_employees_search.php</code>, <code>itm_equipment_search.php</code>, or employees/equipment index search. Covers 34 runtime probes (scalar identity, FK labels, equipment scalars).
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (!defined('ITM_CLI_SCRIPT')) {
     define('ITM_CLI_SCRIPT', true);
 }

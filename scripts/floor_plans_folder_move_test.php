@@ -12,6 +12,16 @@
  *   ITM_TEST_COMPANY_ID (default: 1)
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: HTML log with module/table links (needs DB). CLI: <code>php scripts/floor_plans_folder_move_test.php</code> — optional <code>ITM_TEST_COMPANY_ID</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (version_compare(PHP_VERSION, '7.1.0', '<')) {
     fwrite(STDERR, "This script requires PHP 7.1 or newer (nullable return types).\n");
     fwrite(STDERR, 'Your CLI reports PHP ' . PHP_VERSION . ". Use Laragon's PHP 7.4 binary.\n");

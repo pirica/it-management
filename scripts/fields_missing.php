@@ -10,8 +10,18 @@
  * Reviewed bespoke [SKIP][fail] exceptions: scripts/data/fields_missing_reviewed.json (manifest: fields_missing_reviewed.php).
  * --strict-gate: exit 1 when any bespoke [SKIP][fail] line is not listed in fields_missing_reviewed.json.
  */
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: optional <code>?module=</code> · <code>?strict_gate=1</code> · <code>?json=1</code>. CLI: <code>php scripts/fields_missing.php</code> · <code>--module=&lt;slug&gt;</code> · <code>--json</code> · <code>--strict-gate</code>. Exit <code>1</code> on actionable <code>[FAIL]</code>; default exit <code>0</code> for bespoke <code>[SKIP][fail]</code> only; <code>--strict-gate</code> also fails on unreviewed bespoke <code>[SKIP][fail]</code>. JSON schema for reviewed exceptions: <code>scripts/SCRIPTS.md</code> → <em>fields_missing reviewed exceptions</em>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
 if ($itmIsCli) {
     define('ITM_CLI_SCRIPT', true);

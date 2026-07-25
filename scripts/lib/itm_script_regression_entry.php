@@ -15,4 +15,7 @@ if (itm_script_is_cli() && !defined('ITM_CLI_SCRIPT')) {
 
 require_once dirname(__DIR__) . '/../config/config.php';
 
+require_once __DIR__ . '/itm_script_browser_usage.php';
+itm_script_browser_usage_maybe_gate([]);
+
 itm_script_require_admin_browser_or_exit(isset($conn) ? $conn : null);

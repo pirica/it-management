@@ -3,6 +3,16 @@
  * Regression: Explorer path validation bypass via ./ prefix.
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/repro_explorer_path_bypass_v4.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 define('ITM_VERIFY_SKIP_ROUTER', true);
 require_once __DIR__ . '/../config/config.php';

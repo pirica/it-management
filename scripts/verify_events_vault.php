@@ -4,6 +4,16 @@
  * Verifies private events vault encryption (encrypt on write, decrypt on read, shared events plaintext).
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_events_vault.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/events/events_vault_helpers.php</code>, persistence in <code>modules/events/index.php</code>, calendar event hydration, or <code>itm_vault_reencrypt_events()</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 require_once dirname(__DIR__) . '/config/config.php';
 require_once ROOT_PATH . 'modules/events/events_vault_helpers.php';

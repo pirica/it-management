@@ -29,6 +29,8 @@ if (!function_exists('itm_check_script_begin_browser_admin')) {
 
         if (!itm_script_access_is_cli()) {
             require_once dirname(__DIR__, 2) . '/config/config.php';
+            require_once __DIR__ . '/itm_script_browser_usage.php';
+            itm_script_browser_usage_maybe_gate(['title' => (string)$title]);
             itm_script_require_admin_script_or_exit(
                 $conn,
                 'Access denied. Administrator privileges required.'

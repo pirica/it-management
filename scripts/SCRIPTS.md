@@ -45,7 +45,7 @@ State the map, summary, and analysis in the agent reply before the first impleme
 
 ## 1. Catalog Registration
 
-**Single source of truth:** **`scripts/scripts.php`** holds every catalog row (Script link, Access badges, **What it does**, **How to use**). Do **not** duplicate those four columns in `SCRIPTS.md`, `scripts/AGENT_NOTES.md`, or module notes — link to the catalog (or name the script + one-line purpose) and put behavioral contracts only in `SCRIPTS.md`. **`scripts/SCRIPTS_TEST_MATRIX.md`** classifies cataloged scripts by tier (not a second catalog).
+**Single source of truth:** **`scripts/scripts.php`** holds every catalog row (Script link, Access badges, **What it does**). For **`scripts/*.php`**, **How to use** lives in each entry script (`itm_script_browser_how_to_use()`) and is shown on the browser landing page (dodgerblue info) before **Dry-run** / **Continue** (`run=1`; apply scripts also offer `apply=1` on Continue). Catalog PHP rows use a stub fifth column (`scripts-catalog-how-stub`). Non-PHP documentation rows keep full **How to use** in the catalog. Do **not** duplicate catalog columns in `SCRIPTS.md`, `scripts/AGENT_NOTES.md`, or module notes — link to the catalog and put behavioral contracts only in `SCRIPTS.md`. **`scripts/SCRIPTS_TEST_MATRIX.md`** classifies cataloged scripts by tier (not a second catalog).
 
 All scripts intended for administrative or developer use must be registered in `scripts/scripts.php`.
 - Use the standardized HTML table structure.
@@ -368,9 +368,17 @@ Add a table row with:
 | **Script** | Filename (link if browser-safe to open) |
 | **Access** | **Browser** + **CLI** (most `scripts/*.php`), or **CLI-only** (bash, Python, session hijack helpers) — see catalog badges in `scripts/scripts.php` |
 | **What it does** | Plain-language purpose (one short paragraph) |
-| **How to use** | Exact browser URL/path, query flags, env vars, and CLI command: `php scripts/<name>.php [options]` |
+| **How to use** | **Non-PHP** rows only: exact browser URL/path, query flags, env vars, and CLI command. **PHP** rows: stub text — open the script in the browser for the landing page (see **Browser script usage landing** below). |
 
 Do not add a script under `scripts/` without updating `scripts/scripts.php`.
+
+#### Browser script usage landing (`scripts/lib/itm_script_browser_usage.php`)
+
+- Each browser-capable **`scripts/*.php`** defines **`itm_script_browser_how_to_use(): string`** (plain text or safe HTML). Maintenance: **`php scripts/apply_script_catalog_usage_to_php.php --apply`** moves legacy catalog copy into PHP files and stubs catalog column 5.
+- **First browser GET** (no `run=1`): **← Scripts index**, **How to use** block (`.itm-script-usage-info`, **dodgerblue**), then **🔍** Dry-run (`run=1`, no `apply`) and **▶️** Continue (`run=1`; **apply** scripts add `apply=1` on Continue — Admin gate unchanged).
+- **CLI** skips the landing. **Exempt** basenames: `itm_script_browser_usage_exempt_basenames()` (catalog, API docs, MBQA runners, full HTML apps such as `pitfalls.php`).
+- **Hooks:** `itm_apply_script_bootstrap()` (apply tools, `supports_apply` true), `itm_script_output_begin()` (audit scripts), `itm_script_regression_entry.php`, `itm_check_script_begin_browser_admin()`.
+- **Static gate:** `php scripts/check_script_browser_usage.php` — usage function + hook + catalog stub per browser PHP row.
 
 #### API documentation (`scripts/api.php`)
 

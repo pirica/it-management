@@ -15,8 +15,18 @@
  *   /scripts/DBdesign.php?format=json
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Open <a href="DBdesign.php" target="_blank" rel="nofollow noreferrer">DBdesign.php</a>. Optional: <a href="DBdesign.php?format=mermaid">?format=mermaid</a>, <a href="DBdesign.php?format=json">?format=json</a>. CLI: <code>php scripts/DBdesign.php --mermaid</code> or <code>--json</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (!defined('ITM_CLI_SCRIPT')) {
     define('ITM_CLI_SCRIPT', true);
 }

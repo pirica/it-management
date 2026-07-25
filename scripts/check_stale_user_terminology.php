@@ -5,6 +5,16 @@
  *
  * Why: After the employees merge, docs/scripts must say Employees module and employee_id.
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: plain-text report. CLI: <code>php scripts/check_stale_user_terminology.php</code> — run after docs/script copy changes; exit <code>1</code> on failure.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once __DIR__ . '/lib/itm_script_access_helpers.php';
 
 $nl = itm_check_script_begin_browser_admin('Stale User Terminology Check');

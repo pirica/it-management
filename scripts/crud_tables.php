@@ -11,8 +11,18 @@
  *   php scripts/crud_tables.php > crud_tables.html
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: HTML report. CLI: <code>php scripts/crud_tables.php</code> (HTML to stdout) or <code>&gt; crud_tables.html</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $rootPath = dirname(__DIR__) . DIRECTORY_SEPARATOR;
 $modulesPath = $rootPath . 'modules';
 

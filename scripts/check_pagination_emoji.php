@@ -9,8 +9,18 @@
  * Usage (repository root):
  *   php scripts/check_pagination_emoji.php
  */
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: plain-text report. CLI: <code>php scripts/check_pagination_emoji.php</code> — exit <code>0</code> when 0 violations. Run after pagination label or first/last control changes.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $root = realpath(__DIR__ . '/..');
 if ($root === false) {
     fwrite(STDERR, "Unable to resolve project root.\n");

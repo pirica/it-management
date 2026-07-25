@@ -6,8 +6,18 @@
  * Browser: scripts/verify_dashboard_online_employees.php
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="verify_dashboard_online_employees.php">verify_dashboard_online_employees.php</a>. CLI: <code>php scripts/verify_dashboard_online_employees.php</code>. Run when changing online session presence or admin Online now markup.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once ROOT_PATH . 'includes/itm_active_sessions.php';

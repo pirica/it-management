@@ -8,6 +8,16 @@
  * Also invoked automatically at the end of module_browser_qa_runner.php.
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="cleanup_equipment_test_module_artifacts.php">dry-run</a> / <a href="cleanup_equipment_test_module_artifacts.php?apply=1">apply=1</a> (Admin). CLI: <code>php scripts/cleanup_equipment_test_module_artifacts.php</code> then <code>--apply</code>. Manual run after other equipment DB tests if needed.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 require_once __DIR__ . '/lib/equipment_type_modules.php';
 

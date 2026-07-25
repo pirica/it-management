@@ -10,8 +10,18 @@
  * CLI runtime: set ITM_TEST_BASE_URL and ITM_TEST_COOKIE, then add --runtime
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<strong>Log in first.</strong> Open <a href="test_form_failed_save_display.php" target="_blank" rel="nofollow noreferrer">test_form_failed_save_display.php</a>, run static scan, optionally enable <em>Runtime HTTP tests</em>. CLI: <code>php scripts/test_form_failed_save_display.php</code> · runtime: <code>--runtime</code> with <code>ITM_TEST_BASE_URL</code> and <code>ITM_TEST_COOKIE</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = PHP_SAPI === 'cli';
 
 if ($itmIsCli) {

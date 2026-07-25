@@ -2,6 +2,16 @@
 /**
  * PoC for SQL Injection in Floor Designer via 'dir' parameter.
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/repro_sqli.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 putenv('DB_HOST=127.0.0.1');
 putenv('DB_USER=root');

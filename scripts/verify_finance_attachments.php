@@ -2,6 +2,16 @@
 /**
  * Regression: finance module attachments (storage path, validation, DB table).
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_finance_attachments.php</code>. Run when changing <code>includes/itm_finance_attachments.php</code> or finance attachment UI on invoices, bills, expenses, customers, bank_accounts.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once dirname(__DIR__) . '/config/config.php';
 
 $failures = 0;

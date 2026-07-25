@@ -10,6 +10,16 @@
  * Browser: scripts/verify_audit_logs_disclosure.php (admin login required).
  * CLI: php scripts/verify_audit_logs_disclosure.php
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_audit_logs_disclosure.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (PHP_SAPI === 'cli') {
     define('ITM_CLI_SCRIPT', true);
 }

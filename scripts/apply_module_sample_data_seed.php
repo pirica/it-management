@@ -14,8 +14,18 @@
  * Browser apply: scripts/apply_module_sample_data_seed.php?module=idf_device_type&apply=1
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="apply_module_sample_data_seed.php?module=idf_device_type">dry-run</a> / <a href="apply_module_sample_data_seed.php?module=idf_device_type&amp;apply=1">apply=1</a>. CLI: <code>php scripts/apply_module_sample_data_seed.php --module=idf_device_type</code> then <code>php scripts/apply_module_sample_data_seed.php --module=idf_device_type --apply</code> · <code>--value-column=name --sample=LabPoE</code>. After apply, refreshes <code>db/02_data_sample.sql</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 /**
  * Write error output in CLI (STDERR) or browser (<pre> from apply bootstrap).
  */

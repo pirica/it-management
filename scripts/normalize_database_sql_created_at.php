@@ -8,8 +8,18 @@
  * D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts/normalize_database_sql_created_at.php
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="normalize_database_sql_created_at.php">dry-run</a> / <a href="normalize_database_sql_created_at.php?apply=1">apply=1</a>. CLI: <code>php scripts/normalize_database_sql_created_at.php</code> then <code>php scripts/normalize_database_sql_created_at.php --apply</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 

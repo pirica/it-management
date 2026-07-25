@@ -6,8 +6,18 @@
  * not terminal commands.
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<strong>Log in first.</strong> Open the UI → <strong>← Scripts index</strong> at top → choose scan mode, company, risk filter, output (table/JSON) → <strong>Run scan</strong>. CLI: <code>php scripts/detect_fk_dropdown_ui_risk.php</code> · <code>--company=N</code> · <code>--json</code> · <code>--data-only</code> · <code>--code-only</code> · <code>--repair-catalogs</code> (one-time legacy DB cleanup).
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'itm_script_regression_entry.php';
 require_once ROOT_PATH . 'includes' . DIRECTORY_SEPARATOR . 'detect_fk_dropdown_ui_risk_lib.php';
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'script_browser_nav.php';

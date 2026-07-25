@@ -3,8 +3,18 @@
  * IT Management System - API Documentation (project-aligned)
  **/
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Open <code>scripts/api.php</code> in the browser after API changes. Run <code>php scripts/run_tests.php --filter ApiFunctionsTest</code> when editing collector helpers. After switch-port changes also run <code>php scripts/idfs_sync_human_test.php</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 // Why: Programmatic clients need a lightweight JSON probe without loading the HTML catalogue.
 if (isset($_GET['rate_limit']) && (string)$_GET['rate_limit'] === '1') {
     if (!defined('ITM_API_RATE_LIMIT_PROBE')) {

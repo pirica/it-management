@@ -9,8 +9,18 @@
  * CLI: php scripts/force_delete_company.php --id=6
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Open <a href="force_delete_company.php">force_delete_company.php</a> while logged in as Admin. CLI: <code>php scripts/force_delete_company.php --id=N</code>. <strong>DANGER: Destructive.</strong>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (PHP_SAPI === 'cli') {
     define('ITM_CLI_SCRIPT', true);
 }

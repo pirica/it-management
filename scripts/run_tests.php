@@ -6,6 +6,16 @@
  * It is intended for both CLI and Browser access.
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser menu: <a href="run_tests.php" target="_blank" rel="nofollow noreferrer">run_tests.php</a><br> HTML coverage: <code>run_tests.php?run=1&amp;mode=coverage</code><br> CLI: <code>php scripts/run_tests.php</code><br> CLI coverage: <code>php scripts/run_tests.php --coverage</code><br> Skip DB: <code>ITM_SKIP_DB_TESTS=1</code> or browser checkbox
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 // Define that we are in a CLI script context to bypass web-only auth/logic
 define('ITM_CLI_SCRIPT', true);
 

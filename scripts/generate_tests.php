@@ -4,6 +4,16 @@
  *
  * Browser: dry-run preview (Admin). Writes with ?apply=1 (Admin). CLI: writes immediately.
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="generate_tests.php" target="_blank" rel="nofollow noreferrer">dry-run</a> (Admin) · <a href="generate_tests.php?apply=1" target="_blank" rel="nofollow noreferrer">?apply=1</a> writes missing tests only (skips existing <code>*Test.php</code>). CLI: <code>php scripts/generate_tests.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
 if ($itmIsCli) {
     define('ITM_CLI_SCRIPT', true);
