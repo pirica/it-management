@@ -111,7 +111,7 @@ INSERT INTO `email_alert_rules` (`company_id`, `rule_slug`, `enabled`, `days_bef
 ('1', 'events_datetime', '0', '0', NULL, '1', '2026-06-18 02:00:00');
 
 INSERT INTO `email_smtp_configurations` (`id`, `company_id`, `config_name`, `smtp_host`, `smtp_port`, `username`, `password_encrypted`, `from_email`, `from_name`, `imap_port`, `pop3_port`, `pop3_tls_mode`, `pop3_require_secure_connection`, `is_default`, `active`, `created_at`, `updated_at`) VALUES
-('1', '1', 'IT Manager', 'ABestaQuadrada', '25', 'noreply@example.com', NULL, 'noreply@example.com', 'Mail Manager', '143', '110', 'None', '0', '1', '1', '2026-06-18 01:00:00', '2026-06-19 22:49:25');
+('1', '1', 'IT Manager', '127.0.0.1', '1025', NULL, NULL, 'noreply@example.com', 'Mail Manager', '143', '110', 'None', '0', '1', '1', '2026-06-18 01:00:00', '2026-06-19 22:49:25');
 
 INSERT INTO `emails` (`id`, `company_id`, `smtp_config_id`, `to_email`, `subject`, `status`, `details`, `sent_at`, `active`, `created_at`) VALUES
 ('1', '1', '1', 'nelson.salvador@gmail.com', 'Test Email from IT Manager Pro', 'sent', NULL, '2026-06-18 02:06:00', '1', '2026-06-18 02:06:00');
