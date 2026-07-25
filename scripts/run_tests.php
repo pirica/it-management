@@ -13,7 +13,9 @@ $isCli = (PHP_SAPI === 'cli');
 $runRequested = $isCli;
 
 if (!$isCli) {
-    $runRequested = (($_GET['run'] ?? '') === '1');
+    $runRequested = (($_GET['run'] ?? '') === '1')
+        || (($_GET['coverage_job'] ?? '') === '1')
+        || (($_GET['coverage_start'] ?? '') === '1');
 }
 
 // Browser menu may set skip_db; CLI uses env only until run starts.
@@ -47,6 +49,9 @@ function itm_run_tests_want_coverage($isCli)
             || (getenv('ITM_COVERAGE') === '1');
     }
 
+    if (($_GET['coverage_start'] ?? '') === '1') {
+        return true;
+    }
     $mode = strtolower(trim((string)($_GET['mode'] ?? '')));
     if ($mode === 'coverage') {
         return true;
@@ -183,8 +188,8 @@ function itm_run_tests_render_browser_menu($dbAvailable, $coverageReportPath)
     echo '<strong>Standard</strong> — verbose test run (no code coverage)</label>';
     echo '<label style="display:block;cursor:pointer;">';
     echo '<input type="radio" name="mode" value="coverage"' . $modeCoverage . '> ';
-    echo '<strong>HTML coverage</strong> — verbose run + report at <code>phpunit/coverage/html/coverage.html</code>';
-    echo ' <span style="color:#57606a;">(requires Xdebug or PCOV on CLI PHP)</span></label>';
+    echo '<strong>HTML coverage</strong> — report at <code>phpunit/coverage/html/coverage.html</code>';
+    echo ' <span style="color:#57606a;">(starts a <strong>background CLI</strong> job — avoids gateway timeout)</span></label>';
     echo '</fieldset>';
     echo '<label style="cursor:pointer;"><input type="checkbox" name="skip_db" value="1"' . $skipDbChecked . '> ';
     echo 'Skip database tests (<code>ITM_SKIP_DB_TESTS=1</code>)</label>';
@@ -247,6 +252,40 @@ $coverage_driver_ok = itm_run_tests_has_coverage_driver($php_bin);
 $coverage_skipped_no_driver = ($want_coverage && !$coverage_driver_ok);
 $run_coverage_html = ($want_coverage && $coverage_driver_ok);
 
+require_once __DIR__ . '/lib/itm_run_tests_browser_coverage.php';
+
+// Why: Browser + Xdebug HTML coverage exceeds Apache/proxy timeouts; run detached CLI instead of passthru.
+$coverage_job_view = (!$isCli && (($_GET['coverage_job'] ?? '') === '1'));
+if (!$isCli && $runRequested && ($run_coverage_html || $coverage_job_view)) {
+    if ($coverage_job_view) {
+        itm_run_tests_browser_coverage_render_job_page($coverage_report_file);
+        itm_script_output_end();
+        exit;
+    }
+    if (!$run_coverage_html) {
+        itm_script_output_begin('PHPUnit Test Suite');
+        echo '<p style="color:#cf222e;">HTML coverage needs Xdebug or PCOV on CLI PHP. <a href="run_tests.php">← Back</a></p>';
+        itm_script_output_end();
+        exit;
+    }
+    if (($_GET['coverage_start'] ?? '') !== '1') {
+        itm_run_tests_browser_coverage_render_intro_page($user_wants_skip, $php_bin);
+        itm_script_output_end();
+        exit;
+    }
+    if (!itm_run_tests_browser_coverage_spawn_cli_job($php_bin, $user_wants_skip, ROOT_PATH)) {
+        itm_script_output_begin('PHPUnit Test Suite');
+        echo '<p style="color:#cf222e;">Unable to start background coverage job. Use CLI: <code>php scripts/run_tests.php --coverage</code></p>';
+        itm_script_output_end();
+        exit;
+    }
+    if (!headers_sent()) {
+        header('Location: run_tests.php?coverage_job=1');
+    }
+    itm_script_output_end();
+    exit;
+}
+
 $phpunit_bin = ROOT_PATH . 'phpunit/phpunit.phar';
 $phpunit_xml = ROOT_PATH . 'phpunit/phpunit.xml';
 
@@ -269,6 +308,9 @@ if ($run_coverage_html) {
 $command .= ' 2>&1';
 
 if (!$isCli) {
+    @set_time_limit(0);
+    @ini_set('max_execution_time', '0');
+    @ignore_user_abort(true);
     itm_script_output_begin('PHPUnit Test Suite Results');
     echo '<h1>PHPUnit Test Suite</h1>';
     echo '<p><a href="run_tests.php">← Choose another run mode</a></p>';
