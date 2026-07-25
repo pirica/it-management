@@ -38,12 +38,13 @@ if (!function_exists('itm_detect_fk_connect')) {
         $user = getenv('DB_USER') !== false ? (string)getenv('DB_USER') : 'root';
         $pass = getenv('DB_PASS') !== false ? (string)getenv('DB_PASS') : 'itmanagement';
         $name = getenv('DB_NAME') !== false ? (string)getenv('DB_NAME') : 'itmanagement';
+        $portEnv = getenv('DB_PORT');
+        $port = ($portEnv !== false && $portEnv !== '') ? (int)$portEnv : null;
+
+        require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'bootstrap_helpers.php';
 
         mysqli_report(MYSQLI_REPORT_OFF);
-        $conn = @mysqli_connect($host, $user, $pass, $name);
-        if (!$conn && $host === 'localhost') {
-            $conn = @mysqli_connect('127.0.0.1', $user, $pass, $name);
-        }
+        $conn = itm_mysqli_connect($host, $user, $pass, $name, $port);
 
         if (!$conn) {
             return null;

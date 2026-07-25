@@ -975,7 +975,7 @@ Catalog and extended notes: **`scripts/SCRIPTS.md`** → Pre-merge verification 
 ---
 
 ## 🛠 Setup & Debugging
-* **Dev Credentials:** Host `localhost` | user `root` | **password `itmanagement`** | database `itmanagement` — same value in `config/config.php` (`DB_PASS`) and on the MySQL CLI (`-u root -pitmanagement`; the `-p` flag has **no space** before the password).
+* **Dev Credentials:** Host `localhost` (or `127.0.0.1`) | user `root` | **password `itmanagement`** | database `itmanagement` — set via project root `.env` (`DB_HOST`, optional `DB_PORT` default `3306`, `DB_USER`, `DB_PASS`, `DB_NAME`). MySQL CLI: `-u root -pitmanagement` (no space after `-p`).
 * **Windows Laragon portable — local paths (Nelson, verified):** When `php` / `mysql` are not on PATH, use these full absolute paths:
 
 | What | Local path |

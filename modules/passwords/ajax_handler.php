@@ -12,7 +12,7 @@ if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
     return;
 }
 
-$conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+$conn = itm_mysqli_connect();
 if (!$conn) {
     echo json_encode(['ok' => false, 'message' => 'Connection failed: ' . mysqli_connect_error()]);
     return;

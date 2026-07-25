@@ -13,7 +13,7 @@ if (!isset($_SESSION['employee_id'])) {
 }
 
 $csrfToken = itm_get_csrf_token();
-$conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+$conn = itm_mysqli_connect();
 if (!$conn) { die('Connection failed: ' . mysqli_connect_error()); }
 $user_id = (int)$_SESSION['employee_id'];
 

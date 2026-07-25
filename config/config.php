@@ -72,6 +72,8 @@ define('DB_HOST', getenv('DB_HOST'));
 define('DB_USER', getenv('DB_USER'));
 define('DB_PASS', getenv('DB_PASS'));
 define('DB_NAME', getenv('DB_NAME'));
+$itmDbPortEnv = getenv('DB_PORT');
+define('DB_PORT', ($itmDbPortEnv !== false && $itmDbPortEnv !== '') ? (int) $itmDbPortEnv : 3306);
 
 
 // System Status cache fallback (admin-only module reads before company selection).
@@ -346,12 +348,7 @@ $conn = false;
 $itmSkipDbConn = (defined('ITM_CLI_SCRIPT') && ITM_CLI_SCRIPT && getenv('ITM_SKIP_DB_TESTS') === '1');
 
 if (!$itmSkipDbConn) {
-    $conn = @mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-
-    if (!$conn && DB_HOST === 'localhost') {
-        // Why: Some local stacks disable the MySQL socket path used by localhost but still accept TCP on 127.0.0.1.
-        $conn = @mysqli_connect('127.0.0.1', DB_USER, DB_PASS, DB_NAME);
-    }
+    $conn = itm_mysqli_connect();
 
     if (!$conn) {
         http_response_code(500);

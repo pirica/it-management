@@ -9,4 +9,4 @@ Contains documentation and wiki-style content for the application.
 - Do not “fix” production behaviour by syncing only wiki content. [Cursor-Valid]
 
 ## 12. Module Owner Notes (Optional)
-Used for collaborative documentation.
+Used for collaborative documentation. **Installation.md** documents `.env` database keys (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_NAME`) aligned with `.env.example`.
