@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Import db/ split bundle and assert the live schema matches expectations.
 # Used by CI (GitHub Actions MySQL service) and local verification after schema edits.
 #
