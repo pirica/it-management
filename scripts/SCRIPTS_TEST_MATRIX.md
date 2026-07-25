@@ -63,7 +63,7 @@ If any script **destroys or corrupts** the live `itmanagement` database, seed da
 
 ```cmd
 cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
-"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe" -u root -pitmanagement --default-character-set=utf8mb4 < db/
+"D:\dunebox-v1.0.6\system\apps\mysql\mysql-8.0.45-winx64\bin\mysql.exe" -h 127.0.0.1 -P 3307 -u root -psecret --default-character-set=utf8mb4 < db/
 ```
 
 Or: `bash scripts/verify_database_sql_import.sh`
@@ -126,7 +126,7 @@ php scripts/run_tests.php
 Windows Laragon PowerShell (PHP binary):
 
 ```powershell
-$php = "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe"
+$php = "D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe"
 & $php scripts\verify_crud_fk_label_search.php
 & $php scripts\run_tests.php
 ```

@@ -789,7 +789,7 @@ When a module uses duplicated procedural entry files (`index.php`, `create.php`,
   * **Mandatory human-flow testing for every affected workflow:** execute human-flow regression for each changed Create/Edit/Update/Delete/Copy/Move path before PR.
     * Required regression command (from repository root):
       * **Default (Linux, macOS, CI, PATH):** `php scripts/idfs_sync_human_test.php`
-      * **Windows Laragon fallback (when `php` is not on PATH):** `cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management` then `"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts\idfs_sync_human_test.php`
+      * **Windows Laragon fallback (when `php` is not on PATH):** `cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management` then `"D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts\idfs_sync_human_test.php`
     * If any workflow or command run reports `[FAIL]`, the task is not complete.
 * **Before commit, smoke-check all three screens at minimum:** list (`index.php`), detail (`view.php`), and edit (`edit.php`) for the changed module.
 * **Wrapper action routing guardrail (mandatory):** for modules that use wrapper entry files (`create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`) to set `$crud_action` before requiring `index.php`, verify `index.php` does not overwrite wrapper-provided values. Confirm each wrapper still routes to its expected screen/handler before creating a PR.
@@ -975,27 +975,28 @@ Catalog and extended notes: **`scripts/SCRIPTS.md`** → Pre-merge verification 
 ---
 
 ## 🛠 Setup & Debugging
-* **Dev Credentials:** Host `localhost` (or `127.0.0.1`) | user `root` | **password `itmanagement`** | database `itmanagement` — set via project root `.env` (`DB_HOST`, optional `DB_PORT` default `3306`, `DB_USER`, `DB_PASS`, `DB_NAME`). MySQL CLI: `-u root -pitmanagement` (no space after `-p`).
-* **Windows Laragon portable — local paths (Nelson, verified):** When `php` / `mysql` are not on PATH, use these full absolute paths:
+* **Dev Credentials:** Host `localhost` (or `127.0.0.1`) | user `root` | **password `secret`** (Dunebox default) or **`itmanagement`** (legacy Laragon) | database `itmanagement` — set via project root `.env` (`DB_HOST`, optional `DB_PORT` default **3307** with Dunebox MySQL 8.0, `DB_USER`, `DB_PASS`, `DB_NAME`). MySQL CLI: `-h 127.0.0.1 -P 3307 -u root -p` (Dunebox).
+* **Windows Dunebox + Laragon docroot — local paths (Nelson, verified):** Set `PHP_EXE` / `MYSQL_EXE` in `.env`, or use:
 
 | What | Local path |
 |------|------------|
-| Laragon root | `C:\Users\NelsonSalvador\Downloads\laragon-portable` |
+| Dunebox root | `D:\dunebox-v1.0.6` |
 | ITM repository | `C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management` |
 | App URL (Apache) | `http://localhost/it-management/` |
 | phpMyAdmin (local) | `http://localhost/phpmyadmin/` |
-| **PHP 7.4.33 (ITM — use this)** | `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` |
-| MySQL 8.4 CLI | `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe` |
+| Mailpit (local) | `http://localhost/mailpit/` |
+| **PHP 7.4.33 (ITM — use this)** | `D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe` |
+| **MySQL 8.0 CLI (port 3307)** | `D:\dunebox-v1.0.6\system\apps\mysql\mysql-8.0.45-winx64\bin\mysql.exe` |
 
-### PHP CLI tests — full binary path (mandatory — Windows Laragon)
+### PHP CLI tests — full binary path (mandatory — Windows Dunebox)
 
-On **Windows Laragon** (Nelson's environment), **always** use the **full absolute path** to the PHP 7.4.33 binary when running PHP tests, audits, and `scripts/*.php` — do **not** rely on bare `php` on PATH. For script catalog, smoke, MBQA commands, and CLI conventions, see **`scripts/SCRIPTS.md`**.
+On **Windows Dunebox** (Nelson's environment), **always** use **`PHP_EXE`** from `.env` or the **full absolute path** to PHP 7.4.33 when running tests and `scripts/*.php` — do **not** rely on bare `php` on PATH. For script catalog, smoke, MBQA commands, and CLI conventions, see **`scripts/SCRIPTS.md`**.
 
 | Rule | Detail |
 |------|--------|
 | **Shell** | Nelson's default terminal is **PowerShell** — prefix the quoted `php.exe` path with **`&`**. |
-| **Run commands (PowerShell)** | From repo root: `& "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/<script>.php [options]` |
-| **Run commands (cmd.exe)** | `"C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts\<script>.php [options]` |
+| **Run commands (PowerShell)** | From repo root: `& "D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/<script>.php [options]` |
+| **Run commands (cmd.exe)** | `"D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts\<script>.php [options]` |
 | **PR test plans / agent replies** | List the **exact full-path command** executed — not shortened `php scripts/...` |
 
 **PowerShell error:** `Unexpected token 'scripts/...'` means the line is missing **`&`** before the quoted `php.exe` path.
@@ -1014,7 +1015,7 @@ On **Linux, macOS, CI, and any host where `php` is on PATH**, bare `php scripts/
   * Note: `https://nelsonsalvador.myddns.me/phpmyadmin/` currently returns upstream TLS/certificate errors; use HTTP for phpMyAdmin checks.
 * **Logs:** System errors are piped to `ROOT_PATH . 'error_log.txt'`.
 * **Testing:** Browser screenshots are not supported; rely on verbose error logging. Script suites and full-module QA: **`scripts/SCRIPTS.md`**.
-* **CLI scripts:** Run from the repository root with **PHP 7.4.33** and **MySQLi** enabled — conventions and catalog in **`scripts/SCRIPTS.md`**; Laragon binary path in **PHP CLI tests** above.
+* **CLI scripts:** Run from the repository root with **PHP 7.4.33** and **MySQLi** enabled — conventions and catalog in **`scripts/SCRIPTS.md`**; Dunebox binary path in **PHP CLI tests** above.
 
 ---
 
@@ -1090,7 +1091,7 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
   * `php scripts/check_database_sql_company_name_uniques.php` when `db/` or tenant unique keys changed.
   * FK label guardrails: no raw `*_id` / `*_by` numeric IDs on list/detail when a label exists; persisted FKs stay selected on edit forms.
   * Module consistency rechecks for any touched module (`index.php`, `view.php`, `edit.php`, `create.php`, `list_all.php`, and `delete.php` when applicable).
-  * IDF-related changes: `php scripts/idfs_sync_human_test.php` (or `C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php` from the repo root) — hard-fail if any `[FAIL]`.
+  * IDF-related changes: `php scripts/idfs_sync_human_test.php` (or `D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php` from the repo root) — hard-fail if any `[FAIL]`.
   * Smoke/CI: see **`scripts/SCRIPTS.md`** (Smoke tests) when `.github/workflows/smoke.yml` applies; list exact commands and outcomes in the PR description (do not claim “no tests run” when checks ran).
 * **CI and repo scripts stay authoritative:** the smoke workflow must pass on PRs; see **`scripts/SCRIPTS.md`** and **`scripts/scripts.php`** for other maintenance scripts to run when the change scope requires them.
 

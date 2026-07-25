@@ -168,7 +168,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         <div class="scripts-cli-hint">
             <strong>CLI example:</strong>
             <code>C:\&lt;folder&gt;\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\&lt;script&gt;.php [options]</code><br>
-            <code>C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\apply_module_sample_data_seed.php</code><br>
+            <code>D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\apply_module_sample_data_seed.php</code><br>
             <strong>From project root:</strong> <code>php scripts/&lt;script&gt;.php [options]</code>
         </div>
     </div>

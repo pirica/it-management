@@ -331,8 +331,8 @@ require_once ROOT_PATH . 'includes/itm_live_chat_ticket.php';
 if (!function_exists('mysqli_connect')) {
     $itmMysqliMissingMessage = 'MySQLi extension is not loaded in this PHP build ('
         . PHP_VERSION
-        . '). Use Laragon PHP 7.4 for CLI scripts, for example: '
-        . 'C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\bin\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe scripts\\<script>.php';
+        . '). Use PHP 7.4 CLI (PHP_EXE in .env or Dunebox default), for example: '
+        . 'D:\\dunebox-v1.0.6\\system\\apps\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe scripts\\<script>.php';
     if (PHP_SAPI === 'cli') {
         fwrite(STDERR, $itmMysqliMissingMessage . PHP_EOL);
         exit(1);

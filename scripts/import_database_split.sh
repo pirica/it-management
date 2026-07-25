@@ -6,6 +6,7 @@
 #
 # Environment:
 #   MYSQL_HOST=127.0.0.1   (default)
+#   MYSQL_PORT=3307        (default — Dunebox MySQL 8.0)
 #   MYSQL_USER=root        (default)
 #   MYSQL_PASSWORD=itmanagement
 
@@ -15,6 +16,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
+MYSQL_PORT="${MYSQL_PORT:-3307}"
 MYSQL_USER="${MYSQL_USER:-root}"
 MYSQL_PASSWORD="${MYSQL_PASSWORD:-itmanagement}"
 
@@ -29,9 +31,9 @@ for f in "$SCHEMA_FILE" "$DATA_FILE" "$TRIGGERS_FILE"; do
   fi
 done
 
-MYSQL=(mysql -h "$MYSQL_HOST" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" --default-character-set=utf8mb4)
+MYSQL=(mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" --default-character-set=utf8mb4)
 
-echo "==> Importing split database (01_schema → 02_data → 03_triggers) via ${MYSQL_HOST}"
+echo "==> Importing split database (01_schema → 02_data → 03_triggers) via ${MYSQL_HOST}:${MYSQL_PORT}"
 {
   cat "$SCHEMA_FILE"
   echo ""

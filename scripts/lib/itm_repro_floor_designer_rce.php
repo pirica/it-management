@@ -54,7 +54,7 @@ if (!function_exists('itm_repro_floor_designer_is_cli_php_binary')) {
 if (!function_exists('itm_repro_floor_designer_resolve_php_binary')) {
   function itm_repro_floor_designer_resolve_php_binary(): string
   {
-    $laragonPhp = 'C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\bin\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe';
+    $laragonPhp = 'D:\\dunebox-v1.0.6\\system\\apps\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe';
     if (is_file($laragonPhp)) {
       return $laragonPhp;
     }

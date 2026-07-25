@@ -6,7 +6,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$php = 'C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\bin\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe';
+$php = 'D:\\dunebox-v1.0.6\\system\\apps\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe';
 $bash = 'C:\\Program Files\\Git\\bin\\bash.exe';
 $matrixPath = $root . '/scripts/SCRIPTS_TEST_MATRIX.md';
 $outJson = $root . '/qa-reports/scripts-matrix-safe-run-raw.json';
