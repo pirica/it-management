@@ -4,6 +4,16 @@
  * Wires QR share (join.php, AJAX, view buttons) for CRUD record share rollout modules.
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/apply_crud_record_share_modules.php --apply</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 $repoRoot = dirname(__DIR__);
 $apply = in_array('--apply', $argv ?? [], true);

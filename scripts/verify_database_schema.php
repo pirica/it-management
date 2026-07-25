@@ -3,8 +3,18 @@
  * Why: Deploy scripts can report "success" while MySQL stopped early (e.g. 73/126 tables).
  * Compare tables defined in db/ with information_schema for itmanagement.
  */
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_database_schema.php</code> — run from repository root after <code>db/</code> split bundle import; check <code>mysql-import.err</code> for the first <code>ERROR</code> line if this fails.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 // Why: config.php skips web auth redirects only when ITM_CLI_SCRIPT is set before load.
 if (!defined('ITM_CLI_SCRIPT')) {
     define('ITM_CLI_SCRIPT', true);

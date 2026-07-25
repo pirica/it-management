@@ -3,6 +3,16 @@
  * Standalone verification script for Explorer Path Traversal fix (for screenshot)
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Open <code>verify_explorer_fix_standalone.php</code> in browser.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 /**
  * Why: Helper to safely extract and validate the 'item' parameter from POST.
  * Prevents path traversal by rejecting '..' and path separators.

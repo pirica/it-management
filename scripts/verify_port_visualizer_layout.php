@@ -1,5 +1,20 @@
 <?php
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
 declare(strict_types=1);
+
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_port_visualizer_layout.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
+if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
+    require_once __DIR__ . '/lib/itm_script_browser_usage.php';
+    itm_script_browser_usage_maybe_gate([]);
+}
 
 function sanitize($s)
 {

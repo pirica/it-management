@@ -7,6 +7,16 @@
  * Browser + CLI. Uses a disposable secret per run and checks only the row inserted by this request.
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="repro_attempts_data_leak_v2.php">run</a>. CLI: <code>php scripts/repro_attempts_data_leak_v2.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 if ($itmIsCli) {
     define('ITM_CLI_SCRIPT', true);

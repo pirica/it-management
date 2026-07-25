@@ -14,8 +14,18 @@
  * Browser: scripts/apply_new_company_module_share_capable_seed.php?company=3&apply=1
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+CLI: <code>php scripts/apply_new_company_module_share_capable_seed.php</code> (dry-run), <code>php scripts/apply_new_company_module_share_capable_seed.php --apply</code>, <code>php scripts/apply_new_company_module_share_capable_seed.php --apply --company=3</code>. Browser: <a href="apply_new_company_module_share_capable_seed.php">dry-run</a>, <a href="apply_new_company_module_share_capable_seed.php?apply=1">apply</a> (Admin).
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $isCliBootstrap = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 if ($isCliBootstrap && !defined('ITM_CLI_SCRIPT')) {
     define('ITM_CLI_SCRIPT', true);

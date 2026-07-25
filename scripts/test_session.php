@@ -5,6 +5,16 @@
  * Browser: current script session after config.php (disposable test Admin when scripts bootstrap ran).
  * CLI: php scripts/test_session.php [PHPSESSID]
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="test_session.php" target="_blank" rel="nofollow noreferrer">dump current session</a> (Admin). CLI: <code>php scripts/test_session.php</code> or <code>php scripts/test_session.php &lt;PHPSESSID&gt;</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
 if ($itmIsCli) {
     define('ITM_CLI_SCRIPT', true);

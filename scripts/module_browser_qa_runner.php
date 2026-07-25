@@ -21,8 +21,18 @@
  * Browser (Laragon): open scripts/module_browser_qa_runner.php, set options, Run QA.
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="module_browser_qa_runner.php" target="_blank" rel="nofollow noreferrer">module_browser_qa_runner.php</a> — form: <strong>Run QA</strong> + <strong>Stop</strong> (AJAX poll every 400ms). Optional <strong>UI click smoke</strong> (one module + one company).<br><code>php scripts/module_browser_qa_runner.php</code><br><code>php scripts/module_browser_qa_runner.php --pilot-only</code> (expenses only)<br><code>php scripts/module_browser_qa_runner.php --module=expenses --company=1</code><br><code>php scripts/module_browser_qa_runner.php --module=license_management --company=1</code><br><code>php scripts/module_browser_qa_runner.php --ui-click-smoke --module=expenses --company=1</code> (CLI guard only — real clicks need the browser form)<br><code>php scripts/module_browser_qa_runner.php --help</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 $nl = itm_script_output_nl();

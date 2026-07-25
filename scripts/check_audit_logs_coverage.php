@@ -18,8 +18,18 @@
  *   <laragon-root>\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\check_audit_logs_coverage.php
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: HTML/plain report (PHP 7.4+); query <code>?module=NAME</code> or <code>?json=1</code>. CLI: <code>php scripts/check_audit_logs_coverage.php</code> — exit <code>2</code> on failures.<br><code>--module=NAME</code> · <code>--json</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $root = realpath(__DIR__ . '/..');
 if ($root === false) {
     if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {

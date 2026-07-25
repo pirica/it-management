@@ -3,6 +3,16 @@
  * Verification script for Explorer Path Traversal fix
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_explorer_fix.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 putenv('ITM_SKIP_DB_TESTS=1');
 define('ITM_VERIFY_SKIP_ROUTER', true);

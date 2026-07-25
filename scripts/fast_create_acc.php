@@ -6,8 +6,18 @@
  * Browser: scripts/fast_create_acc.php or scripts/fast_create_acc_browser.php (alias); modules/employees/fast_create_acc.php (Employees 🚀).
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="fast_create_acc.php">scripts/fast_create_acc.php</a>, <a href="fast_create_acc_browser.php">scripts/fast_create_acc_browser.php</a>, or <a href="../modules/employees/fast_create_acc.php">modules/employees/fast_create_acc.php</a>. CLI: <code>php scripts/fast_create_acc.php --seed-demo-bundle --company=1</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (PHP_SAPI === 'cli') {
     define('ITM_CLI_SCRIPT', true);
 }

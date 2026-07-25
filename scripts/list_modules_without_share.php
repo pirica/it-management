@@ -6,8 +6,18 @@
  * CLI: php scripts/list_modules_without_share.php [--json] [--active-only]
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<strong>Admin login required.</strong> Open <a href="list_modules_without_share.php" target="_blank" rel="nofollow noreferrer">list_modules_without_share.php</a> or <a href="list_modules_without_share.php?format=json">?format=json</a> · active filter: <code>?active_only=1</code>.<br> CLI: <code>php scripts/list_modules_without_share.php</code> · JSON: <code>--json</code> · active only: <code>--active-only</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = PHP_SAPI === 'cli';
 
 if ($itmIsCli) {

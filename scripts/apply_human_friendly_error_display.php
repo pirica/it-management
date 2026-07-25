@@ -6,8 +6,18 @@
  * Optional filter: --module=name (CLI) or ?module=name (browser).
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="apply_human_friendly_error_display.php" target="_blank" rel="nofollow noreferrer">dry-run</a> / <a href="apply_human_friendly_error_display.php?apply=1" target="_blank" rel="nofollow noreferrer">apply=1</a> · <a href="apply_human_friendly_error_display.php?module=approvers" target="_blank" rel="nofollow noreferrer">?module=approvers</a>. CLI: <code>php scripts/apply_human_friendly_error_display.php</code> then <code>php scripts/apply_human_friendly_error_display.php --apply</code> · <code>--module=approvers</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 
 $boot = itm_apply_script_bootstrap('Apply Human-Friendly Error Display');

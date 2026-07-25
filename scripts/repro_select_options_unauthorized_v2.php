@@ -9,6 +9,16 @@
  * Embedded scenario matrix exercises parse + verdict logic before the live API run.
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="repro_select_options_unauthorized_v2.php">run</a>. CLI: <code>php scripts/repro_select_options_unauthorized_v2.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 if ($itmIsCli) {
     define('ITM_CLI_SCRIPT', true);

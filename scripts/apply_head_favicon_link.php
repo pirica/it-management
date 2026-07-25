@@ -7,8 +7,18 @@
  *
  * Browser + CLI. Default dry-run; writes with CLI --apply or browser ?apply=1 (Admin).
  */
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="apply_head_favicon_link.php">dry-run</a> / <a href="apply_head_favicon_link.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_head_favicon_link.php</code> then <code>php scripts/apply_head_favicon_link.php --apply</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 require_once __DIR__ . '/lib/itm_titles_list_audit.php';
 require_once __DIR__ . '/lib/itm_ui_list_contract_checks.php';

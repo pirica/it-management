@@ -9,6 +9,16 @@
  *   php scripts/apply_crud_sample_data_live_row_gate.php --apply
  *   php scripts/apply_crud_sample_data_live_row_gate.php --apply --finance-only
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/apply_crud_sample_data_live_row_gate.php --apply --finance-only</code> (dry-run without <code>--apply</code>).
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 
 $boot = itm_apply_script_bootstrap('Apply CRUD sample data live row gate');

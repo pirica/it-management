@@ -5,6 +5,16 @@
  * CLI: php scripts/verify_finance_sample_data_seed.php
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_finance_sample_data_seed.php</code>. Run when changing <code>db/02_data_sample.sql</code> finance rows or <code>itm_seed_apply_finance_row_defaults()</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once ROOT_PATH . 'includes/itm_sample_data_seed.php';

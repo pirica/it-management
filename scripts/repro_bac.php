@@ -3,6 +3,16 @@
  * PoC for Broken Access Control in IDFs API.
  * Why: idfs is RBAC-exempt; BAC is tenant scoping — company 1 must not delete company 2 positions.
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/repro_bac.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 if ($itmIsCli) {
     define('ITM_CLI_SCRIPT', true);

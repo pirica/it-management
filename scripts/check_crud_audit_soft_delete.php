@@ -6,6 +6,23 @@
  * Exit 0 when all in-scope module index.php files pass; else exit 1.
  */
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+CLI: php scripts/check_crud_audit_soft_delete.php — static gate for scaffold soft-delete / audit UI (list, view, filters). Browser: run with run=1 after the landing page.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
+
+$itmCheckCrudAuditIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
+$itmCheckCrudAuditNl = "\n";
+if (!$itmCheckCrudAuditIsCli) {
+    require_once __DIR__ . '/lib/itm_script_access_helpers.php';
+    $itmCheckCrudAuditNl = itm_check_script_begin_browser_admin('CRUD audit soft-delete check');
+}
+
 $root = dirname(__DIR__) . '/';
 require_once $root . 'includes/itm_crud_audit_fields.php';
 
@@ -73,12 +90,31 @@ foreach ($slugs as $slug) {
 }
 
 if ($failures) {
-    fwrite(STDERR, "check_crud_audit_soft_delete: " . count($failures) . " issue(s)\n");
+    $msg = 'check_crud_audit_soft_delete: ' . count($failures) . ' issue(s)' . $itmCheckCrudAuditNl;
+    if ($itmCheckCrudAuditIsCli) {
+        fwrite(STDERR, $msg);
+    } else {
+        echo colorText($msg, 'fail');
+    }
     foreach ($failures as $f) {
-        fwrite(STDERR, " - {$f}\n");
+        $line = ' - ' . $f . $itmCheckCrudAuditNl;
+        if ($itmCheckCrudAuditIsCli) {
+            fwrite(STDERR, $line);
+        } else {
+            echo colorText($line, 'fail');
+        }
+    }
+    if (!$itmCheckCrudAuditIsCli) {
+        itm_script_output_end();
     }
     exit(1);
 }
 
-echo "check_crud_audit_soft_delete: OK (" . count($slugs) . " modules)\n";
+$ok = 'check_crud_audit_soft_delete: OK (' . count($slugs) . ' modules)' . $itmCheckCrudAuditNl;
+if ($itmCheckCrudAuditIsCli) {
+    echo $ok;
+} else {
+    echo colorText($ok, 'pass');
+    itm_script_output_end();
+}
 exit(0);

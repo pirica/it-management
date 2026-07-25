@@ -1,4 +1,14 @@
 <?php
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_audit_columns.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 // IT Management Audit Column Verification Script
 // This script verifies that all tables in the redesigned schema have the mandatory 8 audit columns with correct defaults.
 

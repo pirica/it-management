@@ -6,8 +6,18 @@
  * Browser: scripts/verify_demo_module_restrictions.php (Admin session)
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="verify_demo_module_restrictions.php">verify_demo_module_restrictions.php</a>. CLI: <code>php scripts/verify_demo_module_restrictions.php</code>. Run after seeding demo users in <code>db/02_data.sql</code> or <code>fast_create_acc.php</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 if ($itmIsCli) {
     define('ITM_CLI_SCRIPT', true);

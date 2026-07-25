@@ -5,6 +5,16 @@
  *
  * Browser + CLI; dry-run by default. Writes with --apply or browser ?apply=1 (Admin).
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="dedupe_02_data_per_company_inserts.php">dry-run</a> / <a href="dedupe_02_data_per_company_inserts.php?apply=1">apply=1</a>. CLI: <code>php scripts/dedupe_02_data_per_company_inserts.php</code> then <code>--apply</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 
 $ctx = itm_apply_script_bootstrap('Dedupe 02_data per-company INSERTs');

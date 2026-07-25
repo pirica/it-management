@@ -5,6 +5,16 @@
  * Why: Verifies non-admin users cannot reach companies/users management or delete tenants.
  * CSRF in isolated subprocesses is mocked via itm_validate_csrf_token(); real module handlers enforce CSRF.
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/repro_auth_bypass_v3.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (!defined('ITM_CLI_SCRIPT')) {
     define('ITM_CLI_SCRIPT', true);
 }

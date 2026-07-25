@@ -5,8 +5,18 @@
  * Browser + CLI via script_cli_output.php.
  * CLI: php scripts/verify_source_utf8_mojibake.php [--path=modules/patches_updates]
  */
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: plain-text report. CLI: <code>php scripts/verify_source_utf8_mojibake.php</code> — exit <code>0</code> when 0 violations. Run after encoding or emoji copy/paste changes.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $root = dirname(__DIR__);
 require_once __DIR__ . '/lib/itm_mojibake_audit.php';
 require_once __DIR__ . '/lib/script_cli_output.php';

@@ -3,6 +3,16 @@
  * Explorer Path Validation Test (Pure Logic)
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/test_explorer_paths.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (!function_exists('str_starts_with')) {
     function str_starts_with($haystack, $needle) {
         return (string)$needle !== '' && strncmp((string)$haystack, (string)$needle, strlen((string)$needle)) === 0;

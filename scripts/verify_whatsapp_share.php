@@ -4,6 +4,16 @@
  * Verifies WhatsApp deep-link message/url helpers for temporary share sessions.
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_whatsapp_share.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 require_once dirname(__DIR__) . '/config/config.php';
 require_once ROOT_PATH . 'includes/itm_whatsapp_share.php';

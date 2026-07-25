@@ -6,6 +6,16 @@
  * CLI: php scripts/verify_employee_type_resignations.php
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_employee_type_resignations.php</code> — after changes to <code>modules/employee_type/</code>, <code>modules/resignations/</code>, <code>modules/employees/</code> termination/type fields, or related <code>db/</code> split bundle tables.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';

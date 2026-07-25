@@ -10,6 +10,16 @@
  *   Browser: scripts/apply_display_field_columns_search_alias.php
  *   Browser apply: scripts/apply_display_field_columns_search_alias.php?apply=1
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="apply_display_field_columns_search_alias.php">dry-run</a> / <a href="apply_display_field_columns_search_alias.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_display_field_columns_search_alias.php</code> then <code>php scripts/apply_display_field_columns_search_alias.php --apply</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 
 $boot = itm_apply_script_bootstrap('Apply Display Field Columns Search Alias');

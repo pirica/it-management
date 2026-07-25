@@ -4,6 +4,16 @@
  * Appends Share section to CRUD record share rollout module AGENT_NOTES.md files.
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/patch_crud_share_agent_notes.php --apply</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 $apply = in_array('--apply', $argv ?? [], true);
 $repoRoot = dirname(__DIR__);

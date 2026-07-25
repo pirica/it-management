@@ -6,8 +6,18 @@
  * Browser: scripts/verify_employee_dashboard.php
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="verify_employee_dashboard.php">verify_employee_dashboard.php</a>. CLI: <code>php scripts/verify_employee_dashboard.php</code>. Run when changing employee dashboard cards or stats loader.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';

@@ -5,8 +5,18 @@
  * CLI: php scripts/verify_scripts_catalog_filter.php
  * Browser: scripts/verify_scripts_catalog_filter.php (Admin)
  */
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: plain-text report (Administrator session). CLI: <code>php scripts/verify_scripts_catalog_filter.php</code> — run after changing catalog tag CSS/JS; exit <code>1</code> on drift.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg';
 if ($itmIsCli) {
     define('ITM_CLI_SCRIPT', true);
@@ -55,12 +65,17 @@ foreach ($rows as $row) {
 
     preg_match_all('/<td\b/i', $full, $tdMatches);
     $tdCount = count($tdMatches[0]);
+    $href = verify_catalog_row_href($full);
+    $isPhpRow = verify_catalog_row_has_ext($href, '.php') || preg_match('/\.php$/i', $slug) === 1;
+
     if ($tdCount !== 5) {
         $wrongTdCount++;
         $failures[] = $slug . ': expected 5 <td> cells, found ' . $tdCount;
+    } elseif ($isPhpRow && strpos($full, 'scripts-catalog-how-stub') === false) {
+        $wrongTdCount++;
+        $failures[] = $slug . ': PHP catalog row must use scripts-catalog-how-stub in column 5';
     }
 
-    $href = verify_catalog_row_href($full);
     if (verify_catalog_row_has_ext($href, '.json')) {
         $jsonFileRows++;
         $infoRows[] = $slug;

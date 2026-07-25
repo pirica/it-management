@@ -8,8 +8,18 @@
  * Module links open modules/{table}/index.php in a new tab when that folder exists.
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<strong>Admin login required</strong> in browser. Open <a href="list_empty_tables.php" target="_blank" rel="nofollow noreferrer">list_empty_tables.php</a>, filter with <a href="list_empty_tables.php?company=2">?company=2</a>, or <a href="list_empty_tables.php?company=1&amp;format=json">?company=1&amp;format=json</a>.<br> CLI: <code>php scripts/list_empty_tables.php --company=1</code> · JSON: <code>--json</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = PHP_SAPI === 'cli';
 
 if ($itmIsCli && !defined('ITM_CLI_SCRIPT')) {

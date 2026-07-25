@@ -10,8 +10,18 @@
  * Optional: ?module=monthly_budgets
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<strong>Admin login required</strong> in browser.<br> Browser: <a href="verify_company_empty_sample_data.php?company=4">?company=4</a><br> CLI: <code>php scripts/verify_company_empty_sample_data.php --company=4</code><br> Single module: <code>--module=monthly_budgets</code> / <code>?module=monthly_budgets</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $vcesdIsCli = PHP_SAPI === 'cli';
 
 if ($vcesdIsCli && !defined('ITM_CLI_SCRIPT')) {

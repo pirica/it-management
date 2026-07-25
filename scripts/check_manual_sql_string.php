@@ -5,8 +5,18 @@
  * Why: Complements check_sql_injection_coverage.php by flagging SQL built via
  * concatenation/interpolation; excludes URL http_build_query false positives.
  */
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: plain-text report. CLI: <code>php scripts/check_manual_sql_string.php</code> — default informational (exit <code>0</code>); <code>--strict</code> / <code>?strict=1</code> exits <code>1</code> when violations remain. Optional <code>--include-scripts</code> / <code>?include_scripts=1</code>. Run after dynamic SQL changes; complements <code>check_sql_injection_coverage.php</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $root = dirname(__DIR__);
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_manual_sql_string_audit.php';

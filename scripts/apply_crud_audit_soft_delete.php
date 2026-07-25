@@ -12,6 +12,16 @@
  *   Browser apply: scripts/apply_crud_audit_soft_delete.php?apply=1 (Admin)
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="apply_crud_audit_soft_delete.php">dry-run</a> / <a href="apply_crud_audit_soft_delete.php?apply=1">apply=1</a>. CLI: <code>php scripts/apply_crud_audit_soft_delete.php</code> then <code>php scripts/apply_crud_audit_soft_delete.php --apply</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 putenv('ITM_SKIP_DB_TESTS=1');
 

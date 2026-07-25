@@ -2,6 +2,16 @@
 /**
  * Static gate: every tenant-scoped table has at least one row in db/02_data_sample.sql.
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+CLI: <code>php scripts/check_02_data_sample_coverage.php</code> — exit <code>1</code> when any table is missing.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../includes/itm_sample_sql_export.php';

@@ -14,6 +14,16 @@
  * modules/is_switch_itm_eqdct_* directories. Canonical modules/is_switch, is_server, … are kept.
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+CLI: <code>php scripts/equipment_delete_clear_table_test.php</code> · <code>ITM_SKIP_DB_TESTS=1</code> (static only) · <code>ITM_TEST_COMPANY_ID</code>.<br> Browser: static checks only (no DB or filesystem cleanup). MySQL regression requires CLI: <code>php scripts/equipment_delete_clear_table_test.php</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (version_compare(PHP_VERSION, '7.1.0', '<')) {
     fwrite(STDERR, "This script requires PHP 7.1 or newer.\n");
     exit(1);

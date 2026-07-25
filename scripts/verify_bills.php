@@ -5,6 +5,16 @@
  * CLI: php scripts/verify_bills.php
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_bills.php</code>. Run when changing <code>modules/bills/</code>, <code>includes/itm_expenses_ap.php</code> post-from-bill, or bill seeds.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';

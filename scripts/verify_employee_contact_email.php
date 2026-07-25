@@ -5,8 +5,18 @@
  * CLI: php scripts/verify_employee_contact_email.php
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+CLI: <code>php scripts/verify_employee_contact_email.php</code>. Run when changing employee email validation or employees import/create/edit paths.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 
 require_once __DIR__ . '/../config/config.php';

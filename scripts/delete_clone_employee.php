@@ -11,8 +11,18 @@
  * CLI: php scripts/delete_clone_employee.php --id=N [--apply]
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Open <a href="delete_clone_employee.php">delete_clone_employee.php</a> — preview with employee id, then <code>?id=N&amp;apply=1</code> only when needed.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 
 if ($itmIsCli) {

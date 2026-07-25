@@ -2,6 +2,16 @@
 /**
  * Repro: Data loss in generic table import when columns are missing from payload.
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: open <a href="repro_generic_dataloss.php">repro_generic_dataloss.php</a>. CLI: <code>php scripts/repro_generic_dataloss.php</code> (exit <code>0</code> on pass, non-zero on failure).
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (!defined('ITM_CLI_SCRIPT')) {
     define('ITM_CLI_SCRIPT', true);
 }

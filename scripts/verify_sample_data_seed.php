@@ -6,6 +6,16 @@
  * Browser (Admin): scripts/verify_sample_data_seed.php
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="verify_sample_data_seed.php">verify_sample_data_seed.php</a>. CLI: <code>php scripts/verify_sample_data_seed.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $vssIsCli = PHP_SAPI === 'cli';
 
 if ($vssIsCli && !defined('ITM_CLI_SCRIPT')) {

@@ -2,6 +2,16 @@
 /**
  * Verifies update_port.php returns HTTP 404 on zero-row switch_ports UPDATE before IDF auto-sync.
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_update_port_zero_row.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (!defined('ITM_CLI_SCRIPT')) {
     define('ITM_CLI_SCRIPT', true);
 }

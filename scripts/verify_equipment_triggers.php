@@ -9,6 +9,16 @@
  * Browser: scripts/verify_equipment_triggers.php (admin login required)
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+CLI: <code>php scripts/verify_equipment_triggers.php</code> · <code>ITM_TEST_COMPANY_ID</code> (default <code>1</code>).<br> Browser: runs the verification and displays results (HTML).
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (!defined('ITM_CLI_SCRIPT')) {
     define('ITM_CLI_SCRIPT', true);
 }

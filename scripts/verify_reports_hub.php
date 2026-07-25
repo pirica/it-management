@@ -8,6 +8,16 @@
  * Optional: ITM_TEST_COMPANY_ID (default 1)
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="verify_reports_hub.php">verify_reports_hub.php</a>. CLI: <code>php scripts/verify_reports_hub.php</code>. Optional <code>ITM_TEST_COMPANY_ID</code> (default 1). Run when changing <code>modules/reports/</code>, helpers, or Reports Hub seeds in <code>db/</code> split bundle.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once ROOT_PATH . 'modules/reports/api/helpers.php';

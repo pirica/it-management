@@ -5,6 +5,16 @@
  * Browser: scripts/check_env_vars_in_use.php (Administrator session).
  * CLI: php scripts/check_env_vars_in_use.php [--strict] [--json]
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: plain-text report (Administrator session). CLI: <code>php scripts/check_env_vars_in_use.php</code> — default informational (exit <code>0</code>); <code>--strict</code> / <code>?strict=1</code> exits <code>1</code> on example-only or undocumented app drift. JSON: <code>--json</code> / <code>?json=1</code>. Run when changing <code>.env.example</code>, <code>config/config.php</code>, or integration env reads.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require_once __DIR__ . '/lib/itm_script_access_helpers.php';
 require_once __DIR__ . '/lib/itm_env_vars_audit.php';
 

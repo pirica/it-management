@@ -9,9 +9,24 @@
  * CLI: php scripts/test_sql_injection.php payload="' OR '1'='1"
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<strong>Requires login</strong> and active <code>company_id</code>. GET/POST JSON with a test payload; POST must include a valid CSRF token. Use only in dev/staging — not a public endpoint.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 require __DIR__ . '/../config/config.php';
 require_once ROOT_PATH . 'includes/itm_maintenance_script_admin_gate.php';
 itm_enforce_maintenance_script_admin_browser($conn);
+
+if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
+    require_once __DIR__ . '/lib/itm_script_browser_usage.php';
+    itm_script_browser_usage_maybe_gate([]);
+}
 
 if (isset($_GET['browser'])) {
     require_once __DIR__ . '/lib/script_browser_nav.php';

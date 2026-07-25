@@ -8,8 +8,18 @@
  * Optional: ITM_TEST_COMPANY_ID (default 1) for live count assertions.
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="verify_dashboard_active_employees.php">verify_dashboard_active_employees.php</a>. CLI: <code>php scripts/verify_dashboard_active_employees.php</code>. Run when changing <code>admin.php</code> or Active/On Leave employee count logic.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';

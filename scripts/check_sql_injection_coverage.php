@@ -7,8 +7,18 @@
  * without obvious signs of parameter binding or sanitization.
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: plain-text report. CLI: <code>php scripts/check_sql_injection_coverage.php</code> — smoke step 3 / AGENTS.md after PHP/SQL changes.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 // Resolve project root
 $root = realpath(__DIR__ . '/..');
 if ($root === false) {

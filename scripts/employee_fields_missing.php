@@ -8,8 +8,18 @@
  *
  * Full multi-module audit: php scripts/fields_missing.php
  */
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/employee_fields_missing.php</code> — run after changing <code>db/</code> split bundle, <code>modules/employees/</code> profile fields, or employee list/import columns. Full multi-module audit: <code>php scripts/fields_missing.php</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/itm_fields_missing_report.php';

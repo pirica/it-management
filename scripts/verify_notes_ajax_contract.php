@@ -5,6 +5,16 @@
  * Notes soft-delete on first delete (active=0, deleted_at); attacker must not flip
  * the owner's live row. Subprocess uses CLI php.exe with session before config.
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_notes_ajax_contract.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (!defined('ITM_CLI_SCRIPT')) {
     define('ITM_CLI_SCRIPT', true);
 }

@@ -2,6 +2,16 @@
 /**
  * Generate includes/itm_news_feed_ms_support_products.php from feed picker HTML.
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/generate_ms_support_feed_products.php</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $outFile = dirname(__DIR__) . '/includes/itm_news_feed_ms_support_products.php';
 $h = @file_get_contents('https://support.microsoft.com/en-us/rss-feed-picker');
 if ($h === false) {

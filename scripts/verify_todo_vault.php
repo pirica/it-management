@@ -6,6 +6,16 @@
  * CLI: php scripts/verify_todo_vault.php
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_todo_vault.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/todo/todo_vault_helpers.php</code>, persistence in <code>modules/todo/index.php</code>, or <code>itm_vault_reencrypt_todo()</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
     define('ITM_CLI_SCRIPT', true);
 }

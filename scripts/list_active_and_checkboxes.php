@@ -10,8 +10,18 @@
  * CLI: php scripts/list_active_and_checkboxes.php [--json] [--all]
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: HTML report (Admin). CLI: <code>php scripts/list_active_and_checkboxes.php</code> · JSON: <code>--json</code> · list compliant files: <code>--all</code> · exit <code>1</code> on violations
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = PHP_SAPI === 'cli';
 
 if ($itmIsCli) {

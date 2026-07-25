@@ -12,12 +12,35 @@ if (!function_exists('itm_script_cli_is_cli')) {
         return itm_script_is_cli_sapi();
     }
 
-    function itm_script_output_begin($pageTitle = 'Script output')
+    /**
+     * @param string $pageTitle
+     * @param array{usage?:string,supports_apply?:bool,usage_gate_title?:string,usage_gate_exempt?:bool} $options
+     */
+    function itm_script_output_begin($pageTitle = 'Script output', array $options = [])
     {
         static $opened = false;
         if ($opened || itm_script_cli_is_cli()) {
             return;
         }
+
+        require_once __DIR__ . '/itm_script_browser_usage.php';
+        if (!empty($options['usage'])) {
+            itm_script_browser_usage_register((string)$options['usage'], $options);
+        }
+        $gateOpts = [];
+        if (array_key_exists('supports_apply', $options)) {
+            $gateOpts['supports_apply'] = !empty($options['supports_apply']);
+        }
+        if (!empty($options['usage_gate_title'])) {
+            $gateOpts['title'] = (string)$options['usage_gate_title'];
+        } elseif ($pageTitle !== '') {
+            $gateOpts['title'] = (string)$pageTitle;
+        }
+        if (!empty($options['usage_gate_exempt'])) {
+            $gateOpts['exempt'] = true;
+        }
+        itm_script_browser_usage_maybe_gate($gateOpts);
+
         $opened = true;
 
         if (!headers_sent()) {

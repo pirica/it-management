@@ -5,6 +5,16 @@
  * Compares the live sidebar path (structure + has_module_access filter) against an
  * uncached legacy N+1 simulation. Read-only — no schema or CMA mutations.
  */
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+CLI: <code>php scripts/benchmark_sidebar_module_access.php</code> · optional <code>--company=1 --employee=1 --iterations=3 --checks=100</code>. Browser: <a href="benchmark_sidebar_module_access.php">benchmark_sidebar_module_access.php</a> · query params <code>company</code>, <code>employee</code>, <code>iterations</code>, <code>checks</code>. Env thresholds: <code>ITM_BSMA_MAX_FULL_QUERIES</code> (default 45), <code>ITM_BSMA_MIN_REDUCTION_PCT</code> (default 50), plus BOLT journal component vars documented in <code>scripts/SCRIPTS.md</code>. Verifies claims in <code>docs/bolt.md</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (!defined('ITM_CLI_SCRIPT')) {
     define('ITM_CLI_SCRIPT', true);
 }

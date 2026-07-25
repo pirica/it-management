@@ -6,8 +6,18 @@
  * while maintaining audit logging and optionally toggling FK checks.
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="sql_insert.php">sql_insert.php</a> (form).<br>CLI: <code>php scripts/sql_insert.php --file=path/to/file.sql [--disable-fk]</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
     if (!defined('ITM_CLI_SCRIPT')) {
         define('ITM_CLI_SCRIPT', true);

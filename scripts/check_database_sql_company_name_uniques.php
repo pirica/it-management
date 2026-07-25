@@ -20,8 +20,18 @@
  * CLI: php scripts/check_database_sql_company_name_uniques.php
  */
 
+
 declare(strict_types=1);
 
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Open <a href="check_database_sql_company_name_uniques.php">check_database_sql_company_name_uniques.php</a> or <code>php scripts/check_database_sql_company_name_uniques.php</code> (exit 1 if any fail).
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = PHP_SAPI === 'cli';
 
 if ($itmIsCli) {

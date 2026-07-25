@@ -10,6 +10,16 @@
  * Browser: scripts/seed_company_module_access.php (admin session)
  */
 
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+CLI: <code>php scripts/seed_company_module_access.php</code> (all companies) or <code>php scripts/seed_company_module_access.php 3</code> (one company). Browser: <a href="seed_company_module_access.php">seed_company_module_access.php</a>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 $itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 if ($itmIsCli) {
     define('ITM_CLI_SCRIPT', true);
