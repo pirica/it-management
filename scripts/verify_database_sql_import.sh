@@ -4,6 +4,9 @@
 #
 # Usage (repository root):
 #   bash scripts/verify_database_sql_import.sh
+#
+# Environment: passed through to import_database_split.sh (MYSQL_HOST, MYSQL_PORT, …).
+# CI sets MYSQL_PORT=3306 in smoke.yml; Dunebox default is 3307.
 
 set -euo pipefail
 

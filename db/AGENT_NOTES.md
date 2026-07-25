@@ -29,6 +29,10 @@ Canonical SQL schema, seed data, and audit triggers for the IT Management System
 bash scripts/import_database_split.sh
 ```
 
+**MySQL port (`MYSQL_PORT`):** `import_database_split.sh` and `verify_database_sql_import.sh` honour `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, and `MYSQL_PASSWORD`. Default **`MYSQL_PORT` is 3307** (Dunebox). **GitHub Actions** job **database-import** sets **`MYSQL_PORT=3306`** to match the workflow MySQL service (`3306:3306`). Align CLI import with application `.env` **`DB_PORT`** when not on Dunebox (for example Laragon on **3306**: `MYSQL_PORT=3306 bash scripts/import_database_split.sh`).
+
+**CI parity (local):** `bash scripts/verify_database_sql_import.sh` — same wrapper CI uses after setting port **3306** in `.github/workflows/smoke.yml`.
+
 **Manual (one piped session only — use `bash scripts/import_database_split.sh` when possible):**
 
 ```cmd

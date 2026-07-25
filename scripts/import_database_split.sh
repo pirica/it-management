@@ -6,7 +6,7 @@
 #
 # Environment:
 #   MYSQL_HOST=127.0.0.1   (default)
-#   MYSQL_PORT=3307        (default — Dunebox MySQL 8.0)
+#   MYSQL_PORT=3307        (default — Dunebox MySQL 8.0; GitHub Actions sets 3306 in smoke.yml database-import)
 #   MYSQL_USER=root        (default)
 #   MYSQL_PASSWORD=itmanagement
 

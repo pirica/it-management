@@ -11,7 +11,7 @@
 ## Steps
 
 1. Extract the project files into your web root.
-2. Import `db/` into MySQL, **or** run `bash scripts/import_database_split.sh` for the generated `db/` split (order `01_schema` → `02_data` → `03_triggers` — see `db/AGENT_NOTES.md`).
+2. Import `db/` into MySQL, **or** run `bash scripts/import_database_split.sh` for the generated `db/` split (order `01_schema` → `02_data` → `03_triggers` — see `db/AGENT_NOTES.md`). On Dunebox the import scripts default to **`MYSQL_PORT=3307`**; set `MYSQL_PORT=3306` when MySQL listens on the standard port (Laragon, GitHub Actions CI).
 3. Copy `.env.example` to `.env` and set database credentials (see **Configure database connection** below). Prefer `.env` over editing `config/config.php`.
 4. Create an `images/` directory for equipment uploads.
 5. Create a `tickets_photos/` directory for ticket uploads.
