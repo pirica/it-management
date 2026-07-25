@@ -85,6 +85,29 @@ function itm_run_tests_has_coverage_driver($phpBin = null)
 }
 
 /**
+ * Why: HTML coverage static analysis over the whole tree exceeds default 128M php.ini limits.
+ */
+function itm_run_tests_resolve_memory_limit()
+{
+    $raw = getenv('ITM_PHPUNIT_MEMORY_LIMIT');
+    if ($raw !== false && $raw !== '') {
+        return (string) $raw;
+    }
+
+    return '512M';
+}
+
+/**
+ * Why: PHPUnit runs in a CLI subprocess; pass -d memory_limit so report generation does not fatal.
+ */
+function itm_run_tests_php_ini_memory_flag()
+{
+    $limit = itm_run_tests_resolve_memory_limit();
+
+    return '-d memory_limit=' . $limit;
+}
+
+/**
  * Why: PHPUnit writes index.html; we expose coverage.html as the stable report entry point.
  */
 function itm_run_tests_finalize_coverage_report($coverageHtmlDir)
@@ -104,6 +127,7 @@ function itm_run_tests_finalize_coverage_report($coverageHtmlDir)
 function itm_run_tests_echo_coverage_link($isCli, $wantCoverage, $coverageReportFile, $coverageSkippedNoDriver)
 {
     $reportExists = is_file($coverageReportFile);
+    $nl = $isCli ? "\n" : '';
 
     if ($isCli) {
         if ($reportExists) {
@@ -114,6 +138,8 @@ function itm_run_tests_echo_coverage_link($isCli, $wantCoverage, $coverageReport
                 echo "\nCoverage report not generated: enable Xdebug or PCOV in PHP, then re-run with --coverage." . $nl;
             } else {
                 echo "\nCoverage report not generated." . $nl;
+                echo 'If PHPUnit fatals with "memory size exhausted" during HTML report generation, raise '
+                    . 'ITM_PHPUNIT_MEMORY_LIMIT (default 512M), e.g. set ITM_PHPUNIT_MEMORY_LIMIT=1024M.' . $nl;
             }
         }
         return;
@@ -133,7 +159,8 @@ function itm_run_tests_echo_coverage_link($isCli, $wantCoverage, $coverageReport
         if ($coverageSkippedNoDriver) {
             echo 'Enable <strong>Xdebug</strong> or <strong>PCOV</strong> in Laragon (Menu → PHP → Extensions), restart Apache, then run <strong>HTML coverage</strong> again.';
         } else {
-            echo 'Re-run with HTML coverage mode after fixing any test failures.';
+            echo 'Re-run after fixing test failures. If the log shows <strong>memory size exhausted</strong> during report generation, set '
+                . '<code>ITM_PHPUNIT_MEMORY_LIMIT=1024M</code> (default <code>512M</code>) and run again.';
         }
         echo '</p>';
     }
@@ -252,6 +279,10 @@ $coverage_driver_ok = itm_run_tests_has_coverage_driver($php_bin);
 $coverage_skipped_no_driver = ($want_coverage && !$coverage_driver_ok);
 $run_coverage_html = ($want_coverage && $coverage_driver_ok);
 
+if ($run_coverage_html) {
+    @ini_set('memory_limit', itm_run_tests_resolve_memory_limit());
+}
+
 require_once __DIR__ . '/lib/itm_run_tests_browser_coverage.php';
 
 // Why: Browser + Xdebug HTML coverage exceeds Apache/proxy timeouts; run detached CLI instead of passthru.
@@ -293,7 +324,11 @@ $phpunit_xml = ROOT_PATH . 'phpunit/phpunit.xml';
 
 // Why: Inline environment variables (VAR=val cmd) are not supported by Windows cmd.exe.
 // We rely on putenv('ITM_SKIP_DB_TESTS=1') called earlier in this script.
-$command = escapeshellarg($php_bin) . ' ' . escapeshellarg($phpunit_bin)
+$command = escapeshellarg($php_bin);
+if ($run_coverage_html) {
+    $command .= ' ' . itm_run_tests_php_ini_memory_flag();
+}
+$command .= ' ' . escapeshellarg($phpunit_bin)
     . ' -c ' . escapeshellarg($phpunit_xml)
     . ' --verbose';
 if ($run_coverage_html) {
