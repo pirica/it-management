@@ -49,6 +49,8 @@ The floating knowledge-base chatbot (`js/chatbot.js`, `enable_chatbot`) is **not
 
 Tri-pane layout (`index.php` + `css/live_chat.css` + `js/live_chat.js`):
 
+Browser `<title>` uses canonical scaffold pattern (`$crud_title` with sidebar icon + label, app suffix via `$currentUiConfig`, `itm_render_head_favicon_link($favicon_url)`). Regression: `php scripts/verify_module_page_chrome.php`.
+
 1. App sidebar (standard)
 2. Conversation list sidebar
 3. Chat panel + employee details panel

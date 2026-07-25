@@ -43,7 +43,7 @@ Registry row: **`modules_registry`** slug `news` (sidebar + company module acces
 - Toolbar: **Source** website link (`site_link`), RSS link (`feed.php?source=`), manual refresh POST with CSRF
 - Actions column: `class="itm-actions-cell"` + `data-itm-actions-origin="1"`
 - Footer below the feed table: **More news** link opens the active source `site_link` in a new tab
-- Dynamic browser title via `itm_resolve_module_sidebar_icon()`
+- Browser `<title>` uses canonical scaffold pattern (`$crud_title` includes sidebar icon + label; `$currentUiConfig` + `itm_render_head_favicon_link($favicon_url)`). `index.php` requires `config/config.php` before `news_feed_bootstrap.php` for page-chrome verify. Regression: `php scripts/verify_module_page_chrome.php`
 
 ### Sidebar (app)
 
@@ -59,7 +59,7 @@ Registry row: **`modules_registry`** slug `news` (sidebar + company module acces
 - **`index.php`** — authenticated HTML UI with source select sidebar
 - **`feed.php`** — RSS endpoint per source (`news_handle_feed_request()`)
 - **`background-update.php`** — CLI worker; argv[1] = source id
-- **`news_feed_bootstrap.php`** — loads `config/config.php` + `includes/itm_news_feed.php`
+- **`index.php`** — loads `config/config.php` then `news_feed_bootstrap.php` (bootstrap also requires config for CLI/worker paths)
 - **`cache/`** — runtime per source: `{source_id}-feed.xml`, `{source_id}-feed.json`, `{source_id}.lock`
 - **`includes/itm_news_feed.php`** — source catalog, fetch, cache, lock, background spawn
 

@@ -30,7 +30,7 @@ Read-only **employee-scoped** audit timeline for the signed-in user. Surfaces th
 - **index.php** — intro explains shared vs private scope first, then heading **The following are 100% private and never audited:** with bullet list from `myactivity_private_audit_exempt_labels()` (do not phrase the list as part of Admin → Audit Logs)
 - **view.php** — full event detail (action, module, record id, IP, user agent, old/new JSON payloads)
 - Sidebar: **👤 Employee** section → **🕒 My Activity** (`includes/ui_config.php`)
-- Dynamic browser title via `itm_resolve_module_sidebar_icon()`
+- Browser `<title>` uses canonical scaffold pattern (`$crud_title` includes sidebar icon + label; `$currentUiConfig` + `itm_render_head_favicon_link($favicon_url)`). Regression: `php scripts/verify_module_page_chrome.php`
 - Pagination: emoji-only ⏮️ ◀️ ▶️ ⏭️ when `records_per_page` exceeded
 
 ## 6. API Actions (If Applicable)

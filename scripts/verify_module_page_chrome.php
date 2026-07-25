@@ -147,6 +147,16 @@ if ($failures !== []) {
     echo 'Failures (' . count($failures) . '):' . $nl;
     foreach ($failures as $row) {
         echo itm_verify_page_chrome_format_entry_line('FAIL', $row['path'], $row['detail']) . $nl;
+        if (($row['path'] ?? '') !== '' && function_exists('itm_script_format_modules_file_local_dev_link')) {
+            if (itm_script_is_cli_sapi()) {
+                echo '      Open in browser (new tab): '
+                    . itm_script_modules_repo_path_to_local_url((string) $row['path']) . $nl;
+            } else {
+                echo '      '
+                    . itm_script_format_modules_file_local_dev_link((string) $row['path'], 'Open in new tab →')
+                    . $nl;
+            }
+        }
     }
     echo $nl;
 }

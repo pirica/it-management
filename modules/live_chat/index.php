@@ -9,6 +9,7 @@ $cleanModuleTitle = itm_module_access_strip_catalog_label_prefix('Live Chat');
 $moduleListHeading = trim($resolvedModuleIcon . ' ' . $cleanModuleTitle);
 $crud_title = $moduleListHeading;
 $ui_config = itm_get_ui_configuration($conn, $companyId, $employeeId);
+$currentUiConfig = $ui_config ?? [];
 $initialConversationId = (int)($_GET['conversation_id'] ?? 0);
 $csrfToken = itm_get_csrf_token();
 ?>
@@ -16,7 +17,9 @@ $csrfToken = itm_get_csrf_token();
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title><?php echo sanitize($crud_title); ?></title>
+    <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
+    <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
+
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/styles.css">
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/live_chat.css">
 </head>

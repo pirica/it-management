@@ -124,6 +124,53 @@ if (!function_exists('itm_script_external_link_html')) {
     }
 }
 
+if (!function_exists('itm_script_local_dev_base_url')) {
+    /**
+     * Laragon/Dunebox docroot base for manual browser checks (see AGENTS.md Setup).
+     */
+    function itm_script_local_dev_base_url(): string
+    {
+        return 'http://localhost/it-management/';
+    }
+}
+
+if (!function_exists('itm_script_modules_repo_path_to_local_url')) {
+    /**
+     * @param string $repoRelativePath e.g. modules/news/index.php
+     */
+    function itm_script_modules_repo_path_to_local_url(string $repoRelativePath): string
+    {
+        $path = trim(str_replace('\\', '/', $repoRelativePath), '/');
+        if ($path === '') {
+            return rtrim(itm_script_local_dev_base_url(), '/');
+        }
+
+        return rtrim(itm_script_local_dev_base_url(), '/') . '/' . $path;
+    }
+}
+
+if (!function_exists('itm_script_format_modules_file_local_dev_link')) {
+    /**
+     * Local Laragon URL for a modules/… path (open in new tab in browser script HTML).
+     *
+     * @param string $repoRelativePath e.g. modules/news/index.php
+     * @param string $label Link text (default: repo path)
+     */
+    function itm_script_format_modules_file_local_dev_link(string $repoRelativePath, string $label = ''): string
+    {
+        $repoRelativePath = trim(str_replace('\\', '/', $repoRelativePath), '/');
+        $url = itm_script_modules_repo_path_to_local_url($repoRelativePath);
+        if ($label === '') {
+            $label = $repoRelativePath !== '' ? $repoRelativePath : $url;
+        }
+        if (itm_script_is_cli_sapi()) {
+            return $url;
+        }
+
+        return itm_script_external_link_html($url, $label);
+    }
+}
+
 if (!function_exists('itm_script_format_module_link')) {
     /**
      * @param string $moduleName Folder under modules/ (no path prefix)
