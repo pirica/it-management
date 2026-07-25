@@ -659,6 +659,8 @@ If any are missing, PHPUnit prints: *PHPUnit requires the "dom", "json", … ext
 
 **HTML coverage (additional):** `--coverage-html` needs **Xdebug** or **PCOV** with coverage enabled (`xdebug.mode` must include `coverage` for Xdebug). Without a driver, `run_tests.php` runs **Standard** mode with `--no-coverage` and shows a note. **Xdebug** is the usual choice on Windows Dunebox after `setup_dunebox_php_from_laragon.ps1`.
 
+**Memory:** PHPUnit HTML report generation over the wide `phpunit.xml` include tree needs more than the default **128M** `php.ini`. `run_tests.php` passes **`-d memory_limit=512M`** to the PHPUnit subprocess (override with env **`ITM_PHPUNIT_MEMORY_LIMIT`**, e.g. `1024M` if static analysis still exhausts memory).
+
 Verify on the same binary as `.env` **`PHP_EXE`** (or the path shown on the `run_tests.php` menu):
 
 ```powershell

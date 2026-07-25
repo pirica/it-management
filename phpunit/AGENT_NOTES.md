@@ -12,7 +12,7 @@ Houses the PHPUnit runner, configuration, and the full unit/integration test tre
 - **tests/Unit/Scripts/** — CLI audit script tests; disposable user helper coverage (`ItmScriptTestUserTest`, `ReproAuditDisclosureTest`, `check_script_disposable_employees.unittest.php`).
 
 ## 4. Business Rules (Critical for Agents)
-- **PHP runtime (CLI):** PHPUnit 9 requires extensions `dom`, `json`, `libxml`, `mbstring`, `tokenizer`, `xml`, `xmlwriter` on the **CLI** binary used by `scripts/run_tests.php` (see `itm_phpunit_required_extensions()`). **HTML coverage** requires **Xdebug** or **PCOV** with coverage enabled — see **`scripts/SCRIPTS.md` → PHPUnit test runner**.
+- **PHP runtime (CLI):** PHPUnit 9 requires extensions `dom`, `json`, `libxml`, `mbstring`, `tokenizer`, `xml`, `xmlwriter` on the **CLI** binary used by `scripts/run_tests.php` (see `itm_phpunit_required_extensions()`). **HTML coverage** requires **Xdebug** or **PCOV** with coverage enabled — see **`scripts/SCRIPTS.md` → PHPUnit test runner**. HTML report generation uses **`ITM_PHPUNIT_MEMORY_LIMIT`** (default **512M**) on the PHPUnit subprocess.
 - **Disposable script test users:** when tests INSERT/UPDATE `employees` or touch `reset_token` / password fields, use `scripts/lib/itm_script_test_employee.php`; never mutate seed user id `1`. See `scripts/SCRIPTS.md` → Disposable script test users.
 
 ## 10. Common Pitfalls
