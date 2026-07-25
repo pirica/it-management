@@ -604,7 +604,7 @@ GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
 
 **database-import** job also runs `php scripts/verify_crud_fk_label_search.php` after import (requires MySQL).
 
-Local full import (requires MySQL, password `itmanagement`): `bash scripts/verify_database_sql_import.sh` — same command as CI **database-import** step 1. Local split alternative: `bash scripts/import_database_split.sh` (see `db/AGENT_NOTES.md`). Then run `php scripts/verify_crud_fk_label_search.php` for runtime FK label search regression.
+Local full import (requires MySQL, password `itmanagement`): `bash scripts/verify_database_sql_import.sh` — same entry point as CI **database-import** step 1. **Port:** CI sets `MYSQL_PORT=3306`; Dunebox default in `import_database_split.sh` is **3307** (no extra env). Laragon or other MySQL on **3306**: `MYSQL_PORT=3306 bash scripts/verify_database_sql_import.sh`. Direct split import: `bash scripts/import_database_split.sh` (see `db/AGENT_NOTES.md`). Then run `php scripts/verify_crud_fk_label_search.php` for runtime FK label search regression.
 
 **Database import (`db/`):** canonical files under `db/` (`01_schema.sql`, `02_data.sql`, `03_triggers.sql`). Import in **one MySQL session** in order **01 → 02 → 03** (`bash scripts/import_database_split.sh`) so `@replicate_source_company_id` persists and audit triggers load after seed data. Details: `db/AGENT_NOTES.md`.
 

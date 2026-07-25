@@ -66,9 +66,9 @@ cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
 "D:\dunebox-v1.0.6\system\apps\mysql\mysql-8.0.45-winx64\bin\mysql.exe" -h 127.0.0.1 -P 3307 -u root -psecret --default-character-set=utf8mb4 < db/
 ```
 
-Or: `bash scripts/verify_database_sql_import.sh`
+Or: `bash scripts/verify_database_sql_import.sh` (Dunebox default port **3307**; use `MYSQL_PORT=3306` when MySQL is on 3306)
 
-`db/` import (one session): `bash scripts/import_database_split.sh`. See `db/AGENT_NOTES.md`.
+`db/` import (one session): `bash scripts/import_database_split.sh`. Env: `MYSQL_PORT` (default **3307**; CI **database-import** uses **3306**). See `db/AGENT_NOTES.md`.
 
 Then: `php scripts/verify_database_schema.php` (or `php scripts/count_db_tables.php`) and re-run Tier 1 smoke once before continuing.
 
