@@ -17,9 +17,10 @@ from urllib.parse import urlparse
 
 from playwright.sync_api import sync_playwright
 
-PHP_BIN = os.environ.get(
-    'ITM_PHP_BIN',
-    r'C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe',
+PHP_BIN = (
+    os.environ.get('PHP_EXE')
+    or os.environ.get('ITM_PHP_BIN')
+    or r'D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe'
 )
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUT_DIR = os.path.join(REPO_ROOT, 'qa-reports', 'scripts_catalog_filter')

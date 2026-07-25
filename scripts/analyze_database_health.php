@@ -230,7 +230,7 @@ $nl = itm_script_output_nl();
     } catch (Throwable $e) {
         fwrite(STDERR, 'Unable to bootstrap application config/db connection: ' . $e->getMessage() . PHP_EOL);
         fwrite(STDERR, "Hint: PATH php may be PHP 7.0 without mysqli. Use Laragon PHP 7.4:" . PHP_EOL);
-        fwrite(STDERR, "  C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\bin\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe scripts\\analyze_database_health.php" . PHP_EOL);
+        fwrite(STDERR, "  D:\\dunebox-v1.0.6\\system\\apps\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe scripts\\analyze_database_health.php" . PHP_EOL);
         exit(1);
     }
 

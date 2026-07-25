@@ -104,9 +104,12 @@ if (!function_exists('itm_env_vars_audit_known_tooling_vars')) {
             'ITM_TEST_COOKIE',
             'ITM_USER',
             'MYSQL_HOST',
+            'MYSQL_EXE',
             'MYSQL_PASSWORD',
+            'MYSQL_PORT',
             'MYSQL_USER',
             'PHP_BIN',
+            'PHP_EXE',
             'ROOT',
             'TABLE_COUNT',
         ];

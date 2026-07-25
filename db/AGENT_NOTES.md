@@ -33,7 +33,7 @@ bash scripts/import_database_split.sh
 
 ```cmd
 cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
-(type db\01_schema.sql & echo. & type db\02_data.sql & echo. & type db\03_triggers.sql) | "C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe" -u root -pitmanagement --default-character-set=utf8mb4
+(type db\01_schema.sql & echo. & type db\02_data.sql & echo. & type db\03_triggers.sql) | "D:\dunebox-v1.0.6\system\apps\mysql\mysql-8.0.45-winx64\bin\mysql.exe" -h 127.0.0.1 -P 3307 -u root -psecret --default-character-set=utf8mb4
 ```
 
 Do **not** run schema, data, and triggers as three separate `mysql` CLI imports.

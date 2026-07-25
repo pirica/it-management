@@ -48,14 +48,14 @@ function deploy_env_load(string $envFilePath): void
 function deploy_env_database_config(string $rootDir): array
 {
     $defaults = [
-        'mysql_exe' => 'C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\bin\\mysql\\mysql-8.4.3-winx64\\bin\\mysql.exe',
-        'php_exe' => 'C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\bin\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe',
+        'mysql_exe' => 'D:\\dunebox-v1.0.6\\system\\apps\\mysql\\mysql-8.0.45-winx64\\bin\\mysql.exe',
+        'php_exe' => 'D:\\dunebox-v1.0.6\\system\\apps\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe',
     ];
 
     deploy_env_load($rootDir . DIRECTORY_SEPARATOR . '.env');
 
     $host = $_ENV['DB_HOST'] ?? '127.0.0.1';
-    $port = 3306;
+    $port = 3307;
     if (!empty($_ENV['DB_PORT']) && ctype_digit((string) $_ENV['DB_PORT'])) {
         $port = (int) $_ENV['DB_PORT'];
     }

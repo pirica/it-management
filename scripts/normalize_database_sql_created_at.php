@@ -5,7 +5,7 @@
  * Usage: php scripts/normalize_database_sql_created_at.php
  *
  * Use Laragon PHP 7.4 if `php -v` shows an older CLI (PATH often points at PHP 7.0):
- * C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts/normalize_database_sql_created_at.php
+ * D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts/normalize_database_sql_created_at.php
  */
 
 declare(strict_types=1);

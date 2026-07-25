@@ -24,15 +24,9 @@ if (!function_exists('itm_perform_audit_is_cli_php_binary')) {
 if (!function_exists('itm_perform_audit_resolve_php_binary')) {
     function itm_perform_audit_resolve_php_binary(): string
     {
-        $laragonPhp = 'C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\bin\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe';
-        if (is_file($laragonPhp)) {
-            return $laragonPhp;
-        }
-        if (defined('PHP_BINARY') && PHP_BINARY !== '' && itm_perform_audit_is_cli_php_binary(PHP_BINARY)) {
-            return (string)PHP_BINARY;
-        }
+        require_once dirname(__DIR__, 2) . '/includes/itm_cli_binary.php';
 
-        return 'php';
+        return itm_resolve_cli_php_binary();
     }
 }
 

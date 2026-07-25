@@ -1,7 +1,7 @@
 # Safe scripts matrix runner (tiers 1-3). Writes JSON for docs/scripts_errors.txt.
 $ErrorActionPreference = 'Continue'
 $Root = 'C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management'
-$Php = 'C:\Users\NelsonSalvador\Downloads\laragon-portable\bin\php\php-7.4.33-nts-Win32-vc15-x64\php.exe'
+$Php = 'D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe'
 $Bash = 'C:\Program Files\Git\bin\bash.exe'
 $Matrix = Join-Path $Root 'scripts\SCRIPTS_TEST_MATRIX.md'
 $OutDir = Join-Path $Root 'qa-reports'

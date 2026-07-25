@@ -207,16 +207,9 @@ if (!function_exists('news_feed_user_agent')) {
 if (!function_exists('news_resolve_php_binary')) {
     function news_resolve_php_binary()
     {
-        if (defined('PHP_BINARY') && PHP_BINARY !== '' && stripos((string)PHP_BINARY, 'php') !== false) {
-            return (string)PHP_BINARY;
-        }
+        require_once __DIR__ . '/itm_cli_binary.php';
 
-        $laragonPhp = 'C:\\Users\\NelsonSalvador\\Downloads\\laragon-portable\\bin\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe';
-        if (is_file($laragonPhp)) {
-            return $laragonPhp;
-        }
-
-        return 'php';
+        return itm_resolve_cli_php_binary();
     }
 }
 
