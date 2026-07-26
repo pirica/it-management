@@ -31,6 +31,8 @@ if (!function_exists('itm_script_browser_usage_exempt_basenames')) {
             'schema_report.php',
             // Why: No-auth plain-text monitor; external probes expect immediate count without run=1 landing.
             'count_db_tables.php',
+            // Why: Full HTML form with built-in dry-run; POST must not require run=1 on the action URL.
+            'update_all_created_at.php',
         ];
     }
 }
