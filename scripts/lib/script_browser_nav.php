@@ -43,6 +43,61 @@ if (!function_exists('itm_script_browser_nav_html')) {
     }
 }
 
+if (!function_exists('itm_script_browser_main_menu_items')) {
+    /**
+     * Developer hub links (Scripts catalog, Pitfalls, Cursor rules).
+     *
+     * @return array<int, array{id: string, label: string, href: string}>
+     */
+    function itm_script_browser_main_menu_items(): array
+    {
+        return [
+            ['id' => 'scripts', 'label' => 'Scripts', 'href' => 'scripts.php'],
+            ['id' => 'pitfalls', 'label' => 'Pitfalls', 'href' => 'pitfalls.php'],
+            ['id' => 'rules', 'label' => 'Rules', 'href' => 'rules.php'],
+        ];
+    }
+}
+
+if (!function_exists('itm_script_browser_main_menu_html')) {
+    /**
+     * Sticky Main menu for browser developer pages under scripts/.
+     *
+     * @param string $activeId One of scripts|pitfalls|rules (empty = none highlighted)
+     */
+    function itm_script_browser_main_menu_html(string $activeId = ''): string
+    {
+        $activeId = trim($activeId);
+        $itemsHtml = '';
+        foreach (itm_script_browser_main_menu_items() as $item) {
+            $id = (string)($item['id'] ?? '');
+            $label = htmlspecialchars((string)($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');
+            $href = htmlspecialchars((string)($item['href'] ?? ''), ENT_QUOTES, 'UTF-8');
+            $isActive = $activeId !== '' && $id === $activeId;
+            $style = 'text-decoration:none;font-size:0.95rem;'
+                . ($isActive
+                    ? 'font-weight:600;color:#0969da;'
+                    : 'font-weight:500;color:var(--text-primary,#24292f);');
+            $itemsHtml .= '<a href="' . $href . '" style="' . $style . '">' . $label . '</a>';
+        }
+
+        $homeEsc = htmlspecialchars('../index.php', ENT_QUOTES, 'UTF-8');
+
+        return '<nav class="itm-script-main-menu" aria-label="Main menu" style="position:sticky;top:0;z-index:100;margin:0 0 16px;padding:10px 20px;background:var(--bg-primary,#fff);border-bottom:1px solid var(--border,#d0d7de);box-shadow:0 1px 3px rgba(27,31,36,0.08);font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;">'
+            . '<div style="max-width:1400px;width:95%;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">'
+            . '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">'
+            . $itemsHtml
+            . '</div>'
+            . '<a href="' . $homeEsc . '" style="color:#0969da;text-decoration:none;font-size:0.9rem;white-space:nowrap;">← Home</a>'
+            . '</div></nav>';
+    }
+
+    function itm_script_browser_main_menu_echo(string $activeId = ''): void
+    {
+        echo itm_script_browser_main_menu_html($activeId);
+    }
+}
+
 if (!function_exists('itm_script_module_path_from_table')) {
     function itm_script_module_path_from_table($tableName): string
     {

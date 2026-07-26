@@ -24,6 +24,7 @@ if (!function_exists('itm_script_browser_usage_exempt_basenames')) {
             'module_clean_tests_qa_runner.php',
             'detect_fk_dropdown_ui_risk_ui.php',
             'pitfalls.php',
+            'rules.php',
             'force_delete_company.php',
             'fast_create_acc.php',
             'fast_create_acc_browser.php',

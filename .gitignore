@@ -3,6 +3,9 @@
 up.bat
 up.ps1
 .cursor/
+!.cursor/.htaccess
+!.cursor/rules/
+!.cursor/rules/**
 .phpunit.result.cache
 phpunit/.phpunit.result.cache
 phpunit/coverage/html/

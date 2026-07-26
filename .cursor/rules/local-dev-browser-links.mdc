@@ -1,0 +1,18 @@
+---
+description: Agent chat replies use full localhost URLs for modules/ and scripts/ (new tab)
+alwaysApply: true
+---
+
+## AGENTS.md (mandatory)
+
+- Read `AGENTS.md` workflow step **7a**.
+
+# Local dev links in agent replies
+
+When you mention `modules/…` or `scripts/…` paths to the user for manual checks:
+
+1. Use the full URL: `http://localhost/it-management/` + repo-relative path.
+2. Use markdown links with that URL; say to **open in a new browser tab**.
+3. Do **not** add or refactor application PHP for this unless the user explicitly requests it.
+
+Example: `[apply (dry-run)](http://localhost/it-management/scripts/apply_crud_browser_title_module_icon.php)` · `[apply write](http://localhost/it-management/scripts/apply_crud_browser_title_module_icon.php?apply=1)` · `[check gate](http://localhost/it-management/scripts/check_crud_browser_title_module_icon.php)` · `[titles_list](http://localhost/it-management/scripts/titles_list.php)`

@@ -453,17 +453,7 @@ $generated_at = gmdate('Y-m-d H:i:s') . ' UTC';
     </style>
 </head>
 <body>
-<nav class="scripts-top-nav" aria-label="Scripts directory sections" style="position: sticky; top: 0; z-index: 100; margin: 0 0 16px; padding: 10px 20px; background: var(--bg-primary, #fff); border-bottom: 1px solid var(--border, #d0d7de); box-shadow: 0 1px 3px rgba(27, 31, 36, 0.08); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-    <div style="max-width: 1400px; width: 95%; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
-        <div style="display: flex; align-items: center; gap: 16px;">
-            <a href="scripts.php" style="font-weight: 700; color: var(--text-primary, #24292f); text-decoration: none; font-size: 1.1rem;">Scripts</a>
-            <span style="color: var(--border, #d0d7de);">|</span>
-            <a href="pitfalls.php" style="font-weight: 600; color: #0969da; text-decoration: none; font-size: 0.95rem;">Common Pitfalls</a>
-        </div>
-        <a href="../index.php" style="color: #0969da; text-decoration: none; font-size: 0.9rem;">← Home</a>
-    </div>
-</nav>
-
+<?php itm_script_browser_main_menu_echo('pitfalls'); ?>
 <div class="scripts-wrap">
     <?php itm_script_browser_nav_echo(); ?>
 

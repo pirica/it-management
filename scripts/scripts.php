@@ -152,6 +152,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     </style>
 </head>
 <body>
+<?php
+require_once __DIR__ . '/lib/script_browser_nav.php';
+itm_script_browser_main_menu_echo('scripts');
+?>
 <nav class="scripts-top-nav" aria-label="Scripts directory sections">
     <div class="scripts-top-nav-inner">
         <a class="scripts-top-nav-brand" href="scripts.php">Scripts</a>
@@ -260,6 +264,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
                     <td>Aggregated pitfalls and developer traps from every <code>AGENT_NOTES.md</code> in the repository (not only <code>modules/</code>). Backfills missing note files under <code>modules/</code> only. Reviewed empty §10 sections may use <code>[Confirmed] No pitfalls documented</code>. Skips top-level upload roots but still includes <code>modules/floor_plans/</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>                </tr>
+                <tr data-tags="Codebase">
+                    <td><a href="rules.php" target="_blank" rel="nofollow noreferrer">rules.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Read-only browser list of Cursor project rules under <code>.cursor/rules/*.mdc</code> (same Main menu entry as Pitfalls). Admin only.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="Markdown">
                     <td><a href="SCRIPTS.md" target="_blank" rel="nofollow noreferrer">SCRIPTS.md</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-md">Markdown</span></span></td>
