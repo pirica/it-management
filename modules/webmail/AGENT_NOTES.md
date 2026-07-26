@@ -38,6 +38,7 @@ Session-scoped mailbox UI on the shared **`emails`** send log table. Users see m
 - Star / archive / delete actions via POST `delete.php` with CSRF. **Inbox, Starred, Sent, and Archived** use **soft delete** (move to Trash, no browser confirm). **Trash** alone uses **hard delete** with confirm.
 - **Read / unread:** list **Read** column; bold row when unread; toggle in Actions; view auto-marks read.
 - **View:** read-pane layout (subject header, From/To/CC, date, body pane, folder tabs, toolbar actions); audit fields under collapsible **Technical details**.
+- **List table:** `data-itm-no-import-excel="1"` plus export opt-outs — no table-tools Import Excel (mailbox is not a CRUD import surface).
 
 ## 6. API Actions (If Applicable)
 
