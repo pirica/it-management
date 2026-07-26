@@ -57,6 +57,7 @@ if (!isset($currentUiConfig)) {
                         <tr><th>Subject</th><td><?php echo sanitize((string)($row['subject'] ?? '')); ?></td></tr>
                         <tr><th>Status</th><td><?php echo sanitize((string)($row['status'] ?? '')); ?></td></tr>
                         <tr><th>Archived</th><td><?php echo (int)($row['is_archived'] ?? 0) === 1 ? 'Yes' : 'No'; ?></td></tr>
+                        <tr><th>Starred</th><td><?php echo (int)($row['is_star'] ?? 0) === 1 ? 'Yes' : 'No'; ?></td></tr>
                         <tr><th>Sent at</th><td><?php echo sanitize((string)($row['sent_at'] ?? '')); ?></td></tr>
                         <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $row); ?>
                         </tbody>

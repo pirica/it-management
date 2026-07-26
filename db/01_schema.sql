@@ -1269,6 +1269,7 @@ CREATE TABLE `emails` (
   `sent_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `active` tinyint(1) DEFAULT '1',
   `is_archived` tinyint(1) NOT NULL DEFAULT '0',
+  `is_star` tinyint(1) NOT NULL DEFAULT '0',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_by` int DEFAULT NULL,

@@ -5,6 +5,7 @@ $sendLogsColumnLabels = [
     'cc_email' => 'CC',
     'subject' => 'Subject',
     'status' => 'Status',
+    'is_star' => 'Star',
     'sent_at' => 'Date',
     'details' => 'Details',
 ];
@@ -87,7 +88,7 @@ $sendLogsColumnLabels = [
             </thead>
             <tbody>
                 <?php if (empty($sendLogs)): ?>
-                    <tr><td colspan="<?php echo $showSendLogsBulkActions ? 9 : 8; ?>">No send log entries yet.</td></tr>
+                    <tr><td colspan="<?php echo $showSendLogsBulkActions ? 10 : 9; ?>">No send log entries yet.</td></tr>
                 <?php else: ?>
                     <?php foreach ($sendLogs as $logRow): ?>
                         <?php
@@ -114,6 +115,7 @@ $sendLogsColumnLabels = [
                             <td><?php echo sanitize((string)($logRow['cc_email'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)$logRow['subject']); ?></td>
                             <td><?php echo sanitize($statusLabel); ?></td>
+                            <td><?php echo (int)($logRow['is_star'] ?? 0) === 1 ? 'Yes' : 'No'; ?></td>
                             <td><?php echo sanitize($sentDisplay); ?></td>
                             <td><?php echo sanitize((string)($logRow['details'] ?? '')); ?></td>
                             <td class="itm-actions-cell" data-itm-actions-origin="1">
