@@ -28,7 +28,12 @@ foreach (['status', 'starred', 'archived', 'search', 'sort', 'dir', 'page', 'dat
 }
 $redirect = 'index.php?' . http_build_query($redirectParams);
 if ($id > 0 && $action === 'soft_delete') {
-    webmail_soft_delete($conn, $id, $company_id, $employee_id, $sessionEmail);
+    if (webmail_soft_delete($conn, $id, $company_id, $employee_id, $sessionEmail)) {
+        $_SESSION['webmail_notice'] = 'Message moved to Trash.';
+    }
+    $redirectParams['folder'] = 'trash';
+    unset($redirectParams['page']);
+    $redirect = 'index.php?' . http_build_query($redirectParams);
 } elseif ($id > 0 && $action === 'restore') {
     webmail_restore($conn, $id, $company_id, $employee_id);
 } elseif ($id > 0 && $action === 'hard_delete') {
