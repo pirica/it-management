@@ -110,12 +110,31 @@ $currentUiConfig = $uiConfig ?? [];
     <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
     <link rel="stylesheet" href="../../css/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
     <style>
         .webmail-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-wrap: wrap; align-items: center; }
         .webmail-tab { padding: 8px 16px; text-decoration: none; color: var(--text-primary); border-radius: 6px; font-weight: 500; }
         .webmail-tab.active { background: var(--accent); color: #fff; font-weight: 600; }
-        .webmail-editor-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-        .webmail-editor { min-height: 220px; border: 1px solid var(--border); border-radius: 6px; padding: 12px; background: var(--bg-primary); }
+        .webmail-quill-wrap .ql-toolbar.ql-snow,
+        .webmail-quill-wrap .ql-container.ql-snow {
+            border-color: var(--border);
+            background: var(--bg-primary);
+        }
+        .webmail-quill-wrap .ql-editor {
+            min-height: 220px;
+            color: var(--text-primary);
+        }
+        .webmail-quill-wrap .ql-snow .ql-stroke {
+            stroke: var(--text-primary);
+        }
+        .webmail-quill-wrap .ql-snow .ql-fill,
+        .webmail-quill-wrap .ql-snow .ql-picker {
+            color: var(--text-primary);
+        }
+        .webmail-quill-wrap .ql-snow .ql-picker-options {
+            background: var(--bg-primary);
+            border-color: var(--border);
+        }
     </style>
 </head>
 <body>
@@ -163,16 +182,16 @@ $currentUiConfig = $uiConfig ?? [];
                         <input type="text" name="subject" id="subject" class="form-control" required maxlength="500" value="<?php echo sanitize($data['subject']); ?>">
                     </div>
                     <div class="form-group">
-                        <label>Body</label>
-                        <div class="webmail-editor-toolbar">
-                            <button type="button" class="btn btn-sm" data-webmail-cmd="bold" title="Bold">B</button>
-                            <button type="button" class="btn btn-sm" data-webmail-cmd="italic" title="Italic">I</button>
-                            <button type="button" class="btn btn-sm" data-webmail-cmd="underline" title="Underline">U</button>
-                            <button type="button" class="btn btn-sm" data-webmail-cmd="insertUnorderedList" title="Bullet list">•</button>
-                            <button type="button" class="btn btn-sm" data-webmail-cmd="insertOrderedList" title="Numbered list">1.</button>
-                            <button type="button" class="btn btn-sm" data-webmail-cmd="createLink" title="Link">🔗</button>
+                        <label for="webmail-body-editor">Body</label>
+                        <div class="webmail-quill-wrap">
+                            <div id="webmail-body-editor"></div>
                         </div>
-                        <div id="webmail-body-editor" class="webmail-editor" contenteditable="true"><?php echo webmail_render_details_html($data['body_html']); ?></div>
+                        <script type="application/json" id="webmail-body-initial"><?php
+                            echo json_encode(
+                                webmail_render_details_html($data['body_html']),
+                                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP
+                            );
+                        ?></script>
                         <input type="hidden" name="body_html" id="webmail-body-html" value="">
                     </div>
                     <button type="submit" name="send_now" value="1" class="btn btn-primary" title="Send Now">📤</button>
@@ -182,6 +201,7 @@ $currentUiConfig = $uiConfig ?? [];
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
 <script src="../../js/webmail-compose.js"></script>
 </body>
 </html>

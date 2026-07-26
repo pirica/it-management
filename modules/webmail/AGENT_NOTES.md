@@ -23,7 +23,7 @@ Session-scoped mailbox UI on the shared **`emails`** send log table. Users see m
 - **Trash:** `is_deleted = 1` and `deleted_by =` session `employee_id` (personal trash only).
 - **Soft delete:** `is_deleted = 1`, `deleted_by`, `deleted_at`, `active = 0`.
 - **Hard delete:** `DELETE` only from trash (own) or archived (owned); confirm in UI.
-- **Compose:** `from_email` forced from session; To/CC user-entered; body HTML in `details`; send via `itm_send_email()` with `log_from_email`, `log_details`, `log_created_by`.
+- **Compose:** `from_email` forced from session; To/CC user-entered; body HTML in `details` via **Quill** WYSIWYG (`js/webmail-compose.js`, Quill 1.3.7 from jsDelivr on `compose.php` only); send via `itm_send_email()` with `log_from_email`, `log_details`, `log_created_by`.
 - **Self-sent:** a row can appear in both Inbox and Sent when addresses match both rules.
 - **Private data:** no `audit_logs` / triggers on **emails** (see root `AGENTS.md`).
 
@@ -31,6 +31,7 @@ Session-scoped mailbox UI on the shared **`emails`** send log table. Users see m
 
 - Folders: Inbox, **Starred**, Sent, Archived, Trash; Compose on separate page.
 - Lists: pagination (emoji controls), filters (status, starred/archived on inbox, date range, search).
+- **Compose body:** Quill Snow editor (bold/italic/underline/strike, headers, lists, link, clear); HTML synced to `body_html` on submit and sanitized server-side with `webmail_render_details_html()`.
 - Star / archive / delete actions via POST `delete.php` with CSRF.
 - View: full fields + sanitized HTML body + audit meta rows.
 
