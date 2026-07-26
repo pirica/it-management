@@ -36,6 +36,11 @@ $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = itm_resolve_records_per_page($uiConfig ?? null);
 
 $errors = [];
+$notices = [];
+if (!empty($_SESSION['webmail_notice'])) {
+    $notices[] = (string)$_SESSION['webmail_notice'];
+    unset($_SESSION['webmail_notice']);
+}
 if ($sessionEmail === '') {
     $errors[] = 'Your account has no email on file. Add a work or personal email in your profile to use Webmail.';
 }
@@ -170,6 +175,9 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
             </div>
 
             <?php echo itm_render_alert_errors($errors); ?>
+            <?php foreach ($notices as $notice): ?>
+                <div class="alert alert-success"><?php echo sanitize($notice); ?></div>
+            <?php endforeach; ?>
 
             <div class="webmail-tabs">
                 <?php foreach (webmail_folders() as $tabFolder): ?>
@@ -329,11 +337,11 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
                                                     <?php $hiddenRedirectFields(); ?>
                                                     <button type="submit" class="btn btn-sm" title="Archive">🗄️</button>
                                                 </form>
-                                                <form class="webmail-actions-form" method="POST" action="delete.php">
+                                                <form class="webmail-actions-form" method="POST" action="delete.php" data-itm-webmail-soft-delete="1">
                                                     <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                                     <input type="hidden" name="webmail_action" value="soft_delete">
                                                     <?php $hiddenRedirectFields(); ?>
-                                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
+                                                    <button type="submit" class="btn btn-sm btn-danger" title="Move to Trash" data-itm-auto-tooltip="off">🗑️</button>
                                                 </form>
                                             <?php endif; ?>
                                         </div>
