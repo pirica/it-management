@@ -223,7 +223,7 @@ if ($countStmt) {
 $sendLogs = [];
 $perPage = itm_resolve_records_per_page($uiConfig ?? null);
 $page = max(1, (int)($_GET['page'] ?? 1));
-$sendLogsSortable = ['from_email', 'to_email', 'cc_email', 'subject', 'status', 'sent_at', 'details', 'id'];
+$sendLogsSortable = ['from_email', 'to_email', 'cc_email', 'subject', 'status', 'is_star', 'sent_at', 'details', 'id'];
 $sort = trim((string)($_GET['sort'] ?? 'sent_at'));
 if (!in_array($sort, $sendLogsSortable, true)) {
     $sort = 'sent_at';
@@ -276,7 +276,7 @@ if ($page > $sendLogsTotalPages) {
 }
 $sendLogsOffset = ($page - 1) * $perPage;
 
-$logSql = 'SELECT id, from_email, to_email, cc_email, subject, status, details, sent_at
+$logSql = 'SELECT id, from_email, to_email, cc_email, subject, status, is_star, details, sent_at
            FROM emails
            WHERE ' . $sendLogsWhereSql . ' ORDER BY ' . $sort . ' ' . $dir . ', id DESC LIMIT ? OFFSET ?';
 $logTypes = $sendLogsTypes . 'ii';
@@ -510,14 +510,15 @@ function exportEmailLogsXlsx() {
             'cc' => $row['cc_email'] ?? '',
             'subject' => $row['subject'] ?? '',
             'status' => ucfirst((string)($row['status'] ?? '')),
+            'star' => (int)($row['is_star'] ?? 0) === 1 ? 'Yes' : 'No',
             'date' => $sentAt,
             'details' => $row['details'] ?? '',
         ];
     }, $sendLogs), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
     function writeWorkbook() {
-        const header = ['From', 'To', 'CC', 'Subject', 'Status', 'Date', 'Details'];
+        const header = ['From', 'To', 'CC', 'Subject', 'Status', 'Star', 'Date', 'Details'];
         const data = [header].concat(rows.map(function (row) {
-            return [row.from, row.to, row.cc, row.subject, row.status, row.date, row.details];
+            return [row.from, row.to, row.cc, row.subject, row.status, row.star, row.date, row.details];
         }));
         const ws = XLSX.utils.aoa_to_sheet(data);
         const wb = XLSX.utils.book_new();
