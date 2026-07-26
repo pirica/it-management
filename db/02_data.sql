@@ -747,7 +747,7 @@ INSERT INTO `email_smtp_configurations` (`id`, `company_id`, `config_name`, `smt
 
 INSERT INTO `email_smtp_configurations` (`id`, `company_id`, `config_name`, `smtp_host`, `smtp_port`, `username`, `password_encrypted`, `from_email`, `from_name`, `imap_port`, `pop3_port`, `pop3_tls_mode`, `pop3_require_secure_connection`, `is_default`, `active`, `created_at`, `updated_at`) VALUES ('5', '5', 'IT Manager', '127.0.0.1', '1025', NULL, NULL, 'noreply@example.com', 'Mail Manager', '143', '110', 'None', '0', '1', '1', '2026-06-18 01:00:00', '2026-06-19 22:49:25');
 
-INSERT INTO `emails` (`id`, `company_id`, `smtp_config_id`, `to_email`, `subject`, `status`, `details`, `sent_at`, `active`, `created_at`) VALUES ('1', '1', '1', 'nelson.salvador@gmail.com', 'Test Email from IT Manager Pro', 'sent', NULL, '2026-06-18 02:06:00', '1', '2026-06-18 02:06:00');
+INSERT INTO `emails` (`id`, `company_id`, `smtp_config_id`, `to_email`, `from_email`, `cc_email`, `subject`, `status`, `details`, `sent_at`, `active`, `is_archived`, `created_at`) VALUES ('1', '1', '1', 'nelson.salvador@gmail.com', 'noreply@example.com', '', 'Test Email from IT Manager Pro', 'sent', NULL, '2026-06-18 02:06:00', '1', '0', '2026-06-18 02:06:00');
 
 INSERT INTO `email_alert_rules` (`company_id`, `rule_slug`, `enabled`, `days_before`, `notify_emails`, `active`, `created_at`) VALUES ('1', 'warranty_expiry', '1', '30', 'admin@company.com, it@company.com', '1', '2026-06-18 02:00:00');
 

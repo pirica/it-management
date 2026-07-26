@@ -29,7 +29,7 @@ if (!in_array($active_tab, $allowed_tabs, true)) {
 }
 
 $status_filter = $_GET['status'] ?? '';
-if (!in_array($status_filter, ['', 'sent', 'failed'], true)) {
+if (!in_array($status_filter, ['', 'sent', 'failed', 'received'], true)) {
     $status_filter = '';
 }
 
@@ -200,20 +200,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $totalEmails = 0;
 $sentEmails = 0;
 $failedEmails = 0;
+$receivedEmails = 0;
 
 $countStmt = mysqli_prepare(
     $conn,
     'SELECT
         COUNT(*) AS total_count,
         SUM(CASE WHEN status = "sent" THEN 1 ELSE 0 END) AS sent_count,
-        SUM(CASE WHEN status = "failed" THEN 1 ELSE 0 END) AS failed_count
+        SUM(CASE WHEN status = "failed" THEN 1 ELSE 0 END) AS failed_count,
+        SUM(CASE WHEN status = "received" THEN 1 ELSE 0 END) AS received_count
      FROM emails
-     WHERE company_id = ? AND active = 1'
+     WHERE company_id = ? AND active = 1 AND is_archived = 0'
 );
 if ($countStmt) {
     mysqli_stmt_bind_param($countStmt, 'i', $company_id);
     mysqli_stmt_execute($countStmt);
-    mysqli_stmt_bind_result($countStmt, $totalEmails, $sentEmails, $failedEmails);
+    mysqli_stmt_bind_result($countStmt, $totalEmails, $sentEmails, $failedEmails, $receivedEmails);
     mysqli_stmt_fetch($countStmt);
     mysqli_stmt_close($countStmt);
 }
@@ -221,13 +223,13 @@ if ($countStmt) {
 $sendLogs = [];
 $perPage = itm_resolve_records_per_page($uiConfig ?? null);
 $page = max(1, (int)($_GET['page'] ?? 1));
-$sendLogsSortable = ['to_email', 'subject', 'status', 'sent_at', 'details', 'id'];
+$sendLogsSortable = ['from_email', 'to_email', 'cc_email', 'subject', 'status', 'sent_at', 'details', 'id'];
 $sort = trim((string)($_GET['sort'] ?? 'sent_at'));
 if (!in_array($sort, $sendLogsSortable, true)) {
     $sort = 'sent_at';
 }
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
-$sendLogsWhereSql = 'company_id = ? AND active = 1';
+$sendLogsWhereSql = 'company_id = ? AND active = 1 AND is_archived = 0';
 $sendLogsTypes = 'i';
 $sendLogsParams = [$company_id];
 if ($status_filter !== '') {
@@ -238,13 +240,17 @@ if ($status_filter !== '') {
 if ($searchRaw !== '') {
     $searchPattern = (strpos($searchRaw, '%') !== false || strpos($searchRaw, '_') !== false) ? $searchRaw : '%' . $searchRaw . '%';
     $sendLogsWhereSql .= ' AND (
-        to_email LIKE ?
+        from_email LIKE ?
+        OR to_email LIKE ?
+        OR cc_email LIKE ?
         OR subject LIKE ?
         OR status LIKE ?
         OR details LIKE ?
         OR CAST(sent_at AS CHAR) LIKE ?
     )';
-    $sendLogsTypes .= 'sssss';
+    $sendLogsTypes .= 'sssssss';
+    $sendLogsParams[] = $searchPattern;
+    $sendLogsParams[] = $searchPattern;
     $sendLogsParams[] = $searchPattern;
     $sendLogsParams[] = $searchPattern;
     $sendLogsParams[] = $searchPattern;
@@ -270,7 +276,7 @@ if ($page > $sendLogsTotalPages) {
 }
 $sendLogsOffset = ($page - 1) * $perPage;
 
-$logSql = 'SELECT id, to_email, subject, status, details, sent_at
+$logSql = 'SELECT id, from_email, to_email, cc_email, subject, status, details, sent_at
            FROM emails
            WHERE ' . $sendLogsWhereSql . ' ORDER BY ' . $sort . ' ' . $dir . ', id DESC LIMIT ? OFFSET ?';
 $logTypes = $sendLogsTypes . 'ii';
@@ -370,6 +376,7 @@ $sendLogsClearUrl = 'index.php?tab=send_logs' . ($status_filter !== '' ? '&statu
 $sendLogsStatHrefAll = htmlspecialchars('index.php?' . http_build_query($sendLogsBaseQuery), ENT_QUOTES, 'UTF-8');
 $sendLogsStatHrefSent = htmlspecialchars('index.php?' . http_build_query(array_merge($sendLogsBaseQuery, ['status' => 'sent'])), ENT_QUOTES, 'UTF-8');
 $sendLogsStatHrefFailed = htmlspecialchars('index.php?' . http_build_query(array_merge($sendLogsBaseQuery, ['status' => 'failed'])), ENT_QUOTES, 'UTF-8');
+$sendLogsStatHrefReceived = htmlspecialchars('index.php?' . http_build_query(array_merge($sendLogsBaseQuery, ['status' => 'received'])), ENT_QUOTES, 'UTF-8');
 
 $page_title = 'Email Management';
 $modulePath = dirname($_SERVER['PHP_SELF']);
@@ -456,6 +463,10 @@ if (!isset($crud_title)) {
                     <div class="stat-label">Failed</div>
                     <div class="stat-number"><?php echo (int)$failedEmails; ?></div>
                 </a>
+                <a class="stat-card stat-card-link" href="<?php echo $sendLogsStatHrefReceived; ?>">
+                    <div class="stat-label">Received</div>
+                    <div class="stat-number"><?php echo (int)$receivedEmails; ?></div>
+                </a>
             </div>
 
             <div class="email-tabs">
@@ -494,7 +505,9 @@ function exportEmailLogsXlsx() {
             }
         }
         return [
+            'from' => $row['from_email'] ?? '',
             'to' => $row['to_email'] ?? '',
+            'cc' => $row['cc_email'] ?? '',
             'subject' => $row['subject'] ?? '',
             'status' => ucfirst((string)($row['status'] ?? '')),
             'date' => $sentAt,
@@ -502,9 +515,9 @@ function exportEmailLogsXlsx() {
         ];
     }, $sendLogs), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
     function writeWorkbook() {
-        const header = ['To', 'Subject', 'Status', 'Date', 'Details'];
+        const header = ['From', 'To', 'CC', 'Subject', 'Status', 'Date', 'Details'];
         const data = [header].concat(rows.map(function (row) {
-            return [row.to, row.subject, row.status, row.date, row.details];
+            return [row.from, row.to, row.cc, row.subject, row.status, row.date, row.details];
         }));
         const ws = XLSX.utils.aoa_to_sheet(data);
         const wb = XLSX.utils.book_new();

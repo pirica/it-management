@@ -1,6 +1,8 @@
 <?php
 $sendLogsColumnLabels = [
+    'from_email' => 'From',
     'to_email' => 'To',
+    'cc_email' => 'CC',
     'subject' => 'Subject',
     'status' => 'Status',
     'sent_at' => 'Date',
@@ -85,7 +87,7 @@ $sendLogsColumnLabels = [
             </thead>
             <tbody>
                 <?php if (empty($sendLogs)): ?>
-                    <tr><td colspan="<?php echo $showSendLogsBulkActions ? 7 : 6; ?>">No send log entries yet.</td></tr>
+                    <tr><td colspan="<?php echo $showSendLogsBulkActions ? 9 : 8; ?>">No send log entries yet.</td></tr>
                 <?php else: ?>
                     <?php foreach ($sendLogs as $logRow): ?>
                         <?php
@@ -107,7 +109,9 @@ $sendLogsColumnLabels = [
                                     <input type="checkbox" name="ids[]" value="<?php echo $logId; ?>" form="bulk-delete-form" style="display:none;">
                                 </td>
                             <?php endif; ?>
+                            <td><?php echo sanitize((string)($logRow['from_email'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)$logRow['to_email']); ?></td>
+                            <td><?php echo sanitize((string)($logRow['cc_email'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)$logRow['subject']); ?></td>
                             <td><?php echo sanitize($statusLabel); ?></td>
                             <td><?php echo sanitize($sentDisplay); ?></td>
