@@ -182,6 +182,162 @@ if (!function_exists('webmail_get_row_by_id')) {
     }
 }
 
+if (!function_exists('webmail_reads_table_exists')) {
+    function webmail_reads_table_exists(mysqli $conn): bool
+    {
+        static $cache = null;
+        if ($cache !== null) {
+            return $cache;
+        }
+        $res = mysqli_query($conn, "SHOW TABLES LIKE 'webmail_email_reads'");
+        $cache = $res instanceof mysqli_result && mysqli_num_rows($res) > 0;
+        if ($res instanceof mysqli_result) {
+            mysqli_free_result($res);
+        }
+
+        return $cache;
+    }
+}
+
+if (!function_exists('webmail_user_may_touch_message')) {
+    function webmail_user_may_touch_message(array $row, string $sessionEmail): bool
+    {
+        if ((int)($row['is_deleted'] ?? 0) === 1) {
+            return false;
+        }
+
+        return webmail_is_recipient($row, $sessionEmail) || webmail_is_sender($row, $sessionEmail);
+    }
+}
+
+if (!function_exists('webmail_is_email_read')) {
+    function webmail_is_email_read(mysqli $conn, int $emailId, int $companyId, int $employeeId): bool
+    {
+        if ($emailId <= 0 || !webmail_reads_table_exists($conn)) {
+            return true;
+        }
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT 1 FROM webmail_email_reads
+             WHERE company_id = ? AND employee_id = ? AND email_id = ? AND deleted_at IS NULL LIMIT 1'
+        );
+        if (!$stmt) {
+            return true;
+        }
+        mysqli_stmt_bind_param($stmt, 'iii', $companyId, $employeeId, $emailId);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_bind_result($stmt, $found);
+        $has = mysqli_stmt_fetch($stmt);
+        mysqli_stmt_close($stmt);
+
+        return (bool)$has;
+    }
+}
+
+if (!function_exists('webmail_attach_read_flags_to_rows')) {
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<int, array<string, mixed>>
+     */
+    function webmail_attach_read_flags_to_rows(mysqli $conn, array $rows, int $companyId, int $employeeId): array
+    {
+        if ($rows === []) {
+            return $rows;
+        }
+        if (!webmail_reads_table_exists($conn)) {
+            foreach ($rows as $idx => $row) {
+                $rows[$idx]['is_read'] = 1;
+            }
+
+            return $rows;
+        }
+        $ids = [];
+        foreach ($rows as $row) {
+            $id = (int)($row['id'] ?? 0);
+            if ($id > 0) {
+                $ids[$id] = $id;
+            }
+        }
+        if ($ids === []) {
+            return $rows;
+        }
+        $readIds = [];
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = 'SELECT email_id FROM webmail_email_reads
+                WHERE company_id = ? AND employee_id = ? AND deleted_at IS NULL AND email_id IN (' . $placeholders . ')';
+        $types = 'ii' . str_repeat('i', count($ids));
+        $params = array_merge([$companyId, $employeeId], array_values($ids));
+        $stmt = mysqli_prepare($conn, $sql);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, $types, ...$params);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            while ($res && ($readRow = mysqli_fetch_assoc($res))) {
+                $readIds[(int)($readRow['email_id'] ?? 0)] = true;
+            }
+            mysqli_stmt_close($stmt);
+        }
+        foreach ($rows as $idx => $row) {
+            $id = (int)($row['id'] ?? 0);
+            $rows[$idx]['is_read'] = isset($readIds[$id]) ? 1 : 0;
+        }
+
+        return $rows;
+    }
+}
+
+if (!function_exists('webmail_mark_read')) {
+    function webmail_mark_read(mysqli $conn, int $emailId, int $companyId, int $employeeId, string $sessionEmail): bool
+    {
+        if ($emailId <= 0 || !webmail_reads_table_exists($conn)) {
+            return false;
+        }
+        $row = webmail_get_row_by_id($conn, $emailId, $companyId);
+        if (!$row || !webmail_user_may_touch_message($row, $sessionEmail)) {
+            return false;
+        }
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO webmail_email_reads (company_id, employee_id, email_id, read_at, active, created_by, updated_by)
+             VALUES (?, ?, ?, NOW(), 1, ?, ?)
+             ON DUPLICATE KEY UPDATE read_at = NOW(), deleted_at = NULL, deleted_by = NULL, active = 1, updated_by = ?, updated_at = NOW()'
+        );
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 'iiiiii', $companyId, $employeeId, $emailId, $employeeId, $employeeId, $employeeId);
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+
+        return (bool)$ok;
+    }
+}
+
+if (!function_exists('webmail_mark_unread')) {
+    function webmail_mark_unread(mysqli $conn, int $emailId, int $companyId, int $employeeId, string $sessionEmail): bool
+    {
+        if ($emailId <= 0 || !webmail_reads_table_exists($conn)) {
+            return false;
+        }
+        $row = webmail_get_row_by_id($conn, $emailId, $companyId);
+        if (!$row || !webmail_user_may_touch_message($row, $sessionEmail)) {
+            return false;
+        }
+        $stmt = mysqli_prepare(
+            $conn,
+            'DELETE FROM webmail_email_reads WHERE company_id = ? AND employee_id = ? AND email_id = ?'
+        );
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 'iii', $companyId, $employeeId, $emailId);
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+
+        return (bool)$ok;
+    }
+}
+
 if (!function_exists('webmail_build_list_query')) {
     /**
      * @return array{
@@ -356,6 +512,8 @@ if (!function_exists('webmail_fetch_list')) {
             }
             mysqli_stmt_close($listStmt);
         }
+
+        $rows = webmail_attach_read_flags_to_rows($conn, $rows, $companyId, $employeeId);
 
         return ['rows' => $rows, 'total' => $total, 'page' => $page, 'total_pages' => $totalPages];
     }

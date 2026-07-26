@@ -60,6 +60,12 @@ if (!$conn instanceof mysqli) {
     exit(1);
 }
 
+if (!webmail_reads_table_exists($conn)) {
+    webmail_verify_fail('webmail_email_reads table missing (apply db/migrations/webmail_email_reads.sql).');
+} else {
+    webmail_verify_pass('webmail_email_reads table present.');
+}
+
 $registryStmt = mysqli_prepare($conn, 'SELECT id FROM modules_registry WHERE module_slug = ? LIMIT 1');
 $slug = 'webmail';
 if ($registryStmt) {
@@ -130,6 +136,34 @@ if ($testId > 0) {
         webmail_verify_fail('Inbox folder did not return disposable row.');
     } else {
         webmail_verify_pass('Inbox folder lists recipient-scoped row.');
+    }
+
+    $readList = webmail_fetch_list($conn, 'inbox', $companyId, $employeeId, $sessionEmail, $filters, 50, 1);
+    $listedUnread = false;
+    foreach ($readList['rows'] as $readRow) {
+        if ((int)($readRow['id'] ?? 0) === $testId) {
+            $listedUnread = (int)($readRow['is_read'] ?? 1) === 0;
+            break;
+        }
+    }
+    if (!$listedUnread) {
+        webmail_verify_fail('Disposable inbox row should list as unread before mark_read.');
+    } else {
+        webmail_verify_pass('List hydration marks new message unread.');
+    }
+    if (!webmail_mark_read($conn, $testId, $companyId, $employeeId, $sessionEmail)) {
+        webmail_verify_fail('mark_read failed on disposable row.');
+    } elseif (!webmail_is_email_read($conn, $testId, $companyId, $employeeId)) {
+        webmail_verify_fail('mark_read did not persist read state.');
+    } else {
+        webmail_verify_pass('mark_read persists per-employee read state.');
+    }
+    if (!webmail_mark_unread($conn, $testId, $companyId, $employeeId, $sessionEmail)) {
+        webmail_verify_fail('mark_unread failed on disposable row.');
+    } elseif (webmail_is_email_read($conn, $testId, $companyId, $employeeId)) {
+        webmail_verify_fail('mark_unread did not clear read state.');
+    } else {
+        webmail_verify_pass('mark_unread clears read state.');
     }
 
     $sentToken = 'webmail-verify-sent-' . bin2hex(random_bytes(4));

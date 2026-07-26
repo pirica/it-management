@@ -44,6 +44,15 @@ if ($id > 0 && $action === 'soft_delete') {
     webmail_toggle_archive($conn, $id, $company_id, $employee_id, $sessionEmail);
 } elseif ($id > 0 && $action === 'unarchive') {
     webmail_toggle_archive($conn, $id, $company_id, $employee_id, $sessionEmail, 0);
+} elseif ($id > 0 && $action === 'mark_read') {
+    webmail_mark_read($conn, $id, $company_id, $employee_id, $sessionEmail);
+} elseif ($id > 0 && $action === 'mark_unread') {
+    webmail_mark_unread($conn, $id, $company_id, $employee_id, $sessionEmail);
+}
+
+$returnTo = trim((string)($_POST['return_to'] ?? ''));
+if ($returnTo === 'view' && $id > 0) {
+    $redirect = 'view.php?id=' . $id . '&folder=' . rawurlencode($folder);
 }
 
 header('Location: ' . $redirect);

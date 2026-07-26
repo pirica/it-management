@@ -160,6 +160,7 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
         .webmail-actions-form { display: inline; }
         .webmail-star-on { opacity: 1; }
         .webmail-star-off { opacity: 0.35; }
+        .webmail-row-unread td { font-weight: 600; }
     </style>
 </head>
 <body>
@@ -236,7 +237,7 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
 
             <?php
             // Why: Every folder lists the same addressing columns (From, To, CC) across tabs.
-            $webmailListColspan = 7;
+            $webmailListColspan = 8;
             ?>
             <div class="card">
                 <p><?php echo sanitize($folderTitle); ?> — <?php echo (int)$totalRows; ?> message(s)</p>
@@ -249,6 +250,7 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
                             <th>CC</th>
                             <th>Subject</th>
                             <th>Status</th>
+                            <th>Read</th>
                             <th>Date</th>
                             <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
@@ -268,18 +270,26 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
                                 }
                                 $viewUrl = 'view.php?id=' . (int)$row['id'] . '&folder=' . rawurlencode($folder);
                                 $isStar = (int)($row['is_star'] ?? 0) === 1;
+                                $isRead = (int)($row['is_read'] ?? 0) === 1;
                                 ?>
-                                <tr>
+                                <tr class="<?php echo $isRead ? '' : 'webmail-row-unread'; ?>">
                                     <td><?php echo sanitize((string)($row['from_email'] ?? '')); ?></td>
                                     <td><?php echo sanitize((string)($row['to_email'] ?? '')); ?></td>
                                     <td><?php echo sanitize((string)($row['cc_email'] ?? '')); ?></td>
                                     <td><a href="<?php echo sanitize($viewUrl); ?>"><?php echo sanitize((string)($row['subject'] ?? '')); ?></a></td>
                                     <td><?php echo sanitize((string)($row['status'] ?? '')); ?></td>
+                                    <td><?php echo $isRead ? 'Read' : 'Unread'; ?></td>
                                     <td><?php echo sanitize($sentDisplay); ?></td>
                                     <td class="itm-actions-cell" data-itm-actions-origin="1">
                                         <div class="itm-actions-wrap" style="display:flex;gap:6px;flex-wrap:wrap;">
                                             <a class="btn btn-sm" href="<?php echo sanitize($viewUrl); ?>" title="View">🔎</a>
                                             <?php if ($folder !== 'trash'): ?>
+                                                <form class="webmail-actions-form" method="POST" action="delete.php">
+                                                    <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                                    <input type="hidden" name="webmail_action" value="<?php echo $isRead ? 'mark_unread' : 'mark_read'; ?>">
+                                                    <?php $hiddenRedirectFields(); ?>
+                                                    <button type="submit" class="btn btn-sm" title="<?php echo $isRead ? 'Mark as unread' : 'Mark as read'; ?>"><?php echo $isRead ? '📭' : '📩'; ?></button>
+                                                </form>
                                                 <form class="webmail-actions-form" method="POST" action="delete.php">
                                                     <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                                     <input type="hidden" name="webmail_action" value="toggle_star">
