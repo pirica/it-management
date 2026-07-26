@@ -263,7 +263,7 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
             <div class="card">
                 <p><?php echo sanitize($folderTitle); ?> — <?php echo (int)$totalRows; ?> message(s)</p>
                 <div class="table-responsive">
-                    <table class="data-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
+                    <table class="data-table" data-itm-no-import-excel="1" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
                         <thead>
                         <tr>
                             <?php $webmailSortTh('from_email', 'From'); ?>
