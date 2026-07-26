@@ -63,6 +63,7 @@ Session-scoped mailbox UI on the shared **`emails`** send log table. Users see m
 - System mail logged with SMTP `from_email` still appears in user Inbox when `to_email` matches session.
 - Starred tab must not require `?starred=1` query param (folder sets `is_star = 1` in SQL).
 - Do not show other users' trash (`deleted_by` filter).
+- **view.php toolbar icons:** use `itm_ui_action_emoji()` and PHP `\u{…}` escapes for webmail-only glyphs—do not paste emoji literals after a non–UTF-8 file restore (mojibake in buttons).
 
 ## 11. Examples of Safe Code Patterns
 
