@@ -142,20 +142,25 @@ if (!function_exists('itm_email_get_smtp_config_by_id')) {
 }
 
 if (!function_exists('itm_email_log_send')) {
-    function itm_email_log_send(mysqli $conn, $companyId, $toEmail, $subject, $status, $details = null, $smtpConfigId = null)
+    function itm_email_log_send(mysqli $conn, $companyId, $toEmail, $subject, $status, $details = null, $smtpConfigId = null, $fromEmail = '', $ccEmail = '')
     {
         $companyId = (int)$companyId;
         if ($companyId <= 0) {
             return false;
         }
 
-        $status = strtolower((string)$status) === 'failed' ? 'failed' : 'sent';
+        $status = strtolower((string)$status);
+        if (!in_array($status, ['sent', 'failed', 'received'], true)) {
+            $status = 'sent';
+        }
         $smtpConfigId = $smtpConfigId !== null ? (int)$smtpConfigId : null;
+        $fromEmail = trim((string)$fromEmail);
+        $ccEmail = trim((string)$ccEmail);
 
         $stmt = mysqli_prepare(
             $conn,
-            'INSERT INTO emails (company_id, smtp_config_id, to_email, subject, status, details, sent_at, active)
-             VALUES (?, NULLIF(?, 0), ?, ?, ?, ?, NOW(), 1)'
+            'INSERT INTO emails (company_id, smtp_config_id, to_email, from_email, cc_email, subject, status, details, sent_at, active)
+             VALUES (?, NULLIF(?, 0), ?, ?, ?, ?, ?, ?, NOW(), 1)'
         );
         if (!$stmt) {
             return false;
@@ -163,10 +168,12 @@ if (!function_exists('itm_email_log_send')) {
         $smtpParam = $smtpConfigId !== null ? (int)$smtpConfigId : 0;
         mysqli_stmt_bind_param(
             $stmt,
-            'iissss',
+            'iissssss',
             $companyId,
             $smtpParam,
             $toEmail,
+            $fromEmail,
+            $ccEmail,
             $subject,
             $status,
             $details
@@ -516,6 +523,11 @@ if (!function_exists('itm_send_email')) {
         }
 
         if ($shouldLog && $resolvedCompanyId > 0) {
+            $logFromEmail = '';
+            if (is_array($smtpConfig)) {
+                $logFromEmail = trim((string)($smtpConfig['from_email'] ?? ''));
+            }
+            $logCcEmail = trim((string)($options['cc_email'] ?? $options['cc'] ?? ''));
             itm_email_log_send(
                 $conn,
                 $resolvedCompanyId,
@@ -523,7 +535,9 @@ if (!function_exists('itm_send_email')) {
                 $subject,
                 $sendResult['ok'] ? 'sent' : 'failed',
                 $sendResult['ok'] ? null : (string)$sendResult['error'],
-                $usedConfigId
+                $usedConfigId,
+                $logFromEmail,
+                $logCcEmail
             );
         }
 
