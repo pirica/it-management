@@ -6,7 +6,7 @@
  * can leave live rows with import-time created_at values. Run from the browser after
  * import (or via CLI for automation).
  *
- * Browser: open scripts/update_all_created_at.php (login required).
+ * Browser: open scripts/update_all_created_at.php (login required; exempt from run=1 usage landing — bespoke HTML form).
  * CLI: php scripts/update_all_created_at.php [--dry-run] [--at="2026-01-01 00:00:01"]
  */
 
@@ -278,9 +278,6 @@ if (!isset($conn) || !($conn instanceof mysqli) || mysqli_connect_errno()) {
     http_response_code(500);
     exit('Database connection failed.');
 }
-
-require_once __DIR__ . '/lib/itm_script_browser_usage.php';
-itm_script_browser_usage_maybe_gate(['title' => 'Update all created_at', 'supports_apply' => true]);
 
 $baseUrl = defined('BASE_URL') ? (string) BASE_URL : '../';
 $scriptSelf = $baseUrl . 'scripts/update_all_created_at.php';
