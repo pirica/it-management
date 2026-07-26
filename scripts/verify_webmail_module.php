@@ -40,6 +40,20 @@ function webmail_verify_pass(string $message): void
     echo colorText('[PASS] ' . $message, 'pass') . $nl;
 }
 
+/**
+ * @param array{rows: array<int, array<string, mixed>>} $listResult
+ */
+function webmail_verify_list_contains_id(array $listResult, int $id): bool
+{
+    foreach ($listResult['rows'] as $row) {
+        if ((int)($row['id'] ?? 0) === $id) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 $conn = $GLOBALS['conn'] ?? null;
 if (!$conn instanceof mysqli) {
     webmail_verify_fail('No database connection.');
@@ -105,57 +119,105 @@ if (!$insertStmt) {
 if ($testId > 0) {
     $filters = ['status' => '', 'starred' => '', 'archived' => '', 'date_from' => '', 'date_to' => '', 'search' => $token, 'sort' => 'sent_at', 'dir' => 'DESC'];
     $starredList = webmail_fetch_list($conn, 'starred', $companyId, $employeeId, $sessionEmail, $filters, 50, 1);
-    $foundStarred = false;
-    foreach ($starredList['rows'] as $row) {
-        if ((int)($row['id'] ?? 0) === $testId) {
-            $foundStarred = true;
-            break;
-        }
-    }
-    if (!$foundStarred) {
+    if (!webmail_verify_list_contains_id($starredList, $testId)) {
         webmail_verify_fail('Starred folder did not return disposable row.');
     } else {
         webmail_verify_pass('Starred folder lists session-scoped starred row.');
     }
 
     $inboxList = webmail_fetch_list($conn, 'inbox', $companyId, $employeeId, $sessionEmail, $filters, 50, 1);
-    $foundInbox = false;
-    foreach ($inboxList['rows'] as $row) {
-        if ((int)($row['id'] ?? 0) === $testId) {
-            $foundInbox = true;
-            break;
-        }
-    }
-    if (!$foundInbox) {
+    if (!webmail_verify_list_contains_id($inboxList, $testId)) {
         webmail_verify_fail('Inbox folder did not return disposable row.');
     } else {
         webmail_verify_pass('Inbox folder lists recipient-scoped row.');
+    }
+
+    $sentToken = 'webmail-verify-sent-' . bin2hex(random_bytes(4));
+    $sentSubject = 'Webmail verify sent ' . $sentToken;
+    $sentInsert = mysqli_prepare(
+        $conn,
+        'INSERT INTO emails (company_id, to_email, from_email, cc_email, subject, status, details, sent_at, active, is_archived, is_star, is_deleted, created_by)
+         VALUES (?, ?, ?, "", ?, "sent", "<p>sent verify</p>", NOW(), 1, 0, 0, 0, ?)'
+    );
+    $sentTestId = 0;
+    if (!$sentInsert) {
+        webmail_verify_fail('Could not prepare disposable sent-folder insert.');
+    } else {
+        mysqli_stmt_bind_param($sentInsert, 'isssi', $companyId, $peerEmail, $sessionEmail, $sentSubject, $employeeId);
+        if (!mysqli_stmt_execute($sentInsert)) {
+            webmail_verify_fail('Disposable sent-row insert failed.');
+        } else {
+            $sentTestId = (int)mysqli_insert_id($conn);
+            webmail_verify_pass('Inserted disposable sent row id=' . $sentTestId . '.');
+        }
+        mysqli_stmt_close($sentInsert);
+    }
+
+    if ($sentTestId > 0) {
+        $sentFilters = ['status' => '', 'starred' => '', 'archived' => '', 'date_from' => '', 'date_to' => '', 'search' => $sentToken, 'sort' => 'sent_at', 'dir' => 'DESC'];
+        $sentList = webmail_fetch_list($conn, 'sent', $companyId, $employeeId, $sessionEmail, $sentFilters, 50, 1);
+        if (!webmail_verify_list_contains_id($sentList, $sentTestId)) {
+            webmail_verify_fail('Sent folder did not return session from_email row.');
+        } else {
+            webmail_verify_pass('Sent folder lists sender-scoped row.');
+        }
+        $inboxExcludesSent = webmail_fetch_list($conn, 'inbox', $companyId, $employeeId, $sessionEmail, $sentFilters, 50, 1);
+        if (webmail_verify_list_contains_id($inboxExcludesSent, $sentTestId)) {
+            webmail_verify_fail('Inbox folder must not list sent-only disposable row.');
+        } else {
+            webmail_verify_pass('Inbox excludes sent-only disposable row.');
+        }
     }
 
     if (!webmail_toggle_star($conn, $testId, $companyId, $employeeId, $sessionEmail)) {
         webmail_verify_fail('toggle_star failed on disposable row.');
     } else {
         $starredAfter = webmail_fetch_list($conn, 'starred', $companyId, $employeeId, $sessionEmail, $filters, 50, 1);
-        $stillStarred = false;
-        foreach ($starredAfter['rows'] as $row) {
-            if ((int)($row['id'] ?? 0) === $testId) {
-                $stillStarred = true;
-                break;
-            }
-        }
-        if ($stillStarred) {
+        if (webmail_verify_list_contains_id($starredAfter, $testId)) {
             webmail_verify_fail('Row still listed in starred after unstar.');
         } else {
             webmail_verify_pass('Unstar removes row from starred folder list.');
         }
     }
 
+    if (!webmail_toggle_archive($conn, $testId, $companyId, $employeeId, $sessionEmail, 1)) {
+        webmail_verify_fail('archive toggle (archive) failed.');
+    } else {
+        $archivedList = webmail_fetch_list($conn, 'archived', $companyId, $employeeId, $sessionEmail, $filters, 50, 1);
+        $inboxAfterArchive = webmail_fetch_list($conn, 'inbox', $companyId, $employeeId, $sessionEmail, $filters, 50, 1);
+        if (!webmail_verify_list_contains_id($archivedList, $testId)) {
+            webmail_verify_fail('Archived folder did not list row after archive.');
+        } elseif (webmail_verify_list_contains_id($inboxAfterArchive, $testId)) {
+            webmail_verify_fail('Inbox still lists row after archive.');
+        } else {
+            webmail_verify_pass('Archive moves row to archived folder and off inbox.');
+        }
+        if (!webmail_toggle_archive($conn, $testId, $companyId, $employeeId, $sessionEmail, 0)) {
+            webmail_verify_fail('archive toggle (unarchive) failed.');
+        } else {
+            $inboxAfterUnarchive = webmail_fetch_list($conn, 'inbox', $companyId, $employeeId, $sessionEmail, $filters, 50, 1);
+            if (!webmail_verify_list_contains_id($inboxAfterUnarchive, $testId)) {
+                webmail_verify_fail('Inbox did not list row after unarchive.');
+            } else {
+                webmail_verify_pass('Unarchive restores row to inbox.');
+            }
+        }
+    }
+
     if (!webmail_soft_delete($conn, $testId, $companyId, $employeeId, $sessionEmail)) {
         webmail_verify_fail('soft_delete failed.');
-    } elseif (!webmail_restore($conn, $testId, $companyId, $employeeId)) {
-        webmail_verify_fail('restore failed.');
     } else {
-        webmail_verify_pass('Soft delete and restore succeeded.');
+        $trashList = webmail_fetch_list($conn, 'trash', $companyId, $employeeId, $sessionEmail, $filters, 50, 1);
+        if (!webmail_verify_list_contains_id($trashList, $testId)) {
+            webmail_verify_fail('Trash folder did not list soft-deleted row for session employee.');
+        } else {
+            webmail_verify_pass('Trash folder lists personal soft-deleted row.');
+        }
+        if (!webmail_restore($conn, $testId, $companyId, $employeeId)) {
+            webmail_verify_fail('restore failed.');
+        } else {
+            webmail_verify_pass('Soft delete and restore succeeded.');
+        }
     }
 
     webmail_soft_delete($conn, $testId, $companyId, $employeeId, $sessionEmail);
@@ -163,6 +225,15 @@ if ($testId > 0) {
         webmail_verify_fail('hard_delete from trash failed.');
     } else {
         webmail_verify_pass('Hard delete from trash succeeded.');
+    }
+
+    if ($sentTestId > 0) {
+        $delSent = mysqli_prepare($conn, 'DELETE FROM emails WHERE id = ? AND company_id = ?');
+        if ($delSent) {
+            mysqli_stmt_bind_param($delSent, 'ii', $sentTestId, $companyId);
+            mysqli_stmt_execute($delSent);
+            mysqli_stmt_close($delSent);
+        }
     }
 }
 

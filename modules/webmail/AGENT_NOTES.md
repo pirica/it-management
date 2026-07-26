@@ -82,4 +82,4 @@ itm_send_email($to, $subject, $htmlBody, $company_id, [
 
 ## 12. Module Owner Notes (Optional)
 
-Regression: `php scripts/verify_webmail_module.php`. Sidebar: Planning → Webmail (`includes/ui_config.php`).
+Regression: `php scripts/verify_webmail_module.php` (inbox, starred, sent, trash, archive toggle, delete flows). Sidebar: Planning → Webmail (`includes/ui_config.php`).
