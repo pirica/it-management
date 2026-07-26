@@ -56,7 +56,17 @@ $currentUiConfig = $ui_config ?? [];
 $backUrl = 'index.php?folder=' . rawurlencode($folder);
 $bodyHtml = $row ? webmail_render_details_html((string)($row['details'] ?? '')) : '';
 
-$sentDisplay = 'ÔÇö';
+$wmEmojiBack = itm_ui_action_emoji('back');
+$wmEmojiDelete = itm_ui_action_emoji('delete');
+$wmEmojiMailboxRead = "\u{1F4ED}";
+$wmEmojiEnvelope = "\u{1F4E9}";
+$wmEmojiStarOn = "\u{2B50}";
+$wmEmojiStarOff = "\u{2606}";
+$wmEmojiOutbox = "\u{1F4E4}";
+$wmEmojiArchive = "\u{1F5C4}\u{FE0F}";
+$wmEmojiRecycle = "\u{267B}\u{FE0F}";
+
+$sentDisplay = "\u{2014}";
 if ($row && !empty($row['sent_at'])) {
     $sentAt = (string)$row['sent_at'];
     $sentDisplay = itm_format_date_display(substr($sentAt, 0, 10));
@@ -143,50 +153,50 @@ $renderViewPostFields = static function (bool $returnToView = true) use ($csrfTo
                 <?php if (!$row): ?>
                     <div class="alert alert-danger" style="margin:16px;">Message not found or not accessible.</div>
                     <div style="padding:0 16px 16px;">
-                        <a href="<?php echo sanitize($backUrl); ?>" class="btn" title="Back">­ƒöÖ</a>
+                        <a href="<?php echo sanitize($backUrl); ?>" class="btn" title="Back"><?php echo $wmEmojiBack; ?></a>
                     </div>
                 <?php else: ?>
                     <div class="webmail-read-toolbar">
-                        <a href="<?php echo sanitize($backUrl); ?>" class="btn btn-sm" title="Back to <?php echo sanitize($folderLabels[$folder] ?? $folder); ?>">­ƒöÖ</a>
+                        <a href="<?php echo sanitize($backUrl); ?>" class="btn btn-sm" title="Back to <?php echo sanitize($folderLabels[$folder] ?? $folder); ?>"><?php echo $wmEmojiBack; ?></a>
                         <?php if (!$isDeleted): ?>
                             <form class="webmail-actions-form" method="POST" action="delete.php">
                                 <?php $renderViewPostFields(true); ?>
                                 <input type="hidden" name="webmail_action" value="<?php echo $messageIsRead ? 'mark_unread' : 'mark_read'; ?>">
-                                <button type="submit" class="btn btn-sm" title="<?php echo $messageIsRead ? 'Mark as unread' : 'Mark as read'; ?>"><?php echo $messageIsRead ? '­ƒô¡' : '­ƒô®'; ?></button>
+                                <button type="submit" class="btn btn-sm" title="<?php echo $messageIsRead ? 'Mark as unread' : 'Mark as read'; ?>"><?php echo $messageIsRead ? $wmEmojiMailboxRead : $wmEmojiEnvelope; ?></button>
                             </form>
                             <form class="webmail-actions-form" method="POST" action="delete.php">
                                 <?php $renderViewPostFields(true); ?>
                                 <input type="hidden" name="webmail_action" value="toggle_star">
-                                <button type="submit" class="btn btn-sm <?php echo $isStar ? 'webmail-star-on' : 'webmail-star-off'; ?>" title="Star"><?php echo $isStar ? 'Ô¡É' : 'Ôÿå'; ?></button>
+                                <button type="submit" class="btn btn-sm <?php echo $isStar ? 'webmail-star-on' : 'webmail-star-off'; ?>" title="Star"><?php echo $isStar ? $wmEmojiStarOn : $wmEmojiStarOff; ?></button>
                             </form>
                             <?php if ($folder === 'archived' || $isArchived): ?>
                                 <form class="webmail-actions-form" method="POST" action="delete.php">
                                     <?php $renderViewPostFields(false); ?>
                                     <input type="hidden" name="webmail_action" value="unarchive">
-                                    <button type="submit" class="btn btn-sm" title="Unarchive">­ƒôñ</button>
+                                    <button type="submit" class="btn btn-sm" title="Unarchive"><?php echo $wmEmojiOutbox; ?></button>
                                 </form>
                             <?php else: ?>
                                 <form class="webmail-actions-form" method="POST" action="delete.php">
                                     <?php $renderViewPostFields(false); ?>
                                     <input type="hidden" name="webmail_action" value="toggle_archive">
-                                    <button type="submit" class="btn btn-sm" title="Archive">­ƒùä´©Å</button>
+                                    <button type="submit" class="btn btn-sm" title="Archive"><?php echo $wmEmojiArchive; ?></button>
                                 </form>
                             <?php endif; ?>
                             <form class="webmail-actions-form" method="POST" action="delete.php" data-itm-webmail-soft-delete="1">
                                 <?php $renderViewPostFields(false); ?>
                                 <input type="hidden" name="webmail_action" value="soft_delete">
-                                <button type="submit" class="btn btn-sm btn-danger" title="Move to Trash" data-itm-auto-tooltip="off">­ƒùæ´©Å</button>
+                                <button type="submit" class="btn btn-sm btn-danger" title="Move to Trash" data-itm-auto-tooltip="off"><?php echo $wmEmojiDelete; ?></button>
                             </form>
                         <?php else: ?>
                             <form class="webmail-actions-form" method="POST" action="delete.php">
                                 <?php $renderViewPostFields(false); ?>
                                 <input type="hidden" name="webmail_action" value="restore">
-                                <button type="submit" class="btn btn-sm" title="Restore">ÔÖ╗´©Å</button>
+                                <button type="submit" class="btn btn-sm" title="Restore"><?php echo $wmEmojiRecycle; ?></button>
                             </form>
                             <form class="webmail-actions-form" method="POST" action="delete.php" onsubmit="return confirm('Permanently delete this message? This cannot be undone.');">
                                 <?php $renderViewPostFields(false); ?>
                                 <input type="hidden" name="webmail_action" value="hard_delete">
-                                <button type="submit" class="btn btn-sm btn-danger" title="Delete permanently">­ƒùæ´©Å</button>
+                                <button type="submit" class="btn btn-sm btn-danger" title="Delete permanently"><?php echo $wmEmojiDelete; ?></button>
                             </form>
                         <?php endif; ?>
                     </div>
