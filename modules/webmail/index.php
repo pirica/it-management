@@ -235,9 +235,8 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
             </div>
 
             <?php
-            // Why: Every folder lists the same addressing columns so starred/sent pairs are not collapsed into one peer column.
-            $webmailListShowsCc = in_array($folder, ['inbox', 'sent', 'archived'], true);
-            $webmailListColspan = $webmailListShowsCc ? 7 : 6;
+            // Why: Every folder lists the same addressing columns (From, To, CC) across tabs.
+            $webmailListColspan = 7;
             ?>
             <div class="card">
                 <p><?php echo sanitize($folderTitle); ?> — <?php echo (int)$totalRows; ?> message(s)</p>
@@ -247,9 +246,7 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
                         <tr>
                             <th>From</th>
                             <th>To</th>
-                            <?php if ($webmailListShowsCc): ?>
-                                <th>CC</th>
-                            <?php endif; ?>
+                            <th>CC</th>
                             <th>Subject</th>
                             <th>Status</th>
                             <th>Date</th>
@@ -275,9 +272,7 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
                                 <tr>
                                     <td><?php echo sanitize((string)($row['from_email'] ?? '')); ?></td>
                                     <td><?php echo sanitize((string)($row['to_email'] ?? '')); ?></td>
-                                    <?php if ($webmailListShowsCc): ?>
-                                        <td><?php echo sanitize((string)($row['cc_email'] ?? '')); ?></td>
-                                    <?php endif; ?>
+                                    <td><?php echo sanitize((string)($row['cc_email'] ?? '')); ?></td>
                                     <td><a href="<?php echo sanitize($viewUrl); ?>"><?php echo sanitize((string)($row['subject'] ?? '')); ?></a></td>
                                     <td><?php echo sanitize((string)($row['status'] ?? '')); ?></td>
                                     <td><?php echo sanitize($sentDisplay); ?></td>
