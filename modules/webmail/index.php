@@ -234,22 +234,20 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
                 </form>
             </div>
 
+            <?php
+            // Why: Every folder lists the same addressing columns so starred/sent pairs are not collapsed into one peer column.
+            $webmailListColspan = in_array($folder, ['sent', 'archived'], true) ? 7 : 6;
+            ?>
             <div class="card">
                 <p><?php echo sanitize($folderTitle); ?> — <?php echo (int)$totalRows; ?> message(s)</p>
                 <div class="table-responsive">
                     <table class="data-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
                         <thead>
                         <tr>
-                            <?php if (in_array($folder, ['inbox', 'starred'], true)): ?>
-                                <th>From</th>
-                            <?php endif; ?>
+                            <th>From</th>
+                            <th>To</th>
                             <?php if (in_array($folder, ['sent', 'archived'], true)): ?>
-                                <th>To</th>
                                 <th>CC</th>
-                            <?php endif; ?>
-                            <?php if ($folder === 'trash'): ?>
-                                <th>From</th>
-                                <th>To</th>
                             <?php endif; ?>
                             <th>Subject</th>
                             <th>Status</th>
@@ -259,7 +257,7 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
                         </thead>
                         <tbody>
                         <?php if ($rows === []): ?>
-                            <tr><td colspan="8">No messages.</td></tr>
+                            <tr><td colspan="<?php echo (int)$webmailListColspan; ?>">No messages.</td></tr>
                         <?php else: ?>
                             <?php foreach ($rows as $row): ?>
                                 <?php
@@ -274,21 +272,10 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
                                 $isStar = (int)($row['is_star'] ?? 0) === 1;
                                 ?>
                                 <tr>
-                                    <?php if (in_array($folder, ['inbox', 'starred'], true)): ?>
-                                        <?php
-                                        $displayPeer = webmail_is_recipient($row, $sessionEmail)
-                                            ? (string)($row['from_email'] ?? '')
-                                            : (string)($row['to_email'] ?? '');
-                                        ?>
-                                        <td><?php echo sanitize($displayPeer); ?></td>
-                                    <?php endif; ?>
+                                    <td><?php echo sanitize((string)($row['from_email'] ?? '')); ?></td>
+                                    <td><?php echo sanitize((string)($row['to_email'] ?? '')); ?></td>
                                     <?php if (in_array($folder, ['sent', 'archived'], true)): ?>
-                                        <td><?php echo sanitize((string)($row['to_email'] ?? '')); ?></td>
                                         <td><?php echo sanitize((string)($row['cc_email'] ?? '')); ?></td>
-                                    <?php endif; ?>
-                                    <?php if ($folder === 'trash'): ?>
-                                        <td><?php echo sanitize((string)($row['from_email'] ?? '')); ?></td>
-                                        <td><?php echo sanitize((string)($row['to_email'] ?? '')); ?></td>
                                     <?php endif; ?>
                                     <td><a href="<?php echo sanitize($viewUrl); ?>"><?php echo sanitize((string)($row['subject'] ?? '')); ?></a></td>
                                     <td><?php echo sanitize((string)($row['status'] ?? '')); ?></td>
