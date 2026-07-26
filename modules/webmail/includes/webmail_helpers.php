@@ -428,10 +428,7 @@ if (!function_exists('webmail_hard_delete')) {
             return false;
         }
         $inTrash = (int)($row['is_deleted'] ?? 0) === 1 && (int)($row['deleted_by'] ?? 0) === $employeeId;
-        $archivedOwned = (int)($row['is_archived'] ?? 0) === 1
-            && (int)($row['is_deleted'] ?? 0) === 0
-            && (webmail_is_recipient($row, $sessionEmail) || webmail_is_sender($row, $sessionEmail));
-        if (!$inTrash && !$archivedOwned) {
+        if (!$inTrash) {
             return false;
         }
         $stmt = mysqli_prepare($conn, 'DELETE FROM emails WHERE id = ? AND company_id = ?');

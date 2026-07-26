@@ -291,20 +291,7 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
                                                     <button type="submit" class="btn btn-sm <?php echo $isStar ? 'webmail-star-on' : 'webmail-star-off'; ?>" title="Star"><?php echo $isStar ? '⭐' : '☆'; ?></button>
                                                 </form>
                                             <?php endif; ?>
-                                            <?php if ($folder === 'archived'): ?>
-                                                <form class="webmail-actions-form" method="POST" action="delete.php">
-                                                    <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
-                                                    <input type="hidden" name="webmail_action" value="unarchive">
-                                                    <?php $hiddenRedirectFields(); ?>
-                                                    <button type="submit" class="btn btn-sm" title="Unarchive">📤</button>
-                                                </form>
-                                                <form class="webmail-actions-form" method="POST" action="delete.php" onsubmit="return confirm('Permanently delete this message? This cannot be undone.');">
-                                                    <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
-                                                    <input type="hidden" name="webmail_action" value="hard_delete">
-                                                    <?php $hiddenRedirectFields(); ?>
-                                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete permanently">🗑️</button>
-                                                </form>
-                                            <?php elseif ($folder === 'trash'): ?>
+                                            <?php if ($folder === 'trash'): ?>
                                                 <form class="webmail-actions-form" method="POST" action="delete.php">
                                                     <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                                     <input type="hidden" name="webmail_action" value="restore">
@@ -318,12 +305,21 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
                                                     <button type="submit" class="btn btn-sm btn-danger" title="Delete permanently">🗑️</button>
                                                 </form>
                                             <?php else: ?>
-                                                <form class="webmail-actions-form" method="POST" action="delete.php">
-                                                    <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
-                                                    <input type="hidden" name="webmail_action" value="toggle_archive">
-                                                    <?php $hiddenRedirectFields(); ?>
-                                                    <button type="submit" class="btn btn-sm" title="Archive">🗄️</button>
-                                                </form>
+                                                <?php if ($folder === 'archived'): ?>
+                                                    <form class="webmail-actions-form" method="POST" action="delete.php">
+                                                        <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                                        <input type="hidden" name="webmail_action" value="unarchive">
+                                                        <?php $hiddenRedirectFields(); ?>
+                                                        <button type="submit" class="btn btn-sm" title="Unarchive">📤</button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <form class="webmail-actions-form" method="POST" action="delete.php">
+                                                        <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                                        <input type="hidden" name="webmail_action" value="toggle_archive">
+                                                        <?php $hiddenRedirectFields(); ?>
+                                                        <button type="submit" class="btn btn-sm" title="Archive">🗄️</button>
+                                                    </form>
+                                                <?php endif; ?>
                                                 <form class="webmail-actions-form" method="POST" action="delete.php" data-itm-webmail-soft-delete="1">
                                                     <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                                     <input type="hidden" name="webmail_action" value="soft_delete">
