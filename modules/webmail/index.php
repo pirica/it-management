@@ -236,7 +236,8 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
 
             <?php
             // Why: Every folder lists the same addressing columns so starred/sent pairs are not collapsed into one peer column.
-            $webmailListColspan = in_array($folder, ['sent', 'archived'], true) ? 7 : 6;
+            $webmailListShowsCc = in_array($folder, ['inbox', 'sent', 'archived'], true);
+            $webmailListColspan = $webmailListShowsCc ? 7 : 6;
             ?>
             <div class="card">
                 <p><?php echo sanitize($folderTitle); ?> — <?php echo (int)$totalRows; ?> message(s)</p>
@@ -246,7 +247,7 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
                         <tr>
                             <th>From</th>
                             <th>To</th>
-                            <?php if (in_array($folder, ['sent', 'archived'], true)): ?>
+                            <?php if ($webmailListShowsCc): ?>
                                 <th>CC</th>
                             <?php endif; ?>
                             <th>Subject</th>
@@ -274,7 +275,7 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
                                 <tr>
                                     <td><?php echo sanitize((string)($row['from_email'] ?? '')); ?></td>
                                     <td><?php echo sanitize((string)($row['to_email'] ?? '')); ?></td>
-                                    <?php if (in_array($folder, ['sent', 'archived'], true)): ?>
+                                    <?php if ($webmailListShowsCc): ?>
                                         <td><?php echo sanitize((string)($row['cc_email'] ?? '')); ?></td>
                                     <?php endif; ?>
                                     <td><a href="<?php echo sanitize($viewUrl); ?>"><?php echo sanitize((string)($row['subject'] ?? '')); ?></a></td>
