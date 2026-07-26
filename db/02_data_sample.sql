@@ -113,8 +113,8 @@ INSERT INTO `email_alert_rules` (`company_id`, `rule_slug`, `enabled`, `days_bef
 INSERT INTO `email_smtp_configurations` (`id`, `company_id`, `config_name`, `smtp_host`, `smtp_port`, `username`, `password_encrypted`, `from_email`, `from_name`, `imap_port`, `pop3_port`, `pop3_tls_mode`, `pop3_require_secure_connection`, `is_default`, `active`, `created_at`, `updated_at`) VALUES
 ('1', '1', 'IT Manager', '127.0.0.1', '1025', NULL, NULL, 'noreply@example.com', 'Mail Manager', '143', '110', 'None', '0', '1', '1', '2026-06-18 01:00:00', '2026-06-19 22:49:25');
 
-INSERT INTO `emails` (`id`, `company_id`, `smtp_config_id`, `to_email`, `from_email`, `cc_email`, `subject`, `status`, `details`, `sent_at`, `active`, `is_archived`, `is_star`, `created_at`) VALUES
-('1', '1', '1', 'nelson.salvador@gmail.com', 'noreply@example.com', '', 'Test Email from IT Manager Pro', 'sent', NULL, '2026-06-18 02:06:00', '1', '0', '0', '2026-06-18 02:06:00');
+INSERT INTO `emails` (`id`, `company_id`, `smtp_config_id`, `to_email`, `from_email`, `cc_email`, `subject`, `status`, `details`, `sent_at`, `active`, `is_archived`, `is_star`, `is_deleted`, `created_at`) VALUES
+('1', '1', '1', 'nelson.salvador@gmail.com', 'noreply@example.com', '', 'Test Email from IT Manager Pro', 'sent', NULL, '2026-06-18 02:06:00', '1', '0', '0', '0', '2026-06-18 02:06:00');
 
 INSERT INTO `employee_assignment_history` (`company_id`, `employee_id`, `equipment_id`, `inventory_item_id`, `asset_description`, `sim_imei`, `assigned_date`, `returned_date`, `condition_on_return`, `signed_handover`, `comments`, `assigned_by_employee_id`, `received_by_employee_id`, `active`) VALUES
 (1, 1, 1, 1, 'Sample 80554882', 'Sample 25fafca8', '2026-07-20', '2026-07-20', 'Sample 08337c80', 1, 'Sample 6222879b', 1, 1, 1);

@@ -1270,6 +1270,7 @@ CREATE TABLE `emails` (
   `active` tinyint(1) DEFAULT '1',
   `is_archived` tinyint(1) NOT NULL DEFAULT '0',
   `is_star` tinyint(1) NOT NULL DEFAULT '0',
+  `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_by` int DEFAULT NULL,

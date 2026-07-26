@@ -34,7 +34,7 @@ if ($bulkAction === 'bulk_delete') {
     })));
     if ($ids !== []) {
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $sql = 'UPDATE emails SET active = 0, deleted_by = ?, deleted_at = NOW() WHERE company_id = ? AND active = 1 AND id IN (' . $placeholders . ')';
+        $sql = 'UPDATE emails SET active = 0, is_deleted = 1, deleted_by = ?, deleted_at = NOW() WHERE company_id = ? AND active = 1 AND is_deleted = 0 AND id IN (' . $placeholders . ')';
         $stmt = mysqli_prepare($conn, $sql);
         if ($stmt) {
             $types = 'ii' . str_repeat('i', count($ids));
@@ -47,7 +47,7 @@ if ($bulkAction === 'bulk_delete') {
 } elseif ($bulkAction === 'clear_table') {
     $stmt = mysqli_prepare(
         $conn,
-        'UPDATE emails SET active = 0, deleted_by = ?, deleted_at = NOW() WHERE company_id = ? AND active = 1'
+        'UPDATE emails SET active = 0, is_deleted = 1, deleted_by = ?, deleted_at = NOW() WHERE company_id = ? AND active = 1 AND is_deleted = 0'
     );
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'ii', $employee_id, $company_id);
