@@ -95,6 +95,16 @@ $buildUrl = static function (array $extra = []) use ($urlBase, $page): string {
     return 'index.php?' . http_build_query($q);
 };
 
+$webmailSortTh = static function (string $field, string $label) use ($sort, $dir, $buildUrl): void {
+    $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC';
+    $url = $buildUrl(['sort' => $field, 'dir' => $nextDir, 'page' => 1]);
+    echo '<th><a href="' . sanitize($url) . '" style="text-decoration:none;color:inherit;">' . sanitize($label);
+    if ($sort === $field) {
+        echo ' ' . ($dir === 'ASC' ? '▲' : '▼');
+    }
+    echo '</a></th>';
+};
+
 $folderLabels = [
     'inbox' => 'Inbox',
     'starred' => 'Starred',
@@ -140,6 +150,8 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
     if ($dateTo !== '') {
         echo '<input type="hidden" name="date_to" value="' . sanitize($dateTo) . '">';
     }
+    echo '<input type="hidden" name="sort" value="' . sanitize($sort) . '">';
+    echo '<input type="hidden" name="dir" value="' . sanitize($dir) . '">';
     echo '<input type="hidden" name="sort" value="' . sanitize($sort) . '">';
     echo '<input type="hidden" name="dir" value="' . sanitize($dir) . '">';
     echo '<input type="hidden" name="page" value="' . (int)$page . '">';
@@ -245,13 +257,13 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
                     <table class="data-table" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
                         <thead>
                         <tr>
-                            <th>From</th>
-                            <th>To</th>
-                            <th>CC</th>
-                            <th>Subject</th>
-                            <th>Status</th>
-                            <th>Read</th>
-                            <th>Date</th>
+                            <?php $webmailSortTh('from_email', 'From'); ?>
+                            <?php $webmailSortTh('to_email', 'To'); ?>
+                            <?php $webmailSortTh('cc_email', 'CC'); ?>
+                            <?php $webmailSortTh('subject', 'Subject'); ?>
+                            <?php $webmailSortTh('status', 'Status'); ?>
+                            <?php $webmailSortTh('is_read', 'Read'); ?>
+                            <?php $webmailSortTh('sent_at', 'Date'); ?>
                             <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
                         </thead>
@@ -272,7 +284,7 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
                                 $isStar = (int)($row['is_star'] ?? 0) === 1;
                                 $isRead = (int)($row['is_read'] ?? 0) === 1;
                                 ?>
-                                <tr class="<?php echo $isRead ? '' : 'webmail-row-unread'; ?>">
+                                <tr>
                                     <td><?php echo sanitize((string)($row['from_email'] ?? '')); ?></td>
                                     <td><?php echo sanitize((string)($row['to_email'] ?? '')); ?></td>
                                     <td><?php echo sanitize((string)($row['cc_email'] ?? '')); ?></td>

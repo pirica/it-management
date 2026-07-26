@@ -33,11 +33,11 @@ Session-scoped mailbox UI on the shared **`emails`** send log table. Users see m
 ## 5. UI Behavior Requirements
 
 - Folders: Inbox, **Starred**, Sent, Archived, Trash; Compose on separate page.
-- Lists: **From**, **To**, and **CC** on every folder tab. Pagination (emoji controls), filters (status, starred/archived on inbox, date range, search).
+- Lists: **From**, **To**, and **CC** on every folder tab; **sortable** column headers (▲/▼) on all data columns; pagination (emoji controls), filters (status, starred/archived on inbox, date range, search).
 - **Compose body:** Quill Snow editor (bold/italic/underline/strike, headers, lists, link, clear); HTML synced to `body_html` on submit and sanitized server-side with `webmail_render_details_html()`.
 - Star / archive / delete actions via POST `delete.php` with CSRF. **Inbox, Starred, Sent, and Archived** use **soft delete** (move to Trash, no browser confirm). **Trash** alone uses **hard delete** with confirm.
 - **Read / unread:** list **Read** column; bold row when unread; toggle in Actions; view auto-marks read.
-- **View:** read-pane layout (subject header, From/To/CC, date, body pane, folder tabs, toolbar actions); audit fields under collapsible **Technical details**.
+- **View:** plain two-column table of row fields (matches list data plus body and audit meta); folder tabs; action toolbar. Opening view marks read.
 
 ## 6. API Actions (If Applicable)
 
