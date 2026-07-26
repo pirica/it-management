@@ -210,7 +210,7 @@ $countStmt = mysqli_prepare(
         SUM(CASE WHEN status = "failed" THEN 1 ELSE 0 END) AS failed_count,
         SUM(CASE WHEN status = "received" THEN 1 ELSE 0 END) AS received_count
      FROM emails
-     WHERE company_id = ? AND active = 1 AND is_archived = 0'
+     WHERE company_id = ? AND active = 1 AND is_archived = 0 AND is_deleted = 0'
 );
 if ($countStmt) {
     mysqli_stmt_bind_param($countStmt, 'i', $company_id);
@@ -229,7 +229,7 @@ if (!in_array($sort, $sendLogsSortable, true)) {
     $sort = 'sent_at';
 }
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
-$sendLogsWhereSql = 'company_id = ? AND active = 1 AND is_archived = 0';
+$sendLogsWhereSql = 'company_id = ? AND active = 1 AND is_archived = 0 AND is_deleted = 0';
 $sendLogsTypes = 'i';
 $sendLogsParams = [$company_id];
 if ($status_filter !== '') {
