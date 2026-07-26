@@ -108,6 +108,7 @@ function itm_sidebar_base_structure() {
             'title' => '🗓️ Planning',
             'items' => [
                 ['id' => 'notes', 'label' => '📋 Notes', 'href' => 'modules/notes/', 'match_dir' => 'notes'],
+                ['id' => 'webmail', 'label' => '📬 Webmail', 'href' => 'modules/webmail/', 'match_dir' => 'webmail'],
                 ['id' => 'todo', 'label' => '📝 To-Do', 'href' => 'modules/todo/', 'match_dir' => 'todo'],
                 ['id' => 'calendar', 'label' => '📅 Calendar', 'href' => 'modules/calendar/', 'match_dir' => 'calendar'],
                 ['id' => 'events', 'label' => '📅 Events', 'href' => 'modules/events/', 'match_dir' => 'events'],
@@ -213,6 +214,7 @@ function itm_sidebar_module_default_label($moduleName) {
         'note_labels' => '🏷️ Note Labels',
         'modules_registry' => '🧩 Modules Registry',
         'emails' => '📧 Email Management',
+        'webmail' => '📬 Webmail',
         'import' => '📥 Bulk Import',
         'knowledge_base' => '🧩 Knowledge Base',
         'live_chat' => '💬 Live Chat',

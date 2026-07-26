@@ -3,6 +3,8 @@
 ## 1. Module Purpose
 Tenant-scoped email management: send logs, SMTP profiles, and automated alert rules. Default SMTP drives all `itm_send_email()` calls (forgot-password, registration tests, employee onboarding approvals, expiry runners).
 
+**Webmail (`modules/webmail/`):** end-user mailbox on the same **`emails`** table — session email scopes Inbox/Sent/Starred/Archived/Trash; this module lists **all tenant send logs** for admins without per-user filtering.
+
 ## 2. Key Tables
 - **emails** — send/receive log (`from_email`, `to_email`, `cc_email`, `subject`, `status` = `sent` | `failed` | `received`, `sent_at`, `details`, `is_archived` default `0` hides rows from Send Logs list/stats while keeping `view.php?id=` reachable, `is_star` default `0`, `is_deleted` default `0` set to `1` on soft-delete via `delete.php`).
 - **email_smtp_configurations** — SMTP host/port/credentials plus IMAP port (default 143) and POP3 port (default 110), TLS mode (default `None`), and require-secure toggle (default off); `is_default = 1` selects the tenant transport. `db/` seeds one default **IT Manager** profile per company (`companies` id 1–5).
