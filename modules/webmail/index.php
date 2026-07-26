@@ -105,6 +105,14 @@ $webmailSortTh = static function (string $field, string $label) use ($sort, $dir
     echo '</a></th>';
 };
 
+$webmailListViewLink = static function (string $viewUrl, string $text): void {
+    $label = trim($text);
+    if ($label === '') {
+        return;
+    }
+    echo '<a class="webmail-list-view-link" href="' . sanitize($viewUrl) . '" title="View message">' . sanitize($label) . '</a>';
+};
+
 $folderLabels = [
     'inbox' => 'Inbox',
     'starred' => 'Starred',
@@ -173,6 +181,7 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
         .webmail-star-on { opacity: 1; }
         .webmail-star-off { opacity: 0.35; }
         .webmail-row-unread td { font-weight: 600; }
+        .webmail-list-view-link { text-decoration: none; color: inherit; }
     </style>
 </head>
 <body>
@@ -285,10 +294,10 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
                                 $isRead = (int)($row['is_read'] ?? 0) === 1;
                                 ?>
                                 <tr>
-                                    <td><?php echo sanitize((string)($row['from_email'] ?? '')); ?></td>
-                                    <td><?php echo sanitize((string)($row['to_email'] ?? '')); ?></td>
-                                    <td><?php echo sanitize((string)($row['cc_email'] ?? '')); ?></td>
-                                    <td><a href="<?php echo sanitize($viewUrl); ?>"><?php echo sanitize((string)($row['subject'] ?? '')); ?></a></td>
+                                    <td><?php $webmailListViewLink($viewUrl, (string)($row['from_email'] ?? '')); ?></td>
+                                    <td><?php $webmailListViewLink($viewUrl, (string)($row['to_email'] ?? '')); ?></td>
+                                    <td><?php $webmailListViewLink($viewUrl, (string)($row['cc_email'] ?? '')); ?></td>
+                                    <td><?php $webmailListViewLink($viewUrl, (string)($row['subject'] ?? '')); ?></td>
                                     <td><?php echo sanitize((string)($row['status'] ?? '')); ?></td>
                                     <td><?php echo $isRead ? 'Read' : 'Unread'; ?></td>
                                     <td><?php echo sanitize($sentDisplay); ?></td>
