@@ -7,11 +7,13 @@ Session-scoped mailbox UI on the shared **`emails`** send log table. Users see m
 ## 2. Key Tables
 
 - **emails** — same as Email Management; Webmail filters by `$_SESSION['email']` and `$_SESSION['employee_id']` for trash ownership.
+- **webmail_email_reads** — per-employee read state (`company_id`, `employee_id`, `email_id`, `read_at`); private-data exempt (no audit triggers). Existing DBs: `db/migrations/webmail_email_reads.sql`.
 
 ## 3. Required Relationships
 
 - **emails** → **companies** (`company_id`).
 - **emails.smtp_config_id** → **email_smtp_configurations** (optional).
+- **webmail_email_reads** → **emails**, **employees**, **companies** (CASCADE on delete).
 
 ## 4. Business Rules (Critical for Agents)
 
@@ -25,7 +27,8 @@ Session-scoped mailbox UI on the shared **`emails`** send log table. Users see m
 - **Hard delete:** `DELETE` only from **Trash** (own rows); confirm in UI.
 - **Compose:** `from_email` forced from session; To/CC user-entered; body HTML in `details` via **Quill** WYSIWYG (`js/webmail-compose.js`, Quill 1.3.7 from jsDelivr on `compose.php` only); send via `itm_send_email()` with `log_from_email`, `log_details`, `log_created_by`.
 - **Self-sent:** a row can appear in both Inbox and Sent when addresses match both rules.
-- **Private data:** no `audit_logs` / triggers on **emails** (see root `AGENTS.md`).
+- **Private data:** no `audit_logs` / triggers on **emails** or **webmail_email_reads** (see root `AGENTS.md`).
+- **Read / unread:** stored per employee in **webmail_email_reads**; absence of a row means **Unread**. Opening **view.php** marks read; list/view actions **📩** / **📭** toggle via `delete.php` (`mark_read` / `mark_unread`).
 
 ## 5. UI Behavior Requirements
 
@@ -33,6 +36,7 @@ Session-scoped mailbox UI on the shared **`emails`** send log table. Users see m
 - Lists: **From**, **To**, and **CC** on every folder tab. Pagination (emoji controls), filters (status, starred/archived on inbox, date range, search).
 - **Compose body:** Quill Snow editor (bold/italic/underline/strike, headers, lists, link, clear); HTML synced to `body_html` on submit and sanitized server-side with `webmail_render_details_html()`.
 - Star / archive / delete actions via POST `delete.php` with CSRF. **Inbox, Starred, Sent, and Archived** use **soft delete** (move to Trash, no browser confirm). **Trash** alone uses **hard delete** with confirm.
+- **Read / unread:** list **Read** column; bold row when unread; toggle in Actions; view auto-marks read.
 - View: full fields + sanitized HTML body + audit meta rows.
 
 ## 6. API Actions (If Applicable)

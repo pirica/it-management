@@ -1221,6 +1221,8 @@ CREATE TABLE `employee_type` (
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `email_smtp_configurations`
+DROP TABLE IF EXISTS `webmail_email_reads`;
+
 DROP TABLE IF EXISTS `emails`;
 
 DROP TABLE IF EXISTS `email_alert_rules`;
@@ -1283,6 +1285,29 @@ CREATE TABLE `emails` (
   KEY `smtp_config_id` (`smtp_config_id`),
   CONSTRAINT `emails_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `emails_ibfk_smtp_config` FOREIGN KEY (`smtp_config_id`) REFERENCES `email_smtp_configurations` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Per-employee read state for Webmail (private; no audit triggers).
+CREATE TABLE `webmail_email_reads` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `employee_id` int NOT NULL,
+  `email_id` int NOT NULL,
+  `read_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_webmail_email_reads_scope` (`company_id`,`employee_id`,`email_id`),
+  KEY `idx_webmail_email_reads_email` (`email_id`),
+  KEY `idx_webmail_email_reads_employee` (`company_id`,`employee_id`),
+  CONSTRAINT `webmail_email_reads_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `webmail_email_reads_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `webmail_email_reads_ibfk_email` FOREIGN KEY (`email_id`) REFERENCES `emails` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `email_alert_rules`

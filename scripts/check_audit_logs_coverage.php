@@ -138,6 +138,7 @@ function audit_logs_private_data_tables(): array
 {
     return [
         'emails' => true,
+        'webmail_email_reads' => true,
         'password_entries' => true,
         'password_folders' => true,
         'private_contacts' => true,

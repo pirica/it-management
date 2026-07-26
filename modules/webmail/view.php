@@ -27,6 +27,14 @@ if ($id > 0 && $company_id > 0) {
     }
 }
 
+$messageIsRead = false;
+if ($row && $company_id > 0 && $employee_id > 0) {
+    if ((int)($row['is_deleted'] ?? 0) === 0) {
+        webmail_mark_read($conn, $id, $company_id, $employee_id, $sessionEmail);
+    }
+    $messageIsRead = webmail_is_email_read($conn, $id, $company_id, $employee_id);
+}
+
 $crud_title = 'View message';
 require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
 $crud_title = itm_crud_apply_module_icon_to_browser_title(
@@ -67,6 +75,7 @@ $bodyHtml = $row ? webmail_render_details_html((string)($row['details'] ?? '')) 
                         <tr><th>CC</th><td><?php echo sanitize((string)($row['cc_email'] ?? '')); ?></td></tr>
                         <tr><th>Subject</th><td><?php echo sanitize((string)($row['subject'] ?? '')); ?></td></tr>
                         <tr><th>Status</th><td><?php echo sanitize((string)($row['status'] ?? '')); ?></td></tr>
+                        <tr><th>Read</th><td><?php echo $messageIsRead ? 'Read' : 'Unread'; ?></td></tr>
                         <tr><th>Starred</th><td><?php echo (int)($row['is_star'] ?? 0) === 1 ? 'Yes' : 'No'; ?></td></tr>
                         <tr><th>Archived</th><td><?php echo (int)($row['is_archived'] ?? 0) === 1 ? 'Yes' : 'No'; ?></td></tr>
                         <tr><th>Deleted</th><td><?php echo (int)($row['is_deleted'] ?? 0) === 1 ? 'Yes' : 'No'; ?></td></tr>
@@ -79,6 +88,14 @@ $bodyHtml = $row ? webmail_render_details_html((string)($row['details'] ?? '')) 
                 <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
                     <a href="<?php echo sanitize($backUrl); ?>" class="btn" title="Back">🔙</a>
                     <?php if ($row && (int)($row['is_deleted'] ?? 0) === 0): ?>
+                        <form method="POST" action="delete.php" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                            <input type="hidden" name="webmail_action" value="<?php echo $messageIsRead ? 'mark_unread' : 'mark_read'; ?>">
+                            <input type="hidden" name="folder" value="<?php echo sanitize($folder); ?>">
+                            <input type="hidden" name="return_to" value="view">
+                            <button type="submit" class="btn btn-sm" title="<?php echo $messageIsRead ? 'Mark as unread' : 'Mark as read'; ?>"><?php echo $messageIsRead ? '📭' : '📩'; ?></button>
+                        </form>
                         <form method="POST" action="delete.php" style="display:inline;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                             <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
