@@ -29,6 +29,8 @@ if (!function_exists('itm_script_browser_usage_exempt_basenames')) {
             'fast_create_acc_browser.php',
             'DBdesign.php',
             'schema_report.php',
+            // Why: No-auth plain-text monitor; external probes expect immediate count without run=1 landing.
+            'count_db_tables.php',
         ];
     }
 }
