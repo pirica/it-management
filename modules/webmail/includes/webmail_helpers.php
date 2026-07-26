@@ -448,7 +448,7 @@ if (!function_exists('webmail_build_list_query')) {
             }
         }
 
-        $sortable = ['from_email', 'to_email', 'cc_email', 'subject', 'status', 'is_star', 'sent_at', 'id'];
+        $sortable = ['from_email', 'to_email', 'cc_email', 'subject', 'status', 'is_star', 'is_archived', 'is_deleted', 'sent_at', 'id', 'is_read'];
         $sort = trim((string)($filters['sort'] ?? 'sent_at'));
         if (!in_array($sort, $sortable, true)) {
             $sort = 'sent_at';
@@ -462,6 +462,35 @@ if (!function_exists('webmail_build_list_query')) {
             'sort' => $sort,
             'dir' => $dir,
         ];
+    }
+}
+
+if (!function_exists('webmail_resolve_list_order')) {
+    /**
+     * @return array{join_sql: string, join_types: string, join_params: array<int, int>, order_expr: string}
+     */
+    function webmail_resolve_list_order(mysqli $conn, string $sort, int $companyId, int $employeeId): array
+    {
+        $result = [
+            'join_sql' => '',
+            'join_types' => '',
+            'join_params' => [],
+            'order_expr' => 'emails.sent_at',
+        ];
+        if ($sort === 'is_read' && webmail_reads_table_exists($conn)) {
+            $result['join_sql'] = ' LEFT JOIN webmail_email_reads AS wread ON wread.email_id = emails.id AND wread.company_id = ? AND wread.employee_id = ? AND wread.deleted_at IS NULL';
+            $result['join_types'] = 'ii';
+            $result['join_params'] = [$companyId, $employeeId];
+            $result['order_expr'] = '(wread.id IS NOT NULL)';
+
+            return $result;
+        }
+        $sortable = ['from_email', 'to_email', 'cc_email', 'subject', 'status', 'is_star', 'is_archived', 'is_deleted', 'sent_at', 'id'];
+        if (in_array($sort, $sortable, true) && function_exists('itm_is_safe_identifier') && itm_is_safe_identifier($sort)) {
+            $result['order_expr'] = 'emails.' . $sort;
+        }
+
+        return $result;
     }
 }
 
@@ -497,11 +526,13 @@ if (!function_exists('webmail_fetch_list')) {
         }
         $offset = ($page - 1) * $perPage;
 
+        $order = webmail_resolve_list_order($conn, $built['sort'], $companyId, $employeeId);
+
         $rows = [];
-        $listSql = 'SELECT id, from_email, to_email, cc_email, subject, status, is_star, is_archived, is_deleted, sent_at
-                    FROM emails WHERE ' . $built['where_sql'] . ' ORDER BY ' . $built['sort'] . ' ' . $built['dir'] . ', id DESC LIMIT ? OFFSET ?';
-        $listTypes = $built['types'] . 'ii';
-        $listParams = array_merge($built['params'], [$perPage, $offset]);
+        $listSql = 'SELECT emails.id, emails.from_email, emails.to_email, emails.cc_email, emails.subject, emails.status, emails.is_star, emails.is_archived, emails.is_deleted, emails.sent_at
+                    FROM emails' . $order['join_sql'] . ' WHERE ' . $built['where_sql'] . ' ORDER BY ' . $order['order_expr'] . ' ' . $built['dir'] . ', emails.id DESC LIMIT ? OFFSET ?';
+        $listTypes = $built['types'] . $order['join_types'] . 'ii';
+        $listParams = array_merge($built['params'], $order['join_params'], [$perPage, $offset]);
         $listStmt = mysqli_prepare($conn, $listSql);
         if ($listStmt) {
             mysqli_stmt_bind_param($listStmt, $listTypes, ...$listParams);
