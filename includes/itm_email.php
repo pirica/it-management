@@ -142,8 +142,18 @@ if (!function_exists('itm_email_get_smtp_config_by_id')) {
 }
 
 if (!function_exists('itm_email_log_send')) {
-    function itm_email_log_send(mysqli $conn, $companyId, $toEmail, $subject, $status, $details = null, $smtpConfigId = null, $fromEmail = '', $ccEmail = '')
-    {
+    function itm_email_log_send(
+        mysqli $conn,
+        $companyId,
+        $toEmail,
+        $subject,
+        $status,
+        $details = null,
+        $smtpConfigId = null,
+        $fromEmail = '',
+        $ccEmail = '',
+        $createdBy = null
+    ) {
         $companyId = (int)$companyId;
         if ($companyId <= 0) {
             return false;
@@ -156,28 +166,55 @@ if (!function_exists('itm_email_log_send')) {
         $smtpConfigId = $smtpConfigId !== null ? (int)$smtpConfigId : null;
         $fromEmail = trim((string)$fromEmail);
         $ccEmail = trim((string)$ccEmail);
+        $createdBy = $createdBy !== null ? (int)$createdBy : null;
 
-        $stmt = mysqli_prepare(
-            $conn,
-            'INSERT INTO emails (company_id, smtp_config_id, to_email, from_email, cc_email, subject, status, details, sent_at, active)
-             VALUES (?, NULLIF(?, 0), ?, ?, ?, ?, ?, ?, NOW(), 1)'
-        );
-        if (!$stmt) {
-            return false;
+        if ($createdBy !== null && $createdBy > 0) {
+            $stmt = mysqli_prepare(
+                $conn,
+                'INSERT INTO emails (company_id, smtp_config_id, to_email, from_email, cc_email, subject, status, details, sent_at, active, created_by, updated_by)
+                 VALUES (?, NULLIF(?, 0), ?, ?, ?, ?, ?, ?, NOW(), 1, ?, ?)'
+            );
+            if (!$stmt) {
+                return false;
+            }
+            $smtpParam = $smtpConfigId !== null ? (int)$smtpConfigId : 0;
+            mysqli_stmt_bind_param(
+                $stmt,
+                'iissssssii',
+                $companyId,
+                $smtpParam,
+                $toEmail,
+                $fromEmail,
+                $ccEmail,
+                $subject,
+                $status,
+                $details,
+                $createdBy,
+                $createdBy
+            );
+        } else {
+            $stmt = mysqli_prepare(
+                $conn,
+                'INSERT INTO emails (company_id, smtp_config_id, to_email, from_email, cc_email, subject, status, details, sent_at, active)
+                 VALUES (?, NULLIF(?, 0), ?, ?, ?, ?, ?, ?, NOW(), 1)'
+            );
+            if (!$stmt) {
+                return false;
+            }
+            $smtpParam = $smtpConfigId !== null ? (int)$smtpConfigId : 0;
+            mysqli_stmt_bind_param(
+                $stmt,
+                'iissssss',
+                $companyId,
+                $smtpParam,
+                $toEmail,
+                $fromEmail,
+                $ccEmail,
+                $subject,
+                $status,
+                $details
+            );
         }
-        $smtpParam = $smtpConfigId !== null ? (int)$smtpConfigId : 0;
-        mysqli_stmt_bind_param(
-            $stmt,
-            'iissssss',
-            $companyId,
-            $smtpParam,
-            $toEmail,
-            $fromEmail,
-            $ccEmail,
-            $subject,
-            $status,
-            $details
-        );
         $ok = mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
         return $ok;
@@ -524,20 +561,33 @@ if (!function_exists('itm_send_email')) {
 
         if ($shouldLog && $resolvedCompanyId > 0) {
             $logFromEmail = '';
-            if (is_array($smtpConfig)) {
+            if (array_key_exists('log_from_email', $options)) {
+                $logFromEmail = trim((string)$options['log_from_email']);
+            } elseif (is_array($smtpConfig)) {
                 $logFromEmail = trim((string)($smtpConfig['from_email'] ?? ''));
             }
             $logCcEmail = trim((string)($options['cc_email'] ?? $options['cc'] ?? ''));
+            $logDetails = null;
+            if (array_key_exists('log_details', $options)) {
+                $logDetails = $options['log_details'];
+            } elseif (!$sendResult['ok']) {
+                $logDetails = (string)$sendResult['error'];
+            }
+            $logCreatedBy = null;
+            if (array_key_exists('log_created_by', $options)) {
+                $logCreatedBy = (int)$options['log_created_by'];
+            }
             itm_email_log_send(
                 $conn,
                 $resolvedCompanyId,
                 $to,
                 $subject,
                 $sendResult['ok'] ? 'sent' : 'failed',
-                $sendResult['ok'] ? null : (string)$sendResult['error'],
+                $logDetails,
                 $usedConfigId,
                 $logFromEmail,
-                $logCcEmail
+                $logCcEmail,
+                $logCreatedBy
             );
         }
 
