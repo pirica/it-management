@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Static guard: forbidden cross-module delegates to standard CRUD template.
  *
@@ -12,6 +12,8 @@
 
 declare(strict_types=1);
 
+
+require_once __DIR__ . '/lib/itm_script_stdio.php';
 /**
  * Browser catalog: How to use (shown on landing before run=1).
  */
@@ -23,7 +25,7 @@ ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 $root = realpath(__DIR__ . '/..');
 if ($root === false) {
-    fwrite(STDERR, "Unable to resolve project root.\n");
+    itm_script_write_stderr( "Unable to resolve project root.\n");
     exit(2);
 }
 
@@ -34,7 +36,7 @@ $modulesRoot = $root . DIRECTORY_SEPARATOR . 'modules';
 $manufacturersDir = $modulesRoot . DIRECTORY_SEPARATOR . 'manufacturers';
 
 if (!is_dir($modulesRoot)) {
-    fwrite(STDERR, "modules/ directory not found.\n");
+    itm_script_write_stderr( "modules/ directory not found.\n");
     exit(2);
 }
 

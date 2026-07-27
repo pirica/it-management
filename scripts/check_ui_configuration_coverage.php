@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Audits module UI structure against UI Configuration capabilities.
  *
@@ -27,6 +27,8 @@
 
 declare(strict_types=1);
 
+
+require_once __DIR__ . '/lib/itm_script_stdio.php';
 /**
  * Browser catalog: How to use (shown on landing before run=1).
  */
@@ -40,7 +42,7 @@ $root = dirname(__DIR__);
 $modulesDir = $root . '/modules';
 
 if (!is_dir($modulesDir)) {
-    fwrite(STDERR, "Modules directory not found: {$modulesDir}\n");
+    itm_script_write_stderr( "Modules directory not found: {$modulesDir}\n");
     exit(1);
 }
 

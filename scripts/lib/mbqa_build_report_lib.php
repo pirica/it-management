@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Shared build-report logic for module_browser_qa_build_report.php.
  *
@@ -96,7 +96,7 @@ function mbqar_out(string $message): void
 function mbqar_err(string $message): void
 {
     if (mbqar_is_cli_sapi()) {
-        fwrite(STDERR, $message);
+        itm_script_write_stderr( $message);
     } else {
         mbqar_out($message);
     }

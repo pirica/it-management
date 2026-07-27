@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Harness for Notes module edit POST.
  *
@@ -75,7 +75,7 @@ if (
     || trim((string)($argv[2] ?? '')) === ''
     || trim((string)($argv[3] ?? '')) === ''
 ) {
-    fwrite(STDERR, "Usage: php scripts/test_edit.php <PHPSESSID> <title> <note_id>\n");
+    itm_script_write_stderr( "Usage: php scripts/test_edit.php <PHPSESSID> <title> <note_id>\n");
     exit(1);
 }
 

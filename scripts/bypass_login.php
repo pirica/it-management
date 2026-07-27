@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * CLI Bypass Login Utility
  *
@@ -62,20 +62,20 @@ $idSearch = is_numeric($username) ? (int)$username : -1;
 mysqli_stmt_bind_param($stmt, 'si', $username, $idSearch);
 if (!mysqli_stmt_execute($stmt)) {
     mysqli_stmt_close($stmt);
-    fwrite(STDERR, 'Error: Failed to load user record.' . PHP_EOL);
+    itm_script_write_stderr( 'Error: Failed to load user record.' . PHP_EOL);
     exit(1);
 }
 $user = itm_mysqli_stmt_fetch_assoc($stmt);
 mysqli_stmt_close($stmt);
 
 if (!$user) {
-    fwrite(STDERR, "Error: User '{$username}' not found in database." . PHP_EOL);
+    itm_script_write_stderr( "Error: User '{$username}' not found in database." . PHP_EOL);
     exit(1);
 }
 
 $employeeId = (int)$user['id'];
 if (!itm_is_admin($conn, $employeeId)) {
-    fwrite(STDERR, "Error: Bypass login is restricted to Admin users. User '{$user['username']}' is not an admin." . PHP_EOL);
+    itm_script_write_stderr( "Error: Bypass login is restricted to Admin users. User '{$user['username']}' is not an admin." . PHP_EOL);
     exit(1);
 }
 
@@ -83,14 +83,14 @@ $stmt = mysqli_prepare($conn, 'SELECT id, company FROM companies WHERE id = ? LI
 mysqli_stmt_bind_param($stmt, 'i', $companyId);
 if (!mysqli_stmt_execute($stmt)) {
     mysqli_stmt_close($stmt);
-    fwrite(STDERR, 'Error: Failed to load company record.' . PHP_EOL);
+    itm_script_write_stderr( 'Error: Failed to load company record.' . PHP_EOL);
     exit(1);
 }
 $company = itm_mysqli_stmt_fetch_assoc($stmt);
 mysqli_stmt_close($stmt);
 
 if (!$company) {
-    fwrite(STDERR, "Error: Company with ID {$companyId} not found." . PHP_EOL);
+    itm_script_write_stderr( "Error: Company with ID {$companyId} not found." . PHP_EOL);
     exit(1);
 }
 
@@ -132,17 +132,17 @@ if (file_exists($sessionFile)) {
 
 if (!defined('PHPUNIT_RUNNING')) {
     $baseUrl = defined('BASE_URL') ? (string)BASE_URL : 'http://localhost/it-management/';
-    fwrite(STDOUT, colorText('Bypass Login Successful!', 'pass') . PHP_EOL);
-    fwrite(STDOUT, '------------------------' . PHP_EOL);
-    fwrite(STDOUT, 'User: ' . $_SESSION['username'] . ' (ID: ' . $_SESSION['employee_id'] . ')' . PHP_EOL);
-    fwrite(STDOUT, 'Role: ' . $_SESSION['role_name'] . PHP_EOL);
-    fwrite(STDOUT, 'Company: ' . $_SESSION['company_name'] . ' (ID: ' . $_SESSION['company_id'] . ')' . PHP_EOL);
-    fwrite(STDOUT, 'Session ID: ' . $sessionId . PHP_EOL);
-    fwrite(STDOUT, "Vault Key: Set (hash of '{$password}')" . PHP_EOL);
-    fwrite(STDOUT, '------------------------' . PHP_EOL);
-    fwrite(STDOUT, 'To use this session in your browser:' . PHP_EOL);
-    fwrite(STDOUT, '1. Open the application: ' . $baseUrl . PHP_EOL);
-    fwrite(STDOUT, '2. Open Developer Tools (F12) -> Application/Storage -> Cookies' . PHP_EOL);
-    fwrite(STDOUT, '3. Change PHPSESSID value to: ' . $sessionId . PHP_EOL);
-    fwrite(STDOUT, '4. Refresh the page to access the Dashboard.' . PHP_EOL);
+    itm_script_write_stdout( colorText('Bypass Login Successful!', 'pass') . PHP_EOL);
+    itm_script_write_stdout( '------------------------' . PHP_EOL);
+    itm_script_write_stdout( 'User: ' . $_SESSION['username'] . ' (ID: ' . $_SESSION['employee_id'] . ')' . PHP_EOL);
+    itm_script_write_stdout( 'Role: ' . $_SESSION['role_name'] . PHP_EOL);
+    itm_script_write_stdout( 'Company: ' . $_SESSION['company_name'] . ' (ID: ' . $_SESSION['company_id'] . ')' . PHP_EOL);
+    itm_script_write_stdout( 'Session ID: ' . $sessionId . PHP_EOL);
+    itm_script_write_stdout( "Vault Key: Set (hash of '{$password}')" . PHP_EOL);
+    itm_script_write_stdout( '------------------------' . PHP_EOL);
+    itm_script_write_stdout( 'To use this session in your browser:' . PHP_EOL);
+    itm_script_write_stdout( '1. Open the application: ' . $baseUrl . PHP_EOL);
+    itm_script_write_stdout( '2. Open Developer Tools (F12) -> Application/Storage -> Cookies' . PHP_EOL);
+    itm_script_write_stdout( '3. Change PHPSESSID value to: ' . $sessionId . PHP_EOL);
+    itm_script_write_stdout( '4. Refresh the page to access the Dashboard.' . PHP_EOL);
 }

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Harness for Notes module AJAX quick_add.
  *
@@ -66,7 +66,7 @@ if (!defined('ITM_CLI_SCRIPT')) {
 }
 
 if (!isset($argc) || $argc < 3 || trim((string)($argv[1] ?? '')) === '' || trim((string)($argv[2] ?? '')) === '') {
-    fwrite(STDERR, "Usage: php scripts/test_ajax.php <PHPSESSID> <title>\n");
+    itm_script_write_stderr( "Usage: php scripts/test_ajax.php <PHPSESSID> <title>\n");
     exit(1);
 }
 

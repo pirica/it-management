@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Apply module/table sample seed rows to db/ across all seeded companies.
  *
@@ -17,6 +17,8 @@
 
 declare(strict_types=1);
 
+
+require_once __DIR__ . '/lib/itm_script_stdio.php';
 /**
  * Browser catalog: How to use (shown on landing before run=1).
  */
@@ -32,7 +34,7 @@ ITM_SCRIPT_BROWSER_HOW_TO_USE;
 function itm_seed_fwrite_stderr(string $message): void
 {
     if (defined('STDERR') && is_resource(STDERR)) {
-        fwrite(STDERR, $message);
+        itm_script_write_stderr( $message);
         return;
     }
 

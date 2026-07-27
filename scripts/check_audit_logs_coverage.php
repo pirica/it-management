@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Audit Logs Coverage Static Analysis Script
  *
@@ -21,6 +21,8 @@
 
 declare(strict_types=1);
 
+
+require_once __DIR__ . '/lib/itm_script_stdio.php';
 /**
  * Browser catalog: How to use (shown on landing before run=1).
  */
@@ -33,7 +35,7 @@ ITM_SCRIPT_BROWSER_HOW_TO_USE;
 $root = realpath(__DIR__ . '/..');
 if ($root === false) {
     if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
-        fwrite(STDERR, "Unable to resolve project root.\n");
+        itm_script_write_stderr( "Unable to resolve project root.\n");
     } else {
         header('Content-Type: text/plain; charset=utf-8');
         http_response_code(500);
@@ -69,7 +71,7 @@ if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
             $options['module'] = trim(substr($arg, 9));
             continue;
         }
-        fwrite(STDERR, "Unknown option: {$arg}\n");
+        itm_script_write_stderr( "Unknown option: {$arg}\n");
         exit(2);
     }
 } else {

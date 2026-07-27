@@ -1,4 +1,4 @@
-#!/usr/bin/env php
+﻿#!/usr/bin/env php
 <?php
 /**
  * Static check: scaffold soft-delete + audit UI contracts for docs/list_soft-delete.txt.
@@ -15,6 +15,8 @@ function itm_script_browser_how_to_use(): string
 CLI: php scripts/check_crud_audit_soft_delete.php — static gate for scaffold soft-delete / audit UI (list, view, filters). Browser: run with run=1 after the landing page.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
+
+require_once __DIR__ . '/lib/itm_script_stdio.php';
 
 $itmCheckCrudAuditIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 $itmCheckCrudAuditNl = "\n";
@@ -92,14 +94,14 @@ foreach ($slugs as $slug) {
 if ($failures) {
     $msg = 'check_crud_audit_soft_delete: ' . count($failures) . ' issue(s)' . $itmCheckCrudAuditNl;
     if ($itmCheckCrudAuditIsCli) {
-        fwrite(STDERR, $msg);
+        itm_script_write_stderr( $msg);
     } else {
         echo colorText($msg, 'fail');
     }
     foreach ($failures as $f) {
         $line = ' - ' . $f . $itmCheckCrudAuditNl;
         if ($itmCheckCrudAuditIsCli) {
-            fwrite(STDERR, $line);
+            itm_script_write_stderr( $line);
         } else {
             echo colorText($line, 'fail');
         }

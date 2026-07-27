@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * CLI: php scripts/verify_ops_report_sample_data.php
  * Verifies Add sample data on empty tenants for all ops_report_* child modules.
@@ -26,12 +26,12 @@ function vorsd_fail($message)
 {
     global $failures;
     $failures++;
-    fwrite(STDERR, "[FAIL] {$message}\n");
+    itm_script_write_stderr( "[FAIL] {$message}\n");
 }
 
 function vorsd_pass($message)
 {
-    fwrite(STDOUT, "[PASS] {$message}\n");
+    itm_script_write_stdout( "[PASS] {$message}\n");
 }
 
 if (!($conn instanceof mysqli)) {
@@ -97,4 +97,5 @@ if ($parentCount < 1) {
     vorsd_pass('ops_report parent rows present (' . $parentCount . ').');
 }
 
+itm_script_output_end();
 exit($failures === 0 ? 0 : 1);

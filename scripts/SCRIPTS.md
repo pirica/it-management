@@ -379,6 +379,7 @@ Do not add a script under `scripts/` without updating `scripts/scripts.php`.
 - **CLI** skips the landing. **Exempt** basenames: `itm_script_browser_usage_exempt_basenames()` (catalog, API docs, MBQA runners, full HTML apps such as `pitfalls.php` and `update_all_created_at.php`, no-auth plain-text monitor `count_db_tables.php`).
 - **Hooks:** `itm_apply_script_bootstrap()` (apply tools, `supports_apply` true), `itm_script_output_begin()` (audit scripts), `itm_script_regression_entry.php`, `itm_check_script_begin_browser_admin()`.
 - **Static gate:** `php scripts/check_script_browser_usage.php` — usage function + hook + catalog stub per browser PHP row (skips exempt basenames).
+- **Static gate:** `php scripts/check_script_stdio_fwrite.php` — no raw `fwrite(STDOUT|STDERR)` under `scripts/`; use `itm_script_write_stdout()` / `itm_script_write_stderr()` from `scripts/lib/itm_script_stdio.php` (loaded via `script_cli_output.php`).
 
 #### API documentation (`scripts/api.php`)
 

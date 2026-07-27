@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * CRUD Action Mapper
  *
@@ -13,6 +13,8 @@
 
 declare(strict_types=1);
 
+
+require_once __DIR__ . '/lib/itm_script_stdio.php';
 /**
  * Browser catalog: How to use (shown on landing before run=1).
  */
@@ -28,7 +30,7 @@ $modulesPath = $rootPath . 'modules';
 if (!is_dir($modulesPath)) {
     $message = "Modules directory not found: {$modulesPath}\n";
     if (PHP_SAPI === 'cli' && defined('STDERR')) {
-        fwrite(STDERR, $message);
+        itm_script_write_stderr( $message);
     }
     exit(1);
 }

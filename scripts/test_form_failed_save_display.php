@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Test CRUD create forms for SQL-quoted values after failed saves.
  *
@@ -46,7 +46,7 @@ $nl = itm_script_output_nl();
 
         require_once dirname(__DIR__) . '/includes/form_failed_save_test.php';
     } catch (Throwable $e) {
-        fwrite(STDERR, 'Bootstrap failed: ' . $e->getMessage() . "\n");
+        itm_script_write_stderr( 'Bootstrap failed: ' . $e->getMessage() . "\n");
         exit(1);
     }
 
@@ -69,30 +69,29 @@ $nl = itm_script_output_nl();
         'limit' => $limit,
     ]);
 
-    fwrite(STDOUT, "Probe: {$result['probe']}\n");
-    fwrite(STDOUT, "Modules scanned: {$result['summary']['modules']}\n\n");
+    itm_script_write_stdout( "Probe: {$result['probe']}\n");
+    itm_script_write_stdout( "Modules scanned: {$result['summary']['modules']}\n\n");
 
-    fwrite(STDOUT, "[STATIC]\n");
+    itm_script_write_stdout( "[STATIC]\n");
     foreach ($result['static_results'] as $row) {
         $flag = $row['status'] === 'fail' ? 'FAIL' : strtoupper((string) $row['status']);
-        fwrite(STDOUT, "  [{$flag}] {$row['module']}\n");
+        itm_script_write_stdout( "  [{$flag}] {$row['module']}\n");
         foreach ($row['files'] as $fileRow) {
             if ($fileRow['status'] === 'fail') {
-                fwrite(STDOUT, "         {$fileRow['file']}: {$fileRow['notes']}\n");
+                itm_script_write_stdout( "         {$fileRow['file']}: {$fileRow['notes']}\n");
             }
         }
     }
 
     if ($doRuntime) {
-        fwrite(STDOUT, "\n[RUNTIME]\n");
+        itm_script_write_stdout( "\n[RUNTIME]\n");
         foreach ($result['runtime_results'] as $row) {
             $flag = strtoupper((string) $row['status']);
-            fwrite(STDOUT, "  [{$flag}] {$row['module']}: {$row['notes']}\n");
+            itm_script_write_stdout( "  [{$flag}] {$row['module']}: {$row['notes']}\n");
         }
     }
 
-    fwrite(
-        STDOUT,
+    itm_script_write_stdout(
         "\nSummary: static_fail={$result['summary']['static_fail']}, runtime_fail={$result['summary']['runtime_fail']}\n"
     );
 

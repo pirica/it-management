@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Set created_at on every row in every table that has a created_at column.
  *
@@ -13,6 +13,8 @@
 
 declare(strict_types=1);
 
+
+require_once __DIR__ . '/lib/itm_script_stdio.php';
 /**
  * Browser catalog: How to use (shown on landing before run=1).
  */
@@ -190,7 +192,7 @@ function itm_update_all_created_at_run(mysqli $conn, string $targetCreatedAt, bo
 function itm_update_all_created_at_print_cli(array $result): void
 {
     $modeLabel = $result['dry_run'] ? 'DRY RUN' : 'UPDATE';
-    fwrite(STDOUT, "[{$modeLabel}] Setting created_at to {$result['target']} on {$result['table_count']} table(s) in '" . DB_NAME . "'...\n\n");
+    itm_script_write_stdout( "[{$modeLabel}] Setting created_at to {$result['target']} on {$result['table_count']} table(s) in '" . DB_NAME . "'...\n\n");
 
     foreach ($result['lines'] as $line) {
         $tag = strtoupper($line['level']);
@@ -202,27 +204,27 @@ function itm_update_all_created_at_print_cli(array $result): void
         $tablePart = $line['table'] !== '' ? $line['table'] . ': ' : '';
         $rowsPart = $line['rows'] > 0 ? " {$line['rows']} row(s)" : '';
         if ($line['level'] === 'skip') {
-            fwrite(STDOUT, "[SKIP ] {$line['table']}: {$line['message']}\n");
+            itm_script_write_stdout( "[SKIP ] {$line['table']}: {$line['message']}\n");
         } elseif ($line['level'] === 'plan') {
-            fwrite(STDOUT, "[PLAN ] {$line['table']}: would update{$rowsPart}.\n");
+            itm_script_write_stdout( "[PLAN ] {$line['table']}: would update{$rowsPart}.\n");
         } elseif ($line['level'] === 'ok') {
-            fwrite(STDOUT, "[OK   ] {$line['table']}: updated{$rowsPart}.\n");
+            itm_script_write_stdout( "[OK   ] {$line['table']}: updated{$rowsPart}.\n");
         } elseif ($line['level'] === 'error') {
-            fwrite(STDOUT, "[ERROR] {$tablePart}{$line['message']}\n");
+            itm_script_write_stdout( "[ERROR] {$tablePart}{$line['message']}\n");
         } else {
-            fwrite(STDOUT, "[{$tag}] {$tablePart}{$line['message']}\n");
+            itm_script_write_stdout( "[{$tag}] {$tablePart}{$line['message']}\n");
         }
     }
 
-    fwrite(STDOUT, "\n");
+    itm_script_write_stdout( "\n");
     if ($result['dry_run']) {
-        fwrite(STDOUT, "Dry run complete. {$result['total_affected']} row(s) would be updated.\n");
+        itm_script_write_stdout( "Dry run complete. {$result['total_affected']} row(s) would be updated.\n");
     } else {
-        fwrite(STDOUT, "Done. {$result['total_affected']} row(s) updated across {$result['table_count']} table(s).");
+        itm_script_write_stdout( "Done. {$result['total_affected']} row(s) updated across {$result['table_count']} table(s).");
         if ($result['error_count'] > 0) {
-            fwrite(STDOUT, " {$result['error_count']} table(s) had errors.");
+            itm_script_write_stdout( " {$result['error_count']} table(s) had errors.");
         }
-        fwrite(STDOUT, "\n");
+        itm_script_write_stdout( "\n");
     }
 }
 
@@ -242,28 +244,28 @@ if ($itmIsCli) {
             continue;
         }
         if ($arg === '--help' || $arg === '-h') {
-            fwrite(STDOUT, "Usage: php scripts/update_all_created_at.php [--dry-run] [--at=\"2026-01-01 00:00:01\"]\n");
-            fwrite(STDOUT, "Browser: open scripts/update_all_created_at.php in the app (login required).\n");
+            itm_script_write_stdout( "Usage: php scripts/update_all_created_at.php [--dry-run] [--at=\"2026-01-01 00:00:01\"]\n");
+            itm_script_write_stdout( "Browser: open scripts/update_all_created_at.php in the app (login required).\n");
             exit(0);
         }
-        fwrite(STDERR, "Unknown argument: {$arg}\n");
+        itm_script_write_stderr( "Unknown argument: {$arg}\n");
         exit(1);
     }
 
     if (!preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $targetCreatedAt)) {
-        fwrite(STDERR, "Invalid --at value; expected YYYY-MM-DD HH:MM:SS.\n");
+        itm_script_write_stderr( "Invalid --at value; expected YYYY-MM-DD HH:MM:SS.\n");
         exit(1);
     }
 
     try {
         require_once dirname(__DIR__) . '/config/config.php';
     } catch (Throwable $e) {
-        fwrite(STDERR, 'Unable to bootstrap application config/db connection: ' . $e->getMessage() . "\n");
+        itm_script_write_stderr( 'Unable to bootstrap application config/db connection: ' . $e->getMessage() . "\n");
         exit(1);
     }
 
     if (!isset($conn) || !($conn instanceof mysqli) || mysqli_connect_errno()) {
-        fwrite(STDERR, "Database connection failed.\n");
+        itm_script_write_stderr( "Database connection failed.\n");
         exit(1);
     }
 

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /**
  * Browser catalog: How to use (shown on landing before run=1).
@@ -565,35 +565,35 @@ $exitCode = $cleanup['ok'] ? 0 : 1;
 
 if (mbqa_clean_tests_is_cli()) {
     if ($cleanup['dirs_removed'] > 0) {
-        fwrite(STDOUT, colorText("[OK] Removed {$cleanup['dirs_removed']} regression-test / QA scaffold module folder(s)", 'pass') . "\n");
+        itm_script_write_stdout( colorText("[OK] Removed {$cleanup['dirs_removed']} regression-test / QA scaffold module folder(s)", 'pass') . "\n");
     } else {
-        fwrite(STDOUT, colorText('[OK] No regression-test module folders to remove', 'pass') . "\n");
+        itm_script_write_stdout( colorText('[OK] No regression-test module folders to remove', 'pass') . "\n");
     }
 
     $standardDirsRemoved = (int)($cleanup['standard_scaffold_dirs_removed'] ?? 0);
     if ($standardDirsRemoved > 0) {
-        fwrite(STDOUT, colorText("[OK] clean->>> standard CRUD: removed {$standardDirsRemoved} legacy delegate scaffold folder(s)", 'pass') . "\n");
+        itm_script_write_stdout( colorText("[OK] clean->>> standard CRUD: removed {$standardDirsRemoved} legacy delegate scaffold folder(s)", 'pass') . "\n");
     } else {
-        fwrite(STDOUT, colorText('[OK] clean->>> standard CRUD: no legacy require template stub folders', 'pass') . "\n");
+        itm_script_write_stdout( colorText('[OK] clean->>> standard CRUD: no legacy require template stub folders', 'pass') . "\n");
     }
 
     if ($cleanup['companies_deleted'] > 0) {
         $noun = $cleanup['companies_deleted'] === 1 ? 'y' : 'ies';
-        fwrite(STDOUT, colorText("[OK] Removed {$cleanup['companies_deleted']} ITM test compan{$noun}", 'pass') . "\n");
+        itm_script_write_stdout( colorText("[OK] Removed {$cleanup['companies_deleted']} ITM test compan{$noun}", 'pass') . "\n");
     }
 
     if ($cleanup['types_deleted'] > 0) {
-        fwrite(STDOUT, colorText("[OK] Removed {$cleanup['types_deleted']} equipment_types test row(s)", 'pass') . "\n");
+        itm_script_write_stdout( colorText("[OK] Removed {$cleanup['types_deleted']} equipment_types test row(s)", 'pass') . "\n");
     } elseif ($cleanup['ok']) {
-        fwrite(STDOUT, colorText('[OK] No equipment_types test rows to remove', 'pass') . "\n");
+        itm_script_write_stdout( colorText('[OK] No equipment_types test rows to remove', 'pass') . "\n");
     }
 
     if ($cleanup['sidebar_deleted'] > 0) {
-        fwrite(STDOUT, colorText("[OK] Removed {$cleanup['sidebar_deleted']} employee_sidebar_preferences test row(s)", 'pass') . "\n");
+        itm_script_write_stdout( colorText("[OK] Removed {$cleanup['sidebar_deleted']} employee_sidebar_preferences test row(s)", 'pass') . "\n");
     }
 
     if ($cleanup['runner_rows_deleted'] > 0 || $cleanup['runner_rows_detached'] > 0) {
-        fwrite(STDOUT, colorText('[OK] Cleaned MBQA/QA-IMPORT signature data:', 'pass') . "\n");
+        itm_script_write_stdout( colorText('[OK] Cleaned MBQA/QA-IMPORT signature data:', 'pass') . "\n");
         foreach ($cleanup['runner_table_details'] as $table => $counts) {
             $parts = [];
             if ($counts['deleted'] > 0) {
@@ -602,23 +602,23 @@ if (mbqa_clean_tests_is_cli()) {
             if ($counts['detached'] > 0) {
                 $parts[] = "{$counts['detached']} FKs detached";
             }
-            fwrite(STDOUT, "     - {$table}: " . implode(', ', $parts) . "\n");
+            itm_script_write_stdout( "     - {$table}: " . implode(', ', $parts) . "\n");
         }
-        fwrite(STDOUT, "     Total: {$cleanup['runner_rows_deleted']} row(s) deleted, {$cleanup['runner_rows_detached']} FK(s) detached across {$cleanup['runner_tables_touched']} table(s)\n");
+        itm_script_write_stdout( "     Total: {$cleanup['runner_rows_deleted']} row(s) deleted, {$cleanup['runner_rows_detached']} FK(s) detached across {$cleanup['runner_tables_touched']} table(s)\n");
     } elseif ($cleanup['ok']) {
-        fwrite(STDOUT, colorText('[OK] No MBQA/QA-IMPORT signature rows found across DB tables', 'pass') . "\n");
+        itm_script_write_stdout( colorText('[OK] No MBQA/QA-IMPORT signature rows found across DB tables', 'pass') . "\n");
     }
 
-    fwrite(STDOUT, colorText("[OK] Verified canonical modules/is_* facades ({$cleanup['canonical_ensured']} scaffold pass(es))", 'pass') . "\n");
+    itm_script_write_stdout( colorText("[OK] Verified canonical modules/is_* facades ({$cleanup['canonical_ensured']} scaffold pass(es))", 'pass') . "\n");
 
     foreach ($cleanup['errors'] as $errorLine) {
-        fwrite(STDERR, colorText('[FAIL] ' . $errorLine, 'fail') . "\n");
+        itm_script_write_stderr( colorText('[FAIL] ' . $errorLine, 'fail') . "\n");
     }
     foreach (($cleanup['warnings'] ?? []) as $warningLine) {
-        fwrite(STDOUT, colorText('[WARN] ' . $warningLine, 'warn') . "\n");
+        itm_script_write_stdout( colorText('[WARN] ' . $warningLine, 'warn') . "\n");
     }
 
-    fwrite(STDOUT, "\nSummary: {$cleanup['dirs_removed']} test/QA scaffold folder(s) removed; {$cleanup['runner_rows_deleted']} MBQA/QA-IMPORT row(s) removed; {$cleanup['runner_rows_detached']} FK(s) detached; canonical is_* modules preserved.\n");
+    itm_script_write_stdout( "\nSummary: {$cleanup['dirs_removed']} test/QA scaffold folder(s) removed; {$cleanup['runner_rows_deleted']} MBQA/QA-IMPORT row(s) removed; {$cleanup['runner_rows_detached']} FK(s) detached; canonical is_* modules preserved.\n");
     exit($exitCode);
 }
 

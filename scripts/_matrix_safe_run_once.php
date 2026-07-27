@@ -1,10 +1,12 @@
-<?php
+﻿<?php
 /**
  * One-shot safe matrix runner (tiers 1-3). Writes JSON results for the agent report.
  * Not cataloged — disposable for this session.
  */
 declare(strict_types=1);
 
+
+require_once __DIR__ . '/lib/itm_script_stdio.php';
 $root = dirname(__DIR__);
 $php = 'D:\\dunebox-v1.0.6\\system\\apps\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe';
 $bash = 'C:\\Program Files\\Git\\bin\\bash.exe';
@@ -105,7 +107,7 @@ foreach ($entries as $entry) {
         $row['status'] = 'SKIP';
         $row['note'] = 'docs-only';
         $results[] = $row;
-        fwrite(STDOUT, "SKIP tier0 {$script}\n");
+        itm_script_write_stdout( "SKIP tier0 {$script}\n");
         continue;
     }
     if ($tier >= 4) {
@@ -118,14 +120,14 @@ foreach ($entries as $entry) {
         $row['status'] = 'SKIP';
         $row['note'] = 'destroys-DB; substituted verify_database_schema.php + count_db_tables.php';
         $results[] = $row;
-        fwrite(STDOUT, "SKIP wipe {$script}\n");
+        itm_script_write_stdout( "SKIP wipe {$script}\n");
         continue;
     }
     if (in_array($script, ['check_csrf_coverage.php', 'check_fk_label_search_coverage.php', 'check_sql_injection_coverage.php'], true) && $smokePassed) {
         $row['status'] = 'COVERED';
         $row['note'] = 'covered by smoke_test.sh';
         $results[] = $row;
-        fwrite(STDOUT, "COVERED {$script}\n");
+        itm_script_write_stdout( "COVERED {$script}\n");
         continue;
     }
 
@@ -141,7 +143,7 @@ foreach ($entries as $entry) {
         $row['status'] = 'SKIP';
         $row['note'] = 'file-missing';
         $results[] = $row;
-        fwrite(STDOUT, "SKIP missing {$script}\n");
+        itm_script_write_stdout( "SKIP missing {$script}\n");
         continue;
     }
 
@@ -167,7 +169,7 @@ foreach ($entries as $entry) {
             $row['status'] = 'SKIP';
             $row['note'] = 'python-not-on-PATH';
             $results[] = $row;
-            fwrite(STDOUT, "SKIP no-python {$script}\n");
+            itm_script_write_stdout( "SKIP no-python {$script}\n");
             continue;
         }
         $pyBin = preg_split('/\r?\n/', $py)[0];
@@ -181,7 +183,7 @@ foreach ($entries as $entry) {
         continue;
     }
 
-    fwrite(STDOUT, "RUN tier{$tier} {$script} ... ");
+    itm_script_write_stdout( "RUN tier{$tier} {$script} ... ");
     flush();
     $run = itm_matrix_run($cmd, $timeout, $root);
     $row['exit'] = $run['exit'];
@@ -196,11 +198,11 @@ foreach ($entries as $entry) {
         if ($script === 'smoke_test.sh') {
             $smokePassed = true;
         }
-        fwrite(STDOUT, "PASS ({$run['sec']}s)\n");
+        itm_script_write_stdout( "PASS ({$run['sec']}s)\n");
     } elseif ($run['exit'] === 124) {
         $row['status'] = 'FAIL';
         $row['note'] = 'timeout';
-        fwrite(STDOUT, "TIMEOUT\n");
+        itm_script_write_stdout( "TIMEOUT\n");
     } else {
         // Treat SMTP scripts that clearly need external mail as SKIP if message says so
         $low = strtolower($run['out']);
@@ -211,7 +213,7 @@ foreach ($entries as $entry) {
         }
         $row['status'] = 'FAIL';
         $row['note'] = 'exit-' . $run['exit'];
-        fwrite(STDOUT, "FAIL exit={$run['exit']} ({$run['sec']}s)\n");
+        itm_script_write_stdout( "FAIL exit={$run['exit']} ({$run['sec']}s)\n");
     }
     $results[] = $row;
 }
@@ -232,7 +234,7 @@ foreach (['verify_database_schema.php', 'count_db_tables.php'] as $extra) {
     if (!is_file($path)) {
         continue;
     }
-    fwrite(STDOUT, "RUN substitute {$extra} ... ");
+    itm_script_write_stdout( "RUN substitute {$extra} ... ");
     $run = itm_matrix_run('"' . $php . '" "' . $path . '"', 120, $root);
     $results[] = [
         'tier' => 1,
@@ -244,7 +246,7 @@ foreach (['verify_database_schema.php', 'count_db_tables.php'] as $extra) {
         'tail' => itm_matrix_tail($run['out']),
     ];
     file_put_contents($outLogDir . '/' . $extra . '.log', $run['out']);
-    fwrite(STDOUT, ($run['exit'] === 0 ? 'PASS' : 'FAIL') . "\n");
+    itm_script_write_stdout( ($run['exit'] === 0 ? 'PASS' : 'FAIL') . "\n");
 }
 
 $counts = ['PASS' => 0, 'FAIL' => 0, 'SKIP' => 0, 'EXCLUDED' => 0, 'COVERED' => 0];
@@ -263,5 +265,5 @@ $payload = [
     'results' => $results,
 ];
 file_put_contents($outJson, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
-fwrite(STDOUT, "\nDONE counts=" . json_encode($counts) . "\nWrote {$outJson}\n");
+itm_script_write_stdout( "\nDONE counts=" . json_encode($counts) . "\nWrote {$outJson}\n");
 exit(0);

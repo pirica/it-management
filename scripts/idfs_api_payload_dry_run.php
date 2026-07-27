@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Offline JSON payload validator for IDF Device API endpoints.
  * Why: Allows repeatable structure checks during development without requiring MySQL.
@@ -12,6 +12,8 @@
 
 declare(strict_types=1);
 
+
+require_once __DIR__ . '/lib/itm_script_stdio.php';
 /**
  * Browser catalog: How to use (shown on landing before run=1).
  */
@@ -34,7 +36,7 @@ $nl = itm_script_output_nl();
 function itm_dry_fail(string $message, int $code = 1): void
 {
     if (defined('STDERR')) {
-        fwrite(STDERR, "ERROR: {$message}" . PHP_EOL);
+        itm_script_write_stderr( "ERROR: {$message}" . PHP_EOL);
     } else {
         echo "ERROR: {$message}" . PHP_EOL;
     }

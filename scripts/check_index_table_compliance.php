@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Index table compliance audit for standard module list screens.
  *
@@ -26,6 +26,8 @@
 
 declare(strict_types=1);
 
+
+require_once __DIR__ . '/lib/itm_script_stdio.php';
 /**
  * Browser catalog: How to use (shown on landing before run=1).
  */
@@ -37,7 +39,7 @@ ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 $root = realpath(__DIR__ . '/..');
 if ($root === false) {
-    fwrite(STDERR, "Unable to resolve project root.\n");
+    itm_script_write_stderr( "Unable to resolve project root.\n");
     exit(2);
 }
 
@@ -349,7 +351,7 @@ function itc_check_module(string $module, string $content): array
 }
 
 if (!is_dir($modulesDir)) {
-    fwrite(STDERR, "Modules directory not found: {$modulesDir}\n");
+    itm_script_write_stderr( "Modules directory not found: {$modulesDir}\n");
     exit(2);
 }
 
@@ -386,7 +388,7 @@ if ($writeBaseline) {
     try {
         itc_write_baseline($baselinePath, array_keys($violationsByModule));
     } catch (RuntimeException $e) {
-        fwrite(STDERR, $e->getMessage() . "\n");
+        itm_script_write_stderr( $e->getMessage() . "\n");
         exit(2);
     }
     echo "Wrote baseline with " . count($violationsByModule) . " module(s) to {$baselinePath}\n";

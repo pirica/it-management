@@ -4,6 +4,7 @@
  * <pre> keeps line breaks and column alignment without per-script <br> hacks.
  */
 
+require_once __DIR__ . DIRECTORY_SEPARATOR . 'itm_script_stdio.php';
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'script_browser_nav.php';
 
 if (!function_exists('itm_script_cli_is_cli')) {

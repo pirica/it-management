@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * DB Field Active Audit Script
  *
@@ -53,7 +53,7 @@ $dbSqlPath = itm_database_sql_schema_path();
 if (!is_file($dbSqlPath)) {
     $message = 'Error: db/01_schema.sql not found at ' . $dbSqlPath;
     if ($itmIsCli) {
-        fwrite(STDERR, $message . PHP_EOL);
+        itm_script_write_stderr( $message . PHP_EOL);
     } else {
         echo '<p>' . sanitize($message) . '</p>';
         itm_script_output_end();

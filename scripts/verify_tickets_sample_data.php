@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * CLI: php scripts/verify_tickets_sample_data.php
  * Verifies tickets Add sample data on empty tenants (including zero local employees).
@@ -27,12 +27,12 @@ function vtsd_fail($message)
 {
     global $failures;
     $failures++;
-    fwrite(STDERR, "[FAIL] {$message}\n");
+    itm_script_write_stderr( "[FAIL] {$message}\n");
 }
 
 function vtsd_pass($message)
 {
-    fwrite(STDOUT, "[PASS] {$message}\n");
+    itm_script_write_stdout( "[PASS] {$message}\n");
 }
 
 if (!($conn instanceof mysqli)) {
@@ -114,4 +114,5 @@ if ($staleInserted !== 1) {
     vtsd_pass('Tickets sample seed succeeds when PHP session company_id is stale.');
 }
 
+itm_script_output_end();
 exit($failures === 0 ? 0 : 1);

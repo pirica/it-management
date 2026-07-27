@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Verifies Add sample data seeding for empty tenant tables.
  *
@@ -47,7 +47,7 @@ if (!function_exists('vcesd_fail')) {
     {
         global $nl;
         if (defined('STDERR') && is_resource(STDERR)) {
-            fwrite(STDERR, $message . $nl);
+            itm_script_write_stderr( $message . $nl);
         } else {
             echo (function_exists('colorText') ? colorText($message, 'fail') : $message) . $nl;
         }
