@@ -77,6 +77,7 @@ function fk_search_content_has_label_coverage($content)
         'itm_employees_build_search_conditions',
         'itm_equipment_build_search_where_sql',
         'itm_todo_build_search_clause',
+        'myactivity_build_search_conditions',
         'itm_ipam_fetch_address_list',
         'itm_ipam_count_address_list',
         'itm_ipam_address_list_where_clause',
