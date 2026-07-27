@@ -42,7 +42,7 @@ Registry row: **`modules_registry`** slug `news` (sidebar + company module acces
 - Main table columns adapt: NVD shows Severity + Score; RSS sources show Title only
 - Toolbar: **Source** website link (`site_link`), RSS link (`feed.php?source=`), manual refresh POST with CSRF
 - Actions column: `class="itm-actions-cell"` + `data-itm-actions-origin="1"`
-- **UI configuration coverage:** gate-excluded non-standard CRUD (`scripts/data/ui_configuration_excluded_modules.txt`, `docs/list_bespoke_UI.txt`); reviewed lines in `scripts/data/ui_configuration_reviewed.json` (`news`) — feed cache list, no scaffold search/pagination.
+- **UI configuration coverage:** gate-excluded non-standard CRUD (`scripts/data/ui_configuration_excluded_modules.txt`, `docs/list_bespoke_UI.txt`). Table Actions, Export, and Column sort pass without `[reviewed]`; intentional scaffold gaps (Search, Pagination, CRUD entry files, new button) stay `[reviewed]` in `scripts/data/ui_configuration_reviewed.json`.
 - Footer below the feed table: **More news** link opens the active source `site_link` in a new tab
 - Browser `<title>` uses canonical scaffold pattern (`$crud_title` includes sidebar icon + label; `$currentUiConfig` + `itm_render_head_favicon_link($favicon_url)`). `index.php` requires `config/config.php` before `news_feed_bootstrap.php` for page-chrome verify. Regression: `php scripts/verify_module_page_chrome.php`
 

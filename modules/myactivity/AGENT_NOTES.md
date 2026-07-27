@@ -32,7 +32,7 @@ Read-only **employee-scoped** audit timeline for the signed-in user. Surfaces th
 - Sidebar: **👤 Employee** section → **🕒 My Activity** (`includes/ui_config.php`)
 - Browser `<title>` uses canonical scaffold pattern (`$crud_title` includes sidebar icon + label; `$currentUiConfig` + `itm_render_head_favicon_link($favicon_url)`). Regression: `php scripts/verify_module_page_chrome.php`
 - Pagination: emoji-only ⏮️ ◀️ ▶️ ⏭️ when `records_per_page` exceeded; **sort** / **dir** on activity list (Date, Action, Module, Record ID).
-- **UI configuration coverage:** reviewed lines in `scripts/data/ui_configuration_reviewed.json` (`myactivity`) — read-only module; list supports sortable Date, Action, Module, and Record ID columns.
+- **UI configuration coverage:** passing list-contract checks (Table Actions, Export, Search, Sort, Pagination, `view.php`) are implemented in `index.php` / `view.php` without `[reviewed]` in `check_ui_configuration_coverage.php`. Intentional read-only gaps (`+ New Button`, bulk delete, CRUD entry files, Back & Save) remain in `scripts/data/ui_configuration_reviewed.json`.
 
 ## 6. API Actions (If Applicable)
 

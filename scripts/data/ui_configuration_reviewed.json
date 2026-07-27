@@ -491,11 +491,6 @@
       "reason": "Three-tab Email Management shell (Send Logs | SMTP Configurations | Alert Rules): send-log list/search/sort/pagination/bulk live in tabs/send_logs.php; SMTP profiles use inline forms and create.php/edit.php redirects to index.php?tab=smtp; send-log soft-delete via delete.php (private-data exempt).",
       "checks": [
         {
-          "check": "Delete entry (delete.php)",
-          "code": "ui_config_delete_entry",
-          "note": "Standalone delete.php soft-deletes send logs (bulk/clear_table); POST enforced via itm_require_post_csrf() — static audit also expects $_SERVER REQUEST_METHOD in file"
-        },
-        {
           "check": "Back & Save (create.php)",
           "code": "ui_config_back_save_create",
           "note": "create.php redirects to index.php?tab=smtp — SMTP profile form is inline on the SMTP tab, not a scaffold create.php screen"
@@ -903,11 +898,6 @@
       "reason": "Employee-scoped read-only audit timeline (index.php + view.php): filters and search on audit_logs; no create/edit/delete/list_all; list sorted by created_at DESC by design.",
       "checks": [
         {
-          "check": "Table Actions",
-          "code": "ui_config_table_actions",
-          "note": "View-only Actions column (🔎) — no CRUD mutations on audit rows"
-        },
-        {
           "check": "+ New Button",
           "code": "ui_config_new_button",
           "note": "Module has no create.php — audit rows are system-written only"
@@ -923,26 +913,6 @@
           "note": "Module has no create.php — list-header create button style not applicable"
         },
         {
-          "check": "Export Buttons",
-          "code": "ui_config_export_buttons",
-          "note": "Filter card opts out; activity list table uses table-tools export only"
-        },
-        {
-          "check": "Search",
-          "code": "ui_config_search",
-          "note": "GET search + SQL LIKE on employee-scoped audit_logs columns"
-        },
-        {
-          "check": "Column sort (ASC/DESC)",
-          "code": "ui_config_sort",
-          "note": "Allowlisted ORDER BY al.{sort} with ▲/▼ header links on activity list table"
-        },
-        {
-          "check": "Pagination (records per page)",
-          "code": "ui_config_pagination",
-          "note": "Emoji pagination when total rows exceed records_per_page"
-        },
-        {
           "check": "Bulk delete actions",
           "code": "ui_config_bulk_delete",
           "note": "Module has no delete.php — audit trail is immutable from this module"
@@ -956,11 +926,6 @@
           "check": "Edit entry (edit.php)",
           "code": "ui_config_edit_entry",
           "note": "Edit not used (no edit.php and no edit.php link in index.php)"
-        },
-        {
-          "check": "View entry (view.php)",
-          "code": "ui_config_view_entry",
-          "note": "view.php detail for single audit row"
         },
         {
           "check": "List-all entry (list_all.php)",
@@ -989,11 +954,6 @@
       "reason": "Non-standard feed reader (index.php only): cached RSS/NVD items, source sidebar, column sort — gate-excluded; no CRUD entry files or scaffold search/pagination.",
       "checks": [
         {
-          "check": "Table Actions",
-          "code": "ui_config_table_actions",
-          "note": "Open article 🔎 links — external URLs, not module view.php"
-        },
-        {
           "check": "+ New Button",
           "code": "ui_config_new_button",
           "note": "Module has no create.php — feeds are read-only"
@@ -1007,11 +967,6 @@
           "check": "New button style",
           "code": "ui_config_new_button_style",
           "note": "Module has no create.php — list-header create button style not applicable"
-        },
-        {
-          "check": "Export Buttons",
-          "code": "ui_config_export_buttons",
-          "note": "Feed table opts out via data-itm-no-export-* attributes"
         },
         {
           "check": "Search",
