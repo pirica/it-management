@@ -1,7 +1,9 @@
 <?php
 /**
+ * Notes vault encryption regression.
+ *
+ * Browser: open scripts/verify_notes_vault.php?run=1 (Administrator session).
  * CLI: php scripts/verify_notes_vault.php
- * Verifies private notes vault encryption (encrypt on write, decrypt on read, shared notes plaintext).
  */
 
 
@@ -14,30 +16,36 @@ function itm_script_browser_how_to_use(): string
 <code>php scripts/verify_notes_vault.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/notes/notes_vault_helpers.php</code>, persistence in <code>modules/notes/index.php</code>, or <code>itm_vault_reencrypt_notes()</code>.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
-define('ITM_CLI_SCRIPT', true);
+if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
+    define('ITM_CLI_SCRIPT', true);
+}
+
 require_once dirname(__DIR__) . '/config/config.php';
 require_once ROOT_PATH . 'modules/notes/notes_vault_helpers.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 itm_script_output_begin('Notes Vault Verification');
+$nl = itm_script_output_nl();
 
 $failures = 0;
 
 function notes_vault_fail($message)
 {
-    global $failures;
+    global $failures, $nl;
     $failures++;
-    fwrite(STDERR, "[FAIL] {$message}\n");
+    echo itm_script_format_status_line('[FAIL] ' . $message) . $nl;
 }
 
 function notes_vault_pass($message)
 {
-    fwrite(STDOUT, "[PASS] {$message}\n");
+    global $nl;
+    echo itm_script_format_status_line('[PASS] ' . $message) . $nl;
 }
 
 if (!($conn instanceof mysqli)) {
     notes_vault_fail('Database connection unavailable.');
+    itm_script_output_end();
     exit(1);
 }
 
@@ -45,6 +53,7 @@ $companyId = 1;
 $actor = itm_script_test_employee_create($conn, $companyId, ['script_slug' => 'verify-notes-vault']);
 if (!is_array($actor) || empty($actor['id'])) {
     notes_vault_fail('Could not create disposable test employee.');
+    itm_script_output_end();
     exit(1);
 }
 
@@ -55,6 +64,7 @@ $schemaRes = $conn->query("SHOW COLUMNS FROM notes LIKE 'title_hash'");
 if (!$schemaRes || $schemaRes->num_rows === 0) {
     notes_vault_fail('notes.title_hash column missing — re-import via bash scripts/import_database_split.sh, bash scripts/import_database_split.sh, or apply the notes vault schema migration.');
     itm_script_test_employee_delete($conn, $employeeId);
+    itm_script_output_end();
     exit(1);
 }
 $masterKey = 'NotesVaultTestKey-' . bin2hex(random_bytes(4));
@@ -98,6 +108,7 @@ $ins->bind_param(
 if (!$ins->execute()) {
     notes_vault_fail('Could not insert encrypted note row.');
     itm_script_test_employee_delete($conn, $employeeId);
+    itm_script_output_end();
     exit(1);
 }
 $noteId = (int)$conn->insert_id;
@@ -138,9 +149,11 @@ $conn->query('DELETE FROM notes WHERE id = ' . (int)$noteId);
 itm_script_test_employee_delete($conn, $employeeId);
 
 if ($failures > 0) {
-    fwrite(STDERR, "verify_notes_vault.php: {$failures} failure(s)\n");
+    echo $nl . colorText($failures . ' failure(s).', 'fail') . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
-fwrite(STDOUT, "verify_notes_vault.php: all checks passed\n");
+echo $nl . itm_script_format_status_line('[PASS] All notes vault checks passed.') . $nl;
+itm_script_output_end();
 exit(0);
