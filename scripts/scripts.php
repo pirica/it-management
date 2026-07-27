@@ -75,6 +75,9 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         .scripts-catalog tbody td:nth-child(5) { display: none; }
         .scripts-catalog td.scripts-cell-script,
         .scripts-catalog td:first-child { white-space: nowrap; vertical-align: top; }
+        .scripts-catalog-script-pick { display: inline-flex; align-items: flex-start; gap: 6px; max-width: 100%; cursor: pointer; }
+        .scripts-catalog-row-cb { margin: 2px 0 0; flex-shrink: 0; cursor: pointer; }
+        .scripts-catalog-script-name { min-width: 0; }
         .scripts-catalog td.scripts-tags-cell { color: var(--text-primary, #24292f); overflow: hidden; }
         .scripts-catalog td.scripts-access-cell { overflow: hidden; vertical-align: top; }
         .scripts-tag-badges { display: flex; flex-wrap: wrap; gap: 3px; }
@@ -120,8 +123,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         }
         .scripts-catalog-how-inline { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border, #d0d7de); font-size: 0.78rem; color: var(--text-secondary, #57606a); }
         .scripts-catalog-how-inline::before { content: "How: "; font-weight: 600; color: var(--text-primary, #24292f); }
-        .scripts-catalog td:first-child a { font-weight: 600; font-size: 0.82rem; color: #0969da; text-decoration: none; }
-        .scripts-catalog td:first-child a:hover { text-decoration: underline; }
+        .scripts-catalog td:first-child a,
+        .scripts-catalog-script-name a { font-weight: 600; font-size: 0.82rem; color: #0969da; text-decoration: none; }
+        .scripts-catalog td:first-child a:hover,
+        .scripts-catalog-script-name a:hover { text-decoration: underline; }
         .scripts-catalog code { font-size: 0.78rem; word-break: break-word; background: var(--bg-secondary, #f6f8fa); border: 1px solid var(--border, #d0d7de); border-radius: 3px; padding: 0 4px; }
         .scripts-access-badges { display: flex; flex-direction: column; align-items: flex-start; flex-wrap: nowrap; gap: 3px; }
         .scripts-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; line-height: 1.4; }
@@ -2924,10 +2929,36 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         cell.appendChild(wrap);
     }
 
+    function injectCatalogRowCheckbox(scriptCell) {
+        if (!scriptCell || scriptCell.querySelector('.scripts-catalog-row-cb')) {
+            return;
+        }
+        var link = scriptCell.querySelector('a');
+        if (!link) {
+            return;
+        }
+        var scriptName = (link.textContent || '').replace(/^\s+|\s+$/g, '');
+        var pickLabel = document.createElement('label');
+        pickLabel.className = 'scripts-catalog-script-pick';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'scripts-catalog-row-cb';
+        cb.setAttribute('aria-label', scriptName ? ('Select ' + scriptName) : 'Select script');
+        pickLabel.appendChild(cb);
+        var nameWrap = document.createElement('span');
+        nameWrap.className = 'scripts-catalog-script-name';
+        while (scriptCell.firstChild) {
+            nameWrap.appendChild(scriptCell.firstChild);
+        }
+        pickLabel.appendChild(nameWrap);
+        scriptCell.appendChild(pickLabel);
+    }
+
     rows.forEach(function (row) {
         var cells = row.querySelectorAll('td');
         if (cells.length >= 4) {
             cells[0].classList.add('scripts-cell-script');
+            injectCatalogRowCheckbox(cells[0]);
             cells[3].classList.add('scripts-cell-what');
             wrapCatalogCellClamp(cells[3], 'scripts-cell-what-inner');
             if (cells[4] && !cells[4].classList.contains('scripts-catalog-how-stub')) {
