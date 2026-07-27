@@ -151,6 +151,42 @@ if (!function_exists('myactivity_action_chip_class')) {
     }
 }
 
+if (!function_exists('myactivity_build_search_conditions')) {
+    /**
+     * Employee-scoped audit list search (scalar audit_logs columns + registry module labels).
+     *
+     * @return array{sql:string,types:string,params:array<int,string>}
+     */
+    function myactivity_build_search_conditions($searchRaw)
+    {
+        $searchRaw = trim((string)$searchRaw);
+        if ($searchRaw === '') {
+            return ['sql' => '', 'types' => '', 'params' => []];
+        }
+
+        $searchPattern = (strpos($searchRaw, '%') !== false || strpos($searchRaw, '_') !== false)
+            ? $searchRaw
+            : '%' . $searchRaw . '%';
+
+        $parts = [
+            'al.table_name LIKE ?',
+            'al.module_name LIKE ?',
+            'al.action LIKE ?',
+            'CAST(al.record_id AS CHAR) LIKE ?',
+            'al.old_values LIKE ?',
+            'al.new_values LIKE ?',
+            'CAST(al.created_at AS CHAR) LIKE ?',
+            'EXISTS (SELECT 1 FROM modules_registry mr WHERE mr.module_slug = al.table_name AND mr.module_name LIKE ?)',
+        ];
+
+        return [
+            'sql' => '(' . implode(' OR ', $parts) . ')',
+            'types' => str_repeat('s', count($parts)),
+            'params' => array_fill(0, count($parts), $searchPattern),
+        ];
+    }
+}
+
 if (!function_exists('myactivity_private_audit_exempt_labels')) {
     /**
      * User-facing modules/data with no audit trail (AGENTS.md → Private data — no audit trail;

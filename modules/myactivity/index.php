@@ -65,13 +65,13 @@ if ($dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo) === 1) {
 }
 
 if ($searchRaw !== '') {
-    $searchPattern = (strpos($searchRaw, '%') !== false || strpos($searchRaw, '_') !== false)
-        ? $searchRaw
-        : '%' . $searchRaw . '%';
-    $where[] = '(al.table_name LIKE ? OR al.module_name LIKE ? OR al.action LIKE ? OR CAST(al.record_id AS CHAR) LIKE ? OR al.old_values LIKE ? OR al.new_values LIKE ? OR CAST(al.created_at AS CHAR) LIKE ?)';
-    $types .= 'sssssss';
-    for ($i = 0; $i < 7; $i++) {
-        $params[] = $searchPattern;
+    $searchClause = myactivity_build_search_conditions($searchRaw);
+    if ($searchClause['sql'] !== '') {
+        $where[] = $searchClause['sql'];
+        $types .= $searchClause['types'];
+        foreach ($searchClause['params'] as $searchParam) {
+            $params[] = $searchParam;
+        }
     }
 }
 
