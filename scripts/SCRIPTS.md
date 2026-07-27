@@ -1163,7 +1163,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_qr_share_modules.php` — Passwords, Bookmarks, Todo, Events, Private Contacts, Explorer, Floor Plans, Rack Planner, and CRUD record share (`departments` via `includes/itm_crud_record_share.php`) temporary QR/code sessions (`share_sessions`, `join.php`, module `*_share_helpers.php`, shared `includes/itm_qr_share.php`). Inventory: `docs/CRUD_RECORD_SHARE.md`.
 - `php scripts/verify_module_share.php` — `company_module_share` opt-out matrix + `has_module_share_access()`; requires `share_sessions` table
 - `php scripts/verify_db_migrations.php` — each `db/migrations/*.sql` vs live schema/data (Applied / Superseded / Not applied)
-- `php scripts/verify_whatsapp_share.php` — WhatsApp deep-link message/url helpers (`includes/itm_whatsapp_share.php`, `js/itm-whatsapp-share.js`)
+- `php scripts/verify_whatsapp_share.php` — WhatsApp deep-link message/url helpers (`includes/itm_whatsapp_share.php`, `js/itm-whatsapp-share.js`); browser catalog uses `itm_script_output_nl()` / `itm_script_format_status_line()` (not `fwrite(STDOUT)`).
 - `php scripts/verify_outlook_share.php` — Outlook/mail compose helpers (`includes/itm_outlook_share.php`, `js/itm-outlook-share.js`)
 - `php scripts/verify_request_password.php` — `modules/request_password/` workflow + delete guard
 - `php scripts/verify_chatbot.php` — `js/chatbot.js`, `chat_api.php`, `knowledge_base` tenant scope
