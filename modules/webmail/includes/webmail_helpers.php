@@ -725,3 +725,313 @@ if (!function_exists('webmail_page_url')) {
         return 'index.php?' . http_build_query($query);
     }
 }
+
+if (!function_exists('webmail_signatures_table_exists')) {
+    function webmail_signatures_table_exists(mysqli $conn): bool
+    {
+        static $cache = null;
+        if ($cache !== null) {
+            return $cache;
+        }
+        $res = mysqli_query($conn, "SHOW TABLES LIKE 'webmail_signatures'");
+        $cache = $res instanceof mysqli_result && mysqli_num_rows($res) > 0;
+        if ($res instanceof mysqli_result) {
+            mysqli_free_result($res);
+        }
+
+        return $cache;
+    }
+}
+
+if (!function_exists('webmail_signatures_list')) {
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    function webmail_signatures_list(mysqli $conn, int $companyId, int $employeeId): array
+    {
+        if (!webmail_signatures_table_exists($conn) || $companyId <= 0 || $employeeId <= 0) {
+            return [];
+        }
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id, name, signature FROM webmail_signatures
+             WHERE company_id = ? AND employee_id = ?
+             ORDER BY name ASC, id ASC'
+        );
+        if (!$stmt) {
+            return [];
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $companyId, $employeeId);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $rows = [];
+        if ($result instanceof mysqli_result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $rows[] = $row;
+            }
+            mysqli_free_result($result);
+        }
+        mysqli_stmt_close($stmt);
+
+        return $rows;
+    }
+}
+
+if (!function_exists('webmail_signature_get')) {
+    /**
+     * @return array<string, mixed>|null
+     */
+    function webmail_signature_get(mysqli $conn, int $id, int $companyId, int $employeeId): ?array
+    {
+        if ($id <= 0 || !webmail_signatures_table_exists($conn)) {
+            return null;
+        }
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id, name, signature FROM webmail_signatures
+             WHERE id = ? AND company_id = ? AND employee_id = ? LIMIT 1'
+        );
+        if (!$stmt) {
+            return null;
+        }
+        mysqli_stmt_bind_param($stmt, 'iii', $id, $companyId, $employeeId);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $row = $result instanceof mysqli_result ? mysqli_fetch_assoc($result) : null;
+        if ($result instanceof mysqli_result) {
+            mysqli_free_result($result);
+        }
+        mysqli_stmt_close($stmt);
+
+        return is_array($row) ? $row : null;
+    }
+}
+
+if (!function_exists('webmail_signature_create')) {
+    function webmail_signature_create(
+        mysqli $conn,
+        int $companyId,
+        int $employeeId,
+        string $name,
+        string $signatureHtml
+    ): int {
+        if (!webmail_signatures_table_exists($conn) || $companyId <= 0 || $employeeId <= 0) {
+            return 0;
+        }
+        $name = trim($name);
+        $signatureHtml = webmail_render_details_html($signatureHtml);
+        if ($name === '' || $signatureHtml === '') {
+            return 0;
+        }
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO webmail_signatures (company_id, employee_id, name, signature, active, created_by, updated_by)
+             VALUES (?, ?, ?, ?, 1, ?, ?)'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'iissii', $companyId, $employeeId, $name, $signatureHtml, $employeeId, $employeeId);
+        $ok = mysqli_stmt_execute($stmt);
+        $newId = $ok ? (int)mysqli_insert_id($conn) : 0;
+        mysqli_stmt_close($stmt);
+
+        return $newId;
+    }
+}
+
+if (!function_exists('webmail_signature_update')) {
+    function webmail_signature_update(
+        mysqli $conn,
+        int $id,
+        int $companyId,
+        int $employeeId,
+        string $name,
+        string $signatureHtml
+    ): bool {
+        if ($id <= 0 || !webmail_signatures_table_exists($conn)) {
+            return false;
+        }
+        $name = trim($name);
+        $signatureHtml = webmail_render_details_html($signatureHtml);
+        if ($name === '' || $signatureHtml === '') {
+            return false;
+        }
+        $stmt = mysqli_prepare(
+            $conn,
+            'UPDATE webmail_signatures SET name = ?, signature = ?, updated_by = ?, updated_at = NOW()
+             WHERE id = ? AND company_id = ? AND employee_id = ?'
+        );
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 'ssiiii', $name, $signatureHtml, $employeeId, $id, $companyId, $employeeId);
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+
+        return (bool)$ok;
+    }
+}
+
+if (!function_exists('webmail_signature_delete')) {
+    function webmail_signature_delete(mysqli $conn, int $id, int $companyId, int $employeeId): bool
+    {
+        if ($id <= 0 || !webmail_signatures_table_exists($conn)) {
+            return false;
+        }
+        $stmt = mysqli_prepare(
+            $conn,
+            'DELETE FROM webmail_signatures WHERE id = ? AND company_id = ? AND employee_id = ?'
+        );
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 'iii', $id, $companyId, $employeeId);
+        $ok = mysqli_stmt_execute($stmt);
+        $affected = mysqli_stmt_affected_rows($stmt);
+        mysqli_stmt_close($stmt);
+
+        return $ok && $affected > 0;
+    }
+}
+
+if (!function_exists('webmail_compose_merge_body_and_signature')) {
+    function webmail_compose_merge_body_and_signature(string $bodyHtml, string $signatureHtml): string
+    {
+        $body = webmail_render_details_html($bodyHtml);
+        $sig = webmail_render_details_html($signatureHtml);
+        if ($body === '' && $sig === '') {
+            return '';
+        }
+        if ($body === '') {
+            return $sig;
+        }
+        if ($sig === '') {
+            return $body;
+        }
+
+        return $body . '<br><br>' . $sig;
+    }
+}
+
+if (!function_exists('webmail_signature_redirect_after_mutation')) {
+    function webmail_signature_redirect_after_mutation(string $returnTo): void
+    {
+        $returnTo = trim($returnTo);
+        if ($returnTo === 'compose') {
+            header('Location: compose.php');
+            exit;
+        }
+        header('Location: signatures.php');
+        exit;
+    }
+}
+
+if (!function_exists('webmail_render_tabs')) {
+    function webmail_render_tabs(string $activeTab): void
+    {
+        $folderLabels = [
+            'inbox' => 'Inbox',
+            'starred' => 'Starred',
+            'sent' => 'Sent',
+            'archived' => 'Archived',
+            'trash' => 'Trash',
+        ];
+        foreach (webmail_folders() as $tabFolder) {
+            $class = 'webmail-tab' . ($activeTab === $tabFolder ? ' active' : '');
+            echo '<a href="index.php?folder=' . sanitize($tabFolder) . '" class="' . $class . '">';
+            echo sanitize($folderLabels[$tabFolder] ?? $tabFolder);
+            echo '</a>';
+        }
+        $sigClass = 'webmail-tab' . ($activeTab === 'signatures' ? ' active' : '');
+        echo '<a href="signatures.php" class="' . $sigClass . '">Signatures</a>';
+        $composeClass = 'webmail-tab' . ($activeTab === 'compose' ? ' active' : '');
+        echo '<a href="compose.php" class="' . $composeClass . '">Compose</a>';
+    }
+}
+
+if (!function_exists('webmail_handle_signature_post')) {
+    /**
+     * Shared POST handlers for signatures.php (and compose when posting to signatures endpoint).
+     *
+     * @return array{handled: bool, errors: array<int, string>, notices: array<int, string>}
+     */
+    function webmail_handle_signature_post(mysqli $conn, int $companyId, int $employeeId): array
+    {
+        $errors = [];
+        $notices = [];
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            return ['handled' => false, 'errors' => $errors, 'notices' => $notices];
+        }
+        if (!webmail_signatures_table_exists($conn)) {
+            $errors[] = 'Signatures are not available (database table missing).';
+
+            return ['handled' => true, 'errors' => $errors, 'notices' => $notices];
+        }
+
+        $returnTo = trim((string)($_POST['return_to'] ?? ''));
+
+        if (isset($_POST['save_signature'])) {
+            itm_require_post_csrf();
+            $name = trim((string)($_POST['name'] ?? ''));
+            $signatureHtml = (string)($_POST['signature_html'] ?? '');
+            if ($name === '') {
+                $errors[] = 'Signature name is required.';
+            } elseif (webmail_render_details_html($signatureHtml) === '' && trim(strip_tags($signatureHtml)) === '') {
+                $errors[] = 'Signature body is required.';
+            } else {
+                $newId = webmail_signature_create($conn, $companyId, $employeeId, $name, $signatureHtml);
+                if ($newId <= 0) {
+                    $errors[] = 'Could not save signature.';
+                } else {
+                    $_SESSION['webmail_notice'] = 'Signature saved.';
+                    if ($returnTo === 'compose') {
+                        header('Location: compose.php?signature_id=' . $newId);
+                        exit;
+                    }
+                    webmail_signature_redirect_after_mutation($returnTo);
+                }
+            }
+
+            return ['handled' => true, 'errors' => $errors, 'notices' => $notices];
+        }
+
+        if (isset($_POST['update_signature'])) {
+            itm_require_post_csrf();
+            $signatureId = (int)($_POST['signature_id'] ?? 0);
+            $name = trim((string)($_POST['name'] ?? ''));
+            $signatureHtml = (string)($_POST['signature_html'] ?? '');
+            if ($signatureId <= 0) {
+                $errors[] = 'Invalid signature.';
+            } elseif ($name === '') {
+                $errors[] = 'Signature name is required.';
+            } elseif (webmail_render_details_html($signatureHtml) === '' && trim(strip_tags($signatureHtml)) === '') {
+                $errors[] = 'Signature body is required.';
+            } elseif (!webmail_signature_update($conn, $signatureId, $companyId, $employeeId, $name, $signatureHtml)) {
+                $errors[] = 'Could not update signature.';
+            } else {
+                $_SESSION['webmail_notice'] = 'Signature updated.';
+                webmail_signature_redirect_after_mutation($returnTo);
+            }
+
+            return ['handled' => true, 'errors' => $errors, 'notices' => $notices];
+        }
+
+        if (isset($_POST['delete_signature'])) {
+            itm_require_post_csrf();
+            $signatureId = (int)($_POST['signature_id'] ?? 0);
+            if ($signatureId <= 0) {
+                $errors[] = 'Invalid signature.';
+            } elseif (!webmail_signature_delete($conn, $signatureId, $companyId, $employeeId)) {
+                $errors[] = 'Could not delete signature.';
+            } else {
+                $_SESSION['webmail_notice'] = 'Signature deleted.';
+                webmail_signature_redirect_after_mutation($returnTo);
+            }
+
+            return ['handled' => true, 'errors' => $errors, 'notices' => $notices];
+        }
+
+        return ['handled' => false, 'errors' => $errors, 'notices' => $notices];
+    }
+}

@@ -66,6 +66,12 @@ if (!webmail_reads_table_exists($conn)) {
     webmail_verify_pass('webmail_email_reads table present.');
 }
 
+if (!webmail_signatures_table_exists($conn)) {
+    webmail_verify_fail('webmail_signatures table missing (import latest db/01_schema.sql).');
+} else {
+    webmail_verify_pass('webmail_signatures table present.');
+}
+
 $registryStmt = mysqli_prepare($conn, 'SELECT id FROM modules_registry WHERE module_slug = ? LIMIT 1');
 $slug = 'webmail';
 if ($registryStmt) {
@@ -275,6 +281,48 @@ if (!function_exists('webmail_folders') || !in_array('starred', webmail_folders(
     webmail_verify_fail('webmail_folders() must include starred.');
 } else {
     webmail_verify_pass('webmail_folders() includes starred.');
+}
+
+if (webmail_signatures_table_exists($conn)) {
+    $sigToken = 'webmail-sig-' . bin2hex(random_bytes(4));
+    $sigName = 'Verify ' . $sigToken;
+    $sigBody = '<p>Sig <strong>' . $sigToken . '</strong></p>';
+    $sigId = webmail_signature_create($conn, $companyId, $employeeId, $sigName, $sigBody);
+    if ($sigId <= 0) {
+        webmail_verify_fail('webmail_signature_create failed.');
+    } else {
+        webmail_verify_pass('webmail_signature_create id=' . $sigId . '.');
+        $loaded = webmail_signature_get($conn, $sigId, $companyId, $employeeId);
+        if ($loaded === null || (string)($loaded['name'] ?? '') !== $sigName) {
+            webmail_verify_fail('webmail_signature_get did not return created row.');
+        } else {
+            webmail_verify_pass('webmail_signature_get returns scoped row.');
+        }
+        $updatedName = $sigName . ' updated';
+        if (!webmail_signature_update($conn, $sigId, $companyId, $employeeId, $updatedName, '<p>updated</p>')) {
+            webmail_verify_fail('webmail_signature_update failed.');
+        } else {
+            $afterUpdate = webmail_signature_get($conn, $sigId, $companyId, $employeeId);
+            if ($afterUpdate === null || (string)($afterUpdate['name'] ?? '') !== $updatedName) {
+                webmail_verify_fail('webmail_signature_update did not persist.');
+            } else {
+                webmail_verify_pass('webmail_signature_update succeeded.');
+            }
+        }
+        $merged = webmail_compose_merge_body_and_signature('<p>Hello</p>', '<p>Footer</p>');
+        if (strpos($merged, 'Hello') === false || strpos($merged, 'Footer') === false) {
+            webmail_verify_fail('webmail_compose_merge_body_and_signature missing content.');
+        } else {
+            webmail_verify_pass('webmail_compose_merge_body_and_signature merges HTML.');
+        }
+        if (!webmail_signature_delete($conn, $sigId, $companyId, $employeeId)) {
+            webmail_verify_fail('webmail_signature_delete failed.');
+        } elseif (webmail_signature_get($conn, $sigId, $companyId, $employeeId) !== null) {
+            webmail_verify_fail('webmail_signature_delete left row behind.');
+        } else {
+            webmail_verify_pass('webmail_signature_delete hard-deletes row.');
+        }
+    }
 }
 
 if ($failures > 0) {

@@ -143,10 +143,7 @@ $renderViewPostFields = static function (bool $returnToView = true) use ($csrfTo
             </div>
 
             <div class="webmail-tabs">
-                <?php foreach (webmail_folders() as $tabFolder): ?>
-                    <a href="index.php?folder=<?php echo sanitize($tabFolder); ?>" class="webmail-tab <?php echo $folder === $tabFolder ? 'active' : ''; ?>"><?php echo sanitize($folderLabels[$tabFolder] ?? $tabFolder); ?></a>
-                <?php endforeach; ?>
-                <a href="compose.php" class="webmail-tab">Compose</a>
+                <?php webmail_render_tabs($folder); ?>
             </div>
 
             <div class="card webmail-read-pane">
