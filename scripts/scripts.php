@@ -2656,7 +2656,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="repro_cross_tenant_admin.php" target="_blank" rel="nofollow noreferrer">repro_cross_tenant_admin.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
-                    <td>Reproduction script for cross-tenant admin access in Employees module.</td>
+                    <td>PoC — company-2 Admin Employees list must not include a disposable company-1 username. Seeds via <code>itm_script_test_employee_create_session_actor()</code>; CLI subprocess HTML probe. Browser: <code>?run=1</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
