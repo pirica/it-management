@@ -4,7 +4,7 @@
  *
  * Construct a scenario where an import deletes existing employees.
  *
- * Browser + CLI. Default dry-run; --apply / ?apply=1 (Admin) seeds disposable rows,
+ * Browser + CLI. Default dry-run; --apply / ?run=1&apply=1 (Admin) seeds disposable rows,
  * runs import, asserts rows missing from payload survive, then tears down disposable rows.
  */
 
@@ -15,7 +15,7 @@
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-Browser: <a href="repro_destructive_import.php">dry-run</a>, <a href="repro_destructive_import.php?apply=1">apply</a>. CLI: <code>php scripts/repro_destructive_import.php</code>, <code>php scripts/repro_destructive_import.php --apply</code>
+Browser dry-run: <a href="repro_destructive_import.php?run=1">run=1</a>. Apply (Admin): <a href="repro_destructive_import.php?run=1&amp;apply=1">run=1&amp;apply=1</a> (legacy <code>?apply=1</code> also runs after the usage gate). CLI: <code>php scripts/repro_destructive_import.php</code>, <code>php scripts/repro_destructive_import.php --apply</code>
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 $itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
@@ -31,7 +31,12 @@ require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
-itm_script_output_begin('Repro: Destructive Employee Import');
+// Why: Catalog documents ?apply=1; browser scripts require run=1 before executing (usage landing).
+if (!$itmIsCli && isset($_GET['apply']) && (string)$_GET['apply'] === '1') {
+    $_GET['run'] = '1';
+}
+
+itm_script_output_begin('Repro: Destructive Employee Import', ['supports_apply' => true]);
 
 $nl = itm_script_output_nl();
 $root = dirname(__DIR__) . '/';
@@ -132,7 +137,7 @@ if (!$apply) {
     if ($itmIsCli) {
         echo 'Re-run with --apply to execute: php scripts/repro_destructive_import.php --apply' . $nl;
     } else {
-        echo 'Open with ?apply=1 to execute (Admin): repro_destructive_import.php?apply=1' . $nl;
+        echo 'Open with ?run=1 (dry-run) or ?run=1&apply=1 (Admin apply): repro_destructive_import.php?run=1' . $nl;
     }
     if ($stmtCount) {
         mysqli_stmt_close($stmtCount);
