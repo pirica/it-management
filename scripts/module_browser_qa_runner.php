@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * HTTP session runner for full-module QA (mirrors browser checklist).
  *

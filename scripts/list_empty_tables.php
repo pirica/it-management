@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Lists tenant-scoped tables with zero rows for the active session company.
  *

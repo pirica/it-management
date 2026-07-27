@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Harness for Notes module edit POST.
  *

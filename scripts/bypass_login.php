@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * CLI Bypass Login Utility
  *

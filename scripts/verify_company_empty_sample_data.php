@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Verifies Add sample data seeding for empty tenant tables.
  *

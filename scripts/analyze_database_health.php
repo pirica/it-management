@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Run ANALYZE TABLE on every base table in the active schema.
  *

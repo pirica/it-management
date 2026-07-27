@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * All-module schema/UI audit: db/ columns vs live MySQL vs module screens.
  *

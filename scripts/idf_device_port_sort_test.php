@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /**
  * Regression test: IDF device port list always sorts copper (RJ45) before fiber (SFP).

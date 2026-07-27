@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Audits module UI structure against UI Configuration capabilities.
  *

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Shared build-report logic for module_browser_qa_build_report.php.
  *

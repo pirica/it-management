@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * CRUD Title Mapper
  *

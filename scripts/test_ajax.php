@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Harness for Notes module AJAX quick_add.
  *

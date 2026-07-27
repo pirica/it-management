@@ -1421,6 +1421,13 @@
         ],
         "override": false
     },
+    "check_script_php_utf8_no_bom.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
     "verify_scripts_catalog_filter.php": {
         "tags": [
             "catalogs",

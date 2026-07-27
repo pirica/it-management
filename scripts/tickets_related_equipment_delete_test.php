@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Regression: ticket sample data links Primary File Server; equipment delete is blocked.
  *

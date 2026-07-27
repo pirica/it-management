@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /**
  * Browser catalog: How to use (shown on landing before run=1).

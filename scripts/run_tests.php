@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Test Runner Script
  *

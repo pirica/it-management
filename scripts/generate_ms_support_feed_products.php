@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Generate includes/itm_news_feed_ms_support_products.php from feed picker HTML.
  */

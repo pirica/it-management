@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * CLI: php scripts/verify_tickets_sample_data.php
  * Verifies tickets Add sample data on empty tenants (including zero local employees).

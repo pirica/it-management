@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Why: db/ defines employees columns (e.g. termination_date) that may be absent
  * from the live schema or from employees module screens. Surfaces both gaps in one run.

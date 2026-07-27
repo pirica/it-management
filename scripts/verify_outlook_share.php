@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * CLI: php scripts/verify_outlook_share.php
  * Verifies Outlook/mail compose helpers for temporary share sessions.

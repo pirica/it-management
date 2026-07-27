@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Set created_at on every row in every table that has a created_at column.
  *

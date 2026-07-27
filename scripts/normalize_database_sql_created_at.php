@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Normalize seed created_at timestamps In db/01_schema.sql (INSERT data only).
  *
