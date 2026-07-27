@@ -179,6 +179,18 @@ if (!function_exists('itm_ui_events_in_memory_list_search_detected')) {
     }
 }
 
+if (!function_exists('itm_ui_myactivity_list_search_detected')) {
+    /**
+     * My Activity builds SQL LIKE clauses in myactivity_build_search_conditions() (includes/itm_myactivity.php).
+     */
+    function itm_ui_myactivity_list_search_detected(string $content): bool
+    {
+        return stripos($content, 'myactivity_build_search_conditions(') !== false
+            && stripos($content, '$searchRaw') !== false
+            && preg_match('#[\'"]search[\'"]\s*=>#', $content) === 1;
+    }
+}
+
 if (!function_exists('itm_ui_bookmarks_in_memory_list_sort_detected')) {
     /**
      * Bookmarks sort in PHP via bkm_query_bookmarks_for_list() — no SQL ORDER BY in index.php.
@@ -311,6 +323,7 @@ if (!function_exists('itm_check_search')) {
             || itm_ui_notes_in_memory_list_search_detected($listContent)
             || itm_ui_todo_list_search_detected($listContent)
             || itm_ui_events_in_memory_list_search_detected($listContent)
+            || itm_ui_myactivity_list_search_detected($listContent)
             || itm_ui_ipam_address_list_search_detected($listContent)
             || (stripos($listContent, 'LIKE') !== false && preg_match('#search(Raw|Pattern|Value|Esc|Like)|\$search\s*!==\s*[\'"][\s]*[\'"]#i', $listContent) === 1);
         $hasSearchReset = itm_ui_search_reset_control_detected($listContent);
@@ -331,6 +344,9 @@ if (!function_exists('itm_check_search')) {
             }
             if (itm_ui_ipam_address_list_search_detected($listContent)) {
                 $details = 'Search via itm_ipam_count_address_list() / itm_ipam_address_list_where_clause() and emoji-only 🔙 reset in ' . $sourceLabel;
+            }
+            if (itm_ui_myactivity_list_search_detected($listContent)) {
+                $details = 'Search via myactivity_build_search_conditions() and emoji-only 🔙 reset in ' . $sourceLabel;
             }
 
             return ['status' => 'pass', 'details' => $details];
