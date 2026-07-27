@@ -2704,11 +2704,9 @@
     },
     "patch_crud_share_agent_notes.php": {
         "tags": [
-            "notes"
+            "Codebase"
         ],
-        "tables": [
-            "notes"
-        ],
+        "tables": [],
         "override": false
     },
     "verify_qr_share_modules.php": {
