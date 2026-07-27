@@ -22,6 +22,12 @@ $moduleFilter = trim((string)($_GET['module'] ?? ''));
 $actionFilter = strtoupper(trim((string)($_GET['action_filter'] ?? '')));
 $dateFrom = trim((string)($_GET['date_from'] ?? ''));
 $dateTo = trim((string)($_GET['date_to'] ?? ''));
+$searchRaw = trim((string)($_GET['search'] ?? ''));
+$sort = trim((string)($_GET['sort'] ?? 'created_at'));
+$dir = (string)($_GET['dir'] ?? 'DESC');
+$sortResolved = myactivity_resolve_list_sort($sort, $dir);
+$sort = $sortResolved['sort'];
+$dir = $sortResolved['dir'];
 $allowedActions = myactivity_allowed_actions();
 if (!in_array($actionFilter, $allowedActions, true)) {
     $actionFilter = '';
@@ -58,11 +64,25 @@ if ($dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo) === 1) {
     $types .= 's';
 }
 
+if ($searchRaw !== '') {
+    $searchClause = myactivity_build_search_conditions($searchRaw);
+    if ($searchClause['sql'] !== '') {
+        $where[] = $searchClause['sql'];
+        $types .= $searchClause['types'];
+        foreach ($searchClause['params'] as $searchParam) {
+            $params[] = $searchParam;
+        }
+    }
+}
+
 $listQueryBase = [
     'module' => $moduleFilter,
     'action_filter' => $actionFilter,
     'date_from' => $dateFrom,
     'date_to' => $dateTo,
+    'search' => $searchRaw,
+    'sort' => $sort,
+    'dir' => $dir,
 ];
 
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
@@ -90,7 +110,7 @@ if ($page > $totalPages) {
 
 $listSql = 'SELECT al.id, al.table_name, al.module_name, al.record_id, al.action, al.old_values, al.new_values, al.created_at '
     . 'FROM audit_logs al WHERE ' . implode(' AND ', $where)
-    . ' ORDER BY al.created_at DESC LIMIT ? OFFSET ?';
+    . ' ORDER BY al.' . $sort . ' ' . $dir . ', al.id DESC LIMIT ? OFFSET ?';
 $listStmt = mysqli_prepare($conn, $listSql);
 $rows = [];
 if ($listStmt) {
@@ -132,6 +152,16 @@ $crud_title = $pageHeading;
 $currentUiConfig = $ui_config ?? [];
     require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
         $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0), basename(dirname($_SERVER['PHP_SELF'])), (string)($crud_title ?? ''));
+
+$myactivitySortTh = static function (string $field, string $label) use ($sort, $dir, $listQueryBase): void {
+    $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC';
+    $url = '?' . myactivity_build_query(array_merge($listQueryBase, ['sort' => $field, 'dir' => $nextDir, 'page' => 1]));
+    echo '<th><a href="' . sanitize($url) . '" style="text-decoration:none;color:inherit;">' . sanitize($label);
+    if ($sort === $field) {
+        echo ' ' . ($dir === 'ASC' ? '▲' : '▼');
+    }
+    echo '</a></th>';
+};
     ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -142,7 +172,7 @@ $currentUiConfig = $ui_config ?? [];
     <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
-        .myactivity-filters form { display:grid; grid-template-columns:1.5fr 1fr 1fr 1fr auto auto; gap:10px; align-items:end; }
+        .myactivity-filters form { display:grid; grid-template-columns:2fr 1.5fr 1fr 1fr 1fr auto auto; gap:10px; align-items:end; }
         .myactivity-timeline { list-style:none; padding:0; margin:0; font-size:13px; }
         .myactivity-timeline-item { padding-bottom:14px; border-left:2px solid var(--border); padding-left:15px; position:relative; color:var(--text-primary); }
         .myactivity-timeline-item::after { content:''; position:absolute; left:-6px; top:4px; width:10px; height:10px; border-radius:50%; background:var(--accent); }
@@ -182,7 +212,11 @@ $currentUiConfig = $ui_config ?? [];
             </p>
 
             <div class="card myactivity-filters" style="margin-bottom:16px;" data-itm-no-export-pdf="1" data-itm-no-export-excel="1" data-itm-no-import-excel="1">
-                <form method="GET">
+                <form method="GET" class="table-search-inline">
+                    <div class="form-group" style="margin:0;">
+                        <label for="search">Search</label>
+                        <input type="search" name="search" id="search" class="form-control" value="<?php echo sanitize($searchRaw); ?>" placeholder="Search...">
+                    </div>
                     <div class="form-group" style="margin:0;">
                         <label for="module">Module</label>
                         <select name="module" id="module" class="form-control">
@@ -256,10 +290,10 @@ $currentUiConfig = $ui_config ?? [];
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Date &amp; Time</th>
-                            <th>Action</th>
-                            <th>Module</th>
-                            <th>Record ID</th>
+                            <?php $myactivitySortTh('created_at', 'Date & Time'); ?>
+                            <?php $myactivitySortTh('action', 'Action'); ?>
+                            <?php $myactivitySortTh('table_name', 'Module'); ?>
+                            <?php $myactivitySortTh('record_id', 'Record ID'); ?>
                             <th>Summary</th>
                             <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>

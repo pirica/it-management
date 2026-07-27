@@ -38,6 +38,7 @@ is_server
 is_switch
 is_workstation
 notes
+news
 ops_report
 org_chart
 passwords
@@ -57,3 +58,4 @@ system_status
 todo
 visitors_access_log
 vlans
+webmail

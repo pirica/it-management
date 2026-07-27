@@ -44,6 +44,20 @@ The modules below use **custom entry points** instead (or in addition). They are
 | **Budgeting** | Annual/Monthly Budgets, Forecasts, Expenses (CRUD modules) |
 | **Budget report** | Period comparison report (read-only) — [entry points](#budget-report) |
 | **Audit Logs** | Change audit trail |
+| **Roles & Permissions** | Manage custom roles, hierarchies, and active counts via a 6-column RBAC matrix |
+| **Email Management** | Configure company SMTP, inspect send logs, and manage automated alert rules |
+| **Private Contacts** | User-private address book with UK localization, favorites, and secure share sessions |
+| **Passwords** | Encrypted private password manager with folder organization and import/export tools |
+| **Request Password** | Handle password reset workflow requiring applicant, HR, HOD, and ISM approvals |
+| **Visitors Access Log** | Log manual visitor entries with immutable history rules |
+| **Backup Tape Log** | Monthly server backup tracking with weekend highlighting |
+| **Ops Report** | Daily hotel operations figures, walk-rounds, and guest feedback sections |
+| **Calendar** | Aggregated planner showing events, alerts, ticket deadlines, and equipment expirations |
+| **Alerts** | Manage global/private notifications; supports ICS calendar file imports |
+| **Chatbot / Live Chat** | Floating tech assistance powered by a multi-tenant Knowledge Base |
+| **License Management** | Manage software license keys, types, suppliers, quantities, and expirations |
+| **Company Module Access** | Matrix enabling admins to turn specific modules on/off per company |
+| **Bills & Invoices** | Financial accounts payable/receivable with manual posting to expenses |
 
 ## Equipment
 
@@ -169,3 +183,55 @@ Configure IT department contact information, hours of operation, and escalation 
 ## Audit Logs
 
 Traceable INSERT/UPDATE/DELETE history when audit logging is enabled in Settings.
+
+## Roles & Permissions
+
+Manage tenant role configurations and dynamic RBAC matrices. Administrators can create, edit, and reorder roles, while configuring granular view/add/edit/delete/import/export permissions. The Admin role operates on a system-wide wildcard.
+
+## Email Management
+
+Configure SMTP profiles, track complete outbound/inbound delivery logs, and establish automated notification rules for expiration events (e.g. warranties or software licenses). Logs are private-data exempt from standard audit trail triggers.
+
+## Private Contacts
+
+A secure, user-scoped contact directory with UK-focused localization. Private fields are vault-encrypted. Supports QR-based temporary secure share links.
+
+## Passwords
+
+A secure credentials manager. Password entries and folder structures are scoped strictly to the owning employee and encrypted at rest using the master vault key.
+
+## Request Password
+
+A multi-stage password reset request workflow requiring Applicant, HR, HOD, and ISM approvals. Integrates signature blocks and alert notifications.
+
+## Visitors Access Log
+
+Tracks manual visitor logging entries with strict historical immutability rules. Records created prior to the current day are locked to preserve audit integrity.
+
+## Backup Tape Log
+
+A monthly grid system to track physical server backup tape usage. Derives days of the week, highlights Sundays, and restricts critical action cells to administrators.
+
+## Ops Report
+
+A daily hotel operations report that aggregates figures, walk-rounds, food & beverage outlets, and guest feedback. Restricts editing on legacy reports (D-2) to administrators.
+
+## Calendar, Alerts & Events
+
+An integrated planning system. The calendar module aggregates data from alerts, events, ticket due dates, and equipment expirations. Supports importing third-party calendar feeds via ICS files.
+
+## Chatbot & Knowledge Base
+
+A floating IT support chatbot widget powered by tenant-scoped knowledge base articles. Standardizes input escaping and CSRF validation, and escalates to IT contacts on keyword triggers.
+
+## License Management
+
+Track software licenses with dedicated fields for license keys, types, suppliers, quantities, prices, and purchase/expiry dates.
+
+## Company Module Access
+
+An administrator matrix allowing modules to be enabled or disabled per company tenant, controlling sidebar and dashboard visibility.
+
+## Bills & Invoices
+
+Accounts payable and accounts receivable workflow modules supporting line items, tax rates, payment allocations, and manual posting to budget expenses.
