@@ -988,11 +988,18 @@ if (!function_exists('webmail_compose_merge_body_and_signature')) {
 }
 
 if (!function_exists('webmail_signature_redirect_after_mutation')) {
-    function webmail_signature_redirect_after_mutation(string $returnTo): void
+    /**
+     * @param int $signatureId When return_to is compose, pre-select this signature in the dropdown (0 = none).
+     */
+    function webmail_signature_redirect_after_mutation(string $returnTo, int $signatureId = 0): void
     {
         $returnTo = trim($returnTo);
         if ($returnTo === 'compose') {
-            header('Location: compose.php');
+            if ($signatureId > 0) {
+                header('Location: compose.php?signature_id=' . $signatureId);
+            } else {
+                header('Location: compose.php');
+            }
             exit;
         }
         header('Location: signatures.php');
@@ -1084,7 +1091,7 @@ if (!function_exists('webmail_handle_signature_post')) {
                 $errors[] = 'Could not update signature.';
             } else {
                 $_SESSION['webmail_notice'] = 'Signature updated.';
-                webmail_signature_redirect_after_mutation($returnTo);
+                webmail_signature_redirect_after_mutation($returnTo, $signatureId);
             }
 
             return ['handled' => true, 'errors' => $errors, 'notices' => $notices];
