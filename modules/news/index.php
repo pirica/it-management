@@ -51,6 +51,13 @@ $cacheAgeSeconds = news_cache_age_seconds($sourceId);
 $showCvss = !empty($activeSource['show_cvss']);
 $titleColumn = (string)($activeSource['title_column'] ?? 'Title');
 
+$sort = trim((string)($_GET['sort'] ?? 'published'));
+$dir = (string)($_GET['dir'] ?? 'DESC');
+$sortResolved = news_resolve_list_sort($sort, $dir, $showCvss);
+$sort = $sortResolved['sort'];
+$dir = $sortResolved['dir'];
+$feedItems = news_sort_feed_items_for_ui($feedItems, $sort, $dir);
+
 $cacheAgeLabel = 'Not available';
 if ($cacheAgeSeconds !== null) {
     if ($cacheAgeSeconds < 3600) {
@@ -71,6 +78,16 @@ $feedUrl = news_feed_self_url($sourceId);
 $activeEmoji = (string)($activeSource['emoji'] ?? '📰');
     require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
         $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0), basename(dirname($_SERVER['PHP_SELF'])), (string)($crud_title ?? ''));
+
+$newsSortTh = static function (string $field, string $label) use ($sort, $dir, $sourceId): void {
+    $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC';
+    $url = '?' . http_build_query(['source' => $sourceId, 'sort' => $field, 'dir' => $nextDir]);
+    echo '<th><a href="' . sanitize($url) . '" style="text-decoration:none;color:inherit;">' . sanitize($label);
+    if ($sort === $field) {
+        echo ' ' . ($dir === 'ASC' ? '▲' : '▼');
+    }
+    echo '</a></th>';
+};
     ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -168,13 +185,13 @@ $activeEmoji = (string)($activeSource['emoji'] ?? '📰');
                         <table class="table" data-itm-no-import-excel="1" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
                             <thead>
                                 <tr>
-                                    <th><?php echo sanitize($titleColumn); ?></th>
+                                    <?php $newsSortTh('title', $titleColumn); ?>
                                     <?php if ($showCvss): ?>
-                                        <th>Severity</th>
-                                        <th>Score</th>
+                                        <?php $newsSortTh('severity', 'Severity'); ?>
+                                        <?php $newsSortTh('base_score', 'Score'); ?>
                                     <?php endif; ?>
-                                    <th>Published</th>
-                                    <th>Description</th>
+                                    <?php $newsSortTh('published', 'Published'); ?>
+                                    <?php $newsSortTh('description', 'Description'); ?>
                                     <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                                 </tr>
                             </thead>
@@ -229,7 +246,6 @@ $activeEmoji = (string)($activeSource['emoji'] ?? '📰');
                 </div>
             </div>
         </div>
-        <?php include '../../includes/footer.php'; ?>
     </div>
 </div>
 </body>

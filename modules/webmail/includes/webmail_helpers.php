@@ -550,6 +550,39 @@ if (!function_exists('webmail_fetch_list')) {
     }
 }
 
+if (!function_exists('webmail_fetch_all_list_ids')) {
+    /**
+     * All message ids in the current folder + filters (for Clear Table).
+     *
+     * @return list<int>
+     */
+    function webmail_fetch_all_list_ids(
+        mysqli $conn,
+        string $folder,
+        int $companyId,
+        int $employeeId,
+        string $sessionEmail,
+        array $filters
+    ): array {
+        $built = webmail_build_list_query($folder, $companyId, $employeeId, $sessionEmail, $filters);
+        $sql = 'SELECT id FROM emails WHERE ' . $built['where_sql'] . ' ORDER BY id DESC';
+        $ids = [];
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return $ids;
+        }
+        mysqli_stmt_bind_param($stmt, $built['types'], ...$built['params']);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $ids[] = (int)$row['id'];
+        }
+        mysqli_stmt_close($stmt);
+
+        return $ids;
+    }
+}
+
 if (!function_exists('webmail_render_details_html')) {
     function webmail_render_details_html(?string $html): string
     {

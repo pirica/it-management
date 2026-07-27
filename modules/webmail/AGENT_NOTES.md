@@ -34,6 +34,8 @@ Session-scoped mailbox UI on the shared **`emails`** send log table. Users see m
 
 - Folders: Inbox, **Starred**, Sent, Archived, Trash; Compose on separate page.
 - Lists: **From**, **To**, and **CC** on every folder tab; **sortable** column headers (▲/▼) on all data columns; **From / To / CC / Subject** link to **view.php** with plain (undecorated) styling; pagination (emoji controls), filters (status, starred/archived on inbox, date range, search).
+- **List header ➕:** `href="create.php"` (redirects to **compose.php**) with canonical `title="Create"`; gated by Settings `new_button_position` (`itm_resolve_new_button_position`) in left/right slots.
+- **Bulk delete:** when row count ≥ `records_per_page`, standard `bulk-delete-form` (Select to Delete / Clear Table); non-Trash folders soft-delete to Trash, Trash permanently deletes; scoped to current folder + filters via `delete.php` `bulk_action`.
 - **Compose body:** Quill Snow editor (bold/italic/underline/strike, headers, lists, link, clear); HTML synced to `body_html` on submit and sanitized server-side with `webmail_render_details_html()`.
 - Star / archive / delete actions via POST `delete.php` with CSRF. **Inbox, Starred, Sent, and Archived** use **soft delete** (move to Trash, no browser confirm). **Trash** alone uses **hard delete** with confirm.
 - **Read / unread:** list **Read** column; bold row when unread; toggle in Actions; view auto-marks read.
@@ -50,6 +52,7 @@ Session-scoped mailbox UI on the shared **`emails`** send log table. Users see m
 - `compose.php`, `view.php`, `delete.php`.
 - `includes/webmail_helpers.php` — scopes and mutations.
 - Wrappers: `create.php` → compose; `edit.php` / `list_all.php` → index.
+- **UI configuration coverage:** gate-excluded non-standard CRUD (`scripts/data/ui_configuration_excluded_modules.txt`, `docs/list_bespoke_UI.txt`) — checks print `[n/a][pass|fail|n/a]`; **Back & Save** on create/edit stubs reviewed in `scripts/data/ui_configuration_reviewed.json`.
 
 ## 8. Multi-Tenant Rules
 

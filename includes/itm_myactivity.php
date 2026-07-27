@@ -18,6 +18,23 @@ if (!function_exists('myactivity_build_query')) {
     }
 }
 
+if (!function_exists('myactivity_resolve_list_sort')) {
+    /**
+     * @return array{sort:string,dir:string}
+     */
+    function myactivity_resolve_list_sort(string $sort, string $dir): array
+    {
+        $sortable = ['created_at', 'action', 'table_name', 'record_id'];
+        $sort = trim($sort);
+        if (!in_array($sort, $sortable, true)) {
+            $sort = 'created_at';
+        }
+        $dir = strtoupper(trim($dir)) === 'ASC' ? 'ASC' : 'DESC';
+
+        return ['sort' => $sort, 'dir' => $dir];
+    }
+}
+
 if (!function_exists('myactivity_allowed_actions')) {
     /**
      * @return string[]

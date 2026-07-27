@@ -21,7 +21,7 @@ Read-only **employee-scoped** audit timeline for the signed-in user. Surfaces th
 - **Read-only:** no create, edit, delete, or import. No `audit_logs` mutations.
 - **Settings gate:** when `ui_configuration.enable_audit_logs = 0`, both `index.php` and `view.php` return HTTP 403 (same as Audit Logs).
 - **RBAC exempt:** slug `myactivity` in `itm_crud_rbac_exempt_module_slugs()` — any signed-in tenant user with module access may open their own activity.
-- **Filters:** module (`table_name`), action (`INSERT` / `UPDATE` / `DELETE`), date from, date to.
+- **Filters:** module (`table_name`), action (`INSERT` / `UPDATE` / `DELETE`), date from, date to, and **Search** (`?search=`) across module name, action, record id, payload JSON, and timestamp (SQL `LIKE`, tenant + employee scoped).
 - **Exports:** PDF and Excel via shared `table-tools.js` on the activity list table only (`data-itm-no-import-excel`); filter card opts out of export.
 - **Module links:** `table_name` links resolve through `myactivity_resolve_module_href()` (sidebar catalog → `modules/{slug}/`), matching user-config Recent Activity behaviour.
 
@@ -31,7 +31,8 @@ Read-only **employee-scoped** audit timeline for the signed-in user. Surfaces th
 - **view.php** — full event detail (action, module, record id, IP, user agent, old/new JSON payloads)
 - Sidebar: **👤 Employee** section → **🕒 My Activity** (`includes/ui_config.php`)
 - Browser `<title>` uses canonical scaffold pattern (`$crud_title` includes sidebar icon + label; `$currentUiConfig` + `itm_render_head_favicon_link($favicon_url)`). Regression: `php scripts/verify_module_page_chrome.php`
-- Pagination: emoji-only ⏮️ ◀️ ▶️ ⏭️ when `records_per_page` exceeded
+- Pagination: emoji-only ⏮️ ◀️ ▶️ ⏭️ when `records_per_page` exceeded; **sort** / **dir** on activity list (Date, Action, Module, Record ID).
+- **UI configuration coverage:** reviewed lines in `scripts/data/ui_configuration_reviewed.json` (`myactivity`) — read-only module; list supports sortable Date, Action, Module, and Record ID columns.
 
 ## 6. API Actions (If Applicable)
 
