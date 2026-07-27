@@ -283,6 +283,19 @@ if (!function_exists('webmail_folders') || !in_array('starred', webmail_folders(
     webmail_verify_pass('webmail_folders() includes starred.');
 }
 
+if (!webmail_address_field_contains($peerEmail . ', ' . $sessionEmail, $sessionEmail)) {
+    webmail_verify_fail('webmail_address_field_contains must match comma-separated To lists.');
+} else {
+    webmail_verify_pass('Comma-separated To recipient matching works.');
+}
+
+$multiToList = webmail_normalize_email_list_field($peerEmail . ';' . $sessionEmail);
+if (strpos($multiToList, ',') === false) {
+    webmail_verify_fail('webmail_normalize_email_list_field should join multiple To addresses.');
+} else {
+    webmail_verify_pass('webmail_normalize_email_list_field normalizes To lists.');
+}
+
 if (webmail_signatures_table_exists($conn)) {
     $sigToken = 'webmail-sig-' . bin2hex(random_bytes(4));
     $sigName = 'Verify ' . $sigToken;

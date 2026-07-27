@@ -20,14 +20,14 @@ Session-scoped mailbox UI on the shared **`emails`** send log table. Users see m
 ## 4. Business Rules (Critical for Agents)
 
 - **Session email:** `$_SESSION['email']` from login / company switch (`work_email`, else `personal_email`). Empty email blocks the mailbox (profile required).
-- **Inbox:** `is_deleted = 0`, `is_archived = 0`, `to_email` matches session OR session appears in `cc_email` (comma/semicolon lists).
+- **Inbox:** `is_deleted = 0`, `is_archived = 0`, session appears in **To** or **CC** (comma/semicolon lists).
 - **Starred:** `is_deleted = 0`, `is_star = 1`, recipient OR sender scope; **includes** archived starred rows.
 - **Sent:** `is_deleted = 0`, `is_archived = 0`, `from_email` matches session.
 - **Archived:** `is_deleted = 0`, `is_archived = 1`, recipient OR sender scope.
 - **Trash:** `is_deleted = 1` and `deleted_by =` session `employee_id` (personal trash only).
 - **Soft delete:** `is_deleted = 1`, `deleted_by`, `deleted_at`, `active = 0`.
 - **Hard delete:** `DELETE` only from **Trash** (own rows); confirm in UI.
-- **Compose:** `from_email` forced from session; To/CC user-entered; body HTML in `details` via **Quill** WYSIWYG (`js/webmail-compose.js`, Quill 1.3.7 from jsDelivr on `compose.php`); send via `itm_send_email()` with `log_from_email`, `log_details`, `log_created_by`. Optional **signature** selected on compose: server merges body + signature HTML via `webmail_compose_merge_body_and_signature()` (both parts sanitized with `webmail_render_details_html()`).
+- **Compose:** `from_email` forced from session; **To** and **CC** accept comma- or semicolon-separated addresses (normalized for the send log); body HTML in `details` via **Quill** WYSIWYG (`js/webmail-compose.js`, Quill 1.3.7 from jsDelivr on `compose.php`); send via `itm_send_email()` with `log_from_email`, `log_details`, `log_created_by` (SMTP: one `RCPT TO` per To address). Optional **signature** selected on compose: server merges body + signature HTML via `webmail_compose_merge_body_and_signature()` (both parts sanitized with `webmail_render_details_html()`).
 - **Signatures:** per employee only; create/edit/delete via modals on **`signatures.php`** (`js/webmail-signatures.js`, shared markup `includes/webmail_signature_modal.php`). Compose reuses modals for ➕ / delete; POST handlers in `webmail_handle_signature_post()`. Signatures use **hard delete** only.
 - **Self-sent:** a row can appear in both Inbox and Sent when addresses match both rules.
 - **Private data:** no `audit_logs` / triggers on **emails**, **webmail_email_reads**, or **webmail_signatures** (see root `AGENTS.md`).

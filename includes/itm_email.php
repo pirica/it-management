@@ -221,6 +221,59 @@ if (!function_exists('itm_email_log_send')) {
     }
 }
 
+if (!function_exists('itm_email_parse_address_list')) {
+    /**
+     * @return array<int, string>
+     */
+    function itm_email_parse_address_list($addresses)
+    {
+        $addresses = trim((string)$addresses);
+        if ($addresses === '') {
+            return [];
+        }
+        $parts = preg_split('/[,;]+/', $addresses);
+        if (!is_array($parts)) {
+            return [];
+        }
+        $out = [];
+        $seen = [];
+        foreach ($parts as $part) {
+            $part = trim((string)$part);
+            if ($part === '') {
+                continue;
+            }
+            $key = strtolower($part);
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $out[] = $part;
+        }
+
+        return $out;
+    }
+}
+
+if (!function_exists('itm_email_validate_address_list')) {
+    /**
+     * @return array{ok: bool, error: string, list: array<int, string>}
+     */
+    function itm_email_validate_address_list($addresses)
+    {
+        $list = itm_email_parse_address_list($addresses);
+        if ($list === []) {
+            return ['ok' => false, 'error' => 'Invalid SMTP configuration or recipient.', 'list' => []];
+        }
+        foreach ($list as $email) {
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return ['ok' => false, 'error' => 'Invalid SMTP configuration or recipient.', 'list' => []];
+            }
+        }
+
+        return ['ok' => true, 'error' => '', 'list' => $list];
+    }
+}
+
 if (!function_exists('itm_email_smtp_read_response')) {
     function itm_email_smtp_read_response($socket)
     {
@@ -272,9 +325,14 @@ if (!function_exists('itm_email_send_via_smtp')) {
         $fromEmail = trim((string)($config['from_email'] ?? ''));
         $fromName = trim((string)($config['from_name'] ?? ''));
 
-        if ($host === '' || $fromEmail === '' || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+        if ($host === '' || $fromEmail === '') {
             return ['ok' => false, 'error' => 'Invalid SMTP configuration or recipient.'];
         }
+        $recipientCheck = itm_email_validate_address_list($toEmail);
+        if (!$recipientCheck['ok']) {
+            return ['ok' => false, 'error' => $recipientCheck['error']];
+        }
+        $toList = $recipientCheck['list'];
 
         $remote = ($port === 465 ? 'ssl://' : 'tcp://') . $host . ':' . $port;
         $socket = @stream_socket_client($remote, $errno, $errstr, 20, STREAM_CLIENT_CONNECT);
@@ -326,9 +384,11 @@ if (!function_exists('itm_email_send_via_smtp')) {
             fclose($socket);
             return ['ok' => false, 'error' => 'SMTP MAIL FROM rejected.'];
         }
-        if (itm_email_smtp_command($socket, 'RCPT TO:<' . $toEmail . '>', [250, 251]) === false) {
-            fclose($socket);
-            return ['ok' => false, 'error' => 'SMTP RCPT TO rejected.'];
+        foreach ($toList as $rcptEmail) {
+            if (itm_email_smtp_command($socket, 'RCPT TO:<' . $rcptEmail . '>', [250, 251]) === false) {
+                fclose($socket);
+                return ['ok' => false, 'error' => 'SMTP RCPT TO rejected.'];
+            }
         }
         if (itm_email_smtp_command($socket, 'DATA', [354]) === false) {
             fclose($socket);
@@ -337,9 +397,13 @@ if (!function_exists('itm_email_send_via_smtp')) {
 
         $encodedSubject = '=?UTF-8?B?' . base64_encode((string)$subject) . '?=';
         $fromHeader = $fromName !== '' ? '=?UTF-8?B?' . base64_encode($fromName) . '?= <' . $fromEmail . '>' : $fromEmail;
+        $toHeaderParts = [];
+        foreach ($toList as $rcptEmail) {
+            $toHeaderParts[] = '<' . $rcptEmail . '>';
+        }
         $headers = [
             'From: ' . $fromHeader,
-            'To: <' . $toEmail . '>',
+            'To: ' . implode(', ', $toHeaderParts),
             'Subject: ' . $encodedSubject,
             'MIME-Version: 1.0',
             'Content-Type: text/html; charset=UTF-8',
@@ -371,10 +435,14 @@ if (!function_exists('itm_email_send_via_resend')) {
         }
 
         $from = $fromEmail && trim((string)$fromEmail) !== '' ? trim((string)$fromEmail) : 'onboarding@resend.dev';
+        $recipientCheck = itm_email_validate_address_list($toEmail);
+        if (!$recipientCheck['ok']) {
+            return ['ok' => false, 'error' => $recipientCheck['error']];
+        }
         $url = 'https://api.resend.com/emails';
         $data = [
             'from' => $from,
-            'to' => [$toEmail],
+            'to' => $recipientCheck['list'],
             'subject' => $subject,
             'html' => $htmlBody,
         ];
@@ -521,7 +589,7 @@ if (!function_exists('itm_send_email')) {
     /**
      * Sends a transactional email using the tenant default SMTP configuration.
      *
-     * @param string $to Recipient email
+     * @param string $to Recipient email(s), comma- or semicolon-separated
      * @param string $subject Subject line
      * @param string $htmlBody HTML body
      * @param int|null $companyId Tenant scope (falls back to session company_id)

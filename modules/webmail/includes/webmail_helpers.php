@@ -20,18 +20,25 @@ if (!function_exists('webmail_normalize_email')) {
 if (!function_exists('webmail_cc_contains')) {
     function webmail_cc_contains(string $ccField, string $sessionEmail): bool
     {
+        return webmail_address_field_contains($ccField, $sessionEmail);
+    }
+}
+
+if (!function_exists('webmail_address_field_contains')) {
+    function webmail_address_field_contains(string $addressField, string $sessionEmail): bool
+    {
         $needle = webmail_normalize_email($sessionEmail);
         if ($needle === '') {
             return false;
         }
-        $ccField = trim($ccField);
-        if ($ccField === '') {
+        $addressField = trim($addressField);
+        if ($addressField === '') {
             return false;
         }
-        if (webmail_normalize_email($ccField) === $needle) {
+        if (webmail_normalize_email($addressField) === $needle) {
             return true;
         }
-        $parts = preg_split('/[,;]+/', $ccField);
+        $parts = preg_split('/[,;]+/', $addressField);
         if (!is_array($parts)) {
             return false;
         }
@@ -45,16 +52,79 @@ if (!function_exists('webmail_cc_contains')) {
     }
 }
 
+if (!function_exists('webmail_parse_email_address_list')) {
+    /**
+     * @return array<int, string>
+     */
+    function webmail_parse_email_address_list(string $field): array
+    {
+        $field = trim($field);
+        if ($field === '') {
+            return [];
+        }
+        $parts = preg_split('/[,;]+/', $field);
+        if (!is_array($parts)) {
+            return [];
+        }
+        $out = [];
+        foreach ($parts as $part) {
+            $part = trim((string)$part);
+            if ($part !== '') {
+                $out[] = $part;
+            }
+        }
+
+        return $out;
+    }
+}
+
+if (!function_exists('webmail_normalize_email_list_field')) {
+    function webmail_normalize_email_list_field(string $field): string
+    {
+        $seen = [];
+        $normalized = [];
+        foreach (webmail_parse_email_address_list($field) as $part) {
+            $key = webmail_normalize_email($part);
+            if ($key === '' || isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $normalized[] = trim($part);
+        }
+
+        return implode(', ', $normalized);
+    }
+}
+
+if (!function_exists('webmail_validate_email_address_list')) {
+    /**
+     * @return string|null Error message or null when valid.
+     */
+    function webmail_validate_email_address_list(string $field, bool $required, string $label): ?string
+    {
+        $parts = webmail_parse_email_address_list($field);
+        if ($required && $parts === []) {
+            return $label . ' is required.';
+        }
+        foreach ($parts as $part) {
+            if (!filter_var($part, FILTER_VALIDATE_EMAIL)) {
+                return $label . ' contains an invalid email address.';
+            }
+        }
+
+        return null;
+    }
+}
+
 if (!function_exists('webmail_is_recipient')) {
     function webmail_is_recipient(array $row, string $sessionEmail): bool
     {
-        $needle = webmail_normalize_email($sessionEmail);
-        if ($needle === '') {
+        if (webmail_normalize_email($sessionEmail) === '') {
             return false;
         }
-        $to = webmail_normalize_email((string)($row['to_email'] ?? ''));
 
-        return $to === $needle || webmail_cc_contains((string)($row['cc_email'] ?? ''), $sessionEmail);
+        return webmail_address_field_contains((string)($row['to_email'] ?? ''), $sessionEmail)
+            || webmail_address_field_contains((string)($row['cc_email'] ?? ''), $sessionEmail);
     }
 }
 
@@ -98,9 +168,12 @@ if (!function_exists('webmail_sql_recipient_match')) {
     function webmail_sql_recipient_match(): array
     {
         return [
-            'sql' => '(LOWER(TRIM(to_email)) = ? OR LOWER(TRIM(cc_email)) = ? OR LOWER(cc_email) LIKE CONCAT(\'%,\', ?, \'%\') OR LOWER(cc_email) LIKE CONCAT(?, \',%\') OR LOWER(cc_email) LIKE CONCAT(\'%;\', ?, \'%\') OR LOWER(cc_email) LIKE CONCAT(?, \';\'))',
-            'types' => 'ssssss',
-            'repeat' => 6,
+            'sql' => '('
+                . 'LOWER(TRIM(to_email)) = ? OR LOWER(to_email) LIKE CONCAT(\'%,\', ?, \'%\') OR LOWER(to_email) LIKE CONCAT(?, \',%\') OR LOWER(to_email) LIKE CONCAT(\'%;\', ?, \'%\') OR LOWER(to_email) LIKE CONCAT(?, \';\')'
+                . ' OR LOWER(TRIM(cc_email)) = ? OR LOWER(cc_email) LIKE CONCAT(\'%,\', ?, \'%\') OR LOWER(cc_email) LIKE CONCAT(?, \',%\') OR LOWER(cc_email) LIKE CONCAT(\'%;\', ?, \'%\') OR LOWER(cc_email) LIKE CONCAT(?, \';\')'
+                . ')',
+            'types' => 'ssssssssss',
+            'repeat' => 10,
         ];
     }
 }
