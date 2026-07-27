@@ -18,6 +18,23 @@ if (!function_exists('myactivity_build_query')) {
     }
 }
 
+if (!function_exists('myactivity_resolve_list_sort')) {
+    /**
+     * @return array{sort:string,dir:string}
+     */
+    function myactivity_resolve_list_sort(string $sort, string $dir): array
+    {
+        $sortable = ['created_at', 'action', 'table_name', 'record_id'];
+        $sort = trim($sort);
+        if (!in_array($sort, $sortable, true)) {
+            $sort = 'created_at';
+        }
+        $dir = strtoupper(trim($dir)) === 'ASC' ? 'ASC' : 'DESC';
+
+        return ['sort' => $sort, 'dir' => $dir];
+    }
+}
+
 if (!function_exists('myactivity_allowed_actions')) {
     /**
      * @return string[]
@@ -131,6 +148,42 @@ if (!function_exists('myactivity_action_chip_class')) {
         }
 
         return 'update';
+    }
+}
+
+if (!function_exists('myactivity_build_search_conditions')) {
+    /**
+     * Employee-scoped audit list search (scalar audit_logs columns + registry module labels).
+     *
+     * @return array{sql:string,types:string,params:array<int,string>}
+     */
+    function myactivity_build_search_conditions($searchRaw)
+    {
+        $searchRaw = trim((string)$searchRaw);
+        if ($searchRaw === '') {
+            return ['sql' => '', 'types' => '', 'params' => []];
+        }
+
+        $searchPattern = (strpos($searchRaw, '%') !== false || strpos($searchRaw, '_') !== false)
+            ? $searchRaw
+            : '%' . $searchRaw . '%';
+
+        $parts = [
+            'al.table_name LIKE ?',
+            'al.module_name LIKE ?',
+            'al.action LIKE ?',
+            'CAST(al.record_id AS CHAR) LIKE ?',
+            'al.old_values LIKE ?',
+            'al.new_values LIKE ?',
+            'CAST(al.created_at AS CHAR) LIKE ?',
+            'EXISTS (SELECT 1 FROM modules_registry mr WHERE mr.module_slug = al.table_name AND mr.module_name LIKE ?)',
+        ];
+
+        return [
+            'sql' => '(' . implode(' OR ', $parts) . ')',
+            'types' => str_repeat('s', count($parts)),
+            'params' => array_fill(0, count($parts), $searchPattern),
+        ];
     }
 }
 

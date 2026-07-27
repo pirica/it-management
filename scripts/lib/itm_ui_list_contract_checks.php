@@ -218,6 +218,33 @@ if (!function_exists('itm_ui_todo_list_sort_detected')) {
     }
 }
 
+if (!function_exists('itm_ui_webmail_list_sort_detected')) {
+    /**
+     * Webmail passes sort/dir into webmail_fetch_list() (ORDER BY in webmail_helpers.php).
+     */
+    function itm_ui_webmail_list_sort_detected(string $content): bool
+    {
+        return stripos($content, 'webmail_fetch_list(') !== false
+            && preg_match('#[\'"]sort[\'"]\s*=>#', $content) === 1
+            && stripos($content, '$sort') !== false
+            && (preg_match('#[\'"]dir[\'"]\s*=>#', $content) === 1 || stripos($content, '$dir') !== false);
+    }
+}
+
+if (!function_exists('itm_ui_news_feed_list_sort_detected')) {
+    /**
+     * News sorts cached feed rows in PHP via news_sort_feed_items_for_ui().
+     */
+    function itm_ui_news_feed_list_sort_detected(string $content): bool
+    {
+        return stripos($content, 'news_sort_feed_items_for_ui(') !== false
+            && preg_match('#\$_GET\s*\[\s*[\'"]sort[\'"]\s*\]#', $content) === 1
+            && stripos($content, '$sort') !== false
+            && (preg_match('#\[\'ASC\'\s*,\s*\'DESC\'\]#', $content) === 1
+                || stripos($content, '$dir') !== false);
+    }
+}
+
 if (!function_exists('itm_ui_events_in_memory_list_sort_detected')) {
     /**
      * Events sort in PHP via events_query_events_for_list() — no SQL ORDER BY on encrypted columns.
@@ -349,6 +376,8 @@ if (!function_exists('itm_check_sort')) {
             || itm_ui_bookmarks_in_memory_list_sort_detected($listContent)
             || itm_ui_notes_in_memory_list_sort_detected($listContent)
             || itm_ui_todo_list_sort_detected($listContent)
+            || itm_ui_webmail_list_sort_detected($listContent)
+            || itm_ui_news_feed_list_sort_detected($listContent)
             || itm_ui_events_in_memory_list_sort_detected($listContent)
             || itm_ui_ipam_address_list_sort_detected($listContent);
         $hasSortUi = strpos($listContent, '▲') !== false
@@ -365,6 +394,12 @@ if (!function_exists('itm_check_sort')) {
             }
             if (itm_ui_todo_list_sort_detected($listContent)) {
                 $details = 'Column sort via todo_query_tasks_for_list() in ' . $sourceLabel;
+            }
+            if (itm_ui_webmail_list_sort_detected($listContent)) {
+                $details = 'Column sort via webmail_fetch_list() in ' . $sourceLabel;
+            }
+            if (itm_ui_news_feed_list_sort_detected($listContent)) {
+                $details = 'Column sort via news_sort_feed_items_for_ui() in ' . $sourceLabel;
             }
             if (itm_ui_events_in_memory_list_sort_detected($listContent)) {
                 $details = 'Column sort via events_query_events_for_list() (in-memory) in ' . $sourceLabel;
