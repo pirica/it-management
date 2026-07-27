@@ -795,6 +795,8 @@
         triggerViewPdfPrint(printWindow);
     }
 
+    window.itmExportViewAsPdf = exportViewAsPdf;
+
     function attachViewTools(table) {
         if (table.dataset.tableToolsAttached === '1') {
             return;

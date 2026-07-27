@@ -8,7 +8,7 @@ Record-only modules use the unified `share_sessions` table and the shared helper
 - **Admin matrix:** `modules/share_modules/` — all registry rows; only capable slugs are toggleable; others show **No share UI**
 - **Runtime gate:** `has_module_share_access()` in `includes/itm_module_share.php` (called from `itm_qr_share_create_session()`)
 
-## CRUD record rollout (23 modules)
+## CRUD record rollout (24 modules)
 
 | Slug | Share UI location | Payload |
 |------|-------------------|---------|
@@ -35,6 +35,7 @@ Record-only modules use the unified `share_sessions` table and the shared helper
 | `forecast_revisions_status` | `index.php` inline view | Generic `crud_record` |
 | `gl_accounts` | `index.php` inline view | Generic `crud_record` |
 | `monthly_budgets` | `index.php` inline view | Generic `crud_record` |
+| `webmail` | `view.php` | Bespoke message fields (`emails` row scoped to session mailbox) |
 
 **Original share modules (9):** `notes`, `passwords`, `bookmarks`, `todo`, `events`, `private_contacts`, `explorer`, `floor_plans`, `rack_planner` — each uses module-specific `*_share_helpers.php` (not `itm_crud_record_share.php`).
 
@@ -52,7 +53,7 @@ Record-only modules use the unified `share_sessions` table and the shared helper
 2. **`index.php`** — after `config.php`: `itm_crud_record_share_handle_ajax_request($conn, '{slug}')`
 3. **Share buttons** — `itm_crud_record_share_render_action_buttons()` on view or inline view block
 4. **Modal** — `itm_crud_record_share_include_modal()` before `</body>`
-5. **AJAX URL** — `index.php?ajax_action=create_share_session` (even from standalone `view.php`)
+5. **AJAX URL** — `index.php?ajax_action=create_share_session` (or `view.php?…` when the list lives elsewhere, e.g. **webmail**)
 
 Maintenance bulk-wiring: `php scripts/apply_crud_record_share_modules.php --apply`
 
