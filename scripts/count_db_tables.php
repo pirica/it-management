@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Why: External monitors and deploy checks need a single table count without signing in.
  * Counts live tables in information_schema for DB_NAME and mirrors the value to number_db_tables.txt.

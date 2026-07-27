@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Why: Deploy scripts can report "success" while MySQL stopped early (e.g. 73/126 tables).
  * Compare tables defined in db/ with information_schema for itmanagement.

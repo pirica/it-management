@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Audit db/ for tenant unique-key policy.
  *

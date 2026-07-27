@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * DB Field Active Audit Script
  *

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * CLI: php scripts/verify_ops_report_sample_data.php
  * Verifies Add sample data on empty tenants for all ops_report_* child modules.

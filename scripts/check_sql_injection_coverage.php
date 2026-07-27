@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * SQL Injection Coverage Static Analysis Script
  * 

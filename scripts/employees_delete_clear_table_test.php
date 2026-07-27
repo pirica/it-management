@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Regression tests for employees clear_table soft-delete + detach.
  *

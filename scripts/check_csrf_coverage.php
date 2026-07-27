@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * CSRF Coverage Static Analysis Script
  * 

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Test CRUD create forms for SQL-quoted values after failed saves.
  *

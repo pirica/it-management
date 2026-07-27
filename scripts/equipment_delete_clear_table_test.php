@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Regression tests for equipment clear_table and transactional single deletes.
  *

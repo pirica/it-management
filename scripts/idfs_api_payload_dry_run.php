@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Offline JSON payload validator for IDF Device API endpoints.
  * Why: Allows repeatable structure checks during development without requiring MySQL.

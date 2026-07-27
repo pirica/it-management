@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Static guard: forbidden cross-module delegates to standard CRUD template.
  *

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Static guard: employees clear_table soft-deletes via shared delete helper.
  *

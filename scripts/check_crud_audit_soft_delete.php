@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env php
+#!/usr/bin/env php
 <?php
 /**
  * Static check: scaffold soft-delete + audit UI contracts for docs/list_soft-delete.txt.

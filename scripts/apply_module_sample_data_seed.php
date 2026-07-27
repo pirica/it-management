@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Apply module/table sample seed rows to db/ across all seeded companies.
  *

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * One-shot safe matrix runner (tiers 1-3). Writes JSON results for the agent report.
  * Not cataloged — disposable for this session.

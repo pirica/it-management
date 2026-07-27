@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Regression tests for Floor Plans folder create and reparenting (move folder).
  *

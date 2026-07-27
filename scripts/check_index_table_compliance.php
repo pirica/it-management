@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Index table compliance audit for standard module list screens.
  *

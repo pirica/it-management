@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Static audit: list pagination uses emoji-only visible labels (⏮️ ◀️ ▶️ ⏭️) and word-only titles.
  *
