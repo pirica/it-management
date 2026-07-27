@@ -1584,9 +1584,9 @@ Explorer sidebar **Profile Storage** opens this folder for the logged-in user. T
 |--------|-------|----------------------|
 | `php scripts/empty_folders.php` | **Entire project** (every folder under repo root; skips `.git`, `.github`, and other dot dirs) | Empty `index.html` on **every** folder; managed `.htaccess` + `index.html` on upload paths (`images/`, `tickets_photos/`, `floor_plans/`, `backups/`, `files/`) |
 | `php scripts/ensure_files_htaccess_chain.php` | `files/` only | `deny_http` `.htaccess` + empty `index.html` on every segment (idempotent) |
-| `php scripts/apply_crud_record_share_modules.php` | CRUD record share rollout modules | Dry-run by default; `--apply` writes `join.php`, AJAX handler, view share buttons, and QR modal includes via `includes/itm_crud_record_share.php` |
+| `php scripts/apply_crud_record_share_modules.php` | CRUD record share rollout modules | **Browser + CLI** via `itm_apply_script_bootstrap.php`. Dry-run default; `--apply` / `?apply=1` (Admin) writes `join.php`, AJAX handler, view share buttons, and QR modal includes via `includes/itm_crud_record_share.php` |
 | `php scripts/fix_crud_record_share_view_buttons.php` | Scaffold `index.php` inline view blocks | Repairs share button markup when view needle pattern drifted (dry-run default; `--apply` to write) |
-| `php scripts/patch_crud_share_agent_notes.php` | CRUD record share rollout modules | Appends **Share (temporary QR / code)** section to each module `AGENT_NOTES.md` (dry-run default; `--apply` to write) |
+| `php scripts/patch_crud_share_agent_notes.php` | CRUD record share rollout modules | **Browser + CLI**. Appends **Share (temporary QR / code)** section to each module `AGENT_NOTES.md` (dry-run default; `--apply` / `?apply=1` Admin) |
 
 Run `empty_folders.php` after deploy, when adding new directories, or when folders were created without placeholders. The script lists only **new or changed** paths (repo-relative `index.html`) before the summary line. A second run on an unchanged tree prints `No new or changed folders.` and reports how many folders were already current.
 

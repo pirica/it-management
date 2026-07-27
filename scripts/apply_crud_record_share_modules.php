@@ -1,9 +1,11 @@
 <?php
 /**
- * CLI: php scripts/apply_crud_record_share_modules.php [--apply]
  * Wires QR share (join.php, AJAX, view buttons) for CRUD record share rollout modules.
+ *
+ * Browser + CLI. Default dry-run; writes with CLI --apply or browser ?apply=1 (Admin).
  */
 
+declare(strict_types=1);
 
 /**
  * Browser catalog: How to use (shown on landing before run=1).
@@ -11,12 +13,16 @@
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/apply_crud_record_share_modules.php --apply</code>
+Browser: <a href="apply_crud_record_share_modules.php">dry-run</a> / <a href="apply_crud_record_share_modules.php?apply=1">apply=1</a> (Admin). CLI: <code>php scripts/apply_crud_record_share_modules.php</code> then <code>php scripts/apply_crud_record_share_modules.php --apply</code>. Inventory: <code>docs/CRUD_RECORD_SHARE.md</code>.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
-define('ITM_CLI_SCRIPT', true);
-$repoRoot = dirname(__DIR__);
-$apply = in_array('--apply', $argv ?? [], true);
+
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
+
+$boot = itm_apply_script_bootstrap('Apply CRUD record share modules');
+$apply = $boot['apply'];
+$nl = $boot['nl'];
+$repoRoot = rtrim($boot['root'], '/');
 
 $modules = [
     'employees' => ['share_label' => 'employee', 'view_file' => 'view.php', 'index_ajax' => 'index.php'],
@@ -68,14 +74,14 @@ $changes = 0;
 foreach ($modules as $slug => $meta) {
     $moduleDir = $repoRoot . '/modules/' . $slug;
     if (!is_dir($moduleDir)) {
-        echo "[SKIP] missing module dir: {$slug}\n";
+        echo '[SKIP] missing module dir: ' . $slug . $nl;
         continue;
     }
 
     $joinPath = $moduleDir . '/join.php';
     $joinBody = sprintf($joinTemplate, $slug, $slug);
     if (!is_file($joinPath) || sha1(file_get_contents($joinPath)) !== sha1($joinBody)) {
-        echo ($apply ? '[WRITE]' : '[DRY]') . " {$joinPath}\n";
+        echo ($apply ? '[WRITE]' : '[DRY]') . ' ' . $joinPath . $nl;
         if ($apply) {
             file_put_contents($joinPath, $joinBody);
         }
@@ -92,7 +98,7 @@ foreach ($modules as $slug => $meta) {
                 $replacement = $needle . sprintf($ajaxBlock, $slug);
                 $newBody = str_replace($needle, $replacement, $indexBody, $count);
                 if ($count > 0) {
-                    echo ($apply ? '[PATCH]' : '[DRY]') . " ajax {$indexPath}\n";
+                    echo ($apply ? '[PATCH]' : '[DRY]') . ' ajax ' . $indexPath . $nl;
                     if ($apply) {
                         file_put_contents($indexPath, $newBody);
                     }
@@ -104,7 +110,7 @@ foreach ($modules as $slug => $meta) {
                     $replacement = $needle . sprintf($ajaxBlock, $slug);
                     $newBody = str_replace($needle, $replacement, $indexBody, $count);
                     if ($count > 0) {
-                        echo ($apply ? '[PATCH]' : '[DRY]') . " ajax {$indexPath}\n";
+                        echo ($apply ? '[PATCH]' : '[DRY]') . ' ajax ' . $indexPath . $nl;
                         if ($apply) {
                             file_put_contents($indexPath, $newBody);
                         }
@@ -123,7 +129,7 @@ foreach ($modules as $slug => $meta) {
             if (strpos($indexBody, $viewNeedle) !== false) {
                 $newBody = str_replace($viewNeedle, $viewReplacement, $indexBody, $count);
                 if ($count > 0) {
-                    echo ($apply ? '[PATCH]' : '[DRY]') . " view buttons {$indexPath}\n";
+                    echo ($apply ? '[PATCH]' : '[DRY]') . ' view buttons ' . $indexPath . $nl;
                     if ($apply) {
                         file_put_contents($indexPath, $newBody);
                     }
@@ -138,7 +144,7 @@ foreach ($modules as $slug => $meta) {
             if (strpos($indexBody, $footerNeedle) !== false) {
                 $newBody = str_replace($footerNeedle, $footerReplacement, $indexBody, $count);
                 if ($count > 0) {
-                    echo ($apply ? '[PATCH]' : '[DRY]') . " modal {$indexPath}\n";
+                    echo ($apply ? '[PATCH]' : '[DRY]') . ' modal ' . $indexPath . $nl;
                     if ($apply) {
                         file_put_contents($indexPath, $newBody);
                     }
@@ -163,7 +169,7 @@ foreach ($modules as $slug => $meta) {
                         $replacement = '<?php echo itm_crud_record_share_render_action_buttons(\'' . $slug . '\', (int)($employeeId ?? $id ?? $item[\'id\'] ?? 0), \'' . $shareLabel . '\'); ?>' . "\n                    " . $pattern;
                         $viewBody = str_replace($pattern, $replacement, $viewBody, $count);
                         if ($count > 0) {
-                            echo ($apply ? '[PATCH]' : '[DRY]') . " view buttons {$viewPath}\n";
+                            echo ($apply ? '[PATCH]' : '[DRY]') . ' view buttons ' . $viewPath . $nl;
                             break;
                         }
                     }
@@ -182,8 +188,7 @@ foreach ($modules as $slug => $meta) {
     }
 }
 
-echo $apply
-    ? "Applied {$changes} change group(s).\n"
-    : "Dry run — {$changes} change group(s). Re-run with --apply to write.\n";
-
+echo 'Change groups: ' . $changes . $nl . $nl;
+itm_apply_script_finish_hint($apply, $boot['is_cli'], $changes, $nl, 'apply_crud_record_share_modules.php');
+itm_script_output_end();
 exit(0);

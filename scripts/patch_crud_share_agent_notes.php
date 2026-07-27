@@ -1,9 +1,11 @@
 <?php
 /**
- * CLI: php scripts/patch_crud_share_agent_notes.php [--apply]
  * Appends Share section to CRUD record share rollout module AGENT_NOTES.md files.
+ *
+ * Browser + CLI. Default dry-run; writes with CLI --apply or browser ?apply=1 (Admin).
  */
 
+declare(strict_types=1);
 
 /**
  * Browser catalog: How to use (shown on landing before run=1).
@@ -11,12 +13,16 @@
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/patch_crud_share_agent_notes.php --apply</code>
+Browser: <a href="patch_crud_share_agent_notes.php">dry-run</a> / <a href="patch_crud_share_agent_notes.php?apply=1">apply=1</a> (Admin). CLI: <code>php scripts/patch_crud_share_agent_notes.php</code> then <code>php scripts/patch_crud_share_agent_notes.php --apply</code>.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
-define('ITM_CLI_SCRIPT', true);
-$apply = in_array('--apply', $argv ?? [], true);
-$repoRoot = dirname(__DIR__);
+
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
+
+$boot = itm_apply_script_bootstrap('Patch CRUD share AGENT_NOTES');
+$apply = $boot['apply'];
+$nl = $boot['nl'];
+$repoRoot = rtrim($boot['root'], '/');
 
 $modules = [
     'employees' => 'Share buttons on view.php (admin employee profile).',
@@ -50,12 +56,12 @@ $changes = 0;
 foreach ($modules as $slug => $ui) {
     $path = $repoRoot . '/modules/' . $slug . '/AGENT_NOTES.md';
     if (!is_file($path)) {
-        echo "[MISSING] {$path}\n";
+        echo '[MISSING] ' . $path . $nl;
         continue;
     }
     $body = file_get_contents($path);
     if (strpos($body, $marker) !== false) {
-        echo "[SKIP] {$slug}\n";
+        echo '[SKIP] ' . $slug . $nl;
         continue;
     }
     $block = "\n{$marker}\n"
@@ -63,15 +69,14 @@ foreach ($modules as $slug => $ui) {
         . "- **UI:** {$ui}\n"
         . "- **Wiring:** `includes/itm_crud_record_share.php`; public `join.php`; AJAX `index.php?ajax_action=create_share_session`. Company gate: `modules/share_modules/`.\n"
         . "- **Doc:** `docs/CRUD_RECORD_SHARE.md`.\n";
-    echo ($apply ? '[WRITE]' : '[DRY]') . " {$slug}\n";
+    echo ($apply ? '[WRITE]' : '[DRY]') . ' ' . $slug . $nl;
     if ($apply) {
         file_put_contents($path, rtrim($body) . $block);
     }
     $changes++;
 }
 
-echo $apply
-    ? "Applied {$changes} module note patch(es).\n"
-    : "Dry run — {$changes} patch(es). Re-run with --apply.\n";
-
+echo $nl . 'Patches: ' . $changes . $nl . $nl;
+itm_apply_script_finish_hint($apply, $boot['is_cli'], $changes, $nl, 'patch_crud_share_agent_notes.php');
+itm_script_output_end();
 exit(0);
