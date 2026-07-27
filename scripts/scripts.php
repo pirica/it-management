@@ -1374,6 +1374,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Static gate: every browser-capable catalog <code>*.php</code> defines <code>itm_script_browser_how_to_use()</code>, a usage-gate hook, and a stub how-cell in <code>scripts.php</code>. Honors <code>itm_script_browser_usage_exempt_basenames()</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="Codebase">
+                    <td><a href="check_script_stdio_fwrite.php" target="_blank" rel="nofollow noreferrer">check_script_stdio_fwrite.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Static gate: no raw <code>fwrite(STDOUT|STDERR)</code> under <code>scripts/</code> — use <code>itm_script_write_stdout()</code> / <code>itm_script_write_stderr()</code> (<code>scripts/lib/itm_script_stdio.php</code>) so browser SAPI does not warn.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="ui_configuration">
                     <td><a href="apply_head_favicon_link.php" target="_blank" rel="nofollow noreferrer">apply_head_favicon_link.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

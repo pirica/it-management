@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Why: db/ defines employees columns (e.g. termination_date) that may be absent
  * from the live schema or from employees module screens. Surfaces both gaps in one run.
@@ -31,7 +31,7 @@ $nl = itm_script_output_nl();
 $failures = 0;
 
 if (!$conn instanceof mysqli) {
-    fwrite(STDERR, "[FAIL] No database connection.\n");
+    itm_script_write_stderr( "[FAIL] No database connection.\n");
     exit(1);
 }
 

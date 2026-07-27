@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * All-module schema/UI audit: db/ columns vs live MySQL vs module screens.
  *
@@ -61,7 +61,7 @@ if ($itmIsCli) {
 }
 
 if (!$conn instanceof mysqli) {
-    fwrite(STDERR, "[FAIL] No database connection.\n");
+    itm_script_write_stderr( "[FAIL] No database connection.\n");
     exit(1);
 }
 

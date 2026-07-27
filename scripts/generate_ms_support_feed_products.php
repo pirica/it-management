@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Generate includes/itm_news_feed_ms_support_products.php from feed picker HTML.
  */
@@ -12,15 +12,17 @@ function itm_script_browser_how_to_use(): string
 <code>php scripts/generate_ms_support_feed_products.php</code>
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
+require_once __DIR__ . '/lib/itm_script_stdio.php';
+
 $outFile = dirname(__DIR__) . '/includes/itm_news_feed_ms_support_products.php';
 $h = @file_get_contents('https://support.microsoft.com/en-us/rss-feed-picker');
 if ($h === false) {
-    fwrite(STDERR, "fetch failed\n");
+    itm_script_write_stderr( "fetch failed\n");
     exit(1);
 }
 
 if (!preg_match_all('/<option\s+value="([a-f0-9-]{36})"[^>]*>([^<]+)<\/option>/i', $h, $m, PREG_SET_ORDER)) {
-    fwrite(STDERR, "no options found\n");
+    itm_script_write_stderr( "no options found\n");
     exit(1);
 }
 

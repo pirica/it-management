@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Audit db/ for tenant unique-key policy.
  *
@@ -60,23 +60,23 @@ $nl = itm_script_output_nl();
     require_once dirname(__DIR__) . '/includes/database_sql_unique_audit.php';
 
     $result = itm_database_sql_unique_audit_run($sqlPath);
-    fwrite(STDOUT, 'File: ' . $result['sql_path'] . PHP_EOL);
-    fwrite(STDOUT, 'Required unique count: ' . $result['required_unique_count'] . PHP_EOL);
-    fwrite(STDOUT, 'Tables parsed: ' . $result['summary']['tables'] . PHP_EOL);
-    fwrite(STDOUT, 'Pass: ' . $result['summary']['pass'] . PHP_EOL);
-    fwrite(STDOUT, 'Fail: ' . $result['summary']['fail'] . PHP_EOL);
-    fwrite(STDOUT, 'Skip: ' . $result['summary']['skip'] . PHP_EOL . PHP_EOL);
-    fwrite(STDOUT, 'Scope rules: `name` when present, else 3rd column after id+company_id.' . PHP_EOL);
-    fwrite(STDOUT, 'Floor plans: folders = company + IFNULL(parent_folder_id,0) + name;' . PHP_EOL);
-    fwrite(STDOUT, '  files = company + IFNULL(folder_id,0) + display_name (not company+folder_id only).' . PHP_EOL . PHP_EOL);
+    itm_script_write_stdout( 'File: ' . $result['sql_path'] . PHP_EOL);
+    itm_script_write_stdout( 'Required unique count: ' . $result['required_unique_count'] . PHP_EOL);
+    itm_script_write_stdout( 'Tables parsed: ' . $result['summary']['tables'] . PHP_EOL);
+    itm_script_write_stdout( 'Pass: ' . $result['summary']['pass'] . PHP_EOL);
+    itm_script_write_stdout( 'Fail: ' . $result['summary']['fail'] . PHP_EOL);
+    itm_script_write_stdout( 'Skip: ' . $result['summary']['skip'] . PHP_EOL . PHP_EOL);
+    itm_script_write_stdout( 'Scope rules: `name` when present, else 3rd column after id+company_id.' . PHP_EOL);
+    itm_script_write_stdout( 'Floor plans: folders = company + IFNULL(parent_folder_id,0) + name;' . PHP_EOL);
+    itm_script_write_stdout( '  files = company + IFNULL(folder_id,0) + display_name (not company+folder_id only).' . PHP_EOL . PHP_EOL);
 
     foreach ($result['lines'] as $line) {
         $flag = strtoupper((string) $line['status']);
         $scope = (string) ($line['scope_column'] ?? '');
         $scopeSuffix = $scope !== '' ? ' [scope=' . $scope . ']' : '';
-        fwrite(STDOUT, '[' . $flag . '] ' . $line['table'] . $scopeSuffix . ' — ' . $line['message'] . PHP_EOL);
+        itm_script_write_stdout( '[' . $flag . '] ' . $line['table'] . $scopeSuffix . ' — ' . $line['message'] . PHP_EOL);
         if ($line['alter_sql'] !== '') {
-            fwrite(STDOUT, '       Suggested: ' . $line['alter_sql'] . PHP_EOL);
+            itm_script_write_stdout( '       Suggested: ' . $line['alter_sql'] . PHP_EOL);
         }
     }
 

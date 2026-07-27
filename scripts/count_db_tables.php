@@ -1,13 +1,15 @@
-<?php
+﻿<?php
 /**
  * Why: External monitors and deploy checks need a single table count without signing in.
  * Counts live tables in information_schema for DB_NAME and mirrors the value to number_db_tables.txt.
  *
- * Browser: open scripts/count_db_tables.php (no login; exempt from usage landing — see itm_script_browser_usage_exempt_basenames()).
+ * Browser: open scripts/count_db_tables.php (no login).
  * CLI: php scripts/count_db_tables.php
  */
 declare(strict_types=1);
 
+
+require_once __DIR__ . '/lib/itm_script_stdio.php';
 if (!defined('ITM_CLI_SCRIPT')) {
     define('ITM_CLI_SCRIPT', true);
 }
@@ -36,7 +38,7 @@ if ($res === false) {
         $message .= ' MySQL error (' . $dbErrorCode . '): ' . $dbErrorMessage;
     }
     if (PHP_SAPI === 'cli') {
-        fwrite(STDERR, $message . "\n");
+        itm_script_write_stderr( $message . "\n");
     } else {
         if (!headers_sent()) {
             header('Content-Type: text/plain; charset=utf-8');
@@ -56,7 +58,7 @@ $outputBody = (string) $count . "\n";
 if (file_put_contents($outputPath, $outputBody) === false) {
     $message = 'Failed to write ' . $outputPath;
     if (PHP_SAPI === 'cli') {
-        fwrite(STDERR, $message . "\n");
+        itm_script_write_stderr( $message . "\n");
     } else {
         if (!headers_sent()) {
             header('Content-Type: text/plain; charset=utf-8');

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Why: Deploy scripts can report "success" while MySQL stopped early (e.g. 73/126 tables).
  * Compare tables defined in db/ with information_schema for itmanagement.
@@ -27,7 +27,7 @@ require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 if (!$conn instanceof mysqli) {
     $msg = "Database connection failed.";
     if (PHP_SAPI === 'cli') {
-        fwrite(STDERR, $msg . "\n");
+        itm_script_write_stderr( $msg . "\n");
     } else {
         itm_script_output_begin('Database Schema Verification');
         echo colorText($msg, 'fail') . itm_script_output_nl();
@@ -50,7 +50,7 @@ function itm_verify_expected_tables_from_database_sql(): array
     if (!is_readable($path)) {
         $msg = "Cannot read db/ at {$path}";
         if (PHP_SAPI === 'cli') {
-            fwrite(STDERR, $msg . "\n");
+            itm_script_write_stderr( $msg . "\n");
         } else {
             echo colorText($msg, 'fail') . $nl;
         }
@@ -60,7 +60,7 @@ function itm_verify_expected_tables_from_database_sql(): array
     if ($sql === false) {
         $msg = "Failed to read db/01_schema.sql";
         if (PHP_SAPI === 'cli') {
-            fwrite(STDERR, $msg . "\n");
+            itm_script_write_stderr( $msg . "\n");
         } else {
             echo colorText($msg, 'fail') . $nl;
         }
@@ -69,7 +69,7 @@ function itm_verify_expected_tables_from_database_sql(): array
     if (!preg_match_all('/^CREATE TABLE `([^`]+)`/m', $sql, $matches)) {
         $msg = "No CREATE TABLE entries found in db/01_schema.sql";
         if (PHP_SAPI === 'cli') {
-            fwrite(STDERR, $msg . "\n");
+            itm_script_write_stderr( $msg . "\n");
         } else {
             echo colorText($msg, 'fail') . $nl;
         }
@@ -94,9 +94,9 @@ $res = itm_run_query(
 if ($res === false) {
     $msg = "Failed to read information_schema for database '{$schema}'.";
     if (PHP_SAPI === 'cli') {
-        fwrite(STDERR, $msg . "\n");
+        itm_script_write_stderr( $msg . "\n");
         if ($dbErrorMessage !== null && $dbErrorMessage !== '') {
-            fwrite(STDERR, "MySQL error ({$dbErrorCode}): {$dbErrorMessage}\n");
+            itm_script_write_stderr( "MySQL error ({$dbErrorCode}): {$dbErrorMessage}\n");
         }
     } else {
         echo colorText($msg, 'fail') . $nl;

@@ -1,10 +1,12 @@
-<?php
+﻿<?php
 
 /**
  * Browser catalog: How to use (shown on landing before run=1).
  */
 declare(strict_types=1);
 
+
+require_once __DIR__ . '/lib/itm_script_stdio.php';
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
@@ -22,7 +24,7 @@ if (PHP_SAPI !== 'cli') {
 
 $root = realpath(__DIR__ . '/..');
 if ($root === false) {
-    fwrite(STDERR, "Unable to resolve project root.\n");
+    itm_script_write_stderr( "Unable to resolve project root.\n");
     exit(2);
 }
 
@@ -65,20 +67,20 @@ foreach (array_slice($argv, 1) as $arg) {
         $options['repair_catalogs'] = true;
         continue;
     }
-    fwrite(STDERR, "Unknown argument: {$arg}\n");
+    itm_script_write_stderr( "Unknown argument: {$arg}\n");
     exit(2);
 }
 
 if ($options['help']) {
-    fwrite(STDOUT, "Usage: php scripts/detect_fk_dropdown_ui_risk.php [options]\n\n");
-    fwrite(STDOUT, "Options:\n");
-    fwrite(STDOUT, "  --company=N   Limit data scan to one tenant company_id\n");
-    fwrite(STDOUT, "  --json        Machine-readable output\n");
-    fwrite(STDOUT, "  --code-only   Scan module PHP patterns only (no database)\n");
-    fwrite(STDOUT, "  --data-only   Scan database cross-tenant FK rows only\n");
-    fwrite(STDOUT, "  --repair-catalogs  Delete legacy catalog rows with cross-tenant FK ids\n");
-    fwrite(STDOUT, "  --help        Show this help\n\n");
-    fwrite(STDOUT, "Browser UI: open scripts/detect_fk_dropdown_ui_risk_ui.php\n");
+    itm_script_write_stdout( "Usage: php scripts/detect_fk_dropdown_ui_risk.php [options]\n\n");
+    itm_script_write_stdout( "Options:\n");
+    itm_script_write_stdout( "  --company=N   Limit data scan to one tenant company_id\n");
+    itm_script_write_stdout( "  --json        Machine-readable output\n");
+    itm_script_write_stdout( "  --code-only   Scan module PHP patterns only (no database)\n");
+    itm_script_write_stdout( "  --data-only   Scan database cross-tenant FK rows only\n");
+    itm_script_write_stdout( "  --repair-catalogs  Delete legacy catalog rows with cross-tenant FK ids\n");
+    itm_script_write_stdout( "  --help        Show this help\n\n");
+    itm_script_write_stdout( "Browser UI: open scripts/detect_fk_dropdown_ui_risk_ui.php\n");
     exit(0);
 }
 
@@ -88,15 +90,15 @@ if (!empty($options['repair_catalogs'])) {
     }
     require_once $root . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'config.php';
     if (!isset($conn) || !($conn instanceof mysqli)) {
-        fwrite(STDERR, "Database connection failed.\n");
+        itm_script_write_stderr( "Database connection failed.\n");
         exit(2);
     }
     if (!function_exists('itm_cleanup_catalogs_cross_tenant_fk_rows')) {
-        fwrite(STDERR, "Cleanup helper is not available.\n");
+        itm_script_write_stderr( "Cleanup helper is not available.\n");
         exit(2);
     }
     $deleted = itm_cleanup_catalogs_cross_tenant_fk_rows($conn);
-    fwrite(STDOUT, "Removed {$deleted} catalog row(s) with cross-tenant FK references.\n");
+    itm_script_write_stdout( "Removed {$deleted} catalog row(s) with cross-tenant FK references.\n");
     exit(0);
 }
 
@@ -112,45 +114,45 @@ $dataIssues = $report['data_issues'] ?? [];
 $codeIssues = $report['code_issues'] ?? [];
 
 if (!empty($report['db_error'])) {
-    fwrite(STDERR, (string)$report['db_error'] . "\n");
+    itm_script_write_stderr( (string)$report['db_error'] . "\n");
     exit(2);
 }
 
 if ($options['json']) {
-    fwrite(STDOUT, json_encode($report, JSON_PRETTY_PRINT) . "\n");
+    itm_script_write_stdout( json_encode($report, JSON_PRETTY_PRINT) . "\n");
 } else {
-    fwrite(STDOUT, "FK dropdown UI risk report\n");
-    fwrite(STDOUT, str_repeat('=', 28) . "\n\n");
+    itm_script_write_stdout( "FK dropdown UI risk report\n");
+    itm_script_write_stdout( str_repeat('=', 28) . "\n\n");
 
     if (!$options['code_only']) {
-        fwrite(STDOUT, "Database cross-tenant FK rows: " . count($dataIssues) . "\n");
-        fwrite(STDOUT, "  duplicate_dropdown_risk: " . (int)($report['summary']['duplicate_dropdown_data'] ?? 0) . "\n\n");
+        itm_script_write_stdout( "Database cross-tenant FK rows: " . count($dataIssues) . "\n");
+        itm_script_write_stdout( "  duplicate_dropdown_risk: " . (int)($report['summary']['duplicate_dropdown_data'] ?? 0) . "\n\n");
 
         foreach ($dataIssues as $issue) {
             $riskLabel = itm_detect_fk_risk_label((string)($issue['risk'] ?? ''));
-            fwrite(STDOUT, '[' . strtoupper($riskLabel) . '] ' . itm_detect_fk_data_issue_summary($issue) . "\n");
-            fwrite(STDOUT, '  table: ' . (string)($issue['child_table'] ?? '') . ' row #' . (int)($issue['child_id'] ?? 0) . "\n");
-            fwrite(STDOUT, '  edit: ' . (string)($issue['module'] ?? '') . 'edit.php?id=' . (int)($issue['child_id'] ?? 0) . "\n");
+            itm_script_write_stdout( '[' . strtoupper($riskLabel) . '] ' . itm_detect_fk_data_issue_summary($issue) . "\n");
+            itm_script_write_stdout( '  table: ' . (string)($issue['child_table'] ?? '') . ' row #' . (int)($issue['child_id'] ?? 0) . "\n");
+            itm_script_write_stdout( '  edit: ' . (string)($issue['module'] ?? '') . 'edit.php?id=' . (int)($issue['child_id'] ?? 0) . "\n");
         }
 
         if ($dataIssues !== []) {
-            fwrite(STDOUT, "\n");
+            itm_script_write_stdout( "\n");
         }
     }
 
     if (!$options['data_only']) {
-        fwrite(STDOUT, "Module code without tenant FK resolve: " . count($codeIssues) . "\n\n");
+        itm_script_write_stdout( "Module code without tenant FK resolve: " . count($codeIssues) . "\n\n");
         foreach ($codeIssues as $issue) {
-            fwrite(STDOUT, '[' . strtoupper(itm_detect_fk_risk_label((string)($issue['risk'] ?? ''))) . '] '
+            itm_script_write_stdout( '[' . strtoupper(itm_detect_fk_risk_label((string)($issue['risk'] ?? ''))) . '] '
                 . itm_detect_fk_code_issue_summary($issue) . "\n");
-            fwrite(STDOUT, '  file: ' . (string)($issue['file'] ?? '') . "\n");
+            itm_script_write_stdout( '  file: ' . (string)($issue['file'] ?? '') . "\n");
         }
     }
 
     if ($dataIssues === [] && $codeIssues === []) {
-        fwrite(STDOUT, colorText("\n[OK] No FK dropdown UI risks detected.\n", 'pass'));
+        itm_script_write_stdout( colorText("\n[OK] No FK dropdown UI risks detected.\n", 'pass'));
     } else {
-        fwrite(STDOUT, colorText("\n[FAIL] Review rows above. duplicate_dropdown_risk = two select options for the same logical FK value.\n", 'fail'));
+        itm_script_write_stdout( colorText("\n[FAIL] Review rows above. duplicate_dropdown_risk = two select options for the same logical FK value.\n", 'fail'));
     }
 }
 

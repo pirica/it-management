@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Regression tests for Floor Plans folder create and reparenting (move folder).
  *
@@ -22,9 +22,11 @@ function itm_script_browser_how_to_use(): string
 Browser: HTML log with module/table links (needs DB). CLI: <code>php scripts/floor_plans_folder_move_test.php</code> — optional <code>ITM_TEST_COMPANY_ID</code>.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
+require_once __DIR__ . '/lib/itm_script_stdio.php';
+
 if (version_compare(PHP_VERSION, '7.1.0', '<')) {
-    fwrite(STDERR, "This script requires PHP 7.1 or newer (nullable return types).\n");
-    fwrite(STDERR, 'Your CLI reports PHP ' . PHP_VERSION . ". Use Laragon's PHP 7.4 binary.\n");
+    itm_script_write_stderr( "This script requires PHP 7.1 or newer (nullable return types).\n");
+    itm_script_write_stderr( 'Your CLI reports PHP ' . PHP_VERSION . ". Use Laragon's PHP 7.4 binary.\n");
     exit(1);
 }
 

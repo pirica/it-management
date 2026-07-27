@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Normalize seed created_at timestamps In db/01_schema.sql (INSERT data only).
  *
@@ -11,6 +11,8 @@
 
 declare(strict_types=1);
 
+
+require_once __DIR__ . '/lib/itm_script_stdio.php';
 /**
  * Browser catalog: How to use (shown on landing before run=1).
  */
@@ -399,7 +401,7 @@ $tablesWithCreatedAt = itm_sql_tables_with_created_at($sql);
 $sqlProtected = preg_replace('/^DELIMITER\s+;\s*$/mi', 'DELIMITER __ITM_SEMICOLON__', $sql) ?? $sql;
 $parts = preg_split('/;\s*\n/', $sqlProtected);
 if (!is_array($parts)) {
-    fwrite(STDERR, "Unable to split SQL statements.\n");
+    itm_script_write_stderr( "Unable to split SQL statements.\n");
     exit(1);
 }
 

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /**
  * Regression test: IDF device port list always sorts copper (RJ45) before fiber (SFP).
@@ -18,6 +18,8 @@
 
 declare(strict_types=1);
 
+
+require_once __DIR__ . '/lib/itm_script_stdio.php';
 /**
  * Browser catalog: How to use (shown on landing before run=1).
  */
@@ -61,7 +63,7 @@ function itmdf_sort_out(string $msg, bool $isError = false): void
     $line = itmdf_sort_esc($msg) . itmdf_sort_eol();
     if (itmdf_sort_is_cli()) {
         if ($isError && defined('STDERR') && is_resource(STDERR)) {
-            fwrite(STDERR, $line);
+            itm_script_write_stderr( $line);
             return;
         }
         echo $line;

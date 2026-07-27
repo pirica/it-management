@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Run ANALYZE TABLE on every base table in the active schema.
  *
@@ -12,6 +12,8 @@
 
 declare(strict_types=1);
 
+
+require_once __DIR__ . '/lib/itm_script_stdio.php';
 /**
  * Browser catalog: How to use (shown on landing before run=1).
  */
@@ -195,36 +197,34 @@ function itm_analyze_database_health_run(mysqli $conn): array
 function itm_analyze_database_health_print_cli(array $result): void
 {
     if ($result['table_count'] === 0 && $result['error_count'] === 0) {
-        fwrite(STDOUT, "No base tables were found in schema '" . $result['schema'] . "'." . PHP_EOL);
+        itm_script_write_stdout( "No base tables were found in schema '" . $result['schema'] . "'." . PHP_EOL);
         return;
     }
 
-    fwrite(
-        STDOUT,
+    itm_script_write_stdout(
         'Running ANALYZE TABLE on ' . $result['table_count'] . " base table(s) in schema '" . $result['schema'] . "'..." . PHP_EOL . PHP_EOL
     );
 
     foreach ($result['lines'] as $line) {
         if ($line['level'] === 'ok') {
-            fwrite(STDOUT, "[OK   ] {$line['table']}" . PHP_EOL);
+            itm_script_write_stdout( "[OK   ] {$line['table']}" . PHP_EOL);
             continue;
         }
         if ($line['level'] === 'warning') {
-            fwrite(STDOUT, "[WARN ] {$line['table']}: {$line['message']}" . PHP_EOL);
+            itm_script_write_stdout( "[WARN ] {$line['table']}: {$line['message']}" . PHP_EOL);
             continue;
         }
         if ($line['level'] === 'error') {
-            fwrite(STDOUT, "[ERROR] {$line['table']}: {$line['message']}" . PHP_EOL);
+            itm_script_write_stdout( "[ERROR] {$line['table']}: {$line['message']}" . PHP_EOL);
             if ($line['hint'] !== '') {
-                fwrite(STDOUT, "        Hint: {$line['hint']}" . PHP_EOL);
+                itm_script_write_stdout( "        Hint: {$line['hint']}" . PHP_EOL);
             }
             continue;
         }
-        fwrite(STDOUT, '[' . strtoupper($line['level']) . "] {$line['message']}" . PHP_EOL);
+        itm_script_write_stdout( '[' . strtoupper($line['level']) . "] {$line['message']}" . PHP_EOL);
     }
 
-    fwrite(
-        STDOUT,
+    itm_script_write_stdout(
         PHP_EOL . "Summary: OK={$result['ok_count']}, WARN={$result['warning_count']}, ERROR={$result['error_count']}" . PHP_EOL
     );
 }
@@ -238,14 +238,14 @@ itm_script_output_begin();
 $nl = itm_script_output_nl();
 
     } catch (Throwable $e) {
-        fwrite(STDERR, 'Unable to bootstrap application config/db connection: ' . $e->getMessage() . PHP_EOL);
-        fwrite(STDERR, "Hint: PATH php may be PHP 7.0 without mysqli. Use Laragon PHP 7.4:" . PHP_EOL);
-        fwrite(STDERR, "  D:\\dunebox-v1.0.6\\system\\apps\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe scripts\\analyze_database_health.php" . PHP_EOL);
+        itm_script_write_stderr( 'Unable to bootstrap application config/db connection: ' . $e->getMessage() . PHP_EOL);
+        itm_script_write_stderr( "Hint: PATH php may be PHP 7.0 without mysqli. Use Laragon PHP 7.4:" . PHP_EOL);
+        itm_script_write_stderr( "  D:\\dunebox-v1.0.6\\system\\apps\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe scripts\\analyze_database_health.php" . PHP_EOL);
         exit(1);
     }
 
     if (!isset($conn) || !($conn instanceof mysqli) || mysqli_connect_errno()) {
-        fwrite(STDERR, "Database connection failed.\n");
+        itm_script_write_stderr( "Database connection failed.\n");
         exit(1);
     }
 

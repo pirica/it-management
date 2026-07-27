@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Lists tenant-scoped tables with zero rows for the active session company.
  *
@@ -143,7 +143,7 @@ if ($companyId <= 0) {
 if ($companyId <= 0) {
     $message = 'Company id is required. Sign in and select a company, or pass --company=N on CLI.';
     if ($itmIsCli) {
-        fwrite(STDERR, $message . PHP_EOL);
+        itm_script_write_stderr( $message . PHP_EOL);
         exit(1);
     }
     http_response_code(401);

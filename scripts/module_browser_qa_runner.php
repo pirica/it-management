@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * HTTP session runner for full-module QA (mirrors browser checklist).
  *
@@ -716,7 +716,7 @@ function mbqa_err(string $message): void
         return;
     }
     if (mbqa_is_cli_sapi()) {
-        fwrite(STDERR, $message);
+        itm_script_write_stderr( $message);
     } else {
         mbqa_out($message);
     }

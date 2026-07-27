@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Static guard: equipment clear_table soft-deletes via shared delete helper.
  *
@@ -49,7 +49,7 @@ function itm_eqct_report(string $label, bool $passed): void
     if ($passed) {
         $line = '[PASS] ' . $label;
         if ($itmIsCli) {
-            fwrite(STDOUT, colorText($line . PHP_EOL, 'pass'));
+            itm_script_write_stdout( colorText($line . PHP_EOL, 'pass'));
         } else {
             echo itm_script_format_status_line($line) . $nl;
         }
@@ -59,7 +59,7 @@ function itm_eqct_report(string $label, bool $passed): void
     $failures++;
     $line = '[FAIL] ' . $label;
     if ($itmIsCli) {
-        fwrite(STDOUT, colorText($line . PHP_EOL, 'fail'));
+        itm_script_write_stdout( colorText($line . PHP_EOL, 'fail'));
     } else {
         echo itm_script_format_status_line($line) . $nl;
     }
@@ -102,7 +102,7 @@ if ($itmIsCli) {
 if ($failures === 0) {
     $summary = '[PASS] Equipment clear_table guard complete.';
     if ($itmIsCli) {
-        fwrite(STDOUT, colorText($summary . PHP_EOL, 'pass'));
+        itm_script_write_stdout( colorText($summary . PHP_EOL, 'pass'));
         exit(0);
     }
     echo $nl . itm_script_format_status_line($summary) . $nl;
@@ -112,7 +112,7 @@ if ($failures === 0) {
 
 $summary = '[FAIL] Equipment clear_table guard failed ' . $failures . ' check(s).';
 if ($itmIsCli) {
-    fwrite(STDOUT, colorText($summary . PHP_EOL, 'fail'));
+    itm_script_write_stdout( colorText($summary . PHP_EOL, 'fail'));
     exit(1);
 }
 

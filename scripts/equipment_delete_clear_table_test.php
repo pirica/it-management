@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Regression tests for equipment clear_table and transactional single deletes.
  *
@@ -24,8 +24,10 @@ function itm_script_browser_how_to_use(): string
 CLI: <code>php scripts/equipment_delete_clear_table_test.php</code> · <code>ITM_SKIP_DB_TESTS=1</code> (static only) · <code>ITM_TEST_COMPANY_ID</code>.<br> Browser: static checks only (no DB or filesystem cleanup). MySQL regression requires CLI: <code>php scripts/equipment_delete_clear_table_test.php</code>.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
+require_once __DIR__ . '/lib/itm_script_stdio.php';
+
 if (version_compare(PHP_VERSION, '7.1.0', '<')) {
-    fwrite(STDERR, "This script requires PHP 7.1 or newer.\n");
+    itm_script_write_stderr( "This script requires PHP 7.1 or newer.\n");
     exit(1);
 }
 

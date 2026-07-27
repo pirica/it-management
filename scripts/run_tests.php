@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Test Runner Script
  *
@@ -272,7 +272,7 @@ if ($phpunit_missing_ext !== []) {
         . ' (copies Xdebug from Laragon portable into D:\\dunebox-v1.0.6). See scripts/SCRIPTS.md → PHPUnit test runner.';
     $msg = $hint;
     if ($isCli) {
-        fwrite(STDERR, $msg . $nl);
+        itm_script_write_stderr( $msg . $nl);
         exit(1);
     }
     itm_script_output_begin('PHPUnit Test Suite');
