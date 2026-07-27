@@ -59,20 +59,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_now'])) {
         $data['body_html'] = (string)($_POST['body_html'] ?? '');
         $data['signature_id'] = (int)($_POST['signature_id'] ?? 0);
 
-        if ($data['to_email'] === '' || !filter_var($data['to_email'], FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'To is required and must be a valid email address.';
+        $toError = webmail_validate_email_address_list($data['to_email'], true, 'To');
+        if ($toError !== null) {
+            $errors[] = $toError;
+        } else {
+            $data['to_email'] = webmail_normalize_email_list_field($data['to_email']);
         }
-        if ($data['cc_email'] !== '') {
-            $ccParts = preg_split('/[,;]+/', $data['cc_email']);
-            if (is_array($ccParts)) {
-                foreach ($ccParts as $ccPart) {
-                    $ccPart = trim((string)$ccPart);
-                    if ($ccPart !== '' && !filter_var($ccPart, FILTER_VALIDATE_EMAIL)) {
-                        $errors[] = 'CC contains an invalid email address.';
-                        break;
-                    }
-                }
-            }
+        $ccError = webmail_validate_email_address_list($data['cc_email'], false, 'CC');
+        if ($ccError !== null) {
+            $errors[] = $ccError;
+        } elseif ($data['cc_email'] !== '') {
+            $data['cc_email'] = webmail_normalize_email_list_field($data['cc_email']);
         }
         if ($data['subject'] === '') {
             $errors[] = 'Subject is required.';
@@ -198,7 +195,7 @@ $selectedSignatureId = (int)($data['signature_id'] ?? 0);
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <div class="webmail-compose-row">
                         <label for="to_email">To</label>
-                        <input type="email" name="to_email" id="to_email" class="form-control" required value="<?php echo sanitize($data['to_email']); ?>">
+                        <input type="text" name="to_email" id="to_email" class="form-control" required placeholder="Comma-separated" value="<?php echo sanitize($data['to_email']); ?>">
                     </div>
                     <div class="webmail-compose-row">
                         <label for="from_email">From</label>
