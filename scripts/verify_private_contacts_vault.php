@@ -1,7 +1,9 @@
 <?php
 /**
+ * Private contacts vault encryption regression.
+ *
+ * Browser: open scripts/verify_private_contacts_vault.php?run=1 (Administrator session).
  * CLI: php scripts/verify_private_contacts_vault.php
- * Verifies private contacts vault encryption (encrypt on write, decrypt on read, legacy plaintext).
  */
 
 
@@ -14,30 +16,36 @@ function itm_script_browser_how_to_use(): string
 <code>php scripts/verify_private_contacts_vault.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/private_contacts/pc_vault_helpers.php</code>, create/edit persistence, list hydrate/search, or <code>itm_vault_reencrypt_private_contacts()</code>.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
-define('ITM_CLI_SCRIPT', true);
+if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
+    define('ITM_CLI_SCRIPT', true);
+}
+
 require_once dirname(__DIR__) . '/config/config.php';
 require_once ROOT_PATH . 'modules/private_contacts/pc_vault_helpers.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 itm_script_output_begin('Private Contacts Vault Verification');
+$nl = itm_script_output_nl();
 
 $failures = 0;
 
 function pc_vault_verify_fail($message)
 {
-    global $failures;
+    global $failures, $nl;
     $failures++;
-    fwrite(STDERR, "[FAIL] {$message}\n");
+    echo itm_script_format_status_line('[FAIL] ' . $message) . $nl;
 }
 
 function pc_vault_verify_pass($message)
 {
-    fwrite(STDOUT, "[PASS] {$message}\n");
+    global $nl;
+    echo itm_script_format_status_line('[PASS] ' . $message) . $nl;
 }
 
 if (!($conn instanceof mysqli)) {
     pc_vault_verify_fail('Database connection unavailable.');
+    itm_script_output_end();
     exit(1);
 }
 
@@ -45,6 +53,7 @@ $companyId = 1;
 $actor = itm_script_test_employee_create($conn, $companyId, ['script_slug' => 'verify-private-contacts-vault']);
 if (!is_array($actor) || empty($actor['id'])) {
     pc_vault_verify_fail('Could not create disposable test employee.');
+    itm_script_output_end();
     exit(1);
 }
 
@@ -105,6 +114,7 @@ $ins->bind_param(
 if (!$ins->execute()) {
     pc_vault_verify_fail('Could not insert encrypted private contact row: ' . $ins->error);
     itm_script_test_employee_delete($conn, $employeeId);
+    itm_script_output_end();
     exit(1);
 }
 $contactId = (int)$ins->insert_id;
@@ -141,9 +151,11 @@ mysqli_query($conn, 'DELETE FROM private_contacts WHERE id = ' . (int)$contactId
 itm_script_test_employee_delete($conn, $employeeId);
 
 if ($failures > 0) {
-    fwrite(STDERR, "Result: {$failures} failure(s).\n");
+    echo $nl . colorText($failures . ' failure(s).', 'fail') . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
-fwrite(STDOUT, "Result: all checks passed.\n");
+echo $nl . itm_script_format_status_line('[PASS] All private contacts vault checks passed.') . $nl;
+itm_script_output_end();
 exit(0);

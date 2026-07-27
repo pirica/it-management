@@ -1157,9 +1157,9 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_bookmarks_folder_move.php` — bookmarks folder move/merge (`bkm_move_folder()`, duplicate same-name sibling prompt)
 - `php scripts/verify_notes_vault.php` — notes private-field vault encryption (`notes_vault_helpers.php`, shared vs private persistence, label_hash); browser catalog uses `itm_script_output_nl()` / `itm_script_format_status_line()` (not `fwrite(STDOUT)`).
 - `php scripts/verify_todo_vault.php` — todo private-field vault encryption (`todo_vault_helpers.php`, shared vs private persistence, `title_hash`)
-- `php scripts/verify_events_vault.php` — events private-field vault encryption (`events_vault_helpers.php`, shared vs private persistence, hydrate when vault locked/unlocked)
+- `php scripts/verify_events_vault.php` — events private-field vault encryption (`events_vault_helpers.php`, shared vs private persistence, hydrate when vault locked/unlocked); browser catalog uses `itm_script_output_nl()` / `itm_script_format_status_line()` (not `fwrite(STDOUT)`).
 - `php scripts/verify_notes_share.php` — notes temporary QR/code share sessions (`note_share_sessions`, `join.php`, `notes_share_helpers.php`)
-- `php scripts/verify_private_contacts_vault.php` — private contacts vault encryption (`pc_vault_helpers.php`, list hydrate/search, master-key re-encrypt)
+- `php scripts/verify_private_contacts_vault.php` — private contacts vault encryption (`pc_vault_helpers.php`, list hydrate/search, master-key re-encrypt); browser catalog uses `itm_script_output_nl()` / `itm_script_format_status_line()` (not `fwrite(STDOUT)`).
 - `php scripts/verify_qr_share_modules.php` — Passwords, Bookmarks, Todo, Events, Private Contacts, Explorer, Floor Plans, Rack Planner, and CRUD record share (`departments` via `includes/itm_crud_record_share.php`) temporary QR/code sessions (`share_sessions`, `join.php`, module `*_share_helpers.php`, shared `includes/itm_qr_share.php`). Inventory: `docs/CRUD_RECORD_SHARE.md`.
 - `php scripts/verify_module_share.php` — `company_module_share` opt-out matrix + `has_module_share_access()`; requires `share_sessions` table
 - `php scripts/verify_db_migrations.php` — each `db/migrations/*.sql` vs live schema/data (Applied / Superseded / Not applied)
