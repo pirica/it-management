@@ -4,6 +4,7 @@
  *
  * Blocked (no ZIP stream): every path except the exact own Private/{username}_{employee_id}.
  * Allowed: Private/{username}_{employee_id} only (recursive ZIP of that folder tree).
+ * Step 2 requires session vault_key (Explorer vault gate on Private paths).
  *
  * CLI: php scripts/verify_explorer_zip_leak.php
  */
@@ -22,6 +23,7 @@ if (!defined('ITM_CLI_SCRIPT')) {
 }
 
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/itm_cli_binary.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
@@ -30,39 +32,11 @@ itm_script_output_begin('Explorer ZIP Leak Verification');
 $nl = itm_script_output_nl();
 
 /**
- * @param string $path
- * @return bool
- */
-function vezl_is_cli_php_binary($path)
-{
-    $normalized = strtolower(str_replace('\\', '/', (string)$path));
-    if ($normalized === '' || !is_file($path)) {
-        return false;
-    }
-    if (strpos($normalized, 'php-cgi') !== false) {
-        return false;
-    }
-    if (substr($normalized, -4) === '.dll') {
-        return false;
-    }
-
-    return true;
-}
-
-/**
  * @return string
  */
 function vezl_resolve_php_binary()
 {
-    $laragonPhp = 'D:\\dunebox-v1.0.6\\system\\apps\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe';
-    if (is_file($laragonPhp)) {
-        return $laragonPhp;
-    }
-    if (defined('PHP_BINARY') && PHP_BINARY !== '' && vezl_is_cli_php_binary(PHP_BINARY)) {
-        return (string)PHP_BINARY;
-    }
-
-    return 'php';
+    return itm_resolve_cli_php_binary();
 }
 
 /**
@@ -280,6 +254,11 @@ function vezl_assert_download_zip_allowed($apiPath, array $session, $path, $labe
         return true;
     }
 
+    if (stripos((string)$output, 'Unlock the vault to access Private files') !== false) {
+        echo colorText('[FAIL] ' . $label . ' — vault locked; session needs vault_key for own Private downloadZip.', 'fail') . $nl;
+        return true;
+    }
+
     $snippet = trim(vezl_strip_cli_headers($output));
     if (strlen($snippet) > 120) {
         $snippet = substr($snippet, 0, 120) . '…';
@@ -359,6 +338,8 @@ $session = [
     'company_id' => $companyId,
     'employee_id' => (int)$testUser['id'],
     'username' => (string)$testUser['username'],
+    // Why: downloadZip on own Private folder runs explorer_enforce_vault_for_private_path after ACL.
+    'vault_key' => hash('sha256', 'verify-explorer-zip-leak'),
 ];
 
 $blockedPaths = [
