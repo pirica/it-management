@@ -987,6 +987,36 @@ if (!function_exists('webmail_compose_merge_body_and_signature')) {
     }
 }
 
+if (!function_exists('webmail_compose_resolve_html_body_for_send')) {
+    /**
+     * Merge optional signature and sanitize HTML — same output as compose send / preview.
+     */
+    function webmail_compose_resolve_html_body_for_send(
+        mysqli $conn,
+        int $companyId,
+        int $employeeId,
+        string $bodyHtml,
+        int $signatureId
+    ): string {
+        $bodyForSend = $bodyHtml;
+        if ($signatureId > 0) {
+            $sigRow = webmail_signature_get($conn, $signatureId, $companyId, $employeeId);
+            if ($sigRow !== null) {
+                $bodyForSend = webmail_compose_merge_body_and_signature(
+                    $bodyHtml,
+                    (string)($sigRow['signature'] ?? '')
+                );
+            }
+        }
+        $htmlBody = webmail_render_details_html($bodyForSend);
+        if ($htmlBody === '' && trim(strip_tags($bodyForSend)) === '') {
+            $htmlBody = '<p></p>';
+        }
+
+        return $htmlBody;
+    }
+}
+
 if (!function_exists('webmail_message_body_plaintext')) {
     /**
      * Plain text for PDF export and temporary share payloads (no HTML).
@@ -1082,6 +1112,57 @@ if (!function_exists('webmail_render_tabs')) {
         echo '<a href="signatures.php" class="' . $sigClass . '">Signatures</a>';
         $composeClass = 'webmail-tab' . ($activeTab === 'compose' ? ' active' : '');
         echo '<a href="compose.php" class="' . $composeClass . '">Compose</a>';
+    }
+}
+
+if (!function_exists('webmail_handle_compose_preview_ajax')) {
+    /**
+     * JSON preview for compose modal (exits when ajax_action=preview_message).
+     */
+    function webmail_handle_compose_preview_ajax(mysqli $conn, int $companyId, int $employeeId, string $sessionEmail): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || (string)($_GET['ajax_action'] ?? '') !== 'preview_message') {
+            return;
+        }
+
+        header('Content-Type: application/json; charset=utf-8');
+        itm_require_post_csrf();
+
+        if (trim($sessionEmail) === '') {
+            http_response_code(400);
+            echo json_encode(
+                ['ok' => false, 'error' => 'Cannot preview without a session email address.'],
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+            exit;
+        }
+
+        $toEmail = trim((string)($_POST['to_email'] ?? ''));
+        $ccEmail = trim((string)($_POST['cc_email'] ?? ''));
+        $subject = trim((string)($_POST['subject'] ?? ''));
+        $bodyHtml = (string)($_POST['body_html'] ?? '');
+        $signatureId = (int)($_POST['signature_id'] ?? 0);
+
+        $resolvedBody = webmail_compose_resolve_html_body_for_send(
+            $conn,
+            $companyId,
+            $employeeId,
+            $bodyHtml,
+            $signatureId
+        );
+
+        echo json_encode(
+            [
+                'ok' => true,
+                'from' => $sessionEmail,
+                'to' => $toEmail,
+                'cc' => $ccEmail,
+                'subject' => $subject !== '' ? $subject : '(No subject)',
+                'body_html' => $resolvedBody,
+            ],
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
+        exit;
     }
 }
 

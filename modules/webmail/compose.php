@@ -12,6 +12,8 @@ $sessionEmail = webmail_session_email();
 $csrfToken = itm_get_csrf_token();
 $uiConfig = itm_get_ui_configuration($conn, $company_id, $employee_id > 0 ? $employee_id : null);
 
+webmail_handle_compose_preview_ajax($conn, $company_id, $employee_id, $sessionEmail);
+
 $errors = [];
 $notices = [];
 if (!empty($_SESSION['webmail_error'])) {
@@ -76,20 +78,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_now'])) {
         }
 
         if ($errors === []) {
-            $bodyForSend = $data['body_html'];
-            if ($data['signature_id'] > 0) {
-                $sigRow = webmail_signature_get($conn, $data['signature_id'], $company_id, $employee_id);
-                if ($sigRow !== null) {
-                    $bodyForSend = webmail_compose_merge_body_and_signature(
-                        $data['body_html'],
-                        (string)($sigRow['signature'] ?? '')
-                    );
-                }
-            }
-            $htmlBody = webmail_render_details_html($bodyForSend);
-            if ($htmlBody === '' && trim(strip_tags($bodyForSend)) === '') {
-                $htmlBody = '<p></p>';
-            }
+            $htmlBody = webmail_compose_resolve_html_body_for_send(
+                $conn,
+                $company_id,
+                $employee_id,
+                $data['body_html'],
+                $data['signature_id']
+            );
             $sendOk = itm_send_email(
                 $data['to_email'],
                 $data['subject'],
@@ -168,6 +163,16 @@ $selectedSignatureId = (int)($data['signature_id'] ?? 0);
             border-color: var(--border);
         }
         .webmail-compose-body-label { margin-bottom: 8px; font-weight: 500; display: block; }
+        .webmail-read-subject { margin: 0 0 12px; font-size: 1.35rem; line-height: 1.35; font-weight: 600; color: var(--text-primary); word-break: break-word; }
+        .webmail-read-meta { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px 16px; align-items: start; }
+        .webmail-read-addresses { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+        .webmail-read-line { display: flex; gap: 8px; font-size: 0.95rem; line-height: 1.4; min-width: 0; }
+        .webmail-read-label { flex: 0 0 3.25rem; color: var(--text-secondary, #6b7280); font-weight: 500; }
+        .webmail-read-value { flex: 1; min-width: 0; word-break: break-word; color: var(--text-primary); }
+        .webmail-read-body { padding: 20px; min-height: 120px; font-size: 1rem; line-height: 1.6; color: var(--text-primary); }
+        .webmail-read-body.webmail-read-body-empty { color: var(--text-secondary, #6b7280); font-style: italic; }
+        .webmail-body-view p { margin: 0 0 0.75em; }
+        .webmail-body-view p:last-child { margin-bottom: 0; }
     </style>
 </head>
 <body>
@@ -237,8 +242,13 @@ $selectedSignatureId = (int)($data['signature_id'] ?? 0);
                         ?></script>
                         <input type="hidden" name="body_html" id="webmail-body-html" value="">
                     </div>
-                    <button type="submit" name="send_now" value="1" class="btn btn-primary" title="Send Now">📤</button>
+                    <div class="webmail-compose-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button type="button" class="btn" id="webmail-compose-preview" title="Preview">🔎</button>
+                        <button type="submit" name="send_now" value="1" class="btn btn-primary" title="Send Now">📤</button>
+                    </div>
                 </form>
+
+                <?php require __DIR__ . '/includes/webmail_compose_preview_modal.php'; ?>
 
                 <script type="application/json" id="webmail-signature-html-map"><?php
                     echo json_encode(

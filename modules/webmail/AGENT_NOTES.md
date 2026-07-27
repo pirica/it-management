@@ -42,6 +42,7 @@ Session-scoped mailbox UI on the shared **`emails`** send log table. Users see m
 - **Bulk delete:** when row count ≥ `records_per_page`, standard `bulk-delete-form` (Select to Delete / Clear Table); non-Trash folders soft-delete to Trash, Trash permanently deletes; scoped to current folder + filters via `delete.php` `bulk_action`.
 - **Compose layout:** To, From, CC, Subject, Select Signature, and Body on inline label rows (`.webmail-compose-row`).
 - **Compose body:** Quill Snow editor (bold/italic/underline/strike, headers, lists, link, clear); HTML synced to `body_html` on submit and sanitized server-side with `webmail_render_details_html()`.
+- **Compose preview:** **🔎** beside **📤** opens a modal (`includes/webmail_compose_preview_modal.php`) fed by `POST compose.php?ajax_action=preview_message` (CSRF); body uses `webmail_compose_resolve_html_body_for_send()` (same merge/sanitize as send).
 - **Signatures UI:** list on `signatures.php`; create/edit in modal (Name + Quill); delete in confirm modal; compose dropdown with empty option, signature names, ➕, **✏️** (edit selected), and **🗑️** (delete). Signature modal Quill teardown resets `.webmail-quill-wrap` so Snow toolbars are not duplicated on reopen. After edit from compose (`return_to=compose`), redirect keeps the same `signature_id` selected in the dropdown. List table uses `data-itm-no-table-actions-layout="1"` so Settings table-actions layout does not clone action cells; `js/webmail-signatures.js` uses document-level click delegation for edit/delete/create.
 - Star / archive / delete actions via POST `delete.php` with CSRF. **Inbox, Starred, Sent, and Archived** use **soft delete** (move to Trash, no browser confirm). **Trash** alone uses **hard delete** with confirm.
 - **Read / unread:** list **Read** column; bold row when unread; toggle in Actions; view auto-marks read.
@@ -58,6 +59,7 @@ Session-scoped mailbox UI on the shared **`emails`** send log table. Users see m
 - `compose.php`, `signatures.php`, `view.php`, `delete.php`, `join.php` — temporary message share (QR / code).
 - `includes/webmail_helpers.php` — scopes, mutations, signatures, tabs.
 - `includes/webmail_signature_modal.php` — shared signature modals.
+- `includes/webmail_compose_preview_modal.php` — compose message preview modal.
 - Wrappers: `create.php` → compose; `edit.php` / `list_all.php` → index.
 - **UI configuration coverage:** gate-excluded non-standard CRUD (`scripts/data/ui_configuration_excluded_modules.txt`, `docs/list_bespoke_UI.txt`) — checks print `[n/a][pass|fail|n/a]`; **Back & Save** on create/edit stubs reviewed in `scripts/data/ui_configuration_reviewed.json`.
 

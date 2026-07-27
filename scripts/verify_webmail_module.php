@@ -328,6 +328,18 @@ if (webmail_signatures_table_exists($conn)) {
         } else {
             webmail_verify_pass('webmail_compose_merge_body_and_signature merges HTML.');
         }
+        $resolvedNoSig = webmail_compose_resolve_html_body_for_send($conn, $companyId, $employeeId, '<p>Preview body</p>', 0);
+        if (strpos($resolvedNoSig, 'Preview body') === false) {
+            webmail_verify_fail('webmail_compose_resolve_html_body_for_send without signature failed.');
+        } else {
+            webmail_verify_pass('webmail_compose_resolve_html_body_for_send without signature.');
+        }
+        $resolvedWithSig = webmail_compose_resolve_html_body_for_send($conn, $companyId, $employeeId, '<p>Hi</p>', $sigId);
+        if (strpos($resolvedWithSig, 'Hi') === false || strpos($resolvedWithSig, 'updated') === false) {
+            webmail_verify_fail('webmail_compose_resolve_html_body_for_send with signature failed.');
+        } else {
+            webmail_verify_pass('webmail_compose_resolve_html_body_for_send with signature.');
+        }
         if (!webmail_signature_delete($conn, $sigId, $companyId, $employeeId)) {
             webmail_verify_fail('webmail_signature_delete failed.');
         } elseif (webmail_signature_get($conn, $sigId, $companyId, $employeeId) !== null) {
