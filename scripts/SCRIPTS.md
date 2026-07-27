@@ -175,7 +175,7 @@ Catalog: `scripts/scripts.php`.
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/verify_select_options_escalation.php` | Regression — a non-admin session cannot create an Admin employee via `modules/select_options_api.php` by POSTing `table=employees` with `role_id` and `access_level_id` in `extra_fields`. Expects **PASS** (`[PASS] … blocked by table whitelist`) when `includes/itm_select_options_policy.php` rejects the target table before INSERT. |
+| `php scripts/verify_select_options_escalation.php` | Regression — a non-admin session cannot create an Admin employee via `modules/select_options_api.php` by POSTing `table=employees` with `role_id` and `access_level_id` in `extra_fields`. Expects **PASS** (`[PASS] … blocked by table whitelist`) when `includes/itm_select_options_policy.php` rejects the target table before INSERT. **PASS JSON body:** `{"ok":false,"error":"This list cannot be updated from quick-add."}` (not a `302` to `login.php`). Browser catalog runs use `itm_resolve_cli_php_binary()` (`PHP_EXE` in `.env` when Apache’s `PHP_BINARY` is php-cgi). |
 
 Run after changes to `modules/select_options_api.php` or `includes/itm_select_options_policy.php`. Requires MySQL (`itmanagement` schema). The script creates disposable test users and removes them on exit. Catalog: `scripts/scripts.php`.
 
