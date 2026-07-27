@@ -12,9 +12,12 @@
             </div>
             <div class="modal-body" style="padding:0;">
                 <header class="webmail-read-header" style="padding:20px 20px 16px;border-bottom:1px solid var(--border);">
-                    <h2 class="webmail-read-subject" id="webmail-compose-preview-subject"></h2>
                     <div class="webmail-read-meta">
                         <div class="webmail-read-addresses">
+                            <div class="webmail-read-line">
+                                <span class="webmail-read-label">Subject</span>
+                                <span class="webmail-read-value" id="webmail-compose-preview-subject"></span>
+                            </div>
                             <div class="webmail-read-line">
                                 <span class="webmail-read-label">From</span>
                                 <span class="webmail-read-value" id="webmail-compose-preview-from"></span>
