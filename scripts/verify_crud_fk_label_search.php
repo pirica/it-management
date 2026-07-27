@@ -20,6 +20,7 @@ if (!defined('ITM_CLI_SCRIPT')) {
 }
 
 require_once dirname(__DIR__) . '/config/config.php';
+require_once ROOT_PATH . 'includes/itm_cli_binary.php';
 require_once ROOT_PATH . 'includes/itm_crud_fk_label_search.php';
 require_once ROOT_PATH . 'includes/itm_todo_search.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
@@ -30,6 +31,16 @@ itm_script_output_begin('CRUD FK Label Search Verification');
 $nl = itm_script_output_nl();
 $companyId = 1;
 $failed = false;
+
+/**
+ * Seed Admin master-key unlock for isolated module HTML probes (todo/notes/bookmarks gate on vault).
+ */
+function verify_crud_fk_label_session_with_vault(array $session): array
+{
+    $session['vault_key'] = hash('sha256', 'Admin');
+
+    return $session;
+}
 
 function verify_crud_fk_label_run_isolated($scriptPath, array $session, array $get = [])
 {
@@ -51,8 +62,9 @@ echo ob_get_clean();
 ";
     $tmpFile = tempnam(sys_get_temp_dir(), 'verify_crud_fk_search');
     file_put_contents($tmpFile, $code);
+    $phpBin = itm_resolve_cli_php_binary();
     $output = [];
-    exec(PHP_BINARY . ' -d error_reporting=0 ' . escapeshellarg($tmpFile) . ' 2>&1', $output);
+    exec(escapeshellarg($phpBin) . ' -d error_reporting=0 ' . escapeshellarg($tmpFile) . ' 2>&1', $output);
     unlink($tmpFile);
 
     return implode("\n", $output);
@@ -296,11 +308,15 @@ if ($todoTaskId > 0) {
     } else {
         $todoHtml = verify_crud_fk_label_run_isolated(
             ROOT_PATH . 'modules/todo/index.php',
-            $session,
+            verify_crud_fk_label_session_with_vault($session),
             ['search' => $todoCategoryName, 'filter' => 'tasks']
         );
-        if (stripos($todoHtml, $todoTitle) === false) {
+        if (stripos($todoHtml, 'Enter your master key') !== false) {
+            echo colorText('[FAIL] todo probe hit vault lock screen — session needs vault_key (Admin master key).', 'fail') . $nl;
+            $failed = true;
+        } elseif (stripos($todoHtml, $todoTitle) === false) {
             echo colorText('[FAIL] todo search did not match todo_categories.name.', 'fail') . $nl;
+            echo "Expected PASS: list HTML contains task title \"{$todoTitle}\" when search=\"{$todoCategoryName}\" (category label in PHP search haystack)." . $nl;
             $failed = true;
         } else {
             echo colorText('[PASS] todo search matches category/department/assignee labels.', 'pass') . $nl;
@@ -337,11 +353,15 @@ if ($stmtNote) {
 if ($noteId > 0) {
     $noteHtml = verify_crud_fk_label_run_isolated(
         ROOT_PATH . 'modules/notes/index.php',
-        $session,
+        verify_crud_fk_label_session_with_vault($session),
         ['search' => $sharedSearchTerm, 'filter' => 'all']
     );
-    if (stripos($noteHtml, $noteTitle) === false) {
+    if (stripos($noteHtml, 'Enter your master key') !== false) {
+        echo colorText('[FAIL] notes probe hit vault lock screen — session needs vault_key (Admin master key).', 'fail') . $nl;
+        $failed = true;
+    } elseif (stripos($noteHtml, $noteTitle) === false) {
         echo colorText('[FAIL] notes search did not match shared-with employee names.', 'fail') . $nl;
+        echo 'Expected PASS: list HTML contains note title "' . $noteTitle . '" when search matches shared employee username "' . $sharedSearchTerm . '".' . $nl;
         $failed = true;
     } else {
         echo colorText('[PASS] notes search matches shared-with employee labels.', 'pass') . $nl;
@@ -415,7 +435,7 @@ echo ob_get_clean();
     $tmpFile = tempnam(sys_get_temp_dir(), 'verify_crud_fk_ajax');
     file_put_contents($tmpFile, $code);
     $output = [];
-    exec(PHP_BINARY . ' -d error_reporting=0 ' . escapeshellarg($tmpFile) . ' 2>&1', $output);
+    exec(escapeshellarg(itm_resolve_cli_php_binary()) . ' -d error_reporting=0 ' . escapeshellarg($tmpFile) . ' 2>&1', $output);
     unlink($tmpFile);
 
     return implode("\n", $output);
@@ -489,11 +509,15 @@ if ($bookmarkFolderId > 0) {
 if ($bookmarkId > 0) {
     $bkmHtml = verify_crud_fk_label_run_isolated(
         ROOT_PATH . 'modules/bookmarks/list_all.php',
-        $session,
+        verify_crud_fk_label_session_with_vault($session),
         ['search' => $bookmarkFolderName, 'sort' => 'title', 'dir' => 'ASC']
     );
-    if (stripos($bkmHtml, $bookmarkTitle) === false) {
+    if (stripos($bkmHtml, 'Enter your master key') !== false) {
+        echo colorText('[FAIL] bookmarks list_all probe hit vault lock screen — session needs vault_key (Admin master key).', 'fail') . $nl;
+        $failed = true;
+    } elseif (stripos($bkmHtml, $bookmarkTitle) === false) {
         echo colorText('[FAIL] bookmarks list_all search did not match bookmark_folders.name.', 'fail') . $nl;
+        echo 'Expected PASS: list HTML contains bookmark title "' . $bookmarkTitle . '" when search="' . $bookmarkFolderName . '" (folder name in bkm_row_matches_search haystack).' . $nl;
         $failed = true;
     } else {
         echo colorText('[PASS] bookmarks list_all search matches folder name.', 'pass') . $nl;
