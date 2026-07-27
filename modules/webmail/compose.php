@@ -220,6 +220,7 @@ $selectedSignatureId = (int)($data['signature_id'] ?? 0);
                                 <?php endforeach; ?>
                                 <option value="__add_new__">➕</option>
                             </select>
+                            <button type="button" class="btn btn-sm" id="webmail-compose-signature-edit" style="display:none;" title="Edit">✏️</button>
                             <button type="button" class="btn btn-sm btn-danger" id="webmail-compose-signature-delete" style="display:none;" title="Delete">🗑️</button>
                         </div>
                     </div>
