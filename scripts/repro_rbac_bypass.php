@@ -32,7 +32,7 @@ itm_script_output_begin('RBAC Bypass PoC');
 $nl = itm_script_output_nl();
 
 /**
- * Why: expenses.uq_expenses_company_scope allows one row per (company_id, cost_center_id).
+ * Why: expenses.uq_expenses_company_scope is (company_id, gl_account_id, posting_date, invoice_number).
  */
 function repro_rbac_pick_cost_center_id(mysqli $conn, int $companyId): int
 {
@@ -49,6 +49,52 @@ function repro_rbac_pick_cost_center_id(mysqli $conn, int $companyId): int
             ORDER BY cc.id ASC
             LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return 0;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    mysqli_stmt_execute($stmt);
+    $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+    mysqli_stmt_close($stmt);
+
+    return is_array($row) ? (int)($row['id'] ?? 0) : 0;
+}
+
+function repro_rbac_pick_paid_status_id(mysqli $conn, int $companyId): int
+{
+    $companyId = (int)$companyId;
+    if ($companyId <= 0) {
+        return 0;
+    }
+
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT id FROM paid_statuses WHERE company_id = ? AND active = 1 ORDER BY sort_order ASC, id ASC LIMIT 1'
+    );
+    if (!$stmt) {
+        return 0;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    mysqli_stmt_execute($stmt);
+    $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+    mysqli_stmt_close($stmt);
+
+    return is_array($row) ? (int)($row['id'] ?? 0) : 0;
+}
+
+function repro_rbac_pick_gl_account_id(mysqli $conn, int $companyId): int
+{
+    $companyId = (int)$companyId;
+    if ($companyId <= 0) {
+        return 0;
+    }
+
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT id FROM gl_accounts WHERE company_id = ? AND active = 1 ORDER BY id ASC LIMIT 1'
+    );
     if (!$stmt) {
         return 0;
     }
@@ -326,6 +372,20 @@ if ($costCenterId <= 0) {
     exit(1);
 }
 
+$paidStatusId = repro_rbac_pick_paid_status_id($conn, $company_id);
+if ($paidStatusId <= 0) {
+    echo colorText('[FAIL] No active paid_statuses row for company_id=' . $company_id . '.', 'fail') . $nl;
+    itm_script_output_end();
+    exit(1);
+}
+
+$glAccountId = repro_rbac_pick_gl_account_id($conn, $company_id);
+if ($glAccountId <= 0) {
+    echo colorText('[FAIL] No active gl_accounts row for company_id=' . $company_id . '.', 'fail') . $nl;
+    itm_script_output_end();
+    exit(1);
+}
+
 $csrfToken = 'repro_rbac_csrf_' . bin2hex(random_bytes(8));
 $session = [
     'company_id' => $company_id,
@@ -335,17 +395,29 @@ $session = [
     'csrf_token' => $csrfToken,
 ];
 
-$insertSql = 'INSERT INTO expenses (company_id, cost_center_id, gl_account_id, date, amount, description)
-              VALUES (?, ?, 1, ?, 100.00, ?)';
+$insertSql = 'INSERT INTO expenses (company_id, cost_center_id, gl_account_id, date, posting_date, amount, paid_status_id, description, invoice_number)
+              VALUES (?, ?, ?, ?, ?, 100.00, ?, ?, ?)';
 $insertStmt = mysqli_prepare($conn, $insertSql);
 $insertDate = '2026-06-01';
 $insertDesc = 'RBAC repro row';
+$insertInvoice = 'RBAC-REPRO-' . bin2hex(random_bytes(4));
 if (!$insertStmt) {
     echo colorText('[FAIL] Unable to prepare expenses seed insert.', 'fail') . $nl;
     itm_script_output_end();
     exit(1);
 }
-mysqli_stmt_bind_param($insertStmt, 'iiss', $company_id, $costCenterId, $insertDate, $insertDesc);
+mysqli_stmt_bind_param(
+    $insertStmt,
+    'iiississ',
+    $company_id,
+    $costCenterId,
+    $glAccountId,
+    $insertDate,
+    $insertDate,
+    $paidStatusId,
+    $insertDesc,
+    $insertInvoice
+);
 if (!mysqli_stmt_execute($insertStmt)) {
     echo colorText('[FAIL] Unable to seed expenses row: ' . mysqli_error($conn), 'fail') . $nl;
     mysqli_stmt_close($insertStmt);
