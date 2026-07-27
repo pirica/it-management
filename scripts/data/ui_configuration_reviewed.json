@@ -974,11 +974,6 @@
           "note": "No server-side list search — filter by feed source select only; items capped at NEWS_RESULTS_PER_PAGE from file cache"
         },
         {
-          "check": "Column sort (ASC/DESC)",
-          "code": "ui_config_sort",
-          "note": "In-memory news_sort_feed_items_for_ui() with ▲/▼ headers on cached feed rows"
-        },
-        {
           "check": "Pagination (records per page)",
           "code": "ui_config_pagination",
           "note": "Single page up to NEWS_RESULTS_PER_PAGE items per source — no SQL LIMIT/OFFSET or records_per_page paging"
