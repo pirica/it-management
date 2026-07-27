@@ -1,9 +1,10 @@
 <?php
 /**
+ * WhatsApp deep-link message/url helper regression.
+ *
+ * Browser: open scripts/verify_whatsapp_share.php?run=1 (signed-in session).
  * CLI: php scripts/verify_whatsapp_share.php
- * Verifies WhatsApp deep-link message/url helpers for temporary share sessions.
  */
-
 
 /**
  * Browser catalog: How to use (shown on landing before run=1).
@@ -11,28 +12,34 @@
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/verify_whatsapp_share.php</code>
+<code>php scripts/verify_whatsapp_share.php</code> — exit <code>1</code> on failure. Run when changing <code>includes/itm_whatsapp_share.php</code> or <code>js/itm-whatsapp-share.js</code>.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
-define('ITM_CLI_SCRIPT', true);
+
+if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
+    define('ITM_CLI_SCRIPT', true);
+}
+
 require_once dirname(__DIR__) . '/config/config.php';
 require_once ROOT_PATH . 'includes/itm_whatsapp_share.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 
 itm_script_output_begin('WhatsApp Share Helper Verification');
+$nl = itm_script_output_nl();
 
 $failures = 0;
 
 function whatsapp_share_verify_fail($message)
 {
-    global $failures;
+    global $failures, $nl;
     $failures++;
-    fwrite(STDERR, "[FAIL] {$message}\n");
+    echo itm_script_format_status_line('[FAIL] ' . $message) . $nl;
 }
 
 function whatsapp_share_verify_pass($message)
 {
-    fwrite(STDOUT, "[PASS] {$message}\n");
+    global $nl;
+    echo itm_script_format_status_line('[PASS] ' . $message) . $nl;
 }
 
 $joinUrl = 'http://localhost/it-management/modules/notes/join.php?t=abc123';
@@ -59,9 +66,11 @@ if ($decoded !== $message) {
 }
 
 if ($failures > 0) {
-    fwrite(STDERR, "\n{$failures} failure(s).\n");
+    echo $nl . colorText($failures . ' failure(s).', 'fail') . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
-fwrite(STDOUT, "\nAll WhatsApp share helper checks passed.\n");
+echo $nl . itm_script_format_status_line('[PASS] All WhatsApp share helper checks passed.') . $nl;
+itm_script_output_end();
 exit(0);
