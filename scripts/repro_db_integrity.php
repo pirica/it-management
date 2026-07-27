@@ -1,6 +1,11 @@
 <?php
 /**
- * Reproduction script for incorrect UNIQUE constraints and trigger errors in db/.
+ * Regression: expenses / assignment-history UNIQUE keys and Admin bookmark trigger.
+ *
+ * Browser + CLI. Runs inside a transaction and always rolls back.
+ * Expects expenses unique (company_id, gl_account_id, posting_date, invoice_number) to allow
+ * two different posting dates; documents assignment-history unique (company_id, employee_id);
+ * Admin role insert must not fail the add_default_bookmarks_for_admin trigger.
  */
 
 
@@ -10,122 +15,219 @@
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/repro_db_integrity.php</code>
+Browser: <a href="repro_db_integrity.php?run=1">run=1</a>. CLI: <code>php scripts/repro_db_integrity.php</code> — exit <code>0</code> when expenses multi-row insert and Admin trigger pass (assignment-history one-row-per-employee unique is reported as WARN when still present). All writes roll back.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
-define('ITM_CLI_SCRIPT', true);
+
+$itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
+if ($itmIsCli && !defined('ITM_CLI_SCRIPT')) {
+    define('ITM_CLI_SCRIPT', true);
+}
+
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_script_test_employee.php';
 
 itm_script_output_begin('Database Integrity Reproduction');
 $nl = itm_script_output_nl();
 
-function test_expenses($conn) {
+/**
+ * @return int
+ */
+function itm_repro_db_integrity_pick_id(mysqli $conn, $sql, $companyId)
+{
+    $companyId = (int)$companyId;
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return 0;
+    }
+    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    mysqli_stmt_execute($stmt);
+    $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+    mysqli_stmt_close($stmt);
+
+    return is_array($row) ? (int)($row['id'] ?? 0) : 0;
+}
+
+/**
+ * @return bool
+ */
+function itm_repro_db_integrity_test_expenses(mysqli $conn, $companyId)
+{
     $nl = itm_script_output_nl();
-    $nl = itm_script_output_nl();
-    echo "Testing expenses table unique constraint..." . $nl;
-    $company_id = 1;
-    $cost_center_id = 1;
-    $gl_account_id = 1;
+    echo 'Testing expenses unique key (company_id, gl_account_id, posting_date, invoice_number)...' . $nl;
+
+    $costCenterId = itm_repro_db_integrity_pick_id(
+        $conn,
+        'SELECT id FROM cost_centers WHERE company_id = ? AND active = 1 ORDER BY id ASC LIMIT 1',
+        $companyId
+    );
+    $glAccountId = itm_repro_db_integrity_pick_id(
+        $conn,
+        'SELECT id FROM gl_accounts WHERE company_id = ? AND active = 1 ORDER BY id ASC LIMIT 1',
+        $companyId
+    );
+    $paidStatusId = itm_repro_db_integrity_pick_id(
+        $conn,
+        'SELECT id FROM paid_statuses WHERE company_id = ? AND active = 1 ORDER BY sort_order ASC, id ASC LIMIT 1',
+        $companyId
+    );
+
+    if ($costCenterId <= 0 || $glAccountId <= 0 || $paidStatusId <= 0) {
+        echo colorText('[FAIL] Missing tenant cost_centers / gl_accounts / paid_statuses for expenses seed.', 'fail') . $nl;
+        return false;
+    }
+
     $date1 = '2026-01-01';
     $date2 = '2026-01-02';
-    
-    // Clear existing for clean test
-    mysqli_query($conn, "DELETE FROM expenses WHERE company_id = $company_id AND cost_center_id = $cost_center_id");
-    
-    $sql1 = "INSERT INTO expenses (company_id, cost_center_id, gl_account_id, `date`, amount, active) VALUES ($company_id, $cost_center_id, $gl_account_id, '$date1', 100.00, 1)";
-    if (!mysqli_query($conn, $sql1)) {
-        echo colorText("[FAIL] First expense insert failed: " . mysqli_error($conn), 'fail') . $nl;
+    $inv1 = 'REPRO-DB-INT-A';
+    $inv2 = 'REPRO-DB-INT-B';
+
+    $sql = 'INSERT INTO expenses (company_id, cost_center_id, gl_account_id, `date`, posting_date, amount, paid_status_id, invoice_number, active)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        echo colorText('[FAIL] Unable to prepare expenses insert: ' . mysqli_error($conn), 'fail') . $nl;
         return false;
     }
-    echo colorText("[PASS] First expense insert successful.", 'pass') . $nl;
-    
-    $sql2 = "INSERT INTO expenses (company_id, cost_center_id, gl_account_id, `date`, amount, active) VALUES ($company_id, $cost_center_id, $gl_account_id, '$date2', 200.00, 1)";
-    if (!mysqli_query($conn, $sql2)) {
-        echo colorText("[EXPECTED FAIL] Second expense insert failed (as predicted): " . mysqli_error($conn), 'warn') . $nl;
-    } else {
-        echo colorText("[SUCCESS] Second expense insert successful. The constraint issue is NOT present.", 'pass') . $nl;
+
+    $amount1 = 100.00;
+    mysqli_stmt_bind_param(
+        $stmt,
+        'iiissdis',
+        $companyId,
+        $costCenterId,
+        $glAccountId,
+        $date1,
+        $date1,
+        $amount1,
+        $paidStatusId,
+        $inv1
+    );
+    if (!mysqli_stmt_execute($stmt)) {
+        echo colorText('[FAIL] First expense insert failed: ' . mysqli_stmt_error($stmt), 'fail') . $nl;
+        mysqli_stmt_close($stmt);
+        return false;
     }
+    echo colorText('[PASS] First expense insert successful.', 'pass') . $nl;
+
+    $amount2 = 200.00;
+    mysqli_stmt_bind_param(
+        $stmt,
+        'iiissdis',
+        $companyId,
+        $costCenterId,
+        $glAccountId,
+        $date2,
+        $date2,
+        $amount2,
+        $paidStatusId,
+        $inv2
+    );
+    if (!mysqli_stmt_execute($stmt)) {
+        echo colorText('[FAIL] Second expense insert failed (unique key too tight or FK error): ' . mysqli_stmt_error($stmt), 'fail') . $nl;
+        mysqli_stmt_close($stmt);
+        return false;
+    }
+    echo colorText('[PASS] Second expense insert successful (different posting_date + invoice_number allowed).', 'pass') . $nl;
+    mysqli_stmt_close($stmt);
+
     return true;
 }
 
-function test_assignment_history($conn) {
+/**
+ * @return bool true when diagnostic completed (remaining one-row unique is WARN, not hard fail)
+ */
+function itm_repro_db_integrity_test_assignment_history(mysqli $conn, $companyId)
+{
     $nl = itm_script_output_nl();
-    echo $nl . "Testing employee_assignment_history table unique constraint..." . $nl;
-    $company_id = 1;
-    
-    // Get a valid employee_id
-    $res = mysqli_query($conn, "SELECT id FROM employees WHERE company_id = $company_id LIMIT 1");
-    $row = mysqli_fetch_assoc($res);
-    if (!$row) {
-        echo "[SKIP] No employee found for company $company_id." . $nl;
+    echo $nl . 'Testing employee_assignment_history unique key (company_id, employee_id)...' . $nl;
+
+    $employee = itm_script_test_employee_create_session_actor($conn, $companyId, [
+        'script_slug' => 'repro-db-int-assign',
+        'as_admin' => false,
+    ]);
+    if (!is_array($employee)) {
+        echo colorText('[FAIL] Unable to seed disposable employee for assignment history.', 'fail') . $nl;
         return false;
     }
-    $employee_id = $row['id'];
+    $employeeId = (int)$employee['id'];
+
+    $sql = 'INSERT INTO employee_assignment_history (company_id, employee_id, assigned_date, active) VALUES (?, ?, ?, 1)';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        echo colorText('[FAIL] Unable to prepare assignment insert: ' . mysqli_error($conn), 'fail') . $nl;
+        return false;
+    }
+
     $date1 = '2026-01-01';
     $date2 = '2026-01-02';
-    
-    // Clear existing for clean test
-    mysqli_query($conn, "DELETE FROM employee_assignment_history WHERE company_id = $company_id AND employee_id = $employee_id");
-    
-    $sql1 = "INSERT INTO employee_assignment_history (company_id, employee_id, assigned_date, active) VALUES ($company_id, $employee_id, '$date1', 1)";
-    if (!mysqli_query($conn, $sql1)) {
-        echo colorText("[FAIL] First assignment insert failed: " . mysqli_error($conn), 'fail') . $nl;
+    mysqli_stmt_bind_param($stmt, 'iis', $companyId, $employeeId, $date1);
+    if (!mysqli_stmt_execute($stmt)) {
+        echo colorText('[FAIL] First assignment insert failed: ' . mysqli_stmt_error($stmt), 'fail') . $nl;
+        mysqli_stmt_close($stmt);
         return false;
     }
-    echo colorText("[PASS] First assignment insert successful.", 'pass') . $nl;
-    
-    $sql2 = "INSERT INTO employee_assignment_history (company_id, employee_id, assigned_date, active) VALUES ($company_id, $employee_id, '$date2', 1)";
-    if (!mysqli_query($conn, $sql2)) {
-        echo colorText("[EXPECTED FAIL] Second assignment insert failed (as predicted): " . mysqli_error($conn), 'warn') . $nl;
-    } else {
-        echo colorText("[SUCCESS] Second assignment insert successful. The constraint issue is NOT present.", 'pass') . $nl;
+    echo colorText('[PASS] First assignment insert successful.', 'pass') . $nl;
+
+    mysqli_stmt_bind_param($stmt, 'iis', $companyId, $employeeId, $date2);
+    if (!mysqli_stmt_execute($stmt)) {
+        echo colorText('[WARN] Second assignment insert blocked by uq_employee_assignment_history_company_scope (one row per employee): ' . mysqli_stmt_error($stmt), 'warn') . $nl;
+        mysqli_stmt_close($stmt);
+        return true;
     }
+    echo colorText('[PASS] Second assignment insert successful (history allows multiple assigned_date rows).', 'pass') . $nl;
+    mysqli_stmt_close($stmt);
+
     return true;
 }
 
-function test_employee_trigger($conn) {
+/**
+ * @return bool
+ */
+function itm_repro_db_integrity_test_employee_trigger(mysqli $conn, $companyId)
+{
     $nl = itm_script_output_nl();
-    echo $nl . "Testing add_default_bookmarks_for_new_admin trigger..." . $nl;
-    $company_id = 1;
-    $username = 'test_admin_' . time();
-    
-    // Get a valid employment_status_id
-    $res = mysqli_query($conn, "SELECT id FROM employee_statuses WHERE company_id = $company_id LIMIT 1");
-    $row = mysqli_fetch_assoc($res);
-    $status_id = $row['id'] ?? 1;
+    echo $nl . 'Testing add_default_bookmarks_for_admin trigger (Admin role insert)...' . $nl;
 
-    // Get Admin role id
-    $res = mysqli_query($conn, "SELECT id FROM employee_roles WHERE company_id = $company_id AND LOWER(name) = 'admin' LIMIT 1");
-    $row = mysqli_fetch_assoc($res);
-    $role_id = $row['id'] ?? null;
-
-    if (!$role_id) {
-        echo "[SKIP] Admin role not found." . $nl;
+    $admin = itm_script_test_employee_create_session_actor($conn, $companyId, [
+        'script_slug' => 'repro-db-int-admin',
+        'as_admin' => true,
+    ]);
+    if (!is_array($admin)) {
+        echo colorText('[FAIL] Disposable Admin insert failed (trigger or FK issue).', 'fail') . $nl;
         return false;
     }
 
-    $workEmail = mysqli_real_escape_string($conn, $username . '@repro-db-integrity.example.com');
-    $sql = "INSERT INTO employees (company_id, first_name, last_name, username, work_email, role_id, employment_status_id) 
-            VALUES ($company_id, 'Test', 'Admin', '$username', '$workEmail', $role_id, $status_id)";
-    
-    if (!mysqli_query($conn, $sql)) {
-        echo colorText("[EXPECTED FAIL] Employee insert failed (as predicted): " . mysqli_error($conn), 'warn') . $nl;
-    } else {
-        echo colorText("[SUCCESS] Employee insert successful. The trigger issue is NOT present.", 'pass') . $nl;
-    }
+    echo colorText('[PASS] Disposable Admin insert succeeded (trigger issue not present).', 'pass') . $nl;
     return true;
 }
 
-// Main execution
-echo "Starting Database Integrity Reproduction..." . $nl;
+echo 'Starting Database Integrity Reproduction...' . $nl;
+
+$companyId = 1;
+$exitCode = 0;
+
 mysqli_begin_transaction($conn);
 try {
-    test_expenses($conn);
-    test_assignment_history($conn);
-    test_employee_trigger($conn);
+    if (!itm_repro_db_integrity_test_expenses($conn, $companyId)) {
+        $exitCode = 1;
+    }
+    if (!itm_repro_db_integrity_test_assignment_history($conn, $companyId)) {
+        $exitCode = 1;
+    }
+    if (!itm_repro_db_integrity_test_employee_trigger($conn, $companyId)) {
+        $exitCode = 1;
+    }
 } finally {
     mysqli_rollback($conn);
-    echo $nl . "Reproduction sequence completed. Changes rolled back." . $nl;
+    echo $nl . 'Reproduction sequence completed. Changes rolled back.' . $nl;
+    if ($exitCode === 0) {
+        echo colorText('[PASS] Database integrity repro finished without unexpected failures.', 'pass') . $nl;
+    } else {
+        echo colorText('[FAIL] Database integrity repro reported unexpected failures.', 'fail') . $nl;
+    }
     itm_script_output_end();
 }
+
+exit($exitCode);
