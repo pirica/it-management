@@ -52,9 +52,9 @@ echo $nl;
  */
 function vald_scan_employees_audit_triggers_in_database_sql(array $sensitiveFields): array
 {
-    $path = itm_database_sql_schema_path();
+    $path = itm_database_sql_triggers_path();
     if (!is_readable($path)) {
-        return ['db/ split bundle is not readable'];
+        return ['db/03_triggers.sql is not readable'];
     }
 
     $sql = (string)file_get_contents($path);
@@ -68,7 +68,7 @@ function vald_scan_employees_audit_triggers_in_database_sql(array $sensitiveFiel
     foreach ($triggerNames as $triggerName) {
         $pattern = '/CREATE TRIGGER `' . preg_quote($triggerName, '/') . '`.+?END\$\$/s';
         if (!preg_match($pattern, $sql, $match)) {
-            $issues[] = $triggerName . ' not found in db/03_triggers.sql01_schema.sql';
+            $issues[] = $triggerName . ' not found in db/03_triggers.sql';
             continue;
         }
 
@@ -157,7 +157,7 @@ function vald_scan_recent_employees_audit_logs(mysqli $conn, int $companyId, $pl
     return ['rows' => $rows, 'issues' => $issues];
 }
 
-// --- Step 1: static trigger contract In db/01_schema.sql ---
+// --- Step 1: static trigger contract in db/03_triggers.sql ---
 echo 'Step 1 — db/ employees audit triggers' . $nl;
 $triggerIssues = vald_scan_employees_audit_triggers_in_database_sql($sensitiveFields);
 if ($triggerIssues === []) {
