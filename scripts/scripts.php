@@ -2747,7 +2747,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_audit_columns.php" target="_blank" rel="nofollow noreferrer">verify_audit_columns.php</td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
-				    <td>Verifies that every table in the database has the mandatory 8 audit columns with correct types and defaults.</td>
+                    <td>Schema gate: mandatory audit/soft-delete columns on live tables. Ephemeral <code>live_chat_typing</code> requires <code>company_id</code> only (private chat presence; no <code>audit_logs</code>).</td>
 				    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
 				</tr>
 				<tr data-tags="Codebase">

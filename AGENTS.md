@@ -303,6 +303,7 @@ Tables that store **private user content** must **not** be copied into `audit_lo
 | `notes`, `note_labels` | `modules/notes/` — personal/shared note content. |
 | `events` | `modules/events/` — private/shared event title, description, and location (vault-encrypted when not shared). |
 | `bookmark_folders`, `bookmarks` | `modules/bookmarks/`, `modules/bookmark_folders/` — private/shared links. |
+| `live_chat_messages`, `live_chat_typing` | `modules/live_chat/` — chat message bodies and ephemeral typing presence (including **Chat with** peer threads); no `audit_logs` / no `trg_*_audit_*`. Conversation/participant metadata tables may remain auditable. |
 
 `scripts/check_audit_logs_coverage.php` treats these tables as intentionally exempt from database triggers.
 
