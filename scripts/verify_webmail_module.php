@@ -338,6 +338,20 @@ if (webmail_signatures_table_exists($conn)) {
     }
 }
 
+require_once ROOT_PATH . 'includes/itm_qr_share.php';
+if (!in_array('webmail', itm_qr_share_capable_module_slugs(), true)) {
+    webmail_verify_fail('webmail missing from itm_qr_share_capable_module_slugs().');
+} else {
+    webmail_verify_pass('webmail registered for QR share.');
+}
+
+$bodyPlain = webmail_message_body_plaintext('<p>Line one</p><p>Line two</p>');
+if (strpos($bodyPlain, 'Line one') === false || strpos($bodyPlain, 'Line two') === false) {
+    webmail_verify_fail('webmail_message_body_plaintext did not flatten HTML.');
+} else {
+    webmail_verify_pass('webmail_message_body_plaintext flattens message HTML.');
+}
+
 if ($failures > 0) {
     echo colorText('Verification finished with ' . $failures . ' failure(s).', 'fail') . $nl;
     itm_script_output_end();

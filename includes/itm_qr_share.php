@@ -48,6 +48,7 @@ function itm_qr_share_capable_module_slugs()
         'forecast_revisions_status',
         'gl_accounts',
         'monthly_budgets',
+        'webmail',
     ];
 }
 

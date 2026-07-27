@@ -987,6 +987,61 @@ if (!function_exists('webmail_compose_merge_body_and_signature')) {
     }
 }
 
+if (!function_exists('webmail_message_body_plaintext')) {
+    /**
+     * Plain text for PDF export and temporary share payloads (no HTML).
+     */
+    function webmail_message_body_plaintext(string $detailsHtml): string
+    {
+        $html = webmail_render_details_html($detailsHtml);
+        if ($html === '') {
+            return '';
+        }
+        $withBreaks = preg_replace('#</p>\s*#i', "\n", $html);
+        $withBreaks = preg_replace('#<br\s*/?>#i', "\n", (string)$withBreaks);
+        $text = strip_tags((string)$withBreaks);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        return trim(preg_replace("/[ \t]+/u", ' ', preg_replace("/\n{3,}/u", "\n\n", $text) ?? '') ?? '');
+    }
+}
+
+if (!function_exists('webmail_build_message_share_fields')) {
+    /**
+     * @return array<int, array{label:string,value:string}>
+     */
+    function webmail_build_message_share_fields(array $row): array
+    {
+        $sentAt = trim((string)($row['sent_at'] ?? ''));
+        $sentDisplay = $sentAt;
+        if ($sentAt !== '' && strlen($sentAt) >= 10 && function_exists('itm_format_date_display')) {
+            $sentDisplay = itm_format_date_display(substr($sentAt, 0, 10));
+            if (strlen($sentAt) > 10) {
+                $sentDisplay .= ' ' . substr($sentAt, 11, 8);
+            }
+        }
+
+        $fields = [
+            ['label' => 'Subject', 'value' => (string)($row['subject'] ?? '')],
+            ['label' => 'From', 'value' => (string)($row['from_email'] ?? '')],
+            ['label' => 'To', 'value' => (string)($row['to_email'] ?? '')],
+        ];
+        $cc = trim((string)($row['cc_email'] ?? ''));
+        if ($cc !== '') {
+            $fields[] = ['label' => 'CC', 'value' => $cc];
+        }
+        $fields[] = ['label' => 'Sent', 'value' => $sentDisplay];
+        $status = trim((string)($row['status'] ?? ''));
+        if ($status !== '') {
+            $fields[] = ['label' => 'Status', 'value' => $status];
+        }
+        $bodyPlain = webmail_message_body_plaintext((string)($row['details'] ?? ''));
+        $fields[] = ['label' => 'Body', 'value' => $bodyPlain !== '' ? $bodyPlain : '(No message body)'];
+
+        return $fields;
+    }
+}
+
 if (!function_exists('webmail_signature_redirect_after_mutation')) {
     /**
      * @param int $signatureId When return_to is compose, pre-select this signature in the dropdown (0 = none).

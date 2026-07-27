@@ -433,6 +433,43 @@ if (!function_exists('itm_crud_record_share_create_alerts')) {
     }
 }
 
+if (!function_exists('itm_crud_record_share_create_webmail')) {
+    function itm_crud_record_share_create_webmail($conn, $recordId, $companyId, $employeeId, $ownerUsername)
+    {
+        require_once ROOT_PATH . 'modules/webmail/includes/webmail_helpers.php';
+        $recordId = (int)$recordId;
+        $companyId = (int)$companyId;
+        $employeeId = (int)$employeeId;
+        $sessionEmail = webmail_session_email();
+        if ($sessionEmail === '') {
+            return ['ok' => false, 'error' => 'Your account has no email on file.'];
+        }
+
+        $row = webmail_get_row_by_id($conn, $recordId, $companyId);
+        if (!$row || !webmail_row_visible_to_user($row, $sessionEmail, $employeeId, '')) {
+            return ['ok' => false, 'error' => 'Message not found or not accessible.'];
+        }
+
+        $subject = trim((string)($row['subject'] ?? ''));
+        $heading = $subject !== '' ? $subject : '(No subject)';
+        $payload = [
+            'type' => 'crud_record',
+            'heading' => $heading,
+            'owner_username' => (string)$ownerUsername,
+            'module_slug' => 'webmail',
+            'module_label' => 'Message',
+            'fields' => webmail_build_message_share_fields($row),
+        ];
+
+        return itm_qr_share_create_session($conn, 'webmail', [
+            'company_id' => $companyId,
+            'employee_id' => $employeeId,
+            'record_id' => $recordId,
+            'payload_json' => itm_crud_record_share_encode_payload($payload),
+        ]);
+    }
+}
+
 if (!function_exists('itm_crud_record_share_create_equipment')) {
     function itm_crud_record_share_create_equipment($conn, $recordId, $companyId, $employeeId, $ownerUsername, $shareKind = 'record')
     {
@@ -647,6 +684,8 @@ if (!function_exists('itm_crud_record_share_create_session')) {
                 return itm_crud_record_share_create_tickets($conn, $recordId, $companyId, $employeeId, $ownerUsername);
             case 'alerts':
                 return itm_crud_record_share_create_alerts($conn, $recordId, $companyId, $employeeId, $ownerUsername);
+            case 'webmail':
+                return itm_crud_record_share_create_webmail($conn, $recordId, $companyId, $employeeId, $ownerUsername);
             case 'equipment':
                 return itm_crud_record_share_create_equipment($conn, $recordId, $companyId, $employeeId, $ownerUsername, $shareKind);
             case 'ops_report':
@@ -702,14 +741,17 @@ if (!function_exists('itm_crud_record_share_handle_ajax_request')) {
 }
 
 if (!function_exists('itm_crud_record_share_render_action_buttons')) {
-    function itm_crud_record_share_render_action_buttons($moduleSlug, $recordId, $shareLabel = '', array $extraPostFields = [])
+    function itm_crud_record_share_render_action_buttons($moduleSlug, $recordId, $shareLabel = '', array $extraPostFields = [], $ajaxUrl = '')
     {
         $moduleSlug = trim((string)$moduleSlug);
         $recordId = (int)$recordId;
         if ($moduleSlug === '' || $recordId <= 0) {
             return '';
         }
-        $ajaxUrl = 'index.php?ajax_action=create_share_session';
+        $ajaxUrl = trim((string)$ajaxUrl);
+        if ($ajaxUrl === '') {
+            $ajaxUrl = 'index.php?ajax_action=create_share_session';
+        }
         $shareLabel = trim((string)$shareLabel);
         if ($shareLabel === '') {
             $shareLabel = $moduleSlug;
@@ -748,6 +790,7 @@ if (!function_exists('itm_crud_record_share_render_join_page')) {
             'employees' => 'Employee',
             'tickets' => 'Ticket',
             'alerts' => 'Alert',
+            'webmail' => 'Message',
             'equipment' => 'Equipment',
             'ops_report' => 'Ops Report',
         ];

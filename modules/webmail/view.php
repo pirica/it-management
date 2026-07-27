@@ -5,6 +5,9 @@
 
 require_once dirname(__DIR__, 2) . '/config/config.php';
 require_once __DIR__ . '/includes/webmail_helpers.php';
+require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
+
+itm_crud_record_share_handle_ajax_request($conn, 'webmail');
 
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $employee_id = (int)($_SESSION['employee_id'] ?? 0);
@@ -79,6 +82,8 @@ $isStar = $row && (int)($row['is_star'] ?? 0) === 1;
 $isArchived = $row && (int)($row['is_archived'] ?? 0) === 1;
 $isDeleted = $row && (int)($row['is_deleted'] ?? 0) === 1;
 $ccField = $row ? trim((string)($row['cc_email'] ?? '')) : '';
+$exportBodyPlain = $row ? webmail_message_body_plaintext((string)($row['details'] ?? '')) : '';
+$shareAjaxUrl = 'view.php?ajax_action=create_share_session';
 
 $moduleListHeading = function_exists('itm_sidebar_label_for_module')
     ? itm_sidebar_label_for_module('webmail', 'Webmail')
@@ -130,6 +135,10 @@ $renderViewPostFields = static function (bool $returnToView = true) use ($csrfTo
         .webmail-read-details table { width: 100%; margin-top: 12px; }
         .webmail-read-details th { text-align: left; width: 140px; padding: 4px 8px 4px 0; color: var(--text-secondary, #6b7280); font-weight: 500; vertical-align: top; }
         .webmail-read-details td { padding: 4px 0; word-break: break-word; }
+        .webmail-view-pdf-source { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+        @media print {
+            .webmail-view-pdf-source { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip: auto; white-space: normal; }
+        }
     </style>
 </head>
 <body>
@@ -155,6 +164,8 @@ $renderViewPostFields = static function (bool $returnToView = true) use ($csrfTo
                 <?php else: ?>
                     <div class="webmail-read-toolbar">
                         <a href="<?php echo sanitize($backUrl); ?>" class="btn btn-sm" title="Back to <?php echo sanitize($folderLabels[$folder] ?? $folder); ?>"><?php echo $wmEmojiBack; ?></a>
+                        <button type="button" class="btn btn-sm" id="webmail-view-export-pdf" title="Export PDF">📄</button>
+                        <?php echo itm_crud_record_share_render_action_buttons('webmail', (int)$id, 'message', [], $shareAjaxUrl); ?>
                         <?php if (!$isDeleted): ?>
                             <form class="webmail-actions-form" method="POST" action="delete.php">
                                 <?php $renderViewPostFields(true); ?>
@@ -257,11 +268,43 @@ $renderViewPostFields = static function (bool $returnToView = true) use ($csrfTo
                             </tbody>
                         </table>
                     </details>
+
+                    <div class="webmail-view-pdf-source" aria-hidden="true">
+                        <table id="webmail-view-pdf-table">
+                            <tbody>
+                            <tr><th>Subject</th><td><?php echo sanitize((string)($row['subject'] ?? '(No subject)')); ?></td></tr>
+                            <tr><th>From</th><td><?php echo sanitize((string)($row['from_email'] ?? '')); ?></td></tr>
+                            <tr><th>To</th><td><?php echo sanitize((string)($row['to_email'] ?? '')); ?></td></tr>
+                            <?php if ($ccField !== ''): ?>
+                                <tr><th>CC</th><td><?php echo sanitize($ccField); ?></td></tr>
+                            <?php endif; ?>
+                            <tr><th>Sent</th><td><?php echo sanitize($sentDisplay); ?></td></tr>
+                            <tr><th>Body</th><td><?php echo sanitize($exportBodyPlain !== '' ? $exportBodyPlain : '(No message body)'); ?></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<?php if ($row): ?>
+<script>
+(function () {
+    var btn = document.getElementById('webmail-view-export-pdf');
+    var table = document.getElementById('webmail-view-pdf-table');
+    if (!btn || !table) {
+        return;
+    }
+    btn.addEventListener('click', function () {
+        if (typeof window.itmExportViewAsPdf === 'function') {
+            window.itmExportViewAsPdf(table);
+        }
+    });
+})();
+</script>
+<?php itm_crud_record_share_include_modal(); ?>
+<?php endif; ?>
 </body>
 </html>

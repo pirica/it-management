@@ -45,7 +45,7 @@ Session-scoped mailbox UI on the shared **`emails`** send log table. Users see m
 - **Signatures UI:** list on `signatures.php`; create/edit in modal (Name + Quill); delete in confirm modal; compose dropdown with empty option, signature names, ➕, **✏️** (edit selected), and **🗑️** (delete). Signature modal Quill teardown resets `.webmail-quill-wrap` so Snow toolbars are not duplicated on reopen. After edit from compose (`return_to=compose`), redirect keeps the same `signature_id` selected in the dropdown. List table uses `data-itm-no-table-actions-layout="1"` so Settings table-actions layout does not clone action cells; `js/webmail-signatures.js` uses document-level click delegation for edit/delete/create.
 - Star / archive / delete actions via POST `delete.php` with CSRF. **Inbox, Starred, Sent, and Archived** use **soft delete** (move to Trash, no browser confirm). **Trash** alone uses **hard delete** with confirm.
 - **Read / unread:** list **Read** column; bold row when unread; toggle in Actions; view auto-marks read.
-- **View:** read-pane layout (subject header, From/To/CC, date, body pane, folder tabs, toolbar actions); audit fields under collapsible **Technical details**.
+- **View:** read-pane layout (subject header, From/To/CC, date, body pane, folder tabs, toolbar actions); **📄** Export PDF (print dialog via `window.itmExportViewAsPdf()` + hidden summary table); temporary **📱 / WhatsApp / 📨** share on `view.php` (`join.php`, `itm_crud_record_share_create_webmail()` — enable **webmail** in Share Modules per company); audit fields under collapsible **Technical details**.
 - **List table:** `data-itm-no-import-excel="1"` plus export opt-outs — no table-tools Import Excel (mailbox is not a CRUD import surface).
 
 ## 6. API Actions (If Applicable)
@@ -55,7 +55,7 @@ Session-scoped mailbox UI on the shared **`emails`** send log table. Users see m
 ## 7. File Structure
 
 - `index.php` — folder lists.
-- `compose.php`, `signatures.php`, `view.php`, `delete.php`.
+- `compose.php`, `signatures.php`, `view.php`, `delete.php`, `join.php` — temporary message share (QR / code).
 - `includes/webmail_helpers.php` — scopes, mutations, signatures, tabs.
 - `includes/webmail_signature_modal.php` — shared signature modals.
 - Wrappers: `create.php` → compose; `edit.php` / `list_all.php` → index.
@@ -109,4 +109,4 @@ webmail_compose_merge_body_and_signature($bodyHtml, $signatureHtml);
 
 ## 12. Module Owner Notes (Optional)
 
-Regression: `php scripts/verify_webmail_module.php` (inbox, starred, sent, trash, archive toggle, delete flows, signatures CRUD + merge). Sidebar: Planning → Webmail (`includes/ui_config.php`).
+Regression: `php scripts/verify_webmail_module.php` (inbox, starred, sent, trash, archive toggle, delete flows, signatures CRUD + merge, message share payload helpers). Share matrix: enable **webmail** under Share Modules. Sidebar: Planning → Webmail (`includes/ui_config.php`).
