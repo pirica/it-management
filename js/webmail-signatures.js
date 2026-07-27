@@ -156,31 +156,88 @@
         });
     }
 
+    function bindDelegatedActions() {
+        document.addEventListener('click', function (e) {
+            var target = e.target;
+            if (!target || !target.closest) {
+                return;
+            }
+            var createBtn = target.closest('[data-webmail-signature-create="1"]');
+            if (createBtn) {
+                e.preventDefault();
+                openCreateModal();
+                return;
+            }
+            var editBtn = target.closest('[data-webmail-signature-edit]');
+            if (editBtn) {
+                e.preventDefault();
+                var id = editBtn.getAttribute('data-webmail-signature-edit');
+                var name = editBtn.getAttribute('data-webmail-signature-name') || '';
+                var map = readJsonScript('webmail-signature-html-map');
+                var html = map[String(id)] || '';
+                openEditModal(id, name, html);
+                return;
+            }
+            var deleteBtn = target.closest('[data-webmail-signature-delete]');
+            if (deleteBtn) {
+                e.preventDefault();
+                var delId = deleteBtn.getAttribute('data-webmail-signature-delete');
+                var delName = deleteBtn.getAttribute('data-webmail-signature-name') || '';
+                openDeleteModal(delId, delName);
+                return;
+            }
+            if (target.closest('.webmail-signature-modal-close')) {
+                hideModals();
+                return;
+            }
+            if (target.id === 'webmail-signature-backdrop') {
+                hideModals();
+            }
+        });
+    }
+
     function bindComposeSignatureSelect() {
         var select = document.getElementById('webmail-compose-signature-id');
         if (!select) {
             return;
         }
+        var editBtn = document.getElementById('webmail-compose-signature-edit');
         var deleteBtn = document.getElementById('webmail-compose-signature-delete');
         var map = readJsonScript('webmail-signature-html-map');
 
-        function syncDeleteVisibility() {
-            if (!deleteBtn) {
-                return;
-            }
+        function syncActionVisibility() {
             var val = select.value;
-            deleteBtn.style.display = val && val !== '' && val !== '__add_new__' ? '' : 'none';
+            var show = val && val !== '' && val !== '__add_new__';
+            if (editBtn) {
+                editBtn.style.display = show ? '' : 'none';
+            }
+            if (deleteBtn) {
+                deleteBtn.style.display = show ? '' : 'none';
+            }
         }
 
         select.addEventListener('change', function () {
             if (select.value === '__add_new__') {
                 select.value = '';
                 openCreateModal();
-                syncDeleteVisibility();
+                syncActionVisibility();
                 return;
             }
-            syncDeleteVisibility();
+            syncActionVisibility();
         });
+
+        if (editBtn) {
+            editBtn.addEventListener('click', function () {
+                var val = select.value;
+                if (!val || val === '__add_new__') {
+                    return;
+                }
+                var opt = select.options[select.selectedIndex];
+                var label = opt ? opt.textContent : '';
+                var html = map[String(val)] || '';
+                openEditModal(val, label, html);
+            });
+        }
 
         if (deleteBtn) {
             deleteBtn.addEventListener('click', function () {
@@ -194,50 +251,12 @@
             });
         }
 
-        syncDeleteVisibility();
+        syncActionVisibility();
     }
 
     function init() {
         bindSaveForm();
-
-        document.querySelectorAll('[data-webmail-signature-create="1"]').forEach(function (btn) {
-            btn.addEventListener('click', function (e) {
-                e.preventDefault();
-                openCreateModal();
-            });
-        });
-
-        document.querySelectorAll('[data-webmail-signature-edit]').forEach(function (btn) {
-            btn.addEventListener('click', function (e) {
-                e.preventDefault();
-                var id = btn.getAttribute('data-webmail-signature-edit');
-                var name = btn.getAttribute('data-webmail-signature-name') || '';
-                var map = readJsonScript('webmail-signature-html-map');
-                var html = map[String(id)] || '';
-                openEditModal(id, name, html);
-            });
-        });
-
-        document.querySelectorAll('[data-webmail-signature-delete]').forEach(function (btn) {
-            btn.addEventListener('click', function (e) {
-                e.preventDefault();
-                var id = btn.getAttribute('data-webmail-signature-delete');
-                var name = btn.getAttribute('data-webmail-signature-name') || '';
-                openDeleteModal(id, name);
-            });
-        });
-
-        document.querySelectorAll('.webmail-signature-modal-close').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                hideModals();
-            });
-        });
-
-        var backdrop = document.getElementById('webmail-signature-backdrop');
-        if (backdrop) {
-            backdrop.addEventListener('click', hideModals);
-        }
-
+        bindDelegatedActions();
         bindComposeSignatureSelect();
     }
 

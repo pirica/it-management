@@ -41,6 +41,9 @@
         const tables = document.querySelectorAll('.content .card table');
 
         tables.forEach((table) => {
+            if (table.dataset.itmNoTableActionsLayout === '1') {
+                return;
+            }
             const rows = Array.from(table.querySelectorAll('tr'));
             if (!rows.length) return;
 

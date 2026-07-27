@@ -118,7 +118,7 @@ $signatureReturnTo = '';
                 <?php if ($signatures === []): ?>
                     <p style="margin:16px;color:var(--text-secondary);">No signatures yet. Use ➕ to create one.</p>
                 <?php else: ?>
-                    <table class="table">
+                    <table class="table" data-itm-no-table-actions-layout="1">
                         <thead>
                             <tr>
                                 <th>Name</th>
