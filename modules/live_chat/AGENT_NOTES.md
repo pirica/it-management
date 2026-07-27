@@ -14,7 +14,7 @@ The floating knowledge-base chatbot (`js/chatbot.js`, `enable_chatbot`) is **not
 - **live_chat_conversations** — conversation header (type, ticket link, assignee, status, rating, storage path)
 - **live_chat_participants** — who may read/send in a thread
 - **live_chat_messages** — message body + attachment metadata (private-data exempt from audit triggers; has soft-delete meta columns)
-- **live_chat_typing** — ephemeral typing indicators (`expires_at`, hard delete on poll); **no** soft-delete meta columns; private-data / trigger exempt; `verify_audit_columns.php` requires `company_id` only
+- **live_chat_typing** — ephemeral typing indicators (`expires_at`; API still hard-deletes expired rows). Has standard soft-delete/meta columns for schema consistency; private-data / trigger exempt (no `audit_logs`). Module PHP does not stamp soft-delete.
 - **ticket_activity** — ticket timeline events (e.g. live chat started)
 - **ticket_comments** — ticket comments (internal notes for support agents)
 - **ticket_sla_policies** — per-priority response/resolve SLA minutes
@@ -39,7 +39,7 @@ The floating knowledge-base chatbot (`js/chatbot.js`, `enable_chatbot`) is **not
 - **Chat with** has no ticket; ACL is participant-only — `itm_live_chat_can_view_conversation()` enforces this.
 - Support agents: employees in the IT department (`itm_live_chat_is_support_agent()`).
 - **live_chat_messages** must not get audit triggers or `itm_log_audit()` — private message content (including **Chat with**).
-- **live_chat_typing** must not get audit triggers or soft-delete columns — ephemeral presence only; do not copy into `audit_logs`.
+- **live_chat_typing** must not get audit triggers or `itm_log_audit()` — ephemeral presence; soft-delete meta columns exist for schema gate only; API continues hard-delete on expiry (no module code required to stamp them).
 - Rating: `rating` TINYINT 1–5 on conversation close.
 - Storage:
   - Live Agent: `tickets_photos/{ticket_id}/chat.json` + attachments

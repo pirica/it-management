@@ -640,7 +640,7 @@ Browser menu: `scripts/run_tier2_checks.php` → **Run Tier 2 batch**. Optional 
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/verify_audit_columns.php` | Live-DB gate for mandatory audit/soft-delete columns. Ephemeral `live_chat_typing` requires `company_id` only (private chat presence; no soft-delete meta / no `audit_logs`). |
+| `php scripts/verify_audit_columns.php` | Live-DB gate for mandatory audit/soft-delete columns (including `live_chat_typing`). `live_chat_messages` / `live_chat_typing` stay private-data exempt from `audit_logs` triggers. |
 | `php scripts/apply_crud_audit_soft_delete.php` | **Browser + CLI.** Default run is always **dry-run**; writes only with CLI `--apply` or browser `?apply=1` (Admin). After the count summary, prints named module lists (inventory from `docs/list_soft-delete.txt`, status-driven skips, missing dirs, needing patch, already compliant) using real newlines so browser `<pre>` stays readable. Patches scaffold modules (list hide meta, view show meta, soft-delete SQL, stamps). Idempotent when modules already comply. Skips status-driven slugs (`employees`, `equipment`, `patches_updates`, `tickets`). |
 | `php scripts/check_crud_audit_soft_delete.php` | Static gate: list hide helper / `$viewColumns` (or bespoke `itm_crud_render_audit_cell_value` on `view.php`) / `deleted_at IS NULL` / soft-delete helper for in-scope modules (including status-driven `employees`, `equipment`, `patches_updates`, `tickets`). |
 | Inventory | `docs/list_soft-delete.txt` (in scope), `docs/list_bespoke_UI.txt` (deferred). Helpers: `includes/itm_crud_audit_fields.php` (soft-delete also sets `active=0`; status-driven forms use hidden `active=1`). |

@@ -2,8 +2,8 @@
 /**
  * Verify mandatory tenant/audit meta columns on live tables.
  *
- * Soft-delete + stamp columns are required on CRUD tables. Ephemeral presence
- * tables (live_chat_typing) keep company_id only — no audit_logs triggers, no soft-delete.
+ * Soft-delete + stamp columns are required on CRUD tables (including live_chat_typing).
+ * Private chat tables (messages/typing) still must not get audit_logs triggers — see AGENTS.md.
  */
 
 
@@ -13,7 +13,7 @@
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/verify_audit_columns.php</code> — exit <code>1</code> when a non-exempt table lacks mandatory audit/soft-delete columns. Ephemeral <code>live_chat_typing</code> requires <code>company_id</code> only (private chat presence; no <code>audit_logs</code>).
+<code>php scripts/verify_audit_columns.php</code> — exit <code>1</code> when a table lacks mandatory audit/soft-delete columns. <code>live_chat_messages</code> / <code>live_chat_typing</code> include those columns but remain private-data exempt from <code>audit_logs</code> triggers.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 
@@ -42,12 +42,6 @@ $mandatoryCols = [
     'updated_at' => ['type' => 'timestamp', 'null' => 'YES', 'default' => NULL, 'extra' => 'ON UPDATE CURRENT_TIMESTAMP'],
 ];
 
-// Why: Ephemeral typing indicators are hard-deleted on expiry; soft-delete meta is unused.
-// Chat presence/message bodies must not enter audit_logs (private-data / trigger exempt).
-$softDeleteExemptTables = [
-    'live_chat_typing' => true,
-];
-
 $res = mysqli_query($conn, 'SHOW TABLES');
 $allPassed = true;
 
@@ -59,7 +53,6 @@ while ($row = mysqli_fetch_row($res)) {
         $columns[$colRow['Field']] = $colRow;
     }
 
-    $skipSoftDeleteMeta = !empty($softDeleteExemptTables[$table]);
     $missing = [];
     foreach ($mandatoryCols as $mCol => $specs) {
         if ($mCol === 'company_id' && in_array($table, ['companies', 'audit_logs', 'modules_registry'], true)) {
@@ -68,17 +61,13 @@ while ($row = mysqli_fetch_row($res)) {
         if ($mCol === 'active' && in_array($table, ['tickets', 'patches_updates', 'employees', 'equipment'], true)) {
             continue;
         }
-        if ($skipSoftDeleteMeta && $mCol !== 'company_id') {
-            continue;
-        }
         if (!isset($columns[$mCol])) {
             $missing[] = $mCol . ' (Missing)';
         }
     }
 
     if ($missing === []) {
-        $note = $skipSoftDeleteMeta ? ' (ephemeral: company_id only)' : '';
-        echo itm_script_format_status_line('[PASS] ' . $table . $note) . $nl;
+        echo itm_script_format_status_line('[PASS] ' . $table) . $nl;
     } else {
         echo itm_script_format_status_line('[FAIL] ' . $table . ' - ' . implode(', ', $missing)) . $nl;
         $allPassed = false;
