@@ -86,6 +86,10 @@
         }
         syncBodyHidden();
         var formData = new FormData(form);
+        var subjectInput = document.getElementById('subject');
+        if (subjectInput) {
+            formData.set('subject', subjectInput.value);
+        }
         fetch('compose.php?ajax_action=preview_message', {
             method: 'POST',
             body: formData,
@@ -108,8 +112,15 @@
                 var ccEl = document.getElementById('webmail-compose-preview-cc');
                 var bodyEl = document.getElementById('webmail-compose-preview-body');
                 var bodyWrap = document.getElementById('webmail-compose-preview-body-wrap');
+                var subjectText = (data.subject || '').trim();
+                if (subjectText === '' && subjectInput) {
+                    subjectText = subjectInput.value.trim();
+                }
+                if (subjectText === '') {
+                    subjectText = '(No subject)';
+                }
                 if (subjectEl) {
-                    subjectEl.textContent = data.subject || '(No subject)';
+                    subjectEl.textContent = subjectText;
                 }
                 if (fromEl) {
                     fromEl.textContent = data.from || '';
