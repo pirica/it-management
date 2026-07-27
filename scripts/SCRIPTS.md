@@ -965,7 +965,7 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 | `php scripts/fast_create_acc.php` | CLI `--seed-demo-bundle`; browser UI at `scripts/fast_create_acc.php` (catalog) |
 | `scripts/fast_create_acc_browser.php` | Browser alias — same UI as `scripts/fast_create_acc.php` |
 | `modules/employees/fast_create_acc.php` | Same UI via module toolbar 🚀; shared form in `fast_create_acc_browser.php` |
-| `php scripts/check_fast_create_acc_select_quick_add.php` | Static audit: FK `<select>` in `modules/employees/fast_create_acc_browser.php` includes `__add_new__` ➕ (exempt `module_slugs[]`) |
+| `php scripts/check_fast_create_acc_select_quick_add.php` | Static audit: FK `<select>` in `modules/employees/fast_create_acc_browser.php` includes `__add_new__` ➕ (exempt `module_slugs[]`, `bundle_company_id`, `company_ids[]`) |
 | `php scripts/check_department_select_quick_add.php` | Static audit: every department FK `<select>` in `modules/` and `scripts/` includes `__add_new__` ➕ quick-add (per-select block) |
 | `php scripts/verify_dashboard_active_employees.php` | Regression: **admin.php** row 2 **Active** / **On Leave** call `itm_employee_count_by_employment_status_name()` (no inline `LOWER(es.name)`); helper matches live `deleted_at IS NULL` counts; employee `dashboard.php` must not duplicate company counts; optional `ITM_TEST_COMPANY_ID` |
 | `php scripts/verify_dashboard_online_employees.php` | Regression: **admin.php** **Online now** stat, session presence touch hook, count after touch |
