@@ -152,6 +152,7 @@ function audit_logs_private_data_tables(): array
         'note_labels' => true,
         'share_sessions' => true,
         'live_chat_messages' => true,
+        'live_chat_typing' => true,
         'bookmark_folders' => true,
         'bookmarks' => true,
     ];
@@ -163,7 +164,7 @@ function audit_logs_private_data_tables(): array
 function audit_logs_trigger_exempt_tables(): array
 {
     return array_merge(
-        ['audit_logs' => true, 'live_chat_typing' => true],
+        ['audit_logs' => true],
         audit_logs_private_data_tables()
     );
 }

@@ -263,6 +263,7 @@ Loaded from **`config/config.php`** on every request. Enforces the contract that
 | `php scripts/repro_employee_companies_bac.php` | PoC — non-admin must not access `employee_companies` index (expects PASS after `itm_require_admin()` on all entry files). |
 | `php scripts/repro_employee_companies_leak.php` | PoC — multi-tenant leak checks for Employees module. |
 | `php scripts/repro_cross_tenant_admin.php` | PoC — company-2 Admin Employees list must not include a disposable company-1 username (expects `[PASS]`; seeds via `itm_script_test_employee_create_session_actor()`, Laragon CLI subprocess HTML probe). Browser: `?run=1`. |
+| `php scripts/repro_db_integrity.php` | Regression — expenses UNIQUE allows different `posting_date`/`invoice_number` (requires tenant `paid_status_id`); documents `employee_assignment_history` one-row-per-employee unique as WARN; Admin bookmark trigger via disposable Admin. Transaction + rollback. Browser: `?run=1`. |
 | `php scripts/check_crud_rbac_coverage.php` | Static audit — in-scope flattened `modules/*/index.php` delete/create/edit handlers must call `itm_require_crud_role_module_permission()` (or accepted alternate guards such as `itm_require_admin()`). Exempt slugs: `itm_crud_rbac_exempt_module_slugs()`. Exit `1` when missing. |
 | `php scripts/apply_crud_rbac_guards.php` | **Browser + CLI.** Default dry-run; `--apply` / `?apply=1` (Admin). Lists changed files and RBAC-exempt modules. Bulk-insert CRUD RBAC guards on flattened index handlers (idempotent). |
 | `php scripts/repro_auth_bypass_v3.php` | PoC — non-admin must not reach companies/users delete flows. Subprocess spawn uses `escapeshellarg()`. |
@@ -640,6 +641,7 @@ Browser menu: `scripts/run_tier2_checks.php` → **Run Tier 2 batch**. Optional 
 
 | Script | Purpose |
 |--------|---------|
+| `php scripts/verify_audit_columns.php` | Live-DB gate for mandatory audit/soft-delete columns (including `live_chat_typing`). `live_chat_messages` / `live_chat_typing` stay private-data exempt from `audit_logs` triggers. |
 | `php scripts/apply_crud_audit_soft_delete.php` | **Browser + CLI.** Default run is always **dry-run**; writes only with CLI `--apply` or browser `?apply=1` (Admin). After the count summary, prints named module lists (inventory from `docs/list_soft-delete.txt`, status-driven skips, missing dirs, needing patch, already compliant) using real newlines so browser `<pre>` stays readable. Patches scaffold modules (list hide meta, view show meta, soft-delete SQL, stamps). Idempotent when modules already comply. Skips status-driven slugs (`employees`, `equipment`, `patches_updates`, `tickets`). |
 | `php scripts/check_crud_audit_soft_delete.php` | Static gate: list hide helper / `$viewColumns` (or bespoke `itm_crud_render_audit_cell_value` on `view.php`) / `deleted_at IS NULL` / soft-delete helper for in-scope modules (including status-driven `employees`, `equipment`, `patches_updates`, `tickets`). |
 | Inventory | `docs/list_soft-delete.txt` (in scope), `docs/list_bespoke_UI.txt` (deferred). Helpers: `includes/itm_crud_audit_fields.php` (soft-delete also sets `active=0`; status-driven forms use hidden `active=1`). |
