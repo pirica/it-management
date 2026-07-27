@@ -898,6 +898,178 @@
         }
       ]
     },
+    "myactivity": {
+      "reviewed_at": "2026-07-27",
+      "reason": "Employee-scoped read-only audit timeline (index.php + view.php): filters and search on audit_logs; no create/edit/delete/list_all; list sorted by created_at DESC by design.",
+      "checks": [
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "View-only Actions column (🔎) — no CRUD mutations on audit rows"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "Module has no create.php — audit rows are system-written only"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "Module has no create.php — Settings new_button_position slots not applicable"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "Module has no create.php — list-header create button style not applicable"
+        },
+        {
+          "check": "Export Buttons",
+          "code": "ui_config_export_buttons",
+          "note": "Filter card opts out; activity list table uses table-tools export only"
+        },
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "GET search + SQL LIKE on employee-scoped audit_logs columns"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Allowlisted ORDER BY al.{sort} with ▲/▼ header links on activity list table"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Emoji pagination when total rows exceed records_per_page"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Module has no delete.php — audit trail is immutable from this module"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "Create not used (no create.php and no create.php link in index.php)"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "Edit not used (no edit.php and no edit.php link in index.php)"
+        },
+        {
+          "check": "View entry (view.php)",
+          "code": "ui_config_view_entry",
+          "note": "view.php detail for single audit row"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "List-all not used (no list_all.php and no list_all.php link in index.php)"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Delete not used (no delete.php and no delete.php link in index.php)"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php"
+        }
+      ]
+    },
+    "news": {
+      "reviewed_at": "2026-07-27",
+      "reason": "Non-standard feed reader (index.php only): cached RSS/NVD items, source sidebar, column sort — gate-excluded; no CRUD entry files or scaffold search/pagination.",
+      "checks": [
+        {
+          "check": "Table Actions",
+          "code": "ui_config_table_actions",
+          "note": "Open article 🔎 links — external URLs, not module view.php"
+        },
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "Module has no create.php — feeds are read-only"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "Module has no create.php — Settings new_button_position slots not applicable"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "Module has no create.php — list-header create button style not applicable"
+        },
+        {
+          "check": "Export Buttons",
+          "code": "ui_config_export_buttons",
+          "note": "Feed table opts out via data-itm-no-export-* attributes"
+        },
+        {
+          "check": "Search",
+          "code": "ui_config_search",
+          "note": "No server-side list search — filter by feed source select only; items capped at NEWS_RESULTS_PER_PAGE from file cache"
+        },
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "In-memory news_sort_feed_items_for_ui() with ▲/▼ headers on cached feed rows"
+        },
+        {
+          "check": "Pagination (records per page)",
+          "code": "ui_config_pagination",
+          "note": "Single page up to NEWS_RESULTS_PER_PAGE items per source — no SQL LIMIT/OFFSET or records_per_page paging"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Module has no delete.php — no tenant rows to bulk-delete"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "Create not used (no create.php and no create.php link in index.php)"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "Edit not used (no edit.php and no edit.php link in index.php)"
+        },
+        {
+          "check": "View entry (view.php)",
+          "code": "ui_config_view_entry",
+          "note": "View not used (no view.php — articles open on external sites)"
+        },
+        {
+          "check": "List-all entry (list_all.php)",
+          "code": "ui_config_list_all_entry",
+          "note": "List-all not used (no list_all.php and no list_all.php link in index.php)"
+        },
+        {
+          "check": "Delete entry (delete.php)",
+          "code": "ui_config_delete_entry",
+          "note": "Delete not used (no delete.php and no delete.php link in index.php)"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php"
+        }
+      ]
+    },
     "ops_report": {
       "reviewed_at": "2026-07-20",
       "reason": "Daily hotel operations report uses day/month/year selectors and opr_ensure_report() auto-create — not a flattened CRUD list. create.php is a wrapper to index.php; cross-date search hit list has its own sort/pagination but the main report grid intentionally omits primary create, column sort, and bulk toolbar.",
@@ -1485,6 +1657,22 @@
           "check": "Bulk delete actions",
           "code": "ui_config_bulk_delete",
           "note": "Bulk toolbar intentionally omitted — per-task delete on view/edit and quick-add flow; no ids[] bulk-delete form on card list"
+        }
+      ]
+    },
+    "webmail": {
+      "reviewed_at": "2026-07-27",
+      "reason": "Non-standard mailbox UI on shared emails: folder tabs, compose.php (Quill), read-pane view; create.php/edit.php are redirect stubs — not flattened CRUD create/edit forms.",
+      "checks": [
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "create.php redirects to compose.php — compose is bespoke, not scaffold create.php form markup"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "edit.php redirects to index.php — webmail has no edit scaffold form"
         }
       ]
     },

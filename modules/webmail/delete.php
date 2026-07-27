@@ -27,6 +27,56 @@ foreach (['status', 'starred', 'archived', 'search', 'sort', 'dir', 'page', 'dat
     }
 }
 $redirect = 'index.php?' . http_build_query($redirectParams);
+
+$bulkAction = trim((string)($_POST['bulk_action'] ?? ''));
+if ($bulkAction === 'bulk_delete' || $bulkAction === 'clear_table') {
+    $listFilters = [
+        'status' => trim((string)($_POST['status'] ?? '')),
+        'starred' => trim((string)($_POST['starred'] ?? '')),
+        'archived' => trim((string)($_POST['archived'] ?? '')),
+        'date_from' => trim((string)($_POST['date_from'] ?? '')),
+        'date_to' => trim((string)($_POST['date_to'] ?? '')),
+        'search' => trim((string)($_POST['search'] ?? '')),
+        'sort' => trim((string)($_POST['sort'] ?? 'sent_at')),
+        'dir' => trim((string)($_POST['dir'] ?? 'DESC')),
+    ];
+    $targetIds = [];
+    if ($bulkAction === 'bulk_delete') {
+        foreach ((array)($_POST['ids'] ?? []) as $rawId) {
+            $targetIds[] = (int)$rawId;
+        }
+        $targetIds = array_values(array_unique(array_filter($targetIds, static function (int $i): bool {
+            return $i > 0;
+        })));
+    } else {
+        $targetIds = webmail_fetch_all_list_ids($conn, $folder, $company_id, $employee_id, $sessionEmail, $listFilters);
+    }
+
+    $changed = 0;
+    foreach ($targetIds as $bulkId) {
+        if ($folder === 'trash') {
+            if (webmail_hard_delete($conn, $bulkId, $company_id, $employee_id, $sessionEmail)) {
+                $changed++;
+            }
+        } elseif (webmail_soft_delete($conn, $bulkId, $company_id, $employee_id, $sessionEmail)) {
+            $changed++;
+        }
+    }
+
+    if ($changed > 0) {
+        if ($folder === 'trash') {
+            $_SESSION['webmail_notice'] = $changed . ' message(s) permanently deleted.';
+        } else {
+            $_SESSION['webmail_notice'] = $changed . ' message(s) moved to Trash.';
+            $redirectParams['folder'] = 'trash';
+            unset($redirectParams['page']);
+        }
+    }
+
+    header('Location: index.php?' . http_build_query($redirectParams));
+    exit;
+}
+
 if ($id > 0 && $action === 'soft_delete') {
     if (webmail_soft_delete($conn, $id, $company_id, $employee_id, $sessionEmail)) {
         $_SESSION['webmail_notice'] = 'Message moved to Trash.';

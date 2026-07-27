@@ -64,6 +64,7 @@ $rows = $listResult['rows'];
 $totalRows = (int)$listResult['total'];
 $totalPages = (int)($listResult['total_pages'] ?? 1);
 $page = (int)($listResult['page'] ?? $page);
+$showBulkActions = ($totalRows >= $perPage);
 
 $urlBase = [
     'folder' => $folder,
@@ -136,6 +137,7 @@ $crud_title = itm_crud_apply_module_icon_to_browser_title(
     (string)$crud_title
 );
 $currentUiConfig = $uiConfig ?? [];
+$newButtonPosition = itm_resolve_new_button_position($uiConfig ?? null);
 
 $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starredFilter, $archivedFilter, $searchRaw, $dateFrom, $dateTo, $sort, $dir, $page, $csrfToken): void {
     echo '<input type="hidden" name="csrf_token" value="' . sanitize($csrfToken) . '">';
@@ -191,9 +193,21 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
         <?php include '../../includes/header.php'; ?>
         <div class="content">
             <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap;min-height:40px;">
-                <a href="compose.php" class="btn btn-primary itm-list-new-button" title="Compose">➕</a>
+                <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                    <div style="display:flex;gap:8px;">
+                        <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                    </div>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
                 <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
-                <span></span>
+                <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                    <div style="display:flex;gap:8px;">
+                        <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
+                    </div>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
             </div>
 
             <?php echo itm_render_alert_errors($errors); ?>
@@ -258,14 +272,40 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
 
             <?php
             // Why: Every folder lists the same addressing columns (From, To, CC) across tabs.
-            $webmailListColspan = 8;
+            $webmailListColspan = 8 + ($showBulkActions ? 1 : 0);
             ?>
+            <?php if ($showBulkActions): ?>
+            <div class="card" style="margin-bottom:16px;">
+                <form id="bulk-delete-form" method="POST" action="delete.php" style="display:flex;gap:8px;" data-itm-bulk-delete-bound="1">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <input type="hidden" name="folder" value="<?php echo sanitize($folder); ?>">
+                    <?php if ($statusFilter !== ''): ?><input type="hidden" name="status" value="<?php echo sanitize($statusFilter); ?>"><?php endif; ?>
+                    <?php if ($starredFilter !== ''): ?><input type="hidden" name="starred" value="<?php echo sanitize($starredFilter); ?>"><?php endif; ?>
+                    <?php if ($archivedFilter !== ''): ?><input type="hidden" name="archived" value="<?php echo sanitize($archivedFilter); ?>"><?php endif; ?>
+                    <?php if ($searchRaw !== ''): ?><input type="hidden" name="search" value="<?php echo sanitize($searchRaw); ?>"><?php endif; ?>
+                    <?php if ($dateFrom !== ''): ?><input type="hidden" name="date_from" value="<?php echo sanitize($dateFrom); ?>"><?php endif; ?>
+                    <?php if ($dateTo !== ''): ?><input type="hidden" name="date_to" value="<?php echo sanitize($dateTo); ?>"><?php endif; ?>
+                    <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
+                    <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
+                    <input type="hidden" name="page" value="<?php echo (int)$page; ?>">
+                    <button type="submit" name="bulk_action" value="bulk_delete" class="btn btn-sm btn-danger" id="bulk-delete-toggle">Select to Delete</button>
+                    <button type="button" class="btn btn-sm" data-itm-bulk-cancel="1">Cancel</button>
+                    <button type="submit" name="bulk_action" value="clear_table" class="btn btn-sm btn-danger"
+                        onclick="return confirm(<?php echo $folder === 'trash'
+                            ? "'Permanently delete all messages in Trash matching this view? This cannot be undone.'"
+                            : "'Move all messages in this view to Trash?'"; ?>);">Clear Table</button>
+                </form>
+            </div>
+            <?php endif; ?>
             <div class="card">
                 <p><?php echo sanitize($folderTitle); ?> — <?php echo (int)$totalRows; ?> message(s)</p>
                 <div class="table-responsive">
                     <table class="data-table" data-itm-no-import-excel="1" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
                         <thead>
                         <tr>
+                            <?php if ($showBulkActions): ?>
+                                <th></th>
+                            <?php endif; ?>
                             <?php $webmailSortTh('from_email', 'From'); ?>
                             <?php $webmailSortTh('to_email', 'To'); ?>
                             <?php $webmailSortTh('cc_email', 'CC'); ?>
@@ -293,7 +333,10 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
                                 $isStar = (int)($row['is_star'] ?? 0) === 1;
                                 $isRead = (int)($row['is_read'] ?? 0) === 1;
                                 ?>
-                                <tr>
+                                <tr class="<?php echo $isRead ? '' : 'webmail-row-unread'; ?>">
+                                    <?php if ($showBulkActions): ?>
+                                        <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
+                                    <?php endif; ?>
                                     <td><?php $webmailListViewLink($viewUrl, (string)($row['from_email'] ?? '')); ?></td>
                                     <td><?php $webmailListViewLink($viewUrl, (string)($row['to_email'] ?? '')); ?></td>
                                     <td><?php $webmailListViewLink($viewUrl, (string)($row['cc_email'] ?? '')); ?></td>

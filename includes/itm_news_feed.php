@@ -373,6 +373,67 @@ if (!function_exists('news_sort_items_newest_first')) {
     }
 }
 
+if (!function_exists('news_list_sort_columns')) {
+    /**
+     * @return list<string>
+     */
+    function news_list_sort_columns($showCvss)
+    {
+        $columns = ['title', 'published', 'description'];
+        if ($showCvss) {
+            $columns[] = 'severity';
+            $columns[] = 'base_score';
+        }
+
+        return $columns;
+    }
+}
+
+if (!function_exists('news_resolve_list_sort')) {
+    /**
+     * @return array{sort:string,dir:string}
+     */
+    function news_resolve_list_sort($sort, $dir, $showCvss)
+    {
+        $sort = trim((string)$sort);
+        $allowed = news_list_sort_columns($showCvss);
+        if (!in_array($sort, $allowed, true)) {
+            $sort = 'published';
+        }
+        $dir = strtoupper(trim((string)$dir)) === 'ASC' ? 'ASC' : 'DESC';
+
+        return ['sort' => $sort, 'dir' => $dir];
+    }
+}
+
+if (!function_exists('news_sort_feed_items_for_ui')) {
+    function news_sort_feed_items_for_ui(array $items, $sort, $dir)
+    {
+        $sort = (string)$sort;
+        $dir = strtoupper((string)$dir) === 'ASC' ? 'ASC' : 'DESC';
+        $mult = $dir === 'ASC' ? 1 : -1;
+
+        usort($items, function (array $left, array $right) use ($sort, $mult) {
+            if ($sort === 'base_score') {
+                $leftVal = isset($left['base_score']) && $left['base_score'] !== null ? (float)$left['base_score'] : -1.0;
+                $rightVal = isset($right['base_score']) && $right['base_score'] !== null ? (float)$right['base_score'] : -1.0;
+                $cmp = $leftVal <=> $rightVal;
+            } elseif ($sort === 'published') {
+                $cmp = news_item_published_timestamp($left) <=> news_item_published_timestamp($right);
+            } else {
+                $cmp = strcasecmp((string)($left[$sort] ?? ''), (string)($right[$sort] ?? ''));
+            }
+            if ($cmp === 0) {
+                $cmp = strcasecmp((string)($left['title'] ?? ''), (string)($right['title'] ?? ''));
+            }
+
+            return $cmp * $mult;
+        });
+
+        return $items;
+    }
+}
+
 if (!function_exists('news_strip_html_excerpt')) {
     function news_strip_html_excerpt($html, $maxLength = 220)
     {

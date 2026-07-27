@@ -27,7 +27,7 @@ Registry row: **`modules_registry`** slug `news` (sidebar + company module acces
   - **205 Microsoft Support Atom feeds** from [RSS feed picker](https://support.microsoft.com/en-us/rss-feed-picker) — product list in `includes/itm_news_feed_ms_support_products.php`, merged via `news_microsoft_support_feed_catalog_entries()`; includes `ms_win10_updates` and `ms_win11_updates` (same cache ids as before)
 - Regenerate Support product list: `php scripts/generate_ms_support_feed_products.php` (scrapes feed picker `<option>` GUIDs)
 - **NVD API key:** optional `NVD_API_KEY` or `ITM_NVD_API_KEY` in project root `.env` (see `.env.example`; loaded by `config/config.php`); sent as `apiKey` request header for higher NVD rate limits
-- Feed items are sorted **newest first** by `published` (fallback `last_modified`) in `news_sort_items_newest_first()` before cache save and UI load
+- Feed items are sorted **newest first** by `published` (fallback `last_modified`) in `news_sort_items_newest_first()` before cache save; **index.php** re-sorts the displayed page via `?sort=` / `?dir=` and `news_sort_feed_items_for_ui()` (▲/▼ column headers).
 - Cache TTL: **24 hours** per source (`NEWS_CACHE_DURATION`)
 - Per-source lock files: `modules/news/cache/{source_id}.lock` (5-minute stale timeout)
 - **RBAC exempt:** slug `news` in `itm_crud_rbac_exempt_module_slugs()` — no `role_module_permissions` row required
@@ -42,6 +42,7 @@ Registry row: **`modules_registry`** slug `news` (sidebar + company module acces
 - Main table columns adapt: NVD shows Severity + Score; RSS sources show Title only
 - Toolbar: **Source** website link (`site_link`), RSS link (`feed.php?source=`), manual refresh POST with CSRF
 - Actions column: `class="itm-actions-cell"` + `data-itm-actions-origin="1"`
+- **UI configuration coverage:** gate-excluded non-standard CRUD (`scripts/data/ui_configuration_excluded_modules.txt`, `docs/list_bespoke_UI.txt`); reviewed lines in `scripts/data/ui_configuration_reviewed.json` (`news`) — feed cache list, no scaffold search/pagination.
 - Footer below the feed table: **More news** link opens the active source `site_link` in a new tab
 - Browser `<title>` uses canonical scaffold pattern (`$crud_title` includes sidebar icon + label; `$currentUiConfig` + `itm_render_head_favicon_link($favicon_url)`). `index.php` requires `config/config.php` before `news_feed_bootstrap.php` for page-chrome verify. Regression: `php scripts/verify_module_page_chrome.php`
 
@@ -75,6 +76,7 @@ No database writes — no audit triggers or `audit_logs` rows.
 
 ## 10. Common Pitfalls
 
+- Do not `include includes/footer.php` — the repo has no shared footer partial (close `.content` / `.main-content` / `.container` like other modules).
 - Add new feeds in **`news_feed_source_catalog()`** only — do not hardcode URLs in `index.php`
 - `background-update.php` requires an existing lock (spawned from UI/feed paths)
 - Windows Laragon: `news_resolve_php_binary()` falls back to full PHP 7.4.33 path when `PHP_BINARY` is empty
