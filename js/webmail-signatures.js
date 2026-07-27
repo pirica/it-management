@@ -16,26 +16,34 @@
         }
     }
 
-    function destroyQuill() {
-        if (!quillInstance) {
+    function resetSignatureEditorMount() {
+        var mount = document.getElementById('webmail-signature-editor');
+        if (!mount) {
             return;
         }
-        var mount = document.getElementById('webmail-signature-editor');
-        if (mount) {
-            mount.innerHTML = '';
+        var wrap = mount.closest('.webmail-quill-wrap');
+        if (wrap) {
+            wrap.innerHTML = '<div id="webmail-signature-editor"></div>';
+            return;
         }
+        mount.innerHTML = '';
+        mount.className = '';
+    }
+
+    function destroyQuill() {
         quillInstance = null;
+        resetSignatureEditorMount();
     }
 
     function ensureQuill(initialHtml) {
         if (typeof window.Quill !== 'function') {
             return null;
         }
+        destroyQuill();
         var mount = document.getElementById('webmail-signature-editor');
         if (!mount) {
             return null;
         }
-        destroyQuill();
         quillInstance = new window.Quill(mount, {
             theme: 'snow',
             modules: {
