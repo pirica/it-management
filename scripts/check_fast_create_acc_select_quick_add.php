@@ -2,7 +2,7 @@
 /**
  * Static audit: employees fast_create_acc_browser.php FK selects must include __add_new__ quick-add.
  *
- * Exempt: module_slugs[] (registry catalog).
+ * Exempt: module_slugs[] (registry catalog), bundle_company_id, company_ids[] (tenant pickers — not FK quick-add).
  *
  * CLI: php scripts/check_fast_create_acc_select_quick_add.php
  */
@@ -35,7 +35,15 @@ if ($contents === '') {
 }
 
 $failures = [];
-$exemptNamePattern = '/\bname=(["\'])module_slugs\[\]\1/';
+// Why: Only scaffold FK dropdowns need ➕ quick-add; tenant/module pickers are not select_options_api targets.
+$exemptSelectPatterns = [
+    '/\bname=(["\'])module_slugs\[\]\1/',
+    '/\bid=(["\'])module_slugs\1/',
+    '/\bname=(["\'])bundle_company_id\1/',
+    '/\bid=(["\'])bundle_company_id\1/',
+    '/\bname=(["\'])company_ids\[\]\1/',
+    '/\bid=(["\'])company_ids\1/',
+];
 
 if (!preg_match_all('/<select\b[^>]*>.*?<\/select>/is', $contents, $matches, PREG_OFFSET_CAPTURE)) {
     echo colorText('[FAIL] No <select> elements found in modules/employees/fast_create_acc_browser.php.', 'fail') . $nl;
@@ -47,7 +55,14 @@ foreach ($matches[0] as $match) {
     if ($selectHtml === '') {
         continue;
     }
-    if (preg_match($exemptNamePattern, $selectHtml) === 1) {
+    $exempt = false;
+    foreach ($exemptSelectPatterns as $pattern) {
+        if (preg_match($pattern, $selectHtml) === 1) {
+            $exempt = true;
+            break;
+        }
+    }
+    if ($exempt) {
         continue;
     }
     if (strpos($selectHtml, '__add_new__') === false) {
