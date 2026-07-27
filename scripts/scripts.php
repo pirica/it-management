@@ -60,7 +60,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         .scripts-catalog-empty { margin: 8px 0 0; padding: 10px 12px; border-radius: 6px; background: var(--bg-primary, #fff); border: 1px dashed var(--border, #d0d7de); color: var(--text-secondary, #57606a); font-size: 0.86rem; }
         .scripts-catalog-grid { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
         .scripts-catalog { width: 100%; min-width: 52rem; border-collapse: collapse; table-layout: fixed; font-size: 0.82rem; line-height: 1.4; background: var(--bg-primary, #fff); border: 1px solid var(--border, #d0d7de); }
-        .scripts-catalog col.scripts-col-script { width: 20rem; }
+        .scripts-catalog col.scripts-col-pick { width: 1.75rem; }
+        .scripts-catalog col.scripts-col-script { width: 11rem; }
         .scripts-catalog col.scripts-col-access { width: 4.75rem; }
         .scripts-catalog col.scripts-col-tags { width: 7rem; }
         .scripts-catalog col.scripts-col-what { width: auto; }
@@ -71,15 +72,23 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         .scripts-catalog tbody tr:hover { background: #eef6ff; }
         .scripts-catalog tr.scripts-catalog-hidden { display: none; }
         .scripts-catalog td { padding: 5px 8px; vertical-align: top; text-align: left; }
-        .scripts-catalog thead th:nth-child(5),
-        .scripts-catalog tbody td:nth-child(5) { display: none; }
-        .scripts-catalog td.scripts-cell-script,
-        .scripts-catalog td:first-child { white-space: nowrap; vertical-align: top; text-align: left; }
-        .scripts-catalog td.scripts-cell-script .scripts-catalog-row-cb,
-        .scripts-catalog td:first-child .scripts-catalog-row-cb {
+        .scripts-catalog thead th:nth-child(6),
+        .scripts-catalog tbody td:nth-child(6) { display: none; }
+        .scripts-catalog th.scripts-pick-col,
+        .scripts-catalog td.scripts-cell-pick {
+            width: 1.75rem;
+            max-width: 1.75rem;
+            padding: 5px 0 5px 6px;
+            text-align: left;
+            vertical-align: top;
+            white-space: nowrap;
+        }
+        .scripts-catalog th.scripts-pick-col { padding-top: 6px; padding-bottom: 6px; }
+        .scripts-catalog td.scripts-cell-script { white-space: nowrap; vertical-align: top; text-align: left; padding: 5px 6px 5px 2px; }
+        .scripts-catalog td.scripts-cell-pick .scripts-catalog-row-cb {
             display: inline-block;
             vertical-align: middle;
-            margin: 0 6px 0 0;
+            margin: 0;
             cursor: pointer;
         }
         .scripts-catalog td.scripts-tags-cell { color: var(--text-primary, #24292f); overflow: hidden; }
@@ -127,8 +136,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         }
         .scripts-catalog-how-inline { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border, #d0d7de); font-size: 0.78rem; color: var(--text-secondary, #57606a); }
         .scripts-catalog-how-inline::before { content: "How: "; font-weight: 600; color: var(--text-primary, #24292f); }
-        .scripts-catalog td:first-child a { font-weight: 600; font-size: 0.82rem; color: #0969da; text-decoration: none; }
-        .scripts-catalog td:first-child a:hover { text-decoration: underline; }
+        .scripts-catalog td.scripts-cell-script a { font-weight: 600; font-size: 0.82rem; color: #0969da; text-decoration: none; }
+        .scripts-catalog td.scripts-cell-script a:hover { text-decoration: underline; }
         .scripts-catalog code { font-size: 0.78rem; word-break: break-word; background: var(--bg-secondary, #f6f8fa); border: 1px solid var(--border, #d0d7de); border-radius: 3px; padding: 0 4px; }
         .scripts-access-badges { display: flex; flex-direction: column; align-items: flex-start; flex-wrap: nowrap; gap: 3px; }
         .scripts-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; line-height: 1.4; }
@@ -2931,35 +2940,71 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         cell.appendChild(wrap);
     }
 
-    function injectCatalogRowCheckbox(scriptCell) {
-        if (!scriptCell || scriptCell.querySelector('.scripts-catalog-row-cb')) {
+    function ensureCatalogPickColumns() {
+        document.querySelectorAll('.scripts-catalog').forEach(function (table) {
+            var cg = table.querySelector('colgroup');
+            if (cg && !cg.querySelector('.scripts-col-pick')) {
+                var col = document.createElement('col');
+                col.className = 'scripts-col-pick';
+                cg.insertBefore(col, cg.firstChild);
+            }
+            var headRow = table.querySelector('thead tr');
+            if (headRow && !headRow.querySelector('th.scripts-pick-col')) {
+                var th = document.createElement('th');
+                th.className = 'scripts-pick-col';
+                th.setAttribute('scope', 'col');
+                th.setAttribute('aria-label', 'Select');
+                th.textContent = '\u200b';
+                headRow.insertBefore(th, headRow.firstChild);
+            }
+        });
+    }
+
+    function injectCatalogRowPickColumn(row) {
+        if (row.querySelector('td.scripts-cell-pick')) {
+            return;
+        }
+        var scriptCell = row.cells[0];
+        if (!scriptCell) {
             return;
         }
         var link = scriptCell.querySelector('a');
-        if (!link) {
-            return;
+        var pickTd = document.createElement('td');
+        pickTd.className = 'scripts-cell-pick';
+        if (link) {
+            var scriptName = (link.textContent || '').replace(/^\s+|\s+$/g, '');
+            var existingCb = scriptCell.querySelector('.scripts-catalog-row-cb');
+            if (existingCb) {
+                pickTd.appendChild(existingCb);
+            } else {
+                var cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.className = 'scripts-catalog-row-cb';
+                cb.setAttribute('aria-label', scriptName ? ('Select ' + scriptName) : 'Select script');
+                pickTd.appendChild(cb);
+            }
+            scriptCell.classList.add('scripts-cell-script');
         }
-        var scriptName = (link.textContent || '').replace(/^\s+|\s+$/g, '');
-        var cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.className = 'scripts-catalog-row-cb';
-        cb.setAttribute('aria-label', scriptName ? ('Select ' + scriptName) : 'Select script');
-        scriptCell.insertBefore(cb, scriptCell.firstChild);
+        row.insertBefore(pickTd, scriptCell);
     }
 
+    ensureCatalogPickColumns();
     rows.forEach(function (row) {
+        injectCatalogRowPickColumn(row);
         var cells = row.querySelectorAll('td');
-        if (cells.length >= 4) {
-            cells[0].classList.add('scripts-cell-script');
-            injectCatalogRowCheckbox(cells[0]);
-            cells[3].classList.add('scripts-cell-what');
-            wrapCatalogCellClamp(cells[3], 'scripts-cell-what-inner');
-            if (cells[4] && !cells[4].classList.contains('scripts-catalog-how-stub')) {
-                var whatWrap = cells[3].querySelector('.scripts-cell-clamp');
-                if (whatWrap && cells[4].textContent.replace(/\s+/g, ' ').trim() !== '') {
+        if (cells.length >= 5) {
+            var whatCell = cells[4];
+            var howCell = cells[5];
+            if (whatCell) {
+                whatCell.classList.add('scripts-cell-what');
+                wrapCatalogCellClamp(whatCell, 'scripts-cell-what-inner');
+            }
+            if (howCell && !howCell.classList.contains('scripts-catalog-how-stub') && whatCell) {
+                var whatWrap = whatCell.querySelector('.scripts-cell-clamp');
+                if (whatWrap && howCell.textContent.replace(/\s+/g, ' ').trim() !== '') {
                     var howInline = document.createElement('div');
                     howInline.className = 'scripts-catalog-how-inline';
-                    howInline.innerHTML = cells[4].innerHTML;
+                    howInline.innerHTML = howCell.innerHTML;
                     whatWrap.appendChild(howInline);
                 }
             }
@@ -3113,7 +3158,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
     }
 
     function rowCatalogHref(row) {
-        var link = row.querySelector('td:first-child a');
+        var link = row.querySelector('td.scripts-cell-script a') || row.querySelector('td:nth-child(2) a');
         if (!link) {
             return '';
         }
@@ -3199,7 +3244,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         }
         var href = rowCatalogHref(row);
         var filename = rowCatalogFilename(row);
-        var link = row.querySelector('td:first-child a');
+        var link = row.querySelector('td.scripts-cell-script a') || row.querySelector('td:nth-child(2) a');
         var linkText = link ? (link.textContent || '').replace(/^\s+|\s+$/g, '').toLowerCase() : '';
         return likeRe.test(href) || likeRe.test(filename) || likeRe.test(linkText);
     }

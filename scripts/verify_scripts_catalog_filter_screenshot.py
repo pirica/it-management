@@ -162,7 +162,7 @@ def assert_first_visible_info_data_file(page):
         """() => {
             const row = document.querySelector('.scripts-catalog tbody tr:not(.scripts-catalog-hidden)');
             if (!row) return false;
-            const link = row.querySelector('td:first-child a');
+            const link = row.querySelector('td.scripts-cell-script a') || row.querySelector('td:nth-child(2) a');
             if (!link) return false;
             const href = (link.getAttribute('href') || '').toLowerCase();
             return href.endsWith('.json') || href.endsWith('.txt');
@@ -176,7 +176,7 @@ def assert_first_visible_href_ends_with(page, ext):
         f"""() => {{
             const row = document.querySelector('#docs .scripts-catalog tbody tr:not(.scripts-catalog-hidden)');
             if (!row) return false;
-            const link = row.querySelector('td:first-child a');
+            const link = row.querySelector('td.scripts-cell-script a') || row.querySelector('td:nth-child(2) a');
             if (!link) return false;
             const href = (link.getAttribute('href') || '').toLowerCase();
             return href.endsWith({ext!r});
