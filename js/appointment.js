@@ -356,7 +356,7 @@
                 return;
             }
             if (!confirmedSelection || !confirmedSelection.date || !confirmedSelection.start_time) {
-                alert('Select an appointment time.');
+                alert('Missing day-time for your appointment.');
                 return;
             }
             var typeInput = document.querySelector('input[name="appointment_type"]:checked');
