@@ -38,11 +38,40 @@ if ($kind === 'appointment_type') {
         $res = mysqli_stmt_get_result($check);
         $row = $res ? mysqli_fetch_assoc($res) : null;
         mysqli_stmt_close($check);
+        if (!$row) {
+            header('Location: index.php?msg=' . rawurlencode('Appointment type not found.'));
+            exit;
+        }
         $core = in_array((string)($row['name'] ?? ''), ['in_person', 'remote'], true);
         if ($core) {
             header('Location: index.php?msg=' . rawurlencode('Cannot delete core appointment types.'));
             exit;
         }
+        $refCount = 0;
+        $refStmt = mysqli_prepare(
+            $conn,
+            'SELECT COUNT(*) AS c FROM appointments WHERE company_id = ? AND appointment_type_id = ? AND deleted_at IS NULL'
+        );
+        if ($refStmt) {
+            mysqli_stmt_bind_param($refStmt, 'ii', $company_id, $id);
+            mysqli_stmt_execute($refStmt);
+            $refRes = mysqli_stmt_get_result($refStmt);
+            $refRow = $refRes ? mysqli_fetch_assoc($refRes) : null;
+            $refCount = (int)($refRow['c'] ?? 0);
+            mysqli_stmt_close($refStmt);
+        }
+        if ($refCount > 0) {
+            header('Location: index.php?msg=' . rawurlencode('Cannot delete appointment type: bookings still reference it.'));
+            exit;
+        }
+        $del = mysqli_prepare($conn, 'DELETE FROM appointment_type WHERE id = ? AND company_id = ?');
+        if ($del) {
+            mysqli_stmt_bind_param($del, 'ii', $id, $company_id);
+            mysqli_stmt_execute($del);
+            mysqli_stmt_close($del);
+        }
+        header('Location: index.php?msg=' . rawurlencode(aps_kind_label($kind) . ' deleted.'));
+        exit;
     }
 }
 
