@@ -18,7 +18,7 @@ Canonical SQL schema, seed data, and audit triggers for the IT Management System
 ## 7. File Structure
 - `01_schema.sql` — DDL (`DROP DATABASE`, `CREATE TABLE`, …)
 - `02_data.sql` — seed DML (`INSERT`, `UPDATE`, `DELETE`, `SET @replicate_source_company_id`)
-- `02_data_sample.sql` — **runtime-only** Add sample data / MBQA `sample_data` templates (company `1` markers in file; seeder stamps active tenant). **Not** in import order. Build: `php scripts/extract_02_data_sample.php --apply`. Module **Add sample data** loads rows via `itm_seed_table_from_database_sql()` — only the empty-table PHP gate is optional maintenance (`scripts/apply_crud_sample_data_live_row_gate.php`).
+- `02_data_sample.sql` — **runtime-only** Add sample data / MBQA `sample_data` templates (company `1` markers in file; seeder stamps active tenant). **Not** in import order. Build: `php scripts/extract_02_data_sample.php --apply`. Module **Add sample data** loads rows via `itm_seed_table_from_database_sql()` — only the empty-table PHP gate is optional maintenance (`scripts/apply_crud_sample_data_live_row_gate.php`). **Coverage gate** (`scripts/check_02_data_sample_coverage.php`) skips tables in `itm_sample_sql_exempt_tables()` (RBAC matrix, junctions, finance/live-chat/ticket children, webmail state — not flattened CRUD empty-table targets).
 - `03_triggers.sql` — audit triggers + `SET FOREIGN_KEY_CHECKS=1`
 - `index.html` — directory listing prevention
 

@@ -22,6 +22,24 @@ if (!function_exists('itm_sample_sql_exempt_tables')) {
             'role_hierarchy',
             'role_assignment_rights',
             'ui_configuration',
+            // Matrix / junction / child rows — seeded via parent module or 02_data.sql only (no Add sample data UI).
+            'company_module_share',
+            'employee_departments',
+            'employee_notifications',
+            'finance_attachments',
+            'finance_payment_allocations',
+            // Live chat (private / ephemeral; no flattened CRUD sample button).
+            'live_chat_conversations',
+            'live_chat_messages',
+            'live_chat_participants',
+            'live_chat_typing',
+            // Ticket children / SLA config (no standalone sample module).
+            'ticket_activity',
+            'ticket_comments',
+            'ticket_sla_policies',
+            // Webmail per-user state (not tenant empty-table sample targets).
+            'webmail_email_reads',
+            'webmail_signatures',
         ];
 
         foreach ([
