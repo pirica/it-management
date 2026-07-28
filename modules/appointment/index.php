@@ -211,7 +211,7 @@ function appt_employee_select_label(array $empRow)
     <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/styles.css">
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/appointment.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/appointment.css?v=<?php echo (int)@filemtime(ROOT_PATH . 'css/appointment.css'); ?>">
 </head>
 <body>
 <div class="container">
@@ -364,8 +364,10 @@ function appt_employee_select_label(array $empRow)
 
                             <div class="form-group">
                                 <label for="appointment-slot-display">Select an appointment</label>
-                                <button type="button" class="btn appointment-slot-trigger" id="appointment-open-modal" title="Select an appointment">📅</button>
-                                <input type="text" id="appointment-slot-display" class="form-control" readonly placeholder="No time selected" style="margin-top:8px;">
+                                <div class="appointment-slot-row">
+                                    <button type="button" class="btn appointment-slot-trigger" id="appointment-open-modal" title="Select an appointment">📅</button>
+                                    <input type="text" id="appointment-slot-display" class="form-control appointment-slot-display" readonly placeholder="No time selected">
+                                </div>
                             </div>
 
                             <div class="form-group appointment-type-group hidden">
