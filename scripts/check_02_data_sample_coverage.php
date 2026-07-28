@@ -9,7 +9,7 @@
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-CLI: <code>php scripts/check_02_data_sample_coverage.php</code> — exit <code>1</code> when any table is missing.
+CLI: <code>php scripts/check_02_data_sample_coverage.php</code> — exit <code>1</code> when a required table lacks a template. Skips <code>itm_sample_sql_exempt_tables()</code> (child/junction/matrix tables — see <code>includes/itm_sample_sql_export.php</code>).
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 define('ITM_CLI_SCRIPT', true);
