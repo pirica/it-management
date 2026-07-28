@@ -2,61 +2,138 @@
 
 ## 1. Module Purpose
 
-Employee self-service IT appointment scheduling: pick a visit reason, choose an hourly slot from a weekly grid modal, and confirm in-person or remote (when allowed). Administrators can review bookings via `list_all.php` and `view.php`.
+Employee self-service IT appointment scheduling: choose a **reason for your appointment**, pick an hourly slot from a weekly grid modal, and confirm **In-person** or **Remote** (when allowed). Staff with list access can review company bookings via `list_all.php` and `view.php`. Tenant configuration lives in **`modules/appointment_settings/`** (separate RBAC slug).
 
 ## 2. Key Tables
 
-- **appointments** — booked slots per employee (`appointment_date`, `start_time`, `end_time`, `appointment_type_id`, `status`, `timezone`)
-- **appointment_type** — tenant lookup (`in_person`, `remote`) for visit modality
-- **appointment_visit_reasons** — tenant lookup for the “reason for visiting” dropdown
-- **appointment_settings** — one row per company: `timezone`, `in_person_only`, bookable window, slot duration, check-in buffer
-- **appointment_business_hours** — seven rows per company for sidebar hours and which weekdays allow online booking (`allows_online_booking`)
+- **appointments** — booked slots (`appointment_date`, `start_time`, `end_time`, `appointment_type_id`, `status`, `timezone`, `booking_lock`)
+- **appointment_type** — tenant lookup (`in_person`, `remote`) for modality
+- **appointment_visit_reasons** — dropdown reasons (active rows only in booking UI)
+- **appointment_settings** — one row per company: timezone, `in_person_only`, slot length, bookable window, check-in buffer
+- **appointment_business_hours** — seven rows per company (`allows_online_booking`, open/close, `is_closed`)
 
 ## 3. Required Relationships
 
 - **appointments** → `companies`, `employees`, `appointment_visit_reasons`, `appointment_type`
-- All child tables → `companies` (CASCADE)
+- Configuration tables → `companies` (CASCADE)
+- Booking reads settings/hours/reasons/types via `includes/itm_appointment.php`
 
 ## 4. Business Rules (Critical for Agents)
 
 - All queries scoped by `company_id`.
-- Slot grid: only days with `allows_online_booking = 1` and `is_closed = 0`; hourly slots between `bookable_start_time` and `bookable_end_time` from settings; booked `scheduled` rows block the slot.
-- When `appointment_settings.in_person_only = 1`, API rejects `remote` and UI hides remote radio (banner matches screenshot).
-- Default seed: Mon–Tue display hours but no online slots; Wed–Fri bookable 09:00–14:00; Sat–Sun closed.
-- Soft-delete on **appointments** and lookup tables via standard audit columns; mutations audited in `audit_logs` (triggers in `db/03_triggers.sql`).
-- **Slot lock:** `appointments.booking_lock` + `uq_appointments_company_booking_lock` prevents double-booking; cleared on soft-delete.
+- Slot grid: weekday must have `allows_online_booking = 1` and `is_closed = 0`; slots generated between `bookable_start_time` and `bookable_end_time` using `slot_duration_minutes`; existing `scheduled` rows with same date/start block availability (`booking_lock` unique per company).
+- When `appointment_settings.in_person_only = 1`, API rejects `remote` and UI hides the Remote card.
+- API accepts only `appointment_type` names `in_person` and `remote` (must be active lookup rows).
+- Visit reasons on schedule must be `active = 1` and not soft-deleted.
+- New bookings insert `status = 'scheduled'`; no status workflow UI yet.
+- Soft-delete on **appointments** clears `booking_lock` in the delete handler (`index.php` delete POST).
+- **`appointment_settings.active` is not checked** before booking — inactive settings still load and allow scheduling until code gates on `active = 1` (known gap).
 
 ## 5. UI Behavior Requirements
 
-- **index.php** — booking form + modal week grid (`css/appointment.css`, `js/appointment.js`).
-- **api.php** — `week_slots` (GET), `schedule` (POST, CSRF); rate limit enforced.
-- Live Chat **Live Agent** launch menu links here instead of Knowledge Base (`includes/itm_live_chat_launch_options.php`).
+### Booking (`index.php`, `crud_action` default)
 
-## 6. File Structure
+- Copy: “What is the reason for your appointment?” / “--Select a reason for your appointment--”.
+- Slot picker: modal week grid (`js/appointment.js`, `css/appointment.css`); confirm sets readonly display + hidden `appointment_date` / `start_time` / `end_time`.
+- Appointment type: card-style radios (not legacy inline `itm-checkbox-control` row).
+- Schedule: AJAX POST to `api.php` `action=schedule` with CSRF; success redirects to `view.php?id=`.
+- Sidebar card: simplified Mon–Fri / Sat–Sun summary (see pitfalls — not a full per-day grid).
+- **⚙️ Appointment Settings** link: only when `itm_is_admin($conn, $employee_id)` — not RBAC `appointment_settings` edit permission.
 
-- `index.php` — booking, list, view, delete POST
-- `api.php` — JSON slot/schedule API
-- `includes/itm_appointment.php` — settings, hours, slot builder
+### List / view (`list_all.php`, `view.php`)
 
-## 7. Integration
+- List: up to **200** rows, all company appointments (no “mine only” filter), columns Date/Time/Employee/Reason/Type/Status; actions **🔎 View** only.
+- View: detail + audit meta via `itm_crud_render_audit_cell_value()` when available.
+- **No cancel/delete button** on list or view despite `delete.php` → soft-delete POST on `index.php` (handler exists, UI missing).
 
-- Sidebar: Planning → Appointment (`includes/ui_config.php`); configuration → **Appointment Settings** (`modules/appointment_settings/`, slug `appointment_settings`).
-- `modules_registry` slug: `appointment`
+### Not flattened scaffold CRUD
 
-## 8. Regression
+- No search, pagination, bulk delete, Excel import/export, or `data-itm-db-import-endpoint`.
+- Bespoke by design (`AGENTS.md` Appointment scheduling).
+
+## 6. API Actions
+
+`modules/appointment/api.php` — JSON, rate limit + session required.
+
+| Action | Method | Purpose |
+|--------|--------|---------|
+| **week_slots** | GET `date=YYYY-MM-DD` | Week grid payload (`itm_appointment_build_week_slots`) |
+| **schedule** | POST + CSRF | Create appointment; returns `view_url` on success |
+
+## 7. File Structure
+
+- **index.php** — booking UI, list, view, delete POST when `$crud_action === 'delete'`
+- **list_all.php** / **view.php** / **delete.php** — wrappers setting `$crud_action`
+- **api.php** — slot + schedule JSON
+- **create.php** / **edit.php** — not used for booking (wrappers or absent)
+- **includes/itm_appointment.php** — settings, hours, slot builder, types, reasons
+- **js/appointment.js** — modal, week navigation, schedule fetch
+- **css/appointment.css** — layout, modal, type cards
+
+## 8. Multi-Tenant Rules
+
+- `company_id` from session on all reads/writes.
+- List/view show **any** employee’s appointment in the tenant — not restricted to `employee_id = session` (IT desk model; document when adding “my appointments” filter).
+
+## 9. Audit Logging Requirements
+
+- `appointments` and configuration tables: `trg_{table}_audit_*` in `db/03_triggers.sql` (unconditional INSERT into `audit_logs` on DML).
+- Schedule path uses prepared INSERT in `api.php` (triggers fire).
+
+## 10. Common Pitfalls
+
+- Do not assume delete is employee-scoped: delete POST only checks `company_id`, not booking owner.
+- Past dates/times still appear in the slot grid — no “future only” filter in `itm_appointment_build_week_slots()`.
+- Sidebar hours text hardcodes **“(BST)”**; timezone label elsewhere uses `appointment_settings.timezone` (can disagree).
+- Mon–Fri line uses **first open weekday row** only — misleading if Tuesday hours differ from Monday.
+- Empty visit-reason dropdown if all reasons inactive/deleted — no empty-state message on booking form.
+- Slot display after confirm uses **ISO date** in the text field (`YYYY-MM-DD`), not `dd/mm/yyyy` display helper.
+- Errors use browser `alert()` — no inline flash on booking screen.
+- `itm_appointment_load_settings()` does not filter `active = 1`.
+
+## 11. Examples of Safe Code Patterns
+
+```php
+$stmt = mysqli_prepare($conn, 'SELECT a.* FROM appointments a WHERE a.company_id = ? AND a.id = ? AND a.deleted_at IS NULL LIMIT 1');
+mysqli_stmt_bind_param($stmt, 'ii', $company_id, $appointmentId);
+```
+
+## 12. Module Owner Notes
+
+### Local URLs (open in a new browser tab)
+
+- Booking: [modules/appointment/index.php](http://localhost/it-management/modules/appointment/index.php)
+- List: [modules/appointment/list_all.php](http://localhost/it-management/modules/appointment/list_all.php)
+- Settings (admin): [modules/appointment_settings/index.php](http://localhost/it-management/modules/appointment_settings/index.php)
+
+### Regression
 
 ```bash
 php scripts/verify_appointment.php
 php -l modules/appointment/index.php
 php -l modules/appointment/api.php
-php scripts/check_audit_logs_coverage.php
 ```
 
-## 9. Migration
+### Daily-use improvement backlog (not implemented)
 
-- `db/migrations/appointment.sql` — DROP + CREATE all four tables for DBs that predate the module (fresh installs use `db/01_schema.sql` only).
-- `db/migrations/appointment_type.sql` — enum → `appointment_type` + `appointment_type_id` (destructive; back up first).
+| Area | Gap | Suggested direction |
+|------|-----|---------------------|
+| Self-service | No **cancel** / reschedule | View action 🗑️ or “Cancel” for owner (or admin); optional status `cancelled` |
+| List | All-company list for every viewer | Filter **My appointments** vs **All** (admin/IT); search by employee/date |
+| List | Hard cap 200 rows | Pagination or date-range filter |
+| Booking | Past slots bookable in UI | Hide slots before “now” in slot builder or API validation |
+| Booking | No confirmation email / calendar | `itm_send_email()` + optional ICS after schedule |
+| Booking | `settings.active = 0` | Block booking with clear message |
+| UX | ISO date in slot summary | Use `itm_format_date_display()` in JS or server-side label |
+| UX | Sidebar timezone label | Derive from settings, remove hardcoded BST |
+| Admin link | Only `itm_is_admin` | Also show ⚙️ when role has `appointment_settings` **edit** |
+| Status | Raw `scheduled` string | Badges + workflow (completed, no-show, cancelled) |
+| QA | No dedicated MBQA slug step | Add `module_browser_qa_runner.php --module=appointment` when flow stabilizes |
 
-## 12. Module Owner Notes
+### Migration (existing DBs)
 
-Module browser URL (local Laragon): `http://localhost/it-management/modules/appointment/index.php`
+- `db/migrations/appointment.sql` — full module tables
+- `db/migrations/appointment_booking_lock.sql` — `booking_lock` + unique index
+- `db/migrations/appointment_type.sql` — enum → `appointment_type_id` (destructive)
+
+Fresh installs: `db/01_schema.sql`, `db/02_data.sql`, `db/03_triggers.sql` only.
