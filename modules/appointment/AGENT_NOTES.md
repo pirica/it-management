@@ -25,7 +25,7 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 - **Appointment type (In-person / Remote):** controlled by **per weekday** `appointment_business_hours.allows_in_person` / `allows_remote` after the employee picks a slot date. Booking UI (`js/appointment.js`) and `api.php` `schedule` enforce via `itm_appointment_day_allows_modality()` / `itm_appointment_modality_for_date()`.
 - When only one modality is allowed (company-wide or for the selected day), UI shows a single type card and an info banner.
 - When **both** modalities are allowed, booking UI pre-selects `appointment_settings.default_appointment_modality` (seed/default **remote**).
-- Schedule without a visit reason: `js/appointment.js` shows `Missing Reason for your appointment.`; without a confirmed slot: `Missing day-time for your appointment.`
+- Schedule without a visit reason or slot: `js/appointment.js` alerts `--Select a reason for your appointment--` and `Select an appointment time.` (schedule button stays enabled so alerts always run).
 - API accepts only `appointment_type` names `in_person` and `remote` (must be active lookup rows).
 - Visit reasons on schedule must be `active = 1` and not soft-deleted.
 - New bookings insert `status = 'scheduled'`; no status workflow UI yet.
