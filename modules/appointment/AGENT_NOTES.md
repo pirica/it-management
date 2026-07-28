@@ -27,7 +27,7 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 - API accepts only `appointment_type` names `in_person` and `remote` (must be active lookup rows).
 - Visit reasons on schedule must be `active = 1` and not soft-deleted.
 - New bookings insert `status = 'scheduled'`; no status workflow UI yet.
-- Soft-delete on **appointments** clears `booking_lock` in the delete handler (`index.php` delete POST).
+- Soft-delete on **appointments** clears `booking_lock`, sets `status = cancelled`, and stamps `deleted_*` in the delete handler (`index.php` delete POST) so the slot is bookable again.
 - **`appointment_settings.active` is not checked** before booking — inactive settings still load and allow scheduling until code gates on `active = 1` (known gap).
 
 ## 5. UI Behavior Requirements
@@ -43,9 +43,8 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 
 ### List / view (`list_all.php`, `view.php`)
 
-- List: up to **200** rows, all company appointments (no “mine only” filter), columns Date/Time/Employee/Reason/Type/Status/**Assigned to**/**Confirmed**; inline assignee `<select>` and **Confirmed** checkbox per row when RBAC **edit** is granted (POST `list_all.php`); actions **🔎 View** only.
+- List: up to **200** rows, all company appointments (no “mine only” filter), columns Date/Time/Employee/Reason/Type/Status/**Assigned to**/**Confirmed**; inline assignee `<select>` and **Confirmed** checkbox per row when RBAC **edit** is granted (POST `list_all.php`); actions **🔎 View** and **🗑️ Delete** (RBAC **delete**) — delete soft-removes the row, clears `booking_lock`, sets `status` to `cancelled`, and releases the slot for rebooking.
 - View: detail includes assignee and confirmed flags plus audit meta via `itm_crud_render_audit_cell_value()` when available.
-- **No cancel/delete button** on list or view despite `delete.php` → soft-delete POST on `index.php` (handler exists, UI missing).
 
 ### Not flattened scaffold CRUD
 

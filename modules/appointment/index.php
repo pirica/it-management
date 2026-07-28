@@ -102,7 +102,8 @@ if ($crud_action === 'delete' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') 
     if ($id > 0) {
         $where = 'id = ' . $id . ' AND company_id = ' . $company_id;
         $sql = itm_crud_build_soft_delete_sql($crud_table, $where, $employee_id);
-        $sql = str_replace('`active`=0', '`active`=0, `booking_lock`=NULL', $sql);
+        // Why: Clear slot lock and mark cancelled so the time slot is bookable again.
+        $sql = str_replace('`active`=0', '`active`=0, `booking_lock`=NULL, `status`=\'cancelled\'', $sql);
         itm_run_query($conn, $sql);
     }
     header('Location: list_all.php');
@@ -112,10 +113,12 @@ if ($crud_action === 'delete' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') 
 $listRows = [];
 $listAssigneeEmployees = [];
 $canEditListRows = true;
+$canDeleteListRows = true;
 if (function_exists('itm_user_has_role_module_permission') && function_exists('itm_resolve_rbac_module_name_for_slug')) {
     $rbacModuleName = itm_resolve_rbac_module_name_for_slug($conn, 'appointment');
     if ($rbacModuleName !== '') {
         $canEditListRows = itm_user_has_role_module_permission($conn, $employee_id, $company_id, $rbacModuleName, 'edit');
+        $canDeleteListRows = itm_user_has_role_module_permission($conn, $employee_id, $company_id, $rbacModuleName, 'delete');
     }
 }
 if ($crud_action === 'list_all') {
@@ -275,6 +278,13 @@ function appt_employee_select_label(array $empRow)
                                 </td>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>" title="View">🔎</a>
+                                    <?php if ($canDeleteListRows): ?>
+                                    <form method="post" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this appointment and release the time slot?');">
+                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                        <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
+                                    </form>
+                                    <?php endif; ?>
                                 </td>
                                 <?php if ($canEditListRows): ?>
                                 </form>
