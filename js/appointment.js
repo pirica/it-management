@@ -204,12 +204,28 @@
             });
     }
 
+    function hasVisitReasonSelected() {
+        return !!(reasonSelect && String(reasonSelect.value || '').trim() !== '');
+    }
+
+    function hasAppointmentSlotSelected() {
+        if (confirmedSelection && confirmedSelection.date && confirmedSelection.start_time) {
+            return true;
+        }
+        return !!(
+            slotHiddenDate && String(slotHiddenDate.value || '').trim() !== ''
+            && slotHiddenStart && String(slotHiddenStart.value || '').trim() !== ''
+        );
+    }
+
     function updateScheduleButton() {
         if (!scheduleBtn) {
             return;
         }
-        var slotOk = confirmedSelection && confirmedSelection.date && confirmedSelection.start_time;
-        scheduleBtn.disabled = !slotOk;
+        // Why: Keep clickable so missing reason/slot show alerts; only lock during API submit.
+        if (scheduleBtn.getAttribute('data-itm-submitting') !== '1') {
+            scheduleBtn.disabled = false;
+        }
     }
 
     function loadWeek(anchor) {
@@ -351,12 +367,20 @@
 
     if (scheduleBtn) {
         scheduleBtn.addEventListener('click', function () {
-            if (!reasonSelect || !reasonSelect.value || reasonSelect.value === '') {
-                alert('Missing Reason for your appointment.');
+            if (!hasVisitReasonSelected()) {
+                alert('--Select a reason for your appointment--');
+                if (reasonSelect) {
+                    reasonSelect.focus();
+                }
                 return;
             }
-            if (!confirmedSelection || !confirmedSelection.date || !confirmedSelection.start_time) {
-                alert('Missing day-time for your appointment.');
+            if (!hasAppointmentSlotSelected()) {
+                alert('Select an appointment time.');
+                if (slotDisplay) {
+                    slotDisplay.focus();
+                } else if (openModalBtn) {
+                    openModalBtn.focus();
+                }
                 return;
             }
             var typeInput = document.querySelector('input[name="appointment_type"]:checked');
@@ -369,6 +393,7 @@
             formData.append('end_time', slotHiddenEnd.value);
             formData.append('appointment_type', typeInput ? typeInput.value : defaultAppointmentModality);
             scheduleBtn.disabled = true;
+            scheduleBtn.setAttribute('data-itm-submitting', '1');
             fetch(apiUrl, { method: 'POST', body: formData, credentials: 'same-origin' })
                 .then(function (res) { return res.json().then(function (j) { return { ok: res.ok, body: j }; }); })
                 .then(function (result) {
@@ -377,11 +402,13 @@
                         return;
                     }
                     alert((result.body && result.body.message) ? result.body.message : 'Could not schedule appointment.');
+                    scheduleBtn.removeAttribute('data-itm-submitting');
                     scheduleBtn.disabled = false;
                     updateScheduleButton();
                 })
                 .catch(function () {
                     alert('Could not schedule appointment.');
+                    scheduleBtn.removeAttribute('data-itm-submitting');
                     scheduleBtn.disabled = false;
                     updateScheduleButton();
                 });

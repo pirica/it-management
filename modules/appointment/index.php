@@ -393,7 +393,7 @@ function appt_employee_select_label(array $empRow)
                                 <div id="appointment-modality-banner" class="appointment-info-banner hidden" aria-live="polite"></div>
                             </div>
 
-                            <button type="button" class="btn btn-primary" id="appointment-schedule-btn" title="Schedule appointment" disabled>💾</button>
+                            <button type="button" class="btn btn-primary" id="appointment-schedule-btn" title="Schedule appointment">💾</button>
                         </div>
                     </div>
 
@@ -453,7 +453,7 @@ function appt_employee_select_label(array $empRow)
     </div>
 </div>
 <?php if ($crud_action === 'index'): ?>
-<script src="<?php echo BASE_URL; ?>js/appointment.js"></script>
+<script src="<?php echo BASE_URL; ?>js/appointment.js?v=<?php echo (int)@filemtime(ROOT_PATH . 'js/appointment.js'); ?>"></script>
 <?php endif; ?>
 </body>
 </html>
