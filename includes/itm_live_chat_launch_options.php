@@ -35,12 +35,12 @@ if (!function_exists('itm_live_chat_launch_options_live_agent')) {
                 'url' => null,
             ],
             [
-                'id' => 'knowledge_base',
-                'label' => 'Knowledge Base',
-                'description' => 'Browse self-service articles',
-                'icon' => '🧩',
+                'id' => 'appointment',
+                'label' => 'Appointment',
+                'description' => 'Schedule an in-person or remote visit',
+                'icon' => '📅',
                 'open_mode' => 'browser_tab',
-                'url' => BASE_URL . 'modules/knowledge_base/',
+                'url' => BASE_URL . 'modules/appointment/',
             ],
             [
                 'id' => 'knowledge_base_list_all',

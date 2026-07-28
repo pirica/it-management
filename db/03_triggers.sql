@@ -60,6 +60,83 @@ END$$
 
 DELIMITER ;
 
+DROP TRIGGER IF EXISTS `trg_appointment_business_hours_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_appointment_business_hours_audit_update`;
+DROP TRIGGER IF EXISTS `trg_appointment_business_hours_audit_delete`;
+DROP TRIGGER IF EXISTS `trg_appointment_settings_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_appointment_settings_audit_update`;
+DROP TRIGGER IF EXISTS `trg_appointment_settings_audit_delete`;
+DROP TRIGGER IF EXISTS `trg_appointment_visit_reasons_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_appointment_visit_reasons_audit_update`;
+DROP TRIGGER IF EXISTS `trg_appointment_visit_reasons_audit_delete`;
+DROP TRIGGER IF EXISTS `trg_appointments_audit_insert`;
+DROP TRIGGER IF EXISTS `trg_appointments_audit_update`;
+DROP TRIGGER IF EXISTS `trg_appointments_audit_delete`;
+
+DELIMITER $$
+
+CREATE TRIGGER `trg_appointment_business_hours_audit_insert` AFTER INSERT ON `appointment_business_hours` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'appointment_business_hours', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'day_of_week', NEW.`day_of_week`, 'display_label', NEW.`display_label`, 'open_time', NEW.`open_time`, 'close_time', NEW.`close_time`, 'is_closed', NEW.`is_closed`, 'allows_online_booking', NEW.`allows_online_booking`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_appointment_business_hours_audit_update` AFTER UPDATE ON `appointment_business_hours` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'appointment_business_hours', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'day_of_week', OLD.`day_of_week`, 'display_label', OLD.`display_label`, 'open_time', OLD.`open_time`, 'close_time', OLD.`close_time`, 'is_closed', OLD.`is_closed`, 'allows_online_booking', OLD.`allows_online_booking`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'day_of_week', NEW.`day_of_week`, 'display_label', NEW.`display_label`, 'open_time', NEW.`open_time`, 'close_time', NEW.`close_time`, 'is_closed', NEW.`is_closed`, 'allows_online_booking', NEW.`allows_online_booking`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_appointment_business_hours_audit_delete` AFTER DELETE ON `appointment_business_hours` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'appointment_business_hours', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'day_of_week', OLD.`day_of_week`, 'display_label', OLD.`display_label`, 'open_time', OLD.`open_time`, 'close_time', OLD.`close_time`, 'is_closed', OLD.`is_closed`, 'allows_online_booking', OLD.`allows_online_booking`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_appointment_settings_audit_insert` AFTER INSERT ON `appointment_settings` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'appointment_settings', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'timezone', NEW.`timezone`, 'in_person_only', NEW.`in_person_only`, 'slot_duration_minutes', NEW.`slot_duration_minutes`, 'bookable_start_time', NEW.`bookable_start_time`, 'bookable_end_time', NEW.`bookable_end_time`, 'check_in_end_buffer_minutes', NEW.`check_in_end_buffer_minutes`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_appointment_settings_audit_update` AFTER UPDATE ON `appointment_settings` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'appointment_settings', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'timezone', OLD.`timezone`, 'in_person_only', OLD.`in_person_only`, 'slot_duration_minutes', OLD.`slot_duration_minutes`, 'bookable_start_time', OLD.`bookable_start_time`, 'bookable_end_time', OLD.`bookable_end_time`, 'check_in_end_buffer_minutes', OLD.`check_in_end_buffer_minutes`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'timezone', NEW.`timezone`, 'in_person_only', NEW.`in_person_only`, 'slot_duration_minutes', NEW.`slot_duration_minutes`, 'bookable_start_time', NEW.`bookable_start_time`, 'bookable_end_time', NEW.`bookable_end_time`, 'check_in_end_buffer_minutes', NEW.`check_in_end_buffer_minutes`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_appointment_settings_audit_delete` AFTER DELETE ON `appointment_settings` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'appointment_settings', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'timezone', OLD.`timezone`, 'in_person_only', OLD.`in_person_only`, 'slot_duration_minutes', OLD.`slot_duration_minutes`, 'bookable_start_time', OLD.`bookable_start_time`, 'bookable_end_time', OLD.`bookable_end_time`, 'check_in_end_buffer_minutes', OLD.`check_in_end_buffer_minutes`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_appointment_visit_reasons_audit_insert` AFTER INSERT ON `appointment_visit_reasons` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'appointment_visit_reasons', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_appointment_visit_reasons_audit_update` AFTER UPDATE ON `appointment_visit_reasons` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'appointment_visit_reasons', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_appointment_visit_reasons_audit_delete` AFTER DELETE ON `appointment_visit_reasons` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'appointment_visit_reasons', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_appointments_audit_insert` AFTER INSERT ON `appointments` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'appointments', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'visit_reason_id', NEW.`visit_reason_id`, 'appointment_date', NEW.`appointment_date`, 'start_time', NEW.`start_time`, 'end_time', NEW.`end_time`, 'appointment_type', NEW.`appointment_type`, 'status', NEW.`status`, 'timezone', NEW.`timezone`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_appointments_audit_update` AFTER UPDATE ON `appointments` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'appointments', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'visit_reason_id', OLD.`visit_reason_id`, 'appointment_date', OLD.`appointment_date`, 'start_time', OLD.`start_time`, 'end_time', OLD.`end_time`, 'appointment_type', OLD.`appointment_type`, 'status', OLD.`status`, 'timezone', OLD.`timezone`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'visit_reason_id', NEW.`visit_reason_id`, 'appointment_date', NEW.`appointment_date`, 'start_time', NEW.`start_time`, 'end_time', NEW.`end_time`, 'appointment_type', NEW.`appointment_type`, 'status', NEW.`status`, 'timezone', NEW.`timezone`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`, 'created_by', NEW.`created_by`, 'created_at', NEW.`created_at`, 'updated_by', NEW.`updated_by`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_appointments_audit_delete` AFTER DELETE ON `appointments` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'appointments', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'visit_reason_id', OLD.`visit_reason_id`, 'appointment_date', OLD.`appointment_date`, 'start_time', OLD.`start_time`, 'end_time', OLD.`end_time`, 'appointment_type', OLD.`appointment_type`, 'status', OLD.`status`, 'timezone', OLD.`timezone`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`, 'created_by', OLD.`created_by`, 'created_at', OLD.`created_at`, 'updated_by', OLD.`updated_by`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DELIMITER ;
+
 DROP TRIGGER IF EXISTS `trg_approvals_audit_insert`;
 
 DROP TRIGGER IF EXISTS `trg_approvals_audit_update`;

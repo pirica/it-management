@@ -62,7 +62,7 @@ Default launch options:
 
 | Flow | Options |
 |------|---------|
-| Live Agent | Start live chat, Knowledge Base, List all (knowledge-base), Create ticket, Re-open ticket, Email IT |
+| Live Agent | Start live chat, Appointment, List all (knowledge-base), Create ticket, Re-open ticket, Email IT |
 | Chat with | Message colleague, List all (knowledge-base), Company contacts, Org chart |
 
 Polling via `api.php?action=poll` (not WebSockets). CSRF on all mutating POSTs.
