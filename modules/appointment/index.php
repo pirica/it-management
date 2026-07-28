@@ -256,26 +256,21 @@ function appt_type_label($type)
                                     <?php foreach ($appointmentTypes as $typeRow): ?>
                                         <?php
                                         $typeName = (string)($typeRow['name'] ?? '');
-                                        if ($typeName === 'remote' && !$allowRemote) {
-                                            continue;
-                                        }
-                                        if ($typeName === 'in_person' && !$allowInPerson) {
+                                        if (!in_array($typeName, ['in_person', 'remote'], true)) {
                                             continue;
                                         }
                                         $typeId = 'appointment-type-' . preg_replace('/[^a-z0-9_-]/', '-', $typeName);
-                                        $isChecked = ($typeName === 'remote' && $allowRemote) || ($typeName === 'in_person' && $allowInPerson && !$allowRemote);
                                         ?>
-                                    <label class="appointment-type-card" for="<?php echo sanitize($typeId); ?>" data-appointment-type="<?php echo sanitize($typeName); ?>">
-                                        <input type="radio" name="appointment_type" id="<?php echo sanitize($typeId); ?>" value="<?php echo sanitize($typeName); ?>"<?php echo $isChecked ? ' checked' : ''; ?>>
+                                    <label class="appointment-type-card hidden" for="<?php echo sanitize($typeId); ?>" data-appointment-type="<?php echo sanitize($typeName); ?>">
+                                        <input type="radio" name="appointment_type" id="<?php echo sanitize($typeId); ?>" value="<?php echo sanitize($typeName); ?>">
                                         <span class="appointment-type-card-inner">
                                             <span class="appointment-type-card-title"><?php echo sanitize(appt_type_label($typeName)); ?></span>
                                         </span>
                                     </label>
                                     <?php endforeach; ?>
                                 </div>
+                                <div id="appointment-modality-banner" class="appointment-info-banner hidden" aria-live="polite"></div>
                             </div>
-
-                            <div id="appointment-modality-banner" class="appointment-info-banner hidden" aria-live="polite"></div>
 
                             <button type="button" class="btn btn-primary" id="appointment-schedule-btn" title="Schedule appointment" disabled>💾</button>
                         </div>

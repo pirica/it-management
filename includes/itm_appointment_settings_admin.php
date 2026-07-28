@@ -108,7 +108,7 @@ if (!function_exists('itm_appointment_settings_ensure_company_config')) {
             }
         }
 
-        foreach (['in_person' => 0, 'remote' => 1] as $typeName => $typeActiveDefault) {
+        foreach (['in_person' => 1, 'remote' => 1] as $typeName => $typeActiveDefault) {
             $existsStmt = mysqli_prepare(
                 $conn,
                 'SELECT id FROM appointment_type WHERE company_id = ? AND name = ? AND deleted_at IS NULL LIMIT 1'

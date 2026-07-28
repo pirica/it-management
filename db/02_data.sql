@@ -2371,7 +2371,7 @@ INSERT INTO `appointment_visit_reasons` (`company_id`, `name`, `sort_order`, `ac
 (1, 'Security consultation', 40, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `appointment_type` (`company_id`, `name`, `active`, `created_at`) VALUES
-(1, 'in_person', 0, '2026-01-01 00:00:01'),
+(1, 'in_person', 1, '2026-01-01 00:00:01'),
 (1, 'remote', 1, '2026-01-01 00:00:01');
 
 INSERT INTO `appointment_business_hours` (`company_id`, `day_of_week`, `display_label`, `open_time`, `close_time`, `is_closed`, `allows_in_person`, `allows_remote`, `active`, `created_at`) VALUES

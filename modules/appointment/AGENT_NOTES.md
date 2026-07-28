@@ -36,7 +36,7 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 
 - Copy: “What is the reason for your appointment?” / “--Select a reason for your appointment--”.
 - Slot picker: modal week grid (`js/appointment.js`, `css/appointment.css`); confirm sets readonly display + hidden `appointment_date` / `start_time` / `end_time`.
-- Appointment type: card-style radios; **hidden until a slot is confirmed**; then options reflect company settings plus that weekday’s business hours (`js/appointment.js`).
+- Appointment type: card-style radios; **hidden until a slot is confirmed**; visibility uses `week_slots` per-day `allows_in_person` / `allows_remote` (same rules as the API). Both `in_person` and `remote` lookup rows should be **active** in Appointment Settings types.
 - Schedule: AJAX POST to `api.php` `action=schedule` with CSRF; success redirects to `view.php?id=`.
 - Sidebar card: simplified Mon–Fri / Sat–Sun summary (see pitfalls — not a full per-day grid).
 - **⚙️ Appointment Settings** link: only when `itm_is_admin($conn, $employee_id)` — not RBAC `appointment_settings` edit permission.
