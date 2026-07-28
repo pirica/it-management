@@ -98,10 +98,6 @@ if (!function_exists('itm_repro_floor_designer_run_save_subprocess')) {
 
         $code = "<?php
 define('ITM_CLI_SCRIPT', true);
-putenv('DB_HOST=127.0.0.1');
-putenv('DB_USER=root');
-putenv('DB_PASS=itmanagement');
-putenv('DB_NAME=itmanagement');
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

@@ -17,10 +17,7 @@ $itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
 if ($itmIsCli) {
     define('ITM_CLI_SCRIPT', true);
 }
-putenv('DB_HOST=127.0.0.1');
-putenv('DB_USER=root');
-putenv('DB_PASS=itmanagement');
-putenv('DB_NAME=itmanagement');
+// Why: Use project .env (DB_PASS, DB_PORT) — hardcoded Laragon creds break Dunebox and browser runs.
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
 require_once __DIR__ . '/../modules/floor_plans/gallery_helpers.php';
