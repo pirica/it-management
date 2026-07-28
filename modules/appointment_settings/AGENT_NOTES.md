@@ -7,9 +7,9 @@ Tenant **administration** for `modules/appointment/`: maintain `appointment_sett
 ## 2. Key Tables
 
 - **appointment_settings** — one row per company: timezone, slot length, bookable window, check-in buffer, `default_appointment_modality` (`remote` default when both types allowed), `active`); **no** company-level In Person / Remote columns (modality on `appointment_business_hours` only)
-- **appointment_business_hours** — one row per `day_of_week` (0–6): `allows_in_person`, `allows_remote` (replaces legacy `allows_online_booking`)
+- **appointment_business_hours** — one row per `day_of_week` (0–6): `allows_in_person`, `allows_remote`, `allowed_types_json` (per-type flags keyed by `appointment_type.name`), open/close, `is_closed`
 - **appointment_visit_reasons** — booking dropdown labels (`sort_order`, `active`)
-- **appointment_type** — modality lookup; API only honors `in_person` / `remote` names
+- **appointment_type** — `name` (slug), `label` (UI), `active`; core `in_person` / `remote` used by booking defaults; custom types get columns on business-hours hub and booking when enabled per day
 
 ## 3. Required Relationships
 

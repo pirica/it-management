@@ -2,15 +2,19 @@
 /**
  * Appointment scheduling helpers (slots, settings, business hours).
  */
+require_once __DIR__ . '/itm_appointment_allowed_types.php';
 
 if (!function_exists('itm_appointment_business_hours_day_bookable')) {
-    function itm_appointment_business_hours_day_bookable(?array $businessHourRow): bool
+    function itm_appointment_business_hours_day_bookable(?array $businessHourRow, array $allTypeRows = []): bool
     {
         if (!$businessHourRow || (int)($businessHourRow['is_closed'] ?? 0) === 1) {
             return false;
         }
         if ((int)($businessHourRow['active'] ?? 1) !== 1) {
             return false;
+        }
+        if (!empty($allTypeRows)) {
+            return itm_appointment_hour_allows_any_type($businessHourRow, $allTypeRows);
         }
         return (int)($businessHourRow['allows_in_person'] ?? 0) === 1
             || (int)($businessHourRow['allows_remote'] ?? 0) === 1;
@@ -35,7 +39,8 @@ if (!function_exists('itm_appointment_day_allows_modality')) {
         if ($typeName === 'in_person') {
             return (int)($businessHourRow['allows_in_person'] ?? 0) === 1;
         }
-        return false;
+        $map = itm_appointment_hour_allowed_types_map($businessHourRow);
+        return !empty($map[$typeName]);
     }
 }
 
@@ -228,6 +233,7 @@ if (!function_exists('itm_appointment_build_week_slots')) {
     {
         $settings = itm_appointment_load_settings($conn, $companyId);
         $hoursByDay = itm_appointment_load_business_hours($conn, $companyId);
+        $allTypes = itm_appointment_load_appointment_types($conn, $companyId);
         $weekStart = itm_appointment_week_start_sunday($anchorDateYmd);
         $weekEnd = date('Y-m-d', strtotime($weekStart . ' +6 days'));
         $booked = itm_appointment_booked_slots_for_range($conn, $companyId, $weekStart, $weekEnd);
@@ -245,7 +251,7 @@ if (!function_exists('itm_appointment_build_week_slots')) {
             $dateYmd = date('Y-m-d', strtotime($weekStart . ' +' . $i . ' days'));
             $dow = (int)date('w', strtotime($dateYmd));
             $bh = $hoursByDay[$dow] ?? null;
-            $allows = itm_appointment_business_hours_day_bookable($bh);
+            $allows = itm_appointment_business_hours_day_bookable($bh, $allTypes);
             $slots = [];
             if ($allows) {
                 $cursor = strtotime($dateYmd . ' ' . $bookableStart);
@@ -275,6 +281,7 @@ if (!function_exists('itm_appointment_build_week_slots')) {
                 'allows_booking' => $allows,
                 'allows_in_person' => itm_appointment_day_allows_modality($bh, 'in_person'),
                 'allows_remote' => itm_appointment_day_allows_modality($bh, 'remote'),
+                'allowed_types' => itm_appointment_day_allowed_types_for_booking($bh, $allTypes),
                 'slots' => $slots,
             ];
         }
@@ -296,7 +303,7 @@ if (!function_exists('itm_appointment_load_appointment_types')) {
     {
         $companyId = (int)$companyId;
         $rows = [];
-        $sql = 'SELECT id, name FROM appointment_type WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY name ASC';
+        $sql = 'SELECT id, name, label FROM appointment_type WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY name ASC';
         $stmt = mysqli_prepare($conn, $sql);
         if (!$stmt) {
             return $rows;

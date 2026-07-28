@@ -59,13 +59,19 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
             <tr><th>Default type (both allowed)</th><td><?php echo sanitize(aps_type_label((string)($row['default_appointment_modality'] ?? 'remote'))); ?></td></tr>
             <tr><th>Active</th><td><?php echo (int)($row['active'] ?? 0) === 1 ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>'; ?></td></tr>
         <?php elseif ($kind === 'business_hour'): ?>
+            <?php
+            $typeColumns = aps_appointment_types_for_columns(itm_appointment_settings_load_appointment_types_admin($conn, $company_id));
+            $allowedMap = itm_appointment_hour_allowed_types_map($row);
+            ?>
             <tr><th>Day of week</th><td><?php echo (int)($row['day_of_week'] ?? 0); ?></td></tr>
             <tr><th>Label</th><td><?php echo sanitize($row['display_label'] ?? ''); ?></td></tr>
             <tr><th>Open</th><td><?php echo sanitize(aps_format_time_input($row['open_time'] ?? '') ?: '—'); ?></td></tr>
             <tr><th>Close</th><td><?php echo sanitize(aps_format_time_input($row['close_time'] ?? '') ?: '—'); ?></td></tr>
             <tr><th>Closed</th><td><?php echo (int)($row['is_closed'] ?? 0) === 1 ? 'Yes' : 'No'; ?></td></tr>
-            <tr><th>In Person</th><td><?php echo sanitize(aps_modality_yes_no($row['allows_in_person'] ?? 0)); ?></td></tr>
-            <tr><th>Remote</th><td><?php echo sanitize(aps_modality_yes_no($row['allows_remote'] ?? 0)); ?></td></tr>
+            <?php foreach ($typeColumns as $typeCol): ?>
+                <?php $typeName = (string)($typeCol['name'] ?? ''); ?>
+            <tr><th><?php echo sanitize(aps_type_label($typeCol)); ?></th><td><?php echo sanitize(aps_modality_yes_no(!empty($allowedMap[$typeName]) ? 1 : 0)); ?></td></tr>
+            <?php endforeach; ?>
             <tr><th>Active</th><td><?php echo (int)($row['active'] ?? 0) === 1 ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>'; ?></td></tr>
         <?php elseif ($kind === 'visit_reason'): ?>
             <tr><th>Name</th><td><?php echo sanitize($row['name'] ?? ''); ?></td></tr>
@@ -73,7 +79,7 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
             <tr><th>Active</th><td><?php echo (int)($row['active'] ?? 0) === 1 ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>'; ?></td></tr>
         <?php elseif ($kind === 'appointment_type'): ?>
             <tr><th>Name</th><td><?php echo sanitize($row['name'] ?? ''); ?></td></tr>
-            <tr><th>Label</th><td><?php echo sanitize(aps_type_label($row['name'] ?? '')); ?></td></tr>
+            <tr><th>Label</th><td><?php echo sanitize(aps_type_label($row)); ?></td></tr>
             <tr><th>Active</th><td><?php echo (int)($row['active'] ?? 0) === 1 ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>'; ?></td></tr>
         <?php endif; ?>
     </table>

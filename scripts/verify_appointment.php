@@ -125,6 +125,10 @@ foreach ($week['days'] as $day) {
         appt_verify_fail('week_slots day missing allows_in_person / allows_remote');
         break;
     }
+    if (!array_key_exists('allowed_types', $day) || !is_array($day['allowed_types'])) {
+        appt_verify_fail('week_slots day missing allowed_types map');
+        break;
+    }
 }
 if ($bookableDays < 1) {
     appt_verify_fail('No bookable slots generated for current week');

@@ -77,8 +77,8 @@ if (!function_exists('itm_appointment_settings_ensure_company_config')) {
                 }
                 $insert = mysqli_prepare(
                     $conn,
-                    'INSERT INTO appointment_business_hours (company_id, day_of_week, display_label, open_time, close_time, is_closed, allows_in_person, allows_remote, active, created_by, updated_by)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)'
+                    'INSERT INTO appointment_business_hours (company_id, day_of_week, display_label, open_time, close_time, is_closed, allows_in_person, allows_remote, allowed_types_json, active, created_by, updated_by)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)'
                 );
                 if (!$insert) {
                     continue;
@@ -89,9 +89,13 @@ if (!function_exists('itm_appointment_settings_ensure_company_config')) {
                 $allowsInPerson = (int)$def['allows_in_person'];
                 $allowsRemote = (int)$def['allows_remote'];
                 $label = $def['display_label'];
+                $allowedJson = itm_appointment_encode_allowed_types_json([
+                    'in_person' => $allowsInPerson === 1,
+                    'remote' => $allowsRemote === 1,
+                ]);
                 mysqli_stmt_bind_param(
                     $insert,
-                    'iisssiiiii',
+                    'iisssiiisii',
                     $companyId,
                     $dow,
                     $label,
@@ -100,6 +104,7 @@ if (!function_exists('itm_appointment_settings_ensure_company_config')) {
                     $isClosed,
                     $allowsInPerson,
                     $allowsRemote,
+                    $allowedJson,
                     $employeeId,
                     $employeeId
                 );
@@ -108,7 +113,7 @@ if (!function_exists('itm_appointment_settings_ensure_company_config')) {
             }
         }
 
-        foreach (['in_person' => 1, 'remote' => 1] as $typeName => $typeActiveDefault) {
+        foreach (['in_person' => 'In-person', 'remote' => 'Remote'] as $typeName => $typeLabel) {
             $existsStmt = mysqli_prepare(
                 $conn,
                 'SELECT id FROM appointment_type WHERE company_id = ? AND name = ? AND deleted_at IS NULL LIMIT 1'
@@ -124,16 +129,28 @@ if (!function_exists('itm_appointment_settings_ensure_company_config')) {
             if ($exists) {
                 continue;
             }
+            $typeActiveDefault = 1;
             $typeStmt = mysqli_prepare(
                 $conn,
-                'INSERT INTO appointment_type (company_id, name, active, created_by, updated_by) VALUES (?, ?, ?, ?, ?)'
+                'INSERT INTO appointment_type (company_id, name, label, active, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?)'
             );
             if (!$typeStmt) {
                 continue;
             }
-            mysqli_stmt_bind_param($typeStmt, 'isiii', $companyId, $typeName, $typeActiveDefault, $employeeId, $employeeId);
+            mysqli_stmt_bind_param($typeStmt, 'issiii', $companyId, $typeName, $typeLabel, $typeActiveDefault, $employeeId, $employeeId);
             mysqli_stmt_execute($typeStmt);
             mysqli_stmt_close($typeStmt);
+            itm_appointment_settings_append_type_to_business_hours($conn, $companyId, $typeName, $typeName === 'remote' ? 1 : 0);
+        }
+
+        $labelBackfill = mysqli_prepare(
+            $conn,
+            "UPDATE appointment_type SET label = CASE name WHEN 'in_person' THEN 'In-person' WHEN 'remote' THEN 'Remote' ELSE label END WHERE company_id = ? AND deleted_at IS NULL AND (label = '' OR label IS NULL)"
+        );
+        if ($labelBackfill) {
+            mysqli_stmt_bind_param($labelBackfill, 'i', $companyId);
+            mysqli_stmt_execute($labelBackfill);
+            mysqli_stmt_close($labelBackfill);
         }
     }
 }
@@ -170,7 +187,7 @@ if (!function_exists('itm_appointment_settings_load_appointment_types_admin')) {
     function itm_appointment_settings_load_appointment_types_admin(mysqli $conn, int $companyId): array
     {
         $rows = [];
-        $sql = 'SELECT id, name, active FROM appointment_type WHERE company_id = ? AND deleted_at IS NULL ORDER BY name ASC';
+        $sql = 'SELECT id, name, label, active FROM appointment_type WHERE company_id = ? AND deleted_at IS NULL ORDER BY name ASC';
         $stmt = mysqli_prepare($conn, $sql);
         if (!$stmt) {
             return $rows;

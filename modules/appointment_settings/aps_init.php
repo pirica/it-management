@@ -32,9 +32,17 @@ function aps_format_time_input($timeVal)
     return substr((string)$timeVal, 0, 5);
 }
 
-function aps_type_label($name)
+function aps_type_label($nameOrRow)
 {
-    return $name === 'remote' ? 'Remote' : 'In-person';
+    if (is_array($nameOrRow)) {
+        return itm_appointment_type_display_label($nameOrRow);
+    }
+    return itm_appointment_type_default_label_for_name((string)$nameOrRow);
+}
+
+function aps_appointment_types_for_columns(array $types)
+{
+    return itm_appointment_types_sort_for_ui($types);
 }
 
 function aps_modality_yes_no($value)

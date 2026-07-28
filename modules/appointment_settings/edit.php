@@ -45,9 +45,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $open = trim((string)($_POST['open_time'] ?? ''));
         $close = trim((string)($_POST['close_time'] ?? ''));
         $isClosed = !empty($_POST['is_closed']) ? 1 : 0;
-        $allowsInPerson = !empty($_POST['allows_in_person']) ? 1 : 0;
-        $allowsRemote = !empty($_POST['allows_remote']) ? 1 : 0;
         $isActive = !empty($_POST['active']) ? 1 : 0;
+        $typeRows = itm_appointment_settings_load_appointment_types_admin($conn, $company_id);
+        $allowedMap = itm_appointment_hour_allowed_types_map_from_post($typeRows, $_POST);
+        $legacy = itm_appointment_hour_legacy_modality_from_map($allowedMap);
+        $allowsInPerson = (int)$legacy['allows_in_person'];
+        $allowsRemote = (int)$legacy['allows_remote'];
+        $allowedJson = itm_appointment_encode_allowed_types_json($allowedMap);
         if ($isClosed) {
             $open = null;
             $close = null;
@@ -59,10 +63,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 $close .= ':00';
             }
         }
-        $sql = 'UPDATE appointment_business_hours SET display_label = ?, open_time = ?, close_time = ?, is_closed = ?, allows_in_person = ?, allows_remote = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
+        $sql = 'UPDATE appointment_business_hours SET display_label = ?, open_time = ?, close_time = ?, is_closed = ?, allows_in_person = ?, allows_remote = ?, allowed_types_json = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
         $stmt = mysqli_prepare($conn, $sql);
         if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'sssiiiiiii', $label, $open, $close, $isClosed, $allowsInPerson, $allowsRemote, $isActive, $employee_id, $postId, $company_id);
+            mysqli_stmt_bind_param($stmt, 'sssiiisiiii', $label, $open, $close, $isClosed, $allowsInPerson, $allowsRemote, $allowedJson, $isActive, $employee_id, $postId, $company_id);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
             header('Location: index.php?msg=' . rawurlencode('Business hour saved.'));
@@ -88,13 +92,41 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     }
 
     if ($postKind === 'appointment_type' && $postId > 0) {
+        $label = trim((string)($_POST['label'] ?? ''));
         $isActive = !empty($_POST['active']) ? 1 : 0;
-        $sql = 'UPDATE appointment_type SET active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
+        $check = mysqli_prepare($conn, 'SELECT name FROM appointment_type WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
+        $existingName = '';
+        if ($check) {
+            mysqli_stmt_bind_param($check, 'ii', $postId, $company_id);
+            mysqli_stmt_execute($check);
+            $res = mysqli_stmt_get_result($check);
+            $existing = $res ? mysqli_fetch_assoc($res) : null;
+            mysqli_stmt_close($check);
+            $existingName = (string)($existing['name'] ?? '');
+        }
+        $core = in_array($existingName, ['in_person', 'remote'], true);
+        $newName = $existingName;
+        if (!$core) {
+            $newName = strtolower(trim((string)($_POST['name'] ?? '')));
+            $newName = preg_replace('/[^a-z0-9_]+/', '_', $newName);
+            $newName = trim($newName, '_');
+            if ($newName === '' || in_array($newName, ['in_person', 'remote'], true)) {
+                header('Location: index.php?msg=' . rawurlencode('Invalid appointment type name.'));
+                exit;
+            }
+        }
+        if ($label === '') {
+            $label = itm_appointment_type_default_label_for_name($newName);
+        }
+        $sql = 'UPDATE appointment_type SET name = ?, label = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
         $stmt = mysqli_prepare($conn, $sql);
         if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'iiii', $isActive, $employee_id, $postId, $company_id);
+            mysqli_stmt_bind_param($stmt, 'ssiiii', $newName, $label, $isActive, $employee_id, $postId, $company_id);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
+            if (!$core && $newName !== $existingName && $existingName !== '') {
+                itm_appointment_settings_rename_type_on_business_hours($conn, $company_id, $existingName, $newName);
+            }
             header('Location: index.php?msg=' . rawurlencode('Appointment type saved.'));
             exit;
         }
@@ -137,6 +169,10 @@ if (!$row) {
     header('Location: index.php');
     exit;
 }
+
+$appointmentTypesForForms = aps_appointment_types_for_columns(
+    itm_appointment_settings_load_appointment_types_admin($conn, $company_id)
+);
 
 $pageTitle = 'Edit ' . aps_kind_label($kind);
 aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
@@ -207,18 +243,21 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
                     <span>Closed</span>
                 </label>
             </div>
+            <?php
+            $allowedMap = itm_appointment_hour_allowed_types_map($row);
+            foreach ($appointmentTypesForForms as $typeCol):
+                $typeName = (string)($typeCol['name'] ?? '');
+                if ($typeName === '') {
+                    continue;
+                }
+            ?>
             <div class="form-group">
                 <label class="itm-checkbox-control">
-                    <input type="checkbox" name="allows_in_person" value="1"<?php echo (int)($row['allows_in_person'] ?? 0) === 1 ? ' checked' : ''; ?>>
-                    <span>In Person</span>
+                    <input type="checkbox" name="allowed_type[<?php echo sanitize($typeName); ?>]" value="1"<?php echo !empty($allowedMap[$typeName]) ? ' checked' : ''; ?>>
+                    <span><?php echo sanitize(aps_type_label($typeCol)); ?></span>
                 </label>
             </div>
-            <div class="form-group">
-                <label class="itm-checkbox-control">
-                    <input type="checkbox" name="allows_remote" value="1"<?php echo (int)($row['allows_remote'] ?? 0) === 1 ? ' checked' : ''; ?>>
-                    <span>Remote</span>
-                </label>
-            </div>
+            <?php endforeach; ?>
             <div class="form-group">
                 <label class="itm-checkbox-control">
                     <input type="checkbox" name="active" value="1"<?php echo (int)($row['active'] ?? 0) === 1 ? ' checked' : ''; ?>>
@@ -241,9 +280,18 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
                 </label>
             </div>
         <?php elseif ($kind === 'appointment_type'): ?>
+            <?php $coreType = in_array((string)($row['name'] ?? ''), ['in_person', 'remote'], true); ?>
             <div class="form-group">
-                <label>Name</label>
-                <p><?php echo sanitize($row['name'] ?? ''); ?></p>
+                <label for="type_name">Name</label>
+                <?php if ($coreType): ?>
+                <input class="form-control" type="text" id="type_name" value="<?php echo sanitize($row['name'] ?? ''); ?>" readonly>
+                <?php else: ?>
+                <input class="form-control" type="text" name="name" id="type_name" pattern="[a-z0-9_]+" value="<?php echo sanitize($row['name'] ?? ''); ?>" required>
+                <?php endif; ?>
+            </div>
+            <div class="form-group">
+                <label for="type_label">Label</label>
+                <input class="form-control" type="text" name="label" id="type_label" value="<?php echo sanitize($row['label'] ?? ''); ?>" placeholder="<?php echo sanitize(aps_type_label($row)); ?>" required>
             </div>
             <div class="form-group">
                 <label class="itm-checkbox-control">
