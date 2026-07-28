@@ -40,7 +40,7 @@ Employee self-service IT appointment scheduling: pick a visit reason, choose an 
 
 ## 7. Integration
 
-- Sidebar: Planning → Appointment (`includes/ui_config.php`)
+- Sidebar: Planning → Appointment (`includes/ui_config.php`); configuration → **Appointment Settings** (`modules/appointment_settings/`, slug `appointment_settings`).
 - `modules_registry` slug: `appointment`
 
 ## 8. Regression

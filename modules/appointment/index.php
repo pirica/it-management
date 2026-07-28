@@ -127,6 +127,9 @@ function appt_type_label($type)
                 <div class="card">
                     <h1 title="Appointment list">📋</h1>
                     <p><a href="index.php" class="btn btn-sm" title="Schedule">➕</a>
+                    <?php if (function_exists('itm_is_admin') && itm_is_admin()): ?>
+                        <a href="../appointment_settings/" class="btn btn-sm" title="Appointment settings">⚙️</a>
+                    <?php endif; ?>
                        <a href="index.php" class="btn btn-sm" title="Back">🔙</a></p>
                     <table class="appointment-list-table">
                         <thead>
@@ -198,7 +201,10 @@ function appt_type_label($type)
                 <div class="appointment-layout">
                     <div class="card appointment-form-card">
                         <h1 title="Select appointment"><?php echo sanitize($moduleListHeading); ?></h1>
-                        <p><a href="list_all.php" class="btn btn-sm" title="View scheduled appointments">📋</a></p>
+                        <p><a href="list_all.php" class="btn btn-sm" title="View scheduled appointments">📋</a>
+                        <?php if (function_exists('itm_is_admin') && itm_is_admin()): ?>
+                            <a href="../appointment_settings/" class="btn btn-sm" title="Appointment settings">⚙️</a>
+                        <?php endif; ?></p>
                         <div id="appointment-booking-app"
                              data-api="<?php echo sanitize(BASE_URL . 'modules/appointment/api.php'); ?>"
                              data-csrf="<?php echo sanitize($csrfToken); ?>">
