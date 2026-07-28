@@ -37,6 +37,51 @@ if (!function_exists('itm_appointment_settings_allows_modality')) {
     }
 }
 
+if (!function_exists('itm_appointment_day_allows_modality')) {
+    /**
+     * Company settings gate plus per-weekday business hours (In Person / Remote columns).
+     */
+    function itm_appointment_day_allows_modality(?array $settingsRow, ?array $businessHourRow, string $typeName): bool
+    {
+        if (!itm_appointment_settings_allows_modality($settingsRow, $typeName)) {
+            return false;
+        }
+        if (!$businessHourRow || (int)($businessHourRow['is_closed'] ?? 0) === 1) {
+            return false;
+        }
+        if ($typeName === 'remote') {
+            return (int)($businessHourRow['allows_remote'] ?? 0) === 1;
+        }
+        if ($typeName === 'in_person') {
+            return (int)($businessHourRow['allows_in_person'] ?? 0) === 1;
+        }
+        return false;
+    }
+}
+
+if (!function_exists('itm_appointment_modality_for_date')) {
+    /**
+     * @return array{in_person:bool,remote:bool}
+     */
+    function itm_appointment_modality_for_date(mysqli $conn, int $companyId, string $dateYmd): array
+    {
+        $settings = itm_appointment_load_settings($conn, $companyId);
+        $hoursByDay = itm_appointment_load_business_hours($conn, $companyId);
+        $dow = -1;
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateYmd)) {
+            $ts = strtotime($dateYmd);
+            if ($ts) {
+                $dow = (int)date('w', $ts);
+            }
+        }
+        $bh = $dow >= 0 ? ($hoursByDay[$dow] ?? null) : null;
+        return [
+            'in_person' => itm_appointment_day_allows_modality($settings, $bh, 'in_person'),
+            'remote' => itm_appointment_day_allows_modality($settings, $bh, 'remote'),
+        ];
+    }
+}
+
 if (!function_exists('itm_appointment_build_booking_lock')) {
     function itm_appointment_build_booking_lock(string $dateYmd, string $startTime): string
     {
@@ -213,6 +258,8 @@ if (!function_exists('itm_appointment_build_week_slots')) {
                 'day_label' => itm_appointment_day_label_short($dow),
                 'day_number' => (int)date('j', strtotime($dateYmd)),
                 'allows_booking' => $allows,
+                'allows_in_person' => itm_appointment_day_allows_modality($settings, $bh, 'in_person'),
+                'allows_remote' => itm_appointment_day_allows_modality($settings, $bh, 'remote'),
                 'slots' => $slots,
             ];
         }

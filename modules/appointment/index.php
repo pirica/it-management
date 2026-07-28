@@ -33,8 +33,23 @@ $visitReasons = itm_appointment_load_visit_reasons($conn, $company_id);
 $appointmentTypes = itm_appointment_load_appointment_types($conn, $company_id);
 $allowInPerson = $settings ? (int)($settings['allow_in_person'] ?? 0) === 1 : false;
 $allowRemote = $settings ? (int)($settings['allow_remote'] ?? 1) === 1 : true;
-$inPersonOnly = $settings ? (int)($settings['in_person_only'] ?? 0) === 1 : false;
 $anchorDate = date('Y-m-d');
+
+$modalityByDay = [];
+for ($dow = 0; $dow <= 6; $dow++) {
+    $bh = $businessHours[$dow] ?? null;
+    $modalityByDay[$dow] = [
+        'in_person' => itm_appointment_day_allows_modality($settings, $bh, 'in_person'),
+        'remote' => itm_appointment_day_allows_modality($settings, $bh, 'remote'),
+    ];
+}
+$appointmentModalityConfig = [
+    'company' => [
+        'in_person' => $allowInPerson,
+        'remote' => $allowRemote,
+    ],
+    'days' => $modalityByDay,
+];
 
 require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, $moduleSlug, $moduleListHeading);
@@ -209,7 +224,8 @@ function appt_type_label($type)
                         <?php endif; ?></p>
                         <div id="appointment-booking-app"
                              data-api="<?php echo sanitize(BASE_URL . 'modules/appointment/api.php'); ?>"
-                             data-csrf="<?php echo sanitize($csrfToken); ?>">
+                             data-csrf="<?php echo sanitize($csrfToken); ?>"
+                             data-modality-config="<?php echo htmlspecialchars(json_encode($appointmentModalityConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" id="appointment-anchor-date" value="<?php echo sanitize($anchorDate); ?>">
                             <input type="hidden" id="appointment_date" name="appointment_date" value="">
                             <input type="hidden" id="start_time" name="start_time" value="">
@@ -231,7 +247,7 @@ function appt_type_label($type)
                                 <input type="text" id="appointment-slot-display" class="form-control" readonly placeholder="No time selected" style="margin-top:8px;">
                             </div>
 
-                            <div class="form-group appointment-type-group">
+                            <div class="form-group appointment-type-group hidden">
                                 <div class="appointment-type-heading">
                                     <label class="appointment-type-heading-label" for="appointment-type-in-person">Appointment type</label>
                                     <button type="button" class="appointment-type-help" title="In-person visits are at the IT desk; remote visits use phone or video." aria-label="Appointment type help">❓</button>
@@ -249,7 +265,7 @@ function appt_type_label($type)
                                         $typeId = 'appointment-type-' . preg_replace('/[^a-z0-9_-]/', '-', $typeName);
                                         $isChecked = ($typeName === 'remote' && $allowRemote) || ($typeName === 'in_person' && $allowInPerson && !$allowRemote);
                                         ?>
-                                    <label class="appointment-type-card" for="<?php echo sanitize($typeId); ?>">
+                                    <label class="appointment-type-card" for="<?php echo sanitize($typeId); ?>" data-appointment-type="<?php echo sanitize($typeName); ?>">
                                         <input type="radio" name="appointment_type" id="<?php echo sanitize($typeId); ?>" value="<?php echo sanitize($typeName); ?>"<?php echo $isChecked ? ' checked' : ''; ?>>
                                         <span class="appointment-type-card-inner">
                                             <span class="appointment-type-card-title"><?php echo sanitize(appt_type_label($typeName)); ?></span>
@@ -259,11 +275,7 @@ function appt_type_label($type)
                                 </div>
                             </div>
 
-                            <?php if ($inPersonOnly): ?>
-                                <div class="appointment-info-banner">This location accepts only in-person appointments.</div>
-                            <?php elseif ($allowRemote && !$allowInPerson): ?>
-                                <div class="appointment-info-banner">This location accepts only remote appointments.</div>
-                            <?php endif; ?>
+                            <div id="appointment-modality-banner" class="appointment-info-banner hidden" aria-live="polite"></div>
 
                             <button type="button" class="btn btn-primary" id="appointment-schedule-btn" title="Schedule appointment" disabled>💾</button>
                         </div>

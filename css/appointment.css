@@ -21,6 +21,9 @@
 .appointment-type-group {
     margin-bottom: 16px;
 }
+.appointment-type-group.hidden {
+    display: none !important;
+}
 .appointment-type-heading {
     display: flex;
     align-items: center;
@@ -56,6 +59,10 @@
     max-width: 220px;
     margin: 0;
     cursor: pointer;
+}
+.appointment-type-card.hidden,
+.appointment-info-banner.hidden {
+    display: none !important;
 }
 .appointment-type-card input[type="radio"] {
     position: absolute;
