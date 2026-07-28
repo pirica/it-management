@@ -36,6 +36,7 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
 - `appointment_booking_lock.sql` — `appointments` with `booking_lock` unique slot index (destructive — drops appointment rows; requires `appointment_type` table when using current schema)
 - `appointment_type.sql` — `appointment_type` lookup + `appointments.appointment_type_id` (destructive — drops `appointments`; seeds `in_person` / `remote` per company)
 - `appointments_assigned_confirmed.sql` — `appointments` with `assigned_to_employee_id` (FK `employees`, SET NULL) and `is_confirmed` (destructive — drops appointment rows)
+- `appointment_settings_default_modality.sql` — `appointment_settings.default_appointment_modality` enum (`remote` default; preserves rows via backup table)
 
 ## 12. Module Owner Notes (Optional)
 Catalog pointer: `AGENTS.md` → Database & Schema Rules → **Incremental migrations (`db/migrations/`)**.

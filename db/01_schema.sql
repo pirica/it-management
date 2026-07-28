@@ -4402,6 +4402,7 @@ CREATE TABLE `appointment_settings` (
   `bookable_start_time` time NOT NULL DEFAULT '09:00:00',
   `bookable_end_time` time NOT NULL DEFAULT '14:00:00',
   `check_in_end_buffer_minutes` int NOT NULL DEFAULT '30',
+  `default_appointment_modality` enum('remote','in_person') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'remote' COMMENT 'Preferred type when both modalities are allowed for the selected day',
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,

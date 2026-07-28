@@ -47,6 +47,7 @@ for ($dow = 0; $dow <= 6; $dow++) {
 $appointmentModalityConfig = [
     'days' => $modalityByDay,
 ];
+$defaultAppointmentModality = itm_appointment_settings_default_modality_name($settings);
 
 require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, $moduleSlug, $moduleListHeading);
@@ -344,6 +345,7 @@ function appt_employee_select_label(array $empRow)
                         <div id="appointment-booking-app"
                              data-api="<?php echo sanitize(BASE_URL . 'modules/appointment/api.php'); ?>"
                              data-csrf="<?php echo sanitize($csrfToken); ?>"
+                             data-default-appointment-modality="<?php echo sanitize($defaultAppointmentModality); ?>"
                              data-modality-config="<?php echo htmlspecialchars(json_encode($appointmentModalityConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" id="appointment-anchor-date" value="<?php echo sanitize($anchorDate); ?>">
                             <input type="hidden" id="appointment_date" name="appointment_date" value="">
