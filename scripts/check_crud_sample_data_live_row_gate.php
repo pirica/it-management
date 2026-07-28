@@ -11,7 +11,7 @@
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/check_crud_sample_data_live_row_gate.php</code>. Run after editing finance <code>index.php</code> sample-data handlers.
+Sample row templates: <code>db/02_data_sample.sql</code> (coverage: <code>php scripts/check_02_data_sample_coverage.php</code>). This gate checks finance <code>index.php</code> empty-table logic uses <code>itm_seed_tenant_row_count()</code> before <code>itm_seed_table_from_database_sql()</code>. CLI: <code>php scripts/check_crud_sample_data_live_row_gate.php</code>.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 define('ITM_CLI_SCRIPT', true);

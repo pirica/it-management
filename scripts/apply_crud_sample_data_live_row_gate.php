@@ -2,6 +2,10 @@
 /**
  * Align Add sample data empty gate with list queries (live rows: deleted_at IS NULL).
  *
+ * Row templates come from db/02_data_sample.sql (via itm_seed_table_from_database_sql()) — not from this script.
+ * Fresh installs already seed demo rows from db/02_data.sql; this maintenance only patches legacy PHP COUNT(*)
+ * gates that ignore soft-delete before calling the seeder.
+ *
  * Replaces company_id COUNT(*) blocks that ignore soft-delete with itm_seed_tenant_row_count().
  *
  * Usage:
@@ -16,7 +20,8 @@
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/apply_crud_sample_data_live_row_gate.php --apply --finance-only</code> (dry-run without <code>--apply</code>).
+<strong>Sample data content</strong> lives in <code>db/02_data_sample.sql</code> (built from <code>db/02_data.sql</code> / <code>php scripts/extract_02_data_sample.php --apply</code>). <strong>Add sample data</strong> in modules calls <code>itm_seed_table_from_database_sql()</code> — this script does <em>not</em> change SQL templates.<br>
+This maintenance only replaces legacy PHP <code>COUNT(*)</code> empty gates with <code>itm_seed_tenant_row_count()</code> so soft-deleted rows do not block seeding. Dry-run default; <code>--apply</code> / <code>?apply=1</code> (Admin). Optional <code>--finance-only</code>.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
@@ -25,6 +30,12 @@ $boot = itm_apply_script_bootstrap('Apply CRUD sample data live row gate');
 $apply = $boot['apply'];
 $nl = $boot['nl'];
 $root = rtrim($boot['root'], '/');
+
+echo colorText(
+    'Note: db/02_data_sample.sql holds Add sample data templates; db/02_data.sql seeds fresh imports. '
+    . 'This run only reports PHP gate drift (legacy COUNT without deleted_at).',
+    'info'
+) . $nl . $nl;
 
 $financeOnly = false;
 if ($boot['is_cli']) {
