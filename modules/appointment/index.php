@@ -214,9 +214,9 @@ function appt_type_label($type)
                             <input type="hidden" id="end_time" name="end_time" value="">
 
                             <div class="form-group">
-                                <label for="visit_reason_id">What is your reason for visiting?</label>
+                                <label for="visit_reason_id">What is the reason for your appointment?</label>
                                 <select id="visit_reason_id" name="visit_reason_id" class="form-control">
-                                    <option value="">--Select a reason for your visit--</option>
+                                    <option value="">--Select a reason for your appointment--</option>
                                     <?php foreach ($visitReasons as $reason): ?>
                                         <option value="<?php echo (int)$reason['id']; ?>"><?php echo sanitize($reason['name']); ?></option>
                                     <?php endforeach; ?>
@@ -229,20 +229,27 @@ function appt_type_label($type)
                                 <input type="text" id="appointment-slot-display" class="form-control" readonly placeholder="No time selected" style="margin-top:8px;">
                             </div>
 
-                            <div class="form-group">
-                                <label>Appointment type <span title="In-person visits are at the IT desk; remote visits use phone or video.">❓</span></label>
-                                <div class="appointment-type-row">
-                                    <?php foreach ($appointmentTypes as $typeIndex => $typeRow): ?>
+                            <div class="form-group appointment-type-group">
+                                <div class="appointment-type-heading">
+                                    <label class="appointment-type-heading-label" for="appointment-type-in-person">Appointment type</label>
+                                    <button type="button" class="appointment-type-help" title="In-person visits are at the IT desk; remote visits use phone or video." aria-label="Appointment type help">❓</button>
+                                </div>
+                                <div class="appointment-type-cards" role="radiogroup" aria-label="Appointment type">
+                                    <?php foreach ($appointmentTypes as $typeRow): ?>
                                         <?php
                                         $typeName = (string)($typeRow['name'] ?? '');
                                         $isRemote = $typeName === 'remote';
                                         if ($inPersonOnly && $isRemote) {
                                             continue;
                                         }
+                                        $typeId = 'appointment-type-' . preg_replace('/[^a-z0-9_-]/', '-', $typeName);
+                                        $isChecked = $typeName === 'in_person';
                                         ?>
-                                    <label class="itm-checkbox-control">
-                                        <input type="radio" name="appointment_type" value="<?php echo sanitize($typeName); ?>"<?php echo $typeName === 'in_person' ? ' checked' : ''; ?>>
-                                        <span><?php echo sanitize(appt_type_label($typeName)); ?></span>
+                                    <label class="appointment-type-card" for="<?php echo sanitize($typeId); ?>">
+                                        <input type="radio" name="appointment_type" id="<?php echo sanitize($typeId); ?>" value="<?php echo sanitize($typeName); ?>"<?php echo $isChecked ? ' checked' : ''; ?>>
+                                        <span class="appointment-type-card-inner">
+                                            <span class="appointment-type-card-title"><?php echo sanitize(appt_type_label($typeName)); ?></span>
+                                        </span>
                                     </label>
                                     <?php endforeach; ?>
                                 </div>
