@@ -15,8 +15,12 @@ INSERT INTO `alerts` (`company_id`, `title`, `description`, `start_datetime`, `e
 INSERT INTO `annual_budgets` (`company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
 (1, '1', '1', '2026', '48000.00', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
 
-INSERT INTO `appointments` (`company_id`, `employee_id`, `visit_reason_id`, `appointment_date`, `start_time`, `end_time`, `appointment_type`, `status`, `timezone`, `booking_lock`, `active`, `created_by`, `created_at`) VALUES
-(1, 1, 1, '2026-08-06', '09:00:00', '10:00:00', 'in_person', 'scheduled', 'US/Central', '2026-08-06#09:00:00', 1, 1, '2026-01-01 00:00:01');
+INSERT INTO `appointment_type` (`company_id`, `name`, `active`, `created_at`) VALUES
+(1, 'in_person', 1, '2026-01-01 00:00:01'),
+(1, 'remote', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `appointments` (`company_id`, `employee_id`, `visit_reason_id`, `appointment_date`, `start_time`, `end_time`, `appointment_type_id`, `status`, `timezone`, `booking_lock`, `active`, `created_by`, `created_at`) VALUES
+(1, 1, 1, '2026-08-06', '09:00:00', '10:00:00', 1, 'scheduled', 'US/Central', '2026-08-06#09:00:00', 1, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `appointment_settings` (`company_id`, `timezone`, `in_person_only`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `active`, `created_at`) VALUES
 (1, 'US/Central', 1, 60, '09:00:00', '14:00:00', 30, 1, '2026-01-01 00:00:01');

@@ -41,7 +41,7 @@ function appt_verify_pass($message)
     echo colorText('[PASS] ' . $message, 'pass') . $nl;
 }
 
-$tables = ['appointment_visit_reasons', 'appointment_settings', 'appointment_business_hours', 'appointments'];
+$tables = ['appointment_visit_reasons', 'appointment_settings', 'appointment_business_hours', 'appointment_type', 'appointments'];
 foreach ($tables as $table) {
     $sql = "SELECT COUNT(*) AS c FROM information_schema.triggers
             WHERE trigger_schema = DATABASE() AND event_object_table = ?";
@@ -83,6 +83,14 @@ if (count($reasons) < 1) {
     appt_verify_fail('appointment_visit_reasons seed missing for company 1');
 } else {
     appt_verify_pass('appointment_visit_reasons seeded');
+}
+
+$types = itm_appointment_load_appointment_types($conn, $companyId);
+$typeNames = array_column($types, 'name');
+if (!in_array('in_person', $typeNames, true) || !in_array('remote', $typeNames, true)) {
+    appt_verify_fail('appointment_type seeds missing in_person or remote for company 1');
+} else {
+    appt_verify_pass('appointment_type in_person and remote seeded');
 }
 
 $week = itm_appointment_build_week_slots($conn, $companyId, date('Y-m-d'));

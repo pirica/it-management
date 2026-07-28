@@ -6,14 +6,15 @@ Employee self-service IT appointment scheduling: pick a visit reason, choose an 
 
 ## 2. Key Tables
 
-- **appointments** — booked slots per employee (`appointment_date`, `start_time`, `end_time`, `appointment_type`, `status`, `timezone`)
+- **appointments** — booked slots per employee (`appointment_date`, `start_time`, `end_time`, `appointment_type_id`, `status`, `timezone`)
+- **appointment_type** — tenant lookup (`in_person`, `remote`) for visit modality
 - **appointment_visit_reasons** — tenant lookup for the “reason for visiting” dropdown
 - **appointment_settings** — one row per company: `timezone`, `in_person_only`, bookable window, slot duration, check-in buffer
 - **appointment_business_hours** — seven rows per company for sidebar hours and which weekdays allow online booking (`allows_online_booking`)
 
 ## 3. Required Relationships
 
-- **appointments** → `companies`, `employees`, `appointment_visit_reasons`
+- **appointments** → `companies`, `employees`, `appointment_visit_reasons`, `appointment_type`
 - All child tables → `companies` (CASCADE)
 
 ## 4. Business Rules (Critical for Agents)
@@ -54,7 +55,7 @@ php scripts/check_audit_logs_coverage.php
 ## 9. Migration
 
 - `db/migrations/appointment.sql` — DROP + CREATE all four tables for DBs that predate the module (fresh installs use `db/01_schema.sql` only).
-- `db/migrations/appointment_booking_lock.sql` — DROP + CREATE `appointments` with `booking_lock` (destructive; back up first).
+- `db/migrations/appointment_type.sql` — enum → `appointment_type` + `appointment_type_id` (destructive; back up first).
 
 ## 12. Module Owner Notes
 

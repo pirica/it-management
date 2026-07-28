@@ -192,6 +192,52 @@ if (!function_exists('itm_appointment_build_week_slots')) {
     }
 }
 
+if (!function_exists('itm_appointment_load_appointment_types')) {
+    /**
+     * @return array<int, array{id:int,name:string}>
+     */
+    function itm_appointment_load_appointment_types(mysqli $conn, int $companyId): array
+    {
+        $companyId = (int)$companyId;
+        $rows = [];
+        $sql = 'SELECT id, name FROM appointment_type WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY name ASC';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return $rows;
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $rows[] = $row;
+        }
+        mysqli_stmt_close($stmt);
+        return $rows;
+    }
+}
+
+if (!function_exists('itm_appointment_resolve_type_id_by_name')) {
+    function itm_appointment_resolve_type_id_by_name(mysqli $conn, int $companyId, string $name): int
+    {
+        $companyId = (int)$companyId;
+        $name = trim($name);
+        if ($companyId <= 0 || $name === '') {
+            return 0;
+        }
+        $sql = 'SELECT id FROM appointment_type WHERE company_id = ? AND name = ? AND deleted_at IS NULL AND active = 1 LIMIT 1';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'is', $companyId, $name);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        return (int)($row['id'] ?? 0);
+    }
+}
+
 if (!function_exists('itm_appointment_load_visit_reasons')) {
     function itm_appointment_load_visit_reasons(mysqli $conn, int $companyId): array
     {

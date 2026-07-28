@@ -36,9 +36,9 @@ if ($action === 'schedule' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $appointmentDate = trim((string)($_POST['appointment_date'] ?? ''));
     $startTime = trim((string)($_POST['start_time'] ?? ''));
     $endTime = trim((string)($_POST['end_time'] ?? ''));
-    $appointmentType = trim((string)($_POST['appointment_type'] ?? 'in_person'));
-    if (!in_array($appointmentType, ['in_person', 'remote'], true)) {
-        $appointmentType = 'in_person';
+    $appointmentTypeName = trim((string)($_POST['appointment_type'] ?? 'in_person'));
+    if (!in_array($appointmentTypeName, ['in_person', 'remote'], true)) {
+        $appointmentTypeName = 'in_person';
     }
 
     if ($visitReasonId <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $appointmentDate) || $startTime === '' || $endTime === '') {
@@ -53,9 +53,16 @@ if ($action === 'schedule' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         echo json_encode(['success' => false, 'message' => 'Appointment settings are not configured for this company.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
-    if ((int)($settings['in_person_only'] ?? 0) === 1 && $appointmentType === 'remote') {
+    if ((int)($settings['in_person_only'] ?? 0) === 1 && $appointmentTypeName === 'remote') {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'This location accepts only in-person appointments.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    $appointmentTypeId = itm_appointment_resolve_type_id_by_name($conn, $companyId, $appointmentTypeName);
+    if ($appointmentTypeId <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid appointment type.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
 
@@ -92,7 +99,7 @@ if ($action === 'schedule' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
     $timezone = (string)($settings['timezone'] ?? 'UTC');
     $bookingLock = itm_appointment_build_booking_lock($appointmentDate, $startTime);
-    $sql = 'INSERT INTO appointments (company_id, employee_id, visit_reason_id, appointment_date, start_time, end_time, appointment_type, status, timezone, booking_lock, active, created_by, updated_by)
+    $sql = 'INSERT INTO appointments (company_id, employee_id, visit_reason_id, appointment_date, start_time, end_time, appointment_type_id, status, timezone, booking_lock, active, created_by, updated_by)
             VALUES (?, ?, ?, ?, ?, ?, ?, \'scheduled\', ?, ?, 1, ?, ?)';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
@@ -100,7 +107,7 @@ if ($action === 'schedule' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         echo json_encode(['success' => false, 'message' => 'Could not save appointment.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
-    mysqli_stmt_bind_param($stmt, 'iiissssssii', $companyId, $employeeId, $visitReasonId, $appointmentDate, $startTime, $endTime, $appointmentType, $timezone, $bookingLock, $employeeId, $employeeId);
+    mysqli_stmt_bind_param($stmt, 'iiisssissii', $companyId, $employeeId, $visitReasonId, $appointmentDate, $startTime, $endTime, $appointmentTypeId, $timezone, $bookingLock, $employeeId, $employeeId);
     $ok = mysqli_stmt_execute($stmt);
     $dupKey = $ok ? false : (mysqli_errno($conn) === 1062);
     $newId = $ok ? (int)mysqli_insert_id($conn) : 0;
