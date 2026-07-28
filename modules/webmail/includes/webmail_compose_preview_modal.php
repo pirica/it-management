@@ -15,10 +15,6 @@
                     <div class="webmail-read-meta">
                         <div class="webmail-read-addresses">
                             <div class="webmail-read-line">
-                                <span class="webmail-read-label">Subject</span>
-                                <span class="webmail-read-value" id="webmail-compose-preview-subject"></span>
-                            </div>
-                            <div class="webmail-read-line">
                                 <span class="webmail-read-label">From</span>
                                 <span class="webmail-read-value" id="webmail-compose-preview-from"></span>
                             </div>
@@ -29,6 +25,10 @@
                             <div class="webmail-read-line" id="webmail-compose-preview-cc-row" style="display:none;">
                                 <span class="webmail-read-label">CC</span>
                                 <span class="webmail-read-value" id="webmail-compose-preview-cc"></span>
+                            </div>
+                            <div class="webmail-read-line">
+                                <span class="webmail-read-label">Subject</span>
+                                <span class="webmail-read-value" id="webmail-compose-preview-subject"></span>
                             </div>
                         </div>
                     </div>
