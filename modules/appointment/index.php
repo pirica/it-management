@@ -43,6 +43,7 @@ if ($crud_action === 'delete' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') 
     if ($id > 0) {
         $where = 'id = ' . $id . ' AND company_id = ' . $company_id;
         $sql = itm_crud_build_soft_delete_sql($crud_table, $where, $employee_id);
+        $sql = str_replace('`active`=0', '`active`=0, `booking_lock`=NULL', $sql);
         itm_run_query($conn, $sql);
     }
     header('Location: list_all.php');

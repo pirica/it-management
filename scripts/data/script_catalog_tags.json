@@ -1714,6 +1714,19 @@
         ],
         "override": false
     },
+    "verify_appointment.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "appointment_business_hours",
+            "appointment_settings",
+            "appointment_visit_reasons",
+            "appointments",
+            "modules_registry"
+        ],
+        "override": false
+    },
     "verify_chatbot.php": {
         "tags": [
             "Mixed"

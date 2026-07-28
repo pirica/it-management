@@ -32,6 +32,8 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
 - `it_settings_chat_same_tenant.sql` — `it_settings` with `chat_same_tenant` (`TINYINT(1) NOT NULL DEFAULT 1`; destructive — includes seed INSERT for companies 1–5)
 - `expenses_quotation_order.sql` — `expenses` with `quotation_order` + `quotation_order_accepted` after PO fields (mirrors `db/01_schema.sql`; destructive — re-seed or restore expenses after apply)
 - `live_chat_typing_audit_columns.sql` — `live_chat_typing` with standard soft-delete/meta columns (mirrors `db/01_schema.sql`; destructive — typing rows are ephemeral)
+- `appointment.sql` — all four `appointment_*` tables (mirrors `db/01_schema.sql`; destructive)
+- `appointment_booking_lock.sql` — `appointments` with `booking_lock` unique slot index (destructive — drops appointment rows)
 
 ## 12. Module Owner Notes (Optional)
 Catalog pointer: `AGENTS.md` → Database & Schema Rules → **Incremental migrations (`db/migrations/`)**.

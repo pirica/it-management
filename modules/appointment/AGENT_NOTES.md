@@ -23,6 +23,7 @@ Employee self-service IT appointment scheduling: pick a visit reason, choose an 
 - When `appointment_settings.in_person_only = 1`, API rejects `remote` and UI hides remote radio (banner matches screenshot).
 - Default seed: Mon–Tue display hours but no online slots; Wed–Fri bookable 09:00–14:00; Sat–Sun closed.
 - Soft-delete on **appointments** and lookup tables via standard audit columns; mutations audited in `audit_logs` (triggers in `db/03_triggers.sql`).
+- **Slot lock:** `appointments.booking_lock` + `uq_appointments_company_booking_lock` prevents double-booking; cleared on soft-delete.
 
 ## 5. UI Behavior Requirements
 
@@ -52,7 +53,8 @@ php scripts/check_audit_logs_coverage.php
 
 ## 9. Migration
 
-`db/migrations/appointment.sql` — DROP + CREATE all four tables; apply before importing updated `03_triggers.sql` on live DBs.
+- `db/migrations/appointment.sql` — DROP + CREATE all four tables for DBs that predate the module (fresh installs use `db/01_schema.sql` only).
+- `db/migrations/appointment_booking_lock.sql` — DROP + CREATE `appointments` with `booking_lock` (destructive; back up first).
 
 ## 12. Module Owner Notes
 

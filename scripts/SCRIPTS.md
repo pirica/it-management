@@ -1055,6 +1055,14 @@ Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*`
 
 Run `verify_reports_hub.php` when changing `modules/reports/`, `modules/reports/api/helpers.php`, or Reports Hub-related seeds in `db/03_triggers.sql`.
 
+### Appointment scripts
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/verify_appointment.php` | Regression: four `appointment_*` tables, audit triggers, `booking_lock` unique index, company 1 seeds, slot builder, `modules_registry` slug `appointment` |
+
+Run `verify_appointment.php` when changing `modules/appointment/`, `includes/itm_appointment.php`, or appointment DDL/seeds/triggers in `db/`.
+
 ### Email Management scripts
 
 | Script | Purpose |
@@ -1172,6 +1180,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_outlook_share.php` — Outlook/mail compose helpers (`includes/itm_outlook_share.php`, `js/itm-outlook-share.js`)
 - `php scripts/verify_request_password.php` — `modules/request_password/` workflow + delete guard
 - `php scripts/verify_chatbot.php` — `js/chatbot.js`, `chat_api.php`, `knowledge_base` tenant scope
+- `php scripts/verify_appointment.php` — `modules/appointment/`, `includes/itm_appointment.php`, appointment `db/` bundle
 - `php scripts/verify_live_chat.php` — Live Chat schema, SLA, ACL, notifications, ticket activity/comments helpers
 - `php scripts/debug_peer_options.php` — Debug Chat-with peer picker: `it_settings.chat_same_tenant`, accessible companies, merged peer options vs `list_employees` (CLI `--company_id=` `--employee_id=`; browser query params)
 

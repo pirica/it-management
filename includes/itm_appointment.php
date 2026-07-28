@@ -3,6 +3,13 @@
  * Appointment scheduling helpers (slots, settings, business hours).
  */
 
+if (!function_exists('itm_appointment_build_booking_lock')) {
+    function itm_appointment_build_booking_lock(string $dateYmd, string $startTime): string
+    {
+        return $dateYmd . '#' . substr($startTime, 0, 8);
+    }
+}
+
 if (!function_exists('itm_appointment_load_settings')) {
     function itm_appointment_load_settings(mysqli $conn, int $companyId): ?array
     {
