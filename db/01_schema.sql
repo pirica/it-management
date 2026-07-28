@@ -4472,6 +4472,8 @@ CREATE TABLE `appointments` (
   `start_time` time NOT NULL,
   `end_time` time NOT NULL,
   `appointment_type_id` int NOT NULL,
+  `assigned_to_employee_id` int DEFAULT NULL,
+  `is_confirmed` tinyint(1) NOT NULL DEFAULT '0',
   `status` enum('scheduled','cancelled','completed') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'scheduled',
   `timezone` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'US/Central',
   `booking_lock` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Set for scheduled rows to enforce one booking per company slot; cleared on soft-delete',
@@ -4487,10 +4489,12 @@ CREATE TABLE `appointments` (
   KEY `employee_id` (`employee_id`),
   KEY `visit_reason_id` (`visit_reason_id`),
   KEY `appointment_type_id` (`appointment_type_id`),
+  KEY `assigned_to_employee_id` (`assigned_to_employee_id`),
   KEY `idx_appointments_company_date` (`company_id`,`appointment_date`,`start_time`),
   UNIQUE KEY `uq_appointments_company_booking_lock` (`company_id`,`booking_lock`),
   CONSTRAINT `fk_appointments_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_appointments_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`),
+  CONSTRAINT `fk_appointments_assigned_to` FOREIGN KEY (`assigned_to_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_appointments_visit_reason` FOREIGN KEY (`visit_reason_id`) REFERENCES `appointment_visit_reasons` (`id`),
   CONSTRAINT `fk_appointments_appointment_type` FOREIGN KEY (`appointment_type_id`) REFERENCES `appointment_type` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

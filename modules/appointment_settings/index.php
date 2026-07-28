@@ -159,8 +159,9 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
 <div class="card appointment-settings-section">
     <div class="appointment-settings-section-header">
         <h2 title="Appointment types">🏷️</h2>
+        <a href="create.php?kind=appointment_type" class="btn btn-sm btn-primary" title="Add">➕</a>
     </div>
-    <p>Core types <code>in_person</code> and <code>remote</code> are used by the booking API.</p>
+    <p>Core types in_person and remote are used by the booking API.</p>
     <table class="appointment-list-table">
         <thead>
         <tr>

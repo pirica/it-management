@@ -60,11 +60,35 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             exit;
         }
     }
+
+    if ($postKind === 'appointment_type') {
+        $name = strtolower(trim((string)($_POST['name'] ?? '')));
+        $name = preg_replace('/[^a-z0-9_]+/', '_', $name);
+        $name = trim($name, '_');
+        $isActive = !empty($_POST['active']) ? 1 : 0;
+        if ($name !== '' && !in_array($name, ['in_person', 'remote'], true)) {
+            $sql = 'INSERT INTO appointment_type (company_id, name, active, created_by, updated_by) VALUES (?, ?, ?, ?, ?)';
+            $stmt = mysqli_prepare($conn, $sql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'isiii', $company_id, $name, $isActive, $employee_id, $employee_id);
+                if (@mysqli_stmt_execute($stmt)) {
+                    mysqli_stmt_close($stmt);
+                    header('Location: index.php?msg=' . rawurlencode('Appointment type added.'));
+                    exit;
+                }
+                mysqli_stmt_close($stmt);
+            }
+            header('Location: index.php?msg=' . rawurlencode('Could not add appointment type (name may already exist).'));
+            exit;
+        }
+        header('Location: index.php?msg=' . rawurlencode('Invalid appointment type name.'));
+        exit;
+    }
 }
 
 aps_require_permission($conn, 'create');
 
-$pageTitle = 'Create ' . aps_kind_label($kind === 'business_hour' ? 'business_hour' : 'visit_reason');
+$pageTitle = 'Create ' . aps_kind_label($kind === 'business_hour' ? 'business_hour' : ($kind === 'appointment_type' ? 'appointment_type' : 'visit_reason'));
 aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
 
 $usedDays = [];
@@ -142,6 +166,23 @@ foreach ($hours as $dow => $hourRow) {
             <label class="itm-checkbox-control">
                 <input type="checkbox" name="allows_remote" value="1" checked>
                 <span>Remote</span>
+            </label>
+        </div>
+        <button type="submit" class="btn btn-primary" title="Save">💾</button>
+    </form>
+    <?php elseif ($kind === 'appointment_type'): ?>
+    <form method="post" action="create.php?kind=appointment_type">
+        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+        <input type="hidden" name="kind" value="appointment_type">
+        <div class="form-group">
+            <label for="type_name">Name (slug)</label>
+            <input class="form-control" type="text" name="name" id="type_name" pattern="[a-z0-9_]+" required placeholder="e.g. phone_support">
+            <p class="help-block">Lowercase letters, numbers, and underscores. Reserved: in_person, remote.</p>
+        </div>
+        <div class="form-group">
+            <label class="itm-checkbox-control">
+                <input type="checkbox" name="active" value="1" checked>
+                <span>Active</span>
             </label>
         </div>
         <button type="submit" class="btn btn-primary" title="Save">💾</button>
