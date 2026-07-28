@@ -18,6 +18,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $bookableStart = trim((string)($_POST['bookable_start_time'] ?? '09:00'));
         $bookableEnd = trim((string)($_POST['bookable_end_time'] ?? '14:00'));
         $buffer = max(0, (int)($_POST['check_in_end_buffer_minutes'] ?? 30));
+        $defaultModality = trim((string)($_POST['default_appointment_modality'] ?? 'remote'));
+        if (!in_array($defaultModality, ['remote', 'in_person'], true)) {
+            $defaultModality = 'remote';
+        }
         $isActive = !empty($_POST['active']) ? 1 : 0;
         if (strlen($bookableStart) === 5) {
             $bookableStart .= ':00';
@@ -25,10 +29,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         if (strlen($bookableEnd) === 5) {
             $bookableEnd .= ':00';
         }
-        $sql = 'UPDATE appointment_settings SET timezone = ?, slot_duration_minutes = ?, bookable_start_time = ?, bookable_end_time = ?, check_in_end_buffer_minutes = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
+        $sql = 'UPDATE appointment_settings SET timezone = ?, slot_duration_minutes = ?, bookable_start_time = ?, bookable_end_time = ?, check_in_end_buffer_minutes = ?, default_appointment_modality = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
         $stmt = mysqli_prepare($conn, $sql);
         if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'sisssiiiii', $timezone, $slotMinutes, $bookableStart, $bookableEnd, $buffer, $isActive, $employee_id, $postId, $company_id);
+            mysqli_stmt_bind_param($stmt, 'sisssisiiii', $timezone, $slotMinutes, $bookableStart, $bookableEnd, $buffer, $defaultModality, $isActive, $employee_id, $postId, $company_id);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
             header('Location: index.php?msg=' . rawurlencode('Settings saved.'));
@@ -165,6 +169,18 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
             <div class="form-group">
                 <label for="check_in_end_buffer_minutes">Check-in end buffer (minutes)</label>
                 <input class="form-control" type="number" min="0" name="check_in_end_buffer_minutes" id="check_in_end_buffer_minutes" value="<?php echo (int)($row['check_in_end_buffer_minutes'] ?? 30); ?>">
+            </div>
+            <div class="form-group">
+                <label for="default_appointment_modality">Default appointment type (when both allowed)</label>
+                <select name="default_appointment_modality" id="default_appointment_modality" class="form-control">
+                    <?php
+                    $defaultModality = function_exists('itm_appointment_settings_default_modality_name')
+                        ? itm_appointment_settings_default_modality_name($row)
+                        : 'remote';
+                    ?>
+                    <option value="remote"<?php echo $defaultModality === 'remote' ? ' selected' : ''; ?>>Remote</option>
+                    <option value="in_person"<?php echo $defaultModality === 'in_person' ? ' selected' : ''; ?>>In Person</option>
+                </select>
             </div>
             <div class="form-group">
                 <label class="itm-checkbox-control">

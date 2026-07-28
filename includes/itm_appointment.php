@@ -93,6 +93,38 @@ if (!function_exists('itm_appointment_load_settings')) {
     }
 }
 
+if (!function_exists('itm_appointment_settings_default_modality_name')) {
+    /**
+     * Tenant default modality when both in_person and remote are allowed (DB: appointment_settings.default_appointment_modality).
+     */
+    function itm_appointment_settings_default_modality_name(?array $settings): string
+    {
+        $name = strtolower(trim((string)($settings['default_appointment_modality'] ?? 'remote')));
+        return in_array($name, ['in_person', 'remote'], true) ? $name : 'remote';
+    }
+}
+
+if (!function_exists('itm_appointment_pick_modality_for_day')) {
+    /**
+     * @param array{in_person?:bool,remote?:bool} $dayFlags
+     */
+    function itm_appointment_pick_modality_for_day(array $dayFlags, ?array $settings): string
+    {
+        $allowsInPerson = !empty($dayFlags['in_person']);
+        $allowsRemote = !empty($dayFlags['remote']);
+        if ($allowsRemote && $allowsInPerson) {
+            return itm_appointment_settings_default_modality_name($settings);
+        }
+        if ($allowsRemote) {
+            return 'remote';
+        }
+        if ($allowsInPerson) {
+            return 'in_person';
+        }
+        return itm_appointment_settings_default_modality_name($settings);
+    }
+}
+
 if (!function_exists('itm_appointment_load_business_hours')) {
     /**
      * @return array<int, array> keyed by day_of_week 0=Sunday … 6=Saturday

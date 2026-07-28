@@ -89,6 +89,17 @@ if (!$settings) {
     appt_verify_pass('appointment_settings loaded for company 1');
 }
 
+$modColSql = "SELECT COUNT(*) AS c FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'appointment_settings'
+                AND column_name = 'default_appointment_modality'";
+$modColRes = mysqli_query($conn, $modColSql);
+$modColRow = $modColRes ? mysqli_fetch_assoc($modColRes) : null;
+if ((int)($modColRow['c'] ?? 0) < 1) {
+    appt_verify_fail('appointment_settings missing default_appointment_modality column');
+} else {
+    appt_verify_pass('appointment_settings default_appointment_modality column present');
+}
+
 $reasons = itm_appointment_load_visit_reasons($conn, $companyId);
 if (count($reasons) < 1) {
     appt_verify_fail('appointment_visit_reasons seed missing for company 1');

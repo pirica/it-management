@@ -36,21 +36,21 @@ if ($action === 'schedule' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $appointmentDate = trim((string)($_POST['appointment_date'] ?? ''));
     $startTime = trim((string)($_POST['start_time'] ?? ''));
     $endTime = trim((string)($_POST['end_time'] ?? ''));
-    $appointmentTypeName = trim((string)($_POST['appointment_type'] ?? 'in_person'));
-    if (!in_array($appointmentTypeName, ['in_person', 'remote'], true)) {
-        $appointmentTypeName = 'in_person';
+    $appointmentTypeName = trim((string)($_POST['appointment_type'] ?? ''));
+    $settings = itm_appointment_load_settings($conn, $companyId);
+    if (!$settings) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Appointment settings are not configured for this company.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+    $fallbackType = itm_appointment_settings_default_modality_name($settings);
+    if ($appointmentTypeName === '' || !in_array($appointmentTypeName, ['in_person', 'remote'], true)) {
+        $appointmentTypeName = $fallbackType;
     }
 
     if ($visitReasonId <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $appointmentDate) || $startTime === '' || $endTime === '') {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Missing required fields.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        exit;
-    }
-
-    $settings = itm_appointment_load_settings($conn, $companyId);
-    if (!$settings) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Appointment settings are not configured for this company.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
 

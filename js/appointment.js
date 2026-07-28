@@ -32,6 +32,10 @@
 
     var apiUrl = app.getAttribute('data-api') || '';
     var csrf = app.getAttribute('data-csrf') || '';
+    var defaultAppointmentModality = app.getAttribute('data-default-appointment-modality') || 'remote';
+    if (defaultAppointmentModality !== 'remote' && defaultAppointmentModality !== 'in_person') {
+        defaultAppointmentModality = 'remote';
+    }
     var anchorInput = document.getElementById('appointment-anchor-date');
     var slotDisplay = document.getElementById('appointment-slot-display');
     var slotHiddenDate = document.getElementById('appointment_date');
@@ -115,7 +119,8 @@
 
     function updateAppointmentTypeUi(dateYmd) {
         var flags = resolveModalityFlags(dateYmd);
-        var firstChecked = null;
+        var remoteInput = null;
+        var inPersonInput = null;
         typeCards.forEach(function (card) {
             var typeName = card.getAttribute('data-appointment-type') || '';
             var allowed = typeName === 'remote' ? flags.remote : typeName === 'in_person' ? flags.in_person : false;
@@ -127,12 +132,28 @@
             input.disabled = !allowed;
             if (!allowed) {
                 input.checked = false;
-            } else if (!firstChecked) {
-                firstChecked = input;
+            } else if (typeName === 'remote') {
+                remoteInput = input;
+            } else if (typeName === 'in_person') {
+                inPersonInput = input;
             }
         });
-        if (firstChecked) {
-            firstChecked.checked = true;
+        var pick = null;
+        if (flags.remote && flags.in_person) {
+            if (defaultAppointmentModality === 'in_person' && inPersonInput) {
+                pick = inPersonInput;
+            } else if (remoteInput) {
+                pick = remoteInput;
+            } else if (inPersonInput) {
+                pick = inPersonInput;
+            }
+        } else if (flags.remote && remoteInput) {
+            pick = remoteInput;
+        } else if (flags.in_person && inPersonInput) {
+            pick = inPersonInput;
+        }
+        if (pick) {
+            pick.checked = true;
         }
         if (modalityBanner) {
             var msg = '';
@@ -184,12 +205,11 @@
     }
 
     function updateScheduleButton() {
-        if (!scheduleBtn || !reasonSelect) {
+        if (!scheduleBtn) {
             return;
         }
-        var reasonOk = reasonSelect.value && reasonSelect.value !== '';
         var slotOk = confirmedSelection && confirmedSelection.date && confirmedSelection.start_time;
-        scheduleBtn.disabled = !(reasonOk && slotOk);
+        scheduleBtn.disabled = !slotOk;
     }
 
     function loadWeek(anchor) {
@@ -331,7 +351,12 @@
 
     if (scheduleBtn) {
         scheduleBtn.addEventListener('click', function () {
-            if (scheduleBtn.disabled) {
+            if (!reasonSelect || !reasonSelect.value || reasonSelect.value === '') {
+                alert('Missing Reason for your appointment.');
+                return;
+            }
+            if (!confirmedSelection || !confirmedSelection.date || !confirmedSelection.start_time) {
+                alert('Missing day-time for your appointment.');
                 return;
             }
             var typeInput = document.querySelector('input[name="appointment_type"]:checked');
@@ -342,7 +367,7 @@
             formData.append('appointment_date', slotHiddenDate.value);
             formData.append('start_time', slotHiddenStart.value);
             formData.append('end_time', slotHiddenEnd.value);
-            formData.append('appointment_type', typeInput ? typeInput.value : 'in_person');
+            formData.append('appointment_type', typeInput ? typeInput.value : defaultAppointmentModality);
             scheduleBtn.disabled = true;
             fetch(apiUrl, { method: 'POST', body: formData, credentials: 'same-origin' })
                 .then(function (res) { return res.json().then(function (j) { return { ok: res.ok, body: j }; }); })
