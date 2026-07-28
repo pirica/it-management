@@ -5,7 +5,7 @@ AR invoice headers with line items on create/edit/view.
 
 ## 2. Key Tables
 - **invoices** — `document_number`, `customer_id` (optional FK to `customers`), `contact_name`, optional `supplier_id`, `cost_center_id`, `gl_account_id`, `amount_due` (payments via `finance_payment_allocations`).
-- **invoice_line_items** — lines via `includes/itm_finance_document_lines.php`.
+- **invoice_line_items** — lines via `includes/itm_finance_document_lines.php` (no standalone module; not in `docs/list_soft-delete.txt` — parent `invoices` is in scope).
 
 ## 3. Entry files
 - **Canonical UI:** `index.php` (line grid + payment allocations on edit).

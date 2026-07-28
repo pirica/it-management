@@ -49,9 +49,8 @@ payment_modes
 integration_accounts
 bank_accounts
 bills
-bill_line_items
+# bill_line_items / invoice_line_items — child rows only; soft-delete via includes/itm_finance_document_lines.php on bills/invoices (no modules/{slug}/).
 invoices
-invoice_line_items
 floor_designer
 floor_designer_points
 floor_plans
