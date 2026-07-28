@@ -549,7 +549,7 @@ The Appointment module (`modules/appointment/`) provides employee self-service I
 3. **Slot concurrency:** `appointments.booking_lock` (`company_id` + lock unique) is set on schedule INSERT and cleared on soft-delete so two concurrent `schedule` POSTs cannot double-book the same slot.
 4. **API:** `modules/appointment/api.php` — `week_slots` (GET), `schedule` (POST + CSRF); rate limit enforced.
 5. **Live Chat:** Live Agent launch menu includes **Appointment** (see **Chatbot & Knowledge Base** above).
-6. **Sidebar:** Planning → Appointment (`includes/ui_config.php`). Bespoke UI (not flattened scaffold CRUD); `list_all.php` / `view.php` for admin review.
+6. **Sidebar:** Planning → Appointment (`includes/ui_config.php`); tenant configuration → **`modules/appointment_settings/`** (slug `appointment_settings`, Planning → Appointment Settings). Bespoke booking UI (not flattened scaffold CRUD); `list_all.php` / `view.php` for booking review.
 7. **Sample templates:** `db/02_data_sample.sql` includes `appointments` rows for Add sample data / MBQA when the table is empty for a tenant.
 8. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_appointment.php`.
 

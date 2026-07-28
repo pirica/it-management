@@ -119,6 +119,35 @@ if (!$slugRow) {
     appt_verify_pass('modules_registry row for appointment');
 }
 
+$settingsSlug = 'appointment_settings';
+$settingsSlugStmt = mysqli_prepare($conn, 'SELECT id FROM modules_registry WHERE module_slug = ? AND active = 1 LIMIT 1');
+mysqli_stmt_bind_param($settingsSlugStmt, 's', $settingsSlug);
+mysqli_stmt_execute($settingsSlugStmt);
+$slugRes = mysqli_stmt_get_result($settingsSlugStmt);
+$slugRow = $slugRes ? mysqli_fetch_assoc($slugRes) : null;
+mysqli_stmt_close($settingsSlugStmt);
+if (!$slugRow) {
+    appt_verify_fail('modules_registry row missing for appointment_settings');
+} else {
+    appt_verify_pass('modules_registry row for appointment_settings');
+}
+
+$settingsModulePath = ROOT_PATH . 'modules/appointment_settings/index.php';
+if (!is_file($settingsModulePath)) {
+    appt_verify_fail('modules/appointment_settings/index.php missing');
+} else {
+    appt_verify_pass('appointment_settings module entry present');
+}
+
+require_once ROOT_PATH . 'includes/itm_appointment_settings_admin.php';
+itm_appointment_settings_ensure_company_config($conn, $companyId, 1);
+$settingsAfterEnsure = itm_appointment_load_settings($conn, $companyId);
+if (!$settingsAfterEnsure) {
+    appt_verify_fail('itm_appointment_settings_ensure_company_config did not create settings');
+} else {
+    appt_verify_pass('appointment_settings ensure helper creates tenant row');
+}
+
 if ($failures > 0) {
     echo colorText($failures . ' failure(s).', 'fail') . $nl;
     exit(1);
