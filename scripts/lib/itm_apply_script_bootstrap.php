@@ -26,7 +26,7 @@ if (!function_exists('itm_apply_script_bootstrap')) {
      *
      * @param string $title
      * @param array $options Keys: skip_db_tests (bool, default true)
-     * @return array{is_cli:bool,apply:bool,nl:string,root:string,argv:array}
+     * @return array{is_cli:bool,apply:bool,nl:string,root:string,argv:array,conn:mysqli|null}
      */
     function itm_apply_script_bootstrap($title, array $options = [])
     {
@@ -117,6 +117,7 @@ if (!function_exists('itm_apply_script_bootstrap')) {
             'nl' => $nl,
             'root' => $root,
             'argv' => $argv,
+            'conn' => $itmApplyScriptConn,
         ];
     }
 }
