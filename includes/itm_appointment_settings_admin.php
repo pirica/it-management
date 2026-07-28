@@ -160,3 +160,26 @@ if (!function_exists('itm_appointment_settings_load_visit_reasons_admin')) {
         return $rows;
     }
 }
+
+if (!function_exists('itm_appointment_settings_load_appointment_types_admin')) {
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    function itm_appointment_settings_load_appointment_types_admin(mysqli $conn, int $companyId): array
+    {
+        $rows = [];
+        $sql = 'SELECT id, name, active FROM appointment_type WHERE company_id = ? AND deleted_at IS NULL ORDER BY name ASC';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return $rows;
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $rows[] = $row;
+        }
+        mysqli_stmt_close($stmt);
+        return $rows;
+    }
+}

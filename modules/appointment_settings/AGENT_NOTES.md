@@ -24,9 +24,11 @@ Tenant admin UI for `modules/appointment/`: edit `appointment_settings`, weekly 
 
 ## 5. UI Behavior Requirements
 
-- **index.php** — primary configure screen (settings form, hours grid, visit reasons).
-- **list_all.php** / **view.php** — thin wrappers for scaffold entry files; list shows the single settings row per tenant.
-- **create.php** / **edit.php** — redirect to `index.php` (no separate create flow).
+- **index.php** — hub with four tables (settings, business hours, visit reasons, appointment types); each row has **🔎 View**, **✏️ Edit**, **🗑️ Delete** (core types `in_person` / `remote` cannot be deleted).
+- **create.php** — `?kind=visit_reason` or `?kind=business_hour` (Add **➕** on index).
+- **edit.php** / **view.php** — `?kind=` + `id` for each entity.
+- **delete.php** — POST `kind` + `id`, soft-delete.
+- **aps_init.php** — shared bootstrap and page shell.
 
 ## 6. File Structure
 

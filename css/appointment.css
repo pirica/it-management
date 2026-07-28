@@ -18,6 +18,88 @@
     flex-wrap: wrap;
     align-items: center;
 }
+.appointment-type-group {
+    margin-bottom: 16px;
+}
+.appointment-type-heading {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+.appointment-type-heading-label {
+    margin: 0;
+    font-weight: 600;
+}
+.appointment-type-help {
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: help;
+    font-size: 1rem;
+    line-height: 1;
+}
+.appointment-type-cards {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    flex-wrap: nowrap;
+}
+@media (max-width: 480px) {
+    .appointment-type-cards {
+        flex-direction: column;
+    }
+}
+.appointment-type-card {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 220px;
+    margin: 0;
+    cursor: pointer;
+}
+.appointment-type-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+.appointment-type-card-inner {
+    display: block;
+    padding: 14px 18px;
+    border: 2px solid var(--border-color, #c9d1d9);
+    border-radius: 8px;
+    background: var(--card-bg, #f6f8fa);
+    text-align: center;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.appointment-type-card-title {
+    font-weight: 600;
+    font-size: 15px;
+}
+.appointment-type-card input:checked + .appointment-type-card-inner {
+    border-color: #0969da;
+    background: #ddf4ff;
+    box-shadow: 0 0 0 1px #0969da;
+}
+.appointment-type-card:hover .appointment-type-card-inner {
+    border-color: #0969da;
+}
+.appointment-settings-section {
+    margin-bottom: 20px;
+}
+.appointment-settings-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.appointment-settings-section-header h2 {
+    margin: 0;
+}
 .appointment-info-banner {
     background: #e8f4fc;
     border: 1px solid #b8daf0;
