@@ -16,6 +16,9 @@ if (!function_exists('itm_appointment_business_hours_day_bookable')) {
         if (!$businessHourRow || (int)($businessHourRow['is_closed'] ?? 0) === 1) {
             return false;
         }
+        if ((int)($businessHourRow['active'] ?? 1) !== 1) {
+            return false;
+        }
         return (int)($businessHourRow['allows_in_person'] ?? 0) === 1
             || (int)($businessHourRow['allows_remote'] ?? 0) === 1;
     }
@@ -47,6 +50,9 @@ if (!function_exists('itm_appointment_day_allows_modality')) {
             return false;
         }
         if (!$businessHourRow || (int)($businessHourRow['is_closed'] ?? 0) === 1) {
+            return false;
+        }
+        if ((int)($businessHourRow['active'] ?? 1) !== 1) {
             return false;
         }
         if ($typeName === 'remote') {

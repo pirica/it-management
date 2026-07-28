@@ -61,32 +61,64 @@
     var modalityBanner = document.getElementById('appointment-modality-banner');
     var typeGroup = app.querySelector('.appointment-type-group');
     var typeCards = app.querySelectorAll('.appointment-type-card[data-appointment-type]');
+    var lastWeekSlotsPayload = null;
 
     function dayOfWeekFromYmd(dateStr) {
-        var d = parseYmd(dateStr);
-        return d ? d.getDay() : -1;
+        var parts = String(dateStr || '').split('-');
+        if (parts.length !== 3) {
+            return -1;
+        }
+        var y = parseInt(parts[0], 10);
+        var m = parseInt(parts[1], 10) - 1;
+        var d = parseInt(parts[2], 10);
+        return new Date(y, m, d).getDay();
+    }
+
+    function modalityFlagsFromWeekPayload(dateYmd) {
+        if (!lastWeekSlotsPayload || !lastWeekSlotsPayload.days || !dateYmd) {
+            return null;
+        }
+        for (var i = 0; i < lastWeekSlotsPayload.days.length; i++) {
+            var day = lastWeekSlotsPayload.days[i];
+            if (day.date === dateYmd) {
+                return {
+                    in_person: !!day.allows_in_person,
+                    remote: !!day.allows_remote
+                };
+            }
+        }
+        return null;
+    }
+
+    function modalityFlagsFromEmbed(dateYmd) {
+        if (!dateYmd) {
+            var companyOnly = modalityConfig.company || {};
+            return {
+                in_person: !!companyOnly.in_person,
+                remote: !!companyOnly.remote
+            };
+        }
+        var dow = dayOfWeekFromYmd(dateYmd);
+        var dayRow = (modalityConfig.days || {})[dow] || (modalityConfig.days || {})[String(dow)];
+        if (!dayRow) {
+            return { in_person: false, remote: false };
+        }
+        return {
+            in_person: !!dayRow.in_person,
+            remote: !!dayRow.remote
+        };
     }
 
     function resolveModalityFlags(dateYmd) {
-        var company = modalityConfig.company || {};
-        var allowInPerson = !!company.in_person;
-        var allowRemote = !!company.remote;
-        if (dateYmd) {
-            var dow = dayOfWeekFromYmd(dateYmd);
-            var dayRow = (modalityConfig.days || {})[dow] || (modalityConfig.days || {})[String(dow)];
-            if (dayRow) {
-                allowInPerson = allowInPerson && !!dayRow.in_person;
-                allowRemote = allowRemote && !!dayRow.remote;
-            } else {
-                allowInPerson = false;
-                allowRemote = false;
-            }
+        var fromWeek = modalityFlagsFromWeekPayload(dateYmd);
+        if (fromWeek) {
+            return fromWeek;
         }
-        return { in_person: allowInPerson, remote: allowRemote };
+        return modalityFlagsFromEmbed(dateYmd);
     }
 
     function updateAppointmentTypeUi(dateYmd) {
-        var flags = resolveModalityFlags(dateYmd || null);
+        var flags = resolveModalityFlags(dateYmd);
         var firstChecked = null;
         typeCards.forEach(function (card) {
             var typeName = card.getAttribute('data-appointment-type') || '';
@@ -137,6 +169,24 @@
         updateAppointmentTypeUi(confirmedSelection.date);
     }
 
+    function refreshWeekSlotsForDate(dateYmd, done) {
+        if (!apiUrl || !dateYmd) {
+            done();
+            return;
+        }
+        fetch(apiUrl + '?action=week_slots&date=' + encodeURIComponent(dateYmd), { credentials: 'same-origin' })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (data && data.success) {
+                    lastWeekSlotsPayload = data;
+                }
+                done();
+            })
+            .catch(function () {
+                done();
+            });
+    }
+
     function updateScheduleButton() {
         if (!scheduleBtn || !reasonSelect) {
             return;
@@ -168,6 +218,7 @@
                 if (tzLabel) {
                     tzLabel.textContent = 'Time zone: ' + (data.timezone || 'UTC');
                 }
+                lastWeekSlotsPayload = data;
                 weekGrid.innerHTML = '';
                 (data.days || []).forEach(function (day) {
                     var col = document.createElement('div');
@@ -272,8 +323,10 @@
             if (modal) {
                 modal.classList.add('hidden');
             }
-            syncAppointmentTypeSection();
-            updateScheduleButton();
+            refreshWeekSlotsForDate(confirmedSelection.date, function () {
+                syncAppointmentTypeSection();
+                updateScheduleButton();
+            });
         });
     }
     if (reasonSelect) {
