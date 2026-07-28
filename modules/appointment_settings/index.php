@@ -184,7 +184,7 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
                 <?php if ($coreType): ?>
                 <button type="button" class="btn btn-sm btn-danger" title="Cannot delete core appointment types" disabled>🗑️</button>
                 <?php else: ?>
-                <form method="post" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this appointment type?');">
+                <form method="post" action="delete.php" style="display:inline;" onsubmit="return confirm('Permanently delete this appointment type? This cannot be undone.');">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="kind" value="appointment_type">
                     <input type="hidden" name="id" value="<?php echo (int)$typeRow['id']; ?>">

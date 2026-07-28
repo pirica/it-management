@@ -20,8 +20,9 @@ Tenant **administration** for `modules/appointment/`: maintain `appointment_sett
 ## 4. Business Rules (Critical for Agents)
 
 - On every `aps_init.php` load, `itm_appointment_settings_ensure_company_config()` inserts missing settings (In Person off / Remote on), missing weekday rows (Wed–Fri **Remote** bookable by default), and missing `in_person`/`remote` types — **does not overwrite** existing configuration.
-- Mutations use soft-delete (`itm_crud_build_soft_delete_sql`) except where noted; visit reasons/types/settings/hours all support soft-delete.
+- Mutations use soft-delete (`itm_crud_build_soft_delete_sql`) except **non-core** `appointment_type` rows, which are **hard-deleted** (`DELETE`) when no live `appointments` reference the type; core `in_person` / `remote` cannot be deleted.
 - **Core types** `in_person` and `remote` cannot be deleted from UI (POST blocked in `delete.php`).
+- **Custom appointment types** are removed with a hard `DELETE` when no active appointments reference them; otherwise delete is rejected with a flash message.
 - Deleting the sole **settings** row is allowed from UI but breaks booking until ensure runs again on next settings page hit (avoid in production).
 - Deleting a **business hour** row can leave fewer than seven days — booking grid simply lacks that weekday until re-added via **➕**.
 - RBAC slug **`appointment_settings`** is separate from **`appointment`** — grant IT staff settings access without full appointment delete if matrix allows.
@@ -38,7 +39,7 @@ Four read-only tables with standard actions:
 | Company settings | — (one per company) | `view.php?kind=settings&id=` | `edit.php?kind=settings&id=` | POST `delete.php` |
 | Business hours | `create.php?kind=business_hour` | `view.php?kind=business_hour&id=` | `edit.php?kind=business_hour&id=` | POST `delete.php` |
 | Visit reasons | `create.php?kind=visit_reason` | `view.php?kind=visit_reason&id=` | `edit.php?kind=visit_reason&id=` | POST `delete.php` |
-| Appointment types | ➕ `create.php?kind=appointment_type` | `view.php?kind=appointment_type&id=` | `edit.php?kind=appointment_type&id=` (active only) | 🗑️ all rows; core `in_person`/`remote` disabled in UI; POST blocked in `delete.php` |
+| Appointment types | ➕ `create.php?kind=appointment_type` | `view.php?kind=appointment_type&id=` | `edit.php?kind=appointment_type&id=` (active only) | 🗑️ all rows; core disabled in UI + blocked in `delete.php`; custom types hard-deleted when unreferenced |
 
 - Flash messages via `?msg=` query string after redirect.
 - Company settings hub table columns: **Timezone**, **Slot (min)**, **Active**, **Actions** — modality is configured on **business hours** rows only.
