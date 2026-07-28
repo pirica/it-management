@@ -344,3 +344,137 @@ if (!function_exists('itm_appointment_load_visit_reasons')) {
         return $rows;
     }
 }
+
+if (!function_exists('itm_appointment_regression_sample_settings')) {
+    /**
+     * Company 1 canonical appointment_settings flags for modality regression (see db/02_data.sql).
+     *
+     * @return array{allow_in_person:int,allow_remote:int}
+     */
+    function itm_appointment_regression_sample_settings(): array
+    {
+        return [
+            'allow_in_person' => 1,
+            'allow_remote' => 1,
+        ];
+    }
+}
+
+if (!function_exists('itm_appointment_regression_sample_business_hours_by_dow')) {
+    /**
+     * Company 1 canonical business hours (In Person / Remote columns) for regression tests.
+     *
+     * @return array<int, array{display_label:string,is_closed:int,allows_in_person:int,allows_remote:int}>
+     */
+    function itm_appointment_regression_sample_business_hours_by_dow(): array
+    {
+        return [
+            0 => ['display_label' => 'Sun', 'is_closed' => 1, 'allows_in_person' => 0, 'allows_remote' => 0],
+            1 => ['display_label' => 'Mon', 'is_closed' => 0, 'allows_in_person' => 1, 'allows_remote' => 1],
+            2 => ['display_label' => 'Tue', 'is_closed' => 0, 'allows_in_person' => 1, 'allows_remote' => 1],
+            3 => ['display_label' => 'Wed', 'is_closed' => 0, 'allows_in_person' => 0, 'allows_remote' => 1],
+            4 => ['display_label' => 'Thu', 'is_closed' => 0, 'allows_in_person' => 1, 'allows_remote' => 1],
+            5 => ['display_label' => 'Fri', 'is_closed' => 0, 'allows_in_person' => 1, 'allows_remote' => 1],
+            6 => ['display_label' => 'Sat', 'is_closed' => 1, 'allows_in_person' => 0, 'allows_remote' => 0],
+        ];
+    }
+}
+
+if (!function_exists('itm_appointment_regression_expected_modality_for_dow')) {
+    /**
+     * Effective booking modality for canonical sample settings + business hours row.
+     *
+     * @return array{in_person:bool,remote:bool}
+     */
+    function itm_appointment_regression_expected_modality_for_dow(int $dayOfWeek): array
+    {
+        $sampleSettings = itm_appointment_regression_sample_settings();
+        $settingsRow = [
+            'allow_in_person' => $sampleSettings['allow_in_person'],
+            'allow_remote' => $sampleSettings['allow_remote'],
+        ];
+        $sampleHours = itm_appointment_regression_sample_business_hours_by_dow();
+        $bh = $sampleHours[$dayOfWeek] ?? null;
+        $bhRow = $bh ? [
+            'is_closed' => $bh['is_closed'],
+            'allows_in_person' => $bh['allows_in_person'],
+            'allows_remote' => $bh['allows_remote'],
+            'active' => 1,
+        ] : null;
+        return [
+            'in_person' => itm_appointment_day_allows_modality($settingsRow, $bhRow, 'in_person'),
+            'remote' => itm_appointment_day_allows_modality($settingsRow, $bhRow, 'remote'),
+        ];
+    }
+}
+
+if (!function_exists('itm_appointment_regression_collect_company_modality_sample_errors')) {
+    /**
+     * Compare live tenant rows to canonical company 1 sample (seeds + verify_appointment.php).
+     *
+     * @return list<string>
+     */
+    function itm_appointment_regression_collect_company_modality_sample_errors(mysqli $conn, int $companyId): array
+    {
+        if ($companyId !== 1) {
+            return [];
+        }
+        $errors = [];
+        $sampleSettings = itm_appointment_regression_sample_settings();
+        $settings = itm_appointment_load_settings($conn, $companyId);
+        if (!$settings) {
+            $errors[] = 'appointment_settings missing for company 1';
+            return $errors;
+        }
+        foreach ($sampleSettings as $key => $expected) {
+            if ((int)($settings[$key] ?? -1) !== (int)$expected) {
+                $errors[] = 'appointment_settings.' . $key . ' expected ' . $expected . ', got ' . ($settings[$key] ?? 'null');
+            }
+        }
+
+        $hours = itm_appointment_load_business_hours($conn, $companyId);
+        foreach (itm_appointment_regression_sample_business_hours_by_dow() as $dow => $expected) {
+            $row = $hours[$dow] ?? null;
+            if (!$row) {
+                $errors[] = 'appointment_business_hours missing day_of_week ' . $dow;
+                continue;
+            }
+            foreach (['is_closed', 'allows_in_person', 'allows_remote'] as $col) {
+                if ((int)($row[$col] ?? -1) !== (int)$expected[$col]) {
+                    $errors[] = 'appointment_business_hours day ' . $dow . ' ' . $col . ' expected ' . $expected[$col] . ', got ' . ($row[$col] ?? 'null');
+                }
+            }
+        }
+
+        $dateProbes = [
+            '2026-01-04' => 0,
+            '2026-01-05' => 1,
+            '2026-01-07' => 3,
+        ];
+        foreach ($dateProbes as $dateYmd => $dow) {
+            $expected = itm_appointment_regression_expected_modality_for_dow($dow);
+            $actual = itm_appointment_modality_for_date($conn, $companyId, $dateYmd);
+            foreach (['in_person', 'remote'] as $flag) {
+                if (!empty($expected[$flag]) !== !empty($actual[$flag])) {
+                    $errors[] = 'modality for ' . $dateYmd . ' ' . $flag . ' expected ' . ($expected[$flag] ? '1' : '0') . ', got ' . (!empty($actual[$flag]) ? '1' : '0');
+                }
+            }
+        }
+
+        $week = itm_appointment_build_week_slots($conn, $companyId, '2026-01-04');
+        foreach ($week['days'] as $day) {
+            $dow = (int)($day['day_of_week'] ?? -1);
+            $expected = itm_appointment_regression_expected_modality_for_dow($dow);
+            $actualIn = !empty($day['allows_in_person']);
+            $actualRemote = !empty($day['allows_remote']);
+            if ($actualIn !== !empty($expected['in_person'])) {
+                $errors[] = 'week_slots ' . ($day['date'] ?? '') . ' allows_in_person expected ' . ($expected['in_person'] ? '1' : '0');
+            }
+            if ($actualRemote !== !empty($expected['remote'])) {
+                $errors[] = 'week_slots ' . ($day['date'] ?? '') . ' allows_remote expected ' . ($expected['remote'] ? '1' : '0');
+            }
+        }
+
+        return $errors;
+    }
+}

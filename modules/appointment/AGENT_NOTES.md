@@ -9,8 +9,8 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 - **appointments** — booked slots (`appointment_date`, `start_time`, `end_time`, `appointment_type_id`, `status`, `timezone`, `booking_lock`)
 - **appointment_type** — tenant lookup (`in_person`, `remote`) for modality
 - **appointment_visit_reasons** — dropdown reasons (active rows only in booking UI)
-- **appointment_settings** — one row per company: timezone, `in_person_only`, slot length, bookable window, check-in buffer
-- **appointment_business_hours** — seven rows per company (`allows_in_person`, `allows_remote`, open/close, `is_closed`)
+- **appointment_settings** — one row per company: timezone, `allow_in_person` / `allow_remote`, mirrored `in_person_only`, slot length, bookable window, check-in buffer
+- **appointment_business_hours** — seven rows per company (`allows_in_person`, `allows_remote`, open/close, `is_closed`). **Company 1 seed grid** (regression): Sun/Sat closed; Mon/Tue/Thu/Fri both modalities; **Wed remote-only** — see `itm_appointment_regression_sample_business_hours_by_dow()` in `includes/itm_appointment.php` and `db/02_data.sql`.
 
 ## 3. Required Relationships
 

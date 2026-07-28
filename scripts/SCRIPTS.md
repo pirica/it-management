@@ -1059,7 +1059,7 @@ Run `verify_reports_hub.php` when changing `modules/reports/`, `modules/reports/
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/verify_appointment.php` | Regression: five `appointment_*` tables, audit triggers, `booking_lock` unique index, company 1 seeds (`appointment_type` in_person/remote), slot builder, `modules_registry` slug `appointment` |
+| `php scripts/verify_appointment.php` | Regression: five `appointment_*` tables, audit triggers, `booking_lock` unique index, company 1 seeds (`appointment_type` in_person/remote), slot builder, company 1 **modality sample** (Mon/Tue/Thu/Fri In Person+Remote, Wed remote-only — `itm_appointment_regression_sample_business_hours_by_dow()`), `modules_registry` slug `appointment` |
 
 Run `verify_appointment.php` when changing `modules/appointment/`, `includes/itm_appointment.php`, or appointment DDL/seeds/triggers in `db/`.
 
