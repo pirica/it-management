@@ -41,6 +41,7 @@ Four read-only tables with standard actions:
 | Appointment types | — | `view.php?kind=appointment_type&id=` | `edit.php?kind=appointment_type&id=` (active only) | 🗑️ only non-core types |
 
 - Flash messages via `?msg=` query string after redirect.
+- Company settings hub table columns: **Timezone**, **Slot (min)**, **Active**, **Actions** — `allow_in_person` / `allow_remote` remain on **edit** and **view** only.
 - Actions column: `itm-actions-cell` + `data-itm-actions-origin="1"`.
 
 ### Other entry files
