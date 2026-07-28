@@ -38,7 +38,7 @@ Four read-only tables with standard actions:
 | Company settings | — (one per company) | `view.php?kind=settings&id=` | `edit.php?kind=settings&id=` | POST `delete.php` |
 | Business hours | `create.php?kind=business_hour` | `view.php?kind=business_hour&id=` | `edit.php?kind=business_hour&id=` | POST `delete.php` |
 | Visit reasons | `create.php?kind=visit_reason` | `view.php?kind=visit_reason&id=` | `edit.php?kind=visit_reason&id=` | POST `delete.php` |
-| Appointment types | ➕ `create.php?kind=appointment_type` | `view.php?kind=appointment_type&id=` | `edit.php?kind=appointment_type&id=` (active only) | 🗑️ only non-core types |
+| Appointment types | ➕ `create.php?kind=appointment_type` | `view.php?kind=appointment_type&id=` | `edit.php?kind=appointment_type&id=` (active only) | 🗑️ all rows; core `in_person`/`remote` disabled in UI; POST blocked in `delete.php` |
 
 - Flash messages via `?msg=` query string after redirect.
 - Company settings hub table columns: **Timezone**, **Slot (min)**, **Active**, **Actions** — modality is configured on **business hours** rows only.
