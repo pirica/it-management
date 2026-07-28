@@ -16,20 +16,20 @@ INSERT INTO `annual_budgets` (`company_id`, `cost_center_id`, `gl_account_id`, `
 (1, '1', '1', '2026', '48000.00', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
 
 INSERT INTO `appointment_type` (`company_id`, `name`, `active`, `created_at`) VALUES
-(1, 'in_person', 1, '2026-01-01 00:00:01'),
+(1, 'in_person', 0, '2026-01-01 00:00:01'),
 (1, 'remote', 1, '2026-01-01 00:00:01');
 
 INSERT INTO `appointments` (`company_id`, `employee_id`, `visit_reason_id`, `appointment_date`, `start_time`, `end_time`, `appointment_type_id`, `status`, `timezone`, `booking_lock`, `active`, `created_by`, `created_at`) VALUES
 (1, 1, 1, '2026-08-06', '09:00:00', '10:00:00', 1, 'scheduled', 'US/Central', '2026-08-06#09:00:00', 1, 1, '2026-01-01 00:00:01');
 
-INSERT INTO `appointment_settings` (`company_id`, `timezone`, `in_person_only`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `active`, `created_at`) VALUES
-(1, 'US/Central', 1, 60, '09:00:00', '14:00:00', 30, 1, '2026-01-01 00:00:01');
+INSERT INTO `appointment_settings` (`company_id`, `timezone`, `allow_in_person`, `allow_remote`, `in_person_only`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `active`, `created_at`) VALUES
+(1, 'US/Central', 0, 1, 0, 60, '09:00:00', '14:00:00', 30, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `appointment_visit_reasons` (`company_id`, `name`, `sort_order`, `active`, `created_at`) VALUES
 (1, 'General IT support', 10, 1, '2026-01-01 00:00:01');
 
-INSERT INTO `appointment_business_hours` (`company_id`, `day_of_week`, `display_label`, `open_time`, `close_time`, `is_closed`, `allows_online_booking`, `active`, `created_at`) VALUES
-(1, 3, 'Wed', '10:00:00', '18:00:00', 0, 1, 1, '2026-01-01 00:00:01');
+INSERT INTO `appointment_business_hours` (`company_id`, `day_of_week`, `display_label`, `open_time`, `close_time`, `is_closed`, `allows_in_person`, `allows_remote`, `active`, `created_at`) VALUES
+(1, 3, 'Wed', '10:00:00', '18:00:00', 0, 0, 1, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `approvals` (`company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
 (1, '1', '1', '1', NULL, NULL, 'Awaiting finance validation for submission batch.', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);

@@ -42,7 +42,8 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
         <tr>
             <th>Timezone</th>
             <th>Slot (min)</th>
-            <th>In-person only</th>
+            <th>In Person</th>
+            <th>Remote</th>
             <th>Active</th>
             <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
         </tr>
@@ -52,7 +53,8 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
             <tr>
                 <td><?php echo sanitize($row['timezone'] ?? ''); ?></td>
                 <td><?php echo (int)($row['slot_duration_minutes'] ?? 0); ?></td>
-                <td><?php echo (int)($row['in_person_only'] ?? 0) === 1 ? 'Yes' : 'No'; ?></td>
+                <td><?php echo sanitize(aps_modality_yes_no($row['allow_in_person'] ?? 0)); ?></td>
+                <td><?php echo sanitize(aps_modality_yes_no($row['allow_remote'] ?? 0)); ?></td>
                 <td><?php echo (int)($row['active'] ?? 0) === 1 ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>'; ?></td>
                 <?php aps_actions_cell_open(); ?>
                 <a class="btn btn-sm" href="view.php?kind=settings&amp;id=<?php echo (int)$row['id']; ?>" title="View">🔎</a>
@@ -67,7 +69,7 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
             </tr>
         <?php endforeach; ?>
         <?php if (empty($settingsRows)): ?>
-            <tr><td colspan="5">No settings row — refresh to create defaults.</td></tr>
+            <tr><td colspan="6">No settings row — refresh to create defaults.</td></tr>
         <?php endif; ?>
         </tbody>
     </table>
@@ -86,7 +88,8 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
             <th>Open</th>
             <th>Close</th>
             <th>Closed</th>
-            <th>Online</th>
+            <th>In Person</th>
+            <th>Remote</th>
             <th>Active</th>
             <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
         </tr>
@@ -99,7 +102,8 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
                 <td><?php echo sanitize(aps_format_time_input($hour['open_time'] ?? '') ?: '—'); ?></td>
                 <td><?php echo sanitize(aps_format_time_input($hour['close_time'] ?? '') ?: '—'); ?></td>
                 <td><?php echo (int)($hour['is_closed'] ?? 0) === 1 ? 'Yes' : 'No'; ?></td>
-                <td><?php echo (int)($hour['allows_online_booking'] ?? 0) === 1 ? 'Yes' : 'No'; ?></td>
+                <td><?php echo sanitize(aps_modality_yes_no($hour['allows_in_person'] ?? 0)); ?></td>
+                <td><?php echo sanitize(aps_modality_yes_no($hour['allows_remote'] ?? 0)); ?></td>
                 <td><?php echo (int)($hour['active'] ?? 0) === 1 ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>'; ?></td>
                 <?php aps_actions_cell_open(); ?>
                 <a class="btn btn-sm" href="view.php?kind=business_hour&amp;id=<?php echo (int)$hour['id']; ?>" title="View">🔎</a>

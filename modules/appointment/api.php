@@ -53,9 +53,9 @@ if ($action === 'schedule' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         echo json_encode(['success' => false, 'message' => 'Appointment settings are not configured for this company.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
-    if ((int)($settings['in_person_only'] ?? 0) === 1 && $appointmentTypeName === 'remote') {
+    if (!itm_appointment_settings_allows_modality($settings, $appointmentTypeName)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'This location accepts only in-person appointments.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        echo json_encode(['success' => false, 'message' => 'That appointment type is not enabled for this company.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
 

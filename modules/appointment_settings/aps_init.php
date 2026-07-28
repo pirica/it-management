@@ -37,6 +37,11 @@ function aps_type_label($name)
     return $name === 'remote' ? 'Remote' : 'In-person';
 }
 
+function aps_modality_yes_no($value)
+{
+    return (int)$value === 1 ? 'Yes' : 'No';
+}
+
 function aps_kind_label($kind)
 {
     $map = [

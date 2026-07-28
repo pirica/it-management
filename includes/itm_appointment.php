@@ -3,6 +3,40 @@
  * Appointment scheduling helpers (slots, settings, business hours).
  */
 
+if (!function_exists('itm_appointment_sync_in_person_only_flag')) {
+    function itm_appointment_sync_in_person_only_flag(int $allowInPerson, int $allowRemote): int
+    {
+        return ($allowInPerson === 1 && $allowRemote !== 1) ? 1 : 0;
+    }
+}
+
+if (!function_exists('itm_appointment_business_hours_day_bookable')) {
+    function itm_appointment_business_hours_day_bookable(?array $businessHourRow): bool
+    {
+        if (!$businessHourRow || (int)($businessHourRow['is_closed'] ?? 0) === 1) {
+            return false;
+        }
+        return (int)($businessHourRow['allows_in_person'] ?? 0) === 1
+            || (int)($businessHourRow['allows_remote'] ?? 0) === 1;
+    }
+}
+
+if (!function_exists('itm_appointment_settings_allows_modality')) {
+    function itm_appointment_settings_allows_modality(?array $settingsRow, string $typeName): bool
+    {
+        if (!$settingsRow) {
+            return false;
+        }
+        if ($typeName === 'remote') {
+            return (int)($settingsRow['allow_remote'] ?? 0) === 1;
+        }
+        if ($typeName === 'in_person') {
+            return (int)($settingsRow['allow_in_person'] ?? 0) === 1;
+        }
+        return false;
+    }
+}
+
 if (!function_exists('itm_appointment_build_booking_lock')) {
     function itm_appointment_build_booking_lock(string $dateYmd, string $startTime): string
     {
@@ -151,7 +185,7 @@ if (!function_exists('itm_appointment_build_week_slots')) {
             $dateYmd = date('Y-m-d', strtotime($weekStart . ' +' . $i . ' days'));
             $dow = (int)date('w', strtotime($dateYmd));
             $bh = $hoursByDay[$dow] ?? null;
-            $allows = $bh && (int)($bh['allows_online_booking'] ?? 0) === 1 && (int)($bh['is_closed'] ?? 0) === 0;
+            $allows = itm_appointment_business_hours_day_bookable($bh);
             $slots = [];
             if ($allows) {
                 $cursor = strtotime($dateYmd . ' ' . $bookableStart);

@@ -6,8 +6,8 @@ Tenant **administration** for `modules/appointment/`: maintain `appointment_sett
 
 ## 2. Key Tables
 
-- **appointment_settings** — one row per company (timezone, in-person-only, slot length, bookable window, check-in buffer, `active`)
-- **appointment_business_hours** — one row per `day_of_week` (0–6), unique per company
+- **appointment_settings** — one row per company (`timezone`, `allow_in_person` default off, `allow_remote` default on, mirrored `in_person_only`, slot length, bookable window, `active`)
+- **appointment_business_hours** — one row per `day_of_week` (0–6): `allows_in_person`, `allows_remote` (replaces legacy `allows_online_booking`)
 - **appointment_visit_reasons** — booking dropdown labels (`sort_order`, `active`)
 - **appointment_type** — modality lookup; API only honors `in_person` / `remote` names
 
@@ -19,7 +19,7 @@ Tenant **administration** for `modules/appointment/`: maintain `appointment_sett
 
 ## 4. Business Rules (Critical for Agents)
 
-- On every `aps_init.php` load, `itm_appointment_settings_ensure_company_config()` inserts missing settings, missing weekday rows (default pattern Wed–Fri online), and missing `in_person`/`remote` types — **does not overwrite** existing configuration.
+- On every `aps_init.php` load, `itm_appointment_settings_ensure_company_config()` inserts missing settings (In Person off / Remote on), missing weekday rows (Wed–Fri **Remote** bookable by default), and missing `in_person`/`remote` types — **does not overwrite** existing configuration.
 - Mutations use soft-delete (`itm_crud_build_soft_delete_sql`) except where noted; visit reasons/types/settings/hours all support soft-delete.
 - **Core types** `in_person` and `remote` cannot be deleted from UI (POST blocked in `delete.php`).
 - Deleting the sole **settings** row is allowed from UI but breaks booking until ensure runs again on next settings page hit (avoid in production).

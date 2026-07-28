@@ -53,7 +53,8 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
     <table class="detail-table">
         <?php if ($kind === 'settings'): ?>
             <tr><th>Timezone</th><td><?php echo sanitize($row['timezone'] ?? ''); ?></td></tr>
-            <tr><th>In-person only</th><td><?php echo (int)($row['in_person_only'] ?? 0) === 1 ? 'Yes' : 'No'; ?></td></tr>
+            <tr><th>In Person</th><td><?php echo sanitize(aps_modality_yes_no($row['allow_in_person'] ?? 0)); ?></td></tr>
+            <tr><th>Remote</th><td><?php echo sanitize(aps_modality_yes_no($row['allow_remote'] ?? 0)); ?></td></tr>
             <tr><th>Slot duration (minutes)</th><td><?php echo (int)($row['slot_duration_minutes'] ?? 0); ?></td></tr>
             <tr><th>Bookable window</th><td><?php echo sanitize(aps_format_time_input($row['bookable_start_time'] ?? '') . ' – ' . aps_format_time_input($row['bookable_end_time'] ?? '')); ?></td></tr>
             <tr><th>Check-in buffer (minutes)</th><td><?php echo (int)($row['check_in_end_buffer_minutes'] ?? 0); ?></td></tr>
@@ -64,7 +65,8 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
             <tr><th>Open</th><td><?php echo sanitize(aps_format_time_input($row['open_time'] ?? '') ?: '—'); ?></td></tr>
             <tr><th>Close</th><td><?php echo sanitize(aps_format_time_input($row['close_time'] ?? '') ?: '—'); ?></td></tr>
             <tr><th>Closed</th><td><?php echo (int)($row['is_closed'] ?? 0) === 1 ? 'Yes' : 'No'; ?></td></tr>
-            <tr><th>Online booking</th><td><?php echo (int)($row['allows_online_booking'] ?? 0) === 1 ? 'Yes' : 'No'; ?></td></tr>
+            <tr><th>In Person</th><td><?php echo sanitize(aps_modality_yes_no($row['allows_in_person'] ?? 0)); ?></td></tr>
+            <tr><th>Remote</th><td><?php echo sanitize(aps_modality_yes_no($row['allows_remote'] ?? 0)); ?></td></tr>
             <tr><th>Active</th><td><?php echo (int)($row['active'] ?? 0) === 1 ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>'; ?></td></tr>
         <?php elseif ($kind === 'visit_reason'): ?>
             <tr><th>Name</th><td><?php echo sanitize($row['name'] ?? ''); ?></td></tr>

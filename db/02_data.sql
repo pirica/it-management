@@ -1833,13 +1833,13 @@ INSERT IGNORE INTO `warranty_types` (`company_id`, `name`, `created_at`) SELECT 
 
 INSERT IGNORE INTO `license_types` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `license_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
-INSERT IGNORE INTO `appointment_settings` (`company_id`, `timezone`, `in_person_only`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `active`, `created_at`) SELECT c.`id`, t.`timezone`, t.`in_person_only`, t.`slot_duration_minutes`, t.`bookable_start_time`, t.`bookable_end_time`, t.`check_in_end_buffer_minutes`, t.`active`, '2026-01-01 00:00:01' FROM `appointment_settings` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `appointment_settings` (`company_id`, `timezone`, `allow_in_person`, `allow_remote`, `in_person_only`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `active`, `created_at`) SELECT c.`id`, t.`timezone`, t.`allow_in_person`, t.`allow_remote`, t.`in_person_only`, t.`slot_duration_minutes`, t.`bookable_start_time`, t.`bookable_end_time`, t.`check_in_end_buffer_minutes`, t.`active`, '2026-01-01 00:00:01' FROM `appointment_settings` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `appointment_visit_reasons` (`company_id`, `name`, `sort_order`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`sort_order`, t.`active`, '2026-01-01 00:00:01' FROM `appointment_visit_reasons` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `appointment_type` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `appointment_type` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
-INSERT IGNORE INTO `appointment_business_hours` (`company_id`, `day_of_week`, `display_label`, `open_time`, `close_time`, `is_closed`, `allows_online_booking`, `active`, `created_at`) SELECT c.`id`, t.`day_of_week`, t.`display_label`, t.`open_time`, t.`close_time`, t.`is_closed`, t.`allows_online_booking`, t.`active`, '2026-01-01 00:00:01' FROM `appointment_business_hours` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `appointment_business_hours` (`company_id`, `day_of_week`, `display_label`, `open_time`, `close_time`, `is_closed`, `allows_in_person`, `allows_remote`, `active`, `created_at`) SELECT c.`id`, t.`day_of_week`, t.`display_label`, t.`open_time`, t.`close_time`, t.`is_closed`, t.`allows_in_person`, t.`allows_remote`, t.`active`, '2026-01-01 00:00:01' FROM `appointment_business_hours` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `idf_device_type` (`company_id`, `idfdevicetype_name`, `created_at`) SELECT c.`id`, t.`idfdevicetype_name`, '2026-01-01 00:00:01' FROM `idf_device_type` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
@@ -2361,8 +2361,8 @@ WHERE
     );
 
 -- Appointment module seeds (company 1)
-INSERT INTO `appointment_settings` (`company_id`, `timezone`, `in_person_only`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `active`, `created_at`) VALUES
-(1, 'US/Central', 1, 60, '09:00:00', '14:00:00', 30, 1, '2026-01-01 00:00:01');
+INSERT INTO `appointment_settings` (`company_id`, `timezone`, `allow_in_person`, `allow_remote`, `in_person_only`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `active`, `created_at`) VALUES
+(1, 'US/Central', 0, 1, 0, 60, '09:00:00', '14:00:00', 30, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `appointment_visit_reasons` (`company_id`, `name`, `sort_order`, `active`, `created_at`) VALUES
 (1, 'General IT support', 10, 1, '2026-01-01 00:00:01'),
@@ -2371,17 +2371,17 @@ INSERT INTO `appointment_visit_reasons` (`company_id`, `name`, `sort_order`, `ac
 (1, 'Security consultation', 40, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `appointment_type` (`company_id`, `name`, `active`, `created_at`) VALUES
-(1, 'in_person', 1, '2026-01-01 00:00:01'),
+(1, 'in_person', 0, '2026-01-01 00:00:01'),
 (1, 'remote', 1, '2026-01-01 00:00:01');
 
-INSERT INTO `appointment_business_hours` (`company_id`, `day_of_week`, `display_label`, `open_time`, `close_time`, `is_closed`, `allows_online_booking`, `active`, `created_at`) VALUES
-(1, 0, 'Sun', NULL, NULL, 1, 0, 1, '2026-01-01 00:00:01'),
-(1, 1, 'Mon', '10:00:00', '18:00:00', 0, 0, 1, '2026-01-01 00:00:01'),
-(1, 2, 'Tue', '10:00:00', '18:00:00', 0, 0, 1, '2026-01-01 00:00:01'),
-(1, 3, 'Wed', '10:00:00', '18:00:00', 0, 1, 1, '2026-01-01 00:00:01'),
-(1, 4, 'Thu', '10:00:00', '18:00:00', 0, 1, 1, '2026-01-01 00:00:01'),
-(1, 5, 'Fri', '10:00:00', '18:00:00', 0, 1, 1, '2026-01-01 00:00:01'),
-(1, 6, 'Sat', NULL, NULL, 1, 0, 1, '2026-01-01 00:00:01');
+INSERT INTO `appointment_business_hours` (`company_id`, `day_of_week`, `display_label`, `open_time`, `close_time`, `is_closed`, `allows_in_person`, `allows_remote`, `active`, `created_at`) VALUES
+(1, 0, 'Sun', NULL, NULL, 1, 0, 0, 1, '2026-01-01 00:00:01'),
+(1, 1, 'Mon', '10:00:00', '18:00:00', 0, 0, 0, 1, '2026-01-01 00:00:01'),
+(1, 2, 'Tue', '10:00:00', '18:00:00', 0, 0, 0, 1, '2026-01-01 00:00:01'),
+(1, 3, 'Wed', '10:00:00', '18:00:00', 0, 0, 1, 1, '2026-01-01 00:00:01'),
+(1, 4, 'Thu', '10:00:00', '18:00:00', 0, 0, 1, 1, '2026-01-01 00:00:01'),
+(1, 5, 'Fri', '10:00:00', '18:00:00', 0, 0, 1, 1, '2026-01-01 00:00:01'),
+(1, 6, 'Sat', NULL, NULL, 1, 0, 0, 1, '2026-01-01 00:00:01');
 
 -- Additional Sample Data for Knowledge Base
 INSERT INTO `knowledge_base` (`company_id`, `category`, `title`, `content`, `active`) VALUES
