@@ -211,7 +211,7 @@ function appt_employee_select_label(array $empRow)
     <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/styles.css">
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/appointment.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/appointment.css?v=<?php echo (int)@filemtime(ROOT_PATH . 'css/appointment.css'); ?>">
 </head>
 <body>
 <div class="container">
