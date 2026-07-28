@@ -43,6 +43,7 @@ function rp_verify_pass($message)
 $conn = $GLOBALS['conn'] ?? null;
 if (!$conn instanceof mysqli) {
     rp_verify_fail('No database connection.');
+    itm_script_output_end();
     exit(1);
 }
 
@@ -68,9 +69,7 @@ foreach ($requiredTables as $table) {
     }
 }
 
-if (function_exists('itm_verify_db_migrations_column_exists')) {
-    require_once __DIR__ . '/lib/itm_verify_db_migrations_report.php';
-}
+require_once __DIR__ . '/lib/itm_verify_db_migrations_report.php';
 if (function_exists('itm_verify_db_migrations_column_exists')
     && itm_verify_db_migrations_column_exists($conn, 'employee_roles', 'sidebar_show')) {
     rp_verify_pass('employee_roles.sidebar_show column present.');
@@ -367,10 +366,10 @@ if ($crossCompanyAdminCount < 1) {
 
 if ($failures > 0) {
     echo colorText('Verification finished with ' . $failures . ' failure(s).', 'fail') . $nl;
+    itm_script_output_end();
     exit(1);
 }
 
 echo colorText('All Roles & Permissions checks passed.', 'pass') . $nl;
-exit(0);
-
 itm_script_output_end();
+exit(0);
