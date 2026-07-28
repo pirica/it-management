@@ -306,6 +306,30 @@ if (!function_exists('itm_bsma_run_optimized_structure_only')) {
     }
 }
 
+if (!function_exists('itm_bsma_measure_structure_request_cache_reuse')) {
+    /**
+     * Queries consumed by a second itm_sidebar_structure() in the same request (static cache).
+     *
+     * @return array{queries:int}|null
+     */
+    function itm_bsma_measure_structure_request_cache_reuse(mysqli $conn): ?array
+    {
+        $before = itm_bsma_session_questions($conn);
+        if ($before === null) {
+            return null;
+        }
+
+        itm_sidebar_structure($conn, false);
+
+        $after = itm_bsma_session_questions($conn);
+        if ($after === null) {
+            return null;
+        }
+
+        return ['queries' => $after - $before - 1];
+    }
+}
+
 if (!function_exists('itm_bsma_run_optimized_access_only')) {
     /**
      * @param array<int,string> $moduleSlugs
