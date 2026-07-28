@@ -11,11 +11,11 @@ if (!function_exists('itm_appointment_settings_default_business_hours_rows')) {
     {
         return [
             0 => ['display_label' => 'Sun', 'open_time' => null, 'close_time' => null, 'is_closed' => 1, 'allows_in_person' => 0, 'allows_remote' => 0],
-            1 => ['display_label' => 'Mon', 'open_time' => '10:00:00', 'close_time' => '18:00:00', 'is_closed' => 0, 'allows_in_person' => 0, 'allows_remote' => 0],
-            2 => ['display_label' => 'Tue', 'open_time' => '10:00:00', 'close_time' => '18:00:00', 'is_closed' => 0, 'allows_in_person' => 0, 'allows_remote' => 0],
+            1 => ['display_label' => 'Mon', 'open_time' => '10:00:00', 'close_time' => '18:00:00', 'is_closed' => 0, 'allows_in_person' => 1, 'allows_remote' => 1],
+            2 => ['display_label' => 'Tue', 'open_time' => '10:00:00', 'close_time' => '18:00:00', 'is_closed' => 0, 'allows_in_person' => 1, 'allows_remote' => 1],
             3 => ['display_label' => 'Wed', 'open_time' => '10:00:00', 'close_time' => '18:00:00', 'is_closed' => 0, 'allows_in_person' => 0, 'allows_remote' => 1],
-            4 => ['display_label' => 'Thu', 'open_time' => '10:00:00', 'close_time' => '18:00:00', 'is_closed' => 0, 'allows_in_person' => 0, 'allows_remote' => 1],
-            5 => ['display_label' => 'Fri', 'open_time' => '10:00:00', 'close_time' => '18:00:00', 'is_closed' => 0, 'allows_in_person' => 0, 'allows_remote' => 1],
+            4 => ['display_label' => 'Thu', 'open_time' => '10:00:00', 'close_time' => '18:00:00', 'is_closed' => 0, 'allows_in_person' => 1, 'allows_remote' => 1],
+            5 => ['display_label' => 'Fri', 'open_time' => '10:00:00', 'close_time' => '18:00:00', 'is_closed' => 0, 'allows_in_person' => 1, 'allows_remote' => 1],
             6 => ['display_label' => 'Sat', 'open_time' => null, 'close_time' => null, 'is_closed' => 1, 'allows_in_person' => 0, 'allows_remote' => 0],
         ];
     }

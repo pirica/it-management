@@ -152,6 +152,16 @@ if (!$settingsAfterEnsure) {
     appt_verify_pass('appointment_settings ensure helper creates tenant row');
 }
 
+$modalitySampleErrors = itm_appointment_regression_collect_company_modality_sample_errors($conn, $companyId);
+if ($modalitySampleErrors === []) {
+    appt_verify_pass('Company 1 modality sample (Mon/Tue/Thu/Fri both, Wed remote-only) matches seeds');
+} else {
+    foreach ($modalitySampleErrors as $modalityError) {
+        appt_verify_fail($modalityError);
+    }
+    appt_verify_fail('Align company 1 with db/02_data.sql business hours or re-import; see itm_appointment_regression_sample_business_hours_by_dow()');
+}
+
 if ($failures > 0) {
     echo colorText($failures . ' failure(s).', 'fail') . $nl;
     exit(1);
