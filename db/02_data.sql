@@ -1836,6 +1836,8 @@ INSERT IGNORE INTO `appointment_settings` (`company_id`, `timezone`, `in_person_
 
 INSERT IGNORE INTO `appointment_visit_reasons` (`company_id`, `name`, `sort_order`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`sort_order`, t.`active`, '2026-01-01 00:00:01' FROM `appointment_visit_reasons` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
+INSERT IGNORE INTO `appointment_type` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `appointment_type` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+
 INSERT IGNORE INTO `appointment_business_hours` (`company_id`, `day_of_week`, `display_label`, `open_time`, `close_time`, `is_closed`, `allows_online_booking`, `active`, `created_at`) SELECT c.`id`, t.`day_of_week`, t.`display_label`, t.`open_time`, t.`close_time`, t.`is_closed`, t.`allows_online_booking`, t.`active`, '2026-01-01 00:00:01' FROM `appointment_business_hours` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `idf_device_type` (`company_id`, `idfdevicetype_name`, `created_at`) SELECT c.`id`, t.`idfdevicetype_name`, '2026-01-01 00:00:01' FROM `idf_device_type` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
@@ -2366,6 +2368,10 @@ INSERT INTO `appointment_visit_reasons` (`company_id`, `name`, `sort_order`, `ac
 (1, 'Equipment pickup or return', 20, 1, '2026-01-01 00:00:01'),
 (1, 'New employee onboarding', 30, 1, '2026-01-01 00:00:01'),
 (1, 'Security consultation', 40, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `appointment_type` (`company_id`, `name`, `active`, `created_at`) VALUES
+(1, 'in_person', 1, '2026-01-01 00:00:01'),
+(1, 'remote', 1, '2026-01-01 00:00:01');
 
 INSERT INTO `appointment_business_hours` (`company_id`, `day_of_week`, `display_label`, `open_time`, `close_time`, `is_closed`, `allows_online_booking`, `active`, `created_at`) VALUES
 (1, 0, 'Sun', NULL, NULL, 1, 0, 1, '2026-01-01 00:00:01'),

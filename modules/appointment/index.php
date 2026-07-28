@@ -30,6 +30,7 @@ $currentUiConfig = $ui_config ?? [];
 $settings = itm_appointment_load_settings($conn, $company_id);
 $businessHours = itm_appointment_load_business_hours($conn, $company_id);
 $visitReasons = itm_appointment_load_visit_reasons($conn, $company_id);
+$appointmentTypes = itm_appointment_load_appointment_types($conn, $company_id);
 $inPersonOnly = $settings ? (int)($settings['in_person_only'] ?? 0) === 1 : true;
 $anchorDate = date('Y-m-d');
 
@@ -52,10 +53,11 @@ if ($crud_action === 'delete' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') 
 
 $listRows = [];
 if ($crud_action === 'list_all') {
-    $sql = "SELECT a.*, r.name AS reason_name,
+    $sql = "SELECT a.*, r.name AS reason_name, t.name AS appointment_type_name,
             CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,'')) AS employee_name
             FROM appointments a
             LEFT JOIN appointment_visit_reasons r ON r.id = a.visit_reason_id AND r.company_id = a.company_id
+            LEFT JOIN appointment_type t ON t.id = a.appointment_type_id AND t.company_id = a.company_id
             LEFT JOIN employees e ON e.id = a.employee_id
             WHERE a.company_id = ? AND a.deleted_at IS NULL
             ORDER BY a.appointment_date DESC, a.start_time DESC
@@ -75,10 +77,11 @@ if ($crud_action === 'list_all') {
 $viewRow = null;
 if ($crud_action === 'view') {
     $viewId = (int)($_GET['id'] ?? 0);
-    $sql = "SELECT a.*, r.name AS reason_name,
+    $sql = "SELECT a.*, r.name AS reason_name, t.name AS appointment_type_name,
             CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,'')) AS employee_name
             FROM appointments a
             LEFT JOIN appointment_visit_reasons r ON r.id = a.visit_reason_id AND r.company_id = a.company_id
+            LEFT JOIN appointment_type t ON t.id = a.appointment_type_id AND t.company_id = a.company_id
             LEFT JOIN employees e ON e.id = a.employee_id
             WHERE a.id = ? AND a.company_id = ? AND a.deleted_at IS NULL LIMIT 1";
     $stmt = mysqli_prepare($conn, $sql);
@@ -144,7 +147,7 @@ function appt_type_label($type)
                                 <td><?php echo sanitize(itm_appointment_slot_label(substr($row['start_time'], 0, 8), substr($row['end_time'], 0, 8))); ?></td>
                                 <td><?php echo sanitize(trim($row['employee_name']) ?: '—'); ?></td>
                                 <td><?php echo sanitize($row['reason_name'] ?? '—'); ?></td>
-                                <td><?php echo sanitize(appt_type_label($row['appointment_type'])); ?></td>
+                                <td><?php echo sanitize(appt_type_label($row['appointment_type_name'] ?? '')); ?></td>
                                 <td><?php echo sanitize($row['status']); ?></td>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>" title="View">🔎</a>
@@ -172,7 +175,7 @@ function appt_type_label($type)
                             <tr><th>Reason</th><td><?php echo sanitize($viewRow['reason_name'] ?? '—'); ?></td></tr>
                             <tr><th>Date</th><td><?php echo sanitize(appt_format_date_display($viewRow['appointment_date'])); ?></td></tr>
                             <tr><th>Time</th><td><?php echo sanitize(itm_appointment_slot_label(substr($viewRow['start_time'], 0, 8), substr($viewRow['end_time'], 0, 8))); ?></td></tr>
-                            <tr><th>Type</th><td><?php echo sanitize(appt_type_label($viewRow['appointment_type'])); ?></td></tr>
+                            <tr><th>Type</th><td><?php echo sanitize(appt_type_label($viewRow['appointment_type_name'] ?? '')); ?></td></tr>
                             <tr><th>Status</th><td><?php echo sanitize($viewRow['status']); ?></td></tr>
                             <tr><th>Time zone</th><td><?php echo sanitize($viewRow['timezone']); ?></td></tr>
                             <tr><th>Active</th><td><?php echo (int)($viewRow['active'] ?? 0) === 1 ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>'; ?></td></tr>
@@ -223,16 +226,19 @@ function appt_type_label($type)
                             <div class="form-group">
                                 <label>Appointment type <span title="In-person visits are at the IT desk; remote visits use phone or video.">❓</span></label>
                                 <div class="appointment-type-row">
+                                    <?php foreach ($appointmentTypes as $typeIndex => $typeRow): ?>
+                                        <?php
+                                        $typeName = (string)($typeRow['name'] ?? '');
+                                        $isRemote = $typeName === 'remote';
+                                        if ($inPersonOnly && $isRemote) {
+                                            continue;
+                                        }
+                                        ?>
                                     <label class="itm-checkbox-control">
-                                        <input type="radio" name="appointment_type" value="in_person" checked<?php echo $inPersonOnly ? ' disabled' : ''; ?>>
-                                        <span>In-person</span>
+                                        <input type="radio" name="appointment_type" value="<?php echo sanitize($typeName); ?>"<?php echo $typeName === 'in_person' ? ' checked' : ''; ?>>
+                                        <span><?php echo sanitize(appt_type_label($typeName)); ?></span>
                                     </label>
-                                    <?php if (!$inPersonOnly): ?>
-                                    <label class="itm-checkbox-control">
-                                        <input type="radio" name="appointment_type" value="remote">
-                                        <span>Remote</span>
-                                    </label>
-                                    <?php endif; ?>
+                                    <?php endforeach; ?>
                                 </div>
                             </div>
 

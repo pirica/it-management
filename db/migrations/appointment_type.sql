@@ -1,9 +1,39 @@
--- Appointment slot concurrency: booking_lock unique key on appointments (back up before apply).
--- Canonical definition: db/01_schema.sql (appointments table only).
+-- Replace appointments.appointment_type enum with appointment_type lookup + appointment_type_id FK.
+-- Back up before apply; DROP appointments removes existing bookings.
 
 SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS `appointments`;
+
+DROP TABLE IF EXISTS `appointment_type`;
+
+CREATE TABLE `appointment_type` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_appointment_type_company_name` (`company_id`,`name`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `fk_appointment_type_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `appointment_type` (`company_id`, `name`, `active`, `created_at`)
+SELECT c.`id`, v.`name`, 1, '2026-01-01 00:00:01'
+FROM `companies` c
+CROSS JOIN (
+  SELECT 'in_person' AS `name`
+  UNION ALL SELECT 'remote'
+) v
+WHERE NOT EXISTS (
+  SELECT 1 FROM `appointment_type` t WHERE t.`company_id` = c.`id` AND t.`name` = v.`name`
+);
 
 CREATE TABLE `appointments` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -38,3 +68,5 @@ CREATE TABLE `appointments` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- Re-apply trg_appointments_audit_* and trg_appointment_type_audit_* from db/03_triggers.sql if triggers are missing.

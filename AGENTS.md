@@ -544,8 +544,8 @@ The chatbot module provides a floating technical assistance widget powered by a 
 
 The Appointment module (`modules/appointment/`) provides employee self-service IT visit booking (visit reason, weekly slot modal, in-person or remote when allowed).
 
-1. **Tables:** **`appointment_visit_reasons`**, **`appointment_settings`**, **`appointment_business_hours`**, **`appointments`** — tenant-scoped; standard audit columns and `audit_logs` triggers on all four.
-2. **Fresh install:** canonical DDL/DML/triggers in `db/01_schema.sql`, `db/02_data.sql`, `db/03_triggers.sql` (import via `bash scripts/import_database_split.sh`). **`db/migrations/appointment.sql`** remains for existing databases that predate the module; **`db/migrations/appointment_booking_lock.sql`** adds `booking_lock` + unique slot index on live DBs that already ran the first migration.
+1. **Tables:** **`appointment_visit_reasons`**, **`appointment_type`** (`in_person`, `remote` per company), **`appointment_settings`**, **`appointment_business_hours`**, **`appointments`** — tenant-scoped; standard audit columns and `audit_logs` triggers on all five.
+2. **Fresh install:** canonical DDL/DML/triggers in `db/01_schema.sql`, `db/02_data.sql`, `db/03_triggers.sql` (import via `bash scripts/import_database_split.sh`). **`db/migrations/appointment.sql`** remains for existing databases that predate the module; **`db/migrations/appointment_booking_lock.sql`** adds `booking_lock` on live DBs that still use the enum column; **`db/migrations/appointment_type.sql`** replaces the enum with **`appointment_type`** + **`appointment_type_id`** (destructive to `appointments` rows).
 3. **Slot concurrency:** `appointments.booking_lock` (`company_id` + lock unique) is set on schedule INSERT and cleared on soft-delete so two concurrent `schedule` POSTs cannot double-book the same slot.
 4. **API:** `modules/appointment/api.php` — `week_slots` (GET), `schedule` (POST + CSRF); rate limit enforced.
 5. **Live Chat:** Live Agent launch menu includes **Appointment** (see **Chatbot & Knowledge Base** above).

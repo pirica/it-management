@@ -1721,6 +1721,7 @@
         "tables": [
             "appointment_business_hours",
             "appointment_settings",
+            "appointment_type",
             "appointment_visit_reasons",
             "appointments",
             "modules_registry"
