@@ -1727,14 +1727,14 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="check_crud_sample_data_live_row_gate.php" target="_blank" rel="nofollow noreferrer">check_crud_sample_data_live_row_gate.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">tax_rates</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">expenses</span></span></td>
-                    <td>Static gate: finance modules must use <code>itm_seed_tenant_row_count()</code> for Add sample data (matches list soft-delete filter).</td>
+                    <td>Static gate: finance <code>index.php</code> empty check uses <code>itm_seed_tenant_row_count()</code>. Templates stay in <code>db/02_data_sample.sql</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">
                     <td><a href="apply_crud_sample_data_live_row_gate.php" target="_blank" rel="nofollow noreferrer">apply_crud_sample_data_live_row_gate.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-browser">Browser</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="tag">Codebase</span></span></td>
-                    <td>Maintenance: patch legacy Add sample data <code>COUNT(*)</code> blocks to <code>itm_seed_tenant_row_count()</code>.</td>
+                    <td>Optional PHP gate maintenance only (not <code>db/</code>): legacy <code>COUNT(*)</code> → <code>itm_seed_tenant_row_count()</code> before <code>itm_seed_table_from_database_sql()</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="expenses">
