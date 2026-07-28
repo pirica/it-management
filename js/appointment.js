@@ -92,11 +92,7 @@
 
     function modalityFlagsFromEmbed(dateYmd) {
         if (!dateYmd) {
-            var companyOnly = modalityConfig.company || {};
-            return {
-                in_person: !!companyOnly.in_person,
-                remote: !!companyOnly.remote
-            };
+            return { in_person: true, remote: true };
         }
         var dow = dayOfWeekFromYmd(dateYmd);
         var dayRow = (modalityConfig.days || {})[dow] || (modalityConfig.days || {})[String(dow)];

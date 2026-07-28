@@ -3,13 +3,6 @@
  * Appointment scheduling helpers (slots, settings, business hours).
  */
 
-if (!function_exists('itm_appointment_sync_in_person_only_flag')) {
-    function itm_appointment_sync_in_person_only_flag(int $allowInPerson, int $allowRemote): int
-    {
-        return ($allowInPerson === 1 && $allowRemote !== 1) ? 1 : 0;
-    }
-}
-
 if (!function_exists('itm_appointment_business_hours_day_bookable')) {
     function itm_appointment_business_hours_day_bookable(?array $businessHourRow): bool
     {
@@ -24,31 +17,12 @@ if (!function_exists('itm_appointment_business_hours_day_bookable')) {
     }
 }
 
-if (!function_exists('itm_appointment_settings_allows_modality')) {
-    function itm_appointment_settings_allows_modality(?array $settingsRow, string $typeName): bool
-    {
-        if (!$settingsRow) {
-            return false;
-        }
-        if ($typeName === 'remote') {
-            return (int)($settingsRow['allow_remote'] ?? 0) === 1;
-        }
-        if ($typeName === 'in_person') {
-            return (int)($settingsRow['allow_in_person'] ?? 0) === 1;
-        }
-        return false;
-    }
-}
-
 if (!function_exists('itm_appointment_day_allows_modality')) {
     /**
-     * Company settings gate plus per-weekday business hours (In Person / Remote columns).
+     * Per-weekday business hours (In Person / Remote columns on appointment_business_hours).
      */
-    function itm_appointment_day_allows_modality(?array $settingsRow, ?array $businessHourRow, string $typeName): bool
+    function itm_appointment_day_allows_modality(?array $businessHourRow, string $typeName): bool
     {
-        if (!itm_appointment_settings_allows_modality($settingsRow, $typeName)) {
-            return false;
-        }
         if (!$businessHourRow || (int)($businessHourRow['is_closed'] ?? 0) === 1) {
             return false;
         }
@@ -81,9 +55,12 @@ if (!function_exists('itm_appointment_modality_for_date')) {
             }
         }
         $bh = $dow >= 0 ? ($hoursByDay[$dow] ?? null) : null;
+        if (!$settings) {
+            return ['in_person' => false, 'remote' => false];
+        }
         return [
-            'in_person' => itm_appointment_day_allows_modality($settings, $bh, 'in_person'),
-            'remote' => itm_appointment_day_allows_modality($settings, $bh, 'remote'),
+            'in_person' => itm_appointment_day_allows_modality($bh, 'in_person'),
+            'remote' => itm_appointment_day_allows_modality($bh, 'remote'),
         ];
     }
 }
@@ -264,8 +241,8 @@ if (!function_exists('itm_appointment_build_week_slots')) {
                 'day_label' => itm_appointment_day_label_short($dow),
                 'day_number' => (int)date('j', strtotime($dateYmd)),
                 'allows_booking' => $allows,
-                'allows_in_person' => itm_appointment_day_allows_modality($settings, $bh, 'in_person'),
-                'allows_remote' => itm_appointment_day_allows_modality($settings, $bh, 'remote'),
+                'allows_in_person' => itm_appointment_day_allows_modality($bh, 'in_person'),
+                'allows_remote' => itm_appointment_day_allows_modality($bh, 'remote'),
                 'slots' => $slots,
             ];
         }
@@ -345,21 +322,6 @@ if (!function_exists('itm_appointment_load_visit_reasons')) {
     }
 }
 
-if (!function_exists('itm_appointment_regression_sample_settings')) {
-    /**
-     * Company 1 canonical appointment_settings flags for modality regression (see db/02_data.sql).
-     *
-     * @return array{allow_in_person:int,allow_remote:int}
-     */
-    function itm_appointment_regression_sample_settings(): array
-    {
-        return [
-            'allow_in_person' => 1,
-            'allow_remote' => 1,
-        ];
-    }
-}
-
 if (!function_exists('itm_appointment_regression_sample_business_hours_by_dow')) {
     /**
      * Company 1 canonical business hours (In Person / Remote columns) for regression tests.
@@ -388,11 +350,6 @@ if (!function_exists('itm_appointment_regression_expected_modality_for_dow')) {
      */
     function itm_appointment_regression_expected_modality_for_dow(int $dayOfWeek): array
     {
-        $sampleSettings = itm_appointment_regression_sample_settings();
-        $settingsRow = [
-            'allow_in_person' => $sampleSettings['allow_in_person'],
-            'allow_remote' => $sampleSettings['allow_remote'],
-        ];
         $sampleHours = itm_appointment_regression_sample_business_hours_by_dow();
         $bh = $sampleHours[$dayOfWeek] ?? null;
         $bhRow = $bh ? [
@@ -402,8 +359,8 @@ if (!function_exists('itm_appointment_regression_expected_modality_for_dow')) {
             'active' => 1,
         ] : null;
         return [
-            'in_person' => itm_appointment_day_allows_modality($settingsRow, $bhRow, 'in_person'),
-            'remote' => itm_appointment_day_allows_modality($settingsRow, $bhRow, 'remote'),
+            'in_person' => itm_appointment_day_allows_modality($bhRow, 'in_person'),
+            'remote' => itm_appointment_day_allows_modality($bhRow, 'remote'),
         ];
     }
 }
@@ -420,16 +377,10 @@ if (!function_exists('itm_appointment_regression_collect_company_modality_sample
             return [];
         }
         $errors = [];
-        $sampleSettings = itm_appointment_regression_sample_settings();
         $settings = itm_appointment_load_settings($conn, $companyId);
         if (!$settings) {
             $errors[] = 'appointment_settings missing for company 1';
             return $errors;
-        }
-        foreach ($sampleSettings as $key => $expected) {
-            if ((int)($settings[$key] ?? -1) !== (int)$expected) {
-                $errors[] = 'appointment_settings.' . $key . ' expected ' . $expected . ', got ' . ($settings[$key] ?? 'null');
-            }
         }
 
         $hours = itm_appointment_load_business_hours($conn, $companyId);

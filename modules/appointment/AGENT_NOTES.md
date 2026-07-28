@@ -9,7 +9,7 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 - **appointments** — booked slots (`appointment_date`, `start_time`, `end_time`, `appointment_type_id`, `status`, `timezone`, `booking_lock`)
 - **appointment_type** — tenant lookup (`in_person`, `remote`) for modality
 - **appointment_visit_reasons** — dropdown reasons (active rows only in booking UI)
-- **appointment_settings** — one row per company: timezone, `allow_in_person` / `allow_remote`, mirrored `in_person_only`, slot length, bookable window, check-in buffer
+- **appointment_settings** — one row per company: timezone, slot length, bookable window, check-in buffer (modality only on `appointment_business_hours`)
 - **appointment_business_hours** — seven rows per company (`allows_in_person`, `allows_remote`, open/close, `is_closed`). **Company 1 seed grid** (regression): Sun/Sat closed; Mon/Tue/Thu/Fri both modalities; **Wed remote-only** — see `itm_appointment_regression_sample_business_hours_by_dow()` in `includes/itm_appointment.php` and `db/02_data.sql`.
 
 ## 3. Required Relationships
@@ -22,7 +22,7 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 
 - All queries scoped by `company_id`.
 - Slot grid: weekday must be bookable (`is_closed = 0` and at least one of `allows_in_person` / `allows_remote`); slots generated between `bookable_start_time` and `bookable_end_time` using `slot_duration_minutes`; existing `scheduled` rows with same date/start block availability (`booking_lock` unique per company).
-- **Appointment type (In-person / Remote):** company `appointment_settings.allow_in_person` / `allow_remote` gate types globally; **per weekday** `appointment_business_hours.allows_in_person` / `allows_remote` further restrict types after the employee picks a slot date. Booking UI (`js/appointment.js`) and `api.php` `schedule` both enforce the intersection (`itm_appointment_day_allows_modality()` / `itm_appointment_modality_for_date()`).
+- **Appointment type (In-person / Remote):** controlled by **per weekday** `appointment_business_hours.allows_in_person` / `allows_remote` after the employee picks a slot date. Booking UI (`js/appointment.js`) and `api.php` `schedule` enforce via `itm_appointment_day_allows_modality()` / `itm_appointment_modality_for_date()`.
 - When only one modality is allowed (company-wide or for the selected day), UI shows a single type card and an info banner.
 - API accepts only `appointment_type` names `in_person` and `remote` (must be active lookup rows).
 - Visit reasons on schedule must be `active = 1` and not soft-deleted.

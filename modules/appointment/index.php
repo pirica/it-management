@@ -31,23 +31,17 @@ $settings = itm_appointment_load_settings($conn, $company_id);
 $businessHours = itm_appointment_load_business_hours($conn, $company_id);
 $visitReasons = itm_appointment_load_visit_reasons($conn, $company_id);
 $appointmentTypes = itm_appointment_load_appointment_types($conn, $company_id);
-$allowInPerson = $settings ? (int)($settings['allow_in_person'] ?? 0) === 1 : false;
-$allowRemote = $settings ? (int)($settings['allow_remote'] ?? 1) === 1 : true;
 $anchorDate = date('Y-m-d');
 
 $modalityByDay = [];
 for ($dow = 0; $dow <= 6; $dow++) {
     $bh = $businessHours[$dow] ?? null;
     $modalityByDay[$dow] = [
-        'in_person' => itm_appointment_day_allows_modality($settings, $bh, 'in_person'),
-        'remote' => itm_appointment_day_allows_modality($settings, $bh, 'remote'),
+        'in_person' => itm_appointment_day_allows_modality($bh, 'in_person'),
+        'remote' => itm_appointment_day_allows_modality($bh, 'remote'),
     ];
 }
 $appointmentModalityConfig = [
-    'company' => [
-        'in_person' => $allowInPerson,
-        'remote' => $allowRemote,
-    ],
     'days' => $modalityByDay,
 ];
 

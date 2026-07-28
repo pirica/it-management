@@ -6,7 +6,7 @@ Tenant **administration** for `modules/appointment/`: maintain `appointment_sett
 
 ## 2. Key Tables
 
-- **appointment_settings** — one row per company (`timezone`, `allow_in_person` default off, `allow_remote` default on, mirrored `in_person_only`, slot length, bookable window, `active`)
+- **appointment_settings** — one row per company (`timezone`, slot length, bookable window, check-in buffer, `active`); **no** company-level In Person / Remote columns (modality on `appointment_business_hours` only)
 - **appointment_business_hours** — one row per `day_of_week` (0–6): `allows_in_person`, `allows_remote` (replaces legacy `allows_online_booking`)
 - **appointment_visit_reasons** — booking dropdown labels (`sort_order`, `active`)
 - **appointment_type** — modality lookup; API only honors `in_person` / `remote` names
@@ -41,7 +41,7 @@ Four read-only tables with standard actions:
 | Appointment types | — | `view.php?kind=appointment_type&id=` | `edit.php?kind=appointment_type&id=` (active only) | 🗑️ only non-core types |
 
 - Flash messages via `?msg=` query string after redirect.
-- Company settings hub table columns: **Timezone**, **Slot (min)**, **Active**, **Actions** — `allow_in_person` / `allow_remote` remain on **edit** and **view** only.
+- Company settings hub table columns: **Timezone**, **Slot (min)**, **Active**, **Actions** — modality is configured on **business hours** rows only.
 - Actions column: `itm-actions-cell` + `data-itm-actions-origin="1"`.
 
 ### Other entry files

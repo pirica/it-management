@@ -53,11 +53,6 @@ if ($action === 'schedule' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         echo json_encode(['success' => false, 'message' => 'Appointment settings are not configured for this company.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
-    if (!itm_appointment_settings_allows_modality($settings, $appointmentTypeName)) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'That appointment type is not enabled for this company.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        exit;
-    }
 
     $dayModality = itm_appointment_modality_for_date($conn, $companyId, $appointmentDate);
     $dayAllowsType = $appointmentTypeName === 'remote'
