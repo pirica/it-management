@@ -52,6 +52,90 @@
     var currentAnchor = anchorInput ? anchorInput.value : '';
     var pendingSelection = null;
     var confirmedSelection = null;
+    var modalityConfig = null;
+    try {
+        modalityConfig = JSON.parse(app.getAttribute('data-modality-config') || '{}');
+    } catch (e) {
+        modalityConfig = { company: {}, days: {} };
+    }
+    var modalityBanner = document.getElementById('appointment-modality-banner');
+    var typeGroup = app.querySelector('.appointment-type-group');
+    var typeCards = app.querySelectorAll('.appointment-type-card[data-appointment-type]');
+
+    function dayOfWeekFromYmd(dateStr) {
+        var d = parseYmd(dateStr);
+        return d ? d.getDay() : -1;
+    }
+
+    function resolveModalityFlags(dateYmd) {
+        var company = modalityConfig.company || {};
+        var allowInPerson = !!company.in_person;
+        var allowRemote = !!company.remote;
+        if (dateYmd) {
+            var dow = dayOfWeekFromYmd(dateYmd);
+            var dayRow = (modalityConfig.days || {})[dow] || (modalityConfig.days || {})[String(dow)];
+            if (dayRow) {
+                allowInPerson = allowInPerson && !!dayRow.in_person;
+                allowRemote = allowRemote && !!dayRow.remote;
+            } else {
+                allowInPerson = false;
+                allowRemote = false;
+            }
+        }
+        return { in_person: allowInPerson, remote: allowRemote };
+    }
+
+    function updateAppointmentTypeUi(dateYmd) {
+        var flags = resolveModalityFlags(dateYmd || null);
+        var firstChecked = null;
+        typeCards.forEach(function (card) {
+            var typeName = card.getAttribute('data-appointment-type') || '';
+            var allowed = typeName === 'remote' ? flags.remote : typeName === 'in_person' ? flags.in_person : false;
+            card.classList.toggle('hidden', !allowed);
+            var input = card.querySelector('input[name="appointment_type"]');
+            if (!input) {
+                return;
+            }
+            input.disabled = !allowed;
+            if (!allowed) {
+                input.checked = false;
+            } else if (!firstChecked) {
+                firstChecked = input;
+            }
+        });
+        if (firstChecked) {
+            firstChecked.checked = true;
+        }
+        if (modalityBanner) {
+            var msg = '';
+            if (flags.in_person && !flags.remote) {
+                msg = dateYmd
+                    ? 'This day accepts only in-person appointments.'
+                    : 'This location accepts only in-person appointments.';
+            } else if (flags.remote && !flags.in_person) {
+                msg = dateYmd
+                    ? 'This day accepts only remote appointments.'
+                    : 'This location accepts only remote appointments.';
+            }
+            modalityBanner.textContent = msg;
+            modalityBanner.classList.toggle('hidden', msg === '');
+        }
+    }
+
+    function syncAppointmentTypeSection() {
+        var hasSlot = !!(confirmedSelection && confirmedSelection.date && confirmedSelection.start_time);
+        if (typeGroup) {
+            typeGroup.classList.toggle('hidden', !hasSlot);
+        }
+        if (!hasSlot) {
+            if (modalityBanner) {
+                modalityBanner.textContent = '';
+                modalityBanner.classList.add('hidden');
+            }
+            return;
+        }
+        updateAppointmentTypeUi(confirmedSelection.date);
+    }
 
     function updateScheduleButton() {
         if (!scheduleBtn || !reasonSelect) {
@@ -188,6 +272,7 @@
             if (modal) {
                 modal.classList.add('hidden');
             }
+            syncAppointmentTypeSection();
             updateScheduleButton();
         });
     }
@@ -230,4 +315,5 @@
     }
 
     updateScheduleButton();
+    syncAppointmentTypeSection();
 })();

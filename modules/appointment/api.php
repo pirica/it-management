@@ -59,6 +59,16 @@ if ($action === 'schedule' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         exit;
     }
 
+    $dayModality = itm_appointment_modality_for_date($conn, $companyId, $appointmentDate);
+    $dayAllowsType = $appointmentTypeName === 'remote'
+        ? !empty($dayModality['remote'])
+        : !empty($dayModality['in_person']);
+    if (!$dayAllowsType) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'That appointment type is not available on the selected day.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
     $appointmentTypeId = itm_appointment_resolve_type_id_by_name($conn, $companyId, $appointmentTypeName);
     if ($appointmentTypeId <= 0) {
         http_response_code(400);
