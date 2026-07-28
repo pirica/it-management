@@ -31,7 +31,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $open = trim((string)($_POST['open_time'] ?? ''));
         $close = trim((string)($_POST['close_time'] ?? ''));
         $isClosed = !empty($_POST['is_closed']) ? 1 : 0;
-        $allows = !empty($_POST['allows_online_booking']) ? 1 : 0;
+        $allowsInPerson = !empty($_POST['allows_in_person']) ? 1 : 0;
+        $allowsRemote = !empty($_POST['allows_remote']) ? 1 : 0;
         if ($dow >= 0 && $dow <= 6 && $label !== '') {
             if ($isClosed) {
                 $open = null;
@@ -44,10 +45,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     $close .= ':00';
                 }
             }
-            $sql = 'INSERT INTO appointment_business_hours (company_id, day_of_week, display_label, open_time, close_time, is_closed, allows_online_booking, active, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)';
+            $sql = 'INSERT INTO appointment_business_hours (company_id, day_of_week, display_label, open_time, close_time, is_closed, allows_in_person, allows_remote, active, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)';
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
-                mysqli_stmt_bind_param($stmt, 'iisssiiii', $company_id, $dow, $label, $open, $close, $isClosed, $allows, $employee_id, $employee_id);
+                mysqli_stmt_bind_param($stmt, 'iisssiiiii', $company_id, $dow, $label, $open, $close, $isClosed, $allowsInPerson, $allowsRemote, $employee_id, $employee_id);
                 if (@mysqli_stmt_execute($stmt)) {
                     mysqli_stmt_close($stmt);
                     header('Location: index.php?msg=' . rawurlencode('Business hour added.'));
@@ -133,8 +134,14 @@ foreach ($hours as $dow => $hourRow) {
         </div>
         <div class="form-group">
             <label class="itm-checkbox-control">
-                <input type="checkbox" name="allows_online_booking" value="1">
-                <span>Allows online booking</span>
+                <input type="checkbox" name="allows_in_person" value="1">
+                <span>In Person</span>
+            </label>
+        </div>
+        <div class="form-group">
+            <label class="itm-checkbox-control">
+                <input type="checkbox" name="allows_remote" value="1" checked>
+                <span>Remote</span>
             </label>
         </div>
         <button type="submit" class="btn btn-primary" title="Save">💾</button>

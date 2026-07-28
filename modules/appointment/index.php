@@ -31,7 +31,9 @@ $settings = itm_appointment_load_settings($conn, $company_id);
 $businessHours = itm_appointment_load_business_hours($conn, $company_id);
 $visitReasons = itm_appointment_load_visit_reasons($conn, $company_id);
 $appointmentTypes = itm_appointment_load_appointment_types($conn, $company_id);
-$inPersonOnly = $settings ? (int)($settings['in_person_only'] ?? 0) === 1 : true;
+$allowInPerson = $settings ? (int)($settings['allow_in_person'] ?? 0) === 1 : false;
+$allowRemote = $settings ? (int)($settings['allow_remote'] ?? 1) === 1 : true;
+$inPersonOnly = $settings ? (int)($settings['in_person_only'] ?? 0) === 1 : false;
 $anchorDate = date('Y-m-d');
 
 require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
@@ -238,12 +240,14 @@ function appt_type_label($type)
                                     <?php foreach ($appointmentTypes as $typeRow): ?>
                                         <?php
                                         $typeName = (string)($typeRow['name'] ?? '');
-                                        $isRemote = $typeName === 'remote';
-                                        if ($inPersonOnly && $isRemote) {
+                                        if ($typeName === 'remote' && !$allowRemote) {
+                                            continue;
+                                        }
+                                        if ($typeName === 'in_person' && !$allowInPerson) {
                                             continue;
                                         }
                                         $typeId = 'appointment-type-' . preg_replace('/[^a-z0-9_-]/', '-', $typeName);
-                                        $isChecked = $typeName === 'in_person';
+                                        $isChecked = ($typeName === 'remote' && $allowRemote) || ($typeName === 'in_person' && $allowInPerson && !$allowRemote);
                                         ?>
                                     <label class="appointment-type-card" for="<?php echo sanitize($typeId); ?>">
                                         <input type="radio" name="appointment_type" id="<?php echo sanitize($typeId); ?>" value="<?php echo sanitize($typeName); ?>"<?php echo $isChecked ? ' checked' : ''; ?>>
@@ -257,6 +261,8 @@ function appt_type_label($type)
 
                             <?php if ($inPersonOnly): ?>
                                 <div class="appointment-info-banner">This location accepts only in-person appointments.</div>
+                            <?php elseif ($allowRemote && !$allowInPerson): ?>
+                                <div class="appointment-info-banner">This location accepts only remote appointments.</div>
                             <?php endif; ?>
 
                             <button type="button" class="btn btn-primary" id="appointment-schedule-btn" title="Schedule appointment" disabled>💾</button>

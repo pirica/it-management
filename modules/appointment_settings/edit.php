@@ -14,7 +14,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
     if ($postKind === 'settings' && $postId > 0) {
         $timezone = trim((string)($_POST['timezone'] ?? 'US/Central'));
-        $inPersonOnly = !empty($_POST['in_person_only']) ? 1 : 0;
+        $allowInPerson = !empty($_POST['allow_in_person']) ? 1 : 0;
+        $allowRemote = !empty($_POST['allow_remote']) ? 1 : 0;
+        $inPersonOnly = itm_appointment_sync_in_person_only_flag($allowInPerson, $allowRemote);
         $slotMinutes = max(15, (int)($_POST['slot_duration_minutes'] ?? 60));
         $bookableStart = trim((string)($_POST['bookable_start_time'] ?? '09:00'));
         $bookableEnd = trim((string)($_POST['bookable_end_time'] ?? '14:00'));
@@ -26,10 +28,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         if (strlen($bookableEnd) === 5) {
             $bookableEnd .= ':00';
         }
-        $sql = 'UPDATE appointment_settings SET timezone = ?, in_person_only = ?, slot_duration_minutes = ?, bookable_start_time = ?, bookable_end_time = ?, check_in_end_buffer_minutes = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
+        $sql = 'UPDATE appointment_settings SET timezone = ?, allow_in_person = ?, allow_remote = ?, in_person_only = ?, slot_duration_minutes = ?, bookable_start_time = ?, bookable_end_time = ?, check_in_end_buffer_minutes = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
         $stmt = mysqli_prepare($conn, $sql);
         if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'siissiiiii', $timezone, $inPersonOnly, $slotMinutes, $bookableStart, $bookableEnd, $buffer, $isActive, $employee_id, $postId, $company_id);
+            mysqli_stmt_bind_param($stmt, 'siiiissiiiii', $timezone, $allowInPerson, $allowRemote, $inPersonOnly, $slotMinutes, $bookableStart, $bookableEnd, $buffer, $isActive, $employee_id, $postId, $company_id);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
             header('Location: index.php?msg=' . rawurlencode('Settings saved.'));
@@ -42,7 +44,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $open = trim((string)($_POST['open_time'] ?? ''));
         $close = trim((string)($_POST['close_time'] ?? ''));
         $isClosed = !empty($_POST['is_closed']) ? 1 : 0;
-        $allows = !empty($_POST['allows_online_booking']) ? 1 : 0;
+        $allowsInPerson = !empty($_POST['allows_in_person']) ? 1 : 0;
+        $allowsRemote = !empty($_POST['allows_remote']) ? 1 : 0;
         $isActive = !empty($_POST['active']) ? 1 : 0;
         if ($isClosed) {
             $open = null;
@@ -55,10 +58,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 $close .= ':00';
             }
         }
-        $sql = 'UPDATE appointment_business_hours SET display_label = ?, open_time = ?, close_time = ?, is_closed = ?, allows_online_booking = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
+        $sql = 'UPDATE appointment_business_hours SET display_label = ?, open_time = ?, close_time = ?, is_closed = ?, allows_in_person = ?, allows_remote = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
         $stmt = mysqli_prepare($conn, $sql);
         if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'sssiiiiii', $label, $open, $close, $isClosed, $allows, $isActive, $employee_id, $postId, $company_id);
+            mysqli_stmt_bind_param($stmt, 'sssiiiiiii', $label, $open, $close, $isClosed, $allowsInPerson, $allowsRemote, $isActive, $employee_id, $postId, $company_id);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
             header('Location: index.php?msg=' . rawurlencode('Business hour saved.'));
@@ -152,8 +155,14 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
             </div>
             <div class="form-group">
                 <label class="itm-checkbox-control">
-                    <input type="checkbox" name="in_person_only" value="1"<?php echo (int)($row['in_person_only'] ?? 0) === 1 ? ' checked' : ''; ?>>
-                    <span>In-person only</span>
+                    <input type="checkbox" name="allow_in_person" value="1"<?php echo (int)($row['allow_in_person'] ?? 0) === 1 ? ' checked' : ''; ?>>
+                    <span>In Person</span>
+                </label>
+            </div>
+            <div class="form-group">
+                <label class="itm-checkbox-control">
+                    <input type="checkbox" name="allow_remote" value="1"<?php echo (int)($row['allow_remote'] ?? 1) === 1 ? ' checked' : ''; ?>>
+                    <span>Remote</span>
                 </label>
             </div>
             <div class="form-group">
@@ -199,8 +208,14 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
             </div>
             <div class="form-group">
                 <label class="itm-checkbox-control">
-                    <input type="checkbox" name="allows_online_booking" value="1"<?php echo (int)($row['allows_online_booking'] ?? 0) === 1 ? ' checked' : ''; ?>>
-                    <span>Allows online booking</span>
+                    <input type="checkbox" name="allows_in_person" value="1"<?php echo (int)($row['allows_in_person'] ?? 0) === 1 ? ' checked' : ''; ?>>
+                    <span>In Person</span>
+                </label>
+            </div>
+            <div class="form-group">
+                <label class="itm-checkbox-control">
+                    <input type="checkbox" name="allows_remote" value="1"<?php echo (int)($row['allows_remote'] ?? 0) === 1 ? ' checked' : ''; ?>>
+                    <span>Remote</span>
                 </label>
             </div>
             <div class="form-group">
