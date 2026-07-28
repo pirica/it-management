@@ -22,6 +22,7 @@
 - ✅ Employee Type lookup and Weekly Resignations report (from `employees.termination_date`)
 - ✅ Bulk Import — Centralized Excel/CSV import for Assets and Employees
 - ✅ IT Support Chatbot — Automated technical assistance powered by a multi-tenant Knowledge Base
+- ✅ Appointment — Self-service IT visit scheduling (weekly slots, visit reasons, Live Chat launch card)
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
 <h2 align="center">Login</h2>
 
@@ -228,11 +229,11 @@
 
 #### Planning, calendar, and events
 
-`events`, `event_categories`, `event_share_sessions`
+`events`, `event_categories`, `event_share_sessions`, `appointment_visit_reasons`, `appointment_settings`, `appointment_business_hours`, `appointments`
 
-**Purpose:** Company events and categories (vault-encrypted private fields where applicable); the **Calendar** module aggregates alerts, events, ticket due dates, and equipment expiry dates.
+**Purpose:** Company events and categories (vault-encrypted private fields where applicable); the **Calendar** module aggregates alerts, events, ticket due dates, and equipment expiry dates. **Appointment** provides tenant-configurable business hours and hourly booking slots for IT visits.
 
-**Modules:** `events`, `event_categories`, `calendar` (aggregated read-only view)
+**Modules:** `events`, `event_categories`, `calendar` (aggregated read-only view), `appointment`
 
 #### Operations and file storage
 
@@ -255,7 +256,7 @@
 | Floor plans and locations | 8 | ~60 |
 | Password vault | 3 | 0 |
 | Notes, bookmarks, productivity | 10 | ~5 |
-| Planning and events | 3 | ~10 |
+| Planning and events | 7 | ~11 |
 | Operations | 10 | ~15 |
 | Workstation reference | 7 | ~280 |
 | **Total** | **126** | **~3,075** |

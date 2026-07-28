@@ -1,22 +1,44 @@
 <?php
 /**
  * Appointment module regression checks.
+ *
+ * CLI: php scripts/verify_appointment.php
+ * Browser: scripts/verify_appointment.php
  */
+
+declare(strict_types=1);
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+<code>php scripts/verify_appointment.php</code> — exit <code>1</code> on failure. Run when changing <code>modules/appointment/</code>, <code>includes/itm_appointment.php</code>, or appointment tables in <code>db/</code>.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
+
+define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once ROOT_PATH . 'includes/itm_appointment.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
 
+itm_script_output_begin('Appointment Verification');
+
+$nl = itm_script_output_nl();
 $failures = 0;
 
 function appt_verify_fail($message)
 {
-    global $failures;
+    global $failures, $nl;
     $failures++;
-    fwrite(STDERR, "[FAIL] {$message}\n");
+    echo colorText('[FAIL] ' . $message, 'fail') . $nl;
 }
 
 function appt_verify_pass($message)
 {
-    fwrite(STDOUT, "[PASS] {$message}\n");
+    global $nl;
+    echo colorText('[PASS] ' . $message, 'pass') . $nl;
 }
 
 $tables = ['appointment_visit_reasons', 'appointment_settings', 'appointment_business_hours', 'appointments'];
@@ -35,6 +57,17 @@ foreach ($tables as $table) {
     } else {
         appt_verify_pass("Audit triggers present for {$table}");
     }
+}
+
+$idxSql = "SELECT COUNT(*) AS c FROM information_schema.statistics
+           WHERE table_schema = DATABASE() AND table_name = 'appointments'
+             AND index_name = 'uq_appointments_company_booking_lock'";
+$idxRes = mysqli_query($conn, $idxSql);
+$idxRow = $idxRes ? mysqli_fetch_assoc($idxRes) : null;
+if ((int)($idxRow['c'] ?? 0) < 1) {
+    appt_verify_fail('Missing uq_appointments_company_booking_lock on appointments');
+} else {
+    appt_verify_pass('appointments booking_lock unique index present');
 }
 
 $companyId = 1;
@@ -78,4 +111,10 @@ if (!$slugRow) {
     appt_verify_pass('modules_registry row for appointment');
 }
 
-exit($failures > 0 ? 1 : 0);
+if ($failures > 0) {
+    echo colorText($failures . ' failure(s).', 'fail') . $nl;
+    exit(1);
+}
+
+echo colorText('All appointment checks passed.', 'pass') . $nl;
+exit(0);

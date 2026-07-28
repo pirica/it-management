@@ -536,8 +536,22 @@ The chatbot module provides a floating technical assistance widget powered by a 
     - **Multi-tenancy:** Knowledge base searches must include `AND company_id = ?` to prevent data leaks across tenants.
 3. **Configuration:** Chatbot visibility is controlled by `ui_configuration.enable_chatbot` (boolean).
 4. **Escalation:** When the keyword "escalate" is detected in the knowledge base response, the UI must display the IT department's contact information from `it_settings`.
+5. **Live Agent launch:** `includes/itm_live_chat_launch_options.php` includes an **Appointment** card (`open_mode: browser_tab`) linking to `modules/appointment/` for self-service IT visit scheduling.
 
 **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_chatbot.php`.
+
+#### Appointment scheduling (mandatory)
+
+The Appointment module (`modules/appointment/`) provides employee self-service IT visit booking (visit reason, weekly slot modal, in-person or remote when allowed).
+
+1. **Tables:** **`appointment_visit_reasons`**, **`appointment_settings`**, **`appointment_business_hours`**, **`appointments`** — tenant-scoped; standard audit columns and `audit_logs` triggers on all four.
+2. **Fresh install:** canonical DDL/DML/triggers in `db/01_schema.sql`, `db/02_data.sql`, `db/03_triggers.sql` (import via `bash scripts/import_database_split.sh`). **`db/migrations/appointment.sql`** remains for existing databases that predate the module; **`db/migrations/appointment_booking_lock.sql`** adds `booking_lock` + unique slot index on live DBs that already ran the first migration.
+3. **Slot concurrency:** `appointments.booking_lock` (`company_id` + lock unique) is set on schedule INSERT and cleared on soft-delete so two concurrent `schedule` POSTs cannot double-book the same slot.
+4. **API:** `modules/appointment/api.php` — `week_slots` (GET), `schedule` (POST + CSRF); rate limit enforced.
+5. **Live Chat:** Live Agent launch menu includes **Appointment** (see **Chatbot & Knowledge Base** above).
+6. **Sidebar:** Planning → Appointment (`includes/ui_config.php`). Bespoke UI (not flattened scaffold CRUD); `list_all.php` / `view.php` for admin review.
+7. **Sample templates:** `db/02_data_sample.sql` includes `appointments` rows for Add sample data / MBQA when the table is empty for a tenant.
+8. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_appointment.php`.
 
 #### License Management (mandatory)
 
