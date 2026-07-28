@@ -364,8 +364,10 @@ function appt_employee_select_label(array $empRow)
 
                             <div class="form-group">
                                 <label for="appointment-slot-display">Select an appointment</label>
-                                <button type="button" class="btn appointment-slot-trigger" id="appointment-open-modal" title="Select an appointment">📅</button>
-                                <input type="text" id="appointment-slot-display" class="form-control" readonly placeholder="No time selected" style="margin-top:8px;">
+                                <div class="appointment-slot-row">
+                                    <button type="button" class="btn appointment-slot-trigger" id="appointment-open-modal" title="Select an appointment">📅</button>
+                                    <input type="text" id="appointment-slot-display" class="form-control appointment-slot-display" readonly placeholder="No time selected">
+                                </div>
                             </div>
 
                             <div class="form-group appointment-type-group hidden">
