@@ -215,7 +215,7 @@ $selectedSignatureId = (int)($data['signature_id'] ?? 0);
                         <input type="text" name="subject" id="subject" class="form-control" required maxlength="500" value="<?php echo sanitize($data['subject']); ?>">
                     </div>
                     <div class="webmail-compose-row">
-                        <label for="webmail-compose-signature-id">Select Signature</label>
+                        <label for="webmail-compose-signature-id">Signature</label>
                         <div class="webmail-compose-signature-wrap">
                             <select name="signature_id" id="webmail-compose-signature-id" class="form-control">
                                 <option value="">—</option>
