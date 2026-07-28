@@ -22,8 +22,8 @@ INSERT INTO `appointment_type` (`company_id`, `name`, `active`, `created_at`) VA
 INSERT INTO `appointments` (`company_id`, `employee_id`, `visit_reason_id`, `appointment_date`, `start_time`, `end_time`, `appointment_type_id`, `status`, `timezone`, `booking_lock`, `active`, `created_by`, `created_at`) VALUES
 (1, 1, 1, '2026-08-06', '09:00:00', '10:00:00', 1, 'scheduled', 'US/Central', '2026-08-06#09:00:00', 1, 1, '2026-01-01 00:00:01');
 
-INSERT INTO `appointment_settings` (`company_id`, `timezone`, `allow_in_person`, `allow_remote`, `in_person_only`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `active`, `created_at`) VALUES
-(1, 'US/Central', 1, 1, 0, 60, '09:00:00', '14:00:00', 30, 1, '2026-01-01 00:00:01');
+INSERT INTO `appointment_settings` (`company_id`, `timezone`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `active`, `created_at`) VALUES
+(1, 'US/Central', 60, '09:00:00', '14:00:00', 30, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `appointment_visit_reasons` (`company_id`, `name`, `sort_order`, `active`, `created_at`) VALUES
 (1, 'General IT support', 10, 1, '2026-01-01 00:00:01');

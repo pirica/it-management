@@ -14,9 +14,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
     if ($postKind === 'settings' && $postId > 0) {
         $timezone = trim((string)($_POST['timezone'] ?? 'US/Central'));
-        $allowInPerson = !empty($_POST['allow_in_person']) ? 1 : 0;
-        $allowRemote = !empty($_POST['allow_remote']) ? 1 : 0;
-        $inPersonOnly = itm_appointment_sync_in_person_only_flag($allowInPerson, $allowRemote);
         $slotMinutes = max(15, (int)($_POST['slot_duration_minutes'] ?? 60));
         $bookableStart = trim((string)($_POST['bookable_start_time'] ?? '09:00'));
         $bookableEnd = trim((string)($_POST['bookable_end_time'] ?? '14:00'));
@@ -28,10 +25,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         if (strlen($bookableEnd) === 5) {
             $bookableEnd .= ':00';
         }
-        $sql = 'UPDATE appointment_settings SET timezone = ?, allow_in_person = ?, allow_remote = ?, in_person_only = ?, slot_duration_minutes = ?, bookable_start_time = ?, bookable_end_time = ?, check_in_end_buffer_minutes = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
+        $sql = 'UPDATE appointment_settings SET timezone = ?, slot_duration_minutes = ?, bookable_start_time = ?, bookable_end_time = ?, check_in_end_buffer_minutes = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
         $stmt = mysqli_prepare($conn, $sql);
         if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'siiiissiiiii', $timezone, $allowInPerson, $allowRemote, $inPersonOnly, $slotMinutes, $bookableStart, $bookableEnd, $buffer, $isActive, $employee_id, $postId, $company_id);
+            mysqli_stmt_bind_param($stmt, 'sisssiiiii', $timezone, $slotMinutes, $bookableStart, $bookableEnd, $buffer, $isActive, $employee_id, $postId, $company_id);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
             header('Location: index.php?msg=' . rawurlencode('Settings saved.'));
@@ -152,18 +149,6 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
             <div class="form-group">
                 <label for="timezone">Timezone</label>
                 <input class="form-control" type="text" name="timezone" id="timezone" value="<?php echo sanitize($row['timezone'] ?? ''); ?>">
-            </div>
-            <div class="form-group">
-                <label class="itm-checkbox-control">
-                    <input type="checkbox" name="allow_in_person" value="1"<?php echo (int)($row['allow_in_person'] ?? 0) === 1 ? ' checked' : ''; ?>>
-                    <span>In Person</span>
-                </label>
-            </div>
-            <div class="form-group">
-                <label class="itm-checkbox-control">
-                    <input type="checkbox" name="allow_remote" value="1"<?php echo (int)($row['allow_remote'] ?? 1) === 1 ? ' checked' : ''; ?>>
-                    <span>Remote</span>
-                </label>
             </div>
             <div class="form-group">
                 <label for="slot_duration_minutes">Slot duration (minutes)</label>

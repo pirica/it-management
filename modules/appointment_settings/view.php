@@ -53,8 +53,6 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
     <table class="detail-table">
         <?php if ($kind === 'settings'): ?>
             <tr><th>Timezone</th><td><?php echo sanitize($row['timezone'] ?? ''); ?></td></tr>
-            <tr><th>In Person</th><td><?php echo sanitize(aps_modality_yes_no($row['allow_in_person'] ?? 0)); ?></td></tr>
-            <tr><th>Remote</th><td><?php echo sanitize(aps_modality_yes_no($row['allow_remote'] ?? 0)); ?></td></tr>
             <tr><th>Slot duration (minutes)</th><td><?php echo (int)($row['slot_duration_minutes'] ?? 0); ?></td></tr>
             <tr><th>Bookable window</th><td><?php echo sanitize(aps_format_time_input($row['bookable_start_time'] ?? '') . ' – ' . aps_format_time_input($row['bookable_end_time'] ?? '')); ?></td></tr>
             <tr><th>Check-in buffer (minutes)</th><td><?php echo (int)($row['check_in_end_buffer_minutes'] ?? 0); ?></td></tr>
