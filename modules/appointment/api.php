@@ -44,8 +44,16 @@ if ($action === 'schedule' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         exit;
     }
     $fallbackType = itm_appointment_settings_default_modality_name($settings);
-    if ($appointmentTypeName === '' || !in_array($appointmentTypeName, ['in_person', 'remote'], true)) {
-        $appointmentTypeName = $fallbackType;
+    $activeTypes = itm_appointment_load_appointment_types($conn, $companyId);
+    $activeTypeNames = [];
+    foreach ($activeTypes as $typeRow) {
+        $n = (string)($typeRow['name'] ?? '');
+        if ($n !== '') {
+            $activeTypeNames[] = $n;
+        }
+    }
+    if ($appointmentTypeName === '' || !in_array($appointmentTypeName, $activeTypeNames, true)) {
+        $appointmentTypeName = in_array($fallbackType, $activeTypeNames, true) ? $fallbackType : ($activeTypeNames[0] ?? $fallbackType);
     }
 
     if ($visitReasonId <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $appointmentDate) || $startTime === '' || $endTime === '') {
@@ -54,11 +62,10 @@ if ($action === 'schedule' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         exit;
     }
 
-    $dayModality = itm_appointment_modality_for_date($conn, $companyId, $appointmentDate);
-    $dayAllowsType = $appointmentTypeName === 'remote'
-        ? !empty($dayModality['remote'])
-        : !empty($dayModality['in_person']);
-    if (!$dayAllowsType) {
+    $hoursByDay = itm_appointment_load_business_hours($conn, $companyId);
+    $dow = (int)date('w', strtotime($appointmentDate));
+    $bh = $hoursByDay[$dow] ?? null;
+    if (!itm_appointment_hour_allows_type_name($bh, $appointmentTypeName, $activeTypes)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'That appointment type is not available on the selected day.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;

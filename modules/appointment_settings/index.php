@@ -10,7 +10,7 @@ $flashMessage = trim((string)($_GET['msg'] ?? ''));
 $settings = itm_appointment_load_settings($conn, $company_id);
 $businessHours = itm_appointment_load_business_hours($conn, $company_id);
 $visitReasons = itm_appointment_settings_load_visit_reasons_admin($conn, $company_id);
-$appointmentTypes = itm_appointment_settings_load_appointment_types_admin($conn, $company_id);
+$appointmentTypes = aps_appointment_types_for_columns(itm_appointment_settings_load_appointment_types_admin($conn, $company_id));
 
 $settingsRows = [];
 if ($settings) {
@@ -84,8 +84,9 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
             <th>Open</th>
             <th>Close</th>
             <th>Closed</th>
-            <th>In Person</th>
-            <th>Remote</th>
+            <?php foreach ($appointmentTypes as $typeCol): ?>
+            <th><?php echo sanitize(aps_type_label($typeCol)); ?></th>
+            <?php endforeach; ?>
             <th>Active</th>
             <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
         </tr>
@@ -98,8 +99,13 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
                 <td><?php echo sanitize(aps_format_time_input($hour['open_time'] ?? '') ?: '—'); ?></td>
                 <td><?php echo sanitize(aps_format_time_input($hour['close_time'] ?? '') ?: '—'); ?></td>
                 <td><?php echo (int)($hour['is_closed'] ?? 0) === 1 ? 'Yes' : 'No'; ?></td>
-                <td><?php echo sanitize(aps_modality_yes_no($hour['allows_in_person'] ?? 0)); ?></td>
-                <td><?php echo sanitize(aps_modality_yes_no($hour['allows_remote'] ?? 0)); ?></td>
+                <?php
+                $allowedMap = itm_appointment_hour_allowed_types_map($hour);
+                foreach ($appointmentTypes as $typeCol):
+                    $typeName = (string)($typeCol['name'] ?? '');
+                ?>
+                <td><?php echo sanitize(aps_modality_yes_no(!empty($allowedMap[$typeName]) ? 1 : 0)); ?></td>
+                <?php endforeach; ?>
                 <td><?php echo (int)($hour['active'] ?? 0) === 1 ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>'; ?></td>
                 <?php aps_actions_cell_open(); ?>
                 <a class="btn btn-sm" href="view.php?kind=business_hour&amp;id=<?php echo (int)$hour['id']; ?>" title="View">🔎</a>
@@ -176,7 +182,7 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
             <?php $coreType = in_array((string)($typeRow['name'] ?? ''), ['in_person', 'remote'], true); ?>
             <tr>
                 <td><?php echo sanitize($typeRow['name'] ?? ''); ?></td>
-                <td><?php echo sanitize(aps_type_label($typeRow['name'] ?? '')); ?></td>
+                <td><?php echo sanitize(aps_type_label($typeRow)); ?></td>
                 <td><?php echo (int)($typeRow['active'] ?? 0) === 1 ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>'; ?></td>
                 <?php aps_actions_cell_open(); ?>
                 <a class="btn btn-sm" href="view.php?kind=appointment_type&amp;id=<?php echo (int)$typeRow['id']; ?>" title="View">🔎</a>

@@ -2370,18 +2370,18 @@ INSERT INTO `appointment_visit_reasons` (`company_id`, `name`, `sort_order`, `ac
 (1, 'New employee onboarding', 30, 1, '2026-01-01 00:00:01'),
 (1, 'Security consultation', 40, 1, '2026-01-01 00:00:01');
 
-INSERT INTO `appointment_type` (`company_id`, `name`, `active`, `created_at`) VALUES
-(1, 'in_person', 1, '2026-01-01 00:00:01'),
-(1, 'remote', 1, '2026-01-01 00:00:01');
+INSERT INTO `appointment_type` (`company_id`, `name`, `label`, `active`, `created_at`) VALUES
+(1, 'in_person', 'In-person', 1, '2026-01-01 00:00:01'),
+(1, 'remote', 'Remote', 1, '2026-01-01 00:00:01');
 
-INSERT INTO `appointment_business_hours` (`company_id`, `day_of_week`, `display_label`, `open_time`, `close_time`, `is_closed`, `allows_in_person`, `allows_remote`, `active`, `created_at`) VALUES
-(1, 0, 'Sun', NULL, NULL, 1, 0, 0, 1, '2026-01-01 00:00:01'),
-(1, 1, 'Mon', '10:00:00', '18:00:00', 0, 1, 1, 1, '2026-01-01 00:00:01'),
-(1, 2, 'Tue', '10:00:00', '18:00:00', 0, 1, 1, 1, '2026-01-01 00:00:01'),
-(1, 3, 'Wed', '10:00:00', '18:00:00', 0, 0, 1, 1, '2026-01-01 00:00:01'),
-(1, 4, 'Thu', '10:00:00', '18:00:00', 0, 1, 1, 1, '2026-01-01 00:00:01'),
-(1, 5, 'Fri', '10:00:00', '18:00:00', 0, 1, 1, 1, '2026-01-01 00:00:01'),
-(1, 6, 'Sat', NULL, NULL, 1, 0, 0, 1, '2026-01-01 00:00:01');
+INSERT INTO `appointment_business_hours` (`company_id`, `day_of_week`, `display_label`, `open_time`, `close_time`, `is_closed`, `allows_in_person`, `allows_remote`, `allowed_types_json`, `active`, `created_at`) VALUES
+(1, 0, 'Sun', NULL, NULL, 1, 0, 0, '{"in_person":0,"remote":0}', 1, '2026-01-01 00:00:01'),
+(1, 1, 'Mon', '10:00:00', '18:00:00', 0, 1, 1, '{"in_person":1,"remote":1}', 1, '2026-01-01 00:00:01'),
+(1, 2, 'Tue', '10:00:00', '18:00:00', 0, 1, 1, '{"in_person":1,"remote":1}', 1, '2026-01-01 00:00:01'),
+(1, 3, 'Wed', '10:00:00', '18:00:00', 0, 0, 1, '{"in_person":0,"remote":1}', 1, '2026-01-01 00:00:01'),
+(1, 4, 'Thu', '10:00:00', '18:00:00', 0, 1, 1, '{"in_person":1,"remote":1}', 1, '2026-01-01 00:00:01'),
+(1, 5, 'Fri', '10:00:00', '18:00:00', 0, 1, 1, '{"in_person":1,"remote":1}', 1, '2026-01-01 00:00:01'),
+(1, 6, 'Sat', NULL, NULL, 1, 0, 0, '{"in_person":0,"remote":0}', 1, '2026-01-01 00:00:01');
 
 -- Additional Sample Data for Knowledge Base
 INSERT INTO `knowledge_base` (`company_id`, `category`, `title`, `content`, `active`) VALUES

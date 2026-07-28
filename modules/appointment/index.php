@@ -33,18 +33,27 @@ $currentUiConfig = $ui_config ?? [];
 $settings = itm_appointment_load_settings($conn, $company_id);
 $businessHours = itm_appointment_load_business_hours($conn, $company_id);
 $visitReasons = itm_appointment_load_visit_reasons($conn, $company_id);
-$appointmentTypes = itm_appointment_load_appointment_types($conn, $company_id);
+$appointmentTypes = itm_appointment_types_sort_for_ui(itm_appointment_load_appointment_types($conn, $company_id));
+$appointmentTypeNames = [];
+foreach ($appointmentTypes as $typeRow) {
+    $n = (string)($typeRow['name'] ?? '');
+    if ($n !== '') {
+        $appointmentTypeNames[] = $n;
+    }
+}
+$apptTypeLabelByName = [];
+foreach ($appointmentTypes as $typeRow) {
+    $apptTypeLabelByName[(string)($typeRow['name'] ?? '')] = itm_appointment_type_display_label($typeRow);
+}
 $anchorDate = date('Y-m-d');
 
 $modalityByDay = [];
 for ($dow = 0; $dow <= 6; $dow++) {
     $bh = $businessHours[$dow] ?? null;
-    $modalityByDay[$dow] = [
-        'in_person' => itm_appointment_day_allows_modality($bh, 'in_person'),
-        'remote' => itm_appointment_day_allows_modality($bh, 'remote'),
-    ];
+    $modalityByDay[$dow] = itm_appointment_day_allowed_types_for_booking($bh, $appointmentTypes);
 }
 $appointmentModalityConfig = [
+    'type_names' => $appointmentTypeNames,
     'days' => $modalityByDay,
 ];
 $defaultAppointmentModality = itm_appointment_settings_default_modality_name($settings);
@@ -191,7 +200,12 @@ function appt_format_date_display($ymd)
 
 function appt_type_label($type)
 {
-    return $type === 'remote' ? 'Remote' : 'In-person';
+    global $apptTypeLabelByName;
+    $key = (string)$type;
+    if (isset($apptTypeLabelByName[$key])) {
+        return $apptTypeLabelByName[$key];
+    }
+    return itm_appointment_type_default_label_for_name($key);
 }
 
 function appt_employee_select_label(array $empRow)
@@ -346,6 +360,7 @@ function appt_employee_select_label(array $empRow)
                              data-api="<?php echo sanitize(BASE_URL . 'modules/appointment/api.php'); ?>"
                              data-csrf="<?php echo sanitize($csrfToken); ?>"
                              data-default-appointment-modality="<?php echo sanitize($defaultAppointmentModality); ?>"
+                             data-appointment-type-names="<?php echo htmlspecialchars(json_encode($appointmentTypeNames, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8'); ?>"
                              data-modality-config="<?php echo htmlspecialchars(json_encode($appointmentModalityConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" id="appointment-anchor-date" value="<?php echo sanitize($anchorDate); ?>">
                             <input type="hidden" id="appointment_date" name="appointment_date" value="">
@@ -379,7 +394,7 @@ function appt_employee_select_label(array $empRow)
                                     <?php foreach ($appointmentTypes as $typeRow): ?>
                                         <?php
                                         $typeName = (string)($typeRow['name'] ?? '');
-                                        if (!in_array($typeName, ['in_person', 'remote'], true)) {
+                                        if ($typeName === '') {
                                             continue;
                                         }
                                         $typeId = 'appointment-type-' . preg_replace('/[^a-z0-9_-]/', '-', $typeName);
@@ -387,7 +402,7 @@ function appt_employee_select_label(array $empRow)
                                     <label class="appointment-type-card hidden" for="<?php echo sanitize($typeId); ?>" data-appointment-type="<?php echo sanitize($typeName); ?>">
                                         <input type="radio" name="appointment_type" id="<?php echo sanitize($typeId); ?>" value="<?php echo sanitize($typeName); ?>">
                                         <span class="appointment-type-card-inner">
-                                            <span class="appointment-type-card-title"><?php echo sanitize(appt_type_label($typeName)); ?></span>
+                                            <span class="appointment-type-card-title"><?php echo sanitize(itm_appointment_type_display_label($typeRow)); ?></span>
                                         </span>
                                     </label>
                                     <?php endforeach; ?>

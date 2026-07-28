@@ -31,8 +31,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $open = trim((string)($_POST['open_time'] ?? ''));
         $close = trim((string)($_POST['close_time'] ?? ''));
         $isClosed = !empty($_POST['is_closed']) ? 1 : 0;
-        $allowsInPerson = !empty($_POST['allows_in_person']) ? 1 : 0;
-        $allowsRemote = !empty($_POST['allows_remote']) ? 1 : 0;
+        $typeRows = itm_appointment_settings_load_appointment_types_admin($conn, $company_id);
+        $allowedMap = itm_appointment_hour_allowed_types_map_from_post($typeRows, $_POST);
+        $legacy = itm_appointment_hour_legacy_modality_from_map($allowedMap);
+        $allowsInPerson = (int)$legacy['allows_in_person'];
+        $allowsRemote = (int)$legacy['allows_remote'];
+        $allowedJson = itm_appointment_encode_allowed_types_json($allowedMap);
         if ($dow >= 0 && $dow <= 6 && $label !== '') {
             if ($isClosed) {
                 $open = null;
@@ -45,10 +49,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     $close .= ':00';
                 }
             }
-            $sql = 'INSERT INTO appointment_business_hours (company_id, day_of_week, display_label, open_time, close_time, is_closed, allows_in_person, allows_remote, active, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)';
+            $sql = 'INSERT INTO appointment_business_hours (company_id, day_of_week, display_label, open_time, close_time, is_closed, allows_in_person, allows_remote, allowed_types_json, active, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)';
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
-                mysqli_stmt_bind_param($stmt, 'iisssiiiii', $company_id, $dow, $label, $open, $close, $isClosed, $allowsInPerson, $allowsRemote, $employee_id, $employee_id);
+                mysqli_stmt_bind_param($stmt, 'iisssiiisii', $company_id, $dow, $label, $open, $close, $isClosed, $allowsInPerson, $allowsRemote, $allowedJson, $employee_id, $employee_id);
                 if (@mysqli_stmt_execute($stmt)) {
                     mysqli_stmt_close($stmt);
                     header('Location: index.php?msg=' . rawurlencode('Business hour added.'));
@@ -66,13 +70,18 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $name = preg_replace('/[^a-z0-9_]+/', '_', $name);
         $name = trim($name, '_');
         $isActive = !empty($_POST['active']) ? 1 : 0;
+        $typeLabel = trim((string)($_POST['label'] ?? ''));
         if ($name !== '' && !in_array($name, ['in_person', 'remote'], true)) {
-            $sql = 'INSERT INTO appointment_type (company_id, name, active, created_by, updated_by) VALUES (?, ?, ?, ?, ?)';
+            if ($typeLabel === '') {
+                $typeLabel = itm_appointment_type_default_label_for_name($name);
+            }
+            $sql = 'INSERT INTO appointment_type (company_id, name, label, active, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?)';
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
-                mysqli_stmt_bind_param($stmt, 'isiii', $company_id, $name, $isActive, $employee_id, $employee_id);
+                mysqli_stmt_bind_param($stmt, 'issiii', $company_id, $name, $typeLabel, $isActive, $employee_id, $employee_id);
                 if (@mysqli_stmt_execute($stmt)) {
                     mysqli_stmt_close($stmt);
+                    itm_appointment_settings_append_type_to_business_hours($conn, $company_id, $name, 0);
                     header('Location: index.php?msg=' . rawurlencode('Appointment type added.'));
                     exit;
                 }
@@ -90,6 +99,10 @@ aps_require_permission($conn, 'create');
 
 $pageTitle = 'Create ' . aps_kind_label($kind === 'business_hour' ? 'business_hour' : ($kind === 'appointment_type' ? 'appointment_type' : 'visit_reason'));
 aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
+
+$appointmentTypesForForms = aps_appointment_types_for_columns(
+    itm_appointment_settings_load_appointment_types_admin($conn, $company_id)
+);
 
 $usedDays = [];
 $hours = itm_appointment_load_business_hours($conn, $company_id);
@@ -156,18 +169,20 @@ foreach ($hours as $dow => $hourRow) {
                 <span>Closed</span>
             </label>
         </div>
+        <?php foreach ($appointmentTypesForForms as $typeCol):
+            $typeName = (string)($typeCol['name'] ?? '');
+            if ($typeName === '') {
+                continue;
+            }
+            $checked = ($typeName === 'remote') ? ' checked' : '';
+        ?>
         <div class="form-group">
             <label class="itm-checkbox-control">
-                <input type="checkbox" name="allows_in_person" value="1">
-                <span>In Person</span>
+                <input type="checkbox" name="allowed_type[<?php echo sanitize($typeName); ?>]" value="1"<?php echo $checked; ?>>
+                <span><?php echo sanitize(aps_type_label($typeCol)); ?></span>
             </label>
         </div>
-        <div class="form-group">
-            <label class="itm-checkbox-control">
-                <input type="checkbox" name="allows_remote" value="1" checked>
-                <span>Remote</span>
-            </label>
-        </div>
+        <?php endforeach; ?>
         <button type="submit" class="btn btn-primary" title="Save">💾</button>
     </form>
     <?php elseif ($kind === 'appointment_type'): ?>
@@ -178,6 +193,10 @@ foreach ($hours as $dow => $hourRow) {
             <label for="type_name">Name (slug)</label>
             <input class="form-control" type="text" name="name" id="type_name" pattern="[a-z0-9_]+" required placeholder="e.g. phone_support">
             <p class="help-block">Lowercase letters, numbers, and underscores. Reserved: in_person, remote.</p>
+        </div>
+        <div class="form-group">
+            <label for="type_label">Label</label>
+            <input class="form-control" type="text" name="label" id="type_label" placeholder="e.g. Phone Support">
         </div>
         <div class="form-group">
             <label class="itm-checkbox-control">
