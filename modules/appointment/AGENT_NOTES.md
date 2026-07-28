@@ -6,7 +6,7 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 
 ## 2. Key Tables
 
-- **appointments** — booked slots (`appointment_date`, `start_time`, `end_time`, `appointment_type_id`, `status`, `timezone`, `booking_lock`)
+- **appointments** — booked slots (`appointment_date`, `start_time`, `end_time`, `appointment_type_id`, `assigned_to_employee_id`, `is_confirmed`, `status`, `timezone`, `booking_lock`)
 - **appointment_type** — tenant lookup (`in_person`, `remote`) for modality
 - **appointment_visit_reasons** — dropdown reasons (active rows only in booking UI)
 - **appointment_settings** — one row per company: timezone, slot length, bookable window, check-in buffer (modality only on `appointment_business_hours`)
@@ -14,7 +14,7 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 
 ## 3. Required Relationships
 
-- **appointments** → `companies`, `employees`, `appointment_visit_reasons`, `appointment_type`
+- **appointments** → `companies`, `employees`, `appointment_visit_reasons`, `appointment_type`, optional `assigned_to_employee_id` → `employees`
 - Configuration tables → `companies` (CASCADE)
 - Booking reads settings/hours/reasons/types via `includes/itm_appointment.php`
 
@@ -43,8 +43,8 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 
 ### List / view (`list_all.php`, `view.php`)
 
-- List: up to **200** rows, all company appointments (no “mine only” filter), columns Date/Time/Employee/Reason/Type/Status; actions **🔎 View** only.
-- View: detail + audit meta via `itm_crud_render_audit_cell_value()` when available.
+- List: up to **200** rows, all company appointments (no “mine only” filter), columns Date/Time/Employee/Reason/Type/Status/**Assigned to**/**Confirmed**; inline assignee `<select>` and **Confirmed** checkbox per row when RBAC **edit** is granted (POST `list_all.php`); actions **🔎 View** only.
+- View: detail includes assignee and confirmed flags plus audit meta via `itm_crud_render_audit_cell_value()` when available.
 - **No cancel/delete button** on list or view despite `delete.php` → soft-delete POST on `index.php` (handler exists, UI missing).
 
 ### Not flattened scaffold CRUD

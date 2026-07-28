@@ -70,6 +70,17 @@ if ((int)($idxRow['c'] ?? 0) < 1) {
     appt_verify_pass('appointments booking_lock unique index present');
 }
 
+$colSql = "SELECT COUNT(*) AS c FROM information_schema.columns
+           WHERE table_schema = DATABASE() AND table_name = 'appointments'
+             AND column_name IN ('assigned_to_employee_id', 'is_confirmed')";
+$colRes = mysqli_query($conn, $colSql);
+$colRow = $colRes ? mysqli_fetch_assoc($colRes) : null;
+if ((int)($colRow['c'] ?? 0) < 2) {
+    appt_verify_fail('appointments missing assigned_to_employee_id or is_confirmed columns');
+} else {
+    appt_verify_pass('appointments assignee and confirmed columns present');
+}
+
 $companyId = 1;
 $settings = itm_appointment_load_settings($conn, $companyId);
 if (!$settings) {

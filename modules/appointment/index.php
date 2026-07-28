@@ -12,6 +12,9 @@ require_once ROOT_PATH . 'includes/itm_crud_audit_fields.php';
 
 if (function_exists('itm_require_crud_role_module_permission')) {
     $permAction = in_array($crud_action, ['index', 'list_all', 'view'], true) ? 'view' : $crud_action;
+    if ($crud_action === 'list_all' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+        $permAction = 'edit';
+    }
     if ($crud_action === 'delete') {
         $permAction = 'delete';
     }
@@ -48,6 +51,50 @@ $appointmentModalityConfig = [
 require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, $moduleSlug, $moduleListHeading);
 
+if ($crud_action === 'list_all' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    itm_require_post_csrf();
+    $rowId = (int)($_POST['id'] ?? 0);
+    $assignedRaw = $_POST['assigned_to_employee_id'] ?? '';
+    $assignedTo = ($assignedRaw === '' || $assignedRaw === null) ? null : (int)$assignedRaw;
+    $isConfirmed = !empty($_POST['is_confirmed']) ? 1 : 0;
+    if ($rowId > 0) {
+        if ($assignedTo !== null && $assignedTo > 0) {
+            $check = mysqli_prepare($conn, 'SELECT id FROM employees WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
+            if ($check) {
+                mysqli_stmt_bind_param($check, 'ii', $assignedTo, $company_id);
+                mysqli_stmt_execute($check);
+                $checkRes = mysqli_stmt_get_result($check);
+                $validAssignee = $checkRes && mysqli_fetch_assoc($checkRes);
+                mysqli_stmt_close($check);
+                if (!$validAssignee) {
+                    $assignedTo = null;
+                }
+            }
+        } else {
+            $assignedTo = null;
+        }
+        if ($assignedTo === null) {
+            $sql = 'UPDATE appointments SET assigned_to_employee_id = NULL, is_confirmed = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
+            $stmt = mysqli_prepare($conn, $sql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'iiii', $isConfirmed, $employee_id, $rowId, $company_id);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+            }
+        } else {
+            $sql = 'UPDATE appointments SET assigned_to_employee_id = ?, is_confirmed = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
+            $stmt = mysqli_prepare($conn, $sql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'iiiii', $assignedTo, $isConfirmed, $employee_id, $rowId, $company_id);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+            }
+        }
+    }
+    header('Location: list_all.php');
+    exit;
+}
+
 // Soft-delete handler (delete.php routes here).
 if ($crud_action === 'delete' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     itm_require_post_csrf();
@@ -63,13 +110,36 @@ if ($crud_action === 'delete' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') 
 }
 
 $listRows = [];
+$listAssigneeEmployees = [];
+$canEditListRows = true;
+if (function_exists('itm_user_has_role_module_permission') && function_exists('itm_resolve_rbac_module_name_for_slug')) {
+    $rbacModuleName = itm_resolve_rbac_module_name_for_slug($conn, 'appointment');
+    if ($rbacModuleName !== '') {
+        $canEditListRows = itm_user_has_role_module_permission($conn, $employee_id, $company_id, $rbacModuleName, 'edit');
+    }
+}
 if ($crud_action === 'list_all') {
+    $empSql = "SELECT id, first_name, last_name, username FROM employees
+               WHERE company_id = ? AND deleted_at IS NULL
+               ORDER BY first_name ASC, last_name ASC, username ASC";
+    $empStmt = mysqli_prepare($conn, $empSql);
+    if ($empStmt) {
+        mysqli_stmt_bind_param($empStmt, 'i', $company_id);
+        mysqli_stmt_execute($empStmt);
+        $empRes = mysqli_stmt_get_result($empStmt);
+        while ($empRes && ($empRow = mysqli_fetch_assoc($empRes))) {
+            $listAssigneeEmployees[] = $empRow;
+        }
+        mysqli_stmt_close($empStmt);
+    }
     $sql = "SELECT a.*, r.name AS reason_name, t.name AS appointment_type_name,
-            CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,'')) AS employee_name
+            CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,'')) AS employee_name,
+            CONCAT(COALESCE(ae.first_name,''), ' ', COALESCE(ae.last_name,'')) AS assigned_to_name
             FROM appointments a
             LEFT JOIN appointment_visit_reasons r ON r.id = a.visit_reason_id AND r.company_id = a.company_id
             LEFT JOIN appointment_type t ON t.id = a.appointment_type_id AND t.company_id = a.company_id
             LEFT JOIN employees e ON e.id = a.employee_id
+            LEFT JOIN employees ae ON ae.id = a.assigned_to_employee_id AND ae.company_id = a.company_id
             WHERE a.company_id = ? AND a.deleted_at IS NULL
             ORDER BY a.appointment_date DESC, a.start_time DESC
             LIMIT 200";
@@ -89,11 +159,13 @@ $viewRow = null;
 if ($crud_action === 'view') {
     $viewId = (int)($_GET['id'] ?? 0);
     $sql = "SELECT a.*, r.name AS reason_name, t.name AS appointment_type_name,
-            CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,'')) AS employee_name
+            CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,'')) AS employee_name,
+            CONCAT(COALESCE(ae.first_name,''), ' ', COALESCE(ae.last_name,'')) AS assigned_to_name
             FROM appointments a
             LEFT JOIN appointment_visit_reasons r ON r.id = a.visit_reason_id AND r.company_id = a.company_id
             LEFT JOIN appointment_type t ON t.id = a.appointment_type_id AND t.company_id = a.company_id
             LEFT JOIN employees e ON e.id = a.employee_id
+            LEFT JOIN employees ae ON ae.id = a.assigned_to_employee_id AND ae.company_id = a.company_id
             WHERE a.id = ? AND a.company_id = ? AND a.deleted_at IS NULL LIMIT 1";
     $stmt = mysqli_prepare($conn, $sql);
     if ($stmt) {
@@ -116,6 +188,15 @@ function appt_format_date_display($ymd)
 function appt_type_label($type)
 {
     return $type === 'remote' ? 'Remote' : 'In-person';
+}
+
+function appt_employee_select_label(array $empRow)
+{
+    $name = trim((string)($empRow['first_name'] ?? '') . ' ' . (string)($empRow['last_name'] ?? ''));
+    if ($name === '') {
+        $name = trim((string)($empRow['username'] ?? ''));
+    }
+    return $name !== '' ? $name : 'Employee #' . (int)($empRow['id'] ?? 0);
 }
 
 ?>
@@ -151,25 +232,57 @@ function appt_type_label($type)
                             <th>Reason</th>
                             <th>Type</th>
                             <th>Status</th>
+                            <th>Assigned to</th>
+                            <th>Confirmed</th>
                             <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
                         </thead>
                         <tbody>
                         <?php foreach ($listRows as $row): ?>
                             <tr>
+                                <?php if ($canEditListRows): ?>
+                                <form method="post" action="list_all.php" class="appointment-list-row-form" style="display:contents;">
+                                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                    <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                <?php endif; ?>
                                 <td><?php echo sanitize(appt_format_date_display($row['appointment_date'])); ?></td>
                                 <td><?php echo sanitize(itm_appointment_slot_label(substr($row['start_time'], 0, 8), substr($row['end_time'], 0, 8))); ?></td>
                                 <td><?php echo sanitize(trim($row['employee_name']) ?: '—'); ?></td>
                                 <td><?php echo sanitize($row['reason_name'] ?? '—'); ?></td>
                                 <td><?php echo sanitize(appt_type_label($row['appointment_type_name'] ?? '')); ?></td>
                                 <td><?php echo sanitize($row['status']); ?></td>
+                                <td>
+                                    <?php if ($canEditListRows): ?>
+                                        <select name="assigned_to_employee_id" class="form-control" title="Assigned to" onchange="this.form.submit()">
+                                            <option value="">— Unassigned —</option>
+                                            <?php foreach ($listAssigneeEmployees as $empOpt): ?>
+                                                <option value="<?php echo (int)$empOpt['id']; ?>"<?php echo (int)($row['assigned_to_employee_id'] ?? 0) === (int)$empOpt['id'] ? ' selected' : ''; ?>><?php echo sanitize(appt_employee_select_label($empOpt)); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    <?php else: ?>
+                                        <?php echo sanitize(trim($row['assigned_to_name'] ?? '') ?: '—'); ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($canEditListRows): ?>
+                                        <label class="itm-checkbox-control">
+                                            <input type="checkbox" name="is_confirmed" value="1"<?php echo (int)($row['is_confirmed'] ?? 0) === 1 ? ' checked' : ''; ?> onchange="this.form.submit()">
+                                            <span>Confirmed</span>
+                                        </label>
+                                    <?php else: ?>
+                                        <?php echo (int)($row['is_confirmed'] ?? 0) === 1 ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-danger">No</span>'; ?>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>" title="View">🔎</a>
                                 </td>
+                                <?php if ($canEditListRows): ?>
+                                </form>
+                                <?php endif; ?>
                             </tr>
                         <?php endforeach; ?>
                         <?php if (empty($listRows)): ?>
-                            <tr><td colspan="7">No appointments scheduled.</td></tr>
+                            <tr><td colspan="9">No appointments scheduled.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
@@ -191,6 +304,8 @@ function appt_type_label($type)
                             <tr><th>Time</th><td><?php echo sanitize(itm_appointment_slot_label(substr($viewRow['start_time'], 0, 8), substr($viewRow['end_time'], 0, 8))); ?></td></tr>
                             <tr><th>Type</th><td><?php echo sanitize(appt_type_label($viewRow['appointment_type_name'] ?? '')); ?></td></tr>
                             <tr><th>Status</th><td><?php echo sanitize($viewRow['status']); ?></td></tr>
+                            <tr><th>Assigned to</th><td><?php echo sanitize(trim($viewRow['assigned_to_name'] ?? '') ?: '—'); ?></td></tr>
+                            <tr><th>Confirmed</th><td><?php echo (int)($viewRow['is_confirmed'] ?? 0) === 1 ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-danger">No</span>'; ?></td></tr>
                             <tr><th>Time zone</th><td><?php echo sanitize($viewRow['timezone']); ?></td></tr>
                             <tr><th>Active</th><td><?php echo (int)($viewRow['active'] ?? 0) === 1 ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>'; ?></td></tr>
                             <?php
