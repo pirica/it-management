@@ -245,6 +245,29 @@ if (!function_exists('itm_hotel_booking_resolve_reviews_url')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_sanitize_rate_code')) {
+  function itm_hotel_booking_portal_sanitize_rate_code($value, $maxLen = 8) {
+    $v = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) $value));
+    if ($maxLen < 1) {
+      return '';
+    }
+    return substr($v, 0, (int) $maxLen);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_parse_bool_param')) {
+  function itm_hotel_booking_portal_parse_bool_param(array $source, $key) {
+    if (!array_key_exists($key, $source)) {
+      return 0;
+    }
+    $v = $source[$key];
+    if ($v === true || $v === 1 || $v === '1' || $v === 'on' || $v === 'yes') {
+      return 1;
+    }
+    return 0;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_parse_occupancy')) {
   function itm_hotel_booking_portal_parse_occupancy(array $source) {
     $rooms = max(1, min(4, (int) ($source['rooms'] ?? 1)));
@@ -258,7 +281,82 @@ if (!function_exists('itm_hotel_booking_portal_parse_occupancy')) {
       'children' => $children,
       'babies' => $babies,
       'rate' => $rateSlug,
+      'use_points' => itm_hotel_booking_portal_parse_bool_param($source, 'use_points'),
+      'travel_agents' => itm_hotel_booking_portal_parse_bool_param($source, 'travel_agents'),
+      'aaa_rate' => itm_hotel_booking_portal_parse_bool_param($source, 'aaa_rate'),
+      'senior_rate' => itm_hotel_booking_portal_parse_bool_param($source, 'senior_rate'),
+      'gov_military' => itm_hotel_booking_portal_parse_bool_param($source, 'gov_military'),
+      'promo_code' => itm_hotel_booking_portal_sanitize_rate_code($source['promo_code'] ?? ''),
+      'group_code' => itm_hotel_booking_portal_sanitize_rate_code($source['group_code'] ?? ''),
+      'corporate_account' => itm_hotel_booking_portal_sanitize_rate_code($source['corporate_account'] ?? ''),
+      'member_account' => itm_hotel_booking_portal_sanitize_rate_code($source['member_account'] ?? ''),
     ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_resolved_rate_slug')) {
+  function itm_hotel_booking_portal_resolved_rate_slug(array $occupancy) {
+    $explicit = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($occupancy['rate'] ?? '')));
+    if ($explicit !== '') {
+      return $explicit;
+    }
+    if (!empty($occupancy['promo_code'])) {
+      return 'promo';
+    }
+    if (!empty($occupancy['group_code'])) {
+      return 'group';
+    }
+    if (!empty($occupancy['corporate_account'])) {
+      return 'corporate';
+    }
+    if (!empty($occupancy['member_account'])) {
+      return 'member';
+    }
+    if (!empty($occupancy['use_points'])) {
+      return 'points';
+    }
+    if (!empty($occupancy['travel_agents'])) {
+      return 'travel_agent';
+    }
+    if (!empty($occupancy['aaa_rate'])) {
+      return 'aaa';
+    }
+    if (!empty($occupancy['senior_rate'])) {
+      return 'senior';
+    }
+    if (!empty($occupancy['gov_military'])) {
+      return 'government';
+    }
+    return '';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_occupancy_query_params')) {
+  function itm_hotel_booking_portal_occupancy_query_params(array $occupancy) {
+    $params = [
+      'rooms' => (int) ($occupancy['rooms'] ?? 1),
+      'adults' => (int) ($occupancy['adults'] ?? 1),
+      'children' => (int) ($occupancy['children'] ?? 0),
+      'babies' => (int) ($occupancy['babies'] ?? 0),
+    ];
+    $rateSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($occupancy['rate'] ?? '')));
+    if ($rateSlug !== '') {
+      $params['rate'] = $rateSlug;
+    }
+    $boolKeys = ['use_points', 'travel_agents', 'aaa_rate', 'senior_rate', 'gov_military'];
+    foreach ($boolKeys as $key) {
+      if (!empty($occupancy[$key])) {
+        $params[$key] = '1';
+      }
+    }
+    $codeKeys = ['promo_code', 'group_code', 'corporate_account', 'member_account'];
+    foreach ($codeKeys as $key) {
+      $code = itm_hotel_booking_portal_sanitize_rate_code($occupancy[$key] ?? '');
+      if ($code !== '') {
+        $params[$key] = $code;
+      }
+    }
+    return $params;
   }
 }
 

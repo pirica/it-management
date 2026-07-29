@@ -70,4 +70,25 @@ if ($res && mysqli_num_rows($res) > 0) {
     hb_fail('missing table hotel_booking_special_rates');
 }
 
+$occParsed = itm_hotel_booking_portal_parse_occupancy([
+    'rooms' => 1,
+    'adults' => 2,
+    'aaa_rate' => '1',
+    'promo_code' => 'ab-12!xy',
+    'member_account' => 'toolongcode',
+]);
+if (!empty($occParsed['aaa_rate']) && $occParsed['promo_code'] === 'AB12XY' && $occParsed['member_account'] === 'TOOLONGC') {
+    hb_pass('portal special rate parse sanitize');
+} else {
+    hb_fail('portal special rate parse sanitize');
+}
+
+$resolvedAaa = itm_hotel_booking_portal_resolved_rate_slug(['aaa_rate' => 1]);
+$resolvedPromo = itm_hotel_booking_portal_resolved_rate_slug(['promo_code' => 'SAVE10']);
+if ($resolvedAaa === 'aaa' && $resolvedPromo === 'promo') {
+    hb_pass('portal resolved rate slug');
+} else {
+    hb_fail('portal resolved rate slug got aaa=' . $resolvedAaa . ' promo=' . $resolvedPromo);
+}
+
 exit($fail > 0 ? 1 : 0);

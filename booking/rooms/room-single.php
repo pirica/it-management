@@ -34,7 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
             $error = 'Could not save guest details.';
         } else {
             $hotelIdForRate = (int) ($room['hotel_id'] ?? 0);
-            $discount = itm_hotel_booking_special_rate_discount($conn, $company_id, $hotelIdForRate, $occupancy['rate']);
+            $resolvedRate = itm_hotel_booking_portal_resolved_rate_slug($occupancy);
+            $discount = itm_hotel_booking_special_rate_discount($conn, $company_id, $hotelIdForRate, $resolvedRate);
             $amount = itm_hotel_booking_compute_stay_payment($room['price_per_night'], $checkIn, $checkOut, $occupancy, $discount);
             $status = itm_hotel_booking_apply_segment_status_on_save($conn, $company_id, $checkIn, $checkOut);
             $fs = (int) ($status['future_status_id'] ?? 0);
@@ -76,7 +77,13 @@ if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkInGet)) {
 <input type="hidden" name="adults" value="<?php echo (int) $occupancy['adults']; ?>">
 <input type="hidden" name="children" value="<?php echo (int) $occupancy['children']; ?>">
 <input type="hidden" name="babies" value="<?php echo (int) $occupancy['babies']; ?>">
-<input type="hidden" name="rate" value="<?php echo htmlspecialchars((string) ($occupancy['rate'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+<?php
+$hbOccHidden = itm_hotel_booking_portal_occupancy_query_params($occupancy);
+unset($hbOccHidden['rooms'], $hbOccHidden['adults'], $hbOccHidden['children'], $hbOccHidden['babies']);
+foreach ($hbOccHidden as $hbKey => $hbVal):
+?>
+<input type="hidden" name="<?php echo htmlspecialchars($hbKey, ENT_QUOTES, 'UTF-8'); ?>" value="<?php echo htmlspecialchars((string) $hbVal, ENT_QUOTES, 'UTF-8'); ?>">
+<?php endforeach; ?>
 <label>Full name</label><input type="text" name="full_name" required autocomplete="name">
 <label>Email</label><input type="email" name="email" required autocomplete="email">
 <label>Phone</label><input type="tel" name="phone" autocomplete="tel">
