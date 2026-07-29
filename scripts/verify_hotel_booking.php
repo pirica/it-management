@@ -162,4 +162,22 @@ if (abs((float) ($breakdownSample['room_charges'] ?? 0) - 841.0) < 0.01 && abs((
     hb_fail('portal checkout breakdown with tourist tax');
 }
 
+if (itm_hotel_booking_portal_validate_guest_email('guest@example.com') && !itm_hotel_booking_portal_validate_guest_email('not-an-email')) {
+    hb_pass('portal guest email validation');
+} else {
+    hb_fail('portal guest email validation');
+}
+
+if (itm_hotel_booking_portal_validate_guest_phone('+351912345678') && !itm_hotel_booking_portal_validate_guest_phone('91234')) {
+    hb_pass('portal guest phone validation');
+} else {
+    hb_fail('portal guest phone validation');
+}
+
+if (itm_hotel_booking_portal_normalize_guest_phone('351 912 345 678') === '+351912345678') {
+    hb_pass('portal guest phone normalize');
+} else {
+    hb_fail('portal guest phone normalize');
+}
+
 exit($fail > 0 ? 1 : 0);
