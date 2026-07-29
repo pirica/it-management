@@ -50,15 +50,11 @@
     });
   }
 
-  function amenityIcon(name) {
-    var n = String(name || '').toLowerCase();
-    if (n.indexOf('wifi') >= 0) return '📶';
-    if (n.indexOf('pool') >= 0) return '🏊';
-    if (n.indexOf('fitness') >= 0 || n.indexOf('gym') >= 0) return '🏋️';
-    if (n.indexOf('spa') >= 0) return '💆';
-    if (n.indexOf('parking') >= 0) return '🅿️';
-    if (n.indexOf('restaurant') >= 0 || n.indexOf('dining') >= 0) return '🍽️';
-    return '✨';
+  function amenityIcon(name, iconSlug) {
+    if (typeof window.HB_amenityIconMarkup === 'function') {
+      return window.HB_amenityIconMarkup(name, iconSlug || '');
+    }
+    return '';
   }
 
   function splitParkingLines(text) {
@@ -183,7 +179,8 @@
       ];
     }
     var amenityHtml = amenities.map(function (a) {
-      return '<div class="hb-amenity-item"><span class="hb-amenity-icon" aria-hidden="true">' + amenityIcon(a.name) + '</span><span>' + escapeHtml(a.name) + '</span></div>';
+      var slug = a.icon_slug || '';
+      return '<div class="hb-amenity-item"><span class="hb-amenity-icon" aria-hidden="true">' + amenityIcon(a.name, slug) + '</span><span>' + escapeHtml(a.name) + '</span></div>';
     }).join('');
 
     var parkingHtml = '';

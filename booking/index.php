@@ -31,19 +31,39 @@ function hb_hotel_nearby_rows($conn, $companyId, $hotelId) {
 
 function hb_hotel_amenities_rows($conn, $companyId, $hotelId) {
     $rows = [];
-    $sql = 'SELECT DISTINCT u.name, u.icon_class FROM hotel_booking_room_utilities u
+    $sql = 'SELECT DISTINCT COALESCE(a.name, u.name) AS name, COALESCE(NULLIF(a.icon_slug, \'\'), \'\') AS icon_slug
+            FROM hotel_booking_room_utilities u
             INNER JOIN hotel_booking_rooms r ON r.id = u.room_id AND r.company_id = u.company_id
-            WHERE u.company_id = ? AND r.hotel_id = ? AND u.deleted_at IS NULL AND r.deleted_at IS NULL
-            ORDER BY u.name ASC';
+            LEFT JOIN hotel_booking_amenities a ON a.id = u.amenity_id AND a.company_id = u.company_id AND a.deleted_at IS NULL AND a.active = 1
+            WHERE u.company_id = ? AND r.hotel_id = ? AND u.deleted_at IS NULL AND u.active = 1
+            ORDER BY a.sort_order ASC, name ASC';
     $stmt = mysqli_prepare($conn, $sql);
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'ii', $companyId, $hotelId);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         while ($res && ($row = mysqli_fetch_assoc($res))) {
-            $rows[] = $row;
+            $rows[] = [
+                'name' => $row['name'] ?? '',
+                'icon_slug' => $row['icon_slug'] ?? '',
+            ];
         }
         mysqli_stmt_close($stmt);
+    }
+    if (empty($rows)) {
+        $cstmt = mysqli_prepare($conn, 'SELECT name, icon_slug FROM hotel_booking_amenities WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY sort_order ASC, name ASC LIMIT 12');
+        if ($cstmt) {
+            mysqli_stmt_bind_param($cstmt, 'i', $companyId);
+            mysqli_stmt_execute($cstmt);
+            $cres = mysqli_stmt_get_result($cstmt);
+            while ($cres && ($crow = mysqli_fetch_assoc($cres))) {
+                $rows[] = [
+                    'name' => $crow['name'] ?? '',
+                    'icon_slug' => $crow['icon_slug'] ?? '',
+                ];
+            }
+            mysqli_stmt_close($cstmt);
+        }
     }
     return $rows;
 }
@@ -136,6 +156,7 @@ window.HB_APPURL = <?php echo json_encode(APPURL); ?>;
 window.HB_HOTELS = <?php echo json_encode($hotels, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 window.HB_SETTINGS = <?php echo json_encode($hbSettingsPublic, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
+<script src="<?php echo APPURL; ?>/js/hotel-booking-amenity-icons.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-public.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-dates.js"></script>
 </body>

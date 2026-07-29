@@ -79,7 +79,8 @@ body.hb-modal-open { overflow: hidden; }
 /* Amenities carousel */
 .hb-amenities-scroll { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; }
 .hb-amenity-item { flex: 0 0 auto; text-align: center; width: 88px; font-size: .75rem; color: var(--hb-text); }
-.hb-amenity-icon { display: block; font-size: 1.75rem; margin-bottom: 6px; }
+.hb-amenity-icon { display: block; margin-bottom: 6px; color: var(--hb-primary); }
+.hb-amenity-icon-img { display: block; width: 28px; height: 28px; margin: 0 auto; }
 
 /* Overview table */
 .hb-overview-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
