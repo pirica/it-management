@@ -124,3 +124,33 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
         <?php
     }
 }
+
+if (!function_exists('hb_portal_render_draft_special_requests_review')) {
+    /**
+     * Read-only special requests from step 2 draft (shown on step 4).
+     */
+    function hb_portal_render_draft_special_requests_review(array $draft) {
+        $hasPet = !empty($draft['traveling_with_pet']);
+        $hasAnimal = !empty($draft['service_animal']);
+        $comments = trim((string) ($draft['additional_comments'] ?? ''));
+        if (!$hasPet && !$hasAnimal && $comments === '') {
+            return;
+        }
+        ?>
+<section class="hb-checkout-section hb-special-requests-review">
+<h2 class="hb-checkout-section-title">Special requests</h2>
+<?php if ($hasPet): ?>
+<p class="hb-special-request-line">Traveling with a pet (daily fee included in room charges).</p>
+<?php endif; ?>
+<?php if ($hasAnimal): ?>
+<p class="hb-special-request-line">Service animal noted.</p>
+<?php endif; ?>
+<?php if ($comments !== ''): ?>
+<h3 class="hb-special-requests-comments-title">Additional comments</h3>
+<p class="hb-special-request-comments"><?php echo htmlspecialchars($comments, ENT_QUOTES, 'UTF-8'); ?></p>
+<?php endif; ?>
+<p class="hb-checkout-hint">The hotel staff cannot guarantee additional requests.</p>
+</section>
+        <?php
+    }
+}
