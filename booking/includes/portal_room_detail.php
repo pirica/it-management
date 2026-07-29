@@ -106,6 +106,34 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
                 $comfortHtml .= '<li>' . htmlspecialchars($c, ENT_QUOTES, 'UTF-8') . '</li>';
             }
         }
+        if ($comfortHtml === '') {
+            $comfortDefaults = [
+                '37-inch HDTV',
+                'Air conditioning',
+                'Bath slippers',
+                'Bathrobe',
+                'Bathroom television',
+                'Bidet',
+                'Black-out curtains',
+                'Duvet covers',
+                'Feather pillows (non-allergenic)',
+                'Non-smoking',
+                'On-demand movies',
+            ];
+            foreach ($comfortDefaults as $c) {
+                $comfortHtml .= '<li>' . htmlspecialchars($c, ENT_QUOTES, 'UTF-8') . '</li>';
+            }
+        }
+
+        $descLead = trim($desc);
+        if ($descLead === '') {
+            $descLead = 'Experience modern luxury in this room with thoughtful design and convenient features. Boasting smart amenities for business and leisure stays.';
+        }
+        $descExtra = 'Enjoy quality coffee from the Nespresso coffee machine or a drink from the minibar. The marble bathroom contains a separate bathtub with luxury bath products, cotton bathrobes and slippers.';
+        if ($specLine === '') {
+            $specParts = ['38 sq. m.', 'balcony', '55-inch HDTV', 'minibar', 'rain shower', 'WiFi'];
+            $specLine = implode(', ', $specParts);
+        }
 
         $bookClass = 'hb-btn hb-btn-primary hb-room-detail-book';
         if (!$available) {
@@ -122,10 +150,11 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
 <?php if ($specLine !== ''): ?>
 <p class="hb-rd-spec"><?php echo htmlspecialchars($specLine, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php endif; ?>
-<?php if ($desc !== ''): ?>
-<p class="hb-rd-desc hb-rd-desc-short"><?php echo htmlspecialchars($desc, ENT_QUOTES, 'UTF-8'); ?></p>
+<div class="hb-rd-desc-wrap">
+<p class="hb-rd-desc hb-rd-desc-lead"><?php echo htmlspecialchars($descLead, ENT_QUOTES, 'UTF-8'); ?></p>
+<p class="hb-rd-desc hb-rd-desc-more" hidden><?php echo htmlspecialchars($descExtra, ENT_QUOTES, 'UTF-8'); ?></p>
 <button type="button" class="hb-rd-read-more" data-hb-read-more title="Read more">Read more</button>
-<?php endif; ?>
+</div>
 <?php if ($available): ?>
 <a class="<?php echo htmlspecialchars($bookClass, ENT_QUOTES, 'UTF-8'); ?>" href="<?php echo htmlspecialchars($bookUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Book this room">Book From <?php echo htmlspecialchars($priceLabel, ENT_QUOTES, 'UTF-8'); ?></a>
 <?php else: ?>
@@ -142,7 +171,7 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
 <div class="hb-rd-highlights"><?php echo $highlightsHtml; ?></div>
 </section>
 <details class="hb-rd-more" open>
-<summary>More room details</summary>
+<summary class="hb-rd-more-summary"><span class="hb-rd-more-title">More room details</span><span class="hb-rd-more-chevron" aria-hidden="true"></span></summary>
 <div class="hb-rd-more-body">
 <h4>For your comfort</h4>
 <ul><?php echo $comfortHtml; ?></ul>
