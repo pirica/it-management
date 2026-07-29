@@ -113,7 +113,7 @@ $changeRoomUrl = APPURL . '/rooms.php?' . $changeRoomQuery;
 
 $discountPercent = $draft ? (float) ($draft['discount_percent'] ?? 0) : itm_hotel_booking_special_rate_discount($conn, $company_id, $hotelId, itm_hotel_booking_portal_resolved_rate_slug($occupancy));
 $draftForDisplay = $draft ?: ['rate_plan' => 'room_only', 'traveling_with_pet' => 0, 'service_animal' => 0];
-$touristTaxPerPerson = (float) ($settings['tourist_tax_per_person_per_night'] ?? 0);
+$touristTaxPerPerson = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings);
 $breakdown = itm_hotel_booking_portal_checkout_breakdown(
     (float) ($draft ? ($draft['base_price_per_night'] ?? $room['price_per_night']) : $room['price_per_night']),
     $checkInIso,
@@ -150,10 +150,7 @@ $reservationSummaryContext = [
 <?php hb_portal_render_header($settings); ?>
 <?php hb_portal_render_stay_bar($hotel, $checkInIso, $nights, $occupancy); ?>
 
-<div class="hb-select-room-layout hb-checkout-layout hb-checkout-layout--summary-left">
-<aside class="hb-checkout-summary-aside">
-<?php hb_portal_render_reservation_summary($reservationSummaryContext); ?>
-</aside>
+<div class="hb-select-room-layout hb-checkout-layout">
 <main class="hb-select-room-main">
 <p class="hb-step-label">Step 4 of 4</p>
 <h1 class="hb-page-title">Payment and Guest Details</h1>
@@ -184,11 +181,12 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 </form>
 </main>
 
-<aside class="hb-select-room-aside">
+<aside class="hb-select-room-aside hb-checkout-aside-stack">
 <?php hb_portal_render_checkout_stepper(4, [
     'room_label' => $roomLabel,
     'change_room_url' => $changeRoomUrl,
 ]); ?>
+<?php hb_portal_render_reservation_summary($reservationSummaryContext); ?>
 </aside>
 </div>
 </body>

@@ -6,7 +6,10 @@
   var checkbox = document.getElementById('hb-accept-room-upgrade');
   var roomChargesEl = document.getElementById('hb-reservation-room-charges');
   var stayTotalEl = document.getElementById('hb-reservation-stay-total');
-  if (!checkbox || !roomChargesEl || !stayTotalEl) {
+  if (!roomChargesEl || !stayTotalEl) {
+    return;
+  }
+  if (!cfg.hasUpgradeCheckbox || !checkbox) {
     return;
   }
 

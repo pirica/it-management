@@ -29,7 +29,7 @@ $currency = $room['currency_code'] ?? 'EUR';
 $roomTypeId = (int) ($room['room_type_id'] ?? 0);
 $discountPercent = (float) ($draft['discount_percent'] ?? 0);
 $basePerNight = (float) ($draft['base_price_per_night'] ?? $room['price_per_night']);
-$touristTaxPerPerson = (float) ($settings['tourist_tax_per_person_per_night'] ?? 0);
+$touristTaxPerPerson = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings);
 
 $upgradeOffer = $roomTypeId > 0
     ? itm_hotel_booking_portal_room_type_upgrade_offer($conn, $company_id, $roomTypeId)
@@ -37,11 +37,12 @@ $upgradeOffer = $roomTypeId > 0
 
 $upgradeImageUrl = APPURL . '/images/room-5.jpg';
 if ($upgradeOffer) {
+    $targetTypeId = (int) ($upgradeOffer['target_type_id'] ?? 0);
     $upgradeRoom = itm_hotel_booking_portal_find_available_room_for_type(
         $conn,
         $company_id,
         $hotelId,
-        (int) $upgradeOffer['target_type_id'],
+        $targetTypeId,
         $checkInIso,
         $checkOutIso
     );
@@ -50,25 +51,27 @@ if ($upgradeOffer) {
         $photos = itm_hotel_booking_photos_load($conn, $company_id, 'hotel_booking_room_photos', 'room_id', $upgradeRoomId);
         if (!empty($photos[0]['stored_filename'])) {
             $upgradeImageUrl = itm_hotel_booking_photo_public_url($company_id, 'room', $upgradeRoomId, $photos[0]['stored_filename']);
-        } else {
-            $tphotos = itm_hotel_booking_photos_load($conn, $company_id, 'booking_rooms_type_photos', 'room_type_id', (int) $upgradeOffer['target_type_id']);
-            if (!empty($tphotos[0]['stored_filename'])) {
-                $upgradeImageUrl = itm_hotel_booking_photo_public_url($company_id, 'room_type', (int) $upgradeOffer['target_type_id'], $tphotos[0]['stored_filename']);
-            }
         }
-    } else {
-        $upgradeOffer = null;
+    }
+    if ($upgradeImageUrl === APPURL . '/images/room-5.jpg' && $targetTypeId > 0) {
+        $tphotos = itm_hotel_booking_photos_load($conn, $company_id, 'booking_rooms_type_photos', 'room_type_id', $targetTypeId);
+        if (!empty($tphotos[0]['stored_filename'])) {
+            $upgradeImageUrl = itm_hotel_booking_photo_public_url($company_id, 'room_type', $targetTypeId, $tphotos[0]['stored_filename']);
+        }
     }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
+    $postUpgradeOffer = $roomTypeId > 0
+        ? itm_hotel_booking_portal_room_type_upgrade_offer($conn, $company_id, $roomTypeId)
+        : null;
     $draft['upgrade_accepted'] = 0;
     $draft['upgrade_price_per_night'] = 0;
     $draft['upgrade_target_name'] = '';
     $draft['upgrade_target_type_id'] = 0;
-    if (!empty($_POST['accept_room_upgrade']) && $upgradeOffer) {
-        $targetTypeId = (int) ($upgradeOffer['target_type_id'] ?? 0);
+    if (!empty($_POST['accept_room_upgrade']) && $postUpgradeOffer) {
+        $targetTypeId = (int) ($postUpgradeOffer['target_type_id'] ?? 0);
         $swapRoom = itm_hotel_booking_portal_find_available_room_for_type(
             $conn,
             $company_id,
@@ -79,8 +82,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         if ($swapRoom) {
             $draft['upgrade_accepted'] = 1;
-            $draft['upgrade_price_per_night'] = (float) ($upgradeOffer['upgrade_price_per_night'] ?? 0);
-            $draft['upgrade_target_name'] = (string) ($upgradeOffer['target_name'] ?? '');
+            $draft['upgrade_price_per_night'] = (float) ($postUpgradeOffer['upgrade_price_per_night'] ?? 0);
+            $draft['upgrade_target_name'] = (string) ($postUpgradeOffer['target_name'] ?? '');
             $draft['upgrade_target_type_id'] = $targetTypeId;
             $draft['room_id'] = (int) $swapRoom['id'];
         }
@@ -168,10 +171,7 @@ $reservationSummaryContext = [
 <?php hb_portal_render_header($settings); ?>
 <?php hb_portal_render_stay_bar($hotel, $checkInIso, $nights, $occupancy); ?>
 
-<div class="hb-select-room-layout hb-checkout-layout hb-checkout-layout--summary-left">
-<aside class="hb-checkout-summary-aside">
-<?php hb_portal_render_reservation_summary($reservationSummaryContext); ?>
-</aside>
+<div class="hb-select-room-layout hb-checkout-layout">
 <main class="hb-select-room-main">
 <p class="hb-step-label">Step 3 of 4</p>
 <h1 class="hb-page-title">Customize Your Stay</h1>
@@ -210,19 +210,19 @@ $reservationSummaryContext = [
 
 <div class="hb-checkout-actions">
 <button type="submit" class="hb-btn hb-btn-primary" title="Continue to guest details">Continue</button>
-<a class="hb-btn" href="<?php echo htmlspecialchars($changeRateUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Back">Back</a>
+<a class="hb-btn hb-checkout-skip" href="<?php echo htmlspecialchars($changeRateUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Back">Back</a>
 </div>
 </form>
 </main>
 
-<aside class="hb-select-room-aside">
+<aside class="hb-select-room-aside hb-checkout-aside-stack">
 <?php hb_portal_render_checkout_stepper(3, [
     'room_label' => $roomLabel,
     'change_room_url' => $changeRoomUrl,
 ]); ?>
+<?php hb_portal_render_reservation_summary($reservationSummaryContext); ?>
 </aside>
 </div>
-<?php if ($upgradeOffer): ?>
 <script>
 window.HB_CUSTOMIZE_UPGRADE = <?php echo json_encode([
     'nights' => $nights,
@@ -230,9 +230,9 @@ window.HB_CUSTOMIZE_UPGRADE = <?php echo json_encode([
     'roomChargesBase' => (float) ($breakdownNoUpgrade['room_charges'] ?? 0),
     'touristTax' => (float) ($breakdownNoUpgrade['tourist_tax'] ?? 0),
     'currencyCode' => $currency,
+    'hasUpgradeCheckbox' => (bool) $upgradeOffer,
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-customize.js"></script>
-<?php endif; ?>
 </body>
 </html>
