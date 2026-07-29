@@ -852,9 +852,44 @@ if (!function_exists('itm_hotel_booking_portal_validate_guest_phone')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_occupancy_meta_line')) {
+  /** Machine-readable occupancy stored in hotel_bookings.notes (not shown in Reservation notes UI). */
+  function itm_hotel_booking_portal_occupancy_meta_line(array $occupancy) {
+    $parsed = itm_hotel_booking_portal_parse_occupancy($occupancy);
+    return sprintf(
+      'Occupancy: rooms=%d;adults=%d;children=%d;babies=%d',
+      max(1, (int) ($parsed['rooms'] ?? 1)),
+      max(1, (int) ($parsed['adults'] ?? 1)),
+      max(0, (int) ($parsed['children'] ?? 0)),
+      max(0, (int) ($parsed['babies'] ?? 0))
+    );
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_parse_occupancy_meta_from_notes')) {
+  function itm_hotel_booking_portal_parse_occupancy_meta_from_notes($notesRaw) {
+    $lines = preg_split('/\r\n|\r|\n/', (string) $notesRaw);
+    foreach ($lines as $line) {
+      $line = trim($line);
+      if (preg_match('/^Occupancy:\s*rooms=(\d+);adults=(\d+);children=(\d+);babies=(\d+)$/i', $line, $m)) {
+        return itm_hotel_booking_portal_parse_occupancy([
+          'rooms' => (int) $m[1],
+          'adults' => (int) $m[2],
+          'children' => (int) $m[3],
+          'babies' => (int) $m[4],
+        ]);
+      }
+    }
+    return null;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_build_booking_notes')) {
-  function itm_hotel_booking_portal_build_booking_notes(array $draft) {
+  function itm_hotel_booking_portal_build_booking_notes(array $draft, array $occupancy = null) {
     $parts = [];
+    if (is_array($occupancy)) {
+      $parts[] = itm_hotel_booking_portal_occupancy_meta_line($occupancy);
+    }
     $plan = (string) ($draft['rate_plan'] ?? '');
     if ($plan === 'breakfast') {
       $parts[] = 'Rate: Breakfast included';
@@ -868,11 +903,12 @@ if (!function_exists('itm_hotel_booking_portal_build_booking_notes')) {
       $parts[] = 'Service animal: yes';
     }
     if (!empty($draft['upgrade_accepted']) && !empty($draft['upgrade_target_name'])) {
-      $parts[] = 'Room upgrade: ' . (string) $draft['upgrade_target_name'];
+      $parts[] = 'Room: ' . (string) $draft['upgrade_target_name'];
     }
     $comments = trim((string) ($draft['additional_comments'] ?? ''));
     if ($comments !== '') {
-      $parts[] = 'Guest comments: ' . $comments;
+      $parts[] = 'Guest comments:';
+      $parts[] = $comments;
     }
     return implode("\n", $parts);
   }

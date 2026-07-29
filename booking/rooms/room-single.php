@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
                 $draftForPay,
                 (float) ($settings['tourist_tax_per_person_per_night'] ?? 0)
             );
-            $notes = itm_hotel_booking_portal_build_booking_notes($draftForPay);
+            $notes = itm_hotel_booking_portal_build_booking_notes($draftForPay, $occupancy);
             $status = itm_hotel_booking_apply_segment_status_on_save($conn, $company_id, $checkIn, $checkOut);
             $fs = (int) ($status['future_status_id'] ?? 0);
             $ps = (int) ($status['present_status_id'] ?? 0);
@@ -84,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
                 if (mysqli_stmt_execute($ins)) {
                     $bid = (int) mysqli_insert_id($conn);
                     $_SESSION['hotel_booking_last_id'] = $bid;
+                    $_SESSION['hotel_booking_last_occupancy'] = itm_hotel_booking_portal_occupancy_query_params($occupancy);
                     itm_hotel_booking_portal_draft_clear();
                     header('Location: ' . APPURL . '/rooms/payment.php');
                     exit;

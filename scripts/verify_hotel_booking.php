@@ -180,4 +180,32 @@ if (itm_hotel_booking_portal_normalize_guest_phone('351 912 345 678') === '+3519
     hb_fail('portal guest phone normalize');
 }
 
+$occMeta = itm_hotel_booking_portal_occupancy_meta_line(['rooms' => 2, 'adults' => 2, 'children' => 1, 'babies' => 1]);
+$notesBuilt = itm_hotel_booking_portal_build_booking_notes([
+    'rate_plan' => 'breakfast',
+    'service_animal' => 1,
+    'upgrade_accepted' => 1,
+    'upgrade_target_name' => 'King Grand Deluxe Room with Pool View',
+    'additional_comments' => 'Late arrival',
+], ['rooms' => 2, 'adults' => 2, 'children' => 1, 'babies' => 1]);
+$parsedOcc = itm_hotel_booking_portal_parse_occupancy_meta_from_notes($notesBuilt);
+if (strpos($notesBuilt, $occMeta) === 0
+    && strpos($notesBuilt, 'Rate: Breakfast included') !== false
+    && strpos($notesBuilt, 'Room: King Grand Deluxe Room with Pool View') !== false
+    && strpos($notesBuilt, "Guest comments:\nLate arrival") !== false
+    && is_array($parsedOcc)
+    && (int) ($parsedOcc['rooms'] ?? 0) === 2
+    && (int) ($parsedOcc['children'] ?? 0) === 1) {
+    hb_pass('portal booking notes with occupancy meta');
+} else {
+    hb_fail('portal booking notes with occupancy meta');
+}
+
+$confirmPdfJs = dirname(__DIR__) . '/booking/js/hotel-booking-confirmation-pdf.js';
+if (is_file($confirmPdfJs) && strpos((string) file_get_contents($confirmPdfJs), 'hbSaveBookingConfirmationPdf') !== false) {
+    hb_pass('booking confirmation pdf download script');
+} else {
+    hb_fail('booking confirmation pdf download script missing');
+}
+
 exit($fail > 0 ? 1 : 0);
