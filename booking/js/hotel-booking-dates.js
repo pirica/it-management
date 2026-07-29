@@ -15,8 +15,45 @@
     month: 0,
     selectedYmd: '',
     calendar: null,
-    loading: false
+    loading: false,
+    nights: 1,
+    occupancyLabel: '1 room for 1 adult'
   };
+
+  function stayContextFromPage() {
+    var ctx = window.HB_STAY_CONTEXT || {};
+    return {
+      check_in: String(ctx.check_in || ''),
+      nights: Math.max(1, parseInt(ctx.nights, 10) || 1),
+      occupancy_label: String(ctx.occupancy_label || '1 room for 1 adult')
+    };
+  }
+
+  function formatStayRangeLabel(checkInYmd, nights) {
+    nights = Math.max(1, parseInt(nights, 10) || 1);
+    if (!checkInYmd || !/^\d{4}-\d{2}-\d{2}$/.test(checkInYmd)) {
+      return 'Select dates';
+    }
+    var inD = new Date(checkInYmd + 'T12:00:00');
+    var outD = new Date(inD);
+    outD.setDate(outD.getDate() + nights);
+    var nightWord = nights === 1 ? 'night' : 'nights';
+    var inStr = inD.toLocaleString('en-GB', { weekday: 'short', month: 'short', day: 'numeric' });
+    var outStr = outD.toLocaleString('en-GB', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    return inStr + ' – ' + outStr + ' (' + nights + ' ' + nightWord + ')';
+  }
+
+  function updateStayBarDates() {
+    var el = document.getElementById('hb-dates-stay-dates');
+    if (!el) return;
+    var label = state.selectedYmd
+      ? formatStayRangeLabel(state.selectedYmd, state.nights)
+      : formatStayRangeLabel(stayContextFromPage().check_in, state.nights);
+    if (!state.selectedYmd && !/^\d{4}-\d{2}-\d{2}$/.test(stayContextFromPage().check_in)) {
+      label = 'Select dates';
+    }
+    el.textContent = '📅 ' + label;
+  }
 
   function escapeHtml(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -69,7 +106,11 @@
     }).join('');
 
     datesBody.innerHTML =
-      '<div class="hb-dates-hotel"><strong>' + escapeHtml(h.name) + '</strong></div>' +
+      '<div class="hb-stay-bar hb-dates-stay-bar"><div class="hb-stay-bar-inner">' +
+      '<span class="hb-stay-item" title="Hotel">📍 ' + escapeHtml(h.name) + '</span>' +
+      '<span class="hb-stay-item" id="hb-dates-stay-dates" title="Dates">📅 Select dates</span>' +
+      '<span class="hb-stay-item" title="Guests">👤 ' + escapeHtml(state.occupancyLabel) + '</span>' +
+      '</div></div>' +
       '<p class="hb-dates-copy">We\'re showing the best price per room for 1 night, based on the number of guests.</p>' +
       '<p class="hb-dates-copy">Price includes fees</p>' +
       '<p class="hb-dates-explore"><a href="' + escapeHtml(window.HB_APPURL + '/rooms.php?id=' + h.id) + '">Explore all filters and search options &gt;</a></p>' +
@@ -95,8 +136,10 @@
     datesBody.querySelector('.hb-dates-cancel').addEventListener('click', closeDatesModal);
     datesBody.querySelector('.hb-dates-choose').addEventListener('click', function () {
       if (!state.selectedYmd || !state.hotel) return;
-      window.location.href = window.HB_APPURL + '/rooms.php?id=' + state.hotel.id + '&check_in=' + encodeURIComponent(state.selectedYmd);
+      var q = 'id=' + encodeURIComponent(state.hotel.id) + '&check_in=' + encodeURIComponent(state.selectedYmd) + '&nights=' + encodeURIComponent(state.nights);
+      window.location.href = window.HB_APPURL + '/rooms.php?' + q;
     });
+    updateStayBarDates();
     loadCalendar();
     updateFooter();
   }
@@ -110,6 +153,8 @@
     fetchCalendar(state.hotel.id, state.year, state.month).then(function (data) {
       state.calendar = data;
       renderCalendarGrid();
+      updateFooter();
+      updateStayBarDates();
     }).catch(function () {
       grid.innerHTML = '<p class="hb-dates-error">Could not load calendar.</p>';
     });
@@ -149,6 +194,7 @@
         state.selectedYmd = btn.getAttribute('data-ymd');
         renderCalendarGrid();
         updateFooter();
+        updateStayBarDates();
       });
     });
   }
@@ -179,11 +225,17 @@
 
   function openDatesModal(hotel) {
     if (!hotel) return;
+    var ctx = stayContextFromPage();
     state.hotel = hotel;
+    state.nights = ctx.nights;
+    state.occupancyLabel = ctx.occupancy_label;
     state.selectedYmd = '';
-    var now = new Date();
-    state.year = now.getFullYear();
-    state.month = now.getMonth() + 1;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(ctx.check_in)) {
+      state.selectedYmd = ctx.check_in;
+    }
+    var anchor = state.selectedYmd ? new Date(state.selectedYmd + 'T12:00:00') : new Date();
+    state.year = anchor.getFullYear();
+    state.month = anchor.getMonth() + 1;
     datesModal.hidden = false;
     document.body.classList.add('hb-modal-open');
     renderShell();

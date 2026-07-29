@@ -68,7 +68,20 @@ if (!function_exists('hb_portal_render_stay_bar')) {
             $occupancy = itm_hotel_booking_portal_parse_occupancy(['rooms' => 1, 'adults' => 1]);
         }
         $hotelId = (int) ($hotel['id'] ?? 0);
-        $editUrl = APPURL . '/?hotel=' . $hotelId . '&dates=1';
+        $editQuery = [
+            'hotel' => $hotelId,
+            'dates' => 1,
+            'check_in' => $checkInIso,
+            'nights' => max(1, (int) $nights),
+            'rooms' => (int) ($occupancy['rooms'] ?? 1),
+            'adults' => (int) ($occupancy['adults'] ?? 1),
+            'children' => (int) ($occupancy['children'] ?? 0),
+            'babies' => (int) ($occupancy['babies'] ?? 0),
+        ];
+        if (!empty($occupancy['rate'])) {
+            $editQuery['rate'] = $occupancy['rate'];
+        }
+        $editUrl = APPURL . '/?' . http_build_query($editQuery);
         $rangeLabel = hb_portal_format_stay_range_label($checkInIso, $nights);
         $occLabel = itm_hotel_booking_portal_occupancy_label($occupancy);
         ?>

@@ -76,6 +76,12 @@ if ($stmt) {
     mysqli_stmt_close($stmt);
 }
 $pageTitle = $settings['welcome_title'] ?? 'Find your stay';
+$hbStayOccupancy = itm_hotel_booking_portal_parse_occupancy($_GET);
+$hbStayContext = [
+    'check_in' => trim((string) ($_GET['check_in'] ?? '')),
+    'nights' => max(1, (int) ($_GET['nights'] ?? 1)),
+    'occupancy_label' => itm_hotel_booking_portal_occupancy_label($hbStayOccupancy),
+];
 $hbSettingsPublic = [
     'price_footnote' => $settings['price_footnote'] ?? '',
     'accessible_features_default' => $settings['accessible_features_default'] ?? '',
@@ -135,6 +141,7 @@ $imgUrl = $cover ? itm_hotel_booking_photo_public_url($company_id, 'hotel', (int
 window.HB_APPURL = <?php echo json_encode(APPURL); ?>;
 window.HB_HOTELS = <?php echo json_encode($hotels, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 window.HB_SETTINGS = <?php echo json_encode($hbSettingsPublic, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+window.HB_STAY_CONTEXT = <?php echo json_encode($hbStayContext, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-public.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-dates.js"></script>
