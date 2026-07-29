@@ -217,6 +217,22 @@ if (!function_exists('itm_hotel_booking_fetch_for_guest_manage')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_normalize_reviews_url')) {
+  function itm_hotel_booking_normalize_reviews_url($url) {
+    $url = trim((string) $url);
+    if ($url === '') {
+      return '';
+    }
+    if (!preg_match('#^https?://#i', $url)) {
+      return '';
+    }
+    if (strlen($url) > 500) {
+      $url = substr($url, 0, 500);
+    }
+    return $url;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_compute_payment_amount')) {
   function itm_hotel_booking_compute_payment_amount($pricePerNight, $checkIn, $checkOut) {
     $in = DateTime::createFromFormat('Y-m-d', $checkIn);

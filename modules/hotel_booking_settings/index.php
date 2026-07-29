@@ -28,16 +28,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accessible = trim((string) ($_POST['accessible_features_default'] ?? ''));
     $airport = trim((string) ($_POST['airport_info'] ?? ''));
     $footnote = trim((string) ($_POST['price_footnote'] ?? ''));
+    $reviewsUrl = itm_hotel_booking_normalize_reviews_url($_POST['reviews_url'] ?? '');
+    if (trim((string) ($_POST['reviews_url'] ?? '')) !== '' && $reviewsUrl === '') {
+        $errors[] = 'Reviews URL must start with http:// or https://';
+    }
     $sid = (int) ($row['id'] ?? 0);
-    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
+    if (empty($errors)) {
+    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
     if ($upd) {
-        mysqli_stmt_bind_param($upd, 'issssiiii', $enabled, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $employee_id, $sid, $company_id);
+        mysqli_stmt_bind_param($upd, 'issssssiii', $enabled, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $employee_id, $sid, $company_id);
         mysqli_stmt_execute($upd);
         mysqli_stmt_close($upd);
         header('Location: index.php?saved=1');
         exit;
     }
     $errors[] = 'Save failed.';
+    }
 }
 
 $row = itm_hotel_booking_settings_row($conn, $company_id);
@@ -83,6 +89,11 @@ require '../../includes/header.php';
 <div class="form-group">
 <label>Price footnote</label>
 <textarea name="price_footnote" class="form-control" rows="2"><?php echo sanitize($row['price_footnote'] ?? ''); ?></textarea>
+</div>
+<div class="form-group">
+<label>External reviews URL</label>
+<input type="url" name="reviews_url" class="form-control" maxlength="500" placeholder="https://www.tripadvisor.pt/..." value="<?php echo sanitize($row['reviews_url'] ?? ''); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Opens in a new tab from the public portal “Read reviews” link.</p>
 </div>
 <button type="submit" class="btn btn-primary" title="Save">💾</button>
 <a href="../hotel_bookings/index.php" class="btn" title="Back">🔙</a>
