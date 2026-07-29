@@ -4,6 +4,8 @@
 
 Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM `config/config.php` (MySQLi) and `includes/itm_hotel_booking.php`.
 
+**Canonical doc:** `docs/BOOKING.md` (architecture, flows, admin map, review, troubleshooting).
+
 `bootstrap.php` defines `ITM_HOTEL_BOOKING_PUBLIC_PORTAL` before `config.php` so global employee login is skipped for this tree.
 
 ## 3. Auth
