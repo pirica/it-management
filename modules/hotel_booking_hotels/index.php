@@ -318,7 +318,7 @@ $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_employee_field($col['Field']);
 }));
-$preferredOrder = ['name', 'location', 'phone', 'website_url', 'check_in_time', 'check_out_time', 'currency_code', 'active'];
+$preferredOrder = ['name', 'location', 'phone', 'website_url', 'reviews_url', 'check_in_time', 'check_out_time', 'currency_code', 'active'];
 $fieldOrderMap = array_flip($preferredOrder);
 usort($fieldColumns, static function ($a, $b) use ($fieldOrderMap) {
     $aPos = $fieldOrderMap[$a['Field']] ?? 999;
@@ -761,6 +761,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         }
         if ($name === 'price' && $value !== '' && $value !== null) {
             $value = cr_normalize_price_input($value);
+        }
+        if ($name === 'reviews_url' && $value !== '' && $value !== null) {
+            $normalizedReviews = itm_hotel_booking_normalize_reviews_url((string) $value);
+            if (trim((string) $value) !== '' && $normalizedReviews === '') {
+                $errors[] = 'Reviews URL must start with http:// or https://';
+                $data[$name] = '';
+                $sqlValues[$name] = 'NULL';
+                continue;
+            }
+            $value = $normalizedReviews;
         }
         if (in_array($name, ['purchase_date', 'expiry_date'], true) && $value !== '' && $value !== null && function_exists('itm_parse_date_input')) {
             $parsedDate = itm_parse_date_input((string)$value);

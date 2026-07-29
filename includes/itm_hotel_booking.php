@@ -233,6 +233,18 @@ if (!function_exists('itm_hotel_booking_normalize_reviews_url')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_resolve_reviews_url')) {
+  function itm_hotel_booking_resolve_reviews_url($hotelRow, $settingsRow) {
+    $hotelRow = is_array($hotelRow) ? $hotelRow : [];
+    $settingsRow = is_array($settingsRow) ? $settingsRow : [];
+    $hotelUrl = itm_hotel_booking_normalize_reviews_url($hotelRow['reviews_url'] ?? '');
+    if ($hotelUrl !== '') {
+      return $hotelUrl;
+    }
+    return itm_hotel_booking_normalize_reviews_url($settingsRow['reviews_url'] ?? '');
+  }
+}
+
 if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
   function itm_hotel_booking_hotel_calendar_month($conn, $companyId, $hotelId, $year, $month) {
     $companyId = (int) $companyId;

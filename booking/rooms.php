@@ -125,6 +125,7 @@ foreach ($cardList as $c) {
 $currency = $hotel['currency_code'] ?? 'EUR';
 $mapsUrl = 'https://maps.google.com/?q=' . rawurlencode((string) ($hotel['location'] ?? ''));
 $hotelDetailsUrl = APPURL . '/?hotel=' . $hotelId;
+$reviewsUrl = itm_hotel_booking_resolve_reviews_url($hotel, $settings);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -198,6 +199,7 @@ $hotelDetailsUrl = APPURL . '/?hotel=' . $hotelId;
 <div class="hb-hotel-side-card">
 <div class="hb-hotel-side-img" style="background-image:url('<?php echo htmlspecialchars($hotelCoverUrl, ENT_QUOTES, 'UTF-8'); ?>')"></div>
 <h2><?php echo htmlspecialchars($hotel['name'], ENT_QUOTES, 'UTF-8'); ?></h2>
+<?php hb_portal_render_guest_rating_reviews($reviewsUrl); ?>
 <?php if (!empty($hotel['location'])): ?>
 <p class="hb-hotel-address">
 <a href="<?php echo htmlspecialchars($mapsUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" title="Open address in new tab">
