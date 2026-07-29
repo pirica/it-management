@@ -108,4 +108,10 @@ if (itm_hotel_booking_normalize_special_rate_percent_input('15,5') === 15.5) {
     hb_fail('special rate percent normalize');
 }
 
+if (abs(itm_hotel_booking_portal_breakfast_supplement_per_night(['adults' => 2, 'children' => 1]) - 80.0) < 0.01) {
+    hb_pass('portal breakfast supplement per night');
+} else {
+    hb_fail('portal breakfast supplement per night');
+}
+
 exit($fail > 0 ? 1 : 0);
