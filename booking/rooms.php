@@ -149,6 +149,7 @@ foreach ($rooms as $room) {
         ];
         $fits = itm_hotel_booking_room_type_fits_occupancy($typeRow, $occupancy);
         $basePrice = (float) $room['price_per_night'];
+        $listQuoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, 0);
         $quoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, $discountPercent);
 
         $cards[$typeKey] = [
@@ -165,6 +166,7 @@ foreach ($rooms as $room) {
             'max_children' => (int) ($room['max_children'] ?? 1),
             'image_url' => $imgUrl,
             'base_price' => $basePrice,
+            'list_quoted_price' => $listQuoted,
             'quoted_price' => $quoted,
             'book_room_id' => $roomId,
             'available' => $available && $fits,
@@ -179,6 +181,7 @@ foreach ($rooms as $room) {
             if ((float) $room['price_per_night'] < $cards[$typeKey]['base_price']) {
                 $cards[$typeKey]['base_price'] = (float) $room['price_per_night'];
                 $cards[$typeKey]['book_room_id'] = $roomId;
+                $cards[$typeKey]['list_quoted_price'] = itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $occupancy, 0);
                 $cards[$typeKey]['quoted_price'] = itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $occupancy, $discountPercent);
             }
         }
@@ -314,7 +317,11 @@ $filterOptions = [
 <?php endforeach; ?>
 </ul>
 <?php endif; ?>
-<p class="hb-room-price"><span class="hb-room-price-value"><?php echo htmlspecialchars(hb_portal_money_format($card['quoted_price'], $currency), ENT_QUOTES, 'UTF-8'); ?></span> <span>/ night</span></p>
+<p class="hb-room-price"><?php
+    $listQuotedCard = (float) ($card['list_quoted_price'] ?? $card['quoted_price']);
+    $saleQuotedCard = (float) ($card['quoted_price'] ?? 0);
+    $showPriceCompare = $discountPercent > 0 && $listQuotedCard > $saleQuotedCard;
+?><span class="hb-room-price-compare"<?php echo $showPriceCompare ? '' : ' hidden'; ?>><?php echo $showPriceCompare ? htmlspecialchars(hb_portal_money_format($listQuotedCard, $currency), ENT_QUOTES, 'UTF-8') : ''; ?></span><span class="hb-room-price-value"><?php echo htmlspecialchars(hb_portal_money_format($saleQuotedCard, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <span class="hb-room-price-suffix">/ night</span></p>
 <?php if (!empty($card['available'])): ?>
 <a class="hb-btn hb-btn-primary hb-room-select" href="<?php echo htmlspecialchars($bookUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Select room">Select</a>
 <?php else: ?>

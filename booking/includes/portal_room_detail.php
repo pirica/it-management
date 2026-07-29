@@ -46,7 +46,10 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
         $bullets = is_array($card['bullets'] ?? null) ? $card['bullets'] : [];
         $cats = hb_portal_room_detail_categorize_bullets($bullets);
         $quoted = (float) ($card['quoted_price'] ?? 0);
+        $listQuoted = (float) ($card['list_quoted_price'] ?? $quoted);
         $priceLabel = hb_portal_money_format($quoted, $currencyCode);
+        $listPriceLabel = hb_portal_money_format($listQuoted, $currencyCode);
+        $showBookCompare = $listQuoted > $quoted;
 
         $specParts = [];
         if ($size !== '' && $size !== null) {
@@ -156,7 +159,7 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
 <button type="button" class="hb-rd-read-more" data-hb-read-more title="Read more">Read more</button>
 </div>
 <?php if ($available): ?>
-<a class="<?php echo htmlspecialchars($bookClass, ENT_QUOTES, 'UTF-8'); ?>" href="<?php echo htmlspecialchars($bookUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Book this room">Book From <?php echo htmlspecialchars($priceLabel, ENT_QUOTES, 'UTF-8'); ?></a>
+<a class="<?php echo htmlspecialchars($bookClass, ENT_QUOTES, 'UTF-8'); ?>" href="<?php echo htmlspecialchars($bookUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Book this room">Book From <?php if ($showBookCompare): ?><span class="hb-rd-price-compare"><?php echo htmlspecialchars($listPriceLabel, ENT_QUOTES, 'UTF-8'); ?></span> <?php endif; ?><span class="hb-rd-price-value"><?php echo htmlspecialchars($priceLabel, ENT_QUOTES, 'UTF-8'); ?></span></a>
 <?php else: ?>
 <button type="button" class="hb-btn hb-btn-disabled hb-room-detail-book" disabled title="Not available">Not available</button>
 <?php endif; ?>
