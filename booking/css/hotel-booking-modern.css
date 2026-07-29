@@ -220,8 +220,10 @@ body.hb-modal-open { overflow: hidden; }
   text-decoration: none;
 }
 .hb-room-desc { font-size: .85rem; color: var(--hb-muted); margin: 0 0 12px; }
-.hb-room-price { font-size: 1.35rem; font-weight: 800; margin: 0 0 12px; }
-.hb-room-price span { font-size: .85rem; font-weight: 500; color: var(--hb-muted); }
+.hb-room-price { font-size: 1.35rem; font-weight: 800; margin: 0 0 12px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 8px; }
+.hb-room-price-compare { font-size: 1.05rem; font-weight: 600; color: var(--hb-muted); text-decoration: line-through; }
+.hb-room-price-value { font-size: 1.35rem; font-weight: 800; color: var(--hb-text, #1a1a1a); }
+.hb-room-price-suffix { font-size: .85rem; font-weight: 500; color: var(--hb-muted); }
 .hb-btn-disabled { background: #c5c9d0; color: #fff; cursor: not-allowed; }
 .hb-hotel-side-card { background: #fff; border: 1px solid var(--hb-border); border-radius: 4px; overflow: hidden; position: sticky; top: 16px; }
 .hb-hotel-side-img { height: 160px; background: #ddd center/cover no-repeat; }
@@ -247,6 +249,8 @@ body.hb-modal-open { overflow: hidden; }
 .hb-rd-occ { margin: 0 0 8px; font-size: .9rem; font-weight: 600; }
 .hb-rd-spec { margin: 0 0 12px; font-size: .85rem; color: var(--hb-muted); line-height: 1.45; }
 .hb-rd-desc { margin: 0 0 8px; font-size: .9rem; line-height: 1.5; }
+.hb-rd-price-compare { text-decoration: line-through; color: var(--hb-muted); font-weight: 600; margin-right: 6px; }
+.hb-rd-price-value { font-weight: 700; }
 .hb-rd-desc-wrap { margin-bottom: 20px; }
 .hb-rd-desc-wrap.is-expanded .hb-rd-desc-lead { margin-bottom: 12px; }
 .hb-rd-desc-more { margin: 0 0 8px; }

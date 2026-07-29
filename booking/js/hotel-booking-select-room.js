@@ -140,7 +140,7 @@
     return parseFloat(cfg.discountPercent || 0) || 0;
   }
 
-  function quoteNightly(base) {
+  function quoteNightlyUndiscounted(base) {
     var occ = currentOccupancy();
     var rooms = Math.max(1, Math.min(4, occ.rooms));
     var adults = Math.max(1, Math.min(12, occ.adults));
@@ -148,12 +148,38 @@
     var baseF = parseFloat(base) || 0;
     var included = 2 * rooms;
     var extraAdults = Math.max(0, adults - included);
-    var nightly = baseF * rooms + extraAdults * (baseF * 0.35) + children * 22;
+    return Math.round(baseF * rooms + extraAdults * (baseF * 0.35) + children * 22);
+  }
+
+  function quoteNightly(base) {
+    var nightly = quoteNightlyUndiscounted(base);
     var disc = discountPercent();
     if (disc > 0) {
       nightly *= (1 - disc / 100);
     }
     return Math.round(nightly);
+  }
+
+  function renderRoomPrice(card) {
+    var base = card.getAttribute('data-base-price');
+    var priceEl = card.querySelector('.hb-room-price-value');
+    var compareEl = card.querySelector('.hb-room-price-compare');
+    if (!priceEl || base === null || base === '') {
+      return;
+    }
+    var list = quoteNightlyUndiscounted(base);
+    var sale = quoteNightly(base);
+    var disc = discountPercent();
+    if (compareEl) {
+      if (disc > 0 && list > sale) {
+        compareEl.textContent = formatMoney(list);
+        compareEl.hidden = false;
+      } else {
+        compareEl.textContent = '';
+        compareEl.hidden = true;
+      }
+    }
+    priceEl.textContent = formatMoney(sale);
   }
 
   function formatMoney(amount) {
@@ -231,11 +257,7 @@
 
   function updatePrices() {
     cards.forEach(function (card) {
-      var base = card.getAttribute('data-base-price');
-      var priceEl = card.querySelector('.hb-room-price-value');
-      if (priceEl && base) {
-        priceEl.textContent = formatMoney(quoteNightly(base));
-      }
+      renderRoomPrice(card);
       var select = card.querySelector('.hb-room-select');
       if (select && select.href) {
         try {
@@ -433,10 +455,24 @@
         var card = document.querySelector('.hb-room-card[data-type-id="' + typeId + '"]');
         if (card) {
           var priceEl = card.querySelector('.hb-room-price-value');
+          var compareEl = card.querySelector('.hb-room-price-compare');
           var bookBtn = detail.querySelector('.hb-room-detail-book');
           var selectLink = card.querySelector('.hb-room-select');
-          if (bookBtn && priceEl && bookBtn.tagName === 'A') {
-            bookBtn.textContent = 'Book From ' + priceEl.textContent.trim();
+          if (bookBtn && bookBtn.tagName === 'A') {
+            var bookValue = bookBtn.querySelector('.hb-rd-price-value');
+            var bookCompare = bookBtn.querySelector('.hb-rd-price-compare');
+            if (bookValue && priceEl) {
+              bookValue.textContent = priceEl.textContent.trim();
+            }
+            if (bookCompare && compareEl) {
+              if (!compareEl.hidden && compareEl.textContent.trim() !== '') {
+                bookCompare.textContent = compareEl.textContent.trim();
+                bookCompare.hidden = false;
+              } else {
+                bookCompare.textContent = '';
+                bookCompare.hidden = true;
+              }
+            }
           }
           if (bookBtn && selectLink && bookBtn.tagName === 'A') {
             bookBtn.href = selectLink.href;
