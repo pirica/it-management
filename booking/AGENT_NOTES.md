@@ -24,7 +24,7 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 - `rooms/payment.php` — confirmation after step 4: **Number of nights** `(N night(s))`, **Guests** `👤 …` occupancy line, **Reservation notes**, jsPDF download (**Save booking confirmation** — same card as screen, not print preview). Occupancy stored in `hotel_bookings.notes` as `Occupancy: rooms=…` meta line.
 - `calendar.php` — JSON nightly rates for Select Dates modal (check-in + optional check-out range; single check-in = 1 night).
 - `users/bookings.php` — manage reservation (last name + reservation ID); lookup form uses **Back** (`hb-checkout-skip`); found booking renders the same confirmation panel as `rooms/payment.php` (room type title without room number, nights, guests, reservation notes, PDF + action buttons). Aside includes **Cancellation policy**, **Change booking** (modal with hotel name, directions, website, phone from `hotel_booking_hotels`), and **Cancel Booking** (future stays only; sets segment status to `CANCELLED`).
-- `cancellation_policy/` — default HTML policy pages (`1_cancellation_policy.html` … `4_cancellation_policy.html`); URLs configurable per hotel in **Portal Rate Plans** admin module.
+- `cancellation_policy/` — default HTML policy pages (`1_cancellation_policy.html` … `4_cancellation_policy.html`); URLs configurable per hotel in **Portal Rate Plans** admin module. Each page ends with a **Back** button (`history.go(-1)`) to return to the prior screen.
 - `auth/login.php`, `register.php`, `logout.php`
 
 ## 5. Tenant
