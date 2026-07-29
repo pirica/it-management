@@ -300,6 +300,8 @@ body.hb-modal-open { overflow: hidden; }
 .hb-checkout-change-room:hover { text-decoration: underline; }
 .hb-checkout-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 8px; }
 .hb-checkout-skip { background: #fff; color: var(--hb-primary); border: 2px solid var(--hb-primary); }
+.hb-checkout-aside-stack { display: flex; flex-direction: column; gap: 20px; }
+.hb-checkout-aside-stack .hb-reservation-summary { margin: 0; }
 
 .hb-upgrade-heading { margin: 24px 0 12px; font-size: 1.05rem; font-weight: 700; }
 .hb-upgrade-card { display: grid; grid-template-columns: 200px 1fr auto; gap: 0; background: #fff; border: 1px solid var(--hb-border); border-radius: 6px; overflow: hidden; margin-bottom: 24px; align-items: stretch; }

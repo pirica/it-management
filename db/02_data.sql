@@ -2472,19 +2472,20 @@ INSERT IGNORE INTO `hotel_booking_amenities` (`company_id`, `name`, `icon_slug`,
 INSERT INTO `booking_rooms_types` (`company_id`, `name`, `code`, `description`, `bed_summary`, `room_size_sqm`, `max_adults`, `max_children`, `max_babies`, `filter_tags`, `details_bullets`, `active`, `created_at`) VALUES
 (1, 'Deluxe', 'DLX', 'Spacious deluxe accommodation with garden outlook and private balcony.', '1 King bed', 32.00, 2, 2, 1, 'king,garden_view,balcony', '55" smart TV|Rain shower|Nespresso machine|Balcony seating|Mini bar', 1, '2026-01-01 00:00:01'),
 (1, 'Superior', 'SUP', 'Bright superior room ideal for business or leisure stays.', '2 Twin beds', 28.00, 2, 1, 1, 'twin,city_view', 'City view windows|Work desk|Walk-in shower|Complimentary WiFi', 1, '2026-01-01 00:00:01'),
-(1, 'Standard', 'STD', 'Comfortable standard room with essential amenities.', '1 Queen bed', 24.00, 2, 1, 1, 'queen,city_view', 'Queen bed|In-room safe|Shower|Daily housekeeping', 1, '2026-01-01 00:00:01');
+(1, 'Standard', 'STD', 'Comfortable standard room with essential amenities.', '1 Queen bed', 24.00, 2, 1, 1, 'queen,city_view', 'Queen bed|In-room safe|Shower|Daily housekeeping', 1, '2026-01-01 00:00:01'),
+(1, 'King Grand Deluxe Room with Pool View', 'POOL', 'Premium corner room with sweeping pool and garden views.', '1 King bed', 38.00, 2, 2, 1, 'king,pool_view,balcony', 'Private balcony|Pool view|Soaking tub|Executive lounge access', 1, '2026-01-01 00:00:01');
 
 UPDATE `booking_rooms_types` t
-INNER JOIN `booking_rooms_types` u ON u.company_id = t.company_id AND u.code = 'DLX' AND u.deleted_at IS NULL
+INNER JOIN `booking_rooms_types` u ON u.company_id = t.company_id AND u.code = 'POOL' AND u.deleted_at IS NULL
 SET t.upgrade_to_room_type_id = u.id, t.upgrade_price_per_night = 121.00, t.upgrade_pitch = 'You deserve a little extra. Enjoy a room with added perks.'
-WHERE t.company_id = 1 AND t.code IN ('STD', 'SUP') AND t.deleted_at IS NULL;
+WHERE t.company_id = 1 AND t.code IN ('STD', 'SUP', 'DLX') AND t.deleted_at IS NULL;
 
 INSERT IGNORE INTO `booking_rooms_types` (`company_id`, `name`, `code`, `description`, `bed_summary`, `room_size_sqm`, `max_adults`, `max_children`, `max_babies`, `filter_tags`, `details_bullets`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`code`, t.`description`, t.`bed_summary`, t.`room_size_sqm`, t.`max_adults`, t.`max_children`, t.`max_babies`, t.`filter_tags`, t.`details_bullets`, t.`active`, '2026-01-01 00:00:01' FROM `booking_rooms_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 
-INSERT INTO `hotel_booking_settings` (`company_id`, `public_portal_enabled`, `welcome_title`, `welcome_subtitle`, `price_footnote`, `reviews_url`, `active`, `created_at`) VALUES
-(1, 1, 'Find your stay', 'Browse hotels and book with confidence.', 'Prices may vary by date and availability.', 'https://www.tripadvisor.pt/Hotel_Review-g262054-d2142716-Reviews-Conrad_Algarve-Almancil_Loule_Faro_District_Algarve.html#REVIEWS', 1, '2026-01-01 00:00:01');
+INSERT INTO `hotel_booking_settings` (`company_id`, `public_portal_enabled`, `welcome_title`, `welcome_subtitle`, `price_footnote`, `reviews_url`, `tourist_tax_per_person_per_night`, `active`, `created_at`) VALUES
+(1, 1, 'Find your stay', 'Browse hotels and book with confidence.', 'Prices may vary by date and availability.', 'https://www.tripadvisor.pt/Hotel_Review-g262054-d2142716-Reviews-Conrad_Algarve-Almancil_Loule_Faro_District_Algarve.html#REVIEWS', 2.00, 1, '2026-01-01 00:00:01');
 
-INSERT IGNORE INTO `hotel_booking_settings` (`company_id`, `public_portal_enabled`, `welcome_title`, `welcome_subtitle`, `price_footnote`, `reviews_url`, `active`, `created_at`) SELECT c.`id`, t.`public_portal_enabled`, t.`welcome_title`, t.`welcome_subtitle`, t.`price_footnote`, t.`reviews_url`, t.`active`, '2026-01-01 00:00:01' FROM `hotel_booking_settings` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT IGNORE INTO `hotel_booking_settings` (`company_id`, `public_portal_enabled`, `welcome_title`, `welcome_subtitle`, `price_footnote`, `reviews_url`, `tourist_tax_per_person_per_night`, `active`, `created_at`) SELECT c.`id`, t.`public_portal_enabled`, t.`welcome_title`, t.`welcome_subtitle`, t.`price_footnote`, t.`reviews_url`, t.`tourist_tax_per_person_per_night`, t.`active`, '2026-01-01 00:00:01' FROM `hotel_booking_settings` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 
 INSERT INTO `hotel_booking_hotels` (`company_id`, `name`, `description`, `location`, `phone`, `website_url`, `reviews_url`, `check_in_time`, `check_out_time`, `currency_code`, `parking_info`, `pets_policy`, `active`, `created_at`) VALUES
 (1, 'TechCorp Retreat', 'A comfortable property for business and leisure.', 'Lisbon, Portugal', '+351 210 000 001', 'https://example.com/techcorp-retreat', 'https://www.tripadvisor.pt/Hotel_Review-g262054-d2142716-Reviews-Conrad_Algarve-Almancil_Loule_Faro_District_Algarve.html#REVIEWS', '15:00:00', '12:00:00', 'EUR', 'Self and valet parking complimentary.', 'Pets allowed under 15kg with fee.', 1, '2026-01-01 00:00:01');
@@ -2492,7 +2493,8 @@ INSERT INTO `hotel_booking_hotels` (`company_id`, `name`, `description`, `locati
 INSERT INTO `hotel_booking_rooms` (`company_id`, `hotel_id`, `room_type_id`, `housekeeping_status_id`, `room_number`, `name`, `floor`, `price_per_night`, `num_persons`, `num_beds`, `size_sqm`, `view_label`, `active`, `created_at`) VALUES
 (1, 1, 1, 1, '201', 'Deluxe King 201', '2', 120.00, 2, 1, 32.00, 'Garden', 1, '2026-01-01 00:00:01'),
 (1, 1, 2, 2, '202', 'Superior Twin 202', '2', 95.00, 2, 2, 28.00, 'City', 1, '2026-01-01 00:00:01'),
-(1, 1, 3, 1, '101', 'Standard Queen 101', '1', 75.00, 2, 1, 24.00, 'City', 1, '2026-01-01 00:00:01');
+(1, 1, 3, 1, '101', 'Standard Queen 101', '1', 75.00, 2, 1, 24.00, 'City', 1, '2026-01-01 00:00:01'),
+(1, 1, 4, 1, '301', 'Grand Deluxe Pool 301', '3', 145.00, 2, 1, 38.00, 'Pool', 1, '2026-01-01 00:00:01');
 
 INSERT INTO `hotel_booking_special_rates` (`company_id`, `hotel_id`, `rate_slug`, `name`, `discount_percent`, `description`, `active`, `created_at`) VALUES
 (1, 1, 'member', 'Member rate', 15.00, 'Sign in or join to save on your stay.', 1, '2026-01-01 00:00:01'),

@@ -149,6 +149,12 @@ if (abs($taxSample - 4.0) < 0.01) {
     hb_fail('portal tourist tax amount');
 }
 
+if (itm_hotel_booking_portal_tourist_tax_per_person_from_settings([]) === 2.0) {
+    hb_pass('portal tourist tax default 2 when settings missing');
+} else {
+    hb_fail('portal tourist tax default');
+}
+
 $breakdownSample = itm_hotel_booking_portal_checkout_breakdown(781.0, '2026-07-29', '2026-07-30', ['adults' => 2, 'children' => 0], 0, ['rate_plan' => 'breakfast'], 2.0);
 if (abs((float) ($breakdownSample['room_charges'] ?? 0) - 841.0) < 0.01 && abs((float) ($breakdownSample['tourist_tax'] ?? 0) - 4.0) < 0.01 && abs((float) ($breakdownSample['total'] ?? 0) - 845.0) < 0.01) {
     hb_pass('portal checkout breakdown with tourist tax');

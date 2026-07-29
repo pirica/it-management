@@ -4936,6 +4936,7 @@ CREATE TABLE `hotel_booking_settings` (
   `airport_info` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `price_footnote` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `reviews_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tourist_tax_per_person_per_night` decimal(10,2) NOT NULL DEFAULT '2.00',
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,

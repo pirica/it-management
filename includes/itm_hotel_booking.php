@@ -1056,6 +1056,20 @@ if (!function_exists('itm_hotel_booking_ensure_customer_for_portal')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_tourist_tax_per_person_from_settings')) {
+  /** EUR per guest per night; defaults to 2.00 when settings row or column is missing. */
+  function itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settingsRow) {
+    if (!is_array($settingsRow)) {
+      return 2.0;
+    }
+    if (!array_key_exists('tourist_tax_per_person_per_night', $settingsRow)) {
+      return 2.0;
+    }
+    $rate = (float) ($settingsRow['tourist_tax_per_person_per_night'] ?? 0);
+    return $rate > 0 ? $rate : 2.0;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_settings_row')) {
   function itm_hotel_booking_settings_row($conn, $companyId) {
     $companyId = (int) $companyId;
