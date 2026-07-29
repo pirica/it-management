@@ -1,5 +1,6 @@
 <?php require "../layouts/header.php"; ?>
 <?php require "../../config/config.php"; ?>
+<?php require_once dirname(__DIR__, 2) . '/includes/portal_csrf.php'; ?>
 <?php 
 
 
@@ -14,6 +15,7 @@
   $allHotels = $hotels->fetchAll(PDO::FETCH_OBJ);
 
   if(isset($_POST['submit'])) {
+    itm_require_post_csrf();
     if(empty($_POST['name']) OR empty($_POST['price']) OR empty($_POST['num_persons'])
     OR empty($_POST['num_beds']) OR empty($_POST['size'])
      OR empty($_POST['view']) OR empty($_POST['hotel_name']) OR empty($_POST['hotel_id'])) {
@@ -69,6 +71,7 @@
             <div class="card-body">
               <h5 class="card-title mb-5 d-inline">Create Rooms</h5>
           <form method="POST" action="create-rooms.php" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                 <!-- Email input -->
                 <div class="form-outline mb-4 mt-4">
                   <input type="text" name="name" id="form2Example1" class="form-control" placeholder="name" />

@@ -7,6 +7,7 @@ if (hb_portal_logged_in()) {
 }
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
     $email = trim((string) ($_POST['email'] ?? ''));
     $password = (string) ($_POST['password'] ?? '');
     $stmt = mysqli_prepare($conn, 'SELECT pu.id, pu.customer_id, pu.password_hash FROM hotel_booking_portal_users pu WHERE pu.company_id = ? AND pu.email = ? AND pu.deleted_at IS NULL LIMIT 1');
@@ -34,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <h1>Sign in</h1>
 <?php if ($error): ?><p><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
 <form method="post">
+<input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
 <label>Email</label><input type="email" name="email" required>
 <label>Password</label><input type="password" name="password" required>
 <button type="submit" class="hb-btn hb-btn-primary" title="Sign in">Sign in</button>

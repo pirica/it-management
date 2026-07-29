@@ -7,6 +7,7 @@ if (hb_portal_logged_in()) {
 }
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    itm_require_post_csrf();
     $email = trim((string) ($_POST['email'] ?? ''));
     $password = (string) ($_POST['password'] ?? '');
     $fullName = trim((string) ($_POST['full_name'] ?? ''));
@@ -41,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <h1>Register</h1>
 <?php if ($error): ?><p><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
 <form method="post">
+<input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
 <label>Full name</label><input type="text" name="full_name" required>
 <label>Email</label><input type="email" name="email" required>
 <label>Phone</label><input type="text" name="phone">

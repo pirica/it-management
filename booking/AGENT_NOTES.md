@@ -12,6 +12,7 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 - **Manage booking:** `users/bookings.php` — last name + **reservation ID** (`hotel_bookings.id`); verified by `itm_hotel_booking_fetch_for_guest_manage()`.
 - **Read reviews:** `hotel_booking_settings.reviews_url` (company default) and optional per-hotel `hotel_booking_hotels.reviews_url`; resolved via `itm_hotel_booking_resolve_reviews_url()`. Under the green rating bubbles: **Guest rating** — based on recent stays, then **Read reviews ↗** (example seed: Conrad Algarve TripAdvisor `#REVIEWS` URL).
 - Optional legacy: `hotel_booking_portal_users` and `auth/login.php` / `register.php` (not required for public flow).
+- **CSRF:** Public auth and legacy `admin-panel/` POST forms use `itm_require_post_csrf()` (via `bootstrap.php` or `includes/portal_csrf.php` for PDO admin scripts).
 
 ## 4. Entry points
 

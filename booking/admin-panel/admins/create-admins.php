@@ -1,5 +1,6 @@
 <?php require "../layouts/header.php"; ?>
 <?php require "../../config/config.php"; ?>
+<?php require_once dirname(__DIR__, 2) . '/includes/portal_csrf.php'; ?>
 <?php 
 
 
@@ -8,6 +9,7 @@
   }
 
   if(isset($_POST['submit'])) {
+    itm_require_post_csrf();
     if(empty($_POST['adminname']) OR empty($_POST['email']) OR empty($_POST['password'])) {
       echo "<script>alert('one ore more input are empty')</script>";
     } else {
@@ -39,6 +41,7 @@
             <div class="card-body">
               <h5 class="card-title mb-5 d-inline">Create Admins</h5>
           <form method="POST" action="create-admins.php" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                 <!-- Email input -->
                 <div class="form-outline mb-4 mt-4">
                   <input type="email" name="email" id="form2Example1" class="form-control" placeholder="email" />
