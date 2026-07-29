@@ -18,8 +18,8 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 - `index.php` — hotel list + detail modal
 - `rooms.php` — **Step 1 of 4** Select a Room.
 - `rooms/select-rate.php` — **Step 2 of 4** Select a Rate (breakfast vs room-only, special requests, comments).
-- `rooms/customize.php` — **Step 3 of 4**; left **Reservation summary** box (room, rate, change rate → step 2, room charges, tourist tax from settings, total for stay); **Skip** bypasses optional room upgrade and continues to guest details.
-- `rooms/room-single.php` — **Step 4 of 4** guest details; same reservation summary column; payment total includes tourist tax (`hotel_booking_settings.tourist_tax_per_person_per_night`, adults + children per night).
+- `rooms/customize.php` — **Step 3 of 4** optional room upgrade (checkbox card from `booking_rooms_types.upgrade_*`) plus stay summary; POST swaps `draft.room_id` to an available room of the target type when accepted.
+- `rooms/room-single.php` — **Step 4 of 4** guest details; uses session draft for breakfast/pet fees and `hotel_bookings.notes`.
 - `rooms/payment.php` — payment summary (wording **payment**, not pay)
 - `calendar.php` — JSON nightly rates for Select Dates modal
 - `users/bookings.php` — manage reservation (last name + reservation ID)

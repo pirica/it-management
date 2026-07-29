@@ -114,18 +114,32 @@ if (abs(itm_hotel_booking_portal_breakfast_supplement_per_night(['adults' => 2, 
     hb_fail('portal breakfast supplement per night');
 }
 
-$taxSample = itm_hotel_booking_portal_tourist_tax_amount(['adults' => 2, 'children' => 0], 1, 2.0);
-if (abs($taxSample - 4.0) < 0.01) {
-    hb_pass('portal tourist tax amount');
+$upgradeDraft = [
+    'base_price_per_night' => 100,
+    'rate_plan' => 'room_only',
+    'traveling_with_pet' => 0,
+    'upgrade_accepted' => 1,
+    'upgrade_price_per_night' => 121.0,
+];
+$upgradeTotal = itm_hotel_booking_portal_compute_checkout_total(100, '2026-08-01', '2026-08-03', ['rooms' => 1, 'adults' => 2, 'children' => 0, 'babies' => 0], 0, $upgradeDraft);
+$expectedUpgradeTotal = itm_hotel_booking_compute_stay_payment(100, '2026-08-01', '2026-08-03', ['rooms' => 1, 'adults' => 2, 'children' => 0, 'babies' => 0], 0) + 121.0 * 2;
+if (abs($upgradeTotal - $expectedUpgradeTotal) < 0.02) {
+    hb_pass('portal checkout total with room upgrade supplement');
 } else {
-    hb_fail('portal tourist tax amount');
+    hb_fail('portal checkout upgrade total expected ' . $expectedUpgradeTotal . ' got ' . $upgradeTotal);
 }
 
-$breakdownSample = itm_hotel_booking_portal_checkout_breakdown(781.0, '2026-07-29', '2026-07-30', ['adults' => 2, 'children' => 0], 0, ['rate_plan' => 'breakfast'], 2.0);
-if (abs((float) ($breakdownSample['room_charges'] ?? 0) - 841.0) < 0.01 && abs((float) ($breakdownSample['tourist_tax'] ?? 0) - 4.0) < 0.01 && abs((float) ($breakdownSample['total'] ?? 0) - 845.0) < 0.01) {
-    hb_pass('portal checkout breakdown with tourist tax');
+$resCol = mysqli_query($conn, "SHOW COLUMNS FROM booking_rooms_types LIKE 'upgrade_price_per_night'");
+if ($resCol && mysqli_num_rows($resCol) > 0) {
+    hb_pass('booking_rooms_types upgrade columns');
+    $resStd = mysqli_query($conn, "SELECT t.upgrade_price_per_night FROM booking_rooms_types t WHERE t.company_id = 1 AND t.code = 'STD' AND t.deleted_at IS NULL LIMIT 1");
+    if ($resStd && ($rowStd = mysqli_fetch_assoc($resStd)) && abs((float) ($rowStd['upgrade_price_per_night'] ?? 0) - 121.0) < 0.01) {
+        hb_pass('seed STD upgrade price 121');
+    } else {
+        hb_fail('seed STD upgrade_price_per_night expected 121');
+    }
 } else {
-    hb_fail('portal checkout breakdown with tourist tax');
+    hb_fail('missing booking_rooms_types.upgrade_price_per_night (apply db/migrations/booking_rooms_types_upgrade.sql or re-import db/)');
 }
 
 exit($fail > 0 ? 1 : 0);

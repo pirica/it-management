@@ -4618,6 +4618,9 @@ CREATE TABLE `booking_rooms_types` (
   `max_babies` int NOT NULL DEFAULT '1',
   `filter_tags` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `details_bullets` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `upgrade_to_room_type_id` int DEFAULT NULL,
+  `upgrade_price_per_night` decimal(12,2) DEFAULT NULL,
+  `upgrade_pitch` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -4628,7 +4631,9 @@ CREATE TABLE `booking_rooms_types` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_booking_rooms_types_company_name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
-  CONSTRAINT `booking_rooms_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+  KEY `upgrade_to_room_type_id` (`upgrade_to_room_type_id`),
+  CONSTRAINT `booking_rooms_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `booking_rooms_types_ibfk_upgrade` FOREIGN KEY (`upgrade_to_room_type_id`) REFERENCES `booking_rooms_types` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `hotel_booking_housekeeping_statuses` (
@@ -4931,7 +4936,6 @@ CREATE TABLE `hotel_booking_settings` (
   `airport_info` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `price_footnote` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `reviews_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `tourist_tax_per_person_per_night` decimal(10,2) NOT NULL DEFAULT '0.00',
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
