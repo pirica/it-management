@@ -1,6 +1,7 @@
 <?php
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/includes/portal_chrome.php';
+require __DIR__ . '/includes/portal_room_detail.php';
 
 $company_id = hb_public_company_id($conn);
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
@@ -87,7 +88,6 @@ if ($stmt) {
 }
 
 $cards = [];
-$typeDetailsHtml = [];
 foreach ($rooms as $room) {
     $roomId = (int) $room['id'];
     $typeKey = (int) $room['room_type_id'];
@@ -121,20 +121,6 @@ foreach ($rooms as $room) {
         $basePrice = (float) $room['price_per_night'];
         $quoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, $discountPercent);
 
-        $detailHtml = '<h3>' . htmlspecialchars($room['type_name'], ENT_QUOTES, 'UTF-8') . '</h3>';
-        $detailHtml .= '<p>' . htmlspecialchars($room['type_description'] ?? '', ENT_QUOTES, 'UTF-8') . '</p>';
-        if (!empty($room['bed_summary'])) {
-            $detailHtml .= '<p><strong>Bed:</strong> ' . htmlspecialchars($room['bed_summary'], ENT_QUOTES, 'UTF-8') . '</p>';
-        }
-        if (!empty($bullets)) {
-            $detailHtml .= '<ul>';
-            foreach ($bullets as $b) {
-                $detailHtml .= '<li>' . htmlspecialchars($b, ENT_QUOTES, 'UTF-8') . '</li>';
-            }
-            $detailHtml .= '</ul>';
-        }
-        $typeDetailsHtml[(string) $typeKey] = $detailHtml;
-
         $cards[$typeKey] = [
             'type_id' => $typeKey,
             'type_code' => $code,
@@ -145,6 +131,8 @@ foreach ($rooms as $room) {
             'view_label' => $room['view_label'] ?? '',
             'filter_tags' => $room['filter_tags'] ?? '',
             'bullets' => $bullets,
+            'max_adults' => (int) ($room['max_adults'] ?? 2),
+            'max_children' => (int) ($room['max_children'] ?? 1),
             'image_url' => $imgUrl,
             'base_price' => $basePrice,
             'quoted_price' => $quoted,
@@ -168,7 +156,20 @@ foreach ($rooms as $room) {
     }
 }
 
+$currency = $hotel['currency_code'] ?? 'EUR';
+
 $cardList = array_values($cards);
+$typeDetailsHtml = [];
+foreach ($cardList as $card) {
+    $bookUrl = APPURL . '/rooms/room-single.php?' . hb_select_room_book_query((int) $card['book_room_id'], $checkInIso, $nights, $occupancy);
+    $typeDetailsHtml[(string) $card['type_id']] = hb_portal_room_detail_modal_html(
+        $card,
+        $amenityNames,
+        $currency,
+        $bookUrl,
+        !empty($card['available'])
+    );
+}
 $totalFound = count($cardList);
 $soldOut = 0;
 foreach ($cardList as $c) {
@@ -177,7 +178,6 @@ foreach ($cardList as $c) {
     }
 }
 
-$currency = $hotel['currency_code'] ?? 'EUR';
 $mapsUrl = 'https://maps.google.com/?q=' . rawurlencode((string) ($hotel['location'] ?? ''));
 $hotelDetailsUrl = APPURL . '/?hotel=' . $hotelId;
 $reviewsUrl = itm_hotel_booking_resolve_reviews_url($hotel, $settings);
@@ -370,10 +370,10 @@ $filterOptions = [
 </div>
 </div>
 
-<div id="hb-room-detail-modal" class="hb-modal hb-portal-modal" hidden role="dialog" aria-modal="true">
-<div class="hb-modal-card hb-portal-modal-card">
-<button type="button" class="hb-modal-close" data-hb-modal-close="hb-room-detail-modal" title="Close">✖</button>
-<div id="hb-room-detail-body"></div>
+<div id="hb-room-detail-modal" class="hb-modal hb-room-detail-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-room-detail-title">
+<div class="hb-modal-card hb-room-detail-modal-card">
+<button type="button" class="hb-modal-close hb-room-detail-close" data-hb-modal-close="hb-room-detail-modal" title="Close">✖</button>
+<div id="hb-room-detail-body" class="hb-room-detail-body"></div>
 </div>
 </div>
 
