@@ -34,7 +34,7 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 
 ## 6. Admin
 
-`admin-panel/index.php` redirects to ITM `modules/hotel_bookings/`. Legacy PDO admin CRUD under `admin-panel/` was removed — use ITM modules (`hotel_booking_hotels`, `hotel_booking_rooms`, `hotel_bookings`, etc.).
+Hotel administration lives in ITM modules: `modules/hotel_bookings/`, `modules/hotel_booking_hotels/`, `modules/hotel_booking_rooms/`, etc. (Admin sidebar — Hospitality).
 
 ## 7. Active assets (post-legacy cleanup)
 
@@ -46,4 +46,4 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 | JS | `js/hotel-booking-{public,dates,amenity-icons,select-room,customize,change-booking,confirmation-pdf}.js` |
 | Images | `images/amenities/*.svg` (+ `ATTRIBUTION.md`); hotel/room photos come from `images/hotel_booking/{company_id}/…` via ITM upload helpers |
 
-Removed legacy Colorlib template tree: `about.php`, `contact.php`, `services.php`, `404.php`, `config/config.php` (PDO), `includes/header.php` / `footer.php`, vendored `scss/`, `css/style.css`, jQuery/Bootstrap JS stack, `fonts/`, and PDO `admin-panel/` CRUD (except redirect stub).
+Removed legacy Colorlib template tree: `about.php`, `contact.php`, `services.php`, `404.php`, `config/config.php` (PDO), `includes/header.php` / `footer.php`, vendored `scss/`, `css/style.css`, jQuery/Bootstrap JS stack, `fonts/`, and the entire `admin-panel/` folder.
