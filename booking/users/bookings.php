@@ -6,12 +6,35 @@ require __DIR__ . '/../includes/portal_checkout.php';
 $company_id = hb_public_company_id($conn);
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 $error = '';
+$success = '';
 $booking = null;
+$manageLastName = '';
+$manageReservationId = 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $lastName = trim((string) ($_POST['last_name'] ?? ''));
     $reservationId = (int) ($_POST['reservation_id'] ?? 0);
-    if ($lastName === '' || $reservationId < 1) {
+    $manageLastName = $lastName;
+    $manageReservationId = $reservationId;
+
+    if (!empty($_POST['cancel_booking'])) {
+        itm_require_post_csrf();
+        $cancelResult = itm_hotel_booking_portal_cancel_booking_for_guest($conn, $company_id, $reservationId, $lastName);
+        if (!empty($cancelResult['ok'])) {
+            $success = 'Your reservation has been cancelled.';
+            $booking = hb_portal_load_booking_confirmation($conn, $company_id, $reservationId);
+            if (!$booking) {
+                $error = 'Reservation cancelled, but the confirmation could not be reloaded.';
+                $booking = null;
+            }
+        } else {
+            $error = (string) ($cancelResult['error'] ?? 'Unable to cancel this reservation.');
+            $verified = itm_hotel_booking_fetch_for_guest_manage($conn, $company_id, $reservationId, $lastName);
+            if ($verified) {
+                $booking = hb_portal_load_booking_confirmation($conn, $company_id, (int) $verified['id']);
+            }
+        }
+    } elseif ($lastName === '' || $reservationId < 1) {
         $error = 'Enter your last name and reservation ID.';
     } else {
         $verified = itm_hotel_booking_fetch_for_guest_manage($conn, $company_id, $reservationId, $lastName);
@@ -34,6 +57,16 @@ $roomLabel = 'Your room';
 $changeRoomUrl = APPURL . '/rooms.php';
 
 if ($booking) {
+    if ($manageLastName === '') {
+        $manageLastName = trim((string) ($booking['customer_name'] ?? ''));
+        if ($manageLastName !== '' && strpos($manageLastName, ' ') !== false) {
+            $parts = preg_split('/\s+/', $manageLastName);
+            $manageLastName = (string) end($parts);
+        }
+    }
+    if ($manageReservationId < 1) {
+        $manageReservationId = (int) ($booking['id'] ?? 0);
+    }
     $hotel = [
         'id' => (int) ($booking['hotel_id'] ?? 0),
         'name' => (string) ($booking['hotel_name'] ?? ''),
@@ -69,6 +102,12 @@ if ($booking) {
 <?php hb_portal_render_stay_bar($hotel, $checkInIso, $nights, $occupancy); ?>
 <div class="hb-select-room-layout hb-checkout-layout">
 <main class="hb-select-room-main">
+<?php if ($success !== ''): ?>
+<p class="hb-success-banner" role="status"><?php echo htmlspecialchars($success, ENT_QUOTES, 'UTF-8'); ?></p>
+<?php endif; ?>
+<?php if ($error !== ''): ?>
+<p class="hb-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>
+<?php endif; ?>
 <?php hb_portal_render_payment_confirmation($booking, ['occupancy' => $occupancy, 'nights' => $nights]); ?>
 </main>
 <aside class="hb-select-room-aside hb-checkout-aside-stack">
@@ -79,6 +118,7 @@ if ($booking) {
 ]); ?>
 <?php hb_portal_render_confirmation_summary_aside($booking); ?>
 <?php hb_portal_render_cancellation_policy_button(hb_portal_booking_cancellation_policy_url($conn, $company_id, $booking)); ?>
+<?php hb_portal_render_cancel_booking_button($conn, $company_id, $booking, $manageLastName, $manageReservationId); ?>
 </aside>
 </div>
 <?php hb_portal_render_confirmation_pdf_assets(); ?>

@@ -1222,6 +1222,63 @@ if (!function_exists('itm_hotel_booking_booking_is_cancelled')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_guest_can_cancel_booking')) {
+  function itm_hotel_booking_portal_guest_can_cancel_booking($conn, $companyId, array $bookingRow) {
+    if (itm_hotel_booking_booking_is_cancelled($conn, $companyId, $bookingRow)) {
+      return false;
+    }
+    $segment = itm_hotel_booking_resolve_segment($bookingRow['check_in'] ?? '', $bookingRow['check_out'] ?? '');
+    return $segment === 'future';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_cancel_booking_for_guest')) {
+  /**
+   * @return array{ok:bool,error?:string}
+   */
+  function itm_hotel_booking_portal_cancel_booking_for_guest($conn, $companyId, $reservationId, $lastName) {
+    $companyId = (int) $companyId;
+    $reservationId = (int) $reservationId;
+    $lastName = trim((string) $lastName);
+    if ($companyId < 1 || $reservationId < 1 || $lastName === '') {
+      return ['ok' => false, 'error' => 'Enter your last name and reservation ID.'];
+    }
+    $booking = itm_hotel_booking_fetch_for_guest_manage($conn, $companyId, $reservationId, $lastName);
+    if (!$booking) {
+      return ['ok' => false, 'error' => 'No reservation found. Check your last name and reservation ID.'];
+    }
+    if (itm_hotel_booking_booking_is_cancelled($conn, $companyId, $booking)) {
+      return ['ok' => false, 'error' => 'This reservation is already cancelled.'];
+    }
+    if (!itm_hotel_booking_portal_guest_can_cancel_booking($conn, $companyId, $booking)) {
+      return ['ok' => false, 'error' => 'This reservation can no longer be cancelled online. Please contact the hotel.'];
+    }
+    $segment = itm_hotel_booking_resolve_segment($booking['check_in'], $booking['check_out']);
+    $statusCol = $segment . '_status_id';
+    $allowedCols = ['future_status_id', 'present_status_id', 'history_status_id'];
+    if (!in_array($statusCol, $allowedCols, true)) {
+      return ['ok' => false, 'error' => 'Unable to cancel this reservation.'];
+    }
+    $table = itm_hotel_booking_status_table_for_segment($segment);
+    $cancelId = itm_hotel_booking_status_id_by_name($conn, $companyId, $table, 'CANCELLED');
+    if ($cancelId === null || $cancelId < 1) {
+      return ['ok' => false, 'error' => 'Cancellation is not available right now. Please contact the hotel.'];
+    }
+    $sql = 'UPDATE hotel_bookings SET `' . $statusCol . '` = ?, updated_at = NOW() WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return ['ok' => false, 'error' => 'Unable to cancel this reservation.'];
+    }
+    mysqli_stmt_bind_param($stmt, 'iii', $cancelId, $reservationId, $companyId);
+    $ok = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+    if (!$ok) {
+      return ['ok' => false, 'error' => 'Unable to cancel this reservation.'];
+    }
+    return ['ok' => true];
+  }
+}
+
 if (!function_exists('itm_hotel_booking_has_overlap')) {
   function itm_hotel_booking_has_overlap($conn, $companyId, $roomId, $checkIn, $checkOut, $excludeBookingId = 0) {
     $companyId = (int) $companyId;
