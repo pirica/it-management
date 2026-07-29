@@ -1,7 +1,6 @@
 <?php
 /**
- * Print-friendly booking confirmation (browser Save as PDF).
- * Only available for the booking id stored in session after checkout.
+ * Direct PDF download — same confirmation card as payment.php (html2canvas + jsPDF).
  */
 require __DIR__ . '/../bootstrap.php';
 require __DIR__ . '/../includes/portal_chrome.php';
@@ -19,5 +18,26 @@ if (!$booking) {
     exit;
 }
 
-$autoPrint = isset($_GET['print']) && (string) $_GET['print'] === '1';
-hb_portal_output_confirmation_print_document($booking, $settings, $autoPrint);
+$sessionOccupancy = isset($_SESSION['hotel_booking_last_occupancy']) && is_array($_SESSION['hotel_booking_last_occupancy'])
+    ? $_SESSION['hotel_booking_last_occupancy']
+    : null;
+$occupancy = hb_portal_booking_resolve_occupancy($booking, $sessionOccupancy);
+$nights = hb_portal_booking_stay_nights((string) ($booking['check_in'] ?? ''), (string) ($booking['check_out'] ?? ''));
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Booking confirmation</title>
+<link rel="stylesheet" href="<?php echo APPURL; ?>/css/hotel-booking-modern.css">
+<style>
+body.hb-confirmation-pdf-download { margin: 0; padding: 24px; background: #f4f5f7; }
+.hb-confirmation-pdf-download .hb-payment-confirmation.card { max-width: 52rem; margin: 0 auto; }
+</style>
+</head>
+<body class="hb-public hb-confirmation-pdf-download" data-hb-auto-pdf="1">
+<?php hb_portal_render_payment_confirmation($booking, ['occupancy' => $occupancy, 'nights' => $nights]); ?>
+<?php hb_portal_render_confirmation_pdf_assets(); ?>
+</body>
+</html>

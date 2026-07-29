@@ -22,13 +22,13 @@ if ($booking) {
     ];
     $checkInIso = (string) ($booking['check_in'] ?? $checkInIso);
     $checkOutIso = (string) ($booking['check_out'] ?? '');
-    if ($checkInIso !== '' && $checkOutIso !== '' && $checkOutIso > $checkInIso) {
-        $in = DateTime::createFromFormat('Y-m-d', $checkInIso);
-        $out = DateTime::createFromFormat('Y-m-d', $checkOutIso);
-        if ($in && $out) {
-            $nights = max(1, (int) $in->diff($out)->days);
-        }
-    }
+    $nights = hb_portal_booking_stay_nights($checkInIso, $checkOutIso);
+    $occupancy = hb_portal_booking_resolve_occupancy(
+        $booking,
+        isset($_SESSION['hotel_booking_last_occupancy']) && is_array($_SESSION['hotel_booking_last_occupancy'])
+            ? $_SESSION['hotel_booking_last_occupancy']
+            : null
+    );
     $room = [
         'type_name' => $booking['type_name'] ?? '',
         'bed_summary' => $booking['bed_summary'] ?? '',
@@ -57,7 +57,7 @@ if ($booking) {
 <div class="hb-select-room-layout hb-checkout-layout">
 <main class="hb-select-room-main">
 <?php if ($booking): ?>
-<?php hb_portal_render_payment_confirmation($booking); ?>
+<?php hb_portal_render_payment_confirmation($booking, ['occupancy' => $occupancy, 'nights' => $nights]); ?>
 <?php else: ?>
 <div class="hb-payment-confirmation card hb-payment-confirmation--empty">
 <h1 class="hb-payment-confirmation-title">No reservation found</h1>
@@ -81,5 +81,8 @@ if ($booking) {
 </aside>
 <?php endif; ?>
 </div>
+<?php if ($booking): ?>
+<?php hb_portal_render_confirmation_pdf_assets(); ?>
+<?php endif; ?>
 </body>
 </html>

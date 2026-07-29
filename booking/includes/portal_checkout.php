@@ -190,9 +190,45 @@ if (!function_exists('hb_portal_load_booking_confirmation')) {
     }
 }
 
+if (!function_exists('hb_portal_booking_stay_nights')) {
+    function hb_portal_booking_stay_nights($checkInIso, $checkOutIso) {
+        $checkInIso = trim((string) $checkInIso);
+        $checkOutIso = trim((string) $checkOutIso);
+        if ($checkInIso === '' || $checkOutIso === '' || $checkOutIso <= $checkInIso) {
+            return 1;
+        }
+        $in = DateTime::createFromFormat('Y-m-d', $checkInIso);
+        $out = DateTime::createFromFormat('Y-m-d', $checkOutIso);
+        if (!$in || !$out) {
+            return 1;
+        }
+        return max(1, (int) $in->diff($out)->days);
+    }
+}
+
+if (!function_exists('hb_portal_booking_nights_parenthetical')) {
+    function hb_portal_booking_nights_parenthetical($nights) {
+        $nights = max(1, (int) $nights);
+        return '(' . $nights . ' ' . ($nights === 1 ? 'night' : 'nights') . ')';
+    }
+}
+
+if (!function_exists('hb_portal_booking_resolve_occupancy')) {
+    function hb_portal_booking_resolve_occupancy(array $booking, $sessionOccupancy = null) {
+        if (is_array($sessionOccupancy)) {
+            return itm_hotel_booking_portal_parse_occupancy($sessionOccupancy);
+        }
+        $fromNotes = itm_hotel_booking_portal_parse_occupancy_meta_from_notes((string) ($booking['notes'] ?? ''));
+        if (is_array($fromNotes)) {
+            return $fromNotes;
+        }
+        return itm_hotel_booking_portal_parse_occupancy(['rooms' => 1, 'adults' => 2]);
+    }
+}
+
 if (!function_exists('hb_portal_booking_notes_display_items')) {
     /**
-     * Parse hotel_bookings.notes into display rows (payment confirmation, print PDF).
+     * Parse hotel_bookings.notes into display rows (payment confirmation, PDF).
      *
      * @return list<array{kind:string,label:string,body:string}>
      */
@@ -208,7 +244,7 @@ if (!function_exists('hb_portal_booking_notes_display_items')) {
         $count = count($lines);
         for ($i = 0; $i < $count; $i++) {
             $line = trim($lines[$i]);
-            if ($line === '') {
+            if ($line === '' || preg_match('/^Occupancy:\s*rooms=\d+/i', $line)) {
                 continue;
             }
             if (preg_match('/^Guest comments:\s*(.*)$/iu', $line, $m)) {
@@ -262,8 +298,10 @@ if (!function_exists('hb_portal_render_payment_reservation_notes')) {
 if (!function_exists('hb_portal_render_payment_confirmation')) {
     /**
      * Main confirmation panel after booking is saved (payment.php).
+     *
+     * @param array $options occupancy (array), nights (int)
      */
-    function hb_portal_render_payment_confirmation(array $booking) {
+    function hb_portal_render_payment_confirmation(array $booking, array $options = []) {
         $reservationId = (int) ($booking['id'] ?? 0);
         $guestName = trim((string) ($booking['customer_name'] ?? ''));
         $email = trim((string) ($booking['customer_email'] ?? ''));
@@ -274,6 +312,15 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
         $checkOutDisplay = $checkOutIso !== '' ? itm_format_date_display($checkOutIso) : '';
         $currency = (string) ($booking['currency_code'] ?? 'EUR');
         $amount = (float) ($booking['payment_amount'] ?? 0);
+        $occupancy = isset($options['occupancy']) && is_array($options['occupancy'])
+            ? itm_hotel_booking_portal_parse_occupancy($options['occupancy'])
+            : hb_portal_booking_resolve_occupancy($booking);
+        $nights = isset($options['nights'])
+            ? max(1, (int) $options['nights'])
+            : hb_portal_booking_stay_nights($checkInIso, $checkOutIso);
+        $nightsLabel = hb_portal_booking_nights_parenthetical($nights);
+        $occupancyLabel = '👤 ' . itm_hotel_booking_portal_occupancy_label($occupancy);
+        $pdfFilename = 'booking-confirmation-' . $reservationId . '.pdf';
         $room = [
             'type_name' => $booking['type_name'] ?? '',
             'bed_summary' => $booking['bed_summary'] ?? '',
@@ -281,7 +328,7 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
         ];
         $roomTitle = hb_portal_reservation_room_title($room);
         ?>
-<div class="hb-payment-confirmation card">
+<div class="hb-payment-confirmation card" id="hb-payment-confirmation-pdf-root" data-pdf-filename="<?php echo htmlspecialchars($pdfFilename, ENT_QUOTES, 'UTF-8'); ?>">
 <div class="hb-payment-confirmation-head">
 <span class="hb-payment-confirmation-icon" aria-hidden="true">✓</span>
 <div>
@@ -307,7 +354,15 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <dt>Check-out</dt>
 <dd><?php echo htmlspecialchars($checkOutDisplay, ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
+<div class="hb-payment-detail-row">
+<dt>Number of nights</dt>
+<dd><?php echo htmlspecialchars($nightsLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
+</div>
 <?php endif; ?>
+<div class="hb-payment-detail-row">
+<dt>Guests</dt>
+<dd><?php echo htmlspecialchars($occupancyLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
+</div>
 <?php if ($email !== ''): ?>
 <div class="hb-payment-detail-row">
 <dt>Email</dt>
@@ -330,8 +385,8 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <p><strong>Payment at the hotel.</strong> Online payment is not enabled in this build. No charge was made online — the total above is due according to hotel policy.</p>
 <p class="hb-payment-confirmation-manage-hint">To view or change your reservation later, use your <strong>last name</strong> and confirmation number <strong><?php echo (int) $reservationId; ?></strong> on Manage my booking.</p>
 </div>
-<div class="hb-checkout-actions hb-payment-confirmation-actions">
-<a class="hb-btn hb-checkout-skip" href="<?php echo htmlspecialchars(hb_portal_confirmation_print_url(true), ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" title="Save booking confirmation">Save booking confirmation</a>
+<div class="hb-checkout-actions hb-payment-confirmation-actions hb-pdf-exclude">
+<button type="button" class="hb-btn hb-checkout-skip" id="hb-save-confirmation-pdf" title="Save booking confirmation">Save booking confirmation</button>
 <a class="hb-btn hb-btn-primary" href="<?php echo APPURL; ?>/users/bookings.php" title="Manage my booking">Manage my booking</a>
 <a class="hb-btn hb-checkout-skip" href="<?php echo APPURL; ?>/" title="Return home">Return home</a>
 </div>
@@ -368,122 +423,13 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
     }
 }
 
-if (!function_exists('hb_portal_confirmation_print_url')) {
-    /** Print-friendly confirmation (browser Save as PDF). */
-    function hb_portal_confirmation_print_url($autoPrint = true) {
-        $url = APPURL . '/rooms/confirmation-pdf.php';
-        if ($autoPrint) {
-            $url .= '?print=1';
-        }
-        return $url;
-    }
-}
-
-if (!function_exists('hb_portal_output_confirmation_print_document')) {
-    /**
-     * Standalone HTML document for print / Save as PDF (confirmation-pdf.php).
-     */
-    function hb_portal_output_confirmation_print_document(array $booking, array $settings, $autoPrint = false) {
-        $reservationId = (int) ($booking['id'] ?? 0);
-        $guestName = trim((string) ($booking['customer_name'] ?? ''));
-        $email = trim((string) ($booking['customer_email'] ?? ''));
-        $phone = trim((string) ($booking['customer_phone'] ?? ''));
-        $hotelName = trim((string) ($booking['hotel_name'] ?? ($settings['welcome_title'] ?? 'Hotel')));
-        $checkInIso = (string) ($booking['check_in'] ?? '');
-        $checkOutIso = (string) ($booking['check_out'] ?? '');
-        $checkInDisplay = $checkInIso !== '' ? itm_format_date_display($checkInIso) : '';
-        $checkOutDisplay = $checkOutIso !== '' ? itm_format_date_display($checkOutIso) : '';
-        $currency = (string) ($booking['currency_code'] ?? 'EUR');
-        $amount = (float) ($booking['payment_amount'] ?? 0);
-        $notes = trim((string) ($booking['notes'] ?? ''));
-        $room = [
-            'type_name' => $booking['type_name'] ?? '',
-            'bed_summary' => $booking['bed_summary'] ?? '',
-            'name' => $booking['room_name'] ?? '',
-        ];
-        $roomTitle = hb_portal_reservation_room_title($room);
-        $brand = trim((string) ($settings['welcome_title'] ?? $hotelName));
-        $filename = 'booking-confirmation-' . $reservationId;
-        $autoPrint = (bool) $autoPrint;
-
-        header('Content-Type: text/html; charset=utf-8');
-        header('X-Robots-Tag: noindex, nofollow');
-
+if (!function_exists('hb_portal_render_confirmation_pdf_assets')) {
+    /** html2canvas + jsPDF for direct PDF download (payment confirmation). */
+    function hb_portal_render_confirmation_pdf_assets() {
         ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?php echo htmlspecialchars($filename, ENT_QUOTES, 'UTF-8'); ?></title>
-<style>
-body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 24px; font-size: 14px; line-height: 1.45; }
-h1 { font-size: 22px; margin: 0 0 8px; }
-.hb-print-brand { color: #555; margin: 0 0 20px; font-size: 13px; }
-.hb-print-meta { margin: 0 0 24px; color: #555; font-size: 12px; }
-table.hb-print-table { width: 100%; max-width: 640px; border-collapse: collapse; margin-bottom: 20px; }
-table.hb-print-table th { text-align: left; vertical-align: top; width: 38%; padding: 10px 12px; background: #f6f8fa; border: 1px solid #d0d7de; font-weight: 600; }
-table.hb-print-table td { padding: 10px 12px; border: 1px solid #d0d7de; }
-.hb-print-notes { max-width: 640px; white-space: pre-wrap; margin: 0 0 20px; padding: 12px; background: #f8fafc; border: 1px solid #d0d7de; }
-.hb-print-foot { max-width: 640px; font-size: 12px; color: #555; margin-top: 24px; }
-.hb-print-screen-hint { margin: 0 0 16px; padding: 12px; background: #eef6ff; border: 1px solid #b6d4fe; max-width: 640px; }
-@media print {
-  .hb-print-screen-hint, .hb-print-no-print { display: none !important; }
-  body { margin: 12mm; }
-}
-</style>
-</head>
-<body>
-<p class="hb-print-screen-hint hb-print-no-print">Use your browser print dialog and choose <strong>Save as PDF</strong> to keep a copy of this confirmation.</p>
-<h1>Booking confirmation</h1>
-<p class="hb-print-brand"><?php echo htmlspecialchars($brand, ENT_QUOTES, 'UTF-8'); ?><?php if ($hotelName !== '' && $hotelName !== $brand): ?> — <?php echo htmlspecialchars($hotelName, ENT_QUOTES, 'UTF-8'); ?><?php endif; ?></p>
-<p class="hb-print-meta">Confirmation #<?php echo (int) $reservationId; ?> · Generated <?php echo htmlspecialchars(date('d/m/Y H:i'), ENT_QUOTES, 'UTF-8'); ?></p>
-<table class="hb-print-table">
-<tbody>
-<tr><th>Guest name</th><td><?php echo htmlspecialchars($guestName, ENT_QUOTES, 'UTF-8'); ?></td></tr>
-<?php if ($email !== ''): ?>
-<tr><th>Email</th><td><?php echo htmlspecialchars($email, ENT_QUOTES, 'UTF-8'); ?></td></tr>
-<?php endif; ?>
-<?php if ($phone !== ''): ?>
-<tr><th>Phone</th><td><?php echo htmlspecialchars($phone, ENT_QUOTES, 'UTF-8'); ?></td></tr>
-<?php endif; ?>
-<tr><th>Room</th><td><?php echo htmlspecialchars($roomTitle, ENT_QUOTES, 'UTF-8'); ?></td></tr>
-<?php if ($checkInDisplay !== ''): ?>
-<tr><th>Check-in</th><td><?php echo htmlspecialchars($checkInDisplay, ENT_QUOTES, 'UTF-8'); ?></td></tr>
-<?php endif; ?>
-<?php if ($checkOutDisplay !== ''): ?>
-<tr><th>Check-out</th><td><?php echo htmlspecialchars($checkOutDisplay, ENT_QUOTES, 'UTF-8'); ?></td></tr>
-<?php endif; ?>
-<tr><th>Total for stay</th><td><strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($amount, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></td></tr>
-</tbody>
-</table>
-<?php if ($notes !== ''): ?>
-<h2 style="font-size:16px;margin:0 0 8px;">Reservation notes</h2>
-<div class="hb-print-notes">
-<?php foreach (hb_portal_booking_notes_display_items($notes) as $item):
-    if (($item['kind'] ?? '') === 'comments'): ?>
-<p style="margin:0 0 4px;font-weight:600;"><?php echo htmlspecialchars((string) ($item['label'] ?? 'Guest comments:'), ENT_QUOTES, 'UTF-8'); ?></p>
-<?php if (trim((string) ($item['body'] ?? '')) !== ''): ?>
-<p style="margin:0 0 12px;white-space:pre-wrap;"><?php echo htmlspecialchars((string) $item['body'], ENT_QUOTES, 'UTF-8'); ?></p>
-<?php else: ?>
-<p style="margin:0 0 12px;"></p>
-<?php endif; ?>
-<?php else: ?>
-<p style="margin:0 0 8px;"><?php echo htmlspecialchars((string) ($item['body'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></p>
-<?php endif; ?>
-<?php endforeach; ?>
-</div>
-<?php endif; ?>
-<p class="hb-print-foot">Payment at the hotel: online payment is not enabled in this build. Present this confirmation and your photo ID at check-in. To manage your booking later, use your last name and confirmation number on the hotel booking portal.</p>
-<?php if ($autoPrint): ?>
-<script>
-window.addEventListener('load', function () {
-  window.setTimeout(function () { window.print(); }, 300);
-});
-</script>
-<?php endif; ?>
-</body>
-</html>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="<?php echo APPURL; ?>/js/hotel-booking-confirmation-pdf.js"></script>
         <?php
     }
 }
