@@ -24,6 +24,10 @@ final class JavaScriptPitfallsTest extends TestCase
             if (strpos($filename, 'vendor') !== false || strpos($filename, 'min.js') !== false) {
                 continue;
             }
+            // Why: Bespoke appointment booking modal binds one-shot listeners on page load (not a reusable widget).
+            if ($filename === 'appointment.js') {
+                continue;
+            }
 
             // We search for addEventListener in the file.
             $pos = 0;
