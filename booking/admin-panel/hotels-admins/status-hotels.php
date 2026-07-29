@@ -1,5 +1,6 @@
 <?php require "../layouts/header.php"; ?>
 <?php require "../../config/config.php"; ?>
+<?php require_once dirname(__DIR__, 2) . '/includes/portal_csrf.php'; ?>
 <?php 
 
 
@@ -9,6 +10,7 @@
 
 
     if(isset($_POST['submit'])) {
+      itm_require_post_csrf();
       // if(empty($_POST['status'])) {
       //   echo "<script>alert('one ore more input are empty')</script>";
       // } else {
@@ -39,6 +41,7 @@
             <div class="card-body">
               <h5 class="card-title mb-5 d-inline" >Update Status</h5>
           <form method="POST" action="status-hotels.php?id=<?php echo $id; ?>" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
                 <!-- Email input -->
                 <select name="status" style="margin-top: 15px;" class="form-control">
                     <option>Choose Status</option>
