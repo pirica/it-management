@@ -398,6 +398,10 @@ body.hb-modal-open { overflow: hidden; }
 .hb-payment-confirmation-manage-hint { color: var(--hb-muted); font-size: .88rem; }
 .hb-payment-confirmation-actions { margin-top: 4px; }
 .hb-payment-confirmation--empty { text-align: left; }
+.hb-payment-reservation-notes { margin: 0 0 24px; padding-top: 8px; border-top: 1px solid var(--hb-border); }
+.hb-reservation-note-line { margin: 0 0 8px; font-size: .9rem; line-height: 1.45; }
+.hb-reservation-note-label { margin: 12px 0 6px; font-size: .9rem; font-weight: 700; }
+.hb-reservation-note-comments { margin: 0 0 8px; font-size: .9rem; line-height: 1.45; white-space: pre-wrap; max-width: 40rem; }
 @media (max-width: 640px) {
   .hb-payment-confirmation-details { grid-template-columns: 1fr; }
   .hb-payment-detail-row { display: block; margin-bottom: 12px; }
