@@ -73,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'additional_comments' => itm_hotel_booking_portal_sanitize_comments($_POST['additional_comments'] ?? ''),
             'discount_percent' => $discountPercent,
             'resolved_rate_slug' => $resolvedRate,
+            'base_price_per_night' => $basePerNight,
         ];
         itm_hotel_booking_portal_draft_save($draft);
         header('Location: ' . APPURL . '/rooms/customize.php');

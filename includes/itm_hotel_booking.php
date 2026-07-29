@@ -832,6 +832,9 @@ if (!function_exists('itm_hotel_booking_portal_build_booking_notes')) {
     if (!empty($draft['service_animal'])) {
       $parts[] = 'Service animal: yes';
     }
+    if (!empty($draft['upgrade_accepted']) && !empty($draft['upgrade_target_name'])) {
+      $parts[] = 'Room upgrade: ' . (string) $draft['upgrade_target_name'];
+    }
     $comments = trim((string) ($draft['additional_comments'] ?? ''));
     if ($comments !== '') {
       $parts[] = 'Guest comments: ' . $comments;
@@ -840,8 +843,11 @@ if (!function_exists('itm_hotel_booking_portal_build_booking_notes')) {
   }
 }
 
-if (!function_exists('itm_hotel_booking_portal_room_charges_subtotal')) {
-  function itm_hotel_booking_portal_room_charges_subtotal($basePerNight, $checkIn, $checkOut, array $occupancy, $discountPercent, array $draft) {
+if (!function_exists('itm_hotel_booking_portal_compute_checkout_total')) {
+  function itm_hotel_booking_portal_compute_checkout_total($basePerNight, $checkIn, $checkOut, array $occupancy, $discountPercent, array $draft) {
+    if (isset($draft['base_price_per_night']) && $draft['base_price_per_night'] !== '') {
+      $basePerNight = (float) $draft['base_price_per_night'];
+    }
     $roomTotal = itm_hotel_booking_compute_stay_payment($basePerNight, $checkIn, $checkOut, $occupancy, $discountPercent);
     $nights = itm_hotel_booking_portal_stay_nights($checkIn, $checkOut);
     $extras = 0.0;
@@ -851,54 +857,69 @@ if (!function_exists('itm_hotel_booking_portal_room_charges_subtotal')) {
     if (!empty($draft['traveling_with_pet']) && $nights > 0) {
       $extras += itm_hotel_booking_portal_pet_daily_fee() * $nights;
     }
-    if (!empty($draft['room_upgrade_accepted']) && $nights > 0) {
-      $upgradePerNight = (float) ($draft['upgrade_price_per_night'] ?? 0);
-      if ($upgradePerNight > 0) {
-        $extras += $upgradePerNight * $nights;
-      }
+    if (!empty($draft['upgrade_accepted']) && $nights > 0) {
+      $extras += (float) ($draft['upgrade_price_per_night'] ?? 0) * $nights;
     }
     return round($roomTotal + $extras, 2);
   }
 }
 
-if (!function_exists('itm_hotel_booking_portal_tourist_tax_amount')) {
-  function itm_hotel_booking_portal_tourist_tax_amount(array $occupancy, $nights, $perPersonPerNight) {
-    $nights = max(1, (int) $nights);
-    $per = max(0.0, (float) $perPersonPerNight);
-    if ($per <= 0) {
-      return 0.0;
+if (!function_exists('itm_hotel_booking_portal_room_type_upgrade_offer')) {
+  function itm_hotel_booking_portal_room_type_upgrade_offer($conn, $companyId, $roomTypeId) {
+    $companyId = (int) $companyId;
+    $roomTypeId = (int) $roomTypeId;
+    if ($companyId < 1 || $roomTypeId < 1) {
+      return null;
     }
-    $guests = max(0, (int) ($occupancy['adults'] ?? 0)) + max(0, (int) ($occupancy['children'] ?? 0));
-    if ($guests < 1) {
-      $guests = 1;
+    $sql = 'SELECT t.upgrade_to_room_type_id, t.upgrade_price_per_night, t.upgrade_pitch,
+            u.id AS target_type_id, u.name AS target_name, u.code AS target_code, u.description AS target_description,
+            u.bed_summary AS target_bed_summary, u.room_size_sqm AS target_size_sqm
+            FROM booking_rooms_types t
+            LEFT JOIN booking_rooms_types u ON u.id = t.upgrade_to_room_type_id AND u.company_id = t.company_id AND u.deleted_at IS NULL AND u.active = 1
+            WHERE t.id = ? AND t.company_id = ? AND t.deleted_at IS NULL AND t.active = 1
+            AND t.upgrade_to_room_type_id IS NOT NULL AND t.upgrade_price_per_night IS NOT NULL AND t.upgrade_price_per_night > 0
+            LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return null;
     }
-    return round($per * $guests * $nights, 2);
+    mysqli_stmt_bind_param($stmt, 'ii', $roomTypeId, $companyId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    if (!$row || empty($row['target_type_id'])) {
+      return null;
+    }
+    return $row;
   }
 }
 
-if (!function_exists('itm_hotel_booking_portal_checkout_breakdown')) {
-  function itm_hotel_booking_portal_checkout_breakdown($basePerNight, $checkIn, $checkOut, array $occupancy, $discountPercent, array $draft, $touristTaxPerPersonPerNight = 0.0) {
-    $nights = itm_hotel_booking_portal_stay_nights($checkIn, $checkOut);
-    $roomCharges = itm_hotel_booking_portal_room_charges_subtotal($basePerNight, $checkIn, $checkOut, $occupancy, $discountPercent, $draft);
-    $taxRate = max(0.0, (float) $touristTaxPerPersonPerNight);
-    $touristTax = itm_hotel_booking_portal_tourist_tax_amount($occupancy, $nights, $taxRate);
-    return [
-      'nights' => $nights,
-      'room_charges' => $roomCharges,
-      'tourist_tax' => $touristTax,
-      'tourist_tax_per_person_per_night' => $taxRate,
-      'total' => round($roomCharges + $touristTax, 2),
-    ];
-  }
-}
-
-if (!function_exists('itm_hotel_booking_portal_compute_checkout_total')) {
-  function itm_hotel_booking_portal_compute_checkout_total($basePerNight, $checkIn, $checkOut, array $occupancy, $discountPercent, array $draft, $touristTaxPerPersonPerNight = null) {
-    if ($touristTaxPerPersonPerNight === null) {
-      $touristTaxPerPersonPerNight = (float) ($draft['tourist_tax_per_person_per_night'] ?? 0);
+if (!function_exists('itm_hotel_booking_portal_find_available_room_for_type')) {
+  function itm_hotel_booking_portal_find_available_room_for_type($conn, $companyId, $hotelId, $roomTypeId, $checkIn, $checkOut) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $roomTypeId = (int) $roomTypeId;
+    $sql = 'SELECT r.id, r.price_per_night FROM hotel_booking_rooms r
+            WHERE r.company_id = ? AND r.hotel_id = ? AND r.room_type_id = ? AND r.deleted_at IS NULL AND r.active = 1
+            ORDER BY r.price_per_night ASC, r.id ASC';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return null;
     }
-    $breakdown = itm_hotel_booking_portal_checkout_breakdown($basePerNight, $checkIn, $checkOut, $occupancy, $discountPercent, $draft, $touristTaxPerPersonPerNight);
-    return $breakdown['total'];
+    mysqli_stmt_bind_param($stmt, 'iii', $companyId, $hotelId, $roomTypeId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $pick = null;
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+      $rid = (int) ($row['id'] ?? 0);
+      if ($rid > 0 && !itm_hotel_booking_has_overlap($conn, $companyId, $rid, $checkIn, $checkOut)) {
+        $pick = $row;
+        break;
+      }
+    }
+    mysqli_stmt_close($stmt);
+    return $pick;
   }
 }
 

@@ -38,7 +38,7 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
 - `appointments_assigned_confirmed.sql` — `appointments` with `assigned_to_employee_id` (FK `employees`, SET NULL) and `is_confirmed` (destructive — drops appointment rows)
 - `appointment_settings_default_modality.sql` — `appointment_settings.default_appointment_modality` enum (`remote` default; preserves rows via backup table)
 - `appointment_type_label_allowed_json.sql` — `appointment_type.label` + `appointment_business_hours.allowed_types_json` (preserves type ids and hour rows; re-apply audit triggers from `db/03_triggers.sql` for `appointment_type` and `appointment_business_hours` if not included in your import session)
-- `hotel_booking_settings_tourist_tax.sql` — `hotel_booking_settings` with `tourist_tax_per_person_per_night` (destructive — back up settings row before apply; re-seed from `db/02_data.sql` when needed)
+- `booking_rooms_types_upgrade.sql` — `booking_rooms_types` with `upgrade_to_room_type_id`, `upgrade_price_per_night`, `upgrade_pitch` (destructive — re-seed room types from `db/02_data.sql` after apply)
 
 ## 12. Module Owner Notes (Optional)
 Catalog pointer: `AGENTS.md` → Database & Schema Rules → **Incremental migrations (`db/migrations/`)**.

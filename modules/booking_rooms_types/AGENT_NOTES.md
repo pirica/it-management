@@ -213,6 +213,8 @@ Regression scripts, related `AGENT_NOTES.md` files, or follow-up hardening (docu
 
 Example: Regression: `php scripts/verify_<module>.php`. Parent module: `modules/ops_report/AGENT_NOTES.md`.
 
+**Hotel booking portal upsell:** `upgrade_to_room_type_id` (self-FK to another type), `upgrade_price_per_night`, and optional `upgrade_pitch` drive the Step 3 checkbox card in `booking/rooms/customize.php`. Company 1 seeds set STD/SUP → Deluxe at **121.00** EUR/night in `db/02_data.sql`.
+
 ---
 
 ## Authoring checklist (before marking complete)
