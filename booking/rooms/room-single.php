@@ -115,7 +115,7 @@ $discountPercent = $draft ? (float) ($draft['discount_percent'] ?? 0) : itm_hote
 $draftForDisplay = $draft ?: ['rate_plan' => 'room_only', 'traveling_with_pet' => 0, 'service_animal' => 0];
 $touristTaxPerPerson = (float) ($settings['tourist_tax_per_person_per_night'] ?? 0);
 $breakdown = itm_hotel_booking_portal_checkout_breakdown(
-    (float) $room['price_per_night'],
+    (float) ($draft ? ($draft['base_price_per_night'] ?? $room['price_per_night']) : $room['price_per_night']),
     $checkInIso,
     $checkOutIso,
     $occupancy,
