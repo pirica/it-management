@@ -242,8 +242,10 @@
       '</section>' +
       '<section class="hb-block hb-rating-block">' +
       '<div class="hb-rating-bubbles" aria-hidden="true"><span></span><span></span><span></span><span></span><span class="partial"></span></div>' +
-      '<p class="hb-rating-copy"><strong>Guest rating</strong> — based on recent stays</p>' +
+      '<div class="hb-rating-meta">' +
+      '<p class="hb-rating-copy"><strong>Guest rating</strong><span class="hb-rating-sub"> — based on recent stays</span></p>' +
       reviewsLinkHtml(h) +
+      '</div>' +
       '</section>' +
       '<div class="hb-price-cta">' +
       '<p class="hb-from-price">From<sup>*</sup> <strong>' + escapeHtml(formatPrice(h)) + '</strong></p>' +
