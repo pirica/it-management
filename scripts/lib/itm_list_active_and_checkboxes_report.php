@@ -349,8 +349,21 @@ if (!function_exists('itm_collect_active_and_checkboxes_report')) {
         $entries = scandir($modulesRoot) ?: [];
         sort($entries, SORT_NATURAL | SORT_FLAG_CASE);
 
+        if (!function_exists('itm_crud_tables_load_skip_module_slugs')) {
+            require_once __DIR__ . '/itm_crud_tables_audit.php';
+        }
+        $bespokeModuleSlugs = array_fill_keys(itm_crud_tables_load_skip_module_slugs(), true);
+
         foreach ($entries as $moduleSlug) {
             if ($moduleSlug === '.' || $moduleSlug === '..') {
+                continue;
+            }
+            if (isset($bespokeModuleSlugs[$moduleSlug])) {
+                continue;
+            }
+            // Why: Auto-scaffold stub dirs (MBQA / SHOW TABLES discovery) are not product modules — skip, do not hardcode table slugs.
+            if (function_exists('itm_module_dir_is_standard_crud_scaffold')
+                && itm_module_dir_is_standard_crud_scaffold($modulesRoot, $moduleSlug)) {
                 continue;
             }
             $moduleDir = $modulesRoot . $moduleSlug;
