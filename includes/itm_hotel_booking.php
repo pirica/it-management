@@ -275,7 +275,7 @@ if (!function_exists('itm_hotel_booking_portal_parse_occupancy')) {
     $children = max(0, min(6, (int) ($source['children'] ?? 0)));
     $babies = max(0, min(3, (int) ($source['babies'] ?? 0)));
     $rateSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($source['rate'] ?? '')));
-    return [
+    $occupancy = [
       'rooms' => $rooms,
       'adults' => $adults,
       'children' => $children,
@@ -291,6 +291,156 @@ if (!function_exists('itm_hotel_booking_portal_parse_occupancy')) {
       'corporate_account' => itm_hotel_booking_portal_sanitize_rate_code($source['corporate_account'] ?? ''),
       'member_account' => itm_hotel_booking_portal_sanitize_rate_code($source['member_account'] ?? ''),
     ];
+    return itm_hotel_booking_portal_enforce_exclusive_rate_checkboxes($occupancy);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_enforce_exclusive_rate_checkboxes')) {
+  function itm_hotel_booking_portal_enforce_exclusive_rate_checkboxes(array $occupancy) {
+    $keys = ['use_points', 'travel_agents', 'aaa_rate', 'senior_rate', 'gov_military'];
+    $keep = null;
+    foreach ($keys as $key) {
+      if (!empty($occupancy[$key])) {
+        if ($keep === null) {
+          $keep = $key;
+        } else {
+          $occupancy[$key] = 0;
+        }
+      }
+    }
+    return $occupancy;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_rate_program_options')) {
+  function itm_hotel_booking_portal_rate_program_options() {
+    return [
+      ['param' => 'use_points', 'label' => 'Use Points', 'slug' => 'points'],
+      ['param' => 'travel_agents', 'label' => 'Travel agents', 'slug' => 'travel_agent'],
+      ['param' => 'aaa_rate', 'label' => 'AAA rate', 'slug' => 'aaa'],
+      ['param' => 'senior_rate', 'label' => 'Senior rate', 'slug' => 'senior'],
+      ['param' => 'gov_military', 'label' => 'Government and military rates', 'slug' => 'government'],
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_code_rate_options')) {
+  function itm_hotel_booking_portal_code_rate_options() {
+    return [
+      ['param' => 'promo_code', 'label' => 'Promotion code', 'slug' => 'promo'],
+      ['param' => 'group_code', 'label' => 'Group code', 'slug' => 'group'],
+      ['param' => 'corporate_account', 'label' => 'Corporate account', 'slug' => 'corporate'],
+      ['param' => 'member_account', 'label' => 'Member account', 'slug' => 'member'],
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_canonical_special_rate_definitions')) {
+  function itm_hotel_booking_canonical_special_rate_definitions() {
+    $defs = [];
+    foreach (itm_hotel_booking_portal_rate_program_options() as $row) {
+      $defs[] = [
+        'slug' => (string) ($row['slug'] ?? ''),
+        'name' => (string) ($row['label'] ?? ''),
+        'description' => '',
+      ];
+    }
+    foreach (itm_hotel_booking_portal_code_rate_options() as $row) {
+      $defs[] = [
+        'slug' => (string) ($row['slug'] ?? ''),
+        'name' => (string) ($row['label'] ?? ''),
+        'description' => '',
+      ];
+    }
+    return $defs;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_normalize_special_rate_percent_input')) {
+  function itm_hotel_booking_normalize_special_rate_percent_input($value) {
+    $raw = str_replace(',', '.', trim((string) $value));
+    if ($raw === '' || !is_numeric($raw)) {
+      return 0.0;
+    }
+    $n = (float) $raw;
+    if ($n < 0) {
+      return 0.0;
+    }
+    if ($n > 100) {
+      return 100.0;
+    }
+    return round($n, 2);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_ensure_special_rates_for_hotel')) {
+  function itm_hotel_booking_ensure_special_rates_for_hotel($conn, $companyId, $hotelId, $employeeId = null) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $employeeId = $employeeId ? (int) $employeeId : null;
+    if ($companyId < 1 || $hotelId < 1) {
+      return;
+    }
+    foreach (itm_hotel_booking_canonical_special_rate_definitions() as $def) {
+      $slug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($def['slug'] ?? '')));
+      $name = trim((string) ($def['name'] ?? ''));
+      if ($slug === '' || $name === '') {
+        continue;
+      }
+      $stmt = mysqli_prepare($conn, 'SELECT id FROM hotel_booking_special_rates WHERE company_id = ? AND hotel_id = ? AND rate_slug = ? AND deleted_at IS NULL LIMIT 1');
+      if (!$stmt) {
+        continue;
+      }
+      mysqli_stmt_bind_param($stmt, 'iis', $companyId, $hotelId, $slug);
+      mysqli_stmt_execute($stmt);
+      $res = mysqli_stmt_get_result($stmt);
+      $exists = $res && mysqli_fetch_assoc($res);
+      mysqli_stmt_close($stmt);
+      if ($exists) {
+        continue;
+      }
+      $description = (string) ($def['description'] ?? '');
+      $ins = mysqli_prepare($conn, 'INSERT INTO hotel_booking_special_rates (company_id, hotel_id, rate_slug, name, discount_percent, description, active, created_by, created_at) VALUES (?, ?, ?, ?, 0.00, ?, 1, ?, NOW())');
+      if ($ins) {
+        mysqli_stmt_bind_param($ins, 'iisssi', $companyId, $hotelId, $slug, $name, $description, $employeeId);
+        mysqli_stmt_execute($ins);
+        mysqli_stmt_close($ins);
+      }
+    }
+  }
+}
+
+if (!function_exists('itm_hotel_booking_special_rates_admin_rows')) {
+  function itm_hotel_booking_special_rates_admin_rows($conn, $companyId, $hotelId) {
+    itm_hotel_booking_ensure_special_rates_for_hotel($conn, $companyId, $hotelId);
+    $map = [];
+    $stmt = mysqli_prepare($conn, 'SELECT rate_slug, name, discount_percent, description, active FROM hotel_booking_special_rates WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL ORDER BY name ASC');
+    if ($stmt) {
+      mysqli_stmt_bind_param($stmt, 'ii', $companyId, $hotelId);
+      mysqli_stmt_execute($stmt);
+      $res = mysqli_stmt_get_result($stmt);
+      while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $map[(string) ($row['rate_slug'] ?? '')] = $row;
+      }
+      mysqli_stmt_close($stmt);
+    }
+    $rows = [];
+    foreach (itm_hotel_booking_canonical_special_rate_definitions() as $def) {
+      $slug = (string) ($def['slug'] ?? '');
+      if ($slug === '' || !isset($map[$slug])) {
+        continue;
+      }
+      $rows[] = $map[$slug];
+    }
+    return $rows;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_format_discount_percent_label')) {
+  function itm_hotel_booking_format_discount_percent_label($percent) {
+    $n = (float) $percent;
+    $text = rtrim(rtrim(number_format($n, 2, '.', ''), '0'), '.');
+    return $text === '' ? '0' : $text;
   }
 }
 
@@ -414,6 +564,19 @@ if (!function_exists('itm_hotel_booking_special_rates_for_hotel')) {
       mysqli_stmt_close($stmt);
     }
     return $rows;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_special_rate_discount_map')) {
+  function itm_hotel_booking_special_rate_discount_map($conn, $companyId, $hotelId) {
+    $map = [];
+    foreach (itm_hotel_booking_special_rates_for_hotel($conn, $companyId, $hotelId) as $row) {
+      $slug = (string) ($row['rate_slug'] ?? '');
+      if ($slug !== '') {
+        $map[$slug] = (float) ($row['discount_percent'] ?? 0);
+      }
+    }
+    return $map;
   }
 }
 

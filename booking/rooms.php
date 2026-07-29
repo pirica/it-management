@@ -43,6 +43,9 @@ $discountPercent = itm_hotel_booking_special_rate_discount(
     itm_hotel_booking_portal_resolved_rate_slug($occupancy)
 );
 $resolvedRateSlug = itm_hotel_booking_portal_resolved_rate_slug($occupancy);
+$rateDiscountMap = itm_hotel_booking_special_rate_discount_map($conn, $company_id, $hotelId);
+$rateProgramOptions = itm_hotel_booking_portal_rate_program_options();
+$codeRateOptions = itm_hotel_booking_portal_code_rate_options();
 
 $hotelPhotos = itm_hotel_booking_photos_load($conn, $company_id, 'hotel_booking_hotel_photos', 'hotel_id', $hotelId);
 $hotelCoverUrl = APPURL . '/images/image_2.jpg';
@@ -374,17 +377,32 @@ $filterOptions = [
 <form id="hb-rates-form" class="hb-rates-form" autocomplete="off">
 <fieldset class="hb-rates-fieldset">
 <legend class="hb-sr-only">Rate programs</legend>
-<label class="hb-filter-check"><input type="checkbox" id="hb-rate-use-points" name="use_points" value="1"<?php echo !empty($occupancy['use_points']) ? ' checked' : ''; ?>> Use Points</label>
-<label class="hb-filter-check"><input type="checkbox" id="hb-rate-travel-agents" name="travel_agents" value="1"<?php echo !empty($occupancy['travel_agents']) ? ' checked' : ''; ?>> Travel agents</label>
-<label class="hb-filter-check"><input type="checkbox" id="hb-rate-aaa" name="aaa_rate" value="1"<?php echo !empty($occupancy['aaa_rate']) ? ' checked' : ''; ?>> AAA rate</label>
-<label class="hb-filter-check"><input type="checkbox" id="hb-rate-senior" name="senior_rate" value="1"<?php echo !empty($occupancy['senior_rate']) ? ' checked' : ''; ?>> Senior rate</label>
-<label class="hb-filter-check"><input type="checkbox" id="hb-rate-gov-military" name="gov_military" value="1"<?php echo !empty($occupancy['gov_military']) ? ' checked' : ''; ?>> Government and military rates</label>
+<?php foreach ($rateProgramOptions as $rateOpt):
+    $param = (string) ($rateOpt['param'] ?? '');
+    $slug = (string) ($rateOpt['slug'] ?? '');
+    $label = (string) ($rateOpt['label'] ?? '');
+    $pct = itm_hotel_booking_format_discount_percent_label($rateDiscountMap[$slug] ?? 0);
+    $inputId = 'hb-rate-' . preg_replace('/[^a-z0-9]+/', '-', strtolower($param));
+?>
+<label class="hb-filter-check"><input type="checkbox" class="hb-rate-exclusive" data-hb-rate-exclusive="1" id="<?php echo htmlspecialchars($inputId, ENT_QUOTES, 'UTF-8'); ?>" name="<?php echo htmlspecialchars($param, ENT_QUOTES, 'UTF-8'); ?>" value="1"<?php echo !empty($occupancy[$param]) ? ' checked' : ''; ?>> <?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?> <?php echo htmlspecialchars($pct, ENT_QUOTES, 'UTF-8'); ?>%</label>
+<?php endforeach; ?>
 </fieldset>
 <div class="hb-rates-codes">
-<label class="hb-rates-code-label">Promotion code <input type="text" id="hb-rate-promo" name="promo_code" maxlength="8" size="10" pattern="[A-Za-z0-9]{0,8}" value="<?php echo htmlspecialchars((string) ($occupancy['promo_code'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" autocomplete="off"></label>
-<label class="hb-rates-code-label">Group code <input type="text" id="hb-rate-group" name="group_code" maxlength="8" size="10" pattern="[A-Za-z0-9]{0,8}" value="<?php echo htmlspecialchars((string) ($occupancy['group_code'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" autocomplete="off"></label>
-<label class="hb-rates-code-label">Corporate account <input type="text" id="hb-rate-corporate" name="corporate_account" maxlength="8" size="10" pattern="[A-Za-z0-9]{0,8}" value="<?php echo htmlspecialchars((string) ($occupancy['corporate_account'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" autocomplete="off"></label>
-<label class="hb-rates-code-label">Member account <input type="text" id="hb-rate-member" name="member_account" maxlength="8" size="10" pattern="[A-Za-z0-9]{0,8}" value="<?php echo htmlspecialchars((string) ($occupancy['member_account'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" autocomplete="off"></label>
+<?php foreach ($codeRateOptions as $codeOpt):
+    $codeParam = (string) ($codeOpt['param'] ?? '');
+    $codeSlug = (string) ($codeOpt['slug'] ?? '');
+    $codeLabel = (string) ($codeOpt['label'] ?? '');
+    $codePct = itm_hotel_booking_format_discount_percent_label($rateDiscountMap[$codeSlug] ?? 0);
+    $codeInputIds = [
+        'promo_code' => 'hb-rate-promo',
+        'group_code' => 'hb-rate-group',
+        'corporate_account' => 'hb-rate-corporate',
+        'member_account' => 'hb-rate-member',
+    ];
+    $codeInputId = $codeInputIds[$codeParam] ?? ('hb-rate-' . preg_replace('/[^a-z0-9]+/', '-', strtolower($codeParam)));
+?>
+<label class="hb-rates-code-label"><?php echo htmlspecialchars($codeLabel, ENT_QUOTES, 'UTF-8'); ?> <?php echo htmlspecialchars($codePct, ENT_QUOTES, 'UTF-8'); ?>% <input type="text" id="<?php echo htmlspecialchars($codeInputId, ENT_QUOTES, 'UTF-8'); ?>" name="<?php echo htmlspecialchars($codeParam, ENT_QUOTES, 'UTF-8'); ?>" maxlength="8" size="10" pattern="[A-Za-z0-9]{0,8}" value="<?php echo htmlspecialchars((string) ($occupancy[$codeParam] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" autocomplete="off"></label>
+<?php endforeach; ?>
 </div>
 <div class="hb-rates-actions">
 <button type="button" class="hb-btn hb-btn-primary" id="hb-rates-apply" title="Apply special rates">Apply</button>
@@ -407,6 +425,7 @@ window.HB_SELECT_ROOM = <?php echo json_encode([
     'occupancyLabel' => $occupancyLabel,
     'discountPercent' => $discountPercent,
     'resolvedRateSlug' => $resolvedRateSlug,
+    'rateDiscountPercents' => $rateDiscountMap,
     'currencySymbol' => ($currency === 'EUR' ? '€' : $currency . ' '),
     'typeDetails' => $typeDetailsHtml,
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
