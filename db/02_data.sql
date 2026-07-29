@@ -2420,6 +2420,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_rooms", "Hotel Rooms", 0, 1, "ðŸšª");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_amenities", "Booking Amenities", 0, 1, "✨");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_special_rates", "Booking Special Rates", 0, 1, "🏷️");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_portal_rate_plans", "Portal Rate Plans", 0, 1, "📋");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_room_utilities", "Room Utilities", 0, 1, "âœ¨");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_housekeeping_statuses", "HK Statuses", 0, 1, "ðŸ§¹");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_future", "Booking Future Status", 0, 1, "ðŸ“…");
@@ -2506,6 +2507,12 @@ INSERT INTO `hotel_booking_special_rates` (`company_id`, `hotel_id`, `rate_slug`
 (1, 1, 'promo', 'Promotion code', 15.00, 'Enter a valid promotion code.', 1, '2026-01-01 00:00:01'),
 (1, 1, 'group', 'Group code', 15.00, 'Enter a valid group code.', 1, '2026-01-01 00:00:01'),
 (1, 1, 'corporate', 'Corporate account', 15.00, 'Enter a valid corporate account number.', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_booking_portal_rate_plans` (`company_id`, `hotel_id`, `plan_slot`, `name`, `rate_plan_slug`, `cancellation_policy_url`, `active`, `created_at`) VALUES
+(1, 1, 1, 'Best Available Rate', 'room_only', 'cancellation_policy/1_cancellation_policy.html', 1, '2026-01-01 00:00:01'),
+(1, 1, 2, 'Breakfast Included', 'breakfast', 'cancellation_policy/2_cancellation_policy.html', 1, '2026-01-01 00:00:01'),
+(1, 1, 3, 'Flexible Rate', 'flexible', 'cancellation_policy/3_cancellation_policy.html', 1, '2026-01-01 00:00:01'),
+(1, 1, 4, 'Non-Refundable Rate', 'non_refundable', 'cancellation_policy/4_cancellation_policy.html', 1, '2026-01-01 00:00:01');
 
 INSERT INTO `hotel_booking_hotel_nearby` (`company_id`, `hotel_id`, `place_name`, `distance_km`, `sort_order`, `active`, `created_at`) VALUES
 (1, 1, 'City center', 12.60, 10, 1, '2026-01-01 00:00:01'),

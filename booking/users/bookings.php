@@ -78,6 +78,7 @@ if ($booking) {
     'confirmation' => true,
 ]); ?>
 <?php hb_portal_render_confirmation_summary_aside($booking); ?>
+<?php hb_portal_render_cancellation_policy_button(hb_portal_booking_cancellation_policy_url($conn, $company_id, $booking)); ?>
 </aside>
 </div>
 <?php hb_portal_render_confirmation_pdf_assets(); ?>

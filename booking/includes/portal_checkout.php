@@ -423,6 +423,41 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
     }
 }
 
+if (!function_exists('hb_portal_cancellation_policy_href')) {
+    function hb_portal_cancellation_policy_href($storedUrl) {
+        $storedUrl = trim((string) $storedUrl);
+        if ($storedUrl === '') {
+            return '';
+        }
+        if (preg_match('#^https?://#i', $storedUrl)) {
+            return $storedUrl;
+        }
+        return rtrim(APPURL, '/') . '/' . ltrim(str_replace('\\', '/', $storedUrl), '/');
+    }
+}
+
+if (!function_exists('hb_portal_booking_cancellation_policy_url')) {
+    function hb_portal_booking_cancellation_policy_url($conn, $companyId, array $booking) {
+        $hotelId = (int) ($booking['hotel_id'] ?? 0);
+        $ratePlan = itm_hotel_booking_portal_parse_rate_plan_from_notes((string) ($booking['notes'] ?? ''));
+        return itm_hotel_booking_portal_resolve_cancellation_policy_url($conn, (int) $companyId, $hotelId, $ratePlan);
+    }
+}
+
+if (!function_exists('hb_portal_render_cancellation_policy_button')) {
+    function hb_portal_render_cancellation_policy_button($policyUrl) {
+        $href = hb_portal_cancellation_policy_href($policyUrl);
+        if ($href === '') {
+            return;
+        }
+        ?>
+<div class="hb-cancellation-policy-card card">
+<a class="hb-btn hb-btn-block hb-cancellation-policy-btn hb-checkout-skip" href="<?php echo htmlspecialchars($href, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" title="Cancellation policy (opens in new tab)">Cancellation policy</a>
+</div>
+        <?php
+    }
+}
+
 if (!function_exists('hb_portal_render_confirmation_pdf_assets')) {
     /** html2canvas + jsPDF for direct PDF download (payment confirmation). */
     function hb_portal_render_confirmation_pdf_assets() {
