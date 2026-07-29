@@ -191,6 +191,7 @@ $notesBuilt = itm_hotel_booking_portal_build_booking_notes([
 $parsedOcc = itm_hotel_booking_portal_parse_occupancy_meta_from_notes($notesBuilt);
 if (strpos($notesBuilt, $occMeta) === 0
     && strpos($notesBuilt, 'Rate: Breakfast included') !== false
+    && strpos($notesBuilt, 'Rate plan: breakfast') !== false
     && strpos($notesBuilt, 'Room: King Grand Deluxe Room with Pool View') !== false
     && strpos($notesBuilt, "Guest comments:\nLate arrival") !== false
     && is_array($parsedOcc)
@@ -199,6 +200,27 @@ if (strpos($notesBuilt, $occMeta) === 0
     hb_pass('portal booking notes with occupancy meta');
 } else {
     hb_fail('portal booking notes with occupancy meta');
+}
+
+$res = mysqli_query($conn, "SHOW TABLES LIKE 'hotel_booking_portal_rate_plans'");
+if ($res && mysqli_num_rows($res) > 0) {
+    hb_pass('table hotel_booking_portal_rate_plans');
+} else {
+    hb_fail('missing table hotel_booking_portal_rate_plans');
+}
+
+$ratePlanParsed = itm_hotel_booking_portal_parse_rate_plan_from_notes("Rate: Breakfast included\nRate plan: breakfast");
+if ($ratePlanParsed === 'breakfast') {
+    hb_pass('parse rate plan from notes breakfast');
+} else {
+    hb_fail('parse rate plan from notes breakfast');
+}
+
+$policyUrl = itm_hotel_booking_portal_resolve_cancellation_policy_url($conn, 1, 1, 'room_only');
+if ($policyUrl !== '' && strpos($policyUrl, '1_cancellation_policy.html') !== false) {
+    hb_pass('resolve cancellation policy url room_only');
+} else {
+    hb_fail('resolve cancellation policy url room_only got ' . $policyUrl);
 }
 
 $confirmPdfJs = dirname(__DIR__) . '/booking/js/hotel-booking-confirmation-pdf.js';

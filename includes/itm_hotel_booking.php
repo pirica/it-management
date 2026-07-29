@@ -436,6 +436,174 @@ if (!function_exists('itm_hotel_booking_special_rates_admin_rows')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_rate_plan_definitions')) {
+  function itm_hotel_booking_portal_rate_plan_definitions() {
+    return [
+      [
+        'plan_slot' => 1,
+        'rate_plan_slug' => 'room_only',
+        'name' => 'Best Available Rate',
+        'default_policy_path' => 'cancellation_policy/1_cancellation_policy.html',
+      ],
+      [
+        'plan_slot' => 2,
+        'rate_plan_slug' => 'breakfast',
+        'name' => 'Breakfast Included',
+        'default_policy_path' => 'cancellation_policy/2_cancellation_policy.html',
+      ],
+      [
+        'plan_slot' => 3,
+        'rate_plan_slug' => 'flexible',
+        'name' => 'Flexible Rate',
+        'default_policy_path' => 'cancellation_policy/3_cancellation_policy.html',
+      ],
+      [
+        'plan_slot' => 4,
+        'rate_plan_slug' => 'non_refundable',
+        'name' => 'Non-Refundable Rate',
+        'default_policy_path' => 'cancellation_policy/4_cancellation_policy.html',
+      ],
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_normalize_cancellation_policy_url')) {
+  function itm_hotel_booking_normalize_cancellation_policy_url($url) {
+    $url = trim((string) $url);
+    if ($url === '') {
+      return '';
+    }
+    if (preg_match('#^https?://#i', $url)) {
+      return strlen($url) > 500 ? substr($url, 0, 500) : $url;
+    }
+    $url = ltrim(str_replace('\\', '/', $url), '/');
+    if ($url === '' || strpos($url, '..') !== false) {
+      return '';
+    }
+    return strlen($url) > 500 ? substr($url, 0, 500) : $url;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_default_cancellation_policy_path')) {
+  function itm_hotel_booking_portal_default_cancellation_policy_path($ratePlanSlug) {
+    $slug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) $ratePlanSlug));
+    foreach (itm_hotel_booking_portal_rate_plan_definitions() as $def) {
+      if ((string) ($def['rate_plan_slug'] ?? '') === $slug) {
+        return (string) ($def['default_policy_path'] ?? '');
+      }
+    }
+    return 'cancellation_policy/1_cancellation_policy.html';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_ensure_portal_rate_plans_for_hotel')) {
+  function itm_hotel_booking_ensure_portal_rate_plans_for_hotel($conn, $companyId, $hotelId, $employeeId = null) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $employeeId = $employeeId ? (int) $employeeId : null;
+    if ($companyId < 1 || $hotelId < 1) {
+      return;
+    }
+    foreach (itm_hotel_booking_portal_rate_plan_definitions() as $def) {
+      $slot = (int) ($def['plan_slot'] ?? 0);
+      $slug = (string) ($def['rate_plan_slug'] ?? '');
+      $name = trim((string) ($def['name'] ?? ''));
+      $defaultPath = itm_hotel_booking_normalize_cancellation_policy_url($def['default_policy_path'] ?? '');
+      if ($slot < 1 || $name === '') {
+        continue;
+      }
+      $stmt = mysqli_prepare($conn, 'SELECT id FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND plan_slot = ? AND deleted_at IS NULL LIMIT 1');
+      if (!$stmt) {
+        continue;
+      }
+      mysqli_stmt_bind_param($stmt, 'iii', $companyId, $hotelId, $slot);
+      mysqli_stmt_execute($stmt);
+      $res = mysqli_stmt_get_result($stmt);
+      $exists = $res && mysqli_fetch_assoc($res);
+      mysqli_stmt_close($stmt);
+      if ($exists) {
+        continue;
+      }
+      $ins = mysqli_prepare($conn, 'INSERT INTO hotel_booking_portal_rate_plans (company_id, hotel_id, plan_slot, name, rate_plan_slug, cancellation_policy_url, active, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, NOW())');
+      if ($ins) {
+        mysqli_stmt_bind_param($ins, 'iiisssi', $companyId, $hotelId, $slot, $name, $slug, $defaultPath, $employeeId);
+        mysqli_stmt_execute($ins);
+        mysqli_stmt_close($ins);
+      }
+    }
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_rate_plans_admin_rows')) {
+  function itm_hotel_booking_portal_rate_plans_admin_rows($conn, $companyId, $hotelId) {
+    itm_hotel_booking_ensure_portal_rate_plans_for_hotel($conn, $companyId, $hotelId);
+    $map = [];
+    $stmt = mysqli_prepare($conn, 'SELECT plan_slot, name, rate_plan_slug, cancellation_policy_url, active FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL ORDER BY plan_slot ASC');
+    if ($stmt) {
+      mysqli_stmt_bind_param($stmt, 'ii', $companyId, $hotelId);
+      mysqli_stmt_execute($stmt);
+      $res = mysqli_stmt_get_result($stmt);
+      while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $map[(int) ($row['plan_slot'] ?? 0)] = $row;
+      }
+      mysqli_stmt_close($stmt);
+    }
+    $rows = [];
+    foreach (itm_hotel_booking_portal_rate_plan_definitions() as $def) {
+      $slot = (int) ($def['plan_slot'] ?? 0);
+      if ($slot < 1 || !isset($map[$slot])) {
+        continue;
+      }
+      $rows[] = $map[$slot];
+    }
+    return $rows;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_parse_rate_plan_from_notes')) {
+  function itm_hotel_booking_portal_parse_rate_plan_from_notes($notes) {
+    $notes = (string) $notes;
+    if (preg_match('/^Rate:\s*Breakfast included/im', $notes)) {
+      return 'breakfast';
+    }
+    if (preg_match('/^Rate:\s*Best available/im', $notes)) {
+      return 'room_only';
+    }
+    if (preg_match('/^Rate plan:\s*([a-z0-9_-]+)/im', $notes, $m)) {
+      return strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($m[1] ?? '')));
+    }
+    return 'room_only';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_resolve_cancellation_policy_url')) {
+  function itm_hotel_booking_portal_resolve_cancellation_policy_url($conn, $companyId, $hotelId, $ratePlanSlug) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $ratePlanSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) $ratePlanSlug));
+    if ($ratePlanSlug === '') {
+      $ratePlanSlug = 'room_only';
+    }
+    if ($companyId < 1 || $hotelId < 1) {
+      return itm_hotel_booking_portal_default_cancellation_policy_path($ratePlanSlug);
+    }
+    itm_hotel_booking_ensure_portal_rate_plans_for_hotel($conn, $companyId, $hotelId);
+    $stmt = mysqli_prepare($conn, 'SELECT cancellation_policy_url FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND rate_plan_slug = ? AND deleted_at IS NULL AND active = 1 LIMIT 1');
+    if ($stmt) {
+      mysqli_stmt_bind_param($stmt, 'iis', $companyId, $hotelId, $ratePlanSlug);
+      mysqli_stmt_execute($stmt);
+      $res = mysqli_stmt_get_result($stmt);
+      $row = $res ? mysqli_fetch_assoc($res) : null;
+      mysqli_stmt_close($stmt);
+      $url = itm_hotel_booking_normalize_cancellation_policy_url($row['cancellation_policy_url'] ?? '');
+      if ($url !== '') {
+        return $url;
+      }
+    }
+    return itm_hotel_booking_portal_default_cancellation_policy_path($ratePlanSlug);
+  }
+}
+
 if (!function_exists('itm_hotel_booking_format_discount_percent_label')) {
   function itm_hotel_booking_format_discount_percent_label($percent) {
     $n = (float) $percent;
@@ -893,8 +1061,10 @@ if (!function_exists('itm_hotel_booking_portal_build_booking_notes')) {
     $plan = (string) ($draft['rate_plan'] ?? '');
     if ($plan === 'breakfast') {
       $parts[] = 'Rate: Breakfast included';
+      $parts[] = 'Rate plan: breakfast';
     } elseif ($plan === 'room_only') {
       $parts[] = 'Rate: Best available (room only)';
+      $parts[] = 'Rate plan: room_only';
     }
     if (!empty($draft['traveling_with_pet'])) {
       $parts[] = 'Traveling with pet: yes';

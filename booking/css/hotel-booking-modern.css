@@ -310,6 +310,12 @@ body.hb-modal-open { overflow: hidden; }
 .hb-checkout-skip { background: #fff; color: var(--hb-primary); border: 2px solid var(--hb-primary); }
 .hb-checkout-aside-stack { display: flex; flex-direction: column; gap: 20px; }
 .hb-checkout-aside-stack .hb-reservation-summary { margin: 0; }
+.hb-cancellation-policy-card { padding: 16px; margin: 0; }
+.hb-btn.hb-btn-block { display: block; width: 100%; text-align: center; box-sizing: border-box; }
+.hb-cancellation-policy-btn { text-decoration: none; }
+.hb-cancellation-policy-page { max-width: 720px; margin: 24px auto; padding: 24px; }
+.hb-cancellation-policy-page h1 { font-size: 1.5rem; margin: 0 0 12px; color: var(--hb-primary); }
+.hb-cancellation-policy-page p { line-height: 1.55; margin: 0 0 12px; }
 
 .hb-payment-page .hb-select-room-main { max-width: 52rem; }
 .hb-payment-confirmation.card {
