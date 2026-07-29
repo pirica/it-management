@@ -91,4 +91,21 @@ if ($resolvedAaa === 'aaa' && $resolvedPromo === 'promo') {
     hb_fail('portal resolved rate slug got aaa=' . $resolvedAaa . ' promo=' . $resolvedPromo);
 }
 
+$exclusive = itm_hotel_booking_portal_enforce_exclusive_rate_checkboxes([
+    'use_points' => 1,
+    'aaa_rate' => 1,
+    'senior_rate' => 1,
+]);
+if (!empty($exclusive['use_points']) && empty($exclusive['aaa_rate']) && empty($exclusive['senior_rate'])) {
+    hb_pass('portal exclusive rate checkboxes');
+} else {
+    hb_fail('portal exclusive rate checkboxes');
+}
+
+if (itm_hotel_booking_normalize_special_rate_percent_input('15,5') === 15.5) {
+    hb_pass('special rate percent normalize');
+} else {
+    hb_fail('special rate percent normalize');
+}
+
 exit($fail > 0 ? 1 : 0);

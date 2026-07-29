@@ -2419,6 +2419,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("booking_rooms_types", "Room Types", 0, 1, "ðŸ›ï¸");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_rooms", "Hotel Rooms", 0, 1, "ðŸšª");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_amenities", "Booking Amenities", 0, 1, "✨");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_special_rates", "Booking Special Rates", 0, 1, "🏷️");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_room_utilities", "Room Utilities", 0, 1, "âœ¨");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_housekeeping_statuses", "HK Statuses", 0, 1, "ðŸ§¹");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_future", "Booking Future Status", 0, 1, "ðŸ“…");
@@ -2489,15 +2490,15 @@ INSERT INTO `hotel_booking_rooms` (`company_id`, `hotel_id`, `room_type_id`, `ho
 (1, 1, 3, 1, '101', 'Standard Queen 101', '1', 75.00, 2, 1, 24.00, 'City', 1, '2026-01-01 00:00:01');
 
 INSERT INTO `hotel_booking_special_rates` (`company_id`, `hotel_id`, `rate_slug`, `name`, `discount_percent`, `description`, `active`, `created_at`) VALUES
-(1, 1, 'member', 'Member rate', 10.00, 'Sign in or join to save on your stay.', 1, '2026-01-01 00:00:01'),
+(1, 1, 'member', 'Member rate', 15.00, 'Sign in or join to save on your stay.', 1, '2026-01-01 00:00:01'),
 (1, 1, 'aaa', 'AAA / CAA', 12.00, 'Valid membership card required at check-in.', 1, '2026-01-01 00:00:01'),
 (1, 1, 'government', 'Government', 8.00, 'Eligible government and military ID required.', 1, '2026-01-01 00:00:01'),
 (1, 1, 'points', 'Use Points', 0.00, 'Redeem loyalty points at checkout.', 1, '2026-01-01 00:00:01'),
 (1, 1, 'travel_agent', 'Travel agents', 5.00, 'Valid IATA or agency credentials required.', 1, '2026-01-01 00:00:01'),
 (1, 1, 'senior', 'Senior rate', 10.00, 'Guest must meet property age requirements.', 1, '2026-01-01 00:00:01'),
-(1, 1, 'promo', 'Promotion code', 0.00, 'Enter a valid promotion code.', 1, '2026-01-01 00:00:01'),
-(1, 1, 'group', 'Group code', 0.00, 'Enter a valid group code.', 1, '2026-01-01 00:00:01'),
-(1, 1, 'corporate', 'Corporate account', 0.00, 'Enter a valid corporate account number.', 1, '2026-01-01 00:00:01');
+(1, 1, 'promo', 'Promotion code', 15.00, 'Enter a valid promotion code.', 1, '2026-01-01 00:00:01'),
+(1, 1, 'group', 'Group code', 15.00, 'Enter a valid group code.', 1, '2026-01-01 00:00:01'),
+(1, 1, 'corporate', 'Corporate account', 15.00, 'Enter a valid corporate account number.', 1, '2026-01-01 00:00:01');
 
 INSERT INTO `hotel_booking_hotel_nearby` (`company_id`, `hotel_id`, `place_name`, `distance_km`, `sort_order`, `active`, `created_at`) VALUES
 (1, 1, 'City center', 12.60, 10, 1, '2026-01-01 00:00:01'),

@@ -62,6 +62,80 @@
     });
   }
 
+  function resolvedRateSlugFromOcc(occ) {
+    occ = occ || {};
+    var rate = String(occ.rate || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    if (rate) {
+      return rate;
+    }
+    if (sanitizeRateCode(occ.promo_code)) {
+      return 'promo';
+    }
+    if (sanitizeRateCode(occ.group_code)) {
+      return 'group';
+    }
+    if (sanitizeRateCode(occ.corporate_account)) {
+      return 'corporate';
+    }
+    if (sanitizeRateCode(occ.member_account)) {
+      return 'member';
+    }
+    if (occ.use_points) {
+      return 'points';
+    }
+    if (occ.travel_agents) {
+      return 'travel_agent';
+    }
+    if (occ.aaa_rate) {
+      return 'aaa';
+    }
+    if (occ.senior_rate) {
+      return 'senior';
+    }
+    if (occ.gov_military) {
+      return 'government';
+    }
+    return '';
+  }
+
+  function discountPercentForOcc(occ) {
+    var map = cfg.rateDiscountPercents || {};
+    var slug = resolvedRateSlugFromOcc(occ);
+    if (!slug || !Object.prototype.hasOwnProperty.call(map, slug)) {
+      return 0;
+    }
+    return parseFloat(map[slug]) || 0;
+  }
+
+  function syncOccupancyToUrl() {
+    var qs = buildQuery({});
+    window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
+  }
+
+  function applySpecialRates(overrides) {
+    var merged = Object.assign({}, currentOccupancy(), overrides || {});
+    SPECIAL_RATE_BOOL_KEYS.forEach(function (key) {
+      merged[key] = merged[key] ? 1 : 0;
+    });
+    var exclusiveKeep = null;
+    SPECIAL_RATE_BOOL_KEYS.forEach(function (key) {
+      if (merged[key]) {
+        if (exclusiveKeep === null) {
+          exclusiveKeep = key;
+        } else {
+          merged[key] = 0;
+        }
+      }
+    });
+    cfg.occupancy = merged;
+    cfg.discountPercent = discountPercentForOcc(merged);
+    cfg.resolvedRateSlug = resolvedRateSlugFromOcc(merged);
+    var qs = buildQuery({});
+    window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
+    updatePrices();
+    closeModal('hb-rates-modal');
+  }
+
   function discountPercent() {
     return parseFloat(cfg.discountPercent || 0) || 0;
   }
@@ -120,54 +194,35 @@
       corporate_account: '',
       member_account: ''
     };
-    var usePoints = document.getElementById('hb-rate-use-points');
-    if (usePoints && usePoints.checked) {
-      overrides.use_points = 1;
+    var form = document.getElementById('hb-rates-form');
+    if (!form) {
+      return overrides;
     }
-    var travel = document.getElementById('hb-rate-travel-agents');
-    if (travel && travel.checked) {
-      overrides.travel_agents = 1;
-    }
-    var aaa = document.getElementById('hb-rate-aaa');
-    if (aaa && aaa.checked) {
-      overrides.aaa_rate = 1;
-    }
-    var senior = document.getElementById('hb-rate-senior');
-    if (senior && senior.checked) {
-      overrides.senior_rate = 1;
-    }
-    var gov = document.getElementById('hb-rate-gov-military');
-    if (gov && gov.checked) {
-      overrides.gov_military = 1;
-    }
-    var promo = document.getElementById('hb-rate-promo');
-    if (promo) {
-      overrides.promo_code = sanitizeRateCode(promo.value);
-    }
-    var group = document.getElementById('hb-rate-group');
-    if (group) {
-      overrides.group_code = sanitizeRateCode(group.value);
-    }
-    var corporate = document.getElementById('hb-rate-corporate');
-    if (corporate) {
-      overrides.corporate_account = sanitizeRateCode(corporate.value);
-    }
-    var member = document.getElementById('hb-rate-member');
-    if (member) {
-      overrides.member_account = sanitizeRateCode(member.value);
-    }
+    SPECIAL_RATE_BOOL_KEYS.forEach(function (key) {
+      var el = form.querySelector('input[name="' + key + '"]');
+      if (el && el.checked) {
+        overrides[key] = 1;
+      }
+    });
+    SPECIAL_RATE_CODE_KEYS.forEach(function (key) {
+      var el = form.querySelector('input[name="' + key + '"]');
+      if (el) {
+        overrides[key] = sanitizeRateCode(el.value);
+      }
+    });
     return overrides;
   }
 
   function clearRatesForm() {
-    ['hb-rate-use-points', 'hb-rate-travel-agents', 'hb-rate-aaa', 'hb-rate-senior', 'hb-rate-gov-military'].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el) {
-        el.checked = false;
-      }
+    var form = document.getElementById('hb-rates-form');
+    if (!form) {
+      return;
+    }
+    form.querySelectorAll('[data-hb-rate-exclusive]').forEach(function (el) {
+      el.checked = false;
     });
-    ['hb-rate-promo', 'hb-rate-group', 'hb-rate-corporate', 'hb-rate-member'].forEach(function (id) {
-      var el = document.getElementById(id);
+    SPECIAL_RATE_CODE_KEYS.forEach(function (key) {
+      var el = form.querySelector('input[name="' + key + '"]');
       if (el) {
         el.value = '';
       }
@@ -328,7 +383,7 @@
   var ratesApply = document.getElementById('hb-rates-apply');
   if (ratesApply) {
     ratesApply.addEventListener('click', function () {
-      reloadWith(readRatesFormOverrides());
+      applySpecialRates(readRatesFormOverrides());
     });
   }
 
@@ -336,7 +391,7 @@
   if (rateClear) {
     rateClear.addEventListener('click', function () {
       clearRatesForm();
-      reloadWith({
+      applySpecialRates({
         rate: '',
         use_points: 0,
         travel_agents: 0,
@@ -347,6 +402,22 @@
         group_code: '',
         corporate_account: '',
         member_account: ''
+      });
+    });
+  }
+
+  var ratesForm = document.getElementById('hb-rates-form');
+  if (ratesForm) {
+    ratesForm.querySelectorAll('[data-hb-rate-exclusive]').forEach(function (cb) {
+      cb.addEventListener('change', function () {
+        if (!cb.checked) {
+          return;
+        }
+        ratesForm.querySelectorAll('[data-hb-rate-exclusive]').forEach(function (other) {
+          if (other !== cb) {
+            other.checked = false;
+          }
+        });
       });
     });
   }
