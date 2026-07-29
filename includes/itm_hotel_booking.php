@@ -233,6 +233,114 @@ if (!function_exists('itm_hotel_booking_normalize_reviews_url')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
+  function itm_hotel_booking_hotel_calendar_month($conn, $companyId, $hotelId, $year, $month) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $year = (int) $year;
+    $month = (int) $month;
+    if ($companyId < 1 || $hotelId < 1 || $month < 1 || $month > 12) {
+      return ['year' => $year, 'month' => $month, 'currency_code' => 'EUR', 'days' => []];
+    }
+    $start = sprintf('%04d-%02d-01', $year, $month);
+    $daysInMonth = (int) date('t', strtotime($start));
+    $rangeEnd = sprintf('%04d-%02d-%02d', $year, $month, $daysInMonth);
+    $today = date('Y-m-d');
+
+    $currency = 'EUR';
+    $rooms = [];
+    $rstmt = mysqli_prepare($conn, 'SELECT id, price_per_night FROM hotel_booking_rooms WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL AND active = 1');
+    if ($rstmt) {
+      mysqli_stmt_bind_param($rstmt, 'ii', $companyId, $hotelId);
+      mysqli_stmt_execute($rstmt);
+      $res = mysqli_stmt_get_result($rstmt);
+      while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $rooms[] = ['id' => (int) $row['id'], 'price' => (float) $row['price_per_night']];
+      }
+      mysqli_stmt_close($rstmt);
+    }
+
+    $hstmt = mysqli_prepare($conn, 'SELECT currency_code FROM hotel_booking_hotels WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
+    if ($hstmt) {
+      mysqli_stmt_bind_param($hstmt, 'ii', $hotelId, $companyId);
+      mysqli_stmt_execute($hstmt);
+      $hr = mysqli_stmt_get_result($hstmt);
+      $hotelRow = $hr ? mysqli_fetch_assoc($hr) : null;
+      mysqli_stmt_close($hstmt);
+      if ($hotelRow && !empty($hotelRow['currency_code'])) {
+        $currency = (string) $hotelRow['currency_code'];
+      }
+    }
+
+    $bookingsByRoom = [];
+    if (!empty($rooms)) {
+      $roomIds = array_column($rooms, 'id');
+      $placeholders = implode(',', array_fill(0, count($roomIds), '?'));
+      $types = 'ii' . str_repeat('i', count($roomIds)) . 'ss';
+      $sql = "SELECT room_id, check_in, check_out, future_status_id, present_status_id, history_status_id
+              FROM hotel_bookings WHERE company_id = ? AND hotel_id = ? AND room_id IN ($placeholders)
+              AND deleted_at IS NULL AND check_in <= ? AND check_out > ?";
+      $bstmt = mysqli_prepare($conn, $sql);
+      if ($bstmt) {
+        $params = array_merge([$companyId, $hotelId], $roomIds, [$rangeEnd, $start]);
+        mysqli_stmt_bind_param($bstmt, $types, ...$params);
+        mysqli_stmt_execute($bstmt);
+        $bres = mysqli_stmt_get_result($bstmt);
+        while ($bres && ($b = mysqli_fetch_assoc($bres))) {
+          $rid = (int) $b['room_id'];
+          if (!isset($bookingsByRoom[$rid])) {
+            $bookingsByRoom[$rid] = [];
+          }
+          if (!itm_hotel_booking_booking_is_cancelled($conn, $companyId, $b)) {
+            $bookingsByRoom[$rid][] = $b;
+          }
+        }
+        mysqli_stmt_close($bstmt);
+      }
+    }
+
+    $roomFreeForNight = static function ($roomId, $checkIn, $checkOut) use ($bookingsByRoom) {
+      $list = $bookingsByRoom[$roomId] ?? [];
+      foreach ($list as $b) {
+        if ($b['check_in'] < $checkOut && $b['check_out'] > $checkIn) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    $days = [];
+    for ($d = 1; $d <= $daysInMonth; $d++) {
+      $checkIn = sprintf('%04d-%02d-%02d', $year, $month, $d);
+      $checkOut = date('Y-m-d', strtotime($checkIn . ' +1 day'));
+      if ($checkIn < $today) {
+        $days[$checkIn] = ['available' => false, 'past' => true];
+        continue;
+      }
+      $best = null;
+      foreach ($rooms as $room) {
+        if ($roomFreeForNight($room['id'], $checkIn, $checkOut)) {
+          if ($best === null || $room['price'] < $best) {
+            $best = $room['price'];
+          }
+        }
+      }
+      if ($best !== null) {
+        $days[$checkIn] = ['available' => true, 'price' => round($best, 2)];
+      } else {
+        $days[$checkIn] = ['available' => false];
+      }
+    }
+
+    return [
+      'year' => $year,
+      'month' => $month,
+      'currency_code' => $currency,
+      'days' => $days,
+    ];
+  }
+}
+
 if (!function_exists('itm_hotel_booking_compute_payment_amount')) {
   function itm_hotel_booking_compute_payment_amount($pricePerNight, $checkIn, $checkOut) {
     $in = DateTime::createFromFormat('Y-m-d', $checkIn);

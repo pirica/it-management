@@ -2,6 +2,11 @@
 require __DIR__ . '/bootstrap.php';
 $company_id = hb_public_company_id($conn);
 $hotelId = (int) ($_GET['id'] ?? 0);
+$checkInParam = trim((string) ($_GET['check_in'] ?? ''));
+$checkInIso = '';
+if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkInParam)) {
+    $checkInIso = $checkInParam;
+}
 if ($hotelId < 1) {
     header('Location: ' . APPURL . '/');
     exit;
@@ -23,7 +28,7 @@ if ($stmt) {
 <body class="hb-public"><main class="hb-main">
 <h1>Rooms</h1>
 <?php foreach ($rooms as $r): ?>
-<p><a href="<?php echo APPURL; ?>/rooms/room-single.php?id=<?php echo (int) $r['id']; ?>"><?php echo htmlspecialchars($r['room_number'] . ' — ' . $r['name'], ENT_QUOTES, 'UTF-8'); ?></a> — <?php echo htmlspecialchars(number_format((float) $r['price_per_night'], 2), ENT_QUOTES, 'UTF-8'); ?></p>
+<p><a href="<?php echo APPURL; ?>/rooms/room-single.php?id=<?php echo (int) $r['id']; ?><?php echo $checkInIso !== '' ? '&check_in=' . urlencode($checkInIso) : ''; ?>"><?php echo htmlspecialchars($r['room_number'] . ' — ' . $r['name'], ENT_QUOTES, 'UTF-8'); ?></a> — <?php echo htmlspecialchars(number_format((float) $r['price_per_night'], 2), ENT_QUOTES, 'UTF-8'); ?></p>
 <?php endforeach; ?>
 <p><a href="<?php echo APPURL; ?>/">Back</a></p>
 </main></body></html>

@@ -275,7 +275,11 @@
     bindFavorite(body.querySelector('.hb-fav'), h.id);
 
     body.querySelector('.hb-select-dates').addEventListener('click', function () {
-      window.location.href = window.HB_APPURL + '/rooms.php?id=' + h.id;
+      if (typeof window.HB_openDatesModal === 'function') {
+        window.HB_openDatesModal(h);
+      } else {
+        window.location.href = window.HB_APPURL + '/rooms.php?id=' + h.id;
+      }
     });
   }
 
