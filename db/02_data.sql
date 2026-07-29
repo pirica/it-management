@@ -2412,3 +2412,69 @@ INSERT INTO `it_settings` (`company_id`, `contact_email`, `contact_phone`, `hour
 (3, 'help@networksolutions.example', '+1-415-555-0300', '09:00 - 17:00 PST', 'Please submit a ticket via the portal for escalation.'),
 (4, 'it@cloudtech.example', '+1-206-555-0400', '24/7', 'Contact the Level 2 support team via Slack #it-escalations.'),
 (5, 'it-ops@enterpriseit.example', '+1-617-555-0500', '08:00 - 20:00 EST', 'Standard escalation through the ticketing system.');
+
+-- Hotel booking module registry
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings", "Hotel Bookings", 0, 1, "ðŸ¨");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_hotels", "Hotels", 0, 1, "ðŸ¨");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("booking_rooms_types", "Room Types", 0, 1, "ðŸ›ï¸");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_rooms", "Hotel Rooms", 0, 1, "ðŸšª");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_room_utilities", "Room Utilities", 0, 1, "âœ¨");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_housekeeping_statuses", "HK Statuses", 0, 1, "ðŸ§¹");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_future", "Booking Future Status", 0, 1, "ðŸ“…");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_present", "Booking Present Status", 0, 1, "ðŸ ");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_history", "Booking History Status", 0, 1, "ðŸ“œ");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_settings", "Hotel Booking Settings", 0, 1, "âš™ï¸");
+
+INSERT INTO `hotel_bookings_future` (`company_id`, `name`, `active`, `created_at`) VALUES
+(1, 'CONFIRMED', 1, '2026-01-01 00:00:01'),
+(1, 'CANCELLED', 1, '2026-01-01 00:00:01'),
+(1, 'PENDING', 1, '2026-01-01 00:00:01');
+
+INSERT IGNORE INTO `hotel_bookings_future` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `hotel_bookings_future` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+
+INSERT INTO `hotel_bookings_present` (`company_id`, `name`, `active`, `created_at`) VALUES
+(1, 'IN-HOUSE', 1, '2026-01-01 00:00:01'),
+(1, 'DUE-IN', 1, '2026-01-01 00:00:01'),
+(1, 'DUE-OUT', 1, '2026-01-01 00:00:01'),
+(1, 'NO-SHOW', 1, '2026-01-01 00:00:01'),
+(1, 'CANCELLED', 1, '2026-01-01 00:00:01');
+
+INSERT IGNORE INTO `hotel_bookings_present` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `hotel_bookings_present` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+
+INSERT INTO `hotel_bookings_history` (`company_id`, `name`, `active`, `created_at`) VALUES
+(1, 'CHECKED-OUT', 1, '2026-01-01 00:00:01'),
+(1, 'CANCELLED', 1, '2026-01-01 00:00:01'),
+(1, 'NO-SHOW', 1, '2026-01-01 00:00:01');
+
+INSERT IGNORE INTO `hotel_bookings_history` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `hotel_bookings_history` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+
+INSERT INTO `hotel_booking_housekeeping_statuses` (`company_id`, `name`, `color_hex`, `active`, `created_at`) VALUES
+(1, 'Inspected', '#28a745', 1, '2026-01-01 00:00:01'),
+(1, 'Clean', '#17a2b8', 1, '2026-01-01 00:00:01'),
+(1, 'Dirty', '#dc3545', 1, '2026-01-01 00:00:01'),
+(1, 'Pickup', '#ffc107', 1, '2026-01-01 00:00:01');
+
+INSERT IGNORE INTO `hotel_booking_housekeeping_statuses` (`company_id`, `name`, `color_hex`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`color_hex`, t.`active`, '2026-01-01 00:00:01' FROM `hotel_booking_housekeeping_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+
+INSERT INTO `booking_rooms_types` (`company_id`, `name`, `code`, `description`, `active`, `created_at`) VALUES
+(1, 'Deluxe', 'DLX', 'Deluxe room', 1, '2026-01-01 00:00:01'),
+(1, 'Superior', 'SUP', 'Superior room', 1, '2026-01-01 00:00:01'),
+(1, 'Standard', 'STD', 'Standard room', 1, '2026-01-01 00:00:01');
+
+INSERT IGNORE INTO `booking_rooms_types` (`company_id`, `name`, `code`, `description`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`code`, t.`description`, t.`active`, '2026-01-01 00:00:01' FROM `booking_rooms_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+
+INSERT INTO `hotel_booking_settings` (`company_id`, `public_portal_enabled`, `welcome_title`, `welcome_subtitle`, `price_footnote`, `active`, `created_at`) VALUES
+(1, 1, 'Find your stay', 'Browse hotels and book with confidence.', 'Prices may vary by date and availability.', 1, '2026-01-01 00:00:01');
+
+INSERT IGNORE INTO `hotel_booking_settings` (`company_id`, `public_portal_enabled`, `welcome_title`, `welcome_subtitle`, `price_footnote`, `active`, `created_at`) SELECT c.`id`, t.`public_portal_enabled`, t.`welcome_title`, t.`welcome_subtitle`, t.`price_footnote`, t.`active`, '2026-01-01 00:00:01' FROM `hotel_booking_settings` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+
+INSERT INTO `hotel_booking_hotels` (`company_id`, `name`, `description`, `location`, `phone`, `website_url`, `check_in_time`, `check_out_time`, `currency_code`, `parking_info`, `pets_policy`, `active`, `created_at`) VALUES
+(1, 'TechCorp Retreat', 'A comfortable property for business and leisure.', 'Lisbon, Portugal', '+351 210 000 001', 'https://example.com/techcorp-retreat', '15:00:00', '12:00:00', 'EUR', 'Self and valet parking complimentary.', 'Pets allowed under 15kg with fee.', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_booking_rooms` (`company_id`, `hotel_id`, `room_type_id`, `housekeeping_status_id`, `room_number`, `name`, `floor`, `price_per_night`, `num_persons`, `num_beds`, `size_sqm`, `view_label`, `active`, `created_at`) VALUES
+(1, 1, 1, 1, '201', 'Deluxe King 201', '2', 120.00, 2, 1, 32.00, 'Garden', 1, '2026-01-01 00:00:01'),
+(1, 1, 2, 2, '202', 'Superior Twin 202', '2', 95.00, 2, 2, 28.00, 'City', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_booking_hotel_nearby` (`company_id`, `hotel_id`, `place_name`, `distance_km`, `sort_order`, `active`, `created_at`) VALUES
+(1, 1, 'City center', 12.60, 10, 1, '2026-01-01 00:00:01'),
+(1, 1, 'Airport', 8.20, 20, 1, '2026-01-01 00:00:01');

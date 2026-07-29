@@ -1063,6 +1063,14 @@ Run `verify_reports_hub.php` when changing `modules/reports/`, `modules/reports/
 
 Run `verify_appointment.php` when changing `modules/appointment/`, `includes/itm_appointment.php`, or appointment DDL/seeds/triggers in `db/`.
 
+### Hotel booking scripts
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/verify_hotel_booking.php` | Regression: core `hotel_booking_*` / `booking_rooms_types` tables, segment helper (`future`), company 1 `PENDING` future status seed |
+
+Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking/`, `includes/itm_hotel_booking.php`, or hotel booking DDL/seeds/triggers in `db/`.
+
 ### Email Management scripts
 
 | Script | Purpose |

@@ -658,6 +658,45 @@ if (!isset($crud_title)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <?php if ($crud_table === 'customers' && !empty($data['id'])): ?>
+                    <?php
+                    $hbCustomerId = (int) $data['id'];
+                    $hbBookings = [];
+                    $hbStmt = mysqli_prepare($conn, 'SELECT b.id, b.check_in, b.check_out, b.payment_amount, r.room_number, r.name AS room_name
+                        FROM hotel_bookings b
+                        INNER JOIN hotel_booking_rooms r ON r.id = b.room_id AND r.company_id = b.company_id
+                        WHERE b.company_id = ? AND b.customer_id = ? AND b.deleted_at IS NULL
+                        ORDER BY b.check_in DESC LIMIT 50');
+                    if ($hbStmt) {
+                        mysqli_stmt_bind_param($hbStmt, 'ii', $company_id, $hbCustomerId);
+                        mysqli_stmt_execute($hbStmt);
+                        $hbRes = mysqli_stmt_get_result($hbStmt);
+                        while ($hbRes && ($hbRow = mysqli_fetch_assoc($hbRes))) {
+                            $hbBookings[] = $hbRow;
+                        }
+                        mysqli_stmt_close($hbStmt);
+                    }
+                    ?>
+                    <h2 style="margin-top:24px;">Hotel bookings</h2>
+                    <?php if (empty($hbBookings)): ?>
+                    <p>No hotel bookings for this customer.</p>
+                    <?php else: ?>
+                    <table>
+                        <thead><tr><th>Room</th><th>Check-in</th><th>Check-out</th><th>Payment</th><th></th></tr></thead>
+                        <tbody>
+                        <?php foreach ($hbBookings as $hb): ?>
+                        <tr>
+                            <td><?php echo sanitize($hb['room_number'] . ' — ' . $hb['room_name']); ?></td>
+                            <td><?php echo sanitize(itm_format_date_display($hb['check_in'])); ?></td>
+                            <td><?php echo sanitize(itm_format_date_display($hb['check_out'])); ?></td>
+                            <td><?php echo sanitize(number_format((float) $hb['payment_amount'], 2)); ?></td>
+                            <td><a class="btn btn-sm" href="../hotel_bookings/view.php?id=<?php echo (int) $hb['id']; ?>" title="View booking">🔎</a></td>
+                        </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    <?php endif; ?>
+                    <?php endif; ?>
                     <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
                 </div>
             <?php endif; ?>
