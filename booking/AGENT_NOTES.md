@@ -10,6 +10,7 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 
 - **Browse and book:** no portal login. Guest details (name, email, phone) are collected on `rooms/room-single.php` and stored via `customers` + `hotel_bookings`.
 - **Manage booking:** `users/bookings.php` — last name + **reservation ID** (`hotel_bookings.id`); verified by `itm_hotel_booking_fetch_for_guest_manage()`.
+- **Read reviews:** `hotel_booking_settings.reviews_url` — external link; modal uses `target="_blank"` and `rel="noopener noreferrer"`.
 - Optional legacy: `hotel_booking_portal_users` and `auth/login.php` / `register.php` (not required for public flow).
 
 ## 4. Entry points

@@ -75,6 +75,7 @@ $hbSettingsPublic = [
     'price_footnote' => $settings['price_footnote'] ?? '',
     'accessible_features_default' => $settings['accessible_features_default'] ?? '',
     'airport_info' => $settings['airport_info'] ?? '',
+    'reviews_url' => $settings['reviews_url'] ?? '',
 ];
 ?>
 <!DOCTYPE html>

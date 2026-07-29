@@ -200,6 +200,10 @@
 
     var accessible = (settings.accessible_features_default || '').trim();
     var footnote = (settings.price_footnote || '*Prices are based on current availability and may change.').trim();
+    var reviewsUrl = String(settings.reviews_url || '').trim();
+    var reviewsHtml = reviewsUrl
+      ? '<a href="' + escapeHtml(reviewsUrl) + '" class="hb-reviews-link" target="_blank" rel="noopener noreferrer" title="Read reviews (opens in new tab)">Read reviews</a>'
+      : '';
     var descFull = String(h.description || '');
 
     body.innerHTML =
@@ -227,7 +231,7 @@
       '<section class="hb-block hb-rating-block">' +
       '<div class="hb-rating-bubbles" aria-hidden="true"><span></span><span></span><span></span><span></span><span class="partial"></span></div>' +
       '<p class="hb-rating-copy"><strong>Guest rating</strong> — based on recent stays</p>' +
-      '<a href="#" class="hb-reviews-link" onclick="return false;">Read reviews</a>' +
+      reviewsHtml +
       '</section>' +
       '<div class="hb-price-cta">' +
       '<p class="hb-from-price">From<sup>*</sup> <strong>' + escapeHtml(formatPrice(h)) + '</strong></p>' +
