@@ -68,3 +68,59 @@ if (!function_exists('hb_portal_render_checkout_stepper')) {
         <?php
     }
 }
+
+if (!function_exists('hb_portal_render_reservation_summary')) {
+    /**
+     * Left-column reservation breakdown (steps 3–4).
+     *
+     * @param array $context room, draft, occupancy, dates, breakdown, plan_label, change_rate_url, currency
+     */
+    function hb_portal_render_reservation_summary(array $context) {
+        $room = is_array($context['room'] ?? null) ? $context['room'] : [];
+        $breakdown = is_array($context['breakdown'] ?? null) ? $context['breakdown'] : [];
+        $planLabel = trim((string) ($context['plan_label'] ?? ''));
+        $changeRateUrl = (string) ($context['change_rate_url'] ?? '');
+        $currency = (string) ($context['currency'] ?? 'EUR');
+        $roomTitle = hb_portal_reservation_room_title($room);
+        $roomCharges = (float) ($breakdown['room_charges'] ?? 0);
+        $touristTax = (float) ($breakdown['tourist_tax'] ?? 0);
+        $taxPerPerson = (float) ($breakdown['tourist_tax_per_person_per_night'] ?? 0);
+        $total = (float) ($breakdown['total'] ?? ($roomCharges + $touristTax));
+        $taxLabel = 'Tourist tax';
+        if ($taxPerPerson > 0) {
+            $taxLabel .= ' (' . hb_portal_money_format_decimal($taxPerPerson, $currency) . ' per person per night)';
+        }
+        ?>
+<div class="hb-reservation-summary card">
+<h2 class="hb-reservation-summary-title">Reservation summary</h2>
+<div class="hb-reservation-summary-room">
+<p class="hb-reservation-room-name"><?php echo htmlspecialchars($roomTitle, ENT_QUOTES, 'UTF-8'); ?></p>
+<p class="hb-reservation-room-price"><?php echo htmlspecialchars(hb_portal_money_format_decimal($roomCharges, $currency), ENT_QUOTES, 'UTF-8'); ?></p>
+</div>
+<?php if ($planLabel !== ''): ?>
+<p class="hb-reservation-rate-line"><span class="hb-reservation-muted">Rate:</span> <?php echo htmlspecialchars($planLabel, ENT_QUOTES, 'UTF-8'); ?></p>
+<?php endif; ?>
+<?php if ($changeRateUrl !== ''): ?>
+<p class="hb-reservation-change-rate"><a href="<?php echo htmlspecialchars($changeRateUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Change rate">Change rate</a></p>
+<?php endif; ?>
+<dl class="hb-reservation-totals">
+<div class="hb-reservation-total-row">
+<dt>Total room charges</dt>
+<dd><?php echo htmlspecialchars(hb_portal_money_format_decimal($roomCharges, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
+</div>
+<div class="hb-reservation-total-row hb-reservation-tax-row">
+<dt>Total taxes and government charges</dt>
+<dd class="hb-reservation-tax-amount"><?php echo htmlspecialchars(hb_portal_money_format_decimal($touristTax, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
+</div>
+<?php if ($taxPerPerson > 0 || $touristTax > 0): ?>
+<p class="hb-reservation-tax-detail"><?php echo htmlspecialchars($taxLabel, ENT_QUOTES, 'UTF-8'); ?></p>
+<?php endif; ?>
+<div class="hb-reservation-total-row hb-reservation-grand-total">
+<dt>Total for stay:</dt>
+<dd><?php echo htmlspecialchars(hb_portal_money_format_decimal($total, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
+</div>
+</dl>
+</div>
+        <?php
+    }
+}

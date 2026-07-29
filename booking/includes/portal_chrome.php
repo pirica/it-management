@@ -28,6 +28,33 @@ if (!function_exists('hb_portal_money_format')) {
     }
 }
 
+if (!function_exists('hb_portal_money_format_decimal')) {
+    /** Portal checkout lines (e.g. 781.00€). */
+    function hb_portal_money_format_decimal($amount, $currencyCode = 'EUR') {
+        $amount = (float) $amount;
+        $formatted = number_format($amount, 2, '.', '');
+        $code = strtoupper((string) $currencyCode);
+        if ($code === 'EUR') {
+            return $formatted . '€';
+        }
+        return $code . ' ' . $formatted;
+    }
+}
+
+if (!function_exists('hb_portal_reservation_room_title')) {
+    function hb_portal_reservation_room_title(array $room) {
+        $type = trim((string) ($room['type_name'] ?? ''));
+        $bed = trim((string) ($room['bed_summary'] ?? ''));
+        if ($bed !== '' && $type !== '') {
+            return $bed . ' ' . $type . ' Room';
+        }
+        if ($type !== '') {
+            return $type;
+        }
+        return trim((string) ($room['name'] ?? 'Room'));
+    }
+}
+
 if (!function_exists('hb_portal_render_guest_rating_reviews')) {
     function hb_portal_render_guest_rating_reviews($reviewsUrl) {
         $reviewsUrl = itm_hotel_booking_normalize_reviews_url($reviewsUrl);

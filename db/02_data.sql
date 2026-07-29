@@ -2476,8 +2476,8 @@ INSERT INTO `booking_rooms_types` (`company_id`, `name`, `code`, `description`, 
 
 INSERT IGNORE INTO `booking_rooms_types` (`company_id`, `name`, `code`, `description`, `bed_summary`, `room_size_sqm`, `max_adults`, `max_children`, `max_babies`, `filter_tags`, `details_bullets`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`code`, t.`description`, t.`bed_summary`, t.`room_size_sqm`, t.`max_adults`, t.`max_children`, t.`max_babies`, t.`filter_tags`, t.`details_bullets`, t.`active`, '2026-01-01 00:00:01' FROM `booking_rooms_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 
-INSERT INTO `hotel_booking_settings` (`company_id`, `public_portal_enabled`, `welcome_title`, `welcome_subtitle`, `price_footnote`, `reviews_url`, `active`, `created_at`) VALUES
-(1, 1, 'Find your stay', 'Browse hotels and book with confidence.', 'Prices may vary by date and availability.', 'https://www.tripadvisor.pt/Hotel_Review-g262054-d2142716-Reviews-Conrad_Algarve-Almancil_Loule_Faro_District_Algarve.html#REVIEWS', 1, '2026-01-01 00:00:01');
+INSERT INTO `hotel_booking_settings` (`company_id`, `public_portal_enabled`, `welcome_title`, `welcome_subtitle`, `price_footnote`, `reviews_url`, `tourist_tax_per_person_per_night`, `active`, `created_at`) VALUES
+(1, 1, 'Find your stay', 'Browse hotels and book with confidence.', 'Prices may vary by date and availability.', 'https://www.tripadvisor.pt/Hotel_Review-g262054-d2142716-Reviews-Conrad_Algarve-Almancil_Loule_Faro_District_Algarve.html#REVIEWS', 2.00, 1, '2026-01-01 00:00:01');
 
 INSERT IGNORE INTO `hotel_booking_settings` (`company_id`, `public_portal_enabled`, `welcome_title`, `welcome_subtitle`, `price_footnote`, `reviews_url`, `active`, `created_at`) SELECT c.`id`, t.`public_portal_enabled`, t.`welcome_title`, t.`welcome_subtitle`, t.`price_footnote`, t.`reviews_url`, t.`active`, '2026-01-01 00:00:01' FROM `hotel_booking_settings` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 

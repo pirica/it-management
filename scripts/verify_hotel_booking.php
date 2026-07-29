@@ -114,4 +114,18 @@ if (abs(itm_hotel_booking_portal_breakfast_supplement_per_night(['adults' => 2, 
     hb_fail('portal breakfast supplement per night');
 }
 
+$taxSample = itm_hotel_booking_portal_tourist_tax_amount(['adults' => 2, 'children' => 0], 1, 2.0);
+if (abs($taxSample - 4.0) < 0.01) {
+    hb_pass('portal tourist tax amount');
+} else {
+    hb_fail('portal tourist tax amount');
+}
+
+$breakdownSample = itm_hotel_booking_portal_checkout_breakdown(781.0, '2026-07-29', '2026-07-30', ['adults' => 2, 'children' => 0], 0, ['rate_plan' => 'breakfast'], 2.0);
+if (abs((float) ($breakdownSample['room_charges'] ?? 0) - 841.0) < 0.01 && abs((float) ($breakdownSample['tourist_tax'] ?? 0) - 4.0) < 0.01 && abs((float) ($breakdownSample['total'] ?? 0) - 845.0) < 0.01) {
+    hb_pass('portal checkout breakdown with tourist tax');
+} else {
+    hb_fail('portal checkout breakdown with tourist tax');
+}
+
 exit($fail > 0 ? 1 : 0);

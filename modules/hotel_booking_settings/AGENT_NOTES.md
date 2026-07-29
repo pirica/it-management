@@ -6,7 +6,7 @@ Tenant configuration for the public `booking/` portal and shared copy (welcome t
 
 ## 2. Key Tables
 
-- **hotel_booking_settings** — one row per `company_id`; includes `reviews_url` (external TripAdvisor/reviews page, opened `target="_blank"` from the portal).
+- **hotel_booking_settings** — one row per `company_id`; includes `reviews_url` (external TripAdvisor/reviews page, opened `target="_blank"` from the portal) and `tourist_tax_per_person_per_night` (decimal EUR per guest per night for portal steps 3–4).
 
 ## 3. Business Rules
 

@@ -29,14 +29,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $airport = trim((string) ($_POST['airport_info'] ?? ''));
     $footnote = trim((string) ($_POST['price_footnote'] ?? ''));
     $reviewsUrl = itm_hotel_booking_normalize_reviews_url($_POST['reviews_url'] ?? '');
+    $touristTax = str_replace(',', '.', trim((string) ($_POST['tourist_tax_per_person_per_night'] ?? '0')));
+    if ($touristTax === '' || !is_numeric($touristTax)) {
+        $touristTax = '0';
+    }
+    $touristTax = max(0, (float) $touristTax);
     if (trim((string) ($_POST['reviews_url'] ?? '')) !== '' && $reviewsUrl === '') {
         $errors[] = 'Reviews URL must start with http:// or https://';
     }
     $sid = (int) ($row['id'] ?? 0);
     if (empty($errors)) {
-    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
+    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
     if ($upd) {
-        mysqli_stmt_bind_param($upd, 'issssssiii', $enabled, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $employee_id, $sid, $company_id);
+        mysqli_stmt_bind_param($upd, 'issssssdiii', $enabled, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $employee_id, $sid, $company_id);
         mysqli_stmt_execute($upd);
         mysqli_stmt_close($upd);
         header('Location: index.php?saved=1');
@@ -94,6 +99,11 @@ require '../../includes/header.php';
 <label>External reviews URL</label>
 <input type="url" name="reviews_url" class="form-control" maxlength="500" placeholder="https://www.tripadvisor.pt/Hotel_Review-...html#REVIEWS" value="<?php echo sanitize($row['reviews_url'] ?? ''); ?>">
 <p class="text-muted" style="font-size:.85rem;margin-top:4px;">Shown under “Guest rating — based on recent stays” as <strong>Read reviews ↗</strong> (new tab).</p>
+</div>
+<div class="form-group">
+<label>Tourist tax (per person per night)</label>
+<input type="text" name="tourist_tax_per_person_per_night" class="form-control" inputmode="decimal" placeholder="2.00" value="<?php echo sanitize(number_format((float) ($row['tourist_tax_per_person_per_night'] ?? 0), 2, '.', '')); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Added to portal checkout totals (steps 3–4) for adults and children.</p>
 </div>
 <button type="submit" class="btn btn-primary" title="Save">💾</button>
 <a href="../hotel_bookings/index.php" class="btn" title="Back">🔙</a>
