@@ -1714,6 +1714,23 @@
         ],
         "override": false
     },
+    "verify_hotel_booking.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "booking_rooms_types",
+            "hotel_booking_hotels",
+            "hotel_booking_housekeeping_statuses",
+            "hotel_booking_rooms",
+            "hotel_booking_settings",
+            "hotel_bookings",
+            "hotel_bookings_future",
+            "hotel_bookings_history",
+            "hotel_bookings_present"
+        ],
+        "override": false
+    },
     "verify_appointment.php": {
         "tags": [
             "Mixed"

@@ -104,6 +104,22 @@ function itm_sidebar_base_structure() {
             ],
         ],
         [
+            'id' => 'hospitality',
+            'title' => '🏨 Hospitality',
+            'items' => [
+                ['id' => 'hotel_bookings', 'label' => '🏨 Hotel Bookings', 'href' => 'modules/hotel_bookings/', 'match_dir' => 'hotel_bookings'],
+                ['id' => 'hotel_booking_hotels', 'label' => '🏨 Hotels', 'href' => 'modules/hotel_booking_hotels/', 'match_dir' => 'hotel_booking_hotels'],
+                ['id' => 'booking_rooms_types', 'label' => '🛏️ Room Types', 'href' => 'modules/booking_rooms_types/', 'match_dir' => 'booking_rooms_types'],
+                ['id' => 'hotel_booking_rooms', 'label' => '🚪 Hotel Rooms', 'href' => 'modules/hotel_booking_rooms/', 'match_dir' => 'hotel_booking_rooms'],
+                ['id' => 'hotel_booking_room_utilities', 'label' => '✨ Room Utilities', 'href' => 'modules/hotel_booking_room_utilities/', 'match_dir' => 'hotel_booking_room_utilities'],
+                ['id' => 'hotel_booking_housekeeping_statuses', 'label' => '🧹 HK Statuses', 'href' => 'modules/hotel_booking_housekeeping_statuses/', 'match_dir' => 'hotel_booking_housekeeping_statuses'],
+                ['id' => 'hotel_bookings_future', 'label' => '📅 Future Status', 'href' => 'modules/hotel_bookings_future/', 'match_dir' => 'hotel_bookings_future'],
+                ['id' => 'hotel_bookings_present', 'label' => '🏠 Present Status', 'href' => 'modules/hotel_bookings_present/', 'match_dir' => 'hotel_bookings_present'],
+                ['id' => 'hotel_bookings_history', 'label' => '📜 History Status', 'href' => 'modules/hotel_bookings_history/', 'match_dir' => 'hotel_bookings_history'],
+                ['id' => 'hotel_booking_settings', 'label' => '⚙️ Hotel Booking Settings', 'href' => 'modules/hotel_booking_settings/', 'match_dir' => 'hotel_booking_settings'],
+            ],
+        ],
+        [
             'id' => 'planning',
             'title' => '🗓️ Planning',
             'items' => [

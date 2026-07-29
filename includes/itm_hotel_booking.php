@@ -1,0 +1,374 @@
+<?php
+
+/**
+ * Hotel booking shared helpers (segment, status, photos, planning, portal customer).
+ */
+
+if (!function_exists('itm_hotel_booking_resolve_segment')) {
+  function itm_hotel_booking_resolve_segment($checkIn, $checkOut, $today = null) {
+    $today = $today ?? date('Y-m-d');
+    if ($checkOut < $today) {
+      return 'history';
+    }
+    if ($checkIn > $today) {
+      return 'future';
+    }
+    return 'present';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_status_table_for_segment')) {
+  function itm_hotel_booking_status_table_for_segment($segment) {
+    $map = [
+      'future' => 'hotel_bookings_future',
+      'present' => 'hotel_bookings_present',
+      'history' => 'hotel_bookings_history',
+    ];
+    return $map[$segment] ?? null;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_status_id_by_name')) {
+  function itm_hotel_booking_status_id_by_name($conn, $companyId, $table, $name) {
+    if (!preg_match('/^hotel_bookings_(future|present|history)$/', $table) && $table !== 'hotel_booking_housekeeping_statuses') {
+      return null;
+    }
+    $companyId = (int) $companyId;
+    $name = trim((string) $name);
+    if ($companyId < 1 || $name === '') {
+      return null;
+    }
+    $sql = 'SELECT id FROM `' . str_replace('`', '``', $table) . '` WHERE company_id = ? AND name = ? AND deleted_at IS NULL LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return null;
+    }
+    mysqli_stmt_bind_param($stmt, 'is', $companyId, $name);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    return $row ? (int) $row['id'] : null;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_photo_storage_dir')) {
+  function itm_hotel_booking_photo_storage_dir($companyId, $scope, $parentId) {
+    $companyId = (int) $companyId;
+    $parentId = (int) $parentId;
+    $scope = preg_replace('/[^a-z_]/', '', (string) $scope);
+    return 'images/hotel_booking/' . $companyId . '/' . $scope . '/' . $parentId;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_photo_public_url')) {
+  function itm_hotel_booking_photo_public_url($companyId, $scope, $parentId, $storedFilename) {
+    $storedFilename = basename((string) $storedFilename);
+    if ($storedFilename === '') {
+      return '';
+    }
+    $rel = itm_hotel_booking_photo_storage_dir($companyId, $scope, $parentId) . '/' . $storedFilename;
+    return '/it-management/' . str_replace('\\', '/', $rel);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_photos_load')) {
+  function itm_hotel_booking_photos_load($conn, $companyId, $photoTable, $parentColumn, $parentId) {
+    $allowed = [
+      'hotel_booking_hotel_photos' => 'hotel_id',
+      'hotel_booking_room_photos' => 'room_id',
+      'booking_rooms_type_photos' => 'room_type_id',
+    ];
+    if (!isset($allowed[$photoTable]) || $allowed[$photoTable] !== $parentColumn) {
+      return [];
+    }
+    $companyId = (int) $companyId;
+    $parentId = (int) $parentId;
+    $sql = 'SELECT * FROM `' . str_replace('`', '``', $photoTable) . '` WHERE company_id = ? AND `' . str_replace('`', '``', $parentColumn) . '` = ? AND deleted_at IS NULL ORDER BY is_cover DESC, sort_order ASC, id ASC';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return [];
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $parentId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $rows = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+      $rows[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+    return $rows;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_photos_config_for_parent_table')) {
+  function itm_hotel_booking_photos_config_for_parent_table($parentTable) {
+    $map = [
+      'hotel_booking_hotels' => ['scope' => 'hotel', 'photo_table' => 'hotel_booking_hotel_photos', 'parent_column' => 'hotel_id'],
+      'hotel_booking_rooms' => ['scope' => 'room', 'photo_table' => 'hotel_booking_room_photos', 'parent_column' => 'room_id'],
+      'booking_rooms_types' => ['scope' => 'room_type', 'photo_table' => 'booking_rooms_type_photos', 'parent_column' => 'room_type_id'],
+    ];
+    return $map[$parentTable] ?? null;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_photos_handle_upload')) {
+  function itm_hotel_booking_photos_handle_upload($conn, $companyId, $parentTable, $parentId) {
+    $cfg = itm_hotel_booking_photos_config_for_parent_table($parentTable);
+    if (!$cfg || empty($_FILES['hb_photos']) || !is_array($_FILES['hb_photos']['name'])) {
+      return;
+    }
+    $companyId = (int) $companyId;
+    $parentId = (int) $parentId;
+    if ($companyId < 1 || $parentId < 1) {
+      return;
+    }
+    $scope = $cfg['scope'];
+    $photoTable = $cfg['photo_table'];
+    $parentColumn = $cfg['parent_column'];
+    $relDir = itm_hotel_booking_photo_storage_dir($companyId, $scope, $parentId);
+    $absDir = rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relDir);
+    if (!function_exists('itm_ensure_upload_directory')) {
+      require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
+    }
+    itm_ensure_upload_directory($absDir, 'upload');
+    $names = $_FILES['hb_photos']['name'];
+    $tmp = $_FILES['hb_photos']['tmp_name'];
+    $errs = $_FILES['hb_photos']['error'];
+    $sort = 0;
+    $count = count($names);
+    for ($i = 0; $i < $count; $i++) {
+      if ((int) ($errs[$i] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        continue;
+      }
+      $orig = basename((string) $names[$i]);
+      if ($orig === '' || !is_uploaded_file($tmp[$i])) {
+        continue;
+      }
+      $ext = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
+      if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
+        continue;
+      }
+      $stored = 'hb_' . bin2hex(random_bytes(8)) . '.' . $ext;
+      $dest = $absDir . DIRECTORY_SEPARATOR . $stored;
+      if (!move_uploaded_file($tmp[$i], $dest)) {
+        continue;
+      }
+      $isCover = ($sort === 0) ? 1 : 0;
+      $sql = 'INSERT INTO `' . str_replace('`', '``', $photoTable) . '` (company_id, `' . str_replace('`', '``', $parentColumn) . '`, stored_filename, original_filename, sort_order, is_cover, active, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, NOW())';
+      $stmt = mysqli_prepare($conn, $sql);
+      if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'iissii', $companyId, $parentId, $stored, $orig, $sort, $isCover);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+      }
+      $sort++;
+    }
+  }
+}
+
+if (!function_exists('itm_hotel_booking_compute_payment_amount')) {
+  function itm_hotel_booking_compute_payment_amount($pricePerNight, $checkIn, $checkOut) {
+    $in = DateTime::createFromFormat('Y-m-d', $checkIn);
+    $out = DateTime::createFromFormat('Y-m-d', $checkOut);
+    if (!$in || !$out || $out <= $in) {
+      return 0.0;
+    }
+    $nights = (int) $in->diff($out)->days;
+    return round((float) $pricePerNight * $nights, 2);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_booking_is_cancelled')) {
+  function itm_hotel_booking_booking_is_cancelled($conn, $companyId, array $bookingRow) {
+    $segment = itm_hotel_booking_resolve_segment($bookingRow['check_in'], $bookingRow['check_out']);
+    $col = $segment . '_status_id';
+    $statusId = (int) ($bookingRow[$col] ?? 0);
+    if ($statusId < 1) {
+      return false;
+    }
+    $table = itm_hotel_booking_status_table_for_segment($segment);
+    $cancelId = itm_hotel_booking_status_id_by_name($conn, $companyId, $table, 'CANCELLED');
+    return $cancelId !== null && $statusId === $cancelId;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_has_overlap')) {
+  function itm_hotel_booking_has_overlap($conn, $companyId, $roomId, $checkIn, $checkOut, $excludeBookingId = 0) {
+    $companyId = (int) $companyId;
+    $roomId = (int) $roomId;
+    $excludeBookingId = (int) $excludeBookingId;
+    $sql = 'SELECT id, check_in, check_out, future_status_id, present_status_id, history_status_id FROM hotel_bookings
+            WHERE company_id = ? AND room_id = ? AND deleted_at IS NULL AND id <> ?
+            AND check_in < ? AND check_out > ?';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return true;
+    }
+    mysqli_stmt_bind_param($stmt, 'iiiss', $companyId, $roomId, $excludeBookingId, $checkOut, $checkIn);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+      if (!itm_hotel_booking_booking_is_cancelled($conn, $companyId, $row)) {
+        mysqli_stmt_close($stmt);
+        return true;
+      }
+    }
+    mysqli_stmt_close($stmt);
+    return false;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_ensure_customer_for_portal')) {
+  function itm_hotel_booking_ensure_customer_for_portal($conn, $companyId, $email, $fullName, $phone = '') {
+    $companyId = (int) $companyId;
+    $email = trim((string) $email);
+    $fullName = trim((string) $fullName);
+    $phone = trim((string) $phone);
+    if ($companyId < 1 || $email === '' || $fullName === '') {
+      return null;
+    }
+    $stmt = mysqli_prepare($conn, 'SELECT id FROM customers WHERE company_id = ? AND email = ? AND deleted_at IS NULL LIMIT 1');
+    if ($stmt) {
+      mysqli_stmt_bind_param($stmt, 'is', $companyId, $email);
+      mysqli_stmt_execute($stmt);
+      $res = mysqli_stmt_get_result($stmt);
+      $row = $res ? mysqli_fetch_assoc($res) : null;
+      mysqli_stmt_close($stmt);
+      if ($row) {
+        return (int) $row['id'];
+      }
+    }
+    $statusId = null;
+    $st = mysqli_prepare($conn, 'SELECT id FROM customer_statuses WHERE company_id = ? AND name = ? AND deleted_at IS NULL LIMIT 1');
+    if ($st) {
+      $activeName = 'Active';
+      mysqli_stmt_bind_param($st, 'is', $companyId, $activeName);
+      mysqli_stmt_execute($st);
+      $r = mysqli_stmt_get_result($st);
+      $sr = $r ? mysqli_fetch_assoc($r) : null;
+      mysqli_stmt_close($st);
+      $statusId = $sr ? (int) $sr['id'] : null;
+    }
+    if ($statusId === null) {
+      return null;
+    }
+    $ins = mysqli_prepare($conn, 'INSERT INTO customers (company_id, name, email, phone, status_id, active, created_at) VALUES (?, ?, ?, ?, ?, 1, NOW())');
+    if (!$ins) {
+      return null;
+    }
+    mysqli_stmt_bind_param($ins, 'isssi', $companyId, $fullName, $email, $phone, $statusId);
+    if (!mysqli_stmt_execute($ins)) {
+      mysqli_stmt_close($ins);
+      return null;
+    }
+    $newId = (int) mysqli_insert_id($conn);
+    mysqli_stmt_close($ins);
+    return $newId > 0 ? $newId : null;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_settings_row')) {
+  function itm_hotel_booking_settings_row($conn, $companyId) {
+    $companyId = (int) $companyId;
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM hotel_booking_settings WHERE company_id = ? AND deleted_at IS NULL LIMIT 1');
+    if (!$stmt) {
+      return null;
+    }
+    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    return $row;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_planning_grid_rows')) {
+  function itm_hotel_booking_planning_grid_rows($conn, $companyId, $anchorDate, $hotelId = 0, $roomTypeId = 0, $floor = '', $days = 14) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $days = max(7, min(31, (int) $days));
+    $anchor = DateTime::createFromFormat('Y-m-d', $anchorDate) ?: new DateTime('today');
+    $rangeStart = $anchor->format('Y-m-d');
+    $rangeEnd = (clone $anchor)->modify('+' . ($days - 1) . ' days')->format('Y-m-d');
+
+    $roomSql = 'SELECT r.*, h.name AS hotel_name, t.code AS type_code, t.name AS type_name, hk.name AS hk_name, hk.color_hex AS hk_color
+                FROM hotel_booking_rooms r
+                INNER JOIN hotel_booking_hotels h ON h.id = r.hotel_id AND h.company_id = r.company_id
+                INNER JOIN booking_rooms_types t ON t.id = r.room_type_id AND t.company_id = r.company_id
+                LEFT JOIN hotel_booking_housekeeping_statuses hk ON hk.id = r.housekeeping_status_id
+                WHERE r.company_id = ? AND r.deleted_at IS NULL';
+    $types = 'i';
+    $params = [$companyId];
+    if ($hotelId > 0) {
+      $roomSql .= ' AND r.hotel_id = ?';
+      $types .= 'i';
+      $params[] = $hotelId;
+    }
+    if ($roomTypeId > 0) {
+      $roomSql .= ' AND r.room_type_id = ?';
+      $types .= 'i';
+      $params[] = $roomTypeId;
+    }
+    if ($floor !== '') {
+      $roomSql .= ' AND r.floor = ?';
+      $types .= 's';
+      $params[] = $floor;
+    }
+    $roomSql .= ' ORDER BY r.room_number ASC';
+    $stmt = mysqli_prepare($conn, $roomSql);
+    if (!$stmt) {
+      return ['rooms' => [], 'bookings' => [], 'range_start' => $rangeStart, 'range_end' => $rangeEnd, 'days' => $days];
+    }
+    mysqli_stmt_bind_param($stmt, $types, ...$params);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $rooms = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+      $rooms[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+
+    $bookSql = 'SELECT b.*, c.name AS customer_name FROM hotel_bookings b
+                INNER JOIN customers c ON c.id = b.customer_id AND c.company_id = b.company_id
+                WHERE b.company_id = ? AND b.deleted_at IS NULL AND b.check_in <= ? AND b.check_out >= ?';
+    $bstmt = mysqli_prepare($conn, $bookSql);
+    $bookings = [];
+    if ($bstmt) {
+      mysqli_stmt_bind_param($bstmt, 'iss', $companyId, $rangeEnd, $rangeStart);
+      mysqli_stmt_execute($bstmt);
+      $bres = mysqli_stmt_get_result($bstmt);
+      while ($bres && ($brow = mysqli_fetch_assoc($bres))) {
+        if (!itm_hotel_booking_booking_is_cancelled($conn, $companyId, $brow)) {
+          $bookings[] = $brow;
+        }
+      }
+      mysqli_stmt_close($bstmt);
+    }
+
+    return [
+      'rooms' => $rooms,
+      'bookings' => $bookings,
+      'range_start' => $rangeStart,
+      'range_end' => $rangeEnd,
+      'days' => $days,
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_apply_segment_status_on_save')) {
+  function itm_hotel_booking_apply_segment_status_on_save($conn, $companyId, $checkIn, $checkOut, array $statusIds = []) {
+    $segment = itm_hotel_booking_resolve_segment($checkIn, $checkOut);
+    $out = ['future_status_id' => null, 'present_status_id' => null, 'history_status_id' => null];
+    $col = $segment . '_status_id';
+    $id = (int) ($statusIds[$col] ?? 0);
+    if ($id < 1) {
+      $default = $segment === 'future' ? 'PENDING' : ($segment === 'present' ? 'DUE-IN' : 'CHECKED-OUT');
+      $table = itm_hotel_booking_status_table_for_segment($segment);
+      $id = (int) itm_hotel_booking_status_id_by_name($conn, $companyId, $table, $default);
+    }
+    $out[$col] = $id > 0 ? $id : null;
+    return $out;
+  }
+}
