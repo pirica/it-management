@@ -16,7 +16,7 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 ## 4. Entry points
 
 - `index.php` — hotel list + detail modal
-- `rooms.php`, `rooms/room-single.php` — room list and date booking form
+- `rooms.php` — full **Select a Room** page (step 1, stay bar, room grid, hotel sidebar)
 - `rooms/payment.php` — payment summary (wording **payment**, not pay)
 - `calendar.php` — JSON nightly rates for Select Dates modal
 - `users/bookings.php` — manage reservation (last name + reservation ID)

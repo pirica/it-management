@@ -302,5 +302,10 @@
   });
 
   var deep = parseInt(new URLSearchParams(window.location.search).get('hotel') || '0', 10);
-  if (deep > 0) openModal(deep);
+  var openDates = new URLSearchParams(window.location.search).get('dates') === '1';
+  if (deep > 0 && openDates && typeof window.HB_openDatesModal === 'function' && map[deep]) {
+    window.HB_openDatesModal(map[deep]);
+  } else if (deep > 0) {
+    openModal(deep);
+  }
 })();
