@@ -5,6 +5,9 @@
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
+if (!defined('ITM_HOTEL_BOOKING_PUBLIC_PORTAL')) {
+    define('ITM_HOTEL_BOOKING_PUBLIC_PORTAL', true);
+}
 require dirname(__DIR__) . '/config/config.php';
 
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
