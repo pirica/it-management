@@ -435,6 +435,11 @@ if (defined('ITM_QR_SHARE_PUBLIC') && ITM_QR_SHARE_PUBLIC) {
     $itmSkipWebAuth = true;
 }
 
+// Why: booking/* guest portal must not require ITM employee login (see booking/bootstrap.php).
+if (defined('ITM_HOTEL_BOOKING_PUBLIC_PORTAL') && ITM_HOTEL_BOOKING_PUBLIC_PORTAL) {
+    $itmSkipWebAuth = true;
+}
+
 // Why: Read-only aggregate diagnostics may run without a session when explicitly allowlisted.
 if (
     !$itmSkipWebAuth

@@ -4,10 +4,13 @@
 
 Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM `config/config.php` (MySQLi) and `includes/itm_hotel_booking.php`.
 
+`bootstrap.php` defines `ITM_HOTEL_BOOKING_PUBLIC_PORTAL` before `config.php` so global employee login is skipped for this tree.
+
 ## 3. Auth
 
 - **Browse and book:** no portal login. Guest details (name, email, phone) are collected on `rooms/room-single.php` and stored via `customers` + `hotel_bookings`.
 - **Manage booking:** `users/bookings.php` — last name + **reservation ID** (`hotel_bookings.id`); verified by `itm_hotel_booking_fetch_for_guest_manage()`.
+- **Read reviews:** `hotel_booking_settings.reviews_url` — external link; modal uses `target="_blank"` and `rel="noopener noreferrer"`.
 - Optional legacy: `hotel_booking_portal_users` and `auth/login.php` / `register.php` (not required for public flow).
 
 ## 4. Entry points
