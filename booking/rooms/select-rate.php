@@ -122,6 +122,7 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
 <div class="hb-rate-option-main">
 <h2 class="hb-rate-option-title">Best Available Rate</h2>
 <p class="hb-rate-badge">Pay when you stay</p>
+<p class="hb-rate-policy">Breakfast not included.</p>
 <p class="hb-rate-policy">Change or cancel by <?php echo htmlspecialchars($cancelBy, ENT_QUOTES, 'UTF-8'); ?>.</p>
 </div>
 <div class="hb-rate-option-price-col">
