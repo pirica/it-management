@@ -16,7 +16,7 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 ## 4. Entry points
 
 - `index.php` — hotel list + detail modal
-- `rooms.php` — full **Select a Room** page (step 1, stay bar, room grid, hotel sidebar). **Rooms & guests** modal (`rooms`, `adults`, `children`, `babies` query params); nightly price via `itm_hotel_booking_portal_quote_nightly()`. **Room Filters** (type `filter_tags`) and **Special rates** (`hotel_booking_special_rates`). **View room details** opens two-column modal (`includes/portal_room_detail.php`). **Amenities** use Lucide SVGs under `booking/images/amenities/`; catalog managed in ITM **`modules/hotel_booking_amenities/`** (`icon_slug` on `hotel_booking_amenities`).
+- `rooms.php` — full **Select a Room** page (step 1, stay bar, room grid, hotel sidebar). **Rooms & guests**, filters, special rates. **View room details** modal (`includes/portal_room_detail.php`): **Read more / Read less** description; **More room details** accordion (chevron); sample spec/comfort copy when type data is sparse. Amenities use `hotel_booking_amenities` / SVG icons.
 - `rooms/payment.php` — payment summary (wording **payment**, not pay)
 - `calendar.php` — JSON nightly rates for Select Dates modal
 - `users/bookings.php` — manage reservation (last name + reservation ID)

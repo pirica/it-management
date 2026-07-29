@@ -260,11 +260,18 @@
     if (!readMore) {
       return;
     }
-    var desc = readMore.parentElement.querySelector('.hb-rd-desc');
-    if (desc) {
-      desc.classList.remove('hb-rd-desc-short');
-      readMore.style.display = 'none';
+    e.preventDefault();
+    var wrap = readMore.closest('.hb-rd-desc-wrap');
+    if (!wrap) {
+      return;
     }
+    var more = wrap.querySelector('.hb-rd-desc-more');
+    var expanded = wrap.classList.toggle('is-expanded');
+    if (more) {
+      more.hidden = !expanded;
+    }
+    readMore.textContent = expanded ? 'Read less' : 'Read more';
+    readMore.setAttribute('title', expanded ? 'Read less' : 'Read more');
   });
 
   updatePrices();
