@@ -29,8 +29,158 @@ if (!function_exists('hb_portal_room_detail_categorize_bullets')) {
     }
 }
 
+if (!function_exists('hb_portal_load_hotel_amenity_rows')) {
+    function hb_portal_load_hotel_amenity_rows($conn, $companyId, $hotelId) {
+        $companyId = (int) $companyId;
+        $hotelId = (int) $hotelId;
+        $amenityRows = [];
+        $astmt = mysqli_prepare($conn, 'SELECT DISTINCT COALESCE(a.name, u.name) AS name, COALESCE(NULLIF(a.icon_slug, \'\'), \'\') AS icon_slug
+            FROM hotel_booking_room_utilities u
+            INNER JOIN hotel_booking_rooms r ON r.id = u.room_id AND r.company_id = u.company_id
+            LEFT JOIN hotel_booking_amenities a ON a.id = u.amenity_id AND a.company_id = u.company_id AND a.deleted_at IS NULL AND a.active = 1
+            WHERE u.company_id = ? AND r.hotel_id = ? AND u.deleted_at IS NULL AND r.deleted_at IS NULL AND u.active = 1
+            ORDER BY a.sort_order ASC, name ASC LIMIT 12');
+        if ($astmt) {
+            mysqli_stmt_bind_param($astmt, 'ii', $companyId, $hotelId);
+            mysqli_stmt_execute($astmt);
+            $ares = mysqli_stmt_get_result($astmt);
+            while ($ares && ($ar = mysqli_fetch_assoc($ares))) {
+                $amenityRows[] = ['name' => $ar['name'] ?? '', 'icon_slug' => $ar['icon_slug'] ?? ''];
+            }
+            mysqli_stmt_close($astmt);
+        }
+        if (empty($amenityRows)) {
+            $cstmt = mysqli_prepare($conn, 'SELECT name, icon_slug FROM hotel_booking_amenities WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY sort_order ASC, name ASC LIMIT 12');
+            if ($cstmt) {
+                mysqli_stmt_bind_param($cstmt, 'i', $companyId);
+                mysqli_stmt_execute($cstmt);
+                $cres = mysqli_stmt_get_result($cstmt);
+                while ($cres && ($crow = mysqli_fetch_assoc($cres))) {
+                    $amenityRows[] = ['name' => $crow['name'] ?? '', 'icon_slug' => $crow['icon_slug'] ?? ''];
+                }
+                mysqli_stmt_close($cstmt);
+            }
+        }
+        if (empty($amenityRows)) {
+            $amenityRows = [
+                ['name' => 'Free WiFi', 'icon_slug' => 'wifi'],
+                ['name' => 'Outdoor pool', 'icon_slug' => 'pool'],
+                ['name' => 'Fitness center', 'icon_slug' => 'fitness'],
+            ];
+        }
+        return $amenityRows;
+    }
+}
+
+if (!function_exists('hb_portal_room_detail_card_for_type')) {
+    function hb_portal_room_detail_card_for_type($conn, $companyId, $hotelId, $typeId, array $occupancy, $discountPercent, $checkInIso, $checkOutIso, $imageUrlOverride = '') {
+        $companyId = (int) $companyId;
+        $hotelId = (int) $hotelId;
+        $typeId = (int) $typeId;
+        if ($companyId < 1 || $hotelId < 1 || $typeId < 1) {
+            return null;
+        }
+        $tstmt = mysqli_prepare($conn, 'SELECT * FROM booking_rooms_types WHERE id = ? AND company_id = ? AND deleted_at IS NULL AND active = 1 LIMIT 1');
+        if (!$tstmt) {
+            return null;
+        }
+        mysqli_stmt_bind_param($tstmt, 'ii', $typeId, $companyId);
+        mysqli_stmt_execute($tstmt);
+        $tres = mysqli_stmt_get_result($tstmt);
+        $typeRow = $tres ? mysqli_fetch_assoc($tres) : null;
+        mysqli_stmt_close($tstmt);
+        if (!$typeRow) {
+            return null;
+        }
+
+        $typeDefaultImages = [
+            'DLX' => '/images/room-5.jpg',
+            'SUP' => '/images/room-6.jpg',
+            'STD' => '/images/room-3.jpg',
+        ];
+        $code = strtoupper((string) ($typeRow['code'] ?? ''));
+        $imgUrl = trim((string) $imageUrlOverride);
+        if ($imgUrl === '') {
+            $imgUrl = APPURL . ($typeDefaultImages[$code] ?? '/images/room-5.jpg');
+            $tphotos = itm_hotel_booking_photos_load($conn, $companyId, 'booking_rooms_type_photos', 'room_type_id', $typeId);
+            if (!empty($tphotos[0]['stored_filename'])) {
+                $imgUrl = itm_hotel_booking_photo_public_url($companyId, 'room_type', $typeId, $tphotos[0]['stored_filename']);
+            }
+        }
+
+        $sampleRoom = null;
+        $rstmt = mysqli_prepare($conn, 'SELECT id, price_per_night, view_label, is_out_of_order, is_out_of_service
+            FROM hotel_booking_rooms
+            WHERE company_id = ? AND hotel_id = ? AND room_type_id = ? AND deleted_at IS NULL AND active = 1
+            ORDER BY price_per_night ASC, id ASC');
+        if ($rstmt) {
+            mysqli_stmt_bind_param($rstmt, 'iii', $companyId, $hotelId, $typeId);
+            mysqli_stmt_execute($rstmt);
+            $rres = mysqli_stmt_get_result($rstmt);
+            while ($rres && ($row = mysqli_fetch_assoc($rres))) {
+                $sampleRoom = $row;
+                break;
+            }
+            mysqli_stmt_close($rstmt);
+        }
+
+        $roomId = (int) ($sampleRoom['id'] ?? 0);
+        if ($imgUrl === APPURL . ($typeDefaultImages[$code] ?? '/images/room-5.jpg') && $roomId > 0) {
+            $photos = itm_hotel_booking_photos_load($conn, $companyId, 'hotel_booking_room_photos', 'room_id', $roomId);
+            if (!empty($photos[0]['stored_filename'])) {
+                $imgUrl = itm_hotel_booking_photo_public_url($companyId, 'room', $roomId, $photos[0]['stored_filename']);
+            }
+        }
+        if ($imgUrl === '') {
+            $imgUrl = APPURL . ($typeDefaultImages[$code] ?? '/images/room-5.jpg');
+        }
+
+        $bullets = [];
+        $rawBullets = (string) ($typeRow['details_bullets'] ?? '');
+        if ($rawBullets !== '') {
+            $bullets = preg_split('/\|/', $rawBullets) ?: [];
+            $bullets = array_values(array_filter(array_map('trim', $bullets)));
+        }
+
+        $typeOcc = [
+            'max_adults' => $typeRow['max_adults'] ?? 2,
+            'max_children' => $typeRow['max_children'] ?? 1,
+            'max_babies' => $typeRow['max_babies'] ?? 1,
+        ];
+        $fits = itm_hotel_booking_room_type_fits_occupancy($typeOcc, $occupancy);
+        $blocked = !empty($sampleRoom['is_out_of_order']) || !empty($sampleRoom['is_out_of_service']);
+        $available = $roomId > 0 && !$blocked && $fits
+            && !itm_hotel_booking_has_overlap($conn, $companyId, $roomId, $checkInIso, $checkOutIso);
+        $basePrice = (float) ($sampleRoom['price_per_night'] ?? 0);
+        $listQuoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, 0);
+        $quoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, (float) $discountPercent);
+
+        return [
+            'type_id' => $typeId,
+            'type_code' => $code,
+            'type_name' => (string) ($typeRow['name'] ?? ''),
+            'type_description' => (string) ($typeRow['description'] ?? ''),
+            'bed_summary' => (string) ($typeRow['bed_summary'] ?? ''),
+            'type_size_sqm' => $typeRow['room_size_sqm'] ?? '',
+            'view_label' => (string) ($sampleRoom['view_label'] ?? ''),
+            'filter_tags' => (string) ($typeRow['filter_tags'] ?? ''),
+            'bullets' => $bullets,
+            'max_adults' => (int) ($typeRow['max_adults'] ?? 2),
+            'max_children' => (int) ($typeRow['max_children'] ?? 1),
+            'image_url' => $imgUrl,
+            'base_price' => $basePrice,
+            'list_quoted_price' => $listQuoted,
+            'quoted_price' => $quoted,
+            'book_room_id' => $roomId,
+            'available' => $available,
+            'fits_occupancy' => $fits,
+        ];
+    }
+}
+
 if (!function_exists('hb_portal_room_detail_modal_html')) {
-    function hb_portal_room_detail_modal_html(array $card, array $hotelAmenities, $currencyCode, $bookUrl, $available) {
+    function hb_portal_room_detail_modal_html(array $card, array $hotelAmenities, $currencyCode, $bookUrl, $available, array $options = []) {
+        $showBookCta = !array_key_exists('show_book_cta', $options) || $options['show_book_cta'];
         $name = (string) ($card['type_name'] ?? '');
         $bed = (string) ($card['bed_summary'] ?? '');
         $title = $name;
@@ -158,10 +308,12 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
 <p class="hb-rd-desc hb-rd-desc-more" hidden><?php echo htmlspecialchars($descExtra, ENT_QUOTES, 'UTF-8'); ?></p>
 <button type="button" class="hb-rd-read-more" data-hb-read-more title="Read more">Read more</button>
 </div>
+<?php if ($showBookCta): ?>
 <?php if ($available): ?>
 <a class="<?php echo htmlspecialchars($bookClass, ENT_QUOTES, 'UTF-8'); ?>" href="<?php echo htmlspecialchars($bookUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Book this room">Book From <?php if ($showBookCompare): ?><span class="hb-rd-price-compare"><?php echo htmlspecialchars($listPriceLabel, ENT_QUOTES, 'UTF-8'); ?></span> <?php endif; ?><span class="hb-rd-price-value"><?php echo htmlspecialchars($priceLabel, ENT_QUOTES, 'UTF-8'); ?></span></a>
 <?php else: ?>
 <button type="button" class="hb-btn hb-btn-disabled hb-room-detail-book" disabled title="Not available">Not available</button>
+<?php endif; ?>
 <?php endif; ?>
 </div>
 <div class="hb-room-detail-right">
