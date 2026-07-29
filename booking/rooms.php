@@ -194,7 +194,7 @@ $currency = $hotel['currency_code'] ?? 'EUR';
 $cardList = array_values($cards);
 $typeDetailsHtml = [];
 foreach ($cardList as $card) {
-    $bookUrl = APPURL . '/rooms/room-single.php?' . hb_select_room_book_query((int) $card['book_room_id'], $checkInIso, $nights, $occupancy);
+    $bookUrl = APPURL . '/rooms/select-rate.php?' . hb_select_room_book_query((int) $card['book_room_id'], $checkInIso, $nights, $occupancy);
         $typeDetailsHtml[(string) $card['type_id']] = hb_portal_room_detail_modal_html(
         $card,
         $amenityRows,
@@ -290,7 +290,7 @@ $filterOptions = [
 
 <div class="hb-room-grid">
 <?php foreach ($cardList as $card):
-    $bookUrl = APPURL . '/rooms/room-single.php?' . hb_select_room_book_query((int) $card['book_room_id'], $checkInIso, $nights, $occupancy);
+    $bookUrl = APPURL . '/rooms/select-rate.php?' . hb_select_room_book_query((int) $card['book_room_id'], $checkInIso, $nights, $occupancy);
 ?>
 <article class="hb-room-card<?php echo empty($card['available']) ? ' is-sold-out' : ''; ?>" data-base-price="<?php echo htmlspecialchars((string) $card['base_price'], ENT_QUOTES, 'UTF-8'); ?>" data-filter-tags="<?php echo htmlspecialchars($card['filter_tags'], ENT_QUOTES, 'UTF-8'); ?>" data-type-id="<?php echo (int) $card['type_id']; ?>">
 <div class="hb-room-card-head">

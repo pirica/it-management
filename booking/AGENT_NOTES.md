@@ -16,7 +16,10 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 ## 4. Entry points
 
 - `index.php` — hotel list + detail modal
-- `rooms.php` — full **Select a Room** page (step 1, stay bar, room grid, hotel sidebar). **Rooms & guests**, filters, **Special rates** modal (one program checkbox at a time with **%** from admin; code fields show **%**; Apply updates prices in-page). Admin: **modules/hotel_booking_special_rates/** per hotel. **View room details** modal (`includes/portal_room_detail.php`): **Read more / Read less** description; **More room details** accordion (chevron); sample spec/comfort copy when type data is sparse. Amenities use `hotel_booking_amenities` / SVG icons.
+- `rooms.php` — **Step 1 of 4** Select a Room.
+- `rooms/select-rate.php` — **Step 2 of 4** Select a Rate (breakfast vs room-only, special requests, comments).
+- `rooms/customize.php` — **Step 3 of 4** review summary.
+- `rooms/room-single.php` — **Step 4 of 4** guest details; uses session draft for breakfast/pet fees and `hotel_bookings.notes`.
 - `rooms/payment.php` — payment summary (wording **payment**, not pay)
 - `calendar.php` — JSON nightly rates for Select Dates modal
 - `users/bookings.php` — manage reservation (last name + reservation ID)

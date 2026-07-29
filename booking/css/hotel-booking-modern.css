@@ -239,6 +239,49 @@ body.hb-modal-open { overflow: hidden; }
   .hb-hotel-side-card { position: static; }
 }
 
+/* Checkout steps 2–4 */
+.hb-checkout-page { background: #f4f5f7; }
+.hb-checkout-layout { align-items: start; }
+.hb-rate-info-banner { display: flex; gap: 12px; align-items: flex-start; background: #e8f1fb; border: 1px solid #c5d9f0; padding: 14px 16px; margin-bottom: 24px; font-size: .9rem; line-height: 1.45; }
+.hb-rate-info-icon { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--hb-primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .85rem; }
+.hb-rate-option-row { display: grid; grid-template-columns: 1fr auto; gap: 16px 24px; padding: 20px 0; border-bottom: 1px solid var(--hb-border); align-items: start; }
+.hb-rate-option-title { margin: 0 0 8px; font-size: 1.15rem; font-weight: 700; }
+.hb-rate-badge { display: inline-block; margin: 0 0 8px; padding: 4px 10px; background: #e6f4ea; color: #1e6e3c; font-size: .75rem; font-weight: 700; border-radius: 3px; }
+.hb-rate-policy { margin: 0 0 6px; font-size: .85rem; color: var(--hb-muted); max-width: 36rem; }
+.hb-rate-option-price-col { text-align: right; min-width: 140px; }
+.hb-rate-price-label { margin: 0 0 4px; font-size: .8rem; color: var(--hb-muted); }
+.hb-rate-price-total { margin: 0 0 12px; font-size: 1.5rem; font-weight: 800; }
+.hb-rate-select-outline { background: #fff; color: var(--hb-primary); border: 2px solid var(--hb-primary); padding: 8px 28px; }
+.hb-rate-select-primary { padding: 8px 28px; }
+.hb-checkout-section { margin-top: 28px; }
+.hb-checkout-section-title { margin: 0 0 12px; font-size: 1rem; font-weight: 700; }
+.hb-checkout-check { display: block; margin-bottom: 8px; }
+.hb-checkout-hint { margin: 0 0 16px; font-size: .85rem; color: var(--hb-muted); max-width: 40rem; }
+.hb-checkout-comments { width: 100%; max-width: 40rem; border: 1px solid var(--hb-border); padding: 10px; font-family: inherit; font-size: .9rem; resize: vertical; }
+.hb-checkout-summary { background: #fff; border: 1px solid var(--hb-border); padding: 16px 20px; margin-bottom: 20px; border-radius: 4px; }
+.hb-checkout-total-line { font-size: 1.1rem; margin-bottom: 20px; }
+.hb-guest-form .form-group { margin-bottom: 14px; }
+.hb-guest-form label { display: block; font-weight: 600; margin-bottom: 4px; font-size: .9rem; }
+.hb-input { width: 100%; max-width: 28rem; padding: 10px; border: 1px solid var(--hb-border); font-size: .95rem; }
+.hb-checkout-stepper { background: #fff; border: 1px solid var(--hb-border); border-radius: 4px; padding: 20px 18px; }
+.hb-checkout-stepper-list { list-style: none; margin: 0; padding: 0; }
+.hb-checkout-stepper-list > li { position: relative; padding: 0 0 20px 28px; }
+.hb-checkout-stepper-list > li:last-child { padding-bottom: 0; }
+.hb-checkout-stepper-list > li::before { content: ''; position: absolute; left: 7px; top: 14px; bottom: 0; width: 2px; background: #d0d5dd; }
+.hb-checkout-stepper-list > li:last-child::before { display: none; }
+.hb-checkout-step-marker { position: absolute; left: 0; top: 2px; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--hb-primary); background: #fff; }
+.hb-checkout-stepper-list > li.is-active .hb-checkout-step-marker { background: var(--hb-primary); }
+.hb-checkout-stepper-list > li.is-complete .hb-checkout-step-marker { background: var(--hb-primary); }
+.hb-checkout-step-title { font-weight: 700; font-size: .9rem; display: block; }
+.hb-checkout-stepper-list > li.is-active .hb-checkout-step-title { color: var(--hb-primary); }
+.hb-checkout-change-room { font-size: .8rem; font-weight: 600; color: var(--hb-primary); }
+.hb-checkout-change-room:hover { text-decoration: underline; }
+
+@media (max-width: 720px) {
+  .hb-rate-option-row { grid-template-columns: 1fr; }
+  .hb-rate-option-price-col { text-align: left; }
+}
+
 /* Room details modal (View room details) */
 .hb-room-detail-modal { align-items: flex-start; padding: 24px 16px; }
 .hb-room-detail-modal-card { max-width: 1040px; width: 100%; max-height: 92vh; overflow: auto; padding: 28px 32px 32px; position: relative; border-radius: 4px; }

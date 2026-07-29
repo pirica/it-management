@@ -741,6 +741,120 @@ if (!function_exists('itm_hotel_booking_compute_stay_payment')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_breakfast_adult_price')) {
+  function itm_hotel_booking_portal_breakfast_adult_price() {
+    return 30.0;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_breakfast_child_price')) {
+  function itm_hotel_booking_portal_breakfast_child_price() {
+    return 20.0;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_pet_daily_fee')) {
+  function itm_hotel_booking_portal_pet_daily_fee() {
+    return 50.0;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_breakfast_supplement_per_night')) {
+  function itm_hotel_booking_portal_breakfast_supplement_per_night(array $occupancy) {
+    $adults = max(0, (int) ($occupancy['adults'] ?? 0));
+    $children = max(0, (int) ($occupancy['children'] ?? 0));
+    return $adults * itm_hotel_booking_portal_breakfast_adult_price()
+      + $children * itm_hotel_booking_portal_breakfast_child_price();
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_stay_nights')) {
+  function itm_hotel_booking_portal_stay_nights($checkIn, $checkOut) {
+    $in = DateTime::createFromFormat('Y-m-d', (string) $checkIn);
+    $out = DateTime::createFromFormat('Y-m-d', (string) $checkOut);
+    if (!$in || !$out || $out <= $in) {
+      return 0;
+    }
+    return (int) $in->diff($out)->days;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_draft_session_key')) {
+  function itm_hotel_booking_portal_draft_session_key() {
+    return 'hotel_booking_portal_draft';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_draft_get')) {
+  function itm_hotel_booking_portal_draft_get() {
+    $key = itm_hotel_booking_portal_draft_session_key();
+    return isset($_SESSION[$key]) && is_array($_SESSION[$key]) ? $_SESSION[$key] : null;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_draft_save')) {
+  function itm_hotel_booking_portal_draft_save(array $draft) {
+    $_SESSION[itm_hotel_booking_portal_draft_session_key()] = $draft;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_draft_clear')) {
+  function itm_hotel_booking_portal_draft_clear() {
+    unset($_SESSION[itm_hotel_booking_portal_draft_session_key()]);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_sanitize_comments')) {
+  function itm_hotel_booking_portal_sanitize_comments($value, $maxLen = 130) {
+    $text = trim((string) $value);
+    if ($text === '') {
+      return '';
+    }
+    if (function_exists('mb_substr')) {
+      return mb_substr($text, 0, $maxLen, 'UTF-8');
+    }
+    return substr($text, 0, $maxLen);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_build_booking_notes')) {
+  function itm_hotel_booking_portal_build_booking_notes(array $draft) {
+    $parts = [];
+    $plan = (string) ($draft['rate_plan'] ?? '');
+    if ($plan === 'breakfast') {
+      $parts[] = 'Rate: Breakfast included';
+    } elseif ($plan === 'room_only') {
+      $parts[] = 'Rate: Best available (room only)';
+    }
+    if (!empty($draft['traveling_with_pet'])) {
+      $parts[] = 'Traveling with pet: yes';
+    }
+    if (!empty($draft['service_animal'])) {
+      $parts[] = 'Service animal: yes';
+    }
+    $comments = trim((string) ($draft['additional_comments'] ?? ''));
+    if ($comments !== '') {
+      $parts[] = 'Guest comments: ' . $comments;
+    }
+    return implode("\n", $parts);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_compute_checkout_total')) {
+  function itm_hotel_booking_portal_compute_checkout_total($basePerNight, $checkIn, $checkOut, array $occupancy, $discountPercent, array $draft) {
+    $roomTotal = itm_hotel_booking_compute_stay_payment($basePerNight, $checkIn, $checkOut, $occupancy, $discountPercent);
+    $nights = itm_hotel_booking_portal_stay_nights($checkIn, $checkOut);
+    $extras = 0.0;
+    if (($draft['rate_plan'] ?? '') === 'breakfast' && $nights > 0) {
+      $extras += itm_hotel_booking_portal_breakfast_supplement_per_night($occupancy) * $nights;
+    }
+    if (!empty($draft['traveling_with_pet']) && $nights > 0) {
+      $extras += itm_hotel_booking_portal_pet_daily_fee() * $nights;
+    }
+    return round($roomTotal + $extras, 2);
+  }
+}
+
 if (!function_exists('itm_hotel_booking_booking_is_cancelled')) {
   function itm_hotel_booking_booking_is_cancelled($conn, $companyId, array $bookingRow) {
     $segment = itm_hotel_booking_resolve_segment($bookingRow['check_in'], $bookingRow['check_out']);
