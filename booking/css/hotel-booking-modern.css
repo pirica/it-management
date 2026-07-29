@@ -108,3 +108,38 @@ body.hb-modal-open { overflow: hidden; }
 .hb-manage-result { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--hb-border); }
 .hb-manage-result th { text-align: left; padding: 8px; color: var(--hb-muted); width: 40%; }
 .hb-manage-result td { padding: 8px; border-bottom: 1px solid #eee; }
+
+/* Select Dates modal */
+.hb-dates-modal-card { background: #fff; max-width: 720px; width: 100%; max-height: 92vh; overflow: auto; padding: 28px 32px 24px; position: relative; border-radius: 4px; box-shadow: 0 24px 48px rgba(0,0,0,.22); }
+.hb-dates-close { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border: 1px solid #333; background: #fff; font-size: 1.1rem; cursor: pointer; }
+.hb-dates-heading { text-align: center; font-size: 1.35rem; font-weight: 700; margin: 0 0 20px; padding-right: 40px; }
+.hb-dates-hotel { font-size: 1.05rem; margin-bottom: 8px; }
+.hb-dates-copy { margin: 0 0 4px; font-size: .9rem; color: var(--hb-text); }
+.hb-dates-explore { margin: 8px 0 16px; font-size: .9rem; }
+.hb-dates-explore a { color: var(--hb-primary); font-weight: 600; text-decoration: none; }
+.hb-dates-explore a:hover { text-decoration: underline; }
+.hb-dates-months-wrap { overflow-x: auto; margin-bottom: 8px; border-bottom: 1px solid var(--hb-border); }
+.hb-dates-months { display: flex; gap: 0; min-width: min-content; }
+.hb-dates-month-tab { flex: 0 0 auto; border: none; background: transparent; padding: 12px 16px; font-size: .9rem; font-weight: 600; color: var(--hb-muted); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.hb-dates-month-tab.is-active { color: var(--hb-text); background: #f5f0eb; border-bottom-color: var(--hb-primary); }
+.hb-dates-cal-head { text-align: center; font-weight: 700; font-size: 1.1rem; margin: 16px 0 12px; }
+.hb-dates-cal-grid { min-height: 200px; }
+.hb-cal-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.hb-cal-head span { text-align: center; font-size: .75rem; color: var(--hb-muted); padding: 6px 0; font-weight: 600; }
+.hb-cal-cell { border: none; background: transparent; min-height: 56px; padding: 6px 4px; cursor: default; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; font-family: inherit; }
+.hb-cal-cell.hb-cal-available { cursor: pointer; }
+.hb-cal-cell.hb-cal-available:hover { background: #f0f4f8; }
+.hb-cal-cell.is-selected { background: var(--hb-primary) !important; color: #fff; border-radius: 2px; }
+.hb-cal-cell.is-selected .hb-cal-price { color: #e8f0ff; }
+.hb-cal-past, .hb-cal-unavail { color: #c5c9d0; }
+.hb-cal-day { font-size: .95rem; font-weight: 600; }
+.hb-cal-price { font-size: .7rem; color: var(--hb-muted); margin-top: 2px; }
+.hb-dates-loading, .hb-dates-error { text-align: center; color: var(--hb-muted); padding: 24px; }
+.hb-dates-footer { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--hb-border); flex-wrap: wrap; }
+.hb-dates-sum-price { margin: 0; font-size: 1.75rem; font-weight: 800; }
+.hb-dates-sum-meta, .hb-dates-sum-range { margin: 2px 0 0; font-size: .85rem; color: var(--hb-muted); }
+.hb-dates-sum-label { margin: 4px 0 0; font-size: .85rem; color: #3d5a80; font-weight: 600; }
+.hb-dates-actions { display: flex; gap: 12px; margin-left: auto; }
+.hb-dates-choose { background: var(--hb-primary); color: #fff; padding: 12px 24px; margin: 0; }
+.hb-dates-choose:disabled { background: #c5c9d0; cursor: not-allowed; }
+.hb-dates-cancel { background: #fff; color: var(--hb-primary); border: 2px solid var(--hb-primary); padding: 10px 22px; margin: 0; }

@@ -119,11 +119,19 @@ $imgUrl = $cover ? itm_hotel_booking_photo_public_url($company_id, 'hotel', (int
 <div id="hb-modal-body">Loading…</div>
 </div>
 </div>
+<div id="hb-dates-modal" class="hb-modal hb-dates-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-dates-heading">
+<div class="hb-dates-modal-card">
+<button type="button" class="hb-dates-close" title="Close">✖</button>
+<h2 id="hb-dates-heading" class="hb-dates-heading">Find the best prices for your next trip</h2>
+<div id="hb-dates-body"></div>
+</div>
+</div>
 <script>
 window.HB_APPURL = <?php echo json_encode(APPURL); ?>;
 window.HB_HOTELS = <?php echo json_encode($hotels, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 window.HB_SETTINGS = <?php echo json_encode($hbSettingsPublic, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-public.js"></script>
+<script src="<?php echo APPURL; ?>/js/hotel-booking-dates.js"></script>
 </body>
 </html>

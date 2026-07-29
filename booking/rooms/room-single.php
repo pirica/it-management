@@ -54,6 +54,13 @@ if (!$room) {
     header('Location: ' . APPURL . '/');
     exit;
 }
+$prefillInDisplay = '';
+$prefillOutDisplay = '';
+$checkInGet = trim((string) ($_GET['check_in'] ?? ''));
+if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkInGet)) {
+    $prefillInDisplay = itm_format_date_display($checkInGet);
+    $prefillOutDisplay = itm_format_date_display(date('Y-m-d', strtotime($checkInGet . ' +1 day')));
+}
 ?>
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><title><?php echo htmlspecialchars($room['name'], ENT_QUOTES, 'UTF-8'); ?></title><link rel="stylesheet" href="<?php echo APPURL; ?>/css/hotel-booking-modern.css"></head>
@@ -64,8 +71,8 @@ if (!$room) {
 <label>Full name</label><input type="text" name="full_name" required autocomplete="name">
 <label>Email</label><input type="email" name="email" required autocomplete="email">
 <label>Phone</label><input type="tel" name="phone" autocomplete="tel">
-<label>Check-in (dd/mm/yyyy)</label><input name="check_in" required autocomplete="off">
-<label>Check-out (dd/mm/yyyy)</label><input name="check_out" required autocomplete="off">
+<label>Check-in (dd/mm/yyyy)</label><input name="check_in" required autocomplete="off" value="<?php echo htmlspecialchars($prefillInDisplay, ENT_QUOTES, 'UTF-8'); ?>">
+<label>Check-out (dd/mm/yyyy)</label><input name="check_out" required autocomplete="off" value="<?php echo htmlspecialchars($prefillOutDisplay, ENT_QUOTES, 'UTF-8'); ?>">
 <button type="submit" class="hb-btn hb-btn-primary" title="Book and continue to payment">Book and continue to payment</button>
 </form>
 <p><a href="<?php echo APPURL; ?>/">Back</a></p>
