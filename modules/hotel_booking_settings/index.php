@@ -92,8 +92,8 @@ require '../../includes/header.php';
 </div>
 <div class="form-group">
 <label>External reviews URL</label>
-<input type="url" name="reviews_url" class="form-control" maxlength="500" placeholder="https://www.tripadvisor.pt/..." value="<?php echo sanitize($row['reviews_url'] ?? ''); ?>">
-<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Opens in a new tab from the public portal “Read reviews” link.</p>
+<input type="url" name="reviews_url" class="form-control" maxlength="500" placeholder="https://www.tripadvisor.pt/Hotel_Review-...html#REVIEWS" value="<?php echo sanitize($row['reviews_url'] ?? ''); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Shown under “Guest rating — based on recent stays” as <strong>Read reviews ↗</strong> (new tab).</p>
 </div>
 <button type="submit" class="btn btn-primary" title="Save">💾</button>
 <a href="../hotel_bookings/index.php" class="btn" title="Back">🔙</a>

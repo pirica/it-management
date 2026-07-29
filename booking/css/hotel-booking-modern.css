@@ -60,11 +60,14 @@ body.hb-modal-open { overflow: hidden; }
 .hb-read-more { font-size: .9rem; color: var(--hb-primary); font-weight: 600; text-decoration: none; }
 .hb-read-more:hover { text-decoration: underline; }
 
-.hb-rating-block { padding-bottom: 8px; border-bottom: 1px solid var(--hb-border); margin-bottom: 20px; }
-.hb-rating-bubbles { display: flex; gap: 4px; margin-bottom: 8px; }
-.hb-rating-bubbles span { width: 28px; height: 28px; border-radius: 50% 50% 50% 0; background: var(--hb-green); transform: rotate(-45deg); display: inline-block; }
-.hb-rating-bubbles span.partial { opacity: .45; }
-.hb-rating-copy { margin: 0 0 6px; font-size: .85rem; color: var(--hb-muted); }
+.hb-rating-block { padding-bottom: 12px; border-bottom: 1px solid var(--hb-border); margin-bottom: 20px; }
+.hb-rating-bubbles { display: flex; gap: 4px; margin-bottom: 10px; }
+.hb-rating-bubbles span { width: 28px; height: 28px; border-radius: 50% 50% 50% 0; background: #00aa6c; transform: rotate(-45deg); display: inline-block; }
+.hb-rating-bubbles span.partial { opacity: .42; }
+.hb-rating-meta { margin: 0; }
+.hb-rating-copy { margin: 0 0 4px; font-size: .85rem; line-height: 1.45; }
+.hb-rating-copy strong { color: #2d2d2d; font-weight: 700; }
+.hb-rating-sub { color: var(--hb-muted); font-weight: 400; }
 .hb-reviews-link { display: inline-block; margin-top: 2px; font-size: .85rem; color: var(--hb-primary); text-decoration: underline; font-weight: 600; }
 .hb-reviews-link:hover { color: #001a4d; }
 .hb-external-icon { font-size: .75rem; margin-left: 2px; }
