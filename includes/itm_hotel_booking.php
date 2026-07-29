@@ -840,8 +840,8 @@ if (!function_exists('itm_hotel_booking_portal_build_booking_notes')) {
   }
 }
 
-if (!function_exists('itm_hotel_booking_portal_compute_checkout_total')) {
-  function itm_hotel_booking_portal_compute_checkout_total($basePerNight, $checkIn, $checkOut, array $occupancy, $discountPercent, array $draft) {
+if (!function_exists('itm_hotel_booking_portal_room_charges_subtotal')) {
+  function itm_hotel_booking_portal_room_charges_subtotal($basePerNight, $checkIn, $checkOut, array $occupancy, $discountPercent, array $draft) {
     $roomTotal = itm_hotel_booking_compute_stay_payment($basePerNight, $checkIn, $checkOut, $occupancy, $discountPercent);
     $nights = itm_hotel_booking_portal_stay_nights($checkIn, $checkOut);
     $extras = 0.0;
@@ -851,7 +851,54 @@ if (!function_exists('itm_hotel_booking_portal_compute_checkout_total')) {
     if (!empty($draft['traveling_with_pet']) && $nights > 0) {
       $extras += itm_hotel_booking_portal_pet_daily_fee() * $nights;
     }
+    if (!empty($draft['room_upgrade_accepted']) && $nights > 0) {
+      $upgradePerNight = (float) ($draft['upgrade_price_per_night'] ?? 0);
+      if ($upgradePerNight > 0) {
+        $extras += $upgradePerNight * $nights;
+      }
+    }
     return round($roomTotal + $extras, 2);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_tourist_tax_amount')) {
+  function itm_hotel_booking_portal_tourist_tax_amount(array $occupancy, $nights, $perPersonPerNight) {
+    $nights = max(1, (int) $nights);
+    $per = max(0.0, (float) $perPersonPerNight);
+    if ($per <= 0) {
+      return 0.0;
+    }
+    $guests = max(0, (int) ($occupancy['adults'] ?? 0)) + max(0, (int) ($occupancy['children'] ?? 0));
+    if ($guests < 1) {
+      $guests = 1;
+    }
+    return round($per * $guests * $nights, 2);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_checkout_breakdown')) {
+  function itm_hotel_booking_portal_checkout_breakdown($basePerNight, $checkIn, $checkOut, array $occupancy, $discountPercent, array $draft, $touristTaxPerPersonPerNight = 0.0) {
+    $nights = itm_hotel_booking_portal_stay_nights($checkIn, $checkOut);
+    $roomCharges = itm_hotel_booking_portal_room_charges_subtotal($basePerNight, $checkIn, $checkOut, $occupancy, $discountPercent, $draft);
+    $taxRate = max(0.0, (float) $touristTaxPerPersonPerNight);
+    $touristTax = itm_hotel_booking_portal_tourist_tax_amount($occupancy, $nights, $taxRate);
+    return [
+      'nights' => $nights,
+      'room_charges' => $roomCharges,
+      'tourist_tax' => $touristTax,
+      'tourist_tax_per_person_per_night' => $taxRate,
+      'total' => round($roomCharges + $touristTax, 2),
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_compute_checkout_total')) {
+  function itm_hotel_booking_portal_compute_checkout_total($basePerNight, $checkIn, $checkOut, array $occupancy, $discountPercent, array $draft, $touristTaxPerPersonPerNight = null) {
+    if ($touristTaxPerPersonPerNight === null) {
+      $touristTaxPerPersonPerNight = (float) ($draft['tourist_tax_per_person_per_night'] ?? 0);
+    }
+    $breakdown = itm_hotel_booking_portal_checkout_breakdown($basePerNight, $checkIn, $checkOut, $occupancy, $discountPercent, $draft, $touristTaxPerPersonPerNight);
+    return $breakdown['total'];
   }
 }
 

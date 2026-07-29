@@ -28,13 +28,15 @@ $hotel = ['id' => $hotelId, 'name' => $room['hotel_name'] ?? ''];
 $currency = $room['currency_code'] ?? 'EUR';
 
 $discountPercent = (float) ($draft['discount_percent'] ?? 0);
-$total = itm_hotel_booking_portal_compute_checkout_total(
+$touristTaxPerPerson = (float) ($settings['tourist_tax_per_person_per_night'] ?? 0);
+$breakdown = itm_hotel_booking_portal_checkout_breakdown(
     (float) $room['price_per_night'],
     $checkInIso,
     $checkOutIso,
     $occupancy,
     $discountPercent,
-    $draft
+    $draft,
+    $touristTaxPerPerson
 );
 
 $roomLabel = trim((string) ($room['type_name'] ?? $room['name'] ?? 'Room'));
@@ -63,6 +65,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $planLabel = ($draft['rate_plan'] ?? '') === 'breakfast' ? 'Breakfast included' : 'Best available rate';
+$changeRateUrl = APPURL . '/rooms/select-rate.php?' . http_build_query(array_merge(
+    ['id' => $roomId, 'check_in' => $checkInIso, 'nights' => $nights],
+    itm_hotel_booking_portal_occupancy_query_params($occupancy)
+));
+$reservationSummaryContext = [
+    'room' => $room,
+    'breakdown' => $breakdown,
+    'plan_label' => $planLabel,
+    'change_rate_url' => $changeRateUrl,
+    'currency' => $currency,
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -76,20 +89,19 @@ $planLabel = ($draft['rate_plan'] ?? '') === 'breakfast' ? 'Breakfast included' 
 <?php hb_portal_render_header($settings); ?>
 <?php hb_portal_render_stay_bar($hotel, $checkInIso, $nights, $occupancy); ?>
 
-<div class="hb-select-room-layout hb-checkout-layout">
+<div class="hb-select-room-layout hb-checkout-layout hb-checkout-layout--summary-left">
+<aside class="hb-checkout-summary-aside">
+<?php hb_portal_render_reservation_summary($reservationSummaryContext); ?>
+</aside>
 <main class="hb-select-room-main">
 <p class="hb-step-label">Step 3 of 4</p>
 <h1 class="hb-page-title">Customize Your Stay</h1>
 
-<div class="hb-checkout-summary card">
-<p><strong>Rate:</strong> <?php echo htmlspecialchars($planLabel, ENT_QUOTES, 'UTF-8'); ?></p>
-<p><strong>Estimated total:</strong> <?php echo htmlspecialchars(hb_portal_money_format($total, $currency), ENT_QUOTES, 'UTF-8'); ?></p>
-<?php if (!empty($draft['traveling_with_pet'])): ?><p>Pet fee included (daily).</p><?php endif; ?>
-<?php if (!empty($draft['service_animal'])): ?><p>Service animal noted.</p><?php endif; ?>
+<?php if (!empty($draft['traveling_with_pet'])): ?><p class="hb-checkout-hint">Pet fee included in room charges (daily).</p><?php endif; ?>
+<?php if (!empty($draft['service_animal'])): ?><p class="hb-checkout-hint">Service animal noted.</p><?php endif; ?>
 <?php if (!empty($draft['additional_comments'])): ?>
-<p><strong>Comments:</strong> <?php echo htmlspecialchars((string) $draft['additional_comments'], ENT_QUOTES, 'UTF-8'); ?></p>
+<p class="hb-checkout-hint"><strong>Comments:</strong> <?php echo htmlspecialchars((string) $draft['additional_comments'], ENT_QUOTES, 'UTF-8'); ?></p>
 <?php endif; ?>
-</div>
 
 <form method="post" class="hb-checkout-actions-form">
 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">

@@ -55,7 +55,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
                 'service_animal' => 0,
                 'additional_comments' => '',
             ];
-            $amount = itm_hotel_booking_portal_compute_checkout_total($room['price_per_night'], $checkIn, $checkOut, $occupancy, $discount, $draftForPay);
+            $amount = itm_hotel_booking_portal_compute_checkout_total(
+                $room['price_per_night'],
+                $checkIn,
+                $checkOut,
+                $occupancy,
+                $discount,
+                $draftForPay,
+                (float) ($settings['tourist_tax_per_person_per_night'] ?? 0)
+            );
             $notes = itm_hotel_booking_portal_build_booking_notes($draftForPay);
             $status = itm_hotel_booking_apply_segment_status_on_save($conn, $company_id, $checkIn, $checkOut);
             $fs = (int) ($status['future_status_id'] ?? 0);
@@ -105,8 +113,30 @@ $changeRoomUrl = APPURL . '/rooms.php?' . $changeRoomQuery;
 
 $discountPercent = $draft ? (float) ($draft['discount_percent'] ?? 0) : itm_hotel_booking_special_rate_discount($conn, $company_id, $hotelId, itm_hotel_booking_portal_resolved_rate_slug($occupancy));
 $draftForDisplay = $draft ?: ['rate_plan' => 'room_only', 'traveling_with_pet' => 0, 'service_animal' => 0];
-$estimatedTotal = itm_hotel_booking_portal_compute_checkout_total($room['price_per_night'], $checkInIso, $checkOutIso, $occupancy, $discountPercent, $draftForDisplay);
+$touristTaxPerPerson = (float) ($settings['tourist_tax_per_person_per_night'] ?? 0);
+$breakdown = itm_hotel_booking_portal_checkout_breakdown(
+    (float) $room['price_per_night'],
+    $checkInIso,
+    $checkOutIso,
+    $occupancy,
+    $discountPercent,
+    $draftForDisplay,
+    $touristTaxPerPerson
+);
+$estimatedTotal = $breakdown['total'];
 $currency = $room['currency_code'] ?? 'EUR';
+$planLabel = ($draftForDisplay['rate_plan'] ?? '') === 'breakfast' ? 'Breakfast included' : 'Best available rate';
+$changeRateUrl = APPURL . '/rooms/select-rate.php?' . http_build_query(array_merge(
+    ['id' => $roomId, 'check_in' => $checkInIso, 'nights' => $nights],
+    itm_hotel_booking_portal_occupancy_query_params($occupancy)
+));
+$reservationSummaryContext = [
+    'room' => $room,
+    'breakdown' => $breakdown,
+    'plan_label' => $planLabel,
+    'change_rate_url' => $changeRateUrl,
+    'currency' => $currency,
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -120,14 +150,17 @@ $currency = $room['currency_code'] ?? 'EUR';
 <?php hb_portal_render_header($settings); ?>
 <?php hb_portal_render_stay_bar($hotel, $checkInIso, $nights, $occupancy); ?>
 
-<div class="hb-select-room-layout hb-checkout-layout">
+<div class="hb-select-room-layout hb-checkout-layout hb-checkout-layout--summary-left">
+<aside class="hb-checkout-summary-aside">
+<?php hb_portal_render_reservation_summary($reservationSummaryContext); ?>
+</aside>
 <main class="hb-select-room-main">
 <p class="hb-step-label">Step 4 of 4</p>
 <h1 class="hb-page-title">Payment and Guest Details</h1>
 
 <?php if ($error): ?><p class="hb-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
 
-<p class="hb-checkout-total-line">Total due: <strong><?php echo htmlspecialchars(hb_portal_money_format($estimatedTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></p>
+<p class="hb-checkout-total-line">Total due: <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($estimatedTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></p>
 
 <form method="post" class="hb-guest-form">
 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
