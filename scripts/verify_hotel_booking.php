@@ -223,6 +223,32 @@ if ($policyUrl !== '' && strpos($policyUrl, '1_cancellation_policy.html') !== fa
     hb_fail('resolve cancellation policy url room_only got ' . $policyUrl);
 }
 
+$futureBooking = [
+    'check_in' => date('Y-m-d', strtotime('+14 days')),
+    'check_out' => date('Y-m-d', strtotime('+16 days')),
+    'future_status_id' => 1,
+    'present_status_id' => null,
+    'history_status_id' => null,
+];
+if (itm_hotel_booking_portal_guest_can_cancel_booking($conn, 1, $futureBooking)) {
+    hb_pass('portal guest can cancel future booking');
+} else {
+    hb_fail('portal guest can cancel future booking');
+}
+
+$pastBooking = [
+    'check_in' => '2020-01-01',
+    'check_out' => '2020-01-03',
+    'future_status_id' => null,
+    'present_status_id' => null,
+    'history_status_id' => 1,
+];
+if (!itm_hotel_booking_portal_guest_can_cancel_booking($conn, 1, $pastBooking)) {
+    hb_pass('portal guest cannot cancel past booking');
+} else {
+    hb_fail('portal guest cannot cancel past booking');
+}
+
 $confirmPdfJs = dirname(__DIR__) . '/booking/js/hotel-booking-confirmation-pdf.js';
 if (is_file($confirmPdfJs) && strpos((string) file_get_contents($confirmPdfJs), 'hbSaveBookingConfirmationPdf') !== false) {
     hb_pass('booking confirmation pdf download script');

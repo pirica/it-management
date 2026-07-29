@@ -167,6 +167,7 @@ if (!function_exists('hb_portal_load_booking_confirmation')) {
             return null;
         }
         $sql = 'SELECT b.id, b.check_in, b.check_out, b.payment_amount, b.notes, b.room_id,
+            b.future_status_id, b.present_status_id, b.history_status_id,
             c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
             h.id AS hotel_id, h.name AS hotel_name, h.currency_code,
             r.name AS room_name, r.price_per_night,
@@ -453,6 +454,33 @@ if (!function_exists('hb_portal_render_cancellation_policy_button')) {
         ?>
 <div class="hb-cancellation-policy-card card">
 <a class="hb-btn hb-btn-block hb-cancellation-policy-btn hb-checkout-skip" href="<?php echo htmlspecialchars($href, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" title="Cancellation policy (opens in new tab)">Cancellation policy</a>
+</div>
+        <?php
+    }
+}
+
+if (!function_exists('hb_portal_render_cancel_booking_button')) {
+    function hb_portal_render_cancel_booking_button($conn, $companyId, array $booking, $lastName, $reservationId) {
+        $companyId = (int) $companyId;
+        $reservationId = (int) $reservationId;
+        $lastName = trim((string) $lastName);
+        $isCancelled = itm_hotel_booking_booking_is_cancelled($conn, $companyId, $booking);
+        $canCancel = itm_hotel_booking_portal_guest_can_cancel_booking($conn, $companyId, $booking);
+        ?>
+<div class="hb-cancel-booking-card card">
+<?php if ($isCancelled): ?>
+<p class="hb-cancel-booking-note">This reservation is cancelled.</p>
+<?php elseif (!$canCancel): ?>
+<p class="hb-cancel-booking-note">Online cancellation is not available for this stay. Please contact the hotel.</p>
+<?php else: ?>
+<form method="post" class="hb-cancel-booking-form" onsubmit="return confirm('Cancel this reservation? This cannot be undone.');">
+<input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
+<input type="hidden" name="cancel_booking" value="1">
+<input type="hidden" name="last_name" value="<?php echo htmlspecialchars($lastName, ENT_QUOTES, 'UTF-8'); ?>">
+<input type="hidden" name="reservation_id" value="<?php echo (int) $reservationId; ?>">
+<button type="submit" class="hb-btn hb-btn-block hb-cancel-booking-btn" title="Cancel booking">Cancel Booking</button>
+</form>
+<?php endif; ?>
 </div>
         <?php
     }
