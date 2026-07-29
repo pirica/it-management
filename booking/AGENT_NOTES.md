@@ -4,23 +4,24 @@
 
 Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM `config/config.php` (MySQLi) and `includes/itm_hotel_booking.php`.
 
-## 2. Auth
+## 3. Auth
 
-- `hotel_booking_portal_users` linked to `customers` via `itm_hotel_booking_ensure_customer_for_portal()`
-- Session: `hotel_booking_customer_id`
+- **Browse and book:** no portal login. Guest details (name, email, phone) are collected on `rooms/room-single.php` and stored via `customers` + `hotel_bookings`.
+- **Manage booking:** `users/bookings.php` — last name + **reservation ID** (`hotel_bookings.id`); verified by `itm_hotel_booking_fetch_for_guest_manage()`.
+- Optional legacy: `hotel_booking_portal_users` and `auth/login.php` / `register.php` (not required for public flow).
 
-## 3. Entry points
+## 4. Entry points
 
 - `index.php` — hotel list + detail modal
 - `rooms.php`, `rooms/room-single.php` — room list and date booking form
 - `rooms/payment.php` — payment summary (wording **payment**, not pay)
-- `users/bookings.php` — signed-in guest history
+- `users/bookings.php` — manage reservation (last name + reservation ID)
 - `auth/login.php`, `register.php`, `logout.php`
 
-## 4. Tenant
+## 5. Tenant
 
 `hb_public_company_id()` reads `hotel_booking_settings.public_portal_enabled` per company (fallback company 1).
 
-## 5. Admin
+## 6. Admin
 
 `admin-panel/index.php` redirects to ITM `modules/hotel_bookings/`.

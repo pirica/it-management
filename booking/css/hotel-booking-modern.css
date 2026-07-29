@@ -32,3 +32,7 @@ body.hb-public { margin: 0; font-family: system-ui, -apple-system, Segoe UI, san
 .hb-overview td:first-child { color: var(--hb-muted); width: 40%; }
 .auth-card { max-width: 400px; margin: 48px auto; background: #fff; padding: 24px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
 .auth-card input { width: 100%; padding: 10px; margin: 8px 0 16px; border: 1px solid #ccc; border-radius: 6px; }
+.hb-error { color: #b42318; margin: 0 0 12px; }
+.hb-manage-result { margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
+.hb-manage-result th { text-align: left; padding: 8px; color: var(--hb-muted); width: 40%; }
+.hb-manage-result td { padding: 8px; border-bottom: 1px solid #eee; }

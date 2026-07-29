@@ -31,12 +31,7 @@ $pageTitle = $settings['welcome_title'] ?? 'Find your stay';
 <div class="hb-header-inner">
 <strong><?php echo htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?></strong>
 <nav>
-<?php if (hb_portal_logged_in()): ?>
-<a href="<?php echo APPURL; ?>/users/bookings.php">My bookings</a>
-<a href="<?php echo APPURL; ?>/auth/logout.php">Sign out</a>
-<?php else: ?>
-<a href="<?php echo APPURL; ?>/auth/login.php">Sign in</a>
-<?php endif; ?>
+<a href="<?php echo APPURL; ?>/users/bookings.php" title="Manage my booking">Manage my booking</a>
 </nav>
 </div>
 </header>
