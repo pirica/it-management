@@ -303,6 +303,11 @@ body.hb-modal-open { overflow: hidden; }
 .hb-checkout-aside-stack { display: flex; flex-direction: column; gap: 20px; }
 .hb-checkout-aside-stack .hb-reservation-summary { margin: 0; }
 
+.hb-special-requests-review { margin-bottom: 24px; }
+.hb-special-request-line { margin: 0 0 8px; font-size: .9rem; line-height: 1.45; }
+.hb-special-requests-comments-title { margin: 12px 0 6px; font-size: .9rem; font-weight: 700; }
+.hb-special-request-comments { margin: 0; font-size: .9rem; line-height: 1.45; max-width: 40rem; white-space: pre-wrap; }
+
 .hb-upgrade-heading { margin: 24px 0 12px; font-size: 1.05rem; font-weight: 700; }
 .hb-upgrade-card { display: grid; grid-template-columns: 200px 1fr auto; gap: 0; background: #fff; border: 1px solid var(--hb-border); border-radius: 6px; overflow: hidden; margin-bottom: 24px; align-items: stretch; }
 .hb-upgrade-card-img { min-height: 140px; background: #ddd center/cover no-repeat; }

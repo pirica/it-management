@@ -202,12 +202,6 @@ $reservationSummaryContext = [
 </article>
 <?php endif; ?>
 
-<?php if (!empty($draft['traveling_with_pet'])): ?><p class="hb-checkout-hint">Pet fee included in room charges (daily).</p><?php endif; ?>
-<?php if (!empty($draft['service_animal'])): ?><p class="hb-checkout-hint">Service animal noted.</p><?php endif; ?>
-<?php if (!empty($draft['additional_comments'])): ?>
-<p class="hb-checkout-hint"><strong>Comments:</strong> <?php echo htmlspecialchars((string) $draft['additional_comments'], ENT_QUOTES, 'UTF-8'); ?></p>
-<?php endif; ?>
-
 <div class="hb-checkout-actions">
 <button type="submit" class="hb-btn hb-btn-primary" title="Continue to guest details">Continue</button>
 <a class="hb-btn hb-checkout-skip" href="<?php echo htmlspecialchars($changeRateUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Back">Back</a>

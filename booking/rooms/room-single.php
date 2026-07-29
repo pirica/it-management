@@ -157,6 +157,10 @@ $reservationSummaryContext = [
 
 <?php if ($error): ?><p class="hb-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
 
+<?php if ($draft): ?>
+<?php hb_portal_render_draft_special_requests_review($draft); ?>
+<?php endif; ?>
+
 <p class="hb-checkout-total-line">Total due: <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($estimatedTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></p>
 
 <form method="post" class="hb-guest-form">
