@@ -167,6 +167,56 @@ if (!function_exists('itm_hotel_booking_photos_handle_upload')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_customer_last_name_matches')) {
+  function itm_hotel_booking_customer_last_name_matches($customerName, $lastNameInput) {
+    $lastNameInput = trim(mb_strtolower((string) $lastNameInput, 'UTF-8'));
+    if ($lastNameInput === '') {
+      return false;
+    }
+    $customerName = trim(mb_strtolower((string) $customerName, 'UTF-8'));
+    if ($customerName === '') {
+      return false;
+    }
+    $parts = preg_split('/\s+/u', $customerName);
+    if (!$parts) {
+      return false;
+    }
+    $last = (string) end($parts);
+    return $last === $lastNameInput || $customerName === $lastNameInput;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_fetch_for_guest_manage')) {
+  function itm_hotel_booking_fetch_for_guest_manage($conn, $companyId, $reservationId, $lastName) {
+    $companyId = (int) $companyId;
+    $reservationId = (int) $reservationId;
+    if ($companyId < 1 || $reservationId < 1) {
+      return null;
+    }
+    $sql = 'SELECT b.*, c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
+                   r.room_number, r.name AS room_name, h.name AS hotel_name
+            FROM hotel_bookings b
+            INNER JOIN customers c ON c.id = b.customer_id AND c.company_id = b.company_id
+            INNER JOIN hotel_booking_rooms r ON r.id = b.room_id AND r.company_id = b.company_id
+            INNER JOIN hotel_booking_hotels h ON h.id = r.hotel_id AND h.company_id = r.company_id
+            WHERE b.company_id = ? AND b.id = ? AND b.deleted_at IS NULL
+            LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return null;
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $reservationId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    if (!$row || !itm_hotel_booking_customer_last_name_matches($row['customer_name'] ?? '', $lastName)) {
+      return null;
+    }
+    return $row;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_compute_payment_amount')) {
   function itm_hotel_booking_compute_payment_amount($pricePerNight, $checkIn, $checkOut) {
     $in = DateTime::createFromFormat('Y-m-d', $checkIn);

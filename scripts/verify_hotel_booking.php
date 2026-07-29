@@ -43,4 +43,10 @@ if ($pending) {
     hb_fail('PENDING status missing');
 }
 
+if (itm_hotel_booking_customer_last_name_matches('John Smith', 'smith') && !itm_hotel_booking_customer_last_name_matches('John Smith', 'Jones')) {
+    hb_pass('guest last name match helper');
+} else {
+    hb_fail('guest last name match helper');
+}
+
 exit($fail > 0 ? 1 : 0);
