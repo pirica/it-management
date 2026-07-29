@@ -106,7 +106,7 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
 <dl class="hb-reservation-totals">
 <div class="hb-reservation-total-row">
 <dt>Total room charges</dt>
-<dd><?php echo htmlspecialchars(hb_portal_money_format_decimal($roomCharges, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
+<dd id="hb-reservation-room-charges"><?php echo htmlspecialchars(hb_portal_money_format_decimal($roomCharges, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <div class="hb-reservation-total-row hb-reservation-tax-row">
 <dt>Total taxes and government charges</dt>
@@ -117,7 +117,7 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
 <?php endif; ?>
 <div class="hb-reservation-total-row hb-reservation-grand-total">
 <dt>Total for stay:</dt>
-<dd><?php echo htmlspecialchars(hb_portal_money_format_decimal($total, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
+<dd id="hb-reservation-stay-total"><?php echo htmlspecialchars(hb_portal_money_format_decimal($total, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 </dl>
 </div>

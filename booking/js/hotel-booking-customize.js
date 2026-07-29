@@ -4,29 +4,31 @@
     return;
   }
   var checkbox = document.getElementById('hb-accept-room-upgrade');
-  var totalEl = document.getElementById('hb-customize-total');
-  var upgradeLine = document.getElementById('hb-customize-upgrade-line');
-  if (!checkbox || !totalEl) {
+  var roomChargesEl = document.getElementById('hb-reservation-room-charges');
+  var stayTotalEl = document.getElementById('hb-reservation-stay-total');
+  if (!checkbox || !roomChargesEl || !stayTotalEl) {
     return;
   }
 
-  function formatMoney(amount) {
-    var sym = cfg.currencySymbol || '€';
+  function formatDecimal(amount) {
     var n = Math.round(amount * 100) / 100;
     var parts = n.toFixed(2).split('.');
-    return sym + parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + parts[1];
+    var code = (cfg.currencyCode || 'EUR').toUpperCase();
+    if (code === 'EUR') {
+      return parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + parts[1] + '€';
+    }
+    return code + ' ' + parts[0] + '.' + parts[1];
   }
 
-  function refreshTotal() {
-    var total = cfg.baseTotal;
+  function refreshTotals() {
+    var roomCharges = cfg.roomChargesBase || 0;
     if (checkbox.checked) {
-      total += (cfg.upgradePerNight || 0) * (cfg.nights || 1);
+      roomCharges += (cfg.upgradePerNight || 0) * (cfg.nights || 1);
     }
-    totalEl.textContent = formatMoney(total);
-    if (upgradeLine) {
-      upgradeLine.hidden = !checkbox.checked;
-    }
+    var total = roomCharges + (cfg.touristTax || 0);
+    roomChargesEl.textContent = formatDecimal(roomCharges);
+    stayTotalEl.textContent = formatDecimal(total);
   }
 
-  checkbox.addEventListener('change', refreshTotal);
+  checkbox.addEventListener('change', refreshTotals);
 })();
