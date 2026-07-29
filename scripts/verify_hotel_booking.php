@@ -180,4 +180,21 @@ if (itm_hotel_booking_portal_normalize_guest_phone('351 912 345 678') === '+3519
     hb_fail('portal guest phone normalize');
 }
 
+$notesBuilt = itm_hotel_booking_portal_build_booking_notes([
+    'rate_plan' => 'breakfast',
+    'service_animal' => 1,
+    'upgrade_accepted' => 1,
+    'upgrade_target_name' => 'King Grand Deluxe Room with Pool View',
+    'additional_comments' => 'Late arrival',
+]);
+if (strpos($notesBuilt, 'Rate: Breakfast included') !== false
+    && strpos($notesBuilt, 'Service animal: yes') !== false
+    && strpos($notesBuilt, 'Room: King Grand Deluxe Room with Pool View') !== false
+    && strpos($notesBuilt, 'Room upgrade:') === false
+    && strpos($notesBuilt, "Guest comments:\nLate arrival") !== false) {
+    hb_pass('portal booking notes labels (Room, guest comments)');
+} else {
+    hb_fail('portal booking notes labels');
+}
+
 exit($fail > 0 ? 1 : 0);

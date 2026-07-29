@@ -868,11 +868,12 @@ if (!function_exists('itm_hotel_booking_portal_build_booking_notes')) {
       $parts[] = 'Service animal: yes';
     }
     if (!empty($draft['upgrade_accepted']) && !empty($draft['upgrade_target_name'])) {
-      $parts[] = 'Room upgrade: ' . (string) $draft['upgrade_target_name'];
+      $parts[] = 'Room: ' . (string) $draft['upgrade_target_name'];
     }
     $comments = trim((string) ($draft['additional_comments'] ?? ''));
     if ($comments !== '') {
-      $parts[] = 'Guest comments: ' . $comments;
+      $parts[] = 'Guest comments:';
+      $parts[] = $comments;
     }
     return implode("\n", $parts);
   }

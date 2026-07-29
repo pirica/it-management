@@ -190,6 +190,75 @@ if (!function_exists('hb_portal_load_booking_confirmation')) {
     }
 }
 
+if (!function_exists('hb_portal_booking_notes_display_items')) {
+    /**
+     * Parse hotel_bookings.notes into display rows (payment confirmation, print PDF).
+     *
+     * @return list<array{kind:string,label:string,body:string}>
+     */
+    function hb_portal_booking_notes_display_items($notesRaw) {
+        $notesRaw = trim((string) $notesRaw);
+        if ($notesRaw === '') {
+            return [];
+        }
+        $text = str_replace(["\r\n", "\r"], "\n", $notesRaw);
+        $text = preg_replace('/^Room upgrade:\s*/mi', 'Room: ', $text);
+        $lines = explode("\n", $text);
+        $items = [];
+        $count = count($lines);
+        for ($i = 0; $i < $count; $i++) {
+            $line = trim($lines[$i]);
+            if ($line === '') {
+                continue;
+            }
+            if (preg_match('/^Guest comments:\s*(.*)$/iu', $line, $m)) {
+                $body = trim((string) ($m[1] ?? ''));
+                if ($body === '') {
+                    for ($j = $i + 1; $j < $count; $j++) {
+                        $next = trim($lines[$j]);
+                        if ($next === '') {
+                            break;
+                        }
+                        if (preg_match('/^(Rate:|Traveling with pet:|Service animal:|Room:)/i', $next)) {
+                            break;
+                        }
+                        $body .= ($body === '' ? '' : "\n") . $next;
+                        $i = $j;
+                    }
+                }
+                $items[] = ['kind' => 'comments', 'label' => 'Guest comments:', 'body' => $body];
+                continue;
+            }
+            $items[] = ['kind' => 'line', 'label' => '', 'body' => $line];
+        }
+        return $items;
+    }
+}
+
+if (!function_exists('hb_portal_render_payment_reservation_notes')) {
+    function hb_portal_render_payment_reservation_notes($notesRaw) {
+        $items = hb_portal_booking_notes_display_items($notesRaw);
+        if ($items === []) {
+            return;
+        }
+        ?>
+<section class="hb-checkout-section hb-payment-reservation-notes">
+<h2 class="hb-checkout-section-title">Reservation notes</h2>
+<?php foreach ($items as $item):
+    if (($item['kind'] ?? '') === 'comments'): ?>
+<p class="hb-reservation-note-label"><?php echo htmlspecialchars((string) ($item['label'] ?? 'Guest comments:'), ENT_QUOTES, 'UTF-8'); ?></p>
+<?php if (trim((string) ($item['body'] ?? '')) !== ''): ?>
+<p class="hb-reservation-note-comments"><?php echo htmlspecialchars((string) $item['body'], ENT_QUOTES, 'UTF-8'); ?></p>
+<?php endif; ?>
+<?php else: ?>
+<p class="hb-reservation-note-line"><?php echo htmlspecialchars((string) ($item['body'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></p>
+<?php endif; ?>
+<?php endforeach; ?>
+</section>
+        <?php
+    }
+}
+
 if (!function_exists('hb_portal_render_payment_confirmation')) {
     /**
      * Main confirmation panel after booking is saved (payment.php).
@@ -256,6 +325,7 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <dd><strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($amount, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></dd>
 </div>
 </dl>
+<?php hb_portal_render_payment_reservation_notes((string) ($booking['notes'] ?? '')); ?>
 <div class="hb-payment-confirmation-notice" role="status">
 <p><strong>Payment at the hotel.</strong> Online payment is not enabled in this build. No charge was made online — the total above is due according to hotel policy.</p>
 <p class="hb-payment-confirmation-manage-hint">To view or change your reservation later, use your <strong>last name</strong> and confirmation number <strong><?php echo (int) $reservationId; ?></strong> on Manage my booking.</p>
@@ -389,7 +459,20 @@ table.hb-print-table td { padding: 10px 12px; border: 1px solid #d0d7de; }
 </table>
 <?php if ($notes !== ''): ?>
 <h2 style="font-size:16px;margin:0 0 8px;">Reservation notes</h2>
-<div class="hb-print-notes"><?php echo htmlspecialchars($notes, ENT_QUOTES, 'UTF-8'); ?></div>
+<div class="hb-print-notes">
+<?php foreach (hb_portal_booking_notes_display_items($notes) as $item):
+    if (($item['kind'] ?? '') === 'comments'): ?>
+<p style="margin:0 0 4px;font-weight:600;"><?php echo htmlspecialchars((string) ($item['label'] ?? 'Guest comments:'), ENT_QUOTES, 'UTF-8'); ?></p>
+<?php if (trim((string) ($item['body'] ?? '')) !== ''): ?>
+<p style="margin:0 0 12px;white-space:pre-wrap;"><?php echo htmlspecialchars((string) $item['body'], ENT_QUOTES, 'UTF-8'); ?></p>
+<?php else: ?>
+<p style="margin:0 0 12px;"></p>
+<?php endif; ?>
+<?php else: ?>
+<p style="margin:0 0 8px;"><?php echo htmlspecialchars((string) ($item['body'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></p>
+<?php endif; ?>
+<?php endforeach; ?>
+</div>
 <?php endif; ?>
 <p class="hb-print-foot">Payment at the hotel: online payment is not enabled in this build. Present this confirmation and your photo ID at check-in. To manage your booking later, use your last name and confirmation number on the hotel booking portal.</p>
 <?php if ($autoPrint): ?>
