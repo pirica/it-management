@@ -192,6 +192,14 @@ body.hb-modal-open { overflow: hidden; }
 .hb-rates-list { list-style: none; padding: 0; margin: 0 0 16px; }
 .hb-rates-list li { padding: 12px 0; border-bottom: 1px solid var(--hb-border); font-size: .9rem; }
 .hb-rates-list .hb-btn-sm { margin-top: 8px; }
+.hb-rates-form { margin: 0; }
+.hb-rates-fieldset { border: 0; margin: 0 0 16px; padding: 0; }
+.hb-rates-fieldset .hb-filter-check { display: block; margin-bottom: 10px; }
+.hb-rates-codes { display: grid; gap: 12px; margin-bottom: 16px; }
+.hb-rates-code-label { display: flex; flex-direction: column; gap: 6px; font-size: .9rem; font-weight: 600; }
+.hb-rates-code-label input { font-weight: 400; max-width: 10rem; text-transform: uppercase; letter-spacing: .04em; }
+.hb-rates-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.hb-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .hb-muted { color: var(--hb-muted); font-size: .85rem; }
 .hb-room-count { font-size: .9rem; color: var(--hb-muted); margin-bottom: 20px; }
 .hb-room-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; align-items: stretch; }

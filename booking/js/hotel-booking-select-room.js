@@ -10,15 +10,56 @@
     return Number.isFinite(n) ? n : fallback;
   }
 
+  function sanitizeRateCode(value) {
+    return String(value || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 8);
+  }
+
+  function specialRateFieldsFromOccupancy(o) {
+    o = o || {};
+    return {
+      use_points: o.use_points ? 1 : 0,
+      travel_agents: o.travel_agents ? 1 : 0,
+      aaa_rate: o.aaa_rate ? 1 : 0,
+      senior_rate: o.senior_rate ? 1 : 0,
+      gov_military: o.gov_military ? 1 : 0,
+      promo_code: sanitizeRateCode(o.promo_code),
+      group_code: sanitizeRateCode(o.group_code),
+      corporate_account: sanitizeRateCode(o.corporate_account),
+      member_account: sanitizeRateCode(o.member_account)
+    };
+  }
+
   function currentOccupancy() {
     var o = cfg.occupancy || {};
-    return {
+    var special = specialRateFieldsFromOccupancy(o);
+    return Object.assign({
       rooms: parseIntSafe(o.rooms, 1),
       adults: parseIntSafe(o.adults, 1),
       children: parseIntSafe(o.children, 0),
       babies: parseIntSafe(o.babies, 0),
       rate: String(o.rate || '')
-    };
+    }, special);
+  }
+
+  var SPECIAL_RATE_BOOL_KEYS = ['use_points', 'travel_agents', 'aaa_rate', 'senior_rate', 'gov_military'];
+  var SPECIAL_RATE_CODE_KEYS = ['promo_code', 'group_code', 'corporate_account', 'member_account'];
+
+  function applySpecialRateParams(params, occ) {
+    SPECIAL_RATE_BOOL_KEYS.forEach(function (key) {
+      if (occ[key]) {
+        params.set(key, '1');
+      } else {
+        params.delete(key);
+      }
+    });
+    SPECIAL_RATE_CODE_KEYS.forEach(function (key) {
+      var code = sanitizeRateCode(occ[key]);
+      if (code) {
+        params.set(key, code);
+      } else {
+        params.delete(key);
+      }
+    });
   }
 
   function discountPercent() {
@@ -58,11 +99,79 @@
     } else {
       params.delete('rate');
     }
+    applySpecialRateParams(params, occ);
     return params.toString();
   }
 
   function reloadWith(overrides) {
     window.location.search = buildQuery(overrides);
+  }
+
+  function readRatesFormOverrides() {
+    var overrides = {
+      rate: '',
+      use_points: 0,
+      travel_agents: 0,
+      aaa_rate: 0,
+      senior_rate: 0,
+      gov_military: 0,
+      promo_code: '',
+      group_code: '',
+      corporate_account: '',
+      member_account: ''
+    };
+    var usePoints = document.getElementById('hb-rate-use-points');
+    if (usePoints && usePoints.checked) {
+      overrides.use_points = 1;
+    }
+    var travel = document.getElementById('hb-rate-travel-agents');
+    if (travel && travel.checked) {
+      overrides.travel_agents = 1;
+    }
+    var aaa = document.getElementById('hb-rate-aaa');
+    if (aaa && aaa.checked) {
+      overrides.aaa_rate = 1;
+    }
+    var senior = document.getElementById('hb-rate-senior');
+    if (senior && senior.checked) {
+      overrides.senior_rate = 1;
+    }
+    var gov = document.getElementById('hb-rate-gov-military');
+    if (gov && gov.checked) {
+      overrides.gov_military = 1;
+    }
+    var promo = document.getElementById('hb-rate-promo');
+    if (promo) {
+      overrides.promo_code = sanitizeRateCode(promo.value);
+    }
+    var group = document.getElementById('hb-rate-group');
+    if (group) {
+      overrides.group_code = sanitizeRateCode(group.value);
+    }
+    var corporate = document.getElementById('hb-rate-corporate');
+    if (corporate) {
+      overrides.corporate_account = sanitizeRateCode(corporate.value);
+    }
+    var member = document.getElementById('hb-rate-member');
+    if (member) {
+      overrides.member_account = sanitizeRateCode(member.value);
+    }
+    return overrides;
+  }
+
+  function clearRatesForm() {
+    ['hb-rate-use-points', 'hb-rate-travel-agents', 'hb-rate-aaa', 'hb-rate-senior', 'hb-rate-gov-military'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.checked = false;
+      }
+    });
+    ['hb-rate-promo', 'hb-rate-group', 'hb-rate-corporate', 'hb-rate-member'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.value = '';
+      }
+    });
   }
 
   function updatePrices() {
@@ -216,17 +325,29 @@
     });
   }
 
-  document.querySelectorAll('.hb-rate-pick').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var slug = btn.getAttribute('data-rate-slug') || '';
-      reloadWith({ rate: slug });
+  var ratesApply = document.getElementById('hb-rates-apply');
+  if (ratesApply) {
+    ratesApply.addEventListener('click', function () {
+      reloadWith(readRatesFormOverrides());
     });
-  });
+  }
 
   var rateClear = document.getElementById('hb-rates-clear');
   if (rateClear) {
     rateClear.addEventListener('click', function () {
-      reloadWith({ rate: '' });
+      clearRatesForm();
+      reloadWith({
+        rate: '',
+        use_points: 0,
+        travel_agents: 0,
+        aaa_rate: 0,
+        senior_rate: 0,
+        gov_military: 0,
+        promo_code: '',
+        group_code: '',
+        corporate_account: '',
+        member_account: ''
+      });
     });
   }
 

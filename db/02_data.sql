@@ -2491,7 +2491,13 @@ INSERT INTO `hotel_booking_rooms` (`company_id`, `hotel_id`, `room_type_id`, `ho
 INSERT INTO `hotel_booking_special_rates` (`company_id`, `hotel_id`, `rate_slug`, `name`, `discount_percent`, `description`, `active`, `created_at`) VALUES
 (1, 1, 'member', 'Member rate', 10.00, 'Sign in or join to save on your stay.', 1, '2026-01-01 00:00:01'),
 (1, 1, 'aaa', 'AAA / CAA', 12.00, 'Valid membership card required at check-in.', 1, '2026-01-01 00:00:01'),
-(1, 1, 'government', 'Government', 8.00, 'Eligible government and military ID required.', 1, '2026-01-01 00:00:01');
+(1, 1, 'government', 'Government', 8.00, 'Eligible government and military ID required.', 1, '2026-01-01 00:00:01'),
+(1, 1, 'points', 'Use Points', 0.00, 'Redeem loyalty points at checkout.', 1, '2026-01-01 00:00:01'),
+(1, 1, 'travel_agent', 'Travel agents', 5.00, 'Valid IATA or agency credentials required.', 1, '2026-01-01 00:00:01'),
+(1, 1, 'senior', 'Senior rate', 10.00, 'Guest must meet property age requirements.', 1, '2026-01-01 00:00:01'),
+(1, 1, 'promo', 'Promotion code', 0.00, 'Enter a valid promotion code.', 1, '2026-01-01 00:00:01'),
+(1, 1, 'group', 'Group code', 0.00, 'Enter a valid group code.', 1, '2026-01-01 00:00:01'),
+(1, 1, 'corporate', 'Corporate account', 0.00, 'Enter a valid corporate account number.', 1, '2026-01-01 00:00:01');
 
 INSERT INTO `hotel_booking_hotel_nearby` (`company_id`, `hotel_id`, `place_name`, `distance_km`, `sort_order`, `active`, `created_at`) VALUES
 (1, 1, 'City center', 12.60, 10, 1, '2026-01-01 00:00:01'),
