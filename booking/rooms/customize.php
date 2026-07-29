@@ -2,6 +2,7 @@
 require __DIR__ . '/../bootstrap.php';
 require __DIR__ . '/../includes/portal_chrome.php';
 require __DIR__ . '/../includes/portal_checkout.php';
+require __DIR__ . '/../includes/portal_room_detail.php';
 
 $company_id = hb_public_company_id($conn);
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
@@ -158,6 +159,33 @@ $reservationSummaryContext = [
     'change_rate_url' => $changeRateUrl,
     'currency' => $currency,
 ];
+
+$upgradeRoomDetailHtml = '';
+if ($upgradeOffer) {
+    $targetTypeId = (int) ($upgradeOffer['target_type_id'] ?? 0);
+    $amenityRows = hb_portal_load_hotel_amenity_rows($conn, $company_id, $hotelId);
+    $upgradeDetailCard = hb_portal_room_detail_card_for_type(
+        $conn,
+        $company_id,
+        $hotelId,
+        $targetTypeId,
+        $occupancy,
+        $discountPercent,
+        $checkInIso,
+        $checkOutIso,
+        $upgradeImageUrl
+    );
+    if ($upgradeDetailCard) {
+        $upgradeRoomDetailHtml = hb_portal_room_detail_modal_html(
+            $upgradeDetailCard,
+            $amenityRows,
+            $currency,
+            '',
+            !empty($upgradeDetailCard['available']),
+            ['show_book_cta' => false]
+        );
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -189,11 +217,11 @@ $reservationSummaryContext = [
 <span class="hb-upgrade-card-title"><?php echo htmlspecialchars($upgradeTitle, ENT_QUOTES, 'UTF-8'); ?></span>
 </label>
 <p class="hb-upgrade-card-pitch"><?php echo htmlspecialchars($upgradePitch, ENT_QUOTES, 'UTF-8'); ?></p>
+<?php if ($upgradeRoomDetailHtml !== ''): ?>
 <p class="hb-upgrade-card-links">
-<a href="#hb-reservation-stay-total" title="Quick compare">Quick compare</a>
-<span aria-hidden="true"> | </span>
-<a href="<?php echo htmlspecialchars(APPURL . '/rooms.php?' . $changeRoomQuery, ENT_QUOTES, 'UTF-8'); ?>" title="View room details">View room details</a>
+<button type="button" class="hb-room-details-link hb-room-details-open" id="hb-customize-room-details" title="View room details">View room details</button>
 </p>
+<?php endif; ?>
 </div>
 <div class="hb-upgrade-card-price">
 <p class="hb-upgrade-price-amount">+<?php echo htmlspecialchars(hb_portal_money_format($upgradePrice, $currency), ENT_QUOTES, 'UTF-8'); ?></p>
@@ -217,6 +245,14 @@ $reservationSummaryContext = [
 <?php hb_portal_render_reservation_summary($reservationSummaryContext); ?>
 </aside>
 </div>
+<?php if ($upgradeRoomDetailHtml !== ''): ?>
+<div id="hb-room-detail-modal" class="hb-modal hb-room-detail-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-room-detail-title">
+<div class="hb-modal-card hb-room-detail-modal-card">
+<button type="button" class="hb-modal-close hb-room-detail-close" data-hb-modal-close="hb-room-detail-modal" title="Close">✖</button>
+<div id="hb-room-detail-body" class="hb-room-detail-body"></div>
+</div>
+</div>
+<?php endif; ?>
 <script>
 window.HB_CUSTOMIZE_UPGRADE = <?php echo json_encode([
     'nights' => $nights,
@@ -226,6 +262,11 @@ window.HB_CUSTOMIZE_UPGRADE = <?php echo json_encode([
     'currencyCode' => $currency,
     'hasUpgradeCheckbox' => (bool) $upgradeOffer,
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+<?php if ($upgradeRoomDetailHtml !== ''): ?>
+window.HB_CUSTOMIZE_ROOM_DETAIL = <?php echo json_encode([
+    'html' => $upgradeRoomDetailHtml,
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+<?php endif; ?>
 </script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-customize.js"></script>
 </body>
