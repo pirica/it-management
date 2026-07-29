@@ -1,33 +1,85 @@
 <?php
 require __DIR__ . '/../bootstrap.php';
+require __DIR__ . '/../includes/portal_chrome.php';
+require __DIR__ . '/../includes/portal_checkout.php';
+
 $company_id = hb_public_company_id($conn);
+$settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 $bid = (int) ($_SESSION['hotel_booking_last_id'] ?? 0);
-$amount = 0.0;
-$reservationId = 0;
-if ($bid > 0) {
-    $stmt = mysqli_prepare($conn, 'SELECT id, payment_amount FROM hotel_bookings WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'ii', $bid, $company_id);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        $row = $res ? mysqli_fetch_assoc($res) : null;
-        mysqli_stmt_close($stmt);
-        if ($row) {
-            $reservationId = (int) $row['id'];
-            $amount = (float) ($row['payment_amount'] ?? 0);
+$booking = $bid > 0 ? hb_portal_load_booking_confirmation($conn, $company_id, $bid) : null;
+
+$hotel = ['id' => 0, 'name' => $settings['welcome_title'] ?? 'Hotel booking'];
+$checkInIso = date('Y-m-d');
+$nights = 1;
+$occupancy = itm_hotel_booking_portal_parse_occupancy(['rooms' => 1, 'adults' => 2]);
+$roomLabel = 'Your room';
+$changeRoomUrl = APPURL . '/rooms.php';
+
+if ($booking) {
+    $hotel = [
+        'id' => (int) ($booking['hotel_id'] ?? 0),
+        'name' => (string) ($booking['hotel_name'] ?? ''),
+    ];
+    $checkInIso = (string) ($booking['check_in'] ?? $checkInIso);
+    $checkOutIso = (string) ($booking['check_out'] ?? '');
+    if ($checkInIso !== '' && $checkOutIso !== '' && $checkOutIso > $checkInIso) {
+        $in = DateTime::createFromFormat('Y-m-d', $checkInIso);
+        $out = DateTime::createFromFormat('Y-m-d', $checkOutIso);
+        if ($in && $out) {
+            $nights = max(1, (int) $in->diff($out)->days);
         }
     }
+    $room = [
+        'type_name' => $booking['type_name'] ?? '',
+        'bed_summary' => $booking['bed_summary'] ?? '',
+        'name' => $booking['room_name'] ?? '',
+    ];
+    $roomLabel = hb_portal_reservation_room_title($room);
+    $changeRoomUrl = APPURL . '/rooms.php?' . http_build_query([
+        'id' => (int) ($booking['hotel_id'] ?? 0),
+        'check_in' => $checkInIso,
+        'nights' => $nights,
+    ]);
 }
 ?>
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><title>Payment</title><link rel="stylesheet" href="<?php echo APPURL; ?>/css/hotel-booking-modern.css"></head>
-<body class="hb-public"><main class="hb-main auth-card">
-<h1>Payment for your room</h1>
-<?php if ($reservationId > 0): ?>
-<p>Reservation ID: <strong><?php echo (int) $reservationId; ?></strong> — keep this with your last name to manage your booking later.</p>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reservation confirmed</title>
+<link rel="stylesheet" href="<?php echo APPURL; ?>/css/hotel-booking-modern.css">
+</head>
+<body class="hb-public hb-checkout-page hb-payment-page">
+<?php hb_portal_render_header($settings); ?>
+<?php hb_portal_render_stay_bar($hotel, $checkInIso, $nights, $occupancy); ?>
+
+<div class="hb-select-room-layout hb-checkout-layout">
+<main class="hb-select-room-main">
+<?php if ($booking): ?>
+<?php hb_portal_render_payment_confirmation($booking); ?>
+<?php else: ?>
+<div class="hb-payment-confirmation card hb-payment-confirmation--empty">
+<h1 class="hb-payment-confirmation-title">No reservation found</h1>
+<p class="hb-payment-confirmation-lead">We could not find a recent booking in this browser session. Start a new search or manage an existing reservation with your confirmation number and last name.</p>
+<div class="hb-checkout-actions hb-payment-confirmation-actions">
+<a class="hb-btn hb-btn-primary" href="<?php echo APPURL; ?>/" title="Find a hotel">Find a hotel</a>
+<a class="hb-btn hb-checkout-skip" href="<?php echo APPURL; ?>/users/bookings.php" title="Manage my booking">Manage my booking</a>
+</div>
+</div>
 <?php endif; ?>
-<p>Total due: <strong><?php echo htmlspecialchars(number_format($amount, 2), ENT_QUOTES, 'UTF-8'); ?></strong></p>
-<p>Payment gateway integration is not enabled in this build. Your reservation is recorded.</p>
-<a class="hb-btn hb-btn-primary" href="<?php echo APPURL; ?>/users/bookings.php" title="Manage my booking">Manage my booking</a>
-<a class="hb-btn" href="<?php echo APPURL; ?>/" title="Home">Home</a>
-</main></body></html>
+</main>
+
+<?php if ($booking): ?>
+<aside class="hb-select-room-aside hb-checkout-aside-stack">
+<?php hb_portal_render_checkout_stepper(4, [
+    'room_label' => $roomLabel,
+    'change_room_url' => $changeRoomUrl,
+    'confirmation' => true,
+]); ?>
+<?php hb_portal_render_confirmation_summary_aside($booking); ?>
+</aside>
+<?php endif; ?>
+</div>
+</body>
+</html>
