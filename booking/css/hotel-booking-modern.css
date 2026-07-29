@@ -306,6 +306,106 @@ body.hb-modal-open { overflow: hidden; }
 .hb-checkout-aside-stack { display: flex; flex-direction: column; gap: 20px; }
 .hb-checkout-aside-stack .hb-reservation-summary { margin: 0; }
 
+.hb-payment-page .hb-select-room-main { max-width: 52rem; }
+.hb-payment-confirmation.card {
+  background: #fff;
+  border: 1px solid var(--hb-border);
+  border-radius: 6px;
+  padding: 28px 32px 32px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+}
+.hb-payment-confirmation-head {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--hb-border);
+}
+.hb-payment-confirmation-icon {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #0d6b4c;
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 48px;
+  text-align: center;
+}
+.hb-payment-confirmation-title {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.hb-payment-confirmation-lead {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--hb-muted);
+  line-height: 1.5;
+  max-width: 36rem;
+}
+.hb-payment-confirmation-details {
+  margin: 0 0 24px;
+  display: grid;
+  gap: 12px 24px;
+  grid-template-columns: 1fr 1fr;
+}
+.hb-payment-detail-row {
+  display: contents;
+}
+.hb-payment-detail-row dt {
+  margin: 0;
+  font-size: .85rem;
+  color: var(--hb-muted);
+  font-weight: 600;
+}
+.hb-payment-detail-row dd {
+  margin: 0;
+  font-size: .95rem;
+  line-height: 1.4;
+}
+.hb-payment-detail-total {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px 16px;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hb-border);
+}
+.hb-payment-detail-total dt,
+.hb-payment-detail-total dd {
+  display: block;
+  font-size: 1.05rem;
+}
+.hb-payment-confirmation-notice {
+  background: #f8fafc;
+  border: 1px solid var(--hb-border);
+  border-radius: 4px;
+  padding: 16px 18px;
+  margin-bottom: 24px;
+  font-size: .9rem;
+  line-height: 1.55;
+  color: var(--hb-text);
+}
+.hb-payment-confirmation-notice p { margin: 0 0 10px; }
+.hb-payment-confirmation-notice p:last-child { margin-bottom: 0; }
+.hb-payment-confirmation-manage-hint { color: var(--hb-muted); font-size: .88rem; }
+.hb-payment-confirmation-actions { margin-top: 4px; }
+.hb-payment-confirmation--empty { text-align: left; }
+@media (max-width: 640px) {
+  .hb-payment-confirmation-details { grid-template-columns: 1fr; }
+  .hb-payment-detail-row { display: block; margin-bottom: 12px; }
+  .hb-payment-detail-row dt { margin-bottom: 4px; }
+  .hb-payment-confirmation.card { padding: 20px 18px 24px; }
+  .hb-payment-confirmation-head { flex-direction: column; gap: 12px; }
+}
+
 .hb-special-requests-review { margin-bottom: 24px; }
 .hb-special-request-line { margin: 0 0 8px; font-size: .9rem; line-height: 1.45; }
 .hb-special-requests-comments-title { margin: 12px 0 6px; font-size: .9rem; font-weight: 700; }

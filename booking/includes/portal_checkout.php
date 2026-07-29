@@ -31,6 +31,7 @@ if (!function_exists('hb_portal_render_checkout_stepper')) {
      * @param int $activeStep 1–4
      */
     function hb_portal_render_checkout_stepper($activeStep, array $context) {
+        $confirmation = !empty($context['confirmation']);
         $activeStep = max(1, min(4, (int) $activeStep));
         $roomLabel = trim((string) ($context['room_label'] ?? 'Your room'));
         $changeRoomUrl = (string) ($context['change_room_url'] ?? '');
@@ -45,10 +46,10 @@ if (!function_exists('hb_portal_render_checkout_stepper')) {
 <ol class="hb-checkout-stepper-list">
 <?php foreach ($steps as $num => $step):
     $classes = [];
-    if ($num < $activeStep) {
+    if ($confirmation || $num < $activeStep) {
         $classes[] = 'is-complete';
     }
-    if ($num === $activeStep) {
+    if (!$confirmation && $num === $activeStep) {
         $classes[] = 'is-active';
     }
     $classAttr = $classes ? ' class="' . implode(' ', $classes) . '"' : '';
@@ -57,7 +58,7 @@ if (!function_exists('hb_portal_render_checkout_stepper')) {
 <span class="hb-checkout-step-marker" aria-hidden="true"></span>
 <div class="hb-checkout-step-text">
 <span class="hb-checkout-step-title"><?php echo htmlspecialchars($step['label'], ENT_QUOTES, 'UTF-8'); ?></span>
-<?php if ($num === 1 && $changeRoomUrl !== '' && $activeStep > 1): ?>
+<?php if (!$confirmation && $num === 1 && $changeRoomUrl !== '' && $activeStep > 1): ?>
 <a class="hb-checkout-change-room" href="<?php echo htmlspecialchars($changeRoomUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Change room">Change Room</a>
 <?php endif; ?>
 </div>
@@ -151,6 +152,147 @@ if (!function_exists('hb_portal_render_draft_special_requests_review')) {
 <?php endif; ?>
 <p class="hb-checkout-hint">The hotel staff cannot guarantee additional requests.</p>
 </section>
+        <?php
+    }
+}
+
+if (!function_exists('hb_portal_load_booking_confirmation')) {
+    /**
+     * Load a saved booking for the post-checkout confirmation screen.
+     */
+    function hb_portal_load_booking_confirmation($conn, $companyId, $bookingId) {
+        $companyId = (int) $companyId;
+        $bookingId = (int) $bookingId;
+        if ($bookingId < 1) {
+            return null;
+        }
+        $sql = 'SELECT b.id, b.check_in, b.check_out, b.payment_amount, b.notes, b.room_id,
+            c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
+            h.id AS hotel_id, h.name AS hotel_name, h.currency_code,
+            r.name AS room_name, r.price_per_night,
+            t.name AS type_name, t.bed_summary
+            FROM hotel_bookings b
+            INNER JOIN customers c ON c.id = b.customer_id AND c.company_id = b.company_id
+            INNER JOIN hotel_booking_rooms r ON r.id = b.room_id AND r.company_id = b.company_id
+            INNER JOIN hotel_booking_hotels h ON h.id = r.hotel_id AND h.company_id = r.company_id
+            LEFT JOIN booking_rooms_types t ON t.id = r.room_type_id AND t.company_id = r.company_id
+            WHERE b.id = ? AND b.company_id = ? AND b.deleted_at IS NULL LIMIT 1';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return null;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $bookingId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        return $row ?: null;
+    }
+}
+
+if (!function_exists('hb_portal_render_payment_confirmation')) {
+    /**
+     * Main confirmation panel after booking is saved (payment.php).
+     */
+    function hb_portal_render_payment_confirmation(array $booking) {
+        $reservationId = (int) ($booking['id'] ?? 0);
+        $guestName = trim((string) ($booking['customer_name'] ?? ''));
+        $email = trim((string) ($booking['customer_email'] ?? ''));
+        $phone = trim((string) ($booking['customer_phone'] ?? ''));
+        $checkInIso = (string) ($booking['check_in'] ?? '');
+        $checkOutIso = (string) ($booking['check_out'] ?? '');
+        $checkInDisplay = $checkInIso !== '' ? itm_format_date_display($checkInIso) : '';
+        $checkOutDisplay = $checkOutIso !== '' ? itm_format_date_display($checkOutIso) : '';
+        $currency = (string) ($booking['currency_code'] ?? 'EUR');
+        $amount = (float) ($booking['payment_amount'] ?? 0);
+        $room = [
+            'type_name' => $booking['type_name'] ?? '',
+            'bed_summary' => $booking['bed_summary'] ?? '',
+            'name' => $booking['room_name'] ?? '',
+        ];
+        $roomTitle = hb_portal_reservation_room_title($room);
+        ?>
+<div class="hb-payment-confirmation card">
+<div class="hb-payment-confirmation-head">
+<span class="hb-payment-confirmation-icon" aria-hidden="true">✓</span>
+<div>
+<h1 class="hb-payment-confirmation-title">Reservation confirmed</h1>
+<p class="hb-payment-confirmation-lead">Thank you<?php echo $guestName !== '' ? ', ' . htmlspecialchars($guestName, ENT_QUOTES, 'UTF-8') : ''; ?>. Your stay is on file with the hotel.</p>
+</div>
+</div>
+<dl class="hb-payment-confirmation-details">
+<div class="hb-payment-detail-row">
+<dt>Confirmation number</dt>
+<dd><strong><?php echo (int) $reservationId; ?></strong></dd>
+</div>
+<div class="hb-payment-detail-row">
+<dt>Room</dt>
+<dd><?php echo htmlspecialchars($roomTitle, ENT_QUOTES, 'UTF-8'); ?></dd>
+</div>
+<?php if ($checkInDisplay !== '' && $checkOutDisplay !== ''): ?>
+<div class="hb-payment-detail-row">
+<dt>Check-in</dt>
+<dd><?php echo htmlspecialchars($checkInDisplay, ENT_QUOTES, 'UTF-8'); ?></dd>
+</div>
+<div class="hb-payment-detail-row">
+<dt>Check-out</dt>
+<dd><?php echo htmlspecialchars($checkOutDisplay, ENT_QUOTES, 'UTF-8'); ?></dd>
+</div>
+<?php endif; ?>
+<?php if ($email !== ''): ?>
+<div class="hb-payment-detail-row">
+<dt>Email</dt>
+<dd><?php echo htmlspecialchars($email, ENT_QUOTES, 'UTF-8'); ?></dd>
+</div>
+<?php endif; ?>
+<?php if ($phone !== ''): ?>
+<div class="hb-payment-detail-row">
+<dt>Phone</dt>
+<dd><?php echo htmlspecialchars($phone, ENT_QUOTES, 'UTF-8'); ?></dd>
+</div>
+<?php endif; ?>
+<div class="hb-payment-detail-row hb-payment-detail-total">
+<dt>Total for stay</dt>
+<dd><strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($amount, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></dd>
+</div>
+</dl>
+<div class="hb-payment-confirmation-notice" role="status">
+<p><strong>Payment at the hotel.</strong> Online payment is not enabled in this build. No charge was made online — the total above is due according to hotel policy.</p>
+<p class="hb-payment-confirmation-manage-hint">To view or change your reservation later, use your <strong>last name</strong> and confirmation number <strong><?php echo (int) $reservationId; ?></strong> on Manage my booking.</p>
+</div>
+<div class="hb-checkout-actions hb-payment-confirmation-actions">
+<a class="hb-btn hb-btn-primary" href="<?php echo APPURL; ?>/users/bookings.php" title="Manage my booking">Manage my booking</a>
+<a class="hb-btn hb-checkout-skip" href="<?php echo APPURL; ?>/" title="Return home">Return home</a>
+</div>
+</div>
+        <?php
+    }
+}
+
+if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
+    /** Compact totals card on confirmation (uses stored payment_amount). */
+    function hb_portal_render_confirmation_summary_aside(array $booking) {
+        $room = [
+            'type_name' => $booking['type_name'] ?? '',
+            'bed_summary' => $booking['bed_summary'] ?? '',
+            'name' => $booking['room_name'] ?? '',
+        ];
+        $roomTitle = hb_portal_reservation_room_title($room);
+        $currency = (string) ($booking['currency_code'] ?? 'EUR');
+        $total = (float) ($booking['payment_amount'] ?? 0);
+        ?>
+<div class="hb-reservation-summary card hb-confirmation-summary-aside">
+<h2 class="hb-reservation-summary-title">Your reservation</h2>
+<div class="hb-reservation-summary-room">
+<p class="hb-reservation-room-name"><?php echo htmlspecialchars($roomTitle, ENT_QUOTES, 'UTF-8'); ?></p>
+</div>
+<dl class="hb-reservation-totals">
+<div class="hb-reservation-total-row hb-reservation-grand-total">
+<dt>Total for stay:</dt>
+<dd><?php echo htmlspecialchars(hb_portal_money_format_decimal($total, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
+</div>
+</dl>
+</div>
         <?php
     }
 }
