@@ -48,6 +48,11 @@ function hb_hotel_amenities_rows($conn, $companyId, $hotelId) {
     return $rows;
 }
 
+$settings = itm_hotel_booking_settings_row($conn, $company_id);
+if (!is_array($settings)) {
+    $settings = [];
+}
+
 $hotels = [];
 $stmt = mysqli_prepare($conn, 'SELECT h.*, (SELECT MIN(r.price_per_night) FROM hotel_booking_rooms r WHERE r.hotel_id = h.id AND r.company_id = h.company_id AND r.deleted_at IS NULL) AS min_price
     FROM hotel_booking_hotels h WHERE h.company_id = ? AND h.deleted_at IS NULL AND h.active = 1 ORDER BY h.name');
@@ -65,17 +70,17 @@ if ($stmt) {
         $row['amenities'] = hb_hotel_amenities_rows($conn, $company_id, $hid);
         $row['check_in_display'] = hb_format_hotel_time_display($row['check_in_time'] ?? '');
         $row['check_out_display'] = hb_format_hotel_time_display($row['check_out_time'] ?? '');
+        $row['reviews_url'] = itm_hotel_booking_resolve_reviews_url($row, $settings);
         $hotels[] = $row;
     }
     mysqli_stmt_close($stmt);
 }
-$settings = itm_hotel_booking_settings_row($conn, $company_id);
 $pageTitle = $settings['welcome_title'] ?? 'Find your stay';
 $hbSettingsPublic = [
     'price_footnote' => $settings['price_footnote'] ?? '',
     'accessible_features_default' => $settings['accessible_features_default'] ?? '',
     'airport_info' => $settings['airport_info'] ?? '',
-    'reviews_url' => $settings['reviews_url'] ?? '',
+    'reviews_url' => itm_hotel_booking_resolve_reviews_url([], $settings),
 ];
 ?>
 <!DOCTYPE html>

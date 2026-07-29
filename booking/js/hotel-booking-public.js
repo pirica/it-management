@@ -24,6 +24,22 @@
     return c;
   }
 
+  function resolveReviewsUrl(h) {
+    var fromHotel = String((h && h.reviews_url) || '').trim();
+    if (fromHotel) {
+      return fromHotel;
+    }
+    return String(settings.reviews_url || '').trim();
+  }
+
+  function reviewsLinkHtml(h) {
+    var reviewsUrl = resolveReviewsUrl(h);
+    if (!reviewsUrl) {
+      return '';
+    }
+    return '<a href="' + escapeHtml(reviewsUrl) + '" class="hb-reviews-link" target="_blank" rel="noopener noreferrer" title="Read reviews (opens in new tab)">Read reviews <span class="hb-external-icon" aria-hidden="true">↗</span></a>';
+  }
+
   function photoUrls(h) {
     var photos = h.photos || [];
     if (!photos.length) {
@@ -200,10 +216,6 @@
 
     var accessible = (settings.accessible_features_default || '').trim();
     var footnote = (settings.price_footnote || '*Prices are based on current availability and may change.').trim();
-    var reviewsUrl = String(settings.reviews_url || '').trim();
-    var reviewsHtml = reviewsUrl
-      ? '<a href="' + escapeHtml(reviewsUrl) + '" class="hb-reviews-link" target="_blank" rel="noopener noreferrer" title="Read reviews (opens in new tab)">Read reviews</a>'
-      : '';
     var descFull = String(h.description || '');
 
     body.innerHTML =
@@ -231,7 +243,7 @@
       '<section class="hb-block hb-rating-block">' +
       '<div class="hb-rating-bubbles" aria-hidden="true"><span></span><span></span><span></span><span></span><span class="partial"></span></div>' +
       '<p class="hb-rating-copy"><strong>Guest rating</strong> — based on recent stays</p>' +
-      reviewsHtml +
+      reviewsLinkHtml(h) +
       '</section>' +
       '<div class="hb-price-cta">' +
       '<p class="hb-from-price">From<sup>*</sup> <strong>' + escapeHtml(formatPrice(h)) + '</strong></p>' +
