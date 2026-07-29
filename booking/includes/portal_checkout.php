@@ -297,11 +297,26 @@ if (!function_exists('hb_portal_render_payment_reservation_notes')) {
     }
 }
 
+if (!function_exists('hb_portal_booking_display_is_cancelled')) {
+    function hb_portal_booking_display_is_cancelled(array $booking, array $options = []) {
+        if (array_key_exists('is_cancelled', $options)) {
+            return (bool) $options['is_cancelled'];
+        }
+        $conn = $options['conn'] ?? null;
+        $companyId = (int) ($options['company_id'] ?? 0);
+        if ($conn && $companyId > 0) {
+            return itm_hotel_booking_booking_is_cancelled($conn, $companyId, $booking);
+        }
+
+        return false;
+    }
+}
+
 if (!function_exists('hb_portal_render_payment_confirmation')) {
     /**
      * Main confirmation panel after booking is saved (payment.php).
      *
-     * @param array $options occupancy (array), nights (int)
+     * @param array $options occupancy (array), nights (int), conn, company_id
      */
     function hb_portal_render_payment_confirmation(array $booking, array $options = []) {
         $reservationId = (int) ($booking['id'] ?? 0);
@@ -314,6 +329,7 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
         $checkOutDisplay = $checkOutIso !== '' ? itm_format_date_display($checkOutIso) : '';
         $currency = (string) ($booking['currency_code'] ?? 'EUR');
         $amount = (float) ($booking['payment_amount'] ?? 0);
+        $isCancelled = hb_portal_booking_display_is_cancelled($booking, $options);
         $occupancy = isset($options['occupancy']) && is_array($options['occupancy'])
             ? itm_hotel_booking_portal_parse_occupancy($options['occupancy'])
             : hb_portal_booking_resolve_occupancy($booking);
@@ -329,13 +345,24 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
             'name' => $booking['room_name'] ?? '',
         ];
         $roomTitle = hb_portal_reservation_room_title($room);
+        $cardClass = 'hb-payment-confirmation card' . ($isCancelled ? ' hb-payment-confirmation--cancelled' : '');
+        $iconChar = $isCancelled ? '✕' : '✓';
+        $title = $isCancelled ? 'Reservation cancelled' : 'Reservation confirmed';
+        if ($isCancelled) {
+            $lead = 'Your reservation has been cancelled.';
+            if ($guestName !== '') {
+                $lead = 'Thank you, ' . $guestName . '. Your reservation has been cancelled.';
+            }
+        } else {
+            $lead = 'Thank you' . ($guestName !== '' ? ', ' . $guestName : '') . '. Your stay is on file with the hotel.';
+        }
         ?>
-<div class="hb-payment-confirmation card" id="hb-payment-confirmation-pdf-root" data-pdf-filename="<?php echo htmlspecialchars($pdfFilename, ENT_QUOTES, 'UTF-8'); ?>">
+<div class="<?php echo htmlspecialchars($cardClass, ENT_QUOTES, 'UTF-8'); ?>" id="hb-payment-confirmation-pdf-root" data-pdf-filename="<?php echo htmlspecialchars($pdfFilename, ENT_QUOTES, 'UTF-8'); ?>">
 <div class="hb-payment-confirmation-head">
-<span class="hb-payment-confirmation-icon" aria-hidden="true">✓</span>
+<span class="hb-payment-confirmation-icon" aria-hidden="true"><?php echo $iconChar; ?></span>
 <div>
-<h1 class="hb-payment-confirmation-title">Reservation confirmed</h1>
-<p class="hb-payment-confirmation-lead">Thank you<?php echo $guestName !== '' ? ', ' . htmlspecialchars($guestName, ENT_QUOTES, 'UTF-8') : ''; ?>. Your stay is on file with the hotel.</p>
+<h1 class="hb-payment-confirmation-title"><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></h1>
+<p class="hb-payment-confirmation-lead"><?php echo htmlspecialchars($lead, ENT_QUOTES, 'UTF-8'); ?></p>
 </div>
 </div>
 <dl class="hb-payment-confirmation-details">
@@ -343,6 +370,12 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <dt>Confirmation number</dt>
 <dd><strong><?php echo (int) $reservationId; ?></strong></dd>
 </div>
+<?php if ($isCancelled): ?>
+<div class="hb-payment-detail-row">
+<dt>Status</dt>
+<dd><span class="hb-payment-status-badge hb-payment-status-badge--cancelled">Cancelled</span></dd>
+</div>
+<?php endif; ?>
 <div class="hb-payment-detail-row">
 <dt>Room</dt>
 <dd><?php echo htmlspecialchars($roomTitle, ENT_QUOTES, 'UTF-8'); ?></dd>
@@ -383,6 +416,11 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 </div>
 </dl>
 <?php hb_portal_render_payment_reservation_notes((string) ($booking['notes'] ?? '')); ?>
+<?php if ($isCancelled): ?>
+<div class="hb-payment-confirmation-notice hb-payment-confirmation-notice--cancelled" role="status">
+<p>No further action is required. If you have questions about charges or refunds, please contact the hotel using <strong>Change booking</strong> in the sidebar.</p>
+</div>
+<?php else: ?>
 <div class="hb-payment-confirmation-notice" role="status">
 <p><strong>Payment at the hotel.</strong> Online payment is not enabled in this build. No charge was made online — the total above is due according to hotel policy.</p>
 <p class="hb-payment-confirmation-manage-hint">To view or change your reservation later, use your <strong>last name</strong> and confirmation number <strong><?php echo (int) $reservationId; ?></strong> on Manage my booking.</p>
@@ -392,6 +430,12 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <a class="hb-btn hb-btn-primary" href="<?php echo APPURL; ?>/users/bookings.php" title="Manage my booking">Manage my booking</a>
 <a class="hb-btn hb-checkout-skip" href="<?php echo APPURL; ?>/" title="Return home">Return home</a>
 </div>
+<?php endif; ?>
+<?php if ($isCancelled): ?>
+<div class="hb-checkout-actions hb-payment-confirmation-actions">
+<a class="hb-btn hb-btn-primary" href="<?php echo APPURL; ?>/" title="Return home">Return home</a>
+</div>
+<?php endif; ?>
 </div>
         <?php
     }
@@ -399,7 +443,8 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 
 if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
     /** Compact totals card on confirmation (uses stored payment_amount). */
-    function hb_portal_render_confirmation_summary_aside(array $booking) {
+    function hb_portal_render_confirmation_summary_aside(array $booking, array $options = []) {
+        $isCancelled = hb_portal_booking_display_is_cancelled($booking, $options);
         $room = [
             'type_name' => $booking['type_name'] ?? '',
             'bed_summary' => $booking['bed_summary'] ?? '',
@@ -408,9 +453,13 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
         $roomTitle = hb_portal_reservation_room_title($room);
         $currency = (string) ($booking['currency_code'] ?? 'EUR');
         $total = (float) ($booking['payment_amount'] ?? 0);
+        $asideClass = 'hb-reservation-summary card hb-confirmation-summary-aside' . ($isCancelled ? ' hb-confirmation-summary-aside--cancelled' : '');
         ?>
-<div class="hb-reservation-summary card hb-confirmation-summary-aside">
+<div class="<?php echo htmlspecialchars($asideClass, ENT_QUOTES, 'UTF-8'); ?>">
 <h2 class="hb-reservation-summary-title">Your reservation</h2>
+<?php if ($isCancelled): ?>
+<p class="hb-confirmation-summary-status"><span class="hb-payment-status-badge hb-payment-status-badge--cancelled">Cancelled</span></p>
+<?php endif; ?>
 <div class="hb-reservation-summary-room">
 <p class="hb-reservation-room-name"><?php echo htmlspecialchars($roomTitle, ENT_QUOTES, 'UTF-8'); ?></p>
 </div>

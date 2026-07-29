@@ -357,6 +357,39 @@ body.hb-modal-open { overflow: hidden; }
   line-height: 48px;
   text-align: center;
 }
+.hb-payment-confirmation--cancelled .hb-payment-confirmation-icon {
+  background: #b42318;
+}
+.hb-payment-confirmation--cancelled .hb-payment-confirmation-title {
+  color: #b42318;
+}
+.hb-payment-confirmation--cancelled .hb-payment-confirmation-lead {
+  color: #912018;
+}
+.hb-payment-status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: .82rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.hb-payment-status-badge--cancelled {
+  background: #fef3f2;
+  color: #b42318;
+  border: 1px solid #fecdca;
+}
+.hb-payment-confirmation-notice--cancelled {
+  background: #fef3f2;
+  border-color: #fecdca;
+  color: #912018;
+}
+.hb-confirmation-summary-aside--cancelled {
+  border-color: #fecdca;
+}
+.hb-confirmation-summary-status {
+  margin: 0 0 12px;
+}
 .hb-payment-confirmation-title {
   margin: 0 0 8px;
   font-size: 1.5rem;
