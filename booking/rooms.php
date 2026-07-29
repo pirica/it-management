@@ -246,11 +246,10 @@ $filterOptions = [
 <span>Book direct for the best available rate and flexible stay options.</span>
 </div>
 
-<ul class="hb-amenity-checklist">
-<?php foreach ($amenityNames as $an): ?>
-<li>✓ <?php echo htmlspecialchars($an, ENT_QUOTES, 'UTF-8'); ?></li>
-<?php endforeach; ?>
-</ul>
+<section class="hb-block hb-select-room-amenities">
+<h3>Amenities</h3>
+<?php hb_portal_render_amenities_scroll($amenityNames, 12); ?>
+</section>
 
 <div class="hb-room-toolbar">
 <button type="button" class="hb-toolbar-btn" id="hb-room-filters-btn" title="Room filters">Room Filters</button>

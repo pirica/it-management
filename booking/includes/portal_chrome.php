@@ -62,6 +62,54 @@ if (!function_exists('hb_portal_render_header')) {
     }
 }
 
+if (!function_exists('hb_portal_amenity_icon')) {
+    function hb_portal_amenity_icon($name) {
+        $n = strtolower((string) $name);
+        if (strpos($n, 'wifi') !== false) {
+            return '📶';
+        }
+        if (strpos($n, 'pool') !== false) {
+            return '🏊';
+        }
+        if (strpos($n, 'fitness') !== false || strpos($n, 'gym') !== false) {
+            return '🏋️';
+        }
+        if (strpos($n, 'spa') !== false) {
+            return '💆';
+        }
+        if (strpos($n, 'parking') !== false) {
+            return '🅿️';
+        }
+        if (strpos($n, 'restaurant') !== false || strpos($n, 'dining') !== false) {
+            return '🍽️';
+        }
+        return '✨';
+    }
+}
+
+if (!function_exists('hb_portal_render_amenities_scroll')) {
+    /**
+     * Emoji + label amenity row (matches hotel detail modal on index.php).
+     *
+     * @param string[] $names
+     */
+    function hb_portal_render_amenities_scroll(array $names, $limit = 10) {
+        $names = array_values(array_filter(array_map('strval', $names)));
+        if (empty($names)) {
+            $names = ['Free WiFi'];
+        }
+        $slice = array_slice($names, 0, max(1, (int) $limit));
+        echo '<div class="hb-amenities-scroll">';
+        foreach ($slice as $am) {
+            $icon = hb_portal_amenity_icon($am);
+            echo '<div class="hb-amenity-item"><span class="hb-amenity-icon" aria-hidden="true">' . $icon . '</span><span>';
+            echo htmlspecialchars($am, ENT_QUOTES, 'UTF-8');
+            echo '</span></div>';
+        }
+        echo '</div>';
+    }
+}
+
 if (!function_exists('hb_portal_render_stay_bar')) {
     function hb_portal_render_stay_bar(array $hotel, $checkInIso, $nights = 1, array $occupancy = null) {
         if (!is_array($occupancy)) {

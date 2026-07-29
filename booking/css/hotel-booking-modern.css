@@ -166,8 +166,8 @@ body.hb-modal-open { overflow: hidden; }
 .hb-step-label { margin: 0 0 8px; font-size: .85rem; color: var(--hb-muted); }
 .hb-page-title { margin: 0 0 20px; font-size: 2rem; font-weight: 800; border-bottom: 4px solid var(--hb-primary); display: inline-block; padding-bottom: 4px; }
 .hb-honors-banner { background: var(--hb-primary); color: #fff; padding: 14px 18px; border-radius: 4px; margin-bottom: 20px; display: flex; gap: 10px; align-items: flex-start; font-size: .9rem; }
-.hb-amenity-checklist { list-style: none; margin: 0 0 20px; padding: 0; display: flex; flex-wrap: wrap; gap: 12px 20px; font-size: .85rem; }
-.hb-amenity-checklist li { color: var(--hb-primary); font-weight: 600; }
+.hb-select-room-amenities { margin-bottom: 20px; }
+.hb-select-room-amenities h3 { margin: 0 0 12px; font-size: 1rem; }
 .hb-room-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .hb-toolbar-btn { background: #fff; border: 2px solid var(--hb-primary); color: var(--hb-primary); padding: 8px 16px; border-radius: 4px; font-weight: 600; font-size: .85rem; cursor: pointer; }
 .hb-rate-active { background: var(--hb-primary); color: #fff; padding: 2px 6px; border-radius: 3px; font-size: .75rem; margin-left: 4px; }
