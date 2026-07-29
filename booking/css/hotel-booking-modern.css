@@ -327,6 +327,7 @@ body.hb-modal-open { overflow: hidden; }
 .hb-cancellation-policy-page { max-width: 720px; margin: 24px auto; padding: 24px; }
 .hb-cancellation-policy-page h1 { font-size: 1.5rem; margin: 0 0 12px; color: var(--hb-primary); }
 .hb-cancellation-policy-page p { line-height: 1.55; margin: 0 0 12px; }
+.hb-cancellation-policy-back { margin-top: 8px; cursor: pointer; }
 
 .hb-payment-page .hb-select-room-main { max-width: 52rem; }
 .hb-payment-confirmation.card {
