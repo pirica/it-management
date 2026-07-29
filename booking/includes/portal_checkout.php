@@ -169,7 +169,8 @@ if (!function_exists('hb_portal_load_booking_confirmation')) {
         $sql = 'SELECT b.id, b.check_in, b.check_out, b.payment_amount, b.notes, b.room_id,
             b.future_status_id, b.present_status_id, b.history_status_id,
             c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
-            h.id AS hotel_id, h.name AS hotel_name, h.currency_code,
+            h.id AS hotel_id, h.name AS hotel_name, h.location AS hotel_location, h.phone AS hotel_phone,
+            h.website_url AS hotel_website_url, h.currency_code,
             r.name AS room_name, r.price_per_night,
             t.name AS type_name, t.bed_summary
             FROM hotel_bookings b
@@ -455,6 +456,93 @@ if (!function_exists('hb_portal_render_cancellation_policy_button')) {
 <div class="hb-cancellation-policy-card card">
 <a class="hb-btn hb-btn-block hb-cancellation-policy-btn hb-checkout-skip" href="<?php echo htmlspecialchars($href, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" title="Cancellation policy (opens in new tab)">Cancellation policy</a>
 </div>
+        <?php
+    }
+}
+
+if (!function_exists('hb_portal_hotel_contacts_from_booking')) {
+    /**
+     * @return array{name:string,location:string,phone:string,website_url:string}
+     */
+    function hb_portal_hotel_contacts_from_booking(array $booking) {
+        return [
+            'name' => trim((string) ($booking['hotel_name'] ?? '')),
+            'location' => trim((string) ($booking['hotel_location'] ?? '')),
+            'phone' => trim((string) ($booking['hotel_phone'] ?? '')),
+            'website_url' => trim((string) ($booking['hotel_website_url'] ?? '')),
+        ];
+    }
+}
+
+if (!function_exists('hb_portal_hotel_directions_url')) {
+    function hb_portal_hotel_directions_url($location) {
+        $location = trim((string) $location);
+        if ($location === '') {
+            return '';
+        }
+
+        return 'https://maps.google.com/?q=' . rawurlencode($location);
+    }
+}
+
+if (!function_exists('hb_portal_hotel_phone_tel_href')) {
+    function hb_portal_hotel_phone_tel_href($phone) {
+        $phone = trim((string) $phone);
+        if ($phone === '') {
+            return '';
+        }
+        $digits = preg_replace('/[^\d+]/', '', $phone);
+        if ($digits === '') {
+            return '';
+        }
+
+        return 'tel:' . $digits;
+    }
+}
+
+if (!function_exists('hb_portal_render_change_booking_button')) {
+    function hb_portal_render_change_booking_button(array $booking) {
+        $contacts = hb_portal_hotel_contacts_from_booking($booking);
+        if ($contacts['name'] === '') {
+            return;
+        }
+        $directionsUrl = hb_portal_hotel_directions_url($contacts['location']);
+        $websiteUrl = $contacts['website_url'];
+        $phoneHref = hb_portal_hotel_phone_tel_href($contacts['phone']);
+        $hasLinks = ($directionsUrl !== '' || $websiteUrl !== '' || $phoneHref !== '');
+        ?>
+<div class="hb-change-booking-card card">
+<button type="button" class="hb-btn hb-btn-block hb-change-booking-btn" id="hb-change-booking-open" title="Change booking">Change booking</button>
+</div>
+<div id="hb-change-booking-modal" class="hb-modal hb-portal-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-change-booking-title">
+<div class="hb-modal-card hb-portal-modal-card hb-change-booking-modal-card">
+<button type="button" class="hb-modal-close" data-hb-modal-close="hb-change-booking-modal" title="Close">✖</button>
+<h2 id="hb-change-booking-title" class="hb-change-booking-modal-title">Change booking</h2>
+<p class="hb-modal-note">To change your reservation, please contact the hotel.</p>
+<p class="hb-change-booking-hotel-name"><?php echo htmlspecialchars($contacts['name'], ENT_QUOTES, 'UTF-8'); ?></p>
+<?php if ($hasLinks): ?>
+<div class="hb-action-links hb-change-booking-links">
+<?php if ($directionsUrl !== ''): ?>
+<a href="<?php echo htmlspecialchars($directionsUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" title="Directions (opens in new tab)"><span aria-hidden="true">📍</span> Directions</a>
+<?php endif; ?>
+<?php if ($websiteUrl !== ''): ?>
+<a href="<?php echo htmlspecialchars($websiteUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" title="Visit website (opens in new tab)"><span aria-hidden="true">🌐</span> Visit website</a>
+<?php endif; ?>
+<?php if ($phoneHref !== ''): ?>
+<a href="<?php echo htmlspecialchars($phoneHref, ENT_QUOTES, 'UTF-8'); ?>" title="Call hotel"><span aria-hidden="true">📞</span> <?php echo htmlspecialchars($contacts['phone'], ENT_QUOTES, 'UTF-8'); ?></a>
+<?php endif; ?>
+</div>
+<?php endif; ?>
+</div>
+</div>
+        <?php
+    }
+}
+
+if (!function_exists('hb_portal_render_change_booking_assets')) {
+    function hb_portal_render_change_booking_assets() {
+        ?>
+<script src="<?php echo APPURL; ?>/js/hotel-booking-change-booking.js"></script>
         <?php
     }
 }

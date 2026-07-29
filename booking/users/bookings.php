@@ -118,10 +118,12 @@ if ($booking) {
 ]); ?>
 <?php hb_portal_render_confirmation_summary_aside($booking); ?>
 <?php hb_portal_render_cancellation_policy_button(hb_portal_booking_cancellation_policy_url($conn, $company_id, $booking)); ?>
+<?php hb_portal_render_change_booking_button($booking); ?>
 <?php hb_portal_render_cancel_booking_button($conn, $company_id, $booking, $manageLastName, $manageReservationId); ?>
 </aside>
 </div>
 <?php hb_portal_render_confirmation_pdf_assets(); ?>
+<?php hb_portal_render_change_booking_assets(); ?>
 <?php else: ?>
 <main class="hb-main auth-card hb-manage-booking-card">
 <h1>Manage my booking</h1>

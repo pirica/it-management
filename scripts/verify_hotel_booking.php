@@ -249,6 +249,35 @@ if (!itm_hotel_booking_portal_guest_can_cancel_booking($conn, 1, $pastBooking)) 
     hb_fail('portal guest cannot cancel past booking');
 }
 
+if (!itm_hotel_booking_portal_guest_can_cancel_booking($conn, 1, $pastBooking)) {
+    hb_pass('portal guest cannot cancel past booking');
+} else {
+    hb_fail('portal guest cannot cancel past booking');
+}
+
+require dirname(__DIR__) . '/booking/includes/portal_checkout.php';
+$contactsSample = hb_portal_hotel_contacts_from_booking([
+    'hotel_name' => 'TechCorp Retreat',
+    'hotel_location' => 'Lisbon, Portugal',
+    'hotel_phone' => '+351 210 000 001',
+    'hotel_website_url' => 'https://example.com/techcorp-retreat',
+]);
+if ($contactsSample['name'] === 'TechCorp Retreat'
+    && $contactsSample['phone'] === '+351 210 000 001'
+    && strpos(hb_portal_hotel_directions_url($contactsSample['location']), 'maps.google.com') !== false
+    && hb_portal_hotel_phone_tel_href($contactsSample['phone']) === 'tel:+351210000001') {
+    hb_pass('portal change booking hotel contacts helpers');
+} else {
+    hb_fail('portal change booking hotel contacts helpers');
+}
+
+$changeBookingJs = dirname(__DIR__) . '/booking/js/hotel-booking-change-booking.js';
+if (is_file($changeBookingJs) && strpos((string) file_get_contents($changeBookingJs), 'hb-change-booking-modal') !== false) {
+    hb_pass('change booking modal script');
+} else {
+    hb_fail('change booking modal script missing');
+}
+
 $confirmPdfJs = dirname(__DIR__) . '/booking/js/hotel-booking-confirmation-pdf.js';
 if (is_file($confirmPdfJs) && strpos((string) file_get_contents($confirmPdfJs), 'hbSaveBookingConfirmationPdf') !== false) {
     hb_pass('booking confirmation pdf download script');

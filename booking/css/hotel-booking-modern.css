@@ -313,6 +313,12 @@ body.hb-modal-open { overflow: hidden; }
 .hb-cancellation-policy-card { padding: 16px; margin: 0; }
 .hb-btn.hb-btn-block { display: block; width: 100%; text-align: center; box-sizing: border-box; }
 .hb-cancellation-policy-btn { text-decoration: none; }
+.hb-change-booking-card { padding: 16px; margin: 0; }
+.hb-change-booking-btn { margin: 0; cursor: pointer; font-weight: 600; }
+.hb-change-booking-modal-card { max-width: 440px; }
+.hb-change-booking-modal-title { font-size: 1.25rem; margin: 0 0 8px; color: var(--hb-primary); }
+.hb-change-booking-hotel-name { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; color: var(--hb-text); }
+.hb-change-booking-links { flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 0; }
 .hb-cancel-booking-card { padding: 16px; margin: 0; }
 .hb-cancel-booking-btn { background: #fff; color: #b42318; border: 2px solid #b42318; margin: 0; cursor: pointer; font-weight: 600; }
 .hb-cancel-booking-btn:hover { background: #fef3f2; }
