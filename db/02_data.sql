@@ -2418,6 +2418,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_hotels", "Hotels", 0, 1, "ðŸ¨");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("booking_rooms_types", "Room Types", 0, 1, "ðŸ›ï¸");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_rooms", "Hotel Rooms", 0, 1, "ðŸšª");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_amenities", "Booking Amenities", 0, 1, "✨");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_room_utilities", "Room Utilities", 0, 1, "âœ¨");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_housekeeping_statuses", "HK Statuses", 0, 1, "ðŸ§¹");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_future", "Booking Future Status", 0, 1, "ðŸ“…");
@@ -2455,6 +2456,17 @@ INSERT INTO `hotel_booking_housekeeping_statuses` (`company_id`, `name`, `color_
 (1, 'Pickup', '#ffc107', 1, '2026-01-01 00:00:01');
 
 INSERT IGNORE INTO `hotel_booking_housekeeping_statuses` (`company_id`, `name`, `color_hex`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`color_hex`, t.`active`, '2026-01-01 00:00:01' FROM `hotel_booking_housekeeping_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+
+INSERT INTO `hotel_booking_amenities` (`company_id`, `name`, `icon_slug`, `sort_order`, `active`, `created_at`) VALUES
+(1, 'Free WiFi', 'wifi', 10, 1, '2026-01-01 00:00:01'),
+(1, 'Outdoor pool', 'pool', 20, 1, '2026-01-01 00:00:01'),
+(1, 'Indoor pool', 'pool', 25, 1, '2026-01-01 00:00:01'),
+(1, 'Fitness center', 'fitness', 30, 1, '2026-01-01 00:00:01'),
+(1, 'Spa', 'spa', 40, 1, '2026-01-01 00:00:01'),
+(1, 'Parking', 'parking', 50, 1, '2026-01-01 00:00:01'),
+(1, 'Restaurant', 'restaurant', 60, 1, '2026-01-01 00:00:01');
+
+INSERT IGNORE INTO `hotel_booking_amenities` (`company_id`, `name`, `icon_slug`, `sort_order`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`icon_slug`, t.`sort_order`, t.`active`, '2026-01-01 00:00:01' FROM `hotel_booking_amenities` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 
 INSERT INTO `booking_rooms_types` (`company_id`, `name`, `code`, `description`, `bed_summary`, `room_size_sqm`, `max_adults`, `max_children`, `max_babies`, `filter_tags`, `details_bullets`, `active`, `created_at`) VALUES
 (1, 'Deluxe', 'DLX', 'Spacious deluxe accommodation with garden outlook and private balcony.', '1 King bed', 32.00, 2, 2, 1, 'king,garden_view,balcony', '55" smart TV|Rain shower|Nespresso machine|Balcony seating|Mini bar', 1, '2026-01-01 00:00:01'),

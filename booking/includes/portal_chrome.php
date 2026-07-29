@@ -62,48 +62,46 @@ if (!function_exists('hb_portal_render_header')) {
     }
 }
 
-if (!function_exists('hb_portal_amenity_icon')) {
-    function hb_portal_amenity_icon($name) {
-        $n = strtolower((string) $name);
-        if (strpos($n, 'wifi') !== false) {
-            return '📶';
+if (!function_exists('hb_portal_amenity_icon_markup')) {
+    function hb_portal_amenity_icon_markup($name, $iconSlug = '') {
+        if (!function_exists('itm_hotel_booking_amenity_resolve_slug')) {
+            require_once dirname(__DIR__, 2) . '/includes/itm_hotel_booking_amenity_icons.php';
         }
-        if (strpos($n, 'pool') !== false) {
-            return '🏊';
-        }
-        if (strpos($n, 'fitness') !== false || strpos($n, 'gym') !== false) {
-            return '🏋️';
-        }
-        if (strpos($n, 'spa') !== false) {
-            return '💆';
-        }
-        if (strpos($n, 'parking') !== false) {
-            return '🅿️';
-        }
-        if (strpos($n, 'restaurant') !== false || strpos($n, 'dining') !== false) {
-            return '🍽️';
-        }
-        return '✨';
+        $slug = itm_hotel_booking_amenity_resolve_slug($name, $iconSlug);
+        $url = function_exists('itm_hotel_booking_amenity_icon_booking_url')
+            ? itm_hotel_booking_amenity_icon_booking_url($slug)
+            : (APPURL . '/images/amenities/' . rawurlencode($slug) . '.svg');
+        return '<img class="hb-amenity-icon-img" src="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" alt="" width="28" height="28" loading="lazy" decoding="async" aria-hidden="true">';
     }
 }
 
 if (!function_exists('hb_portal_render_amenities_scroll')) {
     /**
-     * Emoji + label amenity row (matches hotel detail modal on index.php).
+     * Icon + label amenity row (SVGs under booking/images/amenities/).
      *
-     * @param string[] $names
+     * @param array<int,string|array{name:string,icon_slug?:string}> $items
      */
-    function hb_portal_render_amenities_scroll(array $names, $limit = 10) {
-        $names = array_values(array_filter(array_map('strval', $names)));
-        if (empty($names)) {
-            $names = ['Free WiFi'];
+    function hb_portal_render_amenities_scroll(array $items, $limit = 10) {
+        if (empty($items)) {
+            $items = [['name' => 'Free WiFi', 'icon_slug' => 'wifi']];
         }
-        $slice = array_slice($names, 0, max(1, (int) $limit));
+        $slice = array_slice($items, 0, max(1, (int) $limit));
         echo '<div class="hb-amenities-scroll">';
         foreach ($slice as $am) {
-            $icon = hb_portal_amenity_icon($am);
-            echo '<div class="hb-amenity-item"><span class="hb-amenity-icon" aria-hidden="true">' . $icon . '</span><span>';
-            echo htmlspecialchars($am, ENT_QUOTES, 'UTF-8');
+            if (is_array($am)) {
+                $label = (string) ($am['name'] ?? '');
+                $slug = (string) ($am['icon_slug'] ?? '');
+            } else {
+                $label = (string) $am;
+                $slug = '';
+            }
+            if ($label === '') {
+                continue;
+            }
+            echo '<div class="hb-amenity-item"><span class="hb-amenity-icon" aria-hidden="true">';
+            echo hb_portal_amenity_icon_markup($label, $slug);
+            echo '</span><span>';
+            echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
             echo '</span></div>';
         }
         echo '</div>';

@@ -17,7 +17,7 @@ function hb_pass($msg) {
 
 $tables = [
     'hotel_bookings_future', 'hotel_bookings_present', 'hotel_bookings_history',
-    'booking_rooms_types', 'hotel_booking_housekeeping_statuses', 'hotel_booking_hotels',
+    'booking_rooms_types', 'hotel_booking_housekeeping_statuses', 'hotel_booking_amenities', 'hotel_booking_hotels',
     'hotel_booking_rooms', 'hotel_bookings', 'hotel_booking_settings',
 ];
 foreach ($tables as $t) {

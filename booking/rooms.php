@@ -45,22 +45,44 @@ if (!empty($hotelPhotos[0]['stored_filename'])) {
     $hotelCoverUrl = itm_hotel_booking_photo_public_url($company_id, 'hotel', $hotelId, $hotelPhotos[0]['stored_filename']);
 }
 
-$amenityNames = [];
-$astmt = mysqli_prepare($conn, 'SELECT DISTINCT u.name FROM hotel_booking_room_utilities u
+$amenityRows = [];
+$astmt = mysqli_prepare($conn, 'SELECT DISTINCT COALESCE(a.name, u.name) AS name, COALESCE(NULLIF(a.icon_slug, \'\'), \'\') AS icon_slug
+    FROM hotel_booking_room_utilities u
     INNER JOIN hotel_booking_rooms r ON r.id = u.room_id AND r.company_id = u.company_id
-    WHERE u.company_id = ? AND r.hotel_id = ? AND u.deleted_at IS NULL AND r.deleted_at IS NULL ORDER BY u.name LIMIT 12');
+    LEFT JOIN hotel_booking_amenities a ON a.id = u.amenity_id AND a.company_id = u.company_id AND a.deleted_at IS NULL AND a.active = 1
+    WHERE u.company_id = ? AND r.hotel_id = ? AND u.deleted_at IS NULL AND r.deleted_at IS NULL AND u.active = 1
+    ORDER BY a.sort_order ASC, name ASC LIMIT 12');
 if ($astmt) {
     mysqli_stmt_bind_param($astmt, 'ii', $company_id, $hotelId);
     mysqli_stmt_execute($astmt);
     $ares = mysqli_stmt_get_result($astmt);
     while ($ares && ($ar = mysqli_fetch_assoc($ares))) {
-        $amenityNames[] = $ar['name'];
+        $amenityRows[] = ['name' => $ar['name'] ?? '', 'icon_slug' => $ar['icon_slug'] ?? ''];
     }
     mysqli_stmt_close($astmt);
 }
-if (empty($amenityNames)) {
-    $amenityNames = ['Free WiFi', 'Outdoor pool', 'Fitness center'];
+if (empty($amenityRows)) {
+    $cstmt = mysqli_prepare($conn, 'SELECT name, icon_slug FROM hotel_booking_amenities WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY sort_order ASC, name ASC LIMIT 12');
+    if ($cstmt) {
+        mysqli_stmt_bind_param($cstmt, 'i', $company_id);
+        mysqli_stmt_execute($cstmt);
+        $cres = mysqli_stmt_get_result($cstmt);
+        while ($cres && ($crow = mysqli_fetch_assoc($cres))) {
+            $amenityRows[] = ['name' => $crow['name'] ?? '', 'icon_slug' => $crow['icon_slug'] ?? ''];
+        }
+        mysqli_stmt_close($cstmt);
+    }
 }
+if (empty($amenityRows)) {
+    $amenityRows = [
+        ['name' => 'Free WiFi', 'icon_slug' => 'wifi'],
+        ['name' => 'Outdoor pool', 'icon_slug' => 'pool'],
+        ['name' => 'Fitness center', 'icon_slug' => 'fitness'],
+    ];
+}
+$amenityNames = array_map(function ($row) {
+    return $row['name'];
+}, $amenityRows);
 
 $typeDefaultImages = [
     'DLX' => '/images/room-5.jpg',
@@ -162,9 +184,9 @@ $cardList = array_values($cards);
 $typeDetailsHtml = [];
 foreach ($cardList as $card) {
     $bookUrl = APPURL . '/rooms/room-single.php?' . hb_select_room_book_query((int) $card['book_room_id'], $checkInIso, $nights, $occupancy);
-    $typeDetailsHtml[(string) $card['type_id']] = hb_portal_room_detail_modal_html(
+        $typeDetailsHtml[(string) $card['type_id']] = hb_portal_room_detail_modal_html(
         $card,
-        $amenityNames,
+        $amenityRows,
         $currency,
         $bookUrl,
         !empty($card['available'])
@@ -248,7 +270,7 @@ $filterOptions = [
 
 <section class="hb-block hb-select-room-amenities">
 <h3>Amenities</h3>
-<?php hb_portal_render_amenities_scroll($amenityNames, 12); ?>
+<?php hb_portal_render_amenities_scroll($amenityRows, 12); ?>
 </section>
 
 <div class="hb-room-toolbar">
