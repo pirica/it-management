@@ -22,7 +22,7 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, hotel filter), **F
 
 ## 5. Public portal
 
-`booking/` — MySQLi bootstrap, portal users → `customers`; inserts into `hotel_bookings`. Payment page: `booking/rooms/payment.php`.
+`booking/` — MySQLi bootstrap, portal users → `customers`; inserts into `hotel_bookings`. Payment page: `booking/rooms/payment.php`. See **`docs/BOOKING.md`** for full portal review and flows.
 
 ## 6. Regression
 
