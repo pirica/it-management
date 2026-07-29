@@ -22,7 +22,7 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 - `rooms/customize.php` — **Step 3 of 4**: main column upgrade card; right column stacks stepper then **Reservation summary** (tourist tax €2/guest/night from settings).
 - `rooms/room-single.php` — **Step 4 of 4** guest form: locked check-in/out from draft; email (`filter_var`) and phone (E.164 `+` country code) validated server-side.
 - `rooms/payment.php` — confirmation after step 4: **Number of nights** `(N night(s))`, **Guests** `👤 …` occupancy line, **Reservation notes**, jsPDF download (**Save booking confirmation** — same card as screen, not print preview). Occupancy stored in `hotel_bookings.notes` as `Occupancy: rooms=…` meta line.
-- `calendar.php` — JSON nightly rates for Select Dates modal
+- `calendar.php` — JSON nightly rates for Select Dates modal (check-in + optional check-out range; single check-in = 1 night).
 - `users/bookings.php` — manage reservation (last name + reservation ID)
 - `auth/login.php`, `register.php`, `logout.php`
 

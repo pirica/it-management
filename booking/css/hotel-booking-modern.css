@@ -135,12 +135,17 @@ body.hb-modal-open { overflow: hidden; }
 .hb-cal-cell { border: none; background: transparent; min-height: 56px; padding: 6px 4px; cursor: default; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; font-family: inherit; }
 .hb-cal-cell.hb-cal-available { cursor: pointer; }
 .hb-cal-cell.hb-cal-available:hover { background: #f0f4f8; }
-.hb-cal-cell.is-selected { background: var(--hb-primary) !important; color: #fff; border-radius: 2px; }
-.hb-cal-cell.is-selected .hb-cal-price { color: #e8f0ff; }
+.hb-cal-cell.is-range-start,
+.hb-cal-cell.is-range-end { background: var(--hb-primary) !important; color: #fff; border-radius: 2px; }
+.hb-cal-cell.is-range-start .hb-cal-price,
+.hb-cal-cell.is-range-end .hb-cal-price { color: #e8f0ff; }
+.hb-cal-cell.is-in-range { background: #dce8f7; color: var(--hb-text); }
+.hb-cal-cell.is-in-range .hb-cal-price { color: var(--hb-muted); }
 .hb-cal-past, .hb-cal-unavail { color: #c5c9d0; }
 .hb-cal-day { font-size: .95rem; font-weight: 600; }
 .hb-cal-price { font-size: .7rem; color: var(--hb-muted); margin-top: 2px; }
 .hb-dates-loading, .hb-dates-error { text-align: center; color: var(--hb-muted); padding: 24px; }
+.hb-dates-range-hint { font-size: .85rem; color: var(--hb-primary); font-weight: 600; margin: 8px 0 0; min-height: 1.2em; }
 .hb-dates-footer { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--hb-border); flex-wrap: wrap; }
 .hb-dates-sum-price { margin: 0; font-size: 1.75rem; font-weight: 800; }
 .hb-dates-sum-meta, .hb-dates-sum-range { margin: 2px 0 0; font-size: .85rem; color: var(--hb-muted); }
