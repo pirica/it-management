@@ -49,4 +49,25 @@ if (itm_hotel_booking_customer_last_name_matches('John Smith', 'smith') && !itm_
     hb_fail('guest last name match helper');
 }
 
+$quote = itm_hotel_booking_portal_quote_nightly(100, ['rooms' => 1, 'adults' => 2, 'children' => 1, 'babies' => 0], 0);
+if (abs($quote - 122.0) < 0.01) {
+    hb_pass('portal quote nightly child supplement');
+} else {
+    hb_fail('portal quote expected 122 got ' . $quote);
+}
+
+$label = itm_hotel_booking_portal_occupancy_label(['rooms' => 2, 'adults' => 2, 'children' => 1, 'babies' => 1]);
+if (strpos($label, '2 rooms') !== false && strpos($label, '1 baby') !== false) {
+    hb_pass('portal occupancy label');
+} else {
+    hb_fail('portal occupancy label unexpected: ' . $label);
+}
+
+$res = mysqli_query($conn, "SHOW TABLES LIKE 'hotel_booking_special_rates'");
+if ($res && mysqli_num_rows($res) > 0) {
+    hb_pass('table hotel_booking_special_rates');
+} else {
+    hb_fail('missing table hotel_booking_special_rates');
+}
+
 exit($fail > 0 ? 1 : 0);

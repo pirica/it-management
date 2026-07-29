@@ -14,7 +14,9 @@ if ($roomId > 0) {
         mysqli_stmt_close($stmt);
     }
 }
+$occupancy = itm_hotel_booking_portal_parse_occupancy($_GET);
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
+    $occupancy = itm_hotel_booking_portal_parse_occupancy($_POST);
     $checkIn = itm_parse_date_input($_POST['check_in'] ?? '') ?: '';
     $checkOut = itm_parse_date_input($_POST['check_out'] ?? '') ?: '';
     $fullName = trim((string) ($_POST['full_name'] ?? ''));
@@ -31,7 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
         if (!$customerId) {
             $error = 'Could not save guest details.';
         } else {
-            $amount = itm_hotel_booking_compute_payment_amount($room['price_per_night'], $checkIn, $checkOut);
+            $hotelIdForRate = (int) ($room['hotel_id'] ?? 0);
+            $discount = itm_hotel_booking_special_rate_discount($conn, $company_id, $hotelIdForRate, $occupancy['rate']);
+            $amount = itm_hotel_booking_compute_stay_payment($room['price_per_night'], $checkIn, $checkOut, $occupancy, $discount);
             $status = itm_hotel_booking_apply_segment_status_on_save($conn, $company_id, $checkIn, $checkOut);
             $fs = (int) ($status['future_status_id'] ?? 0);
             $ps = (int) ($status['present_status_id'] ?? 0);
@@ -68,6 +72,11 @@ if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkInGet)) {
 <h1><?php echo htmlspecialchars($room['name'], ENT_QUOTES, 'UTF-8'); ?></h1>
 <?php if ($error): ?><p class="hb-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
 <form method="post">
+<input type="hidden" name="rooms" value="<?php echo (int) $occupancy['rooms']; ?>">
+<input type="hidden" name="adults" value="<?php echo (int) $occupancy['adults']; ?>">
+<input type="hidden" name="children" value="<?php echo (int) $occupancy['children']; ?>">
+<input type="hidden" name="babies" value="<?php echo (int) $occupancy['babies']; ?>">
+<input type="hidden" name="rate" value="<?php echo htmlspecialchars((string) ($occupancy['rate'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
 <label>Full name</label><input type="text" name="full_name" required autocomplete="name">
 <label>Email</label><input type="email" name="email" required autocomplete="email">
 <label>Phone</label><input type="tel" name="phone" autocomplete="tel">

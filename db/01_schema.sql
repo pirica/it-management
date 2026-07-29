@@ -4544,6 +4544,7 @@ DROP TABLE IF EXISTS `hotel_booking_room_utilities`;
 DROP TABLE IF EXISTS `hotel_booking_rooms`;
 DROP TABLE IF EXISTS `hotel_booking_hotel_nearby`;
 DROP TABLE IF EXISTS `hotel_booking_hotel_photos`;
+DROP TABLE IF EXISTS `hotel_booking_special_rates`;
 DROP TABLE IF EXISTS `hotel_booking_hotels`;
 DROP TABLE IF EXISTS `booking_rooms_types`;
 DROP TABLE IF EXISTS `hotel_booking_housekeeping_statuses`;
@@ -4609,6 +4610,13 @@ CREATE TABLE `booking_rooms_types` (
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `bed_summary` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `room_size_sqm` decimal(8,2) DEFAULT NULL,
+  `max_adults` int NOT NULL DEFAULT '2',
+  `max_children` int NOT NULL DEFAULT '1',
+  `max_babies` int NOT NULL DEFAULT '1',
+  `filter_tags` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `details_bullets` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -4665,6 +4673,29 @@ CREATE TABLE `hotel_booking_hotels` (
   UNIQUE KEY `uq_hotel_booking_hotels_company_name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `hotel_booking_hotels_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `hotel_booking_special_rates` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `hotel_id` int NOT NULL,
+  `rate_slug` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `discount_percent` decimal(5,2) NOT NULL DEFAULT '0.00',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_hotel_booking_special_rates_slug` (`company_id`,`hotel_id`,`rate_slug`),
+  KEY `company_id` (`company_id`),
+  KEY `hotel_id` (`hotel_id`),
+  CONSTRAINT `hotel_booking_special_rates_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `hotel_booking_special_rates_ibfk_hotel` FOREIGN KEY (`hotel_id`) REFERENCES `hotel_booking_hotels` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `hotel_booking_hotel_photos` (
