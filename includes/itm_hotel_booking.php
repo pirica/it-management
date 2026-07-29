@@ -245,6 +245,114 @@ if (!function_exists('itm_hotel_booking_resolve_reviews_url')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_parse_occupancy')) {
+  function itm_hotel_booking_portal_parse_occupancy(array $source) {
+    $rooms = max(1, min(4, (int) ($source['rooms'] ?? 1)));
+    $adults = max(1, min(12, (int) ($source['adults'] ?? 1)));
+    $children = max(0, min(6, (int) ($source['children'] ?? 0)));
+    $babies = max(0, min(3, (int) ($source['babies'] ?? 0)));
+    $rateSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($source['rate'] ?? '')));
+    return [
+      'rooms' => $rooms,
+      'adults' => $adults,
+      'children' => $children,
+      'babies' => $babies,
+      'rate' => $rateSlug,
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_occupancy_label')) {
+  function itm_hotel_booking_portal_occupancy_label(array $occupancy) {
+    $rooms = (int) ($occupancy['rooms'] ?? 1);
+    $adults = (int) ($occupancy['adults'] ?? 1);
+    $children = (int) ($occupancy['children'] ?? 0);
+    $babies = (int) ($occupancy['babies'] ?? 0);
+    $roomWord = $rooms === 1 ? 'room' : 'rooms';
+    $parts = [];
+    $parts[] = $adults === 1 ? '1 adult' : $adults . ' adults';
+    if ($children > 0) {
+      $parts[] = $children === 1 ? '1 child' : $children . ' children';
+    }
+    if ($babies > 0) {
+      $parts[] = $babies === 1 ? '1 baby' : $babies . ' babies';
+    }
+    return $rooms . ' ' . $roomWord . ' for ' . implode(' + ', $parts);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_quote_nightly')) {
+  function itm_hotel_booking_portal_quote_nightly($basePerNight, array $occupancy, $discountPercent = 0.0) {
+    $basePerNight = (float) $basePerNight;
+    $rooms = max(1, (int) ($occupancy['rooms'] ?? 1));
+    $adults = max(1, (int) ($occupancy['adults'] ?? 1));
+    $children = max(0, (int) ($occupancy['children'] ?? 0));
+    $includedAdults = 2 * $rooms;
+    $extraAdults = max(0, $adults - $includedAdults);
+    $nightly = $basePerNight * $rooms;
+    $nightly += $extraAdults * ($basePerNight * 0.35);
+    $nightly += $children * 22.0;
+    $discountPercent = max(0.0, min(50.0, (float) $discountPercent));
+    if ($discountPercent > 0) {
+      $nightly *= (1 - ($discountPercent / 100));
+    }
+    return round($nightly, 2);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_special_rates_for_hotel')) {
+  function itm_hotel_booking_special_rates_for_hotel($conn, $companyId, $hotelId) {
+    $rows = [];
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $stmt = mysqli_prepare($conn, 'SELECT rate_slug, name, discount_percent, description FROM hotel_booking_special_rates WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY name ASC');
+    if ($stmt) {
+      mysqli_stmt_bind_param($stmt, 'ii', $companyId, $hotelId);
+      mysqli_stmt_execute($stmt);
+      $res = mysqli_stmt_get_result($stmt);
+      while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $rows[] = $row;
+      }
+      mysqli_stmt_close($stmt);
+    }
+    return $rows;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_special_rate_discount')) {
+  function itm_hotel_booking_special_rate_discount($conn, $companyId, $hotelId, $rateSlug) {
+    $rateSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) $rateSlug));
+    if ($rateSlug === '') {
+      return 0.0;
+    }
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $stmt = mysqli_prepare($conn, 'SELECT discount_percent FROM hotel_booking_special_rates WHERE company_id = ? AND hotel_id = ? AND rate_slug = ? AND deleted_at IS NULL AND active = 1 LIMIT 1');
+    if (!$stmt) {
+      return 0.0;
+    }
+    mysqli_stmt_bind_param($stmt, 'iis', $companyId, $hotelId, $rateSlug);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    return $row ? (float) $row['discount_percent'] : 0.0;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_room_type_fits_occupancy')) {
+  function itm_hotel_booking_room_type_fits_occupancy(array $typeRow, array $occupancy) {
+    $rooms = max(1, (int) ($occupancy['rooms'] ?? 1));
+    $adults = max(1, (int) ($occupancy['adults'] ?? 1));
+    $children = max(0, (int) ($occupancy['children'] ?? 0));
+    $babies = max(0, (int) ($occupancy['babies'] ?? 0));
+    $maxAdults = max(1, (int) ($typeRow['max_adults'] ?? 2)) * $rooms;
+    $maxChildren = max(0, (int) ($typeRow['max_children'] ?? 1)) * $rooms;
+    $maxBabies = max(0, (int) ($typeRow['max_babies'] ?? 1)) * $rooms;
+    return $adults <= $maxAdults && $children <= $maxChildren && $babies <= $maxBabies;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
   function itm_hotel_booking_hotel_calendar_month($conn, $companyId, $hotelId, $year, $month) {
     $companyId = (int) $companyId;
@@ -362,6 +470,13 @@ if (!function_exists('itm_hotel_booking_compute_payment_amount')) {
     }
     $nights = (int) $in->diff($out)->days;
     return round((float) $pricePerNight * $nights, 2);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_compute_stay_payment')) {
+  function itm_hotel_booking_compute_stay_payment($basePerNight, $checkIn, $checkOut, array $occupancy, $discountPercent = 0.0) {
+    $nightly = itm_hotel_booking_portal_quote_nightly($basePerNight, $occupancy, $discountPercent);
+    return itm_hotel_booking_compute_payment_amount($nightly, $checkIn, $checkOut);
   }
 }
 

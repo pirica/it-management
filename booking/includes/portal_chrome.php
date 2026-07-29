@@ -63,16 +63,20 @@ if (!function_exists('hb_portal_render_header')) {
 }
 
 if (!function_exists('hb_portal_render_stay_bar')) {
-    function hb_portal_render_stay_bar(array $hotel, $checkInIso, $nights = 1, $adults = 1) {
+    function hb_portal_render_stay_bar(array $hotel, $checkInIso, $nights = 1, array $occupancy = null) {
+        if (!is_array($occupancy)) {
+            $occupancy = itm_hotel_booking_portal_parse_occupancy(['rooms' => 1, 'adults' => 1]);
+        }
         $hotelId = (int) ($hotel['id'] ?? 0);
         $editUrl = APPURL . '/?hotel=' . $hotelId . '&dates=1';
         $rangeLabel = hb_portal_format_stay_range_label($checkInIso, $nights);
+        $occLabel = itm_hotel_booking_portal_occupancy_label($occupancy);
         ?>
 <div class="hb-stay-bar">
 <div class="hb-stay-bar-inner">
 <span class="hb-stay-item" title="Hotel">📍 <?php echo htmlspecialchars($hotel['name'] ?? '', ENT_QUOTES, 'UTF-8'); ?></span>
 <span class="hb-stay-item" title="Dates">📅 <?php echo htmlspecialchars($rangeLabel, ENT_QUOTES, 'UTF-8'); ?></span>
-<span class="hb-stay-item" title="Guests">👤 1 room for <?php echo (int) $adults; ?> adult</span>
+<button type="button" class="hb-stay-item hb-stay-occupancy-trigger" id="hb-stay-occupancy-trigger" title="Change rooms and guests">👤 <?php echo htmlspecialchars($occLabel, ENT_QUOTES, 'UTF-8'); ?></button>
 <a class="hb-stay-edit" href="<?php echo htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8'); ?>">Edit stay</a>
 </div>
 </div>
