@@ -276,6 +276,8 @@ body.hb-modal-open { overflow: hidden; }
 .hb-checkout-stepper-list > li.is-active .hb-checkout-step-title { color: var(--hb-primary); }
 .hb-checkout-change-room { font-size: .8rem; font-weight: 600; color: var(--hb-primary); }
 .hb-checkout-change-room:hover { text-decoration: underline; }
+.hb-checkout-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 8px; }
+.hb-checkout-skip { background: #fff; color: var(--hb-primary); border: 2px solid var(--hb-primary); }
 
 @media (max-width: 720px) {
   .hb-rate-option-row { grid-template-columns: 1fr; }

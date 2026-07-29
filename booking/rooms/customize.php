@@ -51,6 +51,13 @@ $guestUrl = APPURL . '/rooms/room-single.php?' . http_build_query(array_merge(
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
+    if (!empty($_POST['skip'])) {
+        $draft['room_upgrade_accepted'] = 0;
+        $draft['upgrade_room_id'] = 0;
+        $draft['upgrade_type_id'] = 0;
+        $draft['upgrade_price_per_night'] = 0;
+        itm_hotel_booking_portal_draft_save($draft);
+    }
     header('Location: ' . $guestUrl);
     exit;
 }
@@ -84,10 +91,13 @@ $planLabel = ($draft['rate_plan'] ?? '') === 'breakfast' ? 'Breakfast included' 
 <?php endif; ?>
 </div>
 
-<form method="post">
+<form method="post" class="hb-checkout-actions-form">
 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
-<button type="submit" class="hb-btn hb-btn-primary" title="Continue to guest details">Continue</button>
+<div class="hb-checkout-actions">
+<button type="submit" class="hb-btn hb-btn-primary" name="continue" value="1" title="Continue to guest details">Continue</button>
+<button type="submit" class="hb-btn hb-checkout-skip" name="skip" value="1" title="Skip upgrades and continue">Skip</button>
 <a class="hb-btn" href="<?php echo htmlspecialchars(APPURL . '/rooms/select-rate.php?' . http_build_query(array_merge(['id' => $roomId, 'check_in' => $checkInIso, 'nights' => $nights], itm_hotel_booking_portal_occupancy_query_params($occupancy))), ENT_QUOTES, 'UTF-8'); ?>" title="Back">Back</a>
+</div>
 </form>
 </main>
 
