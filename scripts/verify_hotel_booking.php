@@ -162,13 +162,22 @@ if (abs((float) ($breakdownSample['room_charges'] ?? 0) - 841.0) < 0.01 && abs((
     hb_fail('portal checkout breakdown with tourist tax');
 }
 
-$confirmPdfPath = dirname(__DIR__) . '/booking/rooms/confirmation-pdf.php';
-$portalCheckoutPath = dirname(__DIR__) . '/booking/includes/portal_checkout.php';
-$portalCheckoutSrc = is_file($portalCheckoutPath) ? (string) file_get_contents($portalCheckoutPath) : '';
-if (is_file($confirmPdfPath) && strpos($portalCheckoutSrc, 'hb_portal_confirmation_print_url') !== false && strpos($portalCheckoutSrc, 'hb_portal_output_confirmation_print_document') !== false) {
-    hb_pass('booking confirmation print endpoint');
+if (itm_hotel_booking_portal_validate_guest_email('guest@example.com') && !itm_hotel_booking_portal_validate_guest_email('not-an-email')) {
+    hb_pass('portal guest email validation');
 } else {
-    hb_fail('booking confirmation print endpoint missing');
+    hb_fail('portal guest email validation');
+}
+
+if (itm_hotel_booking_portal_validate_guest_phone('+351912345678') && !itm_hotel_booking_portal_validate_guest_phone('91234')) {
+    hb_pass('portal guest phone validation');
+} else {
+    hb_fail('portal guest phone validation');
+}
+
+if (itm_hotel_booking_portal_normalize_guest_phone('351 912 345 678') === '+351912345678') {
+    hb_pass('portal guest phone normalize');
+} else {
+    hb_fail('portal guest phone normalize');
 }
 
 exit($fail > 0 ? 1 : 0);

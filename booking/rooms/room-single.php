@@ -7,6 +7,9 @@ $company_id = hb_public_company_id($conn);
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 $roomId = (int) ($_GET['id'] ?? 0);
 $error = '';
+$formFullName = '';
+$formEmail = '';
+$formPhone = '';
 $room = $roomId > 0 ? hb_portal_checkout_load_room($conn, $company_id, $roomId) : null;
 $draft = itm_hotel_booking_portal_draft_get();
 if ($draft && (int) ($draft['room_id'] ?? 0) !== $roomId) {
@@ -21,19 +24,25 @@ if ($draft && is_array($draft['occupancy'] ?? null)) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
     itm_require_post_csrf();
     $occupancy = itm_hotel_booking_portal_parse_occupancy($_POST);
-    $checkIn = itm_parse_date_input($_POST['check_in'] ?? '') ?: '';
-    $checkOut = itm_parse_date_input($_POST['check_out'] ?? '') ?: '';
-    if ($checkIn === '' && $draft) {
+    if ($draft) {
         $checkIn = (string) ($draft['check_in'] ?? '');
-    }
-    if ($checkOut === '' && $draft) {
         $checkOut = (string) ($draft['check_out'] ?? '');
+    } else {
+        $checkIn = itm_parse_date_input($_POST['check_in'] ?? '') ?: '';
+        $checkOut = itm_parse_date_input($_POST['check_out'] ?? '') ?: '';
     }
     $fullName = trim((string) ($_POST['full_name'] ?? ''));
     $email = trim((string) ($_POST['email'] ?? ''));
-    $phone = trim((string) ($_POST['phone'] ?? ''));
+    $phone = itm_hotel_booking_portal_normalize_guest_phone($_POST['phone'] ?? '');
+    $formFullName = $fullName;
+    $formEmail = $email;
+    $formPhone = $phone;
     if ($fullName === '' || $email === '') {
         $error = 'Name and email are required.';
+    } elseif (!itm_hotel_booking_portal_validate_guest_email($email)) {
+        $error = 'Please enter a valid email address.';
+    } elseif (!itm_hotel_booking_portal_validate_guest_phone($phone)) {
+        $error = 'Please enter a valid phone number with country code (e.g. +351912345678).';
     } elseif ($checkIn === '' || $checkOut === '' || $checkOut <= $checkIn) {
         $error = 'Invalid dates.';
     } elseif (itm_hotel_booking_has_overlap($conn, $company_id, $roomId, $checkIn, $checkOut)) {
@@ -176,11 +185,18 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 ?>
 <input type="hidden" name="<?php echo htmlspecialchars($hbKey, ENT_QUOTES, 'UTF-8'); ?>" value="<?php echo htmlspecialchars((string) $hbVal, ENT_QUOTES, 'UTF-8'); ?>">
 <?php endforeach; ?>
-<div class="form-group"><label>Full name</label><input type="text" name="full_name" class="hb-input" required autocomplete="name"></div>
-<div class="form-group"><label>Email</label><input type="email" name="email" class="hb-input" required autocomplete="email"></div>
-<div class="form-group"><label>Phone</label><input type="tel" name="phone" class="hb-input" autocomplete="tel"></div>
+<div class="form-group"><label>Full name</label><input type="text" name="full_name" class="hb-input" required autocomplete="name" value="<?php echo htmlspecialchars($formFullName, ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="form-group"><label>Email</label><input type="email" name="email" class="hb-input" required autocomplete="email" inputmode="email" value="<?php echo htmlspecialchars($formEmail, ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="form-group"><label>Phone</label><input type="tel" name="phone" class="hb-input" required autocomplete="tel" inputmode="tel" placeholder="+351912345678" pattern="\+\d{8,15}" title="Include country code, e.g. +351912345678" value="<?php echo htmlspecialchars($formPhone, ENT_QUOTES, 'UTF-8'); ?>"><p class="hb-field-hint">Full number with country code (e.g. +351912345678).</p></div>
+<?php if ($draft): ?>
+<div class="form-group"><label>Check-in (dd/mm/yyyy)</label><input type="text" class="hb-input hb-input-locked" readonly disabled value="<?php echo htmlspecialchars($prefillInDisplay, ENT_QUOTES, 'UTF-8'); ?>" aria-disabled="true"></div>
+<div class="form-group"><label>Check-out (dd/mm/yyyy)</label><input type="text" class="hb-input hb-input-locked" readonly disabled value="<?php echo htmlspecialchars($prefillOutDisplay, ENT_QUOTES, 'UTF-8'); ?>" aria-disabled="true"></div>
+<input type="hidden" name="check_in" value="<?php echo htmlspecialchars($prefillInDisplay, ENT_QUOTES, 'UTF-8'); ?>">
+<input type="hidden" name="check_out" value="<?php echo htmlspecialchars($prefillOutDisplay, ENT_QUOTES, 'UTF-8'); ?>">
+<?php else: ?>
 <div class="form-group"><label>Check-in (dd/mm/yyyy)</label><input name="check_in" class="hb-input" required autocomplete="off" value="<?php echo htmlspecialchars($prefillInDisplay, ENT_QUOTES, 'UTF-8'); ?>"></div>
 <div class="form-group"><label>Check-out (dd/mm/yyyy)</label><input name="check_out" class="hb-input" required autocomplete="off" value="<?php echo htmlspecialchars($prefillOutDisplay, ENT_QUOTES, 'UTF-8'); ?>"></div>
+<?php endif; ?>
 <button type="submit" class="hb-btn hb-btn-primary" title="Book and continue to payment">Book and continue to payment</button>
 </form>
 </main>

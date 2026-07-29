@@ -817,6 +817,41 @@ if (!function_exists('itm_hotel_booking_portal_sanitize_comments')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_normalize_guest_phone')) {
+  function itm_hotel_booking_portal_normalize_guest_phone($phone) {
+    $phone = trim((string) $phone);
+    if ($phone === '') {
+      return '';
+    }
+    $phone = preg_replace('/[\s\-\.\(\)]+/', '', $phone);
+    if ($phone !== '' && $phone[0] !== '+' && preg_match('/^\d+$/', $phone)) {
+      $phone = '+' . $phone;
+    }
+    return $phone;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_validate_guest_email')) {
+  function itm_hotel_booking_portal_validate_guest_email($email) {
+    $email = trim((string) $email);
+    if ($email === '') {
+      return false;
+    }
+    return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_validate_guest_phone')) {
+  /** E.164-style: leading + then 8–15 digits (country code required). */
+  function itm_hotel_booking_portal_validate_guest_phone($phone) {
+    $normalized = itm_hotel_booking_portal_normalize_guest_phone($phone);
+    if ($normalized === '') {
+      return false;
+    }
+    return (bool) preg_match('/^\+\d{8,15}$/', $normalized);
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_build_booking_notes')) {
   function itm_hotel_booking_portal_build_booking_notes(array $draft) {
     $parts = [];
