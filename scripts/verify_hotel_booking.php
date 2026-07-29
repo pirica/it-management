@@ -162,4 +162,13 @@ if (abs((float) ($breakdownSample['room_charges'] ?? 0) - 841.0) < 0.01 && abs((
     hb_fail('portal checkout breakdown with tourist tax');
 }
 
+$confirmPdfPath = dirname(__DIR__) . '/booking/rooms/confirmation-pdf.php';
+$portalCheckoutPath = dirname(__DIR__) . '/booking/includes/portal_checkout.php';
+$portalCheckoutSrc = is_file($portalCheckoutPath) ? (string) file_get_contents($portalCheckoutPath) : '';
+if (is_file($confirmPdfPath) && strpos($portalCheckoutSrc, 'hb_portal_confirmation_print_url') !== false && strpos($portalCheckoutSrc, 'hb_portal_output_confirmation_print_document') !== false) {
+    hb_pass('booking confirmation print endpoint');
+} else {
+    hb_fail('booking confirmation print endpoint missing');
+}
+
 exit($fail > 0 ? 1 : 0);
