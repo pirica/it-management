@@ -105,7 +105,10 @@ $manageConfirmationOptions = [
 <body class="hb-public<?php echo $booking ? ' hb-checkout-page hb-payment-page' : ''; ?>">
 <?php hb_portal_render_header($settings); ?>
 <?php if ($booking): ?>
-<?php hb_portal_render_stay_bar($hotel, $checkInIso, $nights, $occupancy); ?>
+<?php hb_portal_render_stay_bar($hotel, $checkInIso, $nights, $occupancy, [
+    'action_label' => 'Logout',
+    'action_href' => APPURL . '/auth/logout.php',
+]); ?>
 <div class="hb-select-room-layout hb-checkout-layout">
 <main class="hb-select-room-main">
 <?php if ($success !== '' && !hb_portal_booking_display_is_cancelled($booking, $manageConfirmationOptions)): ?>

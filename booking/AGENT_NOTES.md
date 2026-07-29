@@ -24,9 +24,9 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 - `rooms/payment.php` — confirmation after step 4: **Number of nights** `(N night(s))`, **Guests** `👤 …` occupancy line, **Reservation notes**, jsPDF download (**Save booking confirmation** — same card as screen, not print preview). Occupancy stored in `hotel_bookings.notes` as `Occupancy: rooms=…` meta line.
 - `rooms/confirmation-pdf.php` — session-scoped auto-PDF page (`data-hb-auto-pdf`) for the last booking in the same browser session.
 - `calendar.php` — JSON nightly rates for Select Dates modal (check-in + optional check-out range; single check-in = 1 night).
-- `users/bookings.php` — manage reservation (last name + reservation ID); lookup form uses **Back** (`hb-checkout-skip`); found booking renders the same confirmation panel as `rooms/payment.php` (room type title without room number, nights, guests, reservation notes, PDF + action buttons). Cancelled stays show a **red** confirmation state (`Reservation cancelled`, status badge). Aside includes **Cancellation policy**, **Change booking** (modal with hotel name, directions, website, phone from `hotel_booking_hotels`), and **Cancel Booking** (future stays only; sets segment status to `CANCELLED`).
+- `users/bookings.php` — manage reservation (last name + reservation ID); lookup form uses **Back** (`hb-checkout-skip`); found booking renders the same confirmation panel as `rooms/payment.php` (room type title without room number, nights, guests, reservation notes, PDF + action buttons). Stay bar shows **Logout** (not **Edit stay**) linking to `auth/logout.php`. Cancelled stays show a **red** confirmation state (`Reservation cancelled`, status badge). Aside includes **Cancellation policy**, **Change booking** (modal with hotel name, directions, website, phone from `hotel_booking_hotels`), and **Cancel Booking** (future stays only; sets segment status to `CANCELLED`).
 - `cancellation_policy/` — default HTML policy pages (`1_cancellation_policy.html` … `4_cancellation_policy.html`); URLs configurable per hotel in **Portal Rate Plans** admin module. Each page ends with a **Back** button (`history.go(-1)`).
-- `auth/login.php`, `register.php`, `logout.php`
+- `auth/login.php`, `register.php`, `logout.php` (`logout.php` clears portal user session and returns to `index.php`)
 
 ## 5. Tenant
 
