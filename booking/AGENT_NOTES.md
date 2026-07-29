@@ -20,7 +20,7 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 - `rooms/select-rate.php` — **Step 2 of 4** Select a Rate (breakfast vs room-only, special requests, comments).
 - `rooms/customize.php` — **Step 3 of 4**: main column upgrade card; right column stacks stepper then **Reservation summary** (tourist tax €2/guest/night from settings).
 - `rooms/room-single.php` — **Step 4 of 4** guest details; read-only **Special requests** block from session draft (pet, service animal, additional comments); uses draft for fees and `hotel_bookings.notes`.
-- `rooms/payment.php` — payment summary (wording **payment**, not pay)
+- `rooms/payment.php` — confirmation after step 4: portal header/stay bar, success card (confirmation #, guest, dates, total), stepper complete + aside summary; online payment not enabled (pay at hotel copy).
 - `calendar.php` — JSON nightly rates for Select Dates modal
 - `users/bookings.php` — manage reservation (last name + reservation ID)
 - `auth/login.php`, `register.php`, `logout.php`
