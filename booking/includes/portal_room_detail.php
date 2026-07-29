@@ -3,6 +3,10 @@
  * Rich room-type detail markup for the Select a Room modal (Hilton-style two-column layout).
  */
 
+if (!function_exists('hb_portal_render_amenities_scroll')) {
+    require_once __DIR__ . '/portal_chrome.php';
+}
+
 if (!function_exists('hb_portal_room_detail_categorize_bullets')) {
     function hb_portal_room_detail_categorize_bullets(array $bullets) {
         $layout = [];
@@ -62,12 +66,9 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
         }
 
         $amenityHtml = '';
-        foreach (array_slice($hotelAmenities, 0, 10) as $am) {
-            $amenityHtml .= '<span class="hb-rd-amenity">' . htmlspecialchars($am, ENT_QUOTES, 'UTF-8') . '</span>';
-        }
-        if ($amenityHtml === '') {
-            $amenityHtml = '<span class="hb-rd-amenity">Free WiFi</span>';
-        }
+        ob_start();
+        hb_portal_render_amenities_scroll($hotelAmenities, 10);
+        $amenityHtml = (string) ob_get_clean();
 
         $highlight = function ($titleText, $items) {
             if (empty($items)) {
@@ -134,7 +135,7 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
 <div class="hb-room-detail-right">
 <section class="hb-rd-section">
 <h3>Hotel amenities</h3>
-<div class="hb-rd-amenities-scroll"><?php echo $amenityHtml; ?></div>
+<?php echo $amenityHtml; ?>
 </section>
 <section class="hb-rd-section">
 <h3>Room highlights</h3>
