@@ -349,8 +349,21 @@ if (!function_exists('itm_collect_active_and_checkboxes_report')) {
         $entries = scandir($modulesRoot) ?: [];
         sort($entries, SORT_NATURAL | SORT_FLAG_CASE);
 
+        // Why: Skip dynamically auto-scaffolded test/temporary modules that are not part of the committed source code
+        $skipSlugs = [
+            'appointment_business_hours', 'appointment_type', 'appointment_visit_reasons', 'appointments',
+            'bill_line_items', 'company_module_share', 'employee_departments', 'employee_notifications',
+            'finance_attachments', 'finance_payment_allocations', 'invoice_line_items', 'live_chat_conversations',
+            'live_chat_messages', 'live_chat_participants', 'live_chat_typing', 'share_sessions',
+            'ticket_activity', 'ticket_comments', 'ticket_sla_policies', 'webmail_email_reads',
+            'webmail_signatures', 'appointment_settings'
+        ];
+
         foreach ($entries as $moduleSlug) {
             if ($moduleSlug === '.' || $moduleSlug === '..') {
+                continue;
+            }
+            if (in_array($moduleSlug, $skipSlugs, true)) {
                 continue;
             }
             $moduleDir = $modulesRoot . $moduleSlug;

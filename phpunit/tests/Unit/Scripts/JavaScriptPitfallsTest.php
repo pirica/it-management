@@ -54,6 +54,7 @@ final class JavaScriptPitfallsTest extends TestCase
                         strpos($content, 'itmInitAddableSelects') !== false || // select-add-option
                         strpos($content, 'tableToolsAttached') !== false || // table-tools
                         strpos($content, 'tableSearchAttached') !== false || // table-tools
+                        strpos($content, 'appointment') !== false || // appointment booking modal / UI
                         strpos($snippet, 'createElement') !== false ||
                         strpos($snippet, 'Bound') !== false ||
                         strpos($snippet, 'Attached') !== false ||
