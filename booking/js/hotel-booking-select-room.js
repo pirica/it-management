@@ -238,9 +238,33 @@
       var map = cfg.typeDetails || {};
       if (detail && typeId && map[typeId]) {
         detail.innerHTML = map[typeId];
+        var card = document.querySelector('.hb-room-card[data-type-id="' + typeId + '"]');
+        if (card) {
+          var priceEl = card.querySelector('.hb-room-price-value');
+          var bookBtn = detail.querySelector('.hb-room-detail-book');
+          var selectLink = card.querySelector('.hb-room-select');
+          if (bookBtn && priceEl && bookBtn.tagName === 'A') {
+            bookBtn.textContent = 'Book From ' + priceEl.textContent.trim();
+          }
+          if (bookBtn && selectLink && bookBtn.tagName === 'A') {
+            bookBtn.href = selectLink.href;
+          }
+        }
         openModal('hb-room-detail-modal');
       }
     });
+  });
+
+  document.getElementById('hb-room-detail-body') && document.getElementById('hb-room-detail-body').addEventListener('click', function (e) {
+    var readMore = e.target.closest('[data-hb-read-more]');
+    if (!readMore) {
+      return;
+    }
+    var desc = readMore.parentElement.querySelector('.hb-rd-desc');
+    if (desc) {
+      desc.classList.remove('hb-rd-desc-short');
+      readMore.style.display = 'none';
+    }
   });
 
   updatePrices();
