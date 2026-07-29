@@ -271,6 +271,17 @@ if ($contactsSample['name'] === 'TechCorp Retreat'
     hb_fail('portal change booking hotel contacts helpers');
 }
 
+$cancelledDisplay = hb_portal_booking_display_is_cancelled([
+    'check_in' => date('Y-m-d', strtotime('+14 days')),
+    'check_out' => date('Y-m-d', strtotime('+16 days')),
+    'future_status_id' => 99,
+], ['is_cancelled' => true]);
+if ($cancelledDisplay && !hb_portal_booking_display_is_cancelled(['check_in' => '2026-01-01', 'check_out' => '2026-01-03'], ['is_cancelled' => false])) {
+    hb_pass('portal booking display is cancelled helper');
+} else {
+    hb_fail('portal booking display is cancelled helper');
+}
+
 $changeBookingJs = dirname(__DIR__) . '/booking/js/hotel-booking-change-booking.js';
 if (is_file($changeBookingJs) && strpos((string) file_get_contents($changeBookingJs), 'hb-change-booking-modal') !== false) {
     hb_pass('change booking modal script');

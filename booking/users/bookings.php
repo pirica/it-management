@@ -87,6 +87,12 @@ if ($booking) {
         'nights' => $nights,
     ]);
 }
+$manageConfirmationOptions = [
+    'occupancy' => $occupancy,
+    'nights' => $nights,
+    'conn' => $conn,
+    'company_id' => $company_id,
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -102,13 +108,13 @@ if ($booking) {
 <?php hb_portal_render_stay_bar($hotel, $checkInIso, $nights, $occupancy); ?>
 <div class="hb-select-room-layout hb-checkout-layout">
 <main class="hb-select-room-main">
-<?php if ($success !== ''): ?>
+<?php if ($success !== '' && !hb_portal_booking_display_is_cancelled($booking, $manageConfirmationOptions)): ?>
 <p class="hb-success-banner" role="status"><?php echo htmlspecialchars($success, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php endif; ?>
 <?php if ($error !== ''): ?>
 <p class="hb-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php endif; ?>
-<?php hb_portal_render_payment_confirmation($booking, ['occupancy' => $occupancy, 'nights' => $nights]); ?>
+<?php hb_portal_render_payment_confirmation($booking, $manageConfirmationOptions); ?>
 </main>
 <aside class="hb-select-room-aside hb-checkout-aside-stack">
 <?php hb_portal_render_checkout_stepper(4, [
@@ -116,7 +122,7 @@ if ($booking) {
     'change_room_url' => $changeRoomUrl,
     'confirmation' => true,
 ]); ?>
-<?php hb_portal_render_confirmation_summary_aside($booking); ?>
+<?php hb_portal_render_confirmation_summary_aside($booking, $manageConfirmationOptions); ?>
 <?php hb_portal_render_cancellation_policy_button(hb_portal_booking_cancellation_policy_url($conn, $company_id, $booking)); ?>
 <?php hb_portal_render_change_booking_button($booking); ?>
 <?php hb_portal_render_cancel_booking_button($conn, $company_id, $booking, $manageLastName, $manageReservationId); ?>
