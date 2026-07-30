@@ -64,6 +64,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
                 'service_animal' => 0,
                 'additional_comments' => '',
             ];
+            if ($draft && (int) ($draft['portal_rate_plan_id'] ?? 0) < 1) {
+                $defaultPlans = itm_hotel_booking_portal_rate_plans_active_for_hotel($conn, $company_id, $hotelIdForRate);
+                foreach ($defaultPlans as $defPlan) {
+                    $defSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($defPlan['rate_plan_slug'] ?? '')));
+                    if ($defSlug === (string) ($draftForPay['rate_plan'] ?? 'room_only')) {
+                        $draftForPay['portal_rate_plan_id'] = (int) ($defPlan['id'] ?? 0);
+                        $draftForPay['portal_rate_plan_name'] = (string) ($defPlan['name'] ?? '');
+                        break;
+                    }
+                }
+            }
+            $portalRatePlanId = (int) ($draftForPay['portal_rate_plan_id'] ?? 0);
             $amount = itm_hotel_booking_portal_compute_checkout_total(
                 $room['price_per_night'],
                 $checkIn,
@@ -79,9 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
             $ps = (int) ($status['present_status_id'] ?? 0);
             $hs = (int) ($status['history_status_id'] ?? 0);
             $bookingColor = itm_hotel_booking_resolve_booking_color('', mt_rand(1, 99999));
-            $ins = mysqli_prepare($conn, 'INSERT INTO hotel_bookings (company_id, customer_id, room_id, check_in, check_out, payment_amount, notes, booking_color, future_status_id, present_status_id, history_status_id, active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), 1, NOW())');
+            $ins = mysqli_prepare($conn, 'INSERT INTO hotel_bookings (company_id, customer_id, room_id, check_in, check_out, payment_amount, portal_rate_plan_id, notes, booking_color, future_status_id, present_status_id, history_status_id, active, created_at) VALUES (?, ?, ?, ?, ?, ?, NULLIF(?,0), ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), 1, NOW())');
             if ($ins) {
-                mysqli_stmt_bind_param($ins, 'iiissdssiii', $company_id, $customerId, $roomId, $checkIn, $checkOut, $amount, $notes, $bookingColor, $fs, $ps, $hs);
+                mysqli_stmt_bind_param($ins, 'iiissdissiii', $company_id, $customerId, $roomId, $checkIn, $checkOut, $amount, $portalRatePlanId, $notes, $bookingColor, $fs, $ps, $hs);
                 if (mysqli_stmt_execute($ins)) {
                     $bid = (int) mysqli_insert_id($conn);
                     $_SESSION['hotel_booking_last_id'] = $bid;
@@ -136,7 +148,10 @@ $breakdown = itm_hotel_booking_portal_checkout_breakdown(
 );
 $estimatedTotal = $breakdown['total'];
 $currency = $room['currency_code'] ?? 'EUR';
-$planLabel = ($draftForDisplay['rate_plan'] ?? '') === 'breakfast' ? 'Breakfast included' : 'Best available rate';
+$planLabel = trim((string) ($draftForDisplay['portal_rate_plan_name'] ?? ''));
+if ($planLabel === '') {
+    $planLabel = ($draftForDisplay['rate_plan'] ?? '') === 'breakfast' ? 'Breakfast included' : 'Best available rate';
+}
 $changeRateUrl = APPURL . '/rooms/select-rate.php?' . http_build_query(array_merge(
     ['id' => $roomId, 'check_in' => $checkInIso, 'nights' => $nights],
     itm_hotel_booking_portal_occupancy_query_params($occupancy)

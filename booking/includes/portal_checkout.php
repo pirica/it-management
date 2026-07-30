@@ -166,18 +166,20 @@ if (!function_exists('hb_portal_load_booking_confirmation')) {
         if ($bookingId < 1) {
             return null;
         }
-        $sql = 'SELECT b.id, b.check_in, b.check_out, b.payment_amount, b.notes, b.room_id,
+        $sql = 'SELECT b.id, b.check_in, b.check_out, b.payment_amount, b.notes, b.room_id, b.portal_rate_plan_id,
             b.future_status_id, b.present_status_id, b.history_status_id,
             c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
             h.id AS hotel_id, h.name AS hotel_name, h.location AS hotel_location, h.phone AS hotel_phone,
             h.website_url AS hotel_website_url, h.currency_code,
             r.name AS room_name, r.price_per_night,
-            t.name AS type_name, t.bed_summary
+            t.name AS type_name, t.bed_summary,
+            rp.name AS portal_rate_plan_name, rp.rate_plan_slug AS portal_rate_plan_slug
             FROM hotel_bookings b
             INNER JOIN customers c ON c.id = b.customer_id AND c.company_id = b.company_id
             INNER JOIN hotel_booking_rooms r ON r.id = b.room_id AND r.company_id = b.company_id
             INNER JOIN hotel_booking_hotels h ON h.id = r.hotel_id AND h.company_id = r.company_id
             LEFT JOIN booking_rooms_types t ON t.id = r.room_type_id AND t.company_id = r.company_id
+            LEFT JOIN hotel_booking_portal_rate_plans rp ON rp.id = b.portal_rate_plan_id AND rp.company_id = b.company_id AND rp.deleted_at IS NULL
             WHERE b.id = ? AND b.company_id = ? AND b.deleted_at IS NULL LIMIT 1';
         $stmt = mysqli_prepare($conn, $sql);
         if (!$stmt) {
@@ -489,9 +491,7 @@ if (!function_exists('hb_portal_cancellation_policy_href')) {
 
 if (!function_exists('hb_portal_booking_cancellation_policy_url')) {
     function hb_portal_booking_cancellation_policy_url($conn, $companyId, array $booking) {
-        $hotelId = (int) ($booking['hotel_id'] ?? 0);
-        $ratePlan = itm_hotel_booking_portal_parse_rate_plan_from_notes((string) ($booking['notes'] ?? ''));
-        return itm_hotel_booking_portal_resolve_cancellation_policy_url($conn, (int) $companyId, $hotelId, $ratePlan);
+        return itm_hotel_booking_portal_resolve_cancellation_policy_url_for_booking($conn, (int) $companyId, $booking);
     }
 }
 

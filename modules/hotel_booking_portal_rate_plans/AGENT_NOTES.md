@@ -15,8 +15,8 @@ Admin UI for **Step 2** portal rate plan cancellation policy URLs (`hotel_bookin
 - **Custom slots (5+):** **create.php** INSERTs via `itm_hotel_booking_portal_rate_plan_create()`; optional template dropdown prefills slot/name/slug but does not block custom values. Default `plan_slot` = `itm_hotel_booking_portal_rate_plan_next_free_slot()`.
 - Uniqueness: `itm_hotel_booking_portal_rate_plan_slot_in_use()` on `(company_id, hotel_id, plan_slot)` for live rows.
 - List: `itm_hotel_booking_portal_rate_plans_admin_rows()` returns **all** DB rows for the hotel (ordered by `plan_slot`), not only the four definitions.
-- Guest lookup: `itm_hotel_booking_portal_parse_rate_plan_from_notes()` reads `Rate plan:` / `Rate:` on `hotel_bookings.notes`; `itm_hotel_booking_portal_resolve_cancellation_policy_url()` returns the hotel row URL or default path.
-- Public Step 2 UI still posts `rate_plan` `room_only` or `breakfast` today; custom slugs remain usable for cancellation policies and `Rate plan:` notes parsing.
+- Guest lookup: `itm_hotel_booking_portal_parse_rate_plan_from_notes()` reads `Rate plan:` on `hotel_bookings.notes`; bookings also store `hotel_bookings.portal_rate_plan_id` (FK to plan `name`). Cancellation URL: `itm_hotel_booking_portal_resolve_cancellation_policy_url_for_booking()`.
+- Public Step 2 (`booking/rooms/select-rate.php`) lists active `hotel_booking_portal_rate_plans` per hotel; selected plan id is stored on the booking at checkout.
 
 ## 4. UI
 

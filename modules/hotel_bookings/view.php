@@ -40,6 +40,16 @@ itm_hospitality_admin_layout_begin($crud_title, ['css/hotel-bookings.css']);
 <p><strong>Future status:</strong> <?php echo sanitize(hb_booking_status_label($conn, $company_id, 'hotel_bookings_future', $row['future_status_id'] ?? 0)); ?></p>
 <p><strong>Present status:</strong> <?php echo sanitize(hb_booking_status_label($conn, $company_id, 'hotel_bookings_present', $row['present_status_id'] ?? 0)); ?></p>
 <p><strong>History status:</strong> <?php echo sanitize(hb_booking_status_label($conn, $company_id, 'hotel_bookings_history', $row['history_status_id'] ?? 0)); ?></p>
+<?php
+$portalPlanId = (int) ($row['portal_rate_plan_id'] ?? 0);
+$portalPlanLabel = $portalPlanId > 0 ? itm_hotel_booking_portal_rate_plan_label($conn, $company_id, $portalPlanId) : '';
+?>
+<p><strong>Portal rate plan:</strong> <?php echo $portalPlanLabel !== '' ? sanitize($portalPlanLabel) : '—'; ?>
+<?php if ($portalPlanId > 0): ?>
+<a class="btn btn-sm" href="../hotel_booking_portal_rate_plans/view.php?id=<?php echo $portalPlanId; ?>" title="View rate plan">🔎</a>
+<a class="btn btn-sm" href="../hotel_booking_portal_rate_plans/edit.php?id=<?php echo $portalPlanId; ?>" title="Edit rate plan">✏️</a>
+<?php endif; ?>
+</p>
 <p><strong>Segment:</strong> <?php echo sanitize($segment); ?></p>
 <p><strong>Notes:</strong> <?php echo sanitize($row['notes'] ?? ''); ?></p>
 <?php

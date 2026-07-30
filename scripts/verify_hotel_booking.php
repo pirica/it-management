@@ -302,6 +302,19 @@ if (function_exists('itm_hotel_booking_planning_move_booking') && function_exist
     hb_fail('planning move helpers missing');
 }
 
+$resCol = mysqli_query($conn, "SHOW COLUMNS FROM hotel_bookings LIKE 'portal_rate_plan_id'");
+if ($resCol && mysqli_num_rows($resCol) > 0) {
+    hb_pass('hotel_bookings portal_rate_plan_id column');
+} else {
+    hb_fail('missing hotel_bookings.portal_rate_plan_id');
+}
+
+if (function_exists('itm_hotel_booking_portal_rate_plans_active_for_hotel') && function_exists('itm_hotel_booking_portal_resolve_cancellation_policy_url_for_booking')) {
+    hb_pass('portal rate plan booking FK helpers');
+} else {
+    hb_fail('portal rate plan booking FK helpers missing');
+}
+
 if (function_exists('itm_hotel_booking_portal_rate_plan_hard_delete')) {
     hb_pass('portal rate plan hard delete helper');
 } else {
