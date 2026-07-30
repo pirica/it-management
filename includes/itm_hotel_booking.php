@@ -536,27 +536,139 @@ if (!function_exists('itm_hotel_booking_ensure_portal_rate_plans_for_hotel')) {
 
 if (!function_exists('itm_hotel_booking_portal_rate_plans_admin_rows')) {
   function itm_hotel_booking_portal_rate_plans_admin_rows($conn, $companyId, $hotelId) {
-    itm_hotel_booking_ensure_portal_rate_plans_for_hotel($conn, $companyId, $hotelId);
-    $map = [];
+    $rows = [];
     $stmt = mysqli_prepare($conn, 'SELECT id, plan_slot, name, rate_plan_slug, cancellation_policy_url, cancellation_policy_html, active FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL ORDER BY plan_slot ASC');
     if ($stmt) {
       mysqli_stmt_bind_param($stmt, 'ii', $companyId, $hotelId);
       mysqli_stmt_execute($stmt);
       $res = mysqli_stmt_get_result($stmt);
       while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $map[(int) ($row['plan_slot'] ?? 0)] = $row;
+        $rows[] = $row;
       }
       mysqli_stmt_close($stmt);
     }
-    $rows = [];
-    foreach (itm_hotel_booking_portal_rate_plan_definitions() as $def) {
-      $slot = (int) ($def['plan_slot'] ?? 0);
-      if ($slot < 1 || !isset($map[$slot])) {
-        continue;
-      }
-      $rows[] = $map[$slot];
-    }
     return $rows;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_rate_plan_slot_in_use')) {
+  function itm_hotel_booking_portal_rate_plan_slot_in_use($conn, $companyId, $hotelId, $planSlot, $excludeId = 0) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $planSlot = (int) $planSlot;
+    $excludeId = (int) $excludeId;
+    if ($companyId < 1 || $hotelId < 1 || $planSlot < 1) {
+      return false;
+    }
+    if ($excludeId > 0) {
+      $stmt = mysqli_prepare($conn, 'SELECT id FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND plan_slot = ? AND deleted_at IS NULL AND id <> ? LIMIT 1');
+      if (!$stmt) {
+        return true;
+      }
+      mysqli_stmt_bind_param($stmt, 'iiii', $companyId, $hotelId, $planSlot, $excludeId);
+    } else {
+      $stmt = mysqli_prepare($conn, 'SELECT id FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND plan_slot = ? AND deleted_at IS NULL LIMIT 1');
+      if (!$stmt) {
+        return true;
+      }
+      mysqli_stmt_bind_param($stmt, 'iii', $companyId, $hotelId, $planSlot);
+    }
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    return $row !== null;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_rate_plan_next_free_slot')) {
+  function itm_hotel_booking_portal_rate_plan_next_free_slot($conn, $companyId, $hotelId) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    if ($companyId < 1 || $hotelId < 1) {
+      return 1;
+    }
+    $used = [];
+    $stmt = mysqli_prepare($conn, 'SELECT plan_slot FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL');
+    if ($stmt) {
+      mysqli_stmt_bind_param($stmt, 'ii', $companyId, $hotelId);
+      mysqli_stmt_execute($stmt);
+      $res = mysqli_stmt_get_result($stmt);
+      while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $slot = (int) ($row['plan_slot'] ?? 0);
+        if ($slot > 0) {
+          $used[$slot] = true;
+        }
+      }
+      mysqli_stmt_close($stmt);
+    }
+    for ($slot = 1; $slot <= 127; $slot++) {
+      if (!isset($used[$slot])) {
+        return $slot;
+      }
+    }
+    return 0;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_rate_plan_create')) {
+  function itm_hotel_booking_portal_rate_plan_create($conn, $companyId, $employeeId, $hotelId, $planSlot, $name, $slug, $policyUrl, $active) {
+    $companyId = (int) $companyId;
+    $employeeId = (int) $employeeId;
+    $hotelId = (int) $hotelId;
+    $planSlot = (int) $planSlot;
+    $name = trim((string) $name);
+    $slug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) $slug));
+    $policyUrl = itm_hotel_booking_normalize_cancellation_policy_url((string) $policyUrl);
+    $active = (int) ((bool) $active);
+    if ($companyId < 1 || $hotelId < 1) {
+      return ['ok' => false, 'error' => 'Select a hotel.'];
+    }
+    if ($planSlot < 1 || $planSlot > 127) {
+      return ['ok' => false, 'error' => 'Plan slot must be between 1 and 127.'];
+    }
+    if ($name === '') {
+      return ['ok' => false, 'error' => 'Plan name is required.'];
+    }
+    if ($slug === '') {
+      return ['ok' => false, 'error' => 'Step 2 slug is required.'];
+    }
+    if (itm_hotel_booking_portal_rate_plan_slot_in_use($conn, $companyId, $hotelId, $planSlot)) {
+      return ['ok' => false, 'error' => 'Plan slot already in use for this hotel.'];
+    }
+    $rstmt = mysqli_prepare($conn, 'SELECT id FROM hotel_booking_hotels WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
+    if (!$rstmt) {
+      return ['ok' => false, 'error' => 'Hotel not found.'];
+    }
+    mysqli_stmt_bind_param($rstmt, 'ii', $hotelId, $companyId);
+    mysqli_stmt_execute($rstmt);
+    $rres = mysqli_stmt_get_result($rstmt);
+    $hotelRow = $rres ? mysqli_fetch_assoc($rres) : null;
+    mysqli_stmt_close($rstmt);
+    if (!$hotelRow) {
+      return ['ok' => false, 'error' => 'Hotel not found.'];
+    }
+    if ($policyUrl === '') {
+      $policyUrl = itm_hotel_booking_normalize_cancellation_policy_url(itm_hotel_booking_portal_default_cancellation_policy_path($slug));
+    }
+    $ins = mysqli_prepare(
+      $conn,
+      'INSERT INTO hotel_booking_portal_rate_plans (company_id, hotel_id, plan_slot, name, rate_plan_slug, cancellation_policy_url, active, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+    );
+    if (!$ins) {
+      return ['ok' => false, 'error' => 'Create failed.'];
+    }
+    mysqli_stmt_bind_param($ins, 'iiisssii', $companyId, $hotelId, $planSlot, $name, $slug, $policyUrl, $active, $employeeId);
+    if (!mysqli_stmt_execute($ins)) {
+      mysqli_stmt_close($ins);
+      return ['ok' => false, 'error' => 'Create failed.'];
+    }
+    $newId = (int) mysqli_insert_id($conn);
+    mysqli_stmt_close($ins);
+    if ($newId < 1) {
+      return ['ok' => false, 'error' => 'Create failed.'];
+    }
+    return ['ok' => true, 'id' => $newId];
   }
 }
 
