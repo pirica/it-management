@@ -18,9 +18,15 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, hotel filter), **F
 
 ## 4. Shared helpers
 
-`includes/itm_hotel_booking.php` — segment resolution, overlap/cancelled checks, planning grid, portal customer ensure, photo upload paths.
+`includes/itm_hotel_booking.php` — segment resolution, overlap/cancelled checks, planning grid, portal customer ensure, photo upload paths, HK rotate (`itm_hotel_booking_rotate_room_housekeeping_status`), portal rate plan CRUD helpers.
 
-## 5. Public portal
+## 5. Planning grid
+
+- Booking bars span **half check-in cell** (right) through **half check-out cell** (left); double-click bar opens **view.php**.
+- HK column double-click rotates to next active `hotel_booking_housekeeping_statuses` via `ajax_action=hk_rotate`.
+- JS: `js/hotel-bookings-planning.js`.
+
+## 6. Public portal
 
 `booking/` — MySQLi bootstrap, portal users → `customers`; inserts into `hotel_bookings`. Payment page: `booking/rooms/payment.php`. See **`docs/BOOKING.md`** for full portal review and flows.
 

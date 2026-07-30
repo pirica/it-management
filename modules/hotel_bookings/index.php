@@ -19,6 +19,14 @@ if (!in_array($mode, ['planning', 'future', 'present', 'history'], true)) {
     $mode = 'planning';
 }
 
+if (isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'hk_rotate') {
+    header('Content-Type: application/json; charset=utf-8');
+    $roomId = (int) ($_GET['room_id'] ?? $_POST['room_id'] ?? 0);
+    $result = itm_hotel_booking_rotate_room_housekeeping_status($conn, $company_id, $roomId, $employee_id);
+    echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 if (isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'planning_grid') {
     header('Content-Type: application/json; charset=utf-8');
     $anchor = $_GET['anchor'] ?? date('Y-m-d');
@@ -172,27 +180,39 @@ for ($i = 0; $i < $planDays; $i++) {
 </thead>
 <tbody>
 <?php foreach ($grid['rooms'] as $room): ?>
-<tr>
+<tr data-room-id="<?php echo (int) $room['id']; ?>">
 <td class="hb-plan-room-col"><?php echo sanitize($room['room_number']); ?></td>
-<td><?php
+<td class="hb-plan-hk-cell" title="Double-click to rotate HK status"><?php
 $hkColor = $room['hk_color'] ?? '#6c757d';
 ?><span class="hb-hk-badge" style="background:<?php echo sanitize($hkColor); ?>"><?php echo sanitize($room['hk_name'] ?? '—'); ?></span></td>
 <td><?php echo sanitize($room['type_code'] ?? $room['type_name']); ?></td>
 <?php
 $roomBookings = $bookingsByRoom[(int) $room['id']] ?? [];
-$startTs = strtotime($grid['range_start']);
 foreach ($dayHeaders as $di => $d):
     $dayYmd = $d->format('Y-m-d');
+    $segmentClass = '';
     $bar = null;
     foreach ($roomBookings as $rb) {
-        if ($rb['check_in'] <= $dayYmd && $rb['check_out'] > $dayYmd) {
-            $bar = $rb;
-            break;
+        $ci = (string) ($rb['check_in'] ?? '');
+        $co = (string) ($rb['check_out'] ?? '');
+        if ($dayYmd < $ci || $dayYmd > $co) {
+            continue;
         }
+        $bar = $rb;
+        if ($ci === $co && $dayYmd === $ci) {
+            $segmentClass = 'hb-plan-bar-segment-sameday';
+        } elseif ($dayYmd === $ci) {
+            $segmentClass = 'hb-plan-bar-segment-start';
+        } elseif ($dayYmd === $co) {
+            $segmentClass = 'hb-plan-bar-segment-end';
+        } else {
+            $segmentClass = 'hb-plan-bar-segment-middle';
+        }
+        break;
     }
 ?>
-<td class="hb-plan-day"><?php if ($bar && $dayYmd === $bar['check_in']): ?>
-<span class="hb-plan-bar" title="<?php echo sanitize($bar['customer_name']); ?>"><?php echo sanitize($bar['customer_name']); ?></span>
+<td class="hb-plan-day hb-plan-day-cell"><?php if ($bar): ?>
+<span class="hb-plan-bar <?php echo sanitize($segmentClass); ?>" data-booking-id="<?php echo (int) $bar['id']; ?>" title="<?php echo sanitize($bar['customer_name']); ?> — double-click to view"><?php echo sanitize($bar['customer_name']); ?></span>
 <?php endif; ?></td>
 <?php endforeach; ?>
 </tr>
@@ -224,4 +244,6 @@ foreach ($dayHeaders as $di => $d):
 </table>
 <?php endif; ?>
 </div>
-<?php itm_hospitality_admin_layout_end(); ?>
+<?php
+$layoutEndScripts = $mode === 'planning' ? ['js/hotel-bookings-planning.js'] : [];
+itm_hospitality_admin_layout_end($layoutEndScripts);

@@ -538,7 +538,7 @@ if (!function_exists('itm_hotel_booking_portal_rate_plans_admin_rows')) {
   function itm_hotel_booking_portal_rate_plans_admin_rows($conn, $companyId, $hotelId) {
     itm_hotel_booking_ensure_portal_rate_plans_for_hotel($conn, $companyId, $hotelId);
     $map = [];
-    $stmt = mysqli_prepare($conn, 'SELECT plan_slot, name, rate_plan_slug, cancellation_policy_url, active FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL ORDER BY plan_slot ASC');
+    $stmt = mysqli_prepare($conn, 'SELECT id, plan_slot, name, rate_plan_slug, cancellation_policy_url, cancellation_policy_html, active FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL ORDER BY plan_slot ASC');
     if ($stmt) {
       mysqli_stmt_bind_param($stmt, 'ii', $companyId, $hotelId);
       mysqli_stmt_execute($stmt);
@@ -1470,5 +1470,150 @@ if (!function_exists('itm_hotel_booking_apply_segment_status_on_save')) {
     }
     $out[$col] = $id > 0 ? $id : null;
     return $out;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_active_housekeeping_status_ids')) {
+  function itm_hotel_booking_active_housekeeping_status_ids($conn, $companyId) {
+    $companyId = (int) $companyId;
+    $ids = [];
+    $stmt = mysqli_prepare($conn, 'SELECT id FROM hotel_booking_housekeeping_statuses WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY id ASC');
+    if ($stmt) {
+      mysqli_stmt_bind_param($stmt, 'i', $companyId);
+      mysqli_stmt_execute($stmt);
+      $res = mysqli_stmt_get_result($stmt);
+      while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $ids[] = (int) $row['id'];
+      }
+      mysqli_stmt_close($stmt);
+    }
+    return $ids;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_rotate_room_housekeeping_status')) {
+  function itm_hotel_booking_rotate_room_housekeeping_status($conn, $companyId, $roomId, $employeeId) {
+    $companyId = (int) $companyId;
+    $roomId = (int) $roomId;
+    $employeeId = (int) $employeeId;
+    if ($companyId < 1 || $roomId < 1) {
+      return ['ok' => false, 'error' => 'Invalid room.'];
+    }
+    $stmt = mysqli_prepare($conn, 'SELECT housekeeping_status_id FROM hotel_booking_rooms WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
+    $currentId = 0;
+    if ($stmt) {
+      mysqli_stmt_bind_param($stmt, 'ii', $roomId, $companyId);
+      mysqli_stmt_execute($stmt);
+      $res = mysqli_stmt_get_result($stmt);
+      $row = $res ? mysqli_fetch_assoc($res) : null;
+      mysqli_stmt_close($stmt);
+      $currentId = (int) ($row['housekeeping_status_id'] ?? 0);
+    }
+    $activeIds = itm_hotel_booking_active_housekeeping_status_ids($conn, $companyId);
+    if (empty($activeIds)) {
+      return ['ok' => false, 'error' => 'No active HK statuses.'];
+    }
+    $nextId = $activeIds[0];
+    if ($currentId > 0) {
+      $idx = array_search($currentId, $activeIds, true);
+      if ($idx !== false) {
+        $nextId = $activeIds[($idx + 1) % count($activeIds)];
+      }
+    }
+    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_rooms SET housekeeping_status_id = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ? AND deleted_at IS NULL');
+    if (!$upd) {
+      return ['ok' => false, 'error' => 'Update failed.'];
+    }
+    mysqli_stmt_bind_param($upd, 'iiii', $nextId, $employeeId, $roomId, $companyId);
+    mysqli_stmt_execute($upd);
+    mysqli_stmt_close($upd);
+    $hkStmt = mysqli_prepare($conn, 'SELECT name, color_hex FROM hotel_booking_housekeeping_statuses WHERE id = ? AND company_id = ? LIMIT 1');
+    $hkName = '';
+    $hkColor = '#6c757d';
+    if ($hkStmt) {
+      mysqli_stmt_bind_param($hkStmt, 'ii', $nextId, $companyId);
+      mysqli_stmt_execute($hkStmt);
+      $hkRes = mysqli_stmt_get_result($hkStmt);
+      $hkRow = $hkRes ? mysqli_fetch_assoc($hkRes) : null;
+      mysqli_stmt_close($hkStmt);
+      if ($hkRow) {
+        $hkName = (string) ($hkRow['name'] ?? '');
+        $hkColor = (string) ($hkRow['color_hex'] ?? '#6c757d');
+      }
+    }
+    return ['ok' => true, 'housekeeping_status_id' => $nextId, 'hk_name' => $hkName, 'hk_color' => $hkColor];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_rate_plan_row_by_id')) {
+  function itm_hotel_booking_portal_rate_plan_row_by_id($conn, $companyId, $planId) {
+    $companyId = (int) $companyId;
+    $planId = (int) $planId;
+    if ($companyId < 1 || $planId < 1) {
+      return null;
+    }
+    $stmt = mysqli_prepare($conn, 'SELECT p.*, h.name AS hotel_name FROM hotel_booking_portal_rate_plans p INNER JOIN hotel_booking_hotels h ON h.id = p.hotel_id AND h.company_id = p.company_id WHERE p.id = ? AND p.company_id = ? AND p.deleted_at IS NULL LIMIT 1');
+    if (!$stmt) {
+      return null;
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $planId, $companyId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    return $row ?: null;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_load_cancellation_policy_html')) {
+  function itm_hotel_booking_load_cancellation_policy_html(array $planRow) {
+    $html = trim((string) ($planRow['cancellation_policy_html'] ?? ''));
+    if ($html !== '') {
+      return $html;
+    }
+    $url = itm_hotel_booking_normalize_cancellation_policy_url($planRow['cancellation_policy_url'] ?? '');
+    if ($url === '' || preg_match('#^https?://#i', $url)) {
+      return '';
+    }
+    $path = ROOT_PATH . 'booking/' . ltrim(str_replace('\\', '/', $url), '/');
+    if (!is_file($path)) {
+      return '';
+    }
+    $raw = file_get_contents($path);
+    if ($raw === false) {
+      return '';
+    }
+    if (preg_match('/<main[^>]*>(.*)<\/main>/is', $raw, $m)) {
+      return trim((string) $m[1]);
+    }
+    return trim($raw);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_write_cancellation_policy_file')) {
+  function itm_hotel_booking_write_cancellation_policy_file($relativeUrl, $planName, $bodyHtml) {
+    $url = itm_hotel_booking_normalize_cancellation_policy_url($relativeUrl);
+    if ($url === '' || preg_match('#^https?://#i', $url)) {
+      return false;
+    }
+    $safeName = trim((string) $planName);
+    if ($safeName === '') {
+      $safeName = 'Cancellation policy';
+    }
+    $bodyHtml = trim((string) $bodyHtml);
+    $full = ROOT_PATH . 'booking/' . ltrim(str_replace('\\', '/', $url), '/');
+    $dir = dirname($full);
+    if (!is_dir($dir)) {
+      if (!@mkdir($dir, 0755, true)) {
+        return false;
+      }
+    }
+    $doc = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
+      . '<title>' . htmlspecialchars($safeName, ENT_QUOTES, 'UTF-8') . ' — Cancellation policy</title>'
+      . '<link rel="stylesheet" href="../css/hotel-booking-modern.css"></head><body class="hb-public">'
+      . '<main class="hb-cancellation-policy-page card">' . $bodyHtml
+      . '<button type="button" class="hb-btn hb-checkout-skip hb-cancellation-policy-back" title="Back" onclick="history.go(-1);">Back</button>'
+      . '</main></body></html>';
+    return file_put_contents($full, $doc) !== false;
   }
 }

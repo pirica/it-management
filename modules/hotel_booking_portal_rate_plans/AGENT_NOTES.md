@@ -17,6 +17,10 @@ Admin UI for **Step 2** portal rate plan cancellation policy URLs (`hotel_bookin
 ## 4. UI
 
 - Bespoke `index.php`: hotel selector + URL/active table (not flattened CRUD).
+- **create.php** — pick hotel + plan slot, ensures row, redirects to **edit.php**.
+- **edit.php** — Plan name, Step 2 slug, cancellation policy URL, Active checkbox, Quill WYSIWYG for policy HTML (saved to DB + local HTML file when URL is relative).
+- **view.php** — read-only summary + policy preview.
+- List **index.php** includes hidden `hotel_id` on edit forms; hotel name shown as label when filtered.
 
 ## 5. Pitfalls
 

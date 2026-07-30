@@ -313,6 +313,8 @@ $hospitalityModuleSlugs = [
     'hotel_booking_portal_rate_plans',
     'hotel_booking_room_utilities',
     'hotel_booking_housekeeping_statuses',
+    'hotel_booking_housekeeping_maintenance_status',
+    'hotel_booking_housekeeping_maintenance',
     'hotel_bookings_future',
     'hotel_bookings_present',
     'hotel_bookings_history',
