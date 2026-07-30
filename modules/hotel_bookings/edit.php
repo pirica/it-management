@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($upd) {
             mysqli_stmt_bind_param(
                 $upd,
-                'iissdiiiisiiii',
+                'iissdiiiisiii',
                 $customerId,
                 $roomId,
                 $checkIn,
