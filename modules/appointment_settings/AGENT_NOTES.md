@@ -47,8 +47,8 @@ Four read-only tables with standard actions:
 
 ### Other entry files
 
-- **create.php** — visit reason or business hour (day dropdown skips days already present).
-- **edit.php** — POST saves per `kind`; settings and business hour forms include `active` checkbox.
+- **create.php** — visit reason or business hour (day dropdown skips days already present); `active` uses `itm-checkbox-control` + `itm-check-indicator` double-label pattern.
+- **edit.php** — POST saves per `kind`; settings, business hour, visit reason, and appointment type forms include compliant `active` checkbox markup.
 - **view.php** — read-only detail per `kind`.
 - **delete.php** — POST only (`kind`, `id`, CSRF).
 - **list_all.php** — redirects to `index.php` (scaffold compatibility).
