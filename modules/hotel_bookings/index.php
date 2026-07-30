@@ -19,6 +19,32 @@ if (!in_array($mode, ['planning', 'future', 'present', 'history'], true)) {
     $mode = 'planning';
 }
 
+if (isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'planning_move') {
+    header('Content-Type: application/json; charset=utf-8');
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['ok' => false, 'error' => 'POST required'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    itm_require_post_csrf();
+    $entityType = (string) ($_POST['entity_type'] ?? '');
+    $entityId = (int) ($_POST['entity_id'] ?? 0);
+    $roomId = (int) ($_POST['room_id'] ?? 0);
+    if ($entityType === 'booking') {
+        $checkIn = itm_parse_date_input($_POST['check_in'] ?? '') ?: (string) ($_POST['check_in'] ?? '');
+        $checkOut = itm_parse_date_input($_POST['check_out'] ?? '') ?: (string) ($_POST['check_out'] ?? '');
+        $result = itm_hotel_booking_planning_move_booking($conn, $company_id, $employee_id, $entityId, $roomId, $checkIn, $checkOut);
+    } elseif ($entityType === 'maintenance') {
+        $fromDate = itm_parse_date_input($_POST['from_date'] ?? '') ?: (string) ($_POST['from_date'] ?? '');
+        $throughDate = itm_parse_date_input($_POST['through_date'] ?? '') ?: (string) ($_POST['through_date'] ?? '');
+        $result = itm_hotel_booking_planning_move_maintenance($conn, $company_id, $employee_id, $entityId, $roomId, $fromDate, $throughDate);
+    } else {
+        $result = ['ok' => false, 'error' => 'Invalid entity type.'];
+    }
+    echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 if (isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'hk_rotate') {
     header('Content-Type: application/json; charset=utf-8');
     $roomId = (int) ($_GET['room_id'] ?? $_POST['room_id'] ?? 0);
@@ -204,21 +230,22 @@ foreach ($dayHeaders as $di => $d):
     $dayMaintenance = itm_hotel_booking_planning_match_maintenance_for_day($maintenanceByRoom[(int) $room['id']] ?? [], $dayYmd);
     $dayBookings = itm_hotel_booking_planning_match_bookings_for_day($roomBookings, $dayYmd);
 ?>
-<td class="hb-plan-day hb-plan-day-cell"><?php
+<td class="hb-plan-day hb-plan-day-cell" data-day-ymd="<?php echo sanitize($dayYmd); ?>"><?php
 foreach ($dayMaintenance as $maint):
     $maintCode = strtoupper(trim((string) ($maint['maintenance_status_code'] ?? '')));
     $maintLabel = $maintCode !== '' ? $maintCode : (string) ($maint['maintenance_status_name'] ?? 'Maint');
     $maintColor = itm_hotel_booking_planning_maintenance_bar_color($maint['maintenance_status_code'] ?? '');
-    $maintTitle = sanitize($maintLabel . ' — ' . itm_format_date_display($maint['from_date']) . ' to ' . itm_format_date_display($maint['through_date']));
+    $maintTitle = sanitize($maintLabel . ' — ' . itm_format_date_display($maint['from_date']) . ' to ' . itm_format_date_display($maint['through_date']) . ' — drag to move');
 ?>
-<span class="hb-plan-bar hb-plan-bar-segment-middle hb-plan-maint" style="background:<?php echo sanitize($maintColor); ?>;z-index:0" title="<?php echo $maintTitle; ?>"><?php echo sanitize($maintLabel); ?></span>
+<span class="hb-plan-bar hb-plan-bar-segment-middle hb-plan-maint hb-plan-draggable" draggable="true" style="background:<?php echo sanitize($maintColor); ?>;z-index:0" data-entity-type="maintenance" data-maintenance-id="<?php echo (int) $maint['id']; ?>" data-from-date="<?php echo sanitize((string) $maint['from_date']); ?>" data-through-date="<?php echo sanitize((string) $maint['through_date']); ?>" data-room-id="<?php echo (int) $room['id']; ?>" title="<?php echo $maintTitle; ?>"><?php echo sanitize($maintLabel); ?></span>
 <?php endforeach; ?>
 <?php foreach ($dayBookings as $match):
     $bar = $match['booking'];
     $segmentClass = $match['segment_class'];
     $barColor = itm_hotel_booking_planning_booking_bar_color((int) ($bar['id'] ?? 0), $bar['booking_color'] ?? '');
+    $barTitle = sanitize($bar['customer_name'] . ' — double-click to view, drag to move');
 ?>
-<span class="hb-plan-bar <?php echo sanitize($segmentClass); ?>" style="background:<?php echo sanitize($barColor); ?>;z-index:1" data-booking-id="<?php echo (int) $bar['id']; ?>" title="<?php echo sanitize($bar['customer_name']); ?> — double-click to view"><?php echo sanitize($bar['customer_name']); ?></span>
+<span class="hb-plan-bar hb-plan-draggable <?php echo sanitize($segmentClass); ?>" draggable="true" style="background:<?php echo sanitize($barColor); ?>;z-index:1" data-entity-type="booking" data-booking-id="<?php echo (int) $bar['id']; ?>" data-check-in="<?php echo sanitize((string) $bar['check_in']); ?>" data-check-out="<?php echo sanitize((string) $bar['check_out']); ?>" data-room-id="<?php echo (int) $room['id']; ?>" title="<?php echo $barTitle; ?>"><?php echo sanitize($bar['customer_name']); ?></span>
 <?php endforeach; ?></td>
 <?php endforeach; ?>
 </tr>
@@ -250,6 +277,11 @@ foreach ($dayMaintenance as $maint):
 </table>
 <?php endif; ?>
 </div>
+<?php if ($mode === 'planning'): ?>
+<script>
+window.HB_PLANNING_DND = <?php echo json_encode(['csrf' => itm_get_csrf_token()], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+</script>
+<?php endif; ?>
 <?php
 $layoutEndScripts = $mode === 'planning' ? ['js/hotel-bookings-planning.js'] : [];
 itm_hospitality_admin_layout_end($layoutEndScripts);
