@@ -308,6 +308,36 @@ if (function_exists('itm_hotel_booking_portal_rate_plan_hard_delete')) {
     hb_fail('portal rate plan hard delete helper missing');
 }
 
+if (function_exists('itm_hotel_booking_portal_rate_plan_slot_in_use')
+    && function_exists('itm_hotel_booking_portal_rate_plan_next_free_slot')
+    && function_exists('itm_hotel_booking_portal_rate_plan_create')) {
+    hb_pass('portal rate plan create and slot helpers');
+} else {
+    hb_fail('portal rate plan create and slot helpers missing');
+}
+
+$resHotel = mysqli_query($conn, 'SELECT id FROM hotel_booking_hotels WHERE company_id = 1 AND deleted_at IS NULL LIMIT 1');
+$hotelProbe = $resHotel ? mysqli_fetch_assoc($resHotel) : null;
+if ($hotelProbe) {
+    $probeHotelId = (int) ($hotelProbe['id'] ?? 0);
+    itm_hotel_booking_ensure_portal_rate_plans_for_hotel($conn, 1, $probeHotelId, 1);
+    $nextFreeSlot = itm_hotel_booking_portal_rate_plan_next_free_slot($conn, 1, $probeHotelId);
+    if ($nextFreeSlot >= 5 && $nextFreeSlot <= 127) {
+        hb_pass('portal rate plan next free slot after defaults');
+    } elseif ($nextFreeSlot >= 1 && $nextFreeSlot <= 127) {
+        hb_pass('portal rate plan next free slot');
+    } else {
+        hb_fail('portal rate plan next free slot invalid: ' . $nextFreeSlot);
+    }
+    if (itm_hotel_booking_portal_rate_plan_slot_in_use($conn, 1, $probeHotelId, 1)) {
+        hb_pass('portal rate plan slot in use for slot 1');
+    } else {
+        hb_fail('portal rate plan slot 1 not in use after ensure');
+    }
+} else {
+    hb_fail('no hotel row for portal rate plan slot probe');
+}
+
 if (function_exists('itm_hospitality_render_bookings_hub_link') && is_file(dirname(__DIR__) . '/modules/hotel_booking_portal_rate_plans/delete.php')) {
     hb_pass('hospitality bookings hub link + rate plan delete.php');
 } else {
