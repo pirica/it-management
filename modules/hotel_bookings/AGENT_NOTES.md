@@ -26,4 +26,8 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, hotel filter), **F
 
 ## 6. Regression
 
-`php scripts/verify_hotel_booking.php` after DDL/seeds or helper changes.
+`php scripts/verify_hotel_booking.php` after DDL/seeds or helper changes (includes subprocess probes for all 13 Hospitality sidebar `index.php` files).
+
+## 7. Admin page shell
+
+Bespoke admin entry files (`index.php`, `create.php`, `edit.php`, `view.php`) and `hotel_booking_settings` / `hotel_booking_special_rates` / `hotel_booking_portal_rate_plans` use `includes/itm_hospitality_admin_layout.php` (`itm_hospitality_admin_layout_begin` / `end`) — **not** `includes/footer.php` (does not exist).
