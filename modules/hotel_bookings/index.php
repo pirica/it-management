@@ -96,6 +96,17 @@ foreach ($grid['bookings'] as $b) {
     }
     $bookingsByRoom[$rid][] = $b;
 }
+$maintenanceByRoom = [];
+foreach ($grid['maintenance'] ?? [] as $m) {
+    $rid = (int) ($m['room_id'] ?? 0);
+    if ($rid < 1) {
+        continue;
+    }
+    if (!isset($maintenanceByRoom[$rid])) {
+        $maintenanceByRoom[$rid] = [];
+    }
+    $maintenanceByRoom[$rid][] = $m;
+}
 
 function hb_board_list($conn, $companyId, $segment, $limit = 200) {
     $companyId = (int) $companyId;
@@ -190,30 +201,25 @@ $hkColor = $room['hk_color'] ?? '#6c757d';
 $roomBookings = $bookingsByRoom[(int) $room['id']] ?? [];
 foreach ($dayHeaders as $di => $d):
     $dayYmd = $d->format('Y-m-d');
-    $segmentClass = '';
-    $bar = null;
-    foreach ($roomBookings as $rb) {
-        $ci = (string) ($rb['check_in'] ?? '');
-        $co = (string) ($rb['check_out'] ?? '');
-        if ($dayYmd < $ci || $dayYmd > $co) {
-            continue;
-        }
-        $bar = $rb;
-        if ($ci === $co && $dayYmd === $ci) {
-            $segmentClass = 'hb-plan-bar-segment-sameday';
-        } elseif ($dayYmd === $ci) {
-            $segmentClass = 'hb-plan-bar-segment-start';
-        } elseif ($dayYmd === $co) {
-            $segmentClass = 'hb-plan-bar-segment-end';
-        } else {
-            $segmentClass = 'hb-plan-bar-segment-middle';
-        }
-        break;
-    }
+    $dayMaintenance = itm_hotel_booking_planning_match_maintenance_for_day($maintenanceByRoom[(int) $room['id']] ?? [], $dayYmd);
+    $dayBookings = itm_hotel_booking_planning_match_bookings_for_day($roomBookings, $dayYmd);
 ?>
-<td class="hb-plan-day hb-plan-day-cell"><?php if ($bar): ?>
-<span class="hb-plan-bar <?php echo sanitize($segmentClass); ?>" data-booking-id="<?php echo (int) $bar['id']; ?>" title="<?php echo sanitize($bar['customer_name']); ?> — double-click to view"><?php echo sanitize($bar['customer_name']); ?></span>
-<?php endif; ?></td>
+<td class="hb-plan-day hb-plan-day-cell"><?php
+foreach ($dayMaintenance as $maint):
+    $maintCode = strtoupper(trim((string) ($maint['maintenance_status_code'] ?? '')));
+    $maintLabel = $maintCode !== '' ? $maintCode : (string) ($maint['maintenance_status_name'] ?? 'Maint');
+    $maintColor = itm_hotel_booking_planning_maintenance_bar_color($maint['maintenance_status_code'] ?? '');
+    $maintTitle = sanitize($maintLabel . ' — ' . itm_format_date_display($maint['from_date']) . ' to ' . itm_format_date_display($maint['through_date']));
+?>
+<span class="hb-plan-bar hb-plan-bar-segment-middle hb-plan-maint" style="background:<?php echo sanitize($maintColor); ?>;z-index:0" title="<?php echo $maintTitle; ?>"><?php echo sanitize($maintLabel); ?></span>
+<?php endforeach; ?>
+<?php foreach ($dayBookings as $match):
+    $bar = $match['booking'];
+    $segmentClass = $match['segment_class'];
+    $barColor = itm_hotel_booking_planning_booking_bar_color((int) ($bar['id'] ?? 0), $bar['booking_color'] ?? '');
+?>
+<span class="hb-plan-bar <?php echo sanitize($segmentClass); ?>" style="background:<?php echo sanitize($barColor); ?>;z-index:1" data-booking-id="<?php echo (int) $bar['id']; ?>" title="<?php echo sanitize($bar['customer_name']); ?> — double-click to view"><?php echo sanitize($bar['customer_name']); ?></span>
+<?php endforeach; ?></td>
 <?php endforeach; ?>
 </tr>
 <?php endforeach; ?>

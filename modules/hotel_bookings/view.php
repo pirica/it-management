@@ -42,6 +42,10 @@ itm_hospitality_admin_layout_begin($crud_title, ['css/hotel-bookings.css']);
 <p><strong>History status:</strong> <?php echo sanitize(hb_booking_status_label($conn, $company_id, 'hotel_bookings_history', $row['history_status_id'] ?? 0)); ?></p>
 <p><strong>Segment:</strong> <?php echo sanitize($segment); ?></p>
 <p><strong>Notes:</strong> <?php echo sanitize($row['notes'] ?? ''); ?></p>
+<?php
+$planColor = itm_hotel_booking_resolve_booking_color($row['booking_color'] ?? '', (int) $row['id']);
+?>
+<p><strong>Planning color:</strong> <span class="hb-booking-color-swatch" style="background:<?php echo sanitize($planColor); ?>"></span> <?php echo sanitize($planColor); ?></p>
 <p><strong>Active:</strong>
 <?php if ($activeInt === 1): ?>
 <span class="badge badge-success">Active</span>

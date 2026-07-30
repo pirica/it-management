@@ -1384,6 +1384,133 @@ if (!function_exists('itm_hotel_booking_settings_row')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_planning_bar_palette')) {
+  /**
+   * Booking bar colors (excludes reserved OOO red and OOS blue).
+   *
+   * @return string[]
+   */
+  function itm_hotel_booking_planning_bar_palette() {
+    return ['#2da44e', '#6f42c1', '#e36209', '#bf3989', '#0a7c71', '#8b5a2b', '#5a32a3', '#1b7f79', '#a37100'];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_normalize_booking_color')) {
+  function itm_hotel_booking_normalize_booking_color($raw) {
+    $hex = trim((string) $raw);
+    if (preg_match('/^#[0-9A-Fa-f]{6}$/', $hex)) {
+      return strtolower($hex);
+    }
+    return '';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_resolve_booking_color')) {
+  /**
+   * Stored #rrggbb or palette fallback (by booking id / seed).
+   */
+  function itm_hotel_booking_resolve_booking_color($raw, $fallbackSeed = 0) {
+    $normalized = itm_hotel_booking_normalize_booking_color($raw);
+    if ($normalized !== '') {
+      return $normalized;
+    }
+    return itm_hotel_booking_planning_booking_bar_color((int) $fallbackSeed);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_planning_booking_bar_color')) {
+  function itm_hotel_booking_planning_booking_bar_color($bookingId, $storedColor = null) {
+    $normalized = itm_hotel_booking_normalize_booking_color($storedColor);
+    if ($normalized !== '') {
+      return $normalized;
+    }
+    $palette = itm_hotel_booking_planning_bar_palette();
+    $idx = (int) $bookingId % count($palette);
+    return $palette[$idx];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_planning_maintenance_bar_color')) {
+  function itm_hotel_booking_planning_maintenance_bar_color($statusCode) {
+    $code = strtolower(trim((string) $statusCode));
+    if ($code === 'ooo') {
+      return '#c62828';
+    }
+    if ($code === 'oos') {
+      return '#1565c0';
+    }
+    return '#6c757d';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_planning_bar_segment_class')) {
+  function itm_hotel_booking_planning_bar_segment_class($dayYmd, $checkIn, $checkOut) {
+    $ci = (string) $checkIn;
+    $co = (string) $checkOut;
+    if ($ci === $co && $dayYmd === $ci) {
+      return 'hb-plan-bar-segment-sameday';
+    }
+    if ($dayYmd === $ci) {
+      return 'hb-plan-bar-segment-start';
+    }
+    if ($dayYmd === $co) {
+      return 'hb-plan-bar-segment-end';
+    }
+    return 'hb-plan-bar-segment-middle';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_planning_match_bookings_for_day')) {
+  function itm_hotel_booking_planning_match_bookings_for_day(array $bookings, $dayYmd) {
+    $matched = [];
+    foreach ($bookings as $booking) {
+      $ci = (string) ($booking['check_in'] ?? '');
+      $co = (string) ($booking['check_out'] ?? '');
+      if ($dayYmd < $ci || $dayYmd > $co) {
+        continue;
+      }
+      $segment = 'middle';
+      if ($ci === $co && $dayYmd === $ci) {
+        $segment = 'sameday';
+      } elseif ($dayYmd === $ci) {
+        $segment = 'start';
+      } elseif ($dayYmd === $co) {
+        $segment = 'end';
+      }
+      $matched[] = [
+        'booking' => $booking,
+        'segment' => $segment,
+        'segment_class' => itm_hotel_booking_planning_bar_segment_class($dayYmd, $ci, $co),
+      ];
+    }
+    $order = ['end' => 0, 'start' => 1, 'sameday' => 2, 'middle' => 3];
+    usort($matched, function ($a, $b) {
+      $oa = $order[$a['segment']] ?? 9;
+      $ob = $order[$b['segment']] ?? 9;
+      if ($oa !== $ob) {
+        return $oa <=> $ob;
+      }
+      return (int) ($a['booking']['id'] ?? 0) <=> (int) ($b['booking']['id'] ?? 0);
+    });
+    return $matched;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_planning_match_maintenance_for_day')) {
+  function itm_hotel_booking_planning_match_maintenance_for_day(array $rows, $dayYmd) {
+    $matched = [];
+    foreach ($rows as $row) {
+      $from = (string) ($row['from_date'] ?? '');
+      $through = (string) ($row['through_date'] ?? '');
+      if ($from === '' || $through === '' || $dayYmd < $from || $dayYmd > $through) {
+        continue;
+      }
+      $matched[] = $row;
+    }
+    return $matched;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_planning_grid_rows')) {
   function itm_hotel_booking_planning_grid_rows($conn, $companyId, $anchorDate, $hotelId = 0, $roomTypeId = 0, $floor = '', $days = 14) {
     $companyId = (int) $companyId;
@@ -1419,7 +1546,7 @@ if (!function_exists('itm_hotel_booking_planning_grid_rows')) {
     $roomSql .= ' ORDER BY r.room_number ASC';
     $stmt = mysqli_prepare($conn, $roomSql);
     if (!$stmt) {
-      return ['rooms' => [], 'bookings' => [], 'range_start' => $rangeStart, 'range_end' => $rangeEnd, 'days' => $days];
+      return ['rooms' => [], 'bookings' => [], 'maintenance' => [], 'range_start' => $rangeStart, 'range_end' => $rangeEnd, 'days' => $days];
     }
     mysqli_stmt_bind_param($stmt, $types, ...$params);
     mysqli_stmt_execute($stmt);
@@ -1447,9 +1574,26 @@ if (!function_exists('itm_hotel_booking_planning_grid_rows')) {
       mysqli_stmt_close($bstmt);
     }
 
+    $maintSql = 'SELECT m.*, ms.name AS maintenance_status_name, ms.code AS maintenance_status_code
+                 FROM hotel_booking_housekeeping_maintenance m
+                 LEFT JOIN hotel_booking_housekeeping_maintenance_status ms ON ms.id = m.maintenance_status_id AND ms.company_id = m.company_id
+                 WHERE m.company_id = ? AND m.deleted_at IS NULL AND m.active = 1 AND m.from_date <= ? AND m.through_date >= ?';
+    $mstmt = mysqli_prepare($conn, $maintSql);
+    $maintenance = [];
+    if ($mstmt) {
+      mysqli_stmt_bind_param($mstmt, 'iss', $companyId, $rangeEnd, $rangeStart);
+      mysqli_stmt_execute($mstmt);
+      $mres = mysqli_stmt_get_result($mstmt);
+      while ($mres && ($mrow = mysqli_fetch_assoc($mres))) {
+        $maintenance[] = $mrow;
+      }
+      mysqli_stmt_close($mstmt);
+    }
+
     return [
       'rooms' => $rooms,
       'bookings' => $bookings,
+      'maintenance' => $maintenance,
       'range_start' => $rangeStart,
       'range_end' => $rangeEnd,
       'days' => $days,

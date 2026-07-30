@@ -291,6 +291,7 @@ CREATE TABLE `hotel_bookings` (
   `present_status_id` int DEFAULT NULL,
   `history_status_id` int DEFAULT NULL,
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `booking_color` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,

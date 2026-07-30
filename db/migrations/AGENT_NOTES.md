@@ -40,6 +40,7 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
 - `hotel_booking_portal_rate_plans.sql` — `hotel_booking_portal_rate_plans` per-hotel Step 2 cancellation policy URLs (mirrors `db/01_schema.sql`; new table — run seeds or admin ensure for rows)
 - `booking_rooms_types_upgrade.sql` — `booking_rooms_types` with `upgrade_to_room_type_id`, `upgrade_price_per_night`, `upgrade_pitch` (destructive — re-seed room types from `db/02_data.sql` after apply)
 - `hotel_booking_registry_icons.sql` — DML only: fixes mojibake `modules_registry.icon` values for hospitality slugs (matches `includes/ui_config.php` catalog)
+- `hotel_bookings_booking_color.sql` — `hotel_bookings.booking_color` varchar(7) `#rrggbb` for planning grid bars (destructive — drops booking rows)
 
 ## 12. Module Owner Notes (Optional)
 Catalog pointer: `AGENTS.md` → Database & Schema Rules → **Incremental migrations (`db/migrations/`)**.

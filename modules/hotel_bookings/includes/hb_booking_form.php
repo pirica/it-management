@@ -176,6 +176,11 @@ if (!function_exists('hb_booking_render_form_fields')) {
         $presentId = (int) ($row['present_status_id'] ?? 0);
         $historyId = (int) ($row['history_status_id'] ?? 0);
         $notes = (string) ($row['notes'] ?? '');
+        $colorSeed = (int) ($row['id'] ?? 0);
+        if ($colorSeed < 1) {
+            $colorSeed = mt_rand(1, 99999);
+        }
+        $colorVal = itm_hotel_booking_resolve_booking_color($row['booking_color'] ?? '', $colorSeed);
         $isActive = (int) ($row['active'] ?? 1) === 1;
         $todayMin = date('Y-m-d');
 
@@ -209,6 +214,9 @@ if (!function_exists('hb_booking_render_form_fields')) {
 
         echo '<div class="form-group"><label>Payment amount</label>';
         echo '<input type="text" name="payment_amount" id="hb-booking-payment" class="form-control" value="' . sanitize((string) $paymentVal) . '" placeholder="Auto from room nights when empty"></div>';
+
+        echo '<div class="form-group"><label>Planning color</label>';
+        echo '<input type="color" name="booking_color" id="hb-booking-color" class="form-control hb-booking-color-picker" value="' . sanitize($colorVal) . '" title="Planning grid bar color"></div>';
 
         echo '<div class="form-group"><label>Future status</label><select name="future_status_id" class="form-control"><option value="">-- Select --</option>';
         foreach ($options['future_statuses'] as $st) {
