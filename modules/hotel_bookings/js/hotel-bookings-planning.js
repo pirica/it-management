@@ -52,6 +52,62 @@
         return input ? input.value : '';
     }
 
+    function getHkMaintEditBase() {
+        if (window.HB_PLANNING_DND && window.HB_PLANNING_DND.hkMaintEditBase) {
+            return window.HB_PLANNING_DND.hkMaintEditBase;
+        }
+        return '../hotel_booking_housekeeping_maintenance/edit.php';
+    }
+
+    function openHkMaintModal(maintenanceId) {
+        var modal = document.getElementById('hb-hk-maint-modal');
+        var frame = document.getElementById('hb-hk-maint-modal-frame');
+        if (!modal || !frame || !maintenanceId) {
+            return;
+        }
+        frame.src = getHkMaintEditBase() + '?id=' + encodeURIComponent(maintenanceId) + '&embed=1';
+        modal.hidden = false;
+        document.body.classList.add('hb-plan-maint-modal-open');
+    }
+
+    function closeHkMaintModal(reloadPlanning) {
+        var modal = document.getElementById('hb-hk-maint-modal');
+        var frame = document.getElementById('hb-hk-maint-modal-frame');
+        if (modal) {
+            modal.hidden = true;
+        }
+        if (frame) {
+            frame.src = 'about:blank';
+        }
+        document.body.classList.remove('hb-plan-maint-modal-open');
+        if (reloadPlanning) {
+            window.location.reload();
+        }
+    }
+
+    document.addEventListener('click', function (ev) {
+        if (ev.target.closest('[data-hb-maint-modal-close]')) {
+            closeHkMaintModal(false);
+            return;
+        }
+        var modal = document.getElementById('hb-hk-maint-modal');
+        if (modal && !modal.hidden && ev.target === modal) {
+            closeHkMaintModal(false);
+        }
+    });
+
+    window.addEventListener('message', function (ev) {
+        var data = ev.data;
+        if (!data || typeof data.type !== 'string') {
+            return;
+        }
+        if (data.type === 'hb_hk_maint_embed_close') {
+            closeHkMaintModal(false);
+        } else if (data.type === 'hb_hk_maint_embed_saved') {
+            closeHkMaintModal(true);
+        }
+    });
+
     function clearDropHighlights() {
         document.querySelectorAll('.hb-plan-day-cell.hb-plan-drop-hover').forEach(function (el) {
             el.classList.remove('hb-plan-drop-hover');
@@ -237,6 +293,14 @@
             var id = bar.getAttribute('data-booking-id');
             if (id) {
                 window.location.href = 'view.php?id=' + encodeURIComponent(id);
+            }
+            return;
+        }
+        var maintBar = ev.target.closest('.hb-plan-bar[data-maintenance-id]');
+        if (maintBar) {
+            var maintId = maintBar.getAttribute('data-maintenance-id');
+            if (maintId) {
+                openHkMaintModal(maintId);
             }
             return;
         }

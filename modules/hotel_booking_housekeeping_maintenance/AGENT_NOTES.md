@@ -12,6 +12,8 @@ Room maintenance windows (OOO/OOS): block dates on a room with return HK status 
 
 Flattened scaffold CRUD. List shows FK labels for room number and status names.
 
+Planning grid integration: `hotel_bookings` planning double-clicks OOO/OOS bars open this module’s `edit.php?id={id}&embed=1` in a modal iframe; embed mode strips sidebar/header, posts `embed=1` hidden field, redirects back to embed edit with `saved=1`, and `postMessage` notifies the parent to reload the grid.
+
 ## 4. Pitfalls
 
 - `room_id` is required; scope all queries by `company_id`.

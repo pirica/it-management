@@ -333,6 +333,8 @@ $viewColumns = array_values(array_filter($fieldColumns, function ($col) use ($hi
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
+$embedMode = ((isset($_GET['embed']) && (string) $_GET['embed'] === '1')
+    || (isset($_POST['embed']) && (string) $_POST['embed'] === '1'));
 
 if ($crud_action === 'delete') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -518,6 +520,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $dbErrorCode = 0;
         $dbErrorMessage = '';
         if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+            if ($embedMode && $crud_action === 'edit' && $editId > 0) {
+                header('Location: edit.php?id=' . (int) $editId . '&embed=1&saved=1');
+                exit;
+            }
             header('Location: ' . $listUrl);
             exit;
         }
@@ -566,13 +572,24 @@ if (!isset($crud_title)) {
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
     <link rel="stylesheet" href="../../css/styles.css">
+    <?php if ($embedMode): ?>
+    <style>
+    body.hb-hk-maint-embed { margin:0; background:var(--bg,#fff); }
+    body.hb-hk-maint-embed .hb-hk-maint-embed-wrap { padding:12px 16px 20px; max-width:980px; }
+    body.hb-hk-maint-embed .form-grid { max-width:100%; }
+    </style>
+    <?php endif; ?>
 </head>
-<body>
+<body<?php echo $embedMode ? ' class="hb-hk-maint-embed"' : ''; ?>>
+<?php if (!$embedMode): ?>
 <div class="container">
     <?php include '../../includes/sidebar.php'; ?>
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
+<?php else: ?>
+<div class="hb-hk-maint-embed-wrap">
+<?php endif; ?>
             <?php echo itm_render_alert_errors($errors); ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
@@ -627,6 +644,9 @@ if (!isset($crud_title)) {
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <?php if ($embedMode): ?>
+                    <input type="hidden" name="embed" value="1">
+                    <?php endif; ?>
                                         <?php
                     if (function_exists('itm_crud_render_form_hidden_audit_inputs')) {
                         itm_crud_render_form_hidden_audit_inputs($data, (string)$crud_action);
@@ -690,8 +710,12 @@ if (!isset($crud_title)) {
                         </div>
                     <?php endforeach; ?>
                     <div class="form-actions itm-form-actions itm-align-left">
-                        <button class="btn btn-primary" type="submit">💾</button>
-                        <a href="index.php" class="btn">🔙</a>
+                        <button class="btn btn-primary" type="submit" title="Save">💾</button>
+                        <?php if ($embedMode): ?>
+                        <button type="button" class="btn" title="Close" onclick="hbHkMaintEmbedClose()">🔙</button>
+                        <?php else: ?>
+                        <a href="index.php" class="btn" title="Back">🔙</a>
+                        <?php endif; ?>
                     </div>
                 </form>
 
@@ -711,9 +735,13 @@ if (!isset($crud_title)) {
                     <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
                 </div>
             <?php endif; ?>
+<?php if ($embedMode): ?>
+</div>
+<?php else: ?>
         </div>
     </div>
 </div>
+<?php endif; ?>
 <script src="../../js/theme.js"></script>
 <script>
 window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
@@ -738,6 +766,18 @@ document.addEventListener('change', function (event) {
     }
 });
 </script>
+<?php if ($embedMode): ?>
+<script>
+function hbHkMaintEmbedClose() {
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'hb_hk_maint_embed_close' }, '*');
+    }
+}
+<?php if (isset($_GET['saved']) && (string) $_GET['saved'] === '1' && $editId > 0): ?>
+window.parent.postMessage({ type: 'hb_hk_maint_embed_saved', id: <?php echo (int) $editId; ?> }, '*');
+<?php endif; ?>
+</script>
+<?php endif; ?>
 
 </body>
 </html>

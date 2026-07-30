@@ -235,7 +235,7 @@ foreach ($dayMaintenance as $maint):
     $maintCode = strtoupper(trim((string) ($maint['maintenance_status_code'] ?? '')));
     $maintLabel = $maintCode !== '' ? $maintCode : (string) ($maint['maintenance_status_name'] ?? 'Maint');
     $maintColor = itm_hotel_booking_planning_maintenance_bar_color($maint['maintenance_status_code'] ?? '');
-    $maintTitle = sanitize($maintLabel . ' — ' . itm_format_date_display($maint['from_date']) . ' to ' . itm_format_date_display($maint['through_date']) . ' — drag to move');
+    $maintTitle = sanitize($maintLabel . ' — ' . itm_format_date_display($maint['from_date']) . ' to ' . itm_format_date_display($maint['through_date']) . ' — double-click to edit, drag to move');
 ?>
 <span class="hb-plan-bar hb-plan-bar-segment-middle hb-plan-maint hb-plan-draggable" draggable="true" style="background:<?php echo sanitize($maintColor); ?>;z-index:0" data-entity-type="maintenance" data-maintenance-id="<?php echo (int) $maint['id']; ?>" data-from-date="<?php echo sanitize((string) $maint['from_date']); ?>" data-through-date="<?php echo sanitize((string) $maint['through_date']); ?>" data-room-id="<?php echo (int) $room['id']; ?>" title="<?php echo $maintTitle; ?>"><?php echo sanitize($maintLabel); ?></span>
 <?php endforeach; ?>
@@ -252,6 +252,15 @@ foreach ($dayMaintenance as $maint):
 <?php endforeach; ?>
 </tbody>
 </table>
+</div>
+<div id="hb-hk-maint-modal" class="hb-modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="hb-hk-maint-modal-title">
+<div class="hb-modal hb-plan-maint-modal">
+<div class="hb-plan-maint-modal-head">
+<h2 id="hb-hk-maint-modal-title" title="HK Maintenance">✏️</h2>
+<button type="button" class="btn btn-sm" data-hb-maint-modal-close title="Close">✖</button>
+</div>
+<iframe id="hb-hk-maint-modal-frame" class="hb-plan-maint-modal-frame" title="HK Maintenance edit" src="about:blank"></iframe>
+</div>
 </div>
 <?php else: ?>
 <table class="hb-board-table table">
@@ -279,7 +288,10 @@ foreach ($dayMaintenance as $maint):
 </div>
 <?php if ($mode === 'planning'): ?>
 <script>
-window.HB_PLANNING_DND = <?php echo json_encode(['csrf' => itm_get_csrf_token()], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+window.HB_PLANNING_DND = <?php echo json_encode([
+    'csrf' => itm_get_csrf_token(),
+    'hkMaintEditBase' => '../hotel_booking_housekeeping_maintenance/edit.php',
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
 <?php endif; ?>
 <?php
