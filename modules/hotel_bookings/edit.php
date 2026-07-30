@@ -111,6 +111,6 @@ itm_hospitality_admin_layout_begin($crud_title, ['css/hotel-bookings.css']);
 </form>
 </div>
 <?php
-itm_hospitality_admin_layout_end(['js/hotel-bookings-date-picker.js', 'js/hotel-bookings-rate-plan-select.js']);
+itm_hospitality_admin_layout_end(['js/hotel-bookings-date-picker.js', BASE_URL . 'js/hotel-bookings-rate-plan-select.js']);
 hb_booking_render_rate_plan_modal();
 ?>

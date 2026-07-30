@@ -1,4 +1,5 @@
 (function () {
+    var ADD_VALUE = '__add_new__';
     var planSelect = document.getElementById('hb-booking-portal-rate-plan-id');
     var roomSelect = document.getElementById('hb-booking-room-id');
     if (!planSelect) {
@@ -6,16 +7,20 @@
     }
 
     var hintEl = document.getElementById('hb-booking-rate-plan-hint');
-    var addBtn = document.getElementById('hb-booking-rate-plan-add');
     var viewBtn = document.getElementById('hb-booking-rate-plan-view');
     var editBtn = document.getElementById('hb-booking-rate-plan-edit');
     var modal = document.getElementById('hb-rate-plan-modal');
     var frame = document.getElementById('hb-rate-plan-modal-frame');
     var modalTitle = document.getElementById('hb-rate-plan-modal-title');
     var baseUrl = (frame && frame.getAttribute('data-base')) || (window.ITM_BASE_URL || '/');
+    var previousPlanValue = planSelect.value && planSelect.value !== ADD_VALUE ? planSelect.value : '';
 
     function moduleBase() {
         return baseUrl.replace(/\/?$/, '/') + 'modules/hotel_booking_portal_rate_plans/';
+    }
+
+    function addNewOption() {
+        return planSelect.querySelector('option[value="' + ADD_VALUE + '"]');
     }
 
     function selectedRoomHotelId() {
@@ -36,10 +41,10 @@
 
     function filterPlanOptions() {
         var hotelId = selectedRoomHotelId();
-        var previous = planSelect.value;
+        var previous = planSelect.value === ADD_VALUE ? previousPlanValue : planSelect.value;
         var visibleCount = 0;
         Array.from(planSelect.options).forEach(function (opt) {
-            if (opt.value === '') {
+            if (opt.value === '' || opt.value === ADD_VALUE) {
                 opt.hidden = false;
                 return;
             }
@@ -53,13 +58,17 @@
         if (hintEl) {
             hintEl.hidden = hotelId > 0;
         }
-        if (addBtn) {
-            addBtn.disabled = hotelId < 1;
+        var addOpt = addNewOption();
+        if (addOpt) {
+            addOpt.disabled = hotelId < 1;
         }
         if (planSelect.selectedOptions[0] && planSelect.selectedOptions[0].hidden) {
             planSelect.value = '';
         } else if (previous) {
             planSelect.value = previous;
+        }
+        if (planSelect.value !== ADD_VALUE) {
+            previousPlanValue = planSelect.value;
         }
         updatePlanActionLinks();
         return visibleCount;
@@ -120,22 +129,26 @@
         if (!opt) {
             opt = document.createElement('option');
             opt.value = String(planId);
-            planSelect.appendChild(opt);
+            var addOpt = addNewOption();
+            if (addOpt) {
+                planSelect.insertBefore(opt, addOpt);
+            } else {
+                planSelect.appendChild(opt);
+            }
         }
         opt.textContent = label;
         opt.setAttribute('data-hotel-id', String(hotelId || 0));
         planSelect.value = String(planId);
+        previousPlanValue = planSelect.value;
         filterPlanOptions();
     }
 
-    if (addBtn) {
-        addBtn.addEventListener('click', function () {
-            var hotelId = selectedRoomHotelId();
-            if (hotelId < 1) {
-                return;
-            }
-            openRatePlanModal(moduleBase() + 'create.php?embed=1&hotel_id=' + encodeURIComponent(hotelId), 'create');
-        });
+    function openCreateModal() {
+        var hotelId = selectedRoomHotelId();
+        if (hotelId < 1) {
+            return;
+        }
+        openRatePlanModal(moduleBase() + 'create.php?embed=1&hotel_id=' + encodeURIComponent(hotelId), 'create');
     }
 
     if (viewBtn) {
@@ -159,6 +172,12 @@
     }
 
     planSelect.addEventListener('change', function () {
+        if (planSelect.value === ADD_VALUE) {
+            planSelect.value = previousPlanValue || '';
+            openCreateModal();
+            return;
+        }
+        previousPlanValue = planSelect.value;
         updatePlanActionLinks();
     });
 
