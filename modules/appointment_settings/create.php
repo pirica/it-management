@@ -126,9 +126,10 @@ foreach ($hours as $dow => $hourRow) {
             <input class="form-control" type="number" name="sort_order" id="sort_order" value="50">
         </div>
         <div class="form-group">
+            <label>Active</label>
             <label class="itm-checkbox-control">
                 <input type="checkbox" name="active" value="1" checked>
-                <span>Active</span>
+                <span>Active <span class="itm-check-indicator" aria-hidden="true">✅</span></span>
             </label>
         </div>
         <button type="submit" class="btn btn-primary" title="Save">💾</button>
@@ -199,9 +200,10 @@ foreach ($hours as $dow => $hourRow) {
             <input class="form-control" type="text" name="label" id="type_label" placeholder="e.g. Phone Support">
         </div>
         <div class="form-group">
+            <label>Active</label>
             <label class="itm-checkbox-control">
                 <input type="checkbox" name="active" value="1" checked>
-                <span>Active</span>
+                <span>Active <span class="itm-check-indicator" aria-hidden="true">✅</span></span>
             </label>
         </div>
         <button type="submit" class="btn btn-primary" title="Save">💾</button>

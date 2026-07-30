@@ -219,9 +219,10 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
                 </select>
             </div>
             <div class="form-group">
+                <label>Active</label>
                 <label class="itm-checkbox-control">
                     <input type="checkbox" name="active" value="1"<?php echo (int)($row['active'] ?? 0) === 1 ? ' checked' : ''; ?>>
-                    <span>Active</span>
+                    <span>Active <span class="itm-check-indicator" aria-hidden="true"><?php echo (int)($row['active'] ?? 0) === 1 ? '✅' : '❌'; ?></span></span>
                 </label>
             </div>
         <?php elseif ($kind === 'business_hour'): ?>
@@ -259,9 +260,10 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
             </div>
             <?php endforeach; ?>
             <div class="form-group">
+                <label>Active</label>
                 <label class="itm-checkbox-control">
                     <input type="checkbox" name="active" value="1"<?php echo (int)($row['active'] ?? 0) === 1 ? ' checked' : ''; ?>>
-                    <span>Active</span>
+                    <span>Active <span class="itm-check-indicator" aria-hidden="true"><?php echo (int)($row['active'] ?? 0) === 1 ? '✅' : '❌'; ?></span></span>
                 </label>
             </div>
         <?php elseif ($kind === 'visit_reason'): ?>
@@ -274,9 +276,10 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
                 <input class="form-control" type="number" name="sort_order" id="sort_order" value="<?php echo (int)($row['sort_order'] ?? 0); ?>">
             </div>
             <div class="form-group">
+                <label>Active</label>
                 <label class="itm-checkbox-control">
                     <input type="checkbox" name="active" value="1"<?php echo (int)($row['active'] ?? 0) === 1 ? ' checked' : ''; ?>>
-                    <span>Active</span>
+                    <span>Active <span class="itm-check-indicator" aria-hidden="true"><?php echo (int)($row['active'] ?? 0) === 1 ? '✅' : '❌'; ?></span></span>
                 </label>
             </div>
         <?php elseif ($kind === 'appointment_type'): ?>
@@ -294,9 +297,10 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
                 <input class="form-control" type="text" name="label" id="type_label" value="<?php echo sanitize($row['label'] ?? ''); ?>" placeholder="<?php echo sanitize(aps_type_label($row)); ?>" required>
             </div>
             <div class="form-group">
+                <label>Active</label>
                 <label class="itm-checkbox-control">
                     <input type="checkbox" name="active" value="1"<?php echo (int)($row['active'] ?? 0) === 1 ? ' checked' : ''; ?>>
-                    <span>Active</span>
+                    <span>Active <span class="itm-check-indicator" aria-hidden="true"><?php echo (int)($row['active'] ?? 0) === 1 ? '✅' : '❌'; ?></span></span>
                 </label>
             </div>
         <?php endif; ?>
