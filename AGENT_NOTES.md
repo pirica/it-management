@@ -4,114 +4,169 @@
 
 ## 1. Module Purpose
 
-The IT Management System is a multi-tenant legacy procedural PHP application (PHP 7.4) for IT infrastructure, employees, budgets, appointments, and helpdesk operations with zero external dependencies (no Composer, no NPM).
+The IT Management System is a multi-tenant legacy procedural PHP application (PHP 7.4) designed to manage IT assets, infrastructure, employees, software licenses, appointments, budgets, and helpdesk operations. It operates with zero external dependencies (no Composer, no NPM, vanilla JS, custom CSS) to ensure maximum port-ability and reliability.
 
 ---
 
 ## 2. Key Tables (system-wide)
 
-- **companies** — Tenant organizations; scopes most application data.
-- **employees** — Authentication and profiles (`username`, `password`, `totp_secret`, `totp_enabled`, `reports_to`).
-- **employee_roles** / **role_module_permissions** — RBAC (see `modules/roles_permissions/`).
-- **employee_companies** — Extra tenant grants for the company switcher.
-- **employee_sidebar_preferences** — Per-user sidebar visibility (not `ui_configuration`).
-- **ui_configuration** — Per-user UI layout, toggles, and API tier (`tier`, `api_key`, `rate_limit_*` counters).
-- **audit_logs** — DML audit trail from triggers (and PHP hooks where applicable).
-- **appointments** (+ lookup tables `appointment_*`) — Self-service IT visit booking (`modules/appointment/`).
-- **modules_registry** / **company_module_access** — Module catalog and per-tenant enablement.
+- **companies** — Tenant organizations; strictly isolates all company-scoped data.
+- **employees** — Core user registry, storing profile, credentials, active employment status, role associations, and security configuration (including `reports_to` self-referencing hierarchy, `totp_secret`, and `totp_enabled` 2FA fields).
+- **employee_roles** — Defines tenant role configurations and `sidebar_show` settings.
+- **role_module_permissions** — Controls RBAC matrix permissions (`can_view`, `can_create`, `can_edit`, `can_delete`, `can_import`, `can_export`).
+- **employee_companies** — Mapping table to grant users access to additional tenants via the tenant switcher.
+- **employee_sidebar_preferences** — Per-user personalized sidebar visibility settings (SideMenu).
+- **ui_configuration** — Per-user configuration (button positions, theme, app name, favicon, custom module icon overrides, and API integration tier keys).
+- **audit_logs** — Stores database DML audit logs automatically populated by MySQL triggers.
+- **appointments** — Stores bookings for self-service IT visits, managed by slot availability and concurrency locking.
+- **modules_registry** — Registry of all system modules.
+- **company_module_access** — Central company-module enablement matrix.
+- **share_sessions** — Unified temporary QR/code sharing logs.
+- **emails** — Mail send logs.
 
 ---
 
 ## 3. Required Relationships
 
-- **Multi-tenancy:** Tenant tables carry `company_id` → `companies(id)`. Queries use the session active company unless a flow explicitly uses the employee home company (profile save on `user-config.php`).
-- **Private modules:** Passwords, notes, private contacts, and similar tables also filter by `employee_id` — see `AGENTS.md` private-data sections.
-- **Audit actors:** `config/config.php` sets MySQL `@app_employee_id` / `@app_company_id` for trigger payloads.
-- **Parent deletes:** When child FKs lack `ON DELETE CASCADE` / `SET NULL`, detach or clear children for the active `company_id` before parent delete (see `AGENTS.md` bulk delete notes).
+- **Multi-tenancy Scoping:** Almost all tables carry a foreign key referencing `companies(id)`. Reading or writing data must always be scoped to the active session `company_id`.
+- **Private Data Scoping:** Vault modules (Passwords, Notes, Bookmarks, Private Contacts, Todo) must additionally filter queries by the logged-in user's `employee_id`.
+- **Audit Logging Context:** The PHP bootstrapper sets `@app_employee_id` and `@app_company_id` session variables in MySQL. Triggers copy this context into the `audit_logs` record during inserts, updates, or deletes.
+- **Parent Delete Dependencies:** For related tables lacking `ON DELETE CASCADE` or `SET NULL` on their foreign keys, child records must be detached or cleared for the active `company_id` *before* deleting the parent (e.g., `inventory_items` referencing `inventory_categories` must clear `category_id` before categories can be removed).
 
 ---
 
 ## 4. Business Rules (Critical for Agents)
 
-- **Security:** CSRF on POST (`itm_require_post_csrf()` / module helpers). Prepared statements for all user data (`mysqli`).
-- **Multi-tenancy:** Scope reads/writes by session `company_id` except documented exceptions (companies table, employee-home profile UPDATE, employee-scoped vault modules).
-- **Architecture:** Procedural PHP; `config/config.php` bootstraps the app. No Composer/NPM.
-- **API rate limits:** Free tier — unlimited, no API key, **session required**. Paid tiers — hourly caps, API key required. See `AGENTS.md` → **API keys and rate limits** and `includes/itm_api_rate_limit.php`.
-- **`db/` hygiene:** No executable `ALTER TABLE` in `01_schema.sql`; migrations use `DROP` + `CREATE` under `db/migrations/`. Multi-company seed admins use tenant-correct role/status lookups — see `AGENTS.md` → **Database & Schema Rules**.
-- **Login session rotation:** `login.php` calls `session_regenerate_id(true)` after successful password verification. Admin success path calls `itm_switch_active_company_session()` for the first active company when needed.
-- **Entry pages / errors:** Root `index.php` must not force `display_errors`; use Settings-driven `enable_all_error_reporting` via `config/config.php`.
-- **UTF-8:** `utf8mb4` end-to-end; do not strip emoji or punctuation to fix viewer mojibake — see `AGENTS.md` → **Character encoding**.
+### Security and Hardening
+- **SQL Injection Prevention:** Use MySQLi prepared statements exclusively (`mysqli`). Do **not** concatenate user inputs directly into SQL queries. String identifiers (tables and columns) must be validated using `itm_is_safe_identifier($name)`.
+- **CSRF Protection:** State-changing `POST` handlers must call `itm_require_post_csrf()` or local equivalents (`cr_require_valid_csrf_token()`). Forms must generate and include the CSRF token using `<input type="hidden" name="csrf_token" value="<?= itm_get_csrf_token() ?>">`.
+- **Redaction of Sensitive Fields:** Passwords, Master Keys, and reset tokens must never be written in plain text to log files, `attempts.email`, or `audit_logs`.
+- **Character Encoding:** The database, connection, and all source code files operate on `utf8mb4` with `utf8mb4_unicode_ci` collations. Do not strip or alter Unicode characters (such as emojis or portuguese accents) under the guise of fixing mojibake.
+- **Directory Listing Prevention:** Every folder under the repository root must contain an empty `index.html` placeholder to prevent directory indexing.
 
-### Appointment booking (client validation)
+### Recently Modified Subsystems
 
-In `js/appointment.js`, the schedule control stays clickable for validation: missing visit reason → `alert('--Select a reason for your appointment--')`; missing slot → `alert('Select an appointment time.')`. The button is disabled only during the schedule AJAX call. Slot concurrency uses `appointments.booking_lock` (unique per company). Regression: `php scripts/verify_appointment.php`.
+#### 1. Roles & Permissions Module (`modules/roles_permissions/`)
+- Allows browsing tenant roles and configuring the permissions matrix for each.
+- Multi-tenancy is strictly enforced, and only `itm_is_admin()` can edit permissions, create, or modify roles (non-admins receive HTTP 403).
+- The seeded **Admin** role uses the `ALL` wildcard and cannot be deleted, modified, or updated.
+- Active employee counts on role cards are calculated by joining the `employees` table with the active HR status (`employment_status_id` linked to "Active").
+- Custom sidebar visibility overrides are managed using `employee_roles.sidebar_show` (0 hides the sidebar modules).
+
+#### 2. Dynamic Module-Title Emojis (Mandatory)
+- Individual module browser `<title>` tags must dynamically prepend the user-selected or system-configured custom emoji at runtime.
+- Prepend the title rendering by calling `itm_crud_apply_module_icon_to_browser_title($conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0), basename(dirname($_SERVER['PHP_SELF'])), (string)($crud_title ?? ''))` immediately before the `<title>` tag.
+
+#### 3. API Keys & Rate Limits
+- API credentials and quotas are stored in `ui_configuration`.
+- Enforced via `includes/itm_api_rate_limit.php`.
+- **Tiers and Limits (rolling hour):**
+  - **Free:** No limit. **Authenticated session required** (no key required).
+  - **Basic:** 300 quota limit. API key required (`X-API-Key` or `api_key`).
+  - **Pro:** 1000 quota limit. API key required.
+  - **Enterprise:** 10000 quota limit. API key required.
+- Quota probes can be verified by querying `GET scripts/api.php?rate_limit=1` without consuming API usage quota.
+
+#### 4. Explorer Module
+- High-security multi-tenant file system utilizing storage under `files/{company_id}/`.
+- Paths are divided into `Common/`, `Departments/{dept_id}/` (members only), `Private/{username}_{employee_id}/` (owner only, requires Vault unlock), and `Trash/`.
+- Traversal attacks (`..`) are blocked by Normalizing slashes and validating boundaries.
+- **`downloadZip` Contract:** Allows recursive ZIP downloads **only** for the exact path of the user's own `Private/{username}_{employee_id}/` directory. Other ZIP targets are rejected with HTTP 403.
+- Directory segment hardening is forced by writing a `.htaccess` file with `deny_http` rules (`RewriteRule ^ - [F]`) on **each folder segment** in the chain.
+
+#### 5. Private Contacts, Notes, Todo, Bookmarks, and Passwords Vaults
+- Vault tables (`password_entries`, `private_contacts`, `notes`, `todo`, `bookmarks`) store sensitive user PII encrypted at rest using `itm_encrypt()` and the user's master key.
+- Unlocking the vault populates `$_SESSION['vault_key']`. If locked, a lock screen is displayed.
+- When `employees.totp_enabled = 1` is configured on the user row, the vault unlock interface requires both the master key and a valid 6-digit TOTP authenticator code (`includes/itm_vault_unlock.php`).
+- Vault fields are decrypted/hydrated at runtime and sorted/searched within PHP (no direct SQL `LIKE` on ciphertext).
+- Master key rotation atomically re-encrypts all vault entries using a database transaction to prevent corruption.
+
+#### 6. Email Management (`modules/emails/` and `modules/email_smtp_configurations/`)
+- Supports custom tenant SMTP profiles, automated alert rules, and centralized logging.
+- Passwords are encrypted with `itm_email_encrypt_password()`.
+- System operations (password resets, invitations, onboarding approvals, alert runners) dispatch mail using `itm_send_email()`.
+- The `emails` log is private-data exempt from audit triggers.
+
+#### 7. Appointment Scheduling (`modules/appointment/`)
+- Self-service visit booking system.
+- To prevent double-booking concurrent requests, inserts set `appointments.booking_lock` and soft-deletes release it.
+- Business hours, reasons, and modalities (In-person, Remote) are configured per tenant company.
+
+#### 8. Ops Report (Daily Operations Report)
+- Tracks daily hotel operations per `company_id` and `report_date`.
+- Non-admins are restricted by a **D-2 Edit Lock**: they can edit today's and yesterday's dates only; older reports are read-only.
+- Custom section titles, labels, and headers persist as JSON in `ops_report.report_ui_json`.
+
+#### 9. License Management (`modules/license_management/`)
+- Tracks software licenses linked to `license_types` and `suppliers`.
+- Prices entered in create/edit or Excel imports normalize commas to dots (`cr_normalize_price_input()`).
+
+#### 10. Request Password (`modules/request_password/`)
+- Reset workflow requiring HR, HOD, and ISM approvals.
+- Features digital signature blocks capturing Applicant, ISM, HR, and HOD dates.
+- Deleting request logs is restricted only to the creating user (`created_by = session_employee_id`).
+
+#### 11. CRUD Record Share (Temporary QR / Code Sharing)
+- Exposes temporary QR codes, 6-digit access codes, WhatsApp, and Outlook share links for record snapshots across 23 capable modules.
+- Managed via `includes/itm_crud_record_share.php` and log entries in `share_sessions` (private-data exempt).
+
+#### 12. Company Module Access (`modules/company_module_access/`)
+- Lets administrators enable/disable modules per company.
+- Access is allowed by default; explicit `enabled = 0` rows deny access.
+- Changes are configured in an admin matrix utilizing AJAX toggles.
 
 ---
 
 ## 5. UI Behavior Requirements
 
-Flattened CRUD modules follow `AGENTS.md` (search/sort/pagination, bulk delete when `$totalRows >= $perPage`, `$displayFieldColumns = $uiColumns`, NO MIXED emoji action labels, `itm-actions-cell` + `data-itm-actions-origin="1"`, import endpoint attributes). Bespoke modules (calendar, explorer, appointment, `user-config.php`, etc.) are listed in `docs/list_bespoke_UI.txt` — match their real PHP, not the generic scaffold checklist.
+- **Actions Column Layout:** Action headers and cells must carry `class="itm-actions-cell"` and `data-itm-actions-origin="1"` to enable correct dynamic alignment (`js/ui-layout.js`).
+- **Bulk Selection Toolbar:** Above tables on index pages, display a bulk form with "Select to Delete", "Cancel", and "Clear Table".
+  - Gated so that bulk actions render only when the row count is greater than or equal to `$perPage`.
+  - The "Cancel" button must have `type="button"` and `data-itm-bulk-cancel="1"` to prevent accidental POST submissions.
+- **Search Column Alignment:** The search function must query the same columns displayed in the UI. Set `$displayFieldColumns = $uiColumns` before the SQL search block to avoid undefined variable warnings.
+- **UI Action Labels (Zero Tolerance for Mixed Labels):** Standalone action buttons, links, and page headers must feature **emoji-only visible labels** (e.g., Back 🔙, Save 💾, Edit ✏️, Delete 🗑️, View 🔎, Create ➕). Compound descriptive titles must reside exclusively in `title` or `aria-label` tags.
+- **Pagination Controls:** Render emoji-only navigation icons (⏮️ First, ◀️ Previous, ▶️ Next, ⏭️ Last) without text labels. Preserve search, sort, and page parameters across URLs.
 
 ---
 
-## 6. API Actions (cross-cutting)
+## 6. API Actions (If Applicable)
 
-- **`scripts/api.php?rate_limit=1`** — Rate-limit probe (does not consume quota).
-- **`modules/explorer/api.php`** — Tenant file manager; `downloadZip` only for own `Private/{username}_{employee_id}` tree.
-- **`modules/knowledge_base/chat_api.php`** — Chatbot; CSRF + rate limit + HTML escape in JS.
-- **`modules/appointment/api.php`** — `week_slots` (GET), `schedule` (POST + CSRF).
-
-Module-specific JSON/import endpoints are documented in `scripts/api.php` and per-module `AGENT_NOTES.md`.
+- **`import_excel_rows`** — JSON POST handler on index pages supporting spreadsheet imports. Updates modify only columns present in the payload header to prevent data loss.
+- **`select_options_api.php`** — Dynamic lookup options and quick-adds. Validated against strict whitelists (`includes/itm_select_options_policy.php`).
+- **`get_ports.php` / `update_port.php`** — API endpoints driving the Switch Port Manager tiles.
 
 ---
 
-## 7. File Structure (high level)
+## 7. File Structure (High Level)
 
-- **config/**, **includes/**, **modules/**, **scripts/**, **db/** — application and schema.
-- **login.php** — Authentication; regenerates session id on success; Admin login calls `itm_switch_active_company_session()` for the initial company so welcome email/username match the tenant (not only after manual company switch).
-- **index.php** — Company selection after login (no forced error display); skipped when `itm_try_auto_select_single_company_session()` finds exactly one accessible tenant (also from `login.php` for non-admins).
-- **dashboard.php** — Employee landing: personal stat cards via `includes/itm_employee_dashboard.php` / `itm_employee_dashboard_cards.php`; **My Activity** → `modules/myactivity/`; **Private** section cards; no Sidebar Prefs or Audit Logs cards. Regression: `php scripts/verify_employee_dashboard.php`.
-- **admin.php** — Admin company overview: module totals exclude soft-deleted rows; **Active** / **On Leave** via `itm_employee_count_by_employment_status_name()`; **Online now** via session presence; **Settings** + **Scripts** cards; sections via `includes/itm_admin_dashboard_cards.php`. Regression: `php scripts/verify_dashboard_active_employees.php`, `php scripts/verify_admin_page_gate.php`.
-- **css/styles.css** — Global stylesheet (see **`css/AGENT_NOTES.md`**).
-- **phpunit/** — PHPUnit PHAR and tests; runner **`scripts/run_tests.php`**; coverage **`phpunit/coverage/html/coverage.html`**. See **`phpunit/AGENT_NOTES.md`** and **`scripts/SCRIPTS.md`**.
+- **config/** — Bootstrapping, database connectivity, and session variables.
+- **includes/** — Shared templates, headers, sidebars, and functional helpers.
+- **modules/** — Segmented folders containing procedural CRUD files (`index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`).
+- **scripts/** — Diagnostic, static audit, and regression testing CLI/Browser utilities.
+- **db/** — Database SQL schema, triggers, and seed files.
 
 ---
 
 ## 8. Multi-Tenant Rules
 
-- Default list/CRUD queries bind `company_id` from `$_SESSION['company_id']`.
-- Vault/private modules also bind `employee_id` from the session.
-- Profile and file paths under `files/{home_company_id}/Private/{username}_{employee_id}/` use the employee **home** company, not only the switched tenant.
-- Admins use `employee_companies` + session switcher; switching updates active `company_id` for subsequent requests.
+- Database queries must always append `WHERE company_id = ?` to prevent cross-tenant data leaks.
+- Tenant profiles and directory uploads use the employee's home `company_id` (not the switched session company) when editing personal profiles.
 
 ---
 
 ## 9. Audit Logging Requirements
 
-- **Database triggers:** `trg_{table}_audit_insert|update|delete` in `db/03_triggers.sql` write to `audit_logs` on DML (not gated by the Settings `enable_audit_logs` toggle).
-- **Private-data exempt tables** (no triggers / no PHP audit copy): full list in `AGENTS.md` → **Private data — no audit trail** (`emails`, vault tables, `share_sessions`, todo/notes/events/bookmarks, live chat bodies, etc.).
+- Standard CRUD tables define INSERT, UPDATE, and DELETE triggers under `db/03_triggers.sql`. Triggers execute unconditionally on DML.
+- **Private-Data Exempt Tables:** Sensitive user tables (emails, password credentials, chat messages, notes, todo, bookmarks, QR share sessions) are excluded from `audit_logs` triggers to maintain privacy.
 
 ---
 
 ## 10. Common Pitfalls
 
-- Bypassing session-based company isolation. [Cursor-Valid]
-- Introducing external libraries. [Cursor-Valid]
-- Forgetting to update `db/` when changing the schema. [Cursor-Valid]
-- Editing `db/*.sql` by hand instead of keeping `01_schema.sql` / migrations aligned. [Cursor-Valid]
-- Allowing arbitrary line-wrapping in administrative or diagnostic reporting tables (use `white-space: nowrap` and a horizontal scroll wrapper). [Cursor-Fixed]
-- Session fixation: reusing the pre-login session id after authentication without regeneration. [Cursor-Fixed]
-- Session cookie missing HttpOnly / SameSite / Secure (when HTTPS). [Cursor-Fixed]
-- Hardcoding `display_errors` on `index.php` instead of Settings-driven config. [Cursor-Fixed]
-- `user-config.php` System Access SELECT must not `array_merge` hardcoded meta names absent from `employee_system_access` (e.g. inventing `changed_at` → prepare failure). [Cursor-Fixed]
-- `user-config.php` profile form must save and re-display `birthday` / `hide_year`; blank birthday and unchecked hide_year must clear/persist correctly. [Cursor-Fixed]
-- `user-config.php` profile UPDATE must use the employee home `company_id`, not the tenant-switcher session company. Theme must set `<html data-theme>` + CSS variables. [Cursor-Fixed]
-- **Manual SQL string false positives:** URL href builders are not SQL — `scripts/check_manual_sql_string.php`; see `scripts/SCRIPTS.md`.
-- `user-config.php` profile photo: broken image often means non-absolute `modules/explorer/file.php` URL — use `emp_profile_photo_url()` + `BASE_URL`. [Cursor-Fixed]
-- Employee dashboard stats: `includes/itm_user_config_stats.php`; `floor_plans` uses `created_by`, not `created_by_employee_id`. [Cursor-Fixed]
-- `db/` tenant replicas must resolve FK seeds by `company_id` + business key, not assumed shared auto-increment ids. [Cursor-Fixed]
-- **Auto-scaffold pollution:** `SHOW TABLES` / MBQA may create stub `modules/{table}/` dirs — use `itm_module_dir_is_standard_crud_scaffold()` to detect; `list_active_and_checkboxes` skips stubs and bespoke slugs from `docs/list_bespoke_UI.txt`. [Cursor-Valid]
-- **Directory listing / uploads:** Every repo folder needs `index.html`; upload trees need `itm_ensure_upload_directory()` policies (`upload`, `deny_http`, `deny_all`) — see `AGENTS.md` and `scripts/AGENT_NOTES.md`.
+- **Incorrect Upload Directory Creation:** Do **not** use bare `mkdir()`. Always call `itm_ensure_upload_directory_chain()` to generate `.htaccess` and `index.html` placeholders correctly.
+- **Broken Edit Selections:** FK dropdowns on edit forms must preserve and append currently selected values even if they do not match the current company options list, preventing form resets to `-- Select --`.
+- **Empty-Table Sample Data Duplication:** When seeding sample templates, verify that the table is empty for the target tenant before performing inserts.
+- **Deleting References with RESTRICT Constraint:** If deleting a parent record with a restricted child relationship, the application must detach or null-out child FKs for the active `company_id` *before* deleting the parent to prevent database constraint exceptions.
 
 ---
 
@@ -126,7 +181,7 @@ $stmt->execute();
 $result = $stmt->get_result();
 ```
 
-### Safe INSERT (tenant-stamped)
+### Safe INSERT
 
 ```php
 $stmt = $conn->prepare('INSERT INTO departments (company_id, name, active, created_by) VALUES (?, ?, 1, ?)');
@@ -138,22 +193,9 @@ $stmt->execute();
 
 ## 12. Module Owner Notes
 
-- Regression and audit scripts: catalog in `scripts/scripts.php`; conventions in `scripts/SCRIPTS.md`.
-- Useful gates: `php scripts/check_sql_injection_coverage.php`, `php scripts/check_ui_action_emoji.php`, `php scripts/check_fk_label_search_coverage.php`, `php scripts/list_active_and_checkboxes.php`, `php scripts/run_tests.php`.
-- **Local dev login bypass:** `php scripts/bypass_login.php` → set browser `PHPSESSID` → open `http://localhost/it-management/` (Admin, company 1, vault unlocked when script sets it).
-
----
-
-## 13. Employee Profile (`user-config.php`)
-
-- **Vault Security (`#vault-security`):** Master-key create/change, optional TOTP 2FA, client-side key generator, secure one-time display after save. Notification-only emails on create/update (no plaintext secrets). See `docs/VAULT.md`.
-- **Scoping:** Profile and security data scoped to `employee_id`.
-- **Stat cards:** On `dashboard.php`; `user-config.php` is profile/preferences only; back link → `dashboard.php`.
-- **Profile save (`action=update_profile`):** `work_email`, `mobile_phone`, `theme`, emergency contact fields, `birthday` (`itm_parse_date_input`), `hide_year` (checkbox). Full name readonly (Employees module). UPDATE uses employee **home** `company_id`. Regression: `php scripts/verify_user_config_profile.php`.
-- **Profile photo:** `files/{home_company_id}/Private/{username}_{employee_id}/profile/`; display via `emp_profile_photo_url()`.
-- **Layout:** `.layout-2col` — 280px sidebar column; stacks at `max-width: 768px`.
-- **Personalized Sidebar:** `itm_sidebar_item_effective_visible()` for checkbox state; saves to `employee_sidebar_preferences`; reload `$ui_config` from `itm_get_ui_configuration()` after save; `itm_normalize_sidebar_submenu_order()`; section visibility via `itm_sidebar_section_effective_visible()`.
-- **Recent Activity:** `{action} in {table_name}` with link to module or catalog href.
-- **Security flash messages:** Password, vault, and TOTP feedback at page top and above each section Save button.
-- **Audit:** Profile and security changes logged to `audit_logs` when applicable.
-- **System Access Overview:** `DESCRIBE employee_system_access` then SELECT existing columns only; meta/audit columns excluded from flag counts.
+### Mandatory Verification Tools
+- Run PHP syntax linter: `php -l path/to/file.php`
+- Run SQL Injection static analyzer: `php scripts/check_sql_injection_coverage.php`
+- Run UI Action Emoji validator: `php scripts/check_ui_action_emoji.php`
+- Run the PHPUnit suite: `php scripts/run_tests.php`
+- Run the Smoke Test suite: `bash scripts/smoke_test.sh`
