@@ -1,15 +1,17 @@
 (function () {
-    var ADD_VALUE = '__add_new__';
     var planSelect = document.getElementById('hb-booking-portal-rate-plan-id');
     var roomSelect = document.getElementById('hb-booking-room-id');
     if (!planSelect) {
         return;
     }
 
+    var hintEl = document.getElementById('hb-booking-rate-plan-hint');
+    var addBtn = document.getElementById('hb-booking-rate-plan-add');
     var viewBtn = document.getElementById('hb-booking-rate-plan-view');
     var editBtn = document.getElementById('hb-booking-rate-plan-edit');
     var modal = document.getElementById('hb-rate-plan-modal');
     var frame = document.getElementById('hb-rate-plan-modal-frame');
+    var modalTitle = document.getElementById('hb-rate-plan-modal-title');
     var baseUrl = (frame && frame.getAttribute('data-base')) || (window.ITM_BASE_URL || '/');
 
     function moduleBase() {
@@ -17,29 +19,50 @@
     }
 
     function selectedRoomHotelId() {
-        if (!roomSelect || !roomSelect.selectedOptions.length) {
+        if (!roomSelect || !roomSelect.selectedOptions.length || !roomSelect.value) {
             return 0;
         }
         return parseInt(roomSelect.selectedOptions[0].getAttribute('data-hotel-id') || '0', 10);
     }
 
+    function formatPlanLabel(name, slug) {
+        var label = String(name || '').trim();
+        var s = String(slug || '').trim();
+        if (s !== '') {
+            label = label !== '' ? label + ' (' + s + ')' : s;
+        }
+        return label;
+    }
+
     function filterPlanOptions() {
         var hotelId = selectedRoomHotelId();
         var previous = planSelect.value;
+        var visibleCount = 0;
         Array.from(planSelect.options).forEach(function (opt) {
-            if (opt.value === '' || opt.value === ADD_VALUE) {
+            if (opt.value === '') {
                 opt.hidden = false;
                 return;
             }
             var optHotel = parseInt(opt.getAttribute('data-hotel-id') || '0', 10);
-            opt.hidden = hotelId > 0 && optHotel !== hotelId;
+            var show = hotelId <= 0 || optHotel === hotelId;
+            opt.hidden = !show;
+            if (show) {
+                visibleCount++;
+            }
         });
-        if (planSelect.value !== ADD_VALUE && planSelect.selectedOptions[0] && planSelect.selectedOptions[0].hidden) {
+        if (hintEl) {
+            hintEl.hidden = hotelId > 0;
+        }
+        if (addBtn) {
+            addBtn.disabled = hotelId < 1;
+        }
+        if (planSelect.selectedOptions[0] && planSelect.selectedOptions[0].hidden) {
             planSelect.value = '';
-        } else if (previous && previous !== ADD_VALUE) {
+        } else if (previous) {
             planSelect.value = previous;
         }
         updatePlanActionLinks();
+        return visibleCount;
     }
 
     function updatePlanActionLinks() {
@@ -47,27 +70,34 @@
         var show = planId > 0;
         if (viewBtn) {
             viewBtn.hidden = !show;
-            if (show) {
-                viewBtn.href = moduleBase() + 'view.php?id=' + encodeURIComponent(planId);
-                viewBtn.target = '_blank';
-                viewBtn.rel = 'noopener noreferrer';
-            }
         }
         if (editBtn) {
             editBtn.hidden = !show;
-            if (show) {
-                editBtn.href = moduleBase() + 'edit.php?id=' + encodeURIComponent(planId);
-                editBtn.target = '_blank';
-                editBtn.rel = 'noopener noreferrer';
-            }
         }
     }
 
-    function openRatePlanModal(hotelId) {
-        if (!modal || !frame || hotelId < 1) {
+    function setModalTitle(mode) {
+        if (!modalTitle) {
             return;
         }
-        frame.src = moduleBase() + 'create.php?embed=1&hotel_id=' + encodeURIComponent(hotelId);
+        if (mode === 'create') {
+            modalTitle.textContent = '➕';
+            modalTitle.setAttribute('title', 'Create rate plan');
+        } else if (mode === 'edit') {
+            modalTitle.textContent = '✏️';
+            modalTitle.setAttribute('title', 'Edit rate plan');
+        } else {
+            modalTitle.textContent = '🔎';
+            modalTitle.setAttribute('title', 'View rate plan');
+        }
+    }
+
+    function openRatePlanModal(url, mode) {
+        if (!modal || !frame || !url) {
+            return;
+        }
+        setModalTitle(mode || 'view');
+        frame.src = url;
         modal.hidden = false;
         document.body.classList.add('hb-plan-maint-modal-open');
     }
@@ -82,32 +112,53 @@
         document.body.classList.remove('hb-plan-maint-modal-open');
     }
 
-    function appendPlanOption(planId, label, hotelId) {
+    function upsertPlanOption(planId, label, hotelId) {
         if (!planId || !label) {
             return;
         }
-        var addOpt = planSelect.querySelector('option[value="' + ADD_VALUE + '"]');
-        var opt = document.createElement('option');
-        opt.value = String(planId);
-        opt.textContent = label;
-        opt.setAttribute('data-hotel-id', String(hotelId || 0));
-        if (addOpt) {
-            planSelect.insertBefore(opt, addOpt);
-        } else {
+        var opt = planSelect.querySelector('option[value="' + String(planId) + '"]');
+        if (!opt) {
+            opt = document.createElement('option');
+            opt.value = String(planId);
             planSelect.appendChild(opt);
         }
+        opt.textContent = label;
+        opt.setAttribute('data-hotel-id', String(hotelId || 0));
         planSelect.value = String(planId);
         filterPlanOptions();
     }
 
-    planSelect.addEventListener('change', function () {
-        if (planSelect.value === ADD_VALUE) {
+    if (addBtn) {
+        addBtn.addEventListener('click', function () {
             var hotelId = selectedRoomHotelId();
-            planSelect.value = planSelect.dataset.previousValue || '';
-            openRatePlanModal(hotelId);
-            return;
-        }
-        planSelect.dataset.previousValue = planSelect.value || '';
+            if (hotelId < 1) {
+                return;
+            }
+            openRatePlanModal(moduleBase() + 'create.php?embed=1&hotel_id=' + encodeURIComponent(hotelId), 'create');
+        });
+    }
+
+    if (viewBtn) {
+        viewBtn.addEventListener('click', function () {
+            var planId = parseInt(planSelect.value || '0', 10);
+            if (planId < 1) {
+                return;
+            }
+            openRatePlanModal(moduleBase() + 'view.php?id=' + encodeURIComponent(planId) + '&embed=1', 'view');
+        });
+    }
+
+    if (editBtn) {
+        editBtn.addEventListener('click', function () {
+            var planId = parseInt(planSelect.value || '0', 10);
+            if (planId < 1) {
+                return;
+            }
+            openRatePlanModal(moduleBase() + 'edit.php?id=' + encodeURIComponent(planId) + '&embed=1', 'edit');
+        });
+    }
+
+    planSelect.addEventListener('change', function () {
         updatePlanActionLinks();
     });
 
@@ -132,7 +183,8 @@
         if (data.type === 'hb_rate_plan_embed_close') {
             closeRatePlanModal();
         } else if (data.type === 'hb_rate_plan_embed_saved') {
-            appendPlanOption(parseInt(data.id, 10) || 0, data.name || '', parseInt(data.hotel_id, 10) || 0);
+            var label = formatPlanLabel(data.name, data.rate_plan_slug);
+            upsertPlanOption(parseInt(data.id, 10) || 0, label, parseInt(data.hotel_id, 10) || 0);
             closeRatePlanModal();
         }
     });

@@ -32,4 +32,5 @@
 .hb-plan-maint-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border-color,#e0e0e0)}
 .hb-plan-maint-modal-head h2{margin:0;font-size:16px}
 .hb-plan-maint-modal-frame{border:0;width:100%;flex:1 1 auto;min-height:480px;background:var(--bg,#fff)}
+#hb-rate-plan-modal .hb-plan-maint-modal-frame{min-height:560px}
 body.hb-plan-maint-modal-open{overflow:hidden}

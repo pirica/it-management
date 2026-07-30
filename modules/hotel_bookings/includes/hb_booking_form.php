@@ -60,6 +60,17 @@ if (!function_exists('hb_booking_load_form_options')) {
             }
             mysqli_stmt_close($rstmt);
         }
+        $employeeId = (int) ($_SESSION['employee_id'] ?? 0);
+        $hotelIds = [];
+        foreach ($out['rooms'] as $roomRow) {
+            $hid = (int) ($roomRow['hotel_id'] ?? 0);
+            if ($hid > 0) {
+                $hotelIds[$hid] = true;
+            }
+        }
+        foreach (array_keys($hotelIds) as $ensureHotelId) {
+            itm_hotel_booking_ensure_portal_rate_plans_for_hotel($conn, $companyId, (int) $ensureHotelId, $employeeId);
+        }
         $pstmt = mysqli_prepare($conn, 'SELECT id, hotel_id, name, rate_plan_slug, plan_slot FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY hotel_id ASC, plan_slot ASC');
         if ($pstmt) {
             mysqli_stmt_bind_param($pstmt, 'i', $companyId);
@@ -248,6 +259,7 @@ if (!function_exists('hb_booking_render_form_fields')) {
         echo '</select></div>';
 
         echo '<div class="form-group hb-booking-rate-plan-field"><label for="hb-booking-portal-rate-plan-id">Portal rate plan</label>';
+        echo '<p class="text-muted" id="hb-booking-rate-plan-hint" style="margin:0 0 8px;font-size:0.9em;" hidden>Select a room to list rate plans for that hotel.</p>';
         echo '<div class="hb-booking-rate-plan-controls" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">';
         echo '<select name="portal_rate_plan_id" id="hb-booking-portal-rate-plan-id" class="form-control" style="min-width:220px;flex:1 1 220px;">';
         echo '<option value="">-- Select --</option>';
@@ -262,10 +274,10 @@ if (!function_exists('hb_booking_render_form_fields')) {
             }
             echo '<option value="' . $pid . '" data-hotel-id="' . $hid . '"' . $sel . '>' . sanitize($planLabel) . '</option>';
         }
-        echo '<option value="__add_new__">➕</option>';
         echo '</select>';
-        echo '<a class="btn btn-sm hb-booking-rate-plan-view" id="hb-booking-rate-plan-view" href="#" title="View" hidden>🔎</a>';
-        echo '<a class="btn btn-sm hb-booking-rate-plan-edit" id="hb-booking-rate-plan-edit" href="#" title="Edit" hidden>✏️</a>';
+        echo '<button type="button" class="btn btn-sm" id="hb-booking-rate-plan-add" data-hb-rate-plan-add="1" title="Create">➕</button>';
+        echo '<button type="button" class="btn btn-sm hb-booking-rate-plan-view" id="hb-booking-rate-plan-view" title="View" hidden>🔎</button>';
+        echo '<button type="button" class="btn btn-sm hb-booking-rate-plan-edit" id="hb-booking-rate-plan-edit" title="Edit" hidden>✏️</button>';
         echo '</div></div>';
 
         echo '<div class="hb-booking-dates-row">';
