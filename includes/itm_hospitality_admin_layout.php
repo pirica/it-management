@@ -10,9 +10,11 @@ if (!function_exists('itm_hospitality_admin_layout_begin')) {
      */
     function itm_hospitality_admin_layout_begin($crudTitle, array $extraCssRelative = [])
     {
-        $currentUiConfig = $GLOBALS['ui_config'] ?? [];
-        $appName = $GLOBALS['app_name'] ?? itm_ui_config_app_name($currentUiConfig);
-        $faviconUrl = $GLOBALS['favicon_url'] ?? null;
+        global $conn, $company_id, $ui_config, $app_name, $favicon_url;
+
+        $currentUiConfig = $ui_config ?? [];
+        $appName = $app_name ?? itm_ui_config_app_name($currentUiConfig);
+        $faviconUrl = $favicon_url ?? null;
         echo '<!DOCTYPE html><html lang="en"><head>';
         echo '<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">';
         echo '<title>' . sanitize((string) $crudTitle) . ' - ' . sanitize((string) $appName) . '</title>';
