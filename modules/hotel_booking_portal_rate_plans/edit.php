@@ -166,6 +166,7 @@ window.parent.postMessage({
     type: 'hb_rate_plan_embed_saved',
     id: <?php echo (int) $id; ?>,
     name: <?php echo json_encode($name, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
+    rate_plan_slug: <?php echo json_encode($slug, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
     hotel_id: <?php echo (int) $hotelId; ?>
 }, '*');
 <?php endif; ?>

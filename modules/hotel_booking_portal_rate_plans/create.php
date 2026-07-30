@@ -109,9 +109,11 @@ foreach ($definitions as $def) {
 <div class="card">
 <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
 <h1 title="Create rate plan" style="margin:0;">➕</h1>
+<?php if (!$embedMode): ?>
 <div class="itm-hospitality-list-actions">
 <?php itm_hospitality_render_bookings_hub_link('btn'); ?>
 </div>
+<?php endif; ?>
 </div>
 <?php foreach ($errors as $e): ?>
 <p class="badge badge-danger"><?php echo sanitize($e); ?></p>
@@ -124,11 +126,23 @@ foreach ($definitions as $def) {
 <?php if ($embedMode): ?><input type="hidden" name="embed" value="1"><?php endif; ?>
 <div class="form-group">
 <label for="hotel_id">Hotel</label>
+<?php if ($embedMode && $hotelId > 0): ?>
+<p class="form-control" style="background:var(--card-bg,#f5f5f5);"><?php
+    foreach ($hotels as $h) {
+        if ((int) $h['id'] === $hotelId) {
+            echo sanitize($h['name']);
+            break;
+        }
+    }
+?></p>
+<input type="hidden" name="hotel_id" value="<?php echo (int) $hotelId; ?>">
+<?php else: ?>
 <select name="hotel_id" id="hotel_id" class="form-control" required>
 <?php foreach ($hotels as $h): ?>
 <option value="<?php echo (int) $h['id']; ?>"<?php echo (int) $h['id'] === $hotelId ? ' selected' : ''; ?>><?php echo sanitize($h['name']); ?></option>
 <?php endforeach; ?>
 </select>
+<?php endif; ?>
 </div>
 <div class="form-group">
 <label for="plan_template">Template (optional)</label>
