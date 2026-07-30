@@ -1395,8 +1395,35 @@ if (!function_exists('itm_hotel_booking_planning_bar_palette')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_normalize_booking_color')) {
+  function itm_hotel_booking_normalize_booking_color($raw) {
+    $hex = trim((string) $raw);
+    if (preg_match('/^#[0-9A-Fa-f]{6}$/', $hex)) {
+      return strtolower($hex);
+    }
+    return '';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_resolve_booking_color')) {
+  /**
+   * Stored #rrggbb or palette fallback (by booking id / seed).
+   */
+  function itm_hotel_booking_resolve_booking_color($raw, $fallbackSeed = 0) {
+    $normalized = itm_hotel_booking_normalize_booking_color($raw);
+    if ($normalized !== '') {
+      return $normalized;
+    }
+    return itm_hotel_booking_planning_booking_bar_color((int) $fallbackSeed);
+  }
+}
+
 if (!function_exists('itm_hotel_booking_planning_booking_bar_color')) {
-  function itm_hotel_booking_planning_booking_bar_color($bookingId) {
+  function itm_hotel_booking_planning_booking_bar_color($bookingId, $storedColor = null) {
+    $normalized = itm_hotel_booking_normalize_booking_color($storedColor);
+    if ($normalized !== '') {
+      return $normalized;
+    }
     $palette = itm_hotel_booking_planning_bar_palette();
     $idx = (int) $bookingId % count($palette);
     return $palette[$idx];

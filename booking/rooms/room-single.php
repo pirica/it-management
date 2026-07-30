@@ -78,9 +78,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
             $fs = (int) ($status['future_status_id'] ?? 0);
             $ps = (int) ($status['present_status_id'] ?? 0);
             $hs = (int) ($status['history_status_id'] ?? 0);
-            $ins = mysqli_prepare($conn, 'INSERT INTO hotel_bookings (company_id, customer_id, room_id, check_in, check_out, payment_amount, notes, future_status_id, present_status_id, history_status_id, active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), 1, NOW())');
+            $bookingColor = itm_hotel_booking_resolve_booking_color('', mt_rand(1, 99999));
+            $ins = mysqli_prepare($conn, 'INSERT INTO hotel_bookings (company_id, customer_id, room_id, check_in, check_out, payment_amount, notes, booking_color, future_status_id, present_status_id, history_status_id, active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), 1, NOW())');
             if ($ins) {
-                mysqli_stmt_bind_param($ins, 'iiissdsiii', $company_id, $customerId, $roomId, $checkIn, $checkOut, $amount, $notes, $fs, $ps, $hs);
+                mysqli_stmt_bind_param($ins, 'iiissdssiii', $company_id, $customerId, $roomId, $checkIn, $checkOut, $amount, $notes, $bookingColor, $fs, $ps, $hs);
                 if (mysqli_stmt_execute($ins)) {
                     $bid = (int) mysqli_insert_id($conn);
                     $_SESSION['hotel_booking_last_id'] = $bid;

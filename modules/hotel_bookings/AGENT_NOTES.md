@@ -6,7 +6,7 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, hotel filter), **F
 
 ## 2. Key Tables
 
-- **hotel_bookings** — reservations (`room_id`, `check_in`, `check_out`, `payment_amount`, segment status FKs)
+- **hotel_bookings** — reservations (`room_id`, `check_in`, `check_out`, `payment_amount`, `booking_color` planning bar `#rrggbb`, segment status FKs)
 - **hotel_bookings_future / present / history** — lifecycle status lookups (no ENUM)
 - **hotel_booking_rooms**, **hotel_booking_hotels**, **booking_rooms_types** — inventory (separate CRUD modules)
 
@@ -23,14 +23,14 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, hotel filter), **F
 ## 5. Planning grid
 
 - Booking bars span **half check-in cell** (right) through **half check-out cell** (left); **same-day turnover** renders checkout (left) and next check-in (right) in one cell when dates align.
-- Each booking uses a deterministic palette color by `hotel_bookings.id`; **OOO** maintenance is **red** (`#c62828`), **OOS** is **blue** (`#1565c0`) from `hotel_booking_housekeeping_maintenance` + `hotel_booking_housekeeping_maintenance_status.code`.
+- Each booking uses `hotel_bookings.booking_color` on the planning grid (fallback palette by id when NULL); **OOO** maintenance is **red** (`#c62828`), **OOS** is **blue** (`#1565c0`) from `hotel_booking_housekeeping_maintenance` + `hotel_booking_housekeeping_maintenance_status.code`.
 - Helpers: `itm_hotel_booking_planning_match_bookings_for_day()`, `itm_hotel_booking_planning_match_maintenance_for_day()` in `includes/itm_hotel_booking.php`.
 - Double-click booking bar opens **view.php**; HK column double-click rotates `hotel_booking_housekeeping_statuses` via `ajax_action=hk_rotate`.
 - JS: `js/hotel-bookings-planning.js`.
 
 ## 5a. Create / edit form
 
-- Shared markup: `includes/hb_booking_form.php` — all `hotel_bookings` business columns (customer, room, check-in/out, payment, three segment status FKs, notes, `active` checkbox).
+- Shared markup: `includes/hb_booking_form.php` — all `hotel_bookings` business columns (customer, room, check-in/out, payment, Planning color via `type="color"` → `booking_color`, three segment status FKs, notes, `active` checkbox).
 - Check-in / check-out use native calendar inputs (`type="date"`, labels note dd/mm/yyyy display); `js/hotel-bookings-date-picker.js` enforces check-out after check-in.
 - Audit meta (`created_by`, `created_at`, `updated_by`, `updated_at`) via hidden inputs from `itm_crud_render_form_hidden_audit_inputs()`; `company_id` stays session-scoped (not on form).
 - `view.php` shows every stored column including segment status labels and audit fields.
