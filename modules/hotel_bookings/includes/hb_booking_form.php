@@ -180,6 +180,9 @@ if (!function_exists('hb_booking_date_input_value')) {
 if (!function_exists('hb_booking_resolve_portal_rate_plan_id')) {
     function hb_booking_resolve_portal_rate_plan_id($conn, $companyId, $roomId, $postedPlanId)
     {
+        if ((string) $postedPlanId === '__add_new__') {
+            return 0;
+        }
         $postedPlanId = (int) $postedPlanId;
         $roomId = (int) $roomId;
         $companyId = (int) $companyId;
@@ -274,8 +277,8 @@ if (!function_exists('hb_booking_render_form_fields')) {
             }
             echo '<option value="' . $pid . '" data-hotel-id="' . $hid . '"' . $sel . '>' . sanitize($planLabel) . '</option>';
         }
+        echo '<option value="__add_new__">➕</option>';
         echo '</select>';
-        echo '<button type="button" class="btn btn-sm" id="hb-booking-rate-plan-add" data-hb-rate-plan-add="1" title="Create">➕</button>';
         echo '<button type="button" class="btn btn-sm hb-booking-rate-plan-view" id="hb-booking-rate-plan-view" title="View" hidden>🔎</button>';
         echo '<button type="button" class="btn btn-sm hb-booking-rate-plan-edit" id="hb-booking-rate-plan-edit" title="Edit" hidden>✏️</button>';
         echo '</div></div>';
