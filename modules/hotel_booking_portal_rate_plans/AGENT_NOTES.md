@@ -20,7 +20,8 @@ Admin UI for **Step 2** portal rate plan cancellation policy URLs (`hotel_bookin
 - **create.php** — pick hotel + plan slot, ensures row, redirects to **edit.php**.
 - **edit.php** — Plan name, Step 2 slug, cancellation policy URL, Active checkbox, Quill WYSIWYG for policy HTML (saved to DB + local HTML file when URL is relative).
 - **view.php** — read-only summary + policy preview.
-- List **index.php** includes hidden `hotel_id` on edit forms; hotel name shown as label when filtered.
+- **delete.php** — hard `DELETE` (not soft-delete); `itm_hotel_booking_ensure_portal_rate_plans_for_hotel()` recreates default slot rows on next list load.
+- List **index.php** toolbar: ➕ then 🏨 hub link (`itm_hospitality_render_bookings_hub_link()`); 🔙 returns to module list on create/edit/view.
 
 ## 5. Pitfalls
 

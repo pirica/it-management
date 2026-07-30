@@ -79,7 +79,10 @@ itm_hospitality_admin_layout_begin($crud_title);
 <?php endforeach; ?>
 <?php if (empty($hotels)): ?>
 <p>No active hotels. Add a hotel first.</p>
+<div class="itm-form-actions itm-align-left" style="display:flex;gap:8px;align-items:center;">
 <a href="../hotel_booking_hotels/create.php" class="btn btn-primary" title="Create">➕</a>
+<?php itm_hospitality_render_bookings_hub_link('btn'); ?>
+</div>
 <?php else: ?>
 <form method="get" class="form-inline" style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
 <label for="hotel_id">Hotel</label>
@@ -89,6 +92,7 @@ itm_hospitality_admin_layout_begin($crud_title);
 <?php endforeach; ?>
 </select>
 <noscript><button type="submit" class="btn btn-sm" title="Load">Load</button></noscript>
+<?php itm_hospitality_render_bookings_hub_link('btn'); ?>
 </form>
 <form method="post">
 <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
@@ -117,7 +121,6 @@ itm_hospitality_admin_layout_begin($crud_title);
 </tbody>
 </table>
 <button type="submit" class="btn btn-primary" title="Save">💾</button>
-<a href="../hotel_bookings/index.php" class="btn" title="Back">🔙</a>
 </form>
 <?php endif; ?>
 </div>

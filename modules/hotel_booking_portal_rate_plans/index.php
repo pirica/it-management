@@ -52,7 +52,10 @@ itm_hospitality_admin_layout_begin($crud_title);
 <p class="text-muted">Configure cancellation policy links and text for Step 2 portal rates.</p>
 <?php if (empty($hotels)): ?>
 <p>No active hotels. Add a hotel first.</p>
+<div class="itm-form-actions itm-align-left" style="display:flex;gap:8px;align-items:center;">
 <a href="../hotel_booking_hotels/create.php" class="btn btn-primary" title="Create">➕</a>
+<?php itm_hospitality_render_bookings_hub_link('btn'); ?>
+</div>
 <?php else: ?>
 <form method="get" class="form-inline" style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
 <label for="hotel_id">Hotel</label>
@@ -66,10 +69,10 @@ itm_hospitality_admin_layout_begin($crud_title);
 <?php if ($hotelName !== ''): ?>
 <p><strong>Hotel:</strong> <?php echo sanitize($hotelName); ?></p>
 <?php endif; ?>
-<p>
+<div class="itm-form-actions itm-align-left" style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">
 <a class="btn btn-primary" href="create.php?hotel_id=<?php echo (int) $hotelId; ?>" title="Create">➕</a>
-<a href="../hotel_bookings/index.php" class="btn" title="Back">🔙</a>
-</p>
+<?php itm_hospitality_render_bookings_hub_link('btn'); ?>
+</div>
 <table class="table" data-itm-no-import-excel="1" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
 <thead>
 <tr><th>Plan</th><th>Step 2 slug</th><th>Cancellation policy URL</th><th>Active</th><th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th></tr>
@@ -89,6 +92,12 @@ itm_hospitality_admin_layout_begin($crud_title);
 <?php if ($planId > 0): ?>
 <a class="btn btn-sm" href="view.php?id=<?php echo $planId; ?>" title="View">🔎</a>
 <a class="btn btn-sm" href="edit.php?id=<?php echo $planId; ?>" title="Edit">✏️</a>
+<form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Permanently delete this rate plan? The default slot row is recreated when the hotel list reloads.');">
+<input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+<input type="hidden" name="id" value="<?php echo $planId; ?>">
+<input type="hidden" name="hotel_id" value="<?php echo (int) $hotelId; ?>">
+<button class="btn btn-sm btn-danger" type="submit" title="Delete">🗑️</button>
+</form>
 <?php endif; ?>
 </td>
 </tr>

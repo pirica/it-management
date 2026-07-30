@@ -1892,6 +1892,28 @@ if (!function_exists('itm_hotel_booking_portal_rate_plan_row_by_id')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_rate_plan_hard_delete')) {
+  function itm_hotel_booking_portal_rate_plan_hard_delete($conn, $companyId, $planId) {
+    $companyId = (int) $companyId;
+    $planId = (int) $planId;
+    if ($companyId < 1 || $planId < 1) {
+      return ['ok' => false, 'error' => 'Invalid request.'];
+    }
+    $stmt = mysqli_prepare($conn, 'DELETE FROM hotel_booking_portal_rate_plans WHERE id = ? AND company_id = ? LIMIT 1');
+    if (!$stmt) {
+      return ['ok' => false, 'error' => 'Delete failed.'];
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $planId, $companyId);
+    $ok = mysqli_stmt_execute($stmt);
+    $affected = mysqli_stmt_affected_rows($stmt);
+    mysqli_stmt_close($stmt);
+    if (!$ok || $affected < 1) {
+      return ['ok' => false, 'error' => 'Rate plan not found or already deleted.'];
+    }
+    return ['ok' => true, 'id' => $planId];
+  }
+}
+
 if (!function_exists('itm_hotel_booking_load_cancellation_policy_html')) {
   function itm_hotel_booking_load_cancellation_policy_html(array $planRow) {
     $html = trim((string) ($planRow['cancellation_policy_html'] ?? ''));

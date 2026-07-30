@@ -302,6 +302,18 @@ if (function_exists('itm_hotel_booking_planning_move_booking') && function_exist
     hb_fail('planning move helpers missing');
 }
 
+if (function_exists('itm_hotel_booking_portal_rate_plan_hard_delete')) {
+    hb_pass('portal rate plan hard delete helper');
+} else {
+    hb_fail('portal rate plan hard delete helper missing');
+}
+
+if (function_exists('itm_hospitality_render_bookings_hub_link') && is_file(dirname(__DIR__) . '/modules/hotel_booking_portal_rate_plans/delete.php')) {
+    hb_pass('hospitality bookings hub link + rate plan delete.php');
+} else {
+    hb_fail('hospitality bookings hub link or rate plan delete.php missing');
+}
+
 $bookingConfirmationPdfJs = dirname(__DIR__) . '/booking/js/hotel-booking-confirmation-pdf.js';
 if (is_file($bookingConfirmationPdfJs) && strpos((string) file_get_contents($bookingConfirmationPdfJs), 'hbSaveBookingConfirmationPdf') !== false) {
     hb_pass('booking confirmation pdf download script');

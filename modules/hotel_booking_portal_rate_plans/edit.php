@@ -94,8 +94,16 @@ itm_hospitality_admin_layout_begin($crud_title);
 <span><?php echo sanitize(itm_humanize_field_name('active')); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo $isActive ? '✅' : '❌'; ?></span></span>
 </label>
 </div>
+<div class="itm-form-actions itm-align-left" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
 <button type="submit" class="btn btn-primary" title="Save">💾</button>
 <a href="view.php?id=<?php echo $id; ?>" class="btn" title="Back">🔙</a>
+<form method="post" action="delete.php" style="display:inline;" onsubmit="return confirm('Permanently delete this rate plan? The default slot row is recreated when the hotel list reloads.');">
+<input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+<input type="hidden" name="id" value="<?php echo $id; ?>">
+<input type="hidden" name="hotel_id" value="<?php echo (int) $hotelId; ?>">
+<button class="btn btn-danger" type="submit" title="Delete">🗑️</button>
+</form>
+</div>
 </form>
 </div>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">

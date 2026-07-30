@@ -88,8 +88,10 @@ itm_hospitality_admin_layout_begin($crud_title);
 <?php endforeach; ?>
 </select>
 </div>
+<div class="itm-form-actions itm-align-left" style="display:flex;gap:8px;align-items:center;">
 <button type="submit" class="btn btn-primary" title="Continue">➕</button>
-<a href="index.php" class="btn" title="Back">🔙</a>
+<a href="index.php<?php echo $hotelId > 0 ? '?hotel_id=' . (int) $hotelId : ''; ?>" class="btn" title="Back">🔙</a>
+</div>
 </form>
 <?php endif; ?>
 </div>

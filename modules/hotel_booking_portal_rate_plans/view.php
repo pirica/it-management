@@ -35,7 +35,15 @@ itm_hospitality_admin_layout_begin($crud_title);
 <div><?php echo $policyHtml; ?></div>
 </div>
 <?php endif; ?>
+<div class="itm-form-actions itm-align-left" style="display:flex;gap:8px;align-items:center;margin-top:16px;">
 <a class="btn btn-sm" href="edit.php?id=<?php echo $id; ?>" title="Edit">✏️</a>
+<form method="post" action="delete.php" style="display:inline;" onsubmit="return confirm('Permanently delete this rate plan? The default slot row is recreated when the hotel list reloads.');">
+<input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+<input type="hidden" name="id" value="<?php echo $id; ?>">
+<input type="hidden" name="hotel_id" value="<?php echo (int) ($row['hotel_id'] ?? 0); ?>">
+<button class="btn btn-sm btn-danger" type="submit" title="Delete">🗑️</button>
+</form>
 <a class="btn" href="index.php?hotel_id=<?php echo (int) ($row['hotel_id'] ?? 0); ?>" title="Back">🔙</a>
+</div>
 </div>
 <?php itm_hospitality_admin_layout_end(); ?>

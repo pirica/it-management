@@ -35,6 +35,29 @@ if (!function_exists('itm_hospitality_admin_layout_begin')) {
     }
 }
 
+if (!function_exists('itm_hospitality_bookings_hub_url')) {
+    function itm_hospitality_bookings_hub_url()
+    {
+        return BASE_URL . 'modules/hotel_bookings/index.php';
+    }
+}
+
+if (!function_exists('itm_hospitality_render_bookings_hub_link')) {
+    /**
+     * Emoji-only hub link to hotel bookings planning (sibling modules use this instead of Back).
+     *
+     * @param string $extraClass Button classes (default matches list Create buttons).
+     */
+    function itm_hospitality_render_bookings_hub_link($extraClass = 'btn btn-primary')
+    {
+        $class = trim((string) $extraClass);
+        if ($class === '') {
+            $class = 'btn btn-primary';
+        }
+        echo '<a class="' . sanitize($class) . '" href="' . sanitize(itm_hospitality_bookings_hub_url()) . '" title="Hotel bookings hub">🏨</a>';
+    }
+}
+
 if (!function_exists('itm_hospitality_admin_layout_end')) {
     /**
      * @param array<int, string> $extraScripts Module-relative or absolute script src paths.
