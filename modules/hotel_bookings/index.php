@@ -216,7 +216,7 @@ foreach ($dayMaintenance as $maint):
 <?php foreach ($dayBookings as $match):
     $bar = $match['booking'];
     $segmentClass = $match['segment_class'];
-    $barColor = itm_hotel_booking_planning_booking_bar_color((int) ($bar['id'] ?? 0));
+    $barColor = itm_hotel_booking_planning_booking_bar_color((int) ($bar['id'] ?? 0), $bar['booking_color'] ?? '');
 ?>
 <span class="hb-plan-bar <?php echo sanitize($segmentClass); ?>" style="background:<?php echo sanitize($barColor); ?>;z-index:1" data-booking-id="<?php echo (int) $bar['id']; ?>" title="<?php echo sanitize($bar['customer_name']); ?> — double-click to view"><?php echo sanitize($bar['customer_name']); ?></span>
 <?php endforeach; ?></td>

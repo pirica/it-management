@@ -43,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fs = (int) ($statusIds['future_status_id'] ?? 0);
     $ps = (int) ($statusIds['present_status_id'] ?? 0);
     $hs = (int) ($statusIds['history_status_id'] ?? 0);
+    $bookingColor = itm_hotel_booking_resolve_booking_color($_POST['booking_color'] ?? '', $id);
 
     if ($customerId < 1 || $roomId < 1 || $checkIn === '' || $checkOut === '') {
         $errors[] = 'Customer, room, and dates are required.';
@@ -52,11 +53,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Room overlap for selected dates.';
     } else {
         $updatedBy = (int) ($_POST['updated_by'] ?? $employee_id);
-        $upd = mysqli_prepare($conn, 'UPDATE hotel_bookings SET customer_id = ?, room_id = ?, check_in = ?, check_out = ?, payment_amount = ?, future_status_id = NULLIF(?,0), present_status_id = NULLIF(?,0), history_status_id = NULLIF(?,0), notes = ?, active = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
+        $upd = mysqli_prepare($conn, 'UPDATE hotel_bookings SET customer_id = ?, room_id = ?, check_in = ?, check_out = ?, payment_amount = ?, future_status_id = NULLIF(?,0), present_status_id = NULLIF(?,0), history_status_id = NULLIF(?,0), notes = ?, booking_color = ?, active = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
         if ($upd) {
             mysqli_stmt_bind_param(
                 $upd,
-                'iissdiiiisiii',
+                'iissdiiiissiii',
                 $customerId,
                 $roomId,
                 $checkIn,
@@ -66,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ps,
                 $hs,
                 $notes,
+                $bookingColor,
                 $active,
                 $updatedBy,
                 $id,
@@ -87,6 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $formRow['present_status_id'] = $ps;
     $formRow['history_status_id'] = $hs;
     $formRow['notes'] = $notes;
+    $formRow['booking_color'] = $bookingColor;
     $formRow['active'] = $active;
 }
 
