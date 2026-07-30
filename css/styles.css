@@ -2567,3 +2567,22 @@ input[type="submit"] {
 .itm-floor-plan-view-card .itm-floor-plan-view-preview {
     text-align: center;
 }
+
+/* Hospitality sibling modules: stack Create + bookings hub under centered list h1 */
+.itm-hospitality-list-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: stretch;
+    width: fit-content;
+    flex-shrink: 0;
+}
+
+.itm-hospitality-list-actions .btn {
+    text-align: center;
+}
+
+[data-itm-new-button-managed="server"] {
+    align-items: flex-start;
+    min-height: 72px;
+}

@@ -314,6 +314,12 @@ if (function_exists('itm_hospitality_render_bookings_hub_link') && is_file(dirna
     hb_fail('hospitality bookings hub link or rate plan delete.php missing');
 }
 
+if (function_exists('itm_hospitality_render_list_create_and_hub')) {
+    hb_pass('hospitality list create and hub stack helper');
+} else {
+    hb_fail('hospitality list create and hub stack helper missing');
+}
+
 $bookingConfirmationPdfJs = dirname(__DIR__) . '/booking/js/hotel-booking-confirmation-pdf.js';
 if (is_file($bookingConfirmationPdfJs) && strpos((string) file_get_contents($bookingConfirmationPdfJs), 'hbSaveBookingConfirmationPdf') !== false) {
     hb_pass('booking confirmation pdf download script');

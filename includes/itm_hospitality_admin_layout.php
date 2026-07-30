@@ -58,6 +58,30 @@ if (!function_exists('itm_hospitality_render_bookings_hub_link')) {
     }
 }
 
+if (!function_exists('itm_hospitality_render_list_create_and_hub')) {
+    /**
+     * Vertical stack: Create (➕) then hotel bookings hub (🏨) — avoids overlap with centered list h1.
+     *
+     * @param string $buttonClass Shared btn classes for both controls.
+     * @param string $createHref Optional create URL (default create.php).
+     */
+    function itm_hospitality_render_list_create_and_hub($buttonClass = 'btn btn-primary', $createHref = 'create.php')
+    {
+        $class = trim((string) $buttonClass);
+        if ($class === '') {
+            $class = 'btn btn-primary';
+        }
+        $createHref = trim((string) $createHref);
+        if ($createHref === '') {
+            $createHref = 'create.php';
+        }
+        echo '<div class="itm-hospitality-list-actions">';
+        echo '<a href="' . sanitize($createHref) . '" class="' . sanitize($class) . ' itm-list-new-button" title="Create">➕</a>';
+        itm_hospitality_render_bookings_hub_link($class);
+        echo '</div>';
+    }
+}
+
 if (!function_exists('itm_hospitality_admin_layout_end')) {
     /**
      * @param array<int, string> $extraScripts Module-relative or absolute script src paths.
