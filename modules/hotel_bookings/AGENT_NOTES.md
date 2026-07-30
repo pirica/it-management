@@ -26,6 +26,13 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, hotel filter), **F
 - HK column double-click rotates to next active `hotel_booking_housekeeping_statuses` via `ajax_action=hk_rotate`.
 - JS: `js/hotel-bookings-planning.js`.
 
+## 5a. Create / edit form
+
+- Shared markup: `includes/hb_booking_form.php` — all `hotel_bookings` business columns (customer, room, check-in/out, payment, three segment status FKs, notes, `active` checkbox).
+- Check-in / check-out use native calendar inputs (`type="date"`, labels note dd/mm/yyyy display); `js/hotel-bookings-date-picker.js` enforces check-out after check-in.
+- Audit meta (`created_by`, `created_at`, `updated_by`, `updated_at`) via hidden inputs from `itm_crud_render_form_hidden_audit_inputs()`; `company_id` stays session-scoped (not on form).
+- `view.php` shows every stored column including segment status labels and audit fields.
+
 ## 6. Public portal
 
 `booking/` — MySQLi bootstrap, portal users → `customers`; inserts into `hotel_bookings`. Payment page: `booking/rooms/payment.php`. See **`docs/BOOKING.md`** for full portal review and flows.
