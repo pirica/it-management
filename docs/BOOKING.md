@@ -49,8 +49,9 @@ sequenceDiagram
 
 | Piece | Role |
 |-------|------|
-| `booking/bootstrap.php` | Session, `ITM_HOTEL_BOOKING_PUBLIC_PORTAL`, `APPURL`, `hb_public_company_id()` |
-| `hb_public_company_id()` | First `hotel_booking_settings.public_portal_enabled` company (session `company_id` or companies 1–5) |
+| `booking/bootstrap.php` | Session, `ITM_HOTEL_BOOKING_PUBLIC_PORTAL`, `APPURL`, `hb_public_company_id()`, `hb_load_active_hotel_row()` |
+| `hb_public_company_id()` | Welcome copy / default portal tenant (session `company_id` or first `public_portal_enabled` among companies 1–5) |
+| `hb_load_active_hotel_row()` | Active hotel by `id` across all companies (used by `rooms.php`, `calendar.php`) |
 | `config/config.php` | Shared DB connection, CSRF, date helpers |
 
 ### Shared portal includes
@@ -83,7 +84,7 @@ Hotel and room photos are served from `images/hotel_booking/{company_id}/…` vi
 
 | Step | URL | Summary |
 |------|-----|---------|
-| 0 | [index.php](http://localhost/it-management/booking/index.php) | Hotel list; detail modal; **Select Dates** (1 night = single check-in; range = multi-night) |
+| 0 | [index.php](http://localhost/it-management/booking/index.php) | Hotel list (all active hotels, all companies); detail modal; **Select Dates** (1 night = single check-in; range = multi-night) |
 | 1 | [rooms.php](http://localhost/it-management/booking/rooms.php) | Room types, special rates, filters, occupancy |
 | 2 | [rooms/select-rate.php](http://localhost/it-management/booking/rooms/select-rate.php) | Room-only vs breakfast, pets, special requests |
 | 3 | [rooms/customize.php](http://localhost/it-management/booking/rooms/customize.php) | Optional room upgrade; reservation summary sidebar |
@@ -199,7 +200,7 @@ Seed example: company 1 **TechCorp Retreat**, reservation IDs from `hotel_bookin
 | **Portal user accounts** | Optional `auth/*` rarely used; logout currently redirects to login, not home (pending UX tweak). |
 | **Stay bar on manage** | Shows **Edit stay** (same as checkout) rather than exit/logout — may confuse guests who only wanted to leave manage view. |
 | **Occupancy modal on manage** | Stay bar includes occupancy trigger but manage page does not load occupancy modal JS — control is inert there. |
-| **Single company in session** | `hb_public_company_id()` picks first enabled tenant; multi-brand public sites need explicit company selection. |
+| **Single company in session** | Welcome banner still uses `hb_public_company_id()`; hotel grid is cross-tenant. Booking steps resolve tenant from the selected hotel row. |
 
 ### Recommended follow-ups (not implemented here)
 
@@ -215,7 +216,7 @@ Seed example: company 1 **TechCorp Retreat**, reservation IDs from `hotel_bookin
 
 | Symptom | Likely cause |
 |---------|----------------|
-| Empty hotel list | `hotel_booking_settings.public_portal_enabled = 0` or no active `hotel_booking_hotels` for company |
+| Empty hotel list | No rows with `hotel_booking_hotels.active = 1` and `deleted_at IS NULL` (any company) |
 | Cancellation policy link missing | No `hotel_booking_portal_rate_plans` row or empty `cancellation_policy_url` |
 | `verify_hotel_booking.php` fails on rate plans table | Run `db/migrations/hotel_booking_portal_rate_plans.sql` on existing DB |
 | Room not available on book | Overlap with non-cancelled booking on same `room_id` |

@@ -18,7 +18,7 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 
 ## 4. Entry points
 
-- `index.php` — hotel list + detail modal
+- `index.php` — hotel list (all active `hotel_booking_hotels` across tenants) + detail modal
 - `rooms.php` — **Step 1 of 4** Select a Room.
 - `rooms/select-rate.php` — **Step 2 of 4** Select a Rate (breakfast vs room-only, special requests, comments).
 - `rooms/customize.php` — **Step 3 of 4**: main column upgrade card; **View room details** opens the same room-detail modal as Step 1 (no Quick compare link); right column stacks stepper then **Reservation summary** (tourist tax €2/guest/night from settings).
@@ -32,7 +32,7 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 
 ## 5. Tenant
 
-`hb_public_company_id()` reads `hotel_booking_settings.public_portal_enabled` per company (fallback company 1).
+`hb_public_company_id()` reads `hotel_booking_settings.public_portal_enabled` per company (fallback company 1) for portal chrome and welcome copy on `index.php`. The home hotel grid lists every row with `hotel_booking_hotels.active = 1` (all companies). `hb_load_active_hotel_row()` resolves a hotel by `id` for `rooms.php` and `calendar.php`.
 
 ## 6. Admin
 
