@@ -313,6 +313,7 @@ require_once ROOT_PATH . 'includes/itm_password_reset.php';
 require_once ROOT_PATH . 'includes/itm_explorer_paths.php';
 require_once ROOT_PATH . 'includes/audit_functions.php';
 require_once ROOT_PATH . 'includes/itm_company_module_access.php';
+require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
 require_once ROOT_PATH . 'includes/itm_module_share.php';
 require_once ROOT_PATH . 'includes/itm_email.php';
 require_once ROOT_PATH . 'includes/itm_totp_helpers.php';

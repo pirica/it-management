@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $hotelId > 0) {
 $planRows = $hotelId > 0 ? itm_hotel_booking_portal_rate_plans_admin_rows($conn, $company_id, $hotelId) : [];
 
 $crud_title = 'Portal Rate Plans';
-itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_booking_portal_rate_plans', $crud_title);
+$crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_booking_portal_rate_plans', $crud_title);
 require '../../includes/header.php';
 ?>
 <div class="container">

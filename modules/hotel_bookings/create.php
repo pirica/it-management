@@ -73,7 +73,7 @@ if ($rstmt) {
     mysqli_stmt_close($rstmt);
 }
 
-itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_bookings', 'New booking');
+$crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_bookings', 'New booking');
 require '../../includes/header.php';
 ?>
 <link rel="stylesheet" href="css/hotel-bookings.css">

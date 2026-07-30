@@ -20,7 +20,7 @@ if (!$row) {
     exit;
 }
 $segment = itm_hotel_booking_resolve_segment($row['check_in'], $row['check_out']);
-itm_crud_apply_module_icon_to_browser_title($conn, $company_id, (int) ($_SESSION['employee_id'] ?? 0), 'hotel_bookings', 'View booking');
+$crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, (int) ($_SESSION['employee_id'] ?? 0), 'hotel_bookings', 'View booking');
 require '../../includes/header.php';
 ?>
 <link rel="stylesheet" href="css/hotel-bookings.css">

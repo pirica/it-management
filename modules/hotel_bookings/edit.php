@@ -56,7 +56,7 @@ if (!$row) {
     header('Location: index.php');
     exit;
 }
-itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_bookings', 'Edit booking');
+$crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_bookings', 'Edit booking');
 require '../../includes/header.php';
 ?>
 <div class="container"><div class="main-content"><div class="content"><div class="card">

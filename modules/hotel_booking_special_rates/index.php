@@ -64,7 +64,7 @@ foreach (itm_hotel_booking_portal_code_rate_options() as $opt) {
 }
 
 $crud_title = 'Booking Special Rates';
-itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_booking_special_rates', $crud_title);
+$crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_booking_special_rates', $crud_title);
 require '../../includes/header.php';
 ?>
 <div class="container">
