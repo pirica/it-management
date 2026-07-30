@@ -3,8 +3,6 @@ require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/includes/portal_chrome.php';
 require __DIR__ . '/includes/portal_room_detail.php';
 
-$company_id = hb_public_company_id($conn);
-$settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 $hotelId = (int) ($_GET['id'] ?? 0);
 $checkInParam = trim((string) ($_GET['check_in'] ?? ''));
 $nights = max(1, (int) ($_GET['nights'] ?? 1));
@@ -15,19 +13,13 @@ if ($hotelId < 1) {
     exit;
 }
 
-$hotel = null;
-$hstmt = mysqli_prepare($conn, 'SELECT * FROM hotel_booking_hotels WHERE id = ? AND company_id = ? AND deleted_at IS NULL AND active = 1 LIMIT 1');
-if ($hstmt) {
-    mysqli_stmt_bind_param($hstmt, 'ii', $hotelId, $company_id);
-    mysqli_stmt_execute($hstmt);
-    $res = mysqli_stmt_get_result($hstmt);
-    $hotel = $res ? mysqli_fetch_assoc($res) : null;
-    mysqli_stmt_close($hstmt);
-}
+$hotel = hb_load_active_hotel_row($conn, $hotelId);
 if (!$hotel) {
     header('Location: ' . APPURL . '/');
     exit;
 }
+$company_id = (int) ($hotel['company_id'] ?? hb_public_company_id($conn));
+$settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 
 $today = date('Y-m-d');
 $checkInIso = $checkInParam;

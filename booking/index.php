@@ -73,21 +73,22 @@ if (!is_array($settings)) {
     $settings = [];
 }
 
+// Why: Public home lists every active hotel across tenants — not session company_id.
 $hotels = [];
 $stmt = mysqli_prepare($conn, 'SELECT h.*, (SELECT MIN(r.price_per_night) FROM hotel_booking_rooms r WHERE r.hotel_id = h.id AND r.company_id = h.company_id AND r.deleted_at IS NULL) AS min_price
-    FROM hotel_booking_hotels h WHERE h.company_id = ? AND h.deleted_at IS NULL AND h.active = 1 ORDER BY h.name');
+    FROM hotel_booking_hotels h WHERE h.deleted_at IS NULL AND h.active = 1 ORDER BY h.name');
 if ($stmt) {
-    mysqli_stmt_bind_param($stmt, 'i', $company_id);
     mysqli_stmt_execute($stmt);
     $res = mysqli_stmt_get_result($stmt);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $hid = (int) $row['id'];
-        $row['photos'] = itm_hotel_booking_photos_load($conn, $company_id, 'hotel_booking_hotel_photos', 'hotel_id', $hid);
+        $hotelCompanyId = (int) ($row['company_id'] ?? 0);
+        $row['photos'] = itm_hotel_booking_photos_load($conn, $hotelCompanyId, 'hotel_booking_hotel_photos', 'hotel_id', $hid);
         foreach ($row['photos'] as $pi => $photo) {
-            $row['photos'][$pi]['public_url'] = itm_hotel_booking_photo_public_url($company_id, 'hotel', $hid, $photo['stored_filename'] ?? '');
+            $row['photos'][$pi]['public_url'] = itm_hotel_booking_photo_public_url($hotelCompanyId, 'hotel', $hid, $photo['stored_filename'] ?? '');
         }
-        $row['nearby'] = hb_hotel_nearby_rows($conn, $company_id, $hid);
-        $row['amenities'] = hb_hotel_amenities_rows($conn, $company_id, $hid);
+        $row['nearby'] = hb_hotel_nearby_rows($conn, $hotelCompanyId, $hid);
+        $row['amenities'] = hb_hotel_amenities_rows($conn, $hotelCompanyId, $hid);
         $row['check_in_display'] = hb_format_hotel_time_display($row['check_in_time'] ?? '');
         $row['check_out_display'] = hb_format_hotel_time_display($row['check_out_time'] ?? '');
         $row['reviews_url'] = itm_hotel_booking_resolve_reviews_url($row, $settings);
@@ -127,7 +128,8 @@ $hbSettingsPublic = [
 <article class="hb-hotel-card" data-hotel-id="<?php echo (int) $hotel['id']; ?>">
 <?php
 $cover = $hotel['photos'][0]['stored_filename'] ?? '';
-$imgUrl = $cover ? itm_hotel_booking_photo_public_url($company_id, 'hotel', (int) $hotel['id'], $cover) : (APPURL . '/images/image_2.jpg');
+$hotelCompanyId = (int) ($hotel['company_id'] ?? 0);
+$imgUrl = $cover ? itm_hotel_booking_photo_public_url($hotelCompanyId, 'hotel', (int) $hotel['id'], $cover) : (APPURL . '/images/image_2.jpg');
 ?>
 <div class="hb-hotel-card-img" style="background-image:url('<?php echo htmlspecialchars($imgUrl, ENT_QUOTES, 'UTF-8'); ?>')"></div>
 <h2><?php echo htmlspecialchars($hotel['name'], ENT_QUOTES, 'UTF-8'); ?></h2>

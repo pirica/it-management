@@ -42,3 +42,23 @@ function hb_portal_customer_id() {
 function hb_portal_logged_in() {
     return hb_portal_customer_id() > 0;
 }
+
+/**
+ * Load one active hotel by primary key (any tenant — public index lists all companies).
+ */
+function hb_load_active_hotel_row($conn, $hotelId) {
+    $hotelId = (int) $hotelId;
+    if ($hotelId < 1) {
+        return null;
+    }
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM hotel_booking_hotels WHERE id = ? AND deleted_at IS NULL AND active = 1 LIMIT 1');
+    if (!$stmt) {
+        return null;
+    }
+    mysqli_stmt_bind_param($stmt, 'i', $hotelId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    return $row ?: null;
+}
