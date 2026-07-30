@@ -22,8 +22,10 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, hotel filter), **F
 
 ## 5. Planning grid
 
-- Booking bars span **half check-in cell** (right) through **half check-out cell** (left); double-click bar opens **view.php**.
-- HK column double-click rotates to next active `hotel_booking_housekeeping_statuses` via `ajax_action=hk_rotate`.
+- Booking bars span **half check-in cell** (right) through **half check-out cell** (left); **same-day turnover** renders checkout (left) and next check-in (right) in one cell when dates align.
+- Each booking uses a deterministic palette color by `hotel_bookings.id`; **OOO** maintenance is **red** (`#c62828`), **OOS** is **blue** (`#1565c0`) from `hotel_booking_housekeeping_maintenance` + `hotel_booking_housekeeping_maintenance_status.code`.
+- Helpers: `itm_hotel_booking_planning_match_bookings_for_day()`, `itm_hotel_booking_planning_match_maintenance_for_day()` in `includes/itm_hotel_booking.php`.
+- Double-click booking bar opens **view.php**; HK column double-click rotates `hotel_booking_housekeeping_statuses` via `ajax_action=hk_rotate`.
 - JS: `js/hotel-bookings-planning.js`.
 
 ## 5a. Create / edit form
