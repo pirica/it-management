@@ -59,6 +59,9 @@ itm_hospitality_admin_layout_begin($crud_title);
 ?>
 <div class="card">
 <h1 title="Hotel booking settings">⚙️</h1>
+<div class="itm-form-actions itm-align-left" style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">
+<?php itm_hospitality_render_bookings_hub_link('btn'); ?>
+</div>
 <?php if (!empty($_GET['saved'])): ?>
 <p class="badge badge-success">Saved</p>
 <?php endif; ?>
@@ -104,7 +107,6 @@ itm_hospitality_admin_layout_begin($crud_title);
 <p class="text-muted" style="font-size:.85rem;margin-top:4px;">Added to portal checkout totals (steps 3–4) for adults and children.</p>
 </div>
 <button type="submit" class="btn btn-primary" title="Save">💾</button>
-<a href="../hotel_bookings/index.php" class="btn" title="Back">🔙</a>
 </form>
 </div>
 <?php itm_hospitality_admin_layout_end(); ?>
