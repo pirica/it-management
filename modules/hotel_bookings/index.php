@@ -122,19 +122,14 @@ if ($mode !== 'planning') {
 }
 
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_bookings', $crud_title);
-require '../../includes/header.php';
-?>
-<link rel="stylesheet" href="css/hotel-bookings.css">
-<?php
+require_once ROOT_PATH . 'includes/itm_hospitality_admin_layout.php';
+itm_hospitality_admin_layout_begin($crud_title, ['css/hotel-bookings.css']);
 $dayHeaders = [];
 $cursor = DateTime::createFromFormat('Y-m-d', $grid['range_start']);
 for ($i = 0; $i < $planDays; $i++) {
     $dayHeaders[] = (clone $cursor)->modify('+' . $i . ' days');
 }
 ?>
-<div class="container">
-<div class="main-content">
-<div class="content">
 <div class="card">
 <h1 title="Hotel bookings">🏨</h1>
 <div class="hb-mode-tabs">
@@ -229,7 +224,4 @@ foreach ($dayHeaders as $di => $d):
 </table>
 <?php endif; ?>
 </div>
-</div>
-</div>
-</div>
-<?php require '../../includes/footer.php'; ?>
+<?php itm_hospitality_admin_layout_end(); ?>

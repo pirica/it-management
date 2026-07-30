@@ -54,11 +54,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $row = itm_hotel_booking_settings_row($conn, $company_id);
 $crud_title = 'Hotel Booking Settings';
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_booking_settings', $crud_title);
-require '../../includes/header.php';
+require_once ROOT_PATH . 'includes/itm_hospitality_admin_layout.php';
+itm_hospitality_admin_layout_begin($crud_title);
 ?>
-<div class="container">
-<div class="main-content">
-<div class="content">
 <div class="card">
 <h1 title="Hotel booking settings">⚙️</h1>
 <?php if (!empty($_GET['saved'])): ?>
@@ -109,7 +107,4 @@ require '../../includes/header.php';
 <a href="../hotel_bookings/index.php" class="btn" title="Back">🔙</a>
 </form>
 </div>
-</div>
-</div>
-</div>
-<?php require '../../includes/footer.php'; ?>
+<?php itm_hospitality_admin_layout_end(); ?>

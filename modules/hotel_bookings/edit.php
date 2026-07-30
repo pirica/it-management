@@ -57,9 +57,10 @@ if (!$row) {
     exit;
 }
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_bookings', 'Edit booking');
-require '../../includes/header.php';
+require_once ROOT_PATH . 'includes/itm_hospitality_admin_layout.php';
+itm_hospitality_admin_layout_begin($crud_title, ['css/hotel-bookings.css']);
 ?>
-<div class="container"><div class="main-content"><div class="content"><div class="card">
+<div class="card">
 <h1 title="Edit booking">✏️</h1>
 <?php foreach ($errors as $e): ?><p class="badge badge-danger"><?php echo sanitize($e); ?></p><?php endforeach; ?>
 <form method="post">
@@ -70,5 +71,5 @@ require '../../includes/header.php';
 <button type="submit" class="btn btn-primary" title="Save">💾</button>
 <a href="view.php?id=<?php echo $id; ?>" class="btn" title="Back">🔙</a>
 </form>
-</div></div></div></div>
-<?php require '../../includes/footer.php'; ?>
+</div>
+<?php itm_hospitality_admin_layout_end(); ?>

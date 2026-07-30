@@ -64,11 +64,9 @@ $planRows = $hotelId > 0 ? itm_hotel_booking_portal_rate_plans_admin_rows($conn,
 
 $crud_title = 'Portal Rate Plans';
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_booking_portal_rate_plans', $crud_title);
-require '../../includes/header.php';
+require_once ROOT_PATH . 'includes/itm_hospitality_admin_layout.php';
+itm_hospitality_admin_layout_begin($crud_title);
 ?>
-<div class="container">
-<div class="main-content">
-<div class="content">
 <div class="card">
 <h1 title="Portal rate plans">📋</h1>
 <p class="text-muted">Configure cancellation policy links for Step 2 portal rates. Guests see the matching policy on Manage my booking and payment confirmation (based on the rate stored on the reservation).</p>
@@ -112,7 +110,7 @@ require '../../includes/header.php';
 <td>
 <label class="itm-checkbox-control">
 <input type="checkbox" name="active[<?php echo $slot; ?>]" value="1"<?php echo !empty($row['active']) ? ' checked' : ''; ?>>
-<span><?php echo sanitize(cr_humanize_field('active')); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo !empty($row['active']) ? '✅' : '❌'; ?></span></span>
+<span><?php echo sanitize(itm_humanize_field_name('active')); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo !empty($row['active']) ? '✅' : '❌'; ?></span></span>
 </label>
 </td>
 </tr>
@@ -125,7 +123,4 @@ require '../../includes/header.php';
 </form>
 <?php endif; ?>
 </div>
-</div>
-</div>
-</div>
-<?php require '../../includes/footer.php'; ?>
+<?php itm_hospitality_admin_layout_end(); ?>

@@ -289,11 +289,58 @@ if (is_file($changeBookingJs) && strpos((string) file_get_contents($changeBookin
     hb_fail('change booking modal script missing');
 }
 
-$confirmPdfJs = dirname(__DIR__) . '/booking/js/hotel-booking-confirmation-pdf.js';
-if (is_file($confirmPdfJs) && strpos((string) file_get_contents($confirmPdfJs), 'hbSaveBookingConfirmationPdf') !== false) {
+$bookingConfirmationPdfJs = dirname(__DIR__) . '/booking/js/hotel-booking-confirmation-pdf.js';
+if (is_file($bookingConfirmationPdfJs) && strpos((string) file_get_contents($bookingConfirmationPdfJs), 'hbSaveBookingConfirmationPdf') !== false) {
     hb_pass('booking confirmation pdf download script');
 } else {
     hb_fail('booking confirmation pdf download script missing');
+}
+
+$_SESSION['employee_id'] = 1;
+$_SESSION['login_employee_id'] = 1;
+$_SESSION['company_id'] = 1;
+$_SESSION['company_name'] = 'TechCorp Global';
+$_SESSION['username'] = 'Admin';
+$_SESSION['role_name'] = 'admin';
+
+$hospitalityModuleSlugs = [
+    'hotel_bookings',
+    'hotel_booking_hotels',
+    'booking_rooms_types',
+    'hotel_booking_rooms',
+    'hotel_booking_amenities',
+    'hotel_booking_special_rates',
+    'hotel_booking_portal_rate_plans',
+    'hotel_booking_room_utilities',
+    'hotel_booking_housekeeping_statuses',
+    'hotel_bookings_future',
+    'hotel_bookings_present',
+    'hotel_bookings_history',
+    'hotel_booking_settings',
+];
+
+$repoRoot = dirname(__DIR__);
+$phpBin = getenv('PHP_EXE');
+if ($phpBin === false || trim((string) $phpBin) === '') {
+    $phpBin = defined('PHP_BINARY') ? PHP_BINARY : 'php';
+}
+$probeScript = $repoRoot . '/scripts/lib/itm_hospitality_index_probe.php';
+foreach ($hospitalityModuleSlugs as $slug) {
+    if (!is_file($repoRoot . '/modules/' . $slug . '/index.php')) {
+        hb_fail("hospitality index missing modules/{$slug}/index.php");
+        continue;
+    }
+
+    $cmd = escapeshellarg($phpBin) . ' ' . escapeshellarg($probeScript) . ' ' . escapeshellarg($slug);
+    $probeOutput = [];
+    $probeCode = 0;
+    exec($cmd . ' 2>&1', $probeOutput, $probeCode);
+    if ($probeCode !== 0) {
+        $detail = trim(implode('; ', $probeOutput));
+        hb_fail("hospitality index {$slug}: " . ($detail !== '' ? $detail : 'probe exit ' . $probeCode));
+    } else {
+        hb_pass("hospitality index {$slug} renders");
+    }
 }
 
 exit($fail > 0 ? 1 : 0);

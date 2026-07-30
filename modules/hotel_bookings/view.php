@@ -21,10 +21,10 @@ if (!$row) {
 }
 $segment = itm_hotel_booking_resolve_segment($row['check_in'], $row['check_out']);
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, (int) ($_SESSION['employee_id'] ?? 0), 'hotel_bookings', 'View booking');
-require '../../includes/header.php';
+require_once ROOT_PATH . 'includes/itm_hospitality_admin_layout.php';
+itm_hospitality_admin_layout_begin($crud_title, ['css/hotel-bookings.css']);
 ?>
-<link rel="stylesheet" href="css/hotel-bookings.css">
-<div class="container"><div class="main-content"><div class="content"><div class="card">
+<div class="card">
 <h1 title="View booking">🔎</h1>
 <p><strong>Customer:</strong> <?php echo sanitize($row['customer_name']); ?></p>
 <p><strong>Room:</strong> <?php echo sanitize($row['room_number'] . ' — ' . $row['room_name']); ?></p>
@@ -35,5 +35,5 @@ require '../../includes/header.php';
 <p><strong>Notes:</strong> <?php echo sanitize($row['notes'] ?? ''); ?></p>
 <a class="btn btn-sm" href="edit.php?id=<?php echo $id; ?>" title="Edit">✏️</a>
 <a class="btn" href="index.php" title="Back">🔙</a>
-</div></div></div></div>
-<?php require '../../includes/footer.php'; ?>
+</div>
+<?php itm_hospitality_admin_layout_end(); ?>
