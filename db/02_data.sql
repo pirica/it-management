@@ -2423,6 +2423,8 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_portal_rate_plans", "Portal Rate Plans", 0, 1, "📋");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_room_utilities", "Room Utilities", 0, 1, "✨");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_housekeeping_statuses", "HK Statuses", 0, 1, "🧹");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_housekeeping_maintenance_status", "HK Maintenance Status", 0, 1, "🔧");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_housekeeping_maintenance", "HK Maintenance", 0, 1, "🛠️");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_future", "Booking Future Status", 0, 1, "📅");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_present", "Booking Present Status", 0, 1, "🏠");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_history", "Booking History Status", 0, 1, "📜");
@@ -2458,6 +2460,12 @@ INSERT INTO `hotel_booking_housekeeping_statuses` (`company_id`, `name`, `color_
 (1, 'Pickup', '#ffc107', 1, '2026-01-01 00:00:01');
 
 INSERT IGNORE INTO `hotel_booking_housekeeping_statuses` (`company_id`, `name`, `color_hex`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`color_hex`, t.`active`, '2026-01-01 00:00:01' FROM `hotel_booking_housekeeping_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+
+INSERT INTO `hotel_booking_housekeeping_maintenance_status` (`company_id`, `name`, `code`, `active`, `created_at`) VALUES
+(1, 'Out of Order', 'ooo', 1, '2026-01-01 00:00:01'),
+(1, 'Out of Service', 'oos', 1, '2026-01-01 00:00:01');
+
+INSERT IGNORE INTO `hotel_booking_housekeeping_maintenance_status` (`company_id`, `name`, `code`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`code`, t.`active`, '2026-01-01 00:00:01' FROM `hotel_booking_housekeeping_maintenance_status` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 
 INSERT INTO `hotel_booking_amenities` (`company_id`, `name`, `icon_slug`, `sort_order`, `active`, `created_at`) VALUES
 (1, 'Free WiFi', 'wifi', 10, 1, '2026-01-01 00:00:01'),

@@ -5,6 +5,7 @@
 require '../../config/config.php';
 
 $company_id = (int) ($_SESSION['company_id'] ?? 0);
+$employee_id = (int) ($_SESSION['employee_id'] ?? 0);
 if ($company_id < 1) {
     header('Location: ../../login.php');
     exit;
@@ -16,7 +17,7 @@ $flash = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
-    if (!itm_is_admin()) {
+    if (!itm_is_admin($conn, $employee_id)) {
         $errors[] = 'Only administrators can manage amenity icons.';
     } else {
         $action = (string) ($_POST['icon_action'] ?? '');
@@ -68,7 +69,7 @@ $pageTitle = 'Amenity icons';
 <div class="card" style="margin-bottom:20px;padding:16px;">
 <h2 style="margin-top:0;font-size:1.1rem;">Upload SVG icon</h2>
 <p class="text-muted" style="font-size:.9rem;">Files are stored under <code>booking/images/amenities/</code>. Slug must be lowercase letters, numbers, hyphen, underscore (e.g. <code>wifi</code>, <code>pool</code>).</p>
-<?php if (itm_is_admin()): ?>
+<?php if (itm_is_admin($conn, $employee_id)): ?>
 <form method="POST" enctype="multipart/form-data" style="max-width:520px;">
 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 <input type="hidden" name="icon_action" value="upload">
@@ -94,7 +95,7 @@ $pageTitle = 'Amenity icons';
 <div class="hb-amenity-icon-option is-selected" style="cursor:default;">
 <?php echo itm_hotel_booking_amenity_icon_markup($slug, 36); ?>
 <span><?php echo htmlspecialchars($slug, ENT_QUOTES, 'UTF-8'); ?></span>
-<?php if (itm_is_admin() && $slug !== 'default'): ?>
+<?php if (itm_is_admin($conn, $employee_id) && $slug !== 'default'): ?>
 <form method="POST" style="margin-top:6px;" onsubmit="return confirm('Remove this icon file?');">
 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 <input type="hidden" name="icon_action" value="delete">

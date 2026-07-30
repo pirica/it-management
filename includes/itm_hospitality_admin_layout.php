@@ -36,10 +36,19 @@ if (!function_exists('itm_hospitality_admin_layout_begin')) {
 }
 
 if (!function_exists('itm_hospitality_admin_layout_end')) {
-    function itm_hospitality_admin_layout_end()
+    /**
+     * @param array<int, string> $extraScripts Module-relative or absolute script src paths.
+     */
+    function itm_hospitality_admin_layout_end(array $extraScripts = [])
     {
         echo '</div></div></div>';
         echo '<script src="' . sanitize(BASE_URL . 'js/theme.js') . '"></script>';
+        foreach ($extraScripts as $src) {
+            $src = trim((string) $src);
+            if ($src !== '') {
+                echo '<script src="' . sanitize($src) . '"></script>';
+            }
+        }
         echo '</body></html>';
     }
 }

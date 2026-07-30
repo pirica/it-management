@@ -116,6 +116,8 @@ function itm_sidebar_base_structure() {
                 ['id' => 'hotel_booking_portal_rate_plans', 'label' => '📋 Portal Rate Plans', 'href' => 'modules/hotel_booking_portal_rate_plans/', 'match_dir' => 'hotel_booking_portal_rate_plans'],
                 ['id' => 'hotel_booking_room_utilities', 'label' => '✨ Room Utilities', 'href' => 'modules/hotel_booking_room_utilities/', 'match_dir' => 'hotel_booking_room_utilities'],
                 ['id' => 'hotel_booking_housekeeping_statuses', 'label' => '🧹 HK Statuses', 'href' => 'modules/hotel_booking_housekeeping_statuses/', 'match_dir' => 'hotel_booking_housekeeping_statuses'],
+                ['id' => 'hotel_booking_housekeeping_maintenance_status', 'label' => '🔧 HK Maintenance Status', 'href' => 'modules/hotel_booking_housekeeping_maintenance_status/', 'match_dir' => 'hotel_booking_housekeeping_maintenance_status'],
+                ['id' => 'hotel_booking_housekeeping_maintenance', 'label' => '🛠️ HK Maintenance', 'href' => 'modules/hotel_booking_housekeeping_maintenance/', 'match_dir' => 'hotel_booking_housekeeping_maintenance'],
                 ['id' => 'hotel_bookings_future', 'label' => '📅 Future Status', 'href' => 'modules/hotel_bookings_future/', 'match_dir' => 'hotel_bookings_future'],
                 ['id' => 'hotel_bookings_present', 'label' => '🏠 Present Status', 'href' => 'modules/hotel_bookings_present/', 'match_dir' => 'hotel_bookings_present'],
                 ['id' => 'hotel_bookings_history', 'label' => '📜 History Status', 'href' => 'modules/hotel_bookings_history/', 'match_dir' => 'hotel_bookings_history'],
