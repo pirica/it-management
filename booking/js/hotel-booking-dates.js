@@ -87,6 +87,86 @@
     return tabs;
   }
 
+  function monthTabsBounds() {
+    var tabs = buildMonthTabs();
+    return { min: tabs[0], max: tabs[tabs.length - 1] };
+  }
+
+  function shiftMonth(year, month, delta) {
+    var d = new Date(year, month - 1 + delta, 1);
+    return { year: d.getFullYear(), month: d.getMonth() + 1 };
+  }
+
+  function compareMonth(aY, aM, bY, bM) {
+    if (aY !== bY) return aY < bY ? -1 : 1;
+    if (aM === bM) return 0;
+    return aM < bM ? -1 : 1;
+  }
+
+  function daysLeftInMonth(ymd) {
+    var parts = ymd.split('-');
+    var y = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10);
+    var d = parseInt(parts[2], 10);
+    return new Date(y, m, 0).getDate() - d;
+  }
+
+  function syncMonthTabUi() {
+    if (!datesBody) return;
+    datesBody.querySelectorAll('.hb-dates-month-tab').forEach(function (tab) {
+      var ty = parseInt(tab.getAttribute('data-year'), 10);
+      var tm = parseInt(tab.getAttribute('data-month'), 10);
+      tab.classList.toggle('is-active', ty === state.year && tm === state.month);
+    });
+    var activeTab = datesBody.querySelector('.hb-dates-month-tab.is-active');
+    if (activeTab && typeof activeTab.scrollIntoView === 'function') {
+      activeTab.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    }
+    var bounds = monthTabsBounds();
+    var prevBtn = datesBody.querySelector('.hb-dates-cal-prev');
+    var nextBtn = datesBody.querySelector('.hb-dates-cal-next');
+    if (prevBtn) {
+      prevBtn.disabled = compareMonth(state.year, state.month, bounds.min.year, bounds.min.month) <= 0;
+    }
+    if (nextBtn) {
+      nextBtn.disabled = compareMonth(state.year, state.month, bounds.max.year, bounds.max.month) >= 0;
+    }
+  }
+
+  function setViewMonth(year, month) {
+    state.year = year;
+    state.month = month;
+    syncMonthTabUi();
+    loadCalendar();
+  }
+
+  function prefetchMonth(year, month) {
+    if (!state.hotel) return;
+    fetchCalendar(state.hotel.id, year, month);
+  }
+
+  function maybeAdvanceMonthForCheckOut(checkInYmd) {
+    if (!checkInYmd || state.checkOutYmd) return;
+    if (daysLeftInMonth(checkInYmd) >= 7) return;
+    var parts = checkInYmd.split('-');
+    var next = shiftMonth(parseInt(parts[0], 10), parseInt(parts[1], 10), 1);
+    var bounds = monthTabsBounds();
+    if (compareMonth(next.year, next.month, bounds.max.year, bounds.max.month) > 0) return;
+    setViewMonth(next.year, next.month);
+  }
+
+  function prefetchAdjacentMonthsForCheckOut(checkInYmd) {
+    if (!checkInYmd || state.checkOutYmd || !state.hotel) return;
+    var parts = checkInYmd.split('-');
+    var y = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10);
+    var next = shiftMonth(y, m, 1);
+    var bounds = monthTabsBounds();
+    if (compareMonth(next.year, next.month, bounds.max.year, bounds.max.month) <= 0) {
+      prefetchMonth(next.year, next.month);
+    }
+  }
+
   function fetchCalendar(hotelId, year, month) {
     var key = cacheKey(year, month);
     if (state.calendarCache[key]) {
@@ -166,7 +246,11 @@
     if (!state.checkInYmd || (state.checkInYmd && state.checkOutYmd)) {
       state.checkInYmd = ymd;
       state.checkOutYmd = '';
-      renderCalendarGrid();
+      prefetchAdjacentMonthsForCheckOut(ymd);
+      maybeAdvanceMonthForCheckOut(ymd);
+      if (compareMonth(state.year, parseInt(ymd.split('-')[0], 10), parseInt(ymd.split('-')[1], 10)) === 0) {
+        renderCalendarGrid();
+      }
       updateFooter();
       return;
     }
@@ -174,7 +258,11 @@
     if (ymd <= state.checkInYmd) {
       state.checkInYmd = ymd;
       state.checkOutYmd = '';
-      renderCalendarGrid();
+      prefetchAdjacentMonthsForCheckOut(ymd);
+      maybeAdvanceMonthForCheckOut(ymd);
+      if (compareMonth(state.year, parseInt(ymd.split('-')[0], 10), parseInt(ymd.split('-')[1], 10)) === 0) {
+        renderCalendarGrid();
+      }
       updateFooter();
       return;
     }
@@ -207,7 +295,11 @@
       '<p class="hb-dates-copy">We\'re showing the best price per room based on the number of guests. Price includes fees.</p>' +
       '<p class="hb-dates-explore"><a href="' + escapeHtml(window.HB_APPURL + '/rooms.php?id=' + h.id) + '">Explore all filters and search options &gt;</a></p>' +
       '<div class="hb-dates-months-wrap"><div class="hb-dates-months">' + tabsHtml + '</div></div>' +
+      '<div class="hb-dates-cal-nav">' +
+      '<button type="button" class="hb-dates-cal-prev" title="Previous month">◀</button>' +
       '<div class="hb-dates-cal-head" id="hb-dates-cal-title"></div>' +
+      '<button type="button" class="hb-dates-cal-next" title="Next month">▶</button>' +
+      '</div>' +
       '<div class="hb-dates-cal-grid" id="hb-dates-cal-grid"><p class="hb-dates-loading">Loading…</p></div>' +
       '<p class="hb-dates-range-hint" id="hb-dates-range-hint"></p>' +
       '<div class="hb-dates-footer">' +
@@ -219,16 +311,26 @@
 
     datesBody.querySelectorAll('.hb-dates-month-tab').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        state.year = parseInt(btn.getAttribute('data-year'), 10);
-        state.month = parseInt(btn.getAttribute('data-month'), 10);
-        datesBody.querySelectorAll('.hb-dates-month-tab').forEach(function (tab) {
-          var ty = parseInt(tab.getAttribute('data-year'), 10);
-          var tm = parseInt(tab.getAttribute('data-month'), 10);
-          tab.classList.toggle('is-active', ty === state.year && tm === state.month);
-        });
-        loadCalendar();
+        setViewMonth(parseInt(btn.getAttribute('data-year'), 10), parseInt(btn.getAttribute('data-month'), 10));
       });
     });
+    var calPrev = datesBody.querySelector('.hb-dates-cal-prev');
+    var calNext = datesBody.querySelector('.hb-dates-cal-next');
+    if (calPrev) {
+      calPrev.addEventListener('click', function () {
+        if (calPrev.disabled) return;
+        var shifted = shiftMonth(state.year, state.month, -1);
+        setViewMonth(shifted.year, shifted.month);
+      });
+    }
+    if (calNext) {
+      calNext.addEventListener('click', function () {
+        if (calNext.disabled) return;
+        var shifted = shiftMonth(state.year, state.month, 1);
+        setViewMonth(shifted.year, shifted.month);
+      });
+    }
+    syncMonthTabUi();
     datesBody.querySelector('.hb-dates-cancel').addEventListener('click', closeDatesModal);
     datesBody.querySelector('.hb-dates-choose').addEventListener('click', function () {
       if (!state.checkInYmd || !state.hotel) return;
@@ -250,6 +352,7 @@
     fetchCalendar(state.hotel.id, state.year, state.month).then(function (data) {
       state.calendar = data;
       renderCalendarGrid();
+      syncMonthTabUi();
     }).catch(function () {
       grid.innerHTML = '<p class="hb-dates-error">Could not load calendar.</p>';
     });
@@ -321,7 +424,7 @@
       if (!state.checkInYmd) {
         hint.textContent = 'Select your check-in date.';
       } else if (!state.checkOutYmd) {
-        hint.textContent = 'Select your check-out date, or choose room for 1 night.';
+        hint.textContent = 'Select your check-out date (use ▶ or the month tabs for the next month), or choose room for 1 night.';
       } else {
         hint.textContent = '';
       }

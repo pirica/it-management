@@ -66,7 +66,7 @@ sequenceDiagram
 | Asset | Used on |
 |-------|---------|
 | `hotel-booking-public.js` | `index.php` — hotel detail modal, gallery |
-| `hotel-booking-dates.js` | `index.php` — Select Dates modal (check-in + check-out range) |
+| `hotel-booking-dates.js` | `index.php` — Select Dates modal (check-in + check-out range; **◀ / ▶** month nav; auto-advance to next month when check-in is in the last week) |
 | `hotel-booking-amenity-icons.js` | Amenity SVG resolution |
 | `hotel-booking-select-room.js` | `rooms.php` — filters, occupancy/rates modals, room detail |
 | `hotel-booking-customize.js` | `rooms/customize.php` — upgrade totals, room detail modal |
