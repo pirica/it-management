@@ -130,6 +130,18 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
+/**
+ * Resolves FK label text for list/view cells.
+ */
+function cr_fk_label_by_id(mysqli $conn, array $fk, int $companyId, int $rawId): string
+{
+    if (function_exists('itm_fk_label_by_id')) {
+        return itm_fk_label_by_id($conn, $fk, $companyId, $rawId);
+    }
+
+    return '';
+}
+
 function cr_render_cell_value($table, $field, $value) {
     if (function_exists('itm_crud_render_audit_cell_value')) {
         $auditHtml = itm_crud_render_audit_cell_value($GLOBALS['conn'] ?? null, (int)($GLOBALS['company_id'] ?? 0), $field, $value);
@@ -140,6 +152,40 @@ function cr_render_cell_value($table, $field, $value) {
 if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
+    if ($table === 'hotel_booking_housekeeping_maintenance' && $field === 'room_id') {
+        $roomId = (int) $value;
+        $companyId = (int) ($GLOBALS['company_id'] ?? 0);
+        $conn = $GLOBALS['conn'] ?? null;
+        if ($roomId > 0 && $companyId > 0 && $conn instanceof mysqli) {
+            $rstmt = mysqli_prepare($conn, 'SELECT room_number, name FROM hotel_booking_rooms WHERE id = ? AND company_id = ? LIMIT 1');
+            if ($rstmt) {
+                mysqli_stmt_bind_param($rstmt, 'ii', $roomId, $companyId);
+                mysqli_stmt_execute($rstmt);
+                $rres = mysqli_stmt_get_result($rstmt);
+                $rrow = $rres ? mysqli_fetch_assoc($rres) : null;
+                mysqli_stmt_close($rstmt);
+                if ($rrow) {
+                    $roomLabel = trim((string) ($rrow['room_number'] ?? '') . ' — ' . (string) ($rrow['name'] ?? ''));
+                    if ($roomLabel !== '') {
+                        return sanitize($roomLabel);
+                    }
+                }
+            }
+        }
+    }
+
+    if (isset($GLOBALS['fkMap'][$field])) {
+        $fkRow = $GLOBALS['fkMap'][$field];
+        $fkDisplayId = (int) $value;
+        if ($fkDisplayId > 0 && (int) ($GLOBALS['company_id'] ?? 0) > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+            $fkDisplayId = itm_fk_resolve_company_equivalent_id($GLOBALS['conn'], $fkRow, (int) $GLOBALS['company_id'], $fkDisplayId);
+        }
+        $resolvedLabel = cr_fk_label_by_id($GLOBALS['conn'], $fkRow, (int) ($GLOBALS['company_id'] ?? 0), $fkDisplayId);
+        if ($resolvedLabel !== '') {
+            return sanitize($resolvedLabel);
+        }
     }
 
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
