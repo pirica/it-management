@@ -24,6 +24,7 @@ Maintains system-wide configuration, database credentials, path constants, and c
 - **Upload size constants:** `MAX_FILE_SIZE` (5MB) for ticket/patch image uploads; `EXPLORER_MAX_FILE_SIZE` (20MB) for Explorer multipart uploads; floor-plan limits remain `FLOOR_PLAN_MAX_FILE_SIZE`.
 - **Audit soft-delete helpers:** `config.php` loads `includes/itm_crud_audit_fields.php` after `itm_date_format.php` for scaffold CRUD soft-delete + audit meta rendering.
 - **Vault TOTP helpers:** `config.php` loads `includes/itm_totp_helpers.php` and `includes/itm_vault_unlock.php` after `includes/itm_email.php` — global `PHPGangsta_GoogleAuthenticator`, encrypted `employees.totp_secret` helpers, and shared vault lock/unlock POST handling. See `docs/VAULT.md`.
+- **Browser title helper:** `config.php` loads `includes/itm_crud_browser_title.php` after `includes/itm_company_module_access.php` so bespoke modules can call `itm_crud_apply_module_icon_to_browser_title()` without a per-file `require_once`.
 
 ## 7. File Structure
 - **config.php** — the core configuration file required by every entry point.

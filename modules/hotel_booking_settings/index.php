@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $row = itm_hotel_booking_settings_row($conn, $company_id);
 $crud_title = 'Hotel Booking Settings';
-itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_booking_settings', $crud_title);
+$crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_booking_settings', $crud_title);
 require '../../includes/header.php';
 ?>
 <div class="container">

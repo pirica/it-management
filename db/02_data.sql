@@ -2414,19 +2414,19 @@ INSERT INTO `it_settings` (`company_id`, `contact_email`, `contact_phone`, `hour
 (5, 'it-ops@enterpriseit.example', '+1-617-555-0500', '08:00 - 20:00 EST', 'Standard escalation through the ticketing system.');
 
 -- Hotel booking module registry
-INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings", "Hotel Bookings", 0, 1, "ðŸ¨");
-INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_hotels", "Hotels", 0, 1, "ðŸ¨");
-INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("booking_rooms_types", "Room Types", 0, 1, "ðŸ›ï¸");
-INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_rooms", "Hotel Rooms", 0, 1, "ðŸšª");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings", "Hotel Bookings", 0, 1, "🏨");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_hotels", "Hotels", 0, 1, "🏨");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("booking_rooms_types", "Room Types", 0, 1, "🛏️");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_rooms", "Hotel Rooms", 0, 1, "🚪");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_amenities", "Booking Amenities", 0, 1, "✨");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_special_rates", "Booking Special Rates", 0, 1, "🏷️");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_portal_rate_plans", "Portal Rate Plans", 0, 1, "📋");
-INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_room_utilities", "Room Utilities", 0, 1, "âœ¨");
-INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_housekeeping_statuses", "HK Statuses", 0, 1, "ðŸ§¹");
-INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_future", "Booking Future Status", 0, 1, "ðŸ“…");
-INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_present", "Booking Present Status", 0, 1, "ðŸ ");
-INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_history", "Booking History Status", 0, 1, "ðŸ“œ");
-INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_settings", "Hotel Booking Settings", 0, 1, "âš™ï¸");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_room_utilities", "Room Utilities", 0, 1, "✨");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_housekeeping_statuses", "HK Statuses", 0, 1, "🧹");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_future", "Booking Future Status", 0, 1, "📅");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_present", "Booking Present Status", 0, 1, "🏠");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_history", "Booking History Status", 0, 1, "📜");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_settings", "Hotel Booking Settings", 0, 1, "⚙️");
 
 INSERT INTO `hotel_bookings_future` (`company_id`, `name`, `active`, `created_at`) VALUES
 (1, 'CONFIRMED', 1, '2026-01-01 00:00:01'),
