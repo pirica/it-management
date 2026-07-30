@@ -289,6 +289,19 @@ if (is_file($changeBookingJs) && strpos((string) file_get_contents($changeBookin
     hb_fail('change booking modal script missing');
 }
 
+$planningJs = dirname(__DIR__) . '/modules/hotel_bookings/js/hotel-bookings-planning.js';
+if (is_file($planningJs) && strpos((string) file_get_contents($planningJs), 'planning_move') !== false && strpos((string) file_get_contents($planningJs), 'hb-plan-draggable') !== false) {
+    hb_pass('planning grid drag-drop script');
+} else {
+    hb_fail('planning grid drag-drop script missing');
+}
+
+if (function_exists('itm_hotel_booking_planning_move_booking') && function_exists('itm_hotel_booking_planning_move_maintenance')) {
+    hb_pass('planning move helpers');
+} else {
+    hb_fail('planning move helpers missing');
+}
+
 $bookingConfirmationPdfJs = dirname(__DIR__) . '/booking/js/hotel-booking-confirmation-pdf.js';
 if (is_file($bookingConfirmationPdfJs) && strpos((string) file_get_contents($bookingConfirmationPdfJs), 'hbSaveBookingConfirmationPdf') !== false) {
     hb_pass('booking confirmation pdf download script');

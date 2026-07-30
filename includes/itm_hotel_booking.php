@@ -1617,6 +1617,189 @@ if (!function_exists('itm_hotel_booking_apply_segment_status_on_save')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_planning_valid_ymd')) {
+  function itm_hotel_booking_planning_valid_ymd($ymd) {
+    $ymd = (string) $ymd;
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $ymd)) {
+      return false;
+    }
+    $dt = DateTime::createFromFormat('Y-m-d', $ymd);
+    return $dt && $dt->format('Y-m-d') === $ymd;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_maintenance_has_overlap')) {
+  function itm_hotel_booking_maintenance_has_overlap($conn, $companyId, $roomId, $fromDate, $throughDate, $excludeMaintenanceId = 0) {
+    $companyId = (int) $companyId;
+    $roomId = (int) $roomId;
+    $excludeMaintenanceId = (int) $excludeMaintenanceId;
+    $sql = 'SELECT id FROM hotel_booking_housekeeping_maintenance
+            WHERE company_id = ? AND room_id = ? AND deleted_at IS NULL AND active = 1 AND id <> ?
+            AND from_date <= ? AND through_date >= ? LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return true;
+    }
+    mysqli_stmt_bind_param($stmt, 'iiiss', $companyId, $roomId, $excludeMaintenanceId, $throughDate, $fromDate);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    return $row !== null;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_planning_move_booking')) {
+  function itm_hotel_booking_planning_move_booking($conn, $companyId, $employeeId, $bookingId, $roomId, $checkIn, $checkOut) {
+    $companyId = (int) $companyId;
+    $employeeId = (int) $employeeId;
+    $bookingId = (int) $bookingId;
+    $roomId = (int) $roomId;
+    $checkIn = (string) $checkIn;
+    $checkOut = (string) $checkOut;
+    if ($companyId < 1 || $bookingId < 1 || $roomId < 1) {
+      return ['ok' => false, 'error' => 'Invalid request.'];
+    }
+    if (!itm_hotel_booking_planning_valid_ymd($checkIn) || !itm_hotel_booking_planning_valid_ymd($checkOut)) {
+      return ['ok' => false, 'error' => 'Invalid dates.'];
+    }
+    if ($checkOut <= $checkIn) {
+      return ['ok' => false, 'error' => 'Check-out must be after check-in.'];
+    }
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM hotel_bookings WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
+    if (!$stmt) {
+      return ['ok' => false, 'error' => 'Booking not found.'];
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $bookingId, $companyId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    if (!$row) {
+      return ['ok' => false, 'error' => 'Booking not found.'];
+    }
+    if (itm_hotel_booking_booking_is_cancelled($conn, $companyId, $row)) {
+      return ['ok' => false, 'error' => 'Cancelled booking cannot be moved.'];
+    }
+    $rstmt = mysqli_prepare($conn, 'SELECT id, price_per_night FROM hotel_booking_rooms WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
+    if (!$rstmt) {
+      return ['ok' => false, 'error' => 'Room not found.'];
+    }
+    mysqli_stmt_bind_param($rstmt, 'ii', $roomId, $companyId);
+    mysqli_stmt_execute($rstmt);
+    $rres = mysqli_stmt_get_result($rstmt);
+    $roomRow = $rres ? mysqli_fetch_assoc($rres) : null;
+    mysqli_stmt_close($rstmt);
+    if (!$roomRow) {
+      return ['ok' => false, 'error' => 'Room not found.'];
+    }
+    if (itm_hotel_booking_has_overlap($conn, $companyId, $roomId, $checkIn, $checkOut, $bookingId)) {
+      return ['ok' => false, 'error' => 'Room overlap for selected dates.'];
+    }
+    $segment = itm_hotel_booking_resolve_segment($checkIn, $checkOut);
+    $defaults = itm_hotel_booking_apply_segment_status_on_save($conn, $companyId, $checkIn, $checkOut);
+    $fs = (int) ($row['future_status_id'] ?? 0);
+    $ps = (int) ($row['present_status_id'] ?? 0);
+    $hs = (int) ($row['history_status_id'] ?? 0);
+    if ($segment === 'future') {
+      $fs = (int) ($defaults['future_status_id'] ?? $fs);
+    } elseif ($segment === 'present') {
+      $ps = (int) ($defaults['present_status_id'] ?? $ps);
+    } else {
+      $hs = (int) ($defaults['history_status_id'] ?? $hs);
+    }
+    $payment = itm_hotel_booking_compute_payment_amount((float) ($roomRow['price_per_night'] ?? 0), $checkIn, $checkOut);
+    $upd = mysqli_prepare(
+      $conn,
+      'UPDATE hotel_bookings SET room_id = ?, check_in = ?, check_out = ?, payment_amount = ?, future_status_id = NULLIF(?,0), present_status_id = NULLIF(?,0), history_status_id = NULLIF(?,0), updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?'
+    );
+    if (!$upd) {
+      return ['ok' => false, 'error' => 'Update failed.'];
+    }
+    mysqli_stmt_bind_param($upd, 'issdiiiiii', $roomId, $checkIn, $checkOut, $payment, $fs, $ps, $hs, $employeeId, $bookingId, $companyId);
+    if (!mysqli_stmt_execute($upd)) {
+      mysqli_stmt_close($upd);
+      return ['ok' => false, 'error' => 'Update failed.'];
+    }
+    mysqli_stmt_close($upd);
+    return [
+      'ok' => true,
+      'booking_id' => $bookingId,
+      'room_id' => $roomId,
+      'check_in' => $checkIn,
+      'check_out' => $checkOut,
+      'payment_amount' => $payment,
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_planning_move_maintenance')) {
+  function itm_hotel_booking_planning_move_maintenance($conn, $companyId, $employeeId, $maintenanceId, $roomId, $fromDate, $throughDate) {
+    $companyId = (int) $companyId;
+    $employeeId = (int) $employeeId;
+    $maintenanceId = (int) $maintenanceId;
+    $roomId = (int) $roomId;
+    $fromDate = (string) $fromDate;
+    $throughDate = (string) $throughDate;
+    if ($companyId < 1 || $maintenanceId < 1 || $roomId < 1) {
+      return ['ok' => false, 'error' => 'Invalid request.'];
+    }
+    if (!itm_hotel_booking_planning_valid_ymd($fromDate) || !itm_hotel_booking_planning_valid_ymd($throughDate)) {
+      return ['ok' => false, 'error' => 'Invalid dates.'];
+    }
+    if ($throughDate < $fromDate) {
+      return ['ok' => false, 'error' => 'Through date must be on or after from date.'];
+    }
+    $stmt = mysqli_prepare($conn, 'SELECT * FROM hotel_booking_housekeeping_maintenance WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
+    if (!$stmt) {
+      return ['ok' => false, 'error' => 'Maintenance record not found.'];
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $maintenanceId, $companyId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    if (!$row) {
+      return ['ok' => false, 'error' => 'Maintenance record not found.'];
+    }
+    $rstmt = mysqli_prepare($conn, 'SELECT id FROM hotel_booking_rooms WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
+    if (!$rstmt) {
+      return ['ok' => false, 'error' => 'Room not found.'];
+    }
+    mysqli_stmt_bind_param($rstmt, 'ii', $roomId, $companyId);
+    mysqli_stmt_execute($rstmt);
+    $rres = mysqli_stmt_get_result($rstmt);
+    $roomRow = $rres ? mysqli_fetch_assoc($rres) : null;
+    mysqli_stmt_close($rstmt);
+    if (!$roomRow) {
+      return ['ok' => false, 'error' => 'Room not found.'];
+    }
+    if (itm_hotel_booking_maintenance_has_overlap($conn, $companyId, $roomId, $fromDate, $throughDate, $maintenanceId)) {
+      return ['ok' => false, 'error' => 'Maintenance overlap for selected dates.'];
+    }
+    $upd = mysqli_prepare(
+      $conn,
+      'UPDATE hotel_booking_housekeeping_maintenance SET room_id = ?, from_date = ?, through_date = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?'
+    );
+    if (!$upd) {
+      return ['ok' => false, 'error' => 'Update failed.'];
+    }
+    mysqli_stmt_bind_param($upd, 'issiii', $roomId, $fromDate, $throughDate, $employeeId, $maintenanceId, $companyId);
+    if (!mysqli_stmt_execute($upd)) {
+      mysqli_stmt_close($upd);
+      return ['ok' => false, 'error' => 'Update failed.'];
+    }
+    mysqli_stmt_close($upd);
+    return [
+      'ok' => true,
+      'maintenance_id' => $maintenanceId,
+      'room_id' => $roomId,
+      'from_date' => $fromDate,
+      'through_date' => $throughDate,
+    ];
+  }
+}
+
 if (!function_exists('itm_hotel_booking_active_housekeeping_status_ids')) {
   function itm_hotel_booking_active_housekeeping_status_ids($conn, $companyId) {
     $companyId = (int) $companyId;
