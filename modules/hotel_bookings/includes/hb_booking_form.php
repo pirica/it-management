@@ -38,6 +38,7 @@ if (!function_exists('hb_booking_load_form_options')) {
             'future_statuses' => hb_booking_load_status_options($conn, $companyId, 'hotel_bookings_future'),
             'present_statuses' => hb_booking_load_status_options($conn, $companyId, 'hotel_bookings_present'),
             'history_statuses' => hb_booking_load_status_options($conn, $companyId, 'hotel_bookings_history'),
+            'portal_rate_plans' => [],
         ];
         $cstmt = mysqli_prepare($conn, 'SELECT id, name FROM customers WHERE company_id = ? AND deleted_at IS NULL ORDER BY name');
         if ($cstmt) {
@@ -49,7 +50,7 @@ if (!function_exists('hb_booking_load_form_options')) {
             }
             mysqli_stmt_close($cstmt);
         }
-        $rstmt = mysqli_prepare($conn, 'SELECT id, room_number, name, price_per_night FROM hotel_booking_rooms WHERE company_id = ? AND deleted_at IS NULL ORDER BY room_number');
+        $rstmt = mysqli_prepare($conn, 'SELECT id, room_number, name, price_per_night, hotel_id FROM hotel_booking_rooms WHERE company_id = ? AND deleted_at IS NULL ORDER BY room_number');
         if ($rstmt) {
             mysqli_stmt_bind_param($rstmt, 'i', $companyId);
             mysqli_stmt_execute($rstmt);
@@ -58,6 +59,16 @@ if (!function_exists('hb_booking_load_form_options')) {
                 $out['rooms'][] = $r;
             }
             mysqli_stmt_close($rstmt);
+        }
+        $pstmt = mysqli_prepare($conn, 'SELECT id, hotel_id, name, rate_plan_slug, plan_slot FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY hotel_id ASC, plan_slot ASC');
+        if ($pstmt) {
+            mysqli_stmt_bind_param($pstmt, 'i', $companyId);
+            mysqli_stmt_execute($pstmt);
+            $pr = mysqli_stmt_get_result($pstmt);
+            while ($pr && ($p = mysqli_fetch_assoc($pr))) {
+                $out['portal_rate_plans'][] = $p;
+            }
+            mysqli_stmt_close($pstmt);
         }
         return $out;
     }
@@ -155,6 +166,36 @@ if (!function_exists('hb_booking_date_input_value')) {
     }
 }
 
+if (!function_exists('hb_booking_resolve_portal_rate_plan_id')) {
+    function hb_booking_resolve_portal_rate_plan_id($conn, $companyId, $roomId, $postedPlanId)
+    {
+        $postedPlanId = (int) $postedPlanId;
+        $roomId = (int) $roomId;
+        $companyId = (int) $companyId;
+        if ($postedPlanId < 1 || $roomId < 1 || $companyId < 1) {
+            return 0;
+        }
+        $stmt = mysqli_prepare($conn, 'SELECT r.hotel_id FROM hotel_booking_rooms r WHERE r.id = ? AND r.company_id = ? AND r.deleted_at IS NULL LIMIT 1');
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $roomId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $roomRow = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        $hotelId = (int) ($roomRow['hotel_id'] ?? 0);
+        if ($hotelId < 1) {
+            return 0;
+        }
+        $planRow = itm_hotel_booking_portal_rate_plan_row_by_id($conn, $companyId, $postedPlanId);
+        if (!$planRow || (int) ($planRow['hotel_id'] ?? 0) !== $hotelId || empty($planRow['active'])) {
+            return 0;
+        }
+        return (int) ($planRow['id'] ?? 0);
+    }
+}
+
 if (!function_exists('hb_booking_render_form_fields')) {
     /**
      * @param array $options hb_booking_load_form_options()
@@ -175,6 +216,7 @@ if (!function_exists('hb_booking_render_form_fields')) {
         $futureId = (int) ($row['future_status_id'] ?? 0);
         $presentId = (int) ($row['present_status_id'] ?? 0);
         $historyId = (int) ($row['history_status_id'] ?? 0);
+        $portalRatePlanId = (int) ($row['portal_rate_plan_id'] ?? 0);
         $notes = (string) ($row['notes'] ?? '');
         $colorSeed = (int) ($row['id'] ?? 0);
         if ($colorSeed < 1) {
@@ -201,9 +243,30 @@ if (!function_exists('hb_booking_render_form_fields')) {
             $rid = (int) $r['id'];
             $sel = $rid === $roomId ? ' selected' : '';
             $label = ($r['room_number'] ?? '') . ' — ' . ($r['name'] ?? '');
-            echo '<option value="' . (int) $rid . '" data-price="' . sanitize(number_format((float) ($r['price_per_night'] ?? 0), 2, '.', '')) . '"' . $sel . '>' . sanitize($label) . '</option>';
+            echo '<option value="' . (int) $rid . '" data-hotel-id="' . (int) ($r['hotel_id'] ?? 0) . '" data-price="' . sanitize(number_format((float) ($r['price_per_night'] ?? 0), 2, '.', '')) . '"' . $sel . '>' . sanitize($label) . '</option>';
         }
         echo '</select></div>';
+
+        echo '<div class="form-group hb-booking-rate-plan-field"><label for="hb-booking-portal-rate-plan-id">Portal rate plan</label>';
+        echo '<div class="hb-booking-rate-plan-controls" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">';
+        echo '<select name="portal_rate_plan_id" id="hb-booking-portal-rate-plan-id" class="form-control" style="min-width:220px;flex:1 1 220px;">';
+        echo '<option value="">-- Select --</option>';
+        foreach ($options['portal_rate_plans'] as $plan) {
+            $pid = (int) ($plan['id'] ?? 0);
+            $hid = (int) ($plan['hotel_id'] ?? 0);
+            $sel = $pid === $portalRatePlanId ? ' selected' : '';
+            $planLabel = (string) ($plan['name'] ?? '');
+            $slug = (string) ($plan['rate_plan_slug'] ?? '');
+            if ($slug !== '') {
+                $planLabel .= ' (' . $slug . ')';
+            }
+            echo '<option value="' . $pid . '" data-hotel-id="' . $hid . '"' . $sel . '>' . sanitize($planLabel) . '</option>';
+        }
+        echo '<option value="__add_new__">➕</option>';
+        echo '</select>';
+        echo '<a class="btn btn-sm hb-booking-rate-plan-view" id="hb-booking-rate-plan-view" href="#" title="View" hidden>🔎</a>';
+        echo '<a class="btn btn-sm hb-booking-rate-plan-edit" id="hb-booking-rate-plan-edit" href="#" title="Edit" hidden>✏️</a>';
+        echo '</div></div>';
 
         echo '<div class="hb-booking-dates-row">';
         echo '<div class="form-group"><label>Check-in <span class="hb-date-hint" title="dd/mm/yyyy">(dd/mm/yyyy)</span></label>';
@@ -251,5 +314,20 @@ if (!function_exists('hb_booking_render_form_fields')) {
         echo '</label></div>';
 
         itm_crud_render_form_hidden_audit_inputs($row, $crudAction);
+    }
+}
+
+if (!function_exists('hb_booking_render_rate_plan_modal')) {
+    function hb_booking_render_rate_plan_modal()
+    {
+        $base = rtrim((string) (defined('BASE_URL') ? BASE_URL : '/'), '/') . '/';
+        echo '<div id="hb-rate-plan-modal" class="hb-modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="hb-rate-plan-modal-title">';
+        echo '<div class="hb-modal hb-plan-maint-modal">';
+        echo '<div class="hb-plan-maint-modal-head">';
+        echo '<h2 id="hb-rate-plan-modal-title" title="Portal rate plan">➕</h2>';
+        echo '<button type="button" class="btn btn-sm" data-hb-rate-plan-modal-close title="Close">✖</button>';
+        echo '</div>';
+        echo '<iframe id="hb-rate-plan-modal-frame" class="hb-plan-maint-modal-frame" title="Portal rate plan" src="about:blank" data-base="' . sanitize($base) . '"></iframe>';
+        echo '</div></div>';
     }
 }

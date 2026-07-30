@@ -147,7 +147,10 @@ $changeRoomQuery = http_build_query(array_merge(
     itm_hotel_booking_portal_occupancy_query_params($occupancy)
 ));
 $changeRoomUrl = APPURL . '/rooms.php?' . $changeRoomQuery;
-$planLabel = ($draft['rate_plan'] ?? '') === 'breakfast' ? 'Breakfast included' : 'Best available rate';
+$planLabel = trim((string) ($draft['portal_rate_plan_name'] ?? ''));
+if ($planLabel === '') {
+    $planLabel = ($draft['rate_plan'] ?? '') === 'breakfast' ? 'Breakfast included' : 'Best available rate';
+}
 $changeRateUrl = APPURL . '/rooms/select-rate.php?' . http_build_query(array_merge(
     ['id' => $roomId, 'check_in' => $checkInIso, 'nights' => $nights],
     itm_hotel_booking_portal_occupancy_query_params($occupancy)

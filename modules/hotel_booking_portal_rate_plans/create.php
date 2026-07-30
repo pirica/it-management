@@ -8,6 +8,8 @@ if ($company_id < 1) {
     exit;
 }
 
+$embedMode = ((isset($_GET['embed']) && (string) $_GET['embed'] === '1') || (isset($_POST['embed']) && (string) $_POST['embed'] === '1'));
+
 $hotelId = (int) ($_GET['hotel_id'] ?? $_POST['hotel_id'] ?? 0);
 $planSlot = (int) ($_POST['plan_slot'] ?? 0);
 $name = trim((string) ($_POST['name'] ?? ''));
@@ -59,15 +61,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $isActive
     );
     if (!empty($result['ok'])) {
-        header('Location: edit.php?id=' . (int) ($result['id'] ?? 0));
+        $newId = (int) ($result['id'] ?? 0);
+        if ($embedMode) {
+            header('Location: edit.php?id=' . $newId . '&embed=1&saved=1');
+        } else {
+            header('Location: edit.php?id=' . $newId);
+        }
         exit;
     }
     $errors[] = (string) ($result['error'] ?? 'Create failed.');
 }
 
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_booking_portal_rate_plans', 'Create rate plan');
-require_once ROOT_PATH . 'includes/itm_hospitality_admin_layout.php';
-itm_hospitality_admin_layout_begin($crud_title);
+if ($embedMode) {
+    $crud_title = 'Create rate plan';
+    ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><?php echo sanitize($crud_title); ?></title>
+<link rel="stylesheet" href="<?php echo BASE_URL; ?>css/styles.css">
+<style>body.hb-rate-plan-embed{margin:0;background:var(--bg,#fff);} .hb-rate-plan-embed-wrap{padding:12px 16px 20px;max-width:980px;}</style>
+</head>
+<body class="hb-rate-plan-embed">
+<div class="hb-rate-plan-embed-wrap">
+<?php
+} else {
+    require_once ROOT_PATH . 'includes/itm_hospitality_admin_layout.php';
+    itm_hospitality_admin_layout_begin($crud_title);
+}
 
 $templateJson = [];
 foreach ($definitions as $def) {
@@ -97,6 +121,7 @@ foreach ($definitions as $def) {
 <?php else: ?>
 <form method="post" id="hb-rate-plan-create-form">
 <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+<?php if ($embedMode): ?><input type="hidden" name="embed" value="1"><?php endif; ?>
 <div class="form-group">
 <label for="hotel_id">Hotel</label>
 <select name="hotel_id" id="hotel_id" class="form-control" required>
@@ -139,7 +164,11 @@ foreach ($definitions as $def) {
 </div>
 <div class="itm-form-actions itm-align-left" style="display:flex;gap:8px;align-items:center;">
 <button type="submit" class="btn btn-primary" title="Save">💾</button>
+<?php if (!$embedMode): ?>
 <a href="index.php<?php echo $hotelId > 0 ? '?hotel_id=' . (int) $hotelId : ''; ?>" class="btn" title="Back">🔙</a>
+<?php else: ?>
+<button type="button" class="btn" data-hb-rate-plan-embed-close title="Close">🔙</button>
+<?php endif; ?>
 </div>
 </form>
 <script>
@@ -167,4 +196,13 @@ foreach ($definitions as $def) {
 </script>
 <?php endif; ?>
 </div>
+<?php if ($embedMode): ?>
+<script>
+document.querySelector('[data-hb-rate-plan-embed-close]')?.addEventListener('click', function () {
+    window.parent.postMessage({ type: 'hb_rate_plan_embed_close' }, '*');
+});
+</script>
+</div></body></html>
+<?php else: ?>
 <?php itm_hospitality_admin_layout_end(); ?>
+<?php endif; ?>

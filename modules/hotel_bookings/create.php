@@ -32,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ps = (int) ($statusIds['present_status_id'] ?? 0);
     $hs = (int) ($statusIds['history_status_id'] ?? 0);
     $bookingColor = itm_hotel_booking_resolve_booking_color($_POST['booking_color'] ?? '', mt_rand(1, 99999));
+    $portalRatePlanId = hb_booking_resolve_portal_rate_plan_id($conn, $company_id, $roomId, $_POST['portal_rate_plan_id'] ?? 0);
 
     if ($customerId < 1 || $roomId < 1 || $checkIn === '' || $checkOut === '') {
         $errors[] = 'Customer, room, and dates are required.';
@@ -40,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (itm_hotel_booking_has_overlap($conn, $company_id, $roomId, $checkIn, $checkOut)) {
         $errors[] = 'Room overlap for selected dates.';
     } else {
-        $ins = mysqli_prepare($conn, 'INSERT INTO hotel_bookings (company_id, customer_id, room_id, check_in, check_out, payment_amount, future_status_id, present_status_id, history_status_id, notes, booking_color, active, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?, ?, ?)');
+        $ins = mysqli_prepare($conn, 'INSERT INTO hotel_bookings (company_id, customer_id, room_id, check_in, check_out, payment_amount, future_status_id, present_status_id, history_status_id, portal_rate_plan_id, notes, booking_color, active, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?, ?, ?)');
         if ($ins) {
             $createdBy = (int) ($_POST['created_by'] ?? $employee_id);
             $createdAt = trim((string) ($_POST['created_at'] ?? ''));
@@ -49,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             mysqli_stmt_bind_param(
                 $ins,
-                'iiissdiiissiis',
+                'iiissdiiiissiis',
                 $company_id,
                 $customerId,
                 $roomId,
@@ -59,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $fs,
                 $ps,
                 $hs,
+                $portalRatePlanId,
                 $notes,
                 $bookingColor,
                 $active,
@@ -80,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $formRow['future_status_id'] = $fs;
     $formRow['present_status_id'] = $ps;
     $formRow['history_status_id'] = $hs;
+    $formRow['portal_rate_plan_id'] = $portalRatePlanId;
     $formRow['notes'] = $notes;
     $formRow['booking_color'] = $bookingColor;
     $formRow['active'] = $active;
@@ -100,5 +103,6 @@ itm_hospitality_admin_layout_begin($crud_title, ['css/hotel-bookings.css']);
 </form>
 </div>
 <?php
-itm_hospitality_admin_layout_end(['js/hotel-bookings-date-picker.js']);
+itm_hospitality_admin_layout_end(['js/hotel-bookings-date-picker.js', 'js/hotel-bookings-rate-plan-select.js']);
+hb_booking_render_rate_plan_modal();
 ?>
