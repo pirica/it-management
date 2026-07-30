@@ -1344,7 +1344,8 @@ if (!function_exists('itm_hotel_booking_portal_guest_can_cancel_booking')) {
       return false;
     }
     $segment = itm_hotel_booking_resolve_segment($bookingRow['check_in'] ?? '', $bookingRow['check_out'] ?? '');
-    return $segment === 'future';
+  // Why: Check-in on or before today is segment present; guests still need online cancel until checkout passes.
+    return $segment === 'future' || $segment === 'present';
   }
 }
 

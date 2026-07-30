@@ -184,7 +184,7 @@ Seed example: company 1 **TechCorp Retreat**, reservation IDs from `hotel_bookin
 
 - **Clear four-step UX** aligned with major hotel sites; shared stepper and reservation summary reduce duplication.
 - **ITM integration** — one database, tenant scoping, audit triggers on admin tables, photo uploads via shared helpers.
-- **Manage booking** — lookup without passwords; cancellation policy, change (contact hotel), and online cancel for future stays.
+- **Manage booking** — lookup without passwords; cancellation policy, change (contact hotel), and online cancel while check-out is still in the future (future and present segments).
 - **Legacy cleanup** — removed Colorlib template, PDO admin-panel, and vendored jQuery/Bootstrap; ~37 active portal files remain.
 - **Regression script** — `scripts/verify_hotel_booking.php` covers segments, guest match, pricing, cancel helpers, PDF JS.
 - **Unicode & dates** — UTF-8 end-to-end; display dates dd/mm/yyyy via shared ITM helpers.
