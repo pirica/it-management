@@ -236,6 +236,19 @@ if (itm_hotel_booking_portal_guest_can_cancel_booking($conn, 1, $futureBooking))
     hb_fail('portal guest can cancel future booking');
 }
 
+$presentBooking = [
+    'check_in' => date('Y-m-d', strtotime('-1 day')),
+    'check_out' => date('Y-m-d', strtotime('+14 days')),
+    'future_status_id' => null,
+    'present_status_id' => 1,
+    'history_status_id' => null,
+];
+if (itm_hotel_booking_portal_guest_can_cancel_booking($conn, 1, $presentBooking)) {
+    hb_pass('portal guest can cancel present-segment booking');
+} else {
+    hb_fail('portal guest can cancel present-segment booking');
+}
+
 $pastBooking = [
     'check_in' => '2020-01-01',
     'check_out' => '2020-01-03',
