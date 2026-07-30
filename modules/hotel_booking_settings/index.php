@@ -59,7 +59,7 @@ itm_hospitality_admin_layout_begin($crud_title);
 ?>
 <div class="card">
 <h1 title="Hotel booking settings">⚙️</h1>
-<div class="itm-form-actions itm-align-left" style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">
+<div class="itm-hospitality-list-actions" style="margin-bottom:16px;">
 <?php itm_hospitality_render_bookings_hub_link('btn'); ?>
 </div>
 <?php if (!empty($_GET['saved'])): ?>

@@ -79,9 +79,8 @@ itm_hospitality_admin_layout_begin($crud_title);
 <?php endforeach; ?>
 <?php if (empty($hotels)): ?>
 <p>No active hotels. Add a hotel first.</p>
-<div class="itm-form-actions itm-align-left" style="display:flex;gap:8px;align-items:center;">
-<a href="../hotel_booking_hotels/create.php" class="btn btn-primary" title="Create">➕</a>
-<?php itm_hospitality_render_bookings_hub_link('btn'); ?>
+<div class="itm-hospitality-list-actions" style="margin-bottom:16px;">
+<?php itm_hospitality_render_list_create_and_hub('btn btn-primary', '../hotel_booking_hotels/create.php'); ?>
 </div>
 <?php else: ?>
 <form method="get" class="form-inline" style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -92,8 +91,10 @@ itm_hospitality_admin_layout_begin($crud_title);
 <?php endforeach; ?>
 </select>
 <noscript><button type="submit" class="btn btn-sm" title="Load">Load</button></noscript>
-<?php itm_hospitality_render_bookings_hub_link('btn'); ?>
 </form>
+<div class="itm-hospitality-list-actions" style="margin-bottom:16px;">
+<?php itm_hospitality_render_bookings_hub_link('btn'); ?>
+</div>
 <form method="post">
 <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
 <input type="hidden" name="hotel_id" value="<?php echo (int) $hotelId; ?>">

@@ -52,9 +52,8 @@ itm_hospitality_admin_layout_begin($crud_title);
 <p class="text-muted">Configure cancellation policy links and text for Step 2 portal rates.</p>
 <?php if (empty($hotels)): ?>
 <p>No active hotels. Add a hotel first.</p>
-<div class="itm-form-actions itm-align-left" style="display:flex;gap:8px;align-items:center;">
-<a href="../hotel_booking_hotels/create.php" class="btn btn-primary" title="Create">➕</a>
-<?php itm_hospitality_render_bookings_hub_link('btn'); ?>
+<div class="itm-hospitality-list-actions" style="margin-bottom:16px;">
+<?php itm_hospitality_render_list_create_and_hub('btn btn-primary', '../hotel_booking_hotels/create.php'); ?>
 </div>
 <?php else: ?>
 <form method="get" class="form-inline" style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -69,9 +68,8 @@ itm_hospitality_admin_layout_begin($crud_title);
 <?php if ($hotelName !== ''): ?>
 <p><strong>Hotel:</strong> <?php echo sanitize($hotelName); ?></p>
 <?php endif; ?>
-<div class="itm-form-actions itm-align-left" style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">
-<a class="btn btn-primary" href="create.php?hotel_id=<?php echo (int) $hotelId; ?>" title="Create">➕</a>
-<?php itm_hospitality_render_bookings_hub_link('btn'); ?>
+<div class="itm-hospitality-list-actions" style="margin-bottom:16px;">
+<?php itm_hospitality_render_list_create_and_hub('btn btn-primary', 'create.php?hotel_id=' . (int) $hotelId); ?>
 </div>
 <table class="table" data-itm-no-import-excel="1" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
 <thead>
