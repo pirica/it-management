@@ -493,6 +493,8 @@ if (!is_file($hotelsIndex)) {
         hb_fail('hotel booking photo public URLs must use app-root path prefix for admin');
     } elseif (strpos($helperSource, 'ITM_HOTEL_BOOKING_PUBLIC_PORTAL') === false || strpos($helperSource, 'APPURL') === false) {
         hb_fail('hotel booking photo public URLs must use APPURL under public portal');
+    } elseif (strpos($helperSource, 'itm_hotel_booking_photo_is_servable') === false) {
+        hb_fail('hotel booking photos must skip missing or invalid files on disk');
     } elseif (!is_file($repoRoot . '/booking/.htaccess')
         || strpos((string) file_get_contents($repoRoot . '/booking/.htaccess'), 'images/hotel_booking') === false) {
         hb_fail('booking/.htaccess must rewrite portal images/hotel_booking to app storage');

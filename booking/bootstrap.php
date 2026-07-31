@@ -12,8 +12,17 @@ require dirname(__DIR__) . '/config/config.php';
 
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-$basePath = '/it-management/booking';
 if (!defined('APPURL')) {
+    $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    $bookingPos = strpos($scriptName, '/booking/');
+    if ($bookingPos !== false) {
+        $basePath = substr($scriptName, 0, $bookingPos + strlen('/booking'));
+    } else {
+        $basePath = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+        if (substr($basePath, -strlen('/booking')) !== '/booking') {
+            $basePath .= '/booking';
+        }
+    }
     define('APPURL', $scheme . '://' . $host . $basePath);
 }
 

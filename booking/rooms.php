@@ -40,9 +40,13 @@ $rateProgramOptions = itm_hotel_booking_portal_rate_program_options();
 $codeRateOptions = itm_hotel_booking_portal_code_rate_options();
 
 $hotelPhotos = itm_hotel_booking_photos_load($conn, $company_id, 'hotel_booking_hotel_photos', 'hotel_id', $hotelId);
-$hotelCoverUrl = APPURL . '/images/image_2.jpg';
-if (!empty($hotelPhotos[0]['stored_filename'])) {
-    $hotelCoverUrl = itm_hotel_booking_photo_public_url($company_id, 'hotel', $hotelId, $hotelPhotos[0]['stored_filename']);
+$hotelCoverUrl = itm_hotel_booking_portal_default_image_url('image_2.jpg');
+foreach ($hotelPhotos as $hotelPhotoRow) {
+    $storedFilename = (string) ($hotelPhotoRow['stored_filename'] ?? '');
+    if (itm_hotel_booking_photo_is_servable($company_id, 'hotel', $hotelId, $storedFilename)) {
+        $hotelCoverUrl = itm_hotel_booking_photo_public_url($company_id, 'hotel', $hotelId, $storedFilename);
+        break;
+    }
 }
 
 $amenityRows = [];

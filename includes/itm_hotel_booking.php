@@ -61,6 +61,43 @@ if (!function_exists('itm_hotel_booking_photo_storage_dir')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_photo_abs_path')) {
+  function itm_hotel_booking_photo_abs_path($companyId, $scope, $parentId, $storedFilename) {
+    $storedFilename = basename((string) $storedFilename);
+    if ($storedFilename === '') {
+      return '';
+    }
+    $rel = itm_hotel_booking_photo_storage_dir($companyId, $scope, $parentId) . '/' . $storedFilename;
+    return rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rel);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_photo_is_servable')) {
+  function itm_hotel_booking_photo_is_servable($companyId, $scope, $parentId, $storedFilename) {
+    $abs = itm_hotel_booking_photo_abs_path($companyId, $scope, $parentId, $storedFilename);
+    if ($abs === '' || !is_file($abs)) {
+      return false;
+    }
+    return @getimagesize($abs) !== false;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_default_image_url')) {
+  function itm_hotel_booking_portal_default_image_url($basename = 'image_2.jpg') {
+    $basename = basename((string) $basename);
+    if ($basename === '') {
+      $basename = 'image_2.jpg';
+    }
+    if (defined('APPURL')) {
+      return rtrim((string) APPURL, '/') . '/images/' . $basename;
+    }
+    if (defined('BASE_URL')) {
+      return rtrim((string) BASE_URL, '/') . '/booking/images/' . $basename;
+    }
+    return '/images/' . $basename;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_photo_public_url')) {
   function itm_hotel_booking_photo_public_url($companyId, $scope, $parentId, $storedFilename) {
     $storedFilename = basename((string) $storedFilename);
