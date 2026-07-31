@@ -98,6 +98,61 @@ if (!function_exists('itm_hotel_booking_portal_default_image_url')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_photo_urls_from_rows')) {
+  function itm_hotel_booking_portal_photo_urls_from_rows($companyId, $scope, $parentId, array $photoRows) {
+    $urls = [];
+    foreach ($photoRows as $photo) {
+      $storedFilename = (string) ($photo['stored_filename'] ?? '');
+      if (!itm_hotel_booking_photo_is_servable($companyId, $scope, $parentId, $storedFilename)) {
+        continue;
+      }
+      $urls[] = itm_hotel_booking_photo_public_url($companyId, $scope, $parentId, $storedFilename);
+    }
+    return $urls;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_hotel_photo_urls')) {
+  function itm_hotel_booking_portal_hotel_photo_urls($conn, $companyId, $hotelId) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $rows = itm_hotel_booking_photos_load($conn, $companyId, 'hotel_booking_hotel_photos', 'hotel_id', $hotelId);
+    $urls = itm_hotel_booking_portal_photo_urls_from_rows($companyId, 'hotel', $hotelId, $rows);
+    if (empty($urls)) {
+      $urls[] = itm_hotel_booking_portal_default_image_url('image_2.jpg');
+    }
+    return $urls;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_type_photo_urls')) {
+  function itm_hotel_booking_portal_room_type_photo_urls($conn, $companyId, $roomId, $typeId, $typeCode, array $typeDefaultImages = []) {
+    $companyId = (int) $companyId;
+    $roomId = (int) $roomId;
+    $typeId = (int) $typeId;
+    $typeCode = strtoupper((string) $typeCode);
+    $urls = itm_hotel_booking_portal_photo_urls_from_rows(
+      $companyId,
+      'room',
+      $roomId,
+      itm_hotel_booking_photos_load($conn, $companyId, 'hotel_booking_room_photos', 'room_id', $roomId)
+    );
+    if (empty($urls) && $typeId > 0) {
+      $urls = itm_hotel_booking_portal_photo_urls_from_rows(
+        $companyId,
+        'room_type',
+        $typeId,
+        itm_hotel_booking_photos_load($conn, $companyId, 'booking_rooms_type_photos', 'room_type_id', $typeId)
+      );
+    }
+    if (empty($urls)) {
+      $fallback = $typeDefaultImages[$typeCode] ?? '/images/room-5.jpg';
+      $urls[] = (defined('APPURL') ? rtrim((string) APPURL, '/') . '/' : '') . ltrim((string) $fallback, '/');
+    }
+    return $urls;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_photo_public_url')) {
   function itm_hotel_booking_photo_public_url($companyId, $scope, $parentId, $storedFilename) {
     $storedFilename = basename((string) $storedFilename);

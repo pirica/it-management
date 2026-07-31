@@ -19,7 +19,7 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 ## 4. Entry points
 
 - `index.php` — hotel list (all active `hotel_booking_hotels` across tenants); each card image has gallery **‹ ›** arrows and **`1 / N`** counter when multiple photos exist; **Details** opens the same gallery in the modal
-- `rooms.php` — **Step 1 of 4** Select a Room.
+- `rooms.php` — **Step 1 of 4** Select a Room; room-type cards and hotel sidebar use gallery **‹ ›** arrows + **`1 / N`** counter; **View room details** modal uses the same gallery
 - `rooms/select-rate.php` — **Step 2 of 4** Select a Rate (active `hotel_booking_portal_rate_plans` per hotel; posts `portal_rate_plan_id`; special requests, comments).
 - `rooms/customize.php` — **Step 3 of 4**: main column upgrade card; **View room details** opens the same room-detail modal as Step 1 (no Quick compare link); right column stacks stepper then **Reservation summary** (tourist tax €2/guest/night from settings).
 - `rooms/room-single.php` — **Step 4 of 4** guest form: locked check-in/out from draft; saves `hotel_bookings.portal_rate_plan_id` from checkout draft; email (`filter_var`) and phone (E.164 `+` country code) validated server-side.
@@ -45,7 +45,7 @@ Hotel administration lives in ITM modules: `modules/hotel_bookings/`, `modules/h
 | Bootstrap | `bootstrap.php` |
 | Includes | `includes/portal_chrome.php`, `portal_checkout.php`, `portal_room_detail.php` |
 | CSS | `css/hotel-booking-modern.css` only |
-| JS | `js/hotel-booking-{public,dates,amenity-icons,select-room,customize,change-booking,confirmation-pdf}.js` |
+| JS | `js/hotel-booking-{gallery,public,dates,amenity-icons,select-room,customize,change-booking,confirmation-pdf}.js` |
 | Images | `images/amenities/*.svg` (+ `ATTRIBUTION.md`); portal fallbacks `image_2.jpg`, `room-5.jpg`, etc.; demo hotel gallery copies `hotel-sample-*.jpg`; uploaded hotel/room photos stored at app root `images/hotel_booking/{company_id}/…` and served as `APPURL/images/hotel_booking/…` (`booking/.htaccess` rewrite) |
 
 Removed legacy Colorlib template tree: `about.php`, `contact.php`, `services.php`, `404.php`, `config/config.php` (PDO), `includes/header.php` / `footer.php`, vendored `scss/`, `css/style.css`, jQuery/Bootstrap JS stack, `fonts/`, and the entire `admin-panel/` folder.

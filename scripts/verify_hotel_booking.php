@@ -504,6 +504,10 @@ if (!is_file($hotelsIndex)) {
         hb_fail('images/hotel_booking/1/hotel/1/hb_seed_01.jpg sample file missing');
     } elseif (strpos((string) file_get_contents($repoRoot . '/booking/index.php'), 'hb-hotel-card-gallery') === false) {
         hb_fail('booking index must render hotel card gallery with arrows and counter');
+    } elseif (strpos((string) file_get_contents($repoRoot . '/booking/rooms.php'), 'hb-room-card-gallery') === false) {
+        hb_fail('booking rooms must render room card gallery with arrows and counter');
+    } elseif (!is_file($repoRoot . '/booking/js/hotel-booking-gallery.js')) {
+        hb_fail('booking/js/hotel-booking-gallery.js shared gallery helper missing');
     } elseif (strpos($helperSource, 'target="_blank"') === false && strpos($helperSource, "target='_blank'") === false) {
         hb_fail('itm_hotel_booking_render_photo_thumbnail_link must open full image in new tab');
     } else {
