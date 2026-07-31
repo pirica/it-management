@@ -23,10 +23,31 @@ if ($hstmt) {
     mysqli_stmt_close($hstmt);
 }
 
-$hotelId = (int) ($_GET['hotel_id'] ?? 0);
+$hotelId = (int) ($_GET['hotel_id'] ?? $_POST['hotel_id'] ?? 0);
 if ($hotelId < 1 && !empty($hotels)) {
     $hotelId = (int) $hotels[0]['id'];
 }
+
+$pricingSaved = false;
+$pricingErrors = [];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_portal_pricing'])) {
+    itm_require_post_csrf();
+    $hotelId = (int) ($_POST['hotel_id'] ?? 0);
+    $saveResult = itm_hotel_booking_portal_save_hotel_pricing($conn, $company_id, $employee_id, $hotelId, [
+        'breakfast_adult_price_per_night' => $_POST['breakfast_adult_price_per_night'] ?? '',
+        'breakfast_child_price_per_night' => $_POST['breakfast_child_price_per_night'] ?? '',
+        'child_nightly_supplement' => $_POST['child_nightly_supplement'] ?? '',
+        'extra_adult_supplement_percent' => $_POST['extra_adult_supplement_percent'] ?? '',
+        'pet_daily_fee' => $_POST['pet_daily_fee'] ?? '',
+    ]);
+    if (!empty($saveResult['ok'])) {
+        $pricingSaved = true;
+    } else {
+        $pricingErrors[] = (string) ($saveResult['error'] ?? 'Save failed.');
+    }
+}
+
+$portalPricing = $hotelId > 0 ? itm_hotel_booking_portal_hotel_pricing($conn, $company_id, $hotelId) : itm_hotel_booking_portal_pricing_defaults();
 
 $hotelName = '';
 foreach ($hotels as $h) {
@@ -49,7 +70,7 @@ itm_hospitality_admin_layout_begin($crud_title);
 ?>
 <div class="card">
 <h1 title="Portal rate plans">📋</h1>
-<p class="text-muted">Configure cancellation policy links and text for Step 2 portal rates.</p>
+<p class="text-muted">Configure Step 2 cancellation policy links and per-hotel portal pricing (breakfast, occupancy supplements, pet fee).</p>
 <?php if (empty($hotels)): ?>
 <p>No active hotels. Add a hotel first.</p>
 <div class="itm-hospitality-list-actions" style="margin-bottom:16px;">
@@ -68,6 +89,44 @@ itm_hospitality_admin_layout_begin($crud_title);
 <?php if ($hotelName !== ''): ?>
 <p><strong>Hotel:</strong> <?php echo sanitize($hotelName); ?></p>
 <?php endif; ?>
+<?php if ($pricingSaved): ?>
+<p class="badge badge-success">Portal pricing saved.</p>
+<?php endif; ?>
+<?php foreach ($pricingErrors as $pricingError): ?>
+<p class="badge badge-danger"><?php echo sanitize($pricingError); ?></p>
+<?php endforeach; ?>
+<div class="card" style="margin-bottom:16px;padding:12px;">
+<h2 style="margin-top:0;font-size:1.05rem;">Portal step pricing</h2>
+<p class="text-muted" style="margin-top:0;">Used on Select a Room and Select a Rate (Step 2). Stored per hotel.</p>
+<form method="post" class="hb-portal-pricing-form">
+<input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+<input type="hidden" name="hotel_id" value="<?php echo (int) $hotelId; ?>">
+<input type="hidden" name="save_portal_pricing" value="1">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+<div class="form-group">
+<label for="breakfast_adult_price_per_night">Breakfast adult / night</label>
+<input type="text" inputmode="decimal" name="breakfast_adult_price_per_night" id="breakfast_adult_price_per_night" class="form-control" required value="<?php echo sanitize(number_format((float) $portalPricing['breakfast_adult_price_per_night'], 2, '.', '')); ?>">
+</div>
+<div class="form-group">
+<label for="breakfast_child_price_per_night">Breakfast child / night</label>
+<input type="text" inputmode="decimal" name="breakfast_child_price_per_night" id="breakfast_child_price_per_night" class="form-control" required value="<?php echo sanitize(number_format((float) $portalPricing['breakfast_child_price_per_night'], 2, '.', '')); ?>">
+</div>
+<div class="form-group">
+<label for="child_nightly_supplement">Child nightly supplement</label>
+<input type="text" inputmode="decimal" name="child_nightly_supplement" id="child_nightly_supplement" class="form-control" required value="<?php echo sanitize(number_format((float) $portalPricing['child_nightly_supplement'], 2, '.', '')); ?>">
+</div>
+<div class="form-group">
+<label for="extra_adult_supplement_percent">Extra adult supplement (%)</label>
+<input type="text" inputmode="decimal" name="extra_adult_supplement_percent" id="extra_adult_supplement_percent" class="form-control" required value="<?php echo sanitize(number_format((float) $portalPricing['extra_adult_supplement_percent'], 2, '.', '')); ?>">
+</div>
+<div class="form-group">
+<label for="pet_daily_fee">Pet daily fee</label>
+<input type="text" inputmode="decimal" name="pet_daily_fee" id="pet_daily_fee" class="form-control" required value="<?php echo sanitize(number_format((float) $portalPricing['pet_daily_fee'], 2, '.', '')); ?>">
+</div>
+</div>
+<button type="submit" class="btn btn-primary" title="Save portal pricing">💾</button>
+</form>
+</div>
 <div class="itm-hospitality-list-actions" style="margin-bottom:16px;">
 <?php itm_hospitality_render_list_create_and_hub('btn btn-primary', 'create.php?hotel_id=' . (int) $hotelId); ?>
 </div>

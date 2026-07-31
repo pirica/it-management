@@ -83,7 +83,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
                 $occupancy,
                 $discount,
                 $draftForPay,
-                (float) ($settings['tourist_tax_per_person_per_night'] ?? 0)
+                (float) ($settings['tourist_tax_per_person_per_night'] ?? 0),
+                $conn,
+                $company_id
             );
             $notes = itm_hotel_booking_portal_build_booking_notes($draftForPay, $occupancy);
             $status = itm_hotel_booking_apply_segment_status_on_save($conn, $company_id, $checkIn, $checkOut);
@@ -135,7 +137,13 @@ $changeRoomQuery = http_build_query(array_merge(
 $changeRoomUrl = APPURL . '/rooms.php?' . $changeRoomQuery;
 
 $discountPercent = $draft ? (float) ($draft['discount_percent'] ?? 0) : itm_hotel_booking_special_rate_discount($conn, $company_id, $hotelId, itm_hotel_booking_portal_resolved_rate_slug($occupancy));
-$draftForDisplay = $draft ?: ['rate_plan' => 'room_only', 'traveling_with_pet' => 0, 'service_animal' => 0];
+$draftForDisplay = $draft ?: ['company_id' => $company_id, 'hotel_id' => $hotelId, 'rate_plan' => 'room_only', 'traveling_with_pet' => 0, 'service_animal' => 0];
+if ($draftForDisplay && !isset($draftForDisplay['company_id'])) {
+    $draftForDisplay['company_id'] = $company_id;
+}
+if ($draftForDisplay && !isset($draftForDisplay['hotel_id'])) {
+    $draftForDisplay['hotel_id'] = $hotelId;
+}
 $touristTaxPerPerson = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings);
 $breakdown = itm_hotel_booking_portal_checkout_breakdown(
     (float) ($draft ? ($draft['base_price_per_night'] ?? $room['price_per_night']) : $room['price_per_night']),
@@ -144,7 +152,9 @@ $breakdown = itm_hotel_booking_portal_checkout_breakdown(
     $occupancy,
     $discountPercent,
     $draftForDisplay,
-    $touristTaxPerPerson
+    $touristTaxPerPerson,
+    $conn,
+    $company_id
 );
 $estimatedTotal = $breakdown['total'];
 $currency = $room['currency_code'] ?? 'EUR';

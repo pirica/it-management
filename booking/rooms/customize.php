@@ -125,7 +125,9 @@ $breakdown = itm_hotel_booking_portal_checkout_breakdown(
     $occupancy,
     $discountPercent,
     $draftForBreakdown,
-    $touristTaxPerPerson
+    $touristTaxPerPerson,
+    $conn,
+    $company_id
 );
 
 $draftNoUpgrade = $draft;
@@ -138,7 +140,9 @@ $breakdownNoUpgrade = itm_hotel_booking_portal_checkout_breakdown(
     $occupancy,
     $discountPercent,
     $draftNoUpgrade,
-    $touristTaxPerPerson
+    $touristTaxPerPerson,
+    $conn,
+    $company_id
 );
 
 $roomLabel = trim((string) ($room['type_name'] ?? $room['name'] ?? 'Room'));
