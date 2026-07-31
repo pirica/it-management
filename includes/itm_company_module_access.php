@@ -913,12 +913,28 @@ if (!function_exists('itm_sidebar_discovery_probe_cleanup')) {
 
         $moduleDir = defined('ROOT_PATH') ? ROOT_PATH . 'modules/' . $slug : dirname(__DIR__) . '/modules/' . $slug;
         if (is_dir($moduleDir)) {
-            foreach (glob($moduleDir . '/*.php') ?: [] as $phpFile) {
-                if (is_file($phpFile)) {
-                    unlink($phpFile);
+            $removeDir = static function ($dir) use (&$removeDir) {
+                if (!is_dir($dir)) {
+                    return;
                 }
-            }
-            @rmdir($moduleDir);
+                $entries = scandir($dir);
+                if (!is_array($entries)) {
+                    return;
+                }
+                foreach ($entries as $entry) {
+                    if ($entry === '.' || $entry === '..') {
+                        continue;
+                    }
+                    $path = $dir . DIRECTORY_SEPARATOR . $entry;
+                    if (is_dir($path)) {
+                        $removeDir($path);
+                    } elseif (is_file($path)) {
+                        @unlink($path);
+                    }
+                }
+                @rmdir($dir);
+            };
+            $removeDir($moduleDir);
         }
     }
 }

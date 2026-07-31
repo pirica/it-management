@@ -1,6 +1,8 @@
 <?php
 require '../../config/config.php';
 require_once '../../includes/itm_hotel_booking.php';
+require_once '../../includes/itm_crud_audit_fields.php';
+itm_require_crud_role_module_permission($conn, 'view', 'hotel_booking_room_photos');
 
 $crud_table = 'hotel_booking_room_photos';
 $crud_title = 'Room Photos';
@@ -14,10 +16,12 @@ if ($editId <= 0) {
     exit;
 }
 
-// Fetch existing record
 $where = ' WHERE id = ' . $editId;
 if ($company_id > 0) {
     $where .= ' AND company_id = ' . (int)$company_id;
+}
+if (function_exists('itm_crud_append_not_deleted_predicate')) {
+    $where = itm_crud_append_not_deleted_predicate($where);
 }
 $q = mysqli_query($conn, 'SELECT * FROM hotel_booking_room_photos' . $where . ' LIMIT 1');
 $data = ($q && mysqli_num_rows($q) === 1) ? mysqli_fetch_assoc($q) : null;
@@ -25,23 +29,6 @@ if (!$data) {
     $_SESSION['crud_error'] = 'Photo record not found.';
     header('Location: ' . $listUrl);
     exit;
-}
-
-// Helper functions for audit fields
-function get_employee_name($conn, $employeeId) {
-    if (!$employeeId) return 'System';
-    $stmt = mysqli_prepare($conn, 'SELECT first_name, last_name, username FROM employees WHERE id = ? LIMIT 1');
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'i', $employeeId);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        if ($res && ($row = mysqli_fetch_assoc($res))) {
-            $fullName = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
-            return $fullName !== '' ? $fullName : ($row['username'] ?? 'System');
-        }
-        mysqli_stmt_close($stmt);
-    }
-    return 'System';
 }
 
 $photoUrl = itm_hotel_booking_photo_public_url($company_id, 'room', $data['room_id'], $data['stored_filename']);
@@ -57,7 +44,11 @@ if ($roomQuery && ($roomRow = mysqli_fetch_assoc($roomQuery))) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Room Photo - <?php echo sanitize($app_name ?? itm_ui_config_app_name($ui_config)); ?></title>
+    <?php
+    require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
+    $pageTitle = itm_crud_apply_module_icon_to_browser_title($conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0), basename(dirname($_SERVER['PHP_SELF'])), (string)($crud_title ?? ''));
+    ?>
+    <title><?php echo sanitize($pageTitle); ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($ui_config)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
@@ -68,7 +59,7 @@ if ($roomQuery && ($roomRow = mysqli_fetch_assoc($roomQuery))) {
         <div class="content">
             <?php echo itm_render_alert_errors($errors); ?>
 
-            <h1>View Room Photo</h1>
+            <h1 title="View">🔎</h1>
             <div class="card">
                 <div style="display: flex; gap: 30px; flex-wrap: wrap;">
                     <div style="flex: 1; min-width: 300px; max-width: 500px;">
@@ -115,20 +106,20 @@ if ($roomQuery && ($roomRow = mysqli_fetch_assoc($roomQuery))) {
                             </tr>
                             <tr>
                                 <th>Created By</th>
-                                <td><?php echo sanitize(get_employee_name($conn, $data['created_by'])); ?></td>
+                                <td><?php echo itm_crud_render_audit_cell_value($conn, (int)$company_id, 'created_by', $data['created_by'] ?? ''); ?></td>
                             </tr>
                             <tr>
                                 <th>Created At</th>
-                                <td><?php echo sanitize($data['created_at']); ?></td>
+                                <td><?php echo itm_crud_render_audit_cell_value($conn, (int)$company_id, 'created_at', $data['created_at'] ?? ''); ?></td>
                             </tr>
-                            <?php if ($data['updated_by']): ?>
+                            <?php if (!empty($data['updated_by'])): ?>
                                 <tr>
                                     <th>Updated By</th>
-                                    <td><?php echo sanitize(get_employee_name($conn, $data['updated_by'])); ?></td>
+                                    <td><?php echo itm_crud_render_audit_cell_value($conn, (int)$company_id, 'updated_by', $data['updated_by']); ?></td>
                                 </tr>
                                 <tr>
                                     <th>Updated At</th>
-                                    <td><?php echo sanitize($data['updated_at']); ?></td>
+                                    <td><?php echo itm_crud_render_audit_cell_value($conn, (int)$company_id, 'updated_at', $data['updated_at'] ?? ''); ?></td>
                                 </tr>
                             <?php endif; ?>
                             </tbody>

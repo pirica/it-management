@@ -666,9 +666,9 @@ Central runner for the suite under `phpunit/tests/Unit/` using `phpunit/phpunit.
 
 **EGPCS and .env Support (mandatory):** The runner executes the PHPUnit process with `-d variables_order=EGPCS` to ensure that environment settings from local `.env` files are correctly parsed and loaded. This prevents database connection failures in environments where the system-wide PHP configuration omits the `E` flag from `variables_order`.
 
-**CLI Argument Forwarding:** Additional command-line arguments (such as `--filter <pattern>` or single test files) are automatically forwarded to the underlying PHPUnit CLI binary, enabling targeted test executions directly through the runner script.
+**CLI Argument Forwarding:** Additional command-line arguments (such as `--filter <pattern>` or single test files) are automatically forwarded to the underlying PHPUnit CLI binary, enabling targeted test executions directly through the runner script. Example: `php scripts/run_tests.php --filter CompanyModuleAccessDiscoveryTest`.
 
-**Scaffolding Cleanup:** Running the test suite may trigger auto-scaffolding (e.g., inside `CompanyModuleAccessDiscoveryTest` where `enable_auto_scaffolding` is enabled). To prevent untracked folder buildup, the runner automatically cleans up the `modules/` directory at the end of the test run using `git clean -fd modules/`.
+**Scaffolding cleanup:** Auto-scaffolding during PHPUnit (for example `CompanyModuleAccessDiscoveryTest` with `enable_auto_scaffolding`) must not leave probe folders under `modules/`. Tests call `itm_sidebar_discovery_probe_cleanup()` for the probe slug (`mbqa_phpunit_sidebar_probe`), which drops the probe table, registry rows, and recursively removes `modules/{slug}/`. Do **not** use blanket `git clean -fd modules/` — that can delete unrelated uncommitted module work.
 
 **PHP extensions (mandatory — every run):** PHPUnit 9 exits immediately unless the **CLI** `php.exe` subprocess loads **all** of:
 

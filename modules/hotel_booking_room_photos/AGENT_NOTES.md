@@ -8,7 +8,7 @@ This module manages the storage, metadata, and visual display of photo assets as
 
 ## 2. Key Tables
 
-- **hotel_booking_room_photos** — Stores metadata about uploaded room photos, including paths, sort order, cover photo status, and soft-delete/audit attributes.
+- **hotel_booking_room_photos** — Stores metadata about uploaded room photos, including paths, sort order, cover photo status, and audit columns (`deleted_at` exists for legacy/list filtering but deletes are hard).
 
 ---
 
@@ -21,11 +21,12 @@ This module manages the storage, metadata, and visual display of photo assets as
 
 ## 4. Business Rules (Critical for Agents)
 
-- **Hard Delete Policy:** On deletion (single delete, bulk delete, or clear table), both the database record and the corresponding physical image file on disk MUST be permanently (hard) deleted.
-- **Tenant Isolation:** All operations (list, create, edit, delete, view) are strictly filtered and scoped by the active company session ID (`company_id`).
-- **File Integrity:** Allowed image formats are restricted to JPG, JPEG, PNG, GIF, and WEBP.
-- **Multiple Uploads:** Multiple photos can be uploaded simultaneously during creation.
-- **Storage Location:** Uploaded files are securely stored under `images/hotel_booking/{company_id}/room/{room_id}/`.
+- **Hard delete policy:** On deletion (single, bulk, or clear table), permanently `DELETE` the database row and unlink the physical image file. Shared helpers: `itm_hotel_booking_room_photos_hard_delete()`, `itm_hotel_booking_photo_delete_files_for_rows()` in `includes/itm_hotel_booking.php`.
+- **Cover uniqueness:** At most one `is_cover = 1` photo per `room_id` per company. Use `itm_hotel_booking_photo_clear_cover_for_parent()` on create/edit when setting cover.
+- **Tenant isolation:** All operations are scoped by session `company_id`.
+- **File integrity:** Allowed formats: JPG, JPEG, PNG, GIF, WEBP.
+- **Multiple uploads:** Create form accepts multiple files in one POST.
+- **Storage location:** `images/hotel_booking/{company_id}/room/{room_id}/` via `itm_hotel_booking_photo_storage_dir()`.
 
 ---
 
@@ -33,10 +34,13 @@ This module manages the storage, metadata, and visual display of photo assets as
 
 ### Standard CRUD Views
 
-- **View Toggle:** Supports switching between a tabular list view ("Table View") and a visual grid card gallery ("Gallery View").
-- **Table view:** Includes a photo thumbnail column, room reference label (displaying `Room Number - Name`), sort order, cover badge, active status badge, and action controls.
-- **Form Controls:** Checkbox fields for `active` and `is_cover` strictly follow the double-label pattern and update indicators dynamically.
-- **No Mixed Labels:** All buttons, form actions, and headers follow the strict emoji-only visible label policy.
+- **View toggle:** Gallery grid (default) and table list.
+- **Table view:** Thumbnail column, room label (`Room Number - Name`), sort order, cover/active badges, actions.
+- **Export/import opt-out:** Table uses `data-itm-no-import-excel="1"`, `data-itm-no-export-excel="1"`, `data-itm-no-export-pdf="1"` — photos are upload-only; no Excel metadata import.
+- **No sample data button:** No rows in `db/02_data_sample.sql` (binary assets).
+- **RBAC:** `view` on `index.php` / `view.php`; `create` / `edit` / `delete` on respective entry files.
+- **Form controls:** `active` and `is_cover` use the double-label checkbox pattern.
+- **NO MIXED labels:** Emoji-only visible action labels with phrases in `title` only.
 
 ---
 
@@ -48,57 +52,57 @@ This module manages the storage, metadata, and visual display of photo assets as
 
 ## 7. File Structure
 
-- **index.php** — Main landing list page with Table and Gallery views.
-- **create.php** — Creation form supporting multiple photo uploads.
-- **edit.php** — Edit metadata (sort order, active status, is_cover) or replace current photo.
-- **delete.php** — Handles permanent hard-deletion of records and physical image files.
-- **view.php** — Detailed record view showing metadata and full photo preview.
-- **list_all.php** — Standard CRUD alternate list wrapper.
-- **index.html** — Prevent directory listings.
+- **index.php** — Gallery + table list, search, pagination, bulk delete.
+- **create.php** — Multi-file upload form.
+- **edit.php** — Metadata edit and optional file replace / room move.
+- **delete.php** — Hard delete + file unlink (`itm_require_post_csrf()`).
+- **view.php** — Detail with audit meta via `itm_crud_render_audit_cell_value()`.
+- **list_all.php** — Standard list wrapper.
+- **index.html** — Directory listing guard.
 
 ---
 
 ## 8. Multi-Tenant Rules
 
-- Queries are scoped strictly to the session `company_id`.
-- Directory paths are generated using `company_id` to maintain strict tenant folder isolation.
+- Queries filter `company_id` from session.
+- Upload paths include `company_id` and `room_id`.
 
 ---
 
 ## 9. Audit Logging Requirements
 
-- Audited via standard triggers `trg_hotel_booking_room_photos_audit_insert`, `trg_hotel_booking_room_photos_audit_update`, and `trg_hotel_booking_room_photos_audit_delete` defined in `db/03_triggers.sql`.
+- Triggers `trg_hotel_booking_room_photos_audit_insert|update|delete` in `db/03_triggers.sql`. Hard `DELETE` fires the delete trigger.
 
 ---
 
 ## 10. Common Pitfalls
 
-- **Do not soft-delete:** Ensure deletion permanently drops the record and removes the file on disk.
-- **Filename Collision:** Ensure files are saved with randomized unique names (`hb_` prefix with random hex) using system helpers.
-- **Directory Permissions:** Ensure directory chains are created securely using helper functions.
+- **Do not soft-delete:** Use hard delete helpers; do not call `itm_crud_build_soft_delete_sql()` for this module.
+- **Cover flag:** Clear sibling covers before setting `is_cover = 1`.
+- **Filename collision:** Store as `hb_` + random hex + extension.
+- **Directory permissions:** Use `itm_ensure_upload_directory()` for upload paths.
 
 ---
 
 ## 11. Examples of Safe Code Patterns
 
-### Safe SELECT (Tenant Scoped)
+### Safe SELECT (tenant scoped)
 
 ```php
-$stmt = $conn->prepare('SELECT * FROM hotel_booking_room_photos WHERE company_id = ? AND id = ?');
+$stmt = $conn->prepare('SELECT * FROM hotel_booking_room_photos WHERE company_id = ? AND id = ? AND deleted_at IS NULL');
 $stmt->bind_param('ii', $companyId, $id);
 $stmt->execute();
 ```
 
-### Safe HARD DELETE
+### Hard delete (shared helper)
 
 ```php
-$stmt = $conn->prepare('DELETE FROM hotel_booking_room_photos WHERE id = ? AND company_id = ?');
-$stmt->bind_param('ii', $id, $companyId);
-$stmt->execute();
+itm_hotel_booking_room_photos_hard_delete($conn, $companyId, [$photoId]);
 ```
 
 ---
 
 ## 12. Module Owner Notes
 
-- Core helpers: `includes/itm_hotel_booking.php` and `includes/bootstrap_helpers.php`.
+- Core helpers: `includes/itm_hotel_booking.php`, `includes/bootstrap_helpers.php`.
+- Regression: `php scripts/verify_hotel_booking.php` (hospitality slug list + delete hard-delete guard).

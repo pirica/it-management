@@ -121,6 +121,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
+        if ($isCover) {
+            itm_hotel_booking_photo_clear_cover_for_parent($conn, (int)$company_id, 'hotel_booking_room_photos', 'room_id', $roomId, $editId);
+        }
+
         $stmt = mysqli_prepare($conn, 'UPDATE hotel_booking_room_photos SET room_id = ?, stored_filename = ?, original_filename = ?, sort_order = ?, is_cover = ?, active = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
         if ($stmt) {
             $employeeId = (int)($_SESSION['employee_id'] ?? 0);
@@ -146,7 +150,11 @@ $photoUrl = itm_hotel_booking_photo_public_url($company_id, 'room', $data['room_
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Room Photo - <?php echo sanitize($app_name ?? itm_ui_config_app_name($ui_config)); ?></title>
+    <?php
+    require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
+    $pageTitle = itm_crud_apply_module_icon_to_browser_title($conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0), basename(dirname($_SERVER['PHP_SELF'])), (string)($crud_title ?? ''));
+    ?>
+    <title><?php echo sanitize($pageTitle); ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($ui_config)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
@@ -157,7 +165,7 @@ $photoUrl = itm_hotel_booking_photo_public_url($company_id, 'room', $data['room_
         <div class="content">
             <?php echo itm_render_alert_errors($errors); ?>
 
-            <h1>Edit Room Photo</h1>
+            <h1 title="Edit">✏️</h1>
             <form method="POST" enctype="multipart/form-data" class="form-grid" style="max-width:980px;">
                 <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
 

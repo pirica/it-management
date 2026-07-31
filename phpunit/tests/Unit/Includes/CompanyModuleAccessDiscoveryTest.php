@@ -46,11 +46,6 @@ class CompanyModuleAccessDiscoveryTest extends TestCase
         }
 
         $this->itmPhpunitEndTestSession();
-
-        // Clean up any untracked folders created under modules/ during auto-scaffolding in tests
-        if (DIRECTORY_SEPARATOR !== '\\') {
-            @exec('cd ' . escapeshellarg(ROOT_PATH) . ' && git clean -fd modules/');
-        }
     }
 
     public function testEnsureRegistryRowsForModuleSlugsInsertsMissingRow(): void

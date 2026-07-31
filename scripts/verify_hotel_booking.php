@@ -460,4 +460,18 @@ foreach ($hospitalityModuleSlugs as $slug) {
     }
 }
 
+$roomPhotosDelete = $repoRoot . '/modules/hotel_booking_room_photos/delete.php';
+if (!is_file($roomPhotosDelete)) {
+    hb_fail('hotel_booking_room_photos delete.php missing');
+} else {
+    $deleteSource = (string) file_get_contents($roomPhotosDelete);
+    if (strpos($deleteSource, 'itm_crud_build_soft_delete_sql') !== false) {
+        hb_fail('hotel_booking_room_photos delete.php must hard-delete, not soft-delete');
+    } elseif (strpos($deleteSource, 'itm_hotel_booking_room_photos_hard_delete') === false) {
+        hb_fail('hotel_booking_room_photos delete.php must use itm_hotel_booking_room_photos_hard_delete()');
+    } else {
+        hb_pass('hotel_booking_room_photos delete hard-delete contract');
+    }
+}
+
 exit($fail > 0 ? 1 : 0);
