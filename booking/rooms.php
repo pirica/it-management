@@ -288,7 +288,7 @@ if (empty($card['available'])) {
     $soldOutInner = '<span class="hb-sold-out-badge">' . htmlspecialchars(empty($card['fits_occupancy']) ? 'Guests exceed capacity' : 'Sold out', ENT_QUOTES, 'UTF-8') . '</span>';
 }
 echo hb_portal_render_image_gallery(
-    $card['image_urls'] ?? [$card['image_url']],
+    $card['photo_urls'] ?? [$card['image_url']],
     'hb-room-card-gallery',
     'hb-gallery hb-room-card-img',
     $soldOutInner
