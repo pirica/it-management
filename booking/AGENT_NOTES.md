@@ -46,6 +46,6 @@ Hotel administration lives in ITM modules: `modules/hotel_bookings/`, `modules/h
 | Includes | `includes/portal_chrome.php`, `portal_checkout.php`, `portal_room_detail.php` |
 | CSS | `css/hotel-booking-modern.css` only |
 | JS | `js/hotel-booking-{public,dates,amenity-icons,select-room,customize,change-booking,confirmation-pdf}.js` |
-| Images | `images/amenities/*.svg` (+ `ATTRIBUTION.md`); hotel/room photos come from `images/hotel_booking/{company_id}/…` via ITM upload helpers |
+| Images | `images/amenities/*.svg` (+ `ATTRIBUTION.md`); uploaded hotel/room photos are stored at app root `images/hotel_booking/{company_id}/…` but **served in HTML as** `APPURL/images/hotel_booking/…` (`booking/.htaccess` rewrites to app storage) |
 
 Removed legacy Colorlib template tree: `about.php`, `contact.php`, `services.php`, `404.php`, `config/config.php` (PDO), `includes/header.php` / `footer.php`, vendored `scss/`, `css/style.css`, jQuery/Bootstrap JS stack, `fonts/`, and the entire `admin-panel/` folder.

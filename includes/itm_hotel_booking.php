@@ -68,7 +68,16 @@ if (!function_exists('itm_hotel_booking_photo_public_url')) {
       return '';
     }
     $rel = itm_hotel_booking_photo_storage_dir($companyId, $scope, $parentId) . '/' . $storedFilename;
-    return '/it-management/' . str_replace('\\', '/', $rel);
+    $rel = ltrim(str_replace('\\', '/', $rel), '/');
+    // Why: guest portal pages live under /booking/ — photo src must match APPURL + /images/hotel_booking/…
+    if (defined('ITM_HOTEL_BOOKING_PUBLIC_PORTAL') && ITM_HOTEL_BOOKING_PUBLIC_PORTAL && defined('APPURL')) {
+      return rtrim((string) APPURL, '/') . '/' . $rel;
+    }
+    if (!function_exists('itm_app_root_public_path_prefix')) {
+      require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
+    }
+    $prefix = itm_app_root_public_path_prefix();
+    return ($prefix !== '' ? rtrim($prefix, '/') : '') . '/' . $rel;
   }
 }
 
@@ -273,16 +282,38 @@ if (!function_exists('itm_hotel_booking_render_photo_thumbnail_link')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_photos_upload_was_attempted')) {
+  function itm_hotel_booking_photos_upload_was_attempted() {
+    if (empty($_FILES['hb_photos']) || !is_array($_FILES['hb_photos']['name'])) {
+      return false;
+    }
+    foreach ($_FILES['hb_photos']['name'] as $name) {
+      if (trim((string) $name) !== '') {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_photos_handle_upload')) {
-  function itm_hotel_booking_photos_handle_upload($conn, $companyId, $parentTable, $parentId) {
+  function itm_hotel_booking_photos_handle_upload($conn, $companyId, $parentTable, $parentId, array &$uploadErrors = null) {
+    $trackErrors = is_array($uploadErrors);
+    if (!$trackErrors) {
+      $uploadErrors = [];
+    }
     $cfg = itm_hotel_booking_photos_config_for_parent_table($parentTable);
-    if (!$cfg || empty($_FILES['hb_photos']) || !is_array($_FILES['hb_photos']['name'])) {
-      return;
+    if (!$cfg) {
+      return 0;
+    }
+    if (!itm_hotel_booking_photos_upload_was_attempted()) {
+      return 0;
     }
     $companyId = (int) $companyId;
     $parentId = (int) $parentId;
     if ($companyId < 1 || $parentId < 1) {
-      return;
+      $uploadErrors[] = 'Photo upload requires a saved hotel record (missing company or record id).';
+      return 0;
     }
     $scope = $cfg['scope'];
     $photoTable = $cfg['photo_table'];
@@ -292,7 +323,10 @@ if (!function_exists('itm_hotel_booking_photos_handle_upload')) {
     if (!function_exists('itm_ensure_upload_directory')) {
       require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
     }
-    itm_ensure_upload_directory($absDir, 'upload');
+    if (!itm_ensure_upload_directory($absDir, 'upload')) {
+      $uploadErrors[] = 'Could not create the photo upload folder on disk.';
+      return 0;
+    }
     $existingPhotos = itm_hotel_booking_photos_for_parent_table($conn, $companyId, $parentTable, $parentId);
     $parentHasCover = false;
     $sort = 0;
@@ -306,25 +340,45 @@ if (!function_exists('itm_hotel_booking_photos_handle_upload')) {
     $names = $_FILES['hb_photos']['name'];
     $tmp = $_FILES['hb_photos']['tmp_name'];
     $errs = $_FILES['hb_photos']['error'];
+    if (!is_array($names)) {
+      $names = [$names];
+      $tmp = [$tmp];
+      $errs = [$errs];
+    }
+    $inserted = 0;
     $count = count($names);
     for ($i = 0; $i < $count; $i++) {
-      if ((int) ($errs[$i] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+      $orig = basename((string) ($names[$i] ?? ''));
+      if ($orig === '') {
         continue;
       }
-      $orig = basename((string) $names[$i]);
-      if ($orig === '' || !is_uploaded_file($tmp[$i])) {
+      $err = (int) ($errs[$i] ?? UPLOAD_ERR_NO_FILE);
+      if ($err !== UPLOAD_ERR_OK) {
+        if ($err !== UPLOAD_ERR_NO_FILE) {
+          $uploadErrors[] = "Upload failed for '{$orig}' (error code {$err}).";
+        }
+        continue;
+      }
+      if (!is_uploaded_file($tmp[$i])) {
+        $uploadErrors[] = "Upload rejected for '{$orig}'.";
         continue;
       }
       $ext = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
+      if ($ext === 'jfif') {
+        $ext = 'jpg';
+      }
       if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
+        $uploadErrors[] = "File '{$orig}' must be JPG, PNG, GIF, or WEBP.";
         continue;
       }
       $stored = itm_hotel_booking_photo_random_stored_filename($ext, $absDir);
       if ($stored === '') {
+        $uploadErrors[] = "Could not generate a stored name for '{$orig}'.";
         continue;
       }
       $dest = $absDir . DIRECTORY_SEPARATOR . $stored;
       if (!move_uploaded_file($tmp[$i], $dest)) {
+        $uploadErrors[] = "Could not save '{$orig}' to disk.";
         continue;
       }
       $isCover = (!$parentHasCover && !$batchCoverAssigned) ? 1 : 0;
@@ -333,13 +387,26 @@ if (!function_exists('itm_hotel_booking_photos_handle_upload')) {
       }
       $sql = 'INSERT INTO `' . str_replace('`', '``', $photoTable) . '` (company_id, `' . str_replace('`', '``', $parentColumn) . '`, stored_filename, original_filename, sort_order, is_cover, active, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, NOW())';
       $stmt = mysqli_prepare($conn, $sql);
-      if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'iissii', $companyId, $parentId, $stored, $orig, $sort, $isCover);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
+      if (!$stmt) {
+        @unlink($dest);
+        $uploadErrors[] = 'Database error while saving photo metadata.';
+        continue;
       }
+      mysqli_stmt_bind_param($stmt, 'iissii', $companyId, $parentId, $stored, $orig, $sort, $isCover);
+      if (!mysqli_stmt_execute($stmt)) {
+        @unlink($dest);
+        $uploadErrors[] = "Database rejected photo metadata for '{$orig}'.";
+        mysqli_stmt_close($stmt);
+        continue;
+      }
+      mysqli_stmt_close($stmt);
+      $inserted++;
       $sort++;
     }
+    if ($inserted === 0 && empty($uploadErrors)) {
+      $uploadErrors[] = 'No photos were saved. Select JPG/PNG/GIF/WEBP files and try again.';
+    }
+    return $inserted;
   }
 }
 

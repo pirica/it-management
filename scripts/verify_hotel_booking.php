@@ -483,8 +483,19 @@ if (!is_file($hotelsIndex)) {
     $helperSource = is_file($hotelBookingHelper) ? (string) file_get_contents($hotelBookingHelper) : '';
     if (strpos($hotelsIndexSource, 'itm_hotel_booking_render_photo_thumbnail_link') === false) {
         hb_fail('hotel_booking_hotels index must render photo thumbnails');
+    } elseif (strpos($hotelsIndexSource, 'name="record_id"') === false) {
+        hb_fail('hotel_booking_hotels edit form must POST record_id for photo uploads');
     } elseif (strpos($helperSource, 'itm_hotel_booking_photo_random_stored_filename') === false) {
         hb_fail('hotel booking photo uploads must use randomized stored filenames');
+    } elseif (strpos($helperSource, 'itm_hotel_booking_photos_upload_was_attempted') === false) {
+        hb_fail('hotel booking photo upload helper must detect attempted uploads');
+    } elseif (strpos($helperSource, 'itm_app_root_public_path_prefix') === false) {
+        hb_fail('hotel booking photo public URLs must use app-root path prefix for admin');
+    } elseif (strpos($helperSource, 'ITM_HOTEL_BOOKING_PUBLIC_PORTAL') === false || strpos($helperSource, 'APPURL') === false) {
+        hb_fail('hotel booking photo public URLs must use APPURL under public portal');
+    } elseif (!is_file($repoRoot . '/booking/.htaccess')
+        || strpos((string) file_get_contents($repoRoot . '/booking/.htaccess'), 'images/hotel_booking') === false) {
+        hb_fail('booking/.htaccess must rewrite portal images/hotel_booking to app storage');
     } elseif (strpos($helperSource, 'target="_blank"') === false && strpos($helperSource, "target='_blank'") === false) {
         hb_fail('itm_hotel_booking_render_photo_thumbnail_link must open full image in new tab');
     } else {

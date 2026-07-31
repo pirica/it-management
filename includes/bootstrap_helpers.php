@@ -343,6 +343,51 @@ if (!function_exists('itm_ensure_companies_company_unique')) {
 }
 
 /**
+ * Web path prefix for the ITM app root (e.g. /it-management), not the current script folder.
+ *
+ * Why: booking/index.php and scripts/*.php must still resolve images/hotel_booking/... under app root.
+ */
+if (!function_exists('itm_app_root_public_path_prefix')) {
+    function itm_app_root_public_path_prefix() {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $docRoot = realpath($_SERVER['DOCUMENT_ROOT'] ?? '');
+        $projectRoot = defined('ROOT_PATH') ? realpath(rtrim(ROOT_PATH, '/\\')) : false;
+        if ($docRoot && $projectRoot && strpos($projectRoot, $docRoot) === 0) {
+            $cached = str_replace('\\', '/', substr($projectRoot, strlen($docRoot)));
+            if ($cached === '/') {
+                $cached = '';
+            }
+            return $cached;
+        }
+
+        $script = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? '/'));
+        $modulesPos = strpos($script, '/modules/');
+        if ($modulesPos !== false) {
+            $cached = substr($script, 0, $modulesPos);
+        } else {
+            $cached = dirname($script);
+            foreach (['/scripts', '/booking'] as $suffix) {
+                if ($suffix !== '' && strlen($cached) >= strlen($suffix) && substr($cached, -strlen($suffix)) === $suffix) {
+                    $cached = substr($cached, 0, -strlen($suffix));
+                    break;
+                }
+            }
+        }
+
+        $cached = '/' . trim((string) $cached, '/');
+        if ($cached === '/') {
+            $cached = '';
+        }
+
+        return $cached;
+    }
+}
+
+/**
  * Why: Upload trees are created with 0775 for the app user; Apache must not execute scripts placed there.
  */
 if (!function_exists('itm_upload_dir_htaccess_upload_policy')) {
