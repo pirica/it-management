@@ -222,6 +222,11 @@ body.hb-modal-open { overflow: hidden; }
 .hb-room-card { background: #fff; border: 1px solid var(--hb-border); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; min-height: 100%; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
 .hb-room-card.is-sold-out { opacity: .85; }
 .hb-room-card-img { height: 200px; background: #ddd center/cover no-repeat; position: relative; }
+.hb-room-card-gallery { margin: 0; border-radius: 0; }
+.hb-room-card-gallery .hb-gallery.hb-room-card-img { min-height: 200px; height: 200px; }
+.hb-room-card-gallery .hb-gallery-prev,
+.hb-room-card-gallery .hb-gallery-next { width: 32px; height: 32px; font-size: 1.35rem; }
+.hb-room-card-gallery .hb-gallery-counter { font-size: 11px; padding: 3px 8px; }
 .hb-sold-out-badge { position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,.7); color: #fff; padding: 6px 10px; font-size: .75rem; font-weight: 700; border-radius: 4px; }
 .hb-room-card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; align-items: stretch; }
 .hb-room-card-body .hb-room-select,
@@ -242,7 +247,9 @@ body.hb-modal-open { overflow: hidden; }
 .hb-room-price-suffix { font-size: .85rem; font-weight: 500; color: var(--hb-muted); }
 .hb-btn-disabled { background: #c5c9d0; color: #fff; cursor: not-allowed; }
 .hb-hotel-side-card { background: #fff; border: 1px solid var(--hb-border); border-radius: 4px; overflow: hidden; position: sticky; top: 16px; }
+.hb-hotel-side-gallery { margin: 0; border-radius: 0; }
 .hb-hotel-side-img { height: 160px; background: #ddd center/cover no-repeat; }
+.hb-hotel-side-gallery .hb-gallery.hb-hotel-side-img { min-height: 160px; height: 160px; }
 .hb-hotel-side-card h2 { font-size: 1.1rem; margin: 14px 16px 8px; }
 .hb-side-rating { margin: 0 16px 12px; padding-bottom: 12px; border-bottom: 1px solid var(--hb-border); }
 .hb-side-rating .hb-rating-bubbles { margin-bottom: 6px; }
@@ -509,6 +516,8 @@ body.hb-modal-open { overflow: hidden; }
 .hb-room-detail-close { position: absolute; top: 16px; right: 16px; z-index: 2; }
 .hb-room-detail-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
 .hb-rd-title { margin: 0 0 16px; font-size: 1.35rem; font-weight: 700; padding-right: 40px; }
+.hb-rd-hero-gallery { margin-bottom: 16px; border-radius: 4px; overflow: hidden; }
+.hb-rd-hero-gallery .hb-gallery.hb-rd-hero { min-height: 240px; height: 240px; border-radius: 4px; margin-bottom: 0; }
 .hb-rd-hero { height: 240px; border-radius: 4px; background: #ddd center/cover no-repeat; margin-bottom: 16px; }
 .hb-rd-occ { margin: 0 0 8px; font-size: .9rem; font-weight: 600; }
 .hb-rd-spec { margin: 0 0 12px; font-size: .85rem; color: var(--hb-muted); line-height: 1.45; }

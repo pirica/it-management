@@ -169,6 +169,7 @@ window.HB_APPURL = <?php echo json_encode(APPURL); ?>;
 window.HB_HOTELS = <?php echo json_encode($hotels, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 window.HB_SETTINGS = <?php echo json_encode($hbSettingsPublic, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
+<script src="<?php echo APPURL; ?>/js/hotel-booking-gallery.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-amenity-icons.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-public.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-dates.js"></script>

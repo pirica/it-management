@@ -85,43 +85,9 @@
   }
 
   function bindGallery(root, urls) {
-    var idx = 0;
-    var el = root.querySelector('.hb-gallery');
-    var counter = root.querySelector('.hb-gallery-counter');
-    var wrap = root.querySelector('.hb-gallery-wrap');
-    var prevBtn = root.querySelector('.hb-gallery-prev');
-    var nextBtn = root.querySelector('.hb-gallery-next');
-    var multi = urls.length > 1;
-    if (wrap) {
-      wrap.classList.toggle('is-single', !multi);
+    if (typeof window.HB_bindGallery === 'function') {
+      window.HB_bindGallery(root, urls);
     }
-    function show(i) {
-      idx = (i + urls.length) % urls.length;
-      if (el) {
-        el.style.backgroundImage = "url('" + urls[idx].replace(/'/g, '%27') + "')";
-      }
-      if (counter) {
-        counter.textContent = (idx + 1) + ' / ' + urls.length;
-      }
-    }
-    function onNavClick(e, delta) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (multi) {
-        show(idx + delta);
-      }
-    }
-    if (prevBtn) {
-      prevBtn.addEventListener('click', function (e) {
-        onNavClick(e, -1);
-      });
-    }
-    if (nextBtn) {
-      nextBtn.addEventListener('click', function (e) {
-        onNavClick(e, 1);
-      });
-    }
-    show(0);
   }
 
   function bindReadMore(root) {

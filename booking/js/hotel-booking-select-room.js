@@ -479,6 +479,9 @@
           }
         }
         openModal('hb-room-detail-modal');
+        if (typeof window.HB_initGalleries === 'function') {
+          HB_initGalleries(detail);
+        }
       }
     });
   });
@@ -503,4 +506,8 @@
   });
 
   updatePrices();
+
+  if (typeof window.HB_initGalleries === 'function') {
+    HB_initGalleries(document);
+  }
 })();

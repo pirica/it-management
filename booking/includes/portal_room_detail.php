@@ -7,6 +7,29 @@ if (!function_exists('hb_portal_render_amenities_scroll')) {
     require_once __DIR__ . '/portal_chrome.php';
 }
 
+if (!function_exists('hb_portal_render_image_gallery')) {
+    function hb_portal_render_image_gallery(array $imageUrls, $wrapClass = '', $galleryClass = 'hb-gallery', $innerHtml = '') {
+        $imageUrls = array_values(array_filter(array_map('strval', $imageUrls)));
+        if (empty($imageUrls)) {
+            $imageUrls = [itm_hotel_booking_portal_default_image_url('image_2.jpg')];
+        }
+        $first = $imageUrls[0];
+        $count = count($imageUrls);
+        $wrapClass = trim('hb-gallery-wrap ' . (string) $wrapClass);
+        $galleryClass = trim((string) $galleryClass . ' hb-gallery');
+        ob_start();
+        ?>
+<div class="<?php echo htmlspecialchars($wrapClass, ENT_QUOTES, 'UTF-8'); ?>" data-gallery-urls="<?php echo htmlspecialchars(json_encode($imageUrls, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8'); ?>">
+<button type="button" class="hb-gallery-prev" title="Previous image" aria-label="Previous image">&#8249;</button>
+<div class="<?php echo htmlspecialchars($galleryClass, ENT_QUOTES, 'UTF-8'); ?>" style="background-image:url('<?php echo htmlspecialchars($first, ENT_QUOTES, 'UTF-8'); ?>')"><?php echo $innerHtml; ?></div>
+<button type="button" class="hb-gallery-next" title="Next image" aria-label="Next image">&#8250;</button>
+<span class="hb-gallery-counter" aria-live="polite">1 / <?php echo (int) $count; ?></span>
+</div>
+        <?php
+        return ob_get_clean();
+    }
+}
+
 if (!function_exists('hb_portal_room_detail_categorize_bullets')) {
     function hb_portal_room_detail_categorize_bullets(array $bullets) {
         $layout = [];
@@ -188,6 +211,10 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
             $title = trim($name . ' — ' . $bed);
         }
         $img = (string) ($card['image_url'] ?? '');
+        $imageUrls = $card['image_urls'] ?? [];
+        if (!is_array($imageUrls) || empty($imageUrls)) {
+            $imageUrls = $img !== '' ? [$img] : [itm_hotel_booking_portal_default_image_url('image_2.jpg')];
+        }
         $desc = (string) ($card['type_description'] ?? '');
         $size = $card['type_size_sqm'] ?? '';
         $view = (string) ($card['view_label'] ?? '');
@@ -298,7 +325,7 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
 <div class="hb-room-detail-layout" data-type-id="<?php echo (int) ($card['type_id'] ?? 0); ?>">
 <div class="hb-room-detail-left">
 <h2 class="hb-rd-title"><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></h2>
-<div class="hb-rd-hero" style="background-image:url('<?php echo htmlspecialchars($img, ENT_QUOTES, 'UTF-8'); ?>')"></div>
+<?php echo hb_portal_render_image_gallery($imageUrls, 'hb-rd-hero-gallery', 'hb-gallery hb-rd-hero'); ?>
 <p class="hb-rd-occ"><?php echo htmlspecialchars($occLabel, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php if ($specLine !== ''): ?>
 <p class="hb-rd-spec"><?php echo htmlspecialchars($specLine, ENT_QUOTES, 'UTF-8'); ?></p>
