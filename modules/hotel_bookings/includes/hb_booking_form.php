@@ -262,7 +262,7 @@ if (!function_exists('hb_booking_render_form_fields')) {
         echo '</select></div>';
 
         echo '<div class="form-group hb-booking-rate-plan-field"><label for="hb-booking-portal-rate-plan-id">Portal rate plan</label>';
-        echo '<p class="text-muted" id="hb-booking-rate-plan-hint" style="margin:0 0 8px;font-size:0.9em;" hidden>Select a room to list rate plans for that hotel.</p>';
+        echo '<p class="text-muted" id="hb-booking-rate-plan-hint" style="margin:0 0 8px;font-size:0.9em;" hidden>Select a room to filter rate plans for that hotel. ➕ still opens create (pick hotel in the modal when no room is selected).</p>';
         echo '<div class="hb-booking-rate-plan-controls" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">';
         echo '<select name="portal_rate_plan_id" id="hb-booking-portal-rate-plan-id" class="form-control" data-hb-rate-plan-select="1" style="min-width:220px;flex:1 1 220px;">';
         echo '<option value="">-- Select --</option>';
@@ -409,6 +409,9 @@ if (!function_exists('hb_booking_rate_plan_form_audit_failures')) {
         }
         if ($jsSrc === '' || strpos($jsSrc, 'ensureModalOnBody') === false) {
             $failures[] = 'js/hotel-bookings-rate-plan-select.js missing ensureModalOnBody';
+        }
+        if ($jsSrc === '' || strpos($jsSrc, 'create.php?embed=1') === false) {
+            $failures[] = 'js/hotel-bookings-rate-plan-select.js missing embed create URL';
         }
 
         $layoutPath = $repoRoot . '/includes/itm_hospitality_admin_layout.php';
