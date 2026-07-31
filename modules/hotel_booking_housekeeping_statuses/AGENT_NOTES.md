@@ -1,16 +1,3 @@
-Read AGENTS.md 
-Read README.md 
-Read scripts/scripts.php 
-Read phpunit/* 
-Read scripts/api.php 
-Read scripts/SCRIPTS.md
-Read db/ 
-Read full project
-
-On base on your learnings edit/update or create AGENT_NOTES.md is none exists for each modules/ on base of this (Module Template) don't use scripts to auto the process.
-`templates/AGENT_NOTES.md` (Module Template)
-
-
 # AGENT_NOTES.md — module template
 
 Use this outline for every in-scope folder (`modules/<slug>/`, `config/`, `includes/`, `scripts/lib/`, etc.). **Read the module PHP and `db/` first** — do not bulk-generate or copy generic boilerplate without verifying behaviour.
@@ -212,6 +199,8 @@ Rules:
 Regression scripts, related `AGENT_NOTES.md` files, or follow-up hardening (document only — do not cite numbered PRs).
 
 Example: Regression: `php scripts/verify_<module>.php`. Parent module: `modules/ops_report/AGENT_NOTES.md`.
+
+**`code` column:** short tenant-unique status code (departments-style), e.g. `INSP`, `CLN`, `DIRTY`, `PICK` in `db/02_data.sql`. Planning grid **HSK** column and `hk_rotate` AJAX prefer `code` over `name`. Live DB migration: `db/migrations/hotel_booking_hk_status_code.sql`.
 
 ---
 

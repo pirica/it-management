@@ -2453,13 +2453,13 @@ INSERT INTO `hotel_bookings_history` (`company_id`, `name`, `active`, `created_a
 
 INSERT IGNORE INTO `hotel_bookings_history` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `hotel_bookings_history` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 
-INSERT INTO `hotel_booking_housekeeping_statuses` (`company_id`, `name`, `color_hex`, `active`, `created_at`) VALUES
-(1, 'Inspected', '#28a745', 1, '2026-01-01 00:00:01'),
-(1, 'Clean', '#17a2b8', 1, '2026-01-01 00:00:01'),
-(1, 'Dirty', '#dc3545', 1, '2026-01-01 00:00:01'),
-(1, 'Pickup', '#ffc107', 1, '2026-01-01 00:00:01');
+INSERT INTO `hotel_booking_housekeeping_statuses` (`company_id`, `name`, `code`, `color_hex`, `active`, `created_at`) VALUES
+(1, 'Inspected', 'INSP', '#28a745', 1, '2026-01-01 00:00:01'),
+(1, 'Clean', 'CLN', '#17a2b8', 1, '2026-01-01 00:00:01'),
+(1, 'Dirty', 'DIRTY', '#dc3545', 1, '2026-01-01 00:00:01'),
+(1, 'Pickup', 'PICK', '#ffc107', 1, '2026-01-01 00:00:01');
 
-INSERT IGNORE INTO `hotel_booking_housekeeping_statuses` (`company_id`, `name`, `color_hex`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`color_hex`, t.`active`, '2026-01-01 00:00:01' FROM `hotel_booking_housekeeping_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT IGNORE INTO `hotel_booking_housekeeping_statuses` (`company_id`, `name`, `code`, `color_hex`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`code`, t.`color_hex`, t.`active`, '2026-01-01 00:00:01' FROM `hotel_booking_housekeeping_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 
 INSERT INTO `hotel_booking_housekeeping_maintenance_status` (`company_id`, `name`, `code`, `active`, `created_at`) VALUES
 (1, 'Out of Order', 'ooo', 1, '2026-01-01 00:00:01'),

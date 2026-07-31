@@ -4643,6 +4643,7 @@ CREATE TABLE `hotel_booking_housekeeping_statuses` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `color_hex` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
@@ -4653,6 +4654,7 @@ CREATE TABLE `hotel_booking_housekeeping_statuses` (
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_hotel_booking_hk_status_company_name` (`company_id`,`name`),
+  UNIQUE KEY `uq_hotel_booking_hk_status_company_code` (`company_id`,`code`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `hotel_booking_hk_status_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -1628,8 +1628,38 @@ if (!function_exists('itm_hotel_booking_planning_match_maintenance_for_day')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_planning_sort_rooms')) {
+  function itm_hotel_booking_planning_sort_rooms(array $rooms, $sortCol, $dir) {
+    $sortCol = in_array($sortCol, ['room', 'hk', 'type'], true) ? $sortCol : 'room';
+    $dirMult = (strtolower((string) $dir) === 'desc') ? -1 : 1;
+    usort($rooms, function ($a, $b) use ($sortCol, $dirMult) {
+      switch ($sortCol) {
+        case 'hk':
+          $av = strtolower((string) ($a['hk_code'] ?? $a['hk_name'] ?? ''));
+          $bv = strtolower((string) ($b['hk_code'] ?? $b['hk_name'] ?? ''));
+          break;
+        case 'type':
+          $av = strtolower((string) ($a['type_code'] ?? $a['type_name'] ?? ''));
+          $bv = strtolower((string) ($b['type_code'] ?? $b['type_name'] ?? ''));
+          break;
+        case 'room':
+        default:
+          $av = strtolower((string) ($a['room_number'] ?? ''));
+          $bv = strtolower((string) ($b['room_number'] ?? ''));
+          break;
+      }
+      $cmp = strcmp($av, $bv);
+      if ($cmp === 0) {
+        $cmp = strcmp((string) ($a['room_number'] ?? ''), (string) ($b['room_number'] ?? ''));
+      }
+      return $dirMult * $cmp;
+    });
+    return $rooms;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_planning_grid_rows')) {
-  function itm_hotel_booking_planning_grid_rows($conn, $companyId, $anchorDate, $hotelId = 0, $roomTypeId = 0, $floor = '', $days = 14) {
+  function itm_hotel_booking_planning_grid_rows($conn, $companyId, $anchorDate, $hotelId = 0, $roomTypeId = 0, $floor = '', $days = 14, $sortCol = 'room', $sortDir = 'asc') {
     $companyId = (int) $companyId;
     $hotelId = (int) $hotelId;
     $days = max(7, min(31, (int) $days));
@@ -1637,7 +1667,7 @@ if (!function_exists('itm_hotel_booking_planning_grid_rows')) {
     $rangeStart = $anchor->format('Y-m-d');
     $rangeEnd = (clone $anchor)->modify('+' . ($days - 1) . ' days')->format('Y-m-d');
 
-    $roomSql = 'SELECT r.*, h.name AS hotel_name, t.code AS type_code, t.name AS type_name, hk.name AS hk_name, hk.color_hex AS hk_color
+    $roomSql = 'SELECT r.*, h.name AS hotel_name, t.code AS type_code, t.name AS type_name, hk.name AS hk_name, hk.code AS hk_code, hk.color_hex AS hk_color
                 FROM hotel_booking_rooms r
                 INNER JOIN hotel_booking_hotels h ON h.id = r.hotel_id AND h.company_id = r.company_id
                 INNER JOIN booking_rooms_types t ON t.id = r.room_type_id AND t.company_id = r.company_id
@@ -1673,6 +1703,7 @@ if (!function_exists('itm_hotel_booking_planning_grid_rows')) {
       $rooms[] = $row;
     }
     mysqli_stmt_close($stmt);
+    $rooms = itm_hotel_booking_planning_sort_rooms($rooms, $sortCol, $sortDir);
 
     $bookSql = 'SELECT b.*, c.name AS customer_name FROM hotel_bookings b
                 INNER JOIN customers c ON c.id = b.customer_id AND c.company_id = b.company_id
@@ -1971,8 +2002,9 @@ if (!function_exists('itm_hotel_booking_rotate_room_housekeeping_status')) {
     mysqli_stmt_bind_param($upd, 'iiii', $nextId, $employeeId, $roomId, $companyId);
     mysqli_stmt_execute($upd);
     mysqli_stmt_close($upd);
-    $hkStmt = mysqli_prepare($conn, 'SELECT name, color_hex FROM hotel_booking_housekeeping_statuses WHERE id = ? AND company_id = ? LIMIT 1');
+    $hkStmt = mysqli_prepare($conn, 'SELECT name, code, color_hex FROM hotel_booking_housekeeping_statuses WHERE id = ? AND company_id = ? LIMIT 1');
     $hkName = '';
+    $hkCode = '';
     $hkColor = '#6c757d';
     if ($hkStmt) {
       mysqli_stmt_bind_param($hkStmt, 'ii', $nextId, $companyId);
@@ -1982,10 +2014,11 @@ if (!function_exists('itm_hotel_booking_rotate_room_housekeeping_status')) {
       mysqli_stmt_close($hkStmt);
       if ($hkRow) {
         $hkName = (string) ($hkRow['name'] ?? '');
+        $hkCode = (string) ($hkRow['code'] ?? '');
         $hkColor = (string) ($hkRow['color_hex'] ?? '#6c757d');
       }
     }
-    return ['ok' => true, 'housekeeping_status_id' => $nextId, 'hk_name' => $hkName, 'hk_color' => $hkColor];
+    return ['ok' => true, 'housekeeping_status_id' => $nextId, 'hk_name' => $hkName, 'hk_code' => $hkCode, 'hk_color' => $hkColor];
   }
 }
 

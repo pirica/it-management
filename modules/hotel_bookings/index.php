@@ -63,7 +63,15 @@ if (isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'planning_grid') {
     $typeId = (int) ($_GET['room_type_id'] ?? 0);
     $floor = trim((string) ($_GET['floor'] ?? ''));
     $days = (int) ($_GET['days'] ?? 14);
-    $grid = itm_hotel_booking_planning_grid_rows($conn, $company_id, $anchor, $hotelId, $typeId, $floor, $days);
+    $planSort = isset($_GET['plan_sort']) ? (string) $_GET['plan_sort'] : 'room';
+    $planDir = isset($_GET['plan_dir']) ? (string) $_GET['plan_dir'] : 'asc';
+    if (!in_array($planSort, ['room', 'hk', 'type'], true)) {
+        $planSort = 'room';
+    }
+    if (!in_array(strtolower($planDir), ['asc', 'desc'], true)) {
+        $planDir = 'asc';
+    }
+    $grid = itm_hotel_booking_planning_grid_rows($conn, $company_id, $anchor, $hotelId, $typeId, $floor, $days, $planSort, $planDir);
     echo json_encode($grid, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
@@ -100,6 +108,14 @@ $filterHotel = (int) ($_GET['hotel_id'] ?? 0);
 $filterType = (int) ($_GET['room_type_id'] ?? 0);
 $filterFloor = trim((string) ($_GET['floor'] ?? ''));
 $planDays = max(7, min(21, (int) ($_GET['days'] ?? 14)));
+$planSort = isset($_GET['plan_sort']) ? (string) $_GET['plan_sort'] : 'room';
+$planDir = isset($_GET['plan_dir']) ? (string) $_GET['plan_dir'] : 'asc';
+if (!in_array($planSort, ['room', 'hk', 'type'], true)) {
+    $planSort = 'room';
+}
+if (!in_array(strtolower($planDir), ['asc', 'desc'], true)) {
+    $planDir = 'asc';
+}
 
 $hotels = [];
 $hstmt = mysqli_prepare($conn, 'SELECT id, name FROM hotel_booking_hotels WHERE company_id = ? AND deleted_at IS NULL ORDER BY name');
@@ -113,7 +129,7 @@ if ($hstmt) {
     mysqli_stmt_close($hstmt);
 }
 
-$grid = itm_hotel_booking_planning_grid_rows($conn, $company_id, $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays);
+$grid = itm_hotel_booking_planning_grid_rows($conn, $company_id, $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir);
 $bookingsByRoom = [];
 foreach ($grid['bookings'] as $b) {
     $rid = (int) $b['room_id'];
@@ -166,6 +182,30 @@ if ($mode !== 'planning') {
     $boardRows = hb_board_list($conn, $company_id, $mode);
 }
 
+function hb_planning_filter_query($anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir) {
+    $q = [
+        'mode' => 'planning',
+        'anchor' => itm_format_date_display($anchorDate),
+        'hotel_id' => (int) $filterHotel,
+        'days' => (int) $planDays,
+        'plan_sort' => (string) $planSort,
+        'plan_dir' => (string) $planDir,
+    ];
+    if ((int) $filterType > 0) {
+        $q['room_type_id'] = (int) $filterType;
+    }
+    if ((string) $filterFloor !== '') {
+        $q['floor'] = (string) $filterFloor;
+    }
+    return $q;
+}
+
+function hb_planning_sort_href($col, $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir) {
+    $nextDir = ($planSort === $col && strtolower($planDir) === 'asc') ? 'desc' : 'asc';
+    $q = hb_planning_filter_query($anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $col, $nextDir);
+    return '?' . http_build_query($q);
+}
+
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_bookings', $crud_title);
 require_once ROOT_PATH . 'includes/itm_hospitality_admin_layout.php';
 itm_hospitality_admin_layout_begin($crud_title, ['css/hotel-bookings.css']);
@@ -174,6 +214,10 @@ $cursor = DateTime::createFromFormat('Y-m-d', $grid['range_start']);
 for ($i = 0; $i < $planDays; $i++) {
     $dayHeaders[] = (clone $cursor)->modify('+' . $i . ' days');
 }
+$prevAnchorDate = date('Y-m-d', strtotime($anchorDate . ' -' . $planDays . ' days'));
+$nextAnchorDate = date('Y-m-d', strtotime($anchorDate . ' +' . $planDays . ' days'));
+$prevAnchorQuery = hb_planning_filter_query($prevAnchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir);
+$nextAnchorQuery = hb_planning_filter_query($nextAnchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir);
 ?>
 <div class="card">
 <h1 title="Hotel bookings">🏨</h1>
@@ -188,6 +232,8 @@ for ($i = 0; $i < $planDays; $i++) {
 <?php if ($mode === 'planning'): ?>
 <form method="get" class="hb-plan-filters">
 <input type="hidden" name="mode" value="planning">
+<input type="hidden" name="plan_sort" value="<?php echo sanitize($planSort); ?>">
+<input type="hidden" name="plan_dir" value="<?php echo sanitize($planDir); ?>">
 <label>Anchor <input type="text" name="anchor" value="<?php echo sanitize(itm_format_date_display($anchorDate)); ?>" placeholder="dd/mm/yyyy"></label>
 <label>Hotel
 <select name="hotel_id">
@@ -197,32 +243,36 @@ for ($i = 0; $i < $planDays; $i++) {
 <?php endforeach; ?>
 </select>
 </label>
-<label>Days <input type="number" name="days" min="7" max="21" value="<?php echo (int) $planDays; ?>" style="width:64px"></label>
-<button type="submit" class="btn btn-sm" title="Search">🔎</button>
+<label>Days <input type="number" name="days" min="7" max="21" value="<?php echo (int) $planDays; ?>" class="hb-plan-days-input"></label>
+<button type="submit" class="btn btn-sm hb-plan-search-btn" title="Search">🔎</button>
 </form>
-<div class="hb-toolbar">
-<a class="btn btn-sm" href="create.php" title="Quick booking">➕</a>
-</div>
 <div class="hb-plan-grid-wrap">
 <table class="hb-plan-grid">
 <thead>
 <tr>
-<th class="hb-plan-room-col">Room</th>
-<th>HK</th>
-<th>Type</th>
+<th class="hb-plan-sticky hb-plan-room-col"><a href="<?php echo sanitize(hb_planning_sort_href('room', $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir)); ?>" class="hb-plan-sort-link" title="Sort by room">Room<?php if ($planSort === 'room'): ?> <?php echo strtolower($planDir) === 'asc' ? '▲' : '▼'; ?><?php endif; ?></a></th>
+<th class="hb-plan-sticky hb-plan-hk-col"><a href="<?php echo sanitize(hb_planning_sort_href('hk', $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir)); ?>" class="hb-plan-sort-link" title="Sort by HSK status">HSK<?php if ($planSort === 'hk'): ?> <?php echo strtolower($planDir) === 'asc' ? '▲' : '▼'; ?><?php endif; ?></a></th>
+<th class="hb-plan-sticky hb-plan-type-col"><a href="<?php echo sanitize(hb_planning_sort_href('type', $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir)); ?>" class="hb-plan-sort-link" title="Sort by room type">Type<?php if ($planSort === 'type'): ?> <?php echo strtolower($planDir) === 'asc' ? '▲' : '▼'; ?><?php endif; ?></a></th>
+<th class="hb-plan-date-nav" title="Previous dates"><a class="btn btn-sm hb-plan-date-arrow" href="?<?php echo sanitize(http_build_query($prevAnchorQuery)); ?>" title="Previous dates">⬅️</a></th>
 <?php foreach ($dayHeaders as $d): ?>
 <th class="hb-plan-day"><?php echo sanitize($d->format('D d/m')); ?></th>
 <?php endforeach; ?>
+<th class="hb-plan-date-nav" title="Next dates"><a class="btn btn-sm hb-plan-date-arrow" href="?<?php echo sanitize(http_build_query($nextAnchorQuery)); ?>" title="Next dates">➡️</a></th>
 </tr>
 </thead>
 <tbody>
 <?php foreach ($grid['rooms'] as $room): ?>
 <tr data-room-id="<?php echo (int) $room['id']; ?>">
-<td class="hb-plan-room-col"><?php echo sanitize($room['room_number']); ?></td>
-<td class="hb-plan-hk-cell" title="Double-click to rotate HK status"><?php
+<td class="hb-plan-sticky hb-plan-room-col"><?php echo sanitize($room['room_number']); ?></td>
+<td class="hb-plan-sticky hb-plan-hk-col hb-plan-hk-cell" title="Double-click to rotate HSK status"><?php
 $hkColor = $room['hk_color'] ?? '#6c757d';
-?><span class="hb-hk-badge" style="background:<?php echo sanitize($hkColor); ?>"><?php echo sanitize($room['hk_name'] ?? '—'); ?></span></td>
-<td><?php echo sanitize($room['type_code'] ?? $room['type_name']); ?></td>
+$hkLabel = trim((string) ($room['hk_code'] ?? ''));
+if ($hkLabel === '') {
+    $hkLabel = (string) ($room['hk_name'] ?? '—');
+}
+?><span class="hb-hk-badge" style="background:<?php echo sanitize($hkColor); ?>"><?php echo sanitize($hkLabel); ?></span></td>
+<td class="hb-plan-sticky hb-plan-type-col"><?php echo sanitize($room['type_code'] ?? $room['type_name']); ?></td>
+<td class="hb-plan-date-nav hb-plan-date-spacer"></td>
 <?php
 $roomBookings = $bookingsByRoom[(int) $room['id']] ?? [];
 foreach ($dayHeaders as $di => $d):
@@ -248,6 +298,7 @@ foreach ($dayMaintenance as $maint):
 <span class="hb-plan-bar hb-plan-draggable <?php echo sanitize($segmentClass); ?>" draggable="true" style="background:<?php echo sanitize($barColor); ?>;z-index:1" data-entity-type="booking" data-booking-id="<?php echo (int) $bar['id']; ?>" data-check-in="<?php echo sanitize((string) $bar['check_in']); ?>" data-check-out="<?php echo sanitize((string) $bar['check_out']); ?>" data-room-id="<?php echo (int) $room['id']; ?>" title="<?php echo $barTitle; ?>"><?php echo sanitize($bar['customer_name']); ?></span>
 <?php endforeach; ?></td>
 <?php endforeach; ?>
+<td class="hb-plan-date-nav hb-plan-date-spacer"></td>
 </tr>
 <?php endforeach; ?>
 </tbody>

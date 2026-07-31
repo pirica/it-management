@@ -6,6 +6,7 @@ $crud_action = $crud_action ?? 'index';
 <?php
 require '../../config/config.php';
 require_once '../../includes/itm_crud_fk_label_search.php';
+require_once __DIR__ . '/includes/brt_fk_helpers.php';
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
@@ -106,6 +107,7 @@ function cr_humanize_field($field) {
         'opera_username' => 'OPERA Username',
         'onq_ri' => 'OnQ R&I',
         'hu_the_lobby' => 'HU & The Lobby',
+        'upgrade_to_room_type_id' => 'Upgrade To Room Type',
     ];
 
     if (isset($map[$label])) {
@@ -140,6 +142,13 @@ function cr_render_cell_value($table, $field, $value) {
 if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
+    if (isset($GLOBALS['fkMap'][$field])) {
+        $resolvedLabel = brt_fk_label_by_id($GLOBALS['conn'], $GLOBALS['fkMap'][$field], (int)($GLOBALS['company_id'] ?? 0), (int)$value, $field);
+        if ($resolvedLabel !== '') {
+            return sanitize($resolvedLabel);
+        }
     }
 
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
@@ -374,7 +383,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
                 if (isset($fkMap[$fieldName])) {
                     $fk = $fkMap[$fieldName];
-                    $options = cr_fk_options($conn, $fk, (int)$company_id);
+                    $options = brt_fk_options($conn, $fk, (int)$company_id, $fieldName);
                     $resolvedId = 0;
                     foreach ($options as $option) {
                         if (strcasecmp((string)$option['label'], $rawValue) === 0) {
@@ -958,7 +967,7 @@ if (!isset($crud_title)) {
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
-                                    $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
+                                    $opts = brt_fk_options($conn, $fkMap[$name], (int)$company_id, $name);
                                     $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
                                 ?>
