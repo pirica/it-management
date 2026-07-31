@@ -85,23 +85,9 @@
   }
 
   function bindGallery(root, urls) {
-    var idx = 0;
-    var el = root.querySelector('.hb-gallery');
-    var counter = root.querySelector('.hb-gallery-counter');
-    function show(i) {
-      idx = (i + urls.length) % urls.length;
-      if (el) el.style.backgroundImage = "url('" + urls[idx].replace(/'/g, '%27') + "')";
-      if (counter) counter.textContent = (idx + 1) + '/' + urls.length;
+    if (typeof window.HB_bindGallery === 'function') {
+      window.HB_bindGallery(root, urls);
     }
-    root.querySelector('.hb-gallery-prev')?.addEventListener('click', function (e) {
-      e.preventDefault();
-      show(idx - 1);
-    });
-    root.querySelector('.hb-gallery-next')?.addEventListener('click', function (e) {
-      e.preventDefault();
-      show(idx + 1);
-    });
-    show(0);
   }
 
   function bindReadMore(root) {
@@ -218,12 +204,8 @@
     body.innerHTML =
       '<div class="hb-detail">' +
       '<div class="hb-detail-left">' +
-      '<div class="hb-gallery-wrap">' +
-      '<button type="button" class="hb-gallery-prev" title="Previous image">‹</button>' +
-      '<div class="hb-gallery"></div>' +
-      '<button type="button" class="hb-gallery-next" title="Next image">›</button>' +
-      '<span class="hb-gallery-counter">1/' + urls.length + '</span>' +
-      '</div>' +
+      (typeof window.HB_galleryMarkup === 'function' ? window.HB_galleryMarkup(urls) :
+        '<div class="hb-gallery-wrap"><div class="hb-gallery"></div></div>') +
       '<div class="hb-title-row">' +
       '<h2 class="hb-detail-title">' + escapeHtml(h.name) + '</h2>' +
       '<button type="button" class="hb-fav" title="Save to favorites" aria-label="Favorite">♡</button>' +

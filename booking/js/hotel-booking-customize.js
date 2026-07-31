@@ -60,6 +60,9 @@
   openBtn.addEventListener('click', function (e) {
     e.preventDefault();
     body.innerHTML = detailCfg.html;
+    if (typeof window.HB_initGalleries === 'function') {
+      window.HB_initGalleries(body);
+    }
     openModal();
   });
 

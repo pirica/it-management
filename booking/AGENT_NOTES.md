@@ -45,7 +45,14 @@ Hotel administration lives in ITM modules: `modules/hotel_bookings/`, `modules/h
 | Bootstrap | `bootstrap.php` |
 | Includes | `includes/portal_chrome.php`, `portal_checkout.php`, `portal_room_detail.php` |
 | CSS | `css/hotel-booking-modern.css` only |
-| JS | `js/hotel-booking-{public,dates,amenity-icons,select-room,customize,change-booking,confirmation-pdf}.js` |
+| JS | `js/hotel-booking-{public,dates,amenity-icons,gallery,select-room,customize,change-booking,confirmation-pdf}.js` |
 | Images | `images/amenities/*.svg` (+ `ATTRIBUTION.md`); hotel/room photos come from `images/hotel_booking/{company_id}/…` via ITM upload helpers |
+
+## 8. Photo galleries (booking portal)
+
+- Shared gallery: `js/hotel-booking-gallery.js` — `HB_galleryMarkup()`, `HB_bindGallery()`, `HB_initGalleries()`.
+- **Hotel detail modal** (`index.php` → `hotel-booking-public.js`): prev/next arrows + `1 / N` counter overlay on all hotel photos.
+- **Room detail modal** (`rooms.php`, `rooms/customize.php` → `portal_room_detail.php`): same gallery markup via `hb_portal_gallery_html()`; arrows hidden when only one image (`hb-gallery-wrap--single`).
+- Counter format uses spaces: `1 / 12`. Arrow controls use dark translucent squares (see `css/hotel-booking-modern.css` `.hb-gallery-*`).
 
 Removed legacy Colorlib template tree: `about.php`, `contact.php`, `services.php`, `404.php`, `config/config.php` (PDO), `includes/header.php` / `footer.php`, vendored `scss/`, `css/style.css`, jQuery/Bootstrap JS stack, `fonts/`, and the entire `admin-panel/` folder.

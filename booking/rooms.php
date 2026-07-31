@@ -118,16 +118,9 @@ foreach ($rooms as $room) {
 
     if (!isset($cards[$typeKey])) {
         $code = strtoupper((string) ($room['type_code'] ?? ''));
-        $photos = itm_hotel_booking_photos_load($conn, $company_id, 'hotel_booking_room_photos', 'room_id', $roomId);
-        $imgUrl = APPURL . ($typeDefaultImages[$code] ?? '/images/room-5.jpg');
-        if (!empty($photos[0]['stored_filename'])) {
-            $imgUrl = itm_hotel_booking_photo_public_url($company_id, 'room', $roomId, $photos[0]['stored_filename']);
-        } else {
-            $tphotos = itm_hotel_booking_photos_load($conn, $company_id, 'booking_rooms_type_photos', 'room_type_id', $typeKey);
-            if (!empty($tphotos[0]['stored_filename'])) {
-                $imgUrl = itm_hotel_booking_photo_public_url($company_id, 'room_type', $typeKey, $tphotos[0]['stored_filename']);
-            }
-        }
+        $fallbackImg = APPURL . ($typeDefaultImages[$code] ?? '/images/room-5.jpg');
+        $photoUrls = hb_portal_room_type_photo_urls($conn, $company_id, $typeKey, $roomId, $fallbackImg);
+        $imgUrl = $photoUrls[0] ?? $fallbackImg;
         $bullets = [];
         $rawBullets = (string) ($room['details_bullets'] ?? '');
         if ($rawBullets !== '') {
@@ -157,6 +150,7 @@ foreach ($rooms as $room) {
             'max_adults' => (int) ($room['max_adults'] ?? 2),
             'max_children' => (int) ($room['max_children'] ?? 1),
             'image_url' => $imgUrl,
+            'photo_urls' => $photoUrls,
             'base_price' => $basePrice,
             'list_quoted_price' => $listQuoted,
             'quoted_price' => $quoted,
@@ -429,6 +423,7 @@ window.HB_SELECT_ROOM = <?php echo json_encode([
     'typeDetails' => $typeDetailsHtml,
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
+<script src="<?php echo APPURL; ?>/js/hotel-booking-gallery.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-select-room.js"></script>
 </body>
 </html>

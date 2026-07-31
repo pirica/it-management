@@ -492,4 +492,20 @@ if (!is_file($hotelsIndex)) {
     }
 }
 
+$bookingGalleryJs = $repoRoot . '/booking/js/hotel-booking-gallery.js';
+$bookingGalleryCss = $repoRoot . '/booking/css/hotel-booking-modern.css';
+if (!is_file($bookingGalleryJs)) {
+    hb_fail('booking/js/hotel-booking-gallery.js missing');
+} else {
+    $galleryJs = (string) file_get_contents($bookingGalleryJs);
+    $galleryCss = is_file($bookingGalleryCss) ? (string) file_get_contents($bookingGalleryCss) : '';
+    if (strpos($galleryJs, 'HB_bindGallery') === false || strpos($galleryJs, ' / ') === false) {
+        hb_fail('booking gallery JS must expose HB_bindGallery and spaced counter format');
+    } elseif (strpos($galleryCss, '.hb-gallery-counter') === false || strpos($galleryCss, '.hb-gallery-prev') === false) {
+        hb_fail('booking gallery CSS must style arrows and counter');
+    } else {
+        hb_pass('booking portal photo gallery arrows and counter');
+    }
+}
+
 exit($fail > 0 ? 1 : 0);

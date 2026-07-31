@@ -479,6 +479,9 @@
           }
         }
         openModal('hb-room-detail-modal');
+        if (typeof window.HB_initGalleries === 'function') {
+          window.HB_initGalleries(detail);
+        }
       }
     });
   });
