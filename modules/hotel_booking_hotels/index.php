@@ -18,6 +18,7 @@ function cr_form_display_value($value) {
 ?>
 <?php
 require_once '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_hotel_booking.php';
 require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
 itm_crud_record_share_handle_ajax_request($conn, 'hotel_booking_hotels');
 
@@ -932,7 +933,24 @@ if ($page > $totalPages) {
 $offset = ($page - 1) * $perPage;
 
 // Final data fetch
-$rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
+$rowsRes = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
+$rowList = [];
+while ($rowsRes && ($listRow = mysqli_fetch_assoc($rowsRes))) {
+    $rowList[] = $listRow;
+}
+$hbPhotoCfg = itm_hotel_booking_photos_config_for_parent_table($crud_table);
+$hbPhotoUrlsMap = [];
+if ($hbPhotoCfg && !empty($rowList)) {
+    $parentIds = [];
+    foreach ($rowList as $listRow) {
+        $parentIds[] = (int) ($listRow['id'] ?? 0);
+    }
+    $hbPhotoUrlsMap = itm_hotel_booking_photo_urls_map_for_parents($conn, (int) $company_id, $crud_table, $parentIds);
+}
+$editParentPhotos = [];
+if ($crud_action === 'edit' && $editId > 0 && $hbPhotoCfg) {
+    $editParentPhotos = itm_hotel_booking_photos_for_parent_table($conn, (int) $company_id, $crud_table, $editId);
+}
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: ('🧩 ' . $crud_title);
 $newButtonPosition = itm_resolve_new_button_position($ui_config);
 ?>
@@ -1014,6 +1032,9 @@ if (!isset($crud_title)) {
                             <?php if ($showBulkActions): ?>
                                 <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
                             <?php endif; ?>
+                            <?php if ($hbPhotoCfg): ?>
+                                <th style="min-width:120px;">Photos</th>
+                            <?php endif; ?>
                             <?php foreach ($uiColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
@@ -1030,10 +1051,30 @@ if (!isset($crud_title)) {
                         </tr>
                         </thead>
                         <tbody>
-                        <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
+                        <?php if (!empty($rowList)): foreach ($rowList as $row): ?>
                             <tr>
                                 <?php if ($showBulkActions): ?>
                                     <td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td>
+                                <?php endif; ?>
+                                <?php if ($hbPhotoCfg): ?>
+                                    <td>
+                                        <?php
+                                        $photoUrls = $hbPhotoUrlsMap[(int) ($row['id'] ?? 0)] ?? [];
+                                        if (empty($photoUrls)) {
+                                            echo itm_hotel_booking_render_photo_thumbnail_link('', (string) ($row['name'] ?? 'Hotel photo'), 48);
+                                        } else {
+                                            echo '<div style="display:flex;flex-wrap:wrap;gap:4px;max-width:200px;">';
+                                            foreach ($photoUrls as $photoUrl) {
+                                                echo itm_hotel_booking_render_photo_thumbnail_link(
+                                                    $photoUrl,
+                                                    (string) ($row['name'] ?? 'Hotel photo'),
+                                                    48
+                                                );
+                                            }
+                                            echo '</div>';
+                                        }
+                                        ?>
+                                    </td>
                                 <?php endif; ?>
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td>
@@ -1058,8 +1099,8 @@ if (!isset($crud_title)) {
                                     </div>
                                 </td>
                             </tr>
-                        <?php endwhile; else: ?>
-                            <tr><td colspan="<?php echo count($fieldColumns) + ($showBulkActions ? 2 : 1); ?>" style="text-align:center;">No records found.</td></tr>
+                        <?php endforeach; else: ?>
+                            <tr><td colspan="<?php echo count($uiColumns) + ($hbPhotoCfg ? 1 : 0) + ($showBulkActions ? 2 : 1); ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
@@ -1155,10 +1196,31 @@ if (!isset($crud_title)) {
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
-                    <?php if (itm_hotel_booking_photos_config_for_parent_table($crud_table)): ?>
-                    <div class="form-group">
-                        <label>Photos</label>
+                    <?php if ($hbPhotoCfg): ?>
+                    <?php if ($crud_action === 'edit' && !empty($editParentPhotos)): ?>
+                    <div class="form-group" style="grid-column:1 / -1;">
+                        <label>Current photos</label>
+                        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;">
+                            <?php foreach ($editParentPhotos as $hbPhotoRow): ?>
+                                <?php
+                                $hbThumbUrl = itm_hotel_booking_photo_public_url(
+                                    (int) $company_id,
+                                    (string) $hbPhotoCfg['scope'],
+                                    (int) $editId,
+                                    (string) ($hbPhotoRow['stored_filename'] ?? '')
+                                );
+                                $hbThumbAlt = (string) ($hbPhotoRow['original_filename'] ?? 'Hotel photo');
+                                echo itm_hotel_booking_render_photo_thumbnail_link($hbThumbUrl, $hbThumbAlt, 120);
+                                ?>
+                            <?php endforeach; ?>
+                        </div>
+                        <small style="opacity:.7;display:block;margin-top:6px;">Click a thumbnail to open the full image in a new tab. Upload below to add more photos.</small>
+                    </div>
+                    <?php endif; ?>
+                    <div class="form-group" style="grid-column:1 / -1;">
+                        <label><?php echo ($crud_action === 'edit' && !empty($editParentPhotos)) ? 'Add photos' : 'Photos'; ?></label>
                         <input type="file" name="hb_photos[]" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+                        <small style="opacity:.7;display:block;margin-top:6px;">Select one or more images. Files are stored with randomized names on disk.</small>
                     </div>
                     <?php endif; ?>
                     <div class="form-actions">

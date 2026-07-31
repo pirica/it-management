@@ -77,20 +77,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 itm_ensure_upload_directory($absDir, 'upload');
 
-                $newStored = 'hb_' . bin2hex(random_bytes(8)) . '.' . $ext;
-                $dest = $absDir . DIRECTORY_SEPARATOR . $newStored;
-
-                if (move_uploaded_file($tmpName, $dest)) {
-                    // Delete old file if it exists and we're either changing the room or just replacing the image
-                    $oldRelDir = itm_hotel_booking_photo_storage_dir($company_id, $scope, $data['room_id']);
-                    $oldAbsDir = rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $oldRelDir);
-                    $oldFile = $oldAbsDir . DIRECTORY_SEPARATOR . $data['stored_filename'];
-                    if (is_file($oldFile)) {
-                        @unlink($oldFile);
-                    }
-                    $stored = $newStored;
+                $newStored = itm_hotel_booking_photo_random_stored_filename($ext, $absDir);
+                if ($newStored === '') {
+                    $errors[] = "File '{$orig}' has an invalid extension. Only JPG, JPEG, PNG, GIF, and WEBP are allowed.";
                 } else {
-                    $errors[] = 'Failed to save the new uploaded file.';
+                    $dest = $absDir . DIRECTORY_SEPARATOR . $newStored;
+
+                    if (move_uploaded_file($tmpName, $dest)) {
+                        // Delete old file if it exists and we're either changing the room or just replacing the image
+                        $oldRelDir = itm_hotel_booking_photo_storage_dir($company_id, $scope, $data['room_id']);
+                        $oldAbsDir = rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $oldRelDir);
+                        $oldFile = $oldAbsDir . DIRECTORY_SEPARATOR . $data['stored_filename'];
+                        if (is_file($oldFile)) {
+                            @unlink($oldFile);
+                        }
+                        $stored = $newStored;
+                    } else {
+                        $errors[] = 'Failed to save the new uploaded file.';
+                    }
                 }
             }
         }

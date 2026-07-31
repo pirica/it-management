@@ -112,6 +112,167 @@ if (!function_exists('itm_hotel_booking_photos_config_for_parent_table')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_photos_for_parent_table')) {
+  function itm_hotel_booking_photos_for_parent_table($conn, $companyId, $parentTable, $parentId) {
+    $cfg = itm_hotel_booking_photos_config_for_parent_table($parentTable);
+    if (!$cfg) {
+      return [];
+    }
+    $parentId = (int) $parentId;
+    if ($parentId < 1) {
+      return [];
+    }
+    return itm_hotel_booking_photos_load(
+      $conn,
+      (int) $companyId,
+      $cfg['photo_table'],
+      $cfg['parent_column'],
+      $parentId
+    );
+  }
+}
+
+if (!function_exists('itm_hotel_booking_photo_cover_url_map_for_parents')) {
+  function itm_hotel_booking_photo_cover_url_map_for_parents($conn, $companyId, $parentTable, array $parentIds) {
+    $cfg = itm_hotel_booking_photos_config_for_parent_table($parentTable);
+    if (!$cfg) {
+      return [];
+    }
+    $companyId = (int) $companyId;
+    $parentIds = array_values(array_unique(array_filter(array_map('intval', $parentIds), static function ($id) {
+      return $id > 0;
+    })));
+    if ($companyId < 1 || empty($parentIds)) {
+      return [];
+    }
+    $photoTable = $cfg['photo_table'];
+    $parentColumn = $cfg['parent_column'];
+    $scope = $cfg['scope'];
+    $placeholders = implode(',', array_fill(0, count($parentIds), '?'));
+    $sql = 'SELECT `' . str_replace('`', '``', $parentColumn) . '` AS parent_id, stored_filename'
+      . ' FROM `' . str_replace('`', '``', $photoTable) . '`'
+      . ' WHERE company_id = ? AND `' . str_replace('`', '``', $parentColumn) . '` IN (' . $placeholders . ')'
+      . ' AND deleted_at IS NULL'
+      . ' ORDER BY is_cover DESC, sort_order ASC, id ASC';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return [];
+    }
+    $types = 'i' . str_repeat('i', count($parentIds));
+    $params = array_merge([$companyId], $parentIds);
+    mysqli_stmt_bind_param($stmt, $types, ...$params);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $map = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+      $parentId = (int) ($row['parent_id'] ?? 0);
+      if ($parentId < 1 || isset($map[$parentId])) {
+        continue;
+      }
+      $map[$parentId] = itm_hotel_booking_photo_public_url(
+        $companyId,
+        $scope,
+        $parentId,
+        (string) ($row['stored_filename'] ?? '')
+      );
+    }
+    mysqli_stmt_close($stmt);
+    return $map;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_photo_random_stored_filename')) {
+  function itm_hotel_booking_photo_random_stored_filename($ext, $absDir = '') {
+    $ext = strtolower((string) $ext);
+    if ($ext === 'jpeg') {
+      $ext = 'jpg';
+    }
+    if (!in_array($ext, ['jpg', 'png', 'gif', 'webp'], true)) {
+      return '';
+    }
+    $absDir = (string) $absDir;
+    for ($attempt = 0; $attempt < 20; $attempt++) {
+      $stored = 'hb_' . bin2hex(random_bytes(16)) . '.' . $ext;
+      if ($absDir === '' || !is_file($absDir . DIRECTORY_SEPARATOR . $stored)) {
+        return $stored;
+      }
+    }
+    return 'hb_' . bin2hex(random_bytes(16)) . '.' . $ext;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_photo_urls_map_for_parents')) {
+  function itm_hotel_booking_photo_urls_map_for_parents($conn, $companyId, $parentTable, array $parentIds) {
+    $cfg = itm_hotel_booking_photos_config_for_parent_table($parentTable);
+    if (!$cfg) {
+      return [];
+    }
+    $companyId = (int) $companyId;
+    $parentIds = array_values(array_unique(array_filter(array_map('intval', $parentIds), static function ($id) {
+      return $id > 0;
+    })));
+    if ($companyId < 1 || empty($parentIds)) {
+      return [];
+    }
+    $photoTable = $cfg['photo_table'];
+    $parentColumn = $cfg['parent_column'];
+    $scope = $cfg['scope'];
+    $placeholders = implode(',', array_fill(0, count($parentIds), '?'));
+    $sql = 'SELECT `' . str_replace('`', '``', $parentColumn) . '` AS parent_id, stored_filename'
+      . ' FROM `' . str_replace('`', '``', $photoTable) . '`'
+      . ' WHERE company_id = ? AND `' . str_replace('`', '``', $parentColumn) . '` IN (' . $placeholders . ')'
+      . ' AND deleted_at IS NULL'
+      . ' ORDER BY is_cover DESC, sort_order ASC, id ASC';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return [];
+    }
+    $types = 'i' . str_repeat('i', count($parentIds));
+    $params = array_merge([$companyId], $parentIds);
+    mysqli_stmt_bind_param($stmt, $types, ...$params);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $map = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+      $parentId = (int) ($row['parent_id'] ?? 0);
+      if ($parentId < 1) {
+        continue;
+      }
+      $url = itm_hotel_booking_photo_public_url(
+        $companyId,
+        $scope,
+        $parentId,
+        (string) ($row['stored_filename'] ?? '')
+      );
+      if ($url === '') {
+        continue;
+      }
+      if (!isset($map[$parentId])) {
+        $map[$parentId] = [];
+      }
+      $map[$parentId][] = $url;
+    }
+    mysqli_stmt_close($stmt);
+    return $map;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_render_photo_thumbnail_link')) {
+  function itm_hotel_booking_render_photo_thumbnail_link($publicUrl, $alt = '', $thumbSize = 60) {
+    $publicUrl = trim((string) $publicUrl);
+    if ($publicUrl === '') {
+      return '<span style="opacity:.45;">—</span>';
+    }
+    $thumbSize = max(32, (int) $thumbSize);
+    $urlEsc = htmlspecialchars($publicUrl, ENT_QUOTES, 'UTF-8');
+    $altEsc = htmlspecialchars((string) $alt, ENT_QUOTES, 'UTF-8');
+    return '<a href="' . $urlEsc . '" target="_blank" rel="noopener noreferrer" title="Open full size">'
+      . '<img src="' . $urlEsc . '" alt="' . $altEsc . '" loading="lazy"'
+      . ' style="width:' . $thumbSize . 'px;height:' . $thumbSize . 'px;object-fit:cover;border-radius:4px;display:block;background:#1e1e1e;">'
+      . '</a>';
+  }
+}
+
 if (!function_exists('itm_hotel_booking_photos_handle_upload')) {
   function itm_hotel_booking_photos_handle_upload($conn, $companyId, $parentTable, $parentId) {
     $cfg = itm_hotel_booking_photos_config_for_parent_table($parentTable);
@@ -132,10 +293,19 @@ if (!function_exists('itm_hotel_booking_photos_handle_upload')) {
       require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
     }
     itm_ensure_upload_directory($absDir, 'upload');
+    $existingPhotos = itm_hotel_booking_photos_for_parent_table($conn, $companyId, $parentTable, $parentId);
+    $parentHasCover = false;
+    $sort = 0;
+    foreach ($existingPhotos as $existingRow) {
+      if (!empty($existingRow['is_cover'])) {
+        $parentHasCover = true;
+      }
+      $sort = max($sort, (int) ($existingRow['sort_order'] ?? 0) + 1);
+    }
+    $batchCoverAssigned = false;
     $names = $_FILES['hb_photos']['name'];
     $tmp = $_FILES['hb_photos']['tmp_name'];
     $errs = $_FILES['hb_photos']['error'];
-    $sort = 0;
     $count = count($names);
     for ($i = 0; $i < $count; $i++) {
       if ((int) ($errs[$i] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
@@ -149,12 +319,18 @@ if (!function_exists('itm_hotel_booking_photos_handle_upload')) {
       if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
         continue;
       }
-      $stored = 'hb_' . bin2hex(random_bytes(8)) . '.' . $ext;
+      $stored = itm_hotel_booking_photo_random_stored_filename($ext, $absDir);
+      if ($stored === '') {
+        continue;
+      }
       $dest = $absDir . DIRECTORY_SEPARATOR . $stored;
       if (!move_uploaded_file($tmp[$i], $dest)) {
         continue;
       }
-      $isCover = ($sort === 0) ? 1 : 0;
+      $isCover = (!$parentHasCover && !$batchCoverAssigned) ? 1 : 0;
+      if ($isCover) {
+        $batchCoverAssigned = true;
+      }
       $sql = 'INSERT INTO `' . str_replace('`', '``', $photoTable) . '` (company_id, `' . str_replace('`', '``', $parentColumn) . '`, stored_filename, original_filename, sort_order, is_cover, active, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, NOW())';
       $stmt = mysqli_prepare($conn, $sql);
       if ($stmt) {
