@@ -51,13 +51,13 @@ if ($upgradeOffer) {
         $upgradeRoomId = (int) $upgradeRoom['id'];
         $photos = itm_hotel_booking_photos_load($conn, $company_id, 'hotel_booking_room_photos', 'room_id', $upgradeRoomId);
         if (!empty($photos[0]['stored_filename'])) {
-            $upgradeImageUrl = itm_hotel_booking_photo_public_url($company_id, 'room', $upgradeRoomId, $photos[0]['stored_filename']);
+            $upgradeImageUrl = itm_hotel_booking_photo_public_url_for_room($conn, $company_id, $upgradeRoomId, $photos[0]['stored_filename']);
         }
     }
     if ($upgradeImageUrl === APPURL . '/images/room-5.jpg' && $targetTypeId > 0) {
         $tphotos = itm_hotel_booking_photos_load($conn, $company_id, 'booking_rooms_type_photos', 'room_type_id', $targetTypeId);
         if (!empty($tphotos[0]['stored_filename'])) {
-            $upgradeImageUrl = itm_hotel_booking_photo_public_url($company_id, 'room_type', $targetTypeId, $tphotos[0]['stored_filename']);
+            $upgradeImageUrl = itm_hotel_booking_photo_public_url($hotelId, 'room_types_photos', $tphotos[0]['stored_filename']);
         }
     }
 }

@@ -115,7 +115,7 @@ foreach ($rooms as $room) {
     if (!isset($cards[$typeKey])) {
         $code = strtoupper((string) ($room['type_code'] ?? ''));
         $fallbackImg = APPURL . ($typeDefaultImages[$code] ?? '/images/room-5.jpg');
-        $photoUrls = hb_portal_room_type_photo_urls($conn, $company_id, $typeKey, $roomId, $fallbackImg);
+        $photoUrls = hb_portal_room_type_photo_urls($conn, $company_id, $hotelId, $typeKey, $fallbackImg);
         $imgUrl = $photoUrls[0] ?? $fallbackImg;
         $bullets = [];
         $rawBullets = (string) ($room['details_bullets'] ?? '');

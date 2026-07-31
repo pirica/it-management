@@ -74,7 +74,7 @@ sequenceDiagram
 | `hotel-booking-confirmation-pdf.js` | Confirmation PDF (html2canvas + jsPDF) |
 | `hotel-booking-change-booking.js` | Manage booking — hotel contacts modal |
 
-Hotel and room photos are stored under app root `images/hotel_booking/{company_id}/…` (ITM upload helpers). The public portal renders them as `APPURL/images/hotel_booking/…` (`booking/.htaccess` rewrites to storage). Static amenity SVGs remain under `booking/images/amenities/` only.
+Hotel photos are managed in **Hotels** (`modules/hotel_booking_hotels/`). **Room gallery images are managed per room type** in **Room Types** (`modules/booking_rooms_types/`). Files live under `booking/images/{hotel_id}/hotel_photos/` and `booking/images/{hotel_id}/room_types_photos/`; the portal serves them as `APPURL/images/{hotel_id}/…`. Static amenity SVGs remain under `booking/images/amenities/` only.
 
 ---
 
@@ -250,7 +250,11 @@ booking/
 ├── includes/       # portal_chrome, portal_checkout, portal_room_detail
 ├── css/hotel-booking-modern.css
 ├── js/hotel-booking-*.js
-└── images/amenities/*.svg
+├── images/
+│   ├── amenities/*.svg
+│   └── {hotel_id}/
+│       ├── hotel_photos/       # Hotels admin uploads
+│       └── room_types_photos/  # Room Types admin uploads (portal room cards)
 
 includes/itm_hotel_booking.php
 modules/hotel_bookings/

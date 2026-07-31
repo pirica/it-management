@@ -495,13 +495,10 @@ if (!is_file($hotelsIndex)) {
         hb_fail('hotel booking photo public URLs must use APPURL under public portal');
     } elseif (strpos($helperSource, 'itm_hotel_booking_photo_is_servable') === false) {
         hb_fail('hotel booking photos must skip missing or invalid files on disk');
-    } elseif (!is_file($repoRoot . '/booking/.htaccess')
-        || strpos((string) file_get_contents($repoRoot . '/booking/.htaccess'), 'images/hotel_booking') === false) {
-        hb_fail('booking/.htaccess must rewrite portal images/hotel_booking to app storage');
-    } elseif (strpos((string) file_get_contents($repoRoot . '/db/02_data.sql'), 'hb_seed_01.jpg') === false) {
-        hb_fail('db/02_data.sql must seed hotel_booking_hotel_photos sample rows');
-    } elseif (!is_file($repoRoot . '/images/hotel_booking/1/hotel/1/hb_seed_01.jpg')) {
-        hb_fail('images/hotel_booking/1/hotel/1/hb_seed_01.jpg sample file missing');
+    } elseif (strpos($helperSource, 'booking/images/') === false || strpos($helperSource, 'hotel_photos') === false || strpos($helperSource, 'room_types_photos') === false) {
+        hb_fail('hotel booking photos must use booking/images/{hotel_id}/hotel_photos and room_types_photos');
+    } elseif (!is_file($repoRoot . '/booking/images/1/hotel_photos/hb_seed_01.jpg')) {
+        hb_fail('booking/images/1/hotel_photos/hb_seed_01.jpg sample file missing');
     } elseif (strpos((string) file_get_contents($repoRoot . '/booking/index.php'), 'hb-hotel-card-gallery') === false) {
         hb_fail('booking index must render hotel card gallery with arrows and counter');
     } elseif (strpos((string) file_get_contents($repoRoot . '/booking/rooms.php'), 'hb-room-card-gallery') === false) {
@@ -528,6 +525,26 @@ if (!is_file($bookingGalleryJs)) {
         hb_fail('booking gallery CSS must style arrows and counter');
     } else {
         hb_pass('booking portal photo gallery arrows and counter');
+    }
+}
+
+$roomTypesIndex = $repoRoot . '/modules/booking_rooms_types/index.php';
+if (!is_file($roomTypesIndex)) {
+    hb_fail('booking_rooms_types index.php missing');
+} else {
+    $roomTypesIndexSource = (string) file_get_contents($roomTypesIndex);
+    if (strpos($roomTypesIndexSource, 'itm_hotel_booking_render_photo_thumbnail_link') === false) {
+        hb_fail('booking_rooms_types index must render photo thumbnails');
+    } elseif (strpos($roomTypesIndexSource, 'name="record_id"') === false) {
+        hb_fail('booking_rooms_types edit form must POST record_id for photo uploads');
+    } elseif (strpos($roomTypesIndexSource, 'Current photos') === false) {
+        hb_fail('booking_rooms_types edit form must preview current photos');
+    } elseif (strpos((string) file_get_contents($repoRoot . '/db/02_data.sql'), 'hb_rt_std_01.jpg') === false) {
+        hb_fail('db/02_data.sql must seed booking_rooms_type_photos sample rows');
+    } elseif (!is_file($repoRoot . '/booking/images/1/room_types_photos/hb_rt_std_01.jpg')) {
+        hb_fail('booking/images/1/room_types_photos/hb_rt_std_01.jpg sample file missing');
+    } else {
+        hb_pass('booking_rooms_types list/edit photo thumbnail markup');
     }
 }
 

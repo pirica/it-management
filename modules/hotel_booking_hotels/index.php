@@ -1218,9 +1218,8 @@ if (!isset($crud_title)) {
                             <?php foreach ($editParentPhotos as $hbPhotoRow): ?>
                                 <?php
                                 $hbThumbUrl = itm_hotel_booking_photo_public_url(
-                                    (int) $company_id,
-                                    (string) $hbPhotoCfg['scope'],
                                     (int) $editId,
+                                    'hotel_photos',
                                     (string) ($hbPhotoRow['stored_filename'] ?? '')
                                 );
                                 $hbThumbAlt = (string) ($hbPhotoRow['original_filename'] ?? 'Hotel photo');

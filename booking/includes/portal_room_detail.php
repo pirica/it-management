@@ -8,39 +8,19 @@ if (!function_exists('hb_portal_render_amenities_scroll')) {
 }
 
 if (!function_exists('hb_portal_room_type_photo_urls')) {
-    function hb_portal_room_type_photo_urls($conn, $companyId, $typeId, $roomId, $fallbackUrl = '') {
+    function hb_portal_room_type_photo_urls($conn, $companyId, $hotelId, $typeId, $fallbackUrl = '') {
         $companyId = (int) $companyId;
+        $hotelId = (int) $hotelId;
         $typeId = (int) $typeId;
-        $roomId = (int) $roomId;
-        $urls = [];
-
-        $tphotos = itm_hotel_booking_photos_load($conn, $companyId, 'booking_rooms_type_photos', 'room_type_id', $typeId);
-        foreach ($tphotos as $photo) {
-            $stored = (string) ($photo['stored_filename'] ?? '');
-            if ($stored !== '') {
-                $urls[] = itm_hotel_booking_photo_public_url($companyId, 'room_type', $typeId, $stored);
-            }
-        }
-
-        if ($roomId > 0) {
-            $photos = itm_hotel_booking_photos_load($conn, $companyId, 'hotel_booking_room_photos', 'room_id', $roomId);
-            foreach ($photos as $photo) {
-                $stored = (string) ($photo['stored_filename'] ?? '');
-                if ($stored === '') {
-                    continue;
-                }
-                $url = itm_hotel_booking_photo_public_url($companyId, 'room', $roomId, $stored);
-                if ($url !== '' && !in_array($url, $urls, true)) {
-                    $urls[] = $url;
-                }
-            }
-        }
-
+        $urls = itm_hotel_booking_portal_photo_urls_from_rows(
+            $hotelId,
+            'room_type',
+            itm_hotel_booking_photos_load($conn, $companyId, 'booking_rooms_type_photos', 'room_type_id', $typeId)
+        );
         $fallbackUrl = trim((string) $fallbackUrl);
         if (empty($urls) && $fallbackUrl !== '') {
             $urls[] = $fallbackUrl;
         }
-
         return array_values($urls);
     }
 }
@@ -178,7 +158,7 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
         }
 
         $roomId = (int) ($sampleRoom['id'] ?? 0);
-        $photoUrls = hb_portal_room_type_photo_urls($conn, $companyId, $typeId, $roomId, $fallbackImg);
+        $photoUrls = hb_portal_room_type_photo_urls($conn, $companyId, $hotelId, $typeId, $fallbackImg);
         $imgUrl = $photoUrls[0] ?? $fallbackImg;
         if ($imageUrlOverride !== '') {
             $imgUrl = $imageUrlOverride;

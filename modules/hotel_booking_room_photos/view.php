@@ -31,7 +31,7 @@ if (!$data) {
     exit;
 }
 
-$photoUrl = itm_hotel_booking_photo_public_url($company_id, 'room', $data['room_id'], $data['stored_filename']);
+$photoUrl = itm_hotel_booking_photo_public_url_for_room($conn, $company_id, (int) $data['room_id'], $data['stored_filename']);
 
 $roomLabel = '';
 $roomQuery = mysqli_query($conn, 'SELECT room_number, name FROM hotel_booking_rooms WHERE id = ' . (int)$data['room_id'] . ' LIMIT 1');

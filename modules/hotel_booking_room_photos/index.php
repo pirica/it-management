@@ -474,7 +474,7 @@ $newButtonPosition = itm_resolve_new_button_position($ui_config);
                 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; margin-bottom: 20px;">
                     <?php if (!empty($rowList)): foreach ($rowList as $row): ?>
                         <?php
-                        $photoUrl = itm_hotel_booking_photo_public_url($company_id, 'room', $row['room_id'], $row['stored_filename']);
+                        $photoUrl = itm_hotel_booking_photo_public_url_for_room($conn, $company_id, (int) $row['room_id'], $row['stored_filename']);
                         $roomLabel = $roomLabelMap[(int)($row['room_id'] ?? 0)] ?? '';
                         ?>
                         <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 12px; height: 100%;">
@@ -531,7 +531,7 @@ $newButtonPosition = itm_resolve_new_button_position($ui_config);
                         <tbody>
                         <?php if (!empty($rowList)): foreach ($rowList as $row): ?>
                             <?php
-                            $photoUrl = itm_hotel_booking_photo_public_url($company_id, 'room', $row['room_id'], $row['stored_filename']);
+                            $photoUrl = itm_hotel_booking_photo_public_url_for_room($conn, $company_id, (int) $row['room_id'], $row['stored_filename']);
                             ?>
                             <tr>
                                 <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>

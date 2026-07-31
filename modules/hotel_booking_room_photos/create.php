@@ -44,14 +44,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $tmpNames = $_FILES['photo_files']['tmp_name'];
         $errs = $_FILES['photo_files']['error'];
 
-        $scope = 'room';
-        $relDir = itm_hotel_booking_photo_storage_dir($company_id, $scope, $roomId);
-        $absDir = rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relDir);
-
+        $absDirs = itm_hotel_booking_photo_storage_abs_dirs_for_scope($conn, (int) $company_id, 'room', $roomId);
+        if (empty($absDirs)) {
+            $errors[] = 'Could not resolve the hotel folder for this room.';
+        } else {
         if (!function_exists('itm_ensure_upload_directory')) {
             require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
         }
-        itm_ensure_upload_directory($absDir, 'upload');
+        if (!itm_ensure_upload_directory($absDirs[0], 'upload')) {
+            $errors[] = 'Could not create the photo upload folder on disk.';
+        } else {
+        $absDir = $absDirs[0];
 
         $insertedCount = 0;
         $count = count($names);
@@ -106,6 +109,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['crud_success'] = "Successfully uploaded {$insertedCount} photo(s).";
             header('Location: ' . $listUrl);
             exit;
+        }
+        }
         }
     }
 }

@@ -52,29 +52,148 @@ if (!function_exists('itm_hotel_booking_status_id_by_name')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_photo_folder_for_scope')) {
+  function itm_hotel_booking_photo_folder_for_scope($scope) {
+    $map = [
+      'hotel' => 'hotel_photos',
+      'room_type' => 'room_types_photos',
+      'room' => 'room_photos',
+    ];
+    $scope = preg_replace('/[^a-z_]/', '', (string) $scope);
+    return $map[$scope] ?? '';
+  }
+}
+
 if (!function_exists('itm_hotel_booking_photo_storage_dir')) {
-  function itm_hotel_booking_photo_storage_dir($companyId, $scope, $parentId) {
+  function itm_hotel_booking_photo_storage_dir($hotelId, $folderName) {
+    $hotelId = (int) $hotelId;
+    $folderName = preg_replace('/[^a-z_]/', '', (string) $folderName);
+    if ($hotelId < 1 || $folderName === '') {
+      return '';
+    }
+    return 'booking/images/' . $hotelId . '/' . $folderName;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_company_hotel_ids')) {
+  function itm_hotel_booking_company_hotel_ids($conn, $companyId) {
+    $companyId = (int) $companyId;
+    if ($companyId < 1) {
+      return [];
+    }
+    $ids = [];
+    $stmt = mysqli_prepare($conn, 'SELECT id FROM hotel_booking_hotels WHERE company_id = ? AND deleted_at IS NULL ORDER BY id ASC');
+    if (!$stmt) {
+      return [];
+    }
+    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+      $ids[] = (int) ($row['id'] ?? 0);
+    }
+    mysqli_stmt_close($stmt);
+    return array_values(array_filter($ids, static function ($id) {
+      return $id > 0;
+    }));
+  }
+}
+
+if (!function_exists('itm_hotel_booking_photo_default_hotel_id')) {
+  function itm_hotel_booking_photo_default_hotel_id($conn, $companyId) {
+    $ids = itm_hotel_booking_company_hotel_ids($conn, $companyId);
+    return $ids[0] ?? 0;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_room_hotel_id')) {
+  function itm_hotel_booking_room_hotel_id($conn, $companyId, $roomId) {
+    $companyId = (int) $companyId;
+    $roomId = (int) $roomId;
+    if ($companyId < 1 || $roomId < 1) {
+      return 0;
+    }
+    $stmt = mysqli_prepare($conn, 'SELECT hotel_id FROM hotel_booking_rooms WHERE company_id = ? AND id = ? AND deleted_at IS NULL LIMIT 1');
+    if (!$stmt) {
+      return 0;
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $roomId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    return (int) ($row['hotel_id'] ?? 0);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_photo_resolve_hotel_id')) {
+  function itm_hotel_booking_photo_resolve_hotel_id($conn, $companyId, $scope, $parentId) {
+    $scope = preg_replace('/[^a-z_]/', '', (string) $scope);
+    $parentId = (int) $parentId;
+    if ($scope === 'hotel') {
+      return $parentId;
+    }
+    if ($scope === 'room') {
+      return itm_hotel_booking_room_hotel_id($conn, (int) $companyId, $parentId);
+    }
+    if ($scope === 'room_type') {
+      return itm_hotel_booking_photo_default_hotel_id($conn, (int) $companyId);
+    }
+    return 0;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_photo_storage_abs_dirs_for_scope')) {
+  function itm_hotel_booking_photo_storage_abs_dirs_for_scope($conn, $companyId, $scope, $parentId) {
+    $folder = itm_hotel_booking_photo_folder_for_scope($scope);
+    if ($folder === '') {
+      return [];
+    }
     $companyId = (int) $companyId;
     $parentId = (int) $parentId;
-    $scope = preg_replace('/[^a-z_]/', '', (string) $scope);
-    return 'images/hotel_booking/' . $companyId . '/' . $scope . '/' . $parentId;
+    $hotelIds = [];
+    if ($scope === 'hotel') {
+      if ($parentId > 0) {
+        $hotelIds = [$parentId];
+      }
+    } elseif ($scope === 'room_type') {
+      $hotelIds = itm_hotel_booking_company_hotel_ids($conn, $companyId);
+    } elseif ($scope === 'room') {
+      $hotelId = itm_hotel_booking_room_hotel_id($conn, $companyId, $parentId);
+      if ($hotelId > 0) {
+        $hotelIds = [$hotelId];
+      }
+    }
+    $dirs = [];
+    $root = rtrim(ROOT_PATH, '/\\');
+    foreach ($hotelIds as $hotelId) {
+      $rel = itm_hotel_booking_photo_storage_dir($hotelId, $folder);
+      if ($rel === '') {
+        continue;
+      }
+      $dirs[] = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rel);
+    }
+    return $dirs;
   }
 }
 
 if (!function_exists('itm_hotel_booking_photo_abs_path')) {
-  function itm_hotel_booking_photo_abs_path($companyId, $scope, $parentId, $storedFilename) {
+  function itm_hotel_booking_photo_abs_path($hotelId, $folderName, $storedFilename) {
     $storedFilename = basename((string) $storedFilename);
     if ($storedFilename === '') {
       return '';
     }
-    $rel = itm_hotel_booking_photo_storage_dir($companyId, $scope, $parentId) . '/' . $storedFilename;
-    return rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rel);
+    $rel = itm_hotel_booking_photo_storage_dir($hotelId, $folderName);
+    if ($rel === '') {
+      return '';
+    }
+    return rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rel . '/' . $storedFilename);
   }
 }
 
 if (!function_exists('itm_hotel_booking_photo_is_servable')) {
-  function itm_hotel_booking_photo_is_servable($companyId, $scope, $parentId, $storedFilename) {
-    $abs = itm_hotel_booking_photo_abs_path($companyId, $scope, $parentId, $storedFilename);
+  function itm_hotel_booking_photo_is_servable($hotelId, $folderName, $storedFilename) {
+    $abs = itm_hotel_booking_photo_abs_path($hotelId, $folderName, $storedFilename);
     if ($abs === '' || !is_file($abs)) {
       return false;
     }
@@ -99,14 +218,19 @@ if (!function_exists('itm_hotel_booking_portal_default_image_url')) {
 }
 
 if (!function_exists('itm_hotel_booking_portal_photo_urls_from_rows')) {
-  function itm_hotel_booking_portal_photo_urls_from_rows($companyId, $scope, $parentId, array $photoRows) {
+  function itm_hotel_booking_portal_photo_urls_from_rows($hotelId, $scope, array $photoRows) {
+    $hotelId = (int) $hotelId;
+    $folder = itm_hotel_booking_photo_folder_for_scope($scope);
+    if ($hotelId < 1 || $folder === '') {
+      return [];
+    }
     $urls = [];
     foreach ($photoRows as $photo) {
       $storedFilename = (string) ($photo['stored_filename'] ?? '');
-      if (!itm_hotel_booking_photo_is_servable($companyId, $scope, $parentId, $storedFilename)) {
+      if (!itm_hotel_booking_photo_is_servable($hotelId, $folder, $storedFilename)) {
         continue;
       }
-      $urls[] = itm_hotel_booking_photo_public_url($companyId, $scope, $parentId, $storedFilename);
+      $urls[] = itm_hotel_booking_photo_public_url($hotelId, $folder, $storedFilename);
     }
     return $urls;
   }
@@ -117,7 +241,7 @@ if (!function_exists('itm_hotel_booking_portal_hotel_photo_urls')) {
     $companyId = (int) $companyId;
     $hotelId = (int) $hotelId;
     $rows = itm_hotel_booking_photos_load($conn, $companyId, 'hotel_booking_hotel_photos', 'hotel_id', $hotelId);
-    $urls = itm_hotel_booking_portal_photo_urls_from_rows($companyId, 'hotel', $hotelId, $rows);
+    $urls = itm_hotel_booking_portal_photo_urls_from_rows($hotelId, 'hotel', $rows);
     if (empty($urls)) {
       $urls[] = itm_hotel_booking_portal_default_image_url('image_2.jpg');
     }
@@ -126,25 +250,17 @@ if (!function_exists('itm_hotel_booking_portal_hotel_photo_urls')) {
 }
 
 if (!function_exists('itm_hotel_booking_portal_room_type_photo_urls')) {
-  function itm_hotel_booking_portal_room_type_photo_urls($conn, $companyId, $roomId, $typeId, $typeCode, array $typeDefaultImages = []) {
+  function itm_hotel_booking_portal_room_type_photo_urls($conn, $companyId, $hotelId, $typeId, $typeCode, array $typeDefaultImages = []) {
     $companyId = (int) $companyId;
-    $roomId = (int) $roomId;
+    $hotelId = (int) $hotelId;
     $typeId = (int) $typeId;
     $typeCode = strtoupper((string) $typeCode);
+    // Why: Portal room cards show photos from the shared room type — not per physical room.
     $urls = itm_hotel_booking_portal_photo_urls_from_rows(
-      $companyId,
-      'room',
-      $roomId,
-      itm_hotel_booking_photos_load($conn, $companyId, 'hotel_booking_room_photos', 'room_id', $roomId)
+      $hotelId,
+      'room_type',
+      itm_hotel_booking_photos_load($conn, $companyId, 'booking_rooms_type_photos', 'room_type_id', $typeId)
     );
-    if (empty($urls) && $typeId > 0) {
-      $urls = itm_hotel_booking_portal_photo_urls_from_rows(
-        $companyId,
-        'room_type',
-        $typeId,
-        itm_hotel_booking_photos_load($conn, $companyId, 'booking_rooms_type_photos', 'room_type_id', $typeId)
-      );
-    }
     if (empty($urls)) {
       $fallback = $typeDefaultImages[$typeCode] ?? '/images/room-5.jpg';
       $urls[] = (defined('APPURL') ? rtrim((string) APPURL, '/') . '/' : '') . ltrim((string) $fallback, '/');
@@ -154,22 +270,37 @@ if (!function_exists('itm_hotel_booking_portal_room_type_photo_urls')) {
 }
 
 if (!function_exists('itm_hotel_booking_photo_public_url')) {
-  function itm_hotel_booking_photo_public_url($companyId, $scope, $parentId, $storedFilename) {
+  function itm_hotel_booking_photo_public_url($hotelId, $folderName, $storedFilename) {
+    $hotelId = (int) $hotelId;
     $storedFilename = basename((string) $storedFilename);
-    if ($storedFilename === '') {
+    $folderName = preg_replace('/[^a-z_]/', '', (string) $folderName);
+    if ($storedFilename === '' || $hotelId < 1 || $folderName === '') {
       return '';
     }
-    $rel = itm_hotel_booking_photo_storage_dir($companyId, $scope, $parentId) . '/' . $storedFilename;
-    $rel = ltrim(str_replace('\\', '/', $rel), '/');
-    // Why: guest portal pages live under /booking/ — photo src must match APPURL + /images/hotel_booking/…
+    $rel = itm_hotel_booking_photo_storage_dir($hotelId, $folderName);
+    if ($rel === '') {
+      return '';
+    }
+    $portalRel = 'images/' . $hotelId . '/' . $folderName . '/' . $storedFilename;
+    // Why: guest portal pages live under /booking/ — photo src is APPURL + images/{hotel_id}/…
     if (defined('ITM_HOTEL_BOOKING_PUBLIC_PORTAL') && ITM_HOTEL_BOOKING_PUBLIC_PORTAL && defined('APPURL')) {
-      return rtrim((string) APPURL, '/') . '/' . $rel;
+      return rtrim((string) APPURL, '/') . '/' . $portalRel;
     }
     if (!function_exists('itm_app_root_public_path_prefix')) {
       require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
     }
     $prefix = itm_app_root_public_path_prefix();
-    return ($prefix !== '' ? rtrim($prefix, '/') : '') . '/' . $rel;
+    return ($prefix !== '' ? rtrim($prefix, '/') : '') . '/' . $rel . '/' . $storedFilename;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_photo_public_url_for_room')) {
+  function itm_hotel_booking_photo_public_url_for_room($conn, $companyId, $roomId, $storedFilename) {
+    $hotelId = itm_hotel_booking_room_hotel_id($conn, (int) $companyId, (int) $roomId);
+    if ($hotelId < 1) {
+      return '';
+    }
+    return itm_hotel_booking_photo_public_url($hotelId, 'room_photos', $storedFilename);
   }
 }
 
@@ -249,6 +380,7 @@ if (!function_exists('itm_hotel_booking_photo_cover_url_map_for_parents')) {
     $photoTable = $cfg['photo_table'];
     $parentColumn = $cfg['parent_column'];
     $scope = $cfg['scope'];
+    $folder = itm_hotel_booking_photo_folder_for_scope($scope);
     $placeholders = implode(',', array_fill(0, count($parentIds), '?'));
     $sql = 'SELECT `' . str_replace('`', '``', $parentColumn) . '` AS parent_id, stored_filename'
       . ' FROM `' . str_replace('`', '``', $photoTable) . '`'
@@ -270,10 +402,13 @@ if (!function_exists('itm_hotel_booking_photo_cover_url_map_for_parents')) {
       if ($parentId < 1 || isset($map[$parentId])) {
         continue;
       }
+      $hotelId = itm_hotel_booking_photo_resolve_hotel_id($conn, $companyId, $scope, $parentId);
+      if ($hotelId < 1) {
+        continue;
+      }
       $map[$parentId] = itm_hotel_booking_photo_public_url(
-        $companyId,
-        $scope,
-        $parentId,
+        $hotelId,
+        $folder,
         (string) ($row['stored_filename'] ?? '')
       );
     }
@@ -318,6 +453,7 @@ if (!function_exists('itm_hotel_booking_photo_urls_map_for_parents')) {
     $photoTable = $cfg['photo_table'];
     $parentColumn = $cfg['parent_column'];
     $scope = $cfg['scope'];
+    $folder = itm_hotel_booking_photo_folder_for_scope($scope);
     $placeholders = implode(',', array_fill(0, count($parentIds), '?'));
     $sql = 'SELECT `' . str_replace('`', '``', $parentColumn) . '` AS parent_id, stored_filename'
       . ' FROM `' . str_replace('`', '``', $photoTable) . '`'
@@ -339,10 +475,13 @@ if (!function_exists('itm_hotel_booking_photo_urls_map_for_parents')) {
       if ($parentId < 1) {
         continue;
       }
+      $hotelId = itm_hotel_booking_photo_resolve_hotel_id($conn, $companyId, $scope, $parentId);
+      if ($hotelId < 1) {
+        continue;
+      }
       $url = itm_hotel_booking_photo_public_url(
-        $companyId,
-        $scope,
-        $parentId,
+        $hotelId,
+        $folder,
         (string) ($row['stored_filename'] ?? '')
       );
       if ($url === '') {
@@ -410,15 +549,21 @@ if (!function_exists('itm_hotel_booking_photos_handle_upload')) {
     $scope = $cfg['scope'];
     $photoTable = $cfg['photo_table'];
     $parentColumn = $cfg['parent_column'];
-    $relDir = itm_hotel_booking_photo_storage_dir($companyId, $scope, $parentId);
-    $absDir = rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relDir);
+    $absDirs = itm_hotel_booking_photo_storage_abs_dirs_for_scope($conn, $companyId, $scope, $parentId);
+    if (empty($absDirs)) {
+      $uploadErrors[] = 'Photo upload requires at least one hotel folder for this company.';
+      return 0;
+    }
     if (!function_exists('itm_ensure_upload_directory')) {
       require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
     }
-    if (!itm_ensure_upload_directory($absDir, 'upload')) {
-      $uploadErrors[] = 'Could not create the photo upload folder on disk.';
-      return 0;
+    foreach ($absDirs as $absDir) {
+      if (!itm_ensure_upload_directory($absDir, 'upload')) {
+        $uploadErrors[] = 'Could not create the photo upload folder on disk.';
+        return 0;
+      }
     }
+    $primaryAbsDir = $absDirs[0];
     $existingPhotos = itm_hotel_booking_photos_for_parent_table($conn, $companyId, $parentTable, $parentId);
     $parentHasCover = false;
     $sort = 0;
@@ -463,15 +608,21 @@ if (!function_exists('itm_hotel_booking_photos_handle_upload')) {
         $uploadErrors[] = "File '{$orig}' must be JPG, PNG, GIF, or WEBP.";
         continue;
       }
-      $stored = itm_hotel_booking_photo_random_stored_filename($ext, $absDir);
+      $stored = itm_hotel_booking_photo_random_stored_filename($ext, $primaryAbsDir);
       if ($stored === '') {
         $uploadErrors[] = "Could not generate a stored name for '{$orig}'.";
         continue;
       }
-      $dest = $absDir . DIRECTORY_SEPARATOR . $stored;
+      $dest = $primaryAbsDir . DIRECTORY_SEPARATOR . $stored;
       if (!move_uploaded_file($tmp[$i], $dest)) {
         $uploadErrors[] = "Could not save '{$orig}' to disk.";
         continue;
+      }
+      for ($dirIndex = 1, $dirCount = count($absDirs); $dirIndex < $dirCount; $dirIndex++) {
+        $mirrorDest = $absDirs[$dirIndex] . DIRECTORY_SEPARATOR . $stored;
+        if (!is_file($mirrorDest)) {
+          @copy($dest, $mirrorDest);
+        }
       }
       $isCover = (!$parentHasCover && !$batchCoverAssigned) ? 1 : 0;
       if ($isCover) {
@@ -503,32 +654,34 @@ if (!function_exists('itm_hotel_booking_photos_handle_upload')) {
 }
 
 if (!function_exists('itm_hotel_booking_photo_unlink_stored_file')) {
-  function itm_hotel_booking_photo_unlink_stored_file($companyId, $scope, $parentId, $storedFilename) {
+  function itm_hotel_booking_photo_unlink_stored_file($conn, $companyId, $scope, $parentId, $storedFilename) {
     $storedFilename = basename((string) $storedFilename);
     if ($storedFilename === '') {
       return;
     }
-    $relDir = itm_hotel_booking_photo_storage_dir($companyId, $scope, $parentId);
-    $absDir = rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relDir);
-    $filePath = $absDir . DIRECTORY_SEPARATOR . $storedFilename;
-    if (is_file($filePath)) {
-      @unlink($filePath);
+    foreach (itm_hotel_booking_photo_storage_abs_dirs_for_scope($conn, (int) $companyId, $scope, (int) $parentId) as $absDir) {
+      $filePath = $absDir . DIRECTORY_SEPARATOR . $storedFilename;
+      if (is_file($filePath)) {
+        @unlink($filePath);
+      }
     }
   }
 }
 
 if (!function_exists('itm_hotel_booking_photo_delete_files_for_rows')) {
-  function itm_hotel_booking_photo_delete_files_for_rows($companyId, $scope, array $rows) {
+  function itm_hotel_booking_photo_delete_files_for_rows($conn, $companyId, $scope, array $rows) {
     $companyId = (int) $companyId;
     $scope = preg_replace('/[^a-z_]/', '', (string) $scope);
     foreach ($rows as $row) {
       if (!is_array($row)) {
         continue;
       }
+      $parentId = (int) ($row['room_id'] ?? $row['room_type_id'] ?? $row['hotel_id'] ?? 0);
       itm_hotel_booking_photo_unlink_stored_file(
+        $conn,
         $companyId,
         $scope,
-        (int) ($row['room_id'] ?? 0),
+        $parentId,
         (string) ($row['stored_filename'] ?? '')
       );
     }
@@ -617,7 +770,7 @@ if (!function_exists('itm_hotel_booking_room_photos_hard_delete')) {
       return false;
     }
     $rows = itm_hotel_booking_room_photos_fetch_rows_for_delete($conn, $companyId, $idList);
-    itm_hotel_booking_photo_delete_files_for_rows($companyId, 'room', $rows);
+    itm_hotel_booking_photo_delete_files_for_rows($conn, $companyId, 'room', $rows);
     if ($idList === null) {
       $stmt = mysqli_prepare($conn, 'DELETE FROM hotel_booking_room_photos WHERE company_id = ?');
       if (!$stmt) {

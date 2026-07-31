@@ -1,6 +1,1 @@
-# Why: hotel/room uploads live under ../images/hotel_booking/ but portal img src uses /booking/images/hotel_booking/…
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteBase /it-management/booking/
-    RewriteRule ^images/hotel_booking/(.*)$ /it-management/images/hotel_booking/$1 [L]
-</IfModule>
+# Hotel and room-type uploads are stored under booking/images/{hotel_id}/hotel_photos and room_types_photos (no rewrite).

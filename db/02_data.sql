@@ -2532,3 +2532,14 @@ INSERT INTO `hotel_booking_hotel_photos` (`company_id`, `hotel_id`, `stored_file
 (1, 1, 'hb_seed_02.jpg', 'hotel-sample-lobby.jpg', 1, 0, 1, '2026-01-01 00:00:01'),
 (1, 1, 'hb_seed_03.jpg', 'hotel-sample-room.jpg', 2, 0, 1, '2026-01-01 00:00:01'),
 (1, 1, 'hb_seed_04.jpg', 'hotel-sample-pool.jpg', 3, 0, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `booking_rooms_type_photos` (`company_id`, `room_type_id`, `stored_filename`, `original_filename`, `sort_order`, `is_cover`, `active`, `created_at`)
+SELECT 1, t.`id`, 'hb_rt_dlx_01.jpg', 'deluxe-room-1.jpg', 0, 1, 1, '2026-01-01 00:00:01' FROM `booking_rooms_types` t WHERE t.`company_id` = 1 AND t.`code` = 'DLX' AND t.`deleted_at` IS NULL LIMIT 1;
+INSERT INTO `booking_rooms_type_photos` (`company_id`, `room_type_id`, `stored_filename`, `original_filename`, `sort_order`, `is_cover`, `active`, `created_at`)
+SELECT 1, t.`id`, 'hb_rt_dlx_02.jpg', 'deluxe-room-2.jpg', 1, 0, 1, '2026-01-01 00:00:01' FROM `booking_rooms_types` t WHERE t.`company_id` = 1 AND t.`code` = 'DLX' AND t.`deleted_at` IS NULL LIMIT 1;
+INSERT INTO `booking_rooms_type_photos` (`company_id`, `room_type_id`, `stored_filename`, `original_filename`, `sort_order`, `is_cover`, `active`, `created_at`)
+SELECT 1, t.`id`, 'hb_rt_sup_01.jpg', 'superior-room-1.jpg', 0, 1, 1, '2026-01-01 00:00:01' FROM `booking_rooms_types` t WHERE t.`company_id` = 1 AND t.`code` = 'SUP' AND t.`deleted_at` IS NULL LIMIT 1;
+INSERT INTO `booking_rooms_type_photos` (`company_id`, `room_type_id`, `stored_filename`, `original_filename`, `sort_order`, `is_cover`, `active`, `created_at`)
+SELECT 1, t.`id`, 'hb_rt_std_01.jpg', 'standard-room-1.jpg', 0, 1, 1, '2026-01-01 00:00:01' FROM `booking_rooms_types` t WHERE t.`company_id` = 1 AND t.`code` = 'STD' AND t.`deleted_at` IS NULL LIMIT 1;
+INSERT INTO `booking_rooms_type_photos` (`company_id`, `room_type_id`, `stored_filename`, `original_filename`, `sort_order`, `is_cover`, `active`, `created_at`)
+SELECT 1, t.`id`, 'hb_rt_std_02.jpg', 'standard-room-2.jpg', 1, 0, 1, '2026-01-01 00:00:01' FROM `booking_rooms_types` t WHERE t.`company_id` = 1 AND t.`code` = 'STD' AND t.`deleted_at` IS NULL LIMIT 1;
