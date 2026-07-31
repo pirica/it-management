@@ -664,6 +664,12 @@ Module seed expansion in `db/02_data.sql` (repo write, no DB mutation): `php scr
 
 Central runner for the suite under `phpunit/tests/Unit/` using `phpunit/phpunit.phar` and `phpunit/phpunit.xml`. Catalog row: **`scripts/scripts.php`**.
 
+**EGPCS and .env Support (mandatory):** The runner executes the PHPUnit process with `-d variables_order=EGPCS` to ensure that environment settings from local `.env` files are correctly parsed and loaded. This prevents database connection failures in environments where the system-wide PHP configuration omits the `E` flag from `variables_order`.
+
+**CLI Argument Forwarding:** Additional command-line arguments (such as `--filter <pattern>` or single test files) are automatically forwarded to the underlying PHPUnit CLI binary, enabling targeted test executions directly through the runner script.
+
+**Scaffolding Cleanup:** Running the test suite may trigger auto-scaffolding (e.g., inside `CompanyModuleAccessDiscoveryTest` where `enable_auto_scaffolding` is enabled). To prevent untracked folder buildup, the runner automatically cleans up the `modules/` directory at the end of the test run using `git clean -fd modules/`.
+
 **PHP extensions (mandatory — every run):** PHPUnit 9 exits immediately unless the **CLI** `php.exe` subprocess loads **all** of:
 
 `dom`, `json`, `libxml`, `mbstring`, `tokenizer`, `xml`, `xmlwriter`
