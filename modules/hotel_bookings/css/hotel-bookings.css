@@ -33,4 +33,5 @@
 .hb-plan-maint-modal-head h2{margin:0;font-size:16px}
 .hb-plan-maint-modal-frame{border:0;width:100%;flex:1 1 auto;min-height:480px;background:var(--bg,#fff)}
 #hb-rate-plan-modal .hb-plan-maint-modal-frame{min-height:560px}
+#hb-rate-plan-modal{z-index:10050}
 body.hb-plan-maint-modal-open{overflow:hidden}

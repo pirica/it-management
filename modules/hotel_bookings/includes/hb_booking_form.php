@@ -264,7 +264,7 @@ if (!function_exists('hb_booking_render_form_fields')) {
         echo '<div class="form-group hb-booking-rate-plan-field"><label for="hb-booking-portal-rate-plan-id">Portal rate plan</label>';
         echo '<p class="text-muted" id="hb-booking-rate-plan-hint" style="margin:0 0 8px;font-size:0.9em;" hidden>Select a room to list rate plans for that hotel.</p>';
         echo '<div class="hb-booking-rate-plan-controls" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">';
-        echo '<select name="portal_rate_plan_id" id="hb-booking-portal-rate-plan-id" class="form-control" style="min-width:220px;flex:1 1 220px;">';
+        echo '<select name="portal_rate_plan_id" id="hb-booking-portal-rate-plan-id" class="form-control" data-hb-rate-plan-select="1" style="min-width:220px;flex:1 1 220px;">';
         echo '<option value="">-- Select --</option>';
         foreach ($options['portal_rate_plans'] as $plan) {
             $pid = (int) ($plan['id'] ?? 0);
@@ -344,5 +344,84 @@ if (!function_exists('hb_booking_render_rate_plan_modal')) {
         echo '</div>';
         echo '<iframe id="hb-rate-plan-modal-frame" class="hb-plan-maint-modal-frame" title="Portal rate plan" src="about:blank" data-base="' . sanitize($base) . '"></iframe>';
         echo '</div></div>';
+    }
+}
+
+if (!function_exists('hb_booking_end_form_page')) {
+    /**
+     * Close hospitality layout: portal rate plan modal at body level (outside .content overflow), then scripts.
+     *
+     * @param array<int, string> $extraScripts Optional override; default date picker + rate plan select JS.
+     */
+    function hb_booking_end_form_page(array $extraScripts = [])
+    {
+        if (!function_exists('itm_hospitality_admin_layout_end')) {
+            require_once ROOT_PATH . 'includes/itm_hospitality_admin_layout.php';
+        }
+        ob_start();
+        hb_booking_render_rate_plan_modal();
+        $modalHtml = ob_get_clean();
+        if ($extraScripts === []) {
+            $extraScripts = [
+                'js/hotel-bookings-date-picker.js',
+                BASE_URL . 'js/hotel-bookings-rate-plan-select.js',
+            ];
+        }
+        itm_hospitality_admin_layout_end($extraScripts, $modalHtml);
+    }
+}
+
+if (!function_exists('hb_booking_rate_plan_form_audit_failures')) {
+    /**
+     * Static regression checks for portal rate plan quick-add on create/edit forms.
+     *
+     * @return array<int, string>
+     */
+    function hb_booking_rate_plan_form_audit_failures($repoRoot = null)
+    {
+        $repoRoot = rtrim((string) ($repoRoot ?: (defined('ROOT_PATH') ? ROOT_PATH : dirname(__DIR__, 3))), '/\\');
+        $failures = [];
+
+        $formPath = $repoRoot . '/modules/hotel_bookings/includes/hb_booking_form.php';
+        $formSrc = is_file($formPath) ? (string) file_get_contents($formPath) : '';
+        if ($formSrc === '' || strpos($formSrc, 'value="__add_new__"') === false) {
+            $failures[] = 'hb_booking_form.php missing __add_new__ portal rate plan option';
+        }
+        if ($formSrc === '' || strpos($formSrc, 'hb_booking_end_form_page') === false) {
+            $failures[] = 'hb_booking_form.php missing hb_booking_end_form_page()';
+        }
+
+        foreach (['create.php', 'edit.php'] as $entryFile) {
+            $entryPath = $repoRoot . '/modules/hotel_bookings/' . $entryFile;
+            $entrySrc = is_file($entryPath) ? (string) file_get_contents($entryPath) : '';
+            if ($entrySrc === '' || strpos($entrySrc, 'hb_booking_end_form_page') === false) {
+                $failures[] = 'modules/hotel_bookings/' . $entryFile . ' must call hb_booking_end_form_page()';
+            }
+            if ($entrySrc !== '' && strpos($entrySrc, 'hb_booking_render_rate_plan_modal') !== false) {
+                $failures[] = 'modules/hotel_bookings/' . $entryFile . ' must not call hb_booking_render_rate_plan_modal() directly (use hb_booking_end_form_page)';
+            }
+        }
+
+        $jsPath = $repoRoot . '/js/hotel-bookings-rate-plan-select.js';
+        $jsSrc = is_file($jsPath) ? (string) file_get_contents($jsPath) : '';
+        if ($jsSrc === '' || strpos($jsSrc, '__add_new__') === false) {
+            $failures[] = 'js/hotel-bookings-rate-plan-select.js missing __add_new__ handler';
+        }
+        if ($jsSrc === '' || strpos($jsSrc, 'ensureModalOnBody') === false) {
+            $failures[] = 'js/hotel-bookings-rate-plan-select.js missing ensureModalOnBody';
+        }
+
+        $layoutPath = $repoRoot . '/includes/itm_hospitality_admin_layout.php';
+        $layoutSrc = is_file($layoutPath) ? (string) file_get_contents($layoutPath) : '';
+        if ($layoutSrc === '' || strpos($layoutSrc, '$htmlBeforeScripts') === false) {
+            $failures[] = 'includes/itm_hospitality_admin_layout.php missing htmlBeforeScripts on layout_end';
+        }
+
+        $ratePlanJsUrl = (defined('BASE_URL') ? BASE_URL : '') . 'js/hotel-bookings-rate-plan-select.js';
+        if ($ratePlanJsUrl !== '' && !is_file($repoRoot . '/js/hotel-bookings-rate-plan-select.js')) {
+            $failures[] = 'missing js/hotel-bookings-rate-plan-select.js at repo root';
+        }
+
+        return $failures;
     }
 }

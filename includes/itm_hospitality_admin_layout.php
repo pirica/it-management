@@ -85,10 +85,14 @@ if (!function_exists('itm_hospitality_render_list_create_and_hub')) {
 if (!function_exists('itm_hospitality_admin_layout_end')) {
     /**
      * @param array<int, string> $extraScripts Module-relative or absolute script src paths.
+     * @param string $htmlBeforeScripts Optional HTML emitted after layout wrappers close (e.g. body-level modals).
      */
-    function itm_hospitality_admin_layout_end(array $extraScripts = [])
+    function itm_hospitality_admin_layout_end(array $extraScripts = [], $htmlBeforeScripts = '')
     {
         echo '</div></div></div>';
+        if ($htmlBeforeScripts !== '') {
+            echo $htmlBeforeScripts;
+        }
         echo '<script src="' . sanitize(BASE_URL . 'js/theme.js') . '"></script>';
         foreach ($extraScripts as $src) {
             $src = trim((string) $src);

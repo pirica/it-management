@@ -1844,6 +1844,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for hospitality bundle: core hotel booking tables, <code>itm_hotel_booking_resolve_segment()</code>, company 1 <code>PENDING</code> future status seed, and subprocess render probe for all 13 Hospitality sidebar modules.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="Codebase">
+                    <td><a href="check_hotel_bookings_rate_plan_form.php" target="_blank" rel="nofollow noreferrer">check_hotel_bookings_rate_plan_form.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Static gate: <code>modules/hotel_bookings</code> portal rate plan <code>__add_new__</code> option, <code>hb_booking_end_form_page()</code> modal placement outside <code>.content</code>, and <code>js/hotel-bookings-rate-plan-select.js</code> quick-add handler.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_appointment.php" target="_blank" rel="nofollow noreferrer">verify_appointment.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

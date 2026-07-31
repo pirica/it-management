@@ -110,7 +110,4 @@ itm_hospitality_admin_layout_begin($crud_title, ['css/hotel-bookings.css']);
 <a href="view.php?id=<?php echo $id; ?>" class="btn" title="Back">🔙</a>
 </form>
 </div>
-<?php hb_booking_render_rate_plan_modal(); ?>
-<?php
-itm_hospitality_admin_layout_end(['js/hotel-bookings-date-picker.js', BASE_URL . 'js/hotel-bookings-rate-plan-select.js']);
-?>
+<?php hb_booking_end_form_page(); ?>
