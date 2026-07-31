@@ -22,10 +22,13 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, hotel filter), **F
 
 ## 5. Planning grid
 
+- Sticky columns **Room | HSK | Type** stay fixed while horizontal scroll moves date columns only; **⬅️** / **➡️** shift the anchor by the current **Days** window (filters and sort preserved).
+- Sortable headers: `plan_sort` = `room` | `hk` | `type`, `plan_dir` = `asc` | `desc` (`itm_hotel_booking_planning_sort_rooms()`).
+- **HSK** badge shows `hotel_booking_housekeeping_statuses.code` (fallback `name`); double-click rotates via `ajax_action=hk_rotate`.
 - Booking bars span **half check-in cell** (right) through **half check-out cell** (left); **same-day turnover** renders checkout (left) and next check-in (right) in one cell when dates align.
 - Each booking uses `hotel_bookings.booking_color` on the planning grid (fallback palette by id when NULL); **OOO** maintenance is **red** (`#c62828`), **OOS** is **blue** (`#1565c0`) from `hotel_booking_housekeeping_maintenance` + `hotel_booking_housekeeping_maintenance_status.code`.
 - Helpers: `itm_hotel_booking_planning_match_bookings_for_day()`, `itm_hotel_booking_planning_match_maintenance_for_day()` in `includes/itm_hotel_booking.php`.
-- Double-click booking bar opens **view.php**; HK column double-click rotates `hotel_booking_housekeeping_statuses` via `ajax_action=hk_rotate`.
+- Double-click booking bar opens **view.php**; HSK column double-click rotates `hotel_booking_housekeeping_statuses` via `ajax_action=hk_rotate`.
 - **Drag-and-drop** on planning bars (bookings + OOO/OOS maintenance): drop on any day cell to shift dates and/or move to another room row; `POST index.php?ajax_action=planning_move` with CSRF. Helpers: `itm_hotel_booking_planning_move_booking()`, `itm_hotel_booking_planning_move_maintenance()`, overlap checks `itm_hotel_booking_has_overlap()` / `itm_hotel_booking_maintenance_has_overlap()`.
 - Double-click **OOO/OOS** bar opens **HK Maintenance** edit in a modal iframe (`hotel_booking_housekeeping_maintenance/edit.php?id=&embed=1`); save reloads the planning grid.
 - JS: `js/hotel-bookings-planning.js`.

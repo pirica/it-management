@@ -326,7 +326,8 @@
                 if (!data || !data.ok || !badge) {
                     return;
                 }
-                badge.textContent = data.hk_name || '—';
+                var label = (data.hk_code && String(data.hk_code).trim() !== '') ? data.hk_code : (data.hk_name || '—');
+                badge.textContent = label;
                 if (data.hk_color) {
                     badge.style.background = data.hk_color;
                 }

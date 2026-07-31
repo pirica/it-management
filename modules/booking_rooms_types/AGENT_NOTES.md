@@ -1,16 +1,3 @@
-Read AGENTS.md 
-Read README.md 
-Read scripts/scripts.php 
-Read phpunit/* 
-Read scripts/api.php 
-Read scripts/SCRIPTS.md
-Read db/ 
-Read full project
-
-On base on your learnings edit/update or create AGENT_NOTES.md is none exists for each modules/ on base of this (Module Template) don't use scripts to auto the process.
-`templates/AGENT_NOTES.md` (Module Template)
-
-
 # AGENT_NOTES.md — module template
 
 Use this outline for every in-scope folder (`modules/<slug>/`, `config/`, `includes/`, `scripts/lib/`, etc.). **Read the module PHP and `db/` first** — do not bulk-generate or copy generic boilerplate without verifying behaviour.
@@ -214,6 +201,8 @@ Regression scripts, related `AGENT_NOTES.md` files, or follow-up hardening (docu
 Example: Regression: `php scripts/verify_<module>.php`. Parent module: `modules/ops_report/AGENT_NOTES.md`.
 
 **Hotel booking portal upsell:** `upgrade_to_room_type_id` (self-FK to another type), `upgrade_price_per_night`, and optional `upgrade_pitch` drive the Step 3 checkbox card in `booking/rooms/customize.php`. Company 1 seeds set STD/SUP → Deluxe at **121.00** EUR/night in `db/02_data.sql`.
+
+**List/view FK label:** `upgrade_to_room_type_id` resolves to the target row's **`code`** (not `name`) via `includes/brt_fk_helpers.php` (`brt_fk_label_by_id`, `brt_fk_options`).
 
 ---
 
