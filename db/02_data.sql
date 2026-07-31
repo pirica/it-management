@@ -354,7 +354,7 @@ INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `e
 
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '1', 'Human Resources', 'HR', 'Human resources department', 'hr@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
 
-INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '1', 'Housekeeping', 'HK', 'Housekeeping operations', 'housekeeping@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
+INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '1', 'Housekeeping', 'HSK', 'Housekeeping operations', 'housekeeping@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
 
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES (NULL, '1', 'Front Office', 'FO', 'Front Office', 'frontoffice@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
 
@@ -384,15 +384,15 @@ INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`,
 
 INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`, `created_at`) VALUES (NULL, '5', '22', 'Restaurant Operations', 'CC-FNB-OPS', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`, `created_at`) VALUES (NULL, '1', '4', 'Room Maintenance', 'CC-HK-RM', '1', '2026-01-01 00:00:01');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`, `created_at`) VALUES (NULL, '1', '4', 'Room Maintenance', 'CC-HSK-RM', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`, `created_at`) VALUES (NULL, '2', '9', 'Room Maintenance', 'CC-HK-RM', '1', '2026-01-01 00:00:01');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`, `created_at`) VALUES (NULL, '2', '9', 'Room Maintenance', 'CC-HSK-RM', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`, `created_at`) VALUES (NULL, '3', '14', 'Room Maintenance', 'CC-HK-RM', '1', '2026-01-01 00:00:01');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`, `created_at`) VALUES (NULL, '3', '14', 'Room Maintenance', 'CC-HSK-RM', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`, `created_at`) VALUES (NULL, '4', '19', 'Room Maintenance', 'CC-HK-RM', '1', '2026-01-01 00:00:01');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`, `created_at`) VALUES (NULL, '4', '19', 'Room Maintenance', 'CC-HSK-RM', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`, `created_at`) VALUES (NULL, '5', '24', 'Room Maintenance', 'CC-HK-RM', '1', '2026-01-01 00:00:01');
+INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`, `created_at`) VALUES (NULL, '5', '24', 'Room Maintenance', 'CC-HSK-RM', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `gl_accounts` (`id`, `company_id`, `account_code`, `account_name`, `category_id`, `active`, `created_at`)
 SELECT NULL, seed.`company_id`, seed.`account_code`, seed.`account_name`, bc.`id`, 1, '2026-01-01 00:00:01'
@@ -2422,9 +2422,9 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_special_rates", "Booking Special Rates", 0, 1, "🏷️");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_portal_rate_plans", "Portal Rate Plans", 0, 1, "📋");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_room_utilities", "Room Utilities", 0, 1, "✨");
-INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_housekeeping_statuses", "HK Statuses", 0, 1, "🧹");
-INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_housekeeping_maintenance_status", "HK Maintenance Status", 0, 1, "🔧");
-INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_housekeeping_maintenance", "HK Maintenance", 0, 1, "🛠️");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_housekeeping_statuses", "HSK Statuses", 0, 1, "🧹");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_housekeeping_maintenance_status", "HSK Maintenance Status", 0, 1, "🔧");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_housekeeping_maintenance", "HSK Maintenance", 0, 1, "🛠️");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_future", "Booking Future Status", 0, 1, "📅");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_present", "Booking Present Status", 0, 1, "🏠");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_history", "Booking History Status", 0, 1, "📜");

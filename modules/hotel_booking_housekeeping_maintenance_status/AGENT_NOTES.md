@@ -1,4 +1,4 @@
-# AGENT_NOTES.md - HK Maintenance Status
+# AGENT_NOTES.md - HSK Maintenance Status
 
 ## 1. Module Purpose
 
