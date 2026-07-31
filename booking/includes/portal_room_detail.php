@@ -7,26 +7,62 @@ if (!function_exists('hb_portal_render_amenities_scroll')) {
     require_once __DIR__ . '/portal_chrome.php';
 }
 
-if (!function_exists('hb_portal_render_image_gallery')) {
-    function hb_portal_render_image_gallery(array $imageUrls, $wrapClass = '', $galleryClass = 'hb-gallery', $innerHtml = '') {
-        $imageUrls = array_values(array_filter(array_map('strval', $imageUrls)));
-        if (empty($imageUrls)) {
-            $imageUrls = [itm_hotel_booking_portal_default_image_url('image_2.jpg')];
+if (!function_exists('hb_portal_room_type_photo_urls')) {
+    function hb_portal_room_type_photo_urls($conn, $companyId, $typeId, $roomId, $fallbackUrl = '') {
+        $companyId = (int) $companyId;
+        $typeId = (int) $typeId;
+        $roomId = (int) $roomId;
+        $urls = [];
+
+        $tphotos = itm_hotel_booking_photos_load($conn, $companyId, 'booking_rooms_type_photos', 'room_type_id', $typeId);
+        foreach ($tphotos as $photo) {
+            $stored = (string) ($photo['stored_filename'] ?? '');
+            if ($stored !== '') {
+                $urls[] = itm_hotel_booking_photo_public_url($companyId, 'room_type', $typeId, $stored);
+            }
         }
-        $first = $imageUrls[0];
-        $count = count($imageUrls);
-        $wrapClass = trim('hb-gallery-wrap ' . (string) $wrapClass);
-        $galleryClass = trim((string) $galleryClass . ' hb-gallery');
-        ob_start();
-        ?>
-<div class="<?php echo htmlspecialchars($wrapClass, ENT_QUOTES, 'UTF-8'); ?>" data-gallery-urls="<?php echo htmlspecialchars(json_encode($imageUrls, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8'); ?>">
-<button type="button" class="hb-gallery-prev" title="Previous image" aria-label="Previous image">&#8249;</button>
-<div class="<?php echo htmlspecialchars($galleryClass, ENT_QUOTES, 'UTF-8'); ?>" style="background-image:url('<?php echo htmlspecialchars($first, ENT_QUOTES, 'UTF-8'); ?>')"><?php echo $innerHtml; ?></div>
-<button type="button" class="hb-gallery-next" title="Next image" aria-label="Next image">&#8250;</button>
-<span class="hb-gallery-counter" aria-live="polite">1 / <?php echo (int) $count; ?></span>
-</div>
-        <?php
-        return ob_get_clean();
+
+        if ($roomId > 0) {
+            $photos = itm_hotel_booking_photos_load($conn, $companyId, 'hotel_booking_room_photos', 'room_id', $roomId);
+            foreach ($photos as $photo) {
+                $stored = (string) ($photo['stored_filename'] ?? '');
+                if ($stored === '') {
+                    continue;
+                }
+                $url = itm_hotel_booking_photo_public_url($companyId, 'room', $roomId, $stored);
+                if ($url !== '' && !in_array($url, $urls, true)) {
+                    $urls[] = $url;
+                }
+            }
+        }
+
+        $fallbackUrl = trim((string) $fallbackUrl);
+        if (empty($urls) && $fallbackUrl !== '') {
+            $urls[] = $fallbackUrl;
+        }
+
+        return array_values($urls);
+    }
+}
+
+if (!function_exists('hb_portal_gallery_html')) {
+    function hb_portal_gallery_html(array $urls, $wrapClass = '') {
+        $urls = array_values(array_filter(array_map('strval', $urls)));
+        if (empty($urls)) {
+            $urls = [APPURL . '/images/room-5.jpg'];
+        }
+        $count = count($urls);
+        $singleClass = $count <= 1 ? ' hb-gallery-wrap--single' : '';
+        $first = htmlspecialchars($urls[0], ENT_QUOTES, 'UTF-8');
+        $jsonUrls = htmlspecialchars(json_encode($urls, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+        $classes = trim('hb-gallery-wrap hb-rd-gallery' . $singleClass . ' ' . $wrapClass);
+
+        return '<div class="' . htmlspecialchars($classes, ENT_QUOTES, 'UTF-8') . '" data-hb-gallery-urls="' . $jsonUrls . '">'
+            . '<button type="button" class="hb-gallery-prev" title="Previous image" aria-label="Previous image"><span aria-hidden="true">‹</span></button>'
+            . '<div class="hb-gallery" style="background-image:url(\'' . $first . '\')" tabindex="0" role="img" aria-label="Photo gallery"></div>'
+            . '<button type="button" class="hb-gallery-next" title="Next image" aria-label="Next image"><span aria-hidden="true">›</span></button>'
+            . '<span class="hb-gallery-counter">1 / ' . (int) $count . '</span>'
+            . '</div>';
     }
 }
 
@@ -122,14 +158,8 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
             'STD' => '/images/room-3.jpg',
         ];
         $code = strtoupper((string) ($typeRow['code'] ?? ''));
-        $imgUrl = trim((string) $imageUrlOverride);
-        if ($imgUrl === '') {
-            $imgUrl = APPURL . ($typeDefaultImages[$code] ?? '/images/room-5.jpg');
-            $tphotos = itm_hotel_booking_photos_load($conn, $companyId, 'booking_rooms_type_photos', 'room_type_id', $typeId);
-            if (!empty($tphotos[0]['stored_filename'])) {
-                $imgUrl = itm_hotel_booking_photo_public_url($companyId, 'room_type', $typeId, $tphotos[0]['stored_filename']);
-            }
-        }
+        $fallbackImg = APPURL . ($typeDefaultImages[$code] ?? '/images/room-5.jpg');
+        $imageUrlOverride = trim((string) $imageUrlOverride);
 
         $sampleRoom = null;
         $rstmt = mysqli_prepare($conn, 'SELECT id, price_per_night, view_label, is_out_of_order, is_out_of_service
@@ -148,14 +178,14 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
         }
 
         $roomId = (int) ($sampleRoom['id'] ?? 0);
-        if ($imgUrl === APPURL . ($typeDefaultImages[$code] ?? '/images/room-5.jpg') && $roomId > 0) {
-            $photos = itm_hotel_booking_photos_load($conn, $companyId, 'hotel_booking_room_photos', 'room_id', $roomId);
-            if (!empty($photos[0]['stored_filename'])) {
-                $imgUrl = itm_hotel_booking_photo_public_url($companyId, 'room', $roomId, $photos[0]['stored_filename']);
+        $photoUrls = hb_portal_room_type_photo_urls($conn, $companyId, $typeId, $roomId, $fallbackImg);
+        $imgUrl = $photoUrls[0] ?? $fallbackImg;
+        if ($imageUrlOverride !== '') {
+            $imgUrl = $imageUrlOverride;
+            if (!in_array($imgUrl, $photoUrls, true)) {
+                array_unshift($photoUrls, $imgUrl);
+                $photoUrls = array_values(array_unique($photoUrls));
             }
-        }
-        if ($imgUrl === '') {
-            $imgUrl = APPURL . ($typeDefaultImages[$code] ?? '/images/room-5.jpg');
         }
 
         $bullets = [];
@@ -191,6 +221,7 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
             'max_adults' => (int) ($typeRow['max_adults'] ?? 2),
             'max_children' => (int) ($typeRow['max_children'] ?? 1),
             'image_url' => $imgUrl,
+            'photo_urls' => $photoUrls,
             'base_price' => $basePrice,
             'list_quoted_price' => $listQuoted,
             'quoted_price' => $quoted,
@@ -211,9 +242,9 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
             $title = trim($name . ' — ' . $bed);
         }
         $img = (string) ($card['image_url'] ?? '');
-        $imageUrls = $card['image_urls'] ?? [];
-        if (!is_array($imageUrls) || empty($imageUrls)) {
-            $imageUrls = $img !== '' ? [$img] : [itm_hotel_booking_portal_default_image_url('image_2.jpg')];
+        $photoUrls = is_array($card['photo_urls'] ?? null) ? $card['photo_urls'] : [];
+        if (empty($photoUrls) && $img !== '') {
+            $photoUrls = [$img];
         }
         $desc = (string) ($card['type_description'] ?? '');
         $size = $card['type_size_sqm'] ?? '';
@@ -325,7 +356,7 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
 <div class="hb-room-detail-layout" data-type-id="<?php echo (int) ($card['type_id'] ?? 0); ?>">
 <div class="hb-room-detail-left">
 <h2 class="hb-rd-title"><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></h2>
-<?php echo hb_portal_render_image_gallery($imageUrls, 'hb-rd-hero-gallery', 'hb-gallery hb-rd-hero'); ?>
+<?php echo hb_portal_gallery_html($photoUrls); ?>
 <p class="hb-rd-occ"><?php echo htmlspecialchars($occLabel, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php if ($specLine !== ''): ?>
 <p class="hb-rd-spec"><?php echo htmlspecialchars($specLine, ENT_QUOTES, 'UTF-8'); ?></p>

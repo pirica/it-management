@@ -114,8 +114,9 @@ foreach ($rooms as $room) {
 
     if (!isset($cards[$typeKey])) {
         $code = strtoupper((string) ($room['type_code'] ?? ''));
-        $imageUrls = itm_hotel_booking_portal_room_type_photo_urls($conn, $company_id, $roomId, $typeKey, $code, $typeDefaultImages);
-        $imgUrl = $imageUrls[0] ?? (APPURL . ($typeDefaultImages[$code] ?? '/images/room-5.jpg'));
+        $fallbackImg = APPURL . ($typeDefaultImages[$code] ?? '/images/room-5.jpg');
+        $photoUrls = hb_portal_room_type_photo_urls($conn, $company_id, $typeKey, $roomId, $fallbackImg);
+        $imgUrl = $photoUrls[0] ?? $fallbackImg;
         $bullets = [];
         $rawBullets = (string) ($room['details_bullets'] ?? '');
         if ($rawBullets !== '') {
@@ -145,7 +146,7 @@ foreach ($rooms as $room) {
             'max_adults' => (int) ($room['max_adults'] ?? 2),
             'max_children' => (int) ($room['max_children'] ?? 1),
             'image_url' => $imgUrl,
-            'image_urls' => $imageUrls,
+            'photo_urls' => $photoUrls,
             'base_price' => $basePrice,
             'list_quoted_price' => $listQuoted,
             'quoted_price' => $quoted,

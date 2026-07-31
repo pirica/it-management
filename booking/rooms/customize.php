@@ -271,6 +271,7 @@ window.HB_CUSTOMIZE_ROOM_DETAIL = <?php echo json_encode([
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 <?php endif; ?>
 </script>
+<script src="<?php echo APPURL; ?>/js/hotel-booking-gallery.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-customize.js"></script>
 </body>
 </html>

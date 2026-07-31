@@ -45,13 +45,46 @@ body.hb-modal-open { overflow: hidden; }
 
 /* Gallery */
 .hb-gallery-wrap { position: relative; margin-bottom: 16px; border-radius: 4px; overflow: hidden; }
-.hb-gallery { min-height: 240px; background: #e8eaed center/cover no-repeat; background-size: cover; background-position: center; }
-.hb-gallery-prev, .hb-gallery-next { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border: none; border-radius: 50%; background: rgba(0,0,0,.72); font-size: 1.75rem; line-height: 1; cursor: pointer; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.25); z-index: 2; }
-.hb-gallery-wrap.is-single .hb-gallery-prev,
-.hb-gallery-wrap.is-single .hb-gallery-next { display: none; }
-.hb-gallery-prev { left: 12px; }
-.hb-gallery-next { right: 12px; }
-.hb-gallery-counter { position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,.65); color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+.hb-gallery { min-height: 280px; background: #1a1a1a center/cover no-repeat; }
+.hb-gallery-prev, .hb-gallery-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.hb-gallery-prev span, .hb-gallery-next span { display: block; margin-top: -2px; }
+.hb-gallery-prev { left: 16px; }
+.hb-gallery-next { right: 16px; }
+.hb-gallery-prev:hover, .hb-gallery-next:hover { background: rgba(0, 0, 0, 0.62); }
+.hb-gallery-wrap--single .hb-gallery-prev,
+.hb-gallery-wrap--single .hb-gallery-next { display: none; }
+.hb-gallery-counter {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 2;
+  letter-spacing: 0.02em;
+}
+.hb-rd-gallery .hb-gallery { min-height: 240px; }
 
 .hb-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .hb-detail-title { font-size: 1.75rem; font-weight: 700; margin: 0; line-height: 1.2; }

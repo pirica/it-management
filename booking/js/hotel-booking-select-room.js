@@ -480,7 +480,7 @@
         }
         openModal('hb-room-detail-modal');
         if (typeof window.HB_initGalleries === 'function') {
-          HB_initGalleries(detail);
+          window.HB_initGalleries(detail);
         }
       }
     });

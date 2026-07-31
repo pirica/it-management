@@ -204,12 +204,8 @@
     body.innerHTML =
       '<div class="hb-detail">' +
       '<div class="hb-detail-left">' +
-      '<div class="hb-gallery-wrap">' +
-      '<button type="button" class="hb-gallery-prev" title="Previous image" aria-label="Previous image">&#8249;</button>' +
-      '<div class="hb-gallery"></div>' +
-      '<button type="button" class="hb-gallery-next" title="Next image" aria-label="Next image">&#8250;</button>' +
-      '<span class="hb-gallery-counter" aria-live="polite">1 / ' + urls.length + '</span>' +
-      '</div>' +
+      (typeof window.HB_galleryMarkup === 'function' ? window.HB_galleryMarkup(urls) :
+        '<div class="hb-gallery-wrap"><div class="hb-gallery"></div></div>') +
       '<div class="hb-title-row">' +
       '<h2 class="hb-detail-title">' + escapeHtml(h.name) + '</h2>' +
       '<button type="button" class="hb-fav" title="Save to favorites" aria-label="Favorite">♡</button>' +
