@@ -83,9 +83,14 @@ if ($stmt) {
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $hid = (int) $row['id'];
         $hotelCompanyId = (int) ($row['company_id'] ?? 0);
-        $row['photos'] = itm_hotel_booking_photos_load($conn, $hotelCompanyId, 'hotel_booking_hotel_photos', 'hotel_id', $hid);
-        foreach ($row['photos'] as $pi => $photo) {
-            $row['photos'][$pi]['public_url'] = itm_hotel_booking_photo_public_url($hotelCompanyId, 'hotel', $hid, $photo['stored_filename'] ?? '');
+        $row['photos'] = [];
+        foreach (itm_hotel_booking_photos_load($conn, $hotelCompanyId, 'hotel_booking_hotel_photos', 'hotel_id', $hid) as $photo) {
+            $storedFilename = (string) ($photo['stored_filename'] ?? '');
+            if (!itm_hotel_booking_photo_is_servable($hotelCompanyId, 'hotel', $hid, $storedFilename)) {
+                continue;
+            }
+            $photo['public_url'] = itm_hotel_booking_photo_public_url($hotelCompanyId, 'hotel', $hid, $storedFilename);
+            $row['photos'][] = $photo;
         }
         $row['nearby'] = hb_hotel_nearby_rows($conn, $hotelCompanyId, $hid);
         $row['amenities'] = hb_hotel_amenities_rows($conn, $hotelCompanyId, $hid);
@@ -127,11 +132,17 @@ $hbSettingsPublic = [
 <?php foreach ($hotels as $hotel): ?>
 <article class="hb-hotel-card" data-hotel-id="<?php echo (int) $hotel['id']; ?>">
 <?php
-$cover = $hotel['photos'][0]['stored_filename'] ?? '';
 $hotelCompanyId = (int) ($hotel['company_id'] ?? 0);
-$imgUrl = $cover ? itm_hotel_booking_photo_public_url($hotelCompanyId, 'hotel', (int) $hotel['id'], $cover) : (APPURL . '/images/image_2.jpg');
+$imgUrl = !empty($hotel['photos'][0]['public_url'])
+    ? (string) $hotel['photos'][0]['public_url']
+    : itm_hotel_booking_portal_default_image_url('image_2.jpg');
 ?>
-<div class="hb-hotel-card-img" style="background-image:url('<?php echo htmlspecialchars($imgUrl, ENT_QUOTES, 'UTF-8'); ?>')"></div>
+<div class="hb-gallery-wrap hb-hotel-card-gallery">
+<button type="button" class="hb-gallery-prev" title="Previous image" aria-label="Previous image">&#8249;</button>
+<div class="hb-gallery hb-hotel-card-img" style="background-image:url('<?php echo htmlspecialchars($imgUrl, ENT_QUOTES, 'UTF-8'); ?>')"></div>
+<button type="button" class="hb-gallery-next" title="Next image" aria-label="Next image">&#8250;</button>
+<span class="hb-gallery-counter" aria-live="polite">1 / <?php echo max(1, count($hotel['photos'])); ?></span>
+</div>
 <h2><?php echo htmlspecialchars($hotel['name'], ENT_QUOTES, 'UTF-8'); ?></h2>
 <p class="hb-loc"><?php echo htmlspecialchars($hotel['location'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
 <p class="hb-from">From <?php echo htmlspecialchars(number_format((float) ($hotel['min_price'] ?? 0), 2), ENT_QUOTES, 'UTF-8'); ?> <?php echo htmlspecialchars($hotel['currency_code'] ?? 'EUR', ENT_QUOTES, 'UTF-8'); ?></p>

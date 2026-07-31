@@ -209,6 +209,12 @@ if ($itm_documentRoot && $itm_projectRoot && strpos($itm_projectRoot, $itm_docum
             && substr($itm_basePath, -strlen($itm_scriptsSuffix)) === $itm_scriptsSuffix) {
             $itm_basePath = substr($itm_basePath, 0, -strlen($itm_scriptsSuffix));
         }
+        // Why: booking/* must not set BASE_URL to .../booking/ — static assets live at app root.
+        $itm_bookingSuffix = '/booking';
+        if ($itm_bookingSuffix !== '' && strlen($itm_basePath) >= strlen($itm_bookingSuffix)
+            && substr($itm_basePath, -strlen($itm_bookingSuffix)) === $itm_bookingSuffix) {
+            $itm_basePath = substr($itm_basePath, 0, -strlen($itm_bookingSuffix));
+        }
     }
 }
 

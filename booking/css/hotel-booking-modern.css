@@ -19,7 +19,11 @@ body.hb-modal-open { overflow: hidden; }
 .hb-sub { color: var(--hb-muted); margin-top: 0; }
 .hb-hotel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
 .hb-hotel-card { background: var(--hb-card); border-radius: var(--hb-radius); overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.06); padding-bottom: 16px; }
-.hb-hotel-card-img { height: 180px; background-size: cover; background-position: center; }
+.hb-hotel-card-gallery { margin: 0; border-radius: 0; }
+.hb-hotel-card-gallery .hb-gallery.hb-hotel-card-img { min-height: 180px; height: 180px; }
+.hb-hotel-card-gallery .hb-gallery-prev,
+.hb-hotel-card-gallery .hb-gallery-next { width: 32px; height: 32px; font-size: 1.35rem; }
+.hb-hotel-card-gallery .hb-gallery-counter { font-size: 11px; padding: 3px 8px; }
 .hb-hotel-card h2 { font-size: 1.15rem; margin: 12px 16px 4px; }
 .hb-loc, .hb-from { margin: 0 16px; font-size: .9rem; color: var(--hb-muted); }
 .hb-btn { border: none; border-radius: 8px; padding: 10px 16px; cursor: pointer; font-size: .95rem; font-weight: 600; }
@@ -41,8 +45,10 @@ body.hb-modal-open { overflow: hidden; }
 
 /* Gallery */
 .hb-gallery-wrap { position: relative; margin-bottom: 16px; border-radius: 4px; overflow: hidden; }
-.hb-gallery { min-height: 240px; background: #e8eaed center/cover no-repeat; }
-.hb-gallery-prev, .hb-gallery-next { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border: none; border-radius: 50%; background: rgba(255,255,255,.92); font-size: 1.5rem; line-height: 1; cursor: pointer; color: var(--hb-text); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.hb-gallery { min-height: 240px; background: #e8eaed center/cover no-repeat; background-size: cover; background-position: center; }
+.hb-gallery-prev, .hb-gallery-next { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border: none; border-radius: 50%; background: rgba(0,0,0,.72); font-size: 1.75rem; line-height: 1; cursor: pointer; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.25); z-index: 2; }
+.hb-gallery-wrap.is-single .hb-gallery-prev,
+.hb-gallery-wrap.is-single .hb-gallery-next { display: none; }
 .hb-gallery-prev { left: 12px; }
 .hb-gallery-next { right: 12px; }
 .hb-gallery-counter { position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,.65); color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; }

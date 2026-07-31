@@ -2526,3 +2526,9 @@ INSERT INTO `hotel_booking_portal_rate_plans` (`company_id`, `hotel_id`, `plan_s
 INSERT INTO `hotel_booking_hotel_nearby` (`company_id`, `hotel_id`, `place_name`, `distance_km`, `sort_order`, `active`, `created_at`) VALUES
 (1, 1, 'City center', 12.60, 10, 1, '2026-01-01 00:00:01'),
 (1, 1, 'Airport', 8.20, 20, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_booking_hotel_photos` (`company_id`, `hotel_id`, `stored_filename`, `original_filename`, `sort_order`, `is_cover`, `active`, `created_at`) VALUES
+(1, 1, 'hb_seed_01.jpg', 'hotel-sample-exterior.jpg', 0, 1, 1, '2026-01-01 00:00:01'),
+(1, 1, 'hb_seed_02.jpg', 'hotel-sample-lobby.jpg', 1, 0, 1, '2026-01-01 00:00:01'),
+(1, 1, 'hb_seed_03.jpg', 'hotel-sample-room.jpg', 2, 0, 1, '2026-01-01 00:00:01'),
+(1, 1, 'hb_seed_04.jpg', 'hotel-sample-pool.jpg', 3, 0, 1, '2026-01-01 00:00:01');

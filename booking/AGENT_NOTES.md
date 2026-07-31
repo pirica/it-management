@@ -18,7 +18,7 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 
 ## 4. Entry points
 
-- `index.php` — hotel list (all active `hotel_booking_hotels` across tenants) + detail modal
+- `index.php` — hotel list (all active `hotel_booking_hotels` across tenants); each card image has gallery **‹ ›** arrows and **`1 / N`** counter when multiple photos exist; **Details** opens the same gallery in the modal
 - `rooms.php` — **Step 1 of 4** Select a Room.
 - `rooms/select-rate.php` — **Step 2 of 4** Select a Rate (active `hotel_booking_portal_rate_plans` per hotel; posts `portal_rate_plan_id`; special requests, comments).
 - `rooms/customize.php` — **Step 3 of 4**: main column upgrade card; **View room details** opens the same room-detail modal as Step 1 (no Quick compare link); right column stacks stepper then **Reservation summary** (tourist tax €2/guest/night from settings).
@@ -46,6 +46,6 @@ Hotel administration lives in ITM modules: `modules/hotel_bookings/`, `modules/h
 | Includes | `includes/portal_chrome.php`, `portal_checkout.php`, `portal_room_detail.php` |
 | CSS | `css/hotel-booking-modern.css` only |
 | JS | `js/hotel-booking-{public,dates,amenity-icons,select-room,customize,change-booking,confirmation-pdf}.js` |
-| Images | `images/amenities/*.svg` (+ `ATTRIBUTION.md`); hotel/room photos come from `images/hotel_booking/{company_id}/…` via ITM upload helpers |
+| Images | `images/amenities/*.svg` (+ `ATTRIBUTION.md`); portal fallbacks `image_2.jpg`, `room-5.jpg`, etc.; demo hotel gallery copies `hotel-sample-*.jpg`; uploaded hotel/room photos stored at app root `images/hotel_booking/{company_id}/…` and served as `APPURL/images/hotel_booking/…` (`booking/.htaccess` rewrite) |
 
 Removed legacy Colorlib template tree: `about.php`, `contact.php`, `services.php`, `404.php`, `config/config.php` (PDO), `includes/header.php` / `footer.php`, vendored `scss/`, `css/style.css`, jQuery/Bootstrap JS stack, `fonts/`, and the entire `admin-panel/` folder.

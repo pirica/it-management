@@ -616,6 +616,9 @@ if ($crud_action === 'create') {
 }
 
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_id'])) {
+    $editId = (int) $_POST['record_id'];
+}
 
 // Fetch record details for Edit or View pages
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
@@ -667,6 +670,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
+    // Why: POST must rebuild sqlValues even when validation fails later.
+    $sqlValues = [];
     // Why: Server-side RBAC before CSRF persistence (UI-only hiding is not enough).
     itm_require_crud_role_module_permission($conn, $crud_action, $crud_table);
     cr_require_valid_csrf_token();
@@ -838,7 +843,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
             $savedId = ($crud_action === 'create') ? (int) mysqli_insert_id($conn) : (int) $editId;
             if ($savedId > 0 && itm_hotel_booking_photos_config_for_parent_table($crud_table)) {
-                itm_hotel_booking_photos_handle_upload($conn, $company_id, $crud_table, $savedId);
+                $photoUploadErrors = [];
+                $photoCount = itm_hotel_booking_photos_handle_upload($conn, $company_id, $crud_table, $savedId, $photoUploadErrors);
+                if ($photoCount > 0) {
+                    $_SESSION['crud_success'] = 'Uploaded ' . (int) $photoCount . ' photo(s).';
+                } elseif (itm_hotel_booking_photos_upload_was_attempted() && !empty($photoUploadErrors)) {
+                    $_SESSION['crud_error'] = implode(' ', $photoUploadErrors);
+                }
             }
             header('Location: ' . $listUrl);
             exit;
@@ -1139,8 +1150,11 @@ if (!isset($crud_title)) {
             <?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>
                 <!-- DATA ENTRY FORM VIEW -->
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
-                <form method="POST" class="form-grid" style="max-width:980px;"<?php echo itm_hotel_booking_photos_config_for_parent_table($crud_table) ? ' enctype="multipart/form-data"' : ''; ?>>
+                <form method="POST" action="<?php echo $crud_action === 'edit' && $editId > 0 ? 'edit.php?id=' . (int) $editId : 'create.php'; ?>" class="form-grid" style="max-width:980px;"<?php echo itm_hotel_booking_photos_config_for_parent_table($crud_table) ? ' enctype="multipart/form-data"' : ''; ?>>
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <?php if ($crud_action === 'edit' && $editId > 0): ?>
+                    <input type="hidden" name="record_id" value="<?php echo (int) $editId; ?>">
+                    <?php endif; ?>
                     <?php
                     // Reuse UI column filtering so table-specific hidden fields (like company_id for departments)
                     // stay hidden in create/edit forms while remaining available to backend save logic.

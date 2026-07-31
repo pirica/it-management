@@ -1,0 +1,6 @@
+# Why: hotel/room uploads live under ../images/hotel_booking/ but portal img src uses /booking/images/hotel_booking/…
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /it-management/booking/
+    RewriteRule ^images/hotel_booking/(.*)$ /it-management/images/hotel_booking/$1 [L]
+</IfModule>
