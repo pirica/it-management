@@ -474,4 +474,20 @@ if (!is_file($roomPhotosDelete)) {
     }
 }
 
+$hotelsIndex = $repoRoot . '/modules/hotel_booking_hotels/index.php';
+$hotelBookingHelper = $repoRoot . '/includes/itm_hotel_booking.php';
+if (!is_file($hotelsIndex)) {
+    hb_fail('hotel_booking_hotels index.php missing');
+} else {
+    $hotelsIndexSource = (string) file_get_contents($hotelsIndex);
+    $helperSource = is_file($hotelBookingHelper) ? (string) file_get_contents($hotelBookingHelper) : '';
+    if (strpos($hotelsIndexSource, 'itm_hotel_booking_render_photo_thumbnail_link') === false) {
+        hb_fail('hotel_booking_hotels index must render photo thumbnails');
+    } elseif (strpos($helperSource, 'target="_blank"') === false && strpos($helperSource, "target='_blank'") === false) {
+        hb_fail('itm_hotel_booking_render_photo_thumbnail_link must open full image in new tab');
+    } else {
+        hb_pass('hotel_booking_hotels list/edit photo thumbnail markup');
+    }
+}
+
 exit($fail > 0 ? 1 : 0);
