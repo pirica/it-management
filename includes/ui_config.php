@@ -122,6 +122,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'hotel_bookings_present', 'label' => '🏠 Present Status', 'href' => 'modules/hotel_bookings_present/', 'match_dir' => 'hotel_bookings_present'],
                 ['id' => 'hotel_bookings_history', 'label' => '📜 History Status', 'href' => 'modules/hotel_bookings_history/', 'match_dir' => 'hotel_bookings_history'],
                 ['id' => 'hotel_booking_settings', 'label' => '⚙️ Hotel Booking Settings', 'href' => 'modules/hotel_booking_settings/', 'match_dir' => 'hotel_booking_settings'],
+                ['id' => 'hotel_booking_room_photos', 'label' => '🖼️ Room Photos', 'href' => 'modules/hotel_booking_room_photos/', 'match_dir' => 'hotel_booking_room_photos'],
             ],
         ],
         [

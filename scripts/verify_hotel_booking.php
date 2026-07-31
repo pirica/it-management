@@ -414,6 +414,7 @@ $hospitalityModuleSlugs = [
     'hotel_bookings_present',
     'hotel_bookings_history',
     'hotel_booking_settings',
+    'hotel_booking_room_photos',
 ];
 
 $repoRoot = dirname(__DIR__);

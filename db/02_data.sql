@@ -2429,6 +2429,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_present", "Booking Present Status", 0, 1, "🏠");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_history", "Booking History Status", 0, 1, "📜");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_settings", "Hotel Booking Settings", 0, 1, "⚙️");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_room_photos", "Room Photos", 0, 1, "🖼️");
 
 INSERT INTO `hotel_bookings_future` (`company_id`, `name`, `active`, `created_at`) VALUES
 (1, 'CONFIRMED', 1, '2026-01-01 00:00:01'),
