@@ -23,8 +23,8 @@ Tenant CRUD for hospitality properties (`hotel_booking_hotels`). Supports photo 
 ## 4. Business Rules (Critical for Agents)
 
 - **Photo storage:** files under `images/hotel_booking/{company_id}/hotel/{hotel_id}/` via `itm_hotel_booking_photo_storage_dir()`.
-- **Upload field:** create/edit forms use `hb_photos[]` handled by `itm_hotel_booking_photos_handle_upload()` after save.
-- **List cover thumbnail:** index loads cover URL map via `itm_hotel_booking_photo_cover_url_map_for_parents()`; thumbnail links open full image in a **new tab** (`target="_blank"`).
+- **Upload field:** create/edit forms use `hb_photos[]` (multiple) handled by `itm_hotel_booking_photos_handle_upload()` after save. Disk names are randomized via `itm_hotel_booking_photo_random_stored_filename()`; `original_filename` keeps the client name for display only.
+- **List thumbnails:** index shows **all** photos per hotel (not only cover); each opens full size in a new tab.
 - **Edit thumbnails:** existing photos render above the file input via `itm_hotel_booking_photos_for_parent_table()` + `itm_hotel_booking_render_photo_thumbnail_link()`.
 
 ---

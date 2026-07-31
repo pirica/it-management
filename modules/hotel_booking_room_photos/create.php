@@ -70,7 +70,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 continue;
             }
 
-            $stored = 'hb_' . bin2hex(random_bytes(8)) . '.' . $ext;
+            $stored = itm_hotel_booking_photo_random_stored_filename($ext, $absDir);
+            if ($stored === '') {
+                $errors[] = "File '{$orig}' has an invalid extension. Only JPG, JPEG, PNG, GIF, and WEBP are allowed.";
+                continue;
+            }
             $dest = $absDir . DIRECTORY_SEPARATOR . $stored;
 
             if (move_uploaded_file($tmpNames[$i], $dest)) {

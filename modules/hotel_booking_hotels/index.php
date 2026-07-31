@@ -939,13 +939,13 @@ while ($rowsRes && ($listRow = mysqli_fetch_assoc($rowsRes))) {
     $rowList[] = $listRow;
 }
 $hbPhotoCfg = itm_hotel_booking_photos_config_for_parent_table($crud_table);
-$hbPhotoCoverUrlMap = [];
+$hbPhotoUrlsMap = [];
 if ($hbPhotoCfg && !empty($rowList)) {
     $parentIds = [];
     foreach ($rowList as $listRow) {
         $parentIds[] = (int) ($listRow['id'] ?? 0);
     }
-    $hbPhotoCoverUrlMap = itm_hotel_booking_photo_cover_url_map_for_parents($conn, (int) $company_id, $crud_table, $parentIds);
+    $hbPhotoUrlsMap = itm_hotel_booking_photo_urls_map_for_parents($conn, (int) $company_id, $crud_table, $parentIds);
 }
 $editParentPhotos = [];
 if ($crud_action === 'edit' && $editId > 0 && $hbPhotoCfg) {
@@ -1033,7 +1033,7 @@ if (!isset($crud_title)) {
                                 <th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th>
                             <?php endif; ?>
                             <?php if ($hbPhotoCfg): ?>
-                                <th style="width:72px;">Photo</th>
+                                <th style="min-width:120px;">Photos</th>
                             <?php endif; ?>
                             <?php foreach ($uiColumns as $col): ?>
                                 <?php $field = (string)$col['Field']; ?>
@@ -1059,8 +1059,20 @@ if (!isset($crud_title)) {
                                 <?php if ($hbPhotoCfg): ?>
                                     <td>
                                         <?php
-                                        $coverUrl = $hbPhotoCoverUrlMap[(int)($row['id'] ?? 0)] ?? '';
-                                        echo itm_hotel_booking_render_photo_thumbnail_link($coverUrl, (string)($row['name'] ?? 'Hotel photo'), 60);
+                                        $photoUrls = $hbPhotoUrlsMap[(int) ($row['id'] ?? 0)] ?? [];
+                                        if (empty($photoUrls)) {
+                                            echo itm_hotel_booking_render_photo_thumbnail_link('', (string) ($row['name'] ?? 'Hotel photo'), 48);
+                                        } else {
+                                            echo '<div style="display:flex;flex-wrap:wrap;gap:4px;max-width:200px;">';
+                                            foreach ($photoUrls as $photoUrl) {
+                                                echo itm_hotel_booking_render_photo_thumbnail_link(
+                                                    $photoUrl,
+                                                    (string) ($row['name'] ?? 'Hotel photo'),
+                                                    48
+                                                );
+                                            }
+                                            echo '</div>';
+                                        }
                                         ?>
                                     </td>
                                 <?php endif; ?>
@@ -1208,6 +1220,7 @@ if (!isset($crud_title)) {
                     <div class="form-group" style="grid-column:1 / -1;">
                         <label><?php echo ($crud_action === 'edit' && !empty($editParentPhotos)) ? 'Add photos' : 'Photos'; ?></label>
                         <input type="file" name="hb_photos[]" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+                        <small style="opacity:.7;display:block;margin-top:6px;">Select one or more images. Files are stored with randomized names on disk.</small>
                     </div>
                     <?php endif; ?>
                     <div class="form-actions">
