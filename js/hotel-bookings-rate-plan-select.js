@@ -177,25 +177,25 @@
 
         function openCreateModal() {
             var hotelId = selectedRoomHotelId();
-            if (hotelId < 1) {
-                if (hintEl) {
-                    hintEl.hidden = false;
-                }
-                if (roomSelect) {
-                    roomSelect.focus();
-                }
-                return false;
+            var url = moduleBase() + 'create.php?embed=1';
+            if (hotelId > 0) {
+                url += '&hotel_id=' + encodeURIComponent(hotelId);
+            } else if (hintEl) {
+                hintEl.hidden = false;
+                hintEl.textContent = 'No room selected — choose the hotel in the create form below.';
             }
-            return openRatePlanModal(moduleBase() + 'create.php?embed=1&hotel_id=' + encodeURIComponent(hotelId), 'create');
+            return openRatePlanModal(url, 'create');
         }
 
         function handleQuickAddSelection() {
             if (planSelect.value !== ADD_VALUE) {
                 return false;
             }
-            openCreateModal();
-            planSelect.value = previousPlanValue || '';
-            return true;
+            var opened = openCreateModal();
+            if (opened) {
+                planSelect.value = previousPlanValue || '';
+            }
+            return opened;
         }
 
         if (viewBtn) {
@@ -224,10 +224,6 @@
             }
             previousPlanValue = planSelect.value;
             updatePlanActionLinks();
-        });
-
-        planSelect.addEventListener('input', function () {
-            handleQuickAddSelection();
         });
 
         if (roomSelect) {

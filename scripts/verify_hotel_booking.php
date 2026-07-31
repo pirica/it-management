@@ -421,6 +421,25 @@ $phpBin = getenv('PHP_EXE');
 if ($phpBin === false || trim((string) $phpBin) === '') {
     $phpBin = defined('PHP_BINARY') ? PHP_BINARY : 'php';
 }
+
+$bookingFormProbe = $repoRoot . '/scripts/lib/itm_hospitality_booking_form_probe.php';
+if (is_file($bookingFormProbe)) {
+    foreach (['create', 'edit'] as $probeMode) {
+        $cmd = escapeshellarg($phpBin) . ' ' . escapeshellarg($bookingFormProbe) . ' ' . escapeshellarg($probeMode);
+        $probeOutput = [];
+        $probeCode = 0;
+        exec($cmd . ' 2>&1', $probeOutput, $probeCode);
+        if ($probeCode !== 0) {
+            $detail = trim(implode('; ', $probeOutput));
+            hb_fail('hotel bookings ' . $probeMode . ' form probe: ' . ($detail !== '' ? $detail : 'exit ' . $probeCode));
+        } else {
+            hb_pass('hotel bookings ' . $probeMode . ' form HTML probe');
+        }
+    }
+} else {
+    hb_fail('missing scripts/lib/itm_hospitality_booking_form_probe.php');
+}
+
 $probeScript = $repoRoot . '/scripts/lib/itm_hospitality_index_probe.php';
 foreach ($hospitalityModuleSlugs as $slug) {
     if (!is_file($repoRoot . '/modules/' . $slug . '/index.php')) {

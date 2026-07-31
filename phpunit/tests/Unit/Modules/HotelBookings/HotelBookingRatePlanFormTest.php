@@ -28,5 +28,13 @@ final class HotelBookingRatePlanFormTest extends TestCase
         $this->assertStringContainsString('__add_new__', $js);
         $this->assertStringContainsString('ensureModalOnBody', $js);
         $this->assertStringContainsString('handleQuickAddSelection', $js);
+        $this->assertStringContainsString('create.php?embed=1', $js);
+        $this->assertStringNotContainsString('roomSelect.focus', $js);
+    }
+
+    public function testBookingFormProbeScriptExists(): void
+    {
+        $path = self::repoRoot() . '/scripts/lib/itm_hospitality_booking_form_probe.php';
+        $this->assertFileExists($path);
     }
 }
