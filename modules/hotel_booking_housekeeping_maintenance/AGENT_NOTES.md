@@ -1,8 +1,8 @@
-# AGENT_NOTES.md - HK Maintenance
+# AGENT_NOTES.md - HSK Maintenance
 
 ## 1. Module Purpose
 
-Room maintenance windows (OOO/OOS): block dates on a room with return HK status and comments.
+Room maintenance windows (OOO/OOS): block dates on a room with return HSK status and comments.
 
 ## 2. Key Tables
 

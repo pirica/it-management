@@ -18,7 +18,7 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, hotel filter), **F
 
 ## 4. Shared helpers
 
-`includes/itm_hotel_booking.php` — segment resolution, overlap/cancelled checks, planning grid, portal customer ensure, photo upload paths, HK rotate (`itm_hotel_booking_rotate_room_housekeeping_status`), portal rate plan CRUD helpers.
+`includes/itm_hotel_booking.php` — segment resolution, overlap/cancelled checks, planning grid, portal customer ensure, photo upload paths, HSK rotate (`itm_hotel_booking_rotate_room_housekeeping_status`), portal rate plan CRUD helpers.
 
 ## 5. Planning grid
 
@@ -30,7 +30,7 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, hotel filter), **F
 - Helpers: `itm_hotel_booking_planning_match_bookings_for_day()`, `itm_hotel_booking_planning_match_maintenance_for_day()` in `includes/itm_hotel_booking.php`.
 - Double-click booking bar opens **view.php**; HSK column double-click rotates `hotel_booking_housekeeping_statuses` via `ajax_action=hk_rotate`.
 - **Drag-and-drop** on planning bars (bookings + OOO/OOS maintenance): drop on any day cell to shift dates and/or move to another room row; `POST index.php?ajax_action=planning_move` with CSRF. Helpers: `itm_hotel_booking_planning_move_booking()`, `itm_hotel_booking_planning_move_maintenance()`, overlap checks `itm_hotel_booking_has_overlap()` / `itm_hotel_booking_maintenance_has_overlap()`.
-- Double-click **OOO/OOS** bar opens **HK Maintenance** edit in a modal iframe (`hotel_booking_housekeeping_maintenance/edit.php?id=&embed=1`); save reloads the planning grid.
+- Double-click **OOO/OOS** bar opens **HSK Maintenance** edit in a modal iframe (`hotel_booking_housekeeping_maintenance/edit.php?id=&embed=1`); save reloads the planning grid.
 - JS: `js/hotel-bookings-planning.js`.
 
 ## 5a. Create / edit form

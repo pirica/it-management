@@ -115,12 +115,12 @@ INSERT INTO `companies` (`id`, `company`, `incode`, `city`, `country`, `phone`, 
 INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`, `active`, `created_at`) VALUES
 (NULL, '1', '1', 'Infrastructure', 'CC-IT-INFRA', '1', '2026-01-01 00:00:01'),
 (NULL, '1', '2', 'Restaurant Operations', 'CC-FNB-OPS', '1', '2026-01-01 00:00:01'),
-(NULL, '1', '4', 'Room Maintenance', 'CC-HK-RM', '1', '2026-01-01 00:00:01');
+(NULL, '1', '4', 'Room Maintenance', 'CC-HSK-RM', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES
 (NULL, '1', 'Food and Drinks', 'FNB', 'Food and Beverages department', 'fnb@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01'),
 (NULL, '1', 'Human Resources', 'HR', 'Human resources department', 'hr@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01'),
-(NULL, '1', 'Housekeeping', 'HK', 'Housekeeping operations', 'housekeeping@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01'),
+(NULL, '1', 'Housekeeping', 'HSK', 'Housekeeping operations', 'housekeeping@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01'),
 (NULL, '1', 'Front Office', 'FO', 'Front Office', 'frontoffice@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01');
 
 INSERT INTO `email_alert_rules` (`company_id`, `rule_slug`, `enabled`, `days_before`, `notify_emails`, `active`, `created_at`) VALUES

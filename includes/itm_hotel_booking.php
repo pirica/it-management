@@ -1986,7 +1986,7 @@ if (!function_exists('itm_hotel_booking_rotate_room_housekeeping_status')) {
     }
     $activeIds = itm_hotel_booking_active_housekeeping_status_ids($conn, $companyId);
     if (empty($activeIds)) {
-      return ['ok' => false, 'error' => 'No active HK statuses.'];
+      return ['ok' => false, 'error' => 'No active HSK statuses.'];
     }
     $nextId = $activeIds[0];
     if ($currentId > 0) {

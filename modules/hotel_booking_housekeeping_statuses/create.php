@@ -1,6 +1,6 @@
 ﻿<?php
 $crud_table = 'hotel_booking_housekeeping_statuses';
-$crud_title = 'HK Statuses';
+$crud_title = 'HSK Statuses';
 $crud_action = 'create';
 ?>
 <?php
@@ -512,7 +512,7 @@ if (!isset($currentUiConfig)) {
     $currentUiConfig = $ui_config ?? [];
 }
 if (!isset($crud_title)) {
-    $crud_title = 'HK Statuses';
+    $crud_title = 'HSK Statuses';
 }
     require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
         $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0), basename(dirname($_SERVER['PHP_SELF'])), (string)($crud_title ?? ''));

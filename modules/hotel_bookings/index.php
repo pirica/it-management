@@ -307,10 +307,10 @@ foreach ($dayMaintenance as $maint):
 <div id="hb-hk-maint-modal" class="hb-modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="hb-hk-maint-modal-title">
 <div class="hb-modal hb-plan-maint-modal">
 <div class="hb-plan-maint-modal-head">
-<h2 id="hb-hk-maint-modal-title" title="HK Maintenance">✏️</h2>
+<h2 id="hb-hk-maint-modal-title" title="HSK Maintenance">✏️</h2>
 <button type="button" class="btn btn-sm" data-hb-maint-modal-close title="Close">✖</button>
 </div>
-<iframe id="hb-hk-maint-modal-frame" class="hb-plan-maint-modal-frame" title="HK Maintenance edit" src="about:blank"></iframe>
+<iframe id="hb-hk-maint-modal-frame" class="hb-plan-maint-modal-frame" title="HSK Maintenance edit" src="about:blank"></iframe>
 </div>
 </div>
 <?php else: ?>
