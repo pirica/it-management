@@ -281,6 +281,15 @@
     document.body.classList.remove('hb-modal-open');
   }
 
+  document.querySelectorAll('.hb-hotel-card').forEach(function (card) {
+    var hotelId = parseInt(card.getAttribute('data-hotel-id'), 10);
+    var h = map[hotelId];
+    if (!h) {
+      return;
+    }
+    bindGallery(card, photoUrls(h));
+  });
+
   document.querySelectorAll('.hb-open-hotel').forEach(function (btn) {
     btn.addEventListener('click', function () {
       openModal(parseInt(btn.getAttribute('data-hotel-id'), 10));

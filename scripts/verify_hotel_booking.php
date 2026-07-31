@@ -483,8 +483,31 @@ if (!is_file($hotelsIndex)) {
     $helperSource = is_file($hotelBookingHelper) ? (string) file_get_contents($hotelBookingHelper) : '';
     if (strpos($hotelsIndexSource, 'itm_hotel_booking_render_photo_thumbnail_link') === false) {
         hb_fail('hotel_booking_hotels index must render photo thumbnails');
+    } elseif (strpos($hotelsIndexSource, 'name="record_id"') === false) {
+        hb_fail('hotel_booking_hotels edit form must POST record_id for photo uploads');
     } elseif (strpos($helperSource, 'itm_hotel_booking_photo_random_stored_filename') === false) {
         hb_fail('hotel booking photo uploads must use randomized stored filenames');
+    } elseif (strpos($helperSource, 'itm_hotel_booking_photos_upload_was_attempted') === false) {
+        hb_fail('hotel booking photo upload helper must detect attempted uploads');
+    } elseif (strpos($helperSource, 'itm_app_root_public_path_prefix') === false) {
+        hb_fail('hotel booking photo public URLs must use app-root path prefix for admin');
+    } elseif (strpos($helperSource, 'ITM_HOTEL_BOOKING_PUBLIC_PORTAL') === false || strpos($helperSource, 'APPURL') === false) {
+        hb_fail('hotel booking photo public URLs must use APPURL under public portal');
+    } elseif (strpos($helperSource, 'itm_hotel_booking_photo_is_servable') === false) {
+        hb_fail('hotel booking photos must skip missing or invalid files on disk');
+    } elseif (!is_file($repoRoot . '/booking/.htaccess')
+        || strpos((string) file_get_contents($repoRoot . '/booking/.htaccess'), 'images/hotel_booking') === false) {
+        hb_fail('booking/.htaccess must rewrite portal images/hotel_booking to app storage');
+    } elseif (strpos((string) file_get_contents($repoRoot . '/db/02_data.sql'), 'hb_seed_01.jpg') === false) {
+        hb_fail('db/02_data.sql must seed hotel_booking_hotel_photos sample rows');
+    } elseif (!is_file($repoRoot . '/images/hotel_booking/1/hotel/1/hb_seed_01.jpg')) {
+        hb_fail('images/hotel_booking/1/hotel/1/hb_seed_01.jpg sample file missing');
+    } elseif (strpos((string) file_get_contents($repoRoot . '/booking/index.php'), 'hb-hotel-card-gallery') === false) {
+        hb_fail('booking index must render hotel card gallery with arrows and counter');
+    } elseif (strpos((string) file_get_contents($repoRoot . '/booking/rooms.php'), 'hb-room-card-gallery') === false) {
+        hb_fail('booking rooms must render room card gallery with arrows and counter');
+    } elseif (!is_file($repoRoot . '/booking/js/hotel-booking-gallery.js')) {
+        hb_fail('booking/js/hotel-booking-gallery.js shared gallery helper missing');
     } elseif (strpos($helperSource, 'target="_blank"') === false && strpos($helperSource, "target='_blank'") === false) {
         hb_fail('itm_hotel_booking_render_photo_thumbnail_link must open full image in new tab');
     } else {

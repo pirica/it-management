@@ -39,11 +39,7 @@ $rateDiscountMap = itm_hotel_booking_special_rate_discount_map($conn, $company_i
 $rateProgramOptions = itm_hotel_booking_portal_rate_program_options();
 $codeRateOptions = itm_hotel_booking_portal_code_rate_options();
 
-$hotelPhotos = itm_hotel_booking_photos_load($conn, $company_id, 'hotel_booking_hotel_photos', 'hotel_id', $hotelId);
-$hotelCoverUrl = APPURL . '/images/image_2.jpg';
-if (!empty($hotelPhotos[0]['stored_filename'])) {
-    $hotelCoverUrl = itm_hotel_booking_photo_public_url($company_id, 'hotel', $hotelId, $hotelPhotos[0]['stored_filename']);
-}
+$hotelPhotoUrls = itm_hotel_booking_portal_hotel_photo_urls($conn, $company_id, $hotelId);
 
 $amenityRows = [];
 $astmt = mysqli_prepare($conn, 'SELECT DISTINCT COALESCE(a.name, u.name) AS name, COALESCE(NULLIF(a.icon_slug, \'\'), \'\') AS icon_slug
@@ -286,11 +282,18 @@ $filterOptions = [
 </div>
 <button type="button" class="hb-room-details-link hb-room-details-open" data-type-id="<?php echo (int) $card['type_id']; ?>" title="View room details">View room details</button>
 </div>
-<div class="hb-room-card-img" style="background-image:url('<?php echo htmlspecialchars($card['image_url'], ENT_QUOTES, 'UTF-8'); ?>')">
-<?php if (empty($card['available'])): ?>
-<span class="hb-sold-out-badge"><?php echo empty($card['fits_occupancy']) ? 'Guests exceed capacity' : 'Sold out'; ?></span>
-<?php endif; ?>
-</div>
+<?php
+$soldOutInner = '';
+if (empty($card['available'])) {
+    $soldOutInner = '<span class="hb-sold-out-badge">' . htmlspecialchars(empty($card['fits_occupancy']) ? 'Guests exceed capacity' : 'Sold out', ENT_QUOTES, 'UTF-8') . '</span>';
+}
+echo hb_portal_render_image_gallery(
+    $card['image_urls'] ?? [$card['image_url']],
+    'hb-room-card-gallery',
+    'hb-gallery hb-room-card-img',
+    $soldOutInner
+);
+?>
 <div class="hb-room-card-body">
 <p class="hb-room-meta"><?php echo htmlspecialchars($card['bed_summary'], ENT_QUOTES, 'UTF-8'); ?><?php if ($card['type_size_sqm'] !== ''): ?> · <?php echo htmlspecialchars((string) $card['type_size_sqm'], ENT_QUOTES, 'UTF-8'); ?> m²<?php endif; ?><?php if ($card['view_label'] !== ''): ?> · <?php echo htmlspecialchars($card['view_label'], ENT_QUOTES, 'UTF-8'); ?> view<?php endif; ?></p>
 <?php if (!empty($card['type_description'])): ?>
@@ -321,7 +324,7 @@ $filterOptions = [
 
 <aside class="hb-select-room-aside">
 <div class="hb-hotel-side-card">
-<div class="hb-hotel-side-img" style="background-image:url('<?php echo htmlspecialchars($hotelCoverUrl, ENT_QUOTES, 'UTF-8'); ?>')"></div>
+<?php echo hb_portal_render_image_gallery($hotelPhotoUrls, 'hb-hotel-side-gallery', 'hb-gallery hb-hotel-side-img'); ?>
 <h2><?php echo htmlspecialchars($hotel['name'], ENT_QUOTES, 'UTF-8'); ?></h2>
 <?php hb_portal_render_guest_rating_reviews($reviewsUrl); ?>
 <?php if (!empty($hotel['location'])): ?>

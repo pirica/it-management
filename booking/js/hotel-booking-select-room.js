@@ -506,4 +506,8 @@
   });
 
   updatePrices();
+
+  if (typeof window.HB_initGalleries === 'function') {
+    HB_initGalleries(document);
+  }
 })();

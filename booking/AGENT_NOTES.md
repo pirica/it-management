@@ -18,8 +18,8 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 
 ## 4. Entry points
 
-- `index.php` — hotel list (all active `hotel_booking_hotels` across tenants) + detail modal
-- `rooms.php` — **Step 1 of 4** Select a Room.
+- `index.php` — hotel list (all active `hotel_booking_hotels` across tenants); each card image has gallery **‹ ›** arrows and **`1 / N`** counter when multiple photos exist; **Details** opens the same gallery in the modal
+- `rooms.php` — **Step 1 of 4** Select a Room; room-type cards and hotel sidebar use gallery **‹ ›** arrows + **`1 / N`** counter; **View room details** modal uses the same gallery
 - `rooms/select-rate.php` — **Step 2 of 4** Select a Rate (active `hotel_booking_portal_rate_plans` per hotel; posts `portal_rate_plan_id`; special requests, comments).
 - `rooms/customize.php` — **Step 3 of 4**: main column upgrade card; **View room details** opens the same room-detail modal as Step 1 (no Quick compare link); right column stacks stepper then **Reservation summary** (tourist tax €2/guest/night from settings).
 - `rooms/room-single.php` — **Step 4 of 4** guest form: locked check-in/out from draft; saves `hotel_bookings.portal_rate_plan_id` from checkout draft; email (`filter_var`) and phone (E.164 `+` country code) validated server-side.
