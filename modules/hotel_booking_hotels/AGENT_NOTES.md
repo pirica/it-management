@@ -22,7 +22,7 @@ Tenant CRUD for hospitality properties (`hotel_booking_hotels`). Supports photo 
 
 ## 4. Business Rules (Critical for Agents)
 
-- **Photo storage:** files under `images/hotel_booking/{company_id}/hotel/{hotel_id}/` via `itm_hotel_booking_photo_storage_dir()`.
+- **Photo storage:** files under `booking/images/{hotel_id}/hotel_photos/` via `itm_hotel_booking_photo_storage_dir($hotelId, 'hotel_photos')`.
 - **Upload field:** create/edit forms use `hb_photos[]` (multiple) handled by `itm_hotel_booking_photos_handle_upload()` after save. Disk names are randomized via `itm_hotel_booking_photo_random_stored_filename()`; `original_filename` keeps the client name for display only. Edit forms POST `record_id` and use `enctype="multipart/form-data"`.
 - **List thumbnails:** index shows **all** photos per hotel (not only cover); each opens full size in a new tab.
 - **Edit thumbnails:** existing photos render above the file input via `itm_hotel_booking_photos_for_parent_table()` + `itm_hotel_booking_render_photo_thumbnail_link()`.
@@ -73,12 +73,12 @@ Tenant CRUD for hospitality properties (`hotel_booking_hotels`). Supports photo 
 
 ```php
 $photos = itm_hotel_booking_photos_for_parent_table($conn, $companyId, 'hotel_booking_hotels', $hotelId);
-$url = itm_hotel_booking_photo_public_url($companyId, 'hotel', $hotelId, $photos[0]['stored_filename'] ?? '');
+$url = itm_hotel_booking_photo_public_url($hotelId, 'hotel_photos', $photos[0]['stored_filename'] ?? '');
 ```
 
 ---
 
 ## 12. Module Owner Notes
 
-- Shared helpers: `includes/itm_hotel_booking.php` — admin thumbnails use `itm_app_root_public_path_prefix()` + `images/hotel_booking/…`; public portal uses `APPURL` + same relative path (`booking/.htaccess` rewrite).
-- Public portal: `booking/index.php` loads hotel photos with `itm_hotel_booking_photos_load()`
+- Shared helpers: `includes/itm_hotel_booking.php` — admin thumbnails use `itm_app_root_public_path_prefix()` + `booking/images/{hotel_id}/hotel_photos/…`; public portal uses `APPURL/images/{hotel_id}/hotel_photos/…`.
+- Public portal: `booking/index.php` loads hotel photos with `itm_hotel_booking_photos_load()` and `itm_hotel_booking_photo_public_url($hotelId, 'hotel_photos', …)`.

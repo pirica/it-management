@@ -345,7 +345,7 @@ if (!function_exists('itm_ensure_companies_company_unique')) {
 /**
  * Web path prefix for the ITM app root (e.g. /it-management), not the current script folder.
  *
- * Why: booking/index.php and scripts/*.php must still resolve images/hotel_booking/... under app root.
+ * Why: booking portal and admin pages resolve uploaded photos under booking/images/{hotel_id}/…
  */
 if (!function_exists('itm_app_root_public_path_prefix')) {
     function itm_app_root_public_path_prefix() {

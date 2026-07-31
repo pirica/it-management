@@ -86,10 +86,10 @@ if ($stmt) {
         $row['photos'] = [];
         foreach (itm_hotel_booking_photos_load($conn, $hotelCompanyId, 'hotel_booking_hotel_photos', 'hotel_id', $hid) as $photo) {
             $storedFilename = (string) ($photo['stored_filename'] ?? '');
-            if (!itm_hotel_booking_photo_is_servable($hotelCompanyId, 'hotel', $hid, $storedFilename)) {
+            if (!itm_hotel_booking_photo_is_servable($hid, 'hotel_photos', $storedFilename)) {
                 continue;
             }
-            $photo['public_url'] = itm_hotel_booking_photo_public_url($hotelCompanyId, 'hotel', $hid, $storedFilename);
+            $photo['public_url'] = itm_hotel_booking_photo_public_url($hid, 'hotel_photos', $storedFilename);
             $row['photos'][] = $photo;
         }
         $row['nearby'] = hb_hotel_nearby_rows($conn, $hotelCompanyId, $hid);

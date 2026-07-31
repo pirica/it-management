@@ -46,13 +46,30 @@ Hotel administration lives in ITM modules: `modules/hotel_bookings/`, `modules/h
 | Includes | `includes/portal_chrome.php`, `portal_checkout.php`, `portal_room_detail.php` |
 | CSS | `css/hotel-booking-modern.css` only |
 | JS | `js/hotel-booking-{public,dates,amenity-icons,gallery,select-room,customize,change-booking,confirmation-pdf}.js` |
-| Images | `images/amenities/*.svg` (+ `ATTRIBUTION.md`); hotel/room photos come from `images/hotel_booking/{company_id}/…` via ITM upload helpers |
+| Images | `images/amenities/*.svg` (+ `ATTRIBUTION.md`); portal fallbacks `image_2.jpg`, `room-5.jpg`, etc.; uploaded hotel photos in `booking/images/{hotel_id}/hotel_photos/`; room-type photos in `booking/images/{hotel_id}/room_types_photos/` (served as `APPURL/images/{hotel_id}/…`) |
 
-## 8. Photo galleries (booking portal)
+## 8. Photo storage and galleries
+
+### Disk layout (per hotel)
+
+| Folder | Admin module | Portal usage |
+|--------|----------------|--------------|
+| `booking/images/{hotel_id}/hotel_photos/` | `modules/hotel_booking_hotels/` | Hotel cards on `index.php`, hotel sidebar on `rooms.php` |
+| `booking/images/{hotel_id}/room_types_photos/` | `modules/booking_rooms_types/` | Room-type cards and modals on `rooms.php` (shared by every physical room of that type) |
+| `booking/images/{hotel_id}/room_photos/` | `modules/hotel_booking_room_photos/` | Optional per-room overrides (not used on `rooms.php` type cards) |
+
+Room-type uploads from **Room Types** are mirrored into every active hotel folder for the tenant (`itm_hotel_booking_photo_storage_abs_dirs_for_scope()`). Portal URLs always use the **current** `hotel_id` from the page query string.
+
+### Gallery UI
 
 - Shared gallery: `js/hotel-booking-gallery.js` — `HB_galleryMarkup()`, `HB_bindGallery()`, `HB_initGalleries()`.
 - **Hotel detail modal** (`index.php` → `hotel-booking-public.js`): prev/next arrows + `1 / N` counter overlay on all hotel photos.
-- **Room detail modal** (`rooms.php`, `rooms/customize.php` → `portal_room_detail.php`): same gallery markup via `hb_portal_gallery_html()`; arrows hidden when only one image (`hb-gallery-wrap--single`).
+- **Room cards and detail modal** (`rooms.php`, `rooms/customize.php` → `portal_room_detail.php`): `hb_portal_room_type_photo_urls()` + `hb_portal_render_image_gallery()` (detail modal uses `hb_portal_gallery_html()` wrapper); arrows hidden when only one image (`hb-gallery-wrap--single`).
 - Counter format uses spaces: `1 / 12`. Arrow controls use dark translucent squares (see `css/hotel-booking-modern.css` `.hb-gallery-*`).
+
+### Sample data backfill
+
+`php scripts/seed_hotel_booking_sample_photos.php --apply` — copies seed JPEGs into `booking/images/1/hotel_photos/` and `room_types_photos/` and upserts `hotel_booking_hotel_photos` / `booking_rooms_type_photos` rows.
+
 
 Removed legacy Colorlib template tree: `about.php`, `contact.php`, `services.php`, `404.php`, `config/config.php` (PDO), `includes/header.php` / `footer.php`, vendored `scss/`, `css/style.css`, jQuery/Bootstrap JS stack, `fonts/`, and the entire `admin-panel/` folder.

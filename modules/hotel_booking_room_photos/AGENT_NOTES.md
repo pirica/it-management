@@ -26,7 +26,7 @@ This module manages the storage, metadata, and visual display of photo assets as
 - **Tenant isolation:** All operations are scoped by session `company_id`.
 - **File integrity:** Allowed formats: JPG, JPEG, PNG, GIF, WEBP.
 - **Multiple uploads:** Create form accepts multiple files in one POST.
-- **Storage location:** `images/hotel_booking/{company_id}/room/{room_id}/` via `itm_hotel_booking_photo_storage_dir()`.
+- **Storage location:** `booking/images/{hotel_id}/room_photos/` (hotel resolved from `hotel_booking_rooms.hotel_id`).
 
 ---
 

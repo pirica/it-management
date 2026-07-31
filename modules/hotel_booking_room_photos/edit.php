@@ -68,8 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
                 $errors[] = "File '{$orig}' has an invalid extension. Only JPG, JPEG, PNG, GIF, and WEBP are allowed.";
             } else {
-                $scope = 'room';
-                $relDir = itm_hotel_booking_photo_storage_dir($company_id, $scope, $roomId);
+                $hotelId = itm_hotel_booking_room_hotel_id($conn, (int) $company_id, $roomId);
+                $relDir = itm_hotel_booking_photo_storage_dir($hotelId, 'room_photos');
                 $absDir = rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relDir);
 
                 if (!function_exists('itm_ensure_upload_directory')) {
@@ -85,7 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     if (move_uploaded_file($tmpName, $dest)) {
                         // Delete old file if it exists and we're either changing the room or just replacing the image
-                        $oldRelDir = itm_hotel_booking_photo_storage_dir($company_id, $scope, $data['room_id']);
+                        $oldHotelId = itm_hotel_booking_room_hotel_id($conn, (int) $company_id, (int) $data['room_id']);
+                        $oldRelDir = itm_hotel_booking_photo_storage_dir($oldHotelId, 'room_photos');
                         $oldAbsDir = rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $oldRelDir);
                         $oldFile = $oldAbsDir . DIRECTORY_SEPARATOR . $data['stored_filename'];
                         if (is_file($oldFile)) {
@@ -100,13 +101,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif (!$hasNewFile && $roomId !== (int)$data['room_id'] && empty($errors)) {
         // If room is changed but no new file is uploaded, move the physical file to the new room's directory!
-        $scope = 'room';
+        $oldHotelId = itm_hotel_booking_room_hotel_id($conn, (int) $company_id, (int) $data['room_id']);
+        $newHotelId = itm_hotel_booking_room_hotel_id($conn, (int) $company_id, $roomId);
 
-        $oldRelDir = itm_hotel_booking_photo_storage_dir($company_id, $scope, $data['room_id']);
+        $oldRelDir = itm_hotel_booking_photo_storage_dir($oldHotelId, 'room_photos');
         $oldAbsDir = rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $oldRelDir);
         $oldFile = $oldAbsDir . DIRECTORY_SEPARATOR . $data['stored_filename'];
 
-        $newRelDir = itm_hotel_booking_photo_storage_dir($company_id, $scope, $roomId);
+        $newRelDir = itm_hotel_booking_photo_storage_dir($newHotelId, 'room_photos');
         $newAbsDir = rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $newRelDir);
 
         if (!function_exists('itm_ensure_upload_directory')) {
@@ -147,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$photoUrl = itm_hotel_booking_photo_public_url($company_id, 'room', $data['room_id'], $data['stored_filename']);
+$photoUrl = itm_hotel_booking_photo_public_url_for_room($conn, $company_id, (int) $data['room_id'], $data['stored_filename']);
 ?>
 <!DOCTYPE html>
 <html lang="en">

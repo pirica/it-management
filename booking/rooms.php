@@ -115,7 +115,7 @@ foreach ($rooms as $room) {
     if (!isset($cards[$typeKey])) {
         $code = strtoupper((string) ($room['type_code'] ?? ''));
         $fallbackImg = APPURL . ($typeDefaultImages[$code] ?? '/images/room-5.jpg');
-        $photoUrls = hb_portal_room_type_photo_urls($conn, $company_id, $typeKey, $roomId, $fallbackImg);
+        $photoUrls = hb_portal_room_type_photo_urls($conn, $company_id, $hotelId, $typeKey, $fallbackImg);
         $imgUrl = $photoUrls[0] ?? $fallbackImg;
         $bullets = [];
         $rawBullets = (string) ($room['details_bullets'] ?? '');
@@ -288,7 +288,7 @@ if (empty($card['available'])) {
     $soldOutInner = '<span class="hb-sold-out-badge">' . htmlspecialchars(empty($card['fits_occupancy']) ? 'Guests exceed capacity' : 'Sold out', ENT_QUOTES, 'UTF-8') . '</span>';
 }
 echo hb_portal_render_image_gallery(
-    $card['image_urls'] ?? [$card['image_url']],
+    $card['photo_urls'] ?? [$card['image_url']],
     'hb-room-card-gallery',
     'hb-gallery hb-room-card-img',
     $soldOutInner
