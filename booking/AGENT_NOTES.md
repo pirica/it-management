@@ -71,5 +71,24 @@ Room-type uploads from **Room Types** are mirrored into every active hotel folde
 
 `php scripts/seed_hotel_booking_sample_photos.php --apply` — copies seed JPEGs into `booking/images/1/hotel_photos/` and `room_types_photos/` and upserts `hotel_booking_hotel_photos` / `booking_rooms_type_photos` rows.
 
+## 9. Portal step pricing (no hardcoded checkout amounts)
+
+Per-hotel portal math is **not** hardcoded in `booking/*.php` or `booking/js/*.js`. Values load from `hotel_booking_hotels` via `itm_hotel_booking_portal_hotel_pricing()`:
+
+| Column | Used for |
+|--------|----------|
+| `portal_breakfast_adult_price_per_night` | Breakfast rate plan add-on (adults) |
+| `portal_breakfast_child_price_per_night` | Breakfast rate plan add-on (children); Step 2 info banner |
+| `portal_child_nightly_supplement` | Extra per child on nightly room quote |
+| `portal_extra_adult_supplement_percent` | % of base rate per adult above 2 per room |
+| `portal_pet_daily_fee` | Pet checkbox add-on per night (Step 2) |
+
+**Admin:** [Portal Rate Plans](http://localhost/it-management/modules/hotel_booking_portal_rate_plans/index.php) — **Portal step pricing** form (per selected hotel). Schema defaults match `itm_hotel_booking_portal_pricing_defaults()` when columns are unset.
+
+**Tourist tax** remains company-level on `hotel_booking_settings.tourist_tax_per_person_per_night` ([Hotel Booking Settings](http://localhost/it-management/modules/hotel_booking_settings/index.php)).
+
+**JS:** `rooms.php` passes `portalPricing` + `pricingDefaults` on `window.HB_SELECT_ROOM` for live occupancy/rate recalculation (`hotel-booking-select-room.js`).
+
+**Migration (existing DBs):** `db/migrations/hotel_booking_portal_hotel_pricing.sql` (destructive `hotel_booking_hotels` replace — back up before apply).
 
 Removed legacy Colorlib template tree: `about.php`, `contact.php`, `services.php`, `404.php`, `config/config.php` (PDO), `includes/header.php` / `footer.php`, vendored `scss/`, `css/style.css`, jQuery/Bootstrap JS stack, `fonts/`, and the entire `admin-panel/` folder.

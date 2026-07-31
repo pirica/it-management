@@ -8,7 +8,7 @@ Tenant CRUD for hospitality properties (`hotel_booking_hotels`). Supports photo 
 
 ## 2. Key Tables
 
-- **hotel_booking_hotels** — hotel master data (name, location, check-in/out, currency, policies)
+- **hotel_booking_hotels** — hotel master data (name, location, check-in/out, currency, policies, **portal step pricing columns**)
 - **hotel_booking_hotel_photos** — image metadata (`stored_filename`, `is_cover`, `sort_order`) linked by `hotel_id`
 
 ---
@@ -26,6 +26,7 @@ Tenant CRUD for hospitality properties (`hotel_booking_hotels`). Supports photo 
 - **Upload field:** create/edit forms use `hb_photos[]` (multiple) handled by `itm_hotel_booking_photos_handle_upload()` after save. Disk names are randomized via `itm_hotel_booking_photo_random_stored_filename()`; `original_filename` keeps the client name for display only. Edit forms POST `record_id` and use `enctype="multipart/form-data"`.
 - **List thumbnails:** index shows **all** photos per hotel (not only cover); each opens full size in a new tab.
 - **Edit thumbnails:** existing photos render above the file input via `itm_hotel_booking_photos_for_parent_table()` + `itm_hotel_booking_render_photo_thumbnail_link()`.
+- **Portal step pricing:** `portal_breakfast_adult_price_per_night`, `portal_breakfast_child_price_per_night`, `portal_child_nightly_supplement`, `portal_extra_adult_supplement_percent`, `portal_pet_daily_fee` on `hotel_booking_hotels` — edited in **Portal Rate Plans** admin (`modules/hotel_booking_portal_rate_plans/index.php`), not on this module's forms.
 
 ---
 

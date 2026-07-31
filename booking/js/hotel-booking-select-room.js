@@ -142,9 +142,10 @@
 
   function portalPricing() {
     var p = cfg.portalPricing || {};
+    var d = cfg.pricingDefaults || {};
     return {
-      child_nightly_supplement: parseFloat(p.child_nightly_supplement) || 22,
-      extra_adult_supplement_percent: parseFloat(p.extra_adult_supplement_percent) || 35
+      child_nightly_supplement: parseFloat(p.child_nightly_supplement != null ? p.child_nightly_supplement : d.child_nightly_supplement) || 0,
+      extra_adult_supplement_percent: parseFloat(p.extra_adult_supplement_percent != null ? p.extra_adult_supplement_percent : d.extra_adult_supplement_percent) || 0
     };
   }
 

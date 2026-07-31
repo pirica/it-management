@@ -425,6 +425,7 @@ window.HB_SELECT_ROOM = <?php echo json_encode([
     'rateDiscountPercents' => $rateDiscountMap,
     'currencySymbol' => ($currency === 'EUR' ? '€' : $currency . ' '),
     'portalPricing' => $portalPricing,
+    'pricingDefaults' => itm_hotel_booking_portal_pricing_defaults(),
     'typeDetails' => $typeDetailsHtml,
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>

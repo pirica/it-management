@@ -93,7 +93,7 @@ Hotel photos are managed in **Hotels** (`modules/hotel_booking_hotels/`). **Room
 
 Draft state (dates, rate, occupancy, upgrade) is stored in session via `itm_hotel_booking_portal_draft_*` helpers until step 4 succeeds.
 
-**Pricing:** nightly room charges, special-rate discount, breakfast supplement, pet fee, tourist tax (`hotel_booking_settings.tourist_tax_per_person_per_night`, default €2/guest/night in seeds). Breakdown helpers live in `itm_hotel_booking_portal_checkout_breakdown()`.
+**Pricing:** nightly room charges use `hotel_booking_rooms.price_per_night` plus per-hotel portal rules on `hotel_booking_hotels` (breakfast adult/child add-on, child nightly supplement, extra-adult %, pet daily fee — edited in **Portal Rate Plans** admin, not hardcoded in `booking/`). Special-rate discount % comes from `hotel_booking_special_rates`. Tourist tax is company-level (`hotel_booking_settings.tourist_tax_per_person_per_night`, default €2/guest/night in seeds). Breakdown: `itm_hotel_booking_portal_checkout_breakdown()` → `itm_hotel_booking_portal_hotel_pricing()`.
 
 **Availability:** `itm_hotel_booking_has_overlap()` blocks double-booking; cancelled bookings are excluded from overlap.
 
@@ -126,7 +126,7 @@ After lookup:
 | Table | Portal use |
 |-------|------------|
 | `hotel_booking_settings` | `public_portal_enabled`, welcome copy, tourist tax, reviews URL |
-| `hotel_booking_hotels` | Property name, location, phone, website, currency, check-in/out times |
+| `hotel_booking_hotels` | Property name, location, phone, website, currency, check-in/out times, **portal step pricing** (`portal_breakfast_*`, `portal_child_nightly_supplement`, `portal_extra_adult_supplement_percent`, `portal_pet_daily_fee`) |
 | `hotel_booking_rooms` | Inventory, `price_per_night`, link to room type |
 | `booking_rooms_types` | Type name, bed summary, upgrade pricing |
 | `hotel_bookings` | Reservations; segment status FKs; `notes` (rate plan, occupancy meta, comments) |
@@ -151,7 +151,7 @@ After lookup:
 | `modules/hotel_booking_rooms/` | Physical rooms |
 | `modules/booking_rooms_types/` | Room types, upgrade targets |
 | `modules/hotel_booking_settings/` | Portal on/off, welcome text, tourist tax |
-| `modules/hotel_booking_portal_rate_plans/` | Cancellation policy URLs per rate slot |
+| `modules/hotel_booking_portal_rate_plans/` | Cancellation policy URLs per rate slot; **portal step pricing** form per hotel |
 | `modules/hotel_booking_special_rates/` | Discount programs per hotel |
 | `modules/hotel_booking_amenities/` | Amenity catalog + icon slugs |
 | `modules/hotel_booking_room_utilities/` | Room ↔ amenity links |
@@ -197,6 +197,7 @@ Seed example: company 1 **TechCorp Retreat**, reservation IDs from `hotel_bookin
 | **Manage auth** | Last name + numeric ID only — weak for high-value reservations; acceptable for demo/internal use. |
 | **Fallback room images** | Code references `room-3.jpg`, `room-5.jpg`, `room-6.jpg`, `image_2.jpg` under `booking/images/` but only amenity SVGs exist on disk — broken fallbacks until photos uploaded or assets added. |
 | **`hotel_booking_portal_rate_plans`** | Required for cancellation policy links; verify script fails if migration not applied on live DB (`db/migrations/hotel_booking_portal_rate_plans.sql`). |
+| **Portal pricing columns** | `hotel_booking_hotels` portal pricing fields — apply `db/migrations/hotel_booking_portal_hotel_pricing.sql` on existing DBs (destructive; back up hotel rows first). |
 | **Portal user accounts** | Optional `auth/*` rarely used; logout currently redirects to login, not home (pending UX tweak). |
 | **Stay bar on manage** | Shows **Edit stay** (same as checkout) rather than exit/logout — may confuse guests who only wanted to leave manage view. |
 | **Occupancy modal on manage** | Stay bar includes occupancy trigger but manage page does not load occupancy modal JS — control is inert there. |
