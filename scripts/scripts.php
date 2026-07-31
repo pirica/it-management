@@ -1838,6 +1838,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
+                    <td><a href="seed_hotel_booking_sample_photos.php" target="_blank" rel="nofollow noreferrer">seed_hotel_booking_sample_photos.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Copy TechCorp Retreat demo hotel photos to <code>booking/images/hotel-sample-*.jpg</code> and <code>images/hotel_booking/1/hotel/1/hb_seed_*.jpg</code>; upsert <code>hotel_booking_hotel_photos</code> rows (<code>--apply</code> writes).</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/seed_hotel_booking_sample_photos.php --apply</code></td>
+                </tr>
+                <tr data-tags="Mixed">
                     <td><a href="verify_hotel_booking.php" target="_blank" rel="nofollow noreferrer">verify_hotel_booking.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>

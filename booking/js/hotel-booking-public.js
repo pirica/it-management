@@ -88,19 +88,39 @@
     var idx = 0;
     var el = root.querySelector('.hb-gallery');
     var counter = root.querySelector('.hb-gallery-counter');
+    var wrap = root.querySelector('.hb-gallery-wrap');
+    var prevBtn = root.querySelector('.hb-gallery-prev');
+    var nextBtn = root.querySelector('.hb-gallery-next');
+    var multi = urls.length > 1;
+    if (wrap) {
+      wrap.classList.toggle('is-single', !multi);
+    }
     function show(i) {
       idx = (i + urls.length) % urls.length;
-      if (el) el.style.backgroundImage = "url('" + urls[idx].replace(/'/g, '%27') + "')";
-      if (counter) counter.textContent = (idx + 1) + '/' + urls.length;
+      if (el) {
+        el.style.backgroundImage = "url('" + urls[idx].replace(/'/g, '%27') + "')";
+      }
+      if (counter) {
+        counter.textContent = (idx + 1) + ' / ' + urls.length;
+      }
     }
-    root.querySelector('.hb-gallery-prev')?.addEventListener('click', function (e) {
+    function onNavClick(e, delta) {
       e.preventDefault();
-      show(idx - 1);
-    });
-    root.querySelector('.hb-gallery-next')?.addEventListener('click', function (e) {
-      e.preventDefault();
-      show(idx + 1);
-    });
+      e.stopPropagation();
+      if (multi) {
+        show(idx + delta);
+      }
+    }
+    if (prevBtn) {
+      prevBtn.addEventListener('click', function (e) {
+        onNavClick(e, -1);
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function (e) {
+        onNavClick(e, 1);
+      });
+    }
     show(0);
   }
 
@@ -219,10 +239,10 @@
       '<div class="hb-detail">' +
       '<div class="hb-detail-left">' +
       '<div class="hb-gallery-wrap">' +
-      '<button type="button" class="hb-gallery-prev" title="Previous image">‹</button>' +
+      '<button type="button" class="hb-gallery-prev" title="Previous image" aria-label="Previous image">&#8249;</button>' +
       '<div class="hb-gallery"></div>' +
-      '<button type="button" class="hb-gallery-next" title="Next image">›</button>' +
-      '<span class="hb-gallery-counter">1/' + urls.length + '</span>' +
+      '<button type="button" class="hb-gallery-next" title="Next image" aria-label="Next image">&#8250;</button>' +
+      '<span class="hb-gallery-counter" aria-live="polite">1 / ' + urls.length + '</span>' +
       '</div>' +
       '<div class="hb-title-row">' +
       '<h2 class="hb-detail-title">' + escapeHtml(h.name) + '</h2>' +
@@ -298,6 +318,15 @@
     modal.hidden = true;
     document.body.classList.remove('hb-modal-open');
   }
+
+  document.querySelectorAll('.hb-hotel-card').forEach(function (card) {
+    var hotelId = parseInt(card.getAttribute('data-hotel-id'), 10);
+    var h = map[hotelId];
+    if (!h) {
+      return;
+    }
+    bindGallery(card, photoUrls(h));
+  });
 
   document.querySelectorAll('.hb-open-hotel').forEach(function (btn) {
     btn.addEventListener('click', function () {

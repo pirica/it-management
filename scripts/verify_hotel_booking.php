@@ -498,6 +498,12 @@ if (!is_file($hotelsIndex)) {
     } elseif (!is_file($repoRoot . '/booking/.htaccess')
         || strpos((string) file_get_contents($repoRoot . '/booking/.htaccess'), 'images/hotel_booking') === false) {
         hb_fail('booking/.htaccess must rewrite portal images/hotel_booking to app storage');
+    } elseif (strpos((string) file_get_contents($repoRoot . '/db/02_data.sql'), 'hb_seed_01.jpg') === false) {
+        hb_fail('db/02_data.sql must seed hotel_booking_hotel_photos sample rows');
+    } elseif (!is_file($repoRoot . '/images/hotel_booking/1/hotel/1/hb_seed_01.jpg')) {
+        hb_fail('images/hotel_booking/1/hotel/1/hb_seed_01.jpg sample file missing');
+    } elseif (strpos((string) file_get_contents($repoRoot . '/booking/index.php'), 'hb-hotel-card-gallery') === false) {
+        hb_fail('booking index must render hotel card gallery with arrows and counter');
     } elseif (strpos($helperSource, 'target="_blank"') === false && strpos($helperSource, "target='_blank'") === false) {
         hb_fail('itm_hotel_booking_render_photo_thumbnail_link must open full image in new tab');
     } else {
