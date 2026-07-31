@@ -40,12 +40,7 @@ while ($roomQuery && ($roomRow = mysqli_fetch_assoc($roomQuery))) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $token = (string)($_POST['csrf_token'] ?? '');
-    $sessionToken = (string)($_SESSION['csrf_token'] ?? '');
-    if ($token === '' || $sessionToken === '' || !hash_equals($sessionToken, $token)) {
-        http_response_code(403);
-        die('Forbidden: invalid CSRF token.');
-    }
+    itm_require_post_csrf();
 
     $roomId = isset($_POST['room_id']) ? (int)$_POST['room_id'] : 0;
     $sortOrder = isset($_POST['sort_order']) ? (int)$_POST['sort_order'] : 0;
