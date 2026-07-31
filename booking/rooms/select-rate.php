@@ -20,6 +20,9 @@ if (!$room) {
 }
 
 $hotelId = (int) ($room['hotel_id'] ?? 0);
+$portalPricing = itm_hotel_booking_portal_hotel_pricing($conn, $company_id, $hotelId);
+$breakfastChildPrice = (float) $portalPricing['breakfast_child_price_per_night'];
+$petDailyFee = (float) $portalPricing['pet_daily_fee'];
 $today = date('Y-m-d');
 $checkInIso = $checkInParam;
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkInIso) || $checkInIso < $today) {
@@ -54,6 +57,8 @@ foreach ($ratePlans as $plan) {
         continue;
     }
     $draftSlice = [
+        'company_id' => $company_id,
+        'hotel_id' => $hotelId,
         'rate_plan' => $slug,
         'traveling_with_pet' => 0,
         'service_animal' => 0,
@@ -66,9 +71,11 @@ foreach ($ratePlans as $plan) {
         $occupancy,
         $discountPercent,
         $draftSlice,
-        (float) ($settings['tourist_tax_per_person_per_night'] ?? 0)
+        (float) ($settings['tourist_tax_per_person_per_night'] ?? 0),
+        $conn,
+        $company_id
     );
-    $listStayTotal = itm_hotel_booking_compute_stay_payment($basePerNight, $checkInIso, $checkOutIso, $occupancy, 0);
+    $listStayTotal = itm_hotel_booking_compute_stay_payment($basePerNight, $checkInIso, $checkOutIso, $occupancy, 0, $portalPricing);
     $isBreakfast = $slug === 'breakfast';
     $ratePlanRows[] = [
         'id' => (int) ($plan['id'] ?? 0),
@@ -94,6 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Please select a rate.';
         } else {
             $draft = [
+                'company_id' => $company_id,
                 'room_id' => $roomId,
                 'hotel_id' => $hotelId,
                 'check_in' => $checkInIso,
@@ -117,7 +125,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$breakfastInfo = "Rates including breakfast reflect adults only. Children's breakfast is charged directly at the Hotel. Children aged 11 up to and including 17 years old pay a supplement of 20 EUR per day per child should they wish to have breakfast.";
+$breakfastInfo = "Rates including breakfast reflect adults only. Children's breakfast is charged directly at the Hotel. Children aged 11 up to and including 17 years old pay a supplement of "
+    . number_format($breakfastChildPrice, 2, '.', '')
+    . ' per day per child should they wish to have breakfast.';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -169,7 +179,7 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
 <h2 class="hb-rate-option-title"><?php echo htmlspecialchars($planRow['name'], ENT_QUOTES, 'UTF-8'); ?></h2>
 <p class="hb-rate-badge">Pay when you stay</p>
 <?php if ($isBreakfast): ?>
-<p class="hb-rate-policy">Breakfast add-on: <?php echo htmlspecialchars(hb_portal_money_format(itm_hotel_booking_portal_breakfast_adult_price(), $currency), ENT_QUOTES, 'UTF-8'); ?> per adult, <?php echo htmlspecialchars(hb_portal_money_format(itm_hotel_booking_portal_breakfast_child_price(), $currency), ENT_QUOTES, 'UTF-8'); ?> per child per night (babies <?php echo htmlspecialchars(hb_portal_money_format(0, $currency), ENT_QUOTES, 'UTF-8'); ?>).</p>
+<p class="hb-rate-policy">Breakfast add-on: <?php echo htmlspecialchars(hb_portal_money_format(itm_hotel_booking_portal_breakfast_adult_price($conn, $company_id, $hotelId), $currency), ENT_QUOTES, 'UTF-8'); ?> per adult, <?php echo htmlspecialchars(hb_portal_money_format(itm_hotel_booking_portal_breakfast_child_price($conn, $company_id, $hotelId), $currency), ENT_QUOTES, 'UTF-8'); ?> per child per night (babies <?php echo htmlspecialchars(hb_portal_money_format(0, $currency), ENT_QUOTES, 'UTF-8'); ?>).</p>
 <?php else: ?>
 <p class="hb-rate-policy">Breakfast not included.</p>
 <?php endif; ?>
@@ -189,7 +199,7 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
 <input type="checkbox" name="traveling_with_pet" value="1">
 <span>Traveling with a pet</span>
 </label>
-<p class="hb-checkout-hint">Pets allowed, 50.00€ non-refundable fee, 30 kg maximum, Daily Fee Applies, fee in euros</p>
+<p class="hb-checkout-hint">Pets allowed, <?php echo htmlspecialchars(number_format($petDailyFee, 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>€ non-refundable fee, 30 kg maximum, Daily Fee Applies, fee in euros</p>
 <label class="hb-filter-check hb-checkout-check">
 <input type="checkbox" name="service_animal" value="1">
 <span>Traveling with a service animal</span>

@@ -208,8 +208,8 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
         $available = $roomId > 0 && !$blocked && $fits
             && !itm_hotel_booking_has_overlap($conn, $companyId, $roomId, $checkInIso, $checkOutIso);
         $basePrice = (float) ($sampleRoom['price_per_night'] ?? 0);
-        $listQuoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, 0);
-        $quoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, (float) $discountPercent);
+        $listQuoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, 0, itm_hotel_booking_portal_hotel_pricing($conn, $companyId, $hotelId));
+        $quoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, (float) $discountPercent, itm_hotel_booking_portal_hotel_pricing($conn, $companyId, $hotelId));
 
         return [
             'type_id' => $typeId,

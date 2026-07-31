@@ -20,6 +20,7 @@ if (!$hotel) {
 }
 $company_id = (int) ($hotel['company_id'] ?? hb_public_company_id($conn));
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
+$portalPricing = itm_hotel_booking_portal_hotel_pricing($conn, $company_id, $hotelId);
 
 $today = date('Y-m-d');
 $checkInIso = $checkInParam;
@@ -130,8 +131,8 @@ foreach ($rooms as $room) {
         ];
         $fits = itm_hotel_booking_room_type_fits_occupancy($typeRow, $occupancy);
         $basePrice = (float) $room['price_per_night'];
-        $listQuoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, 0);
-        $quoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, $discountPercent);
+        $listQuoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, 0, $portalPricing);
+        $quoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, $discountPercent, $portalPricing);
 
         $cards[$typeKey] = [
             'type_id' => $typeKey,
@@ -163,8 +164,8 @@ foreach ($rooms as $room) {
             if ((float) $room['price_per_night'] < $cards[$typeKey]['base_price']) {
                 $cards[$typeKey]['base_price'] = (float) $room['price_per_night'];
                 $cards[$typeKey]['book_room_id'] = $roomId;
-                $cards[$typeKey]['list_quoted_price'] = itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $occupancy, 0);
-                $cards[$typeKey]['quoted_price'] = itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $occupancy, $discountPercent);
+                $cards[$typeKey]['list_quoted_price'] = itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $occupancy, 0, $portalPricing);
+                $cards[$typeKey]['quoted_price'] = itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $occupancy, $discountPercent, $portalPricing);
             }
         }
         $cards[$typeKey]['available'] = $cards[$typeKey]['available_units'] > 0;
@@ -423,6 +424,8 @@ window.HB_SELECT_ROOM = <?php echo json_encode([
     'resolvedRateSlug' => $resolvedRateSlug,
     'rateDiscountPercents' => $rateDiscountMap,
     'currencySymbol' => ($currency === 'EUR' ? '€' : $currency . ' '),
+    'portalPricing' => $portalPricing,
+    'pricingDefaults' => itm_hotel_booking_portal_pricing_defaults(),
     'typeDetails' => $typeDetailsHtml,
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>

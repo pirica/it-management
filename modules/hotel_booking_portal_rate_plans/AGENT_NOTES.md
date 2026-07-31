@@ -1,34 +1,25 @@
-# AGENT_NOTES.md - Portal Rate Plans
+# hotel_booking_portal_rate_plans
 
-## 1. Module Purpose
+## 1. Purpose
 
-Admin UI for **Step 2** portal rate plan cancellation policy URLs (`hotel_booking_portal_rate_plans`). Guests open the policy matching their booked rate on Manage my booking and payment confirmation.
+Admin UI for **Step 2** portal rate plans (`hotel_booking_portal_rate_plans`) and **per-hotel portal pricing** stored on `hotel_booking_hotels` (breakfast add-on, child/extra-adult supplements, pet fee). Guests see computed totals on Select a Rate and later checkout steps.
 
-## 2. Key Tables
+## 2. Tables
 
-- **hotel_booking_portal_rate_plans** — per-hotel `plan_slot` (tinyint 1–127, unique with `company_id` + `hotel_id`), `rate_plan_slug`, `name`, `cancellation_policy_url`, `cancellation_policy_html`, `active`.
+- **hotel_booking_portal_rate_plans** — per-hotel `plan_slot` (1–127), `rate_plan_slug`, `name`, `cancellation_policy_url`, `cancellation_policy_html`, `active`.
+- **hotel_booking_hotels** (pricing columns) — `portal_breakfast_adult_price_per_night`, `portal_breakfast_child_price_per_night`, `portal_child_nightly_supplement`, `portal_extra_adult_supplement_percent`, `portal_pet_daily_fee`.
 
-## 3. Business Rules
+## 3. Business rules
 
-- Built-in templates (slots 1–4): `itm_hotel_booking_portal_rate_plan_definitions()` (`room_only`, `breakfast`, `flexible`, `non_refundable`).
-- `itm_hotel_booking_ensure_portal_rate_plans_for_hotel()` seeds missing built-in rows with default paths under `booking/cancellation_policy/` — called from **index.php only** (not create POST).
-- **Custom slots (5+):** **create.php** INSERTs via `itm_hotel_booking_portal_rate_plan_create()`; optional template dropdown prefills slot/name/slug but does not block custom values. Default `plan_slot` = `itm_hotel_booking_portal_rate_plan_next_free_slot()`.
-- Uniqueness: `itm_hotel_booking_portal_rate_plan_slot_in_use()` on `(company_id, hotel_id, plan_slot)` for live rows.
-- List: `itm_hotel_booking_portal_rate_plans_admin_rows()` returns **all** DB rows for the hotel (ordered by `plan_slot`), not only the four definitions.
-- Guest lookup: `itm_hotel_booking_portal_parse_rate_plan_from_notes()` reads `Rate plan:` on `hotel_bookings.notes`; bookings also store `hotel_bookings.portal_rate_plan_id` (FK to plan `name`). Cancellation URL: `itm_hotel_booking_portal_resolve_cancellation_policy_url_for_booking()`.
-- Public Step 2 (`booking/rooms/select-rate.php`) lists active `hotel_booking_portal_rate_plans` per hotel; selected plan id is stored on the booking at checkout.
+- `itm_hotel_booking_ensure_portal_rate_plans_for_hotel()` seeds four default slots when a hotel is opened in admin.
+- **Portal step pricing** on `index.php` (hotel selector) saves via `itm_hotel_booking_portal_save_hotel_pricing()` — one set of values per hotel, used by `itm_hotel_booking_portal_hotel_pricing()` in checkout math.
+- List: `itm_hotel_booking_portal_rate_plans_admin_rows()` returns all DB rows for the hotel (ordered by `plan_slot`).
+- Public Step 2 (`booking/rooms/select-rate.php`) lists active plans; selected plan id is stored on the booking at checkout.
 
-## 4. UI
+## 4. Helpers
 
-- Bespoke `index.php`: hotel selector + URL/active table (not flattened CRUD).
-- **create.php** — hotel, plan slot (number), plan name, Step 2 slug, optional policy URL, active; optional template quick-fill; **💾** Save INSERT → **edit.php** for Quill policy HTML.
-- **edit.php** — Plan name, Step 2 slug, cancellation policy URL, Active checkbox, Quill WYSIWYG for policy HTML (saved to DB + local HTML file when URL is relative).
-- **view.php** — read-only summary + policy preview.
-- **delete.php** — hard `DELETE` (not soft-delete); `itm_hotel_booking_ensure_portal_rate_plans_for_hotel()` recreates default slot rows on next index load.
-- List **index.php** toolbar: vertical stack **➕** then **🏨** (`itm_hospitality_render_list_create_and_hub()`). **create.php** shows **🏨** hub link (stacked under title). **🔙** returns to index with `hotel_id`.
+- `includes/itm_hotel_booking.php` — `itm_hotel_booking_portal_pricing_defaults()`, `itm_hotel_booking_portal_hotel_pricing()`, `itm_hotel_booking_portal_save_hotel_pricing()`, `itm_hotel_booking_portal_quote_nightly()` (accepts pricing array).
 
-## 5. Pitfalls
+## 5. Regression
 
-- Relative URLs resolve against the public booking portal base (`APPURL`); prefer `cancellation_policy/N_cancellation_policy.html` or full https links.
-- Changing seeds does not update live DB rows; edit via this module.
-- Do not call `ensure_portal_rate_plans_for_hotel()` on create POST — it can recreate deleted built-in slots before a custom INSERT.
+- `php scripts/verify_hotel_booking.php`

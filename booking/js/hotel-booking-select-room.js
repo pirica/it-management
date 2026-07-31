@@ -140,15 +140,27 @@
     return parseFloat(cfg.discountPercent || 0) || 0;
   }
 
+  function portalPricing() {
+    var p = cfg.portalPricing || {};
+    var d = cfg.pricingDefaults || {};
+    return {
+      child_nightly_supplement: parseFloat(p.child_nightly_supplement != null ? p.child_nightly_supplement : d.child_nightly_supplement) || 0,
+      extra_adult_supplement_percent: parseFloat(p.extra_adult_supplement_percent != null ? p.extra_adult_supplement_percent : d.extra_adult_supplement_percent) || 0
+    };
+  }
+
   function quoteNightlyUndiscounted(base) {
     var occ = currentOccupancy();
+    var pricing = portalPricing();
     var rooms = Math.max(1, Math.min(4, occ.rooms));
     var adults = Math.max(1, Math.min(12, occ.adults));
     var children = Math.max(0, Math.min(6, occ.children));
     var baseF = parseFloat(base) || 0;
     var included = 2 * rooms;
     var extraAdults = Math.max(0, adults - included);
-    return Math.round(baseF * rooms + extraAdults * (baseF * 0.35) + children * 22);
+    var extraPct = (parseFloat(pricing.extra_adult_supplement_percent) || 0) / 100;
+    var childSupp = parseFloat(pricing.child_nightly_supplement) || 0;
+    return Math.round(baseF * rooms + extraAdults * (baseF * extraPct) + children * childSupp);
   }
 
   function quoteNightly(base) {

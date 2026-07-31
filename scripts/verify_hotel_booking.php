@@ -114,6 +114,19 @@ if (abs(itm_hotel_booking_portal_breakfast_supplement_per_night(['adults' => 2, 
     hb_fail('portal breakfast supplement per night');
 }
 
+$resPricingCol = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_hotels LIKE 'portal_breakfast_adult_price_per_night'");
+if ($resPricingCol && mysqli_num_rows($resPricingCol) > 0) {
+    hb_pass('hotel_booking_hotels portal pricing columns');
+    $pricingRow = itm_hotel_booking_portal_hotel_pricing($conn, 1, 1);
+    if (is_array($pricingRow) && isset($pricingRow['breakfast_adult_price_per_night'])) {
+        hb_pass('portal hotel pricing loader');
+    } else {
+        hb_fail('portal hotel pricing loader');
+    }
+} else {
+    hb_fail('missing hotel_booking_hotels portal pricing columns — apply db/migrations/hotel_booking_portal_hotel_pricing.sql');
+}
+
 $upgradeDraft = [
     'base_price_per_night' => 100,
     'rate_plan' => 'room_only',
