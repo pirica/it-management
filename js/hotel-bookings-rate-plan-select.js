@@ -25,6 +25,13 @@
             return document.getElementById('hb-rate-plan-modal-title');
         }
 
+        function ensureModalOnBody() {
+            var modal = modalEl();
+            if (modal && modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+        }
+
         function moduleBase() {
             var frame = frameEl();
             var baseUrl = (frame && frame.getAttribute('data-base')) || (window.ITM_BASE_URL || '/');
@@ -110,28 +117,40 @@
             }
         }
 
+        function showModal(modal) {
+            modal.hidden = false;
+            modal.removeAttribute('hidden');
+            document.body.classList.add('hb-plan-maint-modal-open');
+        }
+
+        function hideModal(modal) {
+            modal.hidden = true;
+            modal.setAttribute('hidden', 'hidden');
+            document.body.classList.remove('hb-plan-maint-modal-open');
+        }
+
         function openRatePlanModal(url, mode) {
+            ensureModalOnBody();
             var modal = modalEl();
             var frame = frameEl();
             if (!modal || !frame || !url) {
-                return;
+                return false;
             }
             setModalTitle(mode || 'view');
             frame.src = url;
-            modal.hidden = false;
-            document.body.classList.add('hb-plan-maint-modal-open');
+            showModal(modal);
+            return true;
         }
 
         function closeRatePlanModal() {
             var modal = modalEl();
             var frame = frameEl();
             if (modal) {
-                modal.hidden = true;
+                hideModal(modal);
             }
             if (frame) {
                 frame.src = 'about:blank';
             }
-            document.body.classList.remove('hb-plan-maint-modal-open');
         }
 
         function upsertPlanOption(planId, label, hotelId) {
@@ -165,9 +184,18 @@
                 if (roomSelect) {
                     roomSelect.focus();
                 }
-                return;
+                return false;
             }
-            openRatePlanModal(moduleBase() + 'create.php?embed=1&hotel_id=' + encodeURIComponent(hotelId), 'create');
+            return openRatePlanModal(moduleBase() + 'create.php?embed=1&hotel_id=' + encodeURIComponent(hotelId), 'create');
+        }
+
+        function handleQuickAddSelection() {
+            if (planSelect.value !== ADD_VALUE) {
+                return false;
+            }
+            openCreateModal();
+            planSelect.value = previousPlanValue || '';
+            return true;
         }
 
         if (viewBtn) {
@@ -191,13 +219,15 @@
         }
 
         planSelect.addEventListener('change', function () {
-            if (planSelect.value === ADD_VALUE) {
-                planSelect.value = previousPlanValue || '';
-                openCreateModal();
+            if (handleQuickAddSelection()) {
                 return;
             }
             previousPlanValue = planSelect.value;
             updatePlanActionLinks();
+        });
+
+        planSelect.addEventListener('input', function () {
+            handleQuickAddSelection();
         });
 
         if (roomSelect) {
@@ -228,6 +258,7 @@
             }
         });
 
+        ensureModalOnBody();
         filterPlanOptions();
     }
 

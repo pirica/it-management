@@ -376,6 +376,14 @@ if (function_exists('itm_hospitality_render_list_create_and_hub')) {
     hb_fail('hospitality list create and hub stack helper missing');
 }
 
+require_once dirname(__DIR__) . '/modules/hotel_bookings/includes/hb_booking_form.php';
+$ratePlanFormFailures = hb_booking_rate_plan_form_audit_failures(dirname(__DIR__));
+if (empty($ratePlanFormFailures)) {
+    hb_pass('hotel bookings portal rate plan form contract');
+} else {
+    hb_fail('hotel bookings portal rate plan form: ' . implode('; ', $ratePlanFormFailures));
+}
+
 $bookingConfirmationPdfJs = dirname(__DIR__) . '/booking/js/hotel-booking-confirmation-pdf.js';
 if (is_file($bookingConfirmationPdfJs) && strpos((string) file_get_contents($bookingConfirmationPdfJs), 'hbSaveBookingConfirmationPdf') !== false) {
     hb_pass('booking confirmation pdf download script');

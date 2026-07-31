@@ -1067,9 +1067,10 @@ Run `verify_appointment.php` when changing `modules/appointment/`, `includes/itm
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/verify_hotel_booking.php` | Regression: core `hotel_booking_*` / `booking_rooms_types` tables, segment helper (`future`), company 1 `PENDING` future status seed, and subprocess render probe for all 13 Hospitality sidebar `index.php` modules |
+| `php scripts/verify_hotel_booking.php` | Regression: core `hotel_booking_*` / `booking_rooms_types` tables, segment helper (`future`), company 1 `PENDING` future status seed, portal rate plan form contract, and subprocess render probe for all 13 Hospitality sidebar `index.php` modules |
+| `php scripts/check_hotel_bookings_rate_plan_form.php` | Static gate: `__add_new__` portal rate plan select, `hb_booking_end_form_page()` body-level modal, rate-plan select JS quick-add handler |
 
-Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking/`, `includes/itm_hotel_booking.php`, or hotel booking DDL/seeds/triggers in `db/`.
+Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking/`, `includes/itm_hotel_booking.php`, or hotel booking DDL/seeds/triggers in `db/`. Run `check_hotel_bookings_rate_plan_form.php` when changing hotel bookings create/edit form or `js/hotel-bookings-rate-plan-select.js`.
 
 ### Email Management scripts
 
