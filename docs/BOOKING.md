@@ -1,6 +1,6 @@
-# Hotel Booking Public Portal
+# Hotel Booking & Hospitality Management System
 
-Comprehensive review and reference for the guest-facing hotel booking portal under `booking/`, its four-step checkout, manage-reservation flow, ITM admin modules, and shared helpers.
+Comprehensive review and reference for the guest-facing hotel booking portal under `booking/`, its four-step checkout, manage-reservation flow, the ITM Hospitality admin modules, and developer integration protocols.
 
 **Agent notes (folder):** `booking/AGENT_NOTES.md` — entry points and file layout.  
 **Helpers:** `includes/itm_hotel_booking.php` (loaded from `config/config.php`).
@@ -9,16 +9,20 @@ Comprehensive review and reference for the guest-facing hotel booking portal und
 
 ## 1. Intent & purpose
 
-The **public booking portal** (`booking/`) lets guests browse hotels, select dates and rooms, complete a four-step checkout without ITM employee login, and manage an existing reservation with **last name + confirmation number** (`hotel_bookings.id`).
+The **ITM Hospitality & Booking System** comprises a dual-sided architecture:
+1. A public, guest-facing **booking portal** (`booking/`) allowing guests to browse hotels, select dates/rooms, and complete checkouts.
+2. A private, staff-facing **Hospitality administration suite** under `modules/` allowing employees to configure inventory, rates, properties, and track check-ins, check-outs, and housekeeping statuses.
 
-Staff configure inventory, rates, and policies in ITM **Hospitality** modules (`modules/hotel_bookings/`, `modules/hotel_booking_hotels/`, etc.). The portal reads that data through MySQLi helpers scoped by `company_id`.
-
-**Design constraints:**
-
+### Guest Portal Design Constraints:
 - Procedural PHP; no separate framework under `booking/`.
 - `bootstrap.php` sets `ITM_HOTEL_BOOKING_PUBLIC_PORTAL` so `config/config.php` skips employee login for this tree.
 - Single stylesheet: `booking/css/hotel-booking-modern.css`.
 - No online payment gateway — confirmation states **Payment at the hotel**.
+
+### Administrative Backend Design Constraints:
+- Strict multi-tenant isolation scoped by `company_id`.
+- Inter-module data integrity and transactional consistency for booking modifications, room allocations, and housekeeping logs.
+- Dynamic responsive UI overlays with modular controls, planning colors, and custom grids.
 
 ---
 
@@ -102,7 +106,6 @@ Draft state (dates, rate, occupancy, upgrade) is stored in session via `itm_hote
 [users/bookings.php](http://localhost/it-management/booking/users/bookings.php) — guest enters **last name** + **reservation ID** (no account required).
 
 After lookup:
-
 - Main column: same confirmation card as `payment.php` (room **type** title without room number).
 - **Cancelled** stays: red header (`Reservation cancelled`), status badge, no PDF save.
 - Stay bar: hotel, dates, occupancy; **Edit stay** links back to date picker on home (checkout flow uses the same control).
@@ -121,20 +124,25 @@ After lookup:
 
 ---
 
-## 4. Database model (portal-relevant)
+## 4. Database model
 
-| Table | Portal use |
+| Table | Scoping / Use |
 |-------|------------|
 | `hotel_booking_settings` | `public_portal_enabled`, welcome copy, tourist tax, reviews URL |
 | `hotel_booking_hotels` | Property name, location, phone, website, currency, check-in/out times |
-| `hotel_booking_rooms` | Inventory, `price_per_night`, link to room type |
-| `booking_rooms_types` | Type name, bed summary, upgrade pricing |
-| `hotel_bookings` | Reservations; segment status FKs; `notes` (rate plan, occupancy meta, comments) |
-| `hotel_bookings_future` / `present` / `history` | Status lookups (`PENDING`, `CANCELLED`, etc.) — no ENUM |
+| `hotel_booking_rooms` | Inventory, `price_per_night`, link to room type, hotel references |
+| `booking_rooms_types` | Type name, bed summary, upgrade pricing and target room definitions |
+| `hotel_bookings` | Reservations; segment status FKs; payment details; planning color; `notes` (metadata) |
+| `hotel_bookings_future` | Status lookups for future stays (`PENDING`, `CANCELLED`, etc.) — no ENUM |
+| `hotel_bookings_present` | Status lookups for active stays (`CHECKED_IN`, `IN_HOUSE`, etc.) — no ENUM |
+| `hotel_bookings_history` | Status lookups for completed/past stays (`CHECKED_OUT`, `NO_SHOW`, etc.) — no ENUM |
 | `customers` | Guest PII; ensured on book via `itm_hotel_booking_ensure_customer_for_portal()` |
-| `hotel_booking_portal_rate_plans` | Per-hotel cancellation policy URLs (slots 1–4) |
+| `hotel_booking_portal_rate_plans` | Cancellation policy URLs (slots 1–4) and parent rate definitions |
 | `hotel_booking_special_rates` | Member, AAA, promo, etc. — discount % per hotel |
 | `hotel_booking_amenities` | Icons (`icon_slug` → `booking/images/amenities/*.svg`) |
+| `hotel_booking_room_utilities` | Junction table associating physical rooms with active amenities |
+| `hotel_booking_housekeeping_statuses` | Room cleaning state codes (`CLEAN`, `DIRTY`, `TOUCH_UP`, etc.) |
+| `hotel_booking_housekeeping_maintenance` | Action logs tracking out-of-order rooms and maintenance constraints |
 
 **Segment resolution:** `itm_hotel_booking_resolve_segment(check_in, check_out)` picks which status column applies (`future_status_id`, `present_status_id`, `history_status_id`). Online cancel only when segment is `future` and status is not already `CANCELLED`.
 
@@ -144,100 +152,164 @@ After lookup:
 
 ## 5. ITM admin modules (Hospitality sidebar)
 
-| Module | Purpose |
-|--------|---------|
-| `modules/hotel_bookings/` | Planning grid, Future/Present/History boards, booking CRUD |
-| `modules/hotel_booking_hotels/` | Properties, photos, nearby places |
-| `modules/hotel_booking_rooms/` | Physical rooms |
-| `modules/booking_rooms_types/` | Room types, upgrade targets |
-| `modules/hotel_booking_settings/` | Portal on/off, welcome text, tourist tax |
-| `modules/hotel_booking_portal_rate_plans/` | Cancellation policy URLs per rate slot |
-| `modules/hotel_booking_special_rates/` | Discount programs per hotel |
-| `modules/hotel_booking_amenities/` | Amenity catalog + icon slugs |
-| `modules/hotel_booking_room_utilities/` | Room ↔ amenity links |
-| `modules/hotel_booking_housekeeping_statuses/` | HK status lookup |
-| `modules/hotel_bookings_future` / `present` / `history` | Lifecycle status names |
+The backend administration of the Hospitality system features a comprehensive set of management tools accessible under the "Hospitality" section in the ITM sidebar:
 
-Fresh schema: `db/01_schema.sql`, seeds `db/02_data.sql`, triggers `db/03_triggers.sql`. Existing DBs: `db/migrations/hotel_booking*.sql` (apply in filename order).
-
----
-
-## 6. Local development URLs
-
-Open in a **new browser tab** (no employee login required for portal pages):
-
-| Page | URL |
-|------|-----|
-| Booking home | [http://localhost/it-management/booking/](http://localhost/it-management/booking/) |
-| Manage my booking | [http://localhost/it-management/booking/users/bookings.php](http://localhost/it-management/booking/users/bookings.php) |
-| Hotel bookings (admin) | [http://localhost/it-management/modules/hotel_bookings/index.php](http://localhost/it-management/modules/hotel_bookings/index.php) |
-| Portal rate plans (admin) | [http://localhost/it-management/modules/hotel_booking_portal_rate_plans/](http://localhost/it-management/modules/hotel_booking_portal_rate_plans/) |
-| Verify script (CLI) | `php scripts/verify_hotel_booking.php` |
-
-Seed example: company 1 **TechCorp Retreat**, reservation IDs from `hotel_bookings` after a test book.
+| Module | Location | Purpose |
+|--------|---------|---------|
+| **Hotel Bookings** | `modules/hotel_bookings/` | Operational planning grid, Future/Present/History status boards, and booking CRUD |
+| **Hotels** | `modules/hotel_booking_hotels/` | Configures property profiles, contact info, check-in rules, and photos |
+| **Rooms** | `modules/hotel_booking_rooms/` | Physical inventory tracking mapped to hotels and room types |
+| **Room Types** | `modules/booking_rooms_types/` | Bed specifications, standard pricing, and upgrade targets |
+| **Amenities** | `modules/hotel_booking_amenities/` | Shared lookup catalog for hotel amenities and icon slugs |
+| **Room Utilities** | `modules/hotel_booking_room_utilities/` | Maps specific amenities to physical rooms |
+| **Housekeeping Statuses**| `modules/hotel_booking_housekeeping_statuses/` | Cleaning codes and visual badges |
+| **Maintenance** | `modules/hotel_booking_housekeeping_maintenance/`| Housekeeping and out-of-order blocks |
+| **Portal Rate Plans** | `modules/hotel_booking_portal_rate_plans/` | Configures cancellation rules and rates per hotel slot |
+| **Special Rates** | `modules/hotel_booking_special_rates/` | Custom discount policies (AAA, points, promos) |
+| **Settings** | `modules/hotel_booking_settings/` | Toggle portal on/off, tourist tax rate, and welcome banners |
 
 ---
 
-## 7. Review (current state)
+## 6. Architecture of Administrative Backend Workflows
 
-### Strengths
+### A. Operational Planning Grid
+The core dashboard of the Hospitality backend features an interactive chronological planning grid (`modules/hotel_bookings/js/hotel-bookings-planning.js`):
+- **Draggable Bookings:** Bookings appear as horizontal blocks that can be resized or dragged across rooms and dates to adjust check-in/out schedules.
+- **Housekeeping Blocks:** Rooms marked as out-of-order or dirty appear highlighted to prevent staff from placing guests in unready rooms.
+- **Color Coding:** The background color of a booking block is dynamically driven by `hotel_bookings.booking_color`, allowing staff to categorize bookings visually.
 
-- **Clear four-step UX** aligned with major hotel sites; shared stepper and reservation summary reduce duplication.
-- **ITM integration** — one database, tenant scoping, audit triggers on admin tables, photo uploads via shared helpers.
-- **Manage booking** — lookup without passwords; cancellation policy, change (contact hotel), and online cancel while check-out is still in the future (future and present segments).
-- **Legacy cleanup** — removed Colorlib template, PDO admin-panel, and vendored jQuery/Bootstrap; ~37 active portal files remain.
-- **Regression script** — `scripts/verify_hotel_booking.php` covers segments, guest match, pricing, cancel helpers, PDF JS.
-- **Unicode & dates** — UTF-8 end-to-end; display dates dd/mm/yyyy via shared ITM helpers.
-
-### Gaps & risks
-
-| Area | Notes |
-|------|--------|
-| **No online payment** | By design; confirmation copy must stay accurate if payment is added later. |
-| **Manage auth** | Last name + numeric ID only — weak for high-value reservations; acceptable for demo/internal use. |
-| **Fallback room images** | Code references `room-3.jpg`, `room-5.jpg`, `room-6.jpg`, `image_2.jpg` under `booking/images/` but only amenity SVGs exist on disk — broken fallbacks until photos uploaded or assets added. |
-| **`hotel_booking_portal_rate_plans`** | Required for cancellation policy links; verify script fails if migration not applied on live DB (`db/migrations/hotel_booking_portal_rate_plans.sql`). |
-| **Portal user accounts** | Optional `auth/*` rarely used; logout currently redirects to login, not home (pending UX tweak). |
-| **Stay bar on manage** | Shows **Edit stay** (same as checkout) rather than exit/logout — may confuse guests who only wanted to leave manage view. |
-| **Occupancy modal on manage** | Stay bar includes occupancy trigger but manage page does not load occupancy modal JS — control is inert there. |
-| **Single company in session** | Welcome banner still uses `hb_public_company_id()`; hotel grid is cross-tenant. Booking steps resolve tenant from the selected hotel row. |
-
-### Recommended follow-ups (not implemented here)
-
-1. Add missing default JPG fallbacks or switch fallbacks to amenity-neutral placeholders.
-2. Apply `hotel_booking_portal_rate_plans` migration on all environments; keep `01_schema.sql` in sync.
-3. On manage booking: **Logout** → `auth/logout.php` → `index.php`; hide or wire occupancy control.
-4. Rate-limit manage lookup and cancel POSTs if exposed to the public internet.
-5. MBQA browser step for full portal flow (index → payment → manage cancel).
+### B. Segment Status Boards (Future / Present / History)
+Rather than a unified status column, bookings are managed across three distinct logical lifecycles based on chronological segments (Future, Present, Past).
+- Staff transition bookings between states (e.g. from `PENDING` to `CHECKED_IN`, then `CHECKED_OUT`).
+- The system automatically triggers the appropriate status lookup joins based on the active date segment of the booking.
 
 ---
 
-## 8. Troubleshooting
+## 7. Developer Guide: Portal Rate Plan Quick-Add Mechanism
 
-| Symptom | Likely cause |
-|---------|----------------|
-| Empty hotel list | No rows with `hotel_booking_hotels.active = 1` and `deleted_at IS NULL` (any company) |
-| Cancellation policy link missing | No `hotel_booking_portal_rate_plans` row or empty `cancellation_policy_url` |
-| `verify_hotel_booking.php` fails on rate plans table | Run `db/migrations/hotel_booking_portal_rate_plans.sql` on existing DB |
-| Room not available on book | Overlap with non-cancelled booking on same `room_id` |
-| Manage lookup fails | Last name must match `customers.name` (case-insensitive token match); ID = `hotel_bookings.id` |
-| Cancel button hidden | Stay not in `future` segment or already `CANCELLED` |
-| PDF download fails | CDN blocked for html2canvas/jsPDF; check browser console |
+To improve backend efficiency, the booking create and edit forms (`modules/hotel_bookings/create.php` and `edit.php`) feature an integrated **Portal Rate Plan Quick-Add** mechanism. This allows staff to quickly create, view, or edit a rate plan inline without navigating away from the current form.
 
-### Verification commands
-
-```bash
-php scripts/verify_hotel_booking.php
-php -l booking/bootstrap.php
-php -l booking/includes/portal_checkout.php
-php -l booking/users/bookings.php
+```
++--------------------------------------------------------+
+| Customer: [ Select Customer                       ]   |
+| Room:     [ Room 101 (Double)                     ]   |
+|                                                        |
+| Portal Rate Plan:                                      |
+| [ Standard Rate (RO)                             ] ➕  |
+|                                                        |
+|   +------------------------------------------------+   |
+|   |  #hb-rate-plan-modal                           |   |
+|   |  +------------------------------------------+  |   |
+|   |  | iframe: portal_rate_plans/create.php     |  |   |
+|   |  |                                          |  |   |
+|   |  | [ Save ]                                 |  |   |
+|   |  +------------------------------------------+  |   |
+|   +------------------------------------------------+   |
++--------------------------------------------------------+
 ```
 
-See also `scripts/SCRIPTS.md` — hotel booking section.
+### A. Dynamic Option Hook
+The select field for the Portal Rate Plan (`#hb-booking-portal-rate-plan-id`) includes a quick-add trigger option:
+```html
+<option value="__add_new__">➕</option>
+```
+When this option is selected, the JavaScript handler in `js/hotel-bookings-rate-plan-select.js` intercepts the change event, prevents default submission, and launches the iframe-based modal.
+
+### B. Iframe Modal Structure (`#hb-rate-plan-modal`)
+The modal is rendered at the body level (to avoid overflow clipping inside form layouts) using the helper `hb_booking_end_form_page()`.
+```html
+<div id="hb-rate-plan-modal" class="hb-modal-backdrop" hidden role="dialog" aria-modal="true">
+    <div class="hb-modal hb-plan-maint-modal">
+        <div class="hb-plan-maint-modal-head">
+            <h2 id="hb-rate-plan-modal-title">➕</h2>
+            <button type="button" data-hb-rate-plan-modal-close>✖</button>
+        </div>
+        <iframe id="hb-rate-plan-modal-frame" src="about:blank"></iframe>
+    </div>
+</div>
+```
+The iframe source is pointed dynamically to:
+- **Create:** `modules/hotel_booking_portal_rate_plans/create.php?embed=1`
+- **View:** `modules/hotel_booking_portal_rate_plans/view.php?id={id}&embed=1`
+- **Edit:** `modules/hotel_booking_portal_rate_plans/edit.php?id={id}&embed=1`
+
+If a room is selected in the parent form, its hotel ID is appended to the creation URL (`&hotel_id={hotel_id}`) to pre-select and lock the hotel context inside the iframe.
+
+### C. The HTML5 `postMessage` Event Contract
+The embedded rate plan pages communicate state changes to the parent frame using cross-document messaging (`window.parent.postMessage`). The parent window listens for these events to synchronize the dropdown list in real-time.
+
+#### 1. Cancel / Close Event
+When the user cancels or closes the embedded form, the iframe posts:
+```json
+{
+  "type": "hb_rate_plan_embed_close"
+}
+```
+**Action:** The parent script hides the modal and resets the select field to its prior selected value.
+
+#### 2. Saved Event
+When a rate plan is successfully created or updated, the iframe posts the new database row information:
+```json
+{
+  "type": "hb_rate_plan_embed_saved",
+  "id": 12,
+  "name": "Summer Promotion",
+  "rate_plan_slug": "summer_promo",
+  "hotel_id": 1
+}
+```
+**Action:** The parent script extracts the payload, dynamically inserts or updates the `<option>` tag in the parent `<select>` dropdown, pre-selects the new plan, and closes the modal.
+
+### D. Interactive Quick Actions (🔎, ✏️)
+Next to the rate plan dropdown, action controls `🔎` (View) and `✏️` (Edit) are rendered:
+- They are automatically hidden (`hidden`) when no rate plan is selected or if the field is empty.
+- When a valid, numeric rate plan ID is chosen, the buttons are revealed.
+- Clicking `🔎` or `✏️` loads the respective embedded path in the iframe modal.
+
+### E. Real-Time Hotel Filtering
+To prevent assigning mismatched rate plans, `js/hotel-bookings-rate-plan-select.js` binds to the room dropdown (`#hb-booking-room-id`):
+- Every room option carries a `data-hotel-id` attribute.
+- On room change, the script filters the rate plan dropdown options, hiding (`opt.hidden = true`) any plan whose `data-hotel-id` does not match the active room's hotel ID.
+- If the current selected plan belongs to a different hotel, the field is automatically reset to empty (`""`).
 
 ---
 
-## 9. Related files (quick index)
+## 8. Setup & Developer Diagnostics
+
+### Database Schema / Migrations
+The rate plan and upgrade structures require columns configured in `db/01_schema.sql` or applied manually on existing installations:
+- `db/migrations/hotel_booking_portal_rate_plans.sql` (Creates `hotel_booking_portal_rate_plans` and adds `portal_rate_plan_id` to bookings).
+- `db/migrations/booking_rooms_types_upgrade.sql` (Adds upgrade supplements).
+
+### Auto-generation of Default Rate Plans
+When loading the booking form, the system automatically checks if rate plans exist for the selected hotel. If missing, `itm_hotel_booking_ensure_portal_rate_plans_for_hotel()` dynamically inserts default slot configurations (up to slot 4) to ensure the system is ready to receive bookings.
+
+### Verification CLI Commands
+To verify the integrity of the hospitality backend and portal rate plan forms, run:
+
+```bash
+# Audits the rate plan quick-add modal, postMessage scripts, and file pathways
+php scripts/check_hotel_bookings_rate_plan_form.php
+
+# Exercises the entire hotel booking lifecycle, pricing algorithms, and segment transitions
+php scripts/verify_hotel_booking.php
+```
+
+---
+
+## 9. Troubleshooting & Common Pitfalls
+
+| Symptom | Likely Cause | Solution |
+|---------|--------------|----------|
+| **`➕` dropdown option missing** | Form rendered without `hb_booking_render_form_fields()` helper. | Verify that `create.php` and `edit.php` use the canonical field loader. |
+| **Modal doesn't close on Save** | Iframe omitted the `postMessage` call on success or script failed. | Check the iframe page's saving handler to ensure the `postMessage` contract is satisfied. |
+| **No rate plans listed** | Missing property row or ensure script failed. | Verify that `hotel_booking_hotels` is configured for the active company and that `itm_hotel_booking_ensure_portal_rate_plans_for_hotel` has run. |
+| **Quick Action buttons stay hidden**| Selected dropdown option is missing a valid numeric value. | Ensure option elements generated by `hb_booking_render_form_fields()` have a non-zero `value` attribute. |
+| **Overlapping Booking Error** | A non-cancelled booking already occupies the chosen room on those dates. | Use the planning grid to locate the conflicting block or check the `deleted_at` column. |
+
+---
+
+## 10. Related files (quick index)
 
 ```
 booking/
@@ -245,14 +317,21 @@ booking/
 ├── index.php, rooms.php, calendar.php
 ├── rooms/          # Steps 1–4, payment, confirmation-pdf
 ├── users/bookings.php
-├── cancellation_policy/*.html
-├── auth/           # Optional portal login
-├── includes/       # portal_chrome, portal_checkout, portal_room_detail
 ├── css/hotel-booking-modern.css
-├── js/hotel-booking-*.js
-└── images/amenities/*.svg
+└── js/hotel-booking-*.js
 
-includes/itm_hotel_booking.php
 modules/hotel_bookings/
-scripts/verify_hotel_booking.php
+├── index.php, create.php, edit.php, view.php, delete.php
+├── js/
+│   ├── hotel-bookings-date-picker.js
+│   └── hotel-bookings-planning.js
+└── includes/
+    └── hb_booking_form.php  # Form fields layout & quick-add modal
+
+js/
+└── hotel-bookings-rate-plan-select.js  # Parent window event handler
+
+scripts/
+├── check_hotel_bookings_rate_plan_form.php  # Portal rate-plan static audit
+└── verify_hotel_booking.php                  # Full-stack database regression
 ```
