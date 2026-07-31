@@ -5,7 +5,7 @@
 >
 > Standards: `scripts/SCRIPTS.md`. Catalog UI: `scripts/scripts.php`.
 
-Generated from catalog on 2026-07-16. Catalog rows classified: **234**.
+Generated from catalog on 2026-07-16. Catalog rows classified: **236**.
 
 | Tier | Count | Purpose |
 |------|------:|---------|
@@ -14,7 +14,7 @@ Generated from catalog on 2026-07-16. Catalog rows classified: **234**.
 | 2 | 20 | Manual static `check_*` cluster |
 | 3 | 150 | Runtime `verify_*` / `repro_*` / diagnostics |
 | 4 | 16 | Browser / human-flow / MBQA |
-| 5 | 37 | Excluded from blanket runs (destructive / maintenance) |
+| 5 | 39 | Excluded from blanket runs (destructive / maintenance) |
 
 ## Runner coverage map
 
@@ -402,6 +402,7 @@ php scripts/employees_delete_clear_table_test.php
 | 5 | `bypass_v2.php` | isolated-env | destructive | excluded-blanket | Dev session hijack |
 | 5 | `cleanup_equipment_test_module_artifacts.php` | isolated-env | destructive | excluded-blanket | Deletes test companies and scaffold folders |
 | 5 | `delete_clone_employee.php` | isolated-env | destructive | excluded-blanket | Deletes cloned employee trees |
+| 5 | `deletev2.php` | isolated-env | destructive | excluded-blanket | Deployment tool: clones repo and imports DB |
 | 5 | `detect_fk_dropdown_ui_risk.php` | isolated-env | destructive | excluded-blanket | Safe by default; --repair-catalogs is destructive |
 | 5 | `empty_folders.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Overwrites index.html / .htaccess tree-wide |
 | 5 | `ensure_equipment_type_modules.php` | isolated-env | destructive | excluded-blanket | Creates is_* module folders |
@@ -416,6 +417,7 @@ php scripts/employees_delete_clear_table_test.php
 | 5 | `normalize_database_sql_created_at.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
 | 5 | `perform_audit.php` | isolated-env | destructive | excluded-blanket | Subprocess-runs all scripts - unsafe umbrella |
 | 5 | `repair_table_from_schema.php` | isolated-env | destructive | excluded-blanket | Schema repair writes |
+| 5 | `reset_git_history.php` | isolated-env | destructive | excluded-blanket | Destructive utility to reset Git history and force-push |
 | 5 | `run_email_alert_rules.php` | isolated-env | destructive | excluded-blanket | Sends live emails when scheduled |
 | 5 | `seed_company_module_access.php` | isolated-env | destructive | excluded-blanket | Seeds CMA rows |
 | 5 | `sql_insert.php` | isolated-env | destructive | excluded-blanket | Admin raw INSERT |
@@ -430,7 +432,7 @@ Blanket plans must **not** execute these without an isolated disposable environm
 - Destructive DB: `force_delete_company.php`, `transfer_data_from_employee.php`, `delete_clone_employee.php`, `cleanup_equipment_test_module_artifacts.php`, `sql_insert.php`, `update_all_created_at.php` (non-dry-run), `detect_fk_dropdown_ui_risk.php --repair-catalogs`
 - Repo / tree writers: all `apply_*`, `fix_sql*`, `empty_folders.php`, `ensure_files_htaccess_chain.php`, `generate_tests.php`, `identify_modules.php`, `apply_module_sample_data_seed.php`
 - Unsafe umbrella: `perform_audit.php`
-- Dev / deploy danger: `bypass_login.php`, `bypass_v2.php`, `reset_git_history.php`
+- Dev / deploy danger: `bypass_login.php`, `bypass_v2.php`, `reset_git_history.php`, `deletev2.php`
 - Live side effects: `run_email_alert_rules.php` (unless intentionally testing SMTP)
 
 ## Maintenance

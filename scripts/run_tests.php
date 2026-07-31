@@ -334,13 +334,27 @@ $phpunit_xml = ROOT_PATH . 'phpunit/phpunit.xml';
 
 // Why: Inline environment variables (VAR=val cmd) are not supported by Windows cmd.exe.
 // We rely on putenv('ITM_SKIP_DB_TESTS=1') called earlier in this script.
-$command = escapeshellarg($php_bin);
+$command = escapeshellarg($php_bin) . ' -d variables_order=EGPCS';
 if ($run_coverage_html) {
     $command .= ' ' . itm_run_tests_php_ini_memory_flag();
 }
 $command .= ' ' . escapeshellarg($phpunit_bin)
     . ' -c ' . escapeshellarg($phpunit_xml)
     . ' --verbose';
+
+$extraArgs = [];
+if ($isCli) {
+    global $argv;
+    foreach (($argv ?? []) as $idx => $arg) {
+        if ($idx === 0) continue;
+        if ($arg === '--coverage') continue;
+        $extraArgs[] = escapeshellarg($arg);
+    }
+}
+if (!empty($extraArgs)) {
+    $command .= ' ' . implode(' ', $extraArgs);
+}
+
 if ($run_coverage_html) {
     if (!is_dir($coverage_html_dir)) {
         mkdir($coverage_html_dir, 0777, true);
@@ -383,6 +397,12 @@ if ($run_coverage_html) {
     if ($finalized !== null) {
         $coverage_report_file = $finalized;
     }
+}
+
+// Clean up any untracked folders created under modules/ during auto-scaffolding in tests
+if (DIRECTORY_SEPARATOR !== '\\') {
+    $repoRoot = dirname(__DIR__);
+    @exec('cd ' . escapeshellarg($repoRoot) . ' && git clean -fd modules/');
 }
 
 if (!$isCli) {
