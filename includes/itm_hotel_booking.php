@@ -167,6 +167,151 @@ if (!function_exists('itm_hotel_booking_photos_handle_upload')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_photo_unlink_stored_file')) {
+  function itm_hotel_booking_photo_unlink_stored_file($companyId, $scope, $parentId, $storedFilename) {
+    $storedFilename = basename((string) $storedFilename);
+    if ($storedFilename === '') {
+      return;
+    }
+    $relDir = itm_hotel_booking_photo_storage_dir($companyId, $scope, $parentId);
+    $absDir = rtrim(ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relDir);
+    $filePath = $absDir . DIRECTORY_SEPARATOR . $storedFilename;
+    if (is_file($filePath)) {
+      @unlink($filePath);
+    }
+  }
+}
+
+if (!function_exists('itm_hotel_booking_photo_delete_files_for_rows')) {
+  function itm_hotel_booking_photo_delete_files_for_rows($companyId, $scope, array $rows) {
+    $companyId = (int) $companyId;
+    $scope = preg_replace('/[^a-z_]/', '', (string) $scope);
+    foreach ($rows as $row) {
+      if (!is_array($row)) {
+        continue;
+      }
+      itm_hotel_booking_photo_unlink_stored_file(
+        $companyId,
+        $scope,
+        (int) ($row['room_id'] ?? 0),
+        (string) ($row['stored_filename'] ?? '')
+      );
+    }
+  }
+}
+
+if (!function_exists('itm_hotel_booking_photo_clear_cover_for_parent')) {
+  function itm_hotel_booking_photo_clear_cover_for_parent($conn, $companyId, $photoTable, $parentColumn, $parentId, $exceptPhotoId = 0) {
+    $allowed = [
+      'hotel_booking_hotel_photos' => 'hotel_id',
+      'hotel_booking_room_photos' => 'room_id',
+      'booking_rooms_type_photos' => 'room_type_id',
+    ];
+    if (!isset($allowed[$photoTable]) || $allowed[$photoTable] !== $parentColumn) {
+      return;
+    }
+    $companyId = (int) $companyId;
+    $parentId = (int) $parentId;
+    $exceptPhotoId = (int) $exceptPhotoId;
+    if ($companyId < 1 || $parentId < 1) {
+      return;
+    }
+    $sql = 'UPDATE `' . str_replace('`', '``', $photoTable) . '` SET is_cover = 0 WHERE company_id = ? AND `' . str_replace('`', '``', $parentColumn) . '` = ?';
+    if ($exceptPhotoId > 0) {
+      $sql .= ' AND id <> ?';
+    }
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return;
+    }
+    if ($exceptPhotoId > 0) {
+      mysqli_stmt_bind_param($stmt, 'iii', $companyId, $parentId, $exceptPhotoId);
+    } else {
+      mysqli_stmt_bind_param($stmt, 'ii', $companyId, $parentId);
+    }
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_room_photos_fetch_rows_for_delete')) {
+  function itm_hotel_booking_room_photos_fetch_rows_for_delete($conn, $companyId, $idList = null) {
+    $companyId = (int) $companyId;
+    if ($companyId < 1) {
+      return [];
+    }
+    if ($idList === null) {
+      $sql = 'SELECT id, room_id, stored_filename FROM hotel_booking_room_photos WHERE company_id = ?';
+      $stmt = mysqli_prepare($conn, $sql);
+      if (!$stmt) {
+        return [];
+      }
+      mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    } else {
+      $idList = array_values(array_filter(array_map('intval', $idList), static function ($id) {
+        return $id > 0;
+      }));
+      if (empty($idList)) {
+        return [];
+      }
+      $placeholders = implode(',', array_fill(0, count($idList), '?'));
+      $sql = 'SELECT id, room_id, stored_filename FROM hotel_booking_room_photos WHERE company_id = ? AND id IN (' . $placeholders . ')';
+      $stmt = mysqli_prepare($conn, $sql);
+      if (!$stmt) {
+        return [];
+      }
+      $types = 'i' . str_repeat('i', count($idList));
+      $params = array_merge([$companyId], $idList);
+      mysqli_stmt_bind_param($stmt, $types, ...$params);
+    }
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $rows = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+      $rows[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+    return $rows;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_room_photos_hard_delete')) {
+  function itm_hotel_booking_room_photos_hard_delete($conn, $companyId, $idList = null) {
+    $companyId = (int) $companyId;
+    if ($companyId < 1) {
+      return false;
+    }
+    $rows = itm_hotel_booking_room_photos_fetch_rows_for_delete($conn, $companyId, $idList);
+    itm_hotel_booking_photo_delete_files_for_rows($companyId, 'room', $rows);
+    if ($idList === null) {
+      $stmt = mysqli_prepare($conn, 'DELETE FROM hotel_booking_room_photos WHERE company_id = ?');
+      if (!$stmt) {
+        return false;
+      }
+      mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    } else {
+      $idList = array_values(array_filter(array_map('intval', $idList), static function ($id) {
+        return $id > 0;
+      }));
+      if (empty($idList)) {
+        return false;
+      }
+      $placeholders = implode(',', array_fill(0, count($idList), '?'));
+      $sql = 'DELETE FROM hotel_booking_room_photos WHERE company_id = ? AND id IN (' . $placeholders . ')';
+      $stmt = mysqli_prepare($conn, $sql);
+      if (!$stmt) {
+        return false;
+      }
+      $types = 'i' . str_repeat('i', count($idList));
+      $params = array_merge([$companyId], $idList);
+      mysqli_stmt_bind_param($stmt, $types, ...$params);
+    }
+    $ok = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+    return (bool) $ok;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_customer_last_name_matches')) {
   function itm_hotel_booking_customer_last_name_matches($customerName, $lastNameInput) {
     $lastNameInput = trim(mb_strtolower((string) $lastNameInput, 'UTF-8'));

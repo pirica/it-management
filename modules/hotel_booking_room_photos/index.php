@@ -7,6 +7,7 @@ $crud_action = $crud_action ?? 'index';
 require '../../config/config.php';
 require_once '../../includes/itm_hotel_booking.php';
 require_once '../../includes/itm_crud_fk_label_search.php';
+itm_require_crud_role_module_permission($conn, 'view', 'hotel_booking_room_photos');
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');
@@ -370,7 +371,28 @@ if ($page > $totalPages) {
 }
 $offset = ($page - 1) * $perPage;
 
-$rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
+$rowsRes = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
+$rowList = [];
+while ($rowsRes && ($listRow = mysqli_fetch_assoc($rowsRes))) {
+    $rowList[] = $listRow;
+}
+$roomLabelMap = [];
+if (!empty($rowList)) {
+    $roomIds = [];
+    foreach ($rowList as $listRow) {
+        $roomId = (int)($listRow['room_id'] ?? 0);
+        if ($roomId > 0) {
+            $roomIds[$roomId] = $roomId;
+        }
+    }
+    if (!empty($roomIds)) {
+        $roomIn = implode(',', array_map('intval', array_values($roomIds)));
+        $roomRes = mysqli_query($conn, 'SELECT id, room_number, name FROM hotel_booking_rooms WHERE company_id = ' . (int)$company_id . ' AND id IN (' . $roomIn . ')');
+        while ($roomRes && ($roomRow = mysqli_fetch_assoc($roomRes))) {
+            $roomLabelMap[(int)$roomRow['id']] = 'Room ' . $roomRow['room_number'] . ' - ' . $roomRow['name'];
+        }
+    }
+}
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 $newButtonPosition = itm_resolve_new_button_position($ui_config);
 ?>
@@ -450,14 +472,10 @@ $newButtonPosition = itm_resolve_new_button_position($ui_config);
             <?php if ($viewMode === 'gallery'): ?>
                 <!-- GALLERY GRID VIEW -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; margin-bottom: 20px;">
-                    <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
+                    <?php if (!empty($rowList)): foreach ($rowList as $row): ?>
                         <?php
                         $photoUrl = itm_hotel_booking_photo_public_url($company_id, 'room', $row['room_id'], $row['stored_filename']);
-                        $roomLabel = '';
-                        $roomQuery = mysqli_query($conn, 'SELECT room_number, name FROM hotel_booking_rooms WHERE id = ' . (int)$row['room_id'] . ' LIMIT 1');
-                        if ($roomQuery && ($roomRow = mysqli_fetch_assoc($roomQuery))) {
-                            $roomLabel = 'Room ' . $roomRow['room_number'] . ' - ' . $roomRow['name'];
-                        }
+                        $roomLabel = $roomLabelMap[(int)($row['room_id'] ?? 0)] ?? '';
                         ?>
                         <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 12px; height: 100%;">
                             <div style="position: relative; width: 100%; padding-top: 66.67%; overflow: hidden; border-radius: 6px; background-color: #1e1e1e;">
@@ -483,14 +501,14 @@ $newButtonPosition = itm_resolve_new_button_position($ui_config);
                                 </div>
                             </div>
                         </div>
-                    <?php endwhile; else: ?>
+                    <?php endforeach; else: ?>
                         <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 20px;">No records found.</div>
                     <?php endif; ?>
                 </div>
             <?php else: ?>
                 <!-- STANDARD TABLE VIEW -->
                 <div class="card" style="overflow:auto;">
-                    <table>
+                    <table data-itm-no-import-excel="1" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
                         <thead>
                         <tr>
                             <?php if ($showBulkActions): ?><th style="width:36px;"><input type="checkbox" id="select-all-rows" aria-label="Select all rows"></th><?php endif; ?>
@@ -511,7 +529,7 @@ $newButtonPosition = itm_resolve_new_button_position($ui_config);
                         </tr>
                         </thead>
                         <tbody>
-                        <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
+                        <?php if (!empty($rowList)): foreach ($rowList as $row): ?>
                             <?php
                             $photoUrl = itm_hotel_booking_photo_public_url($company_id, 'room', $row['room_id'], $row['stored_filename']);
                             ?>
@@ -523,14 +541,7 @@ $newButtonPosition = itm_resolve_new_button_position($ui_config);
                                 <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td>
                                         <?php if ($f === 'room_id'): ?>
-                                            <?php
-                                            $roomLabel = '';
-                                            $roomQuery = mysqli_query($conn, 'SELECT room_number, name FROM hotel_booking_rooms WHERE id = ' . (int)$row[$f] . ' LIMIT 1');
-                                            if ($roomQuery && ($roomRow = mysqli_fetch_assoc($roomQuery))) {
-                                                $roomLabel = 'Room ' . $roomRow['room_number'] . ' - ' . $roomRow['name'];
-                                            }
-                                            echo sanitize($roomLabel);
-                                            ?>
+                                            <?php echo sanitize($roomLabelMap[(int)($row[$f] ?? 0)] ?? ''); ?>
                                         <?php else: ?>
                                             <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
                                         <?php endif; ?>
@@ -546,7 +557,7 @@ $newButtonPosition = itm_resolve_new_button_position($ui_config);
                                     </form>
                                 </td>
                             </tr>
-                        <?php endwhile; else: ?>
+                        <?php endforeach; else: ?>
                             <tr><td colspan="<?php echo count($uiColumns) + ($showBulkActions ? 3 : 2); ?>" style="text-align:center;">No records found.</td></tr>
                         <?php endif; ?>
                         </tbody>

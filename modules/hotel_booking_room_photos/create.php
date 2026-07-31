@@ -36,6 +36,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
+        if ($isCover) {
+            itm_hotel_booking_photo_clear_cover_for_parent($conn, (int)$company_id, 'hotel_booking_room_photos', 'room_id', $roomId);
+        }
+
         $names = $_FILES['photo_files']['name'];
         $tmpNames = $_FILES['photo_files']['tmp_name'];
         $errs = $_FILES['photo_files']['error'];
@@ -107,7 +111,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New Room Photo - <?php echo sanitize($app_name ?? itm_ui_config_app_name($ui_config)); ?></title>
+    <?php
+    require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
+    $pageTitle = itm_crud_apply_module_icon_to_browser_title($conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0), basename(dirname($_SERVER['PHP_SELF'])), (string)($crud_title ?? ''));
+    ?>
+    <title><?php echo sanitize($pageTitle); ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($ui_config)); ?></title>
     <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
@@ -118,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="content">
             <?php echo itm_render_alert_errors($errors); ?>
 
-            <h1>New Room Photo</h1>
+            <h1 title="Create">➕</h1>
             <form method="POST" enctype="multipart/form-data" class="form-grid" style="max-width:980px;">
                 <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
 

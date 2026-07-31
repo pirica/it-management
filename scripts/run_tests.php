@@ -399,12 +399,6 @@ if ($run_coverage_html) {
     }
 }
 
-// Clean up any untracked folders created under modules/ during auto-scaffolding in tests
-if (DIRECTORY_SEPARATOR !== '\\') {
-    $repoRoot = dirname(__DIR__);
-    @exec('cd ' . escapeshellarg($repoRoot) . ' && git clean -fd modules/');
-}
-
 if (!$isCli) {
     echo '</pre>';
     itm_run_tests_echo_coverage_link($isCli, $want_coverage, $coverage_report_file, $coverage_skipped_no_driver);
