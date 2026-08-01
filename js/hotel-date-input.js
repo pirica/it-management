@@ -29,7 +29,7 @@
         if (!dt) {
             return '';
         }
-        return dt.getDate() + '/' + MONTHS[dt.getMonth()] + '/' + dt.getFullYear();
+        return String(dt.getDate()).padStart(2, '0') + '/' + MONTHS[dt.getMonth()] + '/' + dt.getFullYear();
     }
 
     function parseHotelDateText(text) {

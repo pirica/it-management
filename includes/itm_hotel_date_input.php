@@ -25,7 +25,7 @@ if (!function_exists('itm_render_hotel_date_input')) {
         $nativeId = $id . '_native';
         ?>
 <div class="hb-hotel-date-field">
-<input type="text" name="<?php echo sanitize($name); ?>" id="<?php echo sanitize($id); ?>" class="<?php echo sanitize($class); ?> hb-hotel-date-text" value="<?php echo sanitize($display); ?>" placeholder="31/Aug/2026" autocomplete="off"<?php echo $required ? ' required' : ''; ?>>
+<input type="text" name="<?php echo sanitize($name); ?>" id="<?php echo sanitize($id); ?>" class="<?php echo sanitize($class); ?> hb-hotel-date-text" value="<?php echo sanitize($display); ?>" autocomplete="off"<?php echo $required ? ' required' : ''; ?>>
 <input type="date" id="<?php echo sanitize($nativeId); ?>" class="hb-hotel-date-native" value="<?php echo sanitize(substr($iso, 0, 10)); ?>"<?php echo $minIso !== '' ? ' min="' . sanitize($minIso) . '"' : ''; ?> aria-hidden="true" tabindex="-1">
 <button type="button" class="btn btn-sm hb-hotel-date-open" data-hb-hotel-date-for="<?php echo sanitize($id); ?>" title="Pick date">📅</button>
 </div>

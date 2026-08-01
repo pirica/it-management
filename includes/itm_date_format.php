@@ -187,7 +187,7 @@ if (!function_exists('itm_format_date_display')) {
 
 if (!function_exists('itm_format_hotel_date_display')) {
     /**
-     * Hospitality portal/admin display: j/Mon/Y (e.g. 31/Aug/2026).
+     * Hospitality portal/admin display: d/Mon/Y (e.g. 31/Aug/2026, 01/Oct/2026).
      */
     function itm_format_hotel_date_display($rawValue)
     {
@@ -202,7 +202,7 @@ if (!function_exists('itm_format_hotel_date_display')) {
             return trim((string) $rawValue);
         }
 
-        return $dt->format('j/M/Y');
+        return $dt->format('d/M/Y');
     }
 }
 

@@ -55,18 +55,32 @@
     return Math.max(1, diff);
   }
 
-  function displayRange(checkInYmd, checkOutYmd) {
+  var HOTEL_DATE_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  function formatHotelDateYmd(ymd) {
     if (typeof window.itmHotelDateFormatYmd === 'function') {
-      var out = window.itmHotelDateFormatYmd(checkOutYmd);
-      var inn = window.itmHotelDateFormatYmd(checkInYmd);
-      if (inn && out) {
-        return inn + ' - ' + out;
-      }
+      return window.itmHotelDateFormatYmd(ymd);
     }
-    var inD = parseYmd(checkInYmd);
-    var outD = parseYmd(checkOutYmd);
-    var opts = { month: 'short', day: 'numeric' };
-    return inD.toLocaleString('en-GB', opts) + ' - ' + outD.toLocaleString('en-GB', opts);
+    var parts = String(ymd || '').split('-');
+    if (parts.length !== 3) {
+      return '';
+    }
+    var y = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10) - 1;
+    var d = parseInt(parts[2], 10);
+    if (!y || m < 0 || m > 11 || d < 1) {
+      return '';
+    }
+    return String(d).padStart(2, '0') + '/' + HOTEL_DATE_MONTHS[m] + '/' + y;
+  }
+
+  function displayRange(checkInYmd, checkOutYmd) {
+    var inn = formatHotelDateYmd(checkInYmd);
+    var out = formatHotelDateYmd(checkOutYmd);
+    if (inn && out) {
+      return inn + ' - ' + out;
+    }
+    return '';
   }
 
   function effectiveCheckOut() {

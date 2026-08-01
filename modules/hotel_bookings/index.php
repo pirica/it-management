@@ -234,7 +234,7 @@ $nextAnchorQuery = hb_planning_filter_query($nextAnchorDate, $filterHotel, $filt
 <input type="hidden" name="mode" value="planning">
 <input type="hidden" name="plan_sort" value="<?php echo sanitize($planSort); ?>">
 <input type="hidden" name="plan_dir" value="<?php echo sanitize($planDir); ?>">
-<label>Anchor <input type="text" name="anchor" value="<?php echo sanitize(itm_format_hotel_date_display($anchorDate)); ?>" placeholder="31/Aug/2026" class="hb-hotel-date-text"></label>
+<label>Anchor <input type="text" name="anchor" value="<?php echo sanitize(itm_format_hotel_date_display($anchorDate)); ?>" class="hb-hotel-date-text"></label>
 <label>Hotel
 <select name="hotel_id">
 <option value="0">All</option>
