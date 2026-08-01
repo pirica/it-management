@@ -1,9 +1,9 @@
 .hb-mode-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
 .hb-mode-tabs a.btn-primary{opacity:1}
-.hb-plan-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px}
+.hb-plan-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:12px}
 .hb-plan-filters label{display:flex;flex-direction:column;gap:4px;font-size:12px}
 .hb-plan-days-input{width:64px}
-.hb-plan-search-btn{align-self:flex-end;margin-bottom:1px}
+.hb-plan-search-label button{align-self:stretch;min-height:41px}
 .hb-plan-grid-wrap{overflow:auto;border:1px solid var(--border-color,#ddd);border-radius:8px}
 .hb-plan-grid{min-width:900px;border-collapse:collapse;width:100%}
 .hb-plan-grid th,.hb-plan-grid td{border:1px solid var(--border-color,#e0e0e0);padding:6px 8px;font-size:12px;vertical-align:middle}
