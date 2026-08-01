@@ -33,8 +33,8 @@ if ($hotelId < 1) {
 $typeOptions = itm_hotel_booking_room_type_options_for_hotel($conn, $company_id, $hotelId);
 $form = [
     'room_type_id' => (int) ($row['room_type_id'] ?? 0),
-    'start_date' => itm_format_date_display($row['start_date'] ?? ''),
-    'end_date' => itm_format_date_display($row['end_date'] ?? ''),
+    'start_date' => itm_parse_date_input($row['start_date'] ?? '') ?? '',
+    'end_date' => itm_parse_date_input($row['end_date'] ?? '') ?? '',
     'price_per_night' => $row ? number_format((float) ($row['price_per_night'] ?? 0), 2, '.', '') : '',
     'notes' => (string) ($row['notes'] ?? ''),
     'active' => $row ? !empty($row['active']) : true,
@@ -112,11 +112,11 @@ itm_hospitality_admin_layout_begin($crud_title);
 </div>
 <div class="form-group">
 <label for="start_date">Start date</label>
-<input type="text" name="start_date" id="start_date" class="form-control" required placeholder="dd/mm/yyyy" value="<?php echo sanitize($form['start_date']); ?>">
+<input type="date" name="start_date" id="start_date" class="form-control" required value="<?php echo sanitize(substr((string) $form['start_date'], 0, 10)); ?>">
 </div>
 <div class="form-group">
 <label for="end_date">End date</label>
-<input type="text" name="end_date" id="end_date" class="form-control" required placeholder="dd/mm/yyyy" value="<?php echo sanitize($form['end_date']); ?>">
+<input type="date" name="end_date" id="end_date" class="form-control" required value="<?php echo sanitize(substr((string) $form['end_date'], 0, 10)); ?>">
 </div>
 <div class="form-group">
 <label for="price_per_night">BAR / night</label>
