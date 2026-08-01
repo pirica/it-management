@@ -645,6 +645,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Scans the <code>modules/</code> directory to identify and categorize all modules into standard CRUD and bespoke types, saving metadata to <code>scripts/modules_metadata.json</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="departments">
+                    <td><a href="scaffold_departments_child_table_modules.php" target="_blank" rel="nofollow noreferrer">scaffold_departments_child_table_modules.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">departments</span></span></td>
+                    <td>Copies flattened CRUD from <code>modules/departments/</code> into the 24 child/support table module allowlist. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Pair with <code>sync_modules_registry.php</code> and <code>includes/ui_config.php</code> sidebar rows.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="Codebase">
                     <td><a href="generate_tests.php" target="_blank" rel="nofollow noreferrer">generate_tests.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
@@ -983,10 +990,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Generates SQL for missing <code>employee_id</code> foreign keys.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="news">
+                <tr data-tags="Codebase">
                     <td><a href="generate_ms_support_feed_products.php" target="_blank" rel="nofollow noreferrer">generate_ms_support_feed_products.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="module">news</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
                     <td>Regenerates <code>includes/itm_news_feed_ms_support_products.php</code> from Microsoft Support RSS feed picker (205 Atom product feeds).</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
@@ -1353,17 +1360,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>One-time/maintenance: add <code>$displayFieldColumns = $uiColumns</code> (or <code>$visibleFieldColumns</code>) before module paths so list search does not reference an undefined variable. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped <code>index.php</code> files. Re-run when new flattened CRUD modules omit the alias.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="catalogs companies">
+                <tr data-tags="catalogs">
                     <td><a href="apply_script_catalog_tags.php" target="_blank" rel="nofollow noreferrer">apply_script_catalog_tags.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">catalogs</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">companies</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">catalogs</span></span></td>
                     <td>Computes table tags for every <code>scripts/scripts.php</code> catalog row (entry script + transitive <code>scripts/</code> requires + one-level spawn targets). Writes <code>scripts/data/script_catalog_tags.json</code> and patches <code>data-tags</code> + tag badge markup on each card.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="catalogs">
                     <td><a href="apply_script_catalog_usage_to_php.php" target="_blank" rel="nofollow noreferrer">apply_script_catalog_usage_to_php.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">catalogs</span></span></td>
                     <td>Moves catalog <em>How to use</em> HTML from <code>scripts/scripts.php</code> into each <code>*.php</code> row as <code>itm_script_browser_how_to_use()</code> and replaces catalog column 5 with <code>scripts-catalog-how-stub</code>. Default dry-run.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
@@ -1395,14 +1402,14 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Maintenance: add <code>itm_render_head_favicon_link($favicon_url ?? null)</code> in module <code>index.php</code>, <code>create.php</code>, <code>edit.php</code>, and <code>view.php</code> <code>&lt;head&gt;</code> so the tab icon matches Settings on first paint. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="ui_configuration">
+                <tr data-tags="Codebase">
                     <td><a href="apply_crud_browser_title_module_icon.php" target="_blank" rel="nofollow noreferrer">apply_crud_browser_title_module_icon.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
                     <td>Maintenance: inject <code>itm_crud_apply_module_icon_to_browser_title()</code> before canonical <code>&lt;title&gt;</code> in <code>modules/**/*.php</code> (sidebar icon in browser tab). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="ui_configuration">
+                <tr data-tags="Codebase">
                     <td><a href="check_crud_browser_title_module_icon.php" target="_blank" rel="nofollow noreferrer">check_crud_browser_title_module_icon.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
@@ -1528,17 +1535,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Static audit: scans PHP, Python, and shell sources for <code>getenv()</code>, <code>$_ENV</code>, <code>os.environ</code>, and <code>${VAR}</code> reads; compares against <code>.env.example</code>. Reports matched keys, example-only placeholders, and undocumented app/tooling/OS vars.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="catalogs companies">
+                <tr data-tags="catalogs">
                     <td><a href="check_script_catalog_tags.php" target="_blank" rel="nofollow noreferrer">check_script_catalog_tags.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">catalogs</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">companies</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">catalogs</span></span></td>
                     <td>Static gate: every <code>scripts/scripts.php</code> catalog row has correct <code>data-tags</code> and tag badge markup matching the computed scan in <code>scripts/lib/itm_script_catalog_tags.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="catalogs companies">
+                <tr data-tags="catalogs">
                     <td><a href="verify_scripts_catalog_filter.php" target="_blank" rel="nofollow noreferrer">verify_scripts_catalog_filter.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">catalogs</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">companies</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">catalogs</span></span></td>
                     <td>Scrape <code>scripts/scripts.php</code> and verify catalog filter contract: all rows have <code>data-tags</code>, five-column markup, CSS column mapping, and simulated <code>*.json</code> / <code>*.txt</code> / <code>*.md</code> search plus Info / <code>*.md</code> chip filters.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
@@ -1716,45 +1723,45 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for <code>modules/ops_report/</code>: D-2 edit lock (today/yesterday editable; D-2+ locked unless admin), daily <code>ops_report</code> CRUD, child-row cascade delete, cross-date hit line format, audit triggers on all <code>ops_report*</code> tables, and <code>modules_registry</code> slug <code>ops_report</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="expenses">
+                <tr data-tags="Mixed">
                     <td><a href="verify_finance_sample_data_seed.php" target="_blank" rel="nofollow noreferrer">verify_finance_sample_data_seed.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">expenses</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">bills</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">invoices</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
                     <td>Add sample data regression for finance modules on a disposable tenant (AP/AR headers, lookups, budgets, <code>currency_code</code> length, sidebar <code>finance</code> section map).</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="expenses">
+                <tr data-tags="Codebase">
                     <td><a href="check_crud_sample_data_live_row_gate.php" target="_blank" rel="nofollow noreferrer">check_crud_sample_data_live_row_gate.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">tax_rates</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">expenses</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
                     <td>Static gate: finance <code>index.php</code> empty check uses <code>itm_seed_tenant_row_count()</code>. Templates stay in <code>db/02_data_sample.sql</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">
                     <td><a href="apply_crud_sample_data_live_row_gate.php" target="_blank" rel="nofollow noreferrer">apply_crud_sample_data_live_row_gate.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-browser">Browser</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="tag">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
                     <td>Optional PHP gate maintenance only (not <code>db/</code>): legacy <code>COUNT(*)</code> → <code>itm_seed_tenant_row_count()</code> before <code>itm_seed_table_from_database_sql()</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="expenses">
+                <tr data-tags="Mixed">
                     <td><a href="verify_expenses_ap.php" target="_blank" rel="nofollow noreferrer">verify_expenses_ap.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">expenses</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
                     <td>Regression for extended <code>expenses</code> AP fields, <code>includes/itm_expenses_ap.php</code>, and Posted/Paid budget-actual filter semantics.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="bills">
+                <tr data-tags="Mixed">
                     <td><a href="verify_bills.php" target="_blank" rel="nofollow noreferrer">verify_bills.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">bills</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
                     <td>Seed bill header/lines rollup, supplier FK, post-to-expenses (`bill_id`, `invoice_number`), duplicate-post guard.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="invoices">
+                <tr data-tags="expenses invoices">
                     <td><a href="verify_invoices.php" target="_blank" rel="nofollow noreferrer">verify_invoices.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">invoices</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">expenses</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">invoices</span></span></td>
                     <td>Seed invoice header/lines rollup, post-to-expenses (`invoice_id`, `invoice_number`), duplicate-post guard.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
@@ -1765,24 +1772,24 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Finance module multi-file attachments (storage path, allowed types, table presence).</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="finance_payment_allocations">
+                <tr data-tags="bills finance_payment_allocations">
                     <td><a href="verify_finance_payment_allocations.php" target="_blank" rel="nofollow noreferrer">verify_finance_payment_allocations.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">finance_payment_allocations</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">bills</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">finance_payment_allocations</span></span></td>
                     <td>Payment allocation insert and <code>amount_due</code> rollup on seed bill.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="expense_recurrence">
+                <tr data-tags="expenses expense_recurrence">
                     <td><a href="verify_expense_recurrence.php" target="_blank" rel="nofollow noreferrer">verify_expense_recurrence.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">expense_recurrence</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">expenses</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">expense_recurrence</span></span></td>
                     <td>Recurrence lookup seeds and <code>itm_expense_recurrence_advance_date</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="customers">
+                <tr data-tags="customers invoices">
                     <td><a href="verify_customers.php" target="_blank" rel="nofollow noreferrer">verify_customers.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">customers</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">customers</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">invoices</span></span></td>
                     <td>Seed customer and invoice <code>customer_id</code> link.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
@@ -1837,10 +1844,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for bookmarks folder drag/move merge: duplicate same-named siblings can reparent without merge or merge bookmarks/subfolders into the existing folder via <code>bkm_move_folder()</code> / <code>bkm_merge_folder_into()</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="booking_rooms_types hotel_bookings">
                     <td><a href="seed_hotel_booking_sample_photos.php" target="_blank" rel="nofollow noreferrer">seed_hotel_booking_sample_photos.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">booking_rooms_types</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_bookings</span></span></td>
                     <td>Copy TechCorp Retreat demo hotel photos to <code>booking/images/{hotel_id}/hotel_photos/</code> and room-type samples to <code>booking/images/{hotel_id}/room_types_photos/</code>; upsert photo rows (<code>--apply</code> writes).</td>
                     <td class="scripts-catalog-how-stub"><code>php scripts/seed_hotel_booking_sample_photos.php --apply</code></td>
                 </tr>
@@ -1851,17 +1858,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for hospitality bundle: core hotel booking tables, <code>itm_hotel_booking_resolve_segment()</code>, company 1 <code>PENDING</code> future status seed, and subprocess render probe for all 13 Hospitality sidebar modules.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="hotel_bookings">
                     <td><a href="check_hotel_bookings_rate_plan_form.php" target="_blank" rel="nofollow noreferrer">check_hotel_bookings_rate_plan_form.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_bookings</span></span></td>
                     <td>Static gate: <code>modules/hotel_bookings</code> portal rate plan <code>__add_new__</code> option, <code>hb_booking_end_form_page()</code> modal placement outside <code>.content</code>, and <code>js/hotel-bookings-rate-plan-select.js</code> quick-add handler.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="appointments modules_registry">
                     <td><a href="verify_appointment.php" target="_blank" rel="nofollow noreferrer">verify_appointment.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">appointments</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">modules_registry</span></span></td>
                     <td>Regression for <code>modules/appointment/</code>: audit triggers on five <code>appointment_*</code> tables (including <code>appointment_type</code>), <code>booking_lock</code> unique index, company 1 settings/reasons/types seeds, weekly slot builder, and <code>modules_registry</code> slug <code>appointment</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
@@ -1956,10 +1963,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for <code>admin.php</code> admin-only gate: <code>itm_is_admin()</code> and redirect to <code>dashboard.php</code> for non-admins.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="companies">
+                <tr data-tags="Codebase">
                     <td><a href="verify_settings_admin_buttons.php" target="_blank" rel="nofollow noreferrer">verify_settings_admin_buttons.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">companies</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
                     <td>Regression for Settings: admin toolbar (<code>ADMIN</code> → <code>admin.php</code>, <code>SCRIPTS</code> → <code>scripts/scripts.php</code>), <strong>All roles</strong> chatbot block, <strong>System (Admin Role only)</strong> flags, and non-admin save preservation.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
@@ -2117,10 +2124,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Validation for Floor Designer SQLi fix.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="request_password">
+                <tr data-tags="Mixed">
                     <td><a href="repro_request_password_bypass.php" target="_blank" rel="nofollow noreferrer">repro_request_password_bypass.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">request_password</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
                     <td>Reproduction script for request_password module bypass (static RBAC string check). Named regression: <a href="verify_request_password.php" target="_blank" rel="nofollow noreferrer">verify_request_password.php</a>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
@@ -2512,10 +2519,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for Notes AJAX mutations: blocked single_delete returns HTTP 404 with ok:false when affected_rows is zero.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Codebase">
                     <td><a href="debug_peer_options.php" target="_blank" rel="nofollow noreferrer">debug_peer_options.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
                     <td>Debug Live Chat Chat-with peer list: <code>chat_same_tenant</code>, accessible companies, merged <code>list_employees</code> options (excludes self).</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
@@ -2568,10 +2575,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Maintenance: wire <code>join.php</code>, AJAX <code>create_share_session</code>, view share buttons, and QR modal for CRUD record share rollout modules (<code>includes/itm_crud_record_share.php</code>). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Inventory: <code>docs/CRUD_RECORD_SHARE.md</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="notes">
                     <td><a href="patch_crud_share_agent_notes.php" target="_blank" rel="nofollow noreferrer">patch_crud_share_agent_notes.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">notes</span></span></td>
                     <td>Maintenance: append <strong>Share (temporary QR / code)</strong> section to each CRUD record share module <code>AGENT_NOTES.md</code>. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
@@ -2680,10 +2687,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Reproduction script for multi-tenant username leak in Todo module.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="employees">
+                <tr data-tags="Mixed">
                     <td><a href="repro_cross_tenant_admin.php" target="_blank" rel="nofollow noreferrer">repro_cross_tenant_admin.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
                     <td>PoC — company-2 Admin Employees list must not include a disposable company-1 username. Seeds via <code>itm_script_test_employee_create_session_actor()</code>; CLI subprocess HTML probe. Browser: <code>?run=1</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>

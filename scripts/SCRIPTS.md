@@ -170,6 +170,7 @@ Catalog: `scripts/scripts.php`.
 | `php scripts/list_modules_without_share.php` | Lists `modules_registry` rows **not** in `itm_qr_share_capable_module_slugs()` (Share Modules **No share UI**). Browser: Admin login; module **name** links to `modules/{slug}/index.php`. CLI: `--json`, `--active-only`. See `docs/CRUD_RECORD_SHARE.md`. |
 | `php scripts/verify_company_empty_sample_data.php` | Regression: for a tenant (`--company=N` or browser `?company=N`), seeds every empty module that exposes **Add sample data** via `itm_seed_lookup_parents_for_table()` + `itm_seed_table_from_database_sql()`; exits `1` on failure. Optional `--module=slug` / `?module=slug`. Browser requires Admin login. Pairs with `list_empty_tables.php` before/after tenant onboarding checks. |
 | `php scripts/extract_by_fields.php` | Parses `db/` to extract column definitions containing keywords like `by`, `to`, `employee_id`, `employee`. Output is formatted and saved to `scripts/fields_by.txt`. |
+| `php scripts/scaffold_departments_child_table_modules.php` | One-time/maintenance: copy flattened CRUD from `modules/departments/` into child/support table modules (24-table allowlist). **Default = dry-run**; writes with CLI `--apply` or browser `?apply=1` (Admin). Run `php scripts/sync_modules_registry.php` after apply; add sidebar rows in `includes/ui_config.php` when introducing new slugs. |
 
 ### Select Options API verification
 
