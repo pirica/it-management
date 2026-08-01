@@ -327,8 +327,8 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
         $phone = trim((string) ($booking['customer_phone'] ?? ''));
         $checkInIso = (string) ($booking['check_in'] ?? '');
         $checkOutIso = (string) ($booking['check_out'] ?? '');
-        $checkInDisplay = $checkInIso !== '' ? itm_format_date_display($checkInIso) : '';
-        $checkOutDisplay = $checkOutIso !== '' ? itm_format_date_display($checkOutIso) : '';
+        $checkInDisplay = $checkInIso !== '' ? itm_format_hotel_date_display($checkInIso) : '';
+        $checkOutDisplay = $checkOutIso !== '' ? itm_format_hotel_date_display($checkOutIso) : '';
         $currency = (string) ($booking['currency_code'] ?? 'EUR');
         $amount = (float) ($booking['payment_amount'] ?? 0);
         $isCancelled = hb_portal_booking_display_is_cancelled($booking, $options);

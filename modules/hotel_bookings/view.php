@@ -34,8 +34,8 @@ itm_hospitality_admin_layout_begin($crud_title, ['css/hotel-bookings.css']);
 <p><strong>Reservation ID:</strong> <?php echo (int) $row['id']; ?></p>
 <p><strong>Customer:</strong> <?php echo sanitize($row['customer_name']); ?></p>
 <p><strong>Room:</strong> <?php echo sanitize($row['room_number'] . ' — ' . $row['room_name']); ?></p>
-<p><strong>Check-in:</strong> <?php echo sanitize(itm_format_date_display($row['check_in'])); ?></p>
-<p><strong>Check-out:</strong> <?php echo sanitize(itm_format_date_display($row['check_out'])); ?></p>
+<p><strong>Check-in:</strong> <?php echo sanitize(itm_format_hotel_date_display($row['check_in'])); ?></p>
+<p><strong>Check-out:</strong> <?php echo sanitize(itm_format_hotel_date_display($row['check_out'])); ?></p>
 <p><strong>Payment:</strong> <?php echo sanitize(number_format((float) $row['payment_amount'], 2)); ?></p>
 <p><strong>Future status:</strong> <?php echo sanitize(hb_booking_status_label($conn, $company_id, 'hotel_bookings_future', $row['future_status_id'] ?? 0)); ?></p>
 <p><strong>Present status:</strong> <?php echo sanitize(hb_booking_status_label($conn, $company_id, 'hotel_bookings_present', $row['present_status_id'] ?? 0)); ?></p>

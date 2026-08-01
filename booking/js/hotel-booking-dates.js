@@ -56,6 +56,13 @@
   }
 
   function displayRange(checkInYmd, checkOutYmd) {
+    if (typeof window.itmHotelDateFormatYmd === 'function') {
+      var out = window.itmHotelDateFormatYmd(checkOutYmd);
+      var inn = window.itmHotelDateFormatYmd(checkInYmd);
+      if (inn && out) {
+        return inn + ' - ' + out;
+      }
+    }
     var inD = parseYmd(checkInYmd);
     var outD = parseYmd(checkOutYmd);
     var opts = { month: 'short', day: 'numeric' };

@@ -667,4 +667,16 @@ if (!$typeRow || !$hotelRow) {
     }
 }
 
+if (itm_format_hotel_date_display('2026-08-31') === '31/Aug/2026') {
+    hb_pass('hotel date display format');
+} else {
+    hb_fail('hotel date display expected 31/Aug/2026 got ' . itm_format_hotel_date_display('2026-08-31'));
+}
+
+if (itm_parse_date_input('31/Aug/2026') === '2026-08-31' && itm_parse_date_input('1/Sep/2026') === '2026-09-01') {
+    hb_pass('hotel date parse format');
+} else {
+    hb_fail('hotel date parse 31/Aug/2026');
+}
+
 exit($fail > 0 ? 1 : 0);

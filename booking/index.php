@@ -173,6 +173,7 @@ window.HB_SETTINGS = <?php echo json_encode($hbSettingsPublic, JSON_UNESCAPED_UN
 <script src="<?php echo APPURL; ?>/js/hotel-booking-amenity-icons.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-gallery.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-public.js"></script>
+<script src="<?php echo htmlspecialchars(BASE_URL . 'js/hotel-date-input.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-dates.js"></script>
 </body>
 </html>

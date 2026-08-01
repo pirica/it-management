@@ -291,6 +291,7 @@ require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
 require_once ROOT_PATH . 'includes/itm_database_sql_source.php';
 require_once ROOT_PATH . 'includes/itm_sample_data_seed.php';
 require_once ROOT_PATH . 'includes/itm_date_format.php';
+require_once ROOT_PATH . 'includes/itm_hotel_date_input.php';
 require_once ROOT_PATH . 'includes/itm_expenses_ap.php';
 require_once ROOT_PATH . 'includes/itm_finance_document_lines.php';
 require_once ROOT_PATH . 'includes/itm_finance_payments.php';
