@@ -1038,6 +1038,11 @@ if (!isset($crud_title)) {
                                     <div class="itm-actions-wrap">
                                         <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
                                         <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                        <form method="POST" action="duplicate.php" style="display:inline;">
+                                            <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                            <button class="btn btn-sm" type="submit" title="Duplicate">📋</button>
+                                        </form>
                                         <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
                                             <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
                                             <input type="hidden" name="bulk_action" value="single_delete">
@@ -1173,6 +1178,11 @@ if (!isset($crud_title)) {
                     </table>
                     <p style="margin-top:16px;">
                         <?php echo itm_crud_record_share_render_action_buttons('hotel_booking_rooms', (int)($data['id'] ?? 0), 'license'); ?>
+                        <form method="POST" action="duplicate.php" style="display:inline;">
+                            <input type="hidden" name="id" value="<?php echo (int)($data['id'] ?? 0); ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <button class="btn btn-sm" type="submit" title="Duplicate">📋</button>
+                        </form>
                         <a href="index.php" class="btn" title="Back">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>" title="Edit">✏️</a></p>
                 </div>
             <?php endif; ?>

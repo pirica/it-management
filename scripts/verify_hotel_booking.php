@@ -561,4 +561,48 @@ if (!is_file($roomTypesIndex)) {
     }
 }
 
+$roomsDuplicate = $repoRoot . '/modules/hotel_booking_rooms/duplicate.php';
+$roomsIndex = $repoRoot . '/modules/hotel_booking_rooms/index.php';
+if (!is_file($roomsDuplicate)) {
+    hb_fail('hotel_booking_rooms duplicate.php missing');
+} elseif (!is_file($roomsIndex)) {
+    hb_fail('hotel_booking_rooms index.php missing');
+} else {
+    $roomsIndexSource = (string) file_get_contents($roomsIndex);
+    $helperSource = is_file($hotelBookingHelper) ? (string) file_get_contents($hotelBookingHelper) : '';
+    if (strpos($roomsIndexSource, 'action="duplicate.php"') === false || strpos($roomsIndexSource, 'title="Duplicate"') === false) {
+        hb_fail('hotel_booking_rooms index must expose Duplicate action');
+    } elseif (strpos($helperSource, 'itm_hotel_booking_room_duplicate_record') === false) {
+        hb_fail('itm_hotel_booking_room_duplicate_record helper missing');
+    } else {
+        hb_pass('hotel_booking_rooms duplicate action wiring');
+    }
+}
+
+$sourceRoomRes = mysqli_query($conn, 'SELECT id, hotel_id, room_number, name FROM hotel_booking_rooms WHERE company_id = 1 AND deleted_at IS NULL ORDER BY id ASC LIMIT 1');
+$sourceRoom = $sourceRoomRes ? mysqli_fetch_assoc($sourceRoomRes) : null;
+if (!$sourceRoom) {
+    hb_fail('hotel_booking_rooms duplicate runtime: no seed room for company 1');
+} else {
+    $_SESSION['employee_id'] = 1;
+    $expectedNumber = itm_hotel_booking_room_resolve_duplicate_room_number($conn, 1, (int) $sourceRoom['hotel_id'], (string) $sourceRoom['room_number']);
+    $expectedName = itm_hotel_booking_room_resolve_duplicate_name((string) $sourceRoom['name']);
+    $dup = itm_hotel_booking_room_duplicate_record($conn, 1, (int) $sourceRoom['id']);
+    if (empty($dup['ok']) || (int) ($dup['new_id'] ?? 0) < 1) {
+        hb_fail('hotel_booking_rooms duplicate runtime failed: ' . (string) ($dup['message'] ?? 'unknown'));
+    } else {
+        $newId = (int) $dup['new_id'];
+        $newRes = mysqli_query($conn, 'SELECT room_number, name FROM hotel_booking_rooms WHERE company_id = 1 AND id = ' . $newId . ' LIMIT 1');
+        $newRow = $newRes ? mysqli_fetch_assoc($newRes) : null;
+        if (!$newRow || (string) $newRow['room_number'] !== $expectedNumber || (string) $newRow['name'] !== $expectedName) {
+            hb_fail('hotel_booking_rooms duplicate runtime: room_number/name mismatch');
+        } elseif ((string) $newRow['room_number'] === (string) $sourceRoom['room_number']) {
+            hb_fail('hotel_booking_rooms duplicate runtime: room_number unchanged');
+        } else {
+            hb_pass('hotel_booking_rooms duplicate runtime');
+            mysqli_query($conn, 'DELETE FROM hotel_booking_rooms WHERE company_id = 1 AND id = ' . $newId . ' LIMIT 1');
+        }
+    }
+}
+
 exit($fail > 0 ? 1 : 0);
