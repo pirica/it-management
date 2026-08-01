@@ -34,6 +34,7 @@ $nl = itm_script_output_nl();
 
 // Known CSRF protection function names used across the system
 $csrfPatterns = [
+    'itm_try_post_csrf',
     'itm_require_post_csrf',
     'itm_validate_csrf_token',
     'cr_require_valid_csrf_token',
