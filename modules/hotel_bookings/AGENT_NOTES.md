@@ -37,7 +37,7 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, hotel filter), **F
 
 - Shared markup: `includes/hb_booking_form.php` — all `hotel_bookings` business columns (customer, room, check-in/out, payment, **portal rate plan** select with ➕ modal create, Planning color via `type="color"` → `booking_color`, three segment status FKs, notes, `active` checkbox).
 - Portal rate plan options filter by selected room’s `hotel_id`; defaults seeded per hotel when the form loads. **➕** is the standard `__add_new__` option inside the plan `<select>` (opens create modal without requiring a room — embed form includes hotel select; room choice only pre-fills `hotel_id`). **🔎** / **✏️** beside the select open view/edit in a modal iframe (`embed=1`). `hb_booking_end_form_page()` renders the modal outside `.content`. Regression: `php scripts/check_hotel_bookings_rate_plan_form.php` and `php scripts/lib/itm_hospitality_booking_form_probe.php create|edit`.
-- Check-in / check-out use native calendar inputs (`type="date"`, labels note dd/mm/yyyy display); `js/hotel-bookings-date-picker.js` enforces check-out after check-in.
+- Check-in / check-out use hospitality date fields (`31/Aug/2026` text + 📅 calendar via `js/hotel-date-input.js`); `js/hotel-bookings-date-picker.js` enforces check-out after check-in.
 - Audit meta (`created_by`, `created_at`, `updated_by`, `updated_at`) via hidden inputs from `itm_crud_render_form_hidden_audit_inputs()`; `company_id` stays session-scoped (not on form).
 - `view.php` shows every stored column including segment status labels and audit fields.
 

@@ -1096,6 +1096,32 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     background-color: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
+.hb-hotel-date-field {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+    max-width: 320px;
+}
+
+.hb-hotel-date-field .hb-hotel-date-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.hb-hotel-date-field .hb-hotel-date-native {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.hb-hotel-date-field .hb-hotel-date-open {
+    flex: 0 0 auto;
+    align-self: stretch;
+}
+
 input[type="color"] {
     padding: 4px;
     height: 44px;

@@ -6,14 +6,18 @@
 if (!function_exists('hb_portal_format_stay_range_label')) {
     function hb_portal_format_stay_range_label($checkInIso, $nights = 1) {
         $nights = max(1, (int) $nights);
-        $in = DateTime::createFromFormat('Y-m-d', $checkInIso);
-        if (!$in) {
+        $checkInIso = itm_parse_date_input($checkInIso) ?? '';
+        if ($checkInIso === '') {
             return '';
         }
-        $out = clone $in;
-        $out->modify('+' . $nights . ' day');
+        $checkOutIso = date('Y-m-d', strtotime($checkInIso . ' +' . $nights . ' day'));
+        $inDisplay = itm_format_hotel_date_display($checkInIso);
+        $outDisplay = itm_format_hotel_date_display($checkOutIso);
+        if ($inDisplay === '' || $outDisplay === '') {
+            return '';
+        }
         $nightWord = $nights === 1 ? 'night' : 'nights';
-        return $in->format('D, M j') . ' – ' . $out->format('D, M j, Y') . ' (' . $nights . ' ' . $nightWord . ')';
+        return $inDisplay . ' – ' . $outDisplay . ' (' . $nights . ' ' . $nightWord . ')';
     }
 }
 

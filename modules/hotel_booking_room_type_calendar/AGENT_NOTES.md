@@ -16,8 +16,8 @@ Room default BAR remains `hotel_booking_rooms.price_per_night`. Overrides win pe
 ## 3. Files
 
 - `index.php` — hotel filter; lists overrides + blocks
-- `rate_edit.php` — create/edit override (`type="date"` start/end fields)
-- `block_edit.php` — create/edit stop-sell (`type="date"` start/end fields)
+- `rate_edit.php` — create/edit override (`31/Aug/2026` + 📅 via `js/hotel-date-input.js`)
+- `block_edit.php` — create/edit stop-sell (`31/Aug/2026` + 📅 via `js/hotel-date-input.js`)
 - `delete.php` — soft-delete (`kind=rate|block`)
 
 ## 4. Portal integration

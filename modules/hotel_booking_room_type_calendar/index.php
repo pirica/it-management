@@ -77,8 +77,8 @@ itm_hospitality_admin_layout_begin($crud_title);
 ?>
 <tr>
 <td><?php echo sanitize($typeLabel); ?></td>
-<td><?php echo sanitize(itm_format_date_display($row['start_date'] ?? '')); ?></td>
-<td><?php echo sanitize(itm_format_date_display($row['end_date'] ?? '')); ?></td>
+<td><?php echo sanitize(itm_format_hotel_date_display($row['start_date'] ?? '')); ?></td>
+<td><?php echo sanitize(itm_format_hotel_date_display($row['end_date'] ?? '')); ?></td>
 <td><?php echo sanitize(number_format((float) ($row['price_per_night'] ?? 0), 2, '.', '')); ?></td>
 <td><?php if (!empty($row['active'])): ?><span class="badge badge-success">Active</span><?php else: ?><span class="badge badge-danger">Inactive</span><?php endif; ?></td>
 <td class="itm-actions-cell" data-itm-actions-origin="1">
@@ -113,8 +113,8 @@ itm_hospitality_admin_layout_begin($crud_title);
 ?>
 <tr>
 <td><?php echo sanitize($typeLabel); ?></td>
-<td><?php echo sanitize(itm_format_date_display($row['start_date'] ?? '')); ?></td>
-<td><?php echo sanitize(itm_format_date_display($row['end_date'] ?? '')); ?></td>
+<td><?php echo sanitize(itm_format_hotel_date_display($row['start_date'] ?? '')); ?></td>
+<td><?php echo sanitize(itm_format_hotel_date_display($row['end_date'] ?? '')); ?></td>
 <td><?php echo sanitize((string) ($row['reason'] ?? '')); ?></td>
 <td><?php if (!empty($row['active'])): ?><span class="badge badge-success">Active</span><?php else: ?><span class="badge badge-danger">Inactive</span><?php endif; ?></td>
 <td class="itm-actions-cell" data-itm-actions-origin="1">

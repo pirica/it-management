@@ -7,6 +7,17 @@
         return;
     }
 
+    function nativeInput(el) {
+        if (!el) {
+            return null;
+        }
+        var field = el.closest('.hb-hotel-date-field');
+        if (field) {
+            return field.querySelector('.hb-hotel-date-native');
+        }
+        return el.type === 'date' ? el : null;
+    }
+
     function parseYmd(ymd) {
         var parts = String(ymd || '').split('-');
         if (parts.length !== 3) {
@@ -29,20 +40,29 @@
     }
 
     function syncCheckOutMin() {
-        var start = parseYmd(checkIn.value);
+        var checkInNative = nativeInput(checkIn);
+        var checkOutNative = nativeInput(checkOut);
+        if (!checkInNative || !checkOutNative) {
+            return;
+        }
+        var start = parseYmd(checkInNative.value);
         if (!start) {
             return;
         }
         var minOut = new Date(start.getTime());
         minOut.setDate(minOut.getDate() + 1);
         var minStr = formatYmd(minOut);
-        checkOut.min = minStr;
-        var end = parseYmd(checkOut.value);
+        checkOutNative.min = minStr;
+        var end = parseYmd(checkOutNative.value);
         if (end && end <= start) {
-            checkOut.value = minStr;
+            checkOutNative.value = minStr;
+            if (typeof window.itmHotelDateFormatYmd === 'function') {
+                checkOut.value = window.itmHotelDateFormatYmd(minStr);
+            }
         }
     }
 
     checkIn.addEventListener('change', syncCheckOutMin);
+    checkOut.addEventListener('change', syncCheckOutMin);
     syncCheckOutMin();
 })();

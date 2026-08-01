@@ -56,7 +56,7 @@ if (isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'hk_rotate') {
 if (isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'planning_grid') {
     header('Content-Type: application/json; charset=utf-8');
     $anchor = $_GET['anchor'] ?? date('Y-m-d');
-    if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $anchor)) {
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $anchor)) {
         $anchor = itm_parse_date_input($anchor) ?: date('Y-m-d');
     }
     $hotelId = (int) ($_GET['hotel_id'] ?? 0);
@@ -95,13 +95,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hb_check_in'])) {
 $anchorInput = trim((string) ($_GET['anchor'] ?? ''));
 $anchorDate = date('Y-m-d');
 if ($anchorInput !== '') {
-    if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $anchorInput)) {
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $anchorInput)) {
+        $anchorDate = $anchorInput;
+    } else {
         $parsed = itm_parse_date_input($anchorInput);
         if ($parsed) {
             $anchorDate = $parsed;
         }
-    } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $anchorInput)) {
-        $anchorDate = $anchorInput;
     }
 }
 $filterHotel = (int) ($_GET['hotel_id'] ?? 0);
@@ -185,7 +185,7 @@ if ($mode !== 'planning') {
 function hb_planning_filter_query($anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir) {
     $q = [
         'mode' => 'planning',
-        'anchor' => itm_format_date_display($anchorDate),
+        'anchor' => itm_format_hotel_date_display($anchorDate),
         'hotel_id' => (int) $filterHotel,
         'days' => (int) $planDays,
         'plan_sort' => (string) $planSort,
@@ -234,7 +234,7 @@ $nextAnchorQuery = hb_planning_filter_query($nextAnchorDate, $filterHotel, $filt
 <input type="hidden" name="mode" value="planning">
 <input type="hidden" name="plan_sort" value="<?php echo sanitize($planSort); ?>">
 <input type="hidden" name="plan_dir" value="<?php echo sanitize($planDir); ?>">
-<label>Anchor <input type="text" name="anchor" value="<?php echo sanitize(itm_format_date_display($anchorDate)); ?>" placeholder="dd/mm/yyyy"></label>
+<label>Anchor <input type="text" name="anchor" value="<?php echo sanitize(itm_format_hotel_date_display($anchorDate)); ?>" class="hb-hotel-date-text"></label>
 <label>Hotel
 <select name="hotel_id">
 <option value="0">All</option>
@@ -255,7 +255,7 @@ $nextAnchorQuery = hb_planning_filter_query($nextAnchorDate, $filterHotel, $filt
 <th class="hb-plan-sticky hb-plan-type-col"><a href="<?php echo sanitize(hb_planning_sort_href('type', $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir)); ?>" class="hb-plan-sort-link" title="Sort by room type">Type<?php if ($planSort === 'type'): ?> <?php echo strtolower($planDir) === 'asc' ? '▲' : '▼'; ?><?php endif; ?></a></th>
 <th class="hb-plan-date-nav" title="Previous dates"><a class="btn btn-sm hb-plan-date-arrow" href="?<?php echo sanitize(http_build_query($prevAnchorQuery)); ?>" title="Previous dates">⬅️</a></th>
 <?php foreach ($dayHeaders as $d): ?>
-<th class="hb-plan-day"><?php echo sanitize($d->format('D d/m')); ?></th>
+<th class="hb-plan-day"><?php echo sanitize($d->format('D ') . itm_format_hotel_date_display($d->format('Y-m-d'))); ?></th>
 <?php endforeach; ?>
 <th class="hb-plan-date-nav" title="Next dates"><a class="btn btn-sm hb-plan-date-arrow" href="?<?php echo sanitize(http_build_query($nextAnchorQuery)); ?>" title="Next dates">➡️</a></th>
 </tr>
@@ -285,7 +285,7 @@ foreach ($dayMaintenance as $maint):
     $maintCode = strtoupper(trim((string) ($maint['maintenance_status_code'] ?? '')));
     $maintLabel = $maintCode !== '' ? $maintCode : (string) ($maint['maintenance_status_name'] ?? 'Maint');
     $maintColor = itm_hotel_booking_planning_maintenance_bar_color($maint['maintenance_status_code'] ?? '');
-    $maintTitle = sanitize($maintLabel . ' — ' . itm_format_date_display($maint['from_date']) . ' to ' . itm_format_date_display($maint['through_date']) . ' — double-click to edit, drag to move');
+    $maintTitle = sanitize($maintLabel . ' — ' . itm_format_hotel_date_display($maint['from_date']) . ' to ' . itm_format_hotel_date_display($maint['through_date']) . ' — double-click to edit, drag to move');
 ?>
 <span class="hb-plan-bar hb-plan-bar-segment-middle hb-plan-maint hb-plan-draggable" draggable="true" style="background:<?php echo sanitize($maintColor); ?>;z-index:0" data-entity-type="maintenance" data-maintenance-id="<?php echo (int) $maint['id']; ?>" data-from-date="<?php echo sanitize((string) $maint['from_date']); ?>" data-through-date="<?php echo sanitize((string) $maint['through_date']); ?>" data-room-id="<?php echo (int) $room['id']; ?>" title="<?php echo $maintTitle; ?>"><?php echo sanitize($maintLabel); ?></span>
 <?php endforeach; ?>
@@ -323,8 +323,8 @@ foreach ($dayMaintenance as $maint):
 <tr>
 <td><?php echo sanitize($br['customer_name']); ?></td>
 <td><?php echo sanitize($br['room_number'] . ' ' . $br['room_name']); ?></td>
-<td><?php echo sanitize(itm_format_date_display($br['check_in'])); ?></td>
-<td><?php echo sanitize(itm_format_date_display($br['check_out'])); ?></td>
+<td><?php echo sanitize(itm_format_hotel_date_display($br['check_in'])); ?></td>
+<td><?php echo sanitize(itm_format_hotel_date_display($br['check_out'])); ?></td>
 <td><?php echo sanitize($br['status_name'] ?? '—'); ?></td>
 <td><?php echo sanitize(number_format((float) $br['payment_amount'], 2)); ?></td>
 <td class="itm-actions-cell" data-itm-actions-origin="1">

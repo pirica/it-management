@@ -127,8 +127,8 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkInIso)) {
     $checkInIso = date('Y-m-d');
 }
 $checkOutIso = (string) ($draft['check_out'] ?? date('Y-m-d', strtotime($checkInIso . ' +' . $nights . ' day')));
-$prefillInDisplay = itm_format_date_display($checkInIso);
-$prefillOutDisplay = itm_format_date_display($checkOutIso);
+$prefillInDisplay = itm_format_hotel_date_display($checkInIso);
+$prefillOutDisplay = itm_format_hotel_date_display($checkOutIso);
 
 $hotelId = (int) ($room['hotel_id'] ?? 0);
 $hotel = ['id' => $hotelId, 'name' => $room['hotel_name'] ?? ''];
@@ -219,13 +219,13 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 <div class="form-group"><label>Email</label><input type="email" name="email" class="hb-input" required autocomplete="email" inputmode="email" value="<?php echo htmlspecialchars($formEmail, ENT_QUOTES, 'UTF-8'); ?>"></div>
 <div class="form-group"><label>Phone</label><input type="tel" name="phone" class="hb-input" required autocomplete="tel" inputmode="tel" placeholder="+351912345678" pattern="\+\d{8,15}" title="Include country code, e.g. +351912345678" value="<?php echo htmlspecialchars($formPhone, ENT_QUOTES, 'UTF-8'); ?>"><p class="hb-field-hint">Full number with country code (e.g. +351912345678).</p></div>
 <?php if ($draft): ?>
-<div class="form-group"><label>Check-in (dd/mm/yyyy)</label><input type="text" class="hb-input hb-input-locked" readonly disabled value="<?php echo htmlspecialchars($prefillInDisplay, ENT_QUOTES, 'UTF-8'); ?>" aria-disabled="true"></div>
-<div class="form-group"><label>Check-out (dd/mm/yyyy)</label><input type="text" class="hb-input hb-input-locked" readonly disabled value="<?php echo htmlspecialchars($prefillOutDisplay, ENT_QUOTES, 'UTF-8'); ?>" aria-disabled="true"></div>
-<input type="hidden" name="check_in" value="<?php echo htmlspecialchars($prefillInDisplay, ENT_QUOTES, 'UTF-8'); ?>">
-<input type="hidden" name="check_out" value="<?php echo htmlspecialchars($prefillOutDisplay, ENT_QUOTES, 'UTF-8'); ?>">
+<div class="form-group"><label>Check-in</label><input type="text" class="hb-input hb-input-locked" readonly disabled value="<?php echo htmlspecialchars($prefillInDisplay, ENT_QUOTES, 'UTF-8'); ?>" aria-disabled="true"></div>
+<div class="form-group"><label>Check-out</label><input type="text" class="hb-input hb-input-locked" readonly disabled value="<?php echo htmlspecialchars($prefillOutDisplay, ENT_QUOTES, 'UTF-8'); ?>" aria-disabled="true"></div>
+<input type="hidden" name="check_in" value="<?php echo htmlspecialchars($checkInIso, ENT_QUOTES, 'UTF-8'); ?>">
+<input type="hidden" name="check_out" value="<?php echo htmlspecialchars($checkOutIso, ENT_QUOTES, 'UTF-8'); ?>">
 <?php else: ?>
-<div class="form-group"><label>Check-in (dd/mm/yyyy)</label><input name="check_in" class="hb-input" required autocomplete="off" value="<?php echo htmlspecialchars($prefillInDisplay, ENT_QUOTES, 'UTF-8'); ?>"></div>
-<div class="form-group"><label>Check-out (dd/mm/yyyy)</label><input name="check_out" class="hb-input" required autocomplete="off" value="<?php echo htmlspecialchars($prefillOutDisplay, ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="form-group"><label>Check-in</label><?php itm_render_hotel_date_input('check_in', 'hb-portal-check-in', $checkInIso, ['required' => true, 'class' => 'hb-input']); ?></div>
+<div class="form-group"><label>Check-out</label><?php itm_render_hotel_date_input('check_out', 'hb-portal-check-out', $checkOutIso, ['required' => true, 'class' => 'hb-input']); ?></div>
 <?php endif; ?>
 <button type="submit" class="hb-btn hb-btn-primary" title="Book and continue to payment">Book and continue to payment</button>
 </form>
@@ -239,5 +239,6 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 <?php hb_portal_render_reservation_summary($reservationSummaryContext); ?>
 </aside>
 </div>
+<script src="<?php echo htmlspecialchars(BASE_URL . 'js/hotel-date-input.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
 </body>
 </html>

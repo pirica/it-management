@@ -93,6 +93,19 @@ if (!function_exists('itm_parse_date_input')) {
             }
         }
 
+        if (preg_match('/^(\d{1,2})\/([A-Za-z]{3})\/(\d{4})$/', $raw, $hotelMatch)) {
+            $candidate = (int) $hotelMatch[1] . '/' . ucfirst(strtolower($hotelMatch[2])) . '/' . $hotelMatch[3];
+            $dt = DateTimeImmutable::createFromFormat('!j/M/Y', $candidate);
+            if ($dt instanceof DateTimeImmutable) {
+                $errors = DateTimeImmutable::getLastErrors();
+                $warn = (int) ($errors['warning_count'] ?? 0);
+                $err = (int) ($errors['error_count'] ?? 0);
+                if ($warn === 0 && $err === 0) {
+                    return $dt->format('Y-m-d');
+                }
+            }
+        }
+
         if (preg_match('/^(\d{4}-\d{2}-\d{2})/', $raw, $prefixMatch)) {
             return $prefixMatch[1];
         }
@@ -169,6 +182,27 @@ if (!function_exists('itm_format_date_display')) {
         }
 
         return $dt->format('d/m/Y');
+    }
+}
+
+if (!function_exists('itm_format_hotel_date_display')) {
+    /**
+     * Hospitality portal/admin display: d/Mon/Y (e.g. 31/Aug/2026, 01/Oct/2026).
+     */
+    function itm_format_hotel_date_display($rawValue)
+    {
+        $canonical = itm_parse_date_input($rawValue);
+        if ($canonical === null) {
+            $text = trim((string) $rawValue);
+            return ($text === '' || $text === '0000-00-00') ? '' : $text;
+        }
+
+        $dt = DateTimeImmutable::createFromFormat('!Y-m-d', $canonical);
+        if (!$dt instanceof DateTimeImmutable) {
+            return trim((string) $rawValue);
+        }
+
+        return $dt->format('d/M/Y');
     }
 }
 
