@@ -400,6 +400,15 @@
         "tables": [],
         "override": false
     },
+    "scaffold_departments_child_table_modules.php": {
+        "tags": [
+            "departments"
+        ],
+        "tables": [
+            "departments"
+        ],
+        "override": false
+    },
     "generate_tests.php": {
         "tags": [
             "Codebase"
