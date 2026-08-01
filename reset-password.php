@@ -100,8 +100,10 @@ if ($token !== '') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    itm_require_post_csrf();
-
+    if (!itm_try_post_csrf()) {
+        $error = 'Invalid CSRF token.';
+        $csrfToken = itm_get_csrf_token();
+    } else {
     $password = trim((string)($_POST['password'] ?? ''));
     $passwordConfirm = trim((string)($_POST['password_confirm'] ?? ''));
 
@@ -133,6 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Unable to update your password. The link may have expired or already been used.';
             }
         }
+    }
     }
 } elseif ($token !== '' && !$tokenIsValid) {
     $error = 'This reset link is invalid or has expired. Request a new password reset email.';

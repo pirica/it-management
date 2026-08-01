@@ -11,6 +11,7 @@ require 'config/config.php';
 $companyId = (int)($_SESSION['company_id'] ?? 0);
 $employeeId = (int)($_SESSION['employee_id'] ?? 0);
 $csrfToken = itm_get_csrf_token();
+$adminCsrfError = '';
 
 // Why: Company admin overview is restricted to Admin role; others land on employee dashboard.
 if (!itm_is_admin($conn, $employeeId)) {
@@ -22,14 +23,17 @@ $isAdmin = true;
 
 // Allow switching company directly from the admin information card
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['company_id'])) {
-    itm_require_post_csrf();
-
+    if (!itm_try_post_csrf()) {
+        $adminCsrfError = 'Invalid CSRF token.';
+        $csrfToken = itm_get_csrf_token();
+    } else {
     $requestedCompanyId = (int)($_POST['company_id'] ?? 0);
     if ($requestedCompanyId > 0 && function_exists('itm_switch_active_company_session')) {
         if (itm_switch_active_company_session($conn, $employeeId, $requestedCompanyId, $isAdmin)) {
             header('Location: admin.php');
             exit();
         }
+    }
     }
 }
 
@@ -255,6 +259,8 @@ if (!empty($dash['reload_required'])) {
                         <?php else: ?>
                             <p style="color: #999; margin-top: 12px;">Please switch company to view company information.</p>
                         <?php endif; ?>
+
+                        <?php if ($adminCsrfError !== ''): ?><p class="crud_error" style="margin-top:12px;"><?php echo htmlspecialchars($adminCsrfError, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
 
                         <?php if ($companies && mysqli_num_rows($companies) > 0): ?>
                             <form method="POST" style="margin-top:20px;">

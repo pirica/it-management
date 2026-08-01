@@ -7,7 +7,9 @@ if (hb_portal_logged_in()) {
 }
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    itm_require_post_csrf();
+    if (!itm_try_post_csrf()) {
+        $error = 'Invalid CSRF token.';
+    } else {
     $email = trim((string) ($_POST['email'] ?? ''));
     $password = (string) ($_POST['password'] ?? '');
     $fullName = trim((string) ($_POST['full_name'] ?? ''));
@@ -32,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $error = 'Email may already be registered.';
         }
+    }
     }
 }
 ?>

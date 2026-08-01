@@ -23,6 +23,7 @@ if (!$conn) {
 $employeeId = (int)$_SESSION['employee_id'];
 $csrfToken = itm_get_csrf_token();
 $isAdmin = false;
+$error = '';
 
 // Check if the current user has administrative privileges
 // We check both the role name and the username for 'admin'
@@ -52,9 +53,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' && function_exists('itm_try_auto_selec
 
 // Handle company selection
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Validate CSRF token for security
-    itm_require_post_csrf();
-    
+    if (!itm_try_post_csrf()) {
+        $error = 'Invalid CSRF token.';
+        $csrfToken = itm_get_csrf_token();
+    } else {
     $company_id = (int)($_POST['company_id'] ?? 0);
 
     if ($company_id > 0 && function_exists('itm_switch_active_company_session')) {
@@ -62,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             header('Location: dashboard.php');
             exit();
         }
+    }
     }
 }
 
@@ -161,6 +164,8 @@ $companies = $accessibleCompanies !== [] ? $accessibleCompanies : false;
             <h1><?php echo sanitize($app_name ?? itm_ui_config_app_name()); ?></h1>
             <p>Select Your Company</p>
         </div>
+
+        <?php if ($error !== ''): ?><p style="color:#d93025; margin-bottom:14px;"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
 
         <?php if (is_array($companies) && count($companies) > 0): ?>
             <form method="POST">
