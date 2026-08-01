@@ -29,10 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+if ($_SERVER['REQUEST_METHOD'] !== 'GET' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     header('Allow: GET, POST');
-    exit('Method Not Allowed');
+    $error = 'Method not allowed.';
 }
 ?>
 <!DOCTYPE html>
@@ -78,10 +78,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
             <p>Sign out of your account?</p>
         </div>
         <?php if ($error !== ''): ?><p class="form-error" role="alert"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
+        <?php $showLogoutForm = ($_SERVER['REQUEST_METHOD'] !== 'POST' || $error !== ''); ?>
+        <?php if ($showLogoutForm): ?>
         <form method="POST">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
             <button type="submit" title="Sign out">Sign out</button>
         </form>
+        <?php endif; ?>
         <div class="links">
             <a href="<?php echo sanitize(BASE_URL); ?>index.php" title="Cancel">Cancel and return</a>
         </div>

@@ -33,7 +33,8 @@ $pk = 'id';
 
 // Multi-tenancy check
 if (!$company_id) {
-    die("Company ID not found.");
+    header('Location: ' . BASE_URL . 'index.php');
+    exit;
 }
 
 /**
@@ -58,7 +59,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['approval_api'])) {
     $expectedToken = hash_hmac('sha256', $recordId . $target . $decision, $secret);
 
     if (!hash_equals($expectedToken, $token)) {
-        die("Invalid or expired authorization link.");
+        header('Content-Type: text/html; charset=utf-8');
+        echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Authorization link</title></head><body><p>Invalid or expired authorization link.</p></body></html>';
+        exit;
     }
 
     $statusField = ($target == 'hr') ? 'hr_approval_status' : 'hod_approval_status';
@@ -97,7 +100,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_email_action']))
     mysqli_stmt_execute($stmt);
     $record = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
 
-    if (!$record) die("Record not found.");
+    if (!$record) {
+        $_SESSION['crud_error'] = 'Record not found.';
+        header('Location: index.php');
+        exit;
+    }
 
     $applicantName = $record['first_name'] . ' ' . $record['last_name'];
     $applicantEmail = $record['work_email'] ?: $record['personal_email'];

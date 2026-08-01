@@ -35,14 +35,13 @@ if (!$canViewAuditLogs) {
 // Ensure the user has a valid company context
 $companyId = (int)($_SESSION['company_id'] ?? 0);
 if ($companyId <= 0) {
-    http_response_code(403);
-    exit('Company context is required.');
+    header('Location: ' . BASE_URL . 'index.php');
+    exit;
 }
 
 // Respect company-level UI policy so disabled audit logs remain hidden everywhere.
 if ((int)($ui_config['enable_audit_logs'] ?? 1) !== 1) {
-    http_response_code(403);
-    exit('Audit logs are disabled in Settings.');
+    itm_exit_forbidden('Audit logs are disabled in Settings.');
 }
 
 $messages = [];

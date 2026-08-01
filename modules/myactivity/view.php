@@ -9,13 +9,12 @@ require_once ROOT_PATH . 'includes/itm_myactivity.php';
 $companyId = (int)($_SESSION['company_id'] ?? 0);
 $employeeId = (int)($_SESSION['employee_id'] ?? 0);
 if ($companyId <= 0 || $employeeId <= 0) {
-    http_response_code(403);
-    exit('Signed-in employee context is required.');
+    header('Location: ' . BASE_URL . 'index.php');
+    exit;
 }
 
 if ((int)($ui_config['enable_audit_logs'] ?? 1) !== 1) {
-    http_response_code(403);
-    exit('Audit logs are disabled in Settings.');
+    itm_exit_forbidden('Audit logs are disabled in Settings.');
 }
 
 $auditId = (int)($_GET['id'] ?? 0);
