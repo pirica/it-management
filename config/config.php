@@ -223,6 +223,11 @@ if ($itm_basePath === '/') {
     $itm_basePath = '';
 }
 
+// Why: Subdirectory installs must not share PHPSESSID at path=/ with other apps on the same host (CSRF/session clashes).
+if (!defined('ITM_SESSION_COOKIE_PATH')) {
+    define('ITM_SESSION_COOKIE_PATH', $itm_basePath !== '' ? $itm_basePath : '/');
+}
+
 if ($itm_envBaseUrl !== '') {
     $itm_envParts = @parse_url($itm_envBaseUrl);
     $itm_envScheme = strtolower((string)($itm_envParts['scheme'] ?? ''));
@@ -385,7 +390,7 @@ if (session_status() === PHP_SESSION_NONE) {
         );
         session_set_cookie_params([
             'lifetime' => 0,
-            'path' => '/',
+            'path' => ITM_SESSION_COOKIE_PATH,
             'secure' => $itmSessionSecure,
             'httponly' => true,
             'samesite' => 'Lax',
@@ -1064,9 +1069,18 @@ if (!function_exists('itm_validate_csrf_token')) {
 /**
  * Enforces CSRF protection for POST requests
  */
+if (!function_exists('itm_try_post_csrf')) {
+    /**
+     * Why: Public auth pages must render CSRF failures inside normal HTML instead of exit().
+     */
+    function itm_try_post_csrf() {
+        return itm_validate_csrf_token($_POST['csrf_token'] ?? '');
+    }
+}
+
 if (!function_exists('itm_require_post_csrf')) {
     function itm_require_post_csrf() {
-        if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
+        if (!itm_try_post_csrf()) {
             http_response_code(403);
             exit('Invalid CSRF token.');
         }
