@@ -54,6 +54,8 @@ function itm_sidebar_base_structure() {
             'title' => '👤 Employee',
             'items' => [
                 ['id' => 'passwords', 'label' => '🔑 Passwords', 'href' => 'modules/passwords/', 'match_dir' => 'passwords'],
+                ['id' => 'password_folders', 'label' => '📁 Password Folders', 'href' => 'modules/password_folders/', 'match_dir' => 'password_folders'],
+                ['id' => 'password_entries', 'label' => '🔐 Password Entries', 'href' => 'modules/password_entries/', 'match_dir' => 'password_entries'],
                 ['id' => 'myactivity', 'label' => '🕒 My Activity', 'href' => 'modules/myactivity/', 'match_dir' => 'myactivity'],
                 ['id' => 'contacts', 'label' => '📓 Contacts', 'href' => 'modules/contacts/', 'match_dir' => 'contacts'],
                 ['id' => 'employees', 'label' => '👤 Employees', 'href' => 'modules/employees/', 'match_dir' => 'employees'],
@@ -191,6 +193,9 @@ function itm_sidebar_base_structure() {
             'items' => [
                 ['id' => 'it_locations', 'label' => '📍 IT Locations', 'href' => 'modules/it_locations/', 'match_dir' => 'it_locations'],
                 ['id' => 'floor_plans', 'label' => '🗺️ Floor Plans', 'href' => 'modules/floor_plans/', 'match_dir' => 'floor_plans'],
+                ['id' => 'floor_plan_folders', 'label' => '📁 Floor Plan Folders', 'href' => 'modules/floor_plan_folders/', 'match_dir' => 'floor_plan_folders'],
+                ['id' => 'floor_plan_tags', 'label' => '🏷️ Floor Plan Tags', 'href' => 'modules/floor_plan_tags/', 'match_dir' => 'floor_plan_tags'],
+                ['id' => 'floor_plan_item_tags', 'label' => '🔗 Floor Plan Item Tags', 'href' => 'modules/floor_plan_item_tags/', 'match_dir' => 'floor_plan_item_tags'],
                 ['id' => 'floor_designer', 'label' => '🎨 Floor Designer', 'href' => 'modules/floor_designer/', 'match_dir' => 'floor_designer'],
                 ['id' => 'location_types', 'label' => '🧭 Location Types', 'href' => 'modules/location_types/', 'match_dir' => 'location_types'],
                 ['id' => 'equipment_types', 'label' => '🖥️ Equipment Types', 'href' => 'modules/equipment_types/', 'match_dir' => 'equipment_types'],
@@ -292,6 +297,11 @@ function itm_sidebar_module_default_label($moduleName) {
         'ticket_sla_policies' => '⏱️ Ticket SLA Policies',
         'webmail_email_reads' => '📬 Webmail Email Reads',
         'webmail_signatures' => '✍️ Webmail Signatures',
+        'floor_plan_folders' => '📁 Floor Plan Folders',
+        'floor_plan_item_tags' => '🔗 Floor Plan Item Tags',
+        'floor_plan_tags' => '🏷️ Floor Plan Tags',
+        'password_folders' => '📁 Password Folders',
+        'password_entries' => '🔐 Password Entries',
         'it_settings' => '⚙️ IT Settings',
         'request_password' => '🔑 Request Password',
         'license_management' => '📄 License Management',
@@ -662,13 +672,7 @@ function itm_auto_create_module_scaffold($moduleName) {
  * Module IDs excluded from auto-discovery and the sidebar (managed inside other modules).
  */
 function itm_sidebar_excluded_module_ids() {
-    return [
-        'floor_plan_folders',
-        'floor_plan_item_tags',
-        'floor_plan_tags',
-        'password_folders',
-        'password_entries',
-    ];
+    return [];
 }
 
 function itm_sidebar_module_is_hidden($moduleName) {

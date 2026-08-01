@@ -6,6 +6,8 @@
 
 Secure private password manager with vault encryption. It allows users to store credentials in a folder hierarchy, featuring a LastPass-style password generator and AES-256-CBC encryption at rest.
 
+Flattened scaffold CRUD for the same tables also exists at `modules/password_folders/` and `modules/password_entries/` (sidebar under Employee). Those modules are company-wide list maintenance only — **this** module remains the vault UI (`employee_id` scope, encrypt/decrypt, lock screen).
+
 ---
 
 ## 2. Key Tables
