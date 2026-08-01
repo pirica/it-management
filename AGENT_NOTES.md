@@ -39,6 +39,7 @@ The IT Management System is a multi-tenant legacy procedural PHP application (PH
 - **API rate limits:** Free tier — unlimited, no API key, **session required**. Paid tiers — hourly caps, API key required. See `AGENTS.md` → **API keys and rate limits** and `includes/itm_api_rate_limit.php`.
 - **`db/` hygiene:** No executable `ALTER TABLE` in `01_schema.sql`; migrations use `DROP` + `CREATE` under `db/migrations/`. Multi-company seed admins use tenant-correct role/status lookups — see `AGENTS.md` → **Database & Schema Rules**.
 - **Login session rotation:** `login.php` calls `session_regenerate_id(true)` after successful password verification. Admin success path calls `itm_switch_active_company_session()` for the first active company when needed.
+- **Login CSRF failures:** `login.php` uses `itm_try_post_csrf()` and renders `Invalid CSRF token.` inside `.container` (does not call `itm_require_post_csrf()` which exits before HTML). Session cookie path is scoped via `ITM_SESSION_COOKIE_PATH` for subdirectory installs.
 - **Entry pages / errors:** Root `index.php` must not force `display_errors`; use Settings-driven `enable_all_error_reporting` via `config/config.php`.
 - **UTF-8:** `utf8mb4` end-to-end; do not strip emoji or punctuation to fix viewer mojibake — see `AGENTS.md` → **Character encoding**.
 

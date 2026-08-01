@@ -10,6 +10,7 @@
 include('config/config.php');
 require_once __DIR__ . '/includes/itm_employee_employment_status.php';
 $csrfToken = itm_get_csrf_token();
+$error = '';
 
 /**
  * Why: Login endpoint is public and attractive for credential stuffing, so we
@@ -82,8 +83,11 @@ function itm_is_login_rate_limited(mysqli $conn, string $ipAddress, ?string $ide
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    itm_require_post_csrf();
-
+    if (!itm_try_post_csrf()) {
+        // Why: itm_require_post_csrf() exits before HTML; show the error in-container and mint a fresh token for retry.
+        $error = 'Invalid CSRF token.';
+        $csrfToken = itm_get_csrf_token();
+    } else {
     $loginIdentifier = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $requestIp = substr(itm_get_login_request_ip(), 0, 45);
@@ -241,6 +245,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         $error = 'Invalid credentials.';
     }
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -287,7 +292,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p>Sign in to continue</p>
         </div>
 
-        <?php if (isset($error)): ?><p style="color:#d93025; margin-bottom:14px;"><?php echo htmlspecialchars($error); ?></p><?php endif; ?>
+        <?php if ($error !== ''): ?><p style="color:#d93025; margin-bottom:14px;"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
         <form method="POST">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
             <label for="email">Email or Username</label>
