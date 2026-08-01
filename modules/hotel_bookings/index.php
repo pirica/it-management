@@ -244,7 +244,7 @@ $nextAnchorQuery = hb_planning_filter_query($nextAnchorDate, $filterHotel, $filt
 </select>
 </label>
 <label>Days <input type="number" name="days" min="7" max="21" value="<?php echo (int) $planDays; ?>" class="hb-plan-days-input"></label>
-<button type="submit" class="btn btn-sm hb-plan-search-btn" title="Search">🔎</button>
+<label class="hb-plan-search-label"><span aria-hidden="true">&nbsp;</span><button type="submit" class="btn btn-sm" title="Search">🔎</button></label>
 </form>
 <div class="hb-plan-grid-wrap">
 <table class="hb-plan-grid">
