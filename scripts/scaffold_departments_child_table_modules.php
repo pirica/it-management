@@ -58,6 +58,11 @@ function itm_scaffold_departments_child_table_module_map(): array
         'ticket_sla_policies' => 'Ticket SLA Policies',
         'webmail_email_reads' => 'Webmail Email Reads',
         'webmail_signatures' => 'Webmail Signatures',
+        'floor_plan_folders' => 'Floor Plan Folders',
+        'floor_plan_item_tags' => 'Floor Plan Item Tags',
+        'floor_plan_tags' => 'Floor Plan Tags',
+        'password_folders' => 'Password Folders',
+        'password_entries' => 'Password Entries',
     ];
 }
 
@@ -108,7 +113,11 @@ function itm_scaffold_departments_child_table_modules_run(bool $apply): array
     foreach (itm_scaffold_departments_child_table_module_map() as $slug => $title) {
         $dest = $root . '/modules/' . $slug;
         if (is_file($dest . '/index.php') && !$apply) {
-            $result['skipped'][] = $slug . ' (index.php exists)';
+            $result['skipped'][] = $slug;
+            continue;
+        }
+        if (is_file($dest . '/index.php') && $apply) {
+            $result['skipped'][] = $slug;
             continue;
         }
         if (!$apply) {
