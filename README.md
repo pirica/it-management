@@ -23,6 +23,8 @@
 - ✅ Bulk Import — Centralized Excel/CSV import for Assets and Employees
 - ✅ IT Support Chatbot — Automated technical assistance powered by a multi-tenant Knowledge Base
 - ✅ Appointment — Self-service IT visit scheduling (weekly slots, visit reasons, Live Chat launch card)
+- ✅ Hotel Booking Public Portal — Guest browse and book at `booking/` (four-step checkout, manage reservation by last name + confirmation number; no ITM employee login)
+- ✅ Hospitality admin — Hotels, room types, reservations, portal rate plans, housekeeping, and tenant settings under Admin → **🏨 Hospitality** (`modules/hotel_*`, `modules/booking_rooms_types/`); canonical reference: `docs/BOOKING.md`
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
 <h2 align="center">Login</h2>
 
@@ -49,6 +51,22 @@
 <p align="center"><strong>Email Management</strong> — send logs, SMTP configurations with default transport, and automated alert rules.</p>
 
 <p align="center"><img src="docs/readme/demo_emails.png" alt="Email Management module" /></p>
+
+<p align="center"><strong>Hotel Booking Public Portal</strong> — guest hotel grid at <code>booking/</code> with date selection, four-step checkout, and manage-reservation lookup (no employee sign-in).</p>
+
+<p align="center"><img src="docs/readme/booking_portal.png" alt="Hotel booking public portal home" /></p>
+
+<p align="center"><strong>Hotel Bookings (admin)</strong> — tenant reservation list with search, status segments, and CRUD tools.</p>
+
+<p align="center"><img src="docs/readme/hotel_bookings.png" alt="Hotel Bookings admin module" /></p>
+
+<p align="center"><strong>Hotels (admin)</strong> — property master data, portal visibility, and review links for the public portal.</p>
+
+<p align="center"><img src="docs/readme/hotel_booking_hotels.png" alt="Hotels admin module" /></p>
+
+<p align="center"><strong>Hotel Booking Settings (admin)</strong> — portal enablement, welcome copy, tourist tax, and cancellation policy defaults.</p>
+
+<p align="center"><img src="docs/readme/hotel_booking_settings.png" alt="Hotel Booking Settings admin module" /></p>
 
 <p align="center"><strong>Roles & Permissions</strong> — role sidebar with hierarchy order and a six-column permission matrix for tenant RBAC (admins edit; other signed-in users browse read-only).</p>
 
@@ -116,6 +134,34 @@
 
 <p align="center"><img src="docs/readme/import_dashboard.png" alt="Bulk Import dashboard" /></p>
 
+<p align="center"><strong>Hotel Booking Public Portal</strong> — guest-facing hotel list and booking flow at <code>/booking/</code> (browse all active hotels, Select Dates modal, four-step checkout, payment-at-hotel confirmation).</p>
+
+<p align="center"><img src="docs/readme/booking_portal.png" alt="Hotel booking public portal home" /></p>
+
+<p align="center"><strong>Hotel Bookings (admin)</strong> — reservation records scoped per company; links to future, present, and history segment statuses.</p>
+
+<p align="center"><img src="docs/readme/hotel_bookings.png" alt="Hotel Bookings admin list" /></p>
+
+<p align="center"><strong>Hotels (admin)</strong> — configure properties shown on the public portal grid.</p>
+
+<p align="center"><img src="docs/readme/hotel_booking_hotels.png" alt="Hotels admin list" /></p>
+
+<p align="center"><strong>Room Types (admin)</strong> — room-type inventory, occupancy, and gallery photos served to the portal.</p>
+
+<p align="center"><img src="docs/readme/booking_rooms_types.png" alt="Room Types admin list" /></p>
+
+<p align="center"><strong>Portal Rate Plans (admin)</strong> — guest-facing rate labels, policies, and cancellation policy URLs for checkout Step 2.</p>
+
+<p align="center"><img src="docs/readme/hotel_booking_portal_rate_plans.png" alt="Portal Rate Plans admin list" /></p>
+
+<p align="center"><strong>Present bookings (admin)</strong> — segment status lookup for in-stay reservations.</p>
+
+<p align="center"><img src="docs/readme/hotel_bookings_present.png" alt="Present booking status admin list" /></p>
+
+<p align="center"><strong>Hotel Booking Settings (admin)</strong> — enable public portal per tenant, welcome text, and pricing defaults.</p>
+
+<p align="center"><img src="docs/readme/hotel_booking_settings.png" alt="Hotel Booking Settings admin" /></p>
+
 <h2 align="center">Architecture</h2>
 
 <p align="center">High-level request flow from web entry points through shared core into company-scoped MySQL data and audit logging.</p>
@@ -145,7 +191,7 @@
 | **Registry entries** | 149 in <code>modules_registry</code> (catalog slugs; not 1:1 with table count) |
 | **Company × module matrix** | 745 rows (5 seed companies × registry modules) |
 | **Sidebar preferences** | 540 rows (5 companies × 108 default sidebar items) |
-| **Functional domains** | 12 (see breakdown below) |
+| **Functional domains** | 13 (see breakdown below) |
 
 <h3 align="center">Domain breakdown</h3>
 
@@ -235,6 +281,14 @@
 
 **Modules:** `events`, `event_categories`, `calendar` (aggregated read-only view), `appointment`
 
+#### Hospitality and hotel booking
+
+`hotel_booking_hotels`, `hotel_booking_rooms`, `booking_rooms_types`, `hotel_bookings`, `customers`, `hotel_booking_portal_rate_plans`, `hotel_booking_special_rates`, `hotel_booking_amenities`, `hotel_booking_room_utilities`, `hotel_booking_settings`, `hotel_booking_housekeeping_*`, `hotel_bookings_future`, `hotel_bookings_present`, `hotel_bookings_history`, `hotel_booking_portal_users`
+
+**Purpose:** Guest hotel reservations via the public **`booking/`** portal (four-step checkout, manage reservation, payment at hotel) and staff configuration in Admin → **🏨 Hospitality** modules.
+
+**Modules:** Public portal `booking/`; admin `hotel_bookings`, `hotel_booking_hotels`, `hotel_booking_hotel_nearby`, `hotel_booking_hotel_photos`, `booking_rooms_types`, `booking_rooms_type_photos`, `hotel_booking_rooms`, `hotel_booking_amenities`, `hotel_booking_special_rates`, `hotel_booking_portal_rate_plans`, `hotel_booking_room_utilities`, `hotel_booking_housekeeping_*`, `hotel_bookings_future`, `hotel_bookings_present`, `hotel_bookings_history`, `hotel_booking_settings`, `hotel_booking_room_photos`, `hotel_booking_portal_users` — see [Hospitality and hotel booking](#hospitality-and-hotel-booking) and `docs/BOOKING.md`.
+
 #### Operations and file storage
 
 `explorer`, `visitors_access_log`, `backup_tape_log`, `ops_report`
@@ -257,13 +311,14 @@
 | Password vault | 3 | 0 |
 | Notes, bookmarks, productivity | 10 | ~5 |
 | Planning and events | 7 | ~11 |
+| Hospitality and hotel booking | 20 | ~80 |
 | Operations | 10 | ~15 |
 | Workstation reference | 7 | ~280 |
 | **Total** | **126** | **~3,075** |
 
 <h3 align="center">What this means</h3>
 
-<p align="center">The database is deliberately modular rather than monolithic. It reflects a full enterprise operations platform — multi-company SaaS, infrastructure and asset management, helpdesk and workflows, budgeting with approvals, user personalisation, and secure password vaulting — not a simple single-table CRUD application.</p>
+<p align="center">The database is deliberately modular rather than monolithic. It reflects a full enterprise operations platform — multi-company SaaS, infrastructure and asset management, helpdesk and workflows, budgeting with approvals, guest hotel booking, user personalisation, and secure password vaulting — not a simple single-table CRUD application.</p>
 
 <p align="center">Every feature module under <code>modules/</code> maps to one or more tables (or read-only aggregates of existing tables). The global catalogue lives in <code>modules_registry</code>; per-tenant visibility is enforced through <code>company_module_access</code> and <code>has_module_access()</code> — see <a href="#company-module-access-management">Company Module Access Management</a>.</p>
 
@@ -485,6 +540,28 @@ flowchart TB
 | Calendar | `modules/calendar/` | Aggregated view of alerts, events, tickets, and equipment expiries |
 | Events | `modules/events/`, `event_categories/` | Company events and categories |
 | System Status | `modules/system_status/` | Admin-only server monitoring (CPU, RAM, disk, PHP, MySQL) |
+| Appointment | `modules/appointment/` | Employee self-service IT visit booking (business hours, slot modal) |
+
+<h3 align="center">Hospitality and hotel booking</h3>
+
+<p align="center">Guests book at <code>booking/</code> without ITM employee login. Staff configure inventory and policies under Admin → <strong>🏨 Hospitality</strong>. Full portal and admin map: <code>docs/BOOKING.md</code>.</p>
+
+| Surface | Path | Summary |
+| --- | --- | --- |
+| **Public portal** | `booking/` | Hotel grid, Select Dates modal, four-step checkout (room → rate → upgrade → guest form), confirmation PDF, manage reservation (`users/bookings.php`) |
+| Hotel Bookings | `modules/hotel_bookings/` | Reservation CRUD and admin list |
+| Hotels | `modules/hotel_booking_hotels/` | Property master, portal visibility, review URLs |
+| Hotel Nearby / Photos | `hotel_booking_hotel_nearby/`, `hotel_booking_hotel_photos/` | Points of interest and hotel gallery uploads |
+| Room Types / Photos | `booking_rooms_types/`, `booking_rooms_type_photos/` | Room-type inventory and portal gallery images |
+| Hotel Rooms | `modules/hotel_booking_rooms/` | Physical room numbers linked to types |
+| Amenities / Utilities | `hotel_booking_amenities/`, `hotel_booking_room_utilities/` | Amenity catalog and per-room utility flags |
+| Special Rates | `modules/hotel_booking_special_rates/` | Tenant rate slugs for pricing helpers |
+| Portal Rate Plans | `modules/hotel_booking_portal_rate_plans/` | Guest-facing rate labels and cancellation policy links (checkout Step 2) |
+| Booking segments | `hotel_bookings_future/`, `hotel_bookings_present/`, `hotel_bookings_history/` | Future, in-stay, and history status lookups |
+| Housekeeping | `hotel_booking_housekeeping_statuses/`, `hotel_booking_housekeeping_maintenance_status/`, `hotel_booking_housekeeping_maintenance/` | HSK status and maintenance workflow |
+| Settings | `modules/hotel_booking_settings/` | `public_portal_enabled`, welcome copy, tourist tax, defaults |
+| Room Photos | `modules/hotel_booking_room_photos/` | Per-room photo uploads |
+| Portal Users | `modules/hotel_booking_portal_users/` | Optional legacy portal accounts (`booking/auth/`) |
 
 <h2 align="center">Floor Plans gallery</h2>
 
