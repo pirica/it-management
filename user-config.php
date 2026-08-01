@@ -317,8 +317,9 @@ $syncThemeToClient = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
-        die('Invalid CSRF token');
-    }
+        $message = 'Invalid CSRF token.';
+        $message_type = 'error';
+    } else {
 
     $action = $_POST['action'] ?? '';
 
@@ -556,6 +557,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = mysqli_prepare($conn, 'SELECT e.*, ep.name AS position_name, d.name AS department_name, es.name AS status_name FROM employees e LEFT JOIN employee_positions ep ON e.employee_position_id = ep.id LEFT JOIN departments d ON e.department_id = d.id LEFT JOIN employee_statuses es ON e.employment_status_id = es.id WHERE e.id = ?');
     mysqli_stmt_bind_param($stmt, 'i', $user_id);
     mysqli_stmt_execute($stmt); $current_user = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt)); mysqli_stmt_close($stmt);
+    }
 }
 
 // Profile Completeness

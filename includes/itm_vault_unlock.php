@@ -85,8 +85,8 @@ if (!function_exists('itm_vault_handle_unlock_requests')) {
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['master_key'])) {
       if (!itm_validate_csrf_token($_POST['csrf_token'] ?? '')) {
-        die('Invalid CSRF token');
-      }
+        $error = 'Invalid CSRF token.';
+      } else {
 
       if (!$configured) {
         header('Location: ../../user-config.php#vault-security');
@@ -104,6 +104,7 @@ if (!function_exists('itm_vault_handle_unlock_requests')) {
       }
 
       $error = $unlock['error'] !== '' ? $unlock['error'] : 'Incorrect Master Key.';
+      }
     }
 
     if (isset($_GET['action']) && (string)$_GET['action'] === 'lock') {

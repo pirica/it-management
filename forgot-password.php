@@ -96,8 +96,10 @@ function itm_is_password_reset_rate_limited(mysqli $conn, string $attemptType, s
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    itm_require_post_csrf();
-
+    if (!itm_try_post_csrf()) {
+        $error = 'Invalid CSRF token.';
+        $csrfToken = itm_get_csrf_token();
+    } else {
     $identifier = trim((string)($_POST['email'] ?? ''));
     $requestIp = substr(itm_get_login_request_ip(), 0, 45);
     $storedAttemptIdentifier = itm_normalize_login_attempt_identifier($identifier);
@@ -140,6 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } else {
         $message = 'If your email exists, a reset link has been sent.';
+    }
     }
 }
 ?>

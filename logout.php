@@ -10,10 +10,13 @@ require __DIR__ . '/config/config.php';
 
 $csrfToken = itm_get_csrf_token();
 $appName = $app_name ?? itm_ui_config_app_name();
+$error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    itm_require_post_csrf();
-
+    if (!itm_try_post_csrf()) {
+        $error = 'Invalid CSRF token.';
+        $csrfToken = itm_get_csrf_token();
+    } else {
     $_SESSION = [];
     if (ini_get('session.use_cookies')) {
         $params = session_get_cookie_params();
@@ -23,6 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     header('Location: login.php');
     exit();
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -56,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
         button { width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 12px; }
         .links { margin-top: 14px; text-align: center; }
         .links a { color: var(--accent); text-decoration: none; }
+        .form-error { color: #d93025; margin-bottom: 14px; font-size: 14px; font-weight: 600; }
         .theme-btn { position: absolute; top: 20px; right: 20px; background: var(--bg); border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         @media (max-width: 480px) {
             body { padding: 12px; }
@@ -72,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
             <h1><?php echo sanitize($appName); ?></h1>
             <p>Sign out of your account?</p>
         </div>
+        <?php if ($error !== ''): ?><p class="form-error" role="alert"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
         <form method="POST">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
             <button type="submit" title="Sign out">Sign out</button>

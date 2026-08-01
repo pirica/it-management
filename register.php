@@ -15,10 +15,13 @@ $prefilledInviteCode = trim((string)($_GET['invite'] ?? ''));
 $prefilledUsername = '';
 $prefilledConfirmUsername = '';
 $formError = '';
+$error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    itm_require_post_csrf();
-
+    if (!itm_try_post_csrf()) {
+        $error = 'Invalid CSRF token.';
+        $csrfToken = itm_get_csrf_token();
+    } else {
     $email = trim($_POST['email'] ?? '');
     $username = trim($_POST['username'] ?? '');
     $confirmUsername = trim($_POST['confirm_username'] ?? '');
@@ -198,6 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $prefilledInviteCode = $inviteCode;
         $prefilledUsername = $username;
         $prefilledConfirmUsername = $confirmUsername;
+    }
     }
 }
 ?>

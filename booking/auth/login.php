@@ -7,7 +7,9 @@ if (hb_portal_logged_in()) {
 }
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    itm_require_post_csrf();
+    if (!itm_try_post_csrf()) {
+        $error = 'Invalid CSRF token.';
+    } else {
     $email = trim((string) ($_POST['email'] ?? ''));
     $password = (string) ($_POST['password'] ?? '');
     $stmt = mysqli_prepare($conn, 'SELECT pu.id, pu.customer_id, pu.password_hash FROM hotel_booking_portal_users pu WHERE pu.company_id = ? AND pu.email = ? AND pu.deleted_at IS NULL LIMIT 1');
@@ -26,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     $error = 'Invalid email or password.';
+    }
 }
 ?>
 <!DOCTYPE html>
