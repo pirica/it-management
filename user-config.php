@@ -50,7 +50,9 @@ $current_user = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
 mysqli_stmt_close($stmt);
 
 if (!$current_user) {
-    die('User not found.');
+    unset($_SESSION['employee_id'], $_SESSION['login_employee_id']);
+    header('Location: ' . BASE_URL . 'login.php');
+    exit;
 }
 
 // Why: profile self-updates must use the employee home company_id — session
