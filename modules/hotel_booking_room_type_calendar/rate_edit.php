@@ -111,11 +111,11 @@ itm_hospitality_admin_layout_begin($crud_title);
 </select>
 </div>
 <div class="form-group">
-<label for="start_date">Start date <span class="hb-date-hint" title="31/Aug/2026">(31/Aug/2026)</span></label>
+<label for="start_date">Start date</label>
 <?php itm_render_hotel_date_input('start_date', 'start_date', $form['start_date'], ['required' => true]); ?>
 </div>
 <div class="form-group">
-<label for="end_date">End date <span class="hb-date-hint" title="31/Aug/2026">(31/Aug/2026)</span></label>
+<label for="end_date">End date</label>
 <?php itm_render_hotel_date_input('end_date', 'end_date', $form['end_date'], ['required' => true]); ?>
 </div>
 <div class="form-group">

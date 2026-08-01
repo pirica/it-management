@@ -284,10 +284,10 @@ if (!function_exists('hb_booking_render_form_fields')) {
         echo '</div></div>';
 
         echo '<div class="hb-booking-dates-row">';
-        echo '<div class="form-group"><label>Check-in <span class="hb-date-hint" title="31/Aug/2026">(31/Aug/2026)</span></label>';
+        echo '<div class="form-group"><label>Check-in</label>';
         itm_render_hotel_date_input('check_in', 'hb-booking-check-in', $row['check_in'] ?? '', ['required' => true, 'min' => $todayMin]);
         echo '</div>';
-        echo '<div class="form-group"><label>Check-out <span class="hb-date-hint" title="31/Aug/2026">(31/Aug/2026)</span></label>';
+        echo '<div class="form-group"><label>Check-out</label>';
         itm_render_hotel_date_input('check_out', 'hb-booking-check-out', $row['check_out'] ?? '', ['required' => true, 'min' => $todayMin]);
         echo '</div>';
         echo '</div>';
