@@ -2927,3 +2927,196 @@ if (!function_exists('itm_hotel_booking_write_cancellation_policy_file')) {
     return file_put_contents($full, $doc) !== false;
   }
 }
+
+if (!function_exists('itm_hotel_booking_room_number_taken')) {
+  /**
+   * Whether another live room in the same hotel already uses this room number.
+   */
+  function itm_hotel_booking_room_number_taken($conn, $companyId, $hotelId, $roomNumber, $excludeRoomId = 0) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $excludeRoomId = (int) $excludeRoomId;
+    $roomNumber = trim((string) $roomNumber);
+    if ($companyId < 1 || $hotelId < 1 || $roomNumber === '') {
+      return false;
+    }
+    $sql = 'SELECT id FROM hotel_booking_rooms WHERE company_id = ? AND hotel_id = ? AND room_number = ? AND deleted_at IS NULL';
+    if ($excludeRoomId > 0) {
+      $sql .= ' AND id <> ?';
+    }
+    $sql .= ' LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return false;
+    }
+    if ($excludeRoomId > 0) {
+      mysqli_stmt_bind_param($stmt, 'iisi', $companyId, $hotelId, $roomNumber, $excludeRoomId);
+    } else {
+      mysqli_stmt_bind_param($stmt, 'iis', $companyId, $hotelId, $roomNumber);
+    }
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $taken = $res && mysqli_num_rows($res) > 0;
+    mysqli_stmt_close($stmt);
+    return $taken;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_room_resolve_duplicate_room_number')) {
+  function itm_hotel_booking_room_resolve_duplicate_room_number($conn, $companyId, $hotelId, $baseRoomNumber) {
+    $baseRoomNumber = trim((string) $baseRoomNumber);
+    if ($baseRoomNumber === '') {
+      $baseRoomNumber = 'ROOM';
+    }
+    for ($i = 0; $i < 50; $i++) {
+      $suffix = $i === 0 ? '-C' : '-C' . ($i + 1);
+      $maxBaseLen = 20 - strlen($suffix);
+      $candidate = ($maxBaseLen > 0 ? substr($baseRoomNumber, 0, $maxBaseLen) : '') . $suffix;
+      if (!itm_hotel_booking_room_number_taken($conn, $companyId, $hotelId, $candidate)) {
+        return $candidate;
+      }
+    }
+    return substr($baseRoomNumber, 0, 8) . '-' . substr((string) time(), -6);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_room_resolve_duplicate_name')) {
+  function itm_hotel_booking_room_resolve_duplicate_name($baseName) {
+    $baseName = trim((string) $baseName);
+    if ($baseName === '') {
+      $baseName = 'Room';
+    }
+    for ($i = 0; $i < 50; $i++) {
+      $suffix = $i === 0 ? ' Copy' : ' Copy ' . ($i + 1);
+      $maxBaseLen = 255 - strlen($suffix);
+      $candidate = ($maxBaseLen > 0 ? substr($baseName, 0, $maxBaseLen) : '') . $suffix;
+      if ($candidate !== $baseName) {
+        return $candidate;
+      }
+    }
+    return substr($baseName, 0, 240) . ' Copy';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_room_duplicate_record')) {
+  /**
+   * Clone a hotel room row; assigns a new unique room_number and suffixed name.
+   *
+   * @return array{ok:bool,new_id:int,message:string}
+   */
+  function itm_hotel_booking_room_duplicate_record($conn, $companyId, $sourceRoomId) {
+    $companyId = (int) $companyId;
+    $sourceRoomId = (int) $sourceRoomId;
+    if ($companyId < 1 || $sourceRoomId < 1) {
+      return ['ok' => false, 'new_id' => 0, 'message' => 'Invalid room.'];
+    }
+
+    $stmt = mysqli_prepare(
+      $conn,
+      'SELECT * FROM hotel_booking_rooms WHERE company_id = ? AND id = ? AND deleted_at IS NULL LIMIT 1'
+    );
+    if (!$stmt) {
+      return ['ok' => false, 'new_id' => 0, 'message' => 'Could not load the source room.'];
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $sourceRoomId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $source = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    if (!$source) {
+      return ['ok' => false, 'new_id' => 0, 'message' => 'Room not found.'];
+    }
+
+    $hotelId = (int) ($source['hotel_id'] ?? 0);
+    $newRoomNumber = itm_hotel_booking_room_resolve_duplicate_room_number(
+      $conn,
+      $companyId,
+      $hotelId,
+      (string) ($source['room_number'] ?? '')
+    );
+    $newName = itm_hotel_booking_room_resolve_duplicate_name((string) ($source['name'] ?? ''));
+
+    $columnMeta = [];
+    $describe = mysqli_query($conn, 'DESCRIBE `hotel_booking_rooms`');
+    while ($describe && ($col = mysqli_fetch_assoc($describe))) {
+      $columnMeta[(string) ($col['Field'] ?? '')] = $col;
+    }
+
+    $skipColumns = ['id', 'created_by', 'created_at', 'updated_by', 'updated_at', 'deleted_by', 'deleted_at'];
+    $insertColumns = [];
+    $insertValues = [];
+
+    foreach ($source as $column => $value) {
+      if (!isset($columnMeta[$column]) || in_array($column, $skipColumns, true)) {
+        continue;
+      }
+      if ($column === 'room_number') {
+        $value = $newRoomNumber;
+      } elseif ($column === 'name') {
+        $value = $newName;
+      } elseif ($column === 'active') {
+        $value = 1;
+      }
+
+      $type = strtolower((string) ($columnMeta[$column]['Type'] ?? ''));
+      if ($value === null || $value === '') {
+        $nullAllowed = strtoupper((string) ($columnMeta[$column]['Null'] ?? '')) === 'YES';
+        $insertValues[] = $nullAllowed ? 'NULL' : "''";
+      } elseif (preg_match('/^(tinyint|smallint|mediumint|int|bigint)/', $type)) {
+        $insertValues[] = (string) (int) $value;
+      } elseif (preg_match('/^(decimal|float|double)/', $type)) {
+        $insertValues[] = (string) (0 + $value);
+      } else {
+        $insertValues[] = "'" . mysqli_real_escape_string($conn, (string) $value) . "'";
+      }
+      $insertColumns[] = '`' . str_replace('`', '``', $column) . '`';
+    }
+
+    $auditData = [];
+    $auditSql = [];
+    if (function_exists('itm_crud_stamp_create_audit')) {
+      itm_crud_stamp_create_audit($auditData, $auditSql);
+      foreach (['created_by', 'created_at', 'updated_by', 'updated_at'] as $auditCol) {
+        if (!array_key_exists($auditCol, $auditData)) {
+          continue;
+        }
+        $insertColumns[] = '`' . $auditCol . '`';
+        if ($auditCol === 'created_by' || $auditCol === 'updated_by') {
+          $insertValues[] = (string) (int) $auditData[$auditCol];
+        } else {
+          $insertValues[] = "'" . mysqli_real_escape_string($conn, (string) $auditData[$auditCol]) . "'";
+        }
+      }
+    }
+
+    $sql = 'INSERT INTO hotel_booking_rooms (' . implode(', ', $insertColumns) . ') VALUES (' . implode(', ', $insertValues) . ')';
+    $dbErrorCode = 0;
+    $dbErrorMessage = '';
+    $ok = itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage);
+    $newId = 0;
+    if ($ok) {
+      $lookup = mysqli_prepare(
+        $conn,
+        'SELECT id FROM hotel_booking_rooms WHERE company_id = ? AND hotel_id = ? AND room_number = ? AND deleted_at IS NULL ORDER BY id DESC LIMIT 1'
+      );
+      if ($lookup) {
+        mysqli_stmt_bind_param($lookup, 'iis', $companyId, $hotelId, $newRoomNumber);
+        mysqli_stmt_execute($lookup);
+        $lookupRes = mysqli_stmt_get_result($lookup);
+        if ($lookupRes && ($lookupRow = mysqli_fetch_assoc($lookupRes))) {
+          $newId = (int) ($lookupRow['id'] ?? 0);
+        }
+        mysqli_stmt_close($lookup);
+      }
+    }
+
+    if (!$ok || $newId < 1) {
+      $message = $dbErrorMessage !== '' && function_exists('itm_format_db_constraint_error')
+        ? itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage)
+        : 'Could not duplicate the room.';
+      return ['ok' => false, 'new_id' => 0, 'message' => $message];
+    }
+
+    return ['ok' => true, 'new_id' => $newId, 'message' => ''];
+  }
+}
