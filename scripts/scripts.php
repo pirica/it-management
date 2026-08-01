@@ -649,7 +649,14 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="scaffold_departments_child_table_modules.php" target="_blank" rel="nofollow noreferrer">scaffold_departments_child_table_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">departments</span></span></td>
-                    <td>Copies flattened CRUD from <code>modules/departments/</code> into the 24 child/support table module allowlist. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Pair with <code>sync_modules_registry.php</code> and <code>includes/ui_config.php</code> sidebar rows.</td>
+                    <td>Copies flattened CRUD from <code>modules/departments/</code> into the 24 child/support table module allowlist. <strong>Default = dry-run</strong> (<code>?run=1</code> compact summary; <code>?verbose=1</code> lists slugs); writes with CLI <code>--apply</code> or browser <code>?run=1&amp;apply=1</code> (Admin). Verify: <code>verify_scaffold_departments_child_table_modules.php</code>.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Codebase">
+                    <td><a href="verify_scaffold_departments_child_table_modules.php" target="_blank" rel="nofollow noreferrer">verify_scaffold_departments_child_table_modules.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Three-step gate for departments child-table modules: folder <code>index.php</code> + <code>$crud_table</code>, schema tables-without-module count, sidebar catalog ids. Exit <code>1</code> on failure.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">

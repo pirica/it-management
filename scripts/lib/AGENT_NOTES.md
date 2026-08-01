@@ -21,6 +21,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 | `itm_active_checkbox_fix.php` | Repair helpers for `fix_scaffold_active_checkbox.php` (`scaffold_active_checkbox_not_compliant` only) |
 | `itm_list_modules_not_on_sidebar_report.php` | Report builder for `list_modules_not_on_sidebar.php` (sidebar match_dir, module folders, registry gaps) |
 | `itm_database_tables_modules_report.php` | Shared schema/live DB vs `modules/` mapping for `compare_database_sql_modules.php` and `list_db_tables_without_modules.php` |
+| `itm_scaffold_departments_child_table.php` | Allowlist + scaffold/verify helpers for `scaffold_departments_child_table_modules.php` and `verify_scaffold_departments_child_table_modules.php` |
 | `itm_titles_list_audit.php` | Shared scan/summary helpers for `titles_list.php`, `titles_list_show.php`, `verify_module_page_chrome.php`, and `verify_favicon_root_cause.php` (module file collection, canonical full `<title>` match, `itm_verify_module_page_chrome_entry_basenames()` / `itm_verify_module_page_chrome_skip_reason()` for index/create/edit/view/list_all/view_all verify scope, summary output) |
 | `utf8_file.php` | UTF-8 writes for `qa-reports/*.md` / `.json` |
 | `mbqa_report_paths.php` | Timestamped QA report paths |
