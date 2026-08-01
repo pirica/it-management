@@ -23,10 +23,11 @@
 - ✅ Bulk Import — Centralized Excel/CSV import for Assets and Employees
 - ✅ IT Support Chatbot — Automated technical assistance powered by a multi-tenant Knowledge Base
 - ✅ Appointment — Self-service IT visit scheduling (weekly slots, visit reasons, Live Chat launch card)
-- ✅ Hotel Booking Public Portal — Guest browse and book at `booking/` (four-step checkout, manage reservation by last name + confirmation number; no ITM employee login)
-- ✅ Hospitality admin — Hotels, room types, reservations, portal rate plans, housekeeping, and tenant settings under Admin → **🏨 Hospitality** (`modules/hotel_*`, `modules/booking_rooms_types/`); canonical reference: `docs/BOOKING.md`
+- ✅ Hotel Booking — Public guest portal at `booking/` and Admin **🏨 Hospitality** modules (`docs/BOOKING.md`)
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
-<h2 align="center">Login</h2>
+<h2 align="center" id="login">Login</h2>
+
+<p align="center">Quick tour after sign-in (login page plus representative module lists). Extended gallery — including the public hotel booking portal — is under <a href="#screenshots">Screenshots</a> below.</p>
 
 <p align="center"><strong>Login</strong> — sign in with username and password; CSRF-protected form with light/dark toggle.</p>
 
@@ -52,22 +53,6 @@
 
 <p align="center"><img src="docs/readme/demo_emails.png" alt="Email Management module" /></p>
 
-<p align="center"><strong>Hotel Booking Public Portal</strong> — guest hotel grid at <code>booking/</code> with date selection, four-step checkout, and manage-reservation lookup (no employee sign-in).</p>
-
-<p align="center"><img src="docs/readme/booking_portal.png" alt="Hotel booking public portal home" /></p>
-
-<p align="center"><strong>Hotel Bookings (admin)</strong> — tenant reservation list with search, status segments, and CRUD tools.</p>
-
-<p align="center"><img src="docs/readme/hotel_bookings.png" alt="Hotel Bookings admin module" /></p>
-
-<p align="center"><strong>Hotels (admin)</strong> — property master data, portal visibility, and review links for the public portal.</p>
-
-<p align="center"><img src="docs/readme/hotel_booking_hotels.png" alt="Hotels admin module" /></p>
-
-<p align="center"><strong>Hotel Booking Settings (admin)</strong> — portal enablement, welcome copy, tourist tax, and cancellation policy defaults.</p>
-
-<p align="center"><img src="docs/readme/hotel_booking_settings.png" alt="Hotel Booking Settings admin module" /></p>
-
 <p align="center"><strong>Roles & Permissions</strong> — role sidebar with hierarchy order and a six-column permission matrix for tenant RBAC (admins edit; other signed-in users browse read-only).</p>
 
 <p align="center"><img src="docs/readme/roles_permissions.png" alt="Roles and Permissions dashboard" /></p>
@@ -76,25 +61,9 @@
 
 <p align="center"><img src="docs/readme/private_contacts.png" alt="Private Contacts module" /></p>
 
-<h2 align="center">Screenshots</h2>
+<h2 align="center" id="screenshots">Screenshots</h2>
 
-<p align="center">Captured from a local Laragon-style install at <code>http://localhost/it-management/</code> (default light theme after sign-in).</p>
-
-<p align="center"><strong>Dashboard</strong> — tenant overview with quick stats and settings shortcut.</p>
-
-<p align="center"><img src="docs/readme/dashboard.png" alt="Dashboard overview" /></p>
-
-<p align="center"><strong>Equipment</strong> — module list with search, sort, and table tools (export / import).</p>
-
-<p align="center"><img src="docs/readme/equipment.png" alt="Equipment module list" /></p>
-
-<p align="center"><strong>License Management</strong> — tenant-scoped license records with Type and Supplier labels, dd/mm/yyyy dates, and standard CRUD tools.</p>
-
-<p align="center"><img src="docs/readme/license_management.png" alt="License Management module list" /></p>
-
-<p align="center"><strong>Private Contacts</strong> — user-scoped contacts with UK localization, photo uploads, and favorites.</p>
-
-<p align="center"><img src="docs/readme/private_contacts.png" alt="Private Contacts module" /></p>
+<p align="center">Extended gallery from a local Laragon-style install at <code>http://localhost/it-management/</code> (default light theme). Signed-in admin modules below; for login and the introductory module tour see <a href="#login">Login</a> above.</p>
 
 <p align="center"><strong>IDF rack</strong> — visual rack layout with positions, port grid, and linked device management.</p>
 
@@ -115,10 +84,6 @@
 <p align="center"><strong>System Status</strong> — Admin-only server dashboard with monitoring gauges, PHP settings, and database metrics.</p>
 
 <p align="center"><img src="docs/readme/system_status.png" alt="System Status monitoring tab" /></p>
-
-<p align="center"><strong>Roles & Permissions</strong> — Admin matrix for role-level CRUD flags (company module access remains the first visibility gate).</p>
-
-<p align="center"><img src="docs/readme/roles_permissions.png" alt="Roles and Permissions dashboard" /></p>
 
 <p align="center"><strong>Reports Hub</strong> — visual dashboard with key metrics for assets, tickets, HR, and network devices.</p>
 
@@ -287,7 +252,7 @@
 
 **Purpose:** Guest hotel reservations via the public **`booking/`** portal (four-step checkout, manage reservation, payment at hotel) and staff configuration in Admin → **🏨 Hospitality** modules.
 
-**Modules:** Public portal `booking/`; admin `hotel_bookings`, `hotel_booking_hotels`, `hotel_booking_hotel_nearby`, `hotel_booking_hotel_photos`, `booking_rooms_types`, `booking_rooms_type_photos`, `hotel_booking_rooms`, `hotel_booking_amenities`, `hotel_booking_special_rates`, `hotel_booking_portal_rate_plans`, `hotel_booking_room_utilities`, `hotel_booking_housekeeping_*`, `hotel_bookings_future`, `hotel_bookings_present`, `hotel_bookings_history`, `hotel_booking_settings`, `hotel_booking_room_photos`, `hotel_booking_portal_users` — see [Hospitality and hotel booking](#hospitality-and-hotel-booking) and `docs/BOOKING.md`.
+**Modules:** Public portal `booking/`; admin Hospitality modules — see [Hospitality and hotel booking](#hospitality-and-hotel-booking) and `docs/BOOKING.md` (full module table; not repeated here).
 
 #### Operations and file storage
 
