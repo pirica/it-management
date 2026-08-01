@@ -3,6 +3,8 @@
 ## 1. Module Purpose
 Manages physical floor plan documents, including images, PDFs, and AutoCAD files. Supports a hierarchical folder structure and tagging.
 
+Flattened maintenance CRUD for child tables also exists: `modules/floor_plan_folders/`, `modules/floor_plan_tags/`, `modules/floor_plan_item_tags/` (sidebar under Reference Data). Gallery UX in this module remains canonical for uploads and folder moves.
+
 ## 2. Key Tables
 - **floor_plans** — main file metadata. Uses standard audit columns (including `created_by` to track the uploaded by user). Tenant display-name unique: `UNIQUE (company_id, IFNULL(folder_id,0), display_name)`.
 - **floor_plan_folders** — folder hierarchy (`parent_folder_id` self-FK; must match PHP/SQL column name). Tenant folder-name unique: `UNIQUE (company_id, IFNULL(parent_folder_id,0), name)` (sibling names unique under a parent — **unlike** bookmark folders).
