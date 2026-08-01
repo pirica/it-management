@@ -2420,6 +2420,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_rooms", "Hotel Rooms", 0, 1, "🚪");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_amenities", "Booking Amenities", 0, 1, "✨");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_special_rates", "Booking Special Rates", 0, 1, "🏷️");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_room_type_calendar", "Room Type Calendar", 0, 1, "📆");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_portal_rate_plans", "Portal Rate Plans", 0, 1, "📋");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_room_utilities", "Room Utilities", 0, 1, "✨");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_housekeeping_statuses", "HSK Statuses", 0, 1, "🧹");

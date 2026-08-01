@@ -32,7 +32,14 @@ $checkOutIso = date('Y-m-d', strtotime($checkInIso . ' +' . $nights . ' day'));
 
 $resolvedRate = itm_hotel_booking_portal_resolved_rate_slug($occupancy);
 $discountPercent = itm_hotel_booking_special_rate_discount($conn, $company_id, $hotelId, $resolvedRate);
-$basePerNight = (float) ($room['price_per_night'] ?? 0);
+$basePerNight = itm_hotel_booking_portal_check_in_display_bar(
+    $conn,
+    $company_id,
+    $hotelId,
+    (int) ($room['room_type_id'] ?? 0),
+    $checkInIso,
+    (float) ($room['price_per_night'] ?? 0)
+);
 $currency = $room['currency_code'] ?? 'EUR';
 
 $cancelBy = date('F jS, Y', strtotime($checkInIso . ' -5 days'));
@@ -59,6 +66,7 @@ foreach ($ratePlans as $plan) {
     $draftSlice = [
         'company_id' => $company_id,
         'hotel_id' => $hotelId,
+        'room_type_id' => (int) ($room['room_type_id'] ?? 0),
         'rate_plan' => $slug,
         'traveling_with_pet' => 0,
         'service_animal' => 0,
@@ -75,7 +83,18 @@ foreach ($ratePlans as $plan) {
         $conn,
         $company_id
     );
-    $listStayTotal = itm_hotel_booking_compute_stay_payment($basePerNight, $checkInIso, $checkOutIso, $occupancy, 0, $portalPricing);
+    $listStayTotal = itm_hotel_booking_compute_stay_payment_dated_rates(
+        $conn,
+        $company_id,
+        $hotelId,
+        (int) ($room['room_type_id'] ?? 0),
+        $basePerNight,
+        $checkInIso,
+        $checkOutIso,
+        $occupancy,
+        0,
+        $portalPricing
+    );
     $isBreakfast = $slug === 'breakfast';
     $ratePlanRows[] = [
         'id' => (int) ($plan['id'] ?? 0),
@@ -117,6 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'discount_percent' => $discountPercent,
                 'resolved_rate_slug' => $resolvedRate,
                 'base_price_per_night' => $basePerNight,
+                'room_type_id' => (int) ($room['room_type_id'] ?? 0),
             ];
             itm_hotel_booking_portal_draft_save($draft);
             header('Location: ' . APPURL . '/rooms/customize.php');
