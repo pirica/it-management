@@ -14,6 +14,7 @@
             "approver_type",
             "bookmarks",
             "bookmark_folders",
+            "cable_colors",
             "catalogs",
             "companies",
             "cost_centers",
@@ -25,12 +26,18 @@
             "employee_sidebar_preferences",
             "employee_statuses",
             "equipment",
+            "equipment_rj45",
             "equipment_types",
             "events",
             "expenses",
             "forecast_revisions",
             "forecast_revisions_status",
             "gl_accounts",
+            "idfs",
+            "idf_device_type",
+            "idf_links",
+            "idf_ports",
+            "idf_positions",
             "ip_addresses",
             "ip_subnets",
             "license_types",
@@ -41,6 +48,9 @@
             "private_contacts",
             "role_assignment_rights",
             "switch_ports",
+            "switch_port_numbering_layout",
+            "switch_port_types",
+            "switch_status",
             "todo",
             "todo_categories",
             "ui_configuration"
@@ -328,6 +338,17 @@
         ],
         "override": false
     },
+    "verify_webmail_module.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "emails",
+            "employees",
+            "modules_registry"
+        ],
+        "override": false
+    },
     "verify_emails_module.php": {
         "tags": [
             "Mixed"
@@ -603,18 +624,6 @@
         "tables": [],
         "override": false
     },
-    "debug_peer_options.php": {
-        "tags": [
-            "Mixed"
-        ],
-        "tables": [
-            "employees",
-            "employee_companies",
-            "it_settings",
-            "companies"
-        ],
-        "override": false
-    },
     "check_02_data_sample_coverage.php": {
         "tags": [
             "Codebase"
@@ -643,57 +652,12 @@
             "equipment_rj45",
             "equipment_statuses",
             "equipment_types",
+            "expenses",
             "switch_ports",
             "switch_port_types",
             "switch_status",
             "workstation_ram"
         ],
-        "override": false
-    },
-    "verify_finance_sample_data_seed.php": {
-        "tags": [
-            "Mixed"
-        ],
-        "tables": [
-            "annual_budgets",
-            "bank_accounts",
-            "bill_line_items",
-            "bills",
-            "budget_categories",
-            "cost_centers",
-            "customer_statuses",
-            "customers",
-            "expense_recurrence",
-            "expenses",
-            "gl_accounts",
-            "integration_accounts",
-            "invoice_line_items",
-            "invoices",
-            "monthly_budgets",
-            "paid_statuses",
-            "payment_modes",
-            "suppliers",
-            "tax_rates"
-        ],
-        "override": false
-    },
-    "check_crud_sample_data_live_row_gate.php": {
-        "tags": [
-            "Mixed"
-        ],
-        "tables": [
-            "expenses",
-            "tax_rates",
-            "bills",
-            "invoices"
-        ],
-        "override": false
-    },
-    "apply_crud_sample_data_live_row_gate.php": {
-        "tags": [
-            "Codebase"
-        ],
-        "tables": [],
         "override": false
     },
     "export_floor_plan_folders_seed.php": {
@@ -822,6 +786,13 @@
         "tables": [
             "employees"
         ],
+        "override": false
+    },
+    "generate_ms_support_feed_products.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
         "override": false
     },
     "generate_reassignment.php": {
@@ -1121,6 +1092,13 @@
         ],
         "override": false
     },
+    "list_db_tables_without_modules.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
     "compare_database_sql_modules.php": {
         "tags": [
             "Codebase"
@@ -1274,13 +1252,41 @@
     },
     "apply_script_catalog_tags.php": {
         "tags": [
-            "catalogs",
-            "companies"
+            "catalogs"
         ],
         "tables": [
-            "catalogs",
-            "companies"
+            "catalogs"
         ],
+        "override": false
+    },
+    "apply_script_catalog_usage_to_php.php": {
+        "tags": [
+            "catalogs"
+        ],
+        "tables": [
+            "catalogs"
+        ],
+        "override": false
+    },
+    "check_script_browser_usage.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_script_stdio_fwrite.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_script_php_utf8_no_bom.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
         "override": false
     },
     "apply_head_favicon_link.php": {
@@ -1290,6 +1296,20 @@
         "tables": [
             "ui_configuration"
         ],
+        "override": false
+    },
+    "apply_crud_browser_title_module_icon.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_crud_browser_title_module_icon.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
         "override": false
     },
     "apply_list_new_button_style.php": {
@@ -1410,32 +1430,28 @@
         "tables": [],
         "override": false
     },
-    "check_script_catalog_tags.php": {
-        "tags": [
-            "catalogs",
-            "companies"
-        ],
-        "tables": [
-            "catalogs",
-            "companies"
-        ],
-        "override": false
-    },
-    "check_script_php_utf8_no_bom.php": {
+    "check_env_vars_in_use.php": {
         "tags": [
             "Codebase"
         ],
         "tables": [],
         "override": false
     },
-    "verify_scripts_catalog_filter.php": {
+    "check_script_catalog_tags.php": {
         "tags": [
-            "catalogs",
-            "companies"
+            "catalogs"
         ],
         "tables": [
-            "catalogs",
-            "companies"
+            "catalogs"
+        ],
+        "override": false
+    },
+    "verify_scripts_catalog_filter.php": {
+        "tags": [
+            "catalogs"
+        ],
+        "tables": [
+            "catalogs"
         ],
         "override": false
     },
@@ -1657,6 +1673,125 @@
         ],
         "override": false
     },
+    "verify_finance_sample_data_seed.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "companies",
+            "expenses",
+            "tax_rates"
+        ],
+        "override": false
+    },
+    "check_crud_sample_data_live_row_gate.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "apply_crud_sample_data_live_row_gate.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_expenses_ap.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "cost_centers",
+            "expenses",
+            "gl_accounts",
+            "tax_rates"
+        ],
+        "override": false
+    },
+    "verify_bills.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "bills",
+            "expenses",
+            "suppliers"
+        ],
+        "override": false
+    },
+    "verify_invoices.php": {
+        "tags": [
+            "expenses",
+            "invoices"
+        ],
+        "tables": [
+            "expenses",
+            "invoices"
+        ],
+        "override": false
+    },
+    "verify_finance_attachments.php": {
+        "tags": [
+            "finance_attachments"
+        ],
+        "tables": [
+            "finance_attachments"
+        ],
+        "override": false
+    },
+    "verify_finance_payment_allocations.php": {
+        "tags": [
+            "bills",
+            "finance_payment_allocations"
+        ],
+        "tables": [
+            "bills",
+            "finance_payment_allocations"
+        ],
+        "override": false
+    },
+    "verify_expense_recurrence.php": {
+        "tags": [
+            "expenses",
+            "expense_recurrence"
+        ],
+        "tables": [
+            "expenses",
+            "expense_recurrence"
+        ],
+        "override": false
+    },
+    "verify_customers.php": {
+        "tags": [
+            "customers",
+            "invoices"
+        ],
+        "tables": [
+            "customers",
+            "invoices"
+        ],
+        "override": false
+    },
+    "verify_integration_accounts.php": {
+        "tags": [
+            "integration_accounts"
+        ],
+        "tables": [
+            "integration_accounts"
+        ],
+        "override": false
+    },
+    "verify_bank_accounts.php": {
+        "tags": [
+            "bank_accounts"
+        ],
+        "tables": [
+            "bank_accounts"
+        ],
+        "override": false
+    },
     "verify_ops_report_sample_data.php": {
         "tags": [
             "ops_report"
@@ -1714,32 +1849,44 @@
         ],
         "override": false
     },
+    "seed_hotel_booking_sample_photos.php": {
+        "tags": [
+            "booking_rooms_types",
+            "hotel_bookings"
+        ],
+        "tables": [
+            "booking_rooms_types",
+            "hotel_bookings"
+        ],
+        "override": false
+    },
     "verify_hotel_booking.php": {
         "tags": [
             "Mixed"
         ],
         "tables": [
             "booking_rooms_types",
-            "hotel_booking_hotels",
-            "hotel_booking_housekeeping_statuses",
-            "hotel_booking_rooms",
-            "hotel_booking_settings",
             "hotel_bookings",
-            "hotel_bookings_future",
-            "hotel_bookings_history",
-            "hotel_bookings_present"
+            "hotel_booking_hotels",
+            "notes"
+        ],
+        "override": false
+    },
+    "check_hotel_bookings_rate_plan_form.php": {
+        "tags": [
+            "hotel_bookings"
+        ],
+        "tables": [
+            "hotel_bookings"
         ],
         "override": false
     },
     "verify_appointment.php": {
         "tags": [
-            "Mixed"
+            "appointments",
+            "modules_registry"
         ],
         "tables": [
-            "appointment_business_hours",
-            "appointment_settings",
-            "appointment_type",
-            "appointment_visit_reasons",
             "appointments",
             "modules_registry"
         ],
@@ -1902,11 +2049,9 @@
     },
     "verify_settings_admin_buttons.php": {
         "tags": [
-            "companies"
+            "Codebase"
         ],
-        "tables": [
-            "companies"
-        ],
+        "tables": [],
         "override": false
     },
     "apply_new_company_module_share_capable_seed.php": {
@@ -2133,9 +2278,15 @@
     },
     "repro_request_password_bypass.php": {
         "tags": [
-            "request_password"
+            "Mixed"
         ],
         "tables": [
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses",
+            "modules_registry",
             "request_password"
         ],
         "override": false
@@ -2662,6 +2813,30 @@
         ],
         "override": false
     },
+    "debug_peer_options.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_live_chat.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "employees",
+            "employee_notifications",
+            "live_chat_conversations",
+            "live_chat_messages",
+            "live_chat_participants",
+            "tickets",
+            "ticket_activity",
+            "ticket_comments",
+            "ticket_statuses"
+        ],
+        "override": false
+    },
     "verify_notes_vault.php": {
         "tags": [
             "Mixed"
@@ -2742,9 +2917,11 @@
     },
     "patch_crud_share_agent_notes.php": {
         "tags": [
-            "Codebase"
+            "notes"
         ],
-        "tables": [],
+        "tables": [
+            "notes"
+        ],
         "override": false
     },
     "verify_qr_share_modules.php": {
@@ -2855,6 +3032,8 @@
             "employee_roles",
             "employee_statuses",
             "expenses",
+            "gl_accounts",
+            "paid_statuses",
             "role_module_permissions"
         ],
         "override": false
@@ -2927,10 +3106,14 @@
     },
     "repro_cross_tenant_admin.php": {
         "tags": [
-            "employees"
+            "Mixed"
         ],
         "tables": [
-            "employees"
+            "access_levels",
+            "employees",
+            "employee_companies",
+            "employee_roles",
+            "employee_statuses"
         ],
         "override": false
     },
@@ -3046,11 +3229,16 @@
             "Mixed"
         ],
         "tables": [
+            "access_levels",
+            "cost_centers",
             "employees",
             "employee_assignment_history",
+            "employee_companies",
             "employee_roles",
             "employee_statuses",
-            "expenses"
+            "expenses",
+            "gl_accounts",
+            "paid_statuses"
         ],
         "override": false
     },
