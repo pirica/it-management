@@ -165,7 +165,7 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
         $imageUrlOverride = trim((string) $imageUrlOverride);
 
         $sampleRoom = null;
-        $rstmt = mysqli_prepare($conn, 'SELECT id, price_per_night, view_label, is_out_of_order, is_out_of_service
+        $rstmt = mysqli_prepare($conn, 'SELECT id, hotel_id, room_type_id, price_per_night, view_label, is_out_of_order, is_out_of_service
             FROM hotel_booking_rooms
             WHERE company_id = ? AND hotel_id = ? AND room_type_id = ? AND deleted_at IS NULL AND active = 1
             ORDER BY price_per_night ASC, id ASC');
@@ -206,8 +206,8 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
         $fits = itm_hotel_booking_room_type_fits_occupancy($typeOcc, $occupancy);
         $blocked = !empty($sampleRoom['is_out_of_order']) || !empty($sampleRoom['is_out_of_service']);
         $available = $roomId > 0 && !$blocked && $fits
-            && !itm_hotel_booking_has_overlap($conn, $companyId, $roomId, $checkInIso, $checkOutIso);
-        $basePrice = (float) ($sampleRoom['price_per_night'] ?? 0);
+            && !itm_hotel_booking_room_unavailable_for_stay($conn, $companyId, $roomId, $checkInIso, $checkOutIso, 0, $sampleRoom);
+        $basePrice = itm_hotel_booking_portal_check_in_display_bar($conn, $companyId, $hotelId, $typeId, $checkInIso, (float) ($sampleRoom['price_per_night'] ?? 0));
         $listQuoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, 0, itm_hotel_booking_portal_hotel_pricing($conn, $companyId, $hotelId));
         $quoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, (float) $discountPercent, itm_hotel_booking_portal_hotel_pricing($conn, $companyId, $hotelId));
 

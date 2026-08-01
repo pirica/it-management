@@ -1649,13 +1649,20 @@ if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
 
     $currency = 'EUR';
     $rooms = [];
-    $rstmt = mysqli_prepare($conn, 'SELECT id, price_per_night FROM hotel_booking_rooms WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL AND active = 1');
+    $rstmt = mysqli_prepare($conn, 'SELECT id, hotel_id, room_type_id, price_per_night, is_out_of_order, is_out_of_service FROM hotel_booking_rooms WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL AND active = 1');
     if ($rstmt) {
       mysqli_stmt_bind_param($rstmt, 'ii', $companyId, $hotelId);
       mysqli_stmt_execute($rstmt);
       $res = mysqli_stmt_get_result($rstmt);
       while ($res && ($row = mysqli_fetch_assoc($res))) {
-        $rooms[] = ['id' => (int) $row['id'], 'price' => (float) $row['price_per_night']];
+        $rooms[] = [
+          'id' => (int) $row['id'],
+          'hotel_id' => (int) $row['hotel_id'],
+          'room_type_id' => (int) $row['room_type_id'],
+          'price' => (float) $row['price_per_night'],
+          'is_out_of_order' => (int) ($row['is_out_of_order'] ?? 0),
+          'is_out_of_service' => (int) ($row['is_out_of_service'] ?? 0),
+        ];
       }
       mysqli_stmt_close($rstmt);
     }
@@ -1699,14 +1706,8 @@ if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
       }
     }
 
-    $roomFreeForNight = static function ($roomId, $checkIn, $checkOut) use ($bookingsByRoom) {
-      $list = $bookingsByRoom[$roomId] ?? [];
-      foreach ($list as $b) {
-        if ($b['check_in'] < $checkOut && $b['check_out'] > $checkIn) {
-          return false;
-        }
-      }
-      return true;
+    $roomFreeForNight = static function ($room, $checkIn, $checkOut) use ($bookingsByRoom, $conn, $companyId) {
+      return itm_hotel_booking_room_sellable_for_night($conn, $companyId, $room, $checkIn, $bookingsByRoom);
     };
 
     $days = [];
@@ -1719,9 +1720,17 @@ if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
       }
       $best = null;
       foreach ($rooms as $room) {
-        if ($roomFreeForNight($room['id'], $checkIn, $checkOut)) {
-          if ($best === null || $room['price'] < $best) {
-            $best = $room['price'];
+        if ($roomFreeForNight($room, $checkIn, $checkOut)) {
+          $bar = itm_hotel_booking_resolve_room_type_nightly_bar(
+            $conn,
+            $companyId,
+            $hotelId,
+            (int) $room['room_type_id'],
+            $checkIn,
+            (float) $room['price']
+          );
+          if ($best === null || $bar < $best) {
+            $best = $bar;
           }
         }
       }
@@ -1958,10 +1967,15 @@ if (!function_exists('itm_hotel_booking_portal_room_charges_subtotal')) {
     }
     $companyId = (int) ($draft['company_id'] ?? $companyId);
     $hotelId = (int) ($draft['hotel_id'] ?? 0);
+    $roomTypeId = (int) ($draft['room_type_id'] ?? 0);
     $pricing = ($conn && $companyId > 0 && $hotelId > 0)
       ? itm_hotel_booking_portal_hotel_pricing($conn, $companyId, $hotelId)
       : itm_hotel_booking_portal_pricing_defaults();
-    $roomTotal = itm_hotel_booking_compute_stay_payment($basePerNight, $checkIn, $checkOut, $occupancy, $discountPercent, $pricing);
+    if ($conn && $companyId > 0 && $hotelId > 0 && $roomTypeId > 0) {
+      $roomTotal = itm_hotel_booking_compute_stay_payment_dated_rates($conn, $companyId, $hotelId, $roomTypeId, $basePerNight, $checkIn, $checkOut, $occupancy, $discountPercent, $pricing);
+    } else {
+      $roomTotal = itm_hotel_booking_compute_stay_payment($basePerNight, $checkIn, $checkOut, $occupancy, $discountPercent, $pricing);
+    }
     $nights = itm_hotel_booking_portal_stay_nights($checkIn, $checkOut);
     $extras = 0.0;
     if (($draft['rate_plan'] ?? '') === 'breakfast' && $nights > 0) {
@@ -2057,7 +2071,7 @@ if (!function_exists('itm_hotel_booking_portal_find_available_room_for_type')) {
     $companyId = (int) $companyId;
     $hotelId = (int) $hotelId;
     $roomTypeId = (int) $roomTypeId;
-    $sql = 'SELECT r.id, r.price_per_night FROM hotel_booking_rooms r
+    $sql = 'SELECT r.id, r.hotel_id, r.room_type_id, r.price_per_night, r.is_out_of_order, r.is_out_of_service FROM hotel_booking_rooms r
             WHERE r.company_id = ? AND r.hotel_id = ? AND r.room_type_id = ? AND r.deleted_at IS NULL AND r.active = 1
             ORDER BY r.price_per_night ASC, r.id ASC';
     $stmt = mysqli_prepare($conn, $sql);
@@ -2070,7 +2084,7 @@ if (!function_exists('itm_hotel_booking_portal_find_available_room_for_type')) {
     $pick = null;
     while ($res && ($row = mysqli_fetch_assoc($res))) {
       $rid = (int) ($row['id'] ?? 0);
-      if ($rid > 0 && !itm_hotel_booking_has_overlap($conn, $companyId, $rid, $checkIn, $checkOut)) {
+      if ($rid > 0 && !itm_hotel_booking_room_unavailable_for_stay($conn, $companyId, $rid, $checkIn, $checkOut, 0, $row)) {
         $pick = $row;
         break;
       }
@@ -2149,6 +2163,208 @@ if (!function_exists('itm_hotel_booking_portal_cancel_booking_for_guest')) {
       return ['ok' => false, 'error' => 'Unable to cancel this reservation.'];
     }
     return ['ok' => true];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_stay_night_dates')) {
+  function itm_hotel_booking_portal_stay_night_dates($checkIn, $checkOut) {
+    $dates = [];
+    $in = DateTime::createFromFormat('Y-m-d', (string) $checkIn);
+    $out = DateTime::createFromFormat('Y-m-d', (string) $checkOut);
+    if (!$in || !$out || $out <= $in) {
+      return $dates;
+    }
+    $cur = clone $in;
+    while ($cur < $out) {
+      $dates[] = $cur->format('Y-m-d');
+      $cur->modify('+1 day');
+    }
+    return $dates;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_room_type_rate_override_for_date')) {
+  function itm_hotel_booking_room_type_rate_override_for_date($conn, $companyId, $hotelId, $roomTypeId, $nightDate) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $roomTypeId = (int) $roomTypeId;
+    $nightDate = (string) $nightDate;
+    if ($companyId < 1 || $hotelId < 1 || $roomTypeId < 1 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $nightDate)) {
+      return null;
+    }
+    $sql = 'SELECT price_per_night FROM hotel_booking_room_type_rate_overrides
+            WHERE company_id = ? AND hotel_id = ? AND room_type_id = ? AND deleted_at IS NULL AND active = 1
+            AND start_date <= ? AND end_date >= ?
+            ORDER BY id DESC LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return null;
+    }
+    mysqli_stmt_bind_param($stmt, 'iiiss', $companyId, $hotelId, $roomTypeId, $nightDate, $nightDate);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    if (!$row) {
+      return null;
+    }
+    return (float) ($row['price_per_night'] ?? 0);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_resolve_room_type_nightly_bar')) {
+  function itm_hotel_booking_resolve_room_type_nightly_bar($conn, $companyId, $hotelId, $roomTypeId, $nightDate, $defaultBar) {
+    $override = itm_hotel_booking_room_type_rate_override_for_date($conn, $companyId, $hotelId, $roomTypeId, $nightDate);
+    if ($override !== null) {
+      return $override;
+    }
+    return (float) $defaultBar;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_room_type_blocked_for_date')) {
+  function itm_hotel_booking_room_type_blocked_for_date($conn, $companyId, $hotelId, $roomTypeId, $nightDate) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $roomTypeId = (int) $roomTypeId;
+    $nightDate = (string) $nightDate;
+    if ($companyId < 1 || $hotelId < 1 || $roomTypeId < 1 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $nightDate)) {
+      return false;
+    }
+    $sql = 'SELECT 1 FROM hotel_booking_room_type_blocks
+            WHERE company_id = ? AND hotel_id = ? AND room_type_id = ? AND deleted_at IS NULL AND active = 1
+            AND start_date <= ? AND end_date >= ? LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return false;
+    }
+    mysqli_stmt_bind_param($stmt, 'iiiss', $companyId, $hotelId, $roomTypeId, $nightDate, $nightDate);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $blocked = $res && mysqli_fetch_assoc($res);
+    mysqli_stmt_close($stmt);
+    return (bool) $blocked;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_room_type_blocked_for_stay')) {
+  function itm_hotel_booking_room_type_blocked_for_stay($conn, $companyId, $hotelId, $roomTypeId, $checkIn, $checkOut) {
+    foreach (itm_hotel_booking_portal_stay_night_dates($checkIn, $checkOut) as $night) {
+      if (itm_hotel_booking_room_type_blocked_for_date($conn, $companyId, $hotelId, $roomTypeId, $night)) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_room_maintenance_blocks_stay')) {
+  function itm_hotel_booking_room_maintenance_blocks_stay($conn, $companyId, $roomId, $checkIn, $checkOut) {
+    $companyId = (int) $companyId;
+    $roomId = (int) $roomId;
+    if ($companyId < 1 || $roomId < 1) {
+      return false;
+    }
+    $lastNight = date('Y-m-d', strtotime((string) $checkOut . ' -1 day'));
+    $sql = 'SELECT 1 FROM hotel_booking_housekeeping_maintenance
+            WHERE company_id = ? AND room_id = ? AND deleted_at IS NULL AND active = 1
+            AND from_date <= ? AND through_date >= ? LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return false;
+    }
+    mysqli_stmt_bind_param($stmt, 'iiss', $companyId, $roomId, $lastNight, $checkIn);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $blocked = $res && mysqli_fetch_assoc($res);
+    mysqli_stmt_close($stmt);
+    return (bool) $blocked;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_room_unavailable_for_stay')) {
+  function itm_hotel_booking_room_unavailable_for_stay($conn, $companyId, $roomId, $checkIn, $checkOut, $excludeBookingId = 0, array $roomRow = null) {
+    $companyId = (int) $companyId;
+    $roomId = (int) $roomId;
+    if ($companyId < 1 || $roomId < 1) {
+      return true;
+    }
+    if ($roomRow === null) {
+      $stmt = mysqli_prepare($conn, 'SELECT id, hotel_id, room_type_id, is_out_of_order, is_out_of_service FROM hotel_booking_rooms WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
+      if (!$stmt) {
+        return true;
+      }
+      mysqli_stmt_bind_param($stmt, 'ii', $roomId, $companyId);
+      mysqli_stmt_execute($stmt);
+      $res = mysqli_stmt_get_result($stmt);
+      $roomRow = $res ? mysqli_fetch_assoc($res) : null;
+      mysqli_stmt_close($stmt);
+    }
+    if (!$roomRow) {
+      return true;
+    }
+    if (!empty($roomRow['is_out_of_order']) || !empty($roomRow['is_out_of_service'])) {
+      return true;
+    }
+    $hotelId = (int) ($roomRow['hotel_id'] ?? 0);
+    $roomTypeId = (int) ($roomRow['room_type_id'] ?? 0);
+    if ($hotelId > 0 && $roomTypeId > 0 && itm_hotel_booking_room_type_blocked_for_stay($conn, $companyId, $hotelId, $roomTypeId, $checkIn, $checkOut)) {
+      return true;
+    }
+    if (itm_hotel_booking_room_maintenance_blocks_stay($conn, $companyId, $roomId, $checkIn, $checkOut)) {
+      return true;
+    }
+    return itm_hotel_booking_has_overlap($conn, $companyId, $roomId, $checkIn, $checkOut, $excludeBookingId);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_room_sellable_for_night')) {
+  function itm_hotel_booking_room_sellable_for_night($conn, $companyId, array $room, $nightDate, array $bookingsByRoom = null) {
+    $companyId = (int) $companyId;
+    $roomId = (int) ($room['id'] ?? 0);
+    $nightDate = (string) $nightDate;
+    if ($companyId < 1 || $roomId < 1 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $nightDate)) {
+      return false;
+    }
+    if (!empty($room['is_out_of_order']) || !empty($room['is_out_of_service'])) {
+      return false;
+    }
+    $hotelId = (int) ($room['hotel_id'] ?? 0);
+    $roomTypeId = (int) ($room['room_type_id'] ?? 0);
+    if ($hotelId > 0 && $roomTypeId > 0 && itm_hotel_booking_room_type_blocked_for_date($conn, $companyId, $hotelId, $roomTypeId, $nightDate)) {
+      return false;
+    }
+    $checkOut = date('Y-m-d', strtotime($nightDate . ' +1 day'));
+    if (itm_hotel_booking_room_maintenance_blocks_stay($conn, $companyId, $roomId, $nightDate, $checkOut)) {
+      return false;
+    }
+    if ($bookingsByRoom !== null) {
+      $list = $bookingsByRoom[$roomId] ?? [];
+      foreach ($list as $b) {
+        if ($b['check_in'] < $checkOut && $b['check_out'] > $nightDate) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return !itm_hotel_booking_has_overlap($conn, $companyId, $roomId, $nightDate, $checkOut);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_compute_stay_payment_dated_rates')) {
+  function itm_hotel_booking_compute_stay_payment_dated_rates($conn, $companyId, $hotelId, $roomTypeId, $defaultBar, $checkIn, $checkOut, array $occupancy, $discountPercent = 0.0, array $pricing = null) {
+    $total = 0.0;
+    foreach (itm_hotel_booking_portal_stay_night_dates($checkIn, $checkOut) as $night) {
+      $bar = itm_hotel_booking_resolve_room_type_nightly_bar($conn, $companyId, $hotelId, $roomTypeId, $night, $defaultBar);
+      $total += itm_hotel_booking_portal_quote_nightly($bar, $occupancy, $discountPercent, $pricing);
+    }
+    return round($total, 2);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_check_in_display_bar')) {
+  function itm_hotel_booking_portal_check_in_display_bar($conn, $companyId, $hotelId, $roomTypeId, $checkIn, $defaultBar) {
+    return itm_hotel_booking_resolve_room_type_nightly_bar($conn, $companyId, $hotelId, $roomTypeId, $checkIn, $defaultBar);
   }
 }
 
@@ -3118,5 +3334,89 @@ if (!function_exists('itm_hotel_booking_room_duplicate_record')) {
     }
 
     return ['ok' => true, 'new_id' => $newId, 'message' => ''];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_room_type_calendar_validate_date_range')) {
+  function itm_hotel_booking_room_type_calendar_validate_date_range($startDate, $endDate) {
+    $start = itm_parse_date_input($startDate);
+    $end = itm_parse_date_input($endDate);
+    if ($start === '' || $end === '') {
+      return ['ok' => false, 'error' => 'Start and end dates are required.'];
+    }
+    if ($end < $start) {
+      return ['ok' => false, 'error' => 'End date must be on or after start date.'];
+    }
+    return ['ok' => true, 'start_date' => $start, 'end_date' => $end];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_room_type_calendar_rate_rows')) {
+  function itm_hotel_booking_room_type_calendar_rate_rows($conn, $companyId, $hotelId) {
+    $rows = [];
+    $sql = 'SELECT o.*, t.name AS room_type_name, t.code AS room_type_code
+            FROM hotel_booking_room_type_rate_overrides o
+            INNER JOIN booking_rooms_types t ON t.id = o.room_type_id AND t.company_id = o.company_id
+            WHERE o.company_id = ? AND o.hotel_id = ? AND o.deleted_at IS NULL
+            ORDER BY o.start_date DESC, t.name ASC, o.id DESC';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return $rows;
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $hotelId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+      $rows[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+    return $rows;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_room_type_calendar_block_rows')) {
+  function itm_hotel_booking_room_type_calendar_block_rows($conn, $companyId, $hotelId) {
+    $rows = [];
+    $sql = 'SELECT b.*, t.name AS room_type_name, t.code AS room_type_code
+            FROM hotel_booking_room_type_blocks b
+            INNER JOIN booking_rooms_types t ON t.id = b.room_type_id AND t.company_id = b.company_id
+            WHERE b.company_id = ? AND b.hotel_id = ? AND b.deleted_at IS NULL
+            ORDER BY b.start_date DESC, t.name ASC, b.id DESC';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return $rows;
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $hotelId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+      $rows[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+    return $rows;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_room_type_options_for_hotel')) {
+  function itm_hotel_booking_room_type_options_for_hotel($conn, $companyId, $hotelId) {
+    $rows = [];
+    $sql = 'SELECT DISTINCT t.id, t.name, t.code
+            FROM booking_rooms_types t
+            INNER JOIN hotel_booking_rooms r ON r.room_type_id = t.id AND r.company_id = t.company_id
+            WHERE t.company_id = ? AND r.hotel_id = ? AND t.deleted_at IS NULL AND t.active = 1
+            AND r.deleted_at IS NULL AND r.active = 1
+            ORDER BY t.name ASC';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return $rows;
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $hotelId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+      $rows[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+    return $rows;
   }
 }

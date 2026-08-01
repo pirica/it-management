@@ -418,6 +418,7 @@ $hospitalityModuleSlugs = [
     'hotel_booking_rooms',
     'hotel_booking_amenities',
     'hotel_booking_special_rates',
+    'hotel_booking_room_type_calendar',
     'hotel_booking_portal_rate_plans',
     'hotel_booking_room_utilities',
     'hotel_booking_housekeeping_statuses',
@@ -602,6 +603,67 @@ if (!$sourceRoom) {
             hb_pass('hotel_booking_rooms duplicate runtime');
             mysqli_query($conn, 'DELETE FROM hotel_booking_rooms WHERE company_id = 1 AND id = ' . $newId . ' LIMIT 1');
         }
+    }
+}
+
+foreach (['hotel_booking_room_type_rate_overrides', 'hotel_booking_room_type_blocks'] as $calendarTable) {
+    $resCalendar = mysqli_query($conn, "SHOW TABLES LIKE '" . mysqli_real_escape_string($conn, $calendarTable) . "'");
+    if ($resCalendar && mysqli_num_rows($resCalendar) > 0) {
+        hb_pass('table ' . $calendarTable);
+    } else {
+        hb_fail('missing table ' . $calendarTable);
+    }
+}
+
+$typeRes = mysqli_query($conn, 'SELECT id FROM booking_rooms_types WHERE company_id = 1 AND deleted_at IS NULL ORDER BY id ASC LIMIT 1');
+$typeRow = $typeRes ? mysqli_fetch_assoc($typeRes) : null;
+$hotelRes = mysqli_query($conn, 'SELECT id FROM hotel_booking_hotels WHERE company_id = 1 AND deleted_at IS NULL ORDER BY id ASC LIMIT 1');
+$hotelRow = $hotelRes ? mysqli_fetch_assoc($hotelRes) : null;
+if (!$typeRow || !$hotelRow) {
+    hb_fail('room type calendar runtime: missing seed hotel or room type');
+} else {
+    $calHotelId = (int) $hotelRow['id'];
+    $calTypeId = (int) $typeRow['id'];
+  $insRate = mysqli_prepare($conn, 'INSERT INTO hotel_booking_room_type_rate_overrides (company_id, hotel_id, room_type_id, start_date, end_date, price_per_night, active, created_at) VALUES (1, ?, ?, ?, ?, 199.50, 1, NOW())');
+    if ($insRate) {
+        $start = '2030-06-01';
+        $end = '2030-06-03';
+        mysqli_stmt_bind_param($insRate, 'iiss', $calHotelId, $calTypeId, $start, $end);
+        mysqli_stmt_execute($insRate);
+        $overrideId = (int) mysqli_insert_id($conn);
+        mysqli_stmt_close($insRate);
+        $resolved = itm_hotel_booking_resolve_room_type_nightly_bar($conn, 1, $calHotelId, $calTypeId, '2030-06-02', 100.0);
+        if (abs($resolved - 199.5) < 0.01) {
+            hb_pass('room type rate override resolves for night');
+        } else {
+            hb_fail('room type rate override expected 199.5 got ' . $resolved);
+        }
+        if ($overrideId > 0) {
+            mysqli_query($conn, 'DELETE FROM hotel_booking_room_type_rate_overrides WHERE company_id = 1 AND id = ' . $overrideId . ' LIMIT 1');
+        }
+    } else {
+        hb_fail('room type rate override insert prepare failed');
+    }
+
+    $insBlock = mysqli_prepare($conn, 'INSERT INTO hotel_booking_room_type_blocks (company_id, hotel_id, room_type_id, start_date, end_date, reason, active, created_at) VALUES (1, ?, ?, ?, ?, ?, 1, NOW())');
+    if ($insBlock) {
+        $bStart = '2030-07-10';
+        $bEnd = '2030-07-12';
+        $reason = 'QA stop-sell';
+        mysqli_stmt_bind_param($insBlock, 'iisss', $calHotelId, $calTypeId, $bStart, $bEnd, $reason);
+        mysqli_stmt_execute($insBlock);
+        $blockId = (int) mysqli_insert_id($conn);
+        mysqli_stmt_close($insBlock);
+        if (itm_hotel_booking_room_type_blocked_for_stay($conn, 1, $calHotelId, $calTypeId, '2030-07-10', '2030-07-13')) {
+            hb_pass('room type stop-sell blocks stay');
+        } else {
+            hb_fail('room type stop-sell block not detected');
+        }
+        if ($blockId > 0) {
+            mysqli_query($conn, 'DELETE FROM hotel_booking_room_type_blocks WHERE company_id = 1 AND id = ' . $blockId . ' LIMIT 1');
+        }
+    } else {
+        hb_fail('room type block insert prepare failed');
     }
 }
 

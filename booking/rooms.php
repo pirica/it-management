@@ -111,7 +111,7 @@ foreach ($rooms as $room) {
     $roomId = (int) $room['id'];
     $typeKey = (int) $room['room_type_id'];
     $blocked = !empty($room['is_out_of_order']) || !empty($room['is_out_of_service']);
-    $available = !$blocked && !itm_hotel_booking_has_overlap($conn, $company_id, $roomId, $checkInIso, $checkOutIso);
+    $available = !$blocked && !itm_hotel_booking_room_unavailable_for_stay($conn, $company_id, $roomId, $checkInIso, $checkOutIso, 0, $room);
 
     if (!isset($cards[$typeKey])) {
         $code = strtoupper((string) ($room['type_code'] ?? ''));
@@ -130,7 +130,7 @@ foreach ($rooms as $room) {
             'max_babies' => $room['max_babies'] ?? 1,
         ];
         $fits = itm_hotel_booking_room_type_fits_occupancy($typeRow, $occupancy);
-        $basePrice = (float) $room['price_per_night'];
+        $basePrice = itm_hotel_booking_portal_check_in_display_bar($conn, $company_id, $hotelId, $typeKey, $checkInIso, (float) $room['price_per_night']);
         $listQuoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, 0, $portalPricing);
         $quoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, $discountPercent, $portalPricing);
 
@@ -161,8 +161,9 @@ foreach ($rooms as $room) {
         $cards[$typeKey]['total_units']++;
         if ($available && $cards[$typeKey]['fits_occupancy']) {
             $cards[$typeKey]['available_units']++;
-            if ((float) $room['price_per_night'] < $cards[$typeKey]['base_price']) {
-                $cards[$typeKey]['base_price'] = (float) $room['price_per_night'];
+            $resolvedBar = itm_hotel_booking_portal_check_in_display_bar($conn, $company_id, $hotelId, $typeKey, $checkInIso, (float) $room['price_per_night']);
+            if ($resolvedBar < $cards[$typeKey]['base_price']) {
+                $cards[$typeKey]['base_price'] = $resolvedBar;
                 $cards[$typeKey]['book_room_id'] = $roomId;
                 $cards[$typeKey]['list_quoted_price'] = itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $occupancy, 0, $portalPricing);
                 $cards[$typeKey]['quoted_price'] = itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $occupancy, $discountPercent, $portalPricing);

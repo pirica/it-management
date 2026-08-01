@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
         $error = 'Please enter a valid phone number with country code (e.g. +351912345678).';
     } elseif ($checkIn === '' || $checkOut === '' || $checkOut <= $checkIn) {
         $error = 'Invalid dates.';
-    } elseif (itm_hotel_booking_has_overlap($conn, $company_id, $roomId, $checkIn, $checkOut)) {
+    } elseif (itm_hotel_booking_room_unavailable_for_stay($conn, $company_id, $roomId, $checkIn, $checkOut, 0, $room)) {
         $error = 'Room not available.';
     } else {
         $customerId = itm_hotel_booking_ensure_customer_for_portal($conn, $company_id, $email, $fullName, $phone);
@@ -64,6 +64,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
                 'service_animal' => 0,
                 'additional_comments' => '',
             ];
+            $draftForPay['company_id'] = $company_id;
+            $draftForPay['hotel_id'] = $hotelIdForRate;
+            $draftForPay['room_type_id'] = (int) ($room['room_type_id'] ?? 0);
             if ($draft && (int) ($draft['portal_rate_plan_id'] ?? 0) < 1) {
                 $defaultPlans = itm_hotel_booking_portal_rate_plans_active_for_hotel($conn, $company_id, $hotelIdForRate);
                 foreach ($defaultPlans as $defPlan) {
