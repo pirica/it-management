@@ -21,6 +21,7 @@ itm_script_output_begin('Maintenance Scripts RBAC Verification');
 $nl = itm_script_output_nl();
 $required = [
     __DIR__ . '/compare_database_sql_modules.php',
+    __DIR__ . '/list_db_tables_without_modules.php',
     __DIR__ . '/test_sql_injection.php',
     __DIR__ . '/module_browser_qa_runner.php',
     dirname(__DIR__) . '/includes/itm_maintenance_script_admin_gate.php',

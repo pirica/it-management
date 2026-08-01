@@ -1101,6 +1101,13 @@
         ],
         "override": false
     },
+    "list_db_tables_without_modules.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
     "compare_database_sql_modules.php": {
         "tags": [
             "Codebase"
