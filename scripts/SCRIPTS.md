@@ -1080,8 +1080,9 @@ Run `verify_appointment.php` when changing `modules/appointment/`, `includes/itm
 | `php scripts/verify_hotel_booking.php` | Regression: core `hotel_booking_*` / `booking_rooms_types` tables, segment helper (`future`), company 1 `PENDING` future status seed, portal rate plan form contract, sample hotel photo seeds (`hb_seed_*.jpg`), and subprocess render probe for all 13 Hospitality sidebar `index.php` modules |
 | `php scripts/seed_hotel_booking_sample_photos.php` | Copy sample hotel + room-type images to `booking/images/{hotel_id}/hotel_photos/` and `room_types_photos/`; upsert photo rows (`--apply` writes; default dry-run) |
 | `php scripts/check_hotel_bookings_rate_plan_form.php` | Static gate: `__add_new__` portal rate plan select, `hb_booking_end_form_page()` body-level modal, rate-plan select JS quick-add handler |
+| `php scripts/check_hospitality_date_format.php` | Static gate: `modules/hotel*` + `booking/` stay dates use `d/M/Y` helpers (`itm_format_hotel_date_display`, `itm_render_hotel_date_input`); no `(31/Aug/2026)` labels or hospitality placeholders |
 
-Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking/`, `includes/itm_hotel_booking.php`, or hotel booking DDL/seeds/triggers in `db/`. Run `check_hotel_bookings_rate_plan_form.php` when changing hotel bookings create/edit form or `js/hotel-bookings-rate-plan-select.js`.
+Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking/`, `includes/itm_hotel_booking.php`, or hotel booking DDL/seeds/triggers in `db/`. Run `check_hotel_bookings_rate_plan_form.php` when changing hotel bookings create/edit form or `js/hotel-bookings-rate-plan-select.js`. Run `check_hospitality_date_format.php` when changing hospitality stay date display, parse, or form widgets.
 
 ### Email Management scripts
 

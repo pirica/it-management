@@ -17,4 +17,4 @@ Planning grid integration: `hotel_bookings` planning double-clicks OOO/OOS bars 
 ## 4. Pitfalls
 
 - `room_id` is required; scope all queries by `company_id`.
-- Date fields use **31/Aug/2026** display via `itm_format_hotel_date_display()` and `itm_render_hotel_date_input()` (`js/hotel-date-input.js`).
+- Date fields use **`d/M/Y`** (`31/Aug/2026`, `01/Oct/2026`) via `itm_format_hotel_date_display()` and `itm_render_hotel_date_input()` (`js/hotel-date-input.js`) on `from_date` / `through_date` forms; list/view via `itm_format_cell_scalar_display()`.

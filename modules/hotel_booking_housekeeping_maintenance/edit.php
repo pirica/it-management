@@ -205,7 +205,7 @@ if ($field === 'active') {
     }
 
     if (function_exists('itm_format_cell_scalar_display')) {
-        $text = itm_format_cell_scalar_display($field, $text);
+        $text = itm_format_cell_scalar_display($field, $text, $table);
     }
 
     return sanitize($text);
@@ -700,6 +700,8 @@ if (!isset($crud_title)) {
                                 </select>
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
+                            <?php elseif ($isDate && in_array($name, ['from_date', 'through_date'], true)): ?>
+                                <?php itm_render_hotel_date_input($name, 'hb-hkm-' . $name, $displayVal, ['required' => ($col['Null'] ?? 'YES') === 'NO']); ?>
                             <?php elseif ($isDate): ?>
                                 <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
                             <?php elseif ($isText): ?>
@@ -778,6 +780,7 @@ window.parent.postMessage({ type: 'hb_hk_maint_embed_saved', id: <?php echo (int
 <?php endif; ?>
 </script>
 <?php endif; ?>
+<script src="<?php echo htmlspecialchars(BASE_URL . 'js/hotel-date-input.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
 
 </body>
 </html>

@@ -1200,7 +1200,7 @@ if (!isset($crud_title)) {
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
                             <?php elseif ($isDate): ?>
-                                <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>" placeholder="dd/mm/yyyy">
+                                <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
                             <?php elseif ($name === 'price'): ?>
                                 <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" inputmode="decimal" placeholder="0.00">
                             <?php elseif ($isText): ?>
