@@ -1883,7 +1883,14 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="check_hospitality_date_format.php" target="_blank" rel="nofollow noreferrer">check_hospitality_date_format.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="module">hotel_bookings</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="module">booking</span></span></td>
-                    <td>Static gate: all <code>modules/hotel*</code> + <code>booking/</code> stay dates use <code>d/M/Y</code> (<code>itm_format_hotel_date_display</code>, <code>itm_render_hotel_date_input</code>); blocks label/placeholder format examples.</td>
+                    <td>Hospitality subset of <code>check_date_format.php</code> — <code>modules/hotel*</code> + <code>booking/</code> stay dates (<code>d/M/Y</code>).</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="modules includes">
+                    <td><a href="check_date_format.php" target="_blank" rel="nofollow noreferrer">check_date_format.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="path">includes/itm_date_format.php</span></span></td>
+                    <td>Project-wide date format gate: UK <code>dd/mm/yyyy</code>, hospitality <code>d/M/Y</code> (<code>31/Aug/2026</code>), audit stamps, hospitality static scan, scaffold cell-hook info.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="appointments modules_registry">
