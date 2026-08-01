@@ -187,7 +187,7 @@ Seed example: company 1 **TechCorp Retreat**, reservation IDs from `hotel_bookin
 - **Manage booking** — lookup without passwords; cancellation policy, change (contact hotel), and online cancel while check-out is still in the future (future and present segments).
 - **Legacy cleanup** — removed Colorlib template, PDO admin-panel, and vendored jQuery/Bootstrap; ~37 active portal files remain.
 - **Regression script** — `scripts/verify_hotel_booking.php` covers segments, guest match, pricing, cancel helpers, PDF JS.
-- **Unicode & dates** — UTF-8 end-to-end; display dates dd/mm/yyyy via shared ITM helpers.
+- **Unicode & dates** — UTF-8 end-to-end; stay dates use hospitality **`d/M/Y`** (`31/Aug/2026`, `01/Oct/2026`) via `itm_format_hotel_date_display()` / `itm_render_hotel_date_input()`; MySQL storage stays `Y-m-d`.
 
 ### Gaps & risks
 

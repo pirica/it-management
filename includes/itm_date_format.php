@@ -261,15 +261,44 @@ if (!function_exists('itm_format_audit_timestamp_display')) {
     }
 }
 
+if (!function_exists('itm_is_hospitality_date_field_name')) {
+    /**
+     * Hospitality stay/scheduling dates (d/M/Y — e.g. 31/Aug/2026, 01/Oct/2026).
+     *
+     * @param string $tableName Optional table slug for start_date/end_date (room-type calendar only).
+     */
+    function itm_is_hospitality_date_field_name($fieldName, $tableName = '')
+    {
+        $field = strtolower(trim((string) $fieldName));
+        if (in_array($field, ['check_in', 'check_out', 'from_date', 'through_date'], true)) {
+            return true;
+        }
+        if (in_array($field, ['start_date', 'end_date'], true)) {
+            $table = strtolower(trim((string) $tableName));
+            return in_array($table, [
+                'hotel_booking_room_type_rate_overrides',
+                'hotel_booking_room_type_blocks',
+            ], true);
+        }
+        return false;
+    }
+}
+
 if (!function_exists('itm_format_cell_scalar_display')) {
     /**
-     * Format a list/view scalar for display (dates → dd/mm/yyyy).
+     * Format a list/view scalar for display (dates → dd/mm/yyyy; hospitality stay dates → d/M/Y).
+     *
+     * @param string|null $tableName Optional source table for hospitality start_date/end_date.
      */
-    function itm_format_cell_scalar_display($fieldName, $value)
+    function itm_format_cell_scalar_display($fieldName, $value, $tableName = null)
     {
         $text = trim((string)($value ?? ''));
         if ($text === '' || $text === '0000-00-00' || $text === '0000-00-00 00:00:00') {
             return $text;
+        }
+
+        if (itm_is_hospitality_date_field_name($fieldName, (string) ($tableName ?? ''))) {
+            return itm_format_hotel_date_display($text);
         }
 
         if (itm_is_datetime_field_name($fieldName) || preg_match('/\d{2}:\d{2}/', $text)) {

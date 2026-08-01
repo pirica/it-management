@@ -1879,6 +1879,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Static gate: <code>modules/hotel_bookings</code> portal rate plan <code>__add_new__</code> option, <code>hb_booking_end_form_page()</code> modal placement outside <code>.content</code>, and <code>js/hotel-bookings-rate-plan-select.js</code> quick-add handler.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="hotel_bookings booking">
+                    <td><a href="check_hospitality_date_format.php" target="_blank" rel="nofollow noreferrer">check_hospitality_date_format.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="module">hotel_bookings</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="module">booking</span></span></td>
+                    <td>Static gate: all <code>modules/hotel*</code> + <code>booking/</code> stay dates use <code>d/M/Y</code> (<code>itm_format_hotel_date_display</code>, <code>itm_render_hotel_date_input</code>); blocks label/placeholder format examples.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="appointments modules_registry">
                     <td><a href="verify_appointment.php" target="_blank" rel="nofollow noreferrer">verify_appointment.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

@@ -234,7 +234,7 @@ $nextAnchorQuery = hb_planning_filter_query($nextAnchorDate, $filterHotel, $filt
 <input type="hidden" name="mode" value="planning">
 <input type="hidden" name="plan_sort" value="<?php echo sanitize($planSort); ?>">
 <input type="hidden" name="plan_dir" value="<?php echo sanitize($planDir); ?>">
-<label>Anchor <input type="text" name="anchor" value="<?php echo sanitize(itm_format_hotel_date_display($anchorDate)); ?>" class="hb-hotel-date-text"></label>
+<label>Anchor <?php itm_render_hotel_date_input('anchor', 'hb-plan-anchor', $anchorDate); ?></label>
 <label>Hotel
 <select name="hotel_id">
 <option value="0">All</option>
@@ -346,5 +346,5 @@ window.HB_PLANNING_DND = <?php echo json_encode([
 </script>
 <?php endif; ?>
 <?php
-$layoutEndScripts = $mode === 'planning' ? ['js/hotel-bookings-planning.js'] : [];
+$layoutEndScripts = $mode === 'planning' ? ['js/hotel-date-input.js', 'js/hotel-bookings-planning.js'] : [];
 itm_hospitality_admin_layout_end($layoutEndScripts);
