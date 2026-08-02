@@ -42,7 +42,7 @@ if (!($conn instanceof mysqli)) {
     exit(1);
 }
 
-foreach (['itm_notify_employee', 'itm_employee_notification_unread_count', 'itm_employee_notifications_list_recent', 'itm_notify_ticket_assigned', 'itm_notify_alert_assigned', 'itm_notify_live_chat_conversation_assigned', 'itm_employee_notifications_sse_stream'] as $fn) {
+foreach (['itm_notify_employee', 'itm_employee_notification_unread_count', 'itm_employee_notifications_list_recent', 'itm_notify_ticket_assigned', 'itm_notify_alert_assigned', 'itm_notify_appointment_assigned', 'itm_notify_live_chat_conversation_assigned', 'itm_ticket_comment_extract_mention_usernames', 'itm_employee_notifications_sse_stream'] as $fn) {
     if (!function_exists($fn)) {
         en_verify_fail("Missing helper {$fn}()");
     } else {
@@ -173,6 +173,26 @@ mysqli_query(
     "DELETE FROM employee_notifications WHERE company_id = {$companyId} AND employee_id = {$actorId} AND module_slug = 'todo' AND body = '"
     . mysqli_real_escape_string($conn, $todoTitle) . "'"
 );
+
+$apptSummary = 'MBQA-appt-self-' . bin2hex(random_bytes(4));
+if (!itm_notify_appointment_assigned($conn, $companyId, $actorId, 1, $apptSummary, $actorId)) {
+    en_verify_fail('itm_notify_appointment_assigned self-assign should notify assignee');
+} else {
+    en_verify_pass('itm_notify_appointment_assigned notifies on self-assign');
+}
+mysqli_query(
+    $conn,
+    "DELETE FROM employee_notifications WHERE company_id = {$companyId} AND employee_id = {$actorId} AND module_slug = 'appointment' AND body = '"
+    . mysqli_real_escape_string($conn, $apptSummary) . "'"
+);
+
+$mentionNew = itm_ticket_comment_extract_mention_usernames('@Admin follow-up @Admin2');
+$mentionOld = itm_ticket_comment_extract_mention_usernames('@Admin');
+if (!in_array('admin2', $mentionNew, true) || in_array('admin2', $mentionOld, true)) {
+    en_verify_fail('itm_ticket_comment_extract_mention_usernames should parse @tokens');
+} else {
+    en_verify_pass('itm_ticket_comment_extract_mention_usernames parses mentions');
+}
 
 $apiPath = dirname(__DIR__) . '/modules/notifications/api.php';
 if (!is_file($apiPath)) {

@@ -65,6 +65,32 @@ if ($crud_action === 'list_all' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
     $assignedTo = ($assignedRaw === '' || $assignedRaw === null) ? null : (int)$assignedRaw;
     $isConfirmed = !empty($_POST['is_confirmed']) ? 1 : 0;
     if ($rowId > 0) {
+        $previousAssigneeId = 0;
+        $appointmentSummary = '';
+        $prevStmt = mysqli_prepare(
+            $conn,
+            'SELECT a.assigned_to_employee_id, a.appointment_date, a.start_time, a.end_time,
+                    TRIM(CONCAT(COALESCE(e.first_name, \'\'), \' \', COALESCE(e.last_name, \'\'))) AS employee_name
+             FROM appointments a
+             LEFT JOIN employees e ON e.id = a.employee_id AND e.company_id = a.company_id
+             WHERE a.id = ? AND a.company_id = ? AND a.deleted_at IS NULL
+             LIMIT 1'
+        );
+        if ($prevStmt) {
+            mysqli_stmt_bind_param($prevStmt, 'ii', $rowId, $company_id);
+            mysqli_stmt_execute($prevStmt);
+            $prevRes = mysqli_stmt_get_result($prevStmt);
+            $prevRow = $prevRes ? mysqli_fetch_assoc($prevRes) : null;
+            mysqli_stmt_close($prevStmt);
+            if ($prevRow) {
+                $previousAssigneeId = (int)($prevRow['assigned_to_employee_id'] ?? 0);
+                $appointmentSummary = trim((string)($prevRow['employee_name'] ?? ''));
+                $appointmentSummary .= ($appointmentSummary !== '' ? ' — ' : '') . trim((string)($prevRow['appointment_date'] ?? ''));
+                if (!empty($prevRow['start_time']) && !empty($prevRow['end_time'])) {
+                    $appointmentSummary .= ' ' . itm_appointment_slot_label(substr((string)$prevRow['start_time'], 0, 8), substr((string)$prevRow['end_time'], 0, 8));
+                }
+            }
+        }
         if ($assignedTo !== null && $assignedTo > 0) {
             $check = mysqli_prepare($conn, 'SELECT id FROM employees WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
             if ($check) {
@@ -93,7 +119,11 @@ if ($crud_action === 'list_all' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, 'iiiii', $assignedTo, $isConfirmed, $employee_id, $rowId, $company_id);
-                mysqli_stmt_execute($stmt);
+                if (mysqli_stmt_execute($stmt)) {
+                    if ($assignedTo > 0 && $assignedTo !== $previousAssigneeId) {
+                        itm_notify_appointment_assigned($conn, $company_id, $assignedTo, $rowId, $appointmentSummary, $employee_id);
+                    }
+                }
                 mysqli_stmt_close($stmt);
             }
         }

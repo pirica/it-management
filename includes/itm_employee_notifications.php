@@ -333,6 +333,26 @@ if (!function_exists('itm_notify_alert_assigned')) {
     }
 }
 
+if (!function_exists('itm_notify_appointment_assigned')) {
+    function itm_notify_appointment_assigned($conn, $companyId, $assigneeEmployeeId, $appointmentId, $summary = '', $actorEmployeeId = 0)
+    {
+        $assigneeEmployeeId = (int)$assigneeEmployeeId;
+        $appointmentId = (int)$appointmentId;
+        if ($assigneeEmployeeId <= 0 || $appointmentId <= 0) {
+            return false;
+        }
+        $summary = trim((string)$summary);
+        return itm_notify_employee($conn, $assigneeEmployeeId, [
+            'company_id' => (int)$companyId,
+            'module_slug' => 'appointment',
+            'record_id' => $appointmentId,
+            'title' => 'Appointment assigned to you',
+            'body' => $summary !== '' ? $summary : 'Open the appointment for details.',
+            'action_url' => itm_employee_notification_build_action_url('appointment', $appointmentId),
+        ]);
+    }
+}
+
 if (!function_exists('itm_notify_live_chat_conversation_assigned')) {
     function itm_notify_live_chat_conversation_assigned($conn, $companyId, $assigneeEmployeeId, $conversationId, $summary = '', $actorEmployeeId = 0)
     {
@@ -408,8 +428,23 @@ if (!function_exists('itm_notify_email_logged')) {
     }
 }
 
+if (!function_exists('itm_ticket_comment_extract_mention_usernames')) {
+    function itm_ticket_comment_extract_mention_usernames($body)
+    {
+        $body = (string)$body;
+        if ($body === '' || !preg_match_all('/@([a-zA-Z0-9_\.\-]{1,64})/', $body, $matches)) {
+            return [];
+        }
+        $usernames = [];
+        foreach (array_unique(array_map('strtolower', $matches[1])) as $username) {
+            $usernames[$username] = $username;
+        }
+        return array_values($usernames);
+    }
+}
+
 if (!function_exists('itm_notify_ticket_comment_mentions')) {
-    function itm_notify_ticket_comment_mentions($conn, $companyId, $ticketId, $commentId, $body, $authorEmployeeId = 0)
+    function itm_notify_ticket_comment_mentions($conn, $companyId, $ticketId, $commentId, $body, $authorEmployeeId = 0, $previousBody = null)
     {
         $companyId = (int)$companyId;
         $ticketId = (int)$ticketId;
@@ -419,10 +454,19 @@ if (!function_exists('itm_notify_ticket_comment_mentions')) {
         if ($companyId <= 0 || $ticketId <= 0 || $body === '') {
             return 0;
         }
-        if (!preg_match_all('/@([a-zA-Z0-9_\.\-]{1,64})/', $body, $matches)) {
+        $usernames = itm_ticket_comment_extract_mention_usernames($body);
+        if ($previousBody !== null) {
+            $previousUsernames = itm_ticket_comment_extract_mention_usernames($previousBody);
+            if ($previousUsernames !== []) {
+                $previousLookup = array_fill_keys($previousUsernames, true);
+                $usernames = array_values(array_filter($usernames, static function ($username) use ($previousLookup) {
+                    return !isset($previousLookup[$username]);
+                }));
+            }
+        }
+        if ($usernames === []) {
             return 0;
         }
-        $usernames = array_unique(array_map('strtolower', $matches[1]));
         $notified = 0;
         foreach ($usernames as $username) {
             $sql = 'SELECT id FROM employees WHERE company_id = ? AND deleted_at IS NULL AND active = 1 AND LOWER(username) = ? LIMIT 1';

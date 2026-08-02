@@ -32,6 +32,7 @@ The central helpdesk/ticketing module for managing support requests.
 - **Archive toggle**: `archive.php` POST sets `is_archived` 0/1 with company scope.
 - **Bulk toolbar:** when `$totalRows >= $perPage`, include `bulk-delete-selection.js` and `data-itm-bulk-cancel="1"` Cancel in `index.php` HTML.
 - **Create/edit audit scrape:** business **Created By** (`created_by_employee_id`) and **ticket logged-at** (`created_at`) are editable on `create.php` — not scaffold audit columns; reviewed in `scripts/data/fields_missing_reviewed.json`.
+- **Assignee notifications:** `itm_notify_ticket_assigned()` on create and when `assigned_to_employee_id` changes on edit (`create.php`). Edit form posts hidden `id` when the query string is omitted.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import on `index.php`.

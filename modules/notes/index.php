@@ -64,6 +64,9 @@ if ($stmtS->get_result()->fetch_assoc()) $hasShared = true;
 
 // Standard CRUD processing
 $editId = (int)($_GET["id"] ?? 0);
+if ($editId <= 0 && isset($_POST['id'])) {
+    $editId = (int)$_POST['id'];
+}
 $csrfToken = itm_get_csrf_token();
 
 // JSON API for Import Excel
@@ -283,6 +286,26 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         $titleHash = $prepared['title_hash'];
         $checklist_json = $prepared['checklist_json'];
 
+        $previousSharedUserIds = [];
+        if ($crud_action === 'edit' && $editId > 0) {
+            $prevStmt = $conn->prepare('SELECT shared_with_json FROM notes WHERE id = ? AND company_id = ? AND employee_id = ? LIMIT 1');
+            if ($prevStmt) {
+                $prevStmt->bind_param('iii', $editId, $company_id, $logged_user_id);
+                $prevStmt->execute();
+                $prevRow = $prevStmt->get_result()->fetch_assoc();
+                $prevStmt->close();
+                $decodedPrevious = json_decode((string)($prevRow['shared_with_json'] ?? ''), true);
+                if (is_array($decodedPrevious)) {
+                    foreach ($decodedPrevious as $prevUid) {
+                        $prevUid = (int)$prevUid;
+                        if ($prevUid > 0) {
+                            $previousSharedUserIds[$prevUid] = true;
+                        }
+                    }
+                }
+            }
+        }
+
         if ($crud_action === "edit" && $editId > 0) {
             $stmt = $conn->prepare("UPDATE notes SET title=?, title_hash=?, content=?, is_checklist=?, color=?, is_pinned=?, is_important=?, is_archived=?, reminder_at=?, checklist_json=?, images_json=?, shared_with_json=?, updated_by=? WHERE id=? AND company_id=? AND employee_id=?");
             $stmt->bind_param("sssisiiissssiiii", $title, $titleHash, $content, $is_checklist, $color, $is_pinned, $is_important, $is_archived, $reminder_at, $checklist_json, $images_json, $shared_with_json, $logged_user_id, $editId, $company_id, $logged_user_id);
@@ -308,7 +331,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
                 }
             }
             if (!empty($shared_users)) {
-                itm_notify_note_shared($conn, (int)$company_id, $shared_with_json, (int)$noteId, $title, (int)$logged_user_id);
+                $notifySharedUsers = $shared_users;
+                if ($crud_action === 'edit') {
+                    $notifySharedUsers = array_values(array_filter($shared_users, static function ($uid) use ($previousSharedUserIds) {
+                        return !isset($previousSharedUserIds[(int)$uid]);
+                    }));
+                }
+                if ($notifySharedUsers !== []) {
+                    itm_notify_note_shared(
+                        $conn,
+                        (int)$company_id,
+                        json_encode(array_values(array_map('intval', $notifySharedUsers))),
+                        (int)$noteId,
+                        $title,
+                        (int)$logged_user_id
+                    );
+                }
             }
             header("Location: index.php?msg=saved");
             die();
@@ -1063,6 +1101,9 @@ if (!isset($crud_title)) {
                         <h1><?php echo $crud_action === "edit" ? "Edit Note" : "New Note"; ?></h1>
                         <form method="POST" class="form-grid" style="max-width: 800px;" enctype="multipart/form-data">
                             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                            <?php if ($crud_action === 'edit' && $editId > 0): ?>
+                                <input type="hidden" name="id" value="<?php echo (int)$editId; ?>">
+                            <?php endif; ?>
                             <input type="hidden" name="deleted_by" value="<?php echo sanitize($data["deleted_by"] ?? ""); ?>">
                             <input type="hidden" name="deleted_at" value="<?php echo sanitize($data["deleted_at"] ?? ""); ?>">
                             <input type="hidden" name="created_by" value="<?php echo sanitize($data["created_by"] ?? ""); ?>">
