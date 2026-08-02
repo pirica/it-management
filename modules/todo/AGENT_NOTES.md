@@ -31,6 +31,7 @@ Microsoft To-Do–style task list for the company. Supports categories, departme
 - **Create control:** primary ➕ uses `btn btn-primary itm-list-new-button` + static `create.php` (active list `filter` stored in `$_SESSION['todo_create_filter']` for create presets).
 - **POST CSRF:** non-AJAX mutations call `itm_require_post_csrf()` on `index.php`.
 - **QR / code share (`join.php`):** task creator (`created_by`) may create 30-minute temporary read links. `todo_share_sessions` stores plaintext `payload_json`. UI: 📱, `images/whatsapp.svg`, and 📨 on task rows and view screen; modal via shared `includes/itm_qr_share_modal.php`. Public page: `join.php` (`ITM_QR_SHARE_PUBLIC`). Regression: `php scripts/verify_qr_share_modules.php`, `php scripts/verify_whatsapp_share.php`, `php scripts/verify_outlook_share.php`.
+- **Assignee notifications**: On create, `itm_notify_todo_assigned()` notifies all assignees in the CSV (including self). On edit, only **newly added** assignee IDs are notified; edit form posts hidden `id` when the query string is omitted.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** (JSON POST on `index.php`) — bulk task import with category/department/username resolution.

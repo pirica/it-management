@@ -163,6 +163,9 @@ if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 }
 // Standard CRUD processing
 $editId = (int)($_GET["id"] ?? 0);
+if ($editId <= 0 && isset($_POST['id'])) {
+    $editId = (int)$_POST['id'];
+}
 $csrfToken = itm_get_csrf_token();
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
@@ -220,6 +223,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         $title_hash = $prepared['title_hash'];
         $description = $prepared['description'];
 
+        $previousAssigneeCsv = '';
+        if ($crud_action === 'edit' && $editId > 0) {
+            $prevStmt = $conn->prepare('SELECT assigned_to_employee_id FROM todo WHERE id = ? AND company_id = ? LIMIT 1');
+            if ($prevStmt) {
+                $prevStmt->bind_param('ii', $editId, $company_id);
+                $prevStmt->execute();
+                $prevRow = $prevStmt->get_result()->fetch_assoc();
+                $prevStmt->close();
+                $previousAssigneeCsv = (string)($prevRow['assigned_to_employee_id'] ?? '');
+            }
+        }
+
         if ($crud_action === "edit" && $editId > 0) {
             $visSql = itm_todo_visibility_sql();
             $stmt = $conn->prepare("UPDATE todo SET title=?, title_hash=?, description=?, due_date=?, reminder_at=?, repeat_pattern=?, category_id=?, department_id=?, assigned_to_employee_id=?, importance=?, completed=?, updated_by=? WHERE id=? AND company_id=? AND ($visSql)");
@@ -231,8 +246,28 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
 
         if ($stmt->execute()) {
             $savedTaskId = ($crud_action === "edit" && $editId > 0) ? $editId : (int)mysqli_insert_id($conn);
+            $notifyAssigneeCsv = '';
             if ($savedTaskId > 0 && trim((string)$assigned_to_employee_id) !== '') {
-                itm_notify_todo_assigned($conn, (int)$company_id, $assigned_to_employee_id, $savedTaskId, $title, (int)$logged_user_id);
+                if ($crud_action === 'edit' && $editId > 0) {
+                    $previousIds = [];
+                    foreach (array_filter(array_map('intval', explode(',', $previousAssigneeCsv))) as $prevId) {
+                        if ($prevId > 0) {
+                            $previousIds[$prevId] = true;
+                        }
+                    }
+                    $addedIds = [];
+                    foreach (array_filter(array_map('intval', explode(',', (string)$assigned_to_employee_id))) as $newId) {
+                        if ($newId > 0 && !isset($previousIds[$newId])) {
+                            $addedIds[] = $newId;
+                        }
+                    }
+                    $notifyAssigneeCsv = implode(',', $addedIds);
+                } else {
+                    $notifyAssigneeCsv = (string)$assigned_to_employee_id;
+                }
+            }
+            if ($savedTaskId > 0 && $notifyAssigneeCsv !== '') {
+                itm_notify_todo_assigned($conn, (int)$company_id, $notifyAssigneeCsv, $savedTaskId, $title, (int)$logged_user_id);
             }
             header("Location: index.php?msg=saved");
             die();
@@ -996,6 +1031,9 @@ if (!isset($crud_title)) {
                         <h1><?php echo $crud_action === "edit" ? "Edit Task" : "New Task"; ?></h1>
                         <form method="POST" class="form-grid" style="max-width: 800px;">
                             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                            <?php if ($crud_action === 'edit' && $editId > 0): ?>
+                                <input type="hidden" name="id" value="<?php echo (int)$editId; ?>">
+                            <?php endif; ?>
                             <input type="hidden" name="created_by" value="<?php echo sanitize((string)($data["created_by"] ?? $logged_user_id)); ?>">
                             <input type="hidden" name="updated_by" value="<?php echo sanitize((string)$logged_user_id); ?>">
                             <input type="hidden" name="active" value="<?php echo sanitize((string)($data["active"] ?? 1)); ?>">

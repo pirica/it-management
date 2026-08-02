@@ -601,6 +601,9 @@ foreach ($fieldColumns as $col) {
 }
 
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if ($editId <= 0 && isset($_POST['id'])) {
+    $editId = (int)$_POST['id'];
+}
 
 // Fetch record details for Edit or View pages
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
@@ -1088,6 +1091,9 @@ if (!isset($crud_title)) {
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <?php if ($crud_action === 'edit' && $editId > 0): ?>
+                        <input type="hidden" name="id" value="<?php echo (int)$editId; ?>">
+                    <?php endif; ?>
                     <?php
                     // Reuse UI column filtering so table-specific hidden fields (like company_id for departments)
                     // stay hidden in create/edit forms while remaining available to backend save logic.

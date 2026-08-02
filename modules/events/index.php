@@ -952,6 +952,9 @@ if ($crud_table === 'catalogs' && $crud_action === 'create') {
 
 // HANDLE FETCH FOR EDIT/VIEW
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if ($editId <= 0 && isset($_POST['id'])) {
+    $editId = (int)$_POST['id'];
+}
 
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $data = itm_events_fetch_visible_by_id($conn, $editId, (int)$company_id, $logged_user_id) ?: [];
@@ -1154,6 +1157,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     }
 
     if (empty($errors)) {
+        $previousAssigneeId = 0;
+        if ($crud_action === 'edit' && $editId > 0) {
+            $prevStmt = mysqli_prepare($conn, 'SELECT assigned_to_employee_id FROM events WHERE id = ? AND company_id = ? LIMIT 1');
+            if ($prevStmt) {
+                mysqli_stmt_bind_param($prevStmt, 'ii', $editId, $company_id);
+                mysqli_stmt_execute($prevStmt);
+                $prevRes = mysqli_stmt_get_result($prevStmt);
+                $prevRow = $prevRes ? mysqli_fetch_assoc($prevRes) : null;
+                mysqli_stmt_close($prevStmt);
+                $previousAssigneeId = (int)($prevRow['assigned_to_employee_id'] ?? 0);
+            }
+        }
         if ($crud_action === 'create' && function_exists('itm_crud_stamp_create_audit')) {
             $sqlValuesStamp = null;
             itm_crud_stamp_create_audit($data, $sqlValuesStamp);
@@ -1219,7 +1234,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 mysqli_stmt_bind_param($stmt, $types, ...$params);
                 if (mysqli_stmt_execute($stmt)) {
                     $assigneeId = (int)($data['assigned_to_employee_id'] ?? 0);
-                    if ($editId > 0 && $assigneeId > 0) {
+                    if ($editId > 0 && $assigneeId > 0 && $assigneeId !== $previousAssigneeId) {
                         itm_notify_event_assigned($conn, (int)$company_id, $assigneeId, $editId, (string)($data['title'] ?? ''), (int)$logged_user_id);
                     }
                     mysqli_stmt_close($stmt);
@@ -1493,6 +1508,9 @@ if (!isset($crud_title)) {
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <?php if ($crud_action === 'edit' && $editId > 0): ?>
+                        <input type="hidden" name="id" value="<?php echo (int)$editId; ?>">
+                    <?php endif; ?>
                     <?php foreach ($uiColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
                         $isDate = str_starts_with($col['Type'], 'date');

@@ -30,13 +30,13 @@ Rows store **metadata only** (title, short body, module slug, record id, link). 
 | Ticket assigned | `modules/tickets/create.php` |
 | Onboarding approval | `modules/employee_onboarding_requests/index.php` (after approval email) |
 | Warranty expiring | `scripts/run_email_alert_rules.php` (equipment assignee) |
-| Todo assigned | `modules/todo/index.php` |
-| Event assigned | `modules/events/index.php` |
-| Alert assigned | `modules/alerts/index.php` (`assigned_to_employee_id` create/edit) |
+| Todo assigned | `modules/todo/index.php` (create + newly added assignees on edit) |
+| Event assigned | `modules/events/index.php` (create + assignee change on edit) |
+| Alert assigned | `modules/alerts/index.php` (`assigned_to_employee_id` create/edit; notifies on self-assign) |
 | Email to/cc match | `includes/itm_email.php` → `itm_email_log_send()` on successful send |
 | Note shared | `modules/notes/index.php` |
 | Ticket `@mention` | `modules/ticket_comments/index.php` (save) + **F2** picker (`js/ticket-comment-mentions.js`) |
-| Live chat conversation assigned | `modules/live_chat_conversations/index.php` (`assigned_to_employee_id` create/edit) |
+| Live chat conversation assigned | `modules/live_chat_conversations/index.php` (`assigned_to_employee_id` create/edit; notifies on self-assign) |
 | Live chat message / waiting | `modules/live_chat/api.php` via `itm_employee_notification_create()` |
 
 ## Operations
