@@ -47,7 +47,7 @@ $csrfToken = itm_get_csrf_token();
                 <ul class="itm-notifications-list" data-itm-notifications-list></ul>
                 <div class="itm-notifications-panel-footer">
                     <a href="<?php echo sanitize($itmNotificationsInboxUrl); ?>" data-itm-notifications-inbox title="Open notification inbox">View all</a>
-                    <button type="button" class="btn btn-sm" data-itm-notifications-mark-all title="Mark all read">Mark all read</button>
+                    <button type="button" class="btn btn-sm" data-itm-notifications-mark-all data-itm-notifications-mode="mark_all" title="Mark all read" aria-label="Mark all read">Mark all read</button>
                 </div>
             </div>
         </div>
