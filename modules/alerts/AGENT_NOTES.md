@@ -15,7 +15,7 @@ This module manages notifications and alerts within the system. It supports both
 - **Visibility Logic**:
     - **Global Alerts**: Records where `assigned_to_employee_id IS NULL` are visible to all users in the company.
     - **Private Alerts**: Records where `assigned_to_employee_id = $user_id` are visible only to that user and the creator.
-- **Assignee notifications**: When `assigned_to_employee_id` is set on create, or changed on edit, `itm_notify_alert_assigned()` in `includes/itm_employee_notifications.php` notifies the assignee (skips self-assign). Wired in `index.php` after successful INSERT/UPDATE.
+- **Assignee notifications**: When `assigned_to_employee_id` is set on create, or changed on edit, `itm_notify_alert_assigned()` in `includes/itm_employee_notifications.php` notifies the assignee (including self-assign — matches tickets). Wired in `index.php` after successful INSERT/UPDATE; edit form posts hidden `id` when the query string is omitted.
 - **Visibility Helpers**: Always use `includes/alerts_visibility.php` to generate SQL conditions for visibility. List counts and **Add sample data** both use `itm_alerts_build_scoped_where_sql()` (company + visibility + `deleted_at IS NULL`) so an empty list matches the sample-data gate.
 - **ICS Support**: Supports importing events from ICS files.
 

@@ -125,6 +125,19 @@ if ($afterUnread >= $beforeUnread) {
 
 mysqli_query($conn, "DELETE FROM employee_notifications WHERE company_id = {$companyId} AND employee_id = {$recipientId} AND title = '" . mysqli_real_escape_string($conn, $title) . "'");
 
+$actorId = $employees[0];
+$alertTitle = 'MBQA-alert-self-' . bin2hex(random_bytes(4));
+if (!itm_notify_alert_assigned($conn, $companyId, $actorId, 1, $alertTitle, $actorId)) {
+    en_verify_fail('itm_notify_alert_assigned self-assign should notify assignee');
+} else {
+    en_verify_pass('itm_notify_alert_assigned notifies on self-assign');
+}
+mysqli_query(
+    $conn,
+    "DELETE FROM employee_notifications WHERE company_id = {$companyId} AND employee_id = {$actorId} AND module_slug = 'alerts' AND body = '"
+    . mysqli_real_escape_string($conn, $alertTitle) . "'"
+);
+
 $apiPath = dirname(__DIR__) . '/modules/notifications/api.php';
 if (!is_file($apiPath)) {
     en_verify_fail('modules/notifications/api.php missing');

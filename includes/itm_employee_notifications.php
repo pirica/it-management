@@ -319,7 +319,7 @@ if (!function_exists('itm_notify_alert_assigned')) {
     {
         $assigneeEmployeeId = (int)$assigneeEmployeeId;
         $alertId = (int)$alertId;
-        if ($assigneeEmployeeId <= 0 || $alertId <= 0 || $assigneeEmployeeId === (int)$actorEmployeeId) {
+        if ($assigneeEmployeeId <= 0 || $alertId <= 0) {
             return false;
         }
         return itm_notify_employee($conn, $assigneeEmployeeId, [
