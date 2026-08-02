@@ -770,7 +770,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_bigint_table_review.php" target="_blank" rel="nofollow noreferrer">verify_bigint_table_review.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">audit_logs</span></span></td>
-                    <td>Reports live row counts, max IDs, and <code>id</code>/<code>record_id</code>/<code>module_id</code> column types for BIGINT migration review tables. Pair with <code>db/migrations/audit_logs_bigint.sql</code>.</td>
+                    <td>Live BIGINT migration review: row counts, max IDs, column types, and AUTO_INCREMENT for six review tables. Browser + CLI (Administrator); <code>?run=1</code> landing and coloured report shell (same pattern as <code>verify_db_migrations.php</code>). Pair with <code>db/migrations/audit_logs_bigint.sql</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
