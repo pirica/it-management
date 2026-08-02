@@ -308,6 +308,7 @@ require_once ROOT_PATH . 'includes/itm_it_settings.php';
 require_once ROOT_PATH . 'includes/itm_ui_action_labels.php';
 require_once ROOT_PATH . 'includes/itm_hotel_booking.php';
 require_once ROOT_PATH . 'includes/itm_hotel_booking_amenity_icons.php';
+require_once ROOT_PATH . 'includes/itm_hotel_booking_distribution.php';
 require_once ROOT_PATH . 'includes/itm_hospitality_admin_layout.php';
 
 // Ensure required upload and backup directories exist (writable, non-executable over HTTP)
@@ -452,6 +453,11 @@ if (defined('ITM_QR_SHARE_PUBLIC') && ITM_QR_SHARE_PUBLIC) {
 
 // Why: booking/* guest portal must not require ITM employee login (see booking/bootstrap.php).
 if (defined('ITM_HOTEL_BOOKING_PUBLIC_PORTAL') && ITM_HOTEL_BOOKING_PUBLIC_PORTAL) {
+    $itmSkipWebAuth = true;
+}
+
+// Why: modules/hotel_booking_api/api.php authenticates channel partners via distribution API keys.
+if (defined('ITM_HOTEL_BOOKING_DISTRIBUTION_API') && ITM_HOTEL_BOOKING_DISTRIBUTION_API) {
     $itmSkipWebAuth = true;
 }
 

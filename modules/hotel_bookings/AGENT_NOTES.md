@@ -45,6 +45,8 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, hotel filter), **F
 
 `booking/` — MySQLi bootstrap, portal users → `customers`; inserts into `hotel_bookings`. Payment page: `booking/rooms/payment.php`. See **`docs/BOOKING.md`** for full portal review and flows.
 
+**Distribution API (channel partners):** `modules/hotel_booking_api/api.php` — not the guest portal; see **`docs/HOTEL_BOOKING_DISTRIBUTION.md`**.
+
 ## 6. Regression
 
 `php scripts/verify_hotel_booking.php` after DDL/seeds or helper changes (includes subprocess probes for all 13 Hospitality sidebar `index.php` files).

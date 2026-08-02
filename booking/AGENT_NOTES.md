@@ -36,7 +36,7 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 
 ## 6. Admin
 
-Hotel administration lives in ITM modules: `modules/hotel_bookings/`, `modules/hotel_booking_hotels/`, `modules/hotel_booking_rooms/`, etc. (Admin sidebar — Hospitality).
+Hotel administration lives in ITM modules: `modules/hotel_bookings/`, `modules/hotel_booking_hotels/`, `modules/hotel_booking_rooms/`, etc. (Admin sidebar — Hospitality). Channel partner API: `modules/hotel_booking_api/` — see `docs/HOTEL_BOOKING_DISTRIBUTION.md`.
 
 ## 7. Active assets (post-legacy cleanup)
 
