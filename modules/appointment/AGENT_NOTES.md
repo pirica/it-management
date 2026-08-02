@@ -46,6 +46,7 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 ### List / view (`list_all.php`, `view.php`)
 
 - List: up to **200** rows, all company appointments (no “mine only” filter), columns Date/Time/Employee/Reason/Type/Status/**Assigned to**/**Confirmed**; inline assignee `<select>` and **Confirmed** checkbox per row when RBAC **edit** is granted (POST `list_all.php`); actions **🔎 View** and **🗑️ Delete** (RBAC **delete**) — delete soft-removes the row, clears `booking_lock`, sets `status` to `cancelled`, and releases the slot for rebooking.
+- **Assignee notifications:** when `assigned_to_employee_id` changes on `list_all` inline POST, `itm_notify_appointment_assigned()` notifies the assignee (including self-assign). Row form already posts hidden `id`.
 - View: detail includes assignee and confirmed flags plus audit meta via `itm_crud_render_audit_cell_value()` when available.
 
 ### Not flattened scaffold CRUD

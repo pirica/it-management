@@ -623,6 +623,9 @@ foreach ($fieldColumns as $col) {
 }
 
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if ($editId <= 0 && isset($_POST['id'])) {
+    $editId = (int)$_POST['id'];
+}
 
 // Fetch record details for Edit or View pages
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
@@ -791,6 +794,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     // Build and execute the dynamic query
     if (empty($errors)) {
+        $previousCommentBody = '';
+        if ($crud_action === 'edit' && $editId > 0 && $crud_table === 'ticket_comments') {
+            $prevStmt = mysqli_prepare($conn, 'SELECT body FROM ticket_comments WHERE id = ? AND company_id = ? LIMIT 1');
+            if ($prevStmt) {
+                mysqli_stmt_bind_param($prevStmt, 'ii', $editId, $company_id);
+                mysqli_stmt_execute($prevStmt);
+                $prevRes = mysqli_stmt_get_result($prevStmt);
+                $prevRow = $prevRes ? mysqli_fetch_assoc($prevRes) : null;
+                mysqli_stmt_close($prevStmt);
+                $previousCommentBody = (string)($prevRow['body'] ?? '');
+            }
+        }
         if ($crud_action === 'create') {
             if (function_exists('itm_crud_stamp_create_audit')) {
                 itm_crud_stamp_create_audit($data, $sqlValues);
@@ -822,12 +837,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $dbErrorCode = 0;
         $dbErrorMessage = '';
         if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
-            if ($crud_action === 'create' && $crud_table === 'ticket_comments') {
-                $commentId = (int)mysqli_insert_id($conn);
+            if ($crud_table === 'ticket_comments') {
                 $ticketId = (int)($data['ticket_id'] ?? 0);
                 $body = (string)($data['body'] ?? '');
-                if ($commentId > 0 && $ticketId > 0 && $body !== '') {
-                    itm_notify_ticket_comment_mentions($conn, (int)$company_id, $ticketId, $commentId, $body, (int)($_SESSION['employee_id'] ?? 0));
+                if ($crud_action === 'create') {
+                    $commentId = (int)mysqli_insert_id($conn);
+                    if ($commentId > 0 && $ticketId > 0 && $body !== '') {
+                        itm_notify_ticket_comment_mentions($conn, (int)$company_id, $ticketId, $commentId, $body, (int)($_SESSION['employee_id'] ?? 0));
+                    }
+                } elseif ($crud_action === 'edit' && $editId > 0 && $ticketId > 0 && $body !== '') {
+                    itm_notify_ticket_comment_mentions($conn, (int)$company_id, $ticketId, (int)$editId, $body, (int)($_SESSION['employee_id'] ?? 0), $previousCommentBody);
                 }
             }
             header('Location: ' . $listUrl);
@@ -1090,6 +1109,9 @@ if (!isset($crud_title)) {
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <?php if ($crud_action === 'edit' && $editId > 0): ?>
+                        <input type="hidden" name="id" value="<?php echo (int)$editId; ?>">
+                    <?php endif; ?>
                     <?php
                     // Reuse UI column filtering so table-specific hidden fields (like company_id for departments)
                     // stay hidden in create/edit forms while remaining available to backend save logic.

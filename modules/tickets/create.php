@@ -332,6 +332,9 @@ function tickets_resolve_created_by_employee_id(mysqli $conn, int $companyId): i
 }
 
 $id = (int)($_GET['id'] ?? 0);
+if ($id <= 0 && isset($_POST['id'])) {
+    $id = (int)$_POST['id'];
+}
 $is_edit = $id > 0;
 $error = '';
 $csrfToken = itm_get_csrf_token();
@@ -584,6 +587,9 @@ if (!isset($crud_title)) {
             <div class="card">
                 <form id="ticketForm" method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <?php if ($is_edit && $id > 0): ?>
+                        <input type="hidden" name="id" value="<?php echo (int)$id; ?>">
+                    <?php endif; ?>
                     <?php itm_crud_render_form_hidden_active_input(); ?>
 
                     <div class="form-row">

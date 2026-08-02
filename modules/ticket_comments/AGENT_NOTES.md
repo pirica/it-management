@@ -209,8 +209,8 @@ Rules:
 
 ## 12. Module Owner Notes (Optional)
 
-- On create/edit save, `itm_notify_ticket_comment_mentions()` runs when `body` contains `@username` tokens.
-- Create/edit forms load `js/ticket-comment-mentions.js` — press **F2** in the `body` textarea to pick a tenant employee mention.
+- On create/edit save, `itm_notify_ticket_comment_mentions()` runs when `body` contains `@username` tokens; on **edit**, only mentions **newly added** since the previous saved body (author still excluded).
+- Create/edit forms load `js/ticket-comment-mentions.js` — press **F2** in the `body` textarea to pick a tenant employee mention. Edit form posts hidden `id` when the query string is omitted.
 - Notifications: `docs/NOTIFICATIONS.md`.
 
 ---
