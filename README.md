@@ -25,6 +25,7 @@
 - ✅ In-app Notification Center — header 🔔 with unread count, dropdown inbox, and digest email for assignments and workflow events
 - ✅ Appointment — Self-service IT visit scheduling (weekly slots, visit reasons, Live Chat launch card)
 - ✅ Hotel Booking — Public guest portal at `booking/` and Admin **🏨 Hospitality** modules (`docs/BOOKING.md`)
+- ✅ Hotel Booking Distribution — Partner channel API (JSON/OpenTravel XML, availability, book/modify/cancel, ARI push/pull) with per-channel keys (`docs/HOTEL_BOOKING_DISTRIBUTION.md`)
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
 <h2 align="center" id="login">Login</h2>
 
@@ -145,13 +146,13 @@
 
 <h2 align="center">Database Structure Overview</h2>
 
-<p align="center">Fresh import of <code>db/</code> split bundle provisions <strong>126 tables</strong> and approximately <strong>3,085 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>employee_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
+<p align="center">Fresh import of <code>db/</code> split bundle provisions <strong>130 tables</strong> and approximately <strong>3,085 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>employee_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
 
 <h3 align="center">High-level summary</h3>
 
 | Metric | Value |
 | --- | --- |
-| **Tables** | 126 |
+| **Tables** | 130 |
 | **Sample rows** | ~3,085 (from <code>db/</code> split bundle) |
 | **Module folders** | 125 under <code>modules/</code> |
 | **Registry entries** | 149 in <code>modules_registry</code> (catalog slugs; not 1:1 with table count) |
@@ -249,11 +250,11 @@
 
 #### Hospitality and hotel booking
 
-`hotel_booking_hotels`, `hotel_booking_rooms`, `booking_rooms_types`, `hotel_bookings`, `customers`, `hotel_booking_portal_rate_plans`, `hotel_booking_special_rates`, `hotel_booking_amenities`, `hotel_booking_room_utilities`, `hotel_booking_settings`, `hotel_booking_housekeeping_*`, `hotel_bookings_future`, `hotel_bookings_present`, `hotel_bookings_history`, `hotel_booking_portal_users`
+`hotel_booking_hotels`, `hotel_booking_rooms`, `booking_rooms_types`, `hotel_bookings`, `customers`, `hotel_booking_portal_rate_plans`, `hotel_booking_special_rates`, `hotel_booking_amenities`, `hotel_booking_room_utilities`, `hotel_booking_settings`, `hotel_booking_housekeeping_*`, `hotel_bookings_future`, `hotel_bookings_present`, `hotel_bookings_history`, `hotel_booking_portal_users`, `hotel_booking_distribution_channels`, `hotel_booking_distribution_mappings`, `hotel_booking_distribution_reservations`, `hotel_booking_distribution_ari_events`
 
-**Purpose:** Guest hotel reservations via the public **`booking/`** portal (four-step checkout, manage reservation, payment at hotel) and staff configuration in Admin → **🏨 Hospitality** modules.
+**Purpose:** Guest hotel reservations via the public **`booking/`** portal (four-step checkout, manage reservation, payment at hotel); staff configuration in Admin → **🏨 Hospitality**; partner OTAs and channel managers via the distribution JSON/XML API (`modules/hotel_booking_api/api.php`) with keys in **Distribution Channels**.
 
-**Modules:** Public portal `booking/`; admin Hospitality modules — see [Hospitality and hotel booking](#hospitality-and-hotel-booking) and `docs/BOOKING.md` (full module table; not repeated here).
+**Modules:** Public portal `booking/`; admin Hospitality modules — see [Hospitality and hotel booking](#hospitality-and-hotel-booking); guest portal map: `docs/BOOKING.md`; partner API: `docs/HOTEL_BOOKING_DISTRIBUTION.md`.
 
 #### Operations and file storage
 
@@ -277,10 +278,10 @@
 | Password vault | 3 | 0 |
 | Notes, bookmarks, productivity | 10 | ~5 |
 | Planning and events | 7 | ~11 |
-| Hospitality and hotel booking | 20 | ~80 |
+| Hospitality and hotel booking | 24 | ~80 |
 | Operations | 10 | ~15 |
 | Workstation reference | 7 | ~280 |
-| **Total** | **126** | **~3,075** |
+| **Total** | **130** | **~3,075** |
 
 <h3 align="center">What this means</h3>
 
@@ -306,6 +307,7 @@ The system includes a variety of JSON and HTML-based endpoints for integration. 
 - **Bulk Import:** How to use the `import_excel_rows` API for multiple modules.
 - **CRUD Operations:** Scripts for editing, viewing, deleting, and archiving records.
 - **List Filtering:** Examples of fetching and parsing filtered results (e.g., Open tickets).
+- **Hotel booking distribution:** Partner channel API at `modules/hotel_booking_api/api.php` (`X-API-Key` auth) — availability, ARI, book/modify/cancel; see `docs/HOTEL_BOOKING_DISTRIBUTION.md`.
 
 Full API documentation is available in the `scripts/api.php` file (viewable in the browser as <code>/scripts/api.php</code>).
 
@@ -510,11 +512,13 @@ flowchart TB
 
 <h3 align="center">Hospitality and hotel booking</h3>
 
-<p align="center">Guests book at <code>booking/</code> without ITM employee login. Staff configure inventory and policies under Admin → <strong>🏨 Hospitality</strong>. Full portal and admin map: <code>docs/BOOKING.md</code>.</p>
+<p align="center">Guests book at <code>booking/</code> without ITM employee login. Staff configure inventory and policies under Admin → <strong>🏨 Hospitality</strong>. OTAs and channel partners integrate via the distribution API (<code>modules/hotel_booking_api/api.php</code>) — JSON, OpenTravel XML, Booking.com, and OHIP wire subsets. Guest portal: <code>docs/BOOKING.md</code>; partner API: <code>docs/HOTEL_BOOKING_DISTRIBUTION.md</code>.</p>
 
 | Surface | Path | Summary |
 | --- | --- | --- |
 | **Public portal** | `booking/` | Hotel grid, Select Dates modal, four-step checkout (room → rate → upgrade → guest form), confirmation PDF, manage reservation (`users/bookings.php`) |
+| **Distribution API** | `modules/hotel_booking_api/api.php` | Partner auth (`X-API-Key`): availability shop, ARI snapshot/push, book/modify/cancel, inbound `notify` |
+| Distribution Channels | `modules/hotel_booking_distribution_channels/` | Channel CRUD, API keys, `standard` (itm_native / opentravel / booking_com / ohip), mappings, webhook URL, Push ARI |
 | Hotel Bookings | `modules/hotel_bookings/` | Reservation CRUD and admin list |
 | Hotels | `modules/hotel_booking_hotels/` | Property master, portal visibility, review URLs |
 | Hotel Nearby / Photos | `hotel_booking_hotel_nearby/`, `hotel_booking_hotel_photos/` | Points of interest and hotel gallery uploads |
