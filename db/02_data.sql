@@ -1767,6 +1767,10 @@ INSERT IGNORE INTO `ticket_statuses` (`company_id`, `name`, `color`, `is_closed`
 
 INSERT IGNORE INTO `employee_roles` (`company_id`, `name`, `created_at`) SELECT c.`id`, t.`name`, '2026-01-01 00:00:01' FROM `employee_roles` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
+-- Why: Admin role allows Personalized Sidebar hide/unhide; Helpdesk keeps sidebar_show for required modules.
+UPDATE `employee_roles` SET `sidebar_show` = 0 WHERE LOWER(TRIM(`name`)) = 'admin';
+UPDATE `employee_roles` SET `sidebar_show` = 1 WHERE LOWER(TRIM(`name`)) = 'helpdesk';
+
 -- Why: Seed admins (username LIKE Admin%) insert before employee_roles; bind tenant Admin role_id after replication so companies 2–5 have roles.
 UPDATE `employees` e
 INNER JOIN `employee_roles` er ON er.`company_id` = e.`company_id` AND er.`name` = 'Admin'

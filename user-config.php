@@ -594,6 +594,7 @@ $totpQrUrl = $totpSetupPending
     : '';
 $ui_config = itm_get_ui_configuration($conn, $company_id, $user_id);
 $user_config_sidebar_ui = $ui_config;
+$user_config_sidebar_role_blocks_hide = itm_employee_role_sidebar_show_enabled($conn, $user_id);
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="<?php echo sanitize($profileTheme); ?>">
@@ -972,7 +973,12 @@ foreach ($access_fields as $f):
 
                         <div class="card">
                             <div class="card-header"><strong>📑 Personalized Sidebar</strong></div>
-                            <form method="POST">
+                            <?php $user_config_render_flash('update_sidebar'); ?>
+                            <p class="form-hint" style="margin:0 0 12px;">Check modules to show in your sidebar; uncheck to hide. Save to apply.</p>
+                            <?php if ($user_config_sidebar_role_blocks_hide): ?>
+                                <p class="form-hint" style="margin:0 0 12px;">Your role keeps required modules visible in the live sidebar even when unchecked here. An administrator can turn off <strong>Sidebar show</strong> on your role in Roles &amp; Permissions to allow full hide/unhide.</p>
+                            <?php endif; ?>
+                            <form method="POST" id="user-config-sidebar-form">
                                 <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>"><input type="hidden" name="action" value="update_sidebar">
                                 <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap:10px;">
                                     <?php foreach (itm_sidebar_item_catalog() as $id => $item):
@@ -982,22 +988,18 @@ foreach ($access_fields as $f):
                                         if (!itm_sidebar_item_passes_access_gate($id, $conn, $company_id)) {
                                             continue;
                                         }
-                                        $sidebarItem = is_array($item) ? $item : [];
-                                        $sidebarItem['id'] = $id;
-                                        $sidebarItemChecked = itm_sidebar_item_effective_visible($sidebarItem, $user_config_sidebar_ui, $conn, $company_id, $user_id);
+                                        // Why: Checkbox reflects saved layout prefs; effective visibility may still force-show via employee_roles.sidebar_show.
+                                        $sidebarItemChecked = itm_sidebar_item_layout_visible($user_config_sidebar_ui, $id);
                                         // Why: Open module in a new tab from the prefs grid without underline chrome.
                                         $sidebarItemHref = !empty($item['href']) ? (string)$item['href'] : ('modules/' . $id . '/');
-                                        $sidebarItem = is_array($item) ? $item : [];
-                                        $sidebarItem['id'] = $id;
-                                        $sidebarItemChecked = itm_sidebar_item_effective_visible($sidebarItem, $user_config_sidebar_ui, $conn, $company_id, $user_id);
                                     ?>
                                         <label class="itm-checkbox-control">
                                             <input type="checkbox" name="sidebar_items[]" value="<?php echo sanitize($id); ?>"<?php echo $sidebarItemChecked ? ' checked' : ''; ?>>
-                                            <span><a class="itm-user-config-sidebar-link" href="<?php echo sanitize($sidebarItemHref); ?>" target="_blank" rel="noopener noreferrer"><?php echo sanitize($item['label']); ?></a></span>
+                                            <span><a class="itm-user-config-sidebar-link" href="<?php echo sanitize($sidebarItemHref); ?>" target="_blank" rel="noopener noreferrer"><?php echo sanitize($item['label']); ?></a> <span class="itm-check-indicator" aria-hidden="true"><?php echo $sidebarItemChecked ? '✅' : '❌'; ?></span></span>
                                         </label>
                                     <?php endforeach; ?>
                                 </div>
-                                <button type="submit" class="btn btn-primary" style="margin-top:15px;">💾</button>
+                                <button type="submit" class="btn btn-primary" style="margin-top:15px;" title="Save">💾</button>
                             </form>
                         </div>
 
@@ -1076,6 +1078,21 @@ foreach ($access_fields as $f):
         var indicator = hideYear.parentNode ? hideYear.parentNode.querySelector('.itm-check-indicator') : null;
         if (indicator) {
             indicator.textContent = hideYear.checked ? '✅' : '❌';
+        }
+    });
+})();
+(function () {
+    // Why: Personalized Sidebar checkboxes need immediate show/hide feedback before save.
+    var sidebarForm = document.getElementById('user-config-sidebar-form');
+    if (!sidebarForm) return;
+    sidebarForm.addEventListener('change', function (event) {
+        var target = event.target;
+        if (!target || target.name !== 'sidebar_items[]') {
+            return;
+        }
+        var indicator = target.parentNode ? target.parentNode.querySelector('.itm-check-indicator') : null;
+        if (indicator) {
+            indicator.textContent = target.checked ? '✅' : '❌';
         }
     });
 })();
