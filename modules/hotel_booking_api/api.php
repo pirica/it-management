@@ -118,6 +118,7 @@ if ($action === 'ari_push' && $method === 'POST') {
         $body = $_POST;
     }
     $result = itm_hotel_booking_distribution_apply_ari_push($conn, $channel, $body);
+    $result['_ota_action'] = 'ari_push';
     $status = !empty($result['success']) ? 200 : 400;
     itm_hotel_booking_distribution_send_response($status, $result, $channel, $wireFormat);
 }

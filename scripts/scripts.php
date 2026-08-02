@@ -1908,6 +1908,27 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub"><code>php scripts/verify_hotel_booking_distribution_http.php</code></td>
                 </tr>
                 <tr data-tags="Mixed">
+                    <td><a href="verify_hotel_booking_distribution_opentravel_coverage.php" target="_blank" rel="nofollow noreferrer">verify_hotel_booking_distribution_opentravel_coverage.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_channels</span></span></td>
+                    <td>OpenTravel OTA message coverage: AvailRQ, ResNotifRQ, AvailNotifRQ (ari_push), PingRQ parse + RS encode.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_hotel_booking_distribution_opentravel_coverage.php</code></td>
+                </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="verify_hotel_booking_distribution_booking_com_cert.php" target="_blank" rel="nofollow noreferrer">verify_hotel_booking_distribution_booking_com_cert.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_channels</span></span></td>
+                    <td>Booking.com Connectivity offline certification checklist (ACK/NACK, notify normalize, rates payload; no live API).</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_hotel_booking_distribution_booking_com_cert.php</code></td>
+                </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="report_hotel_booking_distribution_webhook_ops.php" target="_blank" rel="nofollow noreferrer">report_hotel_booking_distribution_webhook_ops.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_webhook_queue</span></span></td>
+                    <td>Ops dead-letter report for outbound webhook queue; exit <code>1</code> when <code>dead</code> rows exist unless <code>--allow-dead</code>.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/report_hotel_booking_distribution_webhook_ops.php</code></td>
+                </tr>
+                <tr data-tags="Mixed">
                     <td><a href="run_hotel_booking_distribution_ari_sync.php" target="_blank" rel="nofollow noreferrer">run_hotel_booking_distribution_ari_sync.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_channels</span></span></td>

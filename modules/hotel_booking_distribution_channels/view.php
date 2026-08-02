@@ -24,6 +24,10 @@ if (!$row) {
 }
 
 $pushAriMessage = '';
+$queueStats = itm_hotel_booking_distribution_webhook_queue_stats($conn, $company_id, $id);
+$deadQueueRows = itm_hotel_booking_distribution_webhook_queue_list($conn, $company_id, $id, 'dead', 15);
+$failedQueueRows = itm_hotel_booking_distribution_webhook_queue_list($conn, $company_id, $id, 'failed', 10);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['push_ari'])) {
     itm_require_post_csrf();
     $hotelId = 0;
@@ -100,6 +104,49 @@ itm_hospitality_admin_layout_begin($crud_title);
 <input type="hidden" name="push_ari" value="1">
 <button type="submit" class="btn btn-primary" title="Push ARI to webhook">📡</button>
 </form>
+<?php endif; ?>
+
+<h2>Webhook queue (ops)</h2>
+<p>Outbound delivery status for this channel. Retry with <a href="../../scripts/run_hotel_booking_distribution_webhook_queue.php?run=1" target="_blank" rel="noopener">run_hotel_booking_distribution_webhook_queue.php?run=1</a> (open in a new browser tab; Admin session).</p>
+<table class="table" style="margin-bottom:16px;">
+<thead><tr><th>Status</th><th>Count</th></tr></thead>
+<tbody>
+<tr><td>Pending</td><td><?php echo (int) ($queueStats['pending'] ?? 0); ?></td></tr>
+<tr><td>Failed (retrying)</td><td><?php echo (int) ($queueStats['failed'] ?? 0); ?></td></tr>
+<tr><td>Delivered</td><td><?php echo (int) ($queueStats['delivered'] ?? 0); ?></td></tr>
+<tr><td><strong>Dead (dead-letter)</strong></td><td><strong><?php echo (int) ($queueStats['dead'] ?? 0); ?></strong></td></tr>
+</tbody>
+</table>
+<?php if (!empty($deadQueueRows) || !empty($failedQueueRows)): ?>
+<h3>Recent failures</h3>
+<table class="table">
+<thead>
+<tr>
+<th>ID</th>
+<th>Status</th>
+<th>Event</th>
+<th>HTTP</th>
+<th>Attempts</th>
+<th>Last error</th>
+<th>Updated</th>
+</tr>
+</thead>
+<tbody>
+<?php foreach (array_merge($deadQueueRows, $failedQueueRows) as $qrow): ?>
+<tr>
+<td><?php echo (int) ($qrow['id'] ?? 0); ?></td>
+<td><?php echo sanitize($qrow['status'] ?? ''); ?></td>
+<td><?php echo sanitize($qrow['event_type'] ?? ''); ?></td>
+<td><?php echo (int) ($qrow['last_http_code'] ?? 0); ?></td>
+<td><?php echo (int) ($qrow['attempt_count'] ?? 0); ?> / <?php echo (int) ($qrow['max_attempts'] ?? 0); ?></td>
+<td style="max-width:280px;word-break:break-word;"><?php echo sanitize($qrow['last_error'] ?? ''); ?></td>
+<td><?php echo sanitize(itm_format_audit_timestamp_display($qrow['updated_at'] ?? '')); ?></td>
+</tr>
+<?php endforeach; ?>
+</tbody>
+</table>
+<?php else: ?>
+<p>No dead or retrying webhook rows for this channel.</p>
 <?php endif; ?>
 </div>
 <?php itm_hospitality_admin_layout_end(); ?>

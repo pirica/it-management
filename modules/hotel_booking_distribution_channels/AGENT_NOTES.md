@@ -40,6 +40,7 @@ Uses `includes/itm_hospitality_admin_layout.php`.
 
 - Partner API entry: [modules/hotel_booking_api/api.php](http://localhost/it-management/modules/hotel_booking_api/api.php) (API key auth, no employee session)
 - Canonical doc: `docs/HOTEL_BOOKING_DISTRIBUTION.md`
-- Regression: [verify_hotel_booking_distribution.php?run=1](http://localhost/it-management/scripts/verify_hotel_booking_distribution.php?run=1) · [verify_hotel_booking_distribution_http.php?run=1](http://localhost/it-management/scripts/verify_hotel_booking_distribution_http.php?run=1)
+- Regression: [verify_hotel_booking_distribution.php?run=1](http://localhost/it-management/scripts/verify_hotel_booking_distribution.php?run=1) · [verify_hotel_booking_distribution_http.php?run=1](http://localhost/it-management/scripts/verify_hotel_booking_distribution_http.php?run=1) · [verify_hotel_booking_distribution_opentravel_coverage.php?run=1](http://localhost/it-management/scripts/verify_hotel_booking_distribution_opentravel_coverage.php?run=1) · [verify_hotel_booking_distribution_booking_com_cert.php?run=1](http://localhost/it-management/scripts/verify_hotel_booking_distribution_booking_com_cert.php?run=1)
+- Ops: [report_hotel_booking_distribution_webhook_ops.php?run=1](http://localhost/it-management/scripts/report_hotel_booking_distribution_webhook_ops.php?run=1) · webhook queue on channel **view** (dead/failed table)
 - Outbound ARI: channel view **Push ARI** button or [run_hotel_booking_distribution_ari_sync.php?run=1](http://localhost/it-management/scripts/run_hotel_booking_distribution_ari_sync.php?run=1)
 - Webhook retries: [run_hotel_booking_distribution_webhook_queue.php?run=1](http://localhost/it-management/scripts/run_hotel_booking_distribution_webhook_queue.php?run=1)

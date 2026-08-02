@@ -43,6 +43,75 @@ if (!function_exists('itm_hotel_booking_distribution_opentravel_parse_request'))
                 ],
             ];
         }
+        if ($root === 'ota_hotelavailnotifrq') {
+            $hotelCode = '';
+            $hotelNode = $xml->xpath('//*[local-name()="AvailStatusMessages"]');
+            if ($hotelNode && isset($hotelNode[0])) {
+                $hotelCode = (string) ($hotelNode[0]['HotelCode'] ?? '');
+            }
+            $rates = [];
+            $stopSell = false;
+            $startDate = '';
+            $endDate = '';
+            $roomTypeCode = '';
+            $messages = $xml->xpath('//*[local-name()="AvailStatusMessage"]');
+            if ($messages) {
+                foreach ($messages as $message) {
+                    $control = $message->xpath('.//*[local-name()="StatusApplicationControl"]');
+                    $start = '';
+                    $end = '';
+                    $invCode = '';
+                    if ($control && isset($control[0])) {
+                        $start = (string) ($control[0]['Start'] ?? '');
+                        $end = (string) ($control[0]['End'] ?? $start);
+                        $invCode = (string) ($control[0]['InvTypeCode'] ?? '');
+                    }
+                    if ($roomTypeCode === '' && $invCode !== '') {
+                        $roomTypeCode = $invCode;
+                    }
+                    if ($startDate === '' || ($start !== '' && $start < $startDate)) {
+                        $startDate = $start;
+                    }
+                    if ($endDate === '' || ($end !== '' && $end > $endDate)) {
+                        $endDate = $end;
+                    }
+                    $bookingLimit = (int) ($message['BookingLimit'] ?? -1);
+                    $los = $message->xpath('.//*[local-name()="LengthOfStay"]');
+                    $price = 0.0;
+                    if ($los && isset($los[0])) {
+                        $price = (float) ($los[0]['Time'] ?? 0);
+                    }
+                    $restriction = $message->xpath('.//*[local-name()="RestrictionStatus"]');
+                    if ($restriction && isset($restriction[0])) {
+                        $status = strtolower((string) ($restriction[0]['Status'] ?? ''));
+                        if ($status === 'close' || $status === 'closed') {
+                            $stopSell = true;
+                        }
+                    }
+                    if ($start !== '') {
+                        $rates[] = [
+                            'date' => $start,
+                            'price_per_night' => $price,
+                            'allotment' => $bookingLimit >= 0 ? $bookingLimit : null,
+                        ];
+                    }
+                }
+            }
+            return [
+                'action' => 'ari_push',
+                'payload' => [
+                    'external_hotel_code' => $hotelCode,
+                    'external_room_type_code' => $roomTypeCode,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate !== '' ? $endDate : $startDate,
+                    'rates' => $rates,
+                    'stop_sell' => $stopSell,
+                ],
+            ];
+        }
+        if ($root === 'ota_pingrq') {
+            return ['action' => 'probe', 'payload' => []];
+        }
         if ($root === 'ota_hotelresnotifrq') {
             $resStatus = strtolower((string) ($xml['ResStatus'] ?? 'book'));
             $uniqueId = $xml->xpath('//*[local-name()="UniqueID"]');
@@ -146,21 +215,39 @@ if (!function_exists('itm_hotel_booking_distribution_opentravel_encode_response'
                 . '</HotelReservation></HotelReservations></OTA_HotelResNotifRS>';
         }
         if ($otaAction === 'ari_snapshot' && !empty($payload['inventory'])) {
+            $hotelCode = itm_hotel_booking_distribution_opentravel_xml_escape($payload['external_hotel_code'] ?? $payload['hotel_id'] ?? '');
             $segments = '';
             foreach ($payload['inventory'] as $inv) {
                 $code = itm_hotel_booking_distribution_opentravel_xml_escape($inv['external_code'] ?? $inv['room_type_id'] ?? '');
                 foreach ($inv['days'] ?? [] as $day) {
+                    $restriction = '';
+                    if (!empty($day['stop_sell'])) {
+                        $restriction = '<RestrictionStatus Status="Close"/>';
+                    }
+                    $cta = '';
+                    if (!empty($day['closed_to_arrival'])) {
+                        $cta = '<RestrictionStatus Restriction="Arrival" Status="Close"/>';
+                    }
+                    $ctd = '';
+                    if (!empty($day['closed_to_departure'])) {
+                        $ctd = '<RestrictionStatus Restriction="Departure" Status="Close"/>';
+                    }
                     $segments .= '<AvailStatusMessage BookingLimit="' . (int) ($day['available_rooms'] ?? 0) . '">'
                         . '<StatusApplicationControl Start="' . itm_hotel_booking_distribution_opentravel_xml_escape($day['date'] ?? '') . '"'
                         . ' End="' . itm_hotel_booking_distribution_opentravel_xml_escape($day['date'] ?? '') . '"'
                         . ' InvTypeCode="' . $code . '"/>'
                         . '<LengthsOfStay><LengthOfStay Time="' . itm_hotel_booking_distribution_opentravel_xml_escape($day['price_per_night'] ?? 0) . '" TimeUnit="Day"/></LengthsOfStay>'
+                        . $restriction . $cta . $ctd
                         . '</AvailStatusMessage>';
                 }
             }
             return '<?xml version="1.0" encoding="UTF-8"?>'
                 . '<OTA_HotelAvailNotifRS xmlns="http://www.opentravel.org/OTA/2003/05" Version="1.0">'
-                . '<Success/><AvailStatusMessages>' . $segments . '</AvailStatusMessages></OTA_HotelAvailNotifRS>';
+                . '<Success/><AvailStatusMessages HotelCode="' . $hotelCode . '">' . $segments . '</AvailStatusMessages></OTA_HotelAvailNotifRS>';
+        }
+        if ($otaAction === 'ari_push') {
+            return '<?xml version="1.0" encoding="UTF-8"?>'
+                . '<OTA_HotelAvailNotifRS xmlns="http://www.opentravel.org/OTA/2003/05" Version="1.0"><Success/></OTA_HotelAvailNotifRS>';
         }
         return '<?xml version="1.0" encoding="UTF-8"?>'
             . '<OTA_PingRS xmlns="http://www.opentravel.org/OTA/2003/05" Version="1.0"><Success/></OTA_PingRS>';
