@@ -444,6 +444,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$title) { $error = 'Ticket title is required.'; }
     elseif ($created_by_employee_id <= 0) { $error = 'Created by user is required.'; }
     else {
+        $previousAssigneeId = 0;
+        if ($is_edit && $id > 0) {
+            $prevStmt = mysqli_prepare($conn, 'SELECT assigned_to_employee_id FROM tickets WHERE id = ? AND company_id = ? LIMIT 1');
+            if ($prevStmt) {
+                mysqli_stmt_bind_param($prevStmt, 'ii', $id, $company_id);
+                mysqli_stmt_execute($prevStmt);
+                $prevRes = mysqli_stmt_get_result($prevStmt);
+                $prevRow = $prevRes ? mysqli_fetch_assoc($prevRes) : null;
+                mysqli_stmt_close($prevStmt);
+                $previousAssigneeId = (int)($prevRow['assigned_to_employee_id'] ?? 0);
+            }
+        }
+        $newAssigneeId = ($assigned_to_employee_id === 'NULL' || $assigned_to_employee_id === null) ? 0 : (int)$assigned_to_employee_id;
         $photos_sql = empty($ticketPhotoFilenames) ? 'NULL' : "'" . escape_sql(json_encode($ticketPhotoFilenames, JSON_UNESCAPED_SLASHES), $conn) . "'";
         $created_at_val = isset($_POST['created_at']) ? "'" . escape_sql(str_replace('T', ' ', $_POST['created_at']) . ':00', $conn) . "'" : 'CURRENT_TIMESTAMP';
 
@@ -469,6 +482,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($savedTicketId > 0) {
                 require_once '../../includes/itm_search_index.php';
                 itm_search_index_after_module_save($conn, 'tickets', (int)$company_id, $savedTicketId);
+                if ($newAssigneeId > 0 && $newAssigneeId !== $previousAssigneeId) {
+                    itm_notify_ticket_assigned($conn, (int)$company_id, $newAssigneeId, $savedTicketId, $title, $ticket_external_code);
+                }
             }
             header('Location: index.php'); exit;
         }

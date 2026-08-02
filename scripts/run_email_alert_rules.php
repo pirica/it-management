@@ -109,7 +109,7 @@ foreach ($companies as $companyId) {
         $rows = [];
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT id, name, hostname, warranty_expiry FROM equipment
+            'SELECT id, name, hostname, warranty_expiry, assigned_to_employee_id FROM equipment
              WHERE company_id = ? AND active = 1 AND warranty_expiry IS NOT NULL
                AND warranty_expiry >= ? AND warranty_expiry <= ?'
         );
@@ -141,6 +141,21 @@ foreach ($companies as $companyId) {
         );
         $companyStats['warranty_expiry'] = $batch;
         $totalSent += $batch['sent'];
+        foreach ($rows as $warrantyRow) {
+            $assigneeId = (int)($warrantyRow['assigned_to_employee_id'] ?? 0);
+            if ($assigneeId <= 0) {
+                continue;
+            }
+            $label = trim((string)($warrantyRow['hostname'] ?? '')) ?: trim((string)($warrantyRow['name'] ?? 'Equipment'));
+            itm_notify_warranty_expiring(
+                $conn,
+                $companyId,
+                $assigneeId,
+                (int)($warrantyRow['id'] ?? 0),
+                $label,
+                (string)($warrantyRow['warranty_expiry'] ?? '')
+            );
+        }
     }
 
     if (!empty($rules['license_expiry'])) {

@@ -1104,7 +1104,9 @@ Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking
 | `php scripts/verify_webmail_module.php` | Regression: `modules/webmail/` folders (inbox, starred, sent, archived, trash), star/archive toggles, soft/hard delete, `modules_registry` row `webmail` on shared `emails` table |
 | `php scripts/verify_user_config_profile.php` | Regression for `user-config.php` profile fields: home-company UPDATE vs tenant switcher, birthday/theme/emergency round-trip, profile photo URL must be app-absolute `modules/explorer/file.php` (not `../../modules/…`); static `$ui_config` reload after sidebar save |
 | `php scripts/verify_sidebar_preferences.php` | Regression: canonical section normalize/reconcile (`explorer` → `employee`), section visibility sync, `employee_sidebar_preferences` DB round-trip, Settings SideMenu access-gate static wiring, `user-config.php` fresh `$ui_config` contract |
-| `php scripts/run_email_alert_rules.php` | Dispatches enabled alert rules per company (warranty, license, certificate, alerts, notes, to-do, events); optional `--company=1` and `--verbose` (per-rule match/sent notes when count is 0) |
+| `php scripts/run_email_alert_rules.php` | Dispatches enabled alert rules per company (warranty, license, certificate, alerts, notes, to-do, events); warranty matches also enqueue in-app notifications for equipment assignees; optional `--company=1` and `--verbose` (per-rule match/sent notes when count is 0) |
+| `php scripts/run_notification_digest.php` | Sends digest emails for employees with unread `employee_notifications` rows; optional `--company=1` |
+| `php scripts/verify_employee_notifications.php` | Regression for `itm_notify_employee()`, unread count, mark read, header API/JS assets |
 | `php scripts/test_email_forgot.php` | Manual forgot-password email test via `itm_send_email()` / tenant SMTP; creates a real 24-hour reset token for the matching employee before sending; CLI supports `--company=1` (defaults to session company or `1`) |
 | `php scripts/test_register_mail.php` | Manual registration welcome email test via `itm_send_email()`; CLI supports `--company=1` |
 

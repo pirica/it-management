@@ -307,6 +307,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
                     notes_insert_label_row($conn, $company_id, $logged_user_id, $noteId, $label_name);
                 }
             }
+            if (!empty($shared_users)) {
+                itm_notify_note_shared($conn, (int)$company_id, $shared_with_json, (int)$noteId, $title, (int)$logged_user_id);
+            }
             header("Location: index.php?msg=saved");
             die();
         }

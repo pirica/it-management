@@ -167,6 +167,9 @@ function cr_is_hidden_employee_field($field) {
     }
 
     $hidden = ['company_id', 'employee_id', 'location_id', 'location', 'employee_code'];
+    if ($crudTable === 'employee_notifications') {
+        $hidden = array_merge($hidden, ['body', 'action_url', 'read_at', 'module_slug', 'record_id']);
+    }
     return in_array($field, $hidden, true);
 }
 
@@ -336,7 +339,7 @@ foreach ($fieldColumns as $c) {
 }
 
 
-$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'departments', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments', 'it_settings', 'knowledge_base'];
+$hideCompanyIdTables = ['employee_notifications', 'workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'departments', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments', 'it_settings', 'knowledge_base'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     $fieldName = (string)($col['Field'] ?? '');
     if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
@@ -811,6 +814,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 $where = '';
 if ($hasCompany && $company_id > 0) {
     $where = ' WHERE company_id=' . (int)$company_id;
+}
+if ($crud_table === 'employee_notifications') {
+    $sessionEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
+    if ($sessionEmployeeId > 0) {
+        $where .= ($where === '' ? ' WHERE ' : ' AND ') . 'employee_id=' . $sessionEmployeeId;
+    }
 }
 if (function_exists('itm_crud_append_not_deleted_predicate')) {
     $where = itm_crud_append_not_deleted_predicate($where);

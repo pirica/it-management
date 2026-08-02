@@ -216,7 +216,19 @@ if (!function_exists('itm_email_log_send')) {
             );
         }
         $ok = mysqli_stmt_execute($stmt);
+        $emailLogId = $ok ? (int)mysqli_insert_id($conn) : 0;
         mysqli_stmt_close($stmt);
+        if ($ok && $status === 'sent' && function_exists('itm_notify_email_logged')) {
+            itm_notify_email_logged(
+                $conn,
+                $companyId,
+                $emailLogId,
+                $toEmail,
+                $ccEmail,
+                $subject,
+                (int)($createdBy ?? 0)
+            );
+        }
         return $ok;
     }
 }

@@ -26,6 +26,36 @@ $csrfToken = itm_get_csrf_token();
     <div class="header-right">
         <!-- Global UI Action Buttons -->
         <button type="button" class="btn btn-sm" data-itm-command-palette-open="1" title="Search (Ctrl+K)">🔍</button>
+        <?php
+        $itmHeaderEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
+        $itmHeaderCompanyId = (int)($company_id ?? 0);
+        $itmHeaderUnreadNotifications = ($itmHeaderCompanyId > 0 && $itmHeaderEmployeeId > 0)
+            ? itm_employee_notification_unread_count($conn, $itmHeaderCompanyId, $itmHeaderEmployeeId)
+            : 0;
+        $itmNotificationsCssPath = ROOT_PATH . 'css/notifications.css';
+        $itmNotificationsJsPath = ROOT_PATH . 'js/notifications.js';
+        $itmNotificationsCssVersion = is_file($itmNotificationsCssPath) ? (string)filemtime($itmNotificationsCssPath) : '1';
+        $itmNotificationsJsVersion = is_file($itmNotificationsJsPath) ? (string)filemtime($itmNotificationsJsPath) : '1';
+        $itmNotificationsInboxUrl = itm_employee_notification_build_action_url('employee_notifications', null);
+        ?>
+        <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/notifications.css?v=<?php echo sanitize($itmNotificationsCssVersion); ?>">
+        <div id="itm-notifications-root" class="itm-notifications-wrap">
+            <button type="button" class="btn btn-sm itm-notifications-btn" data-itm-notifications-toggle="1" title="Notifications" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">🔔
+                <span class="itm-notifications-badge<?php echo $itmHeaderUnreadNotifications > 0 ? '' : ' hidden'; ?>" data-itm-notifications-badge aria-hidden="<?php echo $itmHeaderUnreadNotifications > 0 ? 'false' : 'true'; ?>"><?php echo $itmHeaderUnreadNotifications > 0 ? (int)$itmHeaderUnreadNotifications : ''; ?></span>
+            </button>
+            <div class="itm-notifications-panel" data-itm-notifications-panel role="menu" aria-label="Recent notifications">
+                <div class="itm-notifications-panel-header">
+                    <span>Notifications</span>
+                </div>
+                <div class="itm-notifications-error" data-itm-notifications-error style="display:none;">Could not load notifications.</div>
+                <div class="itm-notifications-empty" data-itm-notifications-empty style="display:none;">No notifications yet.</div>
+                <ul class="itm-notifications-list" data-itm-notifications-list></ul>
+                <div class="itm-notifications-panel-footer">
+                    <a href="<?php echo sanitize($itmNotificationsInboxUrl); ?>" data-itm-notifications-inbox title="Open notification inbox">View all</a>
+                    <button type="button" class="btn btn-sm" data-itm-notifications-mark-all title="Mark all read">Mark all read</button>
+                </div>
+            </div>
+        </div>
         <button onclick="toggleTheme()" class="btn btn-sm" title="Toggle Dark/Light Mode">🌙</button>
         <form method="POST" action="<?php echo BASE_URL; ?>logout.php" class="header-logout-form">
             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -102,6 +132,7 @@ $itmCommandPaletteVersion = is_file($itmCommandPalettePath) ? (string)filemtime(
 <script src="<?php echo BASE_URL; ?>js/table-tools.js?v=<?php echo sanitize($itmTableToolsVersion); ?>"></script>
 <script src="<?php echo BASE_URL; ?>js/bulk-delete-selection.js?v=<?php echo sanitize($itmBulkDeleteVersion); ?>"></script>
 <script src="<?php echo BASE_URL; ?>js/command-palette.js?v=<?php echo sanitize($itmCommandPaletteVersion); ?>"></script>
+<script src="<?php echo BASE_URL; ?>js/notifications.js?v=<?php echo sanitize($itmNotificationsJsVersion); ?>"></script>
 <?php if ($chatbotEnabled): ?>
 <script src="<?php echo BASE_URL; ?>js/chatbot.js"></script>
 <?php endif; ?>

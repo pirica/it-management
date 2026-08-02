@@ -1183,6 +1183,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, $types, ...$params);
                 if (mysqli_stmt_execute($stmt)) {
+                    $savedEventId = (int)mysqli_insert_id($conn);
+                    $assigneeId = (int)($data['assigned_to_employee_id'] ?? 0);
+                    if ($savedEventId > 0 && $assigneeId > 0) {
+                        itm_notify_event_assigned($conn, (int)$company_id, $assigneeId, $savedEventId, (string)($data['title'] ?? ''), (int)$logged_user_id);
+                    }
                     mysqli_stmt_close($stmt);
                     header('Location: ' . $listUrl);
                     exit;
@@ -1213,6 +1218,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 }
                 mysqli_stmt_bind_param($stmt, $types, ...$params);
                 if (mysqli_stmt_execute($stmt)) {
+                    $assigneeId = (int)($data['assigned_to_employee_id'] ?? 0);
+                    if ($editId > 0 && $assigneeId > 0) {
+                        itm_notify_event_assigned($conn, (int)$company_id, $assigneeId, $editId, (string)($data['title'] ?? ''), (int)$logged_user_id);
+                    }
                     mysqli_stmt_close($stmt);
                     header('Location: ' . $listUrl);
                     exit;
