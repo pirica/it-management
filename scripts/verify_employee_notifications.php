@@ -130,6 +130,12 @@ if (!is_file($apiPath)) {
     en_verify_fail('modules/notifications/api.php missing');
 } else {
     en_verify_pass('modules/notifications/api.php present');
+    $apiSource = (string)@file_get_contents($apiPath);
+    if (strpos($apiSource, 'itm_release_session_lock') === false) {
+        en_verify_fail('notifications api.php must call itm_release_session_lock() after auth');
+    } else {
+        en_verify_pass('notifications api.php releases PHP session lock');
+    }
 }
 
 $jsPath = dirname(__DIR__) . '/js/notifications.js';
