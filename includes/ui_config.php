@@ -1099,6 +1099,17 @@ function itm_sidebar_item_pref_hidden_by_layout($sidebarConfig, $itemId) {
 }
 
 /**
+ * Saved layout visibility for Personalized Sidebar checkboxes (no employee_roles.sidebar_show override).
+ */
+function itm_sidebar_item_layout_visible($sidebarConfig, $itemId) {
+    if (!is_array($sidebarConfig)) {
+        $sidebarConfig = itm_ui_config_defaults();
+    }
+
+    return !itm_sidebar_item_pref_hidden_by_layout($sidebarConfig, $itemId);
+}
+
+/**
  * Role sidebar_show may force-show layout-hidden items that pass access + RBAC view gates.
  */
 function itm_sidebar_item_role_show_override_visible(array $sidebarItem, $sidebarConfig, $conn, $companyId, $employeeId = 0) {

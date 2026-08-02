@@ -155,7 +155,7 @@ $stmt->execute();
 - **Profile save (`action=update_profile`):** `work_email`, `mobile_phone`, `theme`, emergency contact fields, `birthday` (`itm_parse_date_input`), `hide_year` (checkbox). Full name readonly (Employees module). UPDATE uses employee **home** `company_id`. Regression: `php scripts/verify_user_config_profile.php`.
 - **Profile photo:** `files/{home_company_id}/Private/{username}_{employee_id}/profile/`; display via `emp_profile_photo_url()`.
 - **Layout:** `.layout-2col` — 280px sidebar column; stacks at `max-width: 768px`.
-- **Personalized Sidebar:** `itm_sidebar_item_effective_visible()` for checkbox state; saves to `employee_sidebar_preferences`; reload `$ui_config` from `itm_get_ui_configuration()` after save; `itm_normalize_sidebar_submenu_order()`; section visibility via `itm_sidebar_section_effective_visible()`.
+- **Personalized Sidebar:** `itm_sidebar_item_layout_visible()` for checkbox state (saved prefs without `employee_roles.sidebar_show` override); live sidebar still uses `itm_sidebar_item_effective_visible()`; saves to `employee_sidebar_preferences`; reload `$ui_config` from `itm_get_ui_configuration()` after save; Admin seed role uses `sidebar_show = 0` so hide/unhide applies after save.
 - **Recent Activity:** `{action} in {table_name}` with link to module or catalog href.
 - **Security flash messages:** Password, vault, and TOTP feedback at page top and above each section Save button.
 - **Audit:** Profile and security changes logged to `audit_logs` when applicable.
