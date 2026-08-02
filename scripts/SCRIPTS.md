@@ -628,13 +628,13 @@ Local full import (requires MySQL, password `itmanagement`): `bash scripts/verif
 |--------|---------|
 | `php scripts/verify_database_schema.php` | Compare `CREATE TABLE` names in `db/01_schema.sql` with live `information_schema` (catches partial imports). |
 | `php scripts/verify_db_migrations.php` | Probe live DB against each `db/migrations/*.sql` file (Applied / Superseded / Not applied). Browser + CLI (Admin). `--json` / `?format=json`. Lib: `scripts/lib/itm_verify_db_migrations_report.php`. |
-| `php scripts/verify_bigint_table_review.php` | Live row counts, max `id`/`record_id`/`module_id`, column types, and AUTO_INCREMENT for BIGINT migration candidates (`audit_logs`, `modules_registry`, `company_module_access`, `company_module_share`, `employee_sidebar_preferences`, `system_access`). Browser + CLI (Administrator); browser landing `?run=1`; coloured `[PASS]`/`[FAIL]` report via `itm_script_output_begin()` (same shell as `verify_db_migrations.php`). Pair with `db/migrations/audit_logs_bigint.sql`. |
+| `php scripts/verify_bigint_table_review.php` | Live row counts, max `id`/`record_id`/`module_id`, column types, and AUTO_INCREMENT for BIGINT migration candidates (`audit_logs`, `modules_registry`, `company_module_access`, `company_module_share`, `employee_sidebar_preferences`, `system_access`). Browser + CLI (Administrator); browser landing `?run=1`; coloured `[PASS]`/`[FAIL]` report via `itm_script_output_begin()` (same shell as `verify_db_migrations.php`). Includes static **300 staff × 5 companies** scale projection (compare with live counts). Pair with `db/migrations/audit_logs_bigint.sql`. |
 
 ### BIGINT migration review (`verify_bigint_table_review.php`)
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/verify_bigint_table_review.php` | Administrator browser + CLI probe before/after `db/migrations/audit_logs_bigint.sql`: per-table row counts and max IDs, `information_schema` column types for `id` / `record_id` / `module_id`, AUTO_INCREMENT values, and guidance lines. Browser: `scripts/verify_bigint_table_review.php?run=1` (usage landing, ← Scripts index, HTML summary table + coloured `<pre>` log). CLI: `php scripts/verify_bigint_table_review.php`. Exit `1` when a count/type probe fails. **Not** a no-auth script — use `count_db_tables.php` for login-free table totals only. |
+| `php scripts/verify_bigint_table_review.php` | Administrator browser + CLI probe before/after `db/migrations/audit_logs_bigint.sql`: per-table row counts and max IDs, `information_schema` column types for `id` / `record_id` / `module_id`, AUTO_INCREMENT values, guidance lines, and static **300 staff × 5 companies** scale projection (HTML tables in browser + coloured `<pre>` section). Browser: `scripts/verify_bigint_table_review.php?run=1` (usage landing, ← Scripts index, HTML summary table + coloured `<pre>` log). CLI: `php scripts/verify_bigint_table_review.php`. Exit `1` when a count/type probe fails. **Not** a no-auth script — use `count_db_tables.php` for login-free table totals only. |
 
 Catalog: `scripts/scripts.php`.
 
@@ -1207,7 +1207,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_qr_share_modules.php` — Passwords, Bookmarks, Todo, Events, Private Contacts, Explorer, Floor Plans, Rack Planner, and CRUD record share (`departments` via `includes/itm_crud_record_share.php`) temporary QR/code sessions (`share_sessions`, `join.php`, module `*_share_helpers.php`, shared `includes/itm_qr_share.php`). Inventory: `docs/CRUD_RECORD_SHARE.md`.
 - `php scripts/verify_module_share.php` — `company_module_share` opt-out matrix + `has_module_share_access()`; requires `share_sessions` table
 - `php scripts/verify_db_migrations.php` — each `db/migrations/*.sql` vs live schema/data (Applied / Superseded / Not applied)
-- `php scripts/verify_bigint_table_review.php` — BIGINT migration review tables: row counts, max IDs, column types, AUTO_INCREMENT; browser `?run=1` + coloured report shell (Administrator); pair with `db/migrations/audit_logs_bigint.sql`
+- `php scripts/verify_bigint_table_review.php` — BIGINT migration review tables: row counts, max IDs, column types, AUTO_INCREMENT; browser `?run=1` + coloured report shell (Administrator); static 300×5 scale projection; pair with `db/migrations/audit_logs_bigint.sql`
 - `php scripts/verify_whatsapp_share.php` — WhatsApp deep-link message/url helpers (`includes/itm_whatsapp_share.php`, `js/itm-whatsapp-share.js`); browser catalog uses `itm_script_output_nl()` / `itm_script_format_status_line()` (not `fwrite(STDOUT)`).
 - `php scripts/verify_outlook_share.php` — Outlook/mail compose helpers (`includes/itm_outlook_share.php`, `js/itm-outlook-share.js`)
 - `php scripts/verify_request_password.php` — `modules/request_password/` workflow + delete guard
