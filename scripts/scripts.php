@@ -652,10 +652,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Copies flattened CRUD from <code>modules/departments/</code> into the 24 child/support table module allowlist. <strong>Default = dry-run</strong> (<code>?run=1</code> compact summary; <code>?verbose=1</code> lists slugs); writes with CLI <code>--apply</code> or browser <code>?run=1&amp;apply=1</code> (Admin). Verify: <code>verify_scaffold_departments_child_table_modules.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="Codebase">
+                <tr data-tags="departments">
                     <td><a href="verify_scaffold_departments_child_table_modules.php" target="_blank" rel="nofollow noreferrer">verify_scaffold_departments_child_table_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">departments</span></span></td>
                     <td>Three-step gate for departments child-table modules: folder <code>index.php</code> + <code>$crud_table</code>, schema tables-without-module count, sidebar catalog ids. Exit <code>1</code> on failure.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
@@ -766,10 +766,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Counts live tables in <code>information_schema</code> for <code>itmanagement</code>, echoes the total as plain text, and overwrites <code>scripts/number_db_tables.txt</code> with the same number (for external monitors). <strong>No login required.</strong></td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="audit_logs">
                     <td><a href="verify_bigint_table_review.php" target="_blank" rel="nofollow noreferrer">verify_bigint_table_review.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">audit_logs</span></span></td>
                     <td>Reports live row counts, max IDs, and <code>id</code>/<code>record_id</code>/<code>module_id</code> column types for BIGINT migration review tables. Pair with <code>db/migrations/audit_logs_bigint.sql</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
@@ -1886,17 +1886,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Static gate: <code>modules/hotel_bookings</code> portal rate plan <code>__add_new__</code> option, <code>hb_booking_end_form_page()</code> modal placement outside <code>.content</code>, and <code>js/hotel-bookings-rate-plan-select.js</code> quick-add handler.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="hotel_bookings booking">
+                <tr data-tags="Codebase">
                     <td><a href="check_hospitality_date_format.php" target="_blank" rel="nofollow noreferrer">check_hospitality_date_format.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="module">hotel_bookings</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="module">booking</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
                     <td>Hospitality subset of <code>check_date_format.php</code> — <code>modules/hotel*</code> + <code>booking/</code> stay dates (<code>d/M/Y</code>).</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="modules includes">
+                <tr data-tags="Codebase">
                     <td><a href="check_date_format.php" target="_blank" rel="nofollow noreferrer">check_date_format.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="path">includes/itm_date_format.php</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
                     <td>Project-wide date format gate: UK <code>dd/mm/yyyy</code>, hospitality <code>d/M/Y</code> (<code>31/Aug/2026</code>), audit stamps, hospitality static scan, scaffold cell-hook info.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>

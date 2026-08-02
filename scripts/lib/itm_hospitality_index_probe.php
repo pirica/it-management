@@ -6,9 +6,11 @@
  */
 define('ITM_CLI_SCRIPT', true);
 
+require_once __DIR__ . '/itm_script_stdio.php';
+
 $slug = isset($argv[1]) ? trim((string) $argv[1]) : '';
 if ($slug === '' || !preg_match('/^[a-z0-9_]+$/', $slug)) {
-    fwrite(STDERR, "Usage: php itm_hospitality_index_probe.php <module_slug>\n");
+    itm_script_write_stderr("Usage: php itm_hospitality_index_probe.php <module_slug>\n");
     exit(2);
 }
 
@@ -25,7 +27,7 @@ $_SESSION['role_name'] = 'admin';
 
 $indexPath = $repoRoot . '/modules/' . $slug . '/index.php';
 if (!is_file($indexPath)) {
-    fwrite(STDERR, "Missing index: modules/{$slug}/index.php\n");
+    itm_script_write_stderr( "Missing index: modules/{$slug}/index.php\n");
     exit(1);
 }
 
@@ -53,7 +55,7 @@ restore_error_handler();
 
 if (!empty($issues)) {
     foreach (array_slice($issues, 0, 5) as $issue) {
-        fwrite(STDERR, $issue . "\n");
+        itm_script_write_stderr( $issue . "\n");
     }
     exit(1);
 }

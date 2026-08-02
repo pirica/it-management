@@ -6,9 +6,11 @@
  */
 define('ITM_CLI_SCRIPT', true);
 
+require_once __DIR__ . '/itm_script_stdio.php';
+
 $mode = isset($argv[1]) ? trim((string) $argv[1]) : 'create';
 if (!in_array($mode, ['create', 'edit'], true)) {
-    fwrite(STDERR, "Usage: php itm_hospitality_booking_form_probe.php [create|edit]\n");
+    itm_script_write_stderr("Usage: php itm_hospitality_booking_form_probe.php [create|edit]\n");
     exit(2);
 }
 
@@ -54,7 +56,7 @@ if ($mode === 'edit') {
     }
   }
   if ($bid < 1) {
-    fwrite(STDERR, "No hotel_bookings row and probe insert failed for company 1\n");
+    itm_script_write_stderr( "No hotel_bookings row and probe insert failed for company 1\n");
     exit(1);
   }
   $_GET['id'] = $bid;
@@ -85,31 +87,31 @@ restore_error_handler();
 
 if (!empty($issues)) {
     foreach (array_slice($issues, 0, 5) as $issue) {
-        fwrite(STDERR, $issue . "\n");
+        itm_script_write_stderr( $issue . "\n");
     }
     exit(1);
 }
 
 if (strpos($html, 'id="hb-booking-portal-rate-plan-id"') === false) {
-    fwrite(STDERR, "{$entry}: missing portal rate plan select\n");
+    itm_script_write_stderr( "{$entry}: missing portal rate plan select\n");
     exit(1);
 }
 if (strpos($html, 'value="__add_new__"') === false) {
-    fwrite(STDERR, "{$entry}: missing __add_new__ option\n");
+    itm_script_write_stderr( "{$entry}: missing __add_new__ option\n");
     exit(1);
 }
 if (strpos($html, 'id="hb-rate-plan-modal"') === false) {
-    fwrite(STDERR, "{$entry}: missing rate plan modal\n");
+    itm_script_write_stderr( "{$entry}: missing rate plan modal\n");
     exit(1);
 }
 $modalPos = strpos($html, 'id="hb-rate-plan-modal"');
 $scriptPos = strpos($html, 'hotel-bookings-rate-plan-select.js');
 if ($scriptPos === false) {
-    fwrite(STDERR, "{$entry}: missing hotel-bookings-rate-plan-select.js script tag\n");
+    itm_script_write_stderr( "{$entry}: missing hotel-bookings-rate-plan-select.js script tag\n");
     exit(1);
 }
 if ($modalPos === false || $modalPos > $scriptPos) {
-    fwrite(STDERR, "{$entry}: modal must appear before rate-plan select script tag\n");
+    itm_script_write_stderr( "{$entry}: modal must appear before rate-plan select script tag\n");
     exit(1);
 }
 

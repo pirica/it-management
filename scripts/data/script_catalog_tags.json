@@ -409,6 +409,15 @@
         ],
         "override": false
     },
+    "verify_scaffold_departments_child_table_modules.php": {
+        "tags": [
+            "departments"
+        ],
+        "tables": [
+            "departments"
+        ],
+        "override": false
+    },
     "generate_tests.php": {
         "tags": [
             "Codebase"
@@ -501,6 +510,15 @@
             "Codebase"
         ],
         "tables": [],
+        "override": false
+    },
+    "verify_bigint_table_review.php": {
+        "tags": [
+            "audit_logs"
+        ],
+        "tables": [
+            "audit_logs"
+        ],
         "override": false
     },
     "verify_db_migrations.php": {
@@ -1877,6 +1895,9 @@
             "booking_rooms_types",
             "hotel_bookings",
             "hotel_booking_hotels",
+            "hotel_booking_rooms",
+            "hotel_booking_room_type_blocks",
+            "hotel_booking_room_type_rate_overrides",
             "notes"
         ],
         "override": false
@@ -1888,6 +1909,20 @@
         "tables": [
             "hotel_bookings"
         ],
+        "override": false
+    },
+    "check_hospitality_date_format.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "check_date_format.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
         "override": false
     },
     "verify_appointment.php": {
