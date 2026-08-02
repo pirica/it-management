@@ -14,7 +14,7 @@ Contains shared PHP logic, helper functions, and visibility filters used across 
 - **Security Functions**: Use `itm_is_safe_identifier` for dynamic SQL identifiers.
 
 ## 7. File Structure
-- **bootstrap_helpers.php** — shared bootstrap utilities including `itm_mysqli_connect()` (MySQL port / `host:port` parsing for `.env` `DB_PORT`).
+- **bootstrap_helpers.php** — shared bootstrap utilities including `itm_mysqli_connect()` (MySQL port / `host:port` parsing for `.env` `DB_PORT`) and `itm_release_session_lock()` (SSE / long-poll APIs release the PHP session write lock so other tabs load immediately).
 - **itm_cli_binary.php** — `itm_resolve_cli_php_binary()` / `itm_resolve_cli_mysql_binary()` (`.env` `PHP_EXE`, `MYSQL_EXE`); `itm_resolve_phpunit_cli_binary()` picks the first CLI `php.exe` with PHPUnit extensions (Dunebox under `D:\dunebox-v1.0.6`, Laragon portable sibling, or `PHP_BINARY`).
 - **alerts_visibility.php** — centralized visibility logic for global/private alerts.
 - **itm_finance_attachments.php** — finance module file attachments (multi-upload, `finance/{company_id}/{module}/{document_key}/`, 5 MB, allowed extensions); loaded from `config/config.php`.

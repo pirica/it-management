@@ -16,6 +16,18 @@ if (!function_exists('itm_is_safe_identifier')) {
 }
 
 /**
+ * Release the PHP session write lock so long-lived requests (SSE) do not block other tabs.
+ */
+if (!function_exists('itm_release_session_lock')) {
+    function itm_release_session_lock()
+    {
+        if (function_exists('session_write_close') && session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+    }
+}
+
+/**
  * Checks whether a database table contains a given column.
  */
 if (!function_exists('itm_table_has_column')) {

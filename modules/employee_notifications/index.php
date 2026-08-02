@@ -159,17 +159,18 @@ function cr_humanize_field($field) {
 }
 
 /**
- * Checks if a field should be hidden specifically in the employee module view
+ * Checks if a field should be hidden on create/edit/list for module-specific tables.
  */
 function cr_is_hidden_employee_field($field) {
-    if (($GLOBALS['crud_table'] ?? '') !== 'employees') {
+    $table = (string)($GLOBALS['crud_table'] ?? '');
+    if ($table === 'employee_notifications') {
+        return in_array($field, ['company_id', 'employee_id', 'body', 'action_url', 'read_at', 'module_slug', 'record_id'], true);
+    }
+    if ($table !== 'employees') {
         return false;
     }
 
     $hidden = ['company_id', 'employee_id', 'location_id', 'location', 'employee_code'];
-    if ($crudTable === 'employee_notifications') {
-        $hidden = array_merge($hidden, ['body', 'action_url', 'read_at', 'module_slug', 'record_id']);
-    }
     return in_array($field, $hidden, true);
 }
 
@@ -864,8 +865,8 @@ $sortableColumns = array_map(static function ($col) {
     return $col['Field'];
 }, $uiColumns);
 
-$sort = (string)($_GET['sort'] ?? 'id');
-$dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
+$sort = (string)($_GET['sort'] ?? ($crud_table === 'employee_notifications' ? 'created_at' : 'id'));
+$dir = strtoupper((string)($_GET['dir'] ?? ($crud_table === 'employee_notifications' ? 'DESC' : 'DESC')));
 if (!in_array($sort, $sortableColumns, true)) {
     $sort = 'id';
 }
@@ -885,7 +886,7 @@ $totalPages = max(1, (int)ceil($totalRows / $perPage));
 $showBulkActions = ($totalRows >= $perPage);
 
 $companyTotalRows = $totalRows;
-if ($hasCompany && $company_id > 0) {
+if ($hasCompany && $company_id > 0 && $crud_table !== 'employee_notifications') {
     $companyCountSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . ' WHERE company_id=' . (int)$company_id;
     $companyCountRes = mysqli_query($conn, $companyCountSql);
     if ($companyCountRes && ($companyCountRow = mysqli_fetch_assoc($companyCountRes))) {

@@ -19,12 +19,18 @@ if ($companyId <= 0 || $employeeId <= 0) {
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 
+if ($method === 'POST') {
+    itm_require_post_csrf();
+}
+
+// Why: SSE holds the connection ~55s; release the session lock so other pages load immediately.
+itm_release_session_lock();
+
 if ($method === 'GET' && isset($_GET['stream']) && (string)$_GET['stream'] === '1') {
     itm_employee_notifications_sse_stream($conn, $companyId, $employeeId);
 }
 
 if ($method === 'POST') {
-    itm_require_post_csrf();
     $action = trim((string)($_POST['action'] ?? ''));
     if ($action === 'mark_read') {
         $notificationId = (int)($_POST['notification_id'] ?? 0);

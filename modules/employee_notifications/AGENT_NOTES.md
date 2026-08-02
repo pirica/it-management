@@ -11,6 +11,7 @@ Per-employee in-app notification inbox (metadata rows created by `itm_notify_emp
 ## 4. Business Rules (Critical for Agents)
 
 - List/view/forms hide `company_id` and internal routing columns (`employee_id`, `module_slug`, `record_id`, `action_url`, `body` on list).
+- **List performance:** default sort `created_at DESC`; skip company-wide `COUNT(*)` (scoped to session `employee_id` only). Header SSE must release the PHP session lock (`itm_release_session_lock()` in `modules/notifications/api.php`) or inbox navigation blocks until the stream ends.
 - **List queries must filter** `employee_id = $_SESSION['employee_id']` (inbox is private to the signed-in user).
 - `body` must remain metadata — no vault/plaintext private content.
 
