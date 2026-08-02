@@ -314,6 +314,25 @@ if (!function_exists('itm_notify_event_assigned')) {
     }
 }
 
+if (!function_exists('itm_notify_alert_assigned')) {
+    function itm_notify_alert_assigned($conn, $companyId, $assigneeEmployeeId, $alertId, $alertTitle, $actorEmployeeId = 0)
+    {
+        $assigneeEmployeeId = (int)$assigneeEmployeeId;
+        $alertId = (int)$alertId;
+        if ($assigneeEmployeeId <= 0 || $alertId <= 0 || $assigneeEmployeeId === (int)$actorEmployeeId) {
+            return false;
+        }
+        return itm_notify_employee($conn, $assigneeEmployeeId, [
+            'company_id' => (int)$companyId,
+            'module_slug' => 'alerts',
+            'record_id' => $alertId,
+            'title' => 'Alert assigned to you',
+            'body' => trim((string)$alertTitle) !== '' ? trim((string)$alertTitle) : 'Open the alert for details.',
+            'action_url' => itm_employee_notification_build_action_url('alerts', $alertId),
+        ]);
+    }
+}
+
 if (!function_exists('itm_notify_live_chat_conversation_assigned')) {
     function itm_notify_live_chat_conversation_assigned($conn, $companyId, $assigneeEmployeeId, $conversationId, $summary = '', $actorEmployeeId = 0)
     {

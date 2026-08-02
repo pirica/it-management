@@ -31,6 +31,7 @@ Rows store **metadata only** (title, short body, module slug, record id, link). 
 | Warranty expiring | `scripts/run_email_alert_rules.php` (equipment assignee) |
 | Todo assigned | `modules/todo/index.php` |
 | Event assigned | `modules/events/index.php` |
+| Alert assigned | `modules/alerts/index.php` (`assigned_to_employee_id` create/edit) |
 | Email to/cc match | `includes/itm_email.php` → `itm_email_log_send()` on successful send |
 | Note shared | `modules/notes/index.php` |
 | Ticket `@mention` | `modules/ticket_comments/index.php` (save) + **F2** picker (`js/ticket-comment-mentions.js`) |
