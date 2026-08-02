@@ -68,7 +68,13 @@ if (!$isCli) {
     echo '<thead><tr><th>Migration file</th><th>Status</th><th>Detail</th></tr></thead><tbody>';
     foreach ($report['migrations'] as $row) {
         $status = (string)$row['status'];
-        $color = $status === 'fail' ? '#cf222e' : ($status === 'superseded' ? '#57606a' : '#1a7f37');
+        if ($status === 'fail') {
+            $color = '#cf222e';
+        } elseif ($status === 'superseded' || $status === 'info') {
+            $color = '#57606a';
+        } else {
+            $color = '#1a7f37';
+        }
         echo '<tr>';
         echo '<td><code>' . htmlspecialchars((string)$row['file'], ENT_QUOTES, 'UTF-8') . '</code></td>';
         echo '<td style="color:' . $color . ';font-weight:600;">' . htmlspecialchars((string)$row['label'], ENT_QUOTES, 'UTF-8') . '</td>';
@@ -80,8 +86,10 @@ if (!$isCli) {
 
 echo colorText('db/migrations live DB verification', 'info') . $nl;
 echo '[INFO] Database: ' . (string)$report['database'] . $nl;
+echo '[INFO] Migration files: ' . (int)($report['file_count'] ?? count($report['migrations'])) . $nl;
 echo '[INFO] Pass: ' . (int)$report['summary']['pass']
     . ' | Superseded: ' . (int)$report['summary']['superseded']
+    . ' | Info: ' . (int)($report['summary']['info'] ?? 0)
     . ' | Fail: ' . (int)$report['summary']['fail'] . $nl;
 echo str_repeat('-', 72) . $nl;
 
@@ -91,7 +99,7 @@ foreach ($report['migrations'] as $row) {
     if ($row['status'] === 'fail') {
         $prefix = '[FAIL]';
         $type = 'fail';
-    } elseif ($row['status'] === 'superseded') {
+    } elseif ($row['status'] === 'superseded' || $row['status'] === 'info') {
         $prefix = '[INFO]';
         $type = 'info';
     }

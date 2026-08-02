@@ -627,7 +627,7 @@ Local full import (requires MySQL, password `itmanagement`): `bash scripts/verif
 | Script | Purpose |
 |--------|---------|
 | `php scripts/verify_database_schema.php` | Compare `CREATE TABLE` names in `db/01_schema.sql` with live `information_schema` (catches partial imports). |
-| `php scripts/verify_db_migrations.php` | Probe live DB against each `db/migrations/*.sql` file (Applied / Superseded / Not applied). Browser + CLI (Admin). `--json` / `?format=json`. Lib: `scripts/lib/itm_verify_db_migrations_report.php`. |
+| `php scripts/verify_db_migrations.php` | Glob every `db/migrations/*.sql` file (natural sort) and probe live DB state (Applied / Superseded / Not applied / DML only). Generic probes parse `CREATE TABLE` / `CREATE TRIGGER` from each file; a few DML/share files use custom handlers. Browser + CLI (Admin). `--json` / `?format=json`. Lib: `scripts/lib/itm_verify_db_migrations_report.php`. |
 | `php scripts/verify_bigint_table_review.php` | Live row counts, max `id`/`record_id`/`module_id`, column types, and AUTO_INCREMENT for BIGINT migration candidates (`audit_logs`, `modules_registry`, `company_module_access`, `company_module_share`, `employee_sidebar_preferences`, `system_access`). Browser + CLI (Administrator); browser landing `?run=1`; coloured `[PASS]`/`[FAIL]` report via `itm_script_output_begin()` (same shell as `verify_db_migrations.php`). Includes static **300 staff × 5 companies** scale projection (compare with live counts). Pair with `db/migrations/audit_logs_bigint.sql`. |
 
 ### BIGINT migration review (`verify_bigint_table_review.php`)
