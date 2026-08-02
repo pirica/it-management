@@ -1665,6 +1665,10 @@ if ($crud_action === 'delete') {
             }
             mysqli_stmt_close($stmt);
         }
+        if ($crud_table === 'catalogs') {
+            require_once ROOT_PATH . 'includes/itm_search_index.php';
+            itm_search_index_after_module_clear($conn, (int)$company_id, 'catalogs');
+        }
         header('Location: ' . $listUrl);
         exit;
     }
@@ -1704,6 +1708,12 @@ if ($crud_action === 'delete') {
         } else {
             $_SESSION['crud_error'] = 'No records selected for deletion.';
         }
+        if ($crud_table === 'catalogs' && !empty($idList)) {
+            require_once ROOT_PATH . 'includes/itm_search_index.php';
+            foreach ($idList as $catalogId) {
+                itm_search_index_after_module_delete($conn, 'catalogs', (int)$company_id, (int)$catalogId);
+            }
+        }
         header('Location: ' . $listUrl);
         exit;
     }
@@ -1726,6 +1736,10 @@ if ($crud_action === 'delete') {
                 $_SESSION['crud_error'] = itm_format_db_constraint_error(mysqli_stmt_errno($stmt), mysqli_stmt_error($stmt));
             }
             mysqli_stmt_close($stmt);
+        }
+        if ($crud_table === 'catalogs') {
+            require_once ROOT_PATH . 'includes/itm_search_index.php';
+            itm_search_index_after_module_delete($conn, 'catalogs', (int)$company_id, $id);
         }
     }
     header('Location: ' . $listUrl);
@@ -1953,7 +1967,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, $types, ...$params);
                 if (mysqli_stmt_execute($stmt)) {
+                    $savedCatalogId = (int)mysqli_insert_id($conn);
                     mysqli_stmt_close($stmt);
+                    if ($crud_table === 'catalogs' && $savedCatalogId > 0) {
+                        require_once ROOT_PATH . 'includes/itm_search_index.php';
+                        itm_search_index_after_module_save($conn, 'catalogs', (int)$company_id, $savedCatalogId);
+                    }
                     header('Location: ' . $listUrl);
                     exit;
                 }
@@ -1979,6 +1998,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 mysqli_stmt_bind_param($stmt, $types, ...$params);
                 if (mysqli_stmt_execute($stmt)) {
                     mysqli_stmt_close($stmt);
+                    if ($crud_table === 'catalogs' && $editId > 0) {
+                        require_once ROOT_PATH . 'includes/itm_search_index.php';
+                        itm_search_index_after_module_save($conn, 'catalogs', (int)$company_id, $editId);
+                    }
                     header('Location: ' . $listUrl);
                     exit;
                 }

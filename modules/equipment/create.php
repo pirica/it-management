@@ -2345,6 +2345,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($error === '') {
                 mysqli_commit($conn);
+                require_once '../../includes/itm_search_index.php';
+                itm_search_index_after_module_save($conn, 'equipment', (int)$company_id, (int)$id);
             } else {
                 mysqli_rollback($conn);
             }

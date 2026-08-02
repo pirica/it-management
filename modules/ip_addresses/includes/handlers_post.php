@@ -226,6 +226,9 @@ if ($crud_action === 'delete') {
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+        } elseif ($crud_table === 'ip_addresses') {
+            require_once ROOT_PATH . 'includes/itm_search_index.php';
+            itm_search_index_after_module_clear($conn, (int)$company_id, 'ip_addresses');
         }
         header('Location: ' . $listUrl);
         exit;
@@ -246,6 +249,11 @@ if ($crud_action === 'delete') {
             $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where;
             if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
                 $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+            } elseif ($crud_table === 'ip_addresses') {
+                require_once ROOT_PATH . 'includes/itm_search_index.php';
+                foreach ($idList as $ipAddressId) {
+                    itm_search_index_after_module_delete($conn, 'ip_addresses', (int)$company_id, (int)$ipAddressId);
+                }
             }
         } else {
             $_SESSION['crud_error'] = 'No records selected for deletion.';
@@ -261,6 +269,9 @@ if ($crud_action === 'delete') {
         $deleteSql = 'DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1';
         if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
+        } elseif ($crud_table === 'ip_addresses') {
+            require_once ROOT_PATH . 'includes/itm_search_index.php';
+            itm_search_index_after_module_delete($conn, 'ip_addresses', (int)$company_id, $id);
         }
     }
     header('Location: ' . $listUrl);

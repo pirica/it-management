@@ -181,6 +181,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Persist selected system access permissions in the employee_system_access matrix
             esa_save_employee_access_ids($conn, (int)$company_id, $newEmployeeId, $selectedSystemAccessIds);
             itm_employee_sync_department_assignments($conn, (int)$company_id, $newEmployeeId, $selectedDepartmentIds, (int)($_SESSION['employee_id'] ?? 0));
+            require_once '../../includes/itm_search_index.php';
+            itm_search_index_after_module_save($conn, 'employees', (int)$company_id, $newEmployeeId);
             header('Location: index.php');
             exit;
             }

@@ -355,6 +355,8 @@ function itm_ipam_after_crud_save(
                 }
             }
         }
+        require_once __DIR__ . '/itm_search_index.php';
+        itm_search_index_after_module_save($conn, 'ip_addresses', $company_id, $recordId);
         return;
     }
 
