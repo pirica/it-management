@@ -14,10 +14,10 @@ JSON API for the global header notification bell (`includes/header.php`). Not a 
 
 ## 6. API Actions
 
-- **GET** `api.php?unread=0&limit=20` — `{ ok, unread_count, notifications[], inbox_url }`
+- **GET** `api.php?unread=0&limit=20` — `{ ok, unread_count, notifications[], inbox_url }` (responses send `Cache-Control: no-store`)
 - **GET** `api.php?stream=1` — SSE (`event: unread`) for live unread-count updates (~55s per connection; client reconnects)
 - **POST** `action=mark_read` + `notification_id` + CSRF
-- **POST** `action=mark_all_read` + CSRF
+- **POST** `action=mark_all_read` + CSRF — `itm_employee_notification_mark_all_read()` (tenant + `active = 1` scope aligned with unread count)
 
 ## 7. File Structure
 

@@ -508,13 +508,35 @@ if (!function_exists('itm_employee_notification_mark_read')) {
             return false;
         }
         $sql = 'UPDATE employee_notifications SET is_read = 1, read_at = NOW(), updated_by = ?
-                WHERE id = ? AND company_id = ? AND employee_id = ? AND deleted_at IS NULL';
+                WHERE id = ? AND company_id = ? AND employee_id = ? AND deleted_at IS NULL AND active = 1';
         $stmt = mysqli_prepare($conn, $sql);
         if (!$stmt) {
             return false;
         }
         $updatedBy = (int)($_SESSION['employee_id'] ?? 0);
         mysqli_stmt_bind_param($stmt, 'iiii', $updatedBy, $notificationId, $companyId, $employeeId);
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+        return $ok;
+    }
+}
+
+if (!function_exists('itm_employee_notification_mark_all_read')) {
+    function itm_employee_notification_mark_all_read($conn, $companyId, $employeeId)
+    {
+        $companyId = (int)$companyId;
+        $employeeId = (int)$employeeId;
+        if ($companyId <= 0 || $employeeId <= 0) {
+            return false;
+        }
+        $sql = 'UPDATE employee_notifications SET is_read = 1, read_at = NOW(), updated_by = ?
+                WHERE company_id = ? AND employee_id = ? AND is_read = 0 AND deleted_at IS NULL AND active = 1';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return false;
+        }
+        $updatedBy = (int)($_SESSION['employee_id'] ?? 0);
+        mysqli_stmt_bind_param($stmt, 'iii', $updatedBy, $companyId, $employeeId);
         $ok = mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
         return $ok;

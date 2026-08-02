@@ -42,7 +42,7 @@ if (!($conn instanceof mysqli)) {
     exit(1);
 }
 
-foreach (['itm_notify_employee', 'itm_employee_notification_unread_count', 'itm_employee_notifications_list_recent', 'itm_notify_ticket_assigned', 'itm_notify_alert_assigned', 'itm_notify_appointment_assigned', 'itm_notify_live_chat_conversation_assigned', 'itm_ticket_comment_extract_mention_usernames', 'itm_employee_notifications_sse_stream'] as $fn) {
+foreach (['itm_notify_employee', 'itm_employee_notification_unread_count', 'itm_employee_notifications_list_recent', 'itm_employee_notification_mark_all_read', 'itm_notify_ticket_assigned', 'itm_notify_alert_assigned', 'itm_notify_appointment_assigned', 'itm_notify_live_chat_conversation_assigned', 'itm_ticket_comment_extract_mention_usernames', 'itm_employee_notifications_sse_stream'] as $fn) {
     if (!function_exists($fn)) {
         en_verify_fail("Missing helper {$fn}()");
     } else {
@@ -123,7 +123,35 @@ if ($afterUnread >= $beforeUnread) {
     en_verify_pass('Unread count decreased after mark_read');
 }
 
-mysqli_query($conn, "DELETE FROM employee_notifications WHERE company_id = {$companyId} AND employee_id = {$recipientId} AND title = '" . mysqli_real_escape_string($conn, $title) . "'");
+$bulkTitle = 'MBQA-notification-bulk-' . bin2hex(random_bytes(4));
+if (!itm_notify_employee($conn, $recipientId, [
+    'company_id' => $companyId,
+    'module_slug' => 'tickets',
+    'record_id' => 1,
+    'title' => $bulkTitle,
+    'body' => 'Bulk mark probe',
+    'action_url' => $actionUrl,
+])) {
+    en_verify_fail('itm_notify_employee bulk insert failed');
+} else {
+    en_verify_pass('itm_notify_employee created bulk probe row');
+}
+
+$bulkBefore = itm_employee_notification_unread_count($conn, $companyId, $recipientId);
+if (!itm_employee_notification_mark_all_read($conn, $companyId, $recipientId)) {
+    en_verify_fail('mark_all_read failed');
+} else {
+    en_verify_pass('mark_all_read succeeded');
+}
+
+$bulkAfter = itm_employee_notification_unread_count($conn, $companyId, $recipientId);
+if ($bulkAfter !== 0) {
+    en_verify_fail('Unread count should be 0 after mark_all_read');
+} else {
+    en_verify_pass('mark_all_read cleared unread count');
+}
+
+mysqli_query($conn, "DELETE FROM employee_notifications WHERE company_id = {$companyId} AND employee_id = {$recipientId} AND title IN ('" . mysqli_real_escape_string($conn, $title) . "','" . mysqli_real_escape_string($conn, $bulkTitle) . "')");
 
 $actorId = $employees[0];
 $alertTitle = 'MBQA-alert-self-' . bin2hex(random_bytes(4));
@@ -205,6 +233,16 @@ if (!is_file($apiPath)) {
     } else {
         en_verify_pass('notifications api.php releases PHP session lock');
     }
+    if (strpos($apiSource, 'Cache-Control: no-store') === false) {
+        en_verify_fail('notifications api.php must send Cache-Control: no-store');
+    } else {
+        en_verify_pass('notifications api.php disables HTTP caching');
+    }
+    if (strpos($apiSource, 'itm_employee_notification_mark_all_read') === false) {
+        en_verify_fail('notifications api.php must call itm_employee_notification_mark_all_read()');
+    } else {
+        en_verify_pass('notifications api.php uses mark_all_read helper');
+    }
 }
 
 $jsPath = dirname(__DIR__) . '/js/notifications.js';
@@ -212,6 +250,12 @@ if (!is_file($jsPath)) {
     en_verify_fail('js/notifications.js missing');
 } else {
     en_verify_pass('js/notifications.js present');
+    $jsSource = (string)@file_get_contents($jsPath);
+    if (strpos($jsSource, "cache: 'no-store'") === false) {
+        en_verify_fail('notifications.js must use cache: no-store on fetch requests');
+    } else {
+        en_verify_pass('notifications.js disables fetch cache for API calls');
+    }
 }
 
 if (!function_exists('has_module_access') || !has_module_access($conn, $companyId, 'notifications')) {
