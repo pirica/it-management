@@ -1894,6 +1894,20 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub"><code>php scripts/seed_hotel_booking_sample_photos.php --apply</code></td>
                 </tr>
                 <tr data-tags="Mixed">
+                    <td><a href="run_hotel_booking_distribution_webhook_queue.php" target="_blank" rel="nofollow noreferrer">run_hotel_booking_distribution_webhook_queue.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_webhook_queue</span></span></td>
+                    <td>Retry pending/failed outbound distribution webhook deliveries with exponential backoff; rows exceeding <code>max_attempts</code> move to <code>dead</code>.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/run_hotel_booking_distribution_webhook_queue.php</code></td>
+                </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="verify_hotel_booking_distribution_http.php" target="_blank" rel="nofollow noreferrer">verify_hotel_booking_distribution_http.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_channels</span></span></td>
+                    <td>HTTP regression for distribution API: probe auth (401/200), availability GET via curl with disposable channel API key.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_hotel_booking_distribution_http.php</code></td>
+                </tr>
+                <tr data-tags="Mixed">
                     <td><a href="run_hotel_booking_distribution_ari_sync.php" target="_blank" rel="nofollow noreferrer">run_hotel_booking_distribution_ari_sync.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_channels</span></span></td>
@@ -1904,7 +1918,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_hotel_booking_distribution.php" target="_blank" rel="nofollow noreferrer">verify_hotel_booking_distribution.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_channels</span></span></td>
-                    <td>Regression for partner distribution API: <code>hotel_booking_distribution_*</code> tables, API key hash/lookup, availability builder, and <code>modules/hotel_booking_api/api.php</code> auth bypass.</td>
+                    <td>Regression for partner distribution API: <code>hotel_booking_distribution_*</code> tables (phase 3 queue/restrictions/rate-plan mappings), API key hash/lookup, signature/checksum/ACK helpers, availability builder, and <code>modules/hotel_booking_api/api.php</code> auth bypass.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">

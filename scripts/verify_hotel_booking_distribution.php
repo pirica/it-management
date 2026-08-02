@@ -40,6 +40,9 @@ $tables = [
     'hotel_booking_distribution_mappings',
     'hotel_booking_distribution_reservations',
     'hotel_booking_distribution_ari_events',
+    'hotel_booking_distribution_rate_plan_mappings',
+    'hotel_booking_distribution_ari_restrictions',
+    'hotel_booking_distribution_webhook_queue',
 ];
 foreach ($tables as $t) {
     $res = mysqli_query($conn, "SHOW TABLES LIKE '" . mysqli_real_escape_string($conn, $t) . "'");
@@ -111,6 +114,91 @@ if (!function_exists('itm_hotel_booking_distribution_push_ari_to_webhook')) {
     hbd_fail('webhook push helper missing');
 } else {
     hbd_pass('webhook push helper loaded');
+}
+
+$phase3Helpers = [
+    'itm_hotel_booking_distribution_encrypt_secret',
+    'itm_hotel_booking_distribution_verify_inbound_signature',
+    'itm_hotel_booking_distribution_enqueue_webhook',
+    'itm_hotel_booking_distribution_enrich_ari_snapshot',
+    'itm_hotel_booking_distribution_ari_snapshot_checksum',
+    'itm_hotel_booking_distribution_should_skip_delta_push',
+    'itm_hotel_booking_distribution_build_reservation_ack',
+    'itm_hotel_booking_distribution_build_reservation_nack',
+    'itm_hotel_booking_distribution_mark_reservation_ack',
+    'itm_hotel_booking_distribution_booking_com_api_request',
+];
+foreach ($phase3Helpers as $fn) {
+    if (!function_exists($fn)) {
+        hbd_fail("phase3 helper missing: {$fn}");
+    } else {
+        hbd_pass("phase3 helper {$fn}");
+    }
+}
+
+$secretPlain = 'test_partner_secret_' . substr(sha1((string) microtime(true)), 0, 8);
+$secretEnc = itm_hotel_booking_distribution_encrypt_secret($secretPlain);
+if ($secretEnc !== '' && itm_hotel_booking_distribution_decrypt_secret($secretEnc) === $secretPlain) {
+    hbd_pass('partner secret encrypt round-trip');
+} else {
+    hbd_fail('partner secret encrypt round-trip');
+}
+
+$signChannel = ['webhook_signing_secret_encrypted' => $secretEnc];
+$rawBody = '{"test":"payload"}';
+$_SERVER['HTTP_X_ITM_SIGNATURE'] = hash_hmac('sha256', $rawBody, $secretPlain);
+if (itm_hotel_booking_distribution_verify_inbound_signature($signChannel, $rawBody)) {
+    hbd_pass('inbound HMAC signature valid');
+} else {
+    hbd_fail('inbound HMAC signature valid');
+}
+unset($_SERVER['HTTP_X_ITM_SIGNATURE']);
+$_SERVER['HTTP_X_ITM_SIGNATURE'] = 'invalid';
+if (!itm_hotel_booking_distribution_verify_inbound_signature($signChannel, $rawBody)) {
+    hbd_pass('inbound HMAC signature rejects invalid');
+} else {
+    hbd_fail('inbound HMAC signature rejects invalid');
+}
+unset($_SERVER['HTTP_X_ITM_SIGNATURE']);
+
+$snapshotSample = [
+    'success' => true,
+    'hotel_id' => 1,
+    'start_date' => '2026-12-01',
+    'end_date' => '2026-12-03',
+    'inventory' => [],
+];
+$checksum1 = itm_hotel_booking_distribution_ari_snapshot_checksum($snapshotSample);
+$checksum2 = itm_hotel_booking_distribution_ari_snapshot_checksum($snapshotSample);
+if ($checksum1 === $checksum2 && strlen($checksum1) === 64) {
+    hbd_pass('ARI snapshot checksum stable');
+} else {
+    hbd_fail('ARI snapshot checksum stable');
+}
+$channelChecksum = ['last_ari_push_checksum' => $checksum1];
+if (itm_hotel_booking_distribution_should_skip_delta_push($channelChecksum, $snapshotSample, false)) {
+    hbd_pass('delta push skip when checksum matches');
+} else {
+    hbd_fail('delta push skip when checksum matches');
+}
+if (!itm_hotel_booking_distribution_should_skip_delta_push($channelChecksum, $snapshotSample, true)) {
+    hbd_pass('force push bypasses delta skip');
+} else {
+    hbd_fail('force push bypasses delta skip');
+}
+
+$ackChannel = ['standard' => 'booking_com', 'partner_property_id' => '12345'];
+$ack = itm_hotel_booking_distribution_build_reservation_ack($ackChannel, ['external_reservation_id' => 'EXT-1', 'reservation_id' => 99], 'book');
+if (($ack['reservation']['acknowledgement'] ?? '') === 'ACK') {
+    hbd_pass('booking_com ACK payload');
+} else {
+    hbd_fail('booking_com ACK payload');
+}
+$nack = itm_hotel_booking_distribution_build_reservation_nack($ackChannel, 'no_availability', 'Sold out');
+if (($nack['acknowledgement'] ?? '') === 'NACK') {
+    hbd_pass('booking_com NACK payload');
+} else {
+    hbd_fail('booking_com NACK payload');
 }
 
 $otaXml = '<?xml version="1.0"?><OTA_HotelAvailRQ xmlns="http://www.opentravel.org/OTA/2003/05"><AvailRequestSegments><AvailRequestSegment><StayDateRange Start="2026-12-01" End="2026-12-03"/><HotelSearchCriteria><Criterion><HotelRef HotelCode="HTL1"/></Criterion></HotelSearchCriteria></AvailRequestSegment></AvailRequestSegments></OTA_HotelAvailRQ>';

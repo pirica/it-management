@@ -153,6 +153,20 @@ if (!function_exists('itm_hotel_booking_distribution_authenticate_or_exit')) {
             ]);
         }
         itm_hotel_booking_distribution_enforce_rate_limit($conn, $channel);
+        $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+        if ($method === 'POST' && !function_exists('itm_hotel_booking_distribution_verify_inbound_signature')) {
+            require_once ROOT_PATH . 'includes/itm_hotel_booking_distribution_webhooks.php';
+        }
+        if ($method === 'POST' && function_exists('itm_hotel_booking_distribution_read_raw_body')) {
+            $rawBody = itm_hotel_booking_distribution_read_raw_body();
+            if ($rawBody !== '' && !itm_hotel_booking_distribution_verify_inbound_signature($channel, $rawBody)) {
+                itm_hotel_booking_distribution_send_json(401, [
+                    'success' => false,
+                    'error' => 'invalid_webhook_signature',
+                    'message' => 'Inbound signature verification failed.',
+                ]);
+            }
+        }
         return $channel;
     }
 }
@@ -484,6 +498,9 @@ if (!function_exists('itm_hotel_booking_distribution_create_booking')) {
         }
         mysqli_stmt_close($link);
         mysqli_commit($conn);
+        if (function_exists('itm_hotel_booking_distribution_mark_reservation_ack')) {
+            itm_hotel_booking_distribution_mark_reservation_ack($conn, $channelRow, $externalId, true, '', (string) ($payload['partner_message_id'] ?? ''));
+        }
         $currency = 'EUR';
         $cstmt = mysqli_prepare($conn, 'SELECT currency_code FROM hotel_booking_hotels WHERE id = ? AND company_id = ? LIMIT 1');
         if ($cstmt) {
@@ -503,6 +520,8 @@ if (!function_exists('itm_hotel_booking_distribution_create_booking')) {
             'room_id' => $roomId,
             'payment_amount' => $amount,
             'currency_code' => $currency,
+            'status' => 'confirmed',
+            'ack' => true,
         ];
     }
 }
@@ -731,17 +750,38 @@ if (!function_exists('itm_hotel_booking_distribution_modify_booking')) {
 }
 
 if (!function_exists('itm_hotel_booking_distribution_push_ari_to_webhook')) {
-    function itm_hotel_booking_distribution_push_ari_to_webhook($conn, array $channelRow, $hotelId, $startDate, $endDate) {
+    function itm_hotel_booking_distribution_push_ari_to_webhook($conn, array $channelRow, $hotelId, $startDate, $endDate, $forcePush = false) {
         $webhookUrl = trim((string) ($channelRow['webhook_url'] ?? ''));
-        if ($webhookUrl === '' || !preg_match('#^https?://#i', $webhookUrl)) {
-            return ['success' => false, 'error' => 'webhook_url_missing'];
-        }
+        $standard = (string) ($channelRow['standard'] ?? 'itm_native');
         $snapshot = itm_hotel_booking_distribution_build_ari_snapshot($conn, $channelRow, (int) $hotelId, $startDate, $endDate);
         if (empty($snapshot['success'])) {
             return $snapshot;
         }
-        $standard = (string) ($channelRow['standard'] ?? 'itm_native');
-        $body = $snapshot;
+        if (function_exists('itm_hotel_booking_distribution_should_skip_delta_push')
+            && itm_hotel_booking_distribution_should_skip_delta_push($channelRow, $snapshot, $forcePush)) {
+            return [
+                'success' => true,
+                'skipped' => true,
+                'reason' => 'delta_unchanged',
+                'hotel_id' => (int) $hotelId,
+            ];
+        }
+        $bookingComResult = null;
+        if ($standard === 'booking_com' && function_exists('itm_hotel_booking_distribution_booking_com_push_rates')) {
+            $creds = itm_hotel_booking_distribution_booking_com_credentials($channelRow);
+            if ($creds['username'] !== '' && $creds['password'] !== '') {
+                $bookingComResult = itm_hotel_booking_distribution_booking_com_push_rates($conn, $channelRow, $snapshot);
+            }
+        }
+        if ($webhookUrl === '' || !preg_match('#^https?://#i', $webhookUrl)) {
+            if ($bookingComResult !== null) {
+                if (!empty($bookingComResult['success']) && function_exists('itm_hotel_booking_distribution_store_ari_push_checksum')) {
+                    itm_hotel_booking_distribution_store_ari_push_checksum($conn, $channelRow, $snapshot);
+                }
+                return array_merge($bookingComResult, ['hotel_id' => (int) $hotelId, 'delivery' => 'booking_com_api']);
+            }
+            return ['success' => false, 'error' => 'webhook_url_missing'];
+        }
         $contentType = 'application/json; charset=utf-8';
         if ($standard === 'opentravel') {
             require_once ROOT_PATH . 'includes/itm_hotel_booking_distribution_opentravel.php';
@@ -757,29 +797,25 @@ if (!function_exists('itm_hotel_booking_distribution_push_ari_to_webhook')) {
         } else {
             $body = json_encode($snapshot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
-        $apiKey = itm_hotel_booking_distribution_extract_api_key();
-        $headers = [
-            'Content-Type: ' . $contentType,
-            'User-Agent: ITM-Hotel-Distribution/1.0',
-        ];
-        if ($apiKey !== '') {
-            $headers[] = 'X-API-Key: ' . $apiKey;
+        if (!function_exists('itm_hotel_booking_distribution_enqueue_webhook')) {
+            require_once ROOT_PATH . 'includes/itm_hotel_booking_distribution_webhooks.php';
         }
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'POST',
-                'header' => implode("\r\n", $headers),
-                'content' => is_string($body) ? $body : json_encode($body),
-                'timeout' => 30,
-                'ignore_errors' => true,
-            ],
-        ]);
-        $responseBody = @file_get_contents($webhookUrl, false, $context);
-        $httpCode = 0;
-        if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $m)) {
-            $httpCode = (int) $m[1];
+        $queueId = itm_hotel_booking_distribution_enqueue_webhook($conn, $channelRow, 'ari_webhook_push', $webhookUrl, $body, $contentType, (int) $hotelId);
+        $delivery = ['success' => false, 'queue_id' => $queueId];
+        if ($queueId > 0) {
+            $qstmt = mysqli_prepare($conn, 'SELECT * FROM hotel_booking_distribution_webhook_queue WHERE id = ? LIMIT 1');
+            if ($qstmt) {
+                mysqli_stmt_bind_param($qstmt, 'i', $queueId);
+                mysqli_stmt_execute($qstmt);
+                $qres = mysqli_stmt_get_result($qstmt);
+                $queueRow = $qres ? mysqli_fetch_assoc($qres) : null;
+                mysqli_stmt_close($qstmt);
+                if ($queueRow) {
+                    $delivery = itm_hotel_booking_distribution_deliver_webhook_queue_row($conn, $queueRow, $channelRow);
+                }
+            }
         }
-        $ok = $httpCode >= 200 && $httpCode < 300;
+        $ok = !empty($delivery['success']) || ($bookingComResult !== null && !empty($bookingComResult['success']));
         itm_hotel_booking_distribution_log_ari_event(
             $conn,
             $channelRow,
@@ -788,14 +824,21 @@ if (!function_exists('itm_hotel_booking_distribution_push_ari_to_webhook')) {
             'ari_webhook_push',
             'outbound',
             $ok ? 'delivered' : 'failed',
-            ['webhook_url' => $webhookUrl, 'start_date' => $startDate, 'end_date' => $endDate],
-            ['http_code' => $httpCode, 'body' => substr((string) $responseBody, 0, 4000)]
+            ['webhook_url' => $webhookUrl, 'start_date' => $startDate, 'end_date' => $endDate, 'queue_id' => $queueId],
+            ['delivery' => $delivery, 'booking_com' => $bookingComResult]
         );
+        if ($ok && function_exists('itm_hotel_booking_distribution_store_ari_push_checksum')) {
+            itm_hotel_booking_distribution_store_ari_push_checksum($conn, $channelRow, $snapshot);
+        }
         return [
             'success' => $ok,
-            'http_code' => $httpCode,
+            'http_code' => (int) ($delivery['http_code'] ?? ($bookingComResult['http_code'] ?? 0)),
             'webhook_url' => $webhookUrl,
             'hotel_id' => (int) $hotelId,
+            'queue_id' => $queueId,
+            'queue_status' => $delivery['status'] ?? null,
+            'booking_com_api' => $bookingComResult,
+            'skipped' => false,
         ];
     }
 }
@@ -888,7 +931,7 @@ if (!function_exists('itm_hotel_booking_distribution_build_ari_snapshot')) {
             mysqli_stmt_close($tstmt);
         }
         itm_hotel_booking_distribution_log_ari_event($conn, $channelRow, $hotelId, null, 'ari_snapshot', 'outbound', 'ok', ['start_date' => $startDate, 'end_date' => $endDate], $inventory);
-        return [
+        $snapshot = [
             'success' => true,
             'hotel_id' => $hotelId,
             'external_hotel_code' => itm_hotel_booking_distribution_mapping_external_code($conn, $companyId, $channelId, 'hotel', $hotelId),
@@ -896,6 +939,10 @@ if (!function_exists('itm_hotel_booking_distribution_build_ari_snapshot')) {
             'end_date' => $endDate,
             'inventory' => $inventory,
         ];
+        if (function_exists('itm_hotel_booking_distribution_enrich_ari_snapshot')) {
+            $snapshot = itm_hotel_booking_distribution_enrich_ari_snapshot($conn, $channelRow, $snapshot);
+        }
+        return $snapshot;
     }
 }
 

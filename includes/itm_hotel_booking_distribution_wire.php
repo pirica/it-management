@@ -27,8 +27,13 @@ if (!function_exists('itm_hotel_booking_distribution_resolve_wire_format')) {
 
 if (!function_exists('itm_hotel_booking_distribution_read_raw_body')) {
     function itm_hotel_booking_distribution_read_raw_body() {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
         $raw = file_get_contents('php://input');
-        return $raw === false ? '' : $raw;
+        $cached = $raw === false ? '' : $raw;
+        return $cached;
     }
 }
 
@@ -132,6 +137,14 @@ if (!function_exists('itm_hotel_booking_distribution_handle_reservation_action')
         if ($action === 'book') {
             $result = itm_hotel_booking_distribution_create_booking($conn, $channelRow, $payload);
             $result['_ota_action'] = 'book';
+            if (!empty($result['success']) && function_exists('itm_hotel_booking_distribution_build_reservation_ack')) {
+                $result = itm_hotel_booking_distribution_build_reservation_ack($channelRow, $result, 'book');
+            } elseif (empty($result['success']) && function_exists('itm_hotel_booking_distribution_build_reservation_nack')) {
+                $result = itm_hotel_booking_distribution_build_reservation_nack($channelRow, $result['error'] ?? 'error', $result['message'] ?? '');
+                if (!empty($payload['external_reservation_id']) && function_exists('itm_hotel_booking_distribution_mark_reservation_ack')) {
+                    itm_hotel_booking_distribution_mark_reservation_ack($conn, $channelRow, $payload['external_reservation_id'], false, (string) ($result['error'] ?? 'error'));
+                }
+            }
             return [$result, empty($result['success']) ? 400 : 201];
         }
         if ($action === 'modify') {
@@ -141,6 +154,14 @@ if (!function_exists('itm_hotel_booking_distribution_handle_reservation_action')
             if (empty($result['success'])) {
                 $err = (string) ($result['error'] ?? '');
                 $status = $err === 'reservation_not_found' ? 404 : ($err === 'no_availability' ? 409 : 400);
+                if (function_exists('itm_hotel_booking_distribution_build_reservation_nack')) {
+                    $result = itm_hotel_booking_distribution_build_reservation_nack($channelRow, $err, $result['message'] ?? '');
+                }
+            } elseif (function_exists('itm_hotel_booking_distribution_build_reservation_ack')) {
+                $result = itm_hotel_booking_distribution_build_reservation_ack($channelRow, $result, 'modify');
+                if (!empty($payload['external_reservation_id'])) {
+                    itm_hotel_booking_distribution_mark_reservation_ack($conn, $channelRow, $payload['external_reservation_id'], true);
+                }
             }
             return [$result, $status];
         }
@@ -151,6 +172,13 @@ if (!function_exists('itm_hotel_booking_distribution_handle_reservation_action')
             $status = !empty($result['success']) ? 200 : 400;
             if (!$result['success'] && ($result['error'] ?? '') === 'reservation_not_found') {
                 $status = 404;
+            }
+            if (!empty($result['success']) && function_exists('itm_hotel_booking_distribution_build_reservation_ack')) {
+                $result = itm_hotel_booking_distribution_build_reservation_ack($channelRow, $result, 'cancel');
+                itm_hotel_booking_distribution_mark_reservation_ack($conn, $channelRow, $externalId, true);
+            } elseif (empty($result['success']) && function_exists('itm_hotel_booking_distribution_build_reservation_nack')) {
+                $result = itm_hotel_booking_distribution_build_reservation_nack($channelRow, $result['error'] ?? 'error', $result['message'] ?? '');
+                itm_hotel_booking_distribution_mark_reservation_ack($conn, $channelRow, $externalId, false, (string) ($result['error'] ?? 'error'));
             }
             return [$result, $status];
         }

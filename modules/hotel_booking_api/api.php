@@ -33,7 +33,7 @@ if (($action === '' || $action === 'probe') && $method === 'GET') {
             'probe' => ['method' => 'GET', 'description' => 'Validate API key and return channel metadata'],
             'availability' => ['method' => 'GET|POST', 'description' => 'Shop room types (JSON or OpenTravel XML body)'],
             'ari_snapshot' => ['method' => 'GET', 'description' => 'Outbound ARI inventory/rates snapshot'],
-            'ari_push_outbound' => ['method' => 'POST', 'description' => 'POST ARI snapshot to channel webhook_url'],
+            'ari_push_outbound' => ['method' => 'POST', 'description' => 'POST ARI snapshot to channel webhook_url (force=1 bypasses delta checksum skip)'],
             'book' => ['method' => 'POST', 'description' => 'Create reservation'],
             'modify' => ['method' => 'POST', 'description' => 'Amend reservation by external_reservation_id'],
             'cancel' => ['method' => 'POST', 'description' => 'Cancel by external_reservation_id'],
@@ -90,7 +90,8 @@ if ($action === 'ari_push_outbound' && $method === 'POST') {
     $days = max(1, (int) ($body['days_ahead'] ?? 30));
     $startDate = trim((string) ($body['start_date'] ?? date('Y-m-d')));
     $endDate = trim((string) ($body['end_date'] ?? date('Y-m-d', strtotime('+' . $days . ' days'))));
-    $result = itm_hotel_booking_distribution_push_ari_to_webhook($conn, $channel, $hotelId, $startDate, $endDate);
+    $forcePush = !empty($_GET['force']) || !empty($body['force']) || !empty($_GET['force_push']) || !empty($body['force_push']);
+    $result = itm_hotel_booking_distribution_push_ari_to_webhook($conn, $channel, $hotelId, $startDate, $endDate, $forcePush);
     $status = !empty($result['success']) ? 200 : 400;
     itm_hotel_booking_distribution_send_response($status, $result, $channel, $wireFormat);
 }
