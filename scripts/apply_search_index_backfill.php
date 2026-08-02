@@ -8,6 +8,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
+require_once __DIR__ . '/../includes/itm_command_palette_search.php';
 require_once __DIR__ . '/../includes/itm_search_index.php';
 
 function itm_search_index_backfill_script_usage(): string

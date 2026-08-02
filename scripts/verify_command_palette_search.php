@@ -224,6 +224,29 @@ if (!itm_search_index_table_ready($conn)) {
     }
 }
 
+if ($adminId > 0) {
+    $moduleNavPayload = itm_command_palette_search($conn, $companyId, $adminId, 'equipment', 5);
+    $moduleNavHit = false;
+    foreach ($moduleNavPayload['groups'] ?? [] as $group) {
+        if (($group['module_slug'] ?? '') !== 'modules') {
+            continue;
+        }
+        foreach ($group['results'] ?? [] as $item) {
+            if (($item['module_slug'] ?? '') === 'equipment'
+                && ($item['kind'] ?? '') === 'module'
+                && strpos((string)($item['url'] ?? ''), 'modules/equipment/index.php') !== false) {
+                $moduleNavHit = true;
+                break 2;
+            }
+        }
+    }
+    if (!$moduleNavHit) {
+        cps_verify_fail('Query equipment did not return module navigation row linking to equipment/index.php.');
+    } else {
+        cps_verify_pass('Module slug equipment resolves to modules/equipment/index.php.');
+    }
+}
+
 if ($failures > 0) {
     echo $nl . colorText('FAILED: ' . $failures . ' check(s).', 'fail') . $nl;
     exit(1);

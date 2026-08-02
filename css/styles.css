@@ -2738,3 +2738,8 @@ body.itm-command-palette-open {
     font-size: 0.82rem;
 }
 
+.itm-command-palette-item-slug {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    letter-spacing: 0.01em;
+}
+

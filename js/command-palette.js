@@ -35,7 +35,7 @@
             '  <div class="itm-command-palette-card" role="dialog" aria-modal="true" aria-label="Global search">',
             '    <div class="itm-command-palette-input-row">',
             '      <span class="itm-command-palette-input-icon" aria-hidden="true">🔍</span>',
-            '      <input type="search" id="itmCommandPaletteInput" class="itm-command-palette-input" autocomplete="off" spellcheck="false" placeholder="Search employees, equipment, tickets, IPs, catalogs…" aria-label="Search">',
+            '      <input type="search" id="itmCommandPaletteInput" class="itm-command-palette-input" autocomplete="off" spellcheck="false" placeholder="Search modules, employees, equipment, tickets…" aria-label="Search">',
             '      <kbd class="itm-command-palette-kbd" title="Close">Esc</kbd>',
             '    </div>',
             '    <div id="itmCommandPaletteStatus" class="itm-command-palette-status" aria-live="polite"></div>',
@@ -164,6 +164,8 @@
                             title: item.title || '',
                             subtitle: item.subtitle || '',
                             url: item.url || '',
+                            kind: item.kind || 'record',
+                            moduleSlug: item.module_slug || group.module_slug || '',
                         });
                     });
                 });
@@ -210,10 +212,16 @@
             results.forEach(function (item) {
                 const isActive = itemIndex === activeIndex;
                 const classes = 'itm-command-palette-item' + (isActive ? ' is-active' : '');
+                const itemKind = item.kind || 'record';
+                const subtitleHtml = item.subtitle
+                    ? (itemKind === 'module'
+                        ? '<span class="itm-command-palette-item-subtitle itm-command-palette-item-slug">' + escapeHtml(item.subtitle) + '</span>'
+                        : '<span class="itm-command-palette-item-subtitle">' + escapeHtml(item.subtitle) + '</span>')
+                    : '';
                 chunks.push(
-                    '<button type="button" class="' + classes + '" data-index="' + itemIndex + '" data-url="' + escapeHtml(item.url || '') + '">'
+                    '<button type="button" class="' + classes + '" data-index="' + itemIndex + '" data-url="' + escapeHtml(item.url || '') + '" data-kind="' + escapeHtml(itemKind) + '">'
                     + '<span class="itm-command-palette-item-title">' + escapeHtml(item.title || '') + '</span>'
-                    + (item.subtitle ? '<span class="itm-command-palette-item-subtitle">' + escapeHtml(item.subtitle) + '</span>' : '')
+                    + subtitleHtml
                     + '</button>'
                 );
                 itemIndex += 1;
