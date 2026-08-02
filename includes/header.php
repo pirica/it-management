@@ -25,6 +25,7 @@ $csrfToken = itm_get_csrf_token();
     </div>
     <div class="header-right">
         <!-- Global UI Action Buttons -->
+        <button type="button" class="btn btn-sm" data-itm-command-palette-open="1" title="Search (Ctrl+K)">🔍</button>
         <button onclick="toggleTheme()" class="btn btn-sm" title="Toggle Dark/Light Mode">🌙</button>
         <form method="POST" action="<?php echo BASE_URL; ?>logout.php" class="header-logout-form">
             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -95,9 +96,12 @@ $itmTableToolsPath = ROOT_PATH . 'js/table-tools.js';
 $itmTableToolsVersion = is_file($itmTableToolsPath) ? (string)filemtime($itmTableToolsPath) : '1';
 $itmBulkDeletePath = ROOT_PATH . 'js/bulk-delete-selection.js';
 $itmBulkDeleteVersion = is_file($itmBulkDeletePath) ? (string)filemtime($itmBulkDeletePath) : '1';
+$itmCommandPalettePath = ROOT_PATH . 'js/command-palette.js';
+$itmCommandPaletteVersion = is_file($itmCommandPalettePath) ? (string)filemtime($itmCommandPalettePath) : '1';
 ?>
 <script src="<?php echo BASE_URL; ?>js/table-tools.js?v=<?php echo sanitize($itmTableToolsVersion); ?>"></script>
 <script src="<?php echo BASE_URL; ?>js/bulk-delete-selection.js?v=<?php echo sanitize($itmBulkDeleteVersion); ?>"></script>
+<script src="<?php echo BASE_URL; ?>js/command-palette.js?v=<?php echo sanitize($itmCommandPaletteVersion); ?>"></script>
 <?php if ($chatbotEnabled): ?>
 <script src="<?php echo BASE_URL; ?>js/chatbot.js"></script>
 <?php endif; ?>

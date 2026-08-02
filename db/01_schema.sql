@@ -4274,6 +4274,25 @@ CREATE TABLE `note_labels` (
   CONSTRAINT `note_labels_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Table structure for `search_index` (phase 2 command-palette denormalized search)
+DROP TABLE IF EXISTS `search_index`;
+
+CREATE TABLE `search_index` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `module_slug` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `record_id` int NOT NULL,
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `subtitle` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `keywords` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_search` (`company_id`,`module_slug`,`record_id`),
+  FULLTEXT KEY `ft_search` (`title`,`subtitle`,`keywords`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `search_index_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Table structure for `share_sessions`
 DROP TABLE IF EXISTS `share_sessions`;
 
