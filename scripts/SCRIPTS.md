@@ -1090,7 +1090,7 @@ Run `verify_appointment.php` when changing `modules/appointment/`, `includes/itm
 |--------|---------|
 | `php scripts/verify_hotel_booking.php` | Regression: core `hotel_booking_*` / `booking_rooms_types` tables, segment helper (`future`), company 1 `PENDING` future status seed, portal rate plan form contract, sample hotel photo seeds (`hb_seed_*.jpg`), and subprocess render probe for all 13 Hospitality sidebar `index.php` modules |
 | `php scripts/verify_hotel_booking_distribution.php` | Regression: `hotel_booking_distribution_*` tables (including rate-plan mappings, ARI restrictions, webhook queue), API key helpers, inbound signature, delta checksum, ACK/NACK, OpenTravel XML parse/encode, modify + webhook helpers, availability builder |
-| `php scripts/verify_hotel_booking_distribution_http.php` | HTTP regression: disposable channel, `probe` auth (401 without key, 200 with key), availability GET over curl |
+| `php scripts/verify_hotel_booking_distribution_http.php` | HTTP regression: disposable channel, `probe` auth (401 without key, 200 with key), availability GET over curl. Browser `?run=1` delegates to CLI subprocess (avoids Apache gateway timeout when curling localhost) |
 | `php scripts/verify_hotel_booking_distribution_opentravel_coverage.php` | OpenTravel OTA parse/encode: AvailRQ, ResNotifRQ, AvailNotifRQ, PingRQ |
 | `php scripts/verify_hotel_booking_distribution_booking_com_cert.php` | Booking.com Connectivity offline cert checklist (ACK/NACK, notify, rates payload) |
 | `php scripts/report_hotel_booking_distribution_webhook_ops.php` | Ops report: dead-letter + failed webhook queue rows; exit `1` unless `--allow-dead` |

@@ -120,6 +120,22 @@ php scripts/run_hotel_booking_distribution_webhook_queue.php
 
 `verify_hotel_booking_distribution_booking_com_cert.php` validates adapter contracts without calling the live API. Production certification still requires Booking.com sandbox credentials and their official test hotel.
 
+### API examples (`api-examples/`)
+
+Set `ITM_DIST_API_KEY` to a channel plain-text API key from [Distribution Channels](http://localhost/it-management/modules/hotel_booking_distribution_channels/index.php). For modify/cancel, set `ITM_DIST_EXTERNAL_RESERVATION_ID` to an existing partner reservation id.
+
+| Example | Action |
+|---------|--------|
+| `hotel_distribution_probe.php` | `probe` |
+| `hotel_distribution_availability.php` | `availability` |
+| `hotel_distribution_ari_snapshot.php` | `ari_snapshot` |
+| `hotel_distribution_book.php` | `book` |
+| `hotel_distribution_notify_book.php` | `notify` (book) |
+| `hotel_distribution_modify.php` | `modify` |
+| `hotel_distribution_cancel.php` | `cancel` |
+
+Also listed in [scripts/api.php](http://localhost/it-management/scripts/api.php).
+
 ## Related
 
 - Guest portal: `docs/BOOKING.md`

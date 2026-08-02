@@ -4,6 +4,8 @@
  *
  * CLI: php scripts/verify_hotel_booking_distribution_http.php
  * Browser: scripts/verify_hotel_booking_distribution_http.php?run=1 (Administrator).
+ *
+ * Browser mode delegates to a CLI subprocess so curl against localhost does not deadlock Apache workers.
  */
 
 declare(strict_types=1);
@@ -11,14 +13,47 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-CLI: <code>php scripts/verify_hotel_booking_distribution_http.php</code> — optional <code>--base-url=http://localhost/it-management</code>. Browser: <a href="verify_hotel_booking_distribution_http.php?run=1">verify_hotel_booking_distribution_http.php?run=1</a> (Administrator).
+CLI: <code>php scripts/verify_hotel_booking_distribution_http.php</code> — optional <code>--base-url=http://localhost/it-management</code>. Browser: <a href="verify_hotel_booking_distribution_http.php?run=1">verify_hotel_booking_distribution_http.php?run=1</a> (Administrator). Browser runs the same checks in a detached CLI subprocess (avoids gateway timeout when curling localhost).
 <p>Creates a disposable distribution channel, exercises <code>probe</code> and missing-key auth over HTTP, then cleans up.</p>
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 
-define('ITM_CLI_SCRIPT', true);
+$itmIsCli = (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg');
+if ($itmIsCli) {
+    define('ITM_CLI_SCRIPT', true);
+}
+
 require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+
+if (!$itmIsCli) {
+    require_once dirname(__DIR__) . '/includes/itm_cli_binary.php';
+    itm_script_require_admin_script_or_exit($conn);
+    itm_script_output_begin('Hotel booking distribution HTTP verification');
+
+    $phpBin = itm_resolve_cli_php_binary();
+    $scriptPath = __DIR__ . '/verify_hotel_booking_distribution_http.php';
+    $cmdArgs = '';
+    $baseUrlParam = trim((string) ($_GET['base_url'] ?? $_GET['base-url'] ?? ''));
+    if ($baseUrlParam !== '') {
+        $cmdArgs = ' --base-url=' . escapeshellarg($baseUrlParam);
+    }
+    $cmd = escapeshellarg($phpBin) . ' ' . escapeshellarg($scriptPath) . $cmdArgs . ' 2>&1';
+    exec($cmd, $lines, $exitCode);
+
+    echo colorText('[INFO] Browser mode delegates HTTP curl to CLI subprocess (avoids Apache gateway timeout).', 'info') . "\n";
+    if ($lines === [] && $exitCode !== 0) {
+        echo colorText('[FAIL] CLI subprocess produced no output. Set PHP_EXE in .env to CLI php (not php-cgi).', 'fail') . "\n";
+        echo 'PHP binary: ' . itm_script_escape_browser_pre_text($phpBin) . "\n";
+    } else {
+        foreach ($lines as $line) {
+            echo itm_script_format_status_line((string) $line) . "\n";
+        }
+    }
+
+    itm_script_output_end($exitCode);
+    exit($exitCode);
+}
 
 itm_script_output_begin('Hotel booking distribution HTTP verification');
 
