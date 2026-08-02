@@ -143,7 +143,8 @@ $stmt->execute();
 
 - Regression and audit scripts: catalog in `scripts/scripts.php`; conventions in `scripts/SCRIPTS.md`.
 - Useful gates: `php scripts/check_sql_injection_coverage.php`, `php scripts/check_ui_action_emoji.php`, `php scripts/check_fk_label_search_coverage.php`, `php scripts/list_active_and_checkboxes.php`, `php scripts/run_tests.php`.
-- **Local dev login bypass:** `php scripts/bypass_login.php` → set browser `PHPSESSID` → open `http://localhost/it-management/` (Admin, company 1, vault unlocked when script sets it).
+- **Local dev login bypass:** `php scripts/bypass_login.php` → set browser `PHPSESSID` → open [dashboard](http://localhost/it-management/) (Admin, company 1, vault unlocked when script sets it).
+- **Agent replies (localhost links):** whenever an agent cites `modules/…` or `scripts/…` paths in chat — summaries, audits, PR plans, not only defects — use markdown links with base `http://localhost/it-management/` and say **open in a new browser tab** (`AGENTS.md` step **7a**; `.cursor/rules/local-dev-browser-links.mdc`).
 
 ---
 
