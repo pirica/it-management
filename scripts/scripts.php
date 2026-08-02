@@ -1894,6 +1894,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub"><code>php scripts/seed_hotel_booking_sample_photos.php --apply</code></td>
                 </tr>
                 <tr data-tags="Mixed">
+                    <td><a href="run_hotel_booking_distribution_ari_sync.php" target="_blank" rel="nofollow noreferrer">run_hotel_booking_distribution_ari_sync.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_channels</span></span></td>
+                    <td>POST outbound ARI snapshots to every active distribution channel <code>webhook_url</code> (OpenTravel XML / Booking.com / OHIP JSON per <code>standard</code>).</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Mixed">
                     <td><a href="verify_hotel_booking_distribution.php" target="_blank" rel="nofollow noreferrer">verify_hotel_booking_distribution.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_channels</span></span></td>

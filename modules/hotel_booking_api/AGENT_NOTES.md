@@ -2,74 +2,39 @@
 
 ## 1. Module Purpose
 
-Authenticated JSON API for **channel partners** (OTAs, channel managers, PMS bridges). Partners shop availability, create/cancel reservations, and exchange ARI (availability, rates, inventory) using per-channel API keys from **Distribution Channels** admin.
-
-Wire format in phase 1 is **ITM native JSON**; `standard` on the channel row labels future OpenTravel / Booking.com / OHIP adapters.
+Authenticated **JSON + XML** API for channel partners (OTAs, channel managers, PMS bridges). Supports ITM native JSON, **OpenTravel OTA XML**, **Booking.com Connectivity JSON**, and **Oracle OHIP JSON** per channel `standard`.
 
 ## 2. Key Tables
 
-- **hotel_booking_distribution_channels** — API key (prefix + bcrypt hash), hourly quota, `standard`, optional `webhook_url`
-- **hotel_booking_distribution_mappings** — `hotel` / `room_type` internal id ↔ `external_code` per channel
-- **hotel_booking_distribution_reservations** — `external_reservation_id` ↔ `hotel_bookings.id`
-- **hotel_booking_distribution_ari_events** — inbound/outbound ARI audit log
-
-Reads/writes **hotel_bookings**, **hotel_booking_rooms**, **booking_rooms_types**, rate overrides, and room-type blocks via `includes/itm_hotel_booking_distribution.php`.
-
-## 3. Required Relationships
-
-- Channel row is tenant-scoped (`company_id`); auth resolves company from the key — no employee session.
-- Bookings require **customers** (guest email/name) and a physical **hotel_booking_rooms** row (auto-assigned by room type when `room_id` omitted).
-
-## 4. Business Rules
-
-- Auth: `X-API-Key` header or `api_key` query/body; invalid/missing key → `401`.
-- Hourly rate limit per channel (`hourly_rate_limit`, rolling window on channel row) → `429`.
-- `external_reservation_id` must be unique per channel; duplicate book → `409`.
-- Cancel uses portal rules (`itm_hotel_booking_portal_guest_can_cancel_booking`) and sets future status **CANCELLED**.
-- ARI push writes **hotel_booking_room_type_rate_overrides** and optional **hotel_booking_room_type_blocks** (stop-sell).
-
-## 5. UI Behaviour
-
-No employee UI in this folder — admin lives in `modules/hotel_booking_distribution_channels/`. `index.php` redirects to `api.php`.
+Same as phase 1 — see `includes/itm_hotel_booking_distribution.php` and `hotel_booking_distribution_*` tables.
 
 ## 6. API Actions
 
-Base: `modules/hotel_booking_api/api.php` — define `ITM_HOTEL_BOOKING_DISTRIBUTION_API` skips employee login (`config/config.php`).
+Base: [api.php](http://localhost/it-management/modules/hotel_booking_api/api.php)
 
-| Action | Method | Purpose |
-|--------|--------|---------|
-| *(empty)* or `probe` | GET | Channel metadata + supported actions (key check) |
-| `availability` | GET | Shop: `hotel_id` or `external_hotel_code`, `check_in`, `check_out`, occupancy |
-| `ari_snapshot` | GET | Outbound ARI pull for date range |
-| `book` | POST | JSON: `external_reservation_id`, dates, guest, `room_type_id` / codes |
-| `cancel` | POST | JSON: `external_reservation_id` |
-| `ari_push` | POST | JSON: rates array and/or `stop_sell` window |
+| Action | Method | Notes |
+|--------|--------|-------|
+| `probe` | GET | Key check + supported actions |
+| `availability` | GET / POST | Shop; OpenTravel via `format=xml` or `OTA_HotelAvailRQ` POST body |
+| `ari_snapshot` | GET | Pull ARI |
+| `ari_push_outbound` | POST | POST snapshot to `webhook_url` |
+| `book` / `modify` / `cancel` | POST | Reservation lifecycle |
+| `notify` | POST | Inbound OTA (auto-routes book/modify/cancel) |
+| `ari_push` | POST | Inbound rates / stop-sell |
 
 ## 7. File Structure
 
-- **api.php** — JSON router (only entry)
-- **index.php** — redirect to `api.php`
-- **index.html** — directory listing guard
-
-## 8. Multi-Tenant Rules
-
-- Every query scoped by `company_id` from the authenticated channel row.
-- Hotel/room-type external codes resolve only within that channel’s mapping rows.
+- **api.php** — router (uses wire helpers)
+- **index.php** / **index.html** — redirect + listing guard
 
 ## 9. Security
 
-- API keys stored as bcrypt hash; plain key shown once on channel create (admin).
-- No CSRF (machine clients); no `itm_api_enforce_rate_limit_or_exit()` (uses channel hourly limit instead).
-
-## 10. Pitfalls
-
-- Module access gate is skipped when `ITM_HOTEL_BOOKING_DISTRIBUTION_API` is set — do not remove that constant from `api.php`.
-- Partners must map hotels/room types in admin before using `external_*_code` parameters.
-- Standard values `opentravel`, `booking_com`, `ohip` are labels only until adapter phases ship.
+Channel hourly rate limit; bcrypt API keys. Outbound webhook uses `file_get_contents` HTTP POST (30s timeout); logged in `hotel_booking_distribution_ari_events`.
 
 ## 12. Module Owner Notes
 
-- Canonical design: `docs/HOTEL_BOOKING_DISTRIBUTION.md`
-- Helpers: `includes/itm_hotel_booking_distribution.php`
-- Admin: [hotel_booking_distribution_channels/index.php](http://localhost/it-management/modules/hotel_booking_distribution_channels/index.php) (Admin session)
+- Adapters: `includes/itm_hotel_booking_distribution_{wire,opentravel,booking_com,ohip}.php`
+- ARI cron: [run_hotel_booking_distribution_ari_sync.php?run=1](http://localhost/it-management/scripts/run_hotel_booking_distribution_ari_sync.php?run=1)
+- Admin: [Distribution Channels](http://localhost/it-management/modules/hotel_booking_distribution_channels/index.php)
+- Doc: `docs/HOTEL_BOOKING_DISTRIBUTION.md`
 - Regression: [verify_hotel_booking_distribution.php?run=1](http://localhost/it-management/scripts/verify_hotel_booking_distribution.php?run=1)

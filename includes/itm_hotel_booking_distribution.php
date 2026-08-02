@@ -7,9 +7,9 @@ if (!function_exists('itm_hotel_booking_distribution_standards')) {
     function itm_hotel_booking_distribution_standards() {
         return [
             'itm_native' => 'ITM native JSON',
-            'opentravel' => 'OpenTravel (mapping stub)',
-            'booking_com' => 'Booking.com Connectivity (mapping stub)',
-            'ohip' => 'Oracle OHIP (mapping stub)',
+            'opentravel' => 'OpenTravel OTA XML',
+            'booking_com' => 'Booking.com Connectivity JSON',
+            'ohip' => 'Oracle OHIP JSON',
         ];
     }
 }
@@ -569,6 +569,279 @@ if (!function_exists('itm_hotel_booking_distribution_cancel_booking')) {
             'external_reservation_id' => $externalReservationId,
             'status' => 'cancelled',
         ];
+    }
+}
+
+if (!function_exists('itm_hotel_booking_distribution_modify_booking')) {
+    function itm_hotel_booking_distribution_modify_booking($conn, array $channelRow, array $payload) {
+        $companyId = (int) ($channelRow['company_id'] ?? 0);
+        $channelId = (int) ($channelRow['id'] ?? 0);
+        $externalId = trim((string) ($payload['external_reservation_id'] ?? ''));
+        if ($externalId === '') {
+            return ['success' => false, 'error' => 'external_reservation_id_required'];
+        }
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT dr.id AS link_id, dr.hotel_booking_id, hb.*
+             FROM hotel_booking_distribution_reservations dr
+             INNER JOIN hotel_bookings hb ON hb.id = dr.hotel_booking_id AND hb.company_id = dr.company_id
+             WHERE dr.channel_id = ? AND dr.external_reservation_id = ? AND dr.deleted_at IS NULL AND hb.deleted_at IS NULL
+             LIMIT 1'
+        );
+        if (!$stmt) {
+            return ['success' => false, 'error' => 'lookup_failed'];
+        }
+        mysqli_stmt_bind_param($stmt, 'is', $channelId, $externalId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $linkRow = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        if (!$linkRow) {
+            return ['success' => false, 'error' => 'reservation_not_found'];
+        }
+        $bookingId = (int) ($linkRow['hotel_booking_id'] ?? 0);
+        $roomIdCurrent = (int) ($linkRow['room_id'] ?? 0);
+        $hotelId = 0;
+        if ($roomIdCurrent > 0) {
+            $rstmt = mysqli_prepare($conn, 'SELECT hotel_id FROM hotel_booking_rooms WHERE id = ? AND company_id = ? LIMIT 1');
+            if ($rstmt) {
+                mysqli_stmt_bind_param($rstmt, 'ii', $roomIdCurrent, $companyId);
+                mysqli_stmt_execute($rstmt);
+                $rres = mysqli_stmt_get_result($rstmt);
+                $rrow = $rres ? mysqli_fetch_assoc($rres) : null;
+                mysqli_stmt_close($rstmt);
+                $hotelId = (int) ($rrow['hotel_id'] ?? 0);
+            }
+        }
+        $checkIn = trim((string) ($payload['check_in'] ?? $linkRow['check_in'] ?? ''));
+        $checkOut = trim((string) ($payload['check_out'] ?? $linkRow['check_out'] ?? ''));
+        if ($checkOut <= $checkIn) {
+            return ['success' => false, 'error' => 'invalid_stay_dates'];
+        }
+        $roomId = (int) ($payload['room_id'] ?? $linkRow['room_id'] ?? 0);
+        $roomTypeId = (int) ($payload['room_type_id'] ?? 0);
+        if ($roomTypeId < 1 && !empty($payload['external_room_type_code'])) {
+            $roomTypeId = itm_hotel_booking_distribution_resolve_internal_id($conn, $companyId, $channelId, 'room_type', $payload['external_room_type_code']);
+        }
+        if ($roomId < 1 && $roomTypeId > 0 && $hotelId > 0) {
+            $room = itm_hotel_booking_distribution_find_available_room_for_type($conn, $companyId, $hotelId, $roomTypeId, $checkIn, $checkOut);
+            if (!$room) {
+                return ['success' => false, 'error' => 'no_availability'];
+            }
+            $roomId = (int) $room['id'];
+        }
+        if ($roomId < 1) {
+            $roomId = (int) ($linkRow['room_id'] ?? 0);
+        }
+        if (itm_hotel_booking_has_overlap($conn, $companyId, $roomId, $checkIn, $checkOut, $bookingId)) {
+            return ['success' => false, 'error' => 'no_availability'];
+        }
+        $occupancy = itm_hotel_booking_portal_parse_occupancy(is_array($payload['occupancy'] ?? null) ? $payload['occupancy'] : []);
+        $guest = is_array($payload['guest'] ?? null) ? $payload['guest'] : [];
+        $roomRow = null;
+        $rstmt = mysqli_prepare($conn, 'SELECT * FROM hotel_booking_rooms WHERE id = ? AND company_id = ? LIMIT 1');
+        if ($rstmt) {
+            mysqli_stmt_bind_param($rstmt, 'ii', $roomId, $companyId);
+            mysqli_stmt_execute($rstmt);
+            $rres = mysqli_stmt_get_result($rstmt);
+            $roomRow = $rres ? mysqli_fetch_assoc($rres) : null;
+            mysqli_stmt_close($rstmt);
+        }
+        if (!$roomRow) {
+            return ['success' => false, 'error' => 'room_not_found'];
+        }
+        $hotelId = (int) ($roomRow['hotel_id'] ?? $hotelId);
+        $roomTypeId = (int) ($roomRow['room_type_id'] ?? $roomTypeId);
+        $pricing = itm_hotel_booking_portal_hotel_pricing($conn, $companyId, $hotelId);
+        $settings = itm_hotel_booking_settings_row($conn, $companyId) ?: [];
+        $draft = [
+            'company_id' => $companyId,
+            'hotel_id' => $hotelId,
+            'room_type_id' => $roomTypeId,
+            'rate_plan' => 'room_only',
+            'traveling_with_pet' => 0,
+            'service_animal' => 0,
+            'additional_comments' => 'Distribution modify: ' . ($channelRow['channel_code'] ?? ''),
+        ];
+        $amount = itm_hotel_booking_portal_compute_checkout_total(
+            $roomRow['price_per_night'] ?? 0,
+            $checkIn,
+            $checkOut,
+            $occupancy,
+            0.0,
+            $draft,
+            (float) ($settings['tourist_tax_per_person_per_night'] ?? 0),
+            $conn,
+            $companyId
+        );
+        $notes = itm_hotel_booking_portal_build_booking_notes($draft, $occupancy);
+        $notes .= "\nDistribution external id: " . $externalId;
+        $status = itm_hotel_booking_apply_segment_status_on_save($conn, $companyId, $checkIn, $checkOut);
+        $fs = (int) ($status['future_status_id'] ?? 0);
+        $ps = (int) ($status['present_status_id'] ?? 0);
+        $hs = (int) ($status['history_status_id'] ?? 0);
+        $upd = mysqli_prepare(
+            $conn,
+            'UPDATE hotel_bookings SET room_id = ?, check_in = ?, check_out = ?, payment_amount = ?, notes = ?,
+             future_status_id = NULLIF(?,0), present_status_id = NULLIF(?,0), history_status_id = NULLIF(?,0), updated_at = NOW()
+             WHERE id = ? AND company_id = ?'
+        );
+        if (!$upd) {
+            return ['success' => false, 'error' => 'modify_failed'];
+        }
+        mysqli_stmt_bind_param($upd, 'issdsiiiii', $roomId, $checkIn, $checkOut, $amount, $notes, $fs, $ps, $hs, $bookingId, $companyId);
+        if (!mysqli_stmt_execute($upd)) {
+            mysqli_stmt_close($upd);
+            return ['success' => false, 'error' => 'modify_failed'];
+        }
+        mysqli_stmt_close($upd);
+        if (!empty($guest['email']) || !empty($guest['name'])) {
+            $customerId = (int) ($linkRow['customer_id'] ?? 0);
+            if ($customerId > 0) {
+                $email = trim((string) ($guest['email'] ?? ''));
+                $name = trim((string) ($guest['name'] ?? ''));
+                $phone = itm_hotel_booking_portal_normalize_guest_phone($guest['phone'] ?? '');
+                if ($email !== '' && itm_hotel_booking_portal_validate_guest_email($email)) {
+                    $cstmt = mysqli_prepare($conn, 'UPDATE customers SET email = COALESCE(NULLIF(?, \'\'), email), name = COALESCE(NULLIF(?, \'\'), name), phone = COALESCE(NULLIF(?, \'\'), phone), updated_at = NOW() WHERE id = ? AND company_id = ?');
+                    if ($cstmt) {
+                        mysqli_stmt_bind_param($cstmt, 'sssii', $email, $name, $phone, $customerId, $companyId);
+                        mysqli_stmt_execute($cstmt);
+                        mysqli_stmt_close($cstmt);
+                    }
+                }
+            }
+        }
+        $payloadJson = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $linkUpd = mysqli_prepare($conn, 'UPDATE hotel_booking_distribution_reservations SET external_status = \'modified\', payload_json = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
+        if ($linkUpd) {
+            $linkId = (int) ($linkRow['link_id'] ?? 0);
+            mysqli_stmt_bind_param($linkUpd, 'sii', $payloadJson, $linkId, $companyId);
+            mysqli_stmt_execute($linkUpd);
+            mysqli_stmt_close($linkUpd);
+        }
+        return [
+            'success' => true,
+            'reservation_id' => $bookingId,
+            'external_reservation_id' => $externalId,
+            'room_id' => $roomId,
+            'status' => 'modified',
+            'payment_amount' => $amount,
+        ];
+    }
+}
+
+if (!function_exists('itm_hotel_booking_distribution_push_ari_to_webhook')) {
+    function itm_hotel_booking_distribution_push_ari_to_webhook($conn, array $channelRow, $hotelId, $startDate, $endDate) {
+        $webhookUrl = trim((string) ($channelRow['webhook_url'] ?? ''));
+        if ($webhookUrl === '' || !preg_match('#^https?://#i', $webhookUrl)) {
+            return ['success' => false, 'error' => 'webhook_url_missing'];
+        }
+        $snapshot = itm_hotel_booking_distribution_build_ari_snapshot($conn, $channelRow, (int) $hotelId, $startDate, $endDate);
+        if (empty($snapshot['success'])) {
+            return $snapshot;
+        }
+        $standard = (string) ($channelRow['standard'] ?? 'itm_native');
+        $body = $snapshot;
+        $contentType = 'application/json; charset=utf-8';
+        if ($standard === 'opentravel') {
+            require_once ROOT_PATH . 'includes/itm_hotel_booking_distribution_opentravel.php';
+            $snapshot['_ota_action'] = 'ari_snapshot';
+            $body = itm_hotel_booking_distribution_opentravel_encode_response($snapshot, 'ari_snapshot');
+            $contentType = 'application/xml; charset=utf-8';
+        } elseif ($standard === 'booking_com') {
+            require_once ROOT_PATH . 'includes/itm_hotel_booking_distribution_booking_com.php';
+            $body = json_encode(itm_hotel_booking_distribution_booking_com_format_ari_push($snapshot), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        } elseif ($standard === 'ohip') {
+            require_once ROOT_PATH . 'includes/itm_hotel_booking_distribution_ohip.php';
+            $body = json_encode(itm_hotel_booking_distribution_ohip_format_ari_push($snapshot), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        } else {
+            $body = json_encode($snapshot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        $apiKey = itm_hotel_booking_distribution_extract_api_key();
+        $headers = [
+            'Content-Type: ' . $contentType,
+            'User-Agent: ITM-Hotel-Distribution/1.0',
+        ];
+        if ($apiKey !== '') {
+            $headers[] = 'X-API-Key: ' . $apiKey;
+        }
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'POST',
+                'header' => implode("\r\n", $headers),
+                'content' => is_string($body) ? $body : json_encode($body),
+                'timeout' => 30,
+                'ignore_errors' => true,
+            ],
+        ]);
+        $responseBody = @file_get_contents($webhookUrl, false, $context);
+        $httpCode = 0;
+        if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $m)) {
+            $httpCode = (int) $m[1];
+        }
+        $ok = $httpCode >= 200 && $httpCode < 300;
+        itm_hotel_booking_distribution_log_ari_event(
+            $conn,
+            $channelRow,
+            (int) $hotelId,
+            null,
+            'ari_webhook_push',
+            'outbound',
+            $ok ? 'delivered' : 'failed',
+            ['webhook_url' => $webhookUrl, 'start_date' => $startDate, 'end_date' => $endDate],
+            ['http_code' => $httpCode, 'body' => substr((string) $responseBody, 0, 4000)]
+        );
+        return [
+            'success' => $ok,
+            'http_code' => $httpCode,
+            'webhook_url' => $webhookUrl,
+            'hotel_id' => (int) $hotelId,
+        ];
+    }
+}
+
+if (!function_exists('itm_hotel_booking_distribution_sync_all_channel_ari')) {
+    function itm_hotel_booking_distribution_sync_all_channel_ari($conn, $companyId = 0, $daysAhead = 30) {
+        $companyId = (int) $companyId;
+        $daysAhead = max(1, (int) $daysAhead);
+        $startDate = date('Y-m-d');
+        $endDate = date('Y-m-d', strtotime('+' . $daysAhead . ' days'));
+        $results = [];
+        $sql = 'SELECT * FROM hotel_booking_distribution_channels WHERE deleted_at IS NULL AND active = 1 AND webhook_url IS NOT NULL AND webhook_url <> \'\'';
+        if ($companyId > 0) {
+            $sql .= ' AND company_id = ' . $companyId;
+        }
+        $res = mysqli_query($conn, $sql);
+        while ($res && ($channel = mysqli_fetch_assoc($res))) {
+            $cid = (int) ($channel['company_id'] ?? 0);
+            $chid = (int) ($channel['id'] ?? 0);
+            $hstmt = mysqli_prepare(
+                $conn,
+                'SELECT DISTINCT internal_id FROM hotel_booking_distribution_mappings
+                 WHERE company_id = ? AND channel_id = ? AND entity_type = \'hotel\' AND deleted_at IS NULL AND active = 1'
+            );
+            $hotelIds = [];
+            if ($hstmt) {
+                mysqli_stmt_bind_param($hstmt, 'ii', $cid, $chid);
+                mysqli_stmt_execute($hstmt);
+                $hres = mysqli_stmt_get_result($hstmt);
+                while ($hres && ($hrow = mysqli_fetch_assoc($hres))) {
+                    $hotelIds[] = (int) $hrow['internal_id'];
+                }
+                mysqli_stmt_close($hstmt);
+            }
+            if (empty($hotelIds)) {
+                $fallback = mysqli_query($conn, 'SELECT id FROM hotel_booking_hotels WHERE company_id = ' . $cid . ' AND deleted_at IS NULL AND active = 1 LIMIT 1');
+                $frow = $fallback ? mysqli_fetch_assoc($fallback) : null;
+                if ($frow) {
+                    $hotelIds[] = (int) $frow['id'];
+                }
+            }
+            foreach ($hotelIds as $hotelId) {
+                $results[] = itm_hotel_booking_distribution_push_ari_to_webhook($conn, $channel, $hotelId, $startDate, $endDate);
+            }
+        }
+        return $results;
     }
 }
 

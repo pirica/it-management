@@ -37,3 +37,4 @@ Uses `includes/itm_hospitality_admin_layout.php`.
 - Partner API entry: [modules/hotel_booking_api/api.php](http://localhost/it-management/modules/hotel_booking_api/api.php) (API key auth, no employee session)
 - Canonical doc: `docs/HOTEL_BOOKING_DISTRIBUTION.md`
 - Regression: [verify_hotel_booking_distribution.php?run=1](http://localhost/it-management/scripts/verify_hotel_booking_distribution.php?run=1)
+- Outbound ARI: channel view **Push ARI** button or [run_hotel_booking_distribution_ari_sync.php?run=1](http://localhost/it-management/scripts/run_hotel_booking_distribution_ari_sync.php?run=1)
