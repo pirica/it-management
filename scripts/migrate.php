@@ -12,8 +12,8 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/migrate.php --status</code> — lists migrations still needing SQL; schema already satisfied by fresh <code>db/</code> import shows Applied even when unrecorded.<br>
-<code>php scripts/migrate.php --apply</code> — runs only true pending SQL; records satisfied migrations without re-executing destructive files. Browser apply requires Admin: <code>?run=1&amp;apply=1</code>.
+<code>php scripts/migrate.php --status</code> — probes the <strong>live database</strong> for every migration file (Applied vs Pending); <code>schema_migrations</code> is audit/history only.<br>
+<code>php scripts/migrate.php --apply</code> — runs only migrations whose live schema probe failed; records satisfied migrations without re-executing destructive SQL. Browser apply requires Admin: <code>?run=1&amp;apply=1</code>.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 
