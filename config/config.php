@@ -465,6 +465,7 @@ if (
     $itmNoAuthScripts = [
         'count_db_tables.php',
         'test_chatbot.php',
+        'verify_bigint_table_review.php',
     ];
     $itmNoAuthScript = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
 

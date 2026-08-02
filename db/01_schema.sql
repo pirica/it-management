@@ -3219,7 +3219,7 @@ CREATE TABLE `role_assignment_rights` (
 DROP TABLE IF EXISTS `audit_logs`;
 
 CREATE TABLE `audit_logs` (
-  `id` int NOT NULL AUTO_INCREMENT,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `employee_id` int DEFAULT NULL,
   `actor_username` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -3227,7 +3227,7 @@ CREATE TABLE `audit_logs` (
   `module_name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `entity_name` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `table_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `record_id` int NOT NULL,
+  `record_id` bigint NOT NULL,
   `action` enum('INSERT','UPDATE','DELETE') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `old_values` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `new_values` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
