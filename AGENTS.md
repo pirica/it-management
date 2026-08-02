@@ -579,6 +579,21 @@ The license management module (`modules/license_management/`) tracks software li
 8. **Audit logging:** `db/` defines `trg_license_management_audit_insert|update|delete` and `trg_license_types_audit_*` (when Type rows are quick-added).
 9. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/module_browser_qa_runner.php --module=license_management --company=1`.
 
+#### Hotel booking distribution API (mandatory)
+
+Partner-facing channel distribution for hotel inventory, ARI, and reservations — separate from the public guest portal (`booking/`) and employee `ui_configuration` API keys.
+
+1. **Tables:** **`hotel_booking_distribution_channels`** (per-tenant channel + `api_key_hash`, `standard`, `webhook_url`), **`hotel_booking_distribution_mappings`** (external hotel/room-type codes), **`hotel_booking_distribution_reservations`** (channel ↔ `hotel_bookings` link by `external_reservation_id`), **`hotel_booking_distribution_ari_events`** (inbound/outbound ARI audit). Canonical DDL in `db/01_schema.sql`; migration `db/migrations/hotel_booking_distribution.sql`.
+2. **Router:** `modules/hotel_booking_api/api.php` — auth via `X-API-Key` (or `api_key`); no employee session (`ITM_HOTEL_BOOKING_DISTRIBUTION_API` in `config/config.php`). Actions: `probe`, `availability` (GET JSON or POST OpenTravel XML), `ari_snapshot`, `ari_push_outbound`, `book`, `modify`, `cancel`, `notify`, `ari_push`.
+3. **Core logic:** `includes/itm_hotel_booking_distribution.php` — availability shop, ARI snapshot, book/modify/cancel, inbound `ari_push`, outbound webhook push (`itm_hotel_booking_distribution_push_ari_to_webhook()`).
+4. **Wire adapters:** `includes/itm_hotel_booking_distribution_wire.php` (format negotiation); `itm_hotel_booking_distribution_opentravel.php` (`OTA_HotelAvailRQ/RS`, `OTA_HotelResNotifRQ/RS`, `OTA_HotelAvailNotifRS`); `itm_hotel_booking_distribution_booking_com.php` and `itm_hotel_booking_distribution_ohip.php` (partner JSON subsets). Channel `standard` selects parser/encoder; override with `?format=json|xml` or `Accept: application/xml`.
+5. **Inbound OTA notify:** `notify` POST routes book/modify/cancel per channel `standard` — not a substitute for certified Booking.com Connectivity or Oracle OHIP certification.
+6. **Outbound ARI:** `ari_push_outbound` POST or admin **Push ARI** on `modules/hotel_booking_distribution_channels/view.php` when `webhook_url` is set; scheduled bulk: `php scripts/run_hotel_booking_distribution_ari_sync.php`.
+7. **Channel admin:** `modules/hotel_booking_distribution_channels/` — Admin → **🏨 Hospitality**; API key generation, hotel/room mappings, standards selector.
+8. **Multi-tenancy:** All distribution tables and API handlers scope by channel `company_id`; reservations write to `hotel_bookings` for the same tenant.
+9. **Canonical doc:** `docs/HOTEL_BOOKING_DISTRIBUTION.md`; guest portal: `docs/BOOKING.md`.
+10. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_hotel_booking_distribution.php`; `php scripts/run_hotel_booking_distribution_ari_sync.php`.
+
 #### Request Password module (mandatory)
 
 The Request Password module (`modules/request_password/`) handles user requests for password resets.
