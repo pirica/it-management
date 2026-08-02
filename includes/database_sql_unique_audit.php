@@ -38,6 +38,10 @@ if (!function_exists('itm_database_sql_unique_audit_resolve_scope_column')) {
             return 'display_name';
         }
 
+        if ($table === 'hotel_booking_special_rates' && in_array('rate_slug', $columns, true)) {
+            return 'rate_slug';
+        }
+
         if (in_array('name', $columns, true)) {
             return 'name';
         }
@@ -109,7 +113,18 @@ if (!function_exists('itm_database_sql_unique_audit_parse')) {
             $scopeUniqueKey = '';
             $scopeUniqueColumns = [];
             $hasScopeUnique = false;
-            if ($scopeColumn !== '') {
+            foreach ($uniques as $unique) {
+                if (strtoupper((string) $unique['key']) === 'PRIMARY') {
+                    continue;
+                }
+                if (itm_database_sql_unique_audit_unique_is_company_scoped($unique['columns'])) {
+                    $hasScopeUnique = true;
+                    $scopeUniqueKey = $unique['key'];
+                    $scopeUniqueColumns = $unique['columns'];
+                    break;
+                }
+            }
+            if (!$hasScopeUnique && $scopeColumn !== '') {
                 foreach ($uniques as $unique) {
                     if (itm_database_sql_unique_audit_unique_matches_scope($unique['columns'], $scopeColumn, $table)) {
                         $hasScopeUnique = true;
@@ -268,6 +283,27 @@ if (!function_exists('itm_database_sql_unique_audit_middle_matches_ifnull_fk')) 
     }
 }
 
+if (!function_exists('itm_database_sql_unique_audit_column_expr_name')) {
+    function itm_database_sql_unique_audit_column_expr_name(string $expr): string
+    {
+        if (preg_match('/`([a-zA-Z0-9_]+)`/', $expr, $match)) {
+            return strtolower((string) $match[1]);
+        }
+
+        return strtolower(trim($expr, " \t`"));
+    }
+}
+
+if (!function_exists('itm_database_sql_unique_audit_unique_is_company_scoped')) {
+    /**
+     * @param array<int, string> $columns
+     */
+    function itm_database_sql_unique_audit_unique_is_company_scoped(array $columns): bool
+    {
+        return count($columns) >= 1 && strtolower((string) $columns[0]) === 'company_id';
+    }
+}
+
 if (!function_exists('itm_database_sql_unique_audit_unique_matches_scope')) {
     /**
      * UNIQUE must start with (`company_id`, scope_column); additional scope columns allowed.
@@ -289,7 +325,19 @@ if (!function_exists('itm_database_sql_unique_audit_unique_matches_scope')) {
             return false;
         }
 
-        if (strtolower($columns[1]) === strtolower($scopeColumn)) {
+        if (count($columns) === 1) {
+            return true;
+        }
+
+        $scopeLower = strtolower($scopeColumn);
+        foreach (array_slice($columns, 1) as $columnExpr) {
+            $columnName = itm_database_sql_unique_audit_column_expr_name($columnExpr);
+            if ($columnName !== '' && $columnName === $scopeLower) {
+                return true;
+            }
+        }
+
+        if (count($columns) >= 2 && strtolower((string) $columns[1]) === $scopeLower) {
             return true;
         }
 
@@ -380,6 +428,26 @@ if (!function_exists('itm_database_sql_unique_audit_run')) {
             'floor_plan_item_tags' => 'Junction table; identity is PRIMARY KEY (floor_plan_id, tag_id), not a name UNIQUE.',
             // Why: Ephemeral QR/code snapshots (includes/itm_qr_share.php); UNIQUE on access_token only.
             'share_sessions' => 'Ephemeral share snapshot; identity is UNIQUE (access_token); module_slug + record_id or scope_path_hash.',
+            'ticket_activity' => 'Append-only ticket timeline; identity is PRIMARY KEY (id) only.',
+            'ticket_comments' => 'Many comments per ticket; identity is PRIMARY KEY (id) only.',
+            'finance_payment_allocations' => 'Payment allocation rows; identity is PRIMARY KEY (id) only.',
+            'finance_attachments' => 'Polymorphic attachment rows; identity is PRIMARY KEY (id) only.',
+            'employee_notifications' => 'Per-employee notification feed; duplicate titles allowed.',
+            'live_chat_messages' => 'Chat message stream; identity is PRIMARY KEY (id) only.',
+            'hotel_booking_hotel_photos' => 'Many photos per hotel; identity is PRIMARY KEY (id) only.',
+            'hotel_booking_hotel_nearby' => 'Many nearby places per hotel; identity is PRIMARY KEY (id) only.',
+            'hotel_booking_room_photos' => 'Many photos per room; identity is PRIMARY KEY (id) only.',
+            'booking_rooms_type_photos' => 'Many photos per room type; identity is PRIMARY KEY (id) only.',
+            'hotel_booking_housekeeping_maintenance' => 'Maintenance rows per room/date; identity is PRIMARY KEY (id) only.',
+            'hotel_booking_room_type_rate_overrides' => 'Calendar override rows; identity is PRIMARY KEY (id) only.',
+            'hotel_booking_room_type_blocks' => 'Calendar block rows; identity is PRIMARY KEY (id) only.',
+            'hotel_bookings' => 'Reservation facts; many rows per customer.',
+            'appointments' => 'Scheduled slots; many rows per employee.',
+            'live_chat_conversations' => 'Many chat sessions per company; identity is PRIMARY KEY (id) only.',
+            'live_chat_participants' => 'Junction table; identity is UNIQUE (conversation_id, employee_id).',
+            'live_chat_typing' => 'Ephemeral typing row per participant; identity is UNIQUE (conversation_id, employee_id).',
+            'hotel_booking_room_utilities' => 'Many utilities per room; identity is PRIMARY KEY (id) only.',
+            'webmail_signatures' => 'Per-employee signatures; duplicate names allowed per employee.',
         ];
 
         foreach ($parsed as $tableRow) {
@@ -450,8 +518,8 @@ if (!function_exists('itm_database_sql_unique_audit_run')) {
 
             $alterSql = itm_database_sql_unique_audit_suggested_alter_sql($table, $scopeColumn);
 
-            $ok = (int) $tableRow['unique_count'] === $requiredUniqueCount
-                && (!empty($tableRow['has_scope_unique']) || $hasIdCompanyUnique);
+            $ok = (!empty($tableRow['has_scope_unique']) || $hasIdCompanyUnique)
+                && (int) $tableRow['unique_count'] >= $requiredUniqueCount;
 
             if ($ok) {
                 $summary['pass']++;

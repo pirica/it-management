@@ -306,6 +306,7 @@ CREATE TABLE `bank_accounts` (
   `updated_by` int DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_bank_accounts_company_institution_account` (`company_id`,`institution_name`,`account_name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `bank_accounts_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -4387,6 +4388,7 @@ CREATE TABLE `appointment_visit_reasons` (
   `updated_by` int DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_appointment_visit_reasons_company_name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `fk_appointment_visit_reasons_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

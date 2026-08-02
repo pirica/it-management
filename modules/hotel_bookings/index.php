@@ -314,7 +314,7 @@ foreach ($dayMaintenance as $maint):
 </div>
 </div>
 <?php else: ?>
-<table class="hb-board-table table">
+<table class="hb-board-table table" data-itm-no-import-excel="1">
 <thead><tr>
 <th>Customer</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Payment</th><th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
 </tr></thead>

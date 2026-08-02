@@ -56,3 +56,25 @@ todo
 visitors_access_log
 vlans
 webmail
+# Bespoke booking / scheduling UIs (not flattened CRUD list contract).
+appointment
+appointment_settings
+hotel_bookings
+hotel_booking_amenities
+hotel_booking_hotels
+hotel_booking_hotel_nearby
+hotel_booking_hotel_photos
+hotel_booking_housekeeping_maintenance
+hotel_booking_housekeeping_maintenance_status
+hotel_booking_housekeeping_statuses
+hotel_booking_portal_rate_plans
+hotel_booking_portal_users
+hotel_booking_room_photos
+hotel_booking_room_type_calendar
+hotel_booking_room_utilities
+hotel_booking_rooms
+hotel_booking_settings
+hotel_booking_special_rates
+hotel_bookings_future
+hotel_bookings_history
+hotel_bookings_present
