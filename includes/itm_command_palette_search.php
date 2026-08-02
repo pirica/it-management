@@ -203,9 +203,72 @@ if (!function_exists('itm_command_palette_resolve_module_nav_label')) {
     }
 }
 
+if (!function_exists('itm_command_palette_sidebar_visible_module_slugs')) {
+    /**
+     * Module slugs visible in the live sidebar for the signed-in user (prefs + CMA + RBAC).
+     *
+     * @return string[]
+     */
+    function itm_command_palette_sidebar_visible_module_slugs($conn, $companyId, $employeeId)
+    {
+        $companyId = (int)$companyId;
+        $employeeId = (int)$employeeId;
+        if (!($conn instanceof mysqli) || $companyId <= 0 || $employeeId <= 0) {
+            return [];
+        }
+
+        if (!function_exists('itm_sidebar_structure')) {
+            require_once __DIR__ . '/ui_config.php';
+        }
+
+        $sidebarConfig = itm_get_ui_configuration($conn, $companyId);
+        $sidebarStructure = itm_sidebar_structure($conn, true);
+        $catalog = itm_sidebar_item_catalog();
+        $submenuOrder = $sidebarConfig['sidebar_submenu_order'] ?? itm_default_sidebar_submenu_order();
+        if (function_exists('itm_normalize_sidebar_submenu_order')) {
+            $submenuOrder = itm_normalize_sidebar_submenu_order($submenuOrder);
+        }
+
+        $slugs = [];
+        foreach ($sidebarStructure as $section) {
+            $sectionId = (string)($section['id'] ?? '');
+            if ($sectionId === ''
+                || !itm_sidebar_section_effective_visible($sectionId, $sidebarConfig, $conn, $companyId, $employeeId)) {
+                continue;
+            }
+
+            foreach ($submenuOrder[$sectionId] ?? [] as $itemId) {
+                if (!isset($catalog[$itemId])) {
+                    continue;
+                }
+
+                $item = $catalog[$itemId];
+                if (!itm_sidebar_item_effective_visible($item, $sidebarConfig, $conn, $companyId, $employeeId)) {
+                    continue;
+                }
+
+                $moduleSlug = strtolower(trim((string)($item['match_dir'] ?? '')));
+                if ($moduleSlug === '' || isset($slugs[$moduleSlug])) {
+                    continue;
+                }
+                if (!itm_command_palette_module_has_index($moduleSlug)) {
+                    continue;
+                }
+
+                $slugs[$moduleSlug] = $moduleSlug;
+            }
+        }
+
+        $ordered = array_values($slugs);
+        sort($ordered, SORT_STRING);
+
+        return $ordered;
+    }
+}
+
 if (!function_exists('itm_command_palette_navigable_module_slugs')) {
     /**
-     * Registry modules the user may open (company gate + RBAC view + index.php present).
+     * Modules the user may open from the palette (sidebar-visible + registry, access + index.php).
      *
      * @return string[]
      */
@@ -220,6 +283,10 @@ if (!function_exists('itm_command_palette_navigable_module_slugs')) {
         }
 
         $slugs = [];
+        foreach (itm_command_palette_sidebar_visible_module_slugs($conn, (int)$companyId, (int)$employeeId) as $moduleSlug) {
+            $slugs[$moduleSlug] = $moduleSlug;
+        }
+
         foreach (itm_list_all_modules_registry($conn) as $row) {
             $moduleSlug = strtolower(trim((string)($row['module_slug'] ?? '')));
             if ($moduleSlug === '' || isset($slugs[$moduleSlug])) {
