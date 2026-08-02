@@ -4,7 +4,7 @@
 Admin-facing audit trail for **non-private** INSERT, UPDATE, and DELETE activity. Rows capture `table_name`, `record_id`, `action`, and old/new values as JSON. This module **does not** log private user content — see **Private data exclusion** below and `AGENTS.md` → **Private data — no audit trail**.
 
 ## 2. Key Tables
-- **audit_logs** — central repository for audit records (not itself trigger-audited).
+- **audit_logs** — central repository for audit records (not itself trigger-audited). Primary key `id` and generic pointer `record_id` are **`BIGINT`** (see `db/migrations/audit_logs_bigint.sql`).
 
 ## 3. Required Relationships
 - **audit_logs** → depends on **companies**.
