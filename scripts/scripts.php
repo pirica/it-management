@@ -1904,7 +1904,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_hotel_booking_distribution_http.php" target="_blank" rel="nofollow noreferrer">verify_hotel_booking_distribution_http.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_channels</span></span></td>
-                    <td>HTTP regression for distribution API: probe auth (401/200), availability GET via curl with disposable channel API key. Browser delegates to CLI subprocess (avoids gateway timeout).</td>
+                    <td>HTTP regression for distribution API: probe auth (401/200), availability GET via curl with disposable channel API key. Uses built-in PHP server by default (browser-safe; optional <code>--base-url</code> for Apache).</td>
                     <td class="scripts-catalog-how-stub"><code>php scripts/verify_hotel_booking_distribution_http.php</code></td>
                 </tr>
                 <tr data-tags="Mixed">
