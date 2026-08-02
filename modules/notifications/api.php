@@ -7,9 +7,6 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
 
 require_once '../../config/config.php';
-require_once ROOT_PATH . 'includes/itm_api_rate_limit.php';
-
-itm_api_enforce_rate_limit_or_exit($conn);
 
 $companyId = (int)($_SESSION['company_id'] ?? 0);
 $employeeId = (int)($_SESSION['employee_id'] ?? 0);
@@ -34,6 +31,15 @@ itm_release_session_lock();
 
 if ($method === 'GET' && isset($_GET['stream']) && (string)$_GET['stream'] === '1') {
     itm_employee_notifications_sse_stream($conn, $companyId, $employeeId);
+}
+
+if ($method === 'GET' && isset($_GET['count_only']) && (string)$_GET['count_only'] === '1') {
+    echo json_encode([
+        'ok' => true,
+        'unread_count' => itm_employee_notification_unread_count($conn, $companyId, $employeeId),
+        'inbox_url' => itm_employee_notification_build_action_url('employee_notifications', null),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
 }
 
 if ($method === 'POST') {

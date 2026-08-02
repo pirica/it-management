@@ -14,8 +14,9 @@ JSON API for the global header notification bell (`includes/header.php`). Not a 
 
 ## 6. API Actions
 
+- **GET** `api.php?count_only=1` — `{ ok, unread_count, inbox_url }` (badge poll; no list query)
 - **GET** `api.php?unread=0&limit=20` — `{ ok, unread_count, notifications[], inbox_url }` (responses send `Cache-Control: no-store`)
-- **GET** `api.php?stream=1` — SSE (`event: unread`) for live unread-count updates (~55s per connection; client reconnects)
+- **GET** `api.php?stream=1` — SSE (`event: unread`) — **not** auto-started by `js/notifications.js` (ties up PHP workers)
 - **POST** `action=mark_read` + `notification_id` + CSRF
 - **POST** `action=mark_all_read` + CSRF — `itm_employee_notification_mark_all_read()` (tenant + `active = 1` scope aligned with unread count)
 
@@ -30,7 +31,7 @@ JSON API for the global header notification bell (`includes/header.php`). Not a 
 
 ## 12. Module Owner Notes
 
-- Real-time: SSE primary (`api.php?stream=1`); 60s JSON poll fallback (`js/notifications.js`).
+- Real-time: deferred badge poll (`?count_only=1`); full list on bell open; **no** auto SSE (worker exhaustion). **No** `itm_api_enforce_rate_limit_or_exit()` on this API.
 - Access: slug `notifications` is in `itm_module_access_always_allowed_slugs()` — not gated by Company Module Access (header bell must work for every signed-in user).
 - Canonical doc: `docs/NOTIFICATIONS.md`.
 - Regression: `php scripts/verify_employee_notifications.php`.
