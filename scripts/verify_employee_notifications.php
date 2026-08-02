@@ -42,7 +42,7 @@ if (!($conn instanceof mysqli)) {
     exit(1);
 }
 
-foreach (['itm_notify_employee', 'itm_employee_notification_unread_count', 'itm_employee_notifications_list_recent', 'itm_notify_ticket_assigned'] as $fn) {
+foreach (['itm_notify_employee', 'itm_employee_notification_unread_count', 'itm_employee_notifications_list_recent', 'itm_notify_ticket_assigned', 'itm_notify_live_chat_conversation_assigned', 'itm_employee_notifications_sse_stream'] as $fn) {
     if (!function_exists($fn)) {
         en_verify_fail("Missing helper {$fn}()");
     } else {

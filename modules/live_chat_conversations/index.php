@@ -769,6 +769,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     // Build and execute the dynamic query
     if (empty($errors)) {
+        $previousAssigneeId = 0;
+        if ($crud_action === 'edit' && $editId > 0) {
+            $prevStmt = mysqli_prepare($conn, 'SELECT assigned_to_employee_id FROM live_chat_conversations WHERE id = ? AND company_id = ? LIMIT 1');
+            if ($prevStmt) {
+                mysqli_stmt_bind_param($prevStmt, 'ii', $editId, $company_id);
+                mysqli_stmt_execute($prevStmt);
+                $prevRes = mysqli_stmt_get_result($prevStmt);
+                $prevRow = $prevRes ? mysqli_fetch_assoc($prevRes) : null;
+                mysqli_stmt_close($prevStmt);
+                $previousAssigneeId = (int)($prevRow['assigned_to_employee_id'] ?? 0);
+            }
+        }
         if ($crud_action === 'create') {
             if (function_exists('itm_crud_stamp_create_audit')) {
                 itm_crud_stamp_create_audit($data, $sqlValues);
@@ -800,6 +812,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $dbErrorCode = 0;
         $dbErrorMessage = '';
         if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+            $savedConversationId = $crud_action === 'create' ? (int)mysqli_insert_id($conn) : (int)$editId;
+            $newAssigneeId = (int)($data['assigned_to_employee_id'] ?? 0);
+            if ($savedConversationId > 0 && $newAssigneeId > 0 && $newAssigneeId !== $previousAssigneeId) {
+                $summary = 'Conversation #' . $savedConversationId;
+                if (!empty($data['status'])) {
+                    $summary .= ' (' . trim((string)$data['status']) . ')';
+                }
+                itm_notify_live_chat_conversation_assigned(
+                    $conn,
+                    (int)$company_id,
+                    $newAssigneeId,
+                    $savedConversationId,
+                    $summary,
+                    (int)($_SESSION['employee_id'] ?? 0)
+                );
+            }
             header('Location: ' . $listUrl);
             exit;
         }

@@ -15,6 +15,7 @@ JSON API for the global header notification bell (`includes/header.php`). Not a 
 ## 6. API Actions
 
 - **GET** `api.php?unread=0&limit=20` — `{ ok, unread_count, notifications[], inbox_url }`
+- **GET** `api.php?stream=1` — SSE (`event: unread`) for live unread-count updates (~55s per connection; client reconnects)
 - **POST** `action=mark_read` + `notification_id` + CSRF
 - **POST** `action=mark_all_read` + CSRF
 
@@ -29,6 +30,6 @@ JSON API for the global header notification bell (`includes/header.php`). Not a 
 
 ## 12. Module Owner Notes
 
-- Poll interval: 60s (`js/notifications.js`).
+- Real-time: SSE primary (`api.php?stream=1`); 60s JSON poll fallback (`js/notifications.js`).
 - Canonical doc: `docs/NOTIFICATIONS.md`.
 - Regression: `php scripts/verify_employee_notifications.php`.

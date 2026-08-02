@@ -11,6 +11,9 @@ if (!function_exists('itm_employee_notification_build_action_url')) {
             return null;
         }
         $base = defined('BASE_URL') ? BASE_URL : '/';
+        if ($slug === 'live_chat_conversations' && $recordId !== null && (int)$recordId > 0) {
+            return $base . 'modules/live_chat/?conversation_id=' . (int)$recordId;
+        }
         $path = 'modules/' . $slug . '/';
         if ($recordId !== null && (int)$recordId > 0) {
             $path .= 'view.php?id=' . (int)$recordId;
@@ -311,6 +314,26 @@ if (!function_exists('itm_notify_event_assigned')) {
     }
 }
 
+if (!function_exists('itm_notify_live_chat_conversation_assigned')) {
+    function itm_notify_live_chat_conversation_assigned($conn, $companyId, $assigneeEmployeeId, $conversationId, $summary = '', $actorEmployeeId = 0)
+    {
+        $assigneeEmployeeId = (int)$assigneeEmployeeId;
+        $conversationId = (int)$conversationId;
+        if ($assigneeEmployeeId <= 0 || $conversationId <= 0 || $assigneeEmployeeId === (int)$actorEmployeeId) {
+            return false;
+        }
+        $summary = trim((string)$summary);
+        return itm_notify_employee($conn, $assigneeEmployeeId, [
+            'company_id' => (int)$companyId,
+            'module_slug' => 'live_chat_conversations',
+            'record_id' => $conversationId,
+            'title' => 'Live chat assigned to you',
+            'body' => $summary !== '' ? $summary : 'Open the conversation to respond.',
+            'action_url' => itm_employee_notification_build_action_url('live_chat_conversations', $conversationId),
+        ]);
+    }
+}
+
 if (!function_exists('itm_notify_note_shared')) {
     function itm_notify_note_shared($conn, $companyId, $sharedWithJson, $noteId, $noteTitle, $ownerEmployeeId = 0)
     {
@@ -455,6 +478,58 @@ if (!function_exists('itm_employee_notification_unread_count')) {
         $row = $res ? mysqli_fetch_assoc($res) : null;
         mysqli_stmt_close($stmt);
         return (int)($row['c'] ?? 0);
+    }
+}
+
+if (!function_exists('itm_employee_notifications_sse_stream')) {
+    /**
+     * Server-Sent Events stream for header bell unread count (short-lived; client reconnects).
+     */
+    function itm_employee_notifications_sse_stream($conn, $companyId, $employeeId, $maxSeconds = 55, $pollSeconds = 5)
+    {
+        $companyId = (int)$companyId;
+        $employeeId = (int)$employeeId;
+        if ($companyId <= 0 || $employeeId <= 0) {
+            http_response_code(401);
+            return;
+        }
+        @ini_set('zlib.output_compression', '0');
+        @ini_set('implicit_flush', '1');
+        while (ob_get_level() > 0) {
+            ob_end_flush();
+        }
+        header('Content-Type: text/event-stream; charset=utf-8');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Connection: keep-alive');
+        header('X-Accel-Buffering: no');
+
+        $lastUnread = -1;
+        $started = time();
+        $maxSeconds = max(10, min(120, (int)$maxSeconds));
+        $pollSeconds = max(2, min(30, (int)$pollSeconds));
+
+        while ((time() - $started) < $maxSeconds) {
+            if (connection_aborted()) {
+                break;
+            }
+            $unread = itm_employee_notification_unread_count($conn, $companyId, $employeeId);
+            if ($unread !== $lastUnread) {
+                $payload = json_encode([
+                    'ok' => true,
+                    'unread_count' => $unread,
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                echo 'event: unread' . "\n";
+                echo 'data: ' . $payload . "\n\n";
+                $lastUnread = $unread;
+            } else {
+                echo ": heartbeat\n\n";
+            }
+            if (function_exists('flush')) {
+                flush();
+            }
+            sleep($pollSeconds);
+        }
+        exit;
     }
 }
 

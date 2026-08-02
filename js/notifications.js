@@ -3,6 +3,8 @@
 
     var POLL_MS = 60000;
     var pollTimer = null;
+    var eventSource = null;
+    var sseFallbackStarted = false;
 
     function baseUrl() {
         return (window.ITM_BASE_URL || '/').replace(/\/?$/, '/');
@@ -158,6 +160,61 @@
         panel.classList.toggle('is-open');
     }
 
+    function startPolling(root) {
+        if (pollTimer) {
+            clearInterval(pollTimer);
+        }
+        pollTimer = setInterval(function () {
+            var panel = root.querySelector('[data-itm-notifications-panel]');
+            fetchNotifications(root, { renderList: panel && panel.classList.contains('is-open') });
+        }, POLL_MS);
+    }
+
+    function stopSse() {
+        if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+        }
+    }
+
+    function startPollingFallback(root) {
+        if (sseFallbackStarted) {
+            return;
+        }
+        sseFallbackStarted = true;
+        stopSse();
+        startPolling(root);
+    }
+
+    function startSse(root) {
+        if (typeof EventSource === 'undefined') {
+            startPollingFallback(root);
+            return;
+        }
+        stopSse();
+        eventSource = new EventSource(apiUrl('stream=1'));
+        eventSource.addEventListener('unread', function (event) {
+            var data;
+            try {
+                data = JSON.parse(event.data || '{}');
+            } catch (e) {
+                return;
+            }
+            if (!data || !data.ok) {
+                return;
+            }
+            var badgeEl = root.querySelector('[data-itm-notifications-badge]');
+            setBadge(badgeEl, data.unread_count);
+            var panel = root.querySelector('[data-itm-notifications-panel]');
+            if (panel && panel.classList.contains('is-open')) {
+                fetchNotifications(root);
+            }
+        });
+        eventSource.onerror = function () {
+            startPollingFallback(root);
+        };
+    }
+
     function bind(root) {
         if (!root || root.dataset.itmNotificationsBound === '1') {
             return;
@@ -170,6 +227,7 @@
         var markAllBtn = root.querySelector('[data-itm-notifications-mark-all]');
 
         fetchNotifications(root);
+        startSse(root);
 
         if (toggleBtn) {
             toggleBtn.addEventListener('click', function (event) {
@@ -219,13 +277,6 @@
             }
             closePanel(panel);
         });
-
-        if (pollTimer) {
-            clearInterval(pollTimer);
-        }
-        pollTimer = setInterval(function () {
-            fetchNotifications(root, { renderList: panel && panel.classList.contains('is-open') });
-        }, POLL_MS);
     }
 
     document.addEventListener('DOMContentLoaded', function () {
