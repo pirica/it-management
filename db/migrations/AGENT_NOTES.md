@@ -13,8 +13,7 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
   4. `SET FOREIGN_KEY_CHECKS = 1`
 - **Data warning:** `DROP TABLE` removes existing rows. Back up or export data before applying on production; re-seed or restore manually when needed.
 - **Pair every migration with canonical schema:** mirror the same table shape in `db/01_schema.sql` (and `db/02_data.sql` when seeds change) in the **same PR**.
-- **Apply order:** run migrations manually on live DBs in filename order; there is no migration runner yet.
-- **Live verification:** `php scripts/verify_db_migrations.php` (browser + CLI, Admin) globs every `db/migrations/*.sql` and probes live schema/data (parses `CREATE TABLE` / `CREATE TRIGGER`; DML-only files marked Info).
+- **Apply order:** filename order under `db/migrations/*.sql`. **Runner (live DBs):** `php scripts/migrate.php --status` (pending vs `schema_migrations`) and `php scripts/migrate.php --apply` (one MySQL session per invocation; records `filename` + SHA-256 `checksum`). `schema_migrations.sql` bootstraps the history table only (`CREATE TABLE IF NOT EXISTS`) — excluded from the runner file list. **Schema probe (no history):** `php scripts/verify_db_migrations.php` still compares live tables/triggers to migration file contents.
 - **No audit triggers** on private-data tables listed in `AGENTS.md` → Private data — no audit trail.
 
 ## 7. File Structure
@@ -46,6 +45,7 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
 - `audit_logs_bigint.sql` — `audit_logs.id` + `record_id` as `BIGINT` (preserves rows via `_itm_audit_logs_backup`; mirrors `db/01_schema.sql`)
 - `hotel_booking_hk_status_code.sql` — `hotel_booking_housekeeping_statuses` with tenant-unique `code` (destructive — re-seed HK statuses from `db/02_data.sql` after apply)
 - `search_index.sql` — `search_index` denormalized FULLTEXT table for phase-2 command palette (new table; destructive only to existing index rows)
+- `schema_migrations.sql` — `schema_migrations` history table for `scripts/migrate.php` (`CREATE TABLE IF NOT EXISTS`; bootstrap only — not executed by the runner loop)
 
 ## 12. Module Owner Notes (Optional)
 Catalog pointer: `AGENTS.md` → Database & Schema Rules → **Incremental migrations (`db/migrations/`)**.

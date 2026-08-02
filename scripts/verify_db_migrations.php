@@ -1,8 +1,9 @@
 <?php
 /**
- * Compare live DB state against db/migrations/*.sql expectations (no migration history table).
+ * Compare live DB state against db/migrations/*.sql expectations.
  *
  * Browser + CLI (Admin). Reports Applied / Superseded / Not applied per migration file.
+ * Applied history for operator runs: scripts/migrate.php + schema_migrations.
  *
  * CLI: php scripts/verify_db_migrations.php
  * CLI: php scripts/verify_db_migrations.php --json
@@ -63,7 +64,7 @@ if (!$isCli) {
     itm_script_output_close_pre();
     echo '<h1>db/migrations vs live database</h1>';
     echo '<p>Database: <code>' . htmlspecialchars((string)$report['database'], ENT_QUOTES, 'UTF-8') . '</code>. ';
-    echo 'Probes schema/data only — there is no applied-migration log table.</p>';
+    echo 'Probes schema/data — applied history is tracked by <code>schema_migrations</code> via <a href="migrate.php?run=1">migrate.php</a>.</p>';
     echo '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;margin:12px 0;">';
     echo '<thead><tr><th>Migration file</th><th>Status</th><th>Detail</th></tr></thead><tbody>';
     foreach ($report['migrations'] as $row) {
