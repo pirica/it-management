@@ -1,0 +1,39 @@
+-- hotel_bookings: planning bar color (#rrggbb). Destructive — backs up no rows; re-seed bookings after apply on production.
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS `hotel_bookings`;
+CREATE TABLE `hotel_bookings` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `customer_id` int NOT NULL,
+  `room_id` int NOT NULL,
+  `check_in` date NOT NULL,
+  `check_out` date NOT NULL,
+  `payment_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `future_status_id` int DEFAULT NULL,
+  `present_status_id` int DEFAULT NULL,
+  `history_status_id` int DEFAULT NULL,
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `booking_color` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `customer_id` (`customer_id`),
+  KEY `room_id` (`room_id`),
+  KEY `idx_hotel_bookings_dates` (`company_id`,`check_in`,`check_out`),
+  KEY `future_status_id` (`future_status_id`),
+  KEY `present_status_id` (`present_status_id`),
+  KEY `history_status_id` (`history_status_id`),
+  CONSTRAINT `hotel_bookings_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `hotel_bookings_ibfk_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `hotel_bookings_ibfk_room` FOREIGN KEY (`room_id`) REFERENCES `hotel_booking_rooms` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `hotel_bookings_ibfk_future` FOREIGN KEY (`future_status_id`) REFERENCES `hotel_bookings_future` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hotel_bookings_ibfk_present` FOREIGN KEY (`present_status_id`) REFERENCES `hotel_bookings_present` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hotel_bookings_ibfk_history` FOREIGN KEY (`history_status_id`) REFERENCES `hotel_bookings_history` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SET FOREIGN_KEY_CHECKS = 1;
