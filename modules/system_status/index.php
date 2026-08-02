@@ -126,6 +126,7 @@ if (!isset($crud_title)) {
         .ss-metric-block { padding: 10px 0; }
         .ss-metric-block-lg { padding: 20px 0; }
         .ss-table-num { text-align: right; }
+        .ss-db-sort-link { text-decoration: none; color: inherit; }
         .ss-extensions-list { max-height: 320px; overflow: auto; }
         .ss-extensions-columns { column-count: 1; gap: 20px; margin: 0; padding: 0; list-style: none; font-size: 0.85rem; }
         .metric-card { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }

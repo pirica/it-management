@@ -62,7 +62,7 @@ Registry: `modules_registry.module_slug = system_status` (system module, active)
 - **Monitoring:** cached `system_info`, `cpu_usage`, and `storage_report`; Sub Storage tree via `itm_system_status_render_storage_node()`.
 - **Sub Storage:** file/byte totals exclude system placeholders `.htaccess`, `index.html`, and `AGENT_NOTES.md` (`itm_system_status_is_ignored_storage_file()`).
 - **PHP Settings:** cached PHP core, limits, extensions (responsive `.ss-extensions-columns`); live detail via `scripts/system_status_phpinfo.php`.
-- **Database:** cached MySQL status + `db_report` snapshot for active `DB_NAME`.
+- **Database:** cached MySQL status + `db_report` snapshot for active `DB_NAME`. Metrics table columns (**Table**, **Rows**, **Size (MB)**) are sortable via `?tab=database&sort=name|rows|size_mb&dir=ASC|DESC` (default `name` ASC); total row stays pinned at the bottom.
 - **Tabs UI:** active tab uses `var(--accent)` background with white label text.
 - **Layout:** shared `sidebar.php` / `header.php`; module-specific CSS in `index.php` (`.metrics-grid`, `.metrics-stack`, `.metric-card`, `.ss-storage-*`, `.status-badge`).
 - **Responsive layout:** tab partials use CSS classes only (no layout inline styles). Breakpoints in `index.php`:

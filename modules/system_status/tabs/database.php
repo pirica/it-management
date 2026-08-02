@@ -20,6 +20,45 @@ $dbReport = is_array($ssPayload['db_report'] ?? null) ? $ssPayload['db_report'] 
     'table_count' => 0,
     'database' => $activeDatabase,
 ];
+
+$dbSortFields = [
+    'name' => 'Table',
+    'rows' => 'Rows',
+    'size_mb' => 'Size (MB)',
+];
+$dbSort = isset($_GET['sort']) ? (string)$_GET['sort'] : 'name';
+if (!isset($dbSortFields[$dbSort])) {
+    $dbSort = 'name';
+}
+$dbDir = strtoupper((string)($_GET['dir'] ?? 'ASC'));
+if ($dbDir !== 'ASC' && $dbDir !== 'DESC') {
+    $dbDir = 'ASC';
+}
+
+$ssDbSortUrl = static function (array $overrides = []) use ($dbSort, $dbDir): string {
+    $params = array_merge([
+        'tab' => 'database',
+        'sort' => $dbSort,
+        'dir' => $dbDir,
+    ], $overrides);
+
+    return '?' . http_build_query($params);
+};
+
+if (!empty($dbReport['tables']) && is_array($dbReport['tables'])) {
+    usort($dbReport['tables'], static function (array $left, array $right) use ($dbSort, $dbDir): int {
+        if ($dbSort === 'name') {
+            $cmp = strcasecmp((string)($left['name'] ?? ''), (string)($right['name'] ?? ''));
+        } elseif ($dbSort === 'rows') {
+            $cmp = (int)($left['rows'] ?? 0) <=> (int)($right['rows'] ?? 0);
+        } else {
+            $cmp = (float)($left['size_mb'] ?? 0) <=> (float)($right['size_mb'] ?? 0);
+        }
+
+        return $dbDir === 'DESC' ? -$cmp : $cmp;
+    });
+}
+
 $mysqlRunning = !empty($ssPayload['mysql_running']);
 $mysqlVersion = (string)($ssPayload['mysql_version'] ?? 'Unavailable');
 $mysqlServiceName = (string)($ssPayload['mysql_service_name'] ?? 'mysqld');
@@ -67,9 +106,18 @@ $mysqlDisplayName = (string)($ssPayload['mysql_display_name'] ?? 'MySQL Server (
         <table class="info-table">
             <thead>
                 <tr>
-                    <th>Table</th>
-                    <th class="ss-table-num">Rows</th>
-                    <th class="ss-table-num">Size (MB)</th>
+                    <?php foreach ($dbSortFields as $field => $label): ?>
+                        <?php
+                        $nextDir = ($dbSort === $field && $dbDir === 'ASC') ? 'DESC' : 'ASC';
+                        $sortIndicator = ($dbSort === $field) ? ($dbDir === 'ASC' ? ' ▲' : ' ▼') : '';
+                        $thClass = $field === 'name' ? '' : 'ss-table-num';
+                        ?>
+                        <th class="<?php echo sanitize($thClass); ?>">
+                            <a href="<?php echo sanitize($ssDbSortUrl(['sort' => $field, 'dir' => $nextDir])); ?>" class="ss-db-sort-link" title="Sort by <?php echo sanitize($label); ?>">
+                                <?php echo sanitize($label . $sortIndicator); ?>
+                            </a>
+                        </th>
+                    <?php endforeach; ?>
                 </tr>
             </thead>
             <tbody>
