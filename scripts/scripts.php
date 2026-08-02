@@ -777,7 +777,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_db_migrations.php" target="_blank" rel="nofollow noreferrer">verify_db_migrations.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Compares live <code>itmanagement</code> schema/data against every <code>db/migrations/*.sql</code> file (Applied / Superseded / Not applied). No migration history table — probes only. Shared lib: <code>lib/itm_verify_db_migrations_report.php</code>.</td>
+                    <td>Compares live <code>itmanagement</code> schema/data against every <code>db/migrations/*.sql</code> file discovered on disk (natural sort; Applied / Superseded / Not applied / DML only). Parses <code>CREATE TABLE</code> / <code>CREATE TRIGGER</code> per file. No migration history table — probes only. Shared lib: <code>lib/itm_verify_db_migrations_report.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">
