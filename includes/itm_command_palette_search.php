@@ -502,6 +502,17 @@ if (!function_exists('itm_command_palette_run_module_search')) {
     function itm_command_palette_run_module_search($conn, $moduleSlug, $companyId, $query, $limit = 5)
     {
         $moduleSlug = strtolower(trim((string)$moduleSlug));
+
+        if (!function_exists('itm_search_index_query_module')) {
+            require_once __DIR__ . '/itm_search_index.php';
+        }
+        if (itm_search_index_company_has_rows($conn, (int)$companyId, $moduleSlug)) {
+            $indexResults = itm_search_index_query_module($conn, (int)$companyId, $moduleSlug, $query, $limit);
+            if ($indexResults !== []) {
+                return $indexResults;
+            }
+        }
+
         switch ($moduleSlug) {
             case 'employees':
                 return itm_command_palette_search_employees($conn, $companyId, $query, $limit);

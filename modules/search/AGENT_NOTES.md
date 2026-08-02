@@ -4,10 +4,10 @@
 Global **command palette** search across enabled tenant modules so users can find people, assets, tickets, IP addresses, and catalog rows without opening each module first.
 
 - **Phase 1 (live):** `includes/itm_command_palette_search.php` runs scoped SQL `LIKE` queries per module (no vault/private modules).
-- **Phase 2 (schema only):** `search_index` denormalized table in `db/01_schema.sql` / `db/migrations/search_index.sql` for future FULLTEXT + CRUD sync.
+- **Phase 2 (live):** `includes/itm_search_index.php` maintains denormalized `search_index` rows (FULLTEXT) on CRUD for employees, equipment, tickets, ip_addresses, catalogs. Palette prefers index when populated, then falls back to phase 1 SQL `LIKE`.
 
 ## 2. Key Tables
-- **search_index** — phase 2 denormalized palette index (`company_id`, `module_slug`, `record_id`, `title`, `subtitle`, `keywords`, FULLTEXT on text columns). Not populated in phase 1.
+- **search_index** — phase 2 denormalized palette index (`company_id`, `module_slug`, `record_id`, `title`, `subtitle`, `keywords`, FULLTEXT on text columns). Synced on CRUD via `itm_search_index_after_module_*()`; backfill: `php scripts/apply_search_index_backfill.php --apply`.
 
 ## 3. Required Relationships
 - **search_index** → **companies** (`company_id`, `ON DELETE CASCADE`).
@@ -60,8 +60,9 @@ $payload = itm_command_palette_search($conn, $companyId, $employeeId, $query, 5)
 ### Regression
 ```bash
 php scripts/verify_command_palette_search.php
+php scripts/apply_search_index_backfill.php --apply
 ```
 
 ## 12. Change Log (optional)
 - Phase 1 command palette: SQL LIKE API + header modal UI.
-- Phase 2 schema: `search_index` table (FULLTEXT) — population/sync deferred.
+- Phase 2: `search_index` FULLTEXT population, CRUD sync hooks, backfill script, index-first search with SQL fallback.

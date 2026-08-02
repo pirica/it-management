@@ -7,6 +7,7 @@
 
 require '../../config/config.php';
 itm_require_crud_role_module_permission($conn, 'delete', 'tickets');
+require_once '../../includes/itm_search_index.php';
 
 
 // Only allow deletion via POST for security
@@ -38,6 +39,7 @@ if ($bulkAction === 'clear_table') {
     if ($softDeleteSql !== '') {
         itm_run_query($conn, $softDeleteSql);
     }
+    itm_search_index_after_module_clear($conn, 'tickets', $tenantCompanyId);
     header('Location: index.php');
     exit;
 }
@@ -58,6 +60,7 @@ if ($bulkAction === 'bulk_delete') {
             if ($softDeleteSql !== '') {
                 itm_run_query($conn, $softDeleteSql . ' LIMIT 1');
             }
+            itm_search_index_after_module_delete($conn, 'tickets', (int)$company_id, $bulkId);
         }
     }
     header('Location: index.php');
@@ -73,6 +76,7 @@ if ($id > 0) {
     if ($softDeleteSql !== '') {
         itm_run_query($conn, $softDeleteSql . ' LIMIT 1');
     }
+    itm_search_index_after_module_delete($conn, 'tickets', (int)$company_id, $id);
 }
 
 // Redirect back to the main list

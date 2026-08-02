@@ -11,7 +11,7 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/verify_command_palette_search.php</code> — exit <code>1</code> on failure. Run when changing <code>includes/itm_command_palette_search.php</code>, <code>modules/search/api.php</code>, <code>js/command-palette.js</code>, or <code>includes/header.php</code> palette wiring.
+<code>php scripts/verify_command_palette_search.php</code> — exit <code>1</code> on failure. Run when changing <code>includes/itm_command_palette_search.php</code>, <code>includes/itm_search_index.php</code>, <code>modules/search/api.php</code>, <code>js/command-palette.js</code>, or <code>includes/header.php</code> palette wiring.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 
@@ -19,6 +19,7 @@ define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/../includes/itm_command_palette_search.php';
+require_once __DIR__ . '/../includes/itm_search_index.php';
 
 itm_script_output_begin('Command Palette Search Verification');
 
@@ -46,6 +47,7 @@ if (!$conn instanceof mysqli) {
 
 $requiredFiles = [
     'includes/itm_command_palette_search.php',
+    'includes/itm_search_index.php',
     'modules/search/api.php',
     'modules/search/index.php',
     'js/command-palette.js',
@@ -171,6 +173,55 @@ if ($demoId > 0) {
     }
 } else {
     cps_verify_pass('Demo employee not seeded — skipped non-admin employees RBAC probe.');
+}
+
+if (!itm_search_index_table_ready($conn)) {
+    cps_verify_fail('search_index table missing on live database.');
+} else {
+    cps_verify_pass('search_index table exists on live database.');
+
+    $backfillCount = itm_search_index_backfill_company($conn, $companyId, 'employees');
+    if ($backfillCount <= 0) {
+        cps_verify_fail('search_index backfill returned zero employees rows for company 1.');
+    } else {
+        cps_verify_pass('Backfilled ' . $backfillCount . ' employees search_index row(s).');
+    }
+
+    $indexHits = itm_search_index_query_module($conn, $companyId, 'employees', 'Admin', 3);
+    if ($indexHits === []) {
+        cps_verify_fail('FULLTEXT search_index query returned no employees hits for Admin.');
+    } else {
+        cps_verify_pass('FULLTEXT search_index query returned employees hits.');
+    }
+
+    $paletteIndexPayload = ($adminId > 0)
+        ? itm_command_palette_search($conn, $companyId, $adminId, 'Admin', 3)
+        : ['groups' => []];
+    $indexGroupHit = false;
+    foreach ($paletteIndexPayload['groups'] ?? [] as $group) {
+        if (($group['module_slug'] ?? '') === 'employees' && !empty($group['results'])) {
+            $indexGroupHit = true;
+            break;
+        }
+    }
+    if (!$indexGroupHit) {
+        cps_verify_fail('Palette search did not return employees group after index backfill.');
+    } elseif ($adminId <= 0) {
+        cps_verify_pass('Skipped palette index-path probe — Admin employee not seeded.');
+    } else {
+        cps_verify_pass('Palette search uses populated search_index for employees.');
+    }
+
+    if ($adminId > 0) {
+        itm_search_index_remove($conn, $companyId, 'employees', $adminId);
+        $afterDeleteHits = itm_search_index_query_module($conn, $companyId, 'employees', 'Admin', 3);
+        if ($afterDeleteHits !== []) {
+            cps_verify_fail('search_index row still matches after remove() for Admin employee.');
+        } else {
+            cps_verify_pass('search_index remove() drops deleted index row.');
+        }
+        itm_search_index_sync_record($conn, 'employees', $companyId, $adminId);
+    }
 }
 
 if ($failures > 0) {

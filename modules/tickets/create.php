@@ -465,6 +465,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$error && itm_run_query($conn, $sql)) {
             // Success: Cleanup physical files for removed photos
             foreach ($ticketPhotoFilenamesToDeleteAfterSave as $df) { @unlink($ticketUploadPath . $df); }
+            $savedTicketId = $is_edit ? $id : (int)mysqli_insert_id($conn);
+            if ($savedTicketId > 0) {
+                require_once '../../includes/itm_search_index.php';
+                itm_search_index_after_module_save($conn, 'tickets', (int)$company_id, $savedTicketId);
+            }
             header('Location: index.php'); exit;
         }
     }

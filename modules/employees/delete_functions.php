@@ -60,6 +60,8 @@ function employees_delete_record(mysqli $conn, int $companyId, int $id): ?string
         }
 
         mysqli_commit($conn);
+        require_once ROOT_PATH . 'includes/itm_search_index.php';
+        itm_search_index_after_module_delete($conn, 'employees', $companyId, $id);
         return null;
     } catch (Throwable $e) {
         mysqli_rollback($conn);

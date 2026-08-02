@@ -1911,7 +1911,14 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_command_palette_search.php" target="_blank" rel="nofollow noreferrer">verify_command_palette_search.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Regression for global command palette: <code>includes/itm_command_palette_search.php</code>, <code>modules/search/api.php</code>, header <code>Ctrl+K</code> wiring, RBAC gates (employees admin-only), and <code>search_index</code> phase-2 schema presence.</td>
+                    <td>Regression for global command palette: <code>includes/itm_command_palette_search.php</code>, <code>includes/itm_search_index.php</code>, <code>modules/search/api.php</code>, header <code>Ctrl+K</code> wiring, RBAC gates (employees admin-only), <code>search_index</code> FULLTEXT sync, and backfill/remove probes.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="apply_search_index_backfill.php" target="_blank" rel="nofollow noreferrer">apply_search_index_backfill.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Backfill <code>search_index</code> rows for command-palette phase 2 (employees, equipment, tickets, ip_addresses, catalogs). Dry-run default; <code>--apply</code> / <code>?apply=1</code> (Admin). Optional <code>--company=</code> and <code>--module=</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">

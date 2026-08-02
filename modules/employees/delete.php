@@ -28,6 +28,9 @@ if ($bulkAction === 'clear_table') {
         exit;
     }
 
+    require_once '../../includes/itm_search_index.php';
+    itm_search_index_after_module_clear($conn, 'employees', $companyId);
+
     $_SESSION['crud_success'] = 'All visible employees were soft-deleted for this company.';
 
     header('Location: index.php');
