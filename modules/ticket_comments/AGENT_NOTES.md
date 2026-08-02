@@ -209,9 +209,9 @@ Rules:
 
 ## 12. Module Owner Notes (Optional)
 
-Regression scripts, related `AGENT_NOTES.md` files, or follow-up hardening (document only — do not cite numbered PRs).
-
-Example: Regression: `php scripts/verify_<module>.php`. Parent module: `modules/ops_report/AGENT_NOTES.md`.
+- On create/edit save, `itm_notify_ticket_comment_mentions()` runs when `body` contains `@username` tokens.
+- Create/edit forms load `js/ticket-comment-mentions.js` — press **F2** in the `body` textarea to pick a tenant employee mention.
+- Notifications: `docs/NOTIFICATIONS.md`.
 
 ---
 

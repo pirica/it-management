@@ -364,6 +364,28 @@ $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
 
+$itmTicketMentionUsers = [];
+if (in_array($crud_action, ['create', 'edit'], true) && $company_id > 0) {
+    $mentionSql = 'SELECT id, username, first_name, last_name FROM employees
+                   WHERE company_id = ? AND deleted_at IS NULL AND active = 1
+                   ORDER BY username ASC';
+    $mentionStmt = mysqli_prepare($conn, $mentionSql);
+    if ($mentionStmt) {
+        mysqli_stmt_bind_param($mentionStmt, 'i', $company_id);
+        mysqli_stmt_execute($mentionStmt);
+        $mentionRes = mysqli_stmt_get_result($mentionStmt);
+        while ($mentionRes && ($mentionRow = mysqli_fetch_assoc($mentionRes))) {
+            $itmTicketMentionUsers[] = [
+                'id' => (int)$mentionRow['id'],
+                'username' => (string)($mentionRow['username'] ?? ''),
+                'first_name' => (string)($mentionRow['first_name'] ?? ''),
+                'last_name' => (string)($mentionRow['last_name'] ?? ''),
+            ];
+        }
+        mysqli_stmt_close($mentionStmt);
+    }
+}
+
 // Handle Excel/CSV database import requests from table-tools.js.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && strpos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== false) {
     $rawBody = file_get_contents('php://input');
@@ -1115,7 +1137,7 @@ if (!isset($crud_title)) {
                             <?php elseif ($isDate): ?>
                                 <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
                             <?php elseif ($isText): ?>
-                                <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
+                                <textarea name="<?php echo sanitize($name); ?>" rows="4"<?php echo $name === 'body' ? ' title="Press F2 to mention a user"' : ''; ?>><?php echo sanitize($displayVal); ?></textarea>
                             <?php else: ?>
                                 <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
                             <?php endif; ?>
@@ -1154,6 +1176,13 @@ if (!isset($crud_title)) {
 window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 </script>
 <script src="../../js/select-add-option.js"></script>
+<?php if (in_array($crud_action, ['create', 'edit'], true)): ?>
+<link rel="stylesheet" href="../../css/ticket-comment-mentions.css">
+<script>
+window.ITM_TICKET_MENTION_USERS = <?php echo json_encode($itmTicketMentionUsers, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+</script>
+<script src="../../js/ticket-comment-mentions.js"></script>
+<?php endif; ?>
 
 <script>
 /**

@@ -209,9 +209,8 @@ Rules:
 
 ## 12. Module Owner Notes (Optional)
 
-Regression scripts, related `AGENT_NOTES.md` files, or follow-up hardening (document only — do not cite numbered PRs).
-
-Example: Regression: `php scripts/verify_<module>.php`. Parent module: `modules/ops_report/AGENT_NOTES.md`.
+- When `assigned_to_employee_id` changes on create/edit, `itm_notify_live_chat_conversation_assigned()` notifies the assignee (links open `modules/live_chat/?conversation_id=`).
+- Live message/waiting notifications remain in `modules/live_chat/api.php`.
 
 ---
 

@@ -19,6 +19,10 @@ if ($companyId <= 0 || $employeeId <= 0) {
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 
+if ($method === 'GET' && isset($_GET['stream']) && (string)$_GET['stream'] === '1') {
+    itm_employee_notifications_sse_stream($conn, $companyId, $employeeId);
+}
+
 if ($method === 'POST') {
     itm_require_post_csrf();
     $action = trim((string)($_POST['action'] ?? ''));
