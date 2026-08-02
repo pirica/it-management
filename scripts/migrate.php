@@ -4,7 +4,7 @@
  *
  * CLI: php scripts/migrate.php --status
  * CLI: php scripts/migrate.php --apply
- * Browser: scripts/migrate.php?run=1 (status) / ?run=1&apply=1 (Admin apply)
+ * Browser: scripts/migrate.php?run=1 (status) / ?run=1&apply=1 (Admin apply) / POST delete (Admin)
  */
 
 declare(strict_types=1);
@@ -13,14 +13,14 @@ function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
 <code>php scripts/migrate.php --status</code> — probes the <strong>live database</strong> for every migration file (Applied vs Pending); <code>schema_migrations</code> is audit/history only.<br>
-<code>php scripts/migrate.php --apply</code> — runs only migrations whose live schema probe failed; records satisfied migrations without re-executing destructive SQL. Browser apply requires Admin: <code>?run=1&amp;apply=1</code>.
+<code>php scripts/migrate.php --apply</code> — runs only migrations whose live schema probe failed; records satisfied migrations without re-executing destructive SQL. Browser apply requires Admin: <code>?run=1&amp;apply=1</code>. Browser delete (🗑️ column) removes the <code>db/migrations/*.sql</code> file from disk (Admin + confirm).
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 
 /**
  * @param array<int, array<string, mixed>> $migrations
  */
-function itm_migrate_render_browser_table(array $migrations): void
+function itm_migrate_render_browser_table(array $migrations, bool $allowDelete = false, string $csrfToken = ''): void
 {
     echo '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;margin:12px 0;width:100%;max-width:1200px;">';
     echo '<thead><tr>';
@@ -30,6 +30,7 @@ function itm_migrate_render_browser_table(array $migrations): void
     echo '<th>Verify Script run=1</th>';
     echo '<th>Fix Script run=1&amp;apply=1</th>';
     echo '<th>Open SQL (new window)</th>';
+    echo '<th>Delete</th>';
     echo '</tr></thead><tbody>';
 
     foreach ($migrations as $row) {
@@ -61,6 +62,21 @@ function itm_migrate_render_browser_table(array $migrations): void
             $fixLink = '<span title="Resolve checksum drift before apply">—</span>';
         }
 
+        $deleteCell = '—';
+        if ($allowDelete && $filename !== '' && $csrfToken !== '') {
+            $confirmText = 'Delete migration file ' . $filename . ' from the filesystem? This cannot be undone.';
+            $confirmJs = 'return confirm(' . json_encode($confirmText) . ');';
+            $deleteCell = '<form method="POST" action="migrate.php?run=1" style="display:inline;margin:0;"'
+                . ' onsubmit="' . htmlspecialchars($confirmJs, ENT_QUOTES, 'UTF-8') . '">'
+                . '<input type="hidden" name="csrf_token" value="'
+                . htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') . '">'
+                . '<input type="hidden" name="delete_migration" value="1">'
+                . '<input type="hidden" name="filename" value="'
+                . htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') . '">'
+                . '<button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>'
+                . '</form>';
+        }
+
         echo '<tr>';
         echo '<td style="color:' . htmlspecialchars($color, ENT_QUOTES, 'UTF-8') . ';font-weight:600;">'
             . htmlspecialchars($statusText, ENT_QUOTES, 'UTF-8') . '</td>';
@@ -69,6 +85,7 @@ function itm_migrate_render_browser_table(array $migrations): void
         echo '<td>' . $verifyLink . '</td>';
         echo '<td>' . $fixLink . '</td>';
         echo '<td>' . $sqlLink . '</td>';
+        echo '<td>' . $deleteCell . '</td>';
         echo '</tr>';
     }
 
@@ -140,17 +157,57 @@ if (!$conn instanceof mysqli) {
     exit(1);
 }
 
+$browserDeleteNotice = '';
+if (
+    !$isCli
+    && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
+    && isset($_POST['delete_migration'])
+    && (string)$_POST['delete_migration'] === '1'
+) {
+    if (function_exists('itm_script_require_admin_script_or_exit')) {
+        itm_script_require_admin_script_or_exit(
+            $conn,
+            'Forbidden: administrator login required.'
+        );
+    } elseif (!function_exists('itm_is_admin') || !itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+        http_response_code(403);
+        echo colorText('[FAIL] Forbidden: administrator login required.', 'fail') . $nl;
+        itm_script_output_end();
+        exit(1);
+    }
+
+    itm_require_post_csrf();
+    $deleteFilename = trim((string)($_POST['filename'] ?? ''));
+    [$deleted, $deleteMessage] = itm_database_migrations_delete_discovered_file($conn, $deleteFilename);
+    if ($deleted) {
+        $browserDeleteNotice = $deleteMessage;
+        echo colorText('[PASS] ' . $deleteMessage, 'pass') . $nl;
+    } else {
+        echo colorText('[FAIL] ' . $deleteMessage, 'fail') . $nl;
+        itm_script_output_end();
+        exit(1);
+    }
+}
+
 $status = itm_database_migrations_build_status($conn);
 
 if ($showStatus) {
     if (!$isCli) {
+        $allowDelete = function_exists('itm_is_admin')
+            && itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0));
+        $csrfToken = function_exists('itm_get_csrf_token') ? itm_get_csrf_token() : '';
+
         itm_script_output_close_pre();
         echo '<h1>Database migration status</h1>';
+        if ($browserDeleteNotice !== '') {
+            echo '<p style="color:#1a7f37;font-weight:600;">'
+                . htmlspecialchars($browserDeleteNotice, ENT_QUOTES, 'UTF-8') . '</p>';
+        }
         echo '<p>Database: <code>' . htmlspecialchars((string)$status['database'], ENT_QUOTES, 'UTF-8') . '</code>. ';
         echo 'Pending: <strong>' . (int)$status['pending_count'] . '</strong>. ';
         echo 'Drift: <strong>' . (int)$status['drift_count'] . '</strong>. ';
         echo 'Live DB probe is authoritative — <code>schema_migrations</code> is audit/history only.</p>';
-        itm_migrate_render_browser_table($status['migrations']);
+        itm_migrate_render_browser_table($status['migrations'], $allowDelete, $csrfToken);
     }
 
     echo colorText('Database migration status', 'info') . $nl;
@@ -198,8 +255,16 @@ $run = itm_database_migrations_apply_pending($conn, !$apply);
 
 if (!$isCli) {
     $status = itm_database_migrations_build_status($conn);
+    $allowDelete = function_exists('itm_is_admin')
+        && itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0));
+    $csrfToken = function_exists('itm_get_csrf_token') ? itm_get_csrf_token() : '';
+
     itm_script_output_close_pre();
     echo '<h1>Database migration ' . htmlspecialchars($modeLabel, ENT_QUOTES, 'UTF-8') . '</h1>';
+    if ($browserDeleteNotice !== '') {
+        echo '<p style="color:#1a7f37;font-weight:600;">'
+            . htmlspecialchars($browserDeleteNotice, ENT_QUOTES, 'UTF-8') . '</p>';
+    }
     echo '<p>Database: <code>' . htmlspecialchars((string)$status['database'], ENT_QUOTES, 'UTF-8') . '</code>. ';
     echo 'Pending: <strong>' . (int)$status['pending_count'] . '</strong>. ';
     echo 'Drift: <strong>' . (int)$status['drift_count'] . '</strong>.';
@@ -207,7 +272,7 @@ if (!$isCli) {
         echo ' Dry-run — no SQL executed.';
     }
     echo '</p>';
-    itm_migrate_render_browser_table($status['migrations']);
+    itm_migrate_render_browser_table($status['migrations'], $allowDelete, $csrfToken);
 }
 
 echo colorText('Database migration ' . $modeLabel, 'info') . $nl;
