@@ -3,6 +3,7 @@
  * Database migration runner helpers (db/migrations/*.sql + schema_migrations).
  *
  * Why: Production upgrades need filename-ordered SQL in one session with an applied log.
+ * Applied/pending status always comes from live DB probes — schema_migrations is audit only.
  */
 
 if (!function_exists('itm_database_migrations_root_path')) {
@@ -29,6 +30,18 @@ if (!function_exists('itm_database_migrations_bootstrap_filenames')) {
 if (!function_exists('itm_database_migrations_create_table_sql')) {
     function itm_database_migrations_create_table_sql()
     {
+        $bootstrapPath = itm_database_migrations_root_path() . '/schema_migrations.sql';
+        if (is_readable($bootstrapPath)) {
+            $sql = file_get_contents($bootstrapPath);
+            if ($sql !== false && trim($sql) !== '') {
+                if (strncmp($sql, "\xEF\xBB\xBF", 3) === 0) {
+                    $sql = substr($sql, 3);
+                }
+
+                return trim($sql);
+            }
+        }
+
         return <<<'SQL'
 CREATE TABLE IF NOT EXISTS `schema_migrations` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -70,6 +83,13 @@ if (!function_exists('itm_database_migrations_ensure_table')) {
         }
         if (itm_database_migrations_table_exists($conn)) {
             return true;
+        }
+
+        $bootstrapPath = itm_database_migrations_root_path() . '/schema_migrations.sql';
+        if (is_readable($bootstrapPath)) {
+            [$executed] = itm_database_migrations_execute_sql_file($conn, $bootstrapPath);
+
+            return $executed && itm_database_migrations_table_exists($conn);
         }
 
         return mysqli_query($conn, itm_database_migrations_create_table_sql()) === true;
@@ -235,34 +255,46 @@ if (!function_exists('itm_database_migrations_build_status')) {
             $filename = (string)$fileRow['filename'];
             $checksum = (string)$fileRow['checksum'];
             $applied = $appliedMap[$filename] ?? null;
-
             $recorded = ($applied !== null);
 
-            if ($applied === null) {
-                [$schemaSatisfied, $probeDetail] = itm_database_migrations_schema_satisfied($conn, $filename);
-                if ($schemaSatisfied) {
-                    $state = 'applied';
-                    $label = 'Applied';
-                    $detail = 'Live schema already matches'
-                        . ($probeDetail !== '' ? ' (' . $probeDetail . ')' : '')
-                        . '; not recorded in schema_migrations.';
-                } else {
-                    $state = 'pending';
-                    $label = 'Pending';
-                    $detail = $probeDetail !== ''
-                        ? 'Not recorded in schema_migrations — ' . $probeDetail
-                        : 'Not recorded in schema_migrations.';
-                    $pendingCount++;
-                }
-            } elseif ($applied['checksum'] !== $checksum) {
+            // Why: Live DB probe is authoritative — schema_migrations history is audit only.
+            [$schemaSatisfied, $probeDetail] = itm_database_migrations_schema_satisfied($conn, $filename);
+            $checksumDrift = $recorded && $applied['checksum'] !== $checksum;
+
+            if ($checksumDrift) {
                 $state = 'drift';
                 $label = 'Checksum drift';
                 $detail = 'File changed after apply (applied ' . $applied['checksum'] . ' vs current ' . $checksum . ').';
+                if ($probeDetail !== '') {
+                    $detail .= ' Live probe: ' . $probeDetail;
+                }
                 $driftCount++;
+            } elseif (!$schemaSatisfied) {
+                $state = 'pending';
+                $label = 'Pending';
+                $detail = $probeDetail !== ''
+                    ? 'Live schema does not match — ' . $probeDetail
+                    : 'Live schema does not match migration file.';
+                if ($recorded) {
+                    $detail .= ' Recorded at '
+                        . ($applied['applied_at'] !== '' ? $applied['applied_at'] : 'unknown time')
+                        . ' but live DB no longer matches.';
+                }
+                $pendingCount++;
+            } elseif ($recorded) {
+                $state = 'applied';
+                $label = 'Applied';
+                $detail = 'Live schema matches'
+                    . ($probeDetail !== '' ? ' (' . $probeDetail . ')' : '')
+                    . '; recorded at '
+                    . ($applied['applied_at'] !== '' ? $applied['applied_at'] : 'unknown time')
+                    . '.';
             } else {
                 $state = 'applied';
                 $label = 'Applied';
-                $detail = 'Recorded at ' . ($applied['applied_at'] !== '' ? $applied['applied_at'] : 'unknown time') . '.';
+                $detail = 'Live schema matches'
+                    . ($probeDetail !== '' ? ' (' . $probeDetail . ')' : '')
+                    . '; not recorded in schema_migrations.';
             }
 
             $rows[] = [
@@ -272,6 +304,7 @@ if (!function_exists('itm_database_migrations_build_status')) {
                 'label' => $label,
                 'detail' => $detail,
                 'recorded' => $recorded,
+                'schema_satisfied' => $schemaSatisfied,
                 'applied_at' => $applied['applied_at'] ?? null,
             ];
         }

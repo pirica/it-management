@@ -12,9 +12,63 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/migrate.php --status</code> — lists migrations still needing SQL; schema already satisfied by fresh <code>db/</code> import shows Applied even when unrecorded.<br>
-<code>php scripts/migrate.php --apply</code> — runs only true pending SQL; records satisfied migrations without re-executing destructive files. Browser apply requires Admin: <code>?run=1&amp;apply=1</code>.
+<code>php scripts/migrate.php --status</code> — probes the <strong>live database</strong> for every migration file (Applied vs Pending); <code>schema_migrations</code> is audit/history only.<br>
+<code>php scripts/migrate.php --apply</code> — runs only migrations whose live schema probe failed; records satisfied migrations without re-executing destructive SQL. Browser apply requires Admin: <code>?run=1&amp;apply=1</code>.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
+
+/**
+ * @param array<int, array<string, mixed>> $migrations
+ */
+function itm_migrate_render_browser_table(array $migrations): void
+{
+    echo '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;margin:12px 0;width:100%;max-width:1200px;">';
+    echo '<thead><tr>';
+    echo '<th>Status</th>';
+    echo '<th>Migration file</th>';
+    echo '<th>Message</th>';
+    echo '<th>Verify Script run=1</th>';
+    echo '<th>Fix Script run=1&amp;apply=1</th>';
+    echo '</tr></thead><tbody>';
+
+    foreach ($migrations as $row) {
+        $state = (string)($row['state'] ?? '');
+        $filename = (string)($row['filename'] ?? '');
+        $detail = (string)($row['detail'] ?? '');
+        $recorded = !empty($row['recorded']);
+
+        if ($state === 'applied') {
+            $color = '#1a7f37';
+            $statusText = 'Applied';
+        } elseif ($state === 'drift') {
+            $color = '#cf222e';
+            $statusText = 'Drift';
+        } else {
+            $color = '#9a6700';
+            $statusText = 'Pending';
+        }
+
+        $verifyHref = 'verify_db_migrations.php?run=1';
+        $fixHref = 'migrate.php?run=1&amp;apply=1';
+        $verifyLink = '<a href="' . $verifyHref . '">verify_db_migrations.php?run=1</a>';
+        $fixLink = '—';
+        if ($state === 'pending' || ($state === 'applied' && !$recorded)) {
+            $fixLink = '<a href="' . $fixHref . '">migrate.php?run=1&amp;apply=1</a>';
+        } elseif ($state === 'drift') {
+            $fixLink = '<span title="Resolve checksum drift before apply">—</span>';
+        }
+
+        echo '<tr>';
+        echo '<td style="color:' . htmlspecialchars($color, ENT_QUOTES, 'UTF-8') . ';font-weight:600;">'
+            . htmlspecialchars($statusText, ENT_QUOTES, 'UTF-8') . '</td>';
+        echo '<td><code>' . htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') . '</code></td>';
+        echo '<td>' . htmlspecialchars($detail, ENT_QUOTES, 'UTF-8') . '</td>';
+        echo '<td>' . $verifyLink . '</td>';
+        echo '<td>' . $fixLink . '</td>';
+        echo '</tr>';
+    }
+
+    echo '</tbody></table>';
 }
 
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
@@ -47,6 +101,16 @@ if (!$conn instanceof mysqli) {
 $status = itm_database_migrations_build_status($conn);
 
 if ($showStatus) {
+    if (!$isCli) {
+        itm_script_output_close_pre();
+        echo '<h1>Database migration status</h1>';
+        echo '<p>Database: <code>' . htmlspecialchars((string)$status['database'], ENT_QUOTES, 'UTF-8') . '</code>. ';
+        echo 'Pending: <strong>' . (int)$status['pending_count'] . '</strong>. ';
+        echo 'Drift: <strong>' . (int)$status['drift_count'] . '</strong>. ';
+        echo 'Live DB probe is authoritative — <code>schema_migrations</code> is audit/history only.</p>';
+        itm_migrate_render_browser_table($status['migrations']);
+    }
+
     echo colorText('Database migration status', 'info') . $nl;
     echo '[INFO] Database: ' . (string)$status['database'] . $nl;
     echo '[INFO] Migration files: ' . (int)$status['file_count']
@@ -87,9 +151,25 @@ if ($showStatus) {
 }
 
 $modeLabel = $apply ? 'apply' : 'dry-run';
-echo colorText('Database migration ' . $modeLabel, 'info') . $nl;
 
 $run = itm_database_migrations_apply_pending($conn, !$apply);
+
+if (!$isCli) {
+    $status = itm_database_migrations_build_status($conn);
+    itm_script_output_close_pre();
+    echo '<h1>Database migration ' . htmlspecialchars($modeLabel, ENT_QUOTES, 'UTF-8') . '</h1>';
+    echo '<p>Database: <code>' . htmlspecialchars((string)$status['database'], ENT_QUOTES, 'UTF-8') . '</code>. ';
+    echo 'Pending: <strong>' . (int)$status['pending_count'] . '</strong>. ';
+    echo 'Drift: <strong>' . (int)$status['drift_count'] . '</strong>.';
+    if (!$apply) {
+        echo ' Dry-run — no SQL executed.';
+    }
+    echo '</p>';
+    itm_migrate_render_browser_table($status['migrations']);
+}
+
+echo colorText('Database migration ' . $modeLabel, 'info') . $nl;
+
 if (!$apply) {
     echo '[INFO] Dry-run — no SQL executed.' . $nl;
 }
