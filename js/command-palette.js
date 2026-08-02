@@ -35,7 +35,7 @@
             '  <div class="itm-command-palette-card" role="dialog" aria-modal="true" aria-label="Global search">',
             '    <div class="itm-command-palette-input-row">',
             '      <span class="itm-command-palette-input-icon" aria-hidden="true">🔍</span>',
-            '      <input type="search" id="itmCommandPaletteInput" class="itm-command-palette-input" autocomplete="off" spellcheck="false" placeholder="Search modules, employees, equipment, tickets…" aria-label="Search">',
+            '      <input type="search" id="itmCommandPaletteInput" class="itm-command-palette-input" autocomplete="off" spellcheck="false" placeholder="Search modules, employees, equipment, hotel…" aria-label="Search">',
             '      <kbd class="itm-command-palette-kbd" title="Close">Esc</kbd>',
             '    </div>',
             '    <div id="itmCommandPaletteStatus" class="itm-command-palette-status" aria-live="polite"></div>',
