@@ -29,6 +29,7 @@ function itm_migrate_render_browser_table(array $migrations): void
     echo '<th>Message</th>';
     echo '<th>Verify Script run=1</th>';
     echo '<th>Fix Script run=1&amp;apply=1</th>';
+    echo '<th>Open SQL (new window)</th>';
     echo '</tr></thead><tbody>';
 
     foreach ($migrations as $row) {
@@ -48,9 +49,11 @@ function itm_migrate_render_browser_table(array $migrations): void
             $statusText = 'Pending';
         }
 
-        $verifyHref = 'verify_db_migrations.php?run=1';
+        $verifyHref = 'migrate.php?run=1';
         $fixHref = 'migrate.php?run=1&amp;apply=1';
-        $verifyLink = '<a href="' . $verifyHref . '">verify_db_migrations.php?run=1</a>';
+        $sqlHref = 'migrate.php?run=1&amp;sql=' . rawurlencode($filename);
+        $verifyLink = '<a href="' . $verifyHref . '">migrate.php?run=1</a>';
+        $sqlLink = '<a href="' . $sqlHref . '" target="_blank" rel="noopener noreferrer">Open SQL</a>';
         $fixLink = '—';
         if ($state === 'pending' || ($state === 'applied' && !$recorded)) {
             $fixLink = '<a href="' . $fixHref . '">migrate.php?run=1&amp;apply=1</a>';
@@ -65,10 +68,49 @@ function itm_migrate_render_browser_table(array $migrations): void
         echo '<td>' . htmlspecialchars($detail, ENT_QUOTES, 'UTF-8') . '</td>';
         echo '<td>' . $verifyLink . '</td>';
         echo '<td>' . $fixLink . '</td>';
+        echo '<td>' . $sqlLink . '</td>';
         echo '</tr>';
     }
 
     echo '</tbody></table>';
+}
+
+// Why: Serve migration SQL as plain text in a new tab before the HTML <pre> wrapper starts.
+if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
+    $sqlView = isset($_GET['sql']) ? trim((string)$_GET['sql']) : '';
+    if ($sqlView !== '' && isset($_GET['run']) && (string)$_GET['run'] === '1') {
+        require_once __DIR__ . '/../config/config.php';
+        require_once __DIR__ . '/../includes/itm_database_migrations.php';
+
+        $fileRow = itm_database_migrations_resolve_discovered_file($sqlView);
+        if ($fileRow === null) {
+            http_response_code(404);
+            header('Content-Type: text/plain; charset=utf-8');
+            echo "Migration file not found or not allowed.\n";
+            exit(1);
+        }
+
+        $contents = file_get_contents((string)$fileRow['path']);
+        if ($contents === false) {
+            http_response_code(500);
+            header('Content-Type: text/plain; charset=utf-8');
+            echo "Failed to read migration file.\n";
+            exit(1);
+        }
+
+        if (strncmp($contents, "\xEF\xBB\xBF", 3) === 0) {
+            $contents = substr($contents, 3);
+        }
+
+        header('Content-Type: text/plain; charset=utf-8');
+        header(
+            'Content-Disposition: inline; filename="'
+            . str_replace('"', '', (string)$fileRow['filename'])
+            . '"'
+        );
+        echo $contents;
+        exit(0);
+    }
 }
 
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';

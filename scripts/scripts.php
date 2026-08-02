@@ -777,7 +777,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="migrate.php" target="_blank" rel="nofollow noreferrer">migrate.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">schema_migrations</span></span></td>
-                    <td>Migration runner for <code>db/migrations/*.sql</code>: <code>--status</code> probes the <strong>live database</strong> for every file (Applied vs Pending); <code>schema_migrations</code> is audit/history only. <code>--apply</code> runs SQL only when the live probe failed; records satisfied migrations without re-executing destructive files (Admin browser <code>?apply=1</code>). Helpers: <code>includes/itm_database_migrations.php</code>.</td>
+                    <td>Migration runner for <code>db/migrations/*.sql</code>: <code>--status</code> probes the <strong>live database</strong> for every file (Applied vs Pending); <code>schema_migrations</code> is audit/history only. <code>--apply</code> runs SQL only when the live probe failed; records satisfied migrations without re-executing destructive files (Admin browser <code>?apply=1</code>). Browser status table: per-row <code>?run=1&amp;sql={filename}</code> opens migration SQL in a new tab. Helpers: <code>includes/itm_database_migrations.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
