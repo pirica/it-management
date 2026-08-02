@@ -20,6 +20,7 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/../includes/itm_command_palette_search.php';
 require_once __DIR__ . '/../includes/itm_search_index.php';
+require_once __DIR__ . '/lib/itm_command_palette_sidebar_verify.php';
 
 itm_script_output_begin('Command Palette Search Verification');
 
@@ -264,6 +265,40 @@ if ($adminId > 0) {
         cps_verify_fail('Query hotel did not return hotel_bookings module navigation row.');
     } else {
         cps_verify_pass('Query hotel resolves hospitality modules (hotel_bookings).');
+    }
+
+    $sidebarAudit = itm_command_palette_sidebar_verify_collect_misses($conn, $companyId, $adminId);
+    $sidebarSlugs = $sidebarAudit['sidebar_slugs'] ?? [];
+    if ($sidebarSlugs === []) {
+        cps_verify_fail('Admin sidebar returned zero visible module slugs for company 1.');
+    } else {
+        cps_verify_pass('Admin sidebar exposes ' . count($sidebarSlugs) . ' searchable module slug(s).');
+    }
+
+    $navMisses = $sidebarAudit['nav_misses'] ?? [];
+    if ($navMisses !== []) {
+        $preview = implode(', ', array_slice($navMisses, 0, 8));
+        if (count($navMisses) > 8) {
+            $preview .= ' …';
+        }
+        cps_verify_fail(
+            count($navMisses) . ' sidebar slug(s) not returned by module navigation search: ' . $preview
+        );
+    } else {
+        cps_verify_pass('Every visible sidebar slug is findable via module navigation search.');
+    }
+
+    $paletteMisses = $sidebarAudit['palette_misses'] ?? [];
+    if ($paletteMisses !== []) {
+        $preview = implode(', ', array_slice($paletteMisses, 0, 8));
+        if (count($paletteMisses) > 8) {
+            $preview .= ' …';
+        }
+        cps_verify_fail(
+            count($paletteMisses) . ' sidebar slug(s) missing from unified palette Modules group: ' . $preview
+        );
+    } else {
+        cps_verify_pass('Every visible sidebar slug appears in the unified palette Modules group.');
     }
 }
 

@@ -1,0 +1,41 @@
+---
+description: Scripts must live under scripts/ and follow scripts/SCRIPTS.md (catalog, browser+CLI, shared libs). Read before creating or changing any script.
+globs: scripts/**,scripts/SCRIPTS.md,scripts/scripts.php,scripts/AGENT_NOTES.md,scripts/lib/**
+alwaysApply: false
+---
+
+# Scripts directory standards (mandatory)
+
+**Canonical source:** `scripts/SCRIPTS.md` (read completely before any `scripts/` work). Catalog rows live only in `scripts/scripts.php`.
+
+## Where scripts belong
+
+- **All** maintenance, verify, audit, backfill, and regression tools **must** be saved under `scripts/` (or `scripts/lib/` for shared PHP helpers).
+- **Do not** add throwaway probes (`_probe_*.php`, scratch files in repo root, `includes/`, or `modules/`) — ship a cataloged script or extend an existing one.
+- Reusable logic belongs in `scripts/lib/` (e.g. `itm_command_palette_sidebar_verify.php`), not duplicated across entry scripts.
+
+## New or changed script checklist (same PR)
+
+1. **Read** `scripts/SCRIPTS.md` and the target folder's `AGENT_NOTES.md`.
+2. **Create/edit** the entry file at `scripts/<name>.php` (PHP default: browser + CLI).
+3. **Register** a row in `scripts/scripts.php` (Browser/CLI badges, What it does).
+4. **Implement** `itm_script_browser_how_to_use()` on the script landing page; use `scripts/lib/script_cli_output.php` (`itm_script_output_begin()`, `itm_script_output_nl()`).
+5. **Document** behavior in `scripts/SCRIPTS.md` (pre-merge list) when adding a verify/regression script; update `scripts/AGENT_NOTES.md` and `scripts/lib/AGENT_NOTES.md` when libs change.
+6. **Run** the script (`php scripts/<name>.php`) and any parent verifier that delegates to it.
+
+## PHP script contract (summary)
+
+| Requirement | Detail |
+|-------------|--------|
+| CLI entry | `define('ITM_CLI_SCRIPT', true);` before `config.php` when needed |
+| Browser landing | `?run=1` gate; Dry-run / Continue via `itm_script_output_begin()` |
+| Navigation | `itm_script_browser_nav_echo()` via `script_cli_output` — do not duplicate ← Scripts index |
+| Apply writers | Dry-run default; `--apply` / `?apply=1` (Admin) via `itm_apply_script_bootstrap.php` when mutating |
+| Output | `colorText()` + `$nl = itm_script_output_nl()` — no hardcoded `<br>` in generic CLI paths |
+
+## Examples
+
+- Verify regression: `scripts/verify_command_palette_sidebar_slugs.php` + lib `scripts/lib/itm_command_palette_sidebar_verify.php`
+- Catalog browser link: [scripts/scripts.php](http://localhost/it-management/scripts/scripts.php?run=1) (Admin session)
+
+When the user asks for a "test script" or "audit", implement it as a **cataloged** `scripts/verify_*.php` or `scripts/check_*.php` file — not an uncatalogued one-off.
