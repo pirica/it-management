@@ -94,14 +94,31 @@ Payload format follows channel `standard` (XML for OpenTravel, partner JSON for 
 ```bash
 php scripts/verify_hotel_booking_distribution.php
 php scripts/verify_hotel_booking_distribution_http.php
+php scripts/verify_hotel_booking_distribution_opentravel_coverage.php
+php scripts/verify_hotel_booking_distribution_booking_com_cert.php
+php scripts/report_hotel_booking_distribution_webhook_ops.php
 php scripts/run_hotel_booking_distribution_ari_sync.php
 php scripts/run_hotel_booking_distribution_webhook_queue.php
 ```
 
-API examples (set `ITM_DIST_API_KEY`):
+### Ops monitoring
 
-- `api-examples/hotel_distribution_availability.php`
-- `api-examples/hotel_distribution_notify_book.php`
+- Channel **view** shows per-channel webhook queue counts and recent `dead` / `failed` rows.
+- Channel **index** shows a **Dead webhooks** badge per channel.
+- [report_hotel_booking_distribution_webhook_ops.php?run=1](http://localhost/it-management/scripts/report_hotel_booking_distribution_webhook_ops.php?run=1) — tenant-wide dead-letter report (exit `1` when dead rows exist).
+
+### OpenTravel message coverage
+
+| Message | Direction | Action |
+|---------|-----------|--------|
+| `OTA_HotelAvailRQ` / `OTA_HotelAvailRS` | Shop | `availability` |
+| `OTA_HotelResNotifRQ` / `OTA_HotelResNotifRS` | Reservation | `notify` / `book` / `modify` / `cancel` |
+| `OTA_HotelAvailNotifRQ` / `OTA_HotelAvailNotifRS` | ARI | `ari_push` inbound / `ari_snapshot` outbound |
+| `OTA_PingRQ` / `OTA_PingRS` | Health | `probe` |
+
+### Booking.com certification (offline checklist)
+
+`verify_hotel_booking_distribution_booking_com_cert.php` validates adapter contracts without calling the live API. Production certification still requires Booking.com sandbox credentials and their official test hotel.
 
 ## Related
 

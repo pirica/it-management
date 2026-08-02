@@ -93,6 +93,12 @@ if (!function_exists('itm_hotel_booking_distribution_apply_day_restrictions')) {
             if ($stopSell) {
                 $dayRow['stop_sell'] = true;
             }
+            if ($cta) {
+                $dayRow['closed_to_arrival'] = 1;
+            }
+            if ($ctd) {
+                $dayRow['closed_to_departure'] = 1;
+            }
         }
         if (!empty($dayRow['rate_plans'])) {
             $dayRow['price_per_night'] = min(array_column($dayRow['rate_plans'], 'derived_price_per_night'));

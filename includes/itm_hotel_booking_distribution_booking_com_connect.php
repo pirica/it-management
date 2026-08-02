@@ -7,6 +7,10 @@ if (!function_exists('itm_hotel_booking_distribution_booking_com_base_url')) {
     function itm_hotel_booking_distribution_booking_com_base_url(array $channelRow) {
         $sandbox = !empty($channelRow['partner_sandbox_mode']);
         if ($sandbox) {
+            $override = trim((string) getenv('ITM_BOOKING_COM_SANDBOX_URL'));
+            if ($override !== '') {
+                return rtrim($override, '/') . '/';
+            }
             return 'https://supply-xml.booking.com/hotels/xml/';
         }
         return 'https://supply-xml.booking.com/hotels/xml/';

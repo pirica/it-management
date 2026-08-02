@@ -174,3 +174,79 @@ if (!function_exists('itm_hotel_booking_distribution_process_webhook_queue')) {
         return $results;
     }
 }
+
+if (!function_exists('itm_hotel_booking_distribution_webhook_queue_stats')) {
+    function itm_hotel_booking_distribution_webhook_queue_stats($conn, $companyId, $channelId = 0) {
+        $companyId = (int) $companyId;
+        $channelId = (int) $channelId;
+        $stats = [
+            'pending' => 0,
+            'failed' => 0,
+            'delivered' => 0,
+            'dead' => 0,
+            'total' => 0,
+        ];
+        $sql = 'SELECT status, COUNT(*) AS row_count
+                FROM hotel_booking_distribution_webhook_queue
+                WHERE company_id = ? AND deleted_at IS NULL AND direction = \'outbound\'';
+        if ($channelId > 0) {
+            $sql .= ' AND channel_id = ' . $channelId;
+        }
+        $sql .= ' GROUP BY status';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return $stats;
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $status = (string) ($row['status'] ?? '');
+            $count = (int) ($row['row_count'] ?? 0);
+            if (isset($stats[$status])) {
+                $stats[$status] = $count;
+            }
+            $stats['total'] += $count;
+        }
+        mysqli_stmt_close($stmt);
+        return $stats;
+    }
+}
+
+if (!function_exists('itm_hotel_booking_distribution_webhook_queue_list')) {
+    function itm_hotel_booking_distribution_webhook_queue_list($conn, $companyId, $channelId = 0, $statusFilter = '', $limit = 25) {
+        $companyId = (int) $companyId;
+        $channelId = (int) $channelId;
+        $limit = max(1, min(100, (int) $limit));
+        $rows = [];
+        $sql = 'SELECT id, channel_id, hotel_id, event_type, target_url, status, attempt_count, max_attempts,
+                       last_http_code, last_error, next_retry_at, delivered_at, created_at, updated_at
+                FROM hotel_booking_distribution_webhook_queue
+                WHERE company_id = ? AND deleted_at IS NULL AND direction = \'outbound\'';
+        $types = 'i';
+        $params = [$companyId];
+        if ($channelId > 0) {
+            $sql .= ' AND channel_id = ?';
+            $types .= 'i';
+            $params[] = $channelId;
+        }
+        if ($statusFilter !== '') {
+            $sql .= ' AND status = ?';
+            $types .= 's';
+            $params[] = $statusFilter;
+        }
+        $sql .= ' ORDER BY id DESC LIMIT ' . $limit;
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return $rows;
+        }
+        mysqli_stmt_bind_param($stmt, $types, ...$params);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $rows[] = $row;
+        }
+        mysqli_stmt_close($stmt);
+        return $rows;
+    }
+}
