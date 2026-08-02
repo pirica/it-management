@@ -129,6 +129,52 @@ if (!function_exists('itm_database_migrations_discover_files')) {
     }
 }
 
+if (!function_exists('itm_database_migrations_probe_lib_path')) {
+    function itm_database_migrations_probe_lib_path()
+    {
+        return dirname(__DIR__) . '/scripts/lib/itm_verify_db_migrations_report.php';
+    }
+}
+
+if (!function_exists('itm_database_migrations_schema_satisfied')) {
+    /**
+     * Whether live schema/data already matches this migration file (fresh db/ import path).
+     *
+     * @return array{0: bool, 1: string} satisfied, probe detail
+     */
+    function itm_database_migrations_schema_satisfied($conn, $filename)
+    {
+        $filename = (string)$filename;
+        if ($filename === '' || !($conn instanceof mysqli)) {
+            return [false, ''];
+        }
+
+        $probeLib = itm_database_migrations_probe_lib_path();
+        if (!is_file($probeLib)) {
+            return [false, ''];
+        }
+        if (!function_exists('itm_verify_db_migrations_probe_file')) {
+            require_once $probeLib;
+        }
+
+        $probe = itm_verify_db_migrations_probe_file($conn, $filename);
+        $status = (string)($probe['status'] ?? '');
+        $label = (string)($probe['label'] ?? '');
+        $detail = (string)($probe['detail'] ?? '');
+
+        if ($status === 'pass' || $status === 'superseded') {
+            $message = $detail;
+            if ($label !== '' && stripos($detail, $label) !== 0) {
+                $message = $label . ($detail !== '' ? ': ' . $detail : '');
+            }
+
+            return [true, $message];
+        }
+
+        return [false, $detail];
+    }
+}
+
 if (!function_exists('itm_database_migrations_fetch_applied_map')) {
     /**
      * @return array<string, array{filename: string, checksum: string, applied_at: string}>
@@ -190,11 +236,24 @@ if (!function_exists('itm_database_migrations_build_status')) {
             $checksum = (string)$fileRow['checksum'];
             $applied = $appliedMap[$filename] ?? null;
 
+            $recorded = ($applied !== null);
+
             if ($applied === null) {
-                $state = 'pending';
-                $label = 'Pending';
-                $detail = 'Not recorded in schema_migrations.';
-                $pendingCount++;
+                [$schemaSatisfied, $probeDetail] = itm_database_migrations_schema_satisfied($conn, $filename);
+                if ($schemaSatisfied) {
+                    $state = 'applied';
+                    $label = 'Applied';
+                    $detail = 'Live schema already matches'
+                        . ($probeDetail !== '' ? ' (' . $probeDetail . ')' : '')
+                        . '; not recorded in schema_migrations.';
+                } else {
+                    $state = 'pending';
+                    $label = 'Pending';
+                    $detail = $probeDetail !== ''
+                        ? 'Not recorded in schema_migrations — ' . $probeDetail
+                        : 'Not recorded in schema_migrations.';
+                    $pendingCount++;
+                }
             } elseif ($applied['checksum'] !== $checksum) {
                 $state = 'drift';
                 $label = 'Checksum drift';
@@ -212,8 +271,16 @@ if (!function_exists('itm_database_migrations_build_status')) {
                 'state' => $state,
                 'label' => $label,
                 'detail' => $detail,
+                'recorded' => $recorded,
                 'applied_at' => $applied['applied_at'] ?? null,
             ];
+        }
+
+        $appliedCount = 0;
+        foreach ($rows as $row) {
+            if (($row['state'] ?? '') === 'applied') {
+                $appliedCount++;
+            }
         }
 
         return [
@@ -221,7 +288,7 @@ if (!function_exists('itm_database_migrations_build_status')) {
             'database' => $database,
             'table_ready' => $tableReady,
             'file_count' => count($discovered),
-            'applied_count' => count($appliedMap),
+            'applied_count' => $appliedCount,
             'pending_count' => $pendingCount,
             'drift_count' => $driftCount,
             'migrations' => $rows,
@@ -317,6 +384,7 @@ if (!function_exists('itm_database_migrations_apply_pending')) {
      * @return array{
      *   ok: bool,
      *   applied: array<int, string>,
+     *   recorded: array<int, string>,
      *   skipped: array<int, string>,
      *   errors: array<int, array{filename: string, message: string}>
      * }
@@ -326,6 +394,7 @@ if (!function_exists('itm_database_migrations_apply_pending')) {
         $result = [
             'ok' => true,
             'applied' => [],
+            'recorded' => [],
             'skipped' => [],
             'errors' => [],
         ];
@@ -362,7 +431,26 @@ if (!function_exists('itm_database_migrations_apply_pending')) {
                 continue;
             }
             if ($state === 'applied') {
-                $result['skipped'][] = $filename;
+                if (!empty($row['recorded'])) {
+                    $result['skipped'][] = $filename;
+                    continue;
+                }
+
+                if ($dryRun) {
+                    $result['recorded'][] = $filename;
+                    continue;
+                }
+
+                if (!itm_database_migrations_record_applied($conn, $filename, (string)$row['checksum'])) {
+                    $result['ok'] = false;
+                    $result['errors'][] = [
+                        'filename' => $filename,
+                        'message' => 'Schema already matched but schema_migrations insert failed: ' . mysqli_error($conn),
+                    ];
+                    break;
+                }
+
+                $result['recorded'][] = $filename;
                 continue;
             }
             if ($state !== 'pending') {

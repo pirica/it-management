@@ -13,7 +13,7 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
   4. `SET FOREIGN_KEY_CHECKS = 1`
 - **Data warning:** `DROP TABLE` removes existing rows. Back up or export data before applying on production; re-seed or restore manually when needed.
 - **Pair every migration with canonical schema:** mirror the same table shape in `db/01_schema.sql` (and `db/02_data.sql` when seeds change) in the **same PR**.
-- **Apply order:** filename order under `db/migrations/*.sql`. **Runner (live DBs):** `php scripts/migrate.php --status` (pending vs `schema_migrations`) and `php scripts/migrate.php --apply` (one MySQL session per invocation; records `filename` + SHA-256 `checksum`). `schema_migrations.sql` bootstraps the history table only (`CREATE TABLE IF NOT EXISTS`) — excluded from the runner file list. **Schema probe (no history):** `php scripts/verify_db_migrations.php` still compares live tables/triggers to migration file contents.
+- **Apply order:** filename order under `db/migrations/*.sql`. **Runner (live DBs):** `php scripts/migrate.php --status` lists files that still need SQL vs `schema_migrations`; migrations whose live schema already matches (fresh `db/` import) show **Applied** even when unrecorded. `php scripts/migrate.php --apply` runs only true pending SQL, records satisfied migrations without re-executing destructive files, and stamps `filename` + SHA-256 `checksum`. `schema_migrations.sql` bootstraps the history table only (`CREATE TABLE IF NOT EXISTS`) — excluded from the runner file list.
 - **No audit triggers** on private-data tables listed in `AGENTS.md` → Private data — no audit trail.
 
 ## 7. File Structure

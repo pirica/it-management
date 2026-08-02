@@ -12,9 +12,8 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/migrate.php --status</code> — lists pending <code>db/migrations/*.sql</code> files vs <code>schema_migrations</code>.<br>
-<code>php scripts/migrate.php --apply</code> — runs pending migrations in one session (destructive DROP+CREATE files — back up first). Browser apply requires Admin: <code>?run=1&amp;apply=1</code>.<br>
-Pair with <code>php scripts/verify_db_migrations.php</code> to probe live schema before/after apply.
+<code>php scripts/migrate.php --status</code> — lists migrations still needing SQL; schema already satisfied by fresh <code>db/</code> import shows Applied even when unrecorded.<br>
+<code>php scripts/migrate.php --apply</code> — runs only true pending SQL; records satisfied migrations without re-executing destructive files. Browser apply requires Admin: <code>?run=1&amp;apply=1</code>.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 
@@ -97,6 +96,14 @@ if (!$apply) {
 
 foreach ($run['skipped'] ?? [] as $filename) {
     echo colorText('[SKIP] ' . $filename . ' — already applied.', 'info') . $nl;
+}
+
+foreach ($run['recorded'] ?? [] as $filename) {
+    if ($apply) {
+        echo colorText('[PASS] Recorded ' . $filename . ' (schema already matched)', 'pass') . $nl;
+    } else {
+        echo colorText('[PLAN] Would record ' . $filename . ' (schema already matched)', 'warn') . $nl;
+    }
 }
 
 foreach ($run['applied'] ?? [] as $filename) {
