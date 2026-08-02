@@ -124,6 +124,8 @@ php scripts/run_hotel_booking_distribution_webhook_queue.php
 
 Set `ITM_DIST_API_KEY` to a channel plain-text API key from [Distribution Channels](http://localhost/it-management/modules/hotel_booking_distribution_channels/index.php). For modify/cancel, set `ITM_DIST_EXTERNAL_RESERVATION_ID` to an existing partner reservation id.
 
+**OTA codes:** on channel **Edit**, use **Map all hotels** (`HTL{id}`) and **Map all room types** (suggested codes such as `STD`, `DLX`) so availability responses include non-empty `external_code` for every room type.
+
 | Example | Action |
 |---------|--------|
 | `hotel_distribution_probe.php` | `probe` |

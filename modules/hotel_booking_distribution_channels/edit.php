@@ -29,6 +29,20 @@ $newApiKey = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
+    if (!empty($_POST['sync_ota_room_type_mappings'])) {
+        $syncRoomTypes = itm_hotel_booking_distribution_sync_room_type_mappings($conn, $company_id, $id, $employee_id, false);
+        $created = (int) ($syncRoomTypes['created'] ?? 0);
+        $skipped = (int) ($syncRoomTypes['skipped'] ?? 0);
+        header('Location: edit.php?id=' . $id . '&mapped_room_types=' . $created . '&skipped_room_types=' . $skipped);
+        exit;
+    }
+    if (!empty($_POST['sync_ota_hotel_mappings'])) {
+        $syncHotels = itm_hotel_booking_distribution_sync_hotel_mappings($conn, $company_id, $id, $employee_id, false);
+        $created = (int) ($syncHotels['created'] ?? 0);
+        $skipped = (int) ($syncHotels['skipped'] ?? 0);
+        header('Location: edit.php?id=' . $id . '&mapped_hotels=' . $created . '&skipped_hotels=' . $skipped);
+        exit;
+    }
     if (!empty($_POST['regenerate_api_key'])) {
         $newApiKey = itm_hotel_booking_distribution_generate_api_key();
         $prefix = itm_hotel_booking_distribution_api_key_prefix($newApiKey);
@@ -209,6 +223,39 @@ if ($rpstmt) {
     mysqli_stmt_close($rpstmt);
 }
 
+$hotelNameById = [];
+foreach ($hotels as $h) {
+    $hotelNameById[(int) ($h['id'] ?? 0)] = (string) ($h['name'] ?? '');
+}
+$roomTypeNameById = [];
+foreach ($roomTypes as $t) {
+    $roomTypeNameById[(int) ($t['id'] ?? 0)] = (string) ($t['name'] ?? '');
+}
+$mappedRoomTypeIds = [];
+$mappedHotelIds = [];
+foreach ($mappings as $m) {
+    if (($m['entity_type'] ?? '') === 'room_type') {
+        $mappedRoomTypeIds[(int) ($m['internal_id'] ?? 0)] = true;
+    }
+    if (($m['entity_type'] ?? '') === 'hotel') {
+        $mappedHotelIds[(int) ($m['internal_id'] ?? 0)] = true;
+    }
+}
+$unmappedRoomTypes = [];
+foreach ($roomTypes as $t) {
+    $typeId = (int) ($t['id'] ?? 0);
+    if ($typeId > 0 && empty($mappedRoomTypeIds[$typeId])) {
+        $unmappedRoomTypes[] = $t;
+    }
+}
+$unmappedHotels = [];
+foreach ($hotels as $h) {
+    $hotelId = (int) ($h['id'] ?? 0);
+    if ($hotelId > 0 && empty($mappedHotelIds[$hotelId])) {
+        $unmappedHotels[] = $h;
+    }
+}
+
 $hasSigningSecret = !empty($row['webhook_signing_secret_encrypted']);
 
 $crud_title = 'Edit Distribution Channel';
@@ -247,9 +294,39 @@ itm_hospitality_admin_layout_begin($crud_title);
 </div>
 <div class="card" style="margin-top:16px;">
 <h2>Channel mappings</h2>
-<table class="table"><thead><tr><th>Type</th><th>Internal ID</th><th>External code</th></tr></thead><tbody>
+<p class="muted">OTA partners use <code>external_code</code> on availability and book/notify payloads. Map every hotel and room type exposed to a channel.</p>
+<?php if (!empty($_GET['mapped_room_types']) || isset($_GET['skipped_room_types'])): ?>
+<p class="badge badge-success">Mapped <?php echo (int) ($_GET['mapped_room_types'] ?? 0); ?> room type(s); skipped <?php echo (int) ($_GET['skipped_room_types'] ?? 0); ?> already mapped.</p>
+<?php endif; ?>
+<?php if (!empty($_GET['mapped_hotels']) || isset($_GET['skipped_hotels'])): ?>
+<p class="badge badge-success">Mapped <?php echo (int) ($_GET['mapped_hotels'] ?? 0); ?> hotel(s); skipped <?php echo (int) ($_GET['skipped_hotels'] ?? 0); ?> already mapped.</p>
+<?php endif; ?>
+<?php if ($unmappedRoomTypes !== []): ?>
+<p class="badge badge-danger"><?php echo count($unmappedRoomTypes); ?> room type(s) not mapped for this channel yet.</p>
+<?php endif; ?>
+<?php if ($unmappedHotels !== []): ?>
+<p class="badge badge-danger"><?php echo count($unmappedHotels); ?> hotel(s) not mapped for this channel yet.</p>
+<?php endif; ?>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+<form method="post" style="display:inline;">
+<input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+<button type="submit" name="sync_ota_room_type_mappings" value="1" class="btn btn-sm btn-primary" title="Map all room types">Map all room types</button>
+</form>
+<form method="post" style="display:inline;">
+<input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+<button type="submit" name="sync_ota_hotel_mappings" value="1" class="btn btn-sm" title="Map all hotels">Map all hotels</button>
+</form>
+</div>
+<table class="table"><thead><tr><th>Type</th><th>Internal record</th><th>External code</th></tr></thead><tbody>
 <?php if (empty($mappings)): ?><tr><td colspan="3">No mappings yet.</td></tr><?php else: foreach ($mappings as $m): ?>
-<tr><td><?php echo sanitize($m['entity_type'] ?? ''); ?></td><td><?php echo (int) ($m['internal_id'] ?? 0); ?></td><td><code><?php echo sanitize($m['external_code'] ?? ''); ?></code></td></tr>
+<?php
+    $entityType = (string) ($m['entity_type'] ?? '');
+    $internalId = (int) ($m['internal_id'] ?? 0);
+    $label = $entityType === 'hotel'
+        ? ($hotelNameById[$internalId] ?? ('Hotel #' . $internalId))
+        : ($roomTypeNameById[$internalId] ?? ('Room type #' . $internalId));
+?>
+<tr><td><?php echo sanitize($entityType); ?></td><td><?php echo sanitize($label); ?> <span class="muted">(#<?php echo $internalId; ?>)</span></td><td><code><?php echo sanitize($m['external_code'] ?? ''); ?></code></td></tr>
 <?php endforeach; endif; ?>
 </tbody></table>
 <form method="post" style="margin-top:12px;">
@@ -259,11 +336,36 @@ itm_hospitality_admin_layout_begin($crud_title);
 <input type="hidden" name="hourly_rate_limit" value="<?php echo (int) ($row['hourly_rate_limit'] ?? 1000); ?>">
 <input type="hidden" name="webhook_url" value="<?php echo sanitize($row['webhook_url'] ?? ''); ?>">
 <?php if (!empty($row['active'])): ?><input type="hidden" name="active" value="1"><?php endif; ?>
-<div class="form-group"><label>Entity type</label><select name="map_entity_type" class="form-control"><option value="hotel">hotel</option><option value="room_type">room_type</option></select></div>
-<div class="form-group"><label>Internal record</label><select name="map_internal_id" class="form-control"><optgroup label="Hotels"><?php foreach ($hotels as $h): ?><option value="<?php echo (int) $h['id']; ?>"><?php echo sanitize($h['name'] ?? ''); ?></option><?php endforeach; ?></optgroup><optgroup label="Room types"><?php foreach ($roomTypes as $t): ?><option value="<?php echo (int) $t['id']; ?>"><?php echo sanitize($t['name'] ?? ''); ?></option><?php endforeach; ?></optgroup></select></div>
-<div class="form-group"><label>External code</label><input type="text" name="map_external_code" class="form-control" required></div>
+<div class="form-group"><label>Entity type</label><select name="map_entity_type" id="hb-dist-map-entity-type" class="form-control"><option value="hotel">hotel</option><option value="room_type">room_type</option></select></div>
+<div class="form-group"><label>Hotel</label><select name="map_hotel_internal_id" id="hb-dist-map-hotel-id" class="form-control"><?php foreach ($hotels as $h): ?><option value="<?php echo (int) $h['id']; ?>"><?php echo sanitize($h['name'] ?? ''); ?></option><?php endforeach; ?></select></div>
+<div class="form-group"><label>Room type</label><select name="map_room_type_internal_id" id="hb-dist-map-room-type-id" class="form-control"><?php foreach ($roomTypes as $t): ?><option value="<?php echo (int) $t['id']; ?>"><?php echo sanitize($t['name'] ?? ''); ?></option><?php endforeach; ?></select></div>
+<input type="hidden" name="map_internal_id" id="hb-dist-map-internal-id" value="<?php echo (int) ($hotels[0]['id'] ?? 0); ?>">
+<div class="form-group"><label>External code</label><input type="text" name="map_external_code" class="form-control" required placeholder="e.g. STD, DLX, HTL1"></div>
 <button type="submit" class="btn btn-primary" title="Save mapping">💾</button>
 </form>
+<script>
+(function () {
+    var entitySelect = document.getElementById('hb-dist-map-entity-type');
+    var hotelSelect = document.getElementById('hb-dist-map-hotel-id');
+    var roomSelect = document.getElementById('hb-dist-map-room-type-id');
+    var internalInput = document.getElementById('hb-dist-map-internal-id');
+    if (!entitySelect || !hotelSelect || !roomSelect || !internalInput) {
+        return;
+    }
+    function syncMappingForm() {
+        var isHotel = entitySelect.value === 'hotel';
+        hotelSelect.style.display = isHotel ? '' : 'none';
+        roomSelect.style.display = isHotel ? 'none' : '';
+        hotelSelect.disabled = !isHotel;
+        roomSelect.disabled = isHotel;
+        internalInput.value = isHotel ? hotelSelect.value : roomSelect.value;
+    }
+    entitySelect.addEventListener('change', syncMappingForm);
+    hotelSelect.addEventListener('change', syncMappingForm);
+    roomSelect.addEventListener('change', syncMappingForm);
+    syncMappingForm();
+})();
+</script>
 </div>
 <div class="card" style="margin-top:16px;">
 <h2>Rate plan mappings</h2>

@@ -217,6 +217,17 @@ if (strpos($otaRs, 'OTA_HotelAvailRS') !== false && strpos($otaRs, 'RoomTypeCode
     hbd_fail('opentravel avail RS encode');
 }
 
+if (itm_hotel_booking_distribution_suggest_external_code('room_type', 'Standard Room', 3) === 'STD') {
+    hbd_pass('suggest external code STD for Standard');
+} else {
+    hbd_fail('suggest external code STD for Standard');
+}
+if (itm_hotel_booking_distribution_suggest_external_code('hotel', 'TechCorp Retreat', 1) === 'HTL1') {
+    hbd_pass('suggest external code HTL1 for hotel id 1');
+} else {
+    hbd_fail('suggest external code HTL1 for hotel id 1');
+}
+
 if ($channelId > 0) {
     $channel = itm_hotel_booking_distribution_lookup_channel_by_api_key($conn, $plainKey);
     if ($channel && (int) ($channel['id'] ?? 0) === $channelId) {
@@ -229,6 +240,20 @@ if ($channelId > 0) {
     $hotelRow = $hotelRes ? mysqli_fetch_assoc($hotelRes) : null;
     $hotelId = (int) ($hotelRow['id'] ?? 0);
     if ($hotelId > 0) {
+        $syncHotels = itm_hotel_booking_distribution_sync_hotel_mappings($conn, 1, $channelId, 1, false);
+        $syncRooms = itm_hotel_booking_distribution_sync_room_type_mappings($conn, 1, $channelId, 1, false);
+        if (($syncHotels['created'] ?? -1) >= 0 && ($syncRooms['created'] ?? -1) >= 0) {
+            hbd_pass('OTA mapping sync helpers');
+        } else {
+            hbd_fail('OTA mapping sync helpers');
+        }
+        $mappedStd = itm_hotel_booking_distribution_mapping_external_code($conn, 1, $channelId, 'room_type', 3);
+        if ($mappedStd !== '') {
+            hbd_pass('room type mapping external_code populated after sync');
+        } else {
+            hbd_fail('room type mapping external_code populated after sync');
+        }
+
         $avail = itm_hotel_booking_distribution_build_availability(
             $conn,
             $channel,

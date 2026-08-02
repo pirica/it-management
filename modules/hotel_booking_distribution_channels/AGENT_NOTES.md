@@ -24,10 +24,12 @@ Bespoke hospitality admin (not flattened scaffold CRUD):
 
 - `index.php` — channel list
 - `create.php` — new channel; plain API key shown once via session on redirect to `view.php`
-- `edit.php` — update channel, rotate API key, partner credentials (Booking.com), generate webhook signing secret, outbound webhook API key, rate-plan mapping CRUD, add mapping rows
+- `edit.php` — update channel, rotate API key, partner credentials (Booking.com), generate webhook signing secret, outbound webhook API key, rate-plan mapping CRUD, add mapping rows, **Map all room types** / **Map all hotels** (auto-suggest OTA `external_code` values for unmapped rows)
 - `view.php` — details + API endpoint documentation
 - `delete.php` — soft-delete
 - `list_all.php` — redirect to `index.php`
+
+**OTA mappings:** each channel needs `hotel_booking_distribution_mappings` rows so availability/book responses return non-empty `external_code` values. Use **Map all room types** on channel edit to generate codes (e.g. `STD`, `DLX`, `SUP`) without hand-entering every type.
 
 Uses `includes/itm_hospitality_admin_layout.php`.
 

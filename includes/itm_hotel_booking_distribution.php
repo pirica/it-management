@@ -1048,3 +1048,254 @@ if (!function_exists('itm_hotel_booking_distribution_read_json_body')) {
         return is_array($decoded) ? $decoded : [];
     }
 }
+
+if (!function_exists('itm_hotel_booking_distribution_suggest_external_code')) {
+    /**
+     * Suggest a short OTA-style external code from an entity label (hotel or room type name).
+     */
+    function itm_hotel_booking_distribution_suggest_external_code($entityType, $label, $internalId) {
+        $entityType = (string) $entityType;
+        $label = trim((string) $label);
+        $internalId = (int) $internalId;
+        $lower = strtolower($label);
+
+        if ($entityType === 'hotel') {
+            return 'HTL' . max(1, $internalId);
+        }
+
+        $roomAliases = [
+            'standard' => 'STD',
+            'deluxe' => 'DLX',
+            'superior' => 'SUP',
+            'suite' => 'STE',
+            'executive' => 'EXE',
+            'family' => 'FAM',
+            'twin' => 'TWN',
+            'double' => 'DBL',
+            'single' => 'SGL',
+            'king' => 'KNG',
+            'queen' => 'QEN',
+        ];
+        foreach ($roomAliases as $needle => $code) {
+            if ($needle !== '' && strpos($lower, $needle) !== false) {
+                return $code;
+            }
+        }
+
+        $words = preg_split('/\s+/', preg_replace('/[^a-zA-Z0-9\s]+/', ' ', $label));
+        $acronym = '';
+        if (is_array($words)) {
+            foreach ($words as $word) {
+                $word = trim((string) $word);
+                if ($word !== '') {
+                    $acronym .= strtoupper($word[0]);
+                }
+            }
+        }
+        if (strlen($acronym) >= 2 && strlen($acronym) <= 8) {
+            return $acronym;
+        }
+
+        $slug = strtoupper((string) preg_replace('/[^A-Z0-9]+/', '', strtoupper($label)));
+        if (strlen($slug) > 20) {
+            $slug = substr($slug, 0, 20);
+        }
+        if ($slug !== '') {
+            return $slug;
+        }
+
+        return 'RT' . max(1, $internalId);
+    }
+}
+
+if (!function_exists('itm_hotel_booking_distribution_external_code_taken')) {
+    function itm_hotel_booking_distribution_external_code_taken($conn, $channelId, $entityType, $externalCode, $excludeInternalId = 0) {
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT internal_id FROM hotel_booking_distribution_mappings
+             WHERE channel_id = ? AND entity_type = ? AND external_code = ?
+               AND deleted_at IS NULL AND active = 1 AND internal_id <> ?
+             LIMIT 1'
+        );
+        if (!$stmt) {
+            return false;
+        }
+        $excludeInternalId = (int) $excludeInternalId;
+        mysqli_stmt_bind_param($stmt, 'issi', $channelId, $entityType, $externalCode, $excludeInternalId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $taken = $res && mysqli_fetch_assoc($res);
+        mysqli_stmt_close($stmt);
+
+        return (bool) $taken;
+    }
+}
+
+if (!function_exists('itm_hotel_booking_distribution_unique_external_code')) {
+    function itm_hotel_booking_distribution_unique_external_code($conn, $channelId, $entityType, $baseCode, $internalId) {
+        $baseCode = strtoupper(trim((string) $baseCode));
+        if ($baseCode === '') {
+            $baseCode = 'RT' . (int) $internalId;
+        }
+        if (strlen($baseCode) > 64) {
+            $baseCode = substr($baseCode, 0, 64);
+        }
+        $candidate = $baseCode;
+        $suffix = 0;
+        while (itm_hotel_booking_distribution_external_code_taken($conn, $channelId, $entityType, $candidate, $internalId)) {
+            $suffix++;
+            $suffixText = (string) $suffix;
+            $trimmed = substr($baseCode, 0, max(1, 64 - strlen($suffixText)));
+            $candidate = $trimmed . $suffixText;
+        }
+
+        return $candidate;
+    }
+}
+
+if (!function_exists('itm_hotel_booking_distribution_upsert_mapping')) {
+    function itm_hotel_booking_distribution_upsert_mapping($conn, $companyId, $channelId, $entityType, $internalId, $externalCode, $employeeId) {
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO hotel_booking_distribution_mappings (company_id, channel_id, entity_type, internal_id, external_code, active, created_by, created_at)
+             VALUES (?, ?, ?, ?, ?, 1, ?, NOW())
+             ON DUPLICATE KEY UPDATE external_code = VALUES(external_code), active = 1, updated_by = VALUES(created_by), updated_at = NOW()'
+        );
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 'iisssi', $companyId, $channelId, $entityType, $internalId, $externalCode, $employeeId);
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+
+        return $ok;
+    }
+}
+
+if (!function_exists('itm_hotel_booking_distribution_sync_room_type_mappings')) {
+    /**
+     * Create OTA external codes for every active room type missing a channel mapping.
+     *
+     * @return array{created:int,skipped:int,errors:list<string>}
+     */
+    function itm_hotel_booking_distribution_sync_room_type_mappings($conn, $companyId, $channelId, $employeeId, $overwriteExisting = false) {
+        $companyId = (int) $companyId;
+        $channelId = (int) $channelId;
+        $employeeId = (int) $employeeId;
+        $created = 0;
+        $skipped = 0;
+        $errors = [];
+
+        $existingByInternal = [];
+        $estmt = mysqli_prepare(
+            $conn,
+            'SELECT internal_id, external_code FROM hotel_booking_distribution_mappings
+             WHERE company_id = ? AND channel_id = ? AND entity_type = \'room_type\'
+               AND deleted_at IS NULL AND active = 1'
+        );
+        if ($estmt) {
+            mysqli_stmt_bind_param($estmt, 'ii', $companyId, $channelId);
+            mysqli_stmt_execute($estmt);
+            $eres = mysqli_stmt_get_result($estmt);
+            while ($eres && ($erow = mysqli_fetch_assoc($eres))) {
+                $existingByInternal[(int) ($erow['internal_id'] ?? 0)] = (string) ($erow['external_code'] ?? '');
+            }
+            mysqli_stmt_close($estmt);
+        }
+
+        $tstmt = mysqli_prepare(
+            $conn,
+            'SELECT id, name FROM booking_rooms_types WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY name ASC'
+        );
+        if (!$tstmt) {
+            return ['created' => 0, 'skipped' => 0, 'errors' => ['room_type_query_failed']];
+        }
+        mysqli_stmt_bind_param($tstmt, 'i', $companyId);
+        mysqli_stmt_execute($tstmt);
+        $tres = mysqli_stmt_get_result($tstmt);
+        while ($tres && ($typeRow = mysqli_fetch_assoc($tres))) {
+            $typeId = (int) ($typeRow['id'] ?? 0);
+            if ($typeId < 1) {
+                continue;
+            }
+            if (!$overwriteExisting && isset($existingByInternal[$typeId]) && $existingByInternal[$typeId] !== '') {
+                $skipped++;
+                continue;
+            }
+            $suggested = itm_hotel_booking_distribution_suggest_external_code('room_type', (string) ($typeRow['name'] ?? ''), $typeId);
+            $externalCode = itm_hotel_booking_distribution_unique_external_code($conn, $channelId, 'room_type', $suggested, $typeId);
+            if (!itm_hotel_booking_distribution_upsert_mapping($conn, $companyId, $channelId, 'room_type', $typeId, $externalCode, $employeeId)) {
+                $errors[] = 'room_type_' . $typeId;
+                continue;
+            }
+            $created++;
+        }
+        mysqli_stmt_close($tstmt);
+
+        return ['created' => $created, 'skipped' => $skipped, 'errors' => $errors];
+    }
+}
+
+if (!function_exists('itm_hotel_booking_distribution_sync_hotel_mappings')) {
+    /**
+     * Create OTA external codes (HTL{id}) for every active hotel missing a channel mapping.
+     *
+     * @return array{created:int,skipped:int,errors:list<string>}
+     */
+    function itm_hotel_booking_distribution_sync_hotel_mappings($conn, $companyId, $channelId, $employeeId, $overwriteExisting = false) {
+        $companyId = (int) $companyId;
+        $channelId = (int) $channelId;
+        $employeeId = (int) $employeeId;
+        $created = 0;
+        $skipped = 0;
+        $errors = [];
+
+        $existingByInternal = [];
+        $estmt = mysqli_prepare(
+            $conn,
+            'SELECT internal_id, external_code FROM hotel_booking_distribution_mappings
+             WHERE company_id = ? AND channel_id = ? AND entity_type = \'hotel\'
+               AND deleted_at IS NULL AND active = 1'
+        );
+        if ($estmt) {
+            mysqli_stmt_bind_param($estmt, 'ii', $companyId, $channelId);
+            mysqli_stmt_execute($estmt);
+            $eres = mysqli_stmt_get_result($estmt);
+            while ($eres && ($erow = mysqli_fetch_assoc($eres))) {
+                $existingByInternal[(int) ($erow['internal_id'] ?? 0)] = (string) ($erow['external_code'] ?? '');
+            }
+            mysqli_stmt_close($estmt);
+        }
+
+        $hstmt = mysqli_prepare(
+            $conn,
+            'SELECT id, name FROM hotel_booking_hotels WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY name ASC'
+        );
+        if (!$hstmt) {
+            return ['created' => 0, 'skipped' => 0, 'errors' => ['hotel_query_failed']];
+        }
+        mysqli_stmt_bind_param($hstmt, 'i', $companyId);
+        mysqli_stmt_execute($hstmt);
+        $hres = mysqli_stmt_get_result($hstmt);
+        while ($hres && ($hotelRow = mysqli_fetch_assoc($hres))) {
+            $hotelId = (int) ($hotelRow['id'] ?? 0);
+            if ($hotelId < 1) {
+                continue;
+            }
+            if (!$overwriteExisting && isset($existingByInternal[$hotelId]) && $existingByInternal[$hotelId] !== '') {
+                $skipped++;
+                continue;
+            }
+            $suggested = itm_hotel_booking_distribution_suggest_external_code('hotel', (string) ($hotelRow['name'] ?? ''), $hotelId);
+            $externalCode = itm_hotel_booking_distribution_unique_external_code($conn, $channelId, 'hotel', $suggested, $hotelId);
+            if (!itm_hotel_booking_distribution_upsert_mapping($conn, $companyId, $channelId, 'hotel', $hotelId, $externalCode, $employeeId)) {
+                $errors[] = 'hotel_' . $hotelId;
+                continue;
+            }
+            $created++;
+        }
+        mysqli_stmt_close($hstmt);
+
+        return ['created' => $created, 'skipped' => $skipped, 'errors' => $errors];
+    }
+}
