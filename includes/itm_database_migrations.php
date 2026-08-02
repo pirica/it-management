@@ -149,6 +149,31 @@ if (!function_exists('itm_database_migrations_discover_files')) {
     }
 }
 
+if (!function_exists('itm_database_migrations_resolve_discovered_file')) {
+    /**
+     * Resolve a migration filename to a discovered on-disk row (runner scope only).
+     *
+     * @return array{filename: string, path: string, checksum: string}|null
+     */
+    function itm_database_migrations_resolve_discovered_file($filename)
+    {
+        $filename = basename((string)$filename);
+        if ($filename === '' || !preg_match('/^[A-Za-z0-9_.-]+\.sql$/', $filename)) {
+            return null;
+        }
+        if (in_array($filename, itm_database_migrations_bootstrap_filenames(), true)) {
+            return null;
+        }
+        foreach (itm_database_migrations_discover_files() as $row) {
+            if (($row['filename'] ?? '') === $filename) {
+                return $row;
+            }
+        }
+
+        return null;
+    }
+}
+
 if (!function_exists('itm_database_migrations_probe_lib_path')) {
     function itm_database_migrations_probe_lib_path()
     {
