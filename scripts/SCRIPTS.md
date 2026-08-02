@@ -628,7 +628,7 @@ Local full import (requires MySQL, password `itmanagement`): `bash scripts/verif
 |--------|---------|
 | `php scripts/verify_database_schema.php` | Compare `CREATE TABLE` names in `db/01_schema.sql` with live `information_schema` (catches partial imports). |
 | `php scripts/verify_db_migrations.php` | Probe live DB against each `db/migrations/*.sql` file (Applied / Superseded / Not applied). Browser + CLI (Admin). `--json` / `?format=json`. Lib: `scripts/lib/itm_verify_db_migrations_report.php`. |
-| `php scripts/verify_bigint_table_review.php` | Live row counts, max `id`/`record_id`/`module_id`, and column types for BIGINT migration candidates (`audit_logs`, `modules_registry`, `company_module_access`, `company_module_share`, `employee_sidebar_preferences`, `system_access`). CLI + browser (no login). |
+| `php scripts/verify_bigint_table_review.php` | Live row counts, max `id`/`record_id`/`module_id`, and column types for BIGINT migration candidates (`audit_logs`, `modules_registry`, `company_module_access`, `company_module_share`, `employee_sidebar_preferences`, `system_access`). CLI + browser (no login; exempt from `run=1` usage landing like `count_db_tables.php`).
 
 Other scripts (`check_index_table_compliance.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, `check_ui_action_emoji.php`, `check_pagination_emoji.php`, `check_crud_audit_soft_delete.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/scripts.php`).
 

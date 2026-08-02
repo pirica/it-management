@@ -1,9 +1,29 @@
 <?php
 /**
  * CLI/browser regression: hotel booking schema helpers and tenant seeds.
+ *
+ * Browser: scripts/verify_hotel_booking.php?run=1 (Administrator).
+ * CLI: php scripts/verify_hotel_booking.php
  */
+
+declare(strict_types=1);
+
+/**
+ * Browser catalog: How to use (shown on landing before run=1).
+ */
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Browser: <a href="verify_hotel_booking.php?run=1">verify_hotel_booking.php?run=1</a> (Administrator). CLI: <code>php scripts/verify_hotel_booking.php</code> — exit <code>1</code> on failure.
+<p>Regression for <code>hotel_booking_*</code> / <code>booking_rooms_types</code> tables, segment helpers, portal quote/occupancy, hospitality module render probes, and stay-date <code>d/M/Y</code> contracts.</p>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
+
 define('ITM_CLI_SCRIPT', true);
-require dirname(__DIR__) . '/config/config.php';
+require_once dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+
+itm_script_output_begin('Hotel booking verification');
 
 $fail = 0;
 function hb_fail($msg) {
@@ -685,4 +705,5 @@ if (itm_format_hotel_date_display('2026-10-01') === '01/Oct/2026') {
     hb_fail('hotel date display expected 01/Oct/2026 got ' . itm_format_hotel_date_display('2026-10-01'));
 }
 
+itm_script_output_end();
 exit($fail > 0 ? 1 : 0);
