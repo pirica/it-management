@@ -245,6 +245,26 @@ if ($adminId > 0) {
     } else {
         cps_verify_pass('Module slug equipment resolves to modules/equipment/index.php.');
     }
+
+    $hotelNavPayload = itm_command_palette_search($conn, $companyId, $adminId, 'hotel', 15);
+    $hotelNavHit = false;
+    foreach ($hotelNavPayload['groups'] ?? [] as $group) {
+        if (($group['module_slug'] ?? '') !== 'modules') {
+            continue;
+        }
+        foreach ($group['results'] ?? [] as $item) {
+            if (($item['module_slug'] ?? '') === 'hotel_bookings'
+                && strpos((string)($item['url'] ?? ''), 'modules/hotel_bookings/index.php') !== false) {
+                $hotelNavHit = true;
+                break 2;
+            }
+        }
+    }
+    if (!$hotelNavHit) {
+        cps_verify_fail('Query hotel did not return hotel_bookings module navigation row.');
+    } else {
+        cps_verify_pass('Query hotel resolves hospitality modules (hotel_bookings).');
+    }
 }
 
 if ($failures > 0) {

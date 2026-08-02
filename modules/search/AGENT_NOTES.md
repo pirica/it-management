@@ -18,7 +18,7 @@ Global **command palette** search across enabled tenant modules so users can fin
 - **Employees:** admin-only (`itm_is_admin()`) — mirrors `modules/employees/` entry guards even though employees is RBAC-exempt for CRUD helpers.
 - **No vault modules:** passwords, notes, todo, private_contacts, bookmarks, explorer files, etc. are intentionally excluded.
 - **Minimum query length:** 2 characters (`itm_command_palette_search()` and UI debounce).
-- **Module navigation:** query matching a searchable `module_slug` or label (e.g. `equipment`) returns a **Modules** group row with subtitle = slug and `url` → `modules/{slug}/index.php` (`itm_command_palette_search_module_navigation()`).
+- **Module navigation:** query matching slug or sidebar label (e.g. `equipment`, `hotel`) returns a **Modules** group across **all accessible registry modules** with `modules/{slug}/index.php` (not limited to the five record-search modules).
 - **Per-module cap:** default 5 results per group (`limit` query param / JSON field, max 10).
 - **Soft-delete:** respect `deleted_at IS NULL` on scaffold tables; employees also hide `is_hidden = 1`.
 - **Search helpers:** employees → `itm_employees_build_search_conditions()`; equipment → `itm_equipment_build_search_where_sql()` + joins; IP → `itm_ipam_fetch_address_list()`; tickets/catalogs → prepared `LIKE` on scalar + label columns.

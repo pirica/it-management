@@ -42,8 +42,8 @@ if (!function_exists('itm_command_palette_module_group_label')) {
     }
 }
 
-if (!function_exists('itm_command_palette_user_can_search_module')) {
-    function itm_command_palette_user_can_search_module($conn, $companyId, $employeeId, $moduleSlug)
+if (!function_exists('itm_command_palette_user_can_access_module')) {
+    function itm_command_palette_user_can_access_module($conn, $companyId, $employeeId, $moduleSlug)
     {
         $companyId = (int)$companyId;
         $employeeId = (int)$employeeId;
@@ -53,15 +53,11 @@ if (!function_exists('itm_command_palette_user_can_search_module')) {
             return false;
         }
 
-        if (!in_array($moduleSlug, itm_command_palette_searchable_module_slugs(), true)) {
-            return false;
-        }
-
         $adminOnlySlugs = function_exists('itm_module_access_admin_only_slugs')
             ? itm_module_access_admin_only_slugs()
             : ['employees'];
 
-        // Why: Admin-only registry slugs mirror sidebar — admins may search without session RBAC rows.
+        // Why: Admin-only registry slugs mirror sidebar — admins may open without session RBAC rows.
         if (in_array($moduleSlug, $adminOnlySlugs, true)
             && function_exists('itm_is_admin')
             && itm_is_admin($conn, $employeeId)) {
@@ -83,6 +79,19 @@ if (!function_exists('itm_command_palette_user_can_search_module')) {
         }
 
         return itm_sidebar_item_passes_role_view($conn, $companyId, $employeeId, $moduleSlug);
+    }
+}
+
+if (!function_exists('itm_command_palette_user_can_search_module')) {
+    function itm_command_palette_user_can_search_module($conn, $companyId, $employeeId, $moduleSlug)
+    {
+        $moduleSlug = strtolower(trim((string)$moduleSlug));
+
+        if (!in_array($moduleSlug, itm_command_palette_searchable_module_slugs(), true)) {
+            return false;
+        }
+
+        return itm_command_palette_user_can_access_module($conn, $companyId, $employeeId, $moduleSlug);
     }
 }
 
@@ -157,29 +166,141 @@ if (!function_exists('itm_command_palette_module_slug_matches_query')) {
     }
 }
 
+if (!function_exists('itm_command_palette_module_has_index')) {
+    function itm_command_palette_module_has_index($moduleSlug)
+    {
+        $moduleSlug = strtolower(trim((string)$moduleSlug));
+        if ($moduleSlug === '') {
+            return false;
+        }
+
+        $root = defined('ROOT_PATH') ? (string)ROOT_PATH : dirname(__DIR__) . '/';
+
+        return is_file(rtrim($root, '/\\') . '/modules/' . $moduleSlug . '/index.php');
+    }
+}
+
+if (!function_exists('itm_command_palette_resolve_module_nav_label')) {
+    function itm_command_palette_resolve_module_nav_label($conn, $companyId, $employeeId, $moduleSlug)
+    {
+        $moduleSlug = strtolower(trim((string)$moduleSlug));
+        if ($moduleSlug === '') {
+            return '';
+        }
+
+        if (function_exists('itm_resolve_module_sidebar_label')) {
+            $label = itm_resolve_module_sidebar_label($conn, (int)$companyId, (int)$employeeId, $moduleSlug);
+            if (function_exists('itm_module_access_strip_catalog_label_prefix')) {
+                $label = itm_module_access_strip_catalog_label_prefix($label);
+            }
+            $label = trim((string)$label);
+            if ($label !== '') {
+                return $label;
+            }
+        }
+
+        return itm_command_palette_module_group_label($moduleSlug);
+    }
+}
+
+if (!function_exists('itm_command_palette_navigable_module_slugs')) {
+    /**
+     * Registry modules the user may open (company gate + RBAC view + index.php present).
+     *
+     * @return string[]
+     */
+    function itm_command_palette_navigable_module_slugs($conn, $companyId, $employeeId)
+    {
+        if (!($conn instanceof mysqli) || (int)$companyId <= 0 || (int)$employeeId <= 0) {
+            return [];
+        }
+
+        if (!function_exists('itm_list_all_modules_registry')) {
+            require_once __DIR__ . '/itm_company_module_access.php';
+        }
+
+        $slugs = [];
+        foreach (itm_list_all_modules_registry($conn) as $row) {
+            $moduleSlug = strtolower(trim((string)($row['module_slug'] ?? '')));
+            if ($moduleSlug === '' || isset($slugs[$moduleSlug])) {
+                continue;
+            }
+            if (!itm_command_palette_module_has_index($moduleSlug)) {
+                continue;
+            }
+            if (!itm_command_palette_user_can_access_module($conn, (int)$companyId, (int)$employeeId, $moduleSlug)) {
+                continue;
+            }
+            $slugs[$moduleSlug] = $moduleSlug;
+        }
+
+        $ordered = array_values($slugs);
+        sort($ordered, SORT_STRING);
+
+        return $ordered;
+    }
+}
+
+if (!function_exists('itm_command_palette_module_nav_match_score')) {
+    function itm_command_palette_module_nav_match_score($moduleSlug, $label, $query)
+    {
+        $query = mb_strtolower(trim((string)$query));
+        $moduleSlug = mb_strtolower(trim((string)$moduleSlug));
+        $label = mb_strtolower(trim((string)$label));
+        if ($query === '' || $moduleSlug === '') {
+            return 0;
+        }
+
+        $slugSpaced = str_replace('_', ' ', $moduleSlug);
+        if ($moduleSlug === $query || $slugSpaced === $query) {
+            return 100;
+        }
+        if (strpos($moduleSlug, $query) === 0 || strpos($slugSpaced, $query) === 0) {
+            return 80;
+        }
+        if ($label !== '' && strpos($label, $query) === 0) {
+            return 70;
+        }
+        if ($label !== '' && strpos($label, $query) !== false) {
+            return 60;
+        }
+
+        $queryCompact = preg_replace('/\s+/u', '', $query) ?? $query;
+        $slugCompact = str_replace('_', '', $moduleSlug);
+        if ($slugCompact !== '' && strpos($slugCompact, $queryCompact) !== false) {
+            return 50;
+        }
+
+        $firstSegment = strtok($moduleSlug, '_');
+        if ($firstSegment !== false && $firstSegment === $query) {
+            return 45;
+        }
+
+        return 0;
+    }
+}
+
 if (!function_exists('itm_command_palette_search_module_navigation')) {
     /**
-     * Module home rows (slug + index.php) when the query matches a searchable module.
+     * Module home rows (slug + index.php) when the query matches an accessible module.
      *
      * @return array<int, array<string, mixed>>
      */
-    function itm_command_palette_search_module_navigation($conn, $companyId, $employeeId, $query)
+    function itm_command_palette_search_module_navigation($conn, $companyId, $employeeId, $query, $limit = 20)
     {
         $companyId = (int)$companyId;
         $employeeId = (int)$employeeId;
         $query = trim((string)$query);
+        $limit = max(1, min(25, (int)$limit));
         if ($query === '' || !($conn instanceof mysqli) || $companyId <= 0 || $employeeId <= 0) {
             return [];
         }
 
-        $results = [];
-        foreach (itm_command_palette_searchable_module_slugs() as $moduleSlug) {
-            if (!itm_command_palette_user_can_search_module($conn, $companyId, $employeeId, $moduleSlug)) {
-                continue;
-            }
-
-            $label = itm_command_palette_module_group_label($moduleSlug);
-            if (!itm_command_palette_module_slug_matches_query($moduleSlug, $label, $query)) {
+        $candidates = [];
+        foreach (itm_command_palette_navigable_module_slugs($conn, $companyId, $employeeId) as $moduleSlug) {
+            $label = itm_command_palette_resolve_module_nav_label($conn, $companyId, $employeeId, $moduleSlug);
+            $score = itm_command_palette_module_nav_match_score($moduleSlug, $label, $query);
+            if ($score <= 0) {
                 continue;
             }
 
@@ -188,14 +309,40 @@ if (!function_exists('itm_command_palette_search_module_navigation')) {
                 continue;
             }
 
-            $results[] = [
-                'id' => 0,
-                'title' => $label,
-                'subtitle' => $moduleSlug,
-                'url' => $indexUrl,
-                'kind' => 'module',
-                'module_slug' => $moduleSlug,
+            $candidates[] = [
+                'score' => $score,
+                'slug' => $moduleSlug,
+                'row' => [
+                    'id' => 0,
+                    'title' => $label,
+                    'subtitle' => $moduleSlug,
+                    'url' => $indexUrl,
+                    'kind' => 'module',
+                    'module_slug' => $moduleSlug,
+                ],
             ];
+        }
+
+        usort($candidates, static function (array $a, array $b): int {
+            if ($a['score'] !== $b['score']) {
+                return $b['score'] <=> $a['score'];
+            }
+
+            $lenA = strlen((string)$a['slug']);
+            $lenB = strlen((string)$b['slug']);
+            if ($lenA !== $lenB) {
+                return $lenA <=> $lenB;
+            }
+
+            return strcmp((string)$a['slug'], (string)$b['slug']);
+        });
+
+        $results = [];
+        foreach ($candidates as $candidate) {
+            $results[] = $candidate['row'];
+            if (count($results) >= $limit) {
+                break;
+            }
         }
 
         return $results;
@@ -642,7 +789,7 @@ if (!function_exists('itm_command_palette_search')) {
             return $payload;
         }
 
-        $moduleNavResults = itm_command_palette_search_module_navigation($conn, $companyId, $employeeId, $query);
+        $moduleNavResults = itm_command_palette_search_module_navigation($conn, $companyId, $employeeId, $query, 20);
         if ($moduleNavResults !== []) {
             $payload['groups'][] = [
                 'module_slug' => 'modules',
