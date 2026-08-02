@@ -243,6 +243,16 @@ if (!is_file($apiPath)) {
     } else {
         en_verify_pass('notifications api.php uses mark_all_read helper');
     }
+    if (strpos($apiSource, 'count_only') === false) {
+        en_verify_fail('notifications api.php must support count_only=1 lightweight badge poll');
+    } else {
+        en_verify_pass('notifications api.php supports count_only badge poll');
+    }
+    if (strpos($apiSource, 'itm_api_enforce_rate_limit_or_exit') !== false) {
+        en_verify_fail('notifications api.php must not call itm_api_enforce_rate_limit_or_exit (internal session UI)');
+    } else {
+        en_verify_pass('notifications api.php skips external API rate limit');
+    }
 }
 
 $jsPath = dirname(__DIR__) . '/js/notifications.js';
@@ -255,6 +265,16 @@ if (!is_file($jsPath)) {
         en_verify_fail('notifications.js must use cache: no-store on fetch requests');
     } else {
         en_verify_pass('notifications.js disables fetch cache for API calls');
+    }
+    if (strpos($jsSource, 'new EventSource') !== false) {
+        en_verify_fail('notifications.js must not auto-start SSE (Apache worker exhaustion)');
+    } else {
+        en_verify_pass('notifications.js does not auto-start SSE');
+    }
+    if (strpos($jsSource, 'count_only=1') === false) {
+        en_verify_fail('notifications.js must poll count_only=1 for badge updates');
+    } else {
+        en_verify_pass('notifications.js uses lightweight count_only poll');
     }
 }
 

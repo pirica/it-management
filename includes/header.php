@@ -27,11 +27,6 @@ $csrfToken = itm_get_csrf_token();
         <!-- Global UI Action Buttons -->
         <button type="button" class="btn btn-sm" data-itm-command-palette-open="1" title="Search (Ctrl+K)">🔍</button>
         <?php
-        $itmHeaderEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
-        $itmHeaderCompanyId = (int)($company_id ?? 0);
-        $itmHeaderUnreadNotifications = ($itmHeaderCompanyId > 0 && $itmHeaderEmployeeId > 0)
-            ? itm_employee_notification_unread_count($conn, $itmHeaderCompanyId, $itmHeaderEmployeeId)
-            : 0;
         $itmNotificationsCssPath = ROOT_PATH . 'css/notifications.css';
         $itmNotificationsJsPath = ROOT_PATH . 'js/notifications.js';
         $itmNotificationsCssVersion = is_file($itmNotificationsCssPath) ? (string)filemtime($itmNotificationsCssPath) : '1';
@@ -41,7 +36,7 @@ $csrfToken = itm_get_csrf_token();
         <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/notifications.css?v=<?php echo sanitize($itmNotificationsCssVersion); ?>">
         <div id="itm-notifications-root" class="itm-notifications-wrap">
             <button type="button" class="btn btn-sm itm-notifications-btn" data-itm-notifications-toggle="1" title="Notifications" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">🔔
-                <span class="itm-notifications-badge<?php echo $itmHeaderUnreadNotifications > 0 ? '' : ' hidden'; ?>" data-itm-notifications-badge aria-hidden="<?php echo $itmHeaderUnreadNotifications > 0 ? 'false' : 'true'; ?>"><?php echo $itmHeaderUnreadNotifications > 0 ? (int)$itmHeaderUnreadNotifications : ''; ?></span>
+                <span class="itm-notifications-badge hidden" data-itm-notifications-badge aria-hidden="true"></span>
             </button>
             <div class="itm-notifications-panel" data-itm-notifications-panel role="menu" aria-label="Recent notifications">
                 <div class="itm-notifications-panel-header">

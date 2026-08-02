@@ -1,10 +1,11 @@
 (function () {
     'use strict';
 
-    var POLL_MS = 60000;
+    // Why: Long-lived SSE ties up Apache/PHP workers (~55s per tab) and slows every save; badge uses light polling instead.
+    var POLL_MS_CLOSED = 120000;
+    var POLL_MS_OPEN = 60000;
+    var INITIAL_DEFER_MS = 2000;
     var pollTimer = null;
-    var eventSource = null;
-    var sseFallbackStarted = false;
 
     function baseUrl() {
         return (window.ITM_BASE_URL || '/').replace(/\/?$/, '/');
@@ -79,8 +80,38 @@
         });
     }
 
-    function fetchNotifications(root, options) {
-        options = options || {};
+    function fetchUnreadCount(root) {
+        var badgeEl = root.querySelector('[data-itm-notifications-badge]');
+        var inboxLink = root.querySelector('[data-itm-notifications-inbox]');
+        var errorEl = root.querySelector('[data-itm-notifications-error]');
+
+        return fetch(apiUrl('count_only=1'), {
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: { 'Accept': 'application/json' }
+        })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (!data || !data.ok) {
+                    throw new Error((data && data.error) || 'Failed to load notification count');
+                }
+                setBadge(badgeEl, data.unread_count);
+                if (inboxLink && data.inbox_url) {
+                    inboxLink.href = data.inbox_url;
+                }
+                if (errorEl) {
+                    errorEl.style.display = 'none';
+                }
+                return data;
+            })
+            .catch(function () {
+                if (errorEl) {
+                    errorEl.style.display = 'block';
+                }
+            });
+    }
+
+    function fetchNotifications(root) {
         var badgeEl = root.querySelector('[data-itm-notifications-badge]');
         var listEl = root.querySelector('[data-itm-notifications-list]');
         var emptyEl = root.querySelector('[data-itm-notifications-empty]');
@@ -98,9 +129,7 @@
                     throw new Error((data && data.error) || 'Failed to load notifications');
                 }
                 setBadge(badgeEl, data.unread_count);
-                if (options.renderList !== false) {
-                    renderList(listEl, emptyEl, data.notifications);
-                }
+                renderList(listEl, emptyEl, data.notifications);
                 if (inboxLink && data.inbox_url) {
                     inboxLink.href = data.inbox_url;
                 }
@@ -186,59 +215,36 @@
         panel.classList.toggle('is-open');
     }
 
+    function isPanelOpen(root) {
+        var panel = root.querySelector('[data-itm-notifications-panel]');
+        return !!(panel && panel.classList.contains('is-open'));
+    }
+
+    function refreshNotifications(root) {
+        if (document.hidden) {
+            return;
+        }
+        if (isPanelOpen(root)) {
+            fetchNotifications(root);
+            return;
+        }
+        fetchUnreadCount(root);
+    }
+
     function startPolling(root) {
         if (pollTimer) {
             clearInterval(pollTimer);
         }
         pollTimer = setInterval(function () {
-            var panel = root.querySelector('[data-itm-notifications-panel]');
-            fetchNotifications(root, { renderList: panel && panel.classList.contains('is-open') });
-        }, POLL_MS);
+            refreshNotifications(root);
+        }, POLL_MS_CLOSED);
     }
 
-    function stopSse() {
-        if (eventSource) {
-            eventSource.close();
-            eventSource = null;
-        }
-    }
-
-    function startPollingFallback(root) {
-        if (sseFallbackStarted) {
-            return;
-        }
-        sseFallbackStarted = true;
-        stopSse();
-        startPolling(root);
-    }
-
-    function startSse(root) {
-        if (typeof EventSource === 'undefined') {
-            startPollingFallback(root);
-            return;
-        }
-        stopSse();
-        eventSource = new EventSource(apiUrl('stream=1'));
-        eventSource.addEventListener('unread', function (event) {
-            var data;
-            try {
-                data = JSON.parse(event.data || '{}');
-            } catch (e) {
-                return;
-            }
-            if (!data || !data.ok) {
-                return;
-            }
-            var badgeEl = root.querySelector('[data-itm-notifications-badge]');
-            setBadge(badgeEl, data.unread_count);
-            var panel = root.querySelector('[data-itm-notifications-panel]');
-            if (panel && panel.classList.contains('is-open')) {
-                fetchNotifications(root);
-            }
-        });
-        eventSource.onerror = function () {
-            startPollingFallback(root);
-        };
+    function scheduleDeferredBootstrap(root) {
+        window.setTimeout(function () {
+            fetchUnreadCount(root);
+            startPolling(root);
+        }, INITIAL_DEFER_MS);
     }
 
     function bind(root) {
@@ -252,8 +258,13 @@
         var listEl = root.querySelector('[data-itm-notifications-list]');
         var markAllBtn = root.querySelector('[data-itm-notifications-mark-all]');
 
-        fetchNotifications(root);
-        startSse(root);
+        scheduleDeferredBootstrap(root);
+
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) {
+                refreshNotifications(root);
+            }
+        });
 
         if (toggleBtn) {
             toggleBtn.addEventListener('click', function (event) {
@@ -262,6 +273,15 @@
                 togglePanel(panel);
                 if (willOpen) {
                     fetchNotifications(root);
+                    if (pollTimer) {
+                        clearInterval(pollTimer);
+                    }
+                    pollTimer = setInterval(function () {
+                        refreshNotifications(root);
+                    }, POLL_MS_OPEN);
+                } else if (pollTimer) {
+                    clearInterval(pollTimer);
+                    startPolling(root);
                 }
             });
         }
@@ -303,6 +323,10 @@
                 return;
             }
             closePanel(panel);
+            if (pollTimer) {
+                clearInterval(pollTimer);
+            }
+            startPolling(root);
         });
     }
 
