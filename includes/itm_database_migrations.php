@@ -174,6 +174,42 @@ if (!function_exists('itm_database_migrations_resolve_discovered_file')) {
     }
 }
 
+if (!function_exists('itm_database_migrations_delete_discovered_file')) {
+    /**
+     * Delete a runner-scoped migration file from disk and drop any schema_migrations row.
+     *
+     * @return array{0: bool, 1: string}
+     */
+    function itm_database_migrations_delete_discovered_file($conn, $filename)
+    {
+        $fileRow = itm_database_migrations_resolve_discovered_file($filename);
+        if ($fileRow === null) {
+            return [false, 'Migration file not found or not allowed.'];
+        }
+
+        $path = (string)($fileRow['path'] ?? '');
+        if ($path === '' || !is_file($path)) {
+            return [false, 'Migration file is missing on disk.'];
+        }
+
+        if (!@unlink($path)) {
+            return [false, 'Failed to delete migration file from filesystem.'];
+        }
+
+        if ($conn instanceof mysqli) {
+            $stmt = mysqli_prepare($conn, 'DELETE FROM schema_migrations WHERE filename = ? LIMIT 1');
+            if ($stmt) {
+                $basename = (string)$fileRow['filename'];
+                mysqli_stmt_bind_param($stmt, 's', $basename);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+            }
+        }
+
+        return [true, 'Deleted ' . (string)$fileRow['filename'] . ' from filesystem.'];
+    }
+}
+
 if (!function_exists('itm_database_migrations_probe_lib_path')) {
     function itm_database_migrations_probe_lib_path()
     {
