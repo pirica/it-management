@@ -3,6 +3,8 @@
  * In-app notification center JSON API (header bell dropdown).
  */
 header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Pragma: no-cache');
 
 require_once '../../config/config.php';
 require_once ROOT_PATH . 'includes/itm_api_rate_limit.php';
@@ -20,7 +22,11 @@ if ($companyId <= 0 || $employeeId <= 0) {
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 
 if ($method === 'POST') {
-    itm_require_post_csrf();
+    if (!itm_try_post_csrf()) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Invalid CSRF token.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
 }
 
 // Why: SSE holds the connection ~55s; release the session lock so other pages load immediately.
@@ -47,18 +53,14 @@ if ($method === 'POST') {
         exit;
     }
     if ($action === 'mark_all_read') {
-        $sql = 'UPDATE employee_notifications SET is_read = 1, read_at = NOW(), updated_by = ?
-                WHERE company_id = ? AND employee_id = ? AND is_read = 0 AND deleted_at IS NULL';
-        $stmt = mysqli_prepare($conn, $sql);
-        if ($stmt) {
-            $updatedBy = $employeeId;
-            mysqli_stmt_bind_param($stmt, 'iii', $updatedBy, $companyId, $employeeId);
-            mysqli_stmt_execute($stmt);
-            mysqli_stmt_close($stmt);
+        if (!itm_employee_notification_mark_all_read($conn, $companyId, $employeeId)) {
+            http_response_code(500);
+            echo json_encode(['ok' => false, 'error' => 'Could not mark notifications as read.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
         }
         echo json_encode([
             'ok' => true,
-            'unread_count' => 0,
+            'unread_count' => itm_employee_notification_unread_count($conn, $companyId, $employeeId),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }

@@ -21,7 +21,7 @@ Rows store **metadata only** (title, short body, module slug, record id, link). 
 - **SSE:** `GET modules/notifications/api.php?stream=1` — short-lived `text/event-stream` pushing `unread_count` (`event: unread`). Requires an **Admin session** in the browser; slug `notifications` is always allowed (not company-gated).
 - **Session lock:** `modules/notifications/api.php` calls `itm_release_session_lock()` after auth (and CSRF on POST) so the ~55s SSE connection does not block other tabs (for example the inbox list).
 - **Fallback:** `js/notifications.js` falls back to 60s JSON polling when `EventSource` is unavailable or the stream errors.
-- **Full list:** opening the bell dropdown still uses `GET ?unread=0&limit=20`.
+- **Full list:** opening the bell dropdown still uses `GET ?unread=0&limit=20` (API sends `Cache-Control: no-store`; `js/notifications.js` uses `fetch` with `cache: 'no-store'` so **Mark all read** refreshes with live data).
 
 ## Emitters
 

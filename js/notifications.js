@@ -89,6 +89,7 @@
 
         return fetch(apiUrl('unread=0&limit=20'), {
             credentials: 'same-origin',
+            cache: 'no-store',
             headers: { 'Accept': 'application/json' }
         })
             .then(function (res) { return res.json(); })
@@ -123,12 +124,20 @@
         return fetch(apiUrl(), {
             method: 'POST',
             credentials: 'same-origin',
+            cache: 'no-store',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
             },
             body: body.toString()
-        }).then(function (res) { return res.json(); });
+        }).then(function (res) {
+            return res.json().then(function (data) {
+                if (!res.ok || !data || !data.ok) {
+                    throw new Error((data && data.error) || 'Could not mark notification as read.');
+                }
+                return data;
+            });
+        });
     }
 
     function markAllRead(root) {
@@ -138,13 +147,30 @@
         return fetch(apiUrl(), {
             method: 'POST',
             credentials: 'same-origin',
+            cache: 'no-store',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
             },
             body: body.toString()
-        }).then(function (res) { return res.json(); })
-            .then(function () { return fetchNotifications(root); });
+        }).then(function (res) {
+            return res.json().then(function (data) {
+                if (!res.ok || !data || !data.ok) {
+                    throw new Error((data && data.error) || 'Could not mark all notifications as read.');
+                }
+                return data;
+            });
+        }).then(function (data) {
+            var badgeEl = root.querySelector('[data-itm-notifications-badge]');
+            setBadge(badgeEl, data.unread_count);
+            return fetchNotifications(root);
+        }).catch(function () {
+            var errorEl = root.querySelector('[data-itm-notifications-error]');
+            if (errorEl) {
+                errorEl.textContent = 'Could not mark notifications as read.';
+                errorEl.style.display = 'block';
+            }
+        });
     }
 
     function closePanel(panel) {
@@ -264,6 +290,7 @@
         if (markAllBtn) {
             markAllBtn.addEventListener('click', function (event) {
                 event.preventDefault();
+                event.stopPropagation();
                 markAllRead(root);
             });
         }
