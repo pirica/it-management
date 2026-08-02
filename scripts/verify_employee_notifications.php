@@ -138,6 +138,42 @@ mysqli_query(
     . mysqli_real_escape_string($conn, $alertTitle) . "'"
 );
 
+$eventTitle = 'MBQA-event-self-' . bin2hex(random_bytes(4));
+if (!itm_notify_event_assigned($conn, $companyId, $actorId, 1, $eventTitle, $actorId)) {
+    en_verify_fail('itm_notify_event_assigned self-assign should notify assignee');
+} else {
+    en_verify_pass('itm_notify_event_assigned notifies on self-assign');
+}
+mysqli_query(
+    $conn,
+    "DELETE FROM employee_notifications WHERE company_id = {$companyId} AND employee_id = {$actorId} AND module_slug = 'events' AND body = '"
+    . mysqli_real_escape_string($conn, $eventTitle) . "'"
+);
+
+$chatSummary = 'MBQA-chat-self-' . bin2hex(random_bytes(4));
+if (!itm_notify_live_chat_conversation_assigned($conn, $companyId, $actorId, 1, $chatSummary, $actorId)) {
+    en_verify_fail('itm_notify_live_chat_conversation_assigned self-assign should notify assignee');
+} else {
+    en_verify_pass('itm_notify_live_chat_conversation_assigned notifies on self-assign');
+}
+mysqli_query(
+    $conn,
+    "DELETE FROM employee_notifications WHERE company_id = {$companyId} AND employee_id = {$actorId} AND module_slug = 'live_chat_conversations' AND body = '"
+    . mysqli_real_escape_string($conn, $chatSummary) . "'"
+);
+
+$todoTitle = 'MBQA-todo-self-' . bin2hex(random_bytes(4));
+if (itm_notify_todo_assigned($conn, $companyId, (string)$actorId, 1, $todoTitle, $actorId) < 1) {
+    en_verify_fail('itm_notify_todo_assigned self-assign should notify assignee');
+} else {
+    en_verify_pass('itm_notify_todo_assigned notifies on self-assign');
+}
+mysqli_query(
+    $conn,
+    "DELETE FROM employee_notifications WHERE company_id = {$companyId} AND employee_id = {$actorId} AND module_slug = 'todo' AND body = '"
+    . mysqli_real_escape_string($conn, $todoTitle) . "'"
+);
+
 $apiPath = dirname(__DIR__) . '/modules/notifications/api.php';
 if (!is_file($apiPath)) {
     en_verify_fail('modules/notifications/api.php missing');

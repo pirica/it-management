@@ -291,7 +291,7 @@ if (!function_exists('itm_notify_todo_assigned')) {
             'title' => 'Task assigned to you',
             'body' => trim((string)$taskTitle) !== '' ? trim((string)$taskTitle) : 'Open the task for details.',
             'action_url' => itm_employee_notification_build_action_url('todo', $taskId),
-        ], (int)$actorEmployeeId);
+        ], 0);
     }
 }
 
@@ -300,7 +300,7 @@ if (!function_exists('itm_notify_event_assigned')) {
     {
         $assigneeEmployeeId = (int)$assigneeEmployeeId;
         $eventId = (int)$eventId;
-        if ($assigneeEmployeeId <= 0 || $eventId <= 0 || $assigneeEmployeeId === (int)$actorEmployeeId) {
+        if ($assigneeEmployeeId <= 0 || $eventId <= 0) {
             return false;
         }
         return itm_notify_employee($conn, $assigneeEmployeeId, [
@@ -338,7 +338,7 @@ if (!function_exists('itm_notify_live_chat_conversation_assigned')) {
     {
         $assigneeEmployeeId = (int)$assigneeEmployeeId;
         $conversationId = (int)$conversationId;
-        if ($assigneeEmployeeId <= 0 || $conversationId <= 0 || $assigneeEmployeeId === (int)$actorEmployeeId) {
+        if ($assigneeEmployeeId <= 0 || $conversationId <= 0) {
             return false;
         }
         $summary = trim((string)$summary);

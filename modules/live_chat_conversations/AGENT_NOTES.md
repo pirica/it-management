@@ -209,7 +209,7 @@ Rules:
 
 ## 12. Module Owner Notes (Optional)
 
-- When `assigned_to_employee_id` changes on create/edit, `itm_notify_live_chat_conversation_assigned()` notifies the assignee (links open `modules/live_chat/?conversation_id=`).
+- When `assigned_to_employee_id` changes on create/edit, `itm_notify_live_chat_conversation_assigned()` notifies the assignee (including self-assign — matches tickets/alerts). Edit compares previous assignee before UPDATE; edit form posts hidden `id` when the query string is omitted. Links open `modules/live_chat/?conversation_id=`.
 - Live message/waiting notifications remain in `modules/live_chat/api.php`.
 
 ---
