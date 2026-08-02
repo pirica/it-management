@@ -3605,6 +3605,15 @@ DROP TRIGGER IF EXISTS `trg_hotel_booking_distribution_reservations_audit_delete
 DROP TRIGGER IF EXISTS `trg_hotel_booking_distribution_ari_events_audit_insert`$$
 DROP TRIGGER IF EXISTS `trg_hotel_booking_distribution_ari_events_audit_update`$$
 DROP TRIGGER IF EXISTS `trg_hotel_booking_distribution_ari_events_audit_delete`$$
+DROP TRIGGER IF EXISTS `trg_hotel_booking_distribution_rate_plan_mappings_audit_insert`$$
+DROP TRIGGER IF EXISTS `trg_hotel_booking_distribution_rate_plan_mappings_audit_update`$$
+DROP TRIGGER IF EXISTS `trg_hotel_booking_distribution_rate_plan_mappings_audit_delete`$$
+DROP TRIGGER IF EXISTS `trg_hotel_booking_distribution_ari_restrictions_audit_insert`$$
+DROP TRIGGER IF EXISTS `trg_hotel_booking_distribution_ari_restrictions_audit_update`$$
+DROP TRIGGER IF EXISTS `trg_hotel_booking_distribution_ari_restrictions_audit_delete`$$
+DROP TRIGGER IF EXISTS `trg_hotel_booking_distribution_webhook_queue_audit_insert`$$
+DROP TRIGGER IF EXISTS `trg_hotel_booking_distribution_webhook_queue_audit_update`$$
+DROP TRIGGER IF EXISTS `trg_hotel_booking_distribution_webhook_queue_audit_delete`$$
 CREATE TRIGGER `trg_hotel_bookings_future_audit_insert` AFTER INSERT ON `hotel_bookings_future` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'hotel_bookings_future', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`), @app_ip_address, @app_user_agent);
@@ -3993,6 +4002,51 @@ END$$
 CREATE TRIGGER `trg_hotel_booking_distribution_ari_events_audit_delete` AFTER DELETE ON `hotel_booking_distribution_ari_events` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'hotel_booking_distribution_ari_events', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'event_type', OLD.`event_type`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_hotel_booking_distribution_rate_plan_mappings_audit_insert` AFTER INSERT ON `hotel_booking_distribution_rate_plan_mappings` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'hotel_booking_distribution_rate_plan_mappings', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'channel_id', NEW.`channel_id`, 'external_rate_plan_code', NEW.`external_rate_plan_code`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_hotel_booking_distribution_rate_plan_mappings_audit_update` AFTER UPDATE ON `hotel_booking_distribution_rate_plan_mappings` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'hotel_booking_distribution_rate_plan_mappings', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'external_rate_plan_code', OLD.`external_rate_plan_code`), JSON_OBJECT('id', NEW.`id`, 'external_rate_plan_code', NEW.`external_rate_plan_code`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_hotel_booking_distribution_rate_plan_mappings_audit_delete` AFTER DELETE ON `hotel_booking_distribution_rate_plan_mappings` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'hotel_booking_distribution_rate_plan_mappings', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'external_rate_plan_code', OLD.`external_rate_plan_code`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_hotel_booking_distribution_ari_restrictions_audit_insert` AFTER INSERT ON `hotel_booking_distribution_ari_restrictions` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'hotel_booking_distribution_ari_restrictions', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'stay_date', NEW.`stay_date`, 'room_type_id', NEW.`room_type_id`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_hotel_booking_distribution_ari_restrictions_audit_update` AFTER UPDATE ON `hotel_booking_distribution_ari_restrictions` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'hotel_booking_distribution_ari_restrictions', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'stop_sell', OLD.`stop_sell`), JSON_OBJECT('id', NEW.`id`, 'stop_sell', NEW.`stop_sell`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_hotel_booking_distribution_ari_restrictions_audit_delete` AFTER DELETE ON `hotel_booking_distribution_ari_restrictions` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'hotel_booking_distribution_ari_restrictions', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'stay_date', OLD.`stay_date`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_hotel_booking_distribution_webhook_queue_audit_insert` AFTER INSERT ON `hotel_booking_distribution_webhook_queue` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'hotel_booking_distribution_webhook_queue', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'event_type', NEW.`event_type`, 'status', NEW.`status`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_hotel_booking_distribution_webhook_queue_audit_update` AFTER UPDATE ON `hotel_booking_distribution_webhook_queue` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'hotel_booking_distribution_webhook_queue', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'status', OLD.`status`), JSON_OBJECT('id', NEW.`id`, 'status', NEW.`status`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_hotel_booking_distribution_webhook_queue_audit_delete` AFTER DELETE ON `hotel_booking_distribution_webhook_queue` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'hotel_booking_distribution_webhook_queue', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'status', OLD.`status`), NULL, @app_ip_address, @app_user_agent);
 END$$
 
 DELIMITER ;

@@ -4557,6 +4557,9 @@ CREATE TABLE `request_password` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Hotel booking module tables (append to 01_schema.sql)
 
+DROP TABLE IF EXISTS `hotel_booking_distribution_webhook_queue`;
+DROP TABLE IF EXISTS `hotel_booking_distribution_ari_restrictions`;
+DROP TABLE IF EXISTS `hotel_booking_distribution_rate_plan_mappings`;
 DROP TABLE IF EXISTS `hotel_booking_distribution_ari_events`;
 DROP TABLE IF EXISTS `hotel_booking_distribution_reservations`;
 DROP TABLE IF EXISTS `hotel_booking_distribution_mappings`;
@@ -5076,6 +5079,14 @@ CREATE TABLE `hotel_booking_distribution_channels` (
   `api_key_prefix` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `api_key_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `webhook_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `partner_api_username` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `partner_api_password_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `partner_property_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `partner_sandbox_mode` tinyint(1) NOT NULL DEFAULT '0',
+  `webhook_signing_secret_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `outbound_webhook_api_key_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `last_ari_push_checksum` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `webhook_max_attempts` int NOT NULL DEFAULT '5',
   `hourly_rate_limit` int NOT NULL DEFAULT '1000',
   `api_requests_count` int NOT NULL DEFAULT '0',
   `api_window_started_at` timestamp NULL DEFAULT NULL,
@@ -5123,6 +5134,10 @@ CREATE TABLE `hotel_booking_distribution_reservations` (
   `hotel_booking_id` int NOT NULL,
   `external_reservation_id` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `external_status` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'confirmed',
+  `ack_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `ack_at` timestamp NULL DEFAULT NULL,
+  `nack_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `partner_message_id` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `payload_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
@@ -5136,6 +5151,7 @@ CREATE TABLE `hotel_booking_distribution_reservations` (
   KEY `company_id` (`company_id`),
   KEY `hotel_booking_id` (`hotel_booking_id`),
   KEY `channel_id` (`channel_id`),
+  KEY `idx_hb_dist_res_ack` (`channel_id`,`ack_status`),
   CONSTRAINT `hb_dist_res_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `hb_dist_res_ibfk_channel` FOREIGN KEY (`channel_id`) REFERENCES `hotel_booking_distribution_channels` (`id`) ON DELETE CASCADE,
   CONSTRAINT `hb_dist_res_ibfk_booking` FOREIGN KEY (`hotel_booking_id`) REFERENCES `hotel_bookings` (`id`) ON DELETE RESTRICT
@@ -5167,6 +5183,100 @@ CREATE TABLE `hotel_booking_distribution_ari_events` (
   CONSTRAINT `hb_dist_ari_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `hb_dist_ari_ibfk_channel` FOREIGN KEY (`channel_id`) REFERENCES `hotel_booking_distribution_channels` (`id`) ON DELETE CASCADE,
   CONSTRAINT `hb_dist_ari_ibfk_hotel` FOREIGN KEY (`hotel_id`) REFERENCES `hotel_booking_hotels` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `hotel_booking_distribution_rate_plan_mappings` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `channel_id` int NOT NULL,
+  `hotel_id` int NOT NULL,
+  `portal_rate_plan_id` int NOT NULL,
+  `external_rate_plan_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `min_los` int NOT NULL DEFAULT '1',
+  `max_los` int DEFAULT NULL,
+  `price_multiplier` decimal(8,4) NOT NULL DEFAULT '1.0000',
+  `restrictions_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_hb_dist_rp_channel_plan` (`channel_id`,`portal_rate_plan_id`),
+  UNIQUE KEY `uq_hb_dist_rp_channel_external` (`channel_id`,`external_rate_plan_code`),
+  KEY `company_id` (`company_id`),
+  KEY `hotel_id` (`hotel_id`),
+  CONSTRAINT `hb_dist_rp_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `hb_dist_rp_ibfk_channel` FOREIGN KEY (`channel_id`) REFERENCES `hotel_booking_distribution_channels` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `hb_dist_rp_ibfk_hotel` FOREIGN KEY (`hotel_id`) REFERENCES `hotel_booking_hotels` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `hb_dist_rp_ibfk_plan` FOREIGN KEY (`portal_rate_plan_id`) REFERENCES `hotel_booking_portal_rate_plans` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `hotel_booking_distribution_ari_restrictions` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `channel_id` int NOT NULL,
+  `hotel_id` int NOT NULL,
+  `room_type_id` int NOT NULL,
+  `rate_plan_mapping_id` int DEFAULT NULL,
+  `stay_date` date NOT NULL,
+  `min_los` int NOT NULL DEFAULT '1',
+  `max_los` int DEFAULT NULL,
+  `closed_to_arrival` tinyint(1) NOT NULL DEFAULT '0',
+  `closed_to_departure` tinyint(1) NOT NULL DEFAULT '0',
+  `stop_sell` tinyint(1) NOT NULL DEFAULT '0',
+  `derived_price_multiplier` decimal(8,4) NOT NULL DEFAULT '1.0000',
+  `base_price_override` decimal(10,2) DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_hb_dist_ari_restr_day` (`channel_id`,`hotel_id`,`room_type_id`,`stay_date`,`rate_plan_mapping_id`),
+  KEY `company_id` (`company_id`),
+  KEY `channel_id` (`channel_id`),
+  CONSTRAINT `hb_dist_ari_restr_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `hb_dist_ari_ibfk_channel_restr` FOREIGN KEY (`channel_id`) REFERENCES `hotel_booking_distribution_channels` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `hb_dist_ari_restr_ibfk_hotel` FOREIGN KEY (`hotel_id`) REFERENCES `hotel_booking_hotels` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `hb_dist_ari_restr_ibfk_room_type` FOREIGN KEY (`room_type_id`) REFERENCES `booking_rooms_types` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `hb_dist_ari_restr_ibfk_rp` FOREIGN KEY (`rate_plan_mapping_id`) REFERENCES `hotel_booking_distribution_rate_plan_mappings` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `hotel_booking_distribution_webhook_queue` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `channel_id` int NOT NULL,
+  `hotel_id` int DEFAULT NULL,
+  `direction` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'outbound',
+  `event_type` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `target_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `content_type` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'application/json; charset=utf-8',
+  `payload_body` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `attempt_count` int NOT NULL DEFAULT '0',
+  `max_attempts` int NOT NULL DEFAULT '5',
+  `next_retry_at` timestamp NULL DEFAULT NULL,
+  `last_http_code` int DEFAULT NULL,
+  `last_error` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `delivered_at` timestamp NULL DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `channel_id` (`channel_id`),
+  KEY `idx_hb_dist_whq_retry` (`status`,`next_retry_at`),
+  CONSTRAINT `hb_dist_whq_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `hb_dist_whq_ibfk_channel` FOREIGN KEY (`channel_id`) REFERENCES `hotel_booking_distribution_channels` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `hotel_booking_portal_users` (

@@ -22,6 +22,8 @@ Standalone reference scripts demonstrating how to interact with the system's JSO
 - **employees_singleview.php** — fetch and parse single employee HTML view.
 - **tickets_listall_open.php** — filter tickets with `search=Open` and parse HTML.
 - **catalogs_listall_active.php** — list active catalog rows from index HTML.
+- **hotel_distribution_availability.php** — distribution API availability shop (`X-API-Key`).
+- **hotel_distribution_notify_book.php** — distribution `notify` book payload (`X-API-Key`).
 - **index.html** — directory listing placeholder (not an executable example).
 
 All `api-examples/*.php` scripts are auto-listed in **`scripts/api.php`** via `itmDocCollectApiExamples()`.
