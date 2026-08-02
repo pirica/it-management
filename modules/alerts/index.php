@@ -1065,6 +1065,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     // PERSISTENCE (Prepared Statements)
     if (empty($errors)) {
+        $previousAssigneeId = 0;
+        if ($crud_action === 'edit' && $editId > 0) {
+            $prevStmt = mysqli_prepare($conn, 'SELECT assigned_to_employee_id FROM alerts WHERE id = ? AND company_id = ? LIMIT 1');
+            if ($prevStmt) {
+                mysqli_stmt_bind_param($prevStmt, 'ii', $editId, $company_id);
+                mysqli_stmt_execute($prevStmt);
+                $prevRes = mysqli_stmt_get_result($prevStmt);
+                $prevRow = $prevRes ? mysqli_fetch_assoc($prevRes) : null;
+                mysqli_stmt_close($prevStmt);
+                $previousAssigneeId = (int)($prevRow['assigned_to_employee_id'] ?? 0);
+            }
+        }
         if ($crud_action === 'create' && function_exists('itm_crud_stamp_create_audit')) {
             $sqlValuesStamp = null;
             itm_crud_stamp_create_audit($data, $sqlValuesStamp);
@@ -1099,6 +1111,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, $types, ...$params);
                 if (mysqli_stmt_execute($stmt)) {
+                    $savedAlertId = (int)mysqli_insert_id($conn);
+                    $assigneeId = (int)($data['assigned_to_employee_id'] ?? 0);
+                    if ($savedAlertId > 0 && $assigneeId > 0) {
+                        itm_notify_alert_assigned($conn, (int)$company_id, $assigneeId, $savedAlertId, (string)($data['title'] ?? ''), (int)$logged_user_id);
+                    }
                     mysqli_stmt_close($stmt);
                     header('Location: ' . $listUrl);
                     exit;
@@ -1129,6 +1146,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, $updateTypes, ...$updateParams);
                 if (mysqli_stmt_execute($stmt)) {
+                    $assigneeId = (int)($data['assigned_to_employee_id'] ?? 0);
+                    if ($editId > 0 && $assigneeId > 0 && $assigneeId !== $previousAssigneeId) {
+                        itm_notify_alert_assigned($conn, (int)$company_id, $assigneeId, $editId, (string)($data['title'] ?? ''), (int)$logged_user_id);
+                    }
                     mysqli_stmt_close($stmt);
                     header('Location: ' . $listUrl);
                     exit;
