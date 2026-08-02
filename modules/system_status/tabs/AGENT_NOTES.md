@@ -14,7 +14,7 @@ Contains the HTML/PHP partial templates representing the sub-panels (Monitoring,
 - **Responsive Layouts**: Templates must strictly adhere to the project-wide CSS guidelines for standard columns and grid classes.
 
 ## 5. UI Behavior Requirements
-- **database.php** — Lists DB tables, row counts, and sizes using the custom scroll class `.audit-table-wrap`.
+- **database.php** — Lists DB tables, row counts, and sizes using the custom scroll class `.audit-table-wrap`. Column headers link-sort by `name`, `rows`, or `size_mb` (`sort` / `dir` query params; preserves `tab=database`).
 - **monitoring.php** — Shows CPU/RAM metrics and provides the folder traversal tree for **Sub Storage**.
 - **php_settings.php** — Renders the loaded extensions panel inside responsive columns (`.ss-extensions-columns`).
 
