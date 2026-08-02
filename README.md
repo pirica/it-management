@@ -22,6 +22,7 @@
 - ✅ Employee Type lookup and Weekly Resignations report (from `employees.termination_date`)
 - ✅ Bulk Import — Centralized Excel/CSV import for Assets and Employees
 - ✅ IT Support Chatbot — Automated technical assistance powered by a multi-tenant Knowledge Base
+- ✅ In-app Notification Center — header 🔔 with unread count, dropdown inbox, and digest email for assignments and workflow events
 - ✅ Appointment — Self-service IT visit scheduling (weekly slots, visit reasons, Live Chat launch card)
 - ✅ Hotel Booking — Public guest portal at `booking/` and Admin **🏨 Hospitality** modules (`docs/BOOKING.md`)
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->

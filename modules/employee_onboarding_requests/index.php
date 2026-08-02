@@ -1731,6 +1731,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'view' && isset($_
     ])) {
         $_SESSION['crud_error'] = $sendError;
     } else {
+        $approverEmployeeId = itm_employee_resolve_id_by_email($conn, (int)$company_id, $approverEmail);
+        if ($approverEmployeeId > 0) {
+            itm_notify_onboarding_approval_needed($conn, (int)$company_id, $approverEmployeeId, $recordId, $approvalType, $employeeFullName);
+        }
         $emailSentField = '';
         $emailSentAtField = '';
         if ($approvalTarget === 'hod') {

@@ -230,6 +230,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         }
 
         if ($stmt->execute()) {
+            $savedTaskId = ($crud_action === "edit" && $editId > 0) ? $editId : (int)mysqli_insert_id($conn);
+            if ($savedTaskId > 0 && trim((string)$assigned_to_employee_id) !== '') {
+                itm_notify_todo_assigned($conn, (int)$company_id, $assigned_to_employee_id, $savedTaskId, $title, (int)$logged_user_id);
+            }
             header("Location: index.php?msg=saved");
             die();
         }
@@ -268,6 +272,10 @@ if (isset($_GET["ajax_action"])) {
         $stmt->bind_param("issssssssii", $company_id, $prepared['title'], $prepared['title_hash'], $due_date, $reminder_at, $repeat_pattern, $category_id, $department_id, $assigned_to_employee_id, $logged_user_id, $importance);
 
         if ($stmt->execute()) {
+            $savedTaskId = (int)mysqli_insert_id($conn);
+            if ($savedTaskId > 0 && trim((string)$assigned_to_employee_id) !== '') {
+                itm_notify_todo_assigned($conn, (int)$company_id, $assigned_to_employee_id, $savedTaskId, $prepared['title'], (int)$logged_user_id);
+            }
             echo json_encode(["ok" => true]);
         } else {
             echo json_encode(["ok" => false, "error" => $stmt->error]);

@@ -522,6 +522,18 @@ The email management module (`modules/emails/` and `modules/email_smtp_configura
 8. **Audit logging:** `email_smtp_configurations` and `email_alert_rules` use `trg_*_audit_*` triggers in `db/03_triggers.sql`. The **`emails`** send log is **private-data exempt** (no audit triggers — see **Private data — no audit trail**).
 9. **Sidebar:** **Admin → 📧 Email Management** in `includes/ui_config.php`.
 
+#### In-app notification center (mandatory)
+
+The notification center surfaces assignment and workflow events in the header bell without opening each module.
+
+1. **Table:** **`employee_notifications`** — per-employee inbox (`company_id`, `employee_id`, `module_slug`, `record_id`, `title`, `body`, `action_url`, `is_read`, `read_at`). **Metadata only** — never store vault/plaintext private module content in `body`.
+2. **Dispatcher:** `itm_notify_employee($conn, $employeeId, $payload)` in `includes/itm_employee_notifications.php` (wraps `itm_employee_notification_create()` with dedupe + default `action_url`). Specialized helpers: ticket assign, onboarding approval, warranty expiry, todo/event assign, note share, email log recipients, ticket comment `@mention`.
+3. **Header UI:** `includes/header.php` renders 🔔 + unread badge + dropdown; `js/notifications.js` polls `modules/notifications/api.php?unread=0` every **60s**; click marks read (POST `action=mark_read`) then navigates to `action_url`.
+4. **Inbox module:** `modules/employee_notifications/` — list scoped to session `employee_id`; hide `company_id` (and internal routing columns) from list/view/forms.
+5. **Emitters (minimum):** ticket assign (`modules/tickets/create.php`); onboarding approval email (`modules/employee_onboarding_requests/`); warranty expiry (`scripts/run_email_alert_rules.php` → equipment assignee); todo `assigned_to_employee_id`; events `assigned_to_employee_id`; emails `to_email` / `cc_email` on successful send log (`itm_email_log_send()`); notes `shared_with_json`; ticket comment `@username` mentions (`modules/ticket_comments/`). Live Chat continues using the same table via `itm_employee_notification_create()`.
+6. **Digest email:** `php scripts/run_notification_digest.php` — optional daily email summarizing unread rows (links to inbox).
+7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_employee_notifications.php`.
+
 #### Chatbot & Knowledge Base (mandatory)
 
 The chatbot module provides a floating technical assistance widget powered by a multi-tenant knowledge base.

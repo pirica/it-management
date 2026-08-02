@@ -800,6 +800,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $dbErrorCode = 0;
         $dbErrorMessage = '';
         if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+            if ($crud_action === 'create' && $crud_table === 'ticket_comments') {
+                $commentId = (int)mysqli_insert_id($conn);
+                $ticketId = (int)($data['ticket_id'] ?? 0);
+                $body = (string)($data['body'] ?? '');
+                if ($commentId > 0 && $ticketId > 0 && $body !== '') {
+                    itm_notify_ticket_comment_mentions($conn, (int)$company_id, $ticketId, $commentId, $body, (int)($_SESSION['employee_id'] ?? 0));
+                }
+            }
             header('Location: ' . $listUrl);
             exit;
         }
