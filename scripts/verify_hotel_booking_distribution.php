@@ -101,6 +101,34 @@ if ($ins) {
     hbd_fail('disposable channel prepare');
 }
 
+if (!function_exists('itm_hotel_booking_distribution_modify_booking')) {
+    hbd_fail('modify helper missing');
+} else {
+    hbd_pass('modify helper loaded');
+}
+
+if (!function_exists('itm_hotel_booking_distribution_push_ari_to_webhook')) {
+    hbd_fail('webhook push helper missing');
+} else {
+    hbd_pass('webhook push helper loaded');
+}
+
+$otaXml = '<?xml version="1.0"?><OTA_HotelAvailRQ xmlns="http://www.opentravel.org/OTA/2003/05"><AvailRequestSegments><AvailRequestSegment><StayDateRange Start="2026-12-01" End="2026-12-03"/><HotelSearchCriteria><Criterion><HotelRef HotelCode="HTL1"/></Criterion></HotelSearchCriteria></AvailRequestSegment></AvailRequestSegments></OTA_HotelAvailRQ>';
+$parsed = itm_hotel_booking_distribution_opentravel_parse_request($otaXml);
+if (($parsed['action'] ?? '') === 'availability' && ($parsed['payload']['check_in'] ?? '') === '2026-12-01') {
+    hbd_pass('opentravel avail RQ parse');
+} else {
+    hbd_fail('opentravel avail RQ parse');
+}
+
+$availPayload = ['success' => true, 'currency_code' => 'EUR', 'external_hotel_code' => 'HTL1', 'room_types' => [['external_code' => 'STD', 'name' => 'Standard', 'available_rooms' => 2, 'total_amount' => 200]]];
+$otaRs = itm_hotel_booking_distribution_opentravel_encode_response($availPayload, 'availability');
+if (strpos($otaRs, 'OTA_HotelAvailRS') !== false && strpos($otaRs, 'RoomTypeCode="STD"') !== false) {
+    hbd_pass('opentravel avail RS encode');
+} else {
+    hbd_fail('opentravel avail RS encode');
+}
+
 if ($channelId > 0) {
     $channel = itm_hotel_booking_distribution_lookup_channel_by_api_key($conn, $plainKey);
     if ($channel && (int) ($channel['id'] ?? 0) === $channelId) {

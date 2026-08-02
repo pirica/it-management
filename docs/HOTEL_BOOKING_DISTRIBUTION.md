@@ -1,60 +1,63 @@
 # Hotel booking distribution API
 
-Phase 1 adds partner-facing JSON under `modules/hotel_booking_api/api.php` with per-channel API keys managed in **Distribution Channels** (`modules/hotel_booking_distribution_channels/`).
+Partner-facing distribution under `modules/hotel_booking_api/api.php` with per-channel API keys in **Distribution Channels** (`modules/hotel_booking_distribution_channels/`).
 
 ## Architecture
 
 | Layer | Location |
 |-------|----------|
-| JSON router | `modules/hotel_booking_api/api.php` |
-| Business logic | `includes/itm_hotel_booking_distribution.php` |
+| Router | `modules/hotel_booking_api/api.php` |
+| Core logic | `includes/itm_hotel_booking_distribution.php` |
+| Wire negotiation | `includes/itm_hotel_booking_distribution_wire.php` |
+| OpenTravel XML | `includes/itm_hotel_booking_distribution_opentravel.php` |
+| Booking.com JSON | `includes/itm_hotel_booking_distribution_booking_com.php` |
+| Oracle OHIP JSON | `includes/itm_hotel_booking_distribution_ohip.php` |
 | Channel admin | `modules/hotel_booking_distribution_channels/` |
-| Schema | `hotel_booking_distribution_*` tables in `db/01_schema.sql` |
-| Migration | `db/migrations/hotel_booking_distribution.sql` |
 
-Auth uses `X-API-Key` (or `api_key` parameter). Employee login is not required (`ITM_HOTEL_BOOKING_DISTRIBUTION_API` in `config/config.php`).
+Auth: `X-API-Key` (or `api_key`). No employee session (`ITM_HOTEL_BOOKING_DISTRIBUTION_API`).
 
-## Endpoints (ITM native JSON)
+## Wire formats
 
-Base URL: `/it-management/modules/hotel_booking_api/api.php`
+| Channel `standard` | Request | Response |
+|--------------------|---------|----------|
+| `itm_native` | JSON (default) | JSON |
+| `opentravel` | XML (`OTA_HotelAvailRQ`, `OTA_HotelResNotifRQ`) or `format=xml` | `OTA_HotelAvailRS`, `OTA_HotelResNotifRS`, `OTA_HotelAvailNotifRS` |
+| `booking_com` | Booking.com Connectivity JSON subset | Wrapped JSON (`room_rates`, reservation ids) |
+| `ohip` | OHIP JSON subset | Wrapped JSON (`status`, `confirmationId`) |
+
+Override with `?format=json` or `?format=xml`, or `Accept: application/xml`.
+
+## Endpoints
+
+Base: `/it-management/modules/hotel_booking_api/api.php`
 
 | Action | Method | Description |
 |--------|--------|-------------|
-| `probe` | GET | Validate key; return channel metadata |
-| `availability` | GET | Shop room types for `check_in` / `check_out` |
-| `ari_snapshot` | GET | Outbound ARI for a date range |
-| `book` | POST | Create reservation + distribution link row |
+| `probe` | GET | Validate API key |
+| `availability` | GET / POST | Shop (JSON query or OpenTravel XML body) |
+| `ari_snapshot` | GET | Pull ARI inventory/rates |
+| `ari_push_outbound` | POST | POST ARI snapshot to channel `webhook_url` |
+| `book` | POST | Create reservation |
+| `modify` | POST | Amend dates/room/guest by `external_reservation_id` |
 | `cancel` | POST | Cancel by `external_reservation_id` |
-| `ari_push` | POST | Inbound nightly rates and stop-sell blocks |
+| `notify` | POST | Inbound OTA notification (routes to book/modify/cancel) |
+| `ari_push` | POST | Inbound rates / stop-sell into ITM |
 
-Use internal `hotel_id` / `room_type_id` or mapped `external_hotel_code` / `external_room_type_code` (configure mappings per channel in admin).
+## Outbound ARI to OTAs
 
-## Standards roadmap
+1. **On demand:** `POST ?action=ari_push_outbound` (authenticated channel) or **Push ARI** on channel view when `webhook_url` is set.
+2. **Scheduled:** `php scripts/run_hotel_booking_distribution_ari_sync.php` — pushes to all channels with `webhook_url` (cron daily).
 
-| `standard` value | Phase |
-|------------------|-------|
-| `itm_native` | **Current** — JSON documented above |
-| `opentravel` | Planned — OpenTravel XML adapter on same helpers |
-| `booking_com` | Planned — Booking.com Connectivity mapper |
-| `ohip` | Planned — Oracle OHIP mapper |
-
-`webhook_url` on the channel row is reserved for outbound ARI push notifications in a later phase.
+Payload format follows channel `standard` (XML for OpenTravel, partner JSON for Booking.com / OHIP).
 
 ## Regression
 
 ```bash
 php scripts/verify_hotel_booking_distribution.php
+php scripts/run_hotel_booking_distribution_ari_sync.php
 ```
 
-Apply migration on existing databases:
+## Related
 
-```bash
-php scripts/migrate.php --apply
-```
-
-Or import fresh from `db/01_schema.sql`.
-
-## Related docs
-
-- Public guest portal: `docs/BOOKING.md`
-- Reservations admin: `modules/hotel_bookings/AGENT_NOTES.md`
+- Guest portal: `docs/BOOKING.md`
+- Reservations: `modules/hotel_bookings/AGENT_NOTES.md`

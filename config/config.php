@@ -309,6 +309,10 @@ require_once ROOT_PATH . 'includes/itm_ui_action_labels.php';
 require_once ROOT_PATH . 'includes/itm_hotel_booking.php';
 require_once ROOT_PATH . 'includes/itm_hotel_booking_amenity_icons.php';
 require_once ROOT_PATH . 'includes/itm_hotel_booking_distribution.php';
+require_once ROOT_PATH . 'includes/itm_hotel_booking_distribution_wire.php';
+require_once ROOT_PATH . 'includes/itm_hotel_booking_distribution_opentravel.php';
+require_once ROOT_PATH . 'includes/itm_hotel_booking_distribution_booking_com.php';
+require_once ROOT_PATH . 'includes/itm_hotel_booking_distribution_ohip.php';
 require_once ROOT_PATH . 'includes/itm_hospitality_admin_layout.php';
 
 // Ensure required upload and backup directories exist (writable, non-executable over HTTP)

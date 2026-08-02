@@ -1089,13 +1089,14 @@ Run `verify_appointment.php` when changing `modules/appointment/`, `includes/itm
 | Script | Purpose |
 |--------|---------|
 | `php scripts/verify_hotel_booking.php` | Regression: core `hotel_booking_*` / `booking_rooms_types` tables, segment helper (`future`), company 1 `PENDING` future status seed, portal rate plan form contract, sample hotel photo seeds (`hb_seed_*.jpg`), and subprocess render probe for all 13 Hospitality sidebar `index.php` modules |
-| `php scripts/verify_hotel_booking_distribution.php` | Regression: `hotel_booking_distribution_*` tables, API key helpers, channel lookup, availability builder, `modules/hotel_booking_api/api.php` bypass constant |
+| `php scripts/verify_hotel_booking_distribution.php` | Regression: `hotel_booking_distribution_*` tables, API key helpers, OpenTravel XML parse/encode, modify + webhook helpers, availability builder |
+| `php scripts/run_hotel_booking_distribution_ari_sync.php` | Push ARI snapshots to all active channels with `webhook_url` (optional `--company=`, `--days=`) |
 | `php scripts/seed_hotel_booking_sample_photos.php` | Copy sample hotel + room-type images to `booking/images/{hotel_id}/hotel_photos/` and `room_types_photos/`; upsert photo rows (`--apply` writes; default dry-run) |
 | `php scripts/check_hotel_bookings_rate_plan_form.php` | Static gate: `__add_new__` portal rate plan select, `hb_booking_end_form_page()` body-level modal, rate-plan select JS quick-add handler |
 | `php scripts/check_hospitality_date_format.php` | Hospitality-only subset of `check_date_format.php` (stay-date static + helper contracts) |
 | `php scripts/check_date_format.php` | Project-wide date format gate: UK `dd/mm/yyyy`, hospitality `d/M/Y`, audit stamps, hospitality static scan, scaffold cell-hook info |
 
-Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking/`, `includes/itm_hotel_booking.php`, or hotel booking DDL/seeds/triggers in `db/`. Run `verify_hotel_booking_distribution.php` when changing `modules/hotel_booking_api/`, `modules/hotel_booking_distribution_channels/`, `includes/itm_hotel_booking_distribution.php`, or distribution DDL in `db/`. Run `check_hotel_bookings_rate_plan_form.php` when changing hotel bookings create/edit form or `js/hotel-bookings-rate-plan-select.js`. Run `check_hospitality_date_format.php` or `check_date_format.php` when changing date display, parse, or form widgets (`includes/itm_date_format.php`, `includes/itm_hotel_date_input.php`).
+Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking/`, `includes/itm_hotel_booking.php`, or hotel booking DDL/seeds/triggers in `db/`. Run `verify_hotel_booking_distribution.php` when changing `modules/hotel_booking_api/`, `modules/hotel_booking_distribution_channels/`, distribution adapter includes, or distribution DDL in `db/`. Run `run_hotel_booking_distribution_ari_sync.php` after webhook or outbound ARI changes. Run `check_hotel_bookings_rate_plan_form.php` when changing hotel bookings create/edit form or `js/hotel-bookings-rate-plan-select.js`. Run `check_hospitality_date_format.php` or `check_date_format.php` when changing date display, parse, or form widgets (`includes/itm_date_format.php`, `includes/itm_hotel_date_input.php`).
 
 ### Email Management scripts
 
