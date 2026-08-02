@@ -31,5 +31,6 @@ JSON API for the global header notification bell (`includes/header.php`). Not a 
 ## 12. Module Owner Notes
 
 - Real-time: SSE primary (`api.php?stream=1`); 60s JSON poll fallback (`js/notifications.js`).
+- Access: slug `notifications` is in `itm_module_access_always_allowed_slugs()` — not gated by Company Module Access (header bell must work for every signed-in user).
 - Canonical doc: `docs/NOTIFICATIONS.md`.
 - Regression: `php scripts/verify_employee_notifications.php`.

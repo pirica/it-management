@@ -139,6 +139,12 @@ if (!is_file($jsPath)) {
     en_verify_pass('js/notifications.js present');
 }
 
+if (!function_exists('has_module_access') || !has_module_access($conn, $companyId, 'notifications')) {
+    en_verify_fail('notifications slug must be always-allowed for header bell API');
+} else {
+    en_verify_pass('notifications module access allowed (always-allowed slug)');
+}
+
 if ($failures > 0) {
     echo $nl . "Result: {$failures} failure(s)." . $nl;
     itm_script_output_end();
