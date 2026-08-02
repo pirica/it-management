@@ -884,6 +884,9 @@ if ($crud_table === 'catalogs' && $crud_action === 'create') {
 
 // HANDLE FETCH FOR EDIT/VIEW
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if ($editId <= 0 && isset($_POST['id'])) {
+    $editId = (int)$_POST['id'];
+}
 
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $hasCompanyFilter = ($hasCompany && $company_id > 0);
@@ -1450,6 +1453,9 @@ if (!isset($crud_title)) {
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                    <?php if ($crud_action === 'edit' && $editId > 0): ?>
+                        <input type="hidden" name="id" value="<?php echo (int)$editId; ?>">
+                    <?php endif; ?>
                     <?php foreach ($uiColumns as $col): $name = $col['Field'];
                         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
                         $isDate = str_starts_with($col['Type'], 'date');
