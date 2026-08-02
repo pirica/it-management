@@ -34,7 +34,40 @@
         return d.toLocaleString();
     }
 
-    function setBadge(badgeEl, count) {
+    function setMarkAllButtonExitMode(markAllBtn) {
+        if (!markAllBtn) {
+            return;
+        }
+        markAllBtn.dataset.itmNotificationsMode = 'exit';
+        markAllBtn.textContent = 'Exit';
+        markAllBtn.setAttribute('title', 'Exit');
+        markAllBtn.setAttribute('aria-label', 'Exit notifications');
+    }
+
+    function resetMarkAllButton(markAllBtn) {
+        if (!markAllBtn) {
+            return;
+        }
+        markAllBtn.dataset.itmNotificationsMode = 'mark_all';
+        markAllBtn.textContent = 'Mark all read';
+        markAllBtn.setAttribute('title', 'Mark all read');
+        markAllBtn.setAttribute('aria-label', 'Mark all read');
+    }
+
+    function isMarkAllExitMode(markAllBtn) {
+        return !!(markAllBtn && markAllBtn.dataset.itmNotificationsMode === 'exit');
+    }
+
+    function syncMarkAllButtonFromUnread(root, unreadCount) {
+        var markAllBtn = root.querySelector('[data-itm-notifications-mark-all]');
+        if (!markAllBtn) {
+            return;
+        }
+        if ((parseInt(unreadCount, 10) || 0) > 0) {
+            resetMarkAllButton(markAllBtn);
+        }
+    }
+
         if (!badgeEl) {
             return;
         }
@@ -96,6 +129,7 @@
                     throw new Error((data && data.error) || 'Failed to load notification count');
                 }
                 setBadge(badgeEl, data.unread_count);
+                syncMarkAllButtonFromUnread(root, data.unread_count);
                 if (inboxLink && data.inbox_url) {
                     inboxLink.href = data.inbox_url;
                 }
@@ -129,6 +163,7 @@
                     throw new Error((data && data.error) || 'Failed to load notifications');
                 }
                 setBadge(badgeEl, data.unread_count);
+                syncMarkAllButtonFromUnread(root, data.unread_count);
                 renderList(listEl, emptyEl, data.notifications);
                 if (inboxLink && data.inbox_url) {
                     inboxLink.href = data.inbox_url;
@@ -191,7 +226,9 @@
             });
         }).then(function (data) {
             var badgeEl = root.querySelector('[data-itm-notifications-badge]');
+            var markAllBtn = root.querySelector('[data-itm-notifications-mark-all]');
             setBadge(badgeEl, data.unread_count);
+            setMarkAllButtonExitMode(markAllBtn);
             return fetchNotifications(root);
         }).catch(function () {
             var errorEl = root.querySelector('[data-itm-notifications-error]');
@@ -272,6 +309,7 @@
                 var willOpen = panel && !panel.classList.contains('is-open');
                 togglePanel(panel);
                 if (willOpen) {
+                    resetMarkAllButton(markAllBtn);
                     fetchNotifications(root);
                     if (pollTimer) {
                         clearInterval(pollTimer);
@@ -311,6 +349,14 @@
             markAllBtn.addEventListener('click', function (event) {
                 event.preventDefault();
                 event.stopPropagation();
+                if (isMarkAllExitMode(markAllBtn)) {
+                    closePanel(panel);
+                    if (pollTimer) {
+                        clearInterval(pollTimer);
+                    }
+                    startPolling(root);
+                    return;
+                }
                 markAllRead(root);
             });
         }

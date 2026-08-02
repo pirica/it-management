@@ -32,6 +32,7 @@ JSON API for the global header notification bell (`includes/header.php`). Not a 
 ## 12. Module Owner Notes
 
 - Real-time: deferred badge poll (`?count_only=1`); full list on bell open; **no** auto SSE (worker exhaustion). **No** `itm_api_enforce_rate_limit_or_exit()` on this API.
+- Footer: **Mark all read** marks every unread row; on success the same button relabels to **Exit** (closes the dropdown). Reopens as **Mark all read** when the panel opens again or new unread items arrive.
 - Access: slug `notifications` is in `itm_module_access_always_allowed_slugs()` — not gated by Company Module Access (header bell must work for every signed-in user).
 - Canonical doc: `docs/NOTIFICATIONS.md`.
 - Regression: `php scripts/verify_employee_notifications.php`.

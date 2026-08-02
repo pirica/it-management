@@ -276,6 +276,11 @@ if (!is_file($jsPath)) {
     } else {
         en_verify_pass('notifications.js uses lightweight count_only poll');
     }
+    if (strpos($jsSource, "setMarkAllButtonExitMode") === false || strpos($jsSource, "'Exit'") === false) {
+        en_verify_fail('notifications.js must relabel Mark all read to Exit after mark-all');
+    } else {
+        en_verify_pass('notifications.js Mark all read → Exit footer contract');
+    }
 }
 
 if (!function_exists('has_module_access') || !has_module_access($conn, $companyId, 'notifications')) {
