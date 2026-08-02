@@ -1212,7 +1212,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_outlook_share.php` — Outlook/mail compose helpers (`includes/itm_outlook_share.php`, `js/itm-outlook-share.js`)
 - `php scripts/verify_request_password.php` — `modules/request_password/` workflow + delete guard
 - `php scripts/verify_chatbot.php` — `js/chatbot.js`, `chat_api.php`, `knowledge_base` tenant scope
-- `php scripts/verify_command_palette_search.php` — `includes/itm_command_palette_search.php`, `includes/itm_search_index.php`, `modules/search/api.php`, `js/command-palette.js`, header Ctrl+K wiring, RBAC gates, FULLTEXT backfill/remove probes
+- `php scripts/verify_command_palette_search.php` — `includes/itm_command_palette_search.php`, `includes/itm_search_index.php`, `modules/search/api.php`, `js/command-palette.js`, header Ctrl+K wiring, RBAC gates, FULLTEXT backfill/remove probes, **all Admin sidebar module slugs searchable**
 - `php scripts/apply_search_index_backfill.php` — dry-run default; `--apply` / `?apply=1` syncs `search_index` for palette modules per company (`--company=`, `--module=`)
 - `php scripts/verify_appointment.php` — `modules/appointment/`, `includes/itm_appointment.php`, appointment `db/` bundle
 - `php scripts/verify_live_chat.php` — Live Chat schema, SLA, ACL, notifications, ticket activity/comments helpers

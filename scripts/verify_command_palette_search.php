@@ -265,6 +265,75 @@ if ($adminId > 0) {
     } else {
         cps_verify_pass('Query hotel resolves hospitality modules (hotel_bookings).');
     }
+
+    if (!function_exists('itm_command_palette_sidebar_visible_module_slugs')) {
+        cps_verify_fail('Missing itm_command_palette_sidebar_visible_module_slugs() helper.');
+    } else {
+        $sidebarSlugs = itm_command_palette_sidebar_visible_module_slugs($conn, $companyId, $adminId);
+        if ($sidebarSlugs === []) {
+            cps_verify_fail('Admin sidebar returned zero visible module slugs for company 1.');
+        } else {
+            cps_verify_pass('Admin sidebar exposes ' . count($sidebarSlugs) . ' searchable module slug(s).');
+        }
+
+        $sidebarNavMisses = [];
+        $sidebarPaletteMisses = [];
+        foreach ($sidebarSlugs as $moduleSlug) {
+            $navResults = itm_command_palette_search_module_navigation($conn, $companyId, $adminId, $moduleSlug, 25);
+            $navHit = false;
+            foreach ($navResults as $navRow) {
+                if (($navRow['module_slug'] ?? '') === $moduleSlug
+                    && strpos((string)($navRow['url'] ?? ''), 'modules/' . $moduleSlug . '/index.php') !== false) {
+                    $navHit = true;
+                    break;
+                }
+            }
+            if (!$navHit) {
+                $sidebarNavMisses[] = $moduleSlug;
+            }
+
+            $palettePayload = itm_command_palette_search($conn, $companyId, $adminId, $moduleSlug, 25);
+            $paletteHit = false;
+            foreach ($palettePayload['groups'] ?? [] as $group) {
+                if (($group['module_slug'] ?? '') !== 'modules') {
+                    continue;
+                }
+                foreach ($group['results'] ?? [] as $paletteRow) {
+                    if (($paletteRow['module_slug'] ?? '') === $moduleSlug) {
+                        $paletteHit = true;
+                        break 2;
+                    }
+                }
+            }
+            if (!$paletteHit) {
+                $sidebarPaletteMisses[] = $moduleSlug;
+            }
+        }
+
+        if ($sidebarNavMisses !== []) {
+            $preview = implode(', ', array_slice($sidebarNavMisses, 0, 8));
+            if (count($sidebarNavMisses) > 8) {
+                $preview .= ' …';
+            }
+            cps_verify_fail(
+                count($sidebarNavMisses) . ' sidebar slug(s) not returned by module navigation search: ' . $preview
+            );
+        } else {
+            cps_verify_pass('Every visible sidebar slug is findable via module navigation search.');
+        }
+
+        if ($sidebarPaletteMisses !== []) {
+            $preview = implode(', ', array_slice($sidebarPaletteMisses, 0, 8));
+            if (count($sidebarPaletteMisses) > 8) {
+                $preview .= ' …';
+            }
+            cps_verify_fail(
+                count($sidebarPaletteMisses) . ' sidebar slug(s) missing from unified palette Modules group: ' . $preview
+            );
+        } else {
+            cps_verify_pass('Every visible sidebar slug appears in the unified palette Modules group.');
+        }
+    }
 }
 
 if ($failures > 0) {
