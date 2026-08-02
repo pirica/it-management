@@ -2,7 +2,9 @@
 .editorconfig
 up.bat
 up.ps1
-.cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 .phpunit.result.cache
 phpunit/.phpunit.result.cache
 phpunit/coverage/html/

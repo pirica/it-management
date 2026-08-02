@@ -61,6 +61,7 @@ $payload = itm_command_palette_search($conn, $companyId, $employeeId, $query, 5)
 ### Regression
 ```bash
 php scripts/verify_command_palette_search.php
+php scripts/verify_command_palette_sidebar_slugs.php
 php scripts/apply_search_index_backfill.php --apply
 ```
 

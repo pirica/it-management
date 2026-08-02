@@ -1,0 +1,27 @@
+---
+description: When citing modules/ or scripts/ paths in replies, include localhost markdown links (http://localhost/it-management/) and tell the user to open in a new browser tab.
+alwaysApply: true
+---
+
+# Local browser links (mandatory in agent replies)
+
+Whenever you mention a path under `modules/` or `scripts/` — summaries, audits, PR test plans, verification tables, not only defects — provide a **markdown link** with base `http://localhost/it-management/` and tell the user to **open it in a new browser tab**.
+
+## URL patterns
+
+| Path | URL |
+|------|-----|
+| Module page | `http://localhost/it-management/modules/<slug>/<file>.php` |
+| Script landing | `http://localhost/it-management/scripts/<file>.php?run=1` |
+| Script apply flow | `…?run=1&apply=1` (Admin) |
+| No-auth plain probe | `http://localhost/it-management/scripts/<file>.php` (omit `run=1` when script is no-auth, e.g. `count_db_tables.php`) |
+
+Note **Admin session** when required, or **no login** for no-auth scripts. Multi-row lists need a link per script/module — do not cite bare repo paths without a localhost URL.
+
+## Examples
+
+- [Open modules/hotel_bookings/index.php](http://localhost/it-management/modules/hotel_bookings/index.php)
+- [verify_command_palette_sidebar_slugs.php?run=1](http://localhost/it-management/scripts/verify_command_palette_sidebar_slugs.php?run=1)
+- [scripts/scripts.php catalog](http://localhost/it-management/scripts/scripts.php?run=1)
+
+See `AGENTS.md` step **7a** for the full contract.

@@ -1911,7 +1911,14 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_command_palette_search.php" target="_blank" rel="nofollow noreferrer">verify_command_palette_search.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Regression for global command palette: <code>includes/itm_command_palette_search.php</code>, <code>includes/itm_search_index.php</code>, <code>modules/search/api.php</code>, header <code>Ctrl+K</code> wiring, RBAC gates (employees admin-only), <code>search_index</code> FULLTEXT sync, and backfill/remove probes.</td>
+                    <td>Regression for global command palette: <code>includes/itm_command_palette_search.php</code>, <code>includes/itm_search_index.php</code>, <code>modules/search/api.php</code>, header <code>Ctrl+K</code> wiring, RBAC gates (employees admin-only), <code>search_index</code> FULLTEXT sync, and backfill/remove probes. Sidebar slug coverage: <code>verify_command_palette_sidebar_slugs.php</code>.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="verify_command_palette_sidebar_slugs.php" target="_blank" rel="nofollow noreferrer">verify_command_palette_sidebar_slugs.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Regression that every module slug visible in the live Admin sidebar (company 1) is findable via command-palette module navigation (<code>itm_command_palette_sidebar_visible_module_slugs()</code> + unified <strong>Modules</strong> group). Shared lib: <code>scripts/lib/itm_command_palette_sidebar_verify.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
