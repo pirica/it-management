@@ -327,7 +327,7 @@
       '<div class="hb-dates-summary" id="hb-dates-summary"></div>' +
       '<div class="hb-dates-actions">' +
       '<button type="button" class="hb-btn hb-dates-choose" disabled title="Choose room">Choose Room</button>' +
-      '<button type="button" class="hb-btn hb-dates-cancel" title="Cancel">Cancel</button>' +
+      '<button type="button" class="hb-btn hb-dates-cancel" title="Cancel">🔙</button>' +
       '</div></div>';
 
     datesBody.querySelectorAll('.hb-dates-month-tab').forEach(function (btn) {

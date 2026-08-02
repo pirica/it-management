@@ -6,7 +6,7 @@ Admin UI to set **discount_percent** (and **active**) per hotel for canonical po
 
 ## 2. Key Tables
 
-- **hotel_booking_special_rates** — `(company_id, hotel_id, rate_slug)` unique; `discount_percent`, `name`, `description`, `active`, audit + soft-delete.
+- **hotel_booking_special_rates** — `(company_id, hotel_id, rate_slug)` unique; `discount_percent`, `name`, `description`, `active`, audit + soft-delete; `trg_hotel_booking_special_rates_audit_*` in `db/03_triggers.sql`.
 
 ## 3. Business Rules
 

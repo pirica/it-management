@@ -338,7 +338,8 @@ function itc_check_module(string $module, string $content): array
     if ($postSurface && preg_match_all('/<form\b[^>]*method\s*=\s*(["\'])post\1/i', $content, $formMatches) > 0) {
         $formCount = count($formMatches[0]);
         $tokenCount = preg_match_all('/name\s*=\s*(["\'])csrf_token\1/i', $content);
-        if ($tokenCount < $formCount) {
+        $redirectHelperCount = preg_match_all('/\$hiddenRedirectFields\s*\(\s*\)\s*;/', $content);
+        if ($tokenCount + $redirectHelperCount < $formCount) {
             $violations[] = 'POST form(s) detected without enough csrf_token hidden fields';
         }
     }

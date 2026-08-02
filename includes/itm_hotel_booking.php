@@ -3138,7 +3138,7 @@ if (!function_exists('itm_hotel_booking_write_cancellation_policy_file')) {
       . '<title>' . htmlspecialchars($safeName, ENT_QUOTES, 'UTF-8') . ' — Cancellation policy</title>'
       . '<link rel="stylesheet" href="../css/hotel-booking-modern.css"></head><body class="hb-public">'
       . '<main class="hb-cancellation-policy-page card">' . $bodyHtml
-      . '<button type="button" class="hb-btn hb-checkout-skip hb-cancellation-policy-back" title="Back" onclick="history.go(-1);">Back</button>'
+      . '<button type="button" class="hb-btn hb-checkout-skip hb-cancellation-policy-back" title="Back" onclick="history.go(-1);">🔙</button>'
       . '</main></body></html>';
     return file_put_contents($full, $doc) !== false;
   }

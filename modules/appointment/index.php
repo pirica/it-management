@@ -15,9 +15,6 @@ if (function_exists('itm_require_crud_role_module_permission')) {
     if ($crud_action === 'list_all' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $permAction = 'edit';
     }
-    if ($crud_action === 'delete') {
-        $permAction = 'delete';
-    }
     itm_require_crud_role_module_permission($conn, $permAction, 'appointment');
 }
 
@@ -106,15 +103,18 @@ if ($crud_action === 'list_all' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
 }
 
 // Soft-delete handler (delete.php routes here).
-if ($crud_action === 'delete' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
-    itm_require_post_csrf();
-    $id = (int)($_POST['id'] ?? 0);
-    if ($id > 0) {
-        $where = 'id = ' . $id . ' AND company_id = ' . $company_id;
-        $sql = itm_crud_build_soft_delete_sql($crud_table, $where, $employee_id);
-        // Why: Clear slot lock and mark cancelled so the time slot is bookable again.
-        $sql = str_replace('`active`=0', '`active`=0, `booking_lock`=NULL, `status`=\'cancelled\'', $sql);
-        itm_run_query($conn, $sql);
+if ($crud_action === 'delete') {
+    itm_require_crud_role_module_permission($conn, 'delete', 'appointment');
+    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+        itm_require_post_csrf();
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id > 0) {
+            $where = 'id = ' . $id . ' AND company_id = ' . $company_id;
+            $sql = itm_crud_build_soft_delete_sql($crud_table, $where, $employee_id);
+            // Why: Clear slot lock and mark cancelled so the time slot is bookable again.
+            $sql = str_replace('`active`=0', '`active`=0, `booking_lock`=NULL, `status`=\'cancelled\'', $sql);
+            itm_run_query($conn, $sql);
+        }
     }
     header('Location: list_all.php');
     exit;
@@ -241,7 +241,7 @@ function appt_employee_select_label(array $empRow)
                         <a href="../appointment_settings/" class="btn btn-sm" title="Appointment settings">⚙️</a>
                     <?php endif; ?>
                        <a href="index.php" class="btn btn-sm" title="Back">🔙</a></p>
-                    <table class="appointment-list-table">
+                    <table class="appointment-list-table" data-itm-no-import-excel="1">
                         <thead>
                         <tr>
                             <th>Date</th>

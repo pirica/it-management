@@ -37,7 +37,7 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
     <div class="appointment-settings-section-header">
         <h2 title="Company settings">⚙️</h2>
     </div>
-    <table class="appointment-list-table">
+    <table class="appointment-list-table" data-itm-no-import-excel="1">
         <thead>
         <tr>
             <th>Timezone</th>
@@ -76,7 +76,7 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
         <h2 title="Business hours">🕐</h2>
         <a href="create.php?kind=business_hour" class="btn btn-sm btn-primary" title="Add">➕</a>
     </div>
-    <table class="appointment-list-table">
+    <table class="appointment-list-table" data-itm-no-import-excel="1">
         <thead>
         <tr>
             <th>Day</th>
@@ -128,7 +128,7 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
         <h2 title="Visit reasons">📋</h2>
         <a href="create.php?kind=visit_reason" class="btn btn-sm btn-primary" title="Add">➕</a>
     </div>
-    <table class="appointment-list-table">
+    <table class="appointment-list-table" data-itm-no-import-excel="1">
         <thead>
         <tr>
             <th>Name</th>
@@ -168,7 +168,7 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
         <a href="create.php?kind=appointment_type" class="btn btn-sm btn-primary" title="Add">➕</a>
     </div>
     <p>Core types in_person and remote are used by the booking API.</p>
-    <table class="appointment-list-table">
+    <table class="appointment-list-table" data-itm-no-import-excel="1">
         <thead>
         <tr>
             <th>Name</th>
