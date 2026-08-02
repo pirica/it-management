@@ -57,6 +57,15 @@ if (!has_module_access($conn, 1, 'settings')) {
     echo '[PASS] settings access allowed for company 1.' . $nl;
 }
 
+foreach (['notifications', 'employee_notifications'] as $alwaysAllowedSlug) {
+    if (!has_module_access($conn, 1, $alwaysAllowedSlug)) {
+        echo '[FAIL] ' . $alwaysAllowedSlug . ' should remain accessible for company 1 (header bell / inbox).' . $nl;
+        $failures++;
+    } else {
+        echo '[PASS] ' . $alwaysAllowedSlug . ' access allowed for company 1.' . $nl;
+    }
+}
+
 $expectedAccessRows = $registryCount * 5;
 $accessCountRes = mysqli_query($conn, 'SELECT COUNT(*) AS count FROM company_module_access');
 $accessCountRow = $accessCountRes ? mysqli_fetch_assoc($accessCountRes) : null;

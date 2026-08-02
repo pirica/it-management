@@ -29,6 +29,10 @@ if (!function_exists('itm_module_access_always_allowed_slugs')) {
     {
         return [
             'settings',
+            // Why: Header bell JSON/SSE API — not a sidebar module; every signed-in user needs it.
+            'notifications',
+            // Why: Personal notification inbox linked from the bell; not company-gated.
+            'employee_notifications',
         ];
     }
 }
