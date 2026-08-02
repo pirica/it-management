@@ -22,8 +22,13 @@ Standalone reference scripts demonstrating how to interact with the system's JSO
 - **employees_singleview.php** — fetch and parse single employee HTML view.
 - **tickets_listall_open.php** — filter tickets with `search=Open` and parse HTML.
 - **catalogs_listall_active.php** — list active catalog rows from index HTML.
+- **hotel_distribution_probe.php** — distribution API key probe (`action=probe`, `X-API-Key`).
 - **hotel_distribution_availability.php** — distribution API availability shop (`X-API-Key`).
+- **hotel_distribution_ari_snapshot.php** — outbound ARI snapshot pull (`action=ari_snapshot`).
+- **hotel_distribution_book.php** — direct `action=book` reservation create (`X-API-Key`).
 - **hotel_distribution_notify_book.php** — distribution `notify` book payload (`X-API-Key`).
+- **hotel_distribution_modify.php** — `action=modify` amend by `external_reservation_id`.
+- **hotel_distribution_cancel.php** — `action=cancel` by `external_reservation_id`.
 - **index.html** — directory listing placeholder (not an executable example).
 
 All `api-examples/*.php` scripts are auto-listed in **`scripts/api.php`** via `itmDocCollectApiExamples()`.

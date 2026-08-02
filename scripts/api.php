@@ -752,6 +752,13 @@ function itmDocCollectApiExamples(string $rootPath): array
         'employees_singleview.php' => 'List / read (HTML)',
         'tickets_listall_open.php' => 'List / read (HTML)',
         'catalogs_listall_active.php' => 'List / read (HTML)',
+        'hotel_distribution_probe.php' => 'Hotel distribution API',
+        'hotel_distribution_availability.php' => 'Hotel distribution API',
+        'hotel_distribution_ari_snapshot.php' => 'Hotel distribution API',
+        'hotel_distribution_book.php' => 'Hotel distribution API',
+        'hotel_distribution_notify_book.php' => 'Hotel distribution API',
+        'hotel_distribution_modify.php' => 'Hotel distribution API',
+        'hotel_distribution_cancel.php' => 'Hotel distribution API',
     ];
 
     $examples = [];
