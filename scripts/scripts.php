@@ -773,11 +773,18 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Live BIGINT migration review: row counts, max IDs, column types, and AUTO_INCREMENT for six review tables. Browser + CLI (Administrator); <code>?run=1</code> landing and coloured report shell (same pattern as <code>verify_db_migrations.php</code>). Includes static <strong>300 staff × 5 companies</strong> scale projection. Pair with <code>db/migrations/audit_logs_bigint.sql</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="schema_migrations">
+                    <td><a href="migrate.php" target="_blank" rel="nofollow noreferrer">migrate.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">schema_migrations</span></span></td>
+                    <td>Migration runner for <code>db/migrations/*.sql</code>: <code>--status</code> lists pending files vs <code>schema_migrations</code>; <code>--apply</code> runs filename-ordered SQL in one session and records SHA-256 checksums (Admin browser <code>?apply=1</code>). Helpers: <code>includes/itm_database_migrations.php</code>. Pair with <code>verify_db_migrations.php</code> for schema probes.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_db_migrations.php" target="_blank" rel="nofollow noreferrer">verify_db_migrations.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Compares live <code>itmanagement</code> schema/data against every <code>db/migrations/*.sql</code> file discovered on disk (natural sort; Applied / Superseded / Not applied / DML only). Parses <code>CREATE TABLE</code> / <code>CREATE TRIGGER</code> per file. No migration history table — probes only. Shared lib: <code>lib/itm_verify_db_migrations_report.php</code>.</td>
+                    <td>Compares live <code>itmanagement</code> schema/data against every <code>db/migrations/*.sql</code> file discovered on disk (natural sort; Applied / Superseded / Not applied / DML only). Parses <code>CREATE TABLE</code> / <code>CREATE TRIGGER</code> per file. Schema probe only — applied history: <code>migrate.php</code> + <code>schema_migrations</code>. Shared lib: <code>lib/itm_verify_db_migrations_report.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">

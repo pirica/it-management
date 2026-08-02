@@ -1,6 +1,6 @@
 <?php
 /**
- * Live DB checks for db/migrations/*.sql (no migration history table — schema/data probes only).
+ * Live DB checks for db/migrations/*.sql (schema/data probes — applied history is migrate.php + schema_migrations).
  *
  * Discovers every *.sql file under db/migrations/ (filesystem glob, filename order).
  * Per-file probes: optional custom handler, else generic parse of CREATE TABLE / CREATE TRIGGER.
