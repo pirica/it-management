@@ -326,14 +326,12 @@
         ],
         "tables": [
             "access_levels",
-            "companies",
             "company_module_share",
             "employees",
             "employee_companies",
             "employee_roles",
             "employee_sidebar_preferences",
             "employee_statuses",
-            "modules_registry",
             "share_sessions"
         ],
         "override": false
@@ -379,6 +377,24 @@
         ],
         "override": false
     },
+    "run_notification_digest.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "verify_employee_notifications.php": {
+        "tags": [
+            "employees",
+            "employee_notifications"
+        ],
+        "tables": [
+            "employees",
+            "employee_notifications"
+        ],
+        "override": false
+    },
     "itm-user-errors.js": {
         "tags": [
             "Codebase"
@@ -387,6 +403,13 @@
         "override": false
     },
     "run_tests.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "matrix_safe_run_once.php": {
         "tags": [
             "Codebase"
         ],
@@ -406,6 +429,15 @@
         ],
         "tables": [
             "departments"
+        ],
+        "override": false
+    },
+    "scaffold_hotel_booking_crud_modules.php": {
+        "tags": [
+            "hotel_bookings"
+        ],
+        "tables": [
+            "hotel_bookings"
         ],
         "override": false
     },
@@ -521,17 +553,21 @@
         ],
         "override": false
     },
+    "migrate.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
     "verify_db_migrations.php": {
         "tags": [
             "Mixed"
         ],
         "tables": [
-            "companies",
             "company_module_share",
             "employees",
             "employee_roles",
-            "employee_sidebar_preferences",
-            "modules_registry",
             "share_sessions"
         ],
         "override": false
@@ -1295,6 +1331,33 @@
         ],
         "override": false
     },
+    "apply_agent_notes_view_audit_meta.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "audit_logs",
+            "notes",
+            "ui_configuration"
+        ],
+        "override": false
+    },
+    "apply_script_catalog_documentation_files.php": {
+        "tags": [
+            "catalogs"
+        ],
+        "tables": [
+            "catalogs"
+        ],
+        "override": false
+    },
+    "apply_utf8_mojibake_fix.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
     "check_script_browser_usage.php": {
         "tags": [
             "Codebase"
@@ -1790,6 +1853,17 @@
         ],
         "override": false
     },
+    "run_expense_recurrence.php": {
+        "tags": [
+            "expenses",
+            "expense_recurrence"
+        ],
+        "tables": [
+            "expenses",
+            "expense_recurrence"
+        ],
+        "override": false
+    },
     "verify_customers.php": {
         "tags": [
             "customers",
@@ -1887,6 +1961,81 @@
         ],
         "override": false
     },
+    "run_hotel_booking_distribution_webhook_queue.php": {
+        "tags": [
+            "hotel_bookings",
+            "hotel_booking_distribution_webhook_queue"
+        ],
+        "tables": [
+            "hotel_bookings",
+            "hotel_booking_distribution_webhook_queue"
+        ],
+        "override": false
+    },
+    "verify_hotel_booking_distribution_http.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "hotel_bookings",
+            "hotel_booking_distribution_channels",
+            "hotel_booking_hotels"
+        ],
+        "override": false
+    },
+    "verify_hotel_booking_distribution_opentravel_coverage.php": {
+        "tags": [
+            "hotel_bookings"
+        ],
+        "tables": [
+            "hotel_bookings"
+        ],
+        "override": false
+    },
+    "verify_hotel_booking_distribution_booking_com_cert.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "hotel_bookings",
+            "hotel_booking_distribution_channels",
+            "hotel_booking_distribution_reservations"
+        ],
+        "override": false
+    },
+    "report_hotel_booking_distribution_webhook_ops.php": {
+        "tags": [
+            "hotel_bookings",
+            "hotel_booking_distribution_channels"
+        ],
+        "tables": [
+            "hotel_bookings",
+            "hotel_booking_distribution_channels"
+        ],
+        "override": false
+    },
+    "run_hotel_booking_distribution_ari_sync.php": {
+        "tags": [
+            "hotel_bookings"
+        ],
+        "tables": [
+            "hotel_bookings"
+        ],
+        "override": false
+    },
+    "verify_hotel_booking_distribution.php": {
+        "tags": [
+            "Mixed"
+        ],
+        "tables": [
+            "hotel_bookings",
+            "hotel_booking_distribution_channels",
+            "hotel_booking_distribution_mappings",
+            "hotel_booking_distribution_rate_plan_mappings",
+            "hotel_booking_hotels"
+        ],
+        "override": false
+    },
     "verify_hotel_booking.php": {
         "tags": [
             "Mixed"
@@ -1933,6 +2082,37 @@
         "tables": [
             "appointments",
             "modules_registry"
+        ],
+        "override": false
+    },
+    "verify_command_palette_search.php": {
+        "tags": [
+            "employees",
+            "employee_roles"
+        ],
+        "tables": [
+            "employees",
+            "employee_roles"
+        ],
+        "override": false
+    },
+    "verify_command_palette_sidebar_slugs.php": {
+        "tags": [
+            "employees"
+        ],
+        "tables": [
+            "employees"
+        ],
+        "override": false
+    },
+    "apply_search_index_backfill.php": {
+        "tags": [
+            "companies",
+            "search_index"
+        ],
+        "tables": [
+            "companies",
+            "search_index"
         ],
         "override": false
     },
@@ -1999,12 +2179,10 @@
             "Mixed"
         ],
         "tables": [
-            "companies",
             "company_module_share",
             "employees",
             "employee_companies",
             "employee_roles",
-            "employee_sidebar_preferences",
             "modules_registry",
             "role_hierarchy",
             "role_module_permissions",
@@ -2953,6 +3131,13 @@
         "override": false
     },
     "apply_crud_record_share_modules.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
+    "fix_crud_record_share_view_buttons.php": {
         "tags": [
             "Codebase"
         ],

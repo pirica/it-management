@@ -56,7 +56,7 @@ if (!function_exists('itm_perform_audit_static_exclusions')) {
             'perform_audit.php',
             'scripts.php',
             'api.php',
-            '_matrix_safe_run_once.php',
+            'matrix_safe_run_once.php',
             'apply_bulk_actions_records_per_page_gate.php',
             'apply_bulk_delete_cancel_ux.php',
             'apply_crud_audit_soft_delete.php',

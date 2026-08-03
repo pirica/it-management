@@ -1,15 +1,50 @@
 <?php
 /**
  * One-shot safe matrix runner (tiers 1-3). Writes JSON results for the agent report.
- * Not cataloged — disposable for this session.
+ *
+ * CLI: php scripts/matrix_safe_run_once.php
+ * Browser: scripts/matrix_safe_run_once.php (Admin login required)
  */
 declare(strict_types=1);
 
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+CLI: <code>php scripts/matrix_safe_run_once.php</code><br>
+Browser: runs safe test matrix (Tiers 1-3) and outputs results in a <code>&lt;pre&gt;</code> block (Admin).
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
+
+if (!defined('ITM_CLI_SCRIPT')) {
+    define('ITM_CLI_SCRIPT', true);
+}
+
+if (PHP_SAPI !== 'cli') {
+    require_once __DIR__ . '/lib/itm_script_browser_usage.php';
+    itm_script_browser_usage_maybe_gate();
+}
+
+require_once dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+
+if (PHP_SAPI !== 'cli') {
+    itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
+}
+
+itm_script_output_begin('Safe Matrix Test Runner (Tiers 1-3)');
+$nl = itm_script_output_nl();
 
 require_once __DIR__ . '/lib/itm_script_stdio.php';
 $root = dirname(__DIR__);
 $php = 'D:\\dunebox-v1.0.6\\system\\apps\\php\\php-7.4.33-nts-Win32-vc15-x64\\php.exe';
+if (!is_file($php)) {
+    require_once $root . '/includes/itm_cli_binary.php';
+    $php = itm_resolve_cli_php_binary();
+}
 $bash = 'C:\\Program Files\\Git\\bin\\bash.exe';
+if (!is_file($bash)) {
+    $bash = 'bash';
+}
 $matrixPath = $root . '/scripts/SCRIPTS_TEST_MATRIX.md';
 $outJson = $root . '/qa-reports/scripts-matrix-safe-run-raw.json';
 $outLogDir = $root . '/qa-reports/scripts-matrix-logs';
@@ -26,68 +61,74 @@ $started = date('c');
 
 $lines = file($matrixPath, FILE_IGNORE_NEW_LINES);
 $entries = [];
-foreach ($lines as $line) {
-    if (!preg_match('/^\|\s*([0-5])\s*\|\s*`([^`]+)`\s*\|/', $line, $m)) {
-        continue;
+if (is_array($lines)) {
+    foreach ($lines as $line) {
+        if (!preg_match('/^\|\s*([0-5])\s*\|\s*`([^`]+)`\s*\|/', $line, $m)) {
+            continue;
+        }
+        $tier = (int)$m[1];
+        $script = $m[2];
+        $entries[] = ['tier' => $tier, 'script' => $script];
     }
-    $tier = (int)$m[1];
-    $script = $m[2];
-    $entries[] = ['tier' => $tier, 'script' => $script];
 }
 
 $results = [];
 $smokePassed = false;
 
-function itm_matrix_tail(string $text, int $max = 2500): string
-{
-    $text = preg_replace('/\x1b\[[0-9;]*m/', '', $text);
-    if (strlen($text) <= $max) {
-        return $text;
+if (!function_exists('itm_matrix_tail')) {
+    function itm_matrix_tail(string $text, int $max = 2500): string
+    {
+        $text = preg_replace('/\x1b\[[0-9;]*m/', '', $text);
+        if (strlen($text) <= $max) {
+            return $text;
+        }
+        return substr($text, -$max);
     }
-    return substr($text, -$max);
 }
 
-function itm_matrix_run(string $cmd, int $timeoutSec, string $cwd): array
-{
-    $descriptors = [
-        0 => ['pipe', 'r'],
-        1 => ['pipe', 'w'],
-        2 => ['pipe', 'w'],
-    ];
-    $proc = proc_open($cmd, $descriptors, $pipes, $cwd);
-    if (!is_resource($proc)) {
-        return ['exit' => 127, 'out' => 'proc_open failed', 'sec' => 0];
-    }
-    fclose($pipes[0]);
-    stream_set_blocking($pipes[1], false);
-    stream_set_blocking($pipes[2], false);
-    $out = '';
-    $start = microtime(true);
-    $timedOut = false;
-    while (true) {
-        $status = proc_get_status($proc);
+if (!function_exists('itm_matrix_run')) {
+    function itm_matrix_run(string $cmd, int $timeoutSec, string $cwd): array
+    {
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+        $proc = proc_open($cmd, $descriptors, $pipes, $cwd);
+        if (!is_resource($proc)) {
+            return ['exit' => 127, 'out' => 'proc_open failed', 'sec' => 0];
+        }
+        fclose($pipes[0]);
+        stream_set_blocking($pipes[1], false);
+        stream_set_blocking($pipes[2], false);
+        $out = '';
+        $start = microtime(true);
+        $timedOut = false;
+        while (true) {
+            $status = proc_get_status($proc);
+            $out .= stream_get_contents($pipes[1]);
+            $out .= stream_get_contents($pipes[2]);
+            if (!$status['running']) {
+                break;
+            }
+            if ((microtime(true) - $start) > $timeoutSec) {
+                $timedOut = true;
+                proc_terminate($proc, 9);
+                break;
+            }
+            usleep(50000);
+        }
         $out .= stream_get_contents($pipes[1]);
         $out .= stream_get_contents($pipes[2]);
-        if (!$status['running']) {
-            break;
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $code = proc_close($proc);
+        if ($timedOut) {
+            $code = 124;
+            $out .= "\n[TIMEOUT after {$timeoutSec}s]\n";
         }
-        if ((microtime(true) - $start) > $timeoutSec) {
-            $timedOut = true;
-            proc_terminate($proc, 9);
-            break;
-        }
-        usleep(50000);
+        return ['exit' => (int)$code, 'out' => $out, 'sec' => round(microtime(true) - $start, 2)];
     }
-    $out .= stream_get_contents($pipes[1]);
-    $out .= stream_get_contents($pipes[2]);
-    fclose($pipes[1]);
-    fclose($pipes[2]);
-    $code = proc_close($proc);
-    if ($timedOut) {
-        $code = 124;
-        $out .= "\n[TIMEOUT after {$timeoutSec}s]\n";
-    }
-    return ['exit' => (int)$code, 'out' => $out, 'sec' => round(microtime(true) - $start, 2)];
 }
 
 foreach ($entries as $entry) {
@@ -107,7 +148,7 @@ foreach ($entries as $entry) {
         $row['status'] = 'SKIP';
         $row['note'] = 'docs-only';
         $results[] = $row;
-        itm_script_write_stdout( "SKIP tier0 {$script}\n");
+        itm_script_write_stdout("SKIP tier0 {$script}" . $nl);
         continue;
     }
     if ($tier >= 4) {
@@ -120,20 +161,19 @@ foreach ($entries as $entry) {
         $row['status'] = 'SKIP';
         $row['note'] = 'destroys-DB; substituted verify_database_schema.php + count_db_tables.php';
         $results[] = $row;
-        itm_script_write_stdout( "SKIP wipe {$script}\n");
+        itm_script_write_stdout("SKIP wipe {$script}" . $nl);
         continue;
     }
     if (in_array($script, ['check_csrf_coverage.php', 'check_fk_label_search_coverage.php', 'check_sql_injection_coverage.php'], true) && $smokePassed) {
         $row['status'] = 'COVERED';
         $row['note'] = 'covered by smoke_test.sh';
         $results[] = $row;
-        itm_script_write_stdout( "COVERED {$script}\n");
+        itm_script_write_stdout("COVERED {$script}" . $nl);
         continue;
     }
 
     $path = $root . '/scripts/' . $script;
     if (!is_file($path) && $script !== 'smoke_test.sh') {
-        // some live at scripts/ root with exact name
         $path = $root . '/scripts/' . $script;
     }
     if ($script === 'smoke_test.sh') {
@@ -143,7 +183,7 @@ foreach ($entries as $entry) {
         $row['status'] = 'SKIP';
         $row['note'] = 'file-missing';
         $results[] = $row;
-        itm_script_write_stdout( "SKIP missing {$script}\n");
+        itm_script_write_stdout("SKIP missing {$script}" . $nl);
         continue;
     }
 
@@ -169,7 +209,7 @@ foreach ($entries as $entry) {
             $row['status'] = 'SKIP';
             $row['note'] = 'python-not-on-PATH';
             $results[] = $row;
-            itm_script_write_stdout( "SKIP no-python {$script}\n");
+            itm_script_write_stdout("SKIP no-python {$script}" . $nl);
             continue;
         }
         $pyBin = preg_split('/\r?\n/', $py)[0];
@@ -183,7 +223,7 @@ foreach ($entries as $entry) {
         continue;
     }
 
-    itm_script_write_stdout( "RUN tier{$tier} {$script} ... ");
+    itm_script_write_stdout("RUN tier{$tier} {$script} ... ");
     flush();
     $run = itm_matrix_run($cmd, $timeout, $root);
     $row['exit'] = $run['exit'];
@@ -198,22 +238,15 @@ foreach ($entries as $entry) {
         if ($script === 'smoke_test.sh') {
             $smokePassed = true;
         }
-        itm_script_write_stdout( "PASS ({$run['sec']}s)\n");
+        itm_script_write_stdout("PASS ({$run['sec']}s)" . $nl);
     } elseif ($run['exit'] === 124) {
         $row['status'] = 'FAIL';
         $row['note'] = 'timeout';
-        itm_script_write_stdout( "TIMEOUT\n");
+        itm_script_write_stdout("TIMEOUT" . $nl);
     } else {
-        // Treat SMTP scripts that clearly need external mail as SKIP if message says so
-        $low = strtolower($run['out']);
-        if (strpos($script, 'test_email') !== false || strpos($script, 'test_register_mail') !== false) {
-            if (strpos($low, 'smtp') !== false || strpos($low, 'mail') !== false) {
-                // still FAIL if exit non-zero — classify later
-            }
-        }
         $row['status'] = 'FAIL';
         $row['note'] = 'exit-' . $run['exit'];
-        itm_script_write_stdout( "FAIL exit={$run['exit']} ({$run['sec']}s)\n");
+        itm_script_write_stdout("FAIL exit={$run['exit']} ({$run['sec']}s)" . $nl);
     }
     $results[] = $row;
 }
@@ -234,7 +267,7 @@ foreach (['verify_database_schema.php', 'count_db_tables.php'] as $extra) {
     if (!is_file($path)) {
         continue;
     }
-    itm_script_write_stdout( "RUN substitute {$extra} ... ");
+    itm_script_write_stdout("RUN substitute {$extra} ... ");
     $run = itm_matrix_run('"' . $php . '" "' . $path . '"', 120, $root);
     $results[] = [
         'tier' => 1,
@@ -246,7 +279,7 @@ foreach (['verify_database_schema.php', 'count_db_tables.php'] as $extra) {
         'tail' => itm_matrix_tail($run['out']),
     ];
     file_put_contents($outLogDir . '/' . $extra . '.log', $run['out']);
-    itm_script_write_stdout( ($run['exit'] === 0 ? 'PASS' : 'FAIL') . "\n");
+    itm_script_write_stdout(($run['exit'] === 0 ? 'PASS' : 'FAIL') . $nl);
 }
 
 $counts = ['PASS' => 0, 'FAIL' => 0, 'SKIP' => 0, 'EXCLUDED' => 0, 'COVERED' => 0];
@@ -265,5 +298,7 @@ $payload = [
     'results' => $results,
 ];
 file_put_contents($outJson, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
-itm_script_write_stdout( "\nDONE counts=" . json_encode($counts) . "\nWrote {$outJson}\n");
+itm_script_write_stdout($nl . "DONE counts=" . json_encode($counts) . $nl . "Wrote {$outJson}" . $nl);
+
+itm_script_output_end();
 exit(0);

@@ -5,28 +5,41 @@
  * Scope: bespoke list + status-driven slugs that have a matching CREATE TABLE in db/.
  * Skips modules without a same-named table (calendar, org_chart, is_*, passwords, settings, etc.).
  *
- * Usage:
- *   php scripts/apply_agent_notes_view_audit_meta.php           # dry-run
- *   php scripts/apply_agent_notes_view_audit_meta.php --apply   # write files
+ * CLI: php scripts/apply_agent_notes_view_audit_meta.php [--apply]
+ * Browser: scripts/apply_agent_notes_view_audit_meta.php?apply=1 (Admin)
  */
+declare(strict_types=1);
 
-define('ITM_CLI_SCRIPT', true);
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 
-$root = dirname(__DIR__);
-require $root . '/scripts/lib/itm_fields_missing_report.php';
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+CLI: <code>php scripts/apply_agent_notes_view_audit_meta.php --apply</code><br>
+Browser: dry-runs or applies View audit meta bullets to module agent notes (Admin).
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 
-$apply = in_array('--apply', $argv ?? [], true);
+$boot = itm_apply_script_bootstrap('Apply View Audit Meta to Agent Notes');
+$apply = $boot['apply'];
+$nl = $boot['nl'];
+$root = rtrim($boot['root'], '/\\');
+$conn = $boot['conn'];
+
+require_once __DIR__ . '/lib/itm_fields_missing_report.php';
 
 $schema = itm_fields_missing_parse_database_sql_table_columns($root);
 $bespokePath = $root . '/docs/list_bespoke_UI.txt';
 $lines = is_readable($bespokePath) ? file($bespokePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
 $slugs = [];
-foreach ($lines as $line) {
-    $line = trim($line);
-    if ($line === '' || $line[0] === '#') {
-        continue;
+if (is_array($lines)) {
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || $line[0] === '#') {
+            continue;
+        }
+        $slugs[] = $line;
     }
-    $slugs[] = $line;
 }
 foreach (itm_fields_missing_status_driven_slugs() as $slug) {
     $slugs[] = $slug;
@@ -40,25 +53,25 @@ $missingNotes = [];
 foreach ($slugs as $slug) {
     if (!isset($schema[$slug])) {
         $skipped++;
-        echo "[skip-no-table] {$slug}\n";
+        echo "[skip-no-table] {$slug}" . $nl;
         continue;
     }
 
     $notesPath = $root . '/modules/' . $slug . '/AGENT_NOTES.md';
     if (!is_readable($notesPath)) {
         $missingNotes[] = $slug;
-        echo "[skip-no-notes] {$slug}\n";
+        echo "[skip-no-notes] {$slug}" . $nl;
         continue;
     }
 
     $content = file_get_contents($notesPath);
     if ($content === false) {
-        echo "[fail-read] {$slug}\n";
+        echo "[fail-read] {$slug}" . $nl;
         continue;
     }
 
     if (preg_match('/\*\*View audit meta:\*\*/', $content)) {
-        echo "[ok-exists] {$slug}\n";
+        echo "[ok-exists] {$slug}" . $nl;
         continue;
     }
 
@@ -91,7 +104,7 @@ foreach ($slugs as $slug) {
     }
 
     if (!preg_match('/## 5\. UI Behavior Requirements\r?\n/', $content)) {
-        echo "[fail-no-section-5] {$slug}\n";
+        echo "[fail-no-section-5] {$slug}" . $nl;
         continue;
     }
 
@@ -103,7 +116,7 @@ foreach ($slugs as $slug) {
     );
 
     if ($newContent === null || $newContent === $content) {
-        echo "[fail-insert] {$slug}\n";
+        echo "[fail-insert] {$slug}" . $nl;
         continue;
     }
 
@@ -111,13 +124,15 @@ foreach ($slugs as $slug) {
         file_put_contents($notesPath, $newContent);
     }
     $updated++;
-    echo ($apply ? '[updated]' : '[would-update]') . " {$slug}\n";
+    echo ($apply ? '[updated]' : '[would-update]') . " {$slug}" . $nl;
 }
 
-echo PHP_EOL . "Updated: {$updated}, skipped (no table): {$skipped}\n";
+echo $nl . "Updated: {$updated}, skipped (no table): {$skipped}" . $nl;
 if ($missingNotes !== []) {
-    echo 'Missing AGENT_NOTES.md: ' . implode(', ', $missingNotes) . PHP_EOL;
+    echo 'Missing AGENT_NOTES.md: ' . implode(', ', $missingNotes) . $nl;
 }
-if (!$apply && $updated > 0) {
-    echo "Dry-run only — re-run with --apply to write files.\n";
-}
+
+itm_apply_script_finish_hint($apply, $boot['is_cli'], $updated, $nl, 'apply_agent_notes_view_audit_meta.php');
+
+itm_script_output_end();
+exit(0);

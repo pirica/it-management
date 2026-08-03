@@ -187,6 +187,7 @@ php scripts/employees_delete_clear_table_test.php
 | 1 | `check_fk_label_search_coverage.php` | PHP | none | CI smoke | Invoked by smoke_test.sh |
 | 1 | `check_sql_injection_coverage.php` | PHP | none | CI smoke | Invoked by smoke_test.sh |
 | 1 | `run_tests.php` | MySQL optional | low | PHPUnit meta | Unit/integration suite under phpunit/tests/Unit |
+| 1 | `matrix_safe_run_once.php` | PHP | low | runtime | One-shot safe matrix runner (tiers 1-3) |
 | 1 | `smoke_test.sh` | PHP | none | CI smoke | Lint + CSRF + SQLi + FK label static |
 | 1 | `verify_database_sql_import.sh` | MySQL | destroys-DB | CI database-import | Full db/ re-import — baseline clone |
 | 1 | `import_database_split.sh` | MySQL | destroys-DB | manual / local | Split db/ re-import (01→02→03); runs schema + parity checks |
@@ -367,6 +368,7 @@ php scripts/employees_delete_clear_table_test.php
 | 3 | `verify_update_port_zero_row.php` | MySQL | low | runtime | Domain regression verifier |
 | 3 | `verify_user_config_profile.php` | MySQL | low | runtime | Domain regression verifier |
 | 3 | `verify_user_idor.php` | MySQL | low | runtime | Domain regression verifier |
+| 3 | `run_expense_recurrence.php` | MySQL | low | runtime | Recurring template child expense generator |
 | 3 | `verify_visitors_bac_fix.php` | MySQL | low | runtime | Domain regression verifier |
 | 3 | `verify_visitors_sqli_fix.php` | MySQL | low | runtime | Domain regression verifier |
 | 4 | `auth_register_reset_human_test.php` | Apache+MySQL | mutates-DB | human/MBQA | Heavy integration - isolate from Tier 2/3 batches |
@@ -385,6 +387,7 @@ php scripts/employees_delete_clear_table_test.php
 | 4 | `tickets_related_equipment_delete_test.php` | Apache+MySQL | mutates-DB | human/MBQA | Heavy integration - isolate from Tier 2/3 batches |
 | 4 | `verify_todo.py` | Apache+MySQL | mutates-DB | human/MBQA | Heavy integration - isolate from Tier 2/3 batches |
 | 4 | `verify_todo_categories.py` | Apache+MySQL | mutates-DB | human/MBQA | Heavy integration - isolate from Tier 2/3 batches |
+| 5 | `apply_agent_notes_view_audit_meta.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
 | 5 | `apply_bulk_actions_records_per_page_gate.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
 | 5 | `apply_bulk_delete_cancel_ux.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
 | 5 | `apply_crud_audit_soft_delete.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
@@ -397,7 +400,9 @@ php scripts/employees_delete_clear_table_test.php
 | 5 | `apply_human_friendly_error_display.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
 | 5 | `apply_itm_actions_cell_markers.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
 | 5 | `apply_module_sample_data_seed.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Writes db/ seed blocks |
+| 5 | `apply_script_catalog_documentation_files.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
 | 5 | `apply_ui_action_emoji.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
+| 5 | `apply_utf8_mojibake_fix.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
 | 5 | `bypass_login.php` | isolated-env | destructive | excluded-blanket | Dev session hijack |
 | 5 | `bypass_v2.php` | isolated-env | destructive | excluded-blanket | Dev session hijack |
 | 5 | `cleanup_equipment_test_module_artifacts.php` | isolated-env | destructive | excluded-blanket | Deletes test companies and scaffold folders |
@@ -408,6 +413,7 @@ php scripts/employees_delete_clear_table_test.php
 | 5 | `ensure_equipment_type_modules.php` | isolated-env | destructive | excluded-blanket | Creates is_* module folders |
 | 5 | `ensure_files_htaccess_chain.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Overwrites files/ hardening chain |
 | 5 | `export_floor_plan_folders_seed.php` | isolated-env | destructive | excluded-blanket | Dump-only helper (stdout); keep out of blanket mutation passes |
+| 5 | `fix_crud_record_share_view_buttons.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
 | 5 | `fix_sql.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
 | 5 | `fix_sql_broad.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
 | 5 | `fix_sql_departments.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
@@ -421,6 +427,7 @@ php scripts/employees_delete_clear_table_test.php
 | 5 | `run_email_alert_rules.php` | isolated-env | destructive | excluded-blanket | Sends live emails when scheduled |
 | 5 | `seed_company_module_access.php` | isolated-env | destructive | excluded-blanket | Seeds CMA rows |
 | 5 | `sql_insert.php` | isolated-env | destructive | excluded-blanket | Admin raw INSERT |
+| 5 | `scaffold_hotel_booking_crud_modules.php` | isolated-env | writes-repo-or-DB | excluded-blanket | Maintenance / bulk patcher - dry-run or isolated only |
 | 5 | `sync_modules_registry.php` | isolated-env | destructive | excluded-blanket | Upserts modules_registry / CMA |
 | 5 | `transfer_data_from_employee.php` | isolated-env | destructive | excluded-blanket | Clones/mutates employee-related rows |
 | 5 | `update_all_created_at.php` | isolated-env | destructive | excluded-blanket | Bulk UPDATE all created_at (use --dry-run only in blanket plans) |

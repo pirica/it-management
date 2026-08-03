@@ -174,6 +174,7 @@ Catalog: `scripts/scripts.php`.
 | `php scripts/extract_by_fields.php` | Parses `db/` to extract column definitions containing keywords like `by`, `to`, `employee_id`, `employee`. Output is formatted and saved to `scripts/fields_by.txt`. |
 | `php scripts/scaffold_departments_child_table_modules.php` | One-time/maintenance: copy flattened CRUD from `modules/departments/` into child/support table modules (24-table allowlist). **Default = dry-run** (compact summary on `?run=1`; use `--verbose` / `?verbose=1` to list every slug); writes with CLI `--apply` or browser `?run=1&apply=1` (Admin). Pair with `verify_scaffold_departments_child_table_modules.php`. |
 | `php scripts/verify_scaffold_departments_child_table_modules.php` | Three-step gate: module `index.php` + `$crud_table`, `db/01_schema.sql` tables-without-module count, sidebar catalog ids. Exit `1` on failure. |
+| `php scripts/scaffold_hotel_booking_crud_modules.php` | Maintenance / bulk patcher: scaffold Hotel Booking CRUD modules from `modules/customer_statuses` template. Default dry-run. |
 
 ### Select Options API verification
 
@@ -744,6 +745,10 @@ cd C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
 ```
 
 Linux/macOS/CI: bare `php scripts/run_tests.php` when PHP 7.4 is on PATH.
+
+##### Safe matrix runner (`scripts/matrix_safe_run_once.php`)
+
+Runs safe test matrix (Tiers 1-3) and outputs results in a `<pre>` block or JSON. Fully Browser + CLI compliant.
 
 **PHPUnit config:** `phpunit/phpunit.xml` — `verbose="true"`, `<coverage processUncoveredFiles="false">` (avoids bare-`require` of hundreds of uncovered module/script entry files during HTML report generation), HTML output under `coverage/html`. Shared guards: `includes/itm_script_entry_guard.php`. See also `phpunit/AGENT_NOTES.md` and `phpunit/tests/PREFERENCES.md`.
 

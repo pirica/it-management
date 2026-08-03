@@ -1,10 +1,25 @@
 <?php
 /**
  * CLI: php scripts/fix_crud_record_share_view_buttons.php [--apply]
+ * Browser: scripts/fix_crud_record_share_view_buttons.php?apply=1 (Admin)
  */
-define('ITM_CLI_SCRIPT', true);
-$repoRoot = dirname(__DIR__);
-$apply = in_array('--apply', $argv ?? [], true);
+declare(strict_types=1);
+
+require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
+
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+CLI: <code>php scripts/fix_crud_record_share_view_buttons.php --apply</code><br>
+Browser: repairs record share action button markup in index.php of CRUD modules.
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
+
+$boot = itm_apply_script_bootstrap('Fix CRUD record share view buttons');
+$apply = $boot['apply'];
+$nl = $boot['nl'];
+$repoRoot = rtrim($boot['root'], '/\\');
+$conn = $boot['conn'];
 
 $modules = [
     'departments' => 'department',
@@ -35,6 +50,9 @@ foreach ($modules as $slug => $label) {
         continue;
     }
     $body = file_get_contents($path);
+    if ($body === false) {
+        continue;
+    }
     if (strpos($body, 'itm_crud_record_share_render_action_buttons') !== false) {
         continue;
     }
@@ -53,7 +71,7 @@ foreach ($modules as $slug => $label) {
         }
     }
     if ($newBody !== $body) {
-        echo ($apply ? '[PATCH]' : '[DRY]') . " {$path}\n";
+        echo ($apply ? '[PATCH]' : '[DRY]') . " {$path}" . $nl;
         if ($apply) {
             file_put_contents($path, $newBody);
         }
@@ -61,4 +79,9 @@ foreach ($modules as $slug => $label) {
     }
 }
 
-echo ($apply ? "Patched {$changes} file(s).\n" : "Dry run: {$changes} file(s).\n");
+echo ($apply ? "Patched {$changes} file(s)." : "Dry run: {$changes} file(s).") . $nl;
+
+itm_apply_script_finish_hint($apply, $boot['is_cli'], $changes, $nl, 'fix_crud_record_share_view_buttons.php');
+
+itm_script_output_end();
+exit(0);

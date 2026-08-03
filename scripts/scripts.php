@@ -601,17 +601,17 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Dispatches enabled <code>email_alert_rules</code> (warranty, license, certificate, alerts, notes, to-do, events) using tenant default SMTP; warranty matches also enqueue in-app notifications for equipment assignees.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="Codebase">
                     <td><a href="run_notification_digest.php" target="_blank" rel="nofollow noreferrer">run_notification_digest.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
                     <td>Sends digest emails to employees with unread <code>employee_notifications</code> rows (metadata only; links to inbox).</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="employees employee_notifications">
                     <td><a href="verify_employee_notifications.php" target="_blank" rel="nofollow noreferrer">verify_employee_notifications.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employee_notifications</span></span></td>
                     <td>Regression for in-app notification center: <code>itm_notify_employee()</code>, unread count, mark read, API/JS assets.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
@@ -653,6 +653,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">
+                    <td><a href="matrix_safe_run_once.php" target="_blank" rel="nofollow noreferrer">matrix_safe_run_once.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>One-shot safe matrix runner (tiers 1-3). Runs safe test matrix and writes JSON results for the agent report.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Codebase">
                     <td><a href="identify_modules.php" target="_blank" rel="nofollow noreferrer">identify_modules.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
@@ -664,6 +671,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">departments</span></span></td>
                     <td>Copies flattened CRUD from <code>modules/departments/</code> into the 24 child/support table module allowlist. <strong>Default = dry-run</strong> (<code>?run=1</code> compact summary; <code>?verbose=1</code> lists slugs); writes with CLI <code>--apply</code> or browser <code>?run=1&amp;apply=1</code> (Admin). Verify: <code>verify_scaffold_departments_child_table_modules.php</code>.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="hotel_bookings">
+                    <td><a href="scaffold_hotel_booking_crud_modules.php" target="_blank" rel="nofollow noreferrer">scaffold_hotel_booking_crud_modules.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_bookings</span></span></td>
+                    <td>Scaffold flattened CRUD modules from the customer_statuses template (including rooms, housekeeping, bookings status, room utilities, and hotels). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="departments">
@@ -787,10 +801,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Live BIGINT migration review: row counts, max IDs, column types, and AUTO_INCREMENT for six review tables. Browser + CLI (Administrator); <code>?run=1</code> landing and coloured report shell (same pattern as <code>verify_db_migrations.php</code>). Includes static <strong>300 staff × 5 companies</strong> scale projection. Pair with <code>db/migrations/audit_logs_bigint.sql</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="schema_migrations">
+                <tr data-tags="Codebase">
                     <td><a href="migrate.php" target="_blank" rel="nofollow noreferrer">migrate.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">schema_migrations</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
                     <td>Migration runner for <code>db/migrations/*.sql</code>: <code>--status</code> probes the <strong>live database</strong> for every file (Applied vs Pending); <code>schema_migrations</code> is audit/history only. <code>--apply</code> runs SQL only when the live probe failed; records satisfied migrations without re-executing destructive files (Admin browser <code>?apply=1</code>). Browser status table: per-row <code>?run=1&amp;sql={filename}</code> opens migration SQL in a new tab; Admin 🗑️ delete removes the file from disk (JS confirm). Helpers: <code>includes/itm_database_migrations.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
@@ -1416,6 +1430,27 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Moves catalog <em>How to use</em> HTML from <code>scripts/scripts.php</code> into each <code>*.php</code> row as <code>itm_script_browser_how_to_use()</code> and replaces catalog column 5 with <code>scripts-catalog-how-stub</code>. Default dry-run.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="apply_agent_notes_view_audit_meta.php" target="_blank" rel="nofollow noreferrer">apply_agent_notes_view_audit_meta.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>One-time/maintenance: add or refresh the View audit meta bullet in module <code>AGENT_NOTES.md</code> files. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="catalogs">
+                    <td><a href="apply_script_catalog_documentation_files.php" target="_blank" rel="nofollow noreferrer">apply_script_catalog_documentation_files.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">catalogs</span></span></td>
+                    <td>Insert scripts/data and scripts/*.md catalog rows under Documentation. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Codebase">
+                    <td><a href="apply_utf8_mojibake_fix.php" target="_blank" rel="nofollow noreferrer">apply_utf8_mojibake_fix.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Repair known mojibake literals in tracked UTF-8 source (bulk repair, dry-run default). Writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="Codebase">
                     <td><a href="check_script_browser_usage.php" target="_blank" rel="nofollow noreferrer">check_script_browser_usage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
@@ -1828,6 +1863,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Recurrence lookup seeds and <code>itm_expense_recurrence_advance_date</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="expenses expense_recurrence">
+                    <td><a href="run_expense_recurrence.php" target="_blank" rel="nofollow noreferrer">run_expense_recurrence.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">expenses</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">expense_recurrence</span></span></td>
+                    <td>Generate child expenses from recurring templates (next_run_date &lt;= today) for a company.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="customers invoices">
                     <td><a href="verify_customers.php" target="_blank" rel="nofollow noreferrer">verify_customers.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
@@ -1893,52 +1935,52 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Copy TechCorp Retreat demo hotel photos to <code>booking/images/{hotel_id}/hotel_photos/</code> and room-type samples to <code>booking/images/{hotel_id}/room_types_photos/</code>; upsert photo rows (<code>--apply</code> writes).</td>
                     <td class="scripts-catalog-how-stub"><code>php scripts/seed_hotel_booking_sample_photos.php --apply</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="hotel_bookings hotel_booking_distribution_webhook_queue">
                     <td><a href="run_hotel_booking_distribution_webhook_queue.php" target="_blank" rel="nofollow noreferrer">run_hotel_booking_distribution_webhook_queue.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_webhook_queue</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_bookings</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_webhook_queue</span></span></td>
                     <td>Retry pending/failed outbound distribution webhook deliveries with exponential backoff; rows exceeding <code>max_attempts</code> move to <code>dead</code>.</td>
                     <td class="scripts-catalog-how-stub"><code>php scripts/run_hotel_booking_distribution_webhook_queue.php</code></td>
                 </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_hotel_booking_distribution_http.php" target="_blank" rel="nofollow noreferrer">verify_hotel_booking_distribution_http.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_channels</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
                     <td>HTTP regression for distribution API: probe auth (401/200), availability GET via curl with disposable channel API key. Uses built-in PHP server by default (browser-safe; optional <code>--base-url</code> for Apache).</td>
                     <td class="scripts-catalog-how-stub"><code>php scripts/verify_hotel_booking_distribution_http.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="hotel_bookings">
                     <td><a href="verify_hotel_booking_distribution_opentravel_coverage.php" target="_blank" rel="nofollow noreferrer">verify_hotel_booking_distribution_opentravel_coverage.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_channels</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_bookings</span></span></td>
                     <td>OpenTravel OTA message coverage: AvailRQ, ResNotifRQ, AvailNotifRQ (ari_push), PingRQ parse + RS encode.</td>
                     <td class="scripts-catalog-how-stub"><code>php scripts/verify_hotel_booking_distribution_opentravel_coverage.php</code></td>
                 </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_hotel_booking_distribution_booking_com_cert.php" target="_blank" rel="nofollow noreferrer">verify_hotel_booking_distribution_booking_com_cert.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_channels</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
                     <td>Booking.com Connectivity offline certification checklist (ACK/NACK, notify normalize, rates payload; no live API).</td>
                     <td class="scripts-catalog-how-stub"><code>php scripts/verify_hotel_booking_distribution_booking_com_cert.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="hotel_bookings hotel_booking_distribution_channels">
                     <td><a href="report_hotel_booking_distribution_webhook_ops.php" target="_blank" rel="nofollow noreferrer">report_hotel_booking_distribution_webhook_ops.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_webhook_queue</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_bookings</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_channels</span></span></td>
                     <td>Ops dead-letter report for outbound webhook queue; exit <code>1</code> when <code>dead</code> rows exist unless <code>--allow-dead</code>.</td>
                     <td class="scripts-catalog-how-stub"><code>php scripts/report_hotel_booking_distribution_webhook_ops.php</code></td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="hotel_bookings">
                     <td><a href="run_hotel_booking_distribution_ari_sync.php" target="_blank" rel="nofollow noreferrer">run_hotel_booking_distribution_ari_sync.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_channels</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_bookings</span></span></td>
                     <td>POST outbound ARI snapshots to every active distribution channel <code>webhook_url</code> (OpenTravel XML / Booking.com / OHIP JSON per <code>standard</code>).</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_hotel_booking_distribution.php" target="_blank" rel="nofollow noreferrer">verify_hotel_booking_distribution.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_booking_distribution_channels</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
                     <td>Regression for partner distribution API: <code>hotel_booking_distribution_*</code> tables (phase 3 queue/restrictions/rate-plan mappings), API key hash/lookup, signature/checksum/ACK helpers, availability builder, and <code>modules/hotel_booking_api/api.php</code> auth bypass.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
@@ -1977,24 +2019,24 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for <code>modules/appointment/</code>: audit triggers on five <code>appointment_*</code> tables (including <code>appointment_type</code>), <code>booking_lock</code> unique index, company 1 settings/reasons/types seeds, weekly slot builder, and <code>modules_registry</code> slug <code>appointment</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="employees employee_roles">
                     <td><a href="verify_command_palette_search.php" target="_blank" rel="nofollow noreferrer">verify_command_palette_search.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employee_roles</span></span></td>
                     <td>Regression for global command palette: <code>includes/itm_command_palette_search.php</code>, <code>includes/itm_search_index.php</code>, <code>modules/search/api.php</code>, header <code>Ctrl+K</code> wiring, RBAC gates (employees admin-only), <code>search_index</code> FULLTEXT sync, and backfill/remove probes. Sidebar slug coverage: <code>verify_command_palette_sidebar_slugs.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="employees">
                     <td><a href="verify_command_palette_sidebar_slugs.php" target="_blank" rel="nofollow noreferrer">verify_command_palette_sidebar_slugs.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
                     <td>Regression that every module slug visible in the live Admin sidebar (company 1) is findable via command-palette module navigation (<code>itm_command_palette_sidebar_visible_module_slugs()</code> + unified <strong>Modules</strong> group). Shared lib: <code>scripts/lib/itm_command_palette_sidebar_verify.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
-                <tr data-tags="Mixed">
+                <tr data-tags="companies search_index">
                     <td><a href="apply_search_index_backfill.php" target="_blank" rel="nofollow noreferrer">apply_search_index_backfill.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">companies</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">search_index</span></span></td>
                     <td>Backfill <code>search_index</code> rows for command-palette phase 2 (employees, equipment, tickets, ip_addresses, catalogs). Dry-run default; <code>--apply</code> / <code>?apply=1</code> (Admin). Optional <code>--company=</code> and <code>--module=</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
@@ -2699,6 +2741,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
                     <td>Maintenance: wire <code>join.php</code>, AJAX <code>create_share_session</code>, view share buttons, and QR modal for CRUD record share rollout modules (<code>includes/itm_crud_record_share.php</code>). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Inventory: <code>docs/CRUD_RECORD_SHARE.md</code>.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Codebase">
+                    <td><a href="fix_crud_record_share_view_buttons.php" target="_blank" rel="nofollow noreferrer">fix_crud_record_share_view_buttons.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Repairs record share action button markup in index.php of CRUD modules. <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin).</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="notes">

@@ -3,10 +3,18 @@
  * Insert scripts/data and scripts/*.md catalog rows under Documentation.
  *
  * CLI: php scripts/apply_script_catalog_documentation_files.php [--apply]
- * Browser: ?apply=1 (Admin)
+ * Browser: scripts/apply_script_catalog_documentation_files.php?apply=1 (Admin)
  */
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 require_once __DIR__ . '/lib/itm_script_catalog_documentation_files.php';
+
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+CLI: <code>php scripts/apply_script_catalog_documentation_files.php --apply</code><br>
+Browser: parses scripts/data/*.{json,txt,md} and scripts/*.md and inserts new documentation rows in the scripts catalog (Admin).
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 
 $boot = itm_apply_script_bootstrap('Apply Script Catalog Documentation Files');
 $apply = $boot['apply'];

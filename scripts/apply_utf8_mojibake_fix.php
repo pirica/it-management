@@ -4,11 +4,20 @@
  *
  * Bulk repair without per-file selection — prefer fix_source_utf8_mojibake.php for browser selection mode.
  * CLI: php scripts/apply_utf8_mojibake_fix.php --apply
+ * Browser: scripts/apply_utf8_mojibake_fix.php?apply=1 (Admin)
  */
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/itm_apply_script_bootstrap.php';
 require_once __DIR__ . '/lib/itm_mojibake_audit.php';
+
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+CLI: <code>php scripts/apply_utf8_mojibake_fix.php --apply</code><br>
+Browser: runs bulk repair of UTF-8 mojibake literals in tracked source files (Admin).
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
 
 $boot = itm_apply_script_bootstrap('Apply UTF-8 mojibake repair (bulk)');
 $apply = $boot['apply'];
