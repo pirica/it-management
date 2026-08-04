@@ -1,0 +1,4 @@
+-- Database Fixes for hotel_booking_portal_rate_plans
+-- No database schema changes or migrations are required for this security fix,
+-- as the RCE vulnerability was completely resolved in application code
+-- within `includes/itm_hotel_booking.php`.
