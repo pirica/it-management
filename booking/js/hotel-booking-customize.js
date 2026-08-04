@@ -3,13 +3,11 @@
   if (!cfg) {
     return;
   }
-  var checkbox = document.getElementById('hb-accept-room-upgrade');
+  var upgradeCheckbox = document.getElementById('hb-accept-room-upgrade');
+  var petCheckbox = document.getElementById('hb-traveling-with-pet');
   var roomChargesEl = document.getElementById('hb-reservation-room-charges');
   var stayTotalEl = document.getElementById('hb-reservation-stay-total');
   if (!roomChargesEl || !stayTotalEl) {
-    return;
-  }
-  if (!cfg.hasUpgradeCheckbox || !checkbox) {
     return;
   }
 
@@ -25,15 +23,30 @@
 
   function refreshTotals() {
     var roomCharges = cfg.roomChargesBase || 0;
-    if (checkbox.checked) {
+
+    if (petCheckbox) {
+      if (petCheckbox.checked && !cfg.initialTravelingWithPet) {
+        roomCharges += (cfg.petDailyFee || 0) * (cfg.nights || 1);
+      } else if (!petCheckbox.checked && cfg.initialTravelingWithPet) {
+        roomCharges -= (cfg.petDailyFee || 0) * (cfg.nights || 1);
+      }
+    }
+
+    if (upgradeCheckbox && upgradeCheckbox.checked) {
       roomCharges += (cfg.upgradePerNight || 0) * (cfg.nights || 1);
     }
+
     var total = roomCharges + (cfg.touristTax || 0);
     roomChargesEl.textContent = formatDecimal(roomCharges);
     stayTotalEl.textContent = formatDecimal(total);
   }
 
-  checkbox.addEventListener('change', refreshTotals);
+  if (upgradeCheckbox) {
+    upgradeCheckbox.addEventListener('change', refreshTotals);
+  }
+  if (petCheckbox) {
+    petCheckbox.addEventListener('change', refreshTotals);
+  }
 })();
 
 (function () {

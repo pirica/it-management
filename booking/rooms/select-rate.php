@@ -119,6 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($slug === '') {
             $error = 'Please select a rate.';
         } else {
+            $existingDraft = itm_hotel_booking_portal_draft_get();
             $draft = [
                 'company_id' => $company_id,
                 'room_id' => $roomId,
@@ -130,9 +131,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'portal_rate_plan_id' => $planId,
                 'portal_rate_plan_name' => (string) ($planRow['name'] ?? ''),
                 'rate_plan' => $slug,
-                'traveling_with_pet' => !empty($_POST['traveling_with_pet']) ? 1 : 0,
-                'service_animal' => !empty($_POST['service_animal']) ? 1 : 0,
-                'additional_comments' => itm_hotel_booking_portal_sanitize_comments($_POST['additional_comments'] ?? ''),
+                'traveling_with_pet' => !empty($existingDraft['traveling_with_pet']) ? 1 : 0,
+                'service_animal' => !empty($existingDraft['service_animal']) ? 1 : 0,
+                'additional_comments' => isset($existingDraft['additional_comments']) ? (string) $existingDraft['additional_comments'] : '',
                 'discount_percent' => $discountPercent,
                 'resolved_rate_slug' => $resolvedRate,
                 'base_price_per_night' => $basePerNight,
@@ -216,24 +217,6 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
 </article>
 <?php endforeach; ?>
 
-<section class="hb-checkout-section">
-<h2 class="hb-checkout-section-title">Special requests</h2>
-<label class="hb-filter-check hb-checkout-check">
-<input type="checkbox" name="traveling_with_pet" value="1">
-<span>Traveling with a pet</span>
-</label>
-<p class="hb-checkout-hint">Pets allowed, <?php echo htmlspecialchars(number_format($petDailyFee, 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>€ non-refundable fee, 30 kg maximum, Daily Fee Applies, fee in euros</p>
-<label class="hb-filter-check hb-checkout-check">
-<input type="checkbox" name="service_animal" value="1">
-<span>Traveling with a service animal</span>
-</label>
-</section>
-
-<section class="hb-checkout-section">
-<h2 class="hb-checkout-section-title">Additional comments</h2>
-<textarea name="additional_comments" class="hb-checkout-comments" maxlength="130" rows="3" placeholder="Optional requests (130 characters max)"></textarea>
-<p class="hb-checkout-hint">The hotel staff cannot guarantee additional requests.</p>
-</section>
 </form>
 <?php endif; ?>
 </main>
