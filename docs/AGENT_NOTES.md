@@ -6,6 +6,7 @@ Canonical documentation that is not source code: upload maps, README assets, mod
 ## 7. File Structure
 - **docs/VAULT.md** — vault/master-key workflows (create, unlock, change, forgotten-key remediation), optional TOTP 2FA, client-side key generation, one-time display after **💾** save (and on **🔑** generate), and `itm_send_email()` notification contract (no secrets in mail).
 - **docs/ROLES_PERMISSIONS.md** — Role-Based Access Control (RBAC) permission matrix, role hierarchy, active employee counts, and AJAX api actions.
+- **docs/security_assessment_report.md** — a comprehensive ethical and defensive security assessment report of the repository detailing reconnaissance, vulnerabilities, and hardening recommendations.
 - **docs/EMAIL_MANAGEMENT.md** — multi-tenant email management system, SMTP/IMAP/POP3 configuration, Send Logs, transactional templates, and automated alert rules.
 - **docs/CRUD_RECORD_SHARE.md** — temporary QR/6-digit share for CRUD record modules (`includes/itm_crud_record_share.php`): capable slug list, UI locations, wiring contract, seeds, regression commands.
 - **docs/EXPLORER.md** — multi-tenant secure filesystem with trash management, API traversal boundary protection, `.htaccess` upload hardening with `deny_http` policies, empty `index.html` placeholders, and vault integration.
