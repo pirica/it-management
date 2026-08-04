@@ -27,6 +27,12 @@ $checkOutIso = (string) ($draft['check_out'] ?? date('Y-m-d', strtotime($checkIn
 $hotelId = (int) ($draft['hotel_id'] ?? $room['hotel_id']);
 $hotel = ['id' => $hotelId, 'name' => $room['hotel_name'] ?? ''];
 $currency = $room['currency_code'] ?? 'EUR';
+
+$portalPricing = itm_hotel_booking_portal_hotel_pricing($conn, $company_id, $hotelId);
+$petDailyFee = (float) ($portalPricing['pet_daily_fee'] ?? 0);
+$travelingWithPet = !empty($draft['traveling_with_pet']) ? 1 : 0;
+$serviceAnimal = !empty($draft['service_animal']) ? 1 : 0;
+$additionalComments = (string) ($draft['additional_comments'] ?? '');
 $roomTypeId = (int) ($room['room_type_id'] ?? 0);
 $discountPercent = (float) ($draft['discount_percent'] ?? 0);
 $basePerNight = (float) ($draft['base_price_per_night'] ?? $room['price_per_night']);
@@ -89,6 +95,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $draft['room_id'] = (int) $swapRoom['id'];
         }
     }
+
+    $draft['traveling_with_pet'] = !empty($_POST['traveling_with_pet']) ? 1 : 0;
+    $draft['service_animal'] = !empty($_POST['service_animal']) ? 1 : 0;
+    $draft['additional_comments'] = itm_hotel_booking_portal_sanitize_comments($_POST['additional_comments'] ?? '');
+
     itm_hotel_booking_portal_draft_save($draft);
     $guestUrl = APPURL . '/rooms/room-single.php?' . http_build_query(array_merge(
         ['id' => (int) $draft['room_id'], 'check_in' => $checkInIso, 'check_out' => $checkOutIso],
@@ -240,6 +251,25 @@ if ($upgradeOffer) {
 </article>
 <?php endif; ?>
 
+<section class="hb-checkout-section">
+<h2 class="hb-checkout-section-title">Special requests</h2>
+<label class="hb-filter-check hb-checkout-check">
+<input type="checkbox" name="traveling_with_pet" id="hb-traveling-with-pet" value="1"<?php echo $travelingWithPet ? ' checked' : ''; ?>>
+<span>Traveling with a pet</span>
+</label>
+<p class="hb-checkout-hint">Pets allowed, <?php echo htmlspecialchars(number_format($petDailyFee, 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>€ non-refundable fee, 30 kg maximum, Daily Fee Applies, fee in euros</p>
+<label class="hb-filter-check hb-checkout-check">
+<input type="checkbox" name="service_animal" value="1"<?php echo $serviceAnimal ? ' checked' : ''; ?>>
+<span>Traveling with a service animal</span>
+</label>
+</section>
+
+<section class="hb-checkout-section">
+<h2 class="hb-checkout-section-title">Additional comments</h2>
+<textarea name="additional_comments" class="hb-checkout-comments" maxlength="130" rows="3" placeholder="Optional requests (130 characters max)"><?php echo htmlspecialchars($additionalComments, ENT_QUOTES, 'UTF-8'); ?></textarea>
+<p class="hb-checkout-hint">The hotel staff cannot guarantee additional requests.</p>
+</section>
+
 <div class="hb-checkout-actions">
 <button type="submit" class="hb-btn hb-btn-primary" title="Continue to guest details">Continue</button>
 </div>
@@ -271,6 +301,8 @@ window.HB_CUSTOMIZE_UPGRADE = <?php echo json_encode([
     'touristTax' => (float) ($breakdownNoUpgrade['tourist_tax'] ?? 0),
     'currencyCode' => $currency,
     'hasUpgradeCheckbox' => (bool) $upgradeOffer,
+    'petDailyFee' => $petDailyFee,
+    'initialTravelingWithPet' => (bool) $travelingWithPet,
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 <?php if ($upgradeRoomDetailHtml !== ''): ?>
 window.HB_CUSTOMIZE_ROOM_DETAIL = <?php echo json_encode([
