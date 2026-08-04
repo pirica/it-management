@@ -23,7 +23,7 @@
 - ✅ Bulk Import — Centralized Excel/CSV import for Assets and Employees
 - ✅ IT Support Chatbot — Automated technical assistance powered by a multi-tenant Knowledge Base
 - ✅ In-app Notification Center — header 🔔 with unread count, dropdown inbox, and digest email for assignments and workflow events
-- ✅ Appointment — Self-service IT visit scheduling (weekly slots, visit reasons, Live Chat launch card)
+- ✅ Appointments — Self-service IT visit scheduling (weekly slots, visit reasons, Live Chat launch card)
 - ✅ Hotel Booking — Public guest portal at `booking/` and Admin **🏨 Hospitality** modules (`docs/BOOKING.md`)
 - ✅ Hotel Booking Distribution — Partner channel API (JSON/OpenTravel XML, availability, book/modify/cancel, ARI push/pull) with per-channel keys (`docs/HOTEL_BOOKING_DISTRIBUTION.md`)
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
@@ -244,9 +244,9 @@
 
 `events`, `event_categories`, `event_share_sessions`, `appointment_visit_reasons`, `appointment_settings`, `appointment_business_hours`, `appointments`
 
-**Purpose:** Company events and categories (vault-encrypted private fields where applicable); the **Calendar** module aggregates alerts, events, ticket due dates, and equipment expiry dates. **Appointment** provides tenant-configurable business hours and hourly booking slots for IT visits.
+**Purpose:** Company events and categories (vault-encrypted private fields where applicable); the **Calendar** module aggregates alerts, events, ticket due dates, and equipment expiry dates. **Appointments** provides tenant-configurable business hours and hourly booking slots for IT visits.
 
-**Modules:** `events`, `event_categories`, `calendar` (aggregated read-only view), `appointment`
+**Modules:** `events`, `event_categories`, `calendar` (aggregated read-only view), `appointments`
 
 #### Hospitality and hotel booking
 
@@ -508,7 +508,7 @@ flowchart TB
 | Calendar | `modules/calendar/` | Aggregated view of alerts, events, tickets, and equipment expiries |
 | Events | `modules/events/`, `event_categories/` | Company events and categories |
 | System Status | `modules/system_status/` | Admin-only server monitoring (CPU, RAM, disk, PHP, MySQL) |
-| Appointment | `modules/appointments/` | Employee self-service IT visit booking (business hours, slot modal) |
+| Appointments | `modules/appointments/` | Employee self-service IT visit booking (business hours, slot modal) |
 
 <h3 align="center">Hospitality and hotel booking</h3>
 
