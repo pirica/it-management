@@ -489,6 +489,29 @@ if (!function_exists('hb_portal_cancellation_policy_href')) {
     }
 }
 
+if (!function_exists('hb_portal_draft_cancellation_policy_url')) {
+    function hb_portal_draft_cancellation_policy_url($conn, $companyId, array $draft) {
+        $companyId = (int) $companyId;
+        $hotelId = (int) ($draft['hotel_id'] ?? 0);
+        $planId = (int) ($draft['portal_rate_plan_id'] ?? 0);
+        if ($planId > 0) {
+            $planRow = itm_hotel_booking_portal_rate_plan_row_by_id($conn, $companyId, $planId);
+            if ($planRow) {
+                $url = itm_hotel_booking_normalize_cancellation_policy_url($planRow['cancellation_policy_url'] ?? '');
+                if ($url !== '') {
+                    return $url;
+                }
+                $slug = (string) ($planRow['rate_plan_slug'] ?? '');
+                if ($slug !== '') {
+                    return itm_hotel_booking_portal_resolve_cancellation_policy_url($conn, $companyId, (int) ($planRow['hotel_id'] ?? $hotelId), $slug);
+                }
+            }
+        }
+        $ratePlan = (string) ($draft['rate_plan'] ?? 'room_only');
+        return itm_hotel_booking_portal_resolve_cancellation_policy_url($conn, $companyId, $hotelId, $ratePlan);
+    }
+}
+
 if (!function_exists('hb_portal_booking_cancellation_policy_url')) {
     function hb_portal_booking_cancellation_policy_url($conn, $companyId, array $booking) {
         return itm_hotel_booking_portal_resolve_cancellation_policy_url_for_booking($conn, (int) $companyId, $booking);

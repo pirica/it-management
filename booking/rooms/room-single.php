@@ -237,6 +237,7 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
     'change_room_url' => $changeRoomUrl,
 ]); ?>
 <?php hb_portal_render_reservation_summary($reservationSummaryContext); ?>
+<?php hb_portal_render_cancellation_policy_button(hb_portal_draft_cancellation_policy_url($conn, $company_id, $draftForDisplay)); ?>
 </aside>
 </div>
 <script src="<?php echo htmlspecialchars(BASE_URL . 'js/hotel-date-input.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
