@@ -29,6 +29,7 @@ Before making any change, replying, running commands, editing files, or proposin
  | Scaffold soft-delete / bespoke inventory lists | **`docs/list_soft-delete.txt`**, **`docs/list_bespoke_UI.txt`** |
  | Module or folder behaviour | Matching **`AGENT_NOTES.md`** (see **Directory Map → AGENT_NOTES.md**) |
    | New or renamed canonical doc under `docs/` | **`docs/AGENT_NOTES.md`** |
+   | Project handoff, ownership transition, WAMP/LAMP setup, security vulnerability history | **`handoff.md`** |
 
    **No numbered PR cites in documentation or comments (hard fail):** describe current behaviour, files, and commands. The following are **forbidden** in all docs and comments:
 

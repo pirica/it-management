@@ -77,6 +77,7 @@ Module-specific JSON/import endpoints are documented in `scripts/api.php` and pe
 - **admin.php** — Admin company overview: module totals exclude soft-deleted rows; **Active** / **On Leave** via `itm_employee_count_by_employment_status_name()`; **Online now** via session presence; **Settings** + **Scripts** cards; sections via `includes/itm_admin_dashboard_cards.php`. Regression: `php scripts/verify_dashboard_active_employees.php`, `php scripts/verify_admin_page_gate.php`.
 - **css/styles.css** — Global stylesheet (see **`css/AGENT_NOTES.md`**).
 - **phpunit/** — PHPUnit PHAR and tests; runner **`scripts/run_tests.php`**; coverage **`phpunit/coverage/html/coverage.html`**. See **`phpunit/AGENT_NOTES.md`** and **`scripts/SCRIPTS.md`**.
+- **handoff.md** — Multi-tenant project handoff, WAMP/LAMP setups (Dunebox & Laragon Portable), active development, security vulnerability remediation history, and incoming developer strategic guidance.
 
 ---
 
