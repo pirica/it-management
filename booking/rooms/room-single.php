@@ -191,6 +191,9 @@ $reservationSummaryContext = [
 
 <div class="hb-select-room-layout hb-checkout-layout">
 <main class="hb-select-room-main">
+<div class="hb-back-wrapper" style="margin-bottom: 12px;">
+    <a class="hb-btn hb-checkout-skip" href="<?php echo htmlspecialchars(APPURL . '/rooms/customize.php', ENT_QUOTES, 'UTF-8'); ?>" title="Back">Back</a>
+</div>
 <p class="hb-step-label">Step 4 of 4</p>
 <h1 class="hb-page-title">Payment and Guest Details</h1>
 
@@ -227,7 +230,16 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 <div class="form-group"><label>Check-in</label><?php itm_render_hotel_date_input('check_in', 'hb-portal-check-in', $checkInIso, ['required' => true, 'class' => 'hb-input']); ?></div>
 <div class="form-group"><label>Check-out</label><?php itm_render_hotel_date_input('check_out', 'hb-portal-check-out', $checkOutIso, ['required' => true, 'class' => 'hb-input']); ?></div>
 <?php endif; ?>
-<button type="submit" class="hb-btn hb-btn-primary" title="Book and continue to payment">Book and continue to payment</button>
+<div class="form-group hb-agreement-group" style="margin-top: 24px; margin-bottom: 16px;">
+    <p class="hb-agreement-text" style="font-size: 0.9rem; line-height: 1.4; color: var(--hb-text); margin-bottom: 8px;">
+        By completing this booking you agree to the booking conditions, general terms, privacy policy, and Wallet terms.
+    </p>
+    <label class="hb-filter-check hb-checkout-check" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600;">
+        <input type="checkbox" id="agree_terms" name="agree_terms" value="1" required>
+        <span>I agree to these terms</span>
+    </label>
+</div>
+<button type="submit" class="hb-btn hb-btn-primary" id="btn-book-submit" title="Book and continue to payment" disabled>Book and continue to payment</button>
 </form>
 </main>
 
@@ -241,5 +253,18 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 </aside>
 </div>
 <script src="<?php echo htmlspecialchars(BASE_URL . 'js/hotel-date-input.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var agreeCheckbox = document.getElementById('agree_terms');
+    var submitButton = document.getElementById('btn-book-submit');
+    if (agreeCheckbox && submitButton) {
+        agreeCheckbox.addEventListener('change', function() {
+            submitButton.disabled = !this.checked;
+        });
+        // Initial state sync
+        submitButton.disabled = !agreeCheckbox.checked;
+    }
+});
+</script>
 </body>
 </html>

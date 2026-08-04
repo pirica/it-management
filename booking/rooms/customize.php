@@ -208,6 +208,9 @@ if ($upgradeOffer) {
 
 <div class="hb-select-room-layout hb-checkout-layout">
 <main class="hb-select-room-main">
+<div class="hb-back-wrapper" style="margin-bottom: 12px;">
+    <a class="hb-btn hb-checkout-skip" href="<?php echo htmlspecialchars($changeRateUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Back">Back</a>
+</div>
 <p class="hb-step-label">Step 3 of 4</p>
 <h1 class="hb-page-title">Customize Your Stay</h1>
 
@@ -239,7 +242,6 @@ if ($upgradeOffer) {
 
 <div class="hb-checkout-actions">
 <button type="submit" class="hb-btn hb-btn-primary" title="Continue to guest details">Continue</button>
-<a class="hb-btn hb-checkout-skip" href="<?php echo htmlspecialchars($changeRateUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Back">Back</a>
 </div>
 </form>
 </main>

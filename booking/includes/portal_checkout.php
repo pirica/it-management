@@ -526,8 +526,73 @@ if (!function_exists('hb_portal_render_cancellation_policy_button')) {
         }
         ?>
 <div class="hb-cancellation-policy-card card">
-<a class="hb-btn hb-btn-block hb-cancellation-policy-btn hb-checkout-skip" href="<?php echo htmlspecialchars($href, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" title="Cancellation policy (opens in new tab)">Cancellation policy</a>
+<button type="button" class="hb-btn hb-btn-block hb-cancellation-policy-btn hb-checkout-skip" data-policy-url="<?php echo htmlspecialchars($href, ENT_QUOTES, 'UTF-8'); ?>" title="Cancellation policy">Cancellation policy</button>
 </div>
+
+<div id="hb-cancellation-modal" class="hb-modal hb-portal-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-cancellation-title">
+<div class="hb-modal-card hb-portal-modal-card" style="max-width: 600px; width: 90%; margin: 10% auto; padding: 24px; position: relative; background: #fff; border-radius: 8px;">
+<button type="button" class="hb-modal-close" data-hb-modal-close="hb-cancellation-modal" title="Close" style="position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 1.25rem; cursor: pointer;">✖</button>
+<div id="hb-cancellation-modal-body" class="hb-cancellation-modal-body" style="margin-top: 16px;">
+  <p>Loading cancellation policy...</p>
+</div>
+</div>
+</div>
+
+<script>
+(function() {
+    var btn = document.querySelector('.hb-cancellation-policy-btn[data-policy-url]');
+    var modal = document.getElementById('hb-cancellation-modal');
+    if (!btn || !modal) return;
+
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        var url = btn.getAttribute('data-policy-url');
+        modal.hidden = false;
+        document.body.classList.add('hb-modal-open');
+
+        var body = document.getElementById('hb-cancellation-modal-body');
+        body.innerHTML = '<p>Loading cancellation policy...</p>';
+
+        fetch(url)
+            .then(function(res) { return res.text(); })
+            .then(function(html) {
+                var parser = new DOMParser();
+                var doc = parser.parseFromString(html, 'text/html');
+                var mainContent = doc.querySelector('main');
+                if (mainContent) {
+                    body.innerHTML = mainContent.innerHTML;
+                } else {
+                    body.innerHTML = html;
+                }
+            })
+            .catch(function(err) {
+                body.innerHTML = '<p class="hb-error">Failed to load cancellation policy.</p>';
+            });
+    });
+
+    var closeBtn = modal.querySelector('[data-hb-modal-close="hb-cancellation-modal"]');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+            modal.hidden = true;
+            document.body.classList.remove('hb-modal-open');
+        });
+    }
+
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.hidden = true;
+            document.body.classList.remove('hb-modal-open');
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !modal.hidden) {
+            modal.hidden = true;
+            document.body.classList.remove('hb-modal-open');
+        }
+    });
+})();
+</script>
         <?php
     }
 }

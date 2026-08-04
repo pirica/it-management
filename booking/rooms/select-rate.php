@@ -163,6 +163,9 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
 
 <div class="hb-select-room-layout hb-checkout-layout">
 <main class="hb-select-room-main">
+<div class="hb-back-wrapper" style="margin-bottom: 12px;">
+    <a class="hb-btn hb-checkout-skip" href="<?php echo htmlspecialchars($changeRoomUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Back">Back</a>
+</div>
 <p class="hb-step-label">Step 2 of 4</p>
 <h1 class="hb-page-title">Select a Rate</h1>
 
@@ -235,11 +238,15 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
 <?php endif; ?>
 </main>
 
-<aside class="hb-select-room-aside">
+<aside class="hb-select-room-aside hb-checkout-aside-stack">
 <?php hb_portal_render_checkout_stepper(2, [
     'room_label' => $roomLabel,
     'change_room_url' => $changeRoomUrl,
 ]); ?>
+<?php
+$policyUrl = itm_hotel_booking_portal_resolve_cancellation_policy_url($conn, $company_id, $hotelId, 'room_only');
+hb_portal_render_cancellation_policy_button($policyUrl);
+?>
 </aside>
 </div>
 </body>
