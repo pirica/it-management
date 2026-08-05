@@ -269,7 +269,7 @@
       state.checkOutYmd = '';
       prefetchAdjacentMonthsForCheckOut(ymd);
       maybeAdvanceMonthForCheckOut(ymd);
-      if (compareMonth(state.year, parseInt(ymd.split('-')[0], 10), parseInt(ymd.split('-')[1], 10)) === 0) {
+      if (compareMonth(state.year, state.month, parseInt(ymd.split('-')[0], 10), parseInt(ymd.split('-')[1], 10)) === 0) {
         renderCalendarGrid();
       }
       updateFooter();
@@ -281,7 +281,7 @@
       state.checkOutYmd = '';
       prefetchAdjacentMonthsForCheckOut(ymd);
       maybeAdvanceMonthForCheckOut(ymd);
-      if (compareMonth(state.year, parseInt(ymd.split('-')[0], 10), parseInt(ymd.split('-')[1], 10)) === 0) {
+      if (compareMonth(state.year, state.month, parseInt(ymd.split('-')[0], 10), parseInt(ymd.split('-')[1], 10)) === 0) {
         renderCalendarGrid();
       }
       updateFooter();
