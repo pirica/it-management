@@ -222,10 +222,11 @@ if (!function_exists('itm_hotel_booking_distribution_find_available_room_for_typ
         $roomTypeId = (int) $roomTypeId;
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT * FROM hotel_booking_rooms
-             WHERE company_id = ? AND hotel_id = ? AND room_type_id = ?
-               AND deleted_at IS NULL AND active = 1
-             ORDER BY room_number ASC'
+            'SELECT r.*, COALESCE(bp.price_per_night, 0.00) AS price_per_night FROM hotel_booking_rooms r
+             LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL
+             WHERE r.company_id = ? AND r.hotel_id = ? AND r.room_type_id = ?
+               AND r.deleted_at IS NULL AND r.active = 1
+             ORDER BY r.room_number ASC'
         );
         if (!$stmt) {
             return null;
@@ -415,7 +416,7 @@ if (!function_exists('itm_hotel_booking_distribution_create_booking')) {
             $roomId = (int) $room['id'];
         } else {
             $room = null;
-            $rstmt = mysqli_prepare($conn, 'SELECT * FROM hotel_booking_rooms WHERE id = ? AND company_id = ? AND hotel_id = ? AND deleted_at IS NULL LIMIT 1');
+            $rstmt = mysqli_prepare($conn, 'SELECT r.*, COALESCE(bp.price_per_night, 0.00) AS price_per_night FROM hotel_booking_rooms r LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL WHERE r.id = ? AND r.company_id = ? AND r.hotel_id = ? AND r.deleted_at IS NULL LIMIT 1');
             if ($rstmt) {
                 mysqli_stmt_bind_param($rstmt, 'iii', $roomId, $companyId, $hotelId);
                 mysqli_stmt_execute($rstmt);
@@ -658,7 +659,10 @@ if (!function_exists('itm_hotel_booking_distribution_modify_booking')) {
         $occupancy = itm_hotel_booking_portal_parse_occupancy(is_array($payload['occupancy'] ?? null) ? $payload['occupancy'] : []);
         $guest = is_array($payload['guest'] ?? null) ? $payload['guest'] : [];
         $roomRow = null;
-        $rstmt = mysqli_prepare($conn, 'SELECT * FROM hotel_booking_rooms WHERE id = ? AND company_id = ? LIMIT 1');
+        $rstmt = mysqli_prepare(
+            $conn,
+            'SELECT r.*, COALESCE(bp.price_per_night, 0.00) AS price_per_night FROM hotel_booking_rooms r LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL WHERE r.id = ? AND r.company_id = ? LIMIT 1'
+        );
         if ($rstmt) {
             mysqli_stmt_bind_param($rstmt, 'ii', $roomId, $companyId);
             mysqli_stmt_execute($rstmt);

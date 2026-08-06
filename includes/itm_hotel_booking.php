@@ -1649,7 +1649,7 @@ if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
 
     $currency = 'EUR';
     $rooms = [];
-    $rstmt = mysqli_prepare($conn, 'SELECT id, hotel_id, room_type_id, price_per_night, is_out_of_order, is_out_of_service FROM hotel_booking_rooms WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL AND active = 1');
+    $rstmt = mysqli_prepare($conn, 'SELECT r.id, r.hotel_id, r.room_type_id, COALESCE(bp.price_per_night, 0.00) AS price_per_night, r.is_out_of_order, r.is_out_of_service FROM hotel_booking_rooms r LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL WHERE r.company_id = ? AND r.hotel_id = ? AND r.deleted_at IS NULL AND r.active = 1');
     if ($rstmt) {
       mysqli_stmt_bind_param($rstmt, 'ii', $companyId, $hotelId);
       mysqli_stmt_execute($rstmt);
@@ -2071,9 +2071,10 @@ if (!function_exists('itm_hotel_booking_portal_find_available_room_for_type')) {
     $companyId = (int) $companyId;
     $hotelId = (int) $hotelId;
     $roomTypeId = (int) $roomTypeId;
-    $sql = 'SELECT r.id, r.hotel_id, r.room_type_id, r.price_per_night, r.is_out_of_order, r.is_out_of_service FROM hotel_booking_rooms r
+    $sql = 'SELECT r.id, r.hotel_id, r.room_type_id, COALESCE(bp.price_per_night, 0.00) AS price_per_night, r.is_out_of_order, r.is_out_of_service FROM hotel_booking_rooms r
+            LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL
             WHERE r.company_id = ? AND r.hotel_id = ? AND r.room_type_id = ? AND r.deleted_at IS NULL AND r.active = 1
-            ORDER BY r.price_per_night ASC, r.id ASC';
+            ORDER BY COALESCE(bp.price_per_night, 0.00) ASC, r.id ASC';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
       return null;
@@ -2801,7 +2802,7 @@ if (!function_exists('itm_hotel_booking_planning_move_booking')) {
     if (itm_hotel_booking_booking_is_cancelled($conn, $companyId, $row)) {
       return ['ok' => false, 'error' => 'Cancelled booking cannot be moved.'];
     }
-    $rstmt = mysqli_prepare($conn, 'SELECT id, price_per_night FROM hotel_booking_rooms WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
+    $rstmt = mysqli_prepare($conn, 'SELECT r.id, COALESCE(bp.price_per_night, 0.00) AS price_per_night FROM hotel_booking_rooms r LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL WHERE r.id = ? AND r.company_id = ? AND r.deleted_at IS NULL LIMIT 1');
     if (!$rstmt) {
       return ['ok' => false, 'error' => 'Room not found.'];
     }
@@ -3016,6 +3017,27 @@ if (!function_exists('itm_hotel_booking_portal_rate_plans_active_for_hotel')) {
       mysqli_stmt_close($stmt);
     }
     return $rows;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_get_room_type_base_price')) {
+  function itm_hotel_booking_get_room_type_base_price($conn, $companyId, $hotelId, $roomTypeId) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $roomTypeId = (int) $roomTypeId;
+    $sql = 'SELECT price_per_night FROM hotel_booking_room_type_base_prices WHERE company_id = ? AND hotel_id = ? AND room_type_id = ? AND deleted_at IS NULL LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+      mysqli_stmt_bind_param($stmt, 'iii', $companyId, $hotelId, $roomTypeId);
+      mysqli_stmt_execute($stmt);
+      $res = mysqli_stmt_get_result($stmt);
+      if ($res && ($row = mysqli_fetch_assoc($res))) {
+        mysqli_stmt_close($stmt);
+        return (float) $row['price_per_night'];
+      }
+      mysqli_stmt_close($stmt);
+    }
+    return 0.0;
   }
 }
 

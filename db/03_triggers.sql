@@ -3557,6 +3557,9 @@ DROP TRIGGER IF EXISTS `trg_hotel_booking_hotel_nearby_audit_delete`$$
 DROP TRIGGER IF EXISTS `trg_hotel_booking_rooms_audit_insert`$$
 DROP TRIGGER IF EXISTS `trg_hotel_booking_rooms_audit_update`$$
 DROP TRIGGER IF EXISTS `trg_hotel_booking_rooms_audit_delete`$$
+DROP TRIGGER IF EXISTS `trg_hotel_booking_room_type_base_prices_audit_insert`$$
+DROP TRIGGER IF EXISTS `trg_hotel_booking_room_type_base_prices_audit_update`$$
+DROP TRIGGER IF EXISTS `trg_hotel_booking_room_type_base_prices_audit_delete`$$
 DROP TRIGGER IF EXISTS `trg_hotel_booking_room_photos_audit_insert`$$
 DROP TRIGGER IF EXISTS `trg_hotel_booking_room_photos_audit_update`$$
 DROP TRIGGER IF EXISTS `trg_hotel_booking_room_photos_audit_delete`$$
@@ -3762,6 +3765,21 @@ END$$
 CREATE TRIGGER `trg_hotel_booking_rooms_audit_delete` AFTER DELETE ON `hotel_booking_rooms` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'hotel_booking_rooms', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_hotel_booking_room_type_base_prices_audit_insert` AFTER INSERT ON `hotel_booking_room_type_base_prices` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'hotel_booking_room_type_base_prices', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_hotel_booking_room_type_base_prices_audit_update` AFTER UPDATE ON `hotel_booking_room_type_base_prices` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'hotel_booking_room_type_base_prices', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_hotel_booking_room_type_base_prices_audit_delete` AFTER DELETE ON `hotel_booking_room_type_base_prices` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'hotel_booking_room_type_base_prices', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`), NULL, @app_ip_address, @app_user_agent);
 END$$
 
 CREATE TRIGGER `trg_hotel_booking_room_photos_audit_insert` AFTER INSERT ON `hotel_booking_room_photos` FOR EACH ROW BEGIN
