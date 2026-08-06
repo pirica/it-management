@@ -185,6 +185,7 @@ $reservationSummaryContext = [
     'plan_label' => $planLabel,
     'change_rate_url' => $changeRateUrl,
     'currency' => $currency,
+    'draft' => $draftForBreakdown,
 ];
 
 $upgradeRoomDetailHtml = '';

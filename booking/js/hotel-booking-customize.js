@@ -7,6 +7,10 @@
   var petCheckbox = document.getElementById('hb-traveling-with-pet');
   var roomChargesEl = document.getElementById('hb-reservation-room-charges');
   var stayTotalEl = document.getElementById('hb-reservation-stay-total');
+  var petRowEl = document.getElementById('hb-reservation-pet-row');
+  var petFeeEl = document.getElementById('hb-reservation-pet-fee');
+  var roomPriceEl = document.querySelector('.hb-reservation-summary-room .hb-reservation-room-price');
+
   if (!roomChargesEl || !stayTotalEl) {
     return;
   }
@@ -24,20 +28,40 @@
   function refreshTotals() {
     var roomCharges = cfg.roomChargesBase || 0;
 
-    if (petCheckbox) {
-      if (petCheckbox.checked && !cfg.initialTravelingWithPet) {
-        roomCharges += (cfg.petDailyFee || 0) * (cfg.nights || 1);
-      } else if (!petCheckbox.checked && cfg.initialTravelingWithPet) {
-        roomCharges -= (cfg.petDailyFee || 0) * (cfg.nights || 1);
+    // Normalizing roomCharges to never include pet fee
+    var baseWithoutPet = roomCharges;
+    if (cfg.initialTravelingWithPet) {
+      baseWithoutPet -= (cfg.petDailyFee || 0) * (cfg.nights || 1);
+    }
+
+    var currentRoomCharges = baseWithoutPet;
+    if (upgradeCheckbox && upgradeCheckbox.checked) {
+      currentRoomCharges += (cfg.upgradePerNight || 0) * (cfg.nights || 1);
+    }
+
+    // Display total room charges (excluding pet fee)
+    roomChargesEl.textContent = formatDecimal(currentRoomCharges);
+    if (roomPriceEl) {
+      roomPriceEl.textContent = formatDecimal(currentRoomCharges);
+    }
+
+    // Calculate pet fee if checked
+    var petFeeTotal = 0;
+    if (petCheckbox && petCheckbox.checked) {
+      petFeeTotal = (cfg.petDailyFee || 0) * (cfg.nights || 1);
+      if (petRowEl) {
+        petRowEl.style.display = '';
+      }
+      if (petFeeEl) {
+        petFeeEl.textContent = formatDecimal(petFeeTotal);
+      }
+    } else {
+      if (petRowEl) {
+        petRowEl.style.display = 'none';
       }
     }
 
-    if (upgradeCheckbox && upgradeCheckbox.checked) {
-      roomCharges += (cfg.upgradePerNight || 0) * (cfg.nights || 1);
-    }
-
-    var total = roomCharges + (cfg.touristTax || 0);
-    roomChargesEl.textContent = formatDecimal(roomCharges);
+    var total = currentRoomCharges + petFeeTotal + (cfg.touristTax || 0);
     stayTotalEl.textContent = formatDecimal(total);
   }
 

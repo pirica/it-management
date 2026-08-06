@@ -92,6 +92,22 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
         if ($taxPerPerson > 0) {
             $taxLabel .= ' (' . hb_portal_money_format_decimal($taxPerPerson, $currency) . ' per person per night)';
         }
+
+        // Why: Separate "Traveling with a pet" fee from "Total room charges"
+        $draft = is_array($context['draft'] ?? null) ? $context['draft'] : itm_hotel_booking_portal_draft_get();
+        $hasPet = !empty($draft['traveling_with_pet']);
+        $petFeeTotal = 0.0;
+        if ($hasPet) {
+            global $conn;
+            $companyId = (int) ($room['company_id'] ?? 0);
+            $hotelId = (int) ($room['hotel_id'] ?? 0);
+            $nights = (int) ($breakdown['nights'] ?? 1);
+            if ($conn && $companyId > 0 && $hotelId > 0) {
+                $petDailyFee = itm_hotel_booking_portal_pet_daily_fee($conn, $companyId, $hotelId);
+                $petFeeTotal = $petDailyFee * $nights;
+                $roomCharges -= $petFeeTotal;
+            }
+        }
         ?>
 <div class="hb-reservation-summary card">
 <h2 class="hb-reservation-summary-title">Reservation summary</h2>
@@ -109,6 +125,10 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
 <div class="hb-reservation-total-row">
 <dt>Total room charges</dt>
 <dd id="hb-reservation-room-charges"><?php echo htmlspecialchars(hb_portal_money_format_decimal($roomCharges, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
+</div>
+<div class="hb-reservation-total-row" id="hb-reservation-pet-row" <?php echo $hasPet ? '' : 'style="display:none;"'; ?>>
+<dt>Traveling with a pet</dt>
+<dd id="hb-reservation-pet-fee"><?php echo htmlspecialchars(hb_portal_money_format_decimal($petFeeTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <div class="hb-reservation-total-row hb-reservation-tax-row">
 <dt>Total taxes and government charges</dt>
