@@ -165,10 +165,11 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
         $imageUrlOverride = trim((string) $imageUrlOverride);
 
         $sampleRoom = null;
-        $rstmt = mysqli_prepare($conn, 'SELECT id, hotel_id, room_type_id, price_per_night, view_label, is_out_of_order, is_out_of_service
-            FROM hotel_booking_rooms
-            WHERE company_id = ? AND hotel_id = ? AND room_type_id = ? AND deleted_at IS NULL AND active = 1
-            ORDER BY price_per_night ASC, id ASC');
+        $rstmt = mysqli_prepare($conn, 'SELECT r.id, r.hotel_id, r.room_type_id, COALESCE(bp.price_per_night, 0.00) AS price_per_night, r.view_label, r.is_out_of_order, r.is_out_of_service
+            FROM hotel_booking_rooms r
+            LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL
+            WHERE r.company_id = ? AND r.hotel_id = ? AND r.room_type_id = ? AND r.deleted_at IS NULL AND r.active = 1
+            ORDER BY COALESCE(bp.price_per_night, 0.00) ASC, r.id ASC');
         if ($rstmt) {
             mysqli_stmt_bind_param($rstmt, 'iii', $companyId, $hotelId, $typeId);
             mysqli_stmt_execute($rstmt);

@@ -88,13 +88,14 @@ $typeDefaultImages = [
 ];
 
 $rooms = [];
-$sql = 'SELECT r.*, t.name AS type_name, t.code AS type_code, t.description AS type_description,
+$sql = 'SELECT r.*, COALESCE(bp.price_per_night, 0.00) AS price_per_night, t.name AS type_name, t.code AS type_code, t.description AS type_description,
     t.bed_summary, t.room_size_sqm AS type_size_sqm, t.max_adults, t.max_children, t.max_babies,
     t.filter_tags, t.details_bullets
     FROM hotel_booking_rooms r
     INNER JOIN booking_rooms_types t ON t.id = r.room_type_id AND t.company_id = r.company_id
+    LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL
     WHERE r.company_id = ? AND r.hotel_id = ? AND r.deleted_at IS NULL AND r.active = 1
-    ORDER BY r.price_per_night ASC, r.room_number ASC';
+    ORDER BY COALESCE(bp.price_per_night, 0.00) ASC, r.room_number ASC';
 $stmt = mysqli_prepare($conn, $sql);
 if ($stmt) {
     mysqli_stmt_bind_param($stmt, 'ii', $company_id, $hotelId);

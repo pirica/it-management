@@ -75,7 +75,7 @@ if (!is_array($settings)) {
 
 // Why: Public home lists every active hotel across tenants — not session company_id.
 $hotels = [];
-$stmt = mysqli_prepare($conn, 'SELECT h.*, (SELECT MIN(r.price_per_night) FROM hotel_booking_rooms r WHERE r.hotel_id = h.id AND r.company_id = h.company_id AND r.deleted_at IS NULL) AS min_price
+$stmt = mysqli_prepare($conn, 'SELECT h.*, (SELECT MIN(bp.price_per_night) FROM hotel_booking_rooms r INNER JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL WHERE r.hotel_id = h.id AND r.company_id = h.company_id AND r.deleted_at IS NULL) AS min_price
     FROM hotel_booking_hotels h WHERE h.deleted_at IS NULL AND h.active = 1 ORDER BY h.name');
 if ($stmt) {
     mysqli_stmt_execute($stmt);
