@@ -318,7 +318,7 @@ $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_employee_field($col['Field']);
 }));
-$preferredOrder = ['room_number', 'name', 'hotel_id', 'room_type_id', 'housekeeping_status_id', 'floor', 'price_per_night', 'num_persons', 'num_beds', 'size_sqm', 'view_label', 'active'];
+$preferredOrder = ['room_number', 'name', 'hotel_id', 'room_type_id', 'housekeeping_status_id', 'floor', 'num_persons', 'num_beds', 'size_sqm', 'view_label', 'active'];
 $fieldOrderMap = array_flip($preferredOrder);
 usort($fieldColumns, static function ($a, $b) use ($fieldOrderMap) {
     $aPos = $fieldOrderMap[$a['Field']] ?? 999;
