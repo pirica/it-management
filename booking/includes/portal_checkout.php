@@ -7,11 +7,12 @@ if (!function_exists('hb_portal_checkout_load_room')) {
     function hb_portal_checkout_load_room($conn, $companyId, $roomId) {
         $companyId = (int) $companyId;
         $roomId = (int) $roomId;
-        $sql = 'SELECT r.*, h.name AS hotel_name, h.currency_code, h.id AS hotel_id,
+        $sql = 'SELECT r.*, COALESCE(bp.price_per_night, 0.00) AS price_per_night, h.name AS hotel_name, h.currency_code, h.id AS hotel_id,
             t.name AS type_name, t.code AS type_code, t.bed_summary
             FROM hotel_booking_rooms r
             INNER JOIN hotel_booking_hotels h ON h.id = r.hotel_id AND h.company_id = r.company_id
             LEFT JOIN booking_rooms_types t ON t.id = r.room_type_id AND t.company_id = r.company_id
+            LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL
             WHERE r.id = ? AND r.company_id = ? AND r.deleted_at IS NULL AND h.deleted_at IS NULL LIMIT 1';
         $stmt = mysqli_prepare($conn, $sql);
         if (!$stmt) {
@@ -171,7 +172,7 @@ if (!function_exists('hb_portal_load_booking_confirmation')) {
             c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
             h.id AS hotel_id, h.name AS hotel_name, h.location AS hotel_location, h.phone AS hotel_phone,
             h.website_url AS hotel_website_url, h.currency_code,
-            r.name AS room_name, r.price_per_night,
+            r.name AS room_name, COALESCE(bp.price_per_night, 0.00) AS price_per_night,
             t.name AS type_name, t.bed_summary,
             rp.name AS portal_rate_plan_name, rp.rate_plan_slug AS portal_rate_plan_slug
             FROM hotel_bookings b
@@ -179,6 +180,7 @@ if (!function_exists('hb_portal_load_booking_confirmation')) {
             INNER JOIN hotel_booking_rooms r ON r.id = b.room_id AND r.company_id = b.company_id
             INNER JOIN hotel_booking_hotels h ON h.id = r.hotel_id AND h.company_id = r.company_id
             LEFT JOIN booking_rooms_types t ON t.id = r.room_type_id AND t.company_id = r.company_id
+            LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL
             LEFT JOIN hotel_booking_portal_rate_plans rp ON rp.id = b.portal_rate_plan_id AND rp.company_id = b.company_id AND rp.deleted_at IS NULL
             WHERE b.id = ? AND b.company_id = ? AND b.deleted_at IS NULL LIMIT 1';
         $stmt = mysqli_prepare($conn, $sql);

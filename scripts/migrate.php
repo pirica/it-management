@@ -135,6 +135,7 @@ require_once __DIR__ . '/../includes/itm_database_migrations.php';
 
 $boot = itm_apply_script_bootstrap('Database migrations', [
     'usage_gate_title' => 'Database migrations',
+    'skip_db_tests' => false,
 ]);
 $apply = $boot['apply'];
 $nl = $boot['nl'];

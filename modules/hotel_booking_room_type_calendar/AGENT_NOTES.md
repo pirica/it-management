@@ -8,10 +8,11 @@ Admin UI for **date-range BAR overrides** (`hotel_booking_room_type_rate_overrid
 
 | Table | Role |
 |-------|------|
+| `hotel_booking_room_type_base_prices` | Base price per night per `room_type_id` + `hotel_id` |
 | `hotel_booking_room_type_rate_overrides` | `start_date`–`end_date` inclusive nightly BAR per `room_type_id` + `hotel_id` |
 | `hotel_booking_room_type_blocks` | Same keys; when any stay night overlaps, type is unsellable on portal |
 
-Room default BAR remains `hotel_booking_rooms.price_per_night`. Overrides win per night when `active = 1` and night ∈ range (latest `id` wins).
+Room default BAR remains the base price per night defined per room type and hotel in `hotel_booking_room_type_base_prices.price_per_night`. Overrides win per night when `active = 1` and night ∈ range (latest `id` wins).
 
 ## 3. Files
 

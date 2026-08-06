@@ -2,11 +2,11 @@
 
 ## 1. Module Purpose
 
-Flattened CRUD for physical hotel inventory (`hotel_booking_rooms`): room number, display name, hotel, room type, housekeeping status, pricing, capacity, and photo uploads. Rooms feed the **Hotel Bookings** planning grid and public booking portal.
+Flattened CRUD for physical hotel inventory (`hotel_booking_rooms`): room number, display name, hotel, room type, housekeeping status, capacity, and photo uploads. Rooms feed the **Hotel Bookings** planning grid and public booking portal.
 
 ## 2. Key Tables
 
-- **hotel_booking_rooms** — main room records (`room_number`, `name`, `hotel_id`, `room_type_id`, `housekeeping_status_id`, pricing/capacity fields)
+- **hotel_booking_rooms** — main room records (`room_number`, `name`, `hotel_id`, `room_type_id`, `housekeeping_status_id`, capacity fields)
 - **hotel_booking_room_photos** — optional per-room images (upload on create/edit)
 - **hotel_booking_room_utilities** — amenity links (separate module)
 

@@ -50,7 +50,7 @@ if (!function_exists('hb_booking_load_form_options')) {
             }
             mysqli_stmt_close($cstmt);
         }
-        $rstmt = mysqli_prepare($conn, 'SELECT id, room_number, name, price_per_night, hotel_id FROM hotel_booking_rooms WHERE company_id = ? AND deleted_at IS NULL ORDER BY room_number');
+        $rstmt = mysqli_prepare($conn, 'SELECT r.id, r.room_number, r.name, COALESCE(bp.price_per_night, 0.00) AS price_per_night, r.hotel_id FROM hotel_booking_rooms r LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL WHERE r.company_id = ? AND r.deleted_at IS NULL ORDER BY r.room_number');
         if ($rstmt) {
             mysqli_stmt_bind_param($rstmt, 'i', $companyId);
             mysqli_stmt_execute($rstmt);
@@ -133,7 +133,10 @@ if (!function_exists('hb_booking_compute_room_payment')) {
             return 0.0;
         }
         $price = 0.0;
-        $pstmt = mysqli_prepare($conn, 'SELECT price_per_night FROM hotel_booking_rooms WHERE id = ? AND company_id = ? LIMIT 1');
+        $pstmt = mysqli_prepare(
+            $conn,
+            'SELECT COALESCE(bp.price_per_night, 0.00) AS price_per_night FROM hotel_booking_rooms r LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL WHERE r.id = ? AND r.company_id = ? LIMIT 1'
+        );
         if ($pstmt) {
             mysqli_stmt_bind_param($pstmt, 'ii', $roomId, $companyId);
             mysqli_stmt_execute($pstmt);
