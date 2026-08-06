@@ -3,11 +3,17 @@ require __DIR__ . '/../bootstrap.php';
 require __DIR__ . '/../includes/portal_chrome.php';
 require __DIR__ . '/../includes/portal_checkout.php';
 
-$company_id = hb_public_company_id($conn);
+$bid = (int) ($_SESSION['hotel_booking_last_id'] ?? 0);
+$company_id = 0;
+if ($bid > 0) {
+    $company_id = hb_portal_get_booking_company_id($conn, $bid);
+}
+if ($company_id <= 0) {
+    $company_id = hb_public_company_id($conn);
+}
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 $error = '';
 $success = '';
-$bid = (int) ($_SESSION['hotel_booking_last_id'] ?? 0);
 $booking = $bid > 0 ? hb_portal_load_booking_confirmation($conn, $company_id, $bid) : null;
 $cancelLastName = '';
 $cancelReservationId = 0;

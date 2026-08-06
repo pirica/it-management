@@ -71,3 +71,37 @@ function hb_load_active_hotel_row($conn, $hotelId) {
     mysqli_stmt_close($stmt);
     return $row ?: null;
 }
+
+function hb_portal_checkout_get_room_company_id($conn, $roomId) {
+    $roomId = (int) $roomId;
+    if ($roomId <= 0) {
+        return 0;
+    }
+    $stmt = mysqli_prepare($conn, 'SELECT company_id FROM hotel_booking_rooms WHERE id = ? AND deleted_at IS NULL LIMIT 1');
+    if (!$stmt) {
+        return 0;
+    }
+    mysqli_stmt_bind_param($stmt, 'i', $roomId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    return $row ? (int) $row['company_id'] : 0;
+}
+
+function hb_portal_get_booking_company_id($conn, $bookingId) {
+    $bookingId = (int) $bookingId;
+    if ($bookingId <= 0) {
+        return 0;
+    }
+    $stmt = mysqli_prepare($conn, 'SELECT company_id FROM hotel_bookings WHERE id = ? AND deleted_at IS NULL LIMIT 1');
+    if (!$stmt) {
+        return 0;
+    }
+    mysqli_stmt_bind_param($stmt, 'i', $bookingId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    return $row ? (int) $row['company_id'] : 0;
+}
