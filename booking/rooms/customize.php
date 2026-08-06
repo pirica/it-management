@@ -4,8 +4,6 @@ require __DIR__ . '/../includes/portal_chrome.php';
 require __DIR__ . '/../includes/portal_checkout.php';
 require __DIR__ . '/../includes/portal_room_detail.php';
 
-$company_id = hb_public_company_id($conn);
-$settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 $draft = itm_hotel_booking_portal_draft_get();
 if (!$draft || empty($draft['room_id'])) {
     header('Location: ' . APPURL . '/');
@@ -13,6 +11,17 @@ if (!$draft || empty($draft['room_id'])) {
 }
 
 $roomId = (int) $draft['room_id'];
+$company_id = 0;
+if ($draft && !empty($draft['company_id'])) {
+    $company_id = (int) $draft['company_id'];
+}
+if ($company_id <= 0 && $roomId > 0) {
+    $company_id = hb_portal_checkout_get_room_company_id($conn, $roomId);
+}
+if ($company_id <= 0) {
+    $company_id = hb_public_company_id($conn);
+}
+$settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 $room = hb_portal_checkout_load_room($conn, $company_id, $roomId);
 if (!$room) {
     itm_hotel_booking_portal_draft_clear();

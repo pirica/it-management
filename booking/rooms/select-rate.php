@@ -3,9 +3,15 @@ require __DIR__ . '/../bootstrap.php';
 require __DIR__ . '/../includes/portal_chrome.php';
 require __DIR__ . '/../includes/portal_checkout.php';
 
-$company_id = hb_public_company_id($conn);
-$settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 $roomId = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
+$company_id = 0;
+if ($roomId > 0) {
+    $company_id = hb_portal_checkout_get_room_company_id($conn, $roomId);
+}
+if ($company_id <= 0) {
+    $company_id = hb_public_company_id($conn);
+}
+$settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 $checkInParam = trim((string) ($_GET['check_in'] ?? $_POST['check_in'] ?? ''));
 $nights = max(1, (int) ($_GET['nights'] ?? $_POST['nights'] ?? 1));
 $occupancy = itm_hotel_booking_portal_parse_occupancy($_GET);

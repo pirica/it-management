@@ -3,9 +3,19 @@ require __DIR__ . '/../bootstrap.php';
 require __DIR__ . '/../includes/portal_chrome.php';
 require __DIR__ . '/../includes/portal_checkout.php';
 
-$company_id = hb_public_company_id($conn);
-$settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 $roomId = (int) ($_GET['id'] ?? 0);
+$company_id = 0;
+$draft = itm_hotel_booking_portal_draft_get();
+if ($draft && !empty($draft['company_id'])) {
+    $company_id = (int) $draft['company_id'];
+}
+if ($company_id <= 0 && $roomId > 0) {
+    $company_id = hb_portal_checkout_get_room_company_id($conn, $roomId);
+}
+if ($company_id <= 0) {
+    $company_id = hb_public_company_id($conn);
+}
+$settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 $error = '';
 $formFullName = '';
 $formEmail = '';
