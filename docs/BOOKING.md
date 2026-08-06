@@ -93,7 +93,7 @@ Hotel photos are managed in **Hotels** (`modules/hotel_booking_hotels/`). **Room
 
 Draft state (dates, rate, occupancy, upgrade) is stored in session via `itm_hotel_booking_portal_draft_*` helpers until step 4 succeeds.
 
-**Pricing:** nightly room charges use `hotel_booking_rooms.price_per_night` plus per-hotel portal rules on `hotel_booking_hotels` (breakfast adult/child add-on, child nightly supplement, extra-adult %, pet daily fee — edited in **Portal Rate Plans** admin, not hardcoded in `booking/`). Special-rate discount % comes from `hotel_booking_special_rates`. Tourist tax is company-level (`hotel_booking_settings.tourist_tax_per_person_per_night`, default €2/guest/night in seeds). Breakdown: `itm_hotel_booking_portal_checkout_breakdown()` → `itm_hotel_booking_portal_hotel_pricing()`.
+**Pricing:** nightly room charges use the base price per night defined per room type and hotel in `hotel_booking_room_type_base_prices.price_per_night` plus per-hotel portal rules on `hotel_booking_hotels` (breakfast adult/child add-on, child nightly supplement, extra-adult %, pet daily fee — edited in **Portal Rate Plans** admin, not hardcoded in `booking/`). Special-rate discount % comes from `hotel_booking_special_rates`. Tourist tax is company-level (`hotel_booking_settings.tourist_tax_per_person_per_night`, default €2/guest/night in seeds). Breakdown: `itm_hotel_booking_portal_checkout_breakdown()` → `itm_hotel_booking_portal_hotel_pricing()`.
 
 **Availability:** `itm_hotel_booking_has_overlap()` blocks double-booking; cancelled bookings are excluded from overlap.
 
@@ -127,7 +127,8 @@ After lookup:
 |-------|------------|
 | `hotel_booking_settings` | `public_portal_enabled`, welcome copy, tourist tax, reviews URL |
 | `hotel_booking_hotels` | Property name, location, phone, website, currency, check-in/out times, **portal step pricing** (`portal_breakfast_*`, `portal_child_nightly_supplement`, `portal_extra_adult_supplement_percent`, `portal_pet_daily_fee`) |
-| `hotel_booking_rooms` | Inventory, `price_per_night`, link to room type |
+| `hotel_booking_room_type_base_prices` | Base price per night per room type and hotel |
+| `hotel_booking_rooms` | Inventory, link to room type |
 | `booking_rooms_types` | Type name, bed summary, upgrade pricing |
 | `hotel_bookings` | Reservations; segment status FKs; `notes` (rate plan, occupancy meta, comments) |
 | `hotel_bookings_future` / `present` / `history` | Status lookups (`PENDING`, `CANCELLED`, etc.) — no ENUM |
