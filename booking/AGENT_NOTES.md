@@ -11,7 +11,7 @@ Guest-facing hotel listing and booking under `/it-management/booking/`. Uses ITM
 ## 3. Auth
 
 - **Browse and book:** no portal login. Guest details (name, email, phone) are collected on `rooms/room-single.php` and stored via `customers` + `hotel_bookings`.
-- **Manage booking:** `users/bookings.php` — last name + **reservation ID** (`hotel_bookings.id`); verified by `itm_hotel_booking_fetch_for_guest_manage()`.
+- **Manage booking:** `users/bookings.php` — last name + **reservation ID** (`hotel_bookings.id`); verified by `itm_hotel_booking_fetch_for_guest_manage()`. The confirmation page links "Manage my booking" to the company-configured `urlmybooking` URL with `target="_blank"`.
 - **Read reviews:** `hotel_booking_settings.reviews_url` (company default) and optional per-hotel `hotel_booking_hotels.reviews_url`; resolved via `itm_hotel_booking_resolve_reviews_url()`. Under the green rating bubbles: **Guest rating** — based on recent stays, then **Read reviews ↗** (example seed: Conrad Algarve TripAdvisor `#REVIEWS` URL).
 - Optional legacy: `hotel_booking_portal_users` and `auth/login.php` / `register.php` (not required for public flow).
 - **CSRF:** Public auth POST handlers use `itm_require_post_csrf()` via `bootstrap.php`.
