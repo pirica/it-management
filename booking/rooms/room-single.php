@@ -246,11 +246,11 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
         By completing this booking you agree to the booking conditions, general terms, privacy policy, and Wallet terms.
     </p>
     <label class="hb-filter-check hb-checkout-check" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600;">
-        <input type="checkbox" id="agree_terms" name="agree_terms" value="1" required>
+        <input type="checkbox" id="agree_terms" name="agree_terms" value="1">
         <span>I agree to these terms</span>
     </label>
 </div>
-<button type="submit" class="hb-btn hb-btn-primary" id="btn-book-submit" title="Book and continue to payment" disabled>Book and continue to payment</button>
+<button type="submit" class="hb-btn hb-btn-primary" id="btn-book-submit" title="Book and continue to payment">Book and continue to payment</button>
 </form>
 </main>
 
@@ -268,12 +268,32 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 document.addEventListener('DOMContentLoaded', function() {
     var agreeCheckbox = document.getElementById('agree_terms');
     var submitButton = document.getElementById('btn-book-submit');
+    var form = document.querySelector('.hb-guest-form');
+
+    function syncButtonState() {
+        if (agreeCheckbox.checked) {
+            submitButton.classList.remove('hb-btn-disabled');
+            submitButton.style.cursor = 'pointer';
+        } else {
+            submitButton.classList.add('hb-btn-disabled');
+            submitButton.style.cursor = 'not-allowed';
+        }
+    }
+
     if (agreeCheckbox && submitButton) {
-        agreeCheckbox.addEventListener('change', function() {
-            submitButton.disabled = !this.checked;
-        });
+        agreeCheckbox.addEventListener('change', syncButtonState);
         // Initial state sync
-        submitButton.disabled = !agreeCheckbox.checked;
+        syncButtonState();
+    }
+
+    if (form && agreeCheckbox) {
+        form.addEventListener('submit', function(e) {
+            if (!agreeCheckbox.checked) {
+                e.preventDefault();
+                alert('Please agree to the terms and conditions to proceed.');
+                return false;
+            }
+        });
     }
 });
 </script>
