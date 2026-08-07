@@ -108,3 +108,4 @@ workstation_office
 workstation_os_types
 workstation_os_versions
 workstation_ram
+hotel_booking_room_type_base_prices

@@ -80,6 +80,8 @@ if (is_dir($dummyModulePath)) {
     }
     @rmdir($dummyModulePath);
     mysqli_query($conn, "DROP TABLE IF EXISTS `$dummyTable`");
+    mysqli_query($conn, "DELETE FROM `company_module_access` WHERE module_id IN (SELECT id FROM `modules_registry` WHERE module_slug = '$dummyTable')");
+    mysqli_query($conn, "DELETE FROM `modules_registry` WHERE module_slug = '$dummyTable'");
     exit(1);
 } else {
     echo colorText("[PASS]", 'pass') . " Successfully verified: no module was scaffolded when disabled." . $nl;
@@ -112,6 +114,8 @@ foreach (glob($dummyModulePath . '/*') as $f) {
 }
 @rmdir($dummyModulePath);
 mysqli_query($conn, "DROP TABLE IF EXISTS `$dummyTable`");
+mysqli_query($conn, "DELETE FROM `company_module_access` WHERE module_id IN (SELECT id FROM `modules_registry` WHERE module_slug = '$dummyTable')");
+mysqli_query($conn, "DELETE FROM `modules_registry` WHERE module_slug = '$dummyTable'");
 
 // Reset config back to default 0
 mysqli_query($conn, "UPDATE `ui_configuration` SET `enable_auto_scaffolding` = 0 WHERE company_id = 1 AND employee_id = 1");

@@ -69,7 +69,7 @@ The repository is highly mature, with fully implemented, production-ready module
 *   **IT Infrastructure:** Drag-and-drop physical rack planners, visual high-density IDF port guides, IPAM subnets (with TCP connect discovery probes), and workstation/printer tracking.
 *   **Productivity Suites:** Folder-tree bookmark managers with drag-and-drop reordering, labeled personal notes, to-do lists, and user-scoped private contacts.
 *   **Workflow & Approvals:** HR/HOD/ISM multi-stage approval workflow for password resets, daily hotel operations reporting (Ops Report), and backup tape log grids.
-*   **Direct-to-Guest Hospitality:** Multi-step guest room booking workflow at `booking/` with dynamic pricing breakdown, stay-date check range, and auto-generated HTML-to-PDF confirmation invoices.
+*   **Direct-to-Guest Hospitality:** Multi-step guest room booking workflow at `booking/` with dynamic pricing breakdown, stay-date check range, and auto-generated HTML-to-PDF confirmation invoices. Features the standard dynamic CRUD admin panel for Room Type Base Prices (`modules/hotel_booking_room_type_base_prices/`).
 *   **Hotel Booking Distribution:** Unified XML/JSON API for third-party channels (compliant with OpenTravel XML specifications, Booking.com Connectivity, and Oracle OHIP formats) with secure outbound webhook retry queues.
 
 ### 2.2 In-Progress Work & PHP 8+ Compatibility Checks
