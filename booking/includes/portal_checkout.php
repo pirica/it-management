@@ -467,7 +467,7 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <?php else: ?>
 <div class="hb-payment-confirmation-notice" role="status">
 <p><strong>Payment at the hotel.</strong> Online payment is not enabled in this build. No charge was made online — the total above is due according to hotel policy.</p>
-<p class="hb-payment-confirmation-manage-hint">To view or change your reservation later, use your last name: <strong><?php echo htmlspecialchars($lastname, ENT_QUOTES, 'UTF-8'); ?></strong> and confirmation number: <strong><?php echo (int) $numberconfirmation; ?></strong> on Manage my booking.</p>
+<p class="hb-payment-confirmation-manage-hint">To view or change your reservation later, use your last name: <strong><?php echo htmlspecialchars($lastname, ENT_QUOTES, 'UTF-8'); ?></strong> and confirmation number: <strong><?php echo (int) $numberconfirmation; ?></strong> on <a href="<?php echo htmlspecialchars($urlmybooking, ENT_QUOTES, 'UTF-8'); ?>" class="hb-stay-edit" target="_blank"><strong>Manage my booking</strong></a>.</p>
 </div>
 <div class="hb-checkout-actions hb-payment-confirmation-actions hb-pdf-exclude">
 <button type="button" class="hb-btn hb-checkout-skip" id="hb-save-confirmation-pdf" title="Save booking confirmation">Save booking confirmation</button>
