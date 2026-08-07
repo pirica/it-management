@@ -12,6 +12,10 @@ if ($company_id <= 0) {
     $company_id = hb_public_company_id($conn);
 }
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
+$urlmybooking = trim((string) ($settings['urlmybooking'] ?? ''));
+if ($urlmybooking === '') {
+    $urlmybooking = 'https://localhost/it-management/booking/users/bookings.php';
+}
 $error = '';
 $success = '';
 $booking = $bid > 0 ? hb_portal_load_booking_confirmation($conn, $company_id, $bid) : null;
@@ -117,7 +121,7 @@ $paymentConfirmationOptions = [
 <p class="hb-payment-confirmation-lead">We could not find a recent booking in this browser session. Start a new search or manage an existing reservation with your confirmation number and last name.</p>
 <div class="hb-checkout-actions hb-payment-confirmation-actions">
 <a class="hb-btn hb-btn-primary" href="<?php echo APPURL; ?>/" title="Find a hotel">Find a hotel</a>
-<a class="hb-btn hb-checkout-skip" href="<?php echo APPURL; ?>/users/bookings.php" title="Manage my booking">Manage my booking</a>
+<a class="hb-btn hb-checkout-skip" href="<?php echo htmlspecialchars($urlmybooking, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" title="Manage my booking">Manage my booking</a>
 </div>
 </div>
 <?php endif; ?>

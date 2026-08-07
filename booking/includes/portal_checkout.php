@@ -369,6 +369,26 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
             'name' => $booking['room_name'] ?? '',
         ];
         $roomTitle = hb_portal_reservation_room_title($room);
+        $lastname = '';
+        if ($guestName !== '') {
+            $parts = preg_split('/\s+/', $guestName);
+            $lastname = (string) end($parts);
+        }
+        $numberconfirmation = $reservationId;
+
+        $conn = $options['conn'] ?? null;
+        $companyId = (int) ($options['company_id'] ?? 0);
+        $urlmybooking = '';
+        if ($conn && $companyId > 0) {
+            $settings = itm_hotel_booking_settings_row($conn, $companyId);
+            if ($settings && !empty($settings['urlmybooking'])) {
+                $urlmybooking = trim((string) $settings['urlmybooking']);
+            }
+        }
+        if ($urlmybooking === '') {
+            $urlmybooking = 'https://localhost/it-management/booking/users/bookings.php';
+        }
+
         $cardClass = 'hb-payment-confirmation card' . ($isCancelled ? ' hb-payment-confirmation--cancelled' : '');
         $iconChar = $isCancelled ? '✕' : '✓';
         $title = $isCancelled ? 'Reservation cancelled' : 'Reservation confirmed';
@@ -447,11 +467,11 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <?php else: ?>
 <div class="hb-payment-confirmation-notice" role="status">
 <p><strong>Payment at the hotel.</strong> Online payment is not enabled in this build. No charge was made online — the total above is due according to hotel policy.</p>
-<p class="hb-payment-confirmation-manage-hint">To view or change your reservation later, use your <strong>last name</strong> and confirmation number <strong><?php echo (int) $reservationId; ?></strong> on Manage my booking.</p>
+<p class="hb-payment-confirmation-manage-hint">To view or change your reservation later, use your last name: <strong><?php echo htmlspecialchars($lastname, ENT_QUOTES, 'UTF-8'); ?></strong> and confirmation number: <strong><?php echo (int) $numberconfirmation; ?></strong> on <a href="<?php echo htmlspecialchars($urlmybooking, ENT_QUOTES, 'UTF-8'); ?>" target="_blank">Manage my booking</a>.</p>
 </div>
 <div class="hb-checkout-actions hb-payment-confirmation-actions hb-pdf-exclude">
 <button type="button" class="hb-btn hb-checkout-skip" id="hb-save-confirmation-pdf" title="Save booking confirmation">Save booking confirmation</button>
-<a class="hb-btn hb-btn-primary" href="<?php echo APPURL; ?>/users/bookings.php" title="Manage my booking">Manage my booking</a>
+<a class="hb-btn hb-btn-primary" href="<?php echo htmlspecialchars($urlmybooking, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" title="Manage my booking">Manage my booking</a>
 <a class="hb-btn hb-checkout-skip" href="<?php echo APPURL; ?>/" title="Return home">Return home</a>
 </div>
 <?php endif; ?>
