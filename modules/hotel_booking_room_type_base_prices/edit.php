@@ -5,7 +5,7 @@ $crud_action = 'edit';
 ?>
 <?php
 require '../../config/config.php';
-itm_require_crud_role_module_permission($conn, 'edit', 'manufacturers');
+itm_require_crud_role_module_permission($conn, 'edit', 'hotel_booking_room_type_base_prices');
 
 
 if (($crud_table ?? '') === 'system_access') {
