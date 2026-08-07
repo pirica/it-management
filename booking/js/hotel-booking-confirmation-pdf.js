@@ -50,7 +50,31 @@
         heightLeft -= pdfHeight;
       }
 
-      pdf.save(filename);
+      if (typeof window.showSaveFilePicker === 'function') {
+        try {
+          var handle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [{
+              description: 'PDF Document',
+              accept: {
+                'application/pdf': ['.pdf']
+              }
+            }]
+          });
+          var writable = await handle.createWritable();
+          var pdfBlob = pdf.output('blob');
+          await writable.write(pdfBlob);
+          await writable.close();
+        } catch (pickerErr) {
+          if (pickerErr.name !== 'AbortError') {
+            pdf.save(filename);
+          } else {
+            return false;
+          }
+        }
+      } else {
+        pdf.save(filename);
+      }
       return true;
     } catch (err) {
       window.alert('Could not create the PDF. Please try again.');
