@@ -37,11 +37,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (trim((string) ($_POST['reviews_url'] ?? '')) !== '' && $reviewsUrl === '') {
         $errors[] = 'Reviews URL must start with http:// or https://';
     }
+    $urlmybooking = trim((string) ($_POST['urlmybooking'] ?? ''));
+    if ($urlmybooking === '') {
+        $urlmybooking = 'https://localhost/it-management/booking/users/bookings.php';
+    }
+    $urlmybooking_norm = itm_hotel_booking_normalize_reviews_url($urlmybooking);
+    if ($urlmybooking_norm === '') {
+        $errors[] = 'Manage my booking URL must start with http:// or https://';
+    } else {
+        $urlmybooking = $urlmybooking_norm;
+    }
     $sid = (int) ($row['id'] ?? 0);
     if (empty($errors)) {
-    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
+    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
     if ($upd) {
-        mysqli_stmt_bind_param($upd, 'issssssdiii', $enabled, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $employee_id, $sid, $company_id);
+        mysqli_stmt_bind_param($upd, 'issssssdsiii', $enabled, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $urlmybooking, $employee_id, $sid, $company_id);
         mysqli_stmt_execute($upd);
         mysqli_stmt_close($upd);
         header('Location: index.php?saved=1');
@@ -100,6 +110,11 @@ itm_hospitality_admin_layout_begin($crud_title);
 <label>External reviews URL</label>
 <input type="url" name="reviews_url" class="form-control" maxlength="500" placeholder="https://www.tripadvisor.pt/Hotel_Review-...html#REVIEWS" value="<?php echo sanitize($row['reviews_url'] ?? ''); ?>">
 <p class="text-muted" style="font-size:.85rem;margin-top:4px;">Shown under “Guest rating — based on recent stays” as <strong>Read reviews ↗</strong> (new tab).</p>
+</div>
+<div class="form-group">
+<label>Manage my booking URL</label>
+<input type="url" name="urlmybooking" class="form-control" maxlength="500" placeholder="https://localhost/it-management/booking/users/bookings.php" value="<?php echo sanitize($row['urlmybooking'] ?? 'https://localhost/it-management/booking/users/bookings.php'); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Shown under “Manage my booking” as target blank link.</p>
 </div>
 <div class="form-group">
 <label>Tourist tax (per person per night)</label>
