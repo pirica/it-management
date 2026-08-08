@@ -71,7 +71,7 @@ sequenceDiagram
 | `hotel-booking-amenity-icons.js` | Amenity SVG resolution |
 | `hotel-booking-select-room.js` | `rooms.php` — filters, occupancy/rates modals, room detail |
 | `hotel-booking-customize.js` | `rooms/customize.php` — upgrade totals, room detail modal |
-| `hotel-booking-confirmation-pdf.js` | Confirmation PDF (html2canvas + jsPDF) |
+| `hotel-booking-confirmation-pdf.js` | Confirmation PDF (html2canvas + jsPDF); adds a `/URI` link annotation over **Manage my booking** |
 | `hotel-booking-change-booking.js` | Manage booking — hotel contacts modal |
 
 Hotel photos are managed in **Hotels** (`modules/hotel_booking_hotels/`). **Room gallery images are managed per room type** in **Room Types** (`modules/booking_rooms_types/`). Files live under `booking/images/{hotel_id}/hotel_photos/` and `booking/images/{hotel_id}/room_types_photos/`; the portal serves them as `APPURL/images/{hotel_id}/…`. Static amenity SVGs remain under `booking/images/amenities/` only.
@@ -225,6 +225,7 @@ Seed example: company 1 **TechCorp Retreat**, reservation IDs from `hotel_bookin
 | Manage lookup fails | Last name must match `customers.name` (case-insensitive token match); ID = `hotel_bookings.id` |
 | Cancel button hidden | Stay not in `future` segment or already `CANCELLED` |
 | PDF download fails | CDN blocked for html2canvas/jsPDF; check browser console |
+| PDF “Manage my booking” not clickable | Regenerate after update — confirmation PDF must include a jsPDF `link()` annotation over `data-hb-pdf-manage-link` (html2canvas alone paints pixels only) |
 
 ### Verification commands
 
