@@ -565,6 +565,8 @@ if (!is_file($hotelsIndex)) {
         hb_fail('hotel booking photos must use booking/images/{hotel_id}/hotel_photos and room_types_photos');
     } elseif (!is_file($repoRoot . '/booking/images/1/hotel_photos/hb_seed_01.jpg')) {
         hb_fail('booking/images/1/hotel_photos/hb_seed_01.jpg sample file missing');
+    } elseif (!is_file($repoRoot . '/booking/images/image_2.jpg') || !is_file($repoRoot . '/booking/images/room-3.jpg') || !is_file($repoRoot . '/booking/images/room-5.jpg') || !is_file($repoRoot . '/booking/images/room-6.jpg')) {
+        hb_fail('booking/images portal fallback JPGs missing (image_2.jpg, room-3.jpg, room-5.jpg, room-6.jpg)');
     } elseif (strpos((string) file_get_contents($repoRoot . '/booking/index.php'), 'hb-hotel-card-gallery') === false) {
         hb_fail('booking index must render hotel card gallery with arrows and counter');
     } elseif (strpos((string) file_get_contents($repoRoot . '/booking/rooms.php'), 'hb-room-card-gallery') === false) {
@@ -580,17 +582,30 @@ if (!is_file($hotelsIndex)) {
 
 $bookingGalleryJs = $repoRoot . '/booking/js/hotel-booking-gallery.js';
 $bookingGalleryCss = $repoRoot . '/booking/css/hotel-booking-modern.css';
+$portalChrome = $repoRoot . '/booking/includes/portal_chrome.php';
+$roomsPhp = $repoRoot . '/booking/rooms.php';
+$manageBookingsPhp = $repoRoot . '/booking/users/bookings.php';
 if (!is_file($bookingGalleryJs)) {
     hb_fail('booking/js/hotel-booking-gallery.js missing');
 } else {
     $galleryJs = (string) file_get_contents($bookingGalleryJs);
     $galleryCss = is_file($bookingGalleryCss) ? (string) file_get_contents($bookingGalleryCss) : '';
+    $chromeSrc = is_file($portalChrome) ? (string) file_get_contents($portalChrome) : '';
+    $roomsSrc = is_file($roomsPhp) ? (string) file_get_contents($roomsPhp) : '';
+    $manageSrc = is_file($manageBookingsPhp) ? (string) file_get_contents($manageBookingsPhp) : '';
     if (strpos($galleryJs, 'HB_bindGallery') === false || strpos($galleryJs, ' / ') === false) {
         hb_fail('booking gallery JS must expose HB_bindGallery and spaced counter format');
     } elseif (strpos($galleryCss, '.hb-gallery-counter') === false || strpos($galleryCss, '.hb-gallery-prev') === false) {
         hb_fail('booking gallery CSS must style arrows and counter');
+    } elseif (strpos($chromeSrc, 'occupancy_interactive') === false || strpos($chromeSrc, 'hb-stay-occupancy-readonly') === false) {
+        hb_fail('stay bar must support occupancy_interactive and readonly occupancy markup');
+    } elseif (strpos($roomsSrc, "'occupancy_interactive' => true") === false && strpos($roomsSrc, '"occupancy_interactive" => true') === false) {
+        hb_fail('rooms.php must enable interactive stay-bar occupancy (modal page)');
+    } elseif (strpos($manageSrc, 'hb_portal_render_stay_bar') === false) {
+        hb_fail('manage bookings must render stay bar');
     } else {
         hb_pass('booking portal photo gallery arrows and counter');
+        hb_pass('booking stay-bar occupancy interactive only on rooms.php');
     }
 }
 

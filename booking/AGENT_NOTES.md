@@ -46,7 +46,7 @@ Hotel administration lives in ITM modules: `modules/hotel_bookings/`, `modules/h
 | Includes | `includes/portal_chrome.php`, `portal_checkout.php`, `portal_room_detail.php` |
 | CSS | `css/hotel-booking-modern.css` only |
 | JS | `js/hotel-booking-{public,dates,amenity-icons,gallery,select-room,customize,change-booking,confirmation-pdf}.js` |
-| Images | `images/amenities/*.svg` (+ `ATTRIBUTION.md`); portal fallbacks `image_2.jpg`, `room-5.jpg`, etc.; uploaded hotel photos in `booking/images/{hotel_id}/hotel_photos/`; room-type photos in `booking/images/{hotel_id}/room_types_photos/` (served as `APPURL/images/{hotel_id}/…`) |
+| Images | `images/amenities/*.svg` (+ `ATTRIBUTION.md`); committed portal fallbacks `image_2.jpg`, `image_3.jpg`, `services-2.jpg`, `room-3.jpg`, `room-5.jpg`, `room-6.jpg`; uploaded hotel photos in `booking/images/{hotel_id}/hotel_photos/`; room-type photos in `booking/images/{hotel_id}/room_types_photos/` (served as `APPURL/images/{hotel_id}/…`) |
 
 ## 8. Photo storage and galleries
 
@@ -89,7 +89,7 @@ Per-hotel portal math is **not** hardcoded in `booking/*.php` or `booking/js/*.j
 
 **Tourist tax** remains company-level on `hotel_booking_settings.tourist_tax_per_person_per_night` ([Hotel Booking Settings](http://localhost/it-management/modules/hotel_booking_settings/index.php)).
 
-**JS:** `rooms.php` passes `portalPricing` + `pricingDefaults` on `window.HB_SELECT_ROOM` for live occupancy/rate recalculation (`hotel-booking-select-room.js`).
+**JS:** `rooms.php` passes `portalPricing` + `pricingDefaults` on `window.HB_SELECT_ROOM` for live occupancy/rate recalculation (`hotel-booking-select-room.js`). Stay bar occupancy is interactive only when `hb_portal_render_stay_bar(…, ['occupancy_interactive' => true])` (rooms page); manage/confirmation/checkout steps render a read-only occupancy label (no inert button).
 
 **Migration (existing DBs):** `db/migrations/hotel_booking_portal_hotel_pricing.sql` (destructive `hotel_booking_hotels` replace — back up before apply).
 

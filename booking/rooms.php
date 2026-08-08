@@ -244,7 +244,9 @@ $filterOptions = [
 </head>
 <body class="hb-public hb-select-room-page">
 <?php hb_portal_render_header($settings); ?>
-<?php hb_portal_render_stay_bar($hotel, $checkInIso, $nights, $occupancy); ?>
+<?php hb_portal_render_stay_bar($hotel, $checkInIso, $nights, $occupancy, [
+    'occupancy_interactive' => true,
+]); ?>
 
 <div class="hb-select-room-layout">
 <main class="hb-select-room-main">
