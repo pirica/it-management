@@ -107,7 +107,7 @@ After lookup:
 - **Cancelled** stays: red header (`Reservation cancelled`), status badge, no PDF save.
 - Stay bar: hotel, dates, occupancy (read-only label — occupancy modal is only on `rooms.php`); **Edit stay** links back to date picker on home (checkout flow uses the same control).
 - Aside actions:
-  - **Cancellation policy** — opens per-rate HTML under `booking/cancellation_policy/` (configurable in Portal Rate Plans).
+  - **Cancellation policy** — opens per-rate HTML under `booking/cancellation_policy/` (configurable in Portal Rate Plans). Relative URLs are restricted to `.html` / `.htm` / `.txt`; folder `.htaccess` blocks PHP execution.
   - **Change booking** — modal with hotel name, directions (Google Maps), website, phone.
   - **Cancel Booking** — future segment only; sets segment status to `CANCELLED` (CSRF + re-verify last name).
 
@@ -246,7 +246,7 @@ booking/
 ├── index.php, rooms.php, calendar.php
 ├── rooms/          # Steps 1–4, payment, confirmation-pdf
 ├── users/bookings.php
-├── cancellation_policy/*.html
+├── cancellation_policy/*.html (+ .htaccess blocks PHP)
 ├── auth/           # Optional portal login
 ├── includes/       # portal_chrome, portal_checkout, portal_room_detail
 ├── css/hotel-booking-modern.css

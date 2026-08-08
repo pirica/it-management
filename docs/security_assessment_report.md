@@ -57,9 +57,10 @@ The primary attack surfaces identified across the application are:
 - **Risk**: If the file extension validator in `itm_hotel_booking_normalize_cancellation_policy_url()` is absent or bypassed, an attacker can input a file path ending in `.php` (e.g., `cancellation_policy/shell.php`) and place executable PHP code in the HTML content field.
 - **Theoretical Abuse Scenario**: An authenticated malicious admin inputs `cancellation_policy/shell.php` with payload `<?php system($_GET['cmd']); ?>`. The backend writes this directly to disk. The attacker then browses to `booking/cancellation_policy/shell.php?cmd=whoami` to achieve shell access on the server.
 - **Mitigation**:
-  1. Enforce strict extension whitelisting on file creation paths. Allow only `.html`, `.htm`, or `.txt` extensions.
+  1. Enforce strict extension whitelisting on file creation paths. Allow only `.html`, `.htm`, or `.txt` extensions. **Live:** `itm_hotel_booking_normalize_cancellation_policy_url()` in `includes/itm_hotel_booking.php` returns empty for other relative extensions (regression: `php scripts/verify_hotel_booking.php`).
   2. Sanitize and validate paths, ensuring they do not traverse directory bounds (`..` sequences).
-  3. Keep the target directories non-executable under HTTP via `.htaccess` policies that deny PHP execution engines.
+  3. Keep the target directories non-executable under HTTP via `.htaccess` policies that deny PHP execution engines (`booking/cancellation_policy/.htaccess`).
+  4. **Do not** overwrite live `includes/itm_hotel_booking.php` with snapshots under `docs/fixed_files_vulnerability_*` — those trees are stale reference copies; apply the allowlist surgically only.
 
 #### Finding: Upload Directory Hardening Bypass (RCE via `.htaccess` Overwrites)
 - **Severity**: High
