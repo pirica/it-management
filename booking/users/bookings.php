@@ -17,16 +17,19 @@ $success = '';
 $booking = null;
 $manageLastName = '';
 $manageReservationId = 0;
+$manageAuth2 = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $lastName = trim((string) ($_POST['last_name'] ?? ''));
     $reservationId = (int) ($_POST['reservation_id'] ?? 0);
+    $auth2 = itm_hotel_booking_normalize_auth2($_POST['auth2'] ?? '');
     $manageLastName = $lastName;
     $manageReservationId = $reservationId;
+    $manageAuth2 = $auth2;
 
     if (!empty($_POST['cancel_booking'])) {
         itm_require_post_csrf();
-        $cancelResult = itm_hotel_booking_portal_cancel_booking_for_guest($conn, $company_id, $reservationId, $lastName);
+        $cancelResult = itm_hotel_booking_portal_cancel_booking_for_guest($conn, $company_id, $reservationId, $lastName, $auth2);
         if (!empty($cancelResult['ok'])) {
             $success = 'Your reservation has been cancelled.';
             $booking = hb_portal_load_booking_confirmation($conn, $company_id, $reservationId);
@@ -36,21 +39,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             $error = (string) ($cancelResult['error'] ?? 'Unable to cancel this reservation.');
-            $verified = itm_hotel_booking_fetch_for_guest_manage($conn, $company_id, $reservationId, $lastName);
+            $verified = itm_hotel_booking_fetch_for_guest_manage($conn, $company_id, $reservationId, $lastName, $auth2);
             if ($verified) {
                 $booking = hb_portal_load_booking_confirmation($conn, $company_id, (int) $verified['id']);
             }
         }
-    } elseif ($lastName === '' || $reservationId < 1) {
-        $error = 'Enter your last name and reservation ID.';
+    } elseif ($lastName === '' || $reservationId < 1 || $auth2 === '') {
+        $error = 'Enter your last name, reservation ID, and auth code.';
     } else {
-        $verified = itm_hotel_booking_fetch_for_guest_manage($conn, $company_id, $reservationId, $lastName);
+        $verified = itm_hotel_booking_fetch_for_guest_manage($conn, $company_id, $reservationId, $lastName, $auth2);
         if (!$verified) {
-            $error = 'No reservation found. Check your last name and reservation ID.';
+            $error = 'No reservation found. Check your last name, reservation ID, and auth code.';
         } else {
             $booking = hb_portal_load_booking_confirmation($conn, $company_id, (int) $verified['id']);
             if (!$booking) {
-                $error = 'No reservation found. Check your last name and reservation ID.';
+                $error = 'No reservation found. Check your last name, reservation ID, and auth code.';
             }
         }
     }
@@ -73,6 +76,9 @@ if ($booking) {
     }
     if ($manageReservationId < 1) {
         $manageReservationId = (int) ($booking['id'] ?? 0);
+    }
+    if ($manageAuth2 === '') {
+        $manageAuth2 = itm_hotel_booking_normalize_auth2($booking['auth2'] ?? '');
     }
     $hotel = [
         'id' => (int) ($booking['hotel_id'] ?? 0),
@@ -135,7 +141,7 @@ $manageConfirmationOptions = [
 <?php hb_portal_render_confirmation_summary_aside($booking, $manageConfirmationOptions); ?>
 <?php hb_portal_render_cancellation_policy_button(hb_portal_booking_cancellation_policy_url($conn, $company_id, $booking)); ?>
 <?php hb_portal_render_change_booking_button($booking); ?>
-<?php hb_portal_render_cancel_booking_button($conn, $company_id, $booking, $manageLastName, $manageReservationId); ?>
+<?php hb_portal_render_cancel_booking_button($conn, $company_id, $booking, $manageLastName, $manageReservationId, $manageAuth2); ?>
 </aside>
 </div>
 <?php hb_portal_render_confirmation_pdf_assets(); ?>
@@ -143,13 +149,15 @@ $manageConfirmationOptions = [
 <?php else: ?>
 <main class="hb-main auth-card hb-manage-booking-card">
 <h1>Manage my booking</h1>
-<p class="hb-sub">Enter the last name on the reservation and the reservation ID from your confirmation.</p>
+<p class="hb-sub">Enter the last name on the reservation, the reservation ID, and the 4-digit auth code from your confirmation.</p>
 <?php if ($error): ?><p class="hb-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
 <form method="post" class="hb-manage-booking-form">
 <label>Last name</label>
 <input type="text" name="last_name" required autocomplete="family-name" value="<?php echo htmlspecialchars((string) ($_POST['last_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
 <label>Reservation ID</label>
 <input type="number" name="reservation_id" min="1" required inputmode="numeric" value="<?php echo (int) ($_POST['reservation_id'] ?? 0) ?: ''; ?>">
+<label>Auth code</label>
+<input type="text" name="auth2" required inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" value="<?php echo htmlspecialchars(itm_hotel_booking_normalize_auth2($_POST['auth2'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
 <div class="hb-checkout-actions">
 <button type="submit" class="hb-btn hb-btn-primary" title="Find reservation">Find reservation</button>
 <a class="hb-btn hb-checkout-skip" href="<?php echo APPURL; ?>/" title="Back">Back</a>

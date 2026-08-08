@@ -1974,7 +1974,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_hotel_booking.php" target="_blank" rel="nofollow noreferrer">verify_hotel_booking.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Regression for hospitality bundle: core hotel booking tables, <code>itm_hotel_booking_resolve_segment()</code>, company 1 <code>PENDING</code> future status seed, confirmation PDF Manage my booking <code>/URI</code> link helper + markup, and subprocess render probe for all 13 Hospitality sidebar modules.</td>
+                    <td>Regression for hospitality bundle: core hotel booking tables, <code>itm_hotel_booking_resolve_segment()</code>, company 1 <code>PENDING</code> future status seed, confirmation PDF Manage my booking <code>/URI</code> link helper + markup, <code>hotel_bookings.auth2</code> guest PIN helpers, and subprocess render probe for all 13 Hospitality sidebar modules.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="hotel_bookings">

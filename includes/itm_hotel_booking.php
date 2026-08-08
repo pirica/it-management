@@ -819,11 +819,50 @@ if (!function_exists('itm_hotel_booking_customer_last_name_matches')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_generate_auth2')) {
+  /** Random 4-digit guest manage PIN (zero-padded), stored on hotel_bookings.auth2. */
+  function itm_hotel_booking_generate_auth2() {
+    return str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_normalize_auth2')) {
+  /** Keep digits only; require exactly 4 for a usable guest PIN. */
+  function itm_hotel_booking_normalize_auth2($value) {
+    $digits = preg_replace('/\D+/', '', (string) $value);
+    if ($digits === null) {
+      return '';
+    }
+    if (strlen($digits) > 4) {
+      $digits = substr($digits, -4);
+    }
+    if (strlen($digits) !== 4) {
+      return '';
+    }
+    return $digits;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_auth2_matches')) {
+  function itm_hotel_booking_auth2_matches($storedAuth2, $inputAuth2) {
+    $stored = itm_hotel_booking_normalize_auth2($storedAuth2);
+    $input = itm_hotel_booking_normalize_auth2($inputAuth2);
+    if ($stored === '' || $input === '') {
+      return false;
+    }
+    return hash_equals($stored, $input);
+  }
+}
+
 if (!function_exists('itm_hotel_booking_fetch_for_guest_manage')) {
-  function itm_hotel_booking_fetch_for_guest_manage($conn, $companyId, $reservationId, $lastName) {
+  /**
+   * Guest manage/cancel lookup: reservation id + last name + auth2 PIN.
+   */
+  function itm_hotel_booking_fetch_for_guest_manage($conn, $companyId, $reservationId, $lastName, $auth2 = '') {
     $companyId = (int) $companyId;
     $reservationId = (int) $reservationId;
-    if ($companyId < 1 || $reservationId < 1) {
+    $auth2 = itm_hotel_booking_normalize_auth2($auth2);
+    if ($companyId < 1 || $reservationId < 1 || $auth2 === '') {
       return null;
     }
     $sql = 'SELECT b.*, c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
@@ -843,7 +882,11 @@ if (!function_exists('itm_hotel_booking_fetch_for_guest_manage')) {
     $res = mysqli_stmt_get_result($stmt);
     $row = $res ? mysqli_fetch_assoc($res) : null;
     mysqli_stmt_close($stmt);
-    if (!$row || !itm_hotel_booking_customer_last_name_matches($row['customer_name'] ?? '', $lastName)) {
+    if (
+      !$row
+      || !itm_hotel_booking_customer_last_name_matches($row['customer_name'] ?? '', $lastName)
+      || !itm_hotel_booking_auth2_matches($row['auth2'] ?? '', $auth2)
+    ) {
       return null;
     }
     return $row;
@@ -2124,16 +2167,17 @@ if (!function_exists('itm_hotel_booking_portal_cancel_booking_for_guest')) {
   /**
    * @return array{ok:bool,error?:string}
    */
-  function itm_hotel_booking_portal_cancel_booking_for_guest($conn, $companyId, $reservationId, $lastName) {
+  function itm_hotel_booking_portal_cancel_booking_for_guest($conn, $companyId, $reservationId, $lastName, $auth2 = '') {
     $companyId = (int) $companyId;
     $reservationId = (int) $reservationId;
     $lastName = trim((string) $lastName);
-    if ($companyId < 1 || $reservationId < 1 || $lastName === '') {
-      return ['ok' => false, 'error' => 'Enter your last name and reservation ID.'];
+    $auth2 = itm_hotel_booking_normalize_auth2($auth2);
+    if ($companyId < 1 || $reservationId < 1 || $lastName === '' || $auth2 === '') {
+      return ['ok' => false, 'error' => 'Enter your last name, reservation ID, and auth code.'];
     }
-    $booking = itm_hotel_booking_fetch_for_guest_manage($conn, $companyId, $reservationId, $lastName);
+    $booking = itm_hotel_booking_fetch_for_guest_manage($conn, $companyId, $reservationId, $lastName, $auth2);
     if (!$booking) {
-      return ['ok' => false, 'error' => 'No reservation found. Check your last name and reservation ID.'];
+      return ['ok' => false, 'error' => 'No reservation found. Check your last name, reservation ID, and auth code.'];
     }
     if (itm_hotel_booking_booking_is_cancelled($conn, $companyId, $booking)) {
       return ['ok' => false, 'error' => 'This reservation is already cancelled.'];

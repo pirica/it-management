@@ -17,12 +17,14 @@ $success = '';
 $booking = $bid > 0 ? hb_portal_load_booking_confirmation($conn, $company_id, $bid) : null;
 $cancelLastName = '';
 $cancelReservationId = 0;
+$cancelAuth2 = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['cancel_booking']) && $booking) {
     itm_require_post_csrf();
     $cancelLastName = trim((string) ($_POST['last_name'] ?? ''));
     $cancelReservationId = (int) ($_POST['reservation_id'] ?? 0);
-    $cancelResult = itm_hotel_booking_portal_cancel_booking_for_guest($conn, $company_id, $cancelReservationId, $cancelLastName);
+    $cancelAuth2 = itm_hotel_booking_normalize_auth2($_POST['auth2'] ?? '');
+    $cancelResult = itm_hotel_booking_portal_cancel_booking_for_guest($conn, $company_id, $cancelReservationId, $cancelLastName, $cancelAuth2);
     if (!empty($cancelResult['ok'])) {
         $success = 'Your reservation has been cancelled.';
         $booking = hb_portal_load_booking_confirmation($conn, $company_id, $cancelReservationId);
@@ -81,6 +83,9 @@ if ($booking) {
     if ($cancelReservationId < 1) {
         $cancelReservationId = (int) ($booking['id'] ?? 0);
     }
+    if ($cancelAuth2 === '') {
+        $cancelAuth2 = itm_hotel_booking_normalize_auth2($booking['auth2'] ?? '');
+    }
 }
 $paymentConfirmationOptions = [
     'occupancy' => $occupancy,
@@ -132,7 +137,7 @@ $paymentConfirmationOptions = [
 ]); ?>
 <?php hb_portal_render_confirmation_summary_aside($booking, $paymentConfirmationOptions); ?>
 <?php hb_portal_render_cancellation_policy_button(hb_portal_booking_cancellation_policy_url($conn, $company_id, $booking)); ?>
-<?php hb_portal_render_cancel_booking_button($conn, $company_id, $booking, $cancelLastName, $cancelReservationId); ?>
+<?php hb_portal_render_cancel_booking_button($conn, $company_id, $booking, $cancelLastName, $cancelReservationId, $cancelAuth2); ?>
 </aside>
 <?php endif; ?>
 </div>
