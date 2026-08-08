@@ -76,6 +76,7 @@ if (!is_array($settings)) {
 // Why: Public home lists every active hotel across tenants — not session company_id.
 $hotels = [];
 $taxRateByCompany = [];
+$calendarAdvanceByCompany = [];
 $defaultOcc = ['rooms' => 1, 'adults' => 1, 'children' => 0, 'babies' => 0];
 $stmt = mysqli_prepare($conn, 'SELECT h.*, (SELECT MIN(bp.price_per_night) FROM hotel_booking_rooms r INNER JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL WHERE r.hotel_id = h.id AND r.company_id = h.company_id AND r.deleted_at IS NULL) AS min_price
     FROM hotel_booking_hotels h WHERE h.deleted_at IS NULL AND h.active = 1 ORDER BY h.name');
@@ -88,6 +89,7 @@ if ($stmt) {
         if (!isset($taxRateByCompany[$hotelCompanyId])) {
             $hotelSettings = $hotelCompanyId > 0 ? (itm_hotel_booking_settings_row($conn, $hotelCompanyId) ?: []) : [];
             $taxRateByCompany[$hotelCompanyId] = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($hotelSettings);
+            $calendarAdvanceByCompany[$hotelCompanyId] = itm_hotel_booking_portal_calendar_month_advance_days_left_from_settings($hotelSettings);
         }
         $minExcl = (float) ($row['min_price'] ?? 0);
         $cheapest = itm_hotel_booking_portal_cheapest_rate_offer_for_hotel($conn, $hotelCompanyId, $hid);
@@ -101,6 +103,7 @@ if ($stmt) {
         $row['cheapest_rate_plan_slug'] = (string) ($cheapest['slug'] ?? '');
         $row['cheapest_rate_label'] = (string) ($cheapest['price_label'] ?? 'Best available rate');
         $row['plan_discount_percent'] = $planDisc;
+        $row['calendar_month_advance_days_left'] = (int) ($calendarAdvanceByCompany[$hotelCompanyId] ?? 3);
         $row['photos'] = [];
         foreach (itm_hotel_booking_photos_load($conn, $hotelCompanyId, 'hotel_booking_hotel_photos', 'hotel_id', $hid) as $photo) {
             $storedFilename = (string) ($photo['stored_filename'] ?? '');
@@ -126,6 +129,7 @@ $hbSettingsPublic = [
     'airport_info' => $settings['airport_info'] ?? '',
     'reviews_url' => itm_hotel_booking_resolve_reviews_url([], $settings),
     'tourist_tax_per_person_per_night' => itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings),
+    'calendar_month_advance_days_left' => itm_hotel_booking_portal_calendar_month_advance_days_left_from_settings($settings),
     'prices_include_tax' => true,
 ];
 ?>

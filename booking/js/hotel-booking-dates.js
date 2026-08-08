@@ -175,12 +175,33 @@
 
   function maybeAdvanceMonthForCheckOut(checkInYmd) {
     if (!checkInYmd || state.checkOutYmd) return;
-    if (daysLeftInMonth(checkInYmd) >= 7) return;
+    var left = daysLeftInMonth(checkInYmd);
+    var threshold = monthAdvanceDaysLeftThreshold();
+    // Why: Threshold from hotel_booking_settings.calendar_month_advance_days_left (0 = never jump).
+    if (threshold < 1 || left >= threshold) {
+      return;
+    }
     var parts = checkInYmd.split('-');
     var next = shiftMonth(parseInt(parts[0], 10), parseInt(parts[1], 10), 1);
     var bounds = monthTabsBounds();
     if (compareMonth(next.year, next.month, bounds.max.year, bounds.max.month) > 0) return;
     setViewMonth(next.year, next.month);
+  }
+
+  function monthAdvanceDaysLeftThreshold() {
+    var fromCal = state.calendar && state.calendar.calendar_month_advance_days_left;
+    if (fromCal != null && fromCal !== '') {
+      return Math.max(0, Math.min(31, parseInt(fromCal, 10) || 0));
+    }
+    var fromHotel = state.hotel && state.hotel.calendar_month_advance_days_left;
+    if (fromHotel != null && fromHotel !== '') {
+      return Math.max(0, Math.min(31, parseInt(fromHotel, 10) || 0));
+    }
+    var settings = window.HB_SETTINGS || {};
+    if (settings.calendar_month_advance_days_left != null && settings.calendar_month_advance_days_left !== '') {
+      return Math.max(0, Math.min(31, parseInt(settings.calendar_month_advance_days_left, 10) || 0));
+    }
+    return 3;
   }
 
   function prefetchAdjacentMonthsForCheckOut(checkInYmd) {

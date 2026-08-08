@@ -1707,6 +1707,8 @@ if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
     if ($touristTaxPerPersonPerNight === null) {
       $settingsRow = itm_hotel_booking_settings_row($conn, $companyId);
       $touristTaxPerPersonPerNight = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settingsRow ?: []);
+    } elseif (!isset($settingsRow) || !is_array($settingsRow)) {
+      $settingsRow = itm_hotel_booking_settings_row($conn, $companyId) ?: [];
     }
     $touristTaxPerPersonPerNight = max(0.0, (float) $touristTaxPerPersonPerNight);
     $taxPerNight = itm_hotel_booking_portal_tourist_tax_amount($occupancy, 1, $touristTaxPerPersonPerNight);
@@ -1829,6 +1831,7 @@ if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
       'plan_discount_percent' => $planDiscount,
       'cheapest_rate_plan_slug' => (string) ($cheapestOffer['slug'] ?? ''),
       'cheapest_rate_label' => (string) ($cheapestOffer['price_label'] ?? 'Best available rate'),
+      'calendar_month_advance_days_left' => itm_hotel_booking_portal_calendar_month_advance_days_left_from_settings($settingsRow),
     ];
   }
 }
@@ -2165,6 +2168,18 @@ if (!function_exists('itm_hotel_booking_portal_free_cancellation_days_from_setti
       return 5;
     }
     return max(0, min(365, (int) ($settingsRow['free_cancellation_days_before_check_in'] ?? 5)));
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_calendar_month_advance_days_left_from_settings')) {
+  /**
+   * Select Dates auto-advances when daysLeftInMonth(check-in) is below this threshold (0 = never).
+   */
+  function itm_hotel_booking_portal_calendar_month_advance_days_left_from_settings($settingsRow) {
+    if (!is_array($settingsRow) || !array_key_exists('calendar_month_advance_days_left', $settingsRow)) {
+      return 3;
+    }
+    return max(0, min(31, (int) ($settingsRow['calendar_month_advance_days_left'] ?? 3)));
   }
 }
 
