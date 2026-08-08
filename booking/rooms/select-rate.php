@@ -216,8 +216,9 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
 <p class="hb-rate-policy">Change or cancel by <?php echo htmlspecialchars($cancelBy, ENT_QUOTES, 'UTF-8'); ?>.</p>
 </div>
 <div class="hb-rate-option-price-col">
-<p class="hb-rate-price-label"><?php echo $isBreakfast ? 'With breakfast' : 'Standard rate'; ?></p>
-<p class="hb-rate-price-total"><?php if ($discountPercent > 0 && $listStayTotal > $stayTotal): ?><span class="hb-room-price-compare"><?php echo htmlspecialchars(hb_portal_money_format($listStayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <?php endif; ?><span class="hb-rate-price-amount"><?php echo htmlspecialchars(hb_portal_money_format($stayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span></p>
+<p class="hb-rate-price-label"><?php echo $isBreakfast ? 'With breakfast' : 'Best available rate'; ?></p>
+<p class="hb-rate-price-nightly" title="Nightly best available rate for this room type (same as calendar BAR for the type)"><?php echo htmlspecialchars(hb_portal_money_format($basePerNight, $currency), ENT_QUOTES, 'UTF-8'); ?> / night</p>
+<p class="hb-rate-price-total"><?php if ($discountPercent > 0 && $listStayTotal > $stayTotal): ?><span class="hb-room-price-compare"><?php echo htmlspecialchars(hb_portal_money_format($listStayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <?php endif; ?><span class="hb-rate-price-amount"><?php echo htmlspecialchars(hb_portal_money_format($stayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <span class="hb-rate-price-stay-label">stay total</span></p>
 <button type="submit" class="hb-btn<?php echo $isPrimary ? ' hb-btn-primary hb-rate-select-primary' : ' hb-rate-select-outline'; ?>" name="portal_rate_plan_id" value="<?php echo $planId; ?>" title="Select <?php echo htmlspecialchars($planRow['name'], ENT_QUOTES, 'UTF-8'); ?>">Select</button>
 </div>
 </article>
