@@ -60,7 +60,7 @@ The primary attack surfaces identified across the application are:
   1. Enforce strict extension whitelisting on file creation paths. Allow only `.html`, `.htm`, or `.txt` extensions. **Live:** `itm_hotel_booking_normalize_cancellation_policy_url()` in `includes/itm_hotel_booking.php` returns empty for other relative extensions (regression: `php scripts/verify_hotel_booking.php`).
   2. Sanitize and validate paths, ensuring they do not traverse directory bounds (`..` sequences).
   3. Keep the target directories non-executable under HTTP via `.htaccess` policies that deny PHP execution engines (`booking/cancellation_policy/.htaccess`).
-  4. **Do not** overwrite live `includes/itm_hotel_booking.php` with snapshots under `docs/fixed_files_vulnerability_*` — those trees are stale reference copies; apply the allowlist surgically only.
+  4. Keep `docs/fixed_files_vulnerability_*` snapshots aligned with live `includes/itm_hotel_booking.php` when used for offline review; never apply an out-of-date full-file snapshot over live.
 
 #### Finding: Upload Directory Hardening Bypass (RCE via `.htaccess` Overwrites)
 - **Severity**: High
