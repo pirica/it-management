@@ -95,7 +95,12 @@
   }
 
   function cacheKey(year, month) {
-    return year + '-' + month;
+    var occ = state.occupancy || {};
+    return year + '-' + month
+      + '-r' + String(occ.rooms != null ? occ.rooms : 1)
+      + '-a' + String(occ.adults != null ? occ.adults : 1)
+      + '-c' + String(occ.children != null ? occ.children : 0)
+      + '-b' + String(occ.babies != null ? occ.babies : 0);
   }
 
   function buildMonthTabs() {
@@ -194,6 +199,12 @@
       return Promise.resolve(state.calendarCache[key]);
     }
     var url = window.HB_APPURL + '/calendar.php?hotel_id=' + hotelId + '&year=' + year + '&month=' + month;
+    var occ = state.occupancy || {};
+    ['rooms', 'adults', 'children', 'babies'].forEach(function (k) {
+      if (occ[k] != null && occ[k] !== '') {
+        url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(String(occ[k]));
+      }
+    });
     return fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
       state.calendarCache[key] = data;
       return data;
@@ -313,7 +324,7 @@
     datesBody.innerHTML =
       '<div class="hb-dates-hotel"><strong>' + escapeHtml(h.name) + '</strong></div>' +
       '<p class="hb-dates-copy">Select your check-in date, then your check-out date. One night is selected when only check-in is chosen.</p>' +
-      '<p class="hb-dates-copy">We\'re showing the best price per room based on the number of guests. Price includes fees.</p>' +
+      '<p class="hb-dates-copy">We\'re showing the best price per room based on the number of guests. Prices include tourist tax and fees.</p>' +
       '<p class="hb-dates-explore"><a href="' + escapeHtml(window.HB_APPURL + '/rooms.php?id=' + h.id) + '">Explore all filters and search options &gt;</a></p>' +
       '<div class="hb-dates-months-wrap"><div class="hb-dates-months">' + tabsHtml + '</div></div>' +
       '<div class="hb-dates-cal-nav">' +
@@ -471,7 +482,7 @@
       var nightWord = nights === 1 ? 'night' : 'nights';
       summary.innerHTML =
         '<p class="hb-dates-sum-price">' + escapeHtml(formatMoney(avg, code)) + '</p>' +
-        '<p class="hb-dates-sum-meta">avg/night for ' + nights + ' ' + nightWord + '</p>' +
+        '<p class="hb-dates-sum-meta">avg/night for ' + nights + ' ' + nightWord + ' (incl. taxes)</p>' +
         '<p class="hb-dates-sum-label">Best available rate</p>' +
         '<p class="hb-dates-sum-range">' + escapeHtml(displayRange(state.checkInYmd, checkOut)) + '</p>';
       choose.disabled = false;

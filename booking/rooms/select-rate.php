@@ -62,6 +62,7 @@ $changeRoomUrl = APPURL . '/rooms.php?' . $changeRoomQuery;
 
 $hotel = ['id' => $hotelId, 'name' => $room['hotel_name'] ?? ''];
 $ratePlans = itm_hotel_booking_portal_rate_plans_active_for_hotel($conn, $company_id, $hotelId);
+$touristTaxRate = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings);
 
 $ratePlanRows = [];
 foreach ($ratePlans as $plan) {
@@ -69,6 +70,8 @@ foreach ($ratePlans as $plan) {
     if ($slug === '') {
         continue;
     }
+    $offer = itm_hotel_booking_portal_rate_plan_offer($slug);
+    $effectiveDiscount = itm_hotel_booking_portal_rate_plan_effective_discount($discountPercent, $slug);
     $draftSlice = [
         'company_id' => $company_id,
         'hotel_id' => $hotelId,
@@ -83,31 +86,41 @@ foreach ($ratePlans as $plan) {
         $checkInIso,
         $checkOutIso,
         $occupancy,
-        $discountPercent,
+        $effectiveDiscount,
         $draftSlice,
-        (float) ($settings['tourist_tax_per_person_per_night'] ?? 0),
+        $touristTaxRate,
         $conn,
         $company_id
     );
-    $listStayTotal = itm_hotel_booking_compute_stay_payment_dated_rates(
-        $conn,
-        $company_id,
-        $hotelId,
-        (int) ($room['room_type_id'] ?? 0),
+    // Why: Strikethrough list price = same stay without the rate-plan discount (tax still included).
+    $listStayTotal = itm_hotel_booking_portal_compute_checkout_total(
         $basePerNight,
         $checkInIso,
         $checkOutIso,
         $occupancy,
-        0,
-        $portalPricing
+        $discountPercent,
+        $draftSlice,
+        $touristTaxRate,
+        $conn,
+        $company_id
     );
+    $cancelTemplate = (string) ($offer['cancel_template'] ?? 'Change or cancel by {date}.');
+    $cancelText = strpos($cancelTemplate, '{date}') !== false
+        ? str_replace('{date}', $cancelBy, $cancelTemplate)
+        : $cancelTemplate;
     $isBreakfast = $slug === 'breakfast';
+    $nightlyInclTax = $nights > 0 ? round($stayTotal / $nights, 2) : $stayTotal;
     $ratePlanRows[] = [
         'id' => (int) ($plan['id'] ?? 0),
         'name' => (string) ($plan['name'] ?? ''),
         'slug' => $slug,
         'stay_total' => $stayTotal,
         'list_stay_total' => $listStayTotal,
+        'nightly_incl_tax' => $nightlyInclTax,
+        'pay_badge' => (string) ($offer['pay_badge'] ?? 'Pay when you stay'),
+        'price_label' => (string) ($offer['price_label'] ?? 'Best available rate'),
+        'cancel_text' => $cancelText,
+        'effective_discount' => $effectiveDiscount,
         'is_breakfast' => $isBreakfast,
         'is_primary' => $slug === 'breakfast',
     ];
@@ -126,6 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Please select a rate.';
         } else {
             $existingDraft = itm_hotel_booking_portal_draft_get();
+            $planEffectiveDiscount = itm_hotel_booking_portal_rate_plan_effective_discount($discountPercent, $slug);
             $draft = [
                 'company_id' => $company_id,
                 'room_id' => $roomId,
@@ -140,7 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'traveling_with_pet' => !empty($existingDraft['traveling_with_pet']) ? 1 : 0,
                 'service_animal' => !empty($existingDraft['service_animal']) ? 1 : 0,
                 'additional_comments' => isset($existingDraft['additional_comments']) ? (string) $existingDraft['additional_comments'] : '',
-                'discount_percent' => $discountPercent,
+                'discount_percent' => $planEffectiveDiscount,
                 'resolved_rate_slug' => $resolvedRate,
                 'base_price_per_night' => $basePerNight,
                 'room_type_id' => (int) ($room['room_type_id'] ?? 0),
@@ -180,6 +194,7 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
 <span class="hb-rate-info-icon" aria-hidden="true">ℹ</span>
 <p><?php echo htmlspecialchars($breakfastInfo, ENT_QUOTES, 'UTF-8'); ?></p>
 </div>
+<p class="hb-rate-tax-note" style="margin:0 0 16px;font-size:.95rem;opacity:.9;">All prices shown include tourist tax for your guest count.</p>
 
 <?php if ($error !== ''): ?>
 <p class="hb-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>
@@ -203,22 +218,27 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
     $isPrimary = !empty($planRow['is_primary']);
     $stayTotal = (float) ($planRow['stay_total'] ?? 0);
     $listStayTotal = (float) ($planRow['list_stay_total'] ?? 0);
+    $nightlyIncl = (float) ($planRow['nightly_incl_tax'] ?? 0);
+    $effectiveDiscount = (float) ($planRow['effective_discount'] ?? 0);
+    $payBadge = (string) ($planRow['pay_badge'] ?? 'Pay when you stay');
+    $priceLabel = (string) ($planRow['price_label'] ?? 'Best available rate');
+    $cancelText = (string) ($planRow['cancel_text'] ?? '');
 ?>
-<article class="hb-rate-option-row">
+<article class="hb-rate-option-row" data-rate-slug="<?php echo htmlspecialchars((string) ($planRow['slug'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
 <div class="hb-rate-option-main">
 <h2 class="hb-rate-option-title"><?php echo htmlspecialchars($planRow['name'], ENT_QUOTES, 'UTF-8'); ?></h2>
-<p class="hb-rate-badge">Pay when you stay</p>
+<p class="hb-rate-badge"><?php echo htmlspecialchars($payBadge, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php if ($isBreakfast): ?>
 <p class="hb-rate-policy">Breakfast add-on: <?php echo htmlspecialchars(hb_portal_money_format(itm_hotel_booking_portal_breakfast_adult_price($conn, $company_id, $hotelId), $currency), ENT_QUOTES, 'UTF-8'); ?> per adult, <?php echo htmlspecialchars(hb_portal_money_format(itm_hotel_booking_portal_breakfast_child_price($conn, $company_id, $hotelId), $currency), ENT_QUOTES, 'UTF-8'); ?> per child per night (babies <?php echo htmlspecialchars(hb_portal_money_format(0, $currency), ENT_QUOTES, 'UTF-8'); ?>).</p>
 <?php else: ?>
 <p class="hb-rate-policy">Breakfast not included.</p>
 <?php endif; ?>
-<p class="hb-rate-policy">Change or cancel by <?php echo htmlspecialchars($cancelBy, ENT_QUOTES, 'UTF-8'); ?>.</p>
+<p class="hb-rate-policy"><?php echo htmlspecialchars($cancelText, ENT_QUOTES, 'UTF-8'); ?></p>
 </div>
 <div class="hb-rate-option-price-col">
-<p class="hb-rate-price-label"><?php echo $isBreakfast ? 'With breakfast' : 'Best available rate'; ?></p>
-<p class="hb-rate-price-nightly" title="Nightly best available rate for this room type (same as calendar BAR for the type)"><?php echo htmlspecialchars(hb_portal_money_format($basePerNight, $currency), ENT_QUOTES, 'UTF-8'); ?> / night</p>
-<p class="hb-rate-price-total"><?php if ($discountPercent > 0 && $listStayTotal > $stayTotal): ?><span class="hb-room-price-compare"><?php echo htmlspecialchars(hb_portal_money_format($listStayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <?php endif; ?><span class="hb-rate-price-amount"><?php echo htmlspecialchars(hb_portal_money_format($stayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <span class="hb-rate-price-stay-label">stay total</span></p>
+<p class="hb-rate-price-label"><?php echo htmlspecialchars($priceLabel, ENT_QUOTES, 'UTF-8'); ?></p>
+<p class="hb-rate-price-nightly" title="Average per night including tourist tax"><?php echo htmlspecialchars(hb_portal_money_format($nightlyIncl, $currency), ENT_QUOTES, 'UTF-8'); ?> / night</p>
+<p class="hb-rate-price-total"><?php if ($effectiveDiscount > 0 && $listStayTotal > $stayTotal + 0.009): ?><span class="hb-room-price-compare"><?php echo htmlspecialchars(hb_portal_money_format($listStayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <?php endif; ?><span class="hb-rate-price-amount"><?php echo htmlspecialchars(hb_portal_money_format($stayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <span class="hb-rate-price-stay-label">stay total</span></p>
 <button type="submit" class="hb-btn<?php echo $isPrimary ? ' hb-btn-primary hb-rate-select-primary' : ' hb-rate-select-outline'; ?>" name="portal_rate_plan_id" value="<?php echo $planId; ?>" title="Select <?php echo htmlspecialchars($planRow['name'], ENT_QUOTES, 'UTF-8'); ?>">Select</button>
 </div>
 </article>

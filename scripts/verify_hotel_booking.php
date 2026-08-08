@@ -195,12 +195,16 @@ if ($bpStd && ($bpRow = mysqli_fetch_assoc($bpStd)) && abs((float) ($bpRow['pric
     $stdHotelId = (int) ($bpRow['hotel_id'] ?? 1);
     $checkDay = date('Y-m-d', strtotime('+14 days'));
     $stdBar = itm_hotel_booking_portal_check_in_display_bar($conn, 1, $stdHotelId, $stdTypeId, $checkDay, 75.0);
-    $calMonth = itm_hotel_booking_hotel_calendar_month($conn, 1, $stdHotelId, (int) date('Y', strtotime($checkDay)), (int) date('n', strtotime($checkDay)));
+    $calOcc = ['rooms' => 1, 'adults' => 1, 'children' => 0, 'babies' => 0];
+    $calMonth = itm_hotel_booking_hotel_calendar_month($conn, 1, $stdHotelId, (int) date('Y', strtotime($checkDay)), (int) date('n', strtotime($checkDay)), $calOcc);
     $calPrice = isset($calMonth['days'][$checkDay]['price']) ? (float) $calMonth['days'][$checkDay]['price'] : null;
-    if (abs($stdBar - 75.0) < 0.01 && $calPrice !== null && abs($calPrice - $stdBar) < 0.01) {
-        hb_pass('calendar BAR matches STD room-type best available rate');
+    $calExcl = isset($calMonth['days'][$checkDay]['bar_excl_tax']) ? (float) $calMonth['days'][$checkDay]['bar_excl_tax'] : null;
+    $taxOne = itm_hotel_booking_portal_tourist_tax_amount($calOcc, 1, 2.0);
+    $expectedIncl = round($stdBar + $taxOne, 2);
+    if (abs($stdBar - 75.0) < 0.01 && $calExcl !== null && abs($calExcl - $stdBar) < 0.01 && $calPrice !== null && abs($calPrice - $expectedIncl) < 0.01 && !empty($calMonth['prices_include_tax'])) {
+        hb_pass('calendar shows tax-inclusive BAR (STD 75 + tourist tax)');
     } else {
-        hb_fail('calendar BAR must match STD type display bar (stdBar=' . $stdBar . ' cal=' . json_encode($calPrice) . ')');
+        hb_fail('calendar tax-inclusive BAR expected ' . $expectedIncl . ' (stdBar=' . $stdBar . ' cal=' . json_encode($calPrice) . ' excl=' . json_encode($calExcl) . ')');
     }
     $room1 = mysqli_query($conn, 'SELECT r.id, r.room_type_id, COALESCE(bp.price_per_night, 0) AS price_per_night FROM hotel_booking_rooms r LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL WHERE r.company_id = 1 AND r.hotel_id = 1 AND r.id = 1 AND r.deleted_at IS NULL LIMIT 1');
     if ($room1 && ($r1 = mysqli_fetch_assoc($room1)) && (int) ($r1['room_type_id'] ?? 0) === $stdTypeId && abs((float) ($r1['price_per_night'] ?? 0) - 75.0) < 0.01) {
@@ -230,6 +234,18 @@ if (abs((float) ($breakdownSample['room_charges'] ?? 0) - 841.0) < 0.01 && abs((
     hb_pass('portal checkout breakdown with tourist tax');
 } else {
     hb_fail('portal checkout breakdown with tourist tax');
+}
+
+$nrOffer = itm_hotel_booking_portal_rate_plan_offer('non_refundable');
+$flexOffer = itm_hotel_booking_portal_rate_plan_offer('flexible');
+if (($nrOffer['pay_badge'] ?? '') === 'Non-refundable'
+    && abs((float) ($nrOffer['discount_percent'] ?? 0) - 10.0) < 0.01
+    && ($flexOffer['price_label'] ?? '') === 'Flexible rate'
+    && abs(itm_hotel_booking_portal_rate_plan_effective_discount(0, 'non_refundable') - 10.0) < 0.01
+) {
+    hb_pass('portal rate plan offer labels and NR discount');
+} else {
+    hb_fail('portal rate plan offer labels and NR discount');
 }
 
 if (itm_hotel_booking_portal_validate_guest_email('guest@example.com') && !itm_hotel_booking_portal_validate_guest_email('not-an-email')) {
