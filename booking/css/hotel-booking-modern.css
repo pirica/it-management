@@ -329,7 +329,9 @@ body.hb-modal-open { overflow: hidden; }
 .hb-rate-policy { margin: 0 0 6px; font-size: .85rem; color: var(--hb-muted); max-width: 36rem; }
 .hb-rate-option-price-col { text-align: right; min-width: 140px; }
 .hb-rate-price-label { margin: 0 0 4px; font-size: .8rem; color: var(--hb-muted); }
+.hb-rate-price-nightly { margin: 0 0 4px; font-size: 1.15rem; font-weight: 700; color: var(--hb-text); }
 .hb-rate-price-total { margin: 0 0 12px; font-size: 1.5rem; font-weight: 800; }
+.hb-rate-price-stay-label { font-size: .75rem; font-weight: 600; color: var(--hb-muted); }
 .hb-rate-select-outline { background: #fff; color: var(--hb-primary); border: 2px solid var(--hb-primary); padding: 8px 28px; }
 .hb-rate-select-primary { padding: 8px 28px; }
 .hb-checkout-section { margin-top: 28px; }

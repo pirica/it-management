@@ -2507,9 +2507,9 @@ INSERT INTO `hotel_booking_hotels` (`company_id`, `name`, `description`, `locati
 (1, 'TechCorp Retreat', 'A comfortable property for business and leisure.', 'Lisbon, Portugal', '+351 210 000 001', 'https://example.com/techcorp-retreat', 'https://www.tripadvisor.pt/Hotel_Review-g262054-d2142716-Reviews-Conrad_Algarve-Almancil_Loule_Faro_District_Algarve.html#REVIEWS', '15:00:00', '12:00:00', 'EUR', 'Self and valet parking complimentary.', 'Pets allowed under 15kg with fee.', 1, '2026-01-01 00:00:01');
 
 INSERT INTO `hotel_booking_rooms` (`company_id`, `hotel_id`, `room_type_id`, `housekeeping_status_id`, `room_number`, `name`, `floor`, `num_persons`, `num_beds`, `size_sqm`, `view_label`, `active`, `created_at`) VALUES
-(1, 1, 1, 1, '201', 'Deluxe King 201', '2', 2, 1, 32.00, 'Garden', 1, '2026-01-01 00:00:01'),
-(1, 1, 2, 2, '202', 'Superior Twin 202', '2', 2, 2, 28.00, 'City', 1, '2026-01-01 00:00:01'),
 (1, 1, 3, 1, '101', 'Standard Queen 101', '1', 2, 1, 24.00, 'City', 1, '2026-01-01 00:00:01'),
+(1, 1, 2, 2, '202', 'Superior Twin 202', '2', 2, 2, 28.00, 'City', 1, '2026-01-01 00:00:01'),
+(1, 1, 1, 1, '201', 'Deluxe King 201', '2', 2, 1, 32.00, 'Garden', 1, '2026-01-01 00:00:01'),
 (1, 1, 4, 1, '301', 'Grand Deluxe Pool 301', '3', 2, 1, 38.00, 'Pool', 1, '2026-01-01 00:00:01');
 
 INSERT INTO `hotel_booking_room_type_base_prices` (`company_id`, `hotel_id`, `room_type_id`, `price_per_night`, `active`, `created_at`) VALUES
