@@ -23,6 +23,7 @@ if (!$hotel) {
     exit;
 }
 $company_id = (int) ($hotel['company_id'] ?? 0);
+$occupancy = itm_hotel_booking_portal_parse_occupancy($_GET);
 
-$payload = itm_hotel_booking_hotel_calendar_month($conn, $company_id, $hotelId, $year, $month);
+$payload = itm_hotel_booking_hotel_calendar_month($conn, $company_id, $hotelId, $year, $month, $occupancy);
 echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

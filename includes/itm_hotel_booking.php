@@ -1683,14 +1683,23 @@ if (!function_exists('itm_hotel_booking_room_type_fits_occupancy')) {
 }
 
 if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
-  function itm_hotel_booking_hotel_calendar_month($conn, $companyId, $hotelId, $year, $month) {
+  function itm_hotel_booking_hotel_calendar_month($conn, $companyId, $hotelId, $year, $month, array $occupancy = null, $touristTaxPerPersonPerNight = null) {
     $companyId = (int) $companyId;
     $hotelId = (int) $hotelId;
     $year = (int) $year;
     $month = (int) $month;
     if ($companyId < 1 || $hotelId < 1 || $month < 1 || $month > 12) {
-      return ['year' => $year, 'month' => $month, 'currency_code' => 'EUR', 'days' => []];
+      return ['year' => $year, 'month' => $month, 'currency_code' => 'EUR', 'days' => [], 'prices_include_tax' => true];
     }
+    if (!is_array($occupancy)) {
+      $occupancy = itm_hotel_booking_portal_parse_occupancy(['rooms' => 1, 'adults' => 1, 'children' => 0, 'babies' => 0]);
+    }
+    if ($touristTaxPerPersonPerNight === null) {
+      $settingsRow = itm_hotel_booking_settings_row($conn, $companyId);
+      $touristTaxPerPersonPerNight = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settingsRow ?: []);
+    }
+    $touristTaxPerPersonPerNight = max(0.0, (float) $touristTaxPerPersonPerNight);
+    $taxPerNight = itm_hotel_booking_portal_tourist_tax_amount($occupancy, 1, $touristTaxPerPersonPerNight);
     $start = sprintf('%04d-%02d-01', $year, $month);
     $daysInMonth = (int) date('t', strtotime($start));
     $rangeEnd = sprintf('%04d-%02d-%02d', $year, $month, $daysInMonth);
@@ -1784,7 +1793,12 @@ if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
         }
       }
       if ($best !== null) {
-        $days[$checkIn] = ['available' => true, 'price' => round($best, 2)];
+        // Why: Guest-facing calendar prices are tax-inclusive (tourist tax for current occupancy).
+        $days[$checkIn] = [
+          'available' => true,
+          'price' => round((float) $best + $taxPerNight, 2),
+          'bar_excl_tax' => round((float) $best, 2),
+        ];
       } else {
         $days[$checkIn] = ['available' => false];
       }
@@ -1795,6 +1809,8 @@ if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
       'month' => $month,
       'currency_code' => $currency,
       'days' => $days,
+      'prices_include_tax' => true,
+      'tourist_tax_per_person_per_night' => $touristTaxPerPersonPerNight,
     ];
   }
 }
@@ -2055,6 +2071,56 @@ if (!function_exists('itm_hotel_booking_portal_tourist_tax_amount')) {
       $guests = 1;
     }
     return round($per * $guests * $nights, 2);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_rate_plan_offer')) {
+  /**
+   * Commercial rules for portal Step 2 rate-plan cards (pay badge, cancel copy, plan discount).
+   *
+   * @return array{discount_percent:float,pay_badge:string,cancel_template:string,price_label:string}
+   */
+  function itm_hotel_booking_portal_rate_plan_offer($slug) {
+    $slug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) $slug));
+    if ($slug === 'breakfast') {
+      return [
+        'discount_percent' => 0.0,
+        'pay_badge' => 'Pay when you stay',
+        'cancel_template' => 'Change or cancel by {date}.',
+        'price_label' => 'With breakfast',
+      ];
+    }
+    if ($slug === 'flexible') {
+      return [
+        'discount_percent' => 0.0,
+        'pay_badge' => 'Pay when you stay',
+        'cancel_template' => 'Free cancellation until {date}.',
+        'price_label' => 'Flexible rate',
+      ];
+    }
+    if ($slug === 'non_refundable') {
+      return [
+        'discount_percent' => 10.0,
+        'pay_badge' => 'Non-refundable',
+        'cancel_template' => 'Non-refundable. No free cancellation after booking.',
+        'price_label' => 'Non-refundable rate',
+      ];
+    }
+    return [
+      'discount_percent' => 0.0,
+      'pay_badge' => 'Pay when you stay',
+      'cancel_template' => 'Change or cancel by {date}.',
+      'price_label' => 'Best available rate',
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_rate_plan_effective_discount')) {
+  function itm_hotel_booking_portal_rate_plan_effective_discount($specialDiscountPercent, $ratePlanSlug) {
+    $special = max(0.0, min(50.0, (float) $specialDiscountPercent));
+    $offer = itm_hotel_booking_portal_rate_plan_offer($ratePlanSlug);
+    $plan = max(0.0, min(50.0, (float) ($offer['discount_percent'] ?? 0)));
+    return min(50.0, $special + $plan);
   }
 }
 

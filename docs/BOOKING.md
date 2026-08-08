@@ -117,7 +117,7 @@ After lookup:
 
 ### D. Calendar API
 
-`calendar.php` — JSON nightly rates for the date modal (`itm_hotel_booking_hotel_calendar_month()`).
+`calendar.php` — JSON nightly rates for the date modal (`itm_hotel_booking_hotel_calendar_month()`). Day `price` values are **tax-inclusive** for the requested occupancy (`prices_include_tax`; `bar_excl_tax` keeps the room-only BAR).
 
 ---
 
