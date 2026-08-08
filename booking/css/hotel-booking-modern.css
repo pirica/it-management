@@ -210,6 +210,7 @@ body.hb-modal-open { overflow: hidden; }
 .hb-stay-item { color: var(--hb-text); }
 .hb-stay-occupancy-trigger { border: none; background: transparent; padding: 0; font: inherit; cursor: pointer; text-align: left; }
 .hb-stay-occupancy-trigger:hover { color: var(--hb-primary); text-decoration: underline; }
+.hb-stay-occupancy-readonly { cursor: default; }
 .hb-stay-edit { margin-left: auto; color: var(--hb-primary); font-weight: 700; text-decoration: none; }
 .hb-stay-edit:hover { text-decoration: underline; }
 .hb-select-room-layout { max-width: 1200px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 1fr 300px; gap: 28px; align-items: start; }

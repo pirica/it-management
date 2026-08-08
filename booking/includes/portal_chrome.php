@@ -140,6 +140,9 @@ if (!function_exists('hb_portal_render_amenities_scroll')) {
 }
 
 if (!function_exists('hb_portal_render_stay_bar')) {
+    /**
+     * @param array $options action_href, action_label, occupancy_interactive (bool; only rooms.php wires the modal)
+     */
     function hb_portal_render_stay_bar(array $hotel, $checkInIso, $nights = 1, array $occupancy = null, array $options = []) {
         if (!is_array($occupancy)) {
             $occupancy = itm_hotel_booking_portal_parse_occupancy(['rooms' => 1, 'adults' => 1]);
@@ -155,6 +158,7 @@ if (!function_exists('hb_portal_render_stay_bar')) {
         if ($actionLabel === '') {
             $actionLabel = 'Logout';
         }
+        $occupancyInteractive = !empty($options['occupancy_interactive']);
         $rangeLabel = hb_portal_format_stay_range_label($checkInIso, $nights);
         $occLabel = itm_hotel_booking_portal_occupancy_label($occupancy);
         ?>
@@ -162,7 +166,11 @@ if (!function_exists('hb_portal_render_stay_bar')) {
 <div class="hb-stay-bar-inner">
 <span class="hb-stay-item" title="Hotel">📍 <?php echo htmlspecialchars($hotel['name'] ?? '', ENT_QUOTES, 'UTF-8'); ?></span>
 <span class="hb-stay-item" title="Dates">📅 <?php echo htmlspecialchars($rangeLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+<?php if ($occupancyInteractive): ?>
 <button type="button" class="hb-stay-item hb-stay-occupancy-trigger" id="hb-stay-occupancy-trigger" title="Change rooms and guests">👤 <?php echo htmlspecialchars($occLabel, ENT_QUOTES, 'UTF-8'); ?></button>
+<?php else: ?>
+<span class="hb-stay-item hb-stay-occupancy-readonly" title="Rooms and guests">👤 <?php echo htmlspecialchars($occLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+<?php endif; ?>
 <a class="hb-stay-edit" href="<?php echo htmlspecialchars($actionHref, ENT_QUOTES, 'UTF-8'); ?>" title="<?php echo htmlspecialchars($actionLabel, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($actionLabel, ENT_QUOTES, 'UTF-8'); ?></a>
 </div>
 </div>

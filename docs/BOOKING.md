@@ -74,7 +74,7 @@ sequenceDiagram
 | `hotel-booking-confirmation-pdf.js` | Confirmation PDF (html2canvas + jsPDF); adds a `/URI` link annotation over **Manage my booking** |
 | `hotel-booking-change-booking.js` | Manage booking — hotel contacts modal |
 
-Hotel photos are managed in **Hotels** (`modules/hotel_booking_hotels/`). **Room gallery images are managed per room type** in **Room Types** (`modules/booking_rooms_types/`). Files live under `booking/images/{hotel_id}/hotel_photos/` and `booking/images/{hotel_id}/room_types_photos/`; the portal serves them as `APPURL/images/{hotel_id}/…`. Static amenity SVGs remain under `booking/images/amenities/` only.
+Hotel photos are managed in **Hotels** (`modules/hotel_booking_hotels/`). **Room gallery images are managed per room type** in **Room Types** (`modules/booking_rooms_types/`). Files live under `booking/images/{hotel_id}/hotel_photos/` and `booking/images/{hotel_id}/room_types_photos/`; the portal serves them as `APPURL/images/{hotel_id}/…`. Committed portal fallbacks (`image_2.jpg`, `room-3.jpg`, `room-5.jpg`, `room-6.jpg`, plus seed helpers `image_3.jpg` / `services-2.jpg`) live under `booking/images/` when uploads are missing. Static amenity SVGs remain under `booking/images/amenities/` only.
 
 ---
 
@@ -105,7 +105,7 @@ After lookup:
 
 - Main column: same confirmation card as `payment.php` (room **type** title without room number).
 - **Cancelled** stays: red header (`Reservation cancelled`), status badge, no PDF save.
-- Stay bar: hotel, dates, occupancy; **Edit stay** links back to date picker on home (checkout flow uses the same control).
+- Stay bar: hotel, dates, occupancy (read-only label — occupancy modal is only on `rooms.php`); **Edit stay** links back to date picker on home (checkout flow uses the same control).
 - Aside actions:
   - **Cancellation policy** — opens per-rate HTML under `booking/cancellation_policy/` (configurable in Portal Rate Plans).
   - **Change booking** — modal with hotel name, directions (Google Maps), website, phone.
@@ -196,22 +196,19 @@ Seed example: company 1 **TechCorp Retreat**, reservation IDs from `hotel_bookin
 |------|--------|
 | **No online payment** | By design; confirmation copy must stay accurate if payment is added later. |
 | **Manage auth** | Last name + reservation ID + **auth2** (random 4-digit PIN issued at create and shown on confirmation). Still not MFA-grade; rate-limit manage/cancel if public. |
-| **Fallback room images** | Code references `room-3.jpg`, `room-5.jpg`, `room-6.jpg`, `image_2.jpg` under `booking/images/` but only amenity SVGs exist on disk — broken fallbacks until photos uploaded or assets added. |
 | **`hotel_booking_portal_rate_plans`** | Required for cancellation policy links; verify script fails if migration not applied on live DB (`db/migrations/hotel_booking_portal_rate_plans.sql`). |
 | **Portal pricing columns** | `hotel_booking_hotels` portal pricing fields — apply `db/migrations/hotel_booking_portal_hotel_pricing.sql` on existing DBs (destructive; back up hotel rows first). |
 | **Portal user accounts** | Optional `auth/*` rarely used; logout currently redirects to login, not home (pending UX tweak). |
 | **Stay bar on manage** | Shows **Edit stay** (same as checkout) rather than exit/logout — may confuse guests who only wanted to leave manage view. |
-| **Occupancy modal on manage** | Stay bar includes occupancy trigger but manage page does not load occupancy modal JS — control is inert there. |
 | **Single company in session** | Welcome banner still uses `hb_public_company_id()`; hotel grid is cross-tenant. Booking steps resolve tenant from the selected hotel row. |
 
 ### Recommended follow-ups (not implemented here)
 
-1. Add missing default JPG fallbacks or switch fallbacks to amenity-neutral placeholders.
-2. Apply `hotel_booking_portal_rate_plans` migration on all environments; keep `01_schema.sql` in sync.
-3. On manage booking: **Logout** → `auth/logout.php` → `index.php`; hide or wire occupancy control.
-4. Rate-limit manage lookup and cancel POSTs if exposed to the public internet (auth2 reduces enumeration risk vs last name + id alone).
-5. MBQA browser step for full portal flow (index → payment → manage cancel).
-6. Apply `db/migrations/hotel_bookings_auth2.sql` on existing databases (destructive to `hotel_bookings` rows — back up first).
+1. Apply `hotel_booking_portal_rate_plans` migration on all environments; keep `01_schema.sql` in sync.
+2. On manage booking: **Logout** → `auth/logout.php` → `index.php` (stay-bar occupancy is already read-only outside `rooms.php`).
+3. Rate-limit manage lookup and cancel POSTs if exposed to the public internet (auth2 reduces enumeration risk vs last name + id alone).
+4. MBQA browser step for full portal flow (index → payment → manage cancel).
+5. Apply `db/migrations/hotel_bookings_auth2.sql` on existing databases (destructive to `hotel_bookings` rows — back up first).
 
 ---
 
@@ -256,6 +253,8 @@ booking/
 ├── js/hotel-booking-*.js
 ├── images/
 │   ├── amenities/*.svg
+│   ├── image_2.jpg, image_3.jpg, services-2.jpg  # gallery / seed fallbacks
+│   ├── room-3.jpg, room-5.jpg, room-6.jpg        # room-type code fallbacks
 │   └── {hotel_id}/
 │       ├── hotel_photos/       # Hotels admin uploads
 │       └── room_types_photos/  # Room Types admin uploads (portal room cards)
