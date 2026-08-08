@@ -270,6 +270,20 @@ if ($policyUrl !== '' && strpos($policyUrl, '1_cancellation_policy.html') !== fa
     hb_fail('resolve cancellation policy url room_only got ' . $policyUrl);
 }
 
+$blockedPhpPolicy = itm_hotel_booking_normalize_cancellation_policy_url('cancellation_policy/evil.php');
+$allowedHtmlPolicy = itm_hotel_booking_normalize_cancellation_policy_url('cancellation_policy/policy.html');
+$allowedTxtPolicy = itm_hotel_booking_normalize_cancellation_policy_url('cancellation_policy/notes.txt');
+if ($blockedPhpPolicy === '' && $allowedHtmlPolicy === 'cancellation_policy/policy.html' && $allowedTxtPolicy === 'cancellation_policy/notes.txt') {
+    hb_pass('cancellation policy url extension allowlist');
+} else {
+    hb_fail('cancellation policy url extension allowlist');
+}
+if (!is_file(dirname(__DIR__) . '/booking/cancellation_policy/.htaccess')) {
+    hb_fail('booking/cancellation_policy/.htaccess missing');
+} else {
+    hb_pass('booking cancellation_policy htaccess present');
+}
+
 $futureBooking = [
     'check_in' => date('Y-m-d', strtotime('+14 days')),
     'check_out' => date('Y-m-d', strtotime('+16 days')),

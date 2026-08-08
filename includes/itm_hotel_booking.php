@@ -1156,6 +1156,12 @@ if (!function_exists('itm_hotel_booking_normalize_cancellation_policy_url')) {
     if ($url === '' || strpos($url, '..') !== false) {
       return '';
     }
+    // Why: Block cancellation_policy/*.php (and other executables) so policy HTML writes cannot become RCE.
+    $pathInfo = pathinfo($url);
+    $ext = strtolower((string) ($pathInfo['extension'] ?? ''));
+    if (!in_array($ext, ['html', 'htm', 'txt'], true)) {
+      return '';
+    }
     return strlen($url) > 500 ? substr($url, 0, 500) : $url;
   }
 }

@@ -6,7 +6,6 @@ No database schema modifications or migrations were necessary to remediate the R
 
 ## Detailed Explanation
 
-- **Reason**: The vulnerability was entirely caused by insufficient file extension validation in the application logic helper `itm_hotel_booking_normalize_cancellation_policy_url()` within `includes/itm_hotel_booking.php`.
-- **Resolution**:
-  - The security fix was successfully implemented in the PHP source code by introducing robust whitelist-based file extension verification (`html`, `htm`, `txt`).
-  - No database tables, columns, or keys required alterations, meaning the database schema remains intact and fully backward-compatible.
+- **Reason**: The vulnerability was caused by insufficient file extension validation in `itm_hotel_booking_normalize_cancellation_policy_url()` within `includes/itm_hotel_booking.php`.
+- **Resolution**: Whitelist relative policy paths to `.html` / `.htm` / `.txt` in live PHP (not a SQL change). See `AGENT_NOTES.md` in this folder.
+- **Do not** replace live `includes/itm_hotel_booking.php` from `docs/fixed_files_vulnerability_*` snapshots — apply the allowlist surgically only.
