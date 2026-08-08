@@ -2498,10 +2498,10 @@ WHERE t.company_id = 1 AND t.code IN ('STD', 'SUP', 'DLX') AND t.deleted_at IS N
 
 INSERT IGNORE INTO `booking_rooms_types` (`company_id`, `name`, `code`, `description`, `bed_summary`, `room_size_sqm`, `max_adults`, `max_children`, `max_babies`, `filter_tags`, `details_bullets`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`code`, t.`description`, t.`bed_summary`, t.`room_size_sqm`, t.`max_adults`, t.`max_children`, t.`max_babies`, t.`filter_tags`, t.`details_bullets`, t.`active`, '2026-01-01 00:00:01' FROM `booking_rooms_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 
-INSERT INTO `hotel_booking_settings` (`company_id`, `public_portal_enabled`, `welcome_title`, `welcome_subtitle`, `price_footnote`, `reviews_url`, `tourist_tax_per_person_per_night`, `urlmybooking`, `active`, `created_at`) VALUES
-(1, 1, 'Find your stay', 'Browse hotels and book with confidence.', 'Prices include tourist tax and may vary by date and availability.', 'https://www.tripadvisor.pt/Hotel_Review-g262054-d2142716-Reviews-Conrad_Algarve-Almancil_Loule_Faro_District_Algarve.html#REVIEWS', 2.00, 'https://localhost/it-management/booking/users/bookings.php', 1, '2026-01-01 00:00:01');
+INSERT INTO `hotel_booking_settings` (`company_id`, `public_portal_enabled`, `welcome_title`, `welcome_subtitle`, `price_footnote`, `reviews_url`, `tourist_tax_per_person_per_night`, `free_cancellation_days_before_check_in`, `urlmybooking`, `active`, `created_at`) VALUES
+(1, 1, 'Find your stay', 'Browse hotels and book with confidence.', 'Prices include tourist tax and may vary by date and availability.', 'https://www.tripadvisor.pt/Hotel_Review-g262054-d2142716-Reviews-Conrad_Algarve-Almancil_Loule_Faro_District_Algarve.html#REVIEWS', 2.00, 5, 'https://localhost/it-management/booking/users/bookings.php', 1, '2026-01-01 00:00:01');
 
-INSERT IGNORE INTO `hotel_booking_settings` (`company_id`, `public_portal_enabled`, `welcome_title`, `welcome_subtitle`, `price_footnote`, `reviews_url`, `tourist_tax_per_person_per_night`, `urlmybooking`, `active`, `created_at`) SELECT c.`id`, t.`public_portal_enabled`, t.`welcome_title`, t.`welcome_subtitle`, t.`price_footnote`, t.`reviews_url`, t.`tourist_tax_per_person_per_night`, t.`urlmybooking`, t.`active`, '2026-01-01 00:00:01' FROM `hotel_booking_settings` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
+INSERT IGNORE INTO `hotel_booking_settings` (`company_id`, `public_portal_enabled`, `welcome_title`, `welcome_subtitle`, `price_footnote`, `reviews_url`, `tourist_tax_per_person_per_night`, `free_cancellation_days_before_check_in`, `urlmybooking`, `active`, `created_at`) SELECT c.`id`, t.`public_portal_enabled`, t.`welcome_title`, t.`welcome_subtitle`, t.`price_footnote`, t.`reviews_url`, t.`tourist_tax_per_person_per_night`, t.`free_cancellation_days_before_check_in`, t.`urlmybooking`, t.`active`, '2026-01-01 00:00:01' FROM `hotel_booking_settings` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = 1;
 
 INSERT INTO `hotel_booking_hotels` (`company_id`, `name`, `description`, `location`, `phone`, `website_url`, `reviews_url`, `check_in_time`, `check_out_time`, `currency_code`, `parking_info`, `pets_policy`, `active`, `created_at`) VALUES
 (1, 'TechCorp Retreat', 'A comfortable property for business and leisure.', 'Lisbon, Portugal', '+351 210 000 001', 'https://example.com/techcorp-retreat', 'https://www.tripadvisor.pt/Hotel_Review-g262054-d2142716-Reviews-Conrad_Algarve-Almancil_Loule_Faro_District_Algarve.html#REVIEWS', '15:00:00', '12:00:00', 'EUR', 'Self and valet parking complimentary.', 'Pets allowed under 15kg with fee.', 1, '2026-01-01 00:00:01');
@@ -2529,11 +2529,11 @@ INSERT INTO `hotel_booking_special_rates` (`company_id`, `hotel_id`, `rate_slug`
 (1, 1, 'group', 'Group code', 15.00, 'Enter a valid group code.', 1, '2026-01-01 00:00:01'),
 (1, 1, 'corporate', 'Corporate account', 15.00, 'Enter a valid corporate account number.', 1, '2026-01-01 00:00:01');
 
-INSERT INTO `hotel_booking_portal_rate_plans` (`company_id`, `hotel_id`, `plan_slot`, `name`, `rate_plan_slug`, `cancellation_policy_url`, `active`, `created_at`) VALUES
-(1, 1, 1, 'Best Available Rate', 'room_only', 'cancellation_policy/1_cancellation_policy.html', 1, '2026-01-01 00:00:01'),
-(1, 1, 2, 'Breakfast Included', 'breakfast', 'cancellation_policy/2_cancellation_policy.html', 1, '2026-01-01 00:00:01'),
-(1, 1, 3, 'Flexible Rate', 'flexible', 'cancellation_policy/3_cancellation_policy.html', 1, '2026-01-01 00:00:01'),
-(1, 1, 4, 'Non-Refundable Rate', 'non_refundable', 'cancellation_policy/4_cancellation_policy.html', 1, '2026-01-01 00:00:01');
+INSERT INTO `hotel_booking_portal_rate_plans` (`company_id`, `hotel_id`, `plan_slot`, `name`, `rate_plan_slug`, `cancellation_policy_url`, `pay_badge`, `price_label`, `cancel_template`, `plan_discount_percent`, `free_cancellation_days_before_check_in`, `active`, `created_at`) VALUES
+(1, 1, 1, 'Best Available Rate', 'room_only', 'cancellation_policy/1_cancellation_policy.html', 'Pay when you stay', 'Best available rate', 'Change or cancel by {date}.', 0.00, NULL, 1, '2026-01-01 00:00:01'),
+(1, 1, 2, 'Breakfast Included', 'breakfast', 'cancellation_policy/2_cancellation_policy.html', 'Pay when you stay', 'With breakfast', 'Change or cancel by {date}.', 0.00, NULL, 1, '2026-01-01 00:00:01'),
+(1, 1, 3, 'Flexible Rate', 'flexible', 'cancellation_policy/3_cancellation_policy.html', 'Pay when you stay', 'Flexible rate', 'Free cancellation until {date}.', 0.00, NULL, 1, '2026-01-01 00:00:01'),
+(1, 1, 4, 'Non-Refundable Rate', 'non_refundable', 'cancellation_policy/4_cancellation_policy.html', 'Non-refundable', 'Non-refundable rate', 'Non-refundable. No free cancellation after booking.', 10.00, NULL, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `hotel_booking_hotel_nearby` (`company_id`, `hotel_id`, `place_name`, `distance_km`, `sort_order`, `active`, `created_at`) VALUES
 (1, 1, 'City center', 12.60, 10, 1, '2026-01-01 00:00:01'),
@@ -2563,8 +2563,8 @@ FROM `companies` c
 CROSS JOIN (SELECT `description`, `location`, `website_url`, `reviews_url`, `check_in_time`, `check_out_time`, `currency_code`, `parking_info`, `pets_policy` FROM `hotel_booking_hotels` WHERE `company_id` = 1 AND `deleted_at` IS NULL ORDER BY `id` ASC LIMIT 1) t
 WHERE c.`id` BETWEEN 2 AND 5;
 
-INSERT INTO `hotel_booking_portal_rate_plans` (`company_id`, `hotel_id`, `plan_slot`, `name`, `rate_plan_slug`, `cancellation_policy_url`, `active`, `created_at`)
-SELECT h.`company_id`, h.`id`, rp.`plan_slot`, rp.`name`, rp.`rate_plan_slug`, rp.`cancellation_policy_url`, 1, '2026-01-01 00:00:01'
+INSERT INTO `hotel_booking_portal_rate_plans` (`company_id`, `hotel_id`, `plan_slot`, `name`, `rate_plan_slug`, `cancellation_policy_url`, `pay_badge`, `price_label`, `cancel_template`, `plan_discount_percent`, `free_cancellation_days_before_check_in`, `active`, `created_at`)
+SELECT h.`company_id`, h.`id`, rp.`plan_slot`, rp.`name`, rp.`rate_plan_slug`, rp.`cancellation_policy_url`, rp.`pay_badge`, rp.`price_label`, rp.`cancel_template`, rp.`plan_discount_percent`, rp.`free_cancellation_days_before_check_in`, 1, '2026-01-01 00:00:01'
 FROM `hotel_booking_hotels` h
 INNER JOIN `hotel_booking_portal_rate_plans` rp ON rp.`company_id` = 1 AND rp.`hotel_id` = (SELECT `id` FROM `hotel_booking_hotels` WHERE `company_id` = 1 AND `deleted_at` IS NULL ORDER BY `id` ASC LIMIT 1)
 WHERE h.`company_id` BETWEEN 2 AND 5 AND h.`deleted_at` IS NULL;

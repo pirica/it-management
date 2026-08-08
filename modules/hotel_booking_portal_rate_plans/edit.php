@@ -23,6 +23,11 @@ $slug = (string) ($row['rate_plan_slug'] ?? '');
 $url = (string) ($row['cancellation_policy_url'] ?? '');
 $policyHtml = itm_hotel_booking_load_cancellation_policy_html($row);
 $isActive = !empty($row['active']);
+$payBadge = (string) ($row['pay_badge'] ?? '');
+$priceLabel = (string) ($row['price_label'] ?? '');
+$cancelTemplate = (string) ($row['cancel_template'] ?? '');
+$planDiscount = (float) ($row['plan_discount_percent'] ?? 0);
+$planFreeCancelDays = $row['free_cancellation_days_before_check_in'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
@@ -32,6 +37,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $url = itm_hotel_booking_normalize_cancellation_policy_url($rawUrl);
     $policyHtml = (string) ($_POST['cancellation_policy_html'] ?? '');
     $isActive = !empty($_POST['active']) ? 1 : 0;
+    $payBadge = trim((string) ($_POST['pay_badge'] ?? ''));
+    $priceLabel = trim((string) ($_POST['price_label'] ?? ''));
+    $cancelTemplate = trim((string) ($_POST['cancel_template'] ?? ''));
+    $planDiscountRaw = str_replace(',', '.', trim((string) ($_POST['plan_discount_percent'] ?? '0')));
+    $planDiscount = ($planDiscountRaw === '' || !is_numeric($planDiscountRaw)) ? 0.0 : max(0.0, min(50.0, (float) $planDiscountRaw));
+    $planFreeCancelRaw = trim((string) ($_POST['free_cancellation_days_before_check_in'] ?? ''));
+    if ($planFreeCancelRaw === '') {
+        $planFreeCancelDays = null;
+    } else {
+        $planFreeCancelDays = max(0, min(365, (int) $planFreeCancelRaw));
+    }
 
     if ($name === '') {
         $errors[] = 'Plan name is required.';
@@ -44,9 +60,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
-        $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_portal_rate_plans SET name = ?, rate_plan_slug = ?, cancellation_policy_url = ?, cancellation_policy_html = ?, active = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ? AND deleted_at IS NULL');
+        // Why: mysqli cannot bind PHP null as INT reliably on 7.4 — use -1 sentinel → NULLIF.
+        $freeCancelBind = $planFreeCancelDays === null ? -1 : (int) $planFreeCancelDays;
+        $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_portal_rate_plans SET name = ?, rate_plan_slug = ?, cancellation_policy_url = ?, cancellation_policy_html = ?, pay_badge = ?, price_label = ?, cancel_template = ?, plan_discount_percent = ?, free_cancellation_days_before_check_in = NULLIF(?, -1), active = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ? AND deleted_at IS NULL');
         if ($upd) {
-            mysqli_stmt_bind_param($upd, 'ssssiiii', $name, $slug, $url, $policyHtml, $isActive, $employee_id, $id, $company_id);
+            mysqli_stmt_bind_param($upd, 'sssssssdiiiii', $name, $slug, $url, $policyHtml, $payBadge, $priceLabel, $cancelTemplate, $planDiscount, $freeCancelBind, $isActive, $employee_id, $id, $company_id);
             mysqli_stmt_execute($upd);
             mysqli_stmt_close($upd);
         }
@@ -101,6 +119,27 @@ if ($embedMode) {
 <div class="form-group">
 <label for="rate_plan_slug">Step 2 slug</label>
 <input type="text" name="rate_plan_slug" id="rate_plan_slug" class="form-control" maxlength="40" required pattern="[a-z0-9_-]+" value="<?php echo sanitize($slug); ?>">
+</div>
+<div class="form-group">
+<label for="pay_badge">Pay badge</label>
+<input type="text" name="pay_badge" id="pay_badge" class="form-control" maxlength="120" value="<?php echo sanitize($payBadge); ?>" placeholder="Pay when you stay">
+</div>
+<div class="form-group">
+<label for="price_label">Price label</label>
+<input type="text" name="price_label" id="price_label" class="form-control" maxlength="120" value="<?php echo sanitize($priceLabel); ?>" placeholder="Flexible rate">
+</div>
+<div class="form-group">
+<label for="cancel_template">Cancel template</label>
+<input type="text" name="cancel_template" id="cancel_template" class="form-control" maxlength="500" value="<?php echo sanitize($cancelTemplate); ?>" placeholder="Free cancellation until {date}.">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Use <code>{date}</code> for the free-cancel deadline (settings days, or plan override below).</p>
+</div>
+<div class="form-group">
+<label for="plan_discount_percent">Plan discount %</label>
+<input type="text" name="plan_discount_percent" id="plan_discount_percent" class="form-control" inputmode="decimal" value="<?php echo sanitize(number_format($planDiscount, 2, '.', '')); ?>">
+</div>
+<div class="form-group">
+<label for="free_cancellation_days_before_check_in">Free cancel days (optional override)</label>
+<input type="number" name="free_cancellation_days_before_check_in" id="free_cancellation_days_before_check_in" class="form-control" min="0" max="365" step="1" value="<?php echo $planFreeCancelDays === null || $planFreeCancelDays === '' ? '' : (int) $planFreeCancelDays; ?>" placeholder="Use company setting">
 </div>
 <div class="form-group">
 <label for="cancellation_policy_url">Cancellation policy URL</label>

@@ -34,6 +34,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $touristTax = '0';
     }
     $touristTax = max(0, (float) $touristTax);
+    $freeCancelDays = (int) ($_POST['free_cancellation_days_before_check_in'] ?? 5);
+    if ($freeCancelDays < 0) {
+        $freeCancelDays = 0;
+    }
+    if ($freeCancelDays > 365) {
+        $freeCancelDays = 365;
+    }
     if (trim((string) ($_POST['reviews_url'] ?? '')) !== '' && $reviewsUrl === '') {
         $errors[] = 'Reviews URL must start with http:// or https://';
     }
@@ -49,9 +56,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $sid = (int) ($row['id'] ?? 0);
     if (empty($errors)) {
-    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
+    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, free_cancellation_days_before_check_in = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
     if ($upd) {
-        mysqli_stmt_bind_param($upd, 'issssssdsiii', $enabled, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $urlmybooking, $employee_id, $sid, $company_id);
+        mysqli_stmt_bind_param($upd, 'issssssdisiii', $enabled, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $freeCancelDays, $urlmybooking, $employee_id, $sid, $company_id);
         mysqli_stmt_execute($upd);
         mysqli_stmt_close($upd);
         header('Location: index.php?saved=1');
@@ -120,6 +127,11 @@ itm_hospitality_admin_layout_begin($crud_title);
 <label>Tourist tax (per person per night)</label>
 <input type="text" name="tourist_tax_per_person_per_night" class="form-control" inputmode="decimal" placeholder="2.00" value="<?php echo sanitize(number_format((float) ($row['tourist_tax_per_person_per_night'] ?? 0), 2, '.', '')); ?>">
 <p class="text-muted" style="font-size:.85rem;margin-top:4px;">Added to portal checkout totals (steps 3–4) for adults and children.</p>
+</div>
+<div class="form-group">
+<label>Free cancellation days before check-in</label>
+<input type="number" name="free_cancellation_days_before_check_in" class="form-control" min="0" max="365" step="1" value="<?php echo (int) ($row['free_cancellation_days_before_check_in'] ?? 5); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Default for Step 2 rate cards that use <code>{date}</code> in the cancel template (unless a rate plan sets its own days).</p>
 </div>
 <button type="submit" class="btn btn-primary" title="Save">💾</button>
 </form>
