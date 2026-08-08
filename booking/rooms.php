@@ -432,6 +432,7 @@ window.HB_SELECT_ROOM = <?php echo json_encode([
     'currencySymbol' => ($currency === 'EUR' ? '€' : $currency . ' '),
     'portalPricing' => $portalPricing,
     'pricingDefaults' => itm_hotel_booking_portal_pricing_defaults(),
+    'touristTaxPerPersonPerNight' => $touristTaxRate,
     'typeDetails' => $typeDetailsHtml,
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
