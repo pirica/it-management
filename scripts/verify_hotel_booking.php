@@ -256,6 +256,12 @@ if (itm_hotel_booking_portal_free_cancellation_days_from_settings([]) === 5
     hb_fail('portal free cancellation days from settings');
 }
 
+if (abs(itm_hotel_booking_portal_price_incl_tourist_tax(75.0, 2.0, ['rooms' => 1, 'adults' => 1, 'children' => 0, 'babies' => 0]) - 77.0) < 0.01) {
+    hb_pass('portal from-price includes tourist tax');
+} else {
+    hb_fail('portal from-price includes tourist tax');
+}
+
 $seedCancelDaysOk = true;
 $seedMerchOk = true;
 $seedRes = mysqli_query($conn, 'SELECT company_id, free_cancellation_days_before_check_in FROM hotel_booking_settings WHERE company_id BETWEEN 1 AND 5 AND deleted_at IS NULL');

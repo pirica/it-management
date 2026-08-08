@@ -75,6 +75,8 @@ if (!is_array($settings)) {
 
 // Why: Public home lists every active hotel across tenants — not session company_id.
 $hotels = [];
+$taxRateByCompany = [];
+$defaultOcc = ['rooms' => 1, 'adults' => 1, 'children' => 0, 'babies' => 0];
 $stmt = mysqli_prepare($conn, 'SELECT h.*, (SELECT MIN(bp.price_per_night) FROM hotel_booking_rooms r INNER JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL WHERE r.hotel_id = h.id AND r.company_id = h.company_id AND r.deleted_at IS NULL) AS min_price
     FROM hotel_booking_hotels h WHERE h.deleted_at IS NULL AND h.active = 1 ORDER BY h.name');
 if ($stmt) {
@@ -83,6 +85,15 @@ if ($stmt) {
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $hid = (int) $row['id'];
         $hotelCompanyId = (int) ($row['company_id'] ?? 0);
+        if (!isset($taxRateByCompany[$hotelCompanyId])) {
+            $hotelSettings = $hotelCompanyId > 0 ? (itm_hotel_booking_settings_row($conn, $hotelCompanyId) ?: []) : [];
+            $taxRateByCompany[$hotelCompanyId] = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($hotelSettings);
+        }
+        $minExcl = (float) ($row['min_price'] ?? 0);
+        $row['min_price_excl_tax'] = $minExcl;
+        $row['tourist_tax_per_person_per_night'] = $taxRateByCompany[$hotelCompanyId];
+        $row['min_price'] = itm_hotel_booking_portal_price_incl_tourist_tax($minExcl, $taxRateByCompany[$hotelCompanyId], $defaultOcc);
+        $row['prices_include_tax'] = true;
         $row['photos'] = [];
         foreach (itm_hotel_booking_photos_load($conn, $hotelCompanyId, 'hotel_booking_hotel_photos', 'hotel_id', $hid) as $photo) {
             $storedFilename = (string) ($photo['stored_filename'] ?? '');
@@ -107,6 +118,8 @@ $hbSettingsPublic = [
     'accessible_features_default' => $settings['accessible_features_default'] ?? '',
     'airport_info' => $settings['airport_info'] ?? '',
     'reviews_url' => itm_hotel_booking_resolve_reviews_url([], $settings),
+    'tourist_tax_per_person_per_night' => itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings),
+    'prices_include_tax' => true,
 ];
 ?>
 <!DOCTYPE html>
@@ -145,7 +158,7 @@ $imgUrl = !empty($hotel['photos'][0]['public_url'])
 </div>
 <h2><?php echo htmlspecialchars($hotel['name'], ENT_QUOTES, 'UTF-8'); ?></h2>
 <p class="hb-loc"><?php echo htmlspecialchars($hotel['location'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
-<p class="hb-from">From <?php echo htmlspecialchars(number_format((float) ($hotel['min_price'] ?? 0), 2), ENT_QUOTES, 'UTF-8'); ?> <?php echo htmlspecialchars($hotel['currency_code'] ?? 'EUR', ENT_QUOTES, 'UTF-8'); ?></p>
+<p class="hb-from">From <?php echo htmlspecialchars(number_format((float) ($hotel['min_price'] ?? 0), 2), ENT_QUOTES, 'UTF-8'); ?> <?php echo htmlspecialchars($hotel['currency_code'] ?? 'EUR', ENT_QUOTES, 'UTF-8'); ?> <span class="hb-from-tax-note">incl. tax</span></p>
 <button type="button" class="hb-btn hb-btn-primary hb-open-hotel" data-hotel-id="<?php echo (int) $hotel['id']; ?>" title="View details">Details</button>
 </article>
 <?php endforeach; ?>
