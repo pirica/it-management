@@ -135,7 +135,7 @@ if (!function_exists('hb_portal_load_hotel_amenity_rows')) {
 }
 
 if (!function_exists('hb_portal_room_detail_card_for_type')) {
-    function hb_portal_room_detail_card_for_type($conn, $companyId, $hotelId, $typeId, array $occupancy, $discountPercent, $checkInIso, $checkOutIso, $imageUrlOverride = '') {
+    function hb_portal_room_detail_card_for_type($conn, $companyId, $hotelId, $typeId, array $occupancy, $discountPercent, $checkInIso, $checkOutIso, $imageUrlOverride = '', $surchargePercent = 0.0) {
         $companyId = (int) $companyId;
         $hotelId = (int) $hotelId;
         $typeId = (int) $typeId;
@@ -213,8 +213,9 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
         $settingsRow = itm_hotel_booking_settings_row($conn, $companyId) ?: [];
         $taxRate = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settingsRow);
         $taxPerNight = itm_hotel_booking_portal_tourist_tax_amount($occupancy, 1, $taxRate);
-        $listQuoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, 0, $pricing) + $taxPerNight, 2);
-        $quoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, (float) $discountPercent, $pricing) + $taxPerNight, 2);
+        $surchargePercent = max(0.0, min(50.0, (float) $surchargePercent));
+        $listQuoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, 0, $pricing, 0) + $taxPerNight, 2);
+        $quoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, (float) $discountPercent, $pricing, $surchargePercent) + $taxPerNight, 2);
 
         return [
             'type_id' => $typeId,

@@ -1206,14 +1206,15 @@ if (!function_exists('itm_hotel_booking_ensure_portal_rate_plans_for_hotel')) {
       if ($exists) {
         continue;
       }
-      $ins = mysqli_prepare($conn, 'INSERT INTO hotel_booking_portal_rate_plans (company_id, hotel_id, plan_slot, name, rate_plan_slug, cancellation_policy_url, pay_badge, price_label, cancel_template, plan_discount_percent, active, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NOW())');
+      $ins = mysqli_prepare($conn, 'INSERT INTO hotel_booking_portal_rate_plans (company_id, hotel_id, plan_slot, name, rate_plan_slug, cancellation_policy_url, pay_badge, price_label, cancel_template, plan_discount_percent, plan_surcharge_percent, active, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NOW())');
       if ($ins) {
         $offer = itm_hotel_booking_portal_rate_plan_offer($slug);
         $payBadge = (string) ($offer['pay_badge'] ?? '');
         $priceLabel = (string) ($offer['price_label'] ?? '');
         $cancelTpl = (string) ($offer['cancel_template'] ?? '');
         $planDisc = (float) ($offer['discount_percent'] ?? 0);
-        mysqli_stmt_bind_param($ins, 'iiissssssdi', $companyId, $hotelId, $slot, $name, $slug, $defaultPath, $payBadge, $priceLabel, $cancelTpl, $planDisc, $employeeId);
+        $planSur = (float) ($offer['surcharge_percent'] ?? 0);
+        mysqli_stmt_bind_param($ins, 'iiissssssddi', $companyId, $hotelId, $slot, $name, $slug, $defaultPath, $payBadge, $priceLabel, $cancelTpl, $planDisc, $planSur, $employeeId);
         mysqli_stmt_execute($ins);
         mysqli_stmt_close($ins);
       }
@@ -1224,7 +1225,7 @@ if (!function_exists('itm_hotel_booking_ensure_portal_rate_plans_for_hotel')) {
 if (!function_exists('itm_hotel_booking_portal_rate_plans_admin_rows')) {
   function itm_hotel_booking_portal_rate_plans_admin_rows($conn, $companyId, $hotelId) {
     $rows = [];
-    $stmt = mysqli_prepare($conn, 'SELECT id, plan_slot, name, rate_plan_slug, cancellation_policy_url, cancellation_policy_html, pay_badge, price_label, cancel_template, plan_discount_percent, free_cancellation_days_before_check_in, active FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL ORDER BY plan_slot ASC');
+    $stmt = mysqli_prepare($conn, 'SELECT id, plan_slot, name, rate_plan_slug, cancellation_policy_url, cancellation_policy_html, pay_badge, price_label, cancel_template, plan_discount_percent, plan_surcharge_percent, free_cancellation_days_before_check_in, active FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL ORDER BY plan_slot ASC');
     if ($stmt) {
       mysqli_stmt_bind_param($stmt, 'ii', $companyId, $hotelId);
       mysqli_stmt_execute($stmt);
@@ -1340,7 +1341,7 @@ if (!function_exists('itm_hotel_booking_portal_rate_plan_create')) {
     }
     $ins = mysqli_prepare(
       $conn,
-      'INSERT INTO hotel_booking_portal_rate_plans (company_id, hotel_id, plan_slot, name, rate_plan_slug, cancellation_policy_url, pay_badge, price_label, cancel_template, plan_discount_percent, active, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+      'INSERT INTO hotel_booking_portal_rate_plans (company_id, hotel_id, plan_slot, name, rate_plan_slug, cancellation_policy_url, pay_badge, price_label, cancel_template, plan_discount_percent, plan_surcharge_percent, active, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
     );
     if (!$ins) {
       return ['ok' => false, 'error' => 'Create failed.'];
@@ -1350,7 +1351,8 @@ if (!function_exists('itm_hotel_booking_portal_rate_plan_create')) {
     $priceLabel = (string) ($offer['price_label'] ?? '');
     $cancelTpl = (string) ($offer['cancel_template'] ?? '');
     $planDisc = (float) ($offer['discount_percent'] ?? 0);
-    mysqli_stmt_bind_param($ins, 'iiissssssdii', $companyId, $hotelId, $planSlot, $name, $slug, $policyUrl, $payBadge, $priceLabel, $cancelTpl, $planDisc, $active, $employeeId);
+    $planSur = (float) ($offer['surcharge_percent'] ?? 0);
+    mysqli_stmt_bind_param($ins, 'iiissssssddii', $companyId, $hotelId, $planSlot, $name, $slug, $policyUrl, $payBadge, $priceLabel, $cancelTpl, $planDisc, $planSur, $active, $employeeId);
     if (!mysqli_stmt_execute($ins)) {
       mysqli_stmt_close($ins);
       return ['ok' => false, 'error' => 'Create failed.'];
@@ -1603,7 +1605,7 @@ if (!function_exists('itm_hotel_booking_portal_save_hotel_pricing')) {
 }
 
 if (!function_exists('itm_hotel_booking_portal_quote_nightly')) {
-  function itm_hotel_booking_portal_quote_nightly($basePerNight, array $occupancy, $discountPercent = 0.0, array $pricing = null) {
+  function itm_hotel_booking_portal_quote_nightly($basePerNight, array $occupancy, $discountPercent = 0.0, array $pricing = null, $surchargePercent = 0.0) {
     if ($pricing === null || !is_array($pricing)) {
       $pricing = itm_hotel_booking_portal_pricing_defaults();
     }
@@ -1621,6 +1623,11 @@ if (!function_exists('itm_hotel_booking_portal_quote_nightly')) {
     $discountPercent = max(0.0, min(50.0, (float) $discountPercent));
     if ($discountPercent > 0) {
       $nightly *= (1 - ($discountPercent / 100));
+    }
+    // Why: Plan surcharge raises after discount (e.g. flexible +2% on BAR).
+    $surchargePercent = max(0.0, min(50.0, (float) $surchargePercent));
+    if ($surchargePercent > 0) {
+      $nightly *= (1 + ($surchargePercent / 100));
     }
     return round($nightly, 2);
   }
@@ -1714,6 +1721,7 @@ if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
     $taxPerNight = itm_hotel_booking_portal_tourist_tax_amount($occupancy, 1, $touristTaxPerPersonPerNight);
     $cheapestOffer = itm_hotel_booking_portal_cheapest_rate_offer_for_hotel($conn, $companyId, $hotelId);
     $planDiscount = max(0.0, min(50.0, (float) ($cheapestOffer['discount_percent'] ?? 0)));
+    $planSurcharge = max(0.0, min(50.0, (float) ($cheapestOffer['surcharge_percent'] ?? 0)));
     $portalPricing = itm_hotel_booking_portal_hotel_pricing($conn, $companyId, $hotelId);
     $start = sprintf('%04d-%02d-01', $year, $month);
     $daysInMonth = (int) date('t', strtotime($start));
@@ -1809,7 +1817,7 @@ if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
       }
       if ($best !== null) {
         // Why: Guest-facing calendar shows cheapest room plan (usually NR discount) + tourist tax.
-        $roomQuoted = itm_hotel_booking_portal_quote_nightly((float) $best, $occupancy, $planDiscount, $portalPricing);
+        $roomQuoted = itm_hotel_booking_portal_quote_nightly((float) $best, $occupancy, $planDiscount, $portalPricing, $planSurcharge);
         $days[$checkIn] = [
           'available' => true,
           'price' => round((float) $roomQuoted + $taxPerNight, 2),
@@ -1829,6 +1837,7 @@ if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
       'prices_include_tax' => true,
       'tourist_tax_per_person_per_night' => $touristTaxPerPersonPerNight,
       'plan_discount_percent' => $planDiscount,
+      'plan_surcharge_percent' => $planSurcharge,
       'cheapest_rate_plan_slug' => (string) ($cheapestOffer['slug'] ?? ''),
       'cheapest_rate_label' => (string) ($cheapestOffer['price_label'] ?? 'Best available rate'),
       'calendar_month_advance_days_left' => itm_hotel_booking_portal_calendar_month_advance_days_left_from_settings($settingsRow),
@@ -1849,8 +1858,8 @@ if (!function_exists('itm_hotel_booking_compute_payment_amount')) {
 }
 
 if (!function_exists('itm_hotel_booking_compute_stay_payment')) {
-  function itm_hotel_booking_compute_stay_payment($basePerNight, $checkIn, $checkOut, array $occupancy, $discountPercent = 0.0, array $pricing = null) {
-    $nightly = itm_hotel_booking_portal_quote_nightly($basePerNight, $occupancy, $discountPercent, $pricing);
+  function itm_hotel_booking_compute_stay_payment($basePerNight, $checkIn, $checkOut, array $occupancy, $discountPercent = 0.0, array $pricing = null, $surchargePercent = 0.0) {
+    $nightly = itm_hotel_booking_portal_quote_nightly($basePerNight, $occupancy, $discountPercent, $pricing, $surchargePercent);
     return itm_hotel_booking_compute_payment_amount($nightly, $checkIn, $checkOut);
   }
 }
@@ -2057,10 +2066,11 @@ if (!function_exists('itm_hotel_booking_portal_room_charges_subtotal')) {
     $pricing = ($conn && $companyId > 0 && $hotelId > 0)
       ? itm_hotel_booking_portal_hotel_pricing($conn, $companyId, $hotelId)
       : itm_hotel_booking_portal_pricing_defaults();
+    $surchargePercent = max(0.0, min(50.0, (float) ($draft['surcharge_percent'] ?? 0)));
     if ($conn && $companyId > 0 && $hotelId > 0 && $roomTypeId > 0) {
-      $roomTotal = itm_hotel_booking_compute_stay_payment_dated_rates($conn, $companyId, $hotelId, $roomTypeId, $basePerNight, $checkIn, $checkOut, $occupancy, $discountPercent, $pricing);
+      $roomTotal = itm_hotel_booking_compute_stay_payment_dated_rates($conn, $companyId, $hotelId, $roomTypeId, $basePerNight, $checkIn, $checkOut, $occupancy, $discountPercent, $pricing, $surchargePercent);
     } else {
-      $roomTotal = itm_hotel_booking_compute_stay_payment($basePerNight, $checkIn, $checkOut, $occupancy, $discountPercent, $pricing);
+      $roomTotal = itm_hotel_booking_compute_stay_payment($basePerNight, $checkIn, $checkOut, $occupancy, $discountPercent, $pricing, $surchargePercent);
     }
     $nights = itm_hotel_booking_portal_stay_nights($checkIn, $checkOut);
     $extras = 0.0;
@@ -2101,13 +2111,14 @@ if (!function_exists('itm_hotel_booking_portal_rate_plan_offer')) {
    * DB row fields override slug defaults when non-empty.
    *
    * @param array|null $planRow optional hotel_booking_portal_rate_plans row
-   * @return array{discount_percent:float,pay_badge:string,cancel_template:string,price_label:string,free_cancellation_days:?int}
+   * @return array{discount_percent:float,surcharge_percent:float,pay_badge:string,cancel_template:string,price_label:string,free_cancellation_days:?int}
    */
   function itm_hotel_booking_portal_rate_plan_offer($slug, $planRow = null) {
     $slug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) $slug));
     if ($slug === 'breakfast') {
       $offer = [
         'discount_percent' => 0.0,
+        'surcharge_percent' => 0.0,
         'pay_badge' => 'Pay when you stay',
         'cancel_template' => 'Change or cancel by {date}.',
         'price_label' => 'With breakfast',
@@ -2116,6 +2127,7 @@ if (!function_exists('itm_hotel_booking_portal_rate_plan_offer')) {
     } elseif ($slug === 'flexible') {
       $offer = [
         'discount_percent' => 0.0,
+        'surcharge_percent' => 0.0,
         'pay_badge' => 'Pay when you stay',
         'cancel_template' => 'Free cancellation until {date}.',
         'price_label' => 'Flexible rate',
@@ -2124,6 +2136,7 @@ if (!function_exists('itm_hotel_booking_portal_rate_plan_offer')) {
     } elseif ($slug === 'non_refundable') {
       $offer = [
         'discount_percent' => 10.0,
+        'surcharge_percent' => 0.0,
         'pay_badge' => 'Non-refundable',
         'cancel_template' => 'Non-refundable. No free cancellation after booking.',
         'price_label' => 'Non-refundable rate',
@@ -2132,6 +2145,7 @@ if (!function_exists('itm_hotel_booking_portal_rate_plan_offer')) {
     } else {
       $offer = [
         'discount_percent' => 0.0,
+        'surcharge_percent' => 0.0,
         'pay_badge' => 'Pay when you stay',
         'cancel_template' => 'Change or cancel by {date}.',
         'price_label' => 'Best available rate',
@@ -2153,6 +2167,9 @@ if (!function_exists('itm_hotel_booking_portal_rate_plan_offer')) {
       }
       if (array_key_exists('plan_discount_percent', $planRow) && $planRow['plan_discount_percent'] !== null && $planRow['plan_discount_percent'] !== '') {
         $offer['discount_percent'] = max(0.0, min(50.0, (float) $planRow['plan_discount_percent']));
+      }
+      if (array_key_exists('plan_surcharge_percent', $planRow) && $planRow['plan_surcharge_percent'] !== null && $planRow['plan_surcharge_percent'] !== '') {
+        $offer['surcharge_percent'] = max(0.0, min(50.0, (float) $planRow['plan_surcharge_percent']));
       }
       if (array_key_exists('free_cancellation_days_before_check_in', $planRow) && $planRow['free_cancellation_days_before_check_in'] !== null && $planRow['free_cancellation_days_before_check_in'] !== '') {
         $offer['free_cancellation_days'] = max(0, min(365, (int) $planRow['free_cancellation_days_before_check_in']));
@@ -2209,9 +2226,9 @@ if (!function_exists('itm_hotel_booking_portal_price_incl_tourist_tax')) {
 
 if (!function_exists('itm_hotel_booking_portal_cheapest_rate_offer_for_hotel')) {
   /**
-   * Highest plan_discount among active Step 2 plans (usually Non-Refundable).
+   * Lowest net room factor among active Step 2 plans (discount then surcharge; usually Non-Refundable).
    *
-   * @return array{discount_percent:float,slug:string,price_label:string,name:string,pay_badge:string}
+   * @return array{discount_percent:float,surcharge_percent:float,slug:string,price_label:string,name:string,pay_badge:string}
    */
   function itm_hotel_booking_portal_cheapest_rate_offer_for_hotel($conn, $companyId, $hotelId) {
     $companyId = (int) $companyId;
@@ -2227,16 +2244,20 @@ if (!function_exists('itm_hotel_booking_portal_cheapest_rate_offer_for_hotel')) 
         }
         $offer = itm_hotel_booking_portal_rate_plan_offer($slug, $plan);
         $disc = max(0.0, min(50.0, (float) ($offer['discount_percent'] ?? 0)));
+        $sur = max(0.0, min(50.0, (float) ($offer['surcharge_percent'] ?? 0)));
+        $net = (1.0 - ($disc / 100.0)) * (1.0 + ($sur / 100.0));
         $candidate = [
           'discount_percent' => $disc,
+          'surcharge_percent' => $sur,
+          'net_factor' => $net,
           'slug' => $slug,
           'price_label' => (string) ($offer['price_label'] ?? 'Best available rate'),
           'name' => (string) ($plan['name'] ?? $offer['price_label'] ?? ''),
           'pay_badge' => (string) ($offer['pay_badge'] ?? ''),
         ];
         if ($best === null
-          || $disc > (float) $best['discount_percent']
-          || (abs($disc - (float) $best['discount_percent']) < 0.001 && $slug === 'non_refundable')
+          || $net < (float) $best['net_factor'] - 0.000001
+          || (abs($net - (float) $best['net_factor']) < 0.000001 && $slug === 'non_refundable')
         ) {
           $best = $candidate;
         }
@@ -2244,14 +2265,19 @@ if (!function_exists('itm_hotel_booking_portal_cheapest_rate_offer_for_hotel')) 
     }
     if ($best === null) {
       $offer = itm_hotel_booking_portal_rate_plan_offer('non_refundable');
+      $disc = max(0.0, min(50.0, (float) ($offer['discount_percent'] ?? 0)));
+      $sur = max(0.0, min(50.0, (float) ($offer['surcharge_percent'] ?? 0)));
       $best = [
-        'discount_percent' => max(0.0, min(50.0, (float) ($offer['discount_percent'] ?? 0))),
+        'discount_percent' => $disc,
+        'surcharge_percent' => $sur,
+        'net_factor' => (1.0 - ($disc / 100.0)) * (1.0 + ($sur / 100.0)),
         'slug' => 'non_refundable',
         'price_label' => (string) ($offer['price_label'] ?? 'Non-refundable rate'),
         'name' => 'Non-Refundable Rate',
         'pay_badge' => (string) ($offer['pay_badge'] ?? 'Non-refundable'),
       ];
     }
+    unset($best['net_factor']);
     return $best;
   }
 }
@@ -2262,6 +2288,13 @@ if (!function_exists('itm_hotel_booking_portal_rate_plan_effective_discount')) {
     $offer = itm_hotel_booking_portal_rate_plan_offer($ratePlanSlug, $planRow);
     $plan = max(0.0, min(50.0, (float) ($offer['discount_percent'] ?? 0)));
     return min(50.0, $special + $plan);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_rate_plan_effective_surcharge')) {
+  function itm_hotel_booking_portal_rate_plan_effective_surcharge($ratePlanSlug, $planRow = null) {
+    $offer = itm_hotel_booking_portal_rate_plan_offer($ratePlanSlug, $planRow);
+    return max(0.0, min(50.0, (float) ($offer['surcharge_percent'] ?? 0)));
   }
 }
 
@@ -2610,11 +2643,11 @@ if (!function_exists('itm_hotel_booking_room_sellable_for_night')) {
 }
 
 if (!function_exists('itm_hotel_booking_compute_stay_payment_dated_rates')) {
-  function itm_hotel_booking_compute_stay_payment_dated_rates($conn, $companyId, $hotelId, $roomTypeId, $defaultBar, $checkIn, $checkOut, array $occupancy, $discountPercent = 0.0, array $pricing = null) {
+  function itm_hotel_booking_compute_stay_payment_dated_rates($conn, $companyId, $hotelId, $roomTypeId, $defaultBar, $checkIn, $checkOut, array $occupancy, $discountPercent = 0.0, array $pricing = null, $surchargePercent = 0.0) {
     $total = 0.0;
     foreach (itm_hotel_booking_portal_stay_night_dates($checkIn, $checkOut) as $night) {
       $bar = itm_hotel_booking_resolve_room_type_nightly_bar($conn, $companyId, $hotelId, $roomTypeId, $night, $defaultBar);
-      $total += itm_hotel_booking_portal_quote_nightly($bar, $occupancy, $discountPercent, $pricing);
+      $total += itm_hotel_booking_portal_quote_nightly($bar, $occupancy, $discountPercent, $pricing, $surchargePercent);
     }
     return round($total, 2);
   }
@@ -3263,7 +3296,7 @@ if (!function_exists('itm_hotel_booking_portal_rate_plans_active_for_hotel')) {
       itm_hotel_booking_ensure_portal_rate_plans_for_hotel($conn, $companyId, $hotelId);
     }
     $rows = [];
-    $stmt = mysqli_prepare($conn, 'SELECT id, hotel_id, plan_slot, name, rate_plan_slug, cancellation_policy_url, pay_badge, price_label, cancel_template, plan_discount_percent, free_cancellation_days_before_check_in, active FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY plan_slot ASC');
+    $stmt = mysqli_prepare($conn, 'SELECT id, hotel_id, plan_slot, name, rate_plan_slug, cancellation_policy_url, pay_badge, price_label, cancel_template, plan_discount_percent, plan_surcharge_percent, free_cancellation_days_before_check_in, active FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY plan_slot ASC');
     if ($stmt) {
       mysqli_stmt_bind_param($stmt, 'ii', $companyId, $hotelId);
       mysqli_stmt_execute($stmt);

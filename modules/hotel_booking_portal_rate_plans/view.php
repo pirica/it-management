@@ -50,6 +50,7 @@ if ($embedMode) {
 <p><strong>Price label:</strong> <?php echo sanitize($row['price_label'] ?? ''); ?></p>
 <p><strong>Cancel template:</strong> <?php echo sanitize($row['cancel_template'] ?? ''); ?></p>
 <p><strong>Plan discount %:</strong> <?php echo sanitize(number_format((float) ($row['plan_discount_percent'] ?? 0), 2, '.', '')); ?></p>
+<p><strong>Plan surcharge %:</strong> <?php echo sanitize(number_format((float) ($row['plan_surcharge_percent'] ?? 0), 2, '.', '')); ?></p>
 <p><strong>Free cancel days override:</strong> <?php echo ($row['free_cancellation_days_before_check_in'] === null || $row['free_cancellation_days_before_check_in'] === '') ? 'Company setting' : (int) $row['free_cancellation_days_before_check_in']; ?></p>
 <p><strong>Cancellation policy URL:</strong> <?php echo sanitize($row['cancellation_policy_url'] ?? ''); ?></p>
 <p><strong>Active:</strong> <?php if ($isActive): ?><span class="badge badge-success">Active</span><?php else: ?><span class="badge badge-danger">Inactive</span><?php endif; ?></p>

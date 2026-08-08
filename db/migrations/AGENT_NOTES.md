@@ -38,6 +38,7 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
 - `appointments_assigned_confirmed.sql` — `appointments` with `assigned_to_employee_id` (FK `employees`, SET NULL) and `is_confirmed` (destructive — drops appointment rows)
 - `appointment_settings_default_modality.sql` — `appointment_settings.default_appointment_modality` enum (`remote` default; preserves rows via backup table)
 - `hotel_booking_portal_rate_plans.sql` — `hotel_booking_portal_rate_plans` per-hotel Step 2 cancellation policy URLs (mirrors `db/01_schema.sql`; new table — run seeds or admin ensure for rows)
+- `hotel_booking_portal_rate_plans_plan_surcharge_percent.sql` — `plan_surcharge_percent` (default 0; backup/restore preserves rows)
 - `hotel_booking_portal_hotel_pricing.sql` — `hotel_booking_hotels` portal Step 2 pricing columns (breakfast, child supplement, extra-adult %, pet fee)
 - `booking_rooms_types_upgrade.sql` — `booking_rooms_types` with `upgrade_to_room_type_id`, `upgrade_price_per_night`, `upgrade_pitch` (destructive — re-seed room types from `db/02_data.sql` after apply)
 - `hotel_booking_registry_icons.sql` — DML only: fixes mojibake `modules_registry.icon` values for hospitality slugs (matches `includes/ui_config.php` catalog)

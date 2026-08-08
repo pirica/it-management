@@ -4826,6 +4826,7 @@ CREATE TABLE `hotel_booking_portal_rate_plans` (
   `price_label` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `cancel_template` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `plan_discount_percent` decimal(5,2) NOT NULL DEFAULT '0.00',
+  `plan_surcharge_percent` decimal(5,2) NOT NULL DEFAULT '0.00',
   `free_cancellation_days_before_check_in` int DEFAULT NULL,
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,

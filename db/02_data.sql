@@ -2529,11 +2529,11 @@ INSERT INTO `hotel_booking_special_rates` (`company_id`, `hotel_id`, `rate_slug`
 (1, 1, 'group', 'Group code', 15.00, 'Enter a valid group code.', 1, '2026-01-01 00:00:01'),
 (1, 1, 'corporate', 'Corporate account', 15.00, 'Enter a valid corporate account number.', 1, '2026-01-01 00:00:01');
 
-INSERT INTO `hotel_booking_portal_rate_plans` (`company_id`, `hotel_id`, `plan_slot`, `name`, `rate_plan_slug`, `cancellation_policy_url`, `pay_badge`, `price_label`, `cancel_template`, `plan_discount_percent`, `free_cancellation_days_before_check_in`, `active`, `created_at`) VALUES
-(1, 1, 1, 'Best Available Rate', 'room_only', 'cancellation_policy/1_cancellation_policy.html', 'Pay when you stay', 'Best available rate', 'Change or cancel by {date}.', 0.00, NULL, 1, '2026-01-01 00:00:01'),
-(1, 1, 2, 'Breakfast Included', 'breakfast', 'cancellation_policy/2_cancellation_policy.html', 'Pay when you stay', 'With breakfast', 'Change or cancel by {date}.', 0.00, NULL, 1, '2026-01-01 00:00:01'),
-(1, 1, 3, 'Flexible Rate', 'flexible', 'cancellation_policy/3_cancellation_policy.html', 'Pay when you stay', 'Flexible rate', 'Free cancellation until {date}.', 0.00, NULL, 1, '2026-01-01 00:00:01'),
-(1, 1, 4, 'Non-Refundable Rate', 'non_refundable', 'cancellation_policy/4_cancellation_policy.html', 'Non-refundable', 'Non-refundable rate', 'Non-refundable. No free cancellation after booking.', 10.00, NULL, 1, '2026-01-01 00:00:01');
+INSERT INTO `hotel_booking_portal_rate_plans` (`company_id`, `hotel_id`, `plan_slot`, `name`, `rate_plan_slug`, `cancellation_policy_url`, `pay_badge`, `price_label`, `cancel_template`, `plan_discount_percent`, `plan_surcharge_percent`, `free_cancellation_days_before_check_in`, `active`, `created_at`) VALUES
+(1, 1, 1, 'Best Available Rate', 'room_only', 'cancellation_policy/1_cancellation_policy.html', 'Pay when you stay', 'Best available rate', 'Change or cancel by {date}.', 0.00, 0.00, NULL, 1, '2026-01-01 00:00:01'),
+(1, 1, 2, 'Breakfast Included', 'breakfast', 'cancellation_policy/2_cancellation_policy.html', 'Pay when you stay', 'With breakfast', 'Change or cancel by {date}.', 0.00, 0.00, NULL, 1, '2026-01-01 00:00:01'),
+(1, 1, 3, 'Flexible Rate', 'flexible', 'cancellation_policy/3_cancellation_policy.html', 'Pay when you stay', 'Flexible rate', 'Free cancellation until {date}.', 0.00, 0.00, NULL, 1, '2026-01-01 00:00:01'),
+(1, 1, 4, 'Non-Refundable Rate', 'non_refundable', 'cancellation_policy/4_cancellation_policy.html', 'Non-refundable', 'Non-refundable rate', 'Non-refundable. No free cancellation after booking.', 10.00, 0.00, NULL, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `hotel_booking_hotel_nearby` (`company_id`, `hotel_id`, `place_name`, `distance_km`, `sort_order`, `active`, `created_at`) VALUES
 (1, 1, 'City center', 12.60, 10, 1, '2026-01-01 00:00:01'),
@@ -2563,8 +2563,8 @@ FROM `companies` c
 CROSS JOIN (SELECT `description`, `location`, `website_url`, `reviews_url`, `check_in_time`, `check_out_time`, `currency_code`, `parking_info`, `pets_policy` FROM `hotel_booking_hotels` WHERE `company_id` = 1 AND `deleted_at` IS NULL ORDER BY `id` ASC LIMIT 1) t
 WHERE c.`id` BETWEEN 2 AND 5;
 
-INSERT INTO `hotel_booking_portal_rate_plans` (`company_id`, `hotel_id`, `plan_slot`, `name`, `rate_plan_slug`, `cancellation_policy_url`, `pay_badge`, `price_label`, `cancel_template`, `plan_discount_percent`, `free_cancellation_days_before_check_in`, `active`, `created_at`)
-SELECT h.`company_id`, h.`id`, rp.`plan_slot`, rp.`name`, rp.`rate_plan_slug`, rp.`cancellation_policy_url`, rp.`pay_badge`, rp.`price_label`, rp.`cancel_template`, rp.`plan_discount_percent`, rp.`free_cancellation_days_before_check_in`, 1, '2026-01-01 00:00:01'
+INSERT INTO `hotel_booking_portal_rate_plans` (`company_id`, `hotel_id`, `plan_slot`, `name`, `rate_plan_slug`, `cancellation_policy_url`, `pay_badge`, `price_label`, `cancel_template`, `plan_discount_percent`, `plan_surcharge_percent`, `free_cancellation_days_before_check_in`, `active`, `created_at`)
+SELECT h.`company_id`, h.`id`, rp.`plan_slot`, rp.`name`, rp.`rate_plan_slug`, rp.`cancellation_policy_url`, rp.`pay_badge`, rp.`price_label`, rp.`cancel_template`, rp.`plan_discount_percent`, rp.`plan_surcharge_percent`, rp.`free_cancellation_days_before_check_in`, 1, '2026-01-01 00:00:01'
 FROM `hotel_booking_hotels` h
 INNER JOIN `hotel_booking_portal_rate_plans` rp ON rp.`company_id` = 1 AND rp.`hotel_id` = (SELECT `id` FROM `hotel_booking_hotels` WHERE `company_id` = 1 AND `deleted_at` IS NULL ORDER BY `id` ASC LIMIT 1)
 WHERE h.`company_id` BETWEEN 2 AND 5 AND h.`deleted_at` IS NULL;
