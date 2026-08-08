@@ -2183,6 +2183,16 @@ if (!function_exists('itm_hotel_booking_portal_calendar_month_advance_days_left_
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_show_discount_strikethrough_from_settings')) {
+  /** Whether portal Step 1/2 show list-price strikethrough next to discounted sale price. */
+  function itm_hotel_booking_portal_show_discount_strikethrough_from_settings($settingsRow) {
+    if (!is_array($settingsRow) || !array_key_exists('show_discount_strikethrough', $settingsRow)) {
+      return true;
+    }
+    return !empty($settingsRow['show_discount_strikethrough']);
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_price_incl_tourist_tax')) {
   /**
    * Guest-facing nightly display: room amount + tourist tax for occupancy (default 1 adult).

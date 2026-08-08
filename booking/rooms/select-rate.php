@@ -49,6 +49,7 @@ $basePerNight = itm_hotel_booking_portal_check_in_display_bar(
 $currency = $room['currency_code'] ?? 'EUR';
 
 $settingsFreeCancelDays = itm_hotel_booking_portal_free_cancellation_days_from_settings($settings);
+$showDiscountStrikethrough = itm_hotel_booking_portal_show_discount_strikethrough_from_settings($settings);
 $roomLabel = trim((string) ($room['type_name'] ?? $room['name'] ?? 'Room'));
 if (!empty($room['bed_summary']) && stripos($roomLabel, (string) $room['bed_summary']) === false) {
     $roomLabel .= ' ' . $room['bed_summary'];
@@ -242,7 +243,7 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
 <div class="hb-rate-option-price-col">
 <p class="hb-rate-price-label"><?php echo htmlspecialchars($priceLabel, ENT_QUOTES, 'UTF-8'); ?></p>
 <p class="hb-rate-price-nightly" title="Average per night including tourist tax"><?php echo htmlspecialchars(hb_portal_money_format($nightlyIncl, $currency), ENT_QUOTES, 'UTF-8'); ?> / night</p>
-<p class="hb-rate-price-total"><?php if ($effectiveDiscount > 0 && $listStayTotal > $stayTotal + 0.009): ?><span class="hb-room-price-compare"><?php echo htmlspecialchars(hb_portal_money_format($listStayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <?php endif; ?><span class="hb-rate-price-amount"><?php echo htmlspecialchars(hb_portal_money_format($stayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <span class="hb-rate-price-stay-label">stay total</span></p>
+<p class="hb-rate-price-total"><?php if ($showDiscountStrikethrough && $effectiveDiscount > 0 && $listStayTotal > $stayTotal + 0.009): ?><span class="hb-room-price-compare"><?php echo htmlspecialchars(hb_portal_money_format($listStayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <?php endif; ?><span class="hb-rate-price-amount"><?php echo htmlspecialchars(hb_portal_money_format($stayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <span class="hb-rate-price-stay-label">stay total</span></p>
 <button type="submit" class="hb-btn<?php echo $isPrimary ? ' hb-btn-primary hb-rate-select-primary' : ' hb-rate-select-outline'; ?>" name="portal_rate_plan_id" value="<?php echo $planId; ?>" title="Select <?php echo htmlspecialchars($planRow['name'], ENT_QUOTES, 'UTF-8'); ?>">Select</button>
 </div>
 </article>
