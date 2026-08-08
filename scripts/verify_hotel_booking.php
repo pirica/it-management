@@ -662,6 +662,21 @@ if (!is_file($bookingGalleryJs)) {
     }
 }
 
+$selectRoomJs = $repoRoot . '/booking/js/hotel-booking-select-room.js';
+if (!is_file($selectRoomJs)) {
+    hb_fail('booking/js/hotel-booking-select-room.js missing');
+} else {
+    $selectRoomJsSrc = (string) file_get_contents($selectRoomJs);
+    $roomsSrcForTax = is_file($roomsPhp) ? (string) file_get_contents($roomsPhp) : '';
+    if (strpos($selectRoomJsSrc, 'touristTaxPerPersonPerNight') === false || strpos($selectRoomJsSrc, 'touristTaxPerNight') === false) {
+        hb_fail('select-room JS must add tourist tax when re-rendering card prices');
+    } elseif (strpos($roomsSrcForTax, 'touristTaxPerPersonPerNight') === false) {
+        hb_fail('rooms.php must pass touristTaxPerPersonPerNight into HB_SELECT_ROOM');
+    } else {
+        hb_pass('rooms list JS prices include tourist tax');
+    }
+}
+
 $roomTypesIndex = $repoRoot . '/modules/booking_rooms_types/index.php';
 if (!is_file($roomTypesIndex)) {
     hb_fail('booking_rooms_types index.php missing');

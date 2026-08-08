@@ -149,6 +149,19 @@
     };
   }
 
+  function touristTaxPerNight() {
+    var rate = parseFloat(cfg.touristTaxPerPersonPerNight);
+    if (!(rate > 0)) {
+      return 0;
+    }
+    var occ = currentOccupancy();
+    var guests = Math.max(0, parseInt(occ.adults, 10) || 0) + Math.max(0, parseInt(occ.children, 10) || 0);
+    if (guests < 1) {
+      guests = 1;
+    }
+    return Math.round(rate * guests * 100) / 100;
+  }
+
   function quoteNightlyUndiscounted(base) {
     var occ = currentOccupancy();
     var pricing = portalPricing();
@@ -160,7 +173,7 @@
     var extraAdults = Math.max(0, adults - included);
     var extraPct = (parseFloat(pricing.extra_adult_supplement_percent) || 0) / 100;
     var childSupp = parseFloat(pricing.child_nightly_supplement) || 0;
-    return Math.round(baseF * rooms + extraAdults * (baseF * extraPct) + children * childSupp);
+    return Math.round((baseF * rooms + extraAdults * (baseF * extraPct) + children * childSupp) * 100) / 100;
   }
 
   function quoteNightly(base) {
@@ -169,7 +182,7 @@
     if (disc > 0) {
       nightly *= (1 - disc / 100);
     }
-    return Math.round(nightly);
+    return Math.round(nightly * 100) / 100;
   }
 
   function renderRoomPrice(card) {
@@ -179,8 +192,9 @@
     if (!priceEl || base === null || base === '') {
       return;
     }
-    var list = quoteNightlyUndiscounted(base);
-    var sale = quoteNightly(base);
+    var tax = touristTaxPerNight();
+    var list = Math.round((quoteNightlyUndiscounted(base) + tax) * 100) / 100;
+    var sale = Math.round((quoteNightly(base) + tax) * 100) / 100;
     var disc = discountPercent();
     if (compareEl) {
       if (disc > 0 && list > sale) {
