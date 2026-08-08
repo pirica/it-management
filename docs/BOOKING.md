@@ -125,7 +125,7 @@ After lookup:
 
 | Table | Portal use |
 |-------|------------|
-| `hotel_booking_settings` | `public_portal_enabled`, welcome copy, tourist tax, free-cancellation days before check-in (default 5), Select Dates calendar advance threshold `calendar_month_advance_days_left` (default 3), reviews URL |
+| `hotel_booking_settings` | `public_portal_enabled`, welcome copy, tourist tax, free-cancellation days before check-in (default 5), Select Dates calendar advance threshold `calendar_month_advance_days_left` (default 3), `show_discount_strikethrough` (default 1 — list-price strikethrough on Step 1/2), reviews URL |
 | `hotel_booking_hotels` | Property name, location, phone, website, currency, check-in/out times, **portal step pricing** (`portal_breakfast_*`, `portal_child_nightly_supplement`, `portal_extra_adult_supplement_percent`, `portal_pet_daily_fee`) |
 | `hotel_booking_room_type_base_prices` | Base price per night per room type and hotel |
 | `hotel_booking_rooms` | Inventory, link to room type |

@@ -48,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($calendarAdvanceDaysLeft > 31) {
         $calendarAdvanceDaysLeft = 31;
     }
+    $showDiscountStrikethrough = !empty($_POST['show_discount_strikethrough']) ? 1 : 0;
     if (trim((string) ($_POST['reviews_url'] ?? '')) !== '' && $reviewsUrl === '') {
         $errors[] = 'Reviews URL must start with http:// or https://';
     }
@@ -63,9 +64,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $sid = (int) ($row['id'] ?? 0);
     if (empty($errors)) {
-    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
+    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
     if ($upd) {
-        mysqli_stmt_bind_param($upd, 'issssssdiisiii', $enabled, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $freeCancelDays, $calendarAdvanceDaysLeft, $urlmybooking, $employee_id, $sid, $company_id);
+        mysqli_stmt_bind_param($upd, 'issssssdiiisiii', $enabled, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $urlmybooking, $employee_id, $sid, $company_id);
         mysqli_stmt_execute($upd);
         mysqli_stmt_close($upd);
         header('Location: index.php?saved=1');
@@ -144,6 +145,13 @@ itm_hospitality_admin_layout_begin($crud_title);
 <label>Select Dates calendar advance (days left)</label>
 <input type="number" name="calendar_month_advance_days_left" class="form-control" min="0" max="31" step="1" value="<?php echo (int) ($row['calendar_month_advance_days_left'] ?? 3); ?>">
 <p class="text-muted" style="font-size:.85rem;margin-top:4px;">After check-in, auto-advance to the next month when <code>daysLeftInMonth &lt; value</code> (seed <strong>3</strong>). Use <strong>0</strong> to never auto-advance (guest uses ◀ / ▶ or month tabs).</p>
+</div>
+<div class="form-group">
+<label class="itm-checkbox-control">
+<input type="checkbox" name="show_discount_strikethrough" value="1" <?php echo itm_hotel_booking_portal_show_discount_strikethrough_from_settings($row ?: []) ? 'checked' : ''; ?>>
+<span>Show discount as strikethrough</span>
+</label>
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">When enabled, Step 1 room cards and Step 2 rate totals show the list price struck through next to the discounted sale price. When disabled, only the sale price is shown.</p>
 </div>
 <button type="submit" class="btn btn-primary" title="Save">💾</button>
 </form>

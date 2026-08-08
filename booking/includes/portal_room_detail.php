@@ -265,7 +265,8 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
         $listQuoted = (float) ($card['list_quoted_price'] ?? $quoted);
         $priceLabel = hb_portal_money_format($quoted, $currencyCode);
         $listPriceLabel = hb_portal_money_format($listQuoted, $currencyCode);
-        $showBookCompare = $listQuoted > $quoted;
+        $showStrikethrough = !array_key_exists('show_discount_strikethrough', $options) || !empty($options['show_discount_strikethrough']);
+        $showBookCompare = $showStrikethrough && $listQuoted > $quoted;
 
         $specParts = [];
         if ($size !== '' && $size !== null) {

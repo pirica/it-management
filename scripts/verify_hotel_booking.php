@@ -310,6 +310,23 @@ if ($colAdv && mysqli_num_rows($colAdv) === 1) {
     hb_fail('hotel_booking_settings.calendar_month_advance_days_left column missing');
 }
 
+$colStrike = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'show_discount_strikethrough'");
+if ($colStrike && mysqli_num_rows($colStrike) === 1) {
+    hb_pass('hotel_booking_settings.show_discount_strikethrough column');
+} else {
+    hb_fail('hotel_booking_settings.show_discount_strikethrough column missing');
+}
+
+if (function_exists('itm_hotel_booking_portal_show_discount_strikethrough_from_settings')
+    && itm_hotel_booking_portal_show_discount_strikethrough_from_settings([]) === true
+    && itm_hotel_booking_portal_show_discount_strikethrough_from_settings(['show_discount_strikethrough' => 1]) === true
+    && itm_hotel_booking_portal_show_discount_strikethrough_from_settings(['show_discount_strikethrough' => 0]) === false
+) {
+    hb_pass('portal show_discount_strikethrough helper');
+} else {
+    hb_fail('portal show_discount_strikethrough helper');
+}
+
 $roomsPhpSrc = is_file(dirname(__DIR__) . '/booking/rooms.php') ? (string) file_get_contents(dirname(__DIR__) . '/booking/rooms.php') : '';
 $selectRoomJsSrcCheck = is_file(dirname(__DIR__) . '/booking/js/hotel-booking-select-room.js') ? (string) file_get_contents(dirname(__DIR__) . '/booking/js/hotel-booking-select-room.js') : '';
 if (strpos($roomsPhpSrc, 'cheapestPlanDiscountPercent') !== false
@@ -321,10 +338,23 @@ if (strpos($roomsPhpSrc, 'cheapestPlanDiscountPercent') !== false
     hb_fail('Step 1 rooms must apply cheapestPlanDiscountPercent for STD From');
 }
 
+$settingsIndexSrc = is_file(dirname(__DIR__) . '/modules/hotel_booking_settings/index.php') ? (string) file_get_contents(dirname(__DIR__) . '/modules/hotel_booking_settings/index.php') : '';
+$selectRateSrc = is_file(dirname(__DIR__) . '/booking/rooms/select-rate.php') ? (string) file_get_contents(dirname(__DIR__) . '/booking/rooms/select-rate.php') : '';
+if (strpos($settingsIndexSrc, 'show_discount_strikethrough') !== false
+    && strpos($roomsPhpSrc, 'showDiscountStrikethrough') !== false
+    && strpos($selectRoomJsSrcCheck, 'showDiscountStrikethrough') !== false
+    && strpos($selectRateSrc, 'showDiscountStrikethrough') !== false
+) {
+    hb_pass('admin + portal Step 1/2 wire show_discount_strikethrough');
+} else {
+    hb_fail('admin + portal Step 1/2 must wire show_discount_strikethrough');
+}
+
 $seedCancelDaysOk = true;
 $seedAdvanceOk = true;
 $seedMerchOk = true;
-$seedRes = mysqli_query($conn, 'SELECT company_id, free_cancellation_days_before_check_in, calendar_month_advance_days_left FROM hotel_booking_settings WHERE company_id BETWEEN 1 AND 5 AND deleted_at IS NULL');
+$seedStrikeOk = true;
+$seedRes = mysqli_query($conn, 'SELECT company_id, free_cancellation_days_before_check_in, calendar_month_advance_days_left, show_discount_strikethrough FROM hotel_booking_settings WHERE company_id BETWEEN 1 AND 5 AND deleted_at IS NULL');
 $seedCompanies = [];
 while ($seedRes && ($sr = mysqli_fetch_assoc($seedRes))) {
     $seedCompanies[(int) $sr['company_id']] = (int) ($sr['free_cancellation_days_before_check_in'] ?? 0);
@@ -334,10 +364,14 @@ while ($seedRes && ($sr = mysqli_fetch_assoc($seedRes))) {
     if ((int) ($sr['calendar_month_advance_days_left'] ?? -1) !== 3) {
         $seedAdvanceOk = false;
     }
+    if ((int) ($sr['show_discount_strikethrough'] ?? 0) !== 1) {
+        $seedStrikeOk = false;
+    }
 }
 if (count($seedCompanies) < 5) {
     $seedCancelDaysOk = false;
     $seedAdvanceOk = false;
+    $seedStrikeOk = false;
 }
 $merchRes = mysqli_query($conn, "SELECT company_id, COUNT(*) AS c FROM hotel_booking_portal_rate_plans WHERE company_id BETWEEN 1 AND 5 AND deleted_at IS NULL AND rate_plan_slug = 'flexible' AND cancel_template LIKE '%{date}%' GROUP BY company_id");
 $merchCompanies = 0;
@@ -350,10 +384,10 @@ while ($merchRes && ($mr = mysqli_fetch_assoc($merchRes))) {
 if ($merchCompanies < 5) {
     $seedMerchOk = false;
 }
-if ($seedCancelDaysOk && $seedAdvanceOk && $seedMerchOk) {
-    hb_pass('free cancel days + calendar advance + rate plan merchandising seeded for companies 1-5');
+if ($seedCancelDaysOk && $seedAdvanceOk && $seedStrikeOk && $seedMerchOk) {
+    hb_pass('free cancel days + calendar advance + strikethrough + rate plan merchandising seeded for companies 1-5');
 } else {
-    hb_fail('free cancel days + calendar advance + rate plan merchandising seeded for companies 1-5');
+    hb_fail('free cancel days + calendar advance + strikethrough + rate plan merchandising seeded for companies 1-5');
 }
 
 if (itm_hotel_booking_portal_validate_guest_email('guest@example.com') && !itm_hotel_booking_portal_validate_guest_email('not-an-email')) {

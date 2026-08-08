@@ -199,7 +199,8 @@
     var sale = Math.round((quoteNightly(base) + tax) * 100) / 100;
     var disc = discountPercent();
     if (compareEl) {
-      if (disc > 0 && list > sale) {
+      var showStrike = cfg.showDiscountStrikethrough !== false && cfg.showDiscountStrikethrough !== 0;
+      if (showStrike && disc > 0 && list > sale) {
         compareEl.textContent = formatMoney(list);
         compareEl.hidden = false;
       } else {
@@ -493,8 +494,9 @@
             if (bookValue && priceEl) {
               bookValue.textContent = priceEl.textContent.trim();
             }
-            if (bookCompare && compareEl) {
-              if (!compareEl.hidden && compareEl.textContent.trim() !== '') {
+            if (bookCompare) {
+              var showStrikeDetail = cfg.showDiscountStrikethrough !== false && cfg.showDiscountStrikethrough !== 0;
+              if (showStrikeDetail && compareEl && !compareEl.hidden && compareEl.textContent.trim() !== '') {
                 bookCompare.textContent = compareEl.textContent.trim();
                 bookCompare.hidden = false;
               } else {

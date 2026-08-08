@@ -5340,6 +5340,7 @@ CREATE TABLE `hotel_booking_settings` (
   `tourist_tax_per_person_per_night` decimal(10,2) NOT NULL DEFAULT '2.00',
   `free_cancellation_days_before_check_in` int NOT NULL DEFAULT '5',
   `calendar_month_advance_days_left` int NOT NULL DEFAULT '3',
+  `show_discount_strikethrough` tinyint(1) NOT NULL DEFAULT '1',
   `urlmybooking` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'https://localhost/it-management/booking/users/bookings.php',
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,

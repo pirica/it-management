@@ -41,6 +41,7 @@ $cheapestPlanDiscount = max(0.0, min(50.0, (float) ($cheapestOffer['discount_per
 $displayDiscountPercent = min(50.0, (float) $discountPercent + $cheapestPlanDiscount);
 $touristTaxRate = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings);
 $taxPerNight = itm_hotel_booking_portal_tourist_tax_amount($occupancy, 1, $touristTaxRate);
+$showDiscountStrikethrough = itm_hotel_booking_portal_show_discount_strikethrough_from_settings($settings);
 $resolvedRateSlug = itm_hotel_booking_portal_resolved_rate_slug($occupancy);
 $rateDiscountMap = itm_hotel_booking_special_rate_discount_map($conn, $company_id, $hotelId);
 $rateProgramOptions = itm_hotel_booking_portal_rate_program_options();
@@ -191,7 +192,8 @@ foreach ($cardList as $card) {
         $amenityRows,
         $currency,
         $bookUrl,
-        !empty($card['available'])
+        !empty($card['available']),
+        ['show_discount_strikethrough' => $showDiscountStrikethrough]
     );
 }
 $totalFound = count($cardList);
@@ -320,7 +322,7 @@ echo hb_portal_render_image_gallery(
 <p class="hb-room-price"><?php
     $listQuotedCard = (float) ($card['list_quoted_price'] ?? $card['quoted_price']);
     $saleQuotedCard = (float) ($card['quoted_price'] ?? 0);
-    $showPriceCompare = $displayDiscountPercent > 0 && $listQuotedCard > $saleQuotedCard;
+    $showPriceCompare = $showDiscountStrikethrough && $displayDiscountPercent > 0 && $listQuotedCard > $saleQuotedCard;
 ?><span class="hb-room-price-compare"<?php echo $showPriceCompare ? '' : ' hidden'; ?>><?php echo $showPriceCompare ? htmlspecialchars(hb_portal_money_format($listQuotedCard, $currency), ENT_QUOTES, 'UTF-8') : ''; ?></span><span class="hb-room-price-value"><?php echo htmlspecialchars(hb_portal_money_format($saleQuotedCard, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <span class="hb-room-price-suffix">/ night incl. tax</span></p>
 <?php if (!empty($card['available'])): ?>
 <a class="hb-btn hb-btn-primary hb-room-select" href="<?php echo htmlspecialchars($bookUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Select room">Select</a>
@@ -439,6 +441,7 @@ window.HB_SELECT_ROOM = <?php echo json_encode([
     'portalPricing' => $portalPricing,
     'pricingDefaults' => itm_hotel_booking_portal_pricing_defaults(),
     'touristTaxPerPersonPerNight' => $touristTaxRate,
+    'showDiscountStrikethrough' => $showDiscountStrikethrough,
     'typeDetails' => $typeDetailsHtml,
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
