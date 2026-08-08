@@ -67,7 +67,7 @@ sequenceDiagram
 | Asset | Used on |
 |-------|---------|
 | `hotel-booking-public.js` | `index.php` — hotel detail modal, gallery |
-| `hotel-booking-dates.js` | `index.php` — Select Dates modal (check-in + check-out range; **◀ / ▶** month nav; auto-advance to next month when check-in is in the last week) |
+| `hotel-booking-dates.js` | `index.php` — Select Dates modal (check-in + check-out range; **◀ / ▶** month nav; auto-advance when `daysLeftInMonth < calendar_month_advance_days_left` from hotel settings) |
 | `hotel-booking-amenity-icons.js` | Amenity SVG resolution |
 | `hotel-booking-select-room.js` | `rooms.php` — filters, occupancy/rates modals, room detail |
 | `hotel-booking-customize.js` | `rooms/customize.php` — upgrade totals, room detail modal |
@@ -125,7 +125,7 @@ After lookup:
 
 | Table | Portal use |
 |-------|------------|
-| `hotel_booking_settings` | `public_portal_enabled`, welcome copy, tourist tax, free-cancellation days before check-in (default 5), reviews URL |
+| `hotel_booking_settings` | `public_portal_enabled`, welcome copy, tourist tax, free-cancellation days before check-in (default 5), Select Dates calendar advance threshold `calendar_month_advance_days_left` (default 3), reviews URL |
 | `hotel_booking_hotels` | Property name, location, phone, website, currency, check-in/out times, **portal step pricing** (`portal_breakfast_*`, `portal_child_nightly_supplement`, `portal_extra_adult_supplement_percent`, `portal_pet_daily_fee`) |
 | `hotel_booking_room_type_base_prices` | Base price per night per room type and hotel |
 | `hotel_booking_rooms` | Inventory, link to room type |
@@ -151,7 +151,7 @@ After lookup:
 | `modules/hotel_booking_hotels/` | Properties, photos, nearby places |
 | `modules/hotel_booking_rooms/` | Physical rooms |
 | `modules/booking_rooms_types/` | Room types, upgrade targets |
-| `modules/hotel_booking_settings/` | Portal on/off, welcome text, tourist tax, free-cancellation days |
+| `modules/hotel_booking_settings/` | Portal on/off, welcome text, tourist tax, free-cancellation days, Select Dates calendar advance days-left threshold |
 | `modules/hotel_booking_portal_rate_plans/` | Cancellation policy URLs per rate slot; **portal step pricing** form per hotel |
 | `modules/hotel_booking_special_rates/` | Discount programs per hotel |
 | `modules/hotel_booking_amenities/` | Amenity catalog + icon slugs |

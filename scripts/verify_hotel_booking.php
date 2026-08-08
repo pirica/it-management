@@ -285,6 +285,30 @@ if (strpos($datesJsSrc, 'toFixed(2)') !== false && strpos($datesJsSrc, 'Math.rou
 } else {
     hb_fail('Select Dates calendar formatMoney must not Math.round whole euros');
 }
+if (strpos($datesJsSrc, 'monthAdvanceDaysLeftThreshold') !== false
+    && strpos($datesJsSrc, 'calendar_month_advance_days_left') !== false
+) {
+    hb_pass('Select Dates auto-advance reads calendar_month_advance_days_left from settings');
+} else {
+    hb_fail('Select Dates must use monthAdvanceDaysLeftThreshold / calendar_month_advance_days_left');
+}
+
+if (function_exists('itm_hotel_booking_portal_calendar_month_advance_days_left_from_settings')
+    && itm_hotel_booking_portal_calendar_month_advance_days_left_from_settings([]) === 3
+    && itm_hotel_booking_portal_calendar_month_advance_days_left_from_settings(['calendar_month_advance_days_left' => 0]) === 0
+    && itm_hotel_booking_portal_calendar_month_advance_days_left_from_settings(['calendar_month_advance_days_left' => 7]) === 7
+) {
+    hb_pass('portal calendar month advance days helper');
+} else {
+    hb_fail('portal calendar month advance days helper');
+}
+
+$colAdv = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'calendar_month_advance_days_left'");
+if ($colAdv && mysqli_num_rows($colAdv) === 1) {
+    hb_pass('hotel_booking_settings.calendar_month_advance_days_left column');
+} else {
+    hb_fail('hotel_booking_settings.calendar_month_advance_days_left column missing');
+}
 
 $roomsPhpSrc = is_file(dirname(__DIR__) . '/booking/rooms.php') ? (string) file_get_contents(dirname(__DIR__) . '/booking/rooms.php') : '';
 $selectRoomJsSrcCheck = is_file(dirname(__DIR__) . '/booking/js/hotel-booking-select-room.js') ? (string) file_get_contents(dirname(__DIR__) . '/booking/js/hotel-booking-select-room.js') : '';
@@ -298,17 +322,22 @@ if (strpos($roomsPhpSrc, 'cheapestPlanDiscountPercent') !== false
 }
 
 $seedCancelDaysOk = true;
+$seedAdvanceOk = true;
 $seedMerchOk = true;
-$seedRes = mysqli_query($conn, 'SELECT company_id, free_cancellation_days_before_check_in FROM hotel_booking_settings WHERE company_id BETWEEN 1 AND 5 AND deleted_at IS NULL');
+$seedRes = mysqli_query($conn, 'SELECT company_id, free_cancellation_days_before_check_in, calendar_month_advance_days_left FROM hotel_booking_settings WHERE company_id BETWEEN 1 AND 5 AND deleted_at IS NULL');
 $seedCompanies = [];
 while ($seedRes && ($sr = mysqli_fetch_assoc($seedRes))) {
     $seedCompanies[(int) $sr['company_id']] = (int) ($sr['free_cancellation_days_before_check_in'] ?? 0);
     if ((int) ($sr['free_cancellation_days_before_check_in'] ?? 0) !== 5) {
         $seedCancelDaysOk = false;
     }
+    if ((int) ($sr['calendar_month_advance_days_left'] ?? -1) !== 3) {
+        $seedAdvanceOk = false;
+    }
 }
 if (count($seedCompanies) < 5) {
     $seedCancelDaysOk = false;
+    $seedAdvanceOk = false;
 }
 $merchRes = mysqli_query($conn, "SELECT company_id, COUNT(*) AS c FROM hotel_booking_portal_rate_plans WHERE company_id BETWEEN 1 AND 5 AND deleted_at IS NULL AND rate_plan_slug = 'flexible' AND cancel_template LIKE '%{date}%' GROUP BY company_id");
 $merchCompanies = 0;
@@ -321,10 +350,10 @@ while ($merchRes && ($mr = mysqli_fetch_assoc($merchRes))) {
 if ($merchCompanies < 5) {
     $seedMerchOk = false;
 }
-if ($seedCancelDaysOk && $seedMerchOk) {
-    hb_pass('free cancel days + rate plan merchandising seeded for companies 1-5');
+if ($seedCancelDaysOk && $seedAdvanceOk && $seedMerchOk) {
+    hb_pass('free cancel days + calendar advance + rate plan merchandising seeded for companies 1-5');
 } else {
-    hb_fail('free cancel days + rate plan merchandising seeded for companies 1-5');
+    hb_fail('free cancel days + calendar advance + rate plan merchandising seeded for companies 1-5');
 }
 
 if (itm_hotel_booking_portal_validate_guest_email('guest@example.com') && !itm_hotel_booking_portal_validate_guest_email('not-an-email')) {

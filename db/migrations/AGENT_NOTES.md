@@ -47,6 +47,7 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
 - `hotel_booking_hk_status_code.sql` — `hotel_booking_housekeeping_statuses` with tenant-unique `code` (destructive — re-seed HK statuses from `db/02_data.sql` after apply)
 - `hotel_booking_distribution.sql` — four `hotel_booking_distribution_*` tables (channels, mappings, reservation links, ARI event log; mirrors `db/01_schema.sql`; new tables only)
 - `search_index.sql` — `search_index` denormalized FULLTEXT table for phase-2 command palette (new table; destructive only to existing index rows)
+- `hotel_booking_settings_calendar_month_advance_days_left.sql` — `hotel_booking_settings.calendar_month_advance_days_left` (default 3; backup/restore preserves rows)
 - `schema_migrations.sql` — `schema_migrations` history table for `scripts/migrate.php` (`CREATE TABLE IF NOT EXISTS`; bootstrap only — not executed by the runner loop)
 
 ## 12. Module Owner Notes (Optional)
