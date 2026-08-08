@@ -29,8 +29,10 @@
   }
 
   function formatMoney(amount, code) {
-    var n = Math.round(parseFloat(amount) || 0);
-    return moneySym(code) + n;
+    // Why: Calendar API returns cents (69.5); Math.round hid NR as 70 vs home From 69.50.
+    var n = Math.round((parseFloat(amount) || 0) * 100) / 100;
+    var s = n.toFixed(2).replace(/\.00$/, '');
+    return moneySym(code) + s;
   }
 
   function monthLabel(y, m) {
@@ -480,10 +482,13 @@
       var code = (state.calendar && state.calendar.currency_code) || state.hotel.currency_code || 'EUR';
       var avg = averageNightlyPrice(state.checkInYmd, checkOut);
       var nightWord = nights === 1 ? 'night' : 'nights';
+      var rateLabel = (state.calendar && state.calendar.cheapest_rate_label)
+        || (state.hotel && state.hotel.cheapest_rate_label)
+        || 'Best available rate';
       summary.innerHTML =
         '<p class="hb-dates-sum-price">' + escapeHtml(formatMoney(avg, code)) + '</p>' +
         '<p class="hb-dates-sum-meta">avg/night for ' + nights + ' ' + nightWord + ' (incl. taxes)</p>' +
-        '<p class="hb-dates-sum-label">Best available rate</p>' +
+        '<p class="hb-dates-sum-label">' + escapeHtml(rateLabel) + '</p>' +
         '<p class="hb-dates-sum-range">' + escapeHtml(displayRange(state.checkInYmd, checkOut)) + '</p>';
       choose.disabled = false;
     };
