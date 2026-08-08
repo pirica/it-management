@@ -5061,6 +5061,7 @@ CREATE TABLE `hotel_bookings` (
   `check_in` date NOT NULL,
   `check_out` date NOT NULL,
   `payment_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `auth2` char(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `future_status_id` int DEFAULT NULL,
   `present_status_id` int DEFAULT NULL,
   `history_status_id` int DEFAULT NULL,

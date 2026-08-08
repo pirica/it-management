@@ -298,6 +298,14 @@ if (!function_exists('hb_booking_render_form_fields')) {
         echo '<div class="form-group"><label>Payment amount</label>';
         echo '<input type="text" name="payment_amount" id="hb-booking-payment" class="form-control" value="' . sanitize((string) $paymentVal) . '" placeholder="Auto from room nights when empty"></div>';
 
+        if (!$isCreate) {
+            $auth2Display = itm_hotel_booking_normalize_auth2($row['auth2'] ?? '');
+            echo '<div class="form-group"><label>Auth code (auth2)</label>';
+            echo '<input type="text" class="form-control" value="' . sanitize($auth2Display !== '' ? $auth2Display : '—') . '" readonly title="Guest manage PIN — generated on create"></div>';
+        } else {
+            echo '<p class="text-muted" style="margin:0 0 12px;font-size:0.9em;">A random 4-digit <strong>auth2</strong> PIN is generated when the booking is saved (required for Manage my booking).</p>';
+        }
+
         echo '<div class="form-group"><label>Planning color</label>';
         echo '<input type="color" name="booking_color" id="hb-booking-color" class="form-control hb-booking-color-picker" value="' . sanitize($colorVal) . '" title="Planning grid bar color"></div>';
 

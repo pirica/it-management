@@ -69,6 +69,20 @@ if (itm_hotel_booking_customer_last_name_matches('John Smith', 'smith') && !itm_
     hb_fail('guest last name match helper');
 }
 
+$auth2Sample = itm_hotel_booking_generate_auth2();
+if (preg_match('/^\d{4}$/', $auth2Sample) && itm_hotel_booking_normalize_auth2('12-34') === '1234' && itm_hotel_booking_auth2_matches('0042', '42') === false && itm_hotel_booking_auth2_matches('0042', '0042')) {
+    hb_pass('guest auth2 generate/normalize/match');
+} else {
+    hb_fail('guest auth2 generate/normalize/match got ' . $auth2Sample);
+}
+
+$resAuth2Col = mysqli_query($conn, "SHOW COLUMNS FROM hotel_bookings LIKE 'auth2'");
+if ($resAuth2Col && mysqli_num_rows($resAuth2Col) > 0) {
+    hb_pass('hotel_bookings.auth2 column');
+} else {
+    hb_fail('missing hotel_bookings.auth2 — apply db/migrations/hotel_bookings_auth2.sql');
+}
+
 $quote = itm_hotel_booking_portal_quote_nightly(100, ['rooms' => 1, 'adults' => 2, 'children' => 1, 'babies' => 0], 0);
 if (abs($quote - 122.0) < 0.01) {
     hb_pass('portal quote nightly child supplement');

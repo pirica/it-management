@@ -45,9 +45,10 @@ if ($mode === 'edit') {
     if ($roomId > 0 && $custId > 0) {
       $checkIn = date('Y-m-d', strtotime('+7 days'));
       $checkOut = date('Y-m-d', strtotime('+8 days'));
-      $ins = mysqli_prepare($conn, 'INSERT INTO hotel_bookings (company_id, customer_id, room_id, check_in, check_out, payment_amount, active, created_at) VALUES (1, ?, ?, ?, ?, 0, 1, NOW())');
+      $auth2 = itm_hotel_booking_generate_auth2();
+      $ins = mysqli_prepare($conn, 'INSERT INTO hotel_bookings (company_id, customer_id, room_id, check_in, check_out, payment_amount, auth2, active, created_at) VALUES (1, ?, ?, ?, ?, 0, ?, 1, NOW())');
       if ($ins) {
-        mysqli_stmt_bind_param($ins, 'iiss', $custId, $roomId, $checkIn, $checkOut);
+        mysqli_stmt_bind_param($ins, 'iisss', $custId, $roomId, $checkIn, $checkOut, $auth2);
         if (mysqli_stmt_execute($ins)) {
           $bid = (int) mysqli_insert_id($conn);
         }

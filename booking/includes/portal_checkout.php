@@ -187,7 +187,7 @@ if (!function_exists('hb_portal_load_booking_confirmation')) {
         if ($bookingId < 1) {
             return null;
         }
-        $sql = 'SELECT b.id, b.check_in, b.check_out, b.payment_amount, b.notes, b.room_id, b.portal_rate_plan_id,
+        $sql = 'SELECT b.id, b.check_in, b.check_out, b.payment_amount, b.auth2, b.notes, b.room_id, b.portal_rate_plan_id,
             b.future_status_id, b.present_status_id, b.history_status_id,
             c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
             h.id AS hotel_id, h.name AS hotel_name, h.location AS hotel_location, h.phone AS hotel_phone,
@@ -354,6 +354,7 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
             $lastname = (string) end($parts);
         }
         $numberconfirmation = $reservationId;
+        $auth2Display = itm_hotel_booking_normalize_auth2($booking['auth2'] ?? '');
 
         global $conn;
         $urlmybooking = APPURL . '/users/bookings.php';
@@ -414,6 +415,12 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <dt>Confirmation number</dt>
 <dd><strong><?php echo (int) $reservationId; ?></strong></dd>
 </div>
+<?php if ($auth2Display !== ''): ?>
+<div class="hb-payment-detail-row">
+<dt>Auth code</dt>
+<dd><strong><?php echo htmlspecialchars($auth2Display, ENT_QUOTES, 'UTF-8'); ?></strong></dd>
+</div>
+<?php endif; ?>
 <?php if ($isCancelled): ?>
 <div class="hb-payment-detail-row">
 <dt>Status</dt>
@@ -467,7 +474,7 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <?php else: ?>
 <div class="hb-payment-confirmation-notice" role="status">
 <p><strong>Payment at the hotel.</strong> Online payment is not enabled in this build. No charge was made online — the total above is due according to hotel policy.</p>
-<p class="hb-payment-confirmation-manage-hint">To view or change your reservation later, use your last name: <strong><?php echo htmlspecialchars($lastname, ENT_QUOTES, 'UTF-8'); ?></strong> and confirmation number: <strong><?php echo (int) $numberconfirmation; ?></strong> on <a href="<?php echo htmlspecialchars($urlmybooking, ENT_QUOTES, 'UTF-8'); ?>" class="hb-stay-edit" data-hb-pdf-manage-link="1" target="_blank" rel="noopener noreferrer"><strong>Manage my booking</strong></a>.</p>
+<p class="hb-payment-confirmation-manage-hint">To view or change your reservation later, use your last name: <strong><?php echo htmlspecialchars($lastname, ENT_QUOTES, 'UTF-8'); ?></strong>, confirmation number: <strong><?php echo (int) $numberconfirmation; ?></strong>, and auth code: <strong><?php echo htmlspecialchars($auth2Display, ENT_QUOTES, 'UTF-8'); ?></strong> on <a href="<?php echo htmlspecialchars($urlmybooking, ENT_QUOTES, 'UTF-8'); ?>" class="hb-stay-edit" data-hb-pdf-manage-link="1" target="_blank" rel="noopener noreferrer"><strong>Manage my booking</strong></a>.</p>
 </div>
 <div class="hb-checkout-actions hb-payment-confirmation-actions hb-pdf-exclude">
 <button type="button" class="hb-btn hb-checkout-skip" id="hb-save-confirmation-pdf" title="Save booking confirmation">Save booking confirmation</button>
@@ -727,10 +734,11 @@ if (!function_exists('hb_portal_render_change_booking_assets')) {
 }
 
 if (!function_exists('hb_portal_render_cancel_booking_button')) {
-    function hb_portal_render_cancel_booking_button($conn, $companyId, array $booking, $lastName, $reservationId) {
+    function hb_portal_render_cancel_booking_button($conn, $companyId, array $booking, $lastName, $reservationId, $auth2 = '') {
         $companyId = (int) $companyId;
         $reservationId = (int) $reservationId;
         $lastName = trim((string) $lastName);
+        $auth2 = itm_hotel_booking_normalize_auth2($auth2 !== '' ? $auth2 : ($booking['auth2'] ?? ''));
         $isCancelled = itm_hotel_booking_booking_is_cancelled($conn, $companyId, $booking);
         $canCancel = itm_hotel_booking_portal_guest_can_cancel_booking($conn, $companyId, $booking);
         ?>
@@ -745,6 +753,7 @@ if (!function_exists('hb_portal_render_cancel_booking_button')) {
 <input type="hidden" name="cancel_booking" value="1">
 <input type="hidden" name="last_name" value="<?php echo htmlspecialchars($lastName, ENT_QUOTES, 'UTF-8'); ?>">
 <input type="hidden" name="reservation_id" value="<?php echo (int) $reservationId; ?>">
+<input type="hidden" name="auth2" value="<?php echo htmlspecialchars($auth2, ENT_QUOTES, 'UTF-8'); ?>">
 <button type="submit" class="hb-btn hb-btn-block hb-cancel-booking-btn" title="Cancel booking">Cancel Booking</button>
 </form>
 <?php endif; ?>

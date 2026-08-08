@@ -32,6 +32,7 @@ itm_hospitality_admin_layout_begin($crud_title, ['css/hotel-bookings.css']);
 <div class="card">
 <h1 title="View booking">🔎</h1>
 <p><strong>Reservation ID:</strong> <?php echo (int) $row['id']; ?></p>
+<p><strong>Auth code (auth2):</strong> <?php echo sanitize(itm_hotel_booking_normalize_auth2($row['auth2'] ?? '') ?: '—'); ?></p>
 <p><strong>Customer:</strong> <?php echo sanitize($row['customer_name']); ?></p>
 <p><strong>Room:</strong> <?php echo sanitize($row['room_number'] . ' — ' . $row['room_name']); ?></p>
 <p><strong>Check-in:</strong> <?php echo sanitize(itm_format_hotel_date_display($row['check_in'])); ?></p>
