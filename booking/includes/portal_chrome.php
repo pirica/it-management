@@ -25,10 +25,15 @@ if (!function_exists('hb_portal_money_format')) {
     function hb_portal_money_format($amount, $currencyCode = 'EUR') {
         $amount = (float) $amount;
         $code = strtoupper((string) $currencyCode);
-        if ($code === 'EUR') {
-            return '€' . number_format($amount, 0, '.', '');
+        // Why: Guest From/calendar use cents (e.g. NR 69.50); whole-euro round made 69.50 look like 70.
+        $formatted = number_format($amount, 2, '.', $code === 'EUR' ? '' : ',');
+        if (substr($formatted, -3) === '.00') {
+            $formatted = substr($formatted, 0, -3);
         }
-        return $code . ' ' . number_format($amount, 2, '.', ',');
+        if ($code === 'EUR') {
+            return '€' . $formatted;
+        }
+        return $code . ' ' . $formatted;
     }
 }
 

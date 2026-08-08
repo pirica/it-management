@@ -200,11 +200,20 @@ if ($bpStd && ($bpRow = mysqli_fetch_assoc($bpStd)) && abs((float) ($bpRow['pric
     $calPrice = isset($calMonth['days'][$checkDay]['price']) ? (float) $calMonth['days'][$checkDay]['price'] : null;
     $calExcl = isset($calMonth['days'][$checkDay]['bar_excl_tax']) ? (float) $calMonth['days'][$checkDay]['bar_excl_tax'] : null;
     $taxOne = itm_hotel_booking_portal_tourist_tax_amount($calOcc, 1, 2.0);
-    $expectedIncl = round($stdBar + $taxOne, 2);
-    if (abs($stdBar - 75.0) < 0.01 && $calExcl !== null && abs($calExcl - $stdBar) < 0.01 && $calPrice !== null && abs($calPrice - $expectedIncl) < 0.01 && !empty($calMonth['prices_include_tax'])) {
-        hb_pass('calendar shows tax-inclusive BAR (STD 75 + tourist tax)');
+    $cheapest = itm_hotel_booking_portal_cheapest_rate_offer_for_hotel($conn, 1, $stdHotelId);
+    $planDisc = max(0.0, (float) ($cheapest['discount_percent'] ?? 0));
+    $roomAfterPlan = round($stdBar * (1 - ($planDisc / 100)), 2);
+    $expectedIncl = round($roomAfterPlan + $taxOne, 2);
+    if (abs($stdBar - 75.0) < 0.01
+        && $calExcl !== null && abs($calExcl - $stdBar) < 0.01
+        && $calPrice !== null && abs($calPrice - $expectedIncl) < 0.01
+        && !empty($calMonth['prices_include_tax'])
+        && ($cheapest['slug'] ?? '') === 'non_refundable'
+        && abs($planDisc - 10.0) < 0.01
+    ) {
+        hb_pass('calendar shows cheapest NR rate tax-inclusive (STD 75 -10% + tourist tax)');
     } else {
-        hb_fail('calendar tax-inclusive BAR expected ' . $expectedIncl . ' (stdBar=' . $stdBar . ' cal=' . json_encode($calPrice) . ' excl=' . json_encode($calExcl) . ')');
+        hb_fail('calendar cheapest NR tax-inclusive expected ' . $expectedIncl . ' (stdBar=' . $stdBar . ' cal=' . json_encode($calPrice) . ' excl=' . json_encode($calExcl) . ' disc=' . $planDisc . ' slug=' . json_encode($cheapest['slug'] ?? null) . ')');
     }
     $room1 = mysqli_query($conn, 'SELECT r.id, r.room_type_id, COALESCE(bp.price_per_night, 0) AS price_per_night FROM hotel_booking_rooms r LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL WHERE r.company_id = 1 AND r.hotel_id = 1 AND r.id = 1 AND r.deleted_at IS NULL LIMIT 1');
     if ($room1 && ($r1 = mysqli_fetch_assoc($room1)) && (int) ($r1['room_type_id'] ?? 0) === $stdTypeId && abs((float) ($r1['price_per_night'] ?? 0) - 75.0) < 0.01) {
@@ -260,6 +269,32 @@ if (abs(itm_hotel_booking_portal_price_incl_tourist_tax(75.0, 2.0, ['rooms' => 1
     hb_pass('portal from-price includes tourist tax');
 } else {
     hb_fail('portal from-price includes tourist tax');
+}
+
+require_once dirname(__DIR__) . '/booking/includes/portal_chrome.php';
+if (hb_portal_money_format(69.5, 'EUR') === '€69.50' && hb_portal_money_format(77.0, 'EUR') === '€77') {
+    hb_pass('portal money format keeps NR cents (69.50) without rounding to 70');
+} else {
+    hb_fail('portal money format expected €69.50 / €77 got ' . hb_portal_money_format(69.5, 'EUR') . ' / ' . hb_portal_money_format(77.0, 'EUR'));
+}
+
+$datesJsPath = dirname(__DIR__) . '/booking/js/hotel-booking-dates.js';
+$datesJsSrc = is_file($datesJsPath) ? (string) file_get_contents($datesJsPath) : '';
+if (strpos($datesJsSrc, 'toFixed(2)') !== false && strpos($datesJsSrc, 'Math.round(parseFloat(amount) || 0)') === false) {
+    hb_pass('Select Dates calendar formatMoney keeps cents');
+} else {
+    hb_fail('Select Dates calendar formatMoney must not Math.round whole euros');
+}
+
+$roomsPhpSrc = is_file(dirname(__DIR__) . '/booking/rooms.php') ? (string) file_get_contents(dirname(__DIR__) . '/booking/rooms.php') : '';
+$selectRoomJsSrcCheck = is_file(dirname(__DIR__) . '/booking/js/hotel-booking-select-room.js') ? (string) file_get_contents(dirname(__DIR__) . '/booking/js/hotel-booking-select-room.js') : '';
+if (strpos($roomsPhpSrc, 'cheapestPlanDiscountPercent') !== false
+    && strpos($roomsPhpSrc, 'displayDiscountPercent') !== false
+    && strpos($selectRoomJsSrcCheck, 'cheapestPlanDiscountPercent') !== false
+) {
+    hb_pass('Step 1 rooms apply cheapest plan discount (STD From = NR)');
+} else {
+    hb_fail('Step 1 rooms must apply cheapestPlanDiscountPercent for STD From');
 }
 
 $seedCancelDaysOk = true;

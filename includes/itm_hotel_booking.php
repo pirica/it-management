@@ -1710,6 +1710,9 @@ if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
     }
     $touristTaxPerPersonPerNight = max(0.0, (float) $touristTaxPerPersonPerNight);
     $taxPerNight = itm_hotel_booking_portal_tourist_tax_amount($occupancy, 1, $touristTaxPerPersonPerNight);
+    $cheapestOffer = itm_hotel_booking_portal_cheapest_rate_offer_for_hotel($conn, $companyId, $hotelId);
+    $planDiscount = max(0.0, min(50.0, (float) ($cheapestOffer['discount_percent'] ?? 0)));
+    $portalPricing = itm_hotel_booking_portal_hotel_pricing($conn, $companyId, $hotelId);
     $start = sprintf('%04d-%02d-01', $year, $month);
     $daysInMonth = (int) date('t', strtotime($start));
     $rangeEnd = sprintf('%04d-%02d-%02d', $year, $month, $daysInMonth);
@@ -1803,11 +1806,13 @@ if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
         }
       }
       if ($best !== null) {
-        // Why: Guest-facing calendar prices are tax-inclusive (tourist tax for current occupancy).
+        // Why: Guest-facing calendar shows cheapest room plan (usually NR discount) + tourist tax.
+        $roomQuoted = itm_hotel_booking_portal_quote_nightly((float) $best, $occupancy, $planDiscount, $portalPricing);
         $days[$checkIn] = [
           'available' => true,
-          'price' => round((float) $best + $taxPerNight, 2),
+          'price' => round((float) $roomQuoted + $taxPerNight, 2),
           'bar_excl_tax' => round((float) $best, 2),
+          'rate_excl_tax' => round((float) $roomQuoted, 2),
         ];
       } else {
         $days[$checkIn] = ['available' => false];
@@ -1821,6 +1826,9 @@ if (!function_exists('itm_hotel_booking_hotel_calendar_month')) {
       'days' => $days,
       'prices_include_tax' => true,
       'tourist_tax_per_person_per_night' => $touristTaxPerPersonPerNight,
+      'plan_discount_percent' => $planDiscount,
+      'cheapest_rate_plan_slug' => (string) ($cheapestOffer['slug'] ?? ''),
+      'cheapest_rate_label' => (string) ($cheapestOffer['price_label'] ?? 'Best available rate'),
     ];
   }
 }
@@ -2171,6 +2179,55 @@ if (!function_exists('itm_hotel_booking_portal_price_incl_tourist_tax')) {
     }
     $tax = itm_hotel_booking_portal_tourist_tax_amount($occupancy, 1, $touristTaxPerPersonPerNight);
     return round($amount + $tax, 2);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_cheapest_rate_offer_for_hotel')) {
+  /**
+   * Highest plan_discount among active Step 2 plans (usually Non-Refundable).
+   *
+   * @return array{discount_percent:float,slug:string,price_label:string,name:string,pay_badge:string}
+   */
+  function itm_hotel_booking_portal_cheapest_rate_offer_for_hotel($conn, $companyId, $hotelId) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $best = null;
+    if ($companyId > 0 && $hotelId > 0) {
+      $plans = itm_hotel_booking_portal_rate_plans_active_for_hotel($conn, $companyId, $hotelId, true);
+      foreach ($plans as $plan) {
+        $slug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($plan['rate_plan_slug'] ?? '')));
+        if ($slug === '' || $slug === 'breakfast') {
+          // Why: Breakfast add-on raises stay total; From/calendar merchandising is room-rate based.
+          continue;
+        }
+        $offer = itm_hotel_booking_portal_rate_plan_offer($slug, $plan);
+        $disc = max(0.0, min(50.0, (float) ($offer['discount_percent'] ?? 0)));
+        $candidate = [
+          'discount_percent' => $disc,
+          'slug' => $slug,
+          'price_label' => (string) ($offer['price_label'] ?? 'Best available rate'),
+          'name' => (string) ($plan['name'] ?? $offer['price_label'] ?? ''),
+          'pay_badge' => (string) ($offer['pay_badge'] ?? ''),
+        ];
+        if ($best === null
+          || $disc > (float) $best['discount_percent']
+          || (abs($disc - (float) $best['discount_percent']) < 0.001 && $slug === 'non_refundable')
+        ) {
+          $best = $candidate;
+        }
+      }
+    }
+    if ($best === null) {
+      $offer = itm_hotel_booking_portal_rate_plan_offer('non_refundable');
+      $best = [
+        'discount_percent' => max(0.0, min(50.0, (float) ($offer['discount_percent'] ?? 0))),
+        'slug' => 'non_refundable',
+        'price_label' => (string) ($offer['price_label'] ?? 'Non-refundable rate'),
+        'name' => 'Non-Refundable Rate',
+        'pay_badge' => (string) ($offer['pay_badge'] ?? 'Non-refundable'),
+      ];
+    }
+    return $best;
   }
 }
 

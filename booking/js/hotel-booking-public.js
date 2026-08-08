@@ -229,7 +229,7 @@
       '</section>' +
       '<div class="hb-price-cta">' +
       '<p class="hb-from-price">From<sup>*</sup> <strong>' + escapeHtml(formatPrice(h)) + '</strong> <span class="hb-from-tax-note">incl. tax</span></p>' +
-      '<p class="hb-price-label">Best available rate</p>' +
+      '<p class="hb-price-label">' + escapeHtml(h.cheapest_rate_label || 'Best available rate') + '</p>' +
       '<button type="button" class="hb-btn hb-btn-primary hb-btn-block hb-select-dates" data-hotel-id="' + h.id + '" title="Select dates">Select Dates</button>' +
       '</div>' +
       '</div>' +

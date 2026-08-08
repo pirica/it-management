@@ -137,7 +137,9 @@
   }
 
   function discountPercent() {
-    return parseFloat(cfg.discountPercent || 0) || 0;
+    var special = parseFloat(cfg.discountPercent || 0) || 0;
+    var plan = parseFloat(cfg.cheapestPlanDiscountPercent || 0) || 0;
+    return Math.min(50, special + plan);
   }
 
   function portalPricing() {
@@ -210,7 +212,8 @@
 
   function formatMoney(amount) {
     var sym = cfg.currencySymbol || '€';
-    return sym + amount;
+    var n = Math.round((parseFloat(amount) || 0) * 100) / 100;
+    return sym + n.toFixed(2).replace(/\.00$/, '');
   }
 
   function buildQuery(overrides) {
