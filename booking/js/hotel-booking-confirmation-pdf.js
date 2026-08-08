@@ -1,8 +1,77 @@
 /**
  * Save payment confirmation card as a PDF file (html2canvas + jsPDF).
+ * Why: Screenshot PDF loses HTML anchors — map Manage my booking hit-box to a PDF /URI link.
  */
 (function () {
   'use strict';
+
+  function hbPdfAbsUrl(href) {
+    var raw = String(href || '').trim();
+    if (raw === '') {
+      return '';
+    }
+    try {
+      return new URL(raw, window.location.href).href;
+    } catch (err) {
+      return raw;
+    }
+  }
+
+  /**
+   * Measure Manage my booking anchor inside the capture root and add a jsPDF link annotation.
+   */
+  function hbPdfAddManageBookingLink(pdf, root, pdfWidth, pdfHeight, imgHeight) {
+    if (!pdf || !root || typeof pdf.link !== 'function') {
+      return false;
+    }
+    var linkEl = root.querySelector('[data-hb-pdf-manage-link="1"]');
+    if (!linkEl) {
+      return false;
+    }
+    var href = hbPdfAbsUrl(linkEl.getAttribute('href') || linkEl.href || root.getAttribute('data-hb-manage-url') || '');
+    if (href === '' || !/^https?:\/\//i.test(href)) {
+      return false;
+    }
+
+    var rootRect = root.getBoundingClientRect();
+    var linkRect = linkEl.getBoundingClientRect();
+    if (!rootRect.width || !rootRect.height || !linkRect.width || !linkRect.height) {
+      return false;
+    }
+
+    // Why: html2canvas output maps 1:1 onto the full-height image; convert DOM box → PDF mm.
+    var x = ((linkRect.left - rootRect.left) / rootRect.width) * pdfWidth;
+    var yInImage = ((linkRect.top - rootRect.top) / rootRect.height) * imgHeight;
+    var w = (linkRect.width / rootRect.width) * pdfWidth;
+    var h = (linkRect.height / rootRect.height) * imgHeight;
+    // Slightly enlarge hit target for finger/mouse accuracy on the rasterized label.
+    var padX = Math.min(2, w * 0.15);
+    var padY = Math.min(1.5, h * 0.35);
+    x = Math.max(0, x - padX);
+    w = Math.min(pdfWidth - x, w + padX * 2);
+    yInImage = Math.max(0, yInImage - padY);
+    h = h + padY * 2;
+
+    if (w < 1 || h < 0.5 || imgHeight < 1) {
+      return false;
+    }
+
+    var pageCount = Math.max(1, Math.ceil(imgHeight / pdfHeight));
+    var pageIndex = Math.min(pageCount - 1, Math.floor(yInImage / pdfHeight));
+    var yOnPage = yInImage - pageIndex * pdfHeight;
+    // Clamp height to remaining page so the annotation stays on one page.
+    var maxH = pdfHeight - yOnPage;
+    if (maxH < 0.5) {
+      return false;
+    }
+    h = Math.min(h, maxH);
+
+    if (typeof pdf.setPage === 'function') {
+      pdf.setPage(pageIndex + 1);
+    }
+    pdf.link(x, yOnPage, w, h, { url: href });
+    return true;
+  }
 
   async function saveBookingConfirmationPdf(root, options) {
     options = options || {};
@@ -49,6 +118,8 @@
         pdf.addImage(imageData, 'PNG', 0, position, pdfWidth, imgHeight);
         heightLeft -= pdfHeight;
       }
+
+      hbPdfAddManageBookingLink(pdf, root, pdfWidth, pdfHeight, imgHeight);
 
       if (typeof window.showSaveFilePicker === 'function') {
         try {

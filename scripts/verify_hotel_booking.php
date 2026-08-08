@@ -418,10 +418,28 @@ if (empty($ratePlanFormFailures)) {
 }
 
 $bookingConfirmationPdfJs = dirname(__DIR__) . '/booking/js/hotel-booking-confirmation-pdf.js';
-if (is_file($bookingConfirmationPdfJs) && strpos((string) file_get_contents($bookingConfirmationPdfJs), 'hbSaveBookingConfirmationPdf') !== false) {
+$bookingConfirmationPdfJsBody = is_file($bookingConfirmationPdfJs) ? (string) file_get_contents($bookingConfirmationPdfJs) : '';
+if (
+    $bookingConfirmationPdfJsBody !== ''
+    && strpos($bookingConfirmationPdfJsBody, 'hbSaveBookingConfirmationPdf') !== false
+    && strpos($bookingConfirmationPdfJsBody, 'hbPdfAddManageBookingLink') !== false
+    && strpos($bookingConfirmationPdfJsBody, 'pdf.link') !== false
+) {
     hb_pass('booking confirmation pdf download script');
 } else {
-    hb_fail('booking confirmation pdf download script missing');
+    hb_fail('booking confirmation pdf download script missing Manage my booking PDF link helper');
+}
+
+$portalCheckoutPhp = dirname(__DIR__) . '/booking/includes/portal_checkout.php';
+$portalCheckoutBody = is_file($portalCheckoutPhp) ? (string) file_get_contents($portalCheckoutPhp) : '';
+if (
+    $portalCheckoutBody !== ''
+    && strpos($portalCheckoutBody, 'data-hb-pdf-manage-link="1"') !== false
+    && strpos($portalCheckoutBody, 'data-hb-manage-url') !== false
+) {
+    hb_pass('booking confirmation Manage my booking PDF link markup');
+} else {
+    hb_fail('booking confirmation Manage my booking PDF link markup missing');
 }
 
 $_SESSION['employee_id'] = 1;
