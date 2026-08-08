@@ -500,6 +500,13 @@
     state.checkInYmd = '';
     state.checkOutYmd = '';
     state.calendarCache = {};
+    // Why: Calendar day prices include tourist tax for occupancy (default 1 adult on home Select Dates).
+    state.occupancy = {
+      rooms: 1,
+      adults: 1,
+      children: 0,
+      babies: 0
+    };
     var now = new Date();
     state.year = now.getFullYear();
     state.month = now.getMonth() + 1;

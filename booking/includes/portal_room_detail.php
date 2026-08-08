@@ -209,8 +209,12 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
         $available = $roomId > 0 && !$blocked && $fits
             && !itm_hotel_booking_room_unavailable_for_stay($conn, $companyId, $roomId, $checkInIso, $checkOutIso, 0, $sampleRoom);
         $basePrice = itm_hotel_booking_portal_check_in_display_bar($conn, $companyId, $hotelId, $typeId, $checkInIso, (float) ($sampleRoom['price_per_night'] ?? 0));
-        $listQuoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, 0, itm_hotel_booking_portal_hotel_pricing($conn, $companyId, $hotelId));
-        $quoted = itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, (float) $discountPercent, itm_hotel_booking_portal_hotel_pricing($conn, $companyId, $hotelId));
+        $pricing = itm_hotel_booking_portal_hotel_pricing($conn, $companyId, $hotelId);
+        $settingsRow = itm_hotel_booking_settings_row($conn, $companyId) ?: [];
+        $taxRate = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settingsRow);
+        $taxPerNight = itm_hotel_booking_portal_tourist_tax_amount($occupancy, 1, $taxRate);
+        $listQuoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, 0, $pricing) + $taxPerNight, 2);
+        $quoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, (float) $discountPercent, $pricing) + $taxPerNight, 2);
 
         return [
             'type_id' => $typeId,

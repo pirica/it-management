@@ -2160,6 +2160,20 @@ if (!function_exists('itm_hotel_booking_portal_free_cancellation_days_from_setti
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_price_incl_tourist_tax')) {
+  /**
+   * Guest-facing nightly display: room amount + tourist tax for occupancy (default 1 adult).
+   */
+  function itm_hotel_booking_portal_price_incl_tourist_tax($amountExclTax, $touristTaxPerPersonPerNight, array $occupancy = null) {
+    $amount = max(0.0, (float) $amountExclTax);
+    if (!is_array($occupancy)) {
+      $occupancy = ['rooms' => 1, 'adults' => 1, 'children' => 0, 'babies' => 0];
+    }
+    $tax = itm_hotel_booking_portal_tourist_tax_amount($occupancy, 1, $touristTaxPerPersonPerNight);
+    return round($amount + $tax, 2);
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_rate_plan_effective_discount')) {
   function itm_hotel_booking_portal_rate_plan_effective_discount($specialDiscountPercent, $ratePlanSlug, $planRow = null) {
     $special = max(0.0, min(50.0, (float) $specialDiscountPercent));
