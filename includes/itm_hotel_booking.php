@@ -1206,9 +1206,14 @@ if (!function_exists('itm_hotel_booking_ensure_portal_rate_plans_for_hotel')) {
       if ($exists) {
         continue;
       }
-      $ins = mysqli_prepare($conn, 'INSERT INTO hotel_booking_portal_rate_plans (company_id, hotel_id, plan_slot, name, rate_plan_slug, cancellation_policy_url, active, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, NOW())');
+      $ins = mysqli_prepare($conn, 'INSERT INTO hotel_booking_portal_rate_plans (company_id, hotel_id, plan_slot, name, rate_plan_slug, cancellation_policy_url, pay_badge, price_label, cancel_template, plan_discount_percent, active, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NOW())');
       if ($ins) {
-        mysqli_stmt_bind_param($ins, 'iiisssi', $companyId, $hotelId, $slot, $name, $slug, $defaultPath, $employeeId);
+        $offer = itm_hotel_booking_portal_rate_plan_offer($slug);
+        $payBadge = (string) ($offer['pay_badge'] ?? '');
+        $priceLabel = (string) ($offer['price_label'] ?? '');
+        $cancelTpl = (string) ($offer['cancel_template'] ?? '');
+        $planDisc = (float) ($offer['discount_percent'] ?? 0);
+        mysqli_stmt_bind_param($ins, 'iiissssssdi', $companyId, $hotelId, $slot, $name, $slug, $defaultPath, $payBadge, $priceLabel, $cancelTpl, $planDisc, $employeeId);
         mysqli_stmt_execute($ins);
         mysqli_stmt_close($ins);
       }
@@ -1219,7 +1224,7 @@ if (!function_exists('itm_hotel_booking_ensure_portal_rate_plans_for_hotel')) {
 if (!function_exists('itm_hotel_booking_portal_rate_plans_admin_rows')) {
   function itm_hotel_booking_portal_rate_plans_admin_rows($conn, $companyId, $hotelId) {
     $rows = [];
-    $stmt = mysqli_prepare($conn, 'SELECT id, plan_slot, name, rate_plan_slug, cancellation_policy_url, cancellation_policy_html, active FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL ORDER BY plan_slot ASC');
+    $stmt = mysqli_prepare($conn, 'SELECT id, plan_slot, name, rate_plan_slug, cancellation_policy_url, cancellation_policy_html, pay_badge, price_label, cancel_template, plan_discount_percent, free_cancellation_days_before_check_in, active FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL ORDER BY plan_slot ASC');
     if ($stmt) {
       mysqli_stmt_bind_param($stmt, 'ii', $companyId, $hotelId);
       mysqli_stmt_execute($stmt);
@@ -1335,12 +1340,17 @@ if (!function_exists('itm_hotel_booking_portal_rate_plan_create')) {
     }
     $ins = mysqli_prepare(
       $conn,
-      'INSERT INTO hotel_booking_portal_rate_plans (company_id, hotel_id, plan_slot, name, rate_plan_slug, cancellation_policy_url, active, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+      'INSERT INTO hotel_booking_portal_rate_plans (company_id, hotel_id, plan_slot, name, rate_plan_slug, cancellation_policy_url, pay_badge, price_label, cancel_template, plan_discount_percent, active, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
     );
     if (!$ins) {
       return ['ok' => false, 'error' => 'Create failed.'];
     }
-    mysqli_stmt_bind_param($ins, 'iiisssii', $companyId, $hotelId, $planSlot, $name, $slug, $policyUrl, $active, $employeeId);
+    $offer = itm_hotel_booking_portal_rate_plan_offer($slug);
+    $payBadge = (string) ($offer['pay_badge'] ?? '');
+    $priceLabel = (string) ($offer['price_label'] ?? '');
+    $cancelTpl = (string) ($offer['cancel_template'] ?? '');
+    $planDisc = (float) ($offer['discount_percent'] ?? 0);
+    mysqli_stmt_bind_param($ins, 'iiissssssdii', $companyId, $hotelId, $planSlot, $name, $slug, $policyUrl, $payBadge, $priceLabel, $cancelTpl, $planDisc, $active, $employeeId);
     if (!mysqli_stmt_execute($ins)) {
       mysqli_stmt_close($ins);
       return ['ok' => false, 'error' => 'Create failed.'];
@@ -2077,48 +2087,83 @@ if (!function_exists('itm_hotel_booking_portal_tourist_tax_amount')) {
 if (!function_exists('itm_hotel_booking_portal_rate_plan_offer')) {
   /**
    * Commercial rules for portal Step 2 rate-plan cards (pay badge, cancel copy, plan discount).
+   * DB row fields override slug defaults when non-empty.
    *
-   * @return array{discount_percent:float,pay_badge:string,cancel_template:string,price_label:string}
+   * @param array|null $planRow optional hotel_booking_portal_rate_plans row
+   * @return array{discount_percent:float,pay_badge:string,cancel_template:string,price_label:string,free_cancellation_days:?int}
    */
-  function itm_hotel_booking_portal_rate_plan_offer($slug) {
+  function itm_hotel_booking_portal_rate_plan_offer($slug, $planRow = null) {
     $slug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) $slug));
     if ($slug === 'breakfast') {
-      return [
+      $offer = [
         'discount_percent' => 0.0,
         'pay_badge' => 'Pay when you stay',
         'cancel_template' => 'Change or cancel by {date}.',
         'price_label' => 'With breakfast',
+        'free_cancellation_days' => null,
       ];
-    }
-    if ($slug === 'flexible') {
-      return [
+    } elseif ($slug === 'flexible') {
+      $offer = [
         'discount_percent' => 0.0,
         'pay_badge' => 'Pay when you stay',
         'cancel_template' => 'Free cancellation until {date}.',
         'price_label' => 'Flexible rate',
+        'free_cancellation_days' => null,
       ];
-    }
-    if ($slug === 'non_refundable') {
-      return [
+    } elseif ($slug === 'non_refundable') {
+      $offer = [
         'discount_percent' => 10.0,
         'pay_badge' => 'Non-refundable',
         'cancel_template' => 'Non-refundable. No free cancellation after booking.',
         'price_label' => 'Non-refundable rate',
+        'free_cancellation_days' => null,
+      ];
+    } else {
+      $offer = [
+        'discount_percent' => 0.0,
+        'pay_badge' => 'Pay when you stay',
+        'cancel_template' => 'Change or cancel by {date}.',
+        'price_label' => 'Best available rate',
+        'free_cancellation_days' => null,
       ];
     }
-    return [
-      'discount_percent' => 0.0,
-      'pay_badge' => 'Pay when you stay',
-      'cancel_template' => 'Change or cancel by {date}.',
-      'price_label' => 'Best available rate',
-    ];
+    if (is_array($planRow)) {
+      $badge = trim((string) ($planRow['pay_badge'] ?? ''));
+      $label = trim((string) ($planRow['price_label'] ?? ''));
+      $tpl = trim((string) ($planRow['cancel_template'] ?? ''));
+      if ($badge !== '') {
+        $offer['pay_badge'] = $badge;
+      }
+      if ($label !== '') {
+        $offer['price_label'] = $label;
+      }
+      if ($tpl !== '') {
+        $offer['cancel_template'] = $tpl;
+      }
+      if (array_key_exists('plan_discount_percent', $planRow) && $planRow['plan_discount_percent'] !== null && $planRow['plan_discount_percent'] !== '') {
+        $offer['discount_percent'] = max(0.0, min(50.0, (float) $planRow['plan_discount_percent']));
+      }
+      if (array_key_exists('free_cancellation_days_before_check_in', $planRow) && $planRow['free_cancellation_days_before_check_in'] !== null && $planRow['free_cancellation_days_before_check_in'] !== '') {
+        $offer['free_cancellation_days'] = max(0, min(365, (int) $planRow['free_cancellation_days_before_check_in']));
+      }
+    }
+    return $offer;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_free_cancellation_days_from_settings')) {
+  function itm_hotel_booking_portal_free_cancellation_days_from_settings($settingsRow) {
+    if (!is_array($settingsRow) || !array_key_exists('free_cancellation_days_before_check_in', $settingsRow)) {
+      return 5;
+    }
+    return max(0, min(365, (int) ($settingsRow['free_cancellation_days_before_check_in'] ?? 5)));
   }
 }
 
 if (!function_exists('itm_hotel_booking_portal_rate_plan_effective_discount')) {
-  function itm_hotel_booking_portal_rate_plan_effective_discount($specialDiscountPercent, $ratePlanSlug) {
+  function itm_hotel_booking_portal_rate_plan_effective_discount($specialDiscountPercent, $ratePlanSlug, $planRow = null) {
     $special = max(0.0, min(50.0, (float) $specialDiscountPercent));
-    $offer = itm_hotel_booking_portal_rate_plan_offer($ratePlanSlug);
+    $offer = itm_hotel_booking_portal_rate_plan_offer($ratePlanSlug, $planRow);
     $plan = max(0.0, min(50.0, (float) ($offer['discount_percent'] ?? 0)));
     return min(50.0, $special + $plan);
   }
@@ -3122,7 +3167,7 @@ if (!function_exists('itm_hotel_booking_portal_rate_plans_active_for_hotel')) {
       itm_hotel_booking_ensure_portal_rate_plans_for_hotel($conn, $companyId, $hotelId);
     }
     $rows = [];
-    $stmt = mysqli_prepare($conn, 'SELECT id, hotel_id, plan_slot, name, rate_plan_slug, cancellation_policy_url, active FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY plan_slot ASC');
+    $stmt = mysqli_prepare($conn, 'SELECT id, hotel_id, plan_slot, name, rate_plan_slug, cancellation_policy_url, pay_badge, price_label, cancel_template, plan_discount_percent, free_cancellation_days_before_check_in, active FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY plan_slot ASC');
     if ($stmt) {
       mysqli_stmt_bind_param($stmt, 'ii', $companyId, $hotelId);
       mysqli_stmt_execute($stmt);

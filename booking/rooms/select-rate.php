@@ -48,7 +48,7 @@ $basePerNight = itm_hotel_booking_portal_check_in_display_bar(
 );
 $currency = $room['currency_code'] ?? 'EUR';
 
-$cancelBy = date('F jS, Y', strtotime($checkInIso . ' -5 days'));
+$settingsFreeCancelDays = itm_hotel_booking_portal_free_cancellation_days_from_settings($settings);
 $roomLabel = trim((string) ($room['type_name'] ?? $room['name'] ?? 'Room'));
 if (!empty($room['bed_summary']) && stripos($roomLabel, (string) $room['bed_summary']) === false) {
     $roomLabel .= ' ' . $room['bed_summary'];
@@ -70,8 +70,12 @@ foreach ($ratePlans as $plan) {
     if ($slug === '') {
         continue;
     }
-    $offer = itm_hotel_booking_portal_rate_plan_offer($slug);
-    $effectiveDiscount = itm_hotel_booking_portal_rate_plan_effective_discount($discountPercent, $slug);
+    $offer = itm_hotel_booking_portal_rate_plan_offer($slug, $plan);
+    $effectiveDiscount = itm_hotel_booking_portal_rate_plan_effective_discount($discountPercent, $slug, $plan);
+    $planCancelDays = isset($offer['free_cancellation_days']) && $offer['free_cancellation_days'] !== null
+        ? (int) $offer['free_cancellation_days']
+        : $settingsFreeCancelDays;
+    $cancelBy = date('F jS, Y', strtotime($checkInIso . ' -' . $planCancelDays . ' days'));
     $draftSlice = [
         'company_id' => $company_id,
         'hotel_id' => $hotelId,
@@ -139,7 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Please select a rate.';
         } else {
             $existingDraft = itm_hotel_booking_portal_draft_get();
-            $planEffectiveDiscount = itm_hotel_booking_portal_rate_plan_effective_discount($discountPercent, $slug);
+            $planEffectiveDiscount = itm_hotel_booking_portal_rate_plan_effective_discount($discountPercent, $slug, $planRow);
             $draft = [
                 'company_id' => $company_id,
                 'room_id' => $roomId,

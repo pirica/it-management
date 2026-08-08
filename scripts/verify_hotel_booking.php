@@ -248,6 +248,44 @@ if (($nrOffer['pay_badge'] ?? '') === 'Non-refundable'
     hb_fail('portal rate plan offer labels and NR discount');
 }
 
+if (itm_hotel_booking_portal_free_cancellation_days_from_settings([]) === 5
+    && itm_hotel_booking_portal_free_cancellation_days_from_settings(['free_cancellation_days_before_check_in' => 7]) === 7
+) {
+    hb_pass('portal free cancellation days from settings');
+} else {
+    hb_fail('portal free cancellation days from settings');
+}
+
+$seedCancelDaysOk = true;
+$seedMerchOk = true;
+$seedRes = mysqli_query($conn, 'SELECT company_id, free_cancellation_days_before_check_in FROM hotel_booking_settings WHERE company_id BETWEEN 1 AND 5 AND deleted_at IS NULL');
+$seedCompanies = [];
+while ($seedRes && ($sr = mysqli_fetch_assoc($seedRes))) {
+    $seedCompanies[(int) $sr['company_id']] = (int) ($sr['free_cancellation_days_before_check_in'] ?? 0);
+    if ((int) ($sr['free_cancellation_days_before_check_in'] ?? 0) !== 5) {
+        $seedCancelDaysOk = false;
+    }
+}
+if (count($seedCompanies) < 5) {
+    $seedCancelDaysOk = false;
+}
+$merchRes = mysqli_query($conn, "SELECT company_id, COUNT(*) AS c FROM hotel_booking_portal_rate_plans WHERE company_id BETWEEN 1 AND 5 AND deleted_at IS NULL AND rate_plan_slug = 'flexible' AND cancel_template LIKE '%{date}%' GROUP BY company_id");
+$merchCompanies = 0;
+while ($merchRes && ($mr = mysqli_fetch_assoc($merchRes))) {
+    $merchCompanies++;
+    if ((int) ($mr['c'] ?? 0) < 1) {
+        $seedMerchOk = false;
+    }
+}
+if ($merchCompanies < 5) {
+    $seedMerchOk = false;
+}
+if ($seedCancelDaysOk && $seedMerchOk) {
+    hb_pass('free cancel days + rate plan merchandising seeded for companies 1-5');
+} else {
+    hb_fail('free cancel days + rate plan merchandising seeded for companies 1-5');
+}
+
 if (itm_hotel_booking_portal_validate_guest_email('guest@example.com') && !itm_hotel_booking_portal_validate_guest_email('not-an-email')) {
     hb_pass('portal guest email validation');
 } else {
