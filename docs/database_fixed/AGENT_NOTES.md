@@ -9,6 +9,7 @@ Notes for the cancellation-policy RCE remediation regarding **database** impact.
 - **No schema change** was required: the issue was application validation in `itm_hotel_booking_normalize_cancellation_policy_url()` (`includes/itm_hotel_booking.php`), not MySQL DDL.
 - Do not import or apply anything from this folder as a database fix — remediation is PHP-only.
 - Live allowlist: relative policy paths must use `.html`, `.htm`, or `.txt`.
+- Reference snapshots under `docs/fixed_files_vulnerability_*` should match live `includes/itm_hotel_booking.php` when retained.
 
 ## 7. File Structure
 
