@@ -19,6 +19,7 @@ if (!$hotel) {
     exit;
 }
 $company_id = (int) ($hotel['company_id'] ?? hb_public_company_id($conn));
+hb_require_company_public_portal($conn, $company_id);
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 $portalPricing = itm_hotel_booking_portal_hotel_pricing($conn, $company_id, $hotelId);
 

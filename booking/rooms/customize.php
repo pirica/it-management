@@ -21,6 +21,7 @@ if ($company_id <= 0 && $roomId > 0) {
 if ($company_id <= 0) {
     $company_id = hb_public_company_id($conn);
 }
+hb_require_company_public_portal($conn, $company_id);
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 $room = hb_portal_checkout_load_room($conn, $company_id, $roomId);
 if (!$room) {

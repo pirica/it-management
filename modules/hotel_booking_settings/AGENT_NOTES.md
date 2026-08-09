@@ -12,7 +12,7 @@ Tenant configuration for the public `booking/` portal and shared copy (welcome t
 
 - `reviews_url` must be `http://` or `https://` (normalized via `itm_hotel_booking_normalize_reviews_url()`).
 - `urlmybooking` must be `http://` or `https://` (normalized via `itm_hotel_booking_normalize_reviews_url()`).
-- `public_portal_enabled` gates which company `hb_public_company_id()` uses for anonymous guests.
+- `public_portal_enabled` gates which company `hb_public_company_id()` uses for anonymous welcome/chrome **and** hard-blocks browse/book via `hb_require_company_public_portal()` (rooms, calendar, select-rate, customize, room-single); home hotel grid skips disabled tenants.
 - `free_cancellation_days_before_check_in` is company default; portal rate plans may override per plan.
 - `calendar_month_advance_days_left` is company-scoped (0–31); portal JS reads it from `HB_HOTELS` / calendar JSON / `HB_SETTINGS`.
 - `show_discount_strikethrough` is company-scoped; portal reads via `itm_hotel_booking_portal_show_discount_strikethrough_from_settings()` and `HB_SELECT_ROOM.showDiscountStrikethrough` (Step 1 JS).

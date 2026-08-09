@@ -86,6 +86,9 @@ if ($stmt) {
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $hid = (int) $row['id'];
         $hotelCompanyId = (int) ($row['company_id'] ?? 0);
+        if ($hotelCompanyId < 1 || !hb_company_public_portal_enabled($conn, $hotelCompanyId)) {
+            continue;
+        }
         if (!isset($taxRateByCompany[$hotelCompanyId])) {
             $hotelSettings = $hotelCompanyId > 0 ? (itm_hotel_booking_settings_row($conn, $hotelCompanyId) ?: []) : [];
             $taxRateByCompany[$hotelCompanyId] = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($hotelSettings);

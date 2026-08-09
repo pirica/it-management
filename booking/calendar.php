@@ -23,6 +23,7 @@ if (!$hotel) {
     exit;
 }
 $company_id = (int) ($hotel['company_id'] ?? 0);
+hb_require_company_public_portal($conn, $company_id, ['json' => true]);
 $occupancy = itm_hotel_booking_portal_parse_occupancy($_GET);
 
 $payload = itm_hotel_booking_hotel_calendar_month($conn, $company_id, $hotelId, $year, $month, $occupancy);

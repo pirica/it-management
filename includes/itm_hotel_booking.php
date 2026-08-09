@@ -3732,3 +3732,157 @@ if (!function_exists('itm_hotel_booking_room_type_options_for_hotel')) {
     return $rows;
   }
 }
+
+if (!function_exists('itm_hotel_booking_portal_manage_rate_limit_session_key')) {
+  function itm_hotel_booking_portal_manage_rate_limit_session_key() {
+    return 'hotel_booking_manage_rl_events';
+  }
+}
+
+/**
+ * Why: Manage lookup/cancel are public POSTs — throttle by PHP session window before DB verify.
+ *
+ * @return array{ok:bool,error?:string,count?:int,max?:int}
+ */
+if (!function_exists('itm_hotel_booking_portal_manage_rate_limit_check')) {
+  function itm_hotel_booking_portal_manage_rate_limit_check($maxAttempts = 12, $windowSeconds = 900) {
+    $maxAttempts = max(1, (int) $maxAttempts);
+    $windowSeconds = max(60, (int) $windowSeconds);
+    $now = time();
+    $key = itm_hotel_booking_portal_manage_rate_limit_session_key();
+    $events = (isset($_SESSION[$key]) && is_array($_SESSION[$key])) ? $_SESSION[$key] : [];
+    $fresh = [];
+    foreach ($events as $ts) {
+      $ts = (int) $ts;
+      if ($ts > 0 && ($now - $ts) < $windowSeconds) {
+        $fresh[] = $ts;
+      }
+    }
+    $_SESSION[$key] = $fresh;
+    if (count($fresh) >= $maxAttempts) {
+      return [
+        'ok' => false,
+        'error' => 'Too many attempts. Please wait and try again.',
+        'count' => count($fresh),
+        'max' => $maxAttempts,
+      ];
+    }
+    return ['ok' => true, 'count' => count($fresh), 'max' => $maxAttempts];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_manage_rate_limit_record')) {
+  function itm_hotel_booking_portal_manage_rate_limit_record() {
+    $key = itm_hotel_booking_portal_manage_rate_limit_session_key();
+    $events = (isset($_SESSION[$key]) && is_array($_SESSION[$key])) ? $_SESSION[$key] : [];
+    $events[] = time();
+    $_SESSION[$key] = $events;
+  }
+}
+
+/**
+ * Why: Overlap check + INSERT must be atomic under a room row lock to prevent concurrent double-books.
+ *
+ * @return array{ok:bool,booking_id?:int,error?:string}
+ */
+if (!function_exists('itm_hotel_booking_portal_insert_booking_locked')) {
+  function itm_hotel_booking_portal_insert_booking_locked(
+    $conn,
+    $companyId,
+    $customerId,
+    $roomId,
+    $checkIn,
+    $checkOut,
+    $amount,
+    $auth2,
+    $portalRatePlanId,
+    $notes,
+    $bookingColor,
+    $futureStatusId,
+    $presentStatusId,
+    $historyStatusId
+  ) {
+    $companyId = (int) $companyId;
+    $customerId = (int) $customerId;
+    $roomId = (int) $roomId;
+    $checkIn = (string) $checkIn;
+    $checkOut = (string) $checkOut;
+    $amount = (float) $amount;
+    $auth2 = itm_hotel_booking_normalize_auth2($auth2);
+    $portalRatePlanId = (int) $portalRatePlanId;
+    $notes = (string) $notes;
+    $bookingColor = (string) $bookingColor;
+    $futureStatusId = (int) $futureStatusId;
+    $presentStatusId = (int) $presentStatusId;
+    $historyStatusId = (int) $historyStatusId;
+
+    if ($companyId < 1 || $customerId < 1 || $roomId < 1 || $checkIn === '' || $checkOut === '' || $checkOut <= $checkIn || $auth2 === '') {
+      return ['ok' => false, 'error' => 'Invalid booking payload.'];
+    }
+    if (!mysqli_begin_transaction($conn)) {
+      return ['ok' => false, 'error' => 'Booking failed.'];
+    }
+
+    $lock = mysqli_prepare($conn, 'SELECT id FROM hotel_booking_rooms WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1 FOR UPDATE');
+    if (!$lock) {
+      mysqli_rollback($conn);
+      return ['ok' => false, 'error' => 'Booking failed.'];
+    }
+    mysqli_stmt_bind_param($lock, 'ii', $roomId, $companyId);
+    if (!mysqli_stmt_execute($lock)) {
+      mysqli_stmt_close($lock);
+      mysqli_rollback($conn);
+      return ['ok' => false, 'error' => 'Booking failed.'];
+    }
+    $lockRes = mysqli_stmt_get_result($lock);
+    $lockedRow = $lockRes ? mysqli_fetch_assoc($lockRes) : null;
+    mysqli_stmt_close($lock);
+    if (!$lockedRow) {
+      mysqli_rollback($conn);
+      return ['ok' => false, 'error' => 'Room not available.'];
+    }
+
+    if (itm_hotel_booking_room_unavailable_for_stay($conn, $companyId, $roomId, $checkIn, $checkOut, 0, null)) {
+      mysqli_rollback($conn);
+      return ['ok' => false, 'error' => 'Room not available.'];
+    }
+
+    $ins = mysqli_prepare(
+      $conn,
+      'INSERT INTO hotel_bookings (company_id, customer_id, room_id, check_in, check_out, payment_amount, auth2, portal_rate_plan_id, notes, booking_color, future_status_id, present_status_id, history_status_id, active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), 1, NOW())'
+    );
+    if (!$ins) {
+      mysqli_rollback($conn);
+      return ['ok' => false, 'error' => 'Booking failed.'];
+    }
+    mysqli_stmt_bind_param(
+      $ins,
+      'iiissdsissiii',
+      $companyId,
+      $customerId,
+      $roomId,
+      $checkIn,
+      $checkOut,
+      $amount,
+      $auth2,
+      $portalRatePlanId,
+      $notes,
+      $bookingColor,
+      $futureStatusId,
+      $presentStatusId,
+      $historyStatusId
+    );
+    if (!mysqli_stmt_execute($ins)) {
+      mysqli_stmt_close($ins);
+      mysqli_rollback($conn);
+      return ['ok' => false, 'error' => 'Booking failed.'];
+    }
+    $bookingId = (int) mysqli_insert_id($conn);
+    mysqli_stmt_close($ins);
+    if ($bookingId < 1 || !mysqli_commit($conn)) {
+      mysqli_rollback($conn);
+      return ['ok' => false, 'error' => 'Booking failed.'];
+    }
+    return ['ok' => true, 'booking_id' => $bookingId];
+  }
+}
