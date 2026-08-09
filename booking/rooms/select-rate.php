@@ -73,6 +73,7 @@ foreach ($ratePlans as $plan) {
     }
     $offer = itm_hotel_booking_portal_rate_plan_offer($slug, $plan);
     $effectiveDiscount = itm_hotel_booking_portal_rate_plan_effective_discount($discountPercent, $slug, $plan);
+    $planSurcharge = itm_hotel_booking_portal_rate_plan_effective_surcharge($slug, $plan);
     $planCancelDays = isset($offer['free_cancellation_days']) && $offer['free_cancellation_days'] !== null
         ? (int) $offer['free_cancellation_days']
         : $settingsFreeCancelDays;
@@ -85,6 +86,7 @@ foreach ($ratePlans as $plan) {
         'traveling_with_pet' => 0,
         'service_animal' => 0,
         'base_price_per_night' => $basePerNight,
+        'surcharge_percent' => $planSurcharge,
     ];
     $stayTotal = itm_hotel_booking_portal_compute_checkout_total(
         $basePerNight,
@@ -97,14 +99,16 @@ foreach ($ratePlans as $plan) {
         $conn,
         $company_id
     );
-    // Why: Strikethrough list price = same stay without the rate-plan discount (tax still included).
+    // Why: Strikethrough list = special-rate stay only (no plan discount/surcharge; tax still included).
+    $listDraftSlice = $draftSlice;
+    $listDraftSlice['surcharge_percent'] = 0.0;
     $listStayTotal = itm_hotel_booking_portal_compute_checkout_total(
         $basePerNight,
         $checkInIso,
         $checkOutIso,
         $occupancy,
         $discountPercent,
-        $draftSlice,
+        $listDraftSlice,
         $touristTaxRate,
         $conn,
         $company_id
@@ -126,6 +130,7 @@ foreach ($ratePlans as $plan) {
         'price_label' => (string) ($offer['price_label'] ?? 'Best available rate'),
         'cancel_text' => $cancelText,
         'effective_discount' => $effectiveDiscount,
+        'plan_surcharge_percent' => $planSurcharge,
         'is_breakfast' => $isBreakfast,
         'is_primary' => $slug === 'breakfast',
     ];
@@ -145,6 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $existingDraft = itm_hotel_booking_portal_draft_get();
             $planEffectiveDiscount = itm_hotel_booking_portal_rate_plan_effective_discount($discountPercent, $slug, $planRow);
+            $planEffectiveSurcharge = itm_hotel_booking_portal_rate_plan_effective_surcharge($slug, $planRow);
             $draft = [
                 'company_id' => $company_id,
                 'room_id' => $roomId,
@@ -160,6 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'service_animal' => !empty($existingDraft['service_animal']) ? 1 : 0,
                 'additional_comments' => isset($existingDraft['additional_comments']) ? (string) $existingDraft['additional_comments'] : '',
                 'discount_percent' => $planEffectiveDiscount,
+                'surcharge_percent' => $planEffectiveSurcharge,
                 'resolved_rate_slug' => $resolvedRate,
                 'base_price_per_night' => $basePerNight,
                 'room_type_id' => (int) ($room['room_type_id'] ?? 0),

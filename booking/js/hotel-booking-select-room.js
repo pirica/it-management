@@ -178,11 +178,26 @@
     return Math.round((baseF * rooms + extraAdults * (baseF * extraPct) + children * childSupp) * 100) / 100;
   }
 
+  function planSurchargePercent() {
+    var s = parseFloat(cfg.cheapestPlanSurchargePercent);
+    if (isNaN(s) || s < 0) {
+      s = 0;
+    }
+    if (s > 50) {
+      s = 50;
+    }
+    return s;
+  }
+
   function quoteNightly(base) {
     var nightly = quoteNightlyUndiscounted(base);
     var disc = discountPercent();
     if (disc > 0) {
       nightly *= (1 - disc / 100);
+    }
+    var sur = planSurchargePercent();
+    if (sur > 0) {
+      nightly *= (1 + sur / 100);
     }
     return Math.round(nightly * 100) / 100;
   }

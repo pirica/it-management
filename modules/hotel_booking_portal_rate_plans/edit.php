@@ -27,6 +27,7 @@ $payBadge = (string) ($row['pay_badge'] ?? '');
 $priceLabel = (string) ($row['price_label'] ?? '');
 $cancelTemplate = (string) ($row['cancel_template'] ?? '');
 $planDiscount = (float) ($row['plan_discount_percent'] ?? 0);
+$planSurcharge = (float) ($row['plan_surcharge_percent'] ?? 0);
 $planFreeCancelDays = $row['free_cancellation_days_before_check_in'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -42,6 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cancelTemplate = trim((string) ($_POST['cancel_template'] ?? ''));
     $planDiscountRaw = str_replace(',', '.', trim((string) ($_POST['plan_discount_percent'] ?? '0')));
     $planDiscount = ($planDiscountRaw === '' || !is_numeric($planDiscountRaw)) ? 0.0 : max(0.0, min(50.0, (float) $planDiscountRaw));
+    $planSurchargeRaw = str_replace(',', '.', trim((string) ($_POST['plan_surcharge_percent'] ?? '0')));
+    $planSurcharge = ($planSurchargeRaw === '' || !is_numeric($planSurchargeRaw)) ? 0.0 : max(0.0, min(50.0, (float) $planSurchargeRaw));
     $planFreeCancelRaw = trim((string) ($_POST['free_cancellation_days_before_check_in'] ?? ''));
     if ($planFreeCancelRaw === '') {
         $planFreeCancelDays = null;
@@ -62,9 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         // Why: mysqli cannot bind PHP null as INT reliably on 7.4 — use -1 sentinel → NULLIF.
         $freeCancelBind = $planFreeCancelDays === null ? -1 : (int) $planFreeCancelDays;
-        $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_portal_rate_plans SET name = ?, rate_plan_slug = ?, cancellation_policy_url = ?, cancellation_policy_html = ?, pay_badge = ?, price_label = ?, cancel_template = ?, plan_discount_percent = ?, free_cancellation_days_before_check_in = NULLIF(?, -1), active = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ? AND deleted_at IS NULL');
+        $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_portal_rate_plans SET name = ?, rate_plan_slug = ?, cancellation_policy_url = ?, cancellation_policy_html = ?, pay_badge = ?, price_label = ?, cancel_template = ?, plan_discount_percent = ?, plan_surcharge_percent = ?, free_cancellation_days_before_check_in = NULLIF(?, -1), active = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ? AND deleted_at IS NULL');
         if ($upd) {
-            mysqli_stmt_bind_param($upd, 'sssssssdiiiii', $name, $slug, $url, $policyHtml, $payBadge, $priceLabel, $cancelTemplate, $planDiscount, $freeCancelBind, $isActive, $employee_id, $id, $company_id);
+            mysqli_stmt_bind_param($upd, 'sssssssddiiiii', $name, $slug, $url, $policyHtml, $payBadge, $priceLabel, $cancelTemplate, $planDiscount, $planSurcharge, $freeCancelBind, $isActive, $employee_id, $id, $company_id);
             mysqli_stmt_execute($upd);
             mysqli_stmt_close($upd);
         }
@@ -136,6 +139,12 @@ if ($embedMode) {
 <div class="form-group">
 <label for="plan_discount_percent">Plan discount %</label>
 <input type="text" name="plan_discount_percent" id="plan_discount_percent" class="form-control" inputmode="decimal" value="<?php echo sanitize(number_format($planDiscount, 2, '.', '')); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">0–50. Reduces BAR before surcharge.</p>
+</div>
+<div class="form-group">
+<label for="plan_surcharge_percent">Plan surcharge %</label>
+<input type="text" name="plan_surcharge_percent" id="plan_surcharge_percent" class="form-control" inputmode="decimal" value="<?php echo sanitize(number_format($planSurcharge, 2, '.', '')); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">0–50. Increases the rate after discount (e.g. <strong>2</strong> for +2%). Use this instead of a negative discount.</p>
 </div>
 <div class="form-group">
 <label for="free_cancellation_days_before_check_in">Free cancel days (optional override)</label>

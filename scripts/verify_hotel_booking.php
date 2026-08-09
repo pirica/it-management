@@ -247,14 +247,37 @@ if (abs((float) ($breakdownSample['room_charges'] ?? 0) - 841.0) < 0.01 && abs((
 
 $nrOffer = itm_hotel_booking_portal_rate_plan_offer('non_refundable');
 $flexOffer = itm_hotel_booking_portal_rate_plan_offer('flexible');
+$surOffer = itm_hotel_booking_portal_rate_plan_offer('flexible', ['plan_surcharge_percent' => 2]);
+$quotedSur = itm_hotel_booking_portal_quote_nightly(100.0, ['rooms' => 1, 'adults' => 2, 'children' => 0, 'babies' => 0], 0, null, 2.0);
 if (($nrOffer['pay_badge'] ?? '') === 'Non-refundable'
     && abs((float) ($nrOffer['discount_percent'] ?? 0) - 10.0) < 0.01
     && ($flexOffer['price_label'] ?? '') === 'Flexible rate'
     && abs(itm_hotel_booking_portal_rate_plan_effective_discount(0, 'non_refundable') - 10.0) < 0.01
+    && abs((float) ($surOffer['surcharge_percent'] ?? 0) - 2.0) < 0.01
+    && abs(itm_hotel_booking_portal_rate_plan_effective_surcharge('flexible', ['plan_surcharge_percent' => 2]) - 2.0) < 0.01
+    && abs($quotedSur - 102.0) < 0.01
 ) {
-    hb_pass('portal rate plan offer labels and NR discount');
+    hb_pass('portal rate plan offer labels, NR discount, and plan surcharge');
 } else {
-    hb_fail('portal rate plan offer labels and NR discount');
+    hb_fail('portal rate plan offer labels, NR discount, and plan surcharge');
+}
+
+$colSur = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_portal_rate_plans LIKE 'plan_surcharge_percent'");
+if ($colSur && mysqli_num_rows($colSur) === 1) {
+    hb_pass('hotel_booking_portal_rate_plans.plan_surcharge_percent column');
+} else {
+    hb_fail('hotel_booking_portal_rate_plans.plan_surcharge_percent column missing');
+}
+
+$editRatePlanSrc = is_file(dirname(__DIR__) . '/modules/hotel_booking_portal_rate_plans/edit.php') ? (string) file_get_contents(dirname(__DIR__) . '/modules/hotel_booking_portal_rate_plans/edit.php') : '';
+$selectRateSrcSur = is_file(dirname(__DIR__) . '/booking/rooms/select-rate.php') ? (string) file_get_contents(dirname(__DIR__) . '/booking/rooms/select-rate.php') : '';
+if (strpos($editRatePlanSrc, 'plan_surcharge_percent') !== false
+    && strpos($selectRateSrcSur, 'surcharge_percent') !== false
+    && strpos((string) file_get_contents(dirname(__DIR__) . '/booking/js/hotel-booking-select-room.js'), 'cheapestPlanSurchargePercent') !== false
+) {
+    hb_pass('admin + portal wire plan_surcharge_percent');
+} else {
+    hb_fail('admin + portal must wire plan_surcharge_percent');
 }
 
 if (itm_hotel_booking_portal_free_cancellation_days_from_settings([]) === 5

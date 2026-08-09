@@ -94,7 +94,8 @@ if ($stmt) {
         $minExcl = (float) ($row['min_price'] ?? 0);
         $cheapest = itm_hotel_booking_portal_cheapest_rate_offer_for_hotel($conn, $hotelCompanyId, $hid);
         $planDisc = max(0.0, min(50.0, (float) ($cheapest['discount_percent'] ?? 0)));
-        $minAfterPlan = round($minExcl * (1 - ($planDisc / 100)), 2);
+        $planSur = max(0.0, min(50.0, (float) ($cheapest['surcharge_percent'] ?? 0)));
+        $minAfterPlan = round($minExcl * (1 - ($planDisc / 100)) * (1 + ($planSur / 100)), 2);
         $row['min_price_excl_tax'] = $minExcl;
         $row['min_price_rate_excl_tax'] = $minAfterPlan;
         $row['tourist_tax_per_person_per_night'] = $taxRateByCompany[$hotelCompanyId];
@@ -103,6 +104,7 @@ if ($stmt) {
         $row['cheapest_rate_plan_slug'] = (string) ($cheapest['slug'] ?? '');
         $row['cheapest_rate_label'] = (string) ($cheapest['price_label'] ?? 'Best available rate');
         $row['plan_discount_percent'] = $planDisc;
+        $row['plan_surcharge_percent'] = $planSur;
         $row['calendar_month_advance_days_left'] = (int) ($calendarAdvanceByCompany[$hotelCompanyId] ?? 3);
         $row['photos'] = [];
         foreach (itm_hotel_booking_photos_load($conn, $hotelCompanyId, 'hotel_booking_hotel_photos', 'hotel_id', $hid) as $photo) {

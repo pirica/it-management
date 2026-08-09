@@ -37,6 +37,7 @@ $discountPercent = itm_hotel_booking_special_rate_discount(
 );
 $cheapestOffer = itm_hotel_booking_portal_cheapest_rate_offer_for_hotel($conn, $company_id, $hotelId);
 $cheapestPlanDiscount = max(0.0, min(50.0, (float) ($cheapestOffer['discount_percent'] ?? 0)));
+$cheapestPlanSurcharge = max(0.0, min(50.0, (float) ($cheapestOffer['surcharge_percent'] ?? 0)));
 // Why: Step 1 From matches home/calendar cheapest plan (usually NR), stacked with special rates like Step 2.
 $displayDiscountPercent = min(50.0, (float) $discountPercent + $cheapestPlanDiscount);
 $touristTaxRate = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings);
@@ -139,8 +140,8 @@ foreach ($rooms as $room) {
         ];
         $fits = itm_hotel_booking_room_type_fits_occupancy($typeRow, $occupancy);
         $basePrice = itm_hotel_booking_portal_check_in_display_bar($conn, $company_id, $hotelId, $typeKey, $checkInIso, (float) $room['price_per_night']);
-        $listQuoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, 0, $portalPricing) + $taxPerNight, 2);
-        $quoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, $displayDiscountPercent, $portalPricing) + $taxPerNight, 2);
+        $listQuoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, 0, $portalPricing, 0) + $taxPerNight, 2);
+        $quoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, $displayDiscountPercent, $portalPricing, $cheapestPlanSurcharge) + $taxPerNight, 2);
 
         $cards[$typeKey] = [
             'type_id' => $typeKey,
@@ -173,8 +174,8 @@ foreach ($rooms as $room) {
             if ($resolvedBar < $cards[$typeKey]['base_price']) {
                 $cards[$typeKey]['base_price'] = $resolvedBar;
                 $cards[$typeKey]['book_room_id'] = $roomId;
-                $cards[$typeKey]['list_quoted_price'] = round(itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $occupancy, 0, $portalPricing) + $taxPerNight, 2);
-                $cards[$typeKey]['quoted_price'] = round(itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $occupancy, $displayDiscountPercent, $portalPricing) + $taxPerNight, 2);
+                $cards[$typeKey]['list_quoted_price'] = round(itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $occupancy, 0, $portalPricing, 0) + $taxPerNight, 2);
+                $cards[$typeKey]['quoted_price'] = round(itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $occupancy, $displayDiscountPercent, $portalPricing, $cheapestPlanSurcharge) + $taxPerNight, 2);
             }
         }
         $cards[$typeKey]['available'] = $cards[$typeKey]['available_units'] > 0;
@@ -434,6 +435,7 @@ window.HB_SELECT_ROOM = <?php echo json_encode([
     'occupancyLabel' => $occupancyLabel,
     'discountPercent' => $discountPercent,
     'cheapestPlanDiscountPercent' => $cheapestPlanDiscount,
+    'cheapestPlanSurchargePercent' => $cheapestPlanSurcharge,
     'cheapestRateLabel' => (string) ($cheapestOffer['price_label'] ?? ''),
     'resolvedRateSlug' => $resolvedRateSlug,
     'rateDiscountPercents' => $rateDiscountMap,

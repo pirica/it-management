@@ -44,6 +44,7 @@ $serviceAnimal = !empty($draft['service_animal']) ? 1 : 0;
 $additionalComments = (string) ($draft['additional_comments'] ?? '');
 $roomTypeId = (int) ($room['room_type_id'] ?? 0);
 $discountPercent = (float) ($draft['discount_percent'] ?? 0);
+$surchargePercent = (float) ($draft['surcharge_percent'] ?? 0);
 $basePerNight = (float) ($draft['base_price_per_night'] ?? $room['price_per_night']);
 $touristTaxPerPerson = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings);
 
@@ -201,7 +202,8 @@ if ($upgradeOffer) {
         $discountPercent,
         $checkInIso,
         $checkOutIso,
-        $upgradeImageUrl
+        $upgradeImageUrl,
+        $surchargePercent
     );
     if ($upgradeDetailCard) {
         $upgradeRoomDetailHtml = hb_portal_room_detail_modal_html(

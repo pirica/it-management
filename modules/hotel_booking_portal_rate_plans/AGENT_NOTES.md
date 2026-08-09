@@ -6,7 +6,7 @@ Admin UI for **Step 2** portal rate plans (`hotel_booking_portal_rate_plans`) an
 
 ## 2. Tables
 
-- **hotel_booking_portal_rate_plans** — per-hotel `plan_slot` (1–127), `rate_plan_slug`, `name`, `cancellation_policy_url`, `cancellation_policy_html`, Step 2 merchandising (`pay_badge`, `price_label`, `cancel_template`, `plan_discount_percent`, optional `free_cancellation_days_before_check_in`), `active`.
+- **hotel_booking_portal_rate_plans** — per-hotel `plan_slot` (1–127), `rate_plan_slug`, `name`, `cancellation_policy_url`, `cancellation_policy_html`, Step 2 merchandising (`pay_badge`, `price_label`, `cancel_template`, `plan_discount_percent`, `plan_surcharge_percent`, optional `free_cancellation_days_before_check_in`), `active`.
 - **hotel_booking_hotels** (pricing columns) — `portal_breakfast_adult_price_per_night`, `portal_breakfast_child_price_per_night`, `portal_child_nightly_supplement`, `portal_extra_adult_supplement_percent`, `portal_pet_daily_fee`.
 
 ## 3. Business rules
@@ -15,11 +15,12 @@ Admin UI for **Step 2** portal rate plans (`hotel_booking_portal_rate_plans`) an
 - **Portal step pricing** on `index.php` (hotel selector) saves via `itm_hotel_booking_portal_save_hotel_pricing()` — one set of values per hotel, used by `itm_hotel_booking_portal_hotel_pricing()` in checkout math.
 - List: `itm_hotel_booking_portal_rate_plans_admin_rows()` returns all DB rows for the hotel (ordered by `plan_slot`).
 - Public Step 2 (`booking/rooms/select-rate.php`) lists active plans; cancel `{date}` uses plan override days or company `hotel_booking_settings.free_cancellation_days_before_check_in`.
+- Pricing: `plan_discount_percent` (0–50) reduces BAR; `plan_surcharge_percent` (0–50) multiplies after discount. Checkout draft stores `discount_percent` + `surcharge_percent`.
 - **Cancellation policy files:** `cancellation_policy_url` relative paths must normalize to `.html` / `.htm` / `.txt` only (`itm_hotel_booking_normalize_cancellation_policy_url()`). Defense in depth: `booking/cancellation_policy/.htaccess` denies PHP/CGI under that folder.
 
 ## 4. Helpers
 
-- `includes/itm_hotel_booking.php` — `itm_hotel_booking_portal_pricing_defaults()`, `itm_hotel_booking_portal_hotel_pricing()`, `itm_hotel_booking_portal_save_hotel_pricing()`, `itm_hotel_booking_portal_quote_nightly()` (accepts pricing array), `itm_hotel_booking_portal_rate_plan_offer()`, `itm_hotel_booking_portal_free_cancellation_days_from_settings()`.
+- `includes/itm_hotel_booking.php` — `itm_hotel_booking_portal_quote_nightly()` (discount then surcharge), `itm_hotel_booking_portal_rate_plan_offer()`, `itm_hotel_booking_portal_rate_plan_effective_surcharge()`, `itm_hotel_booking_portal_free_cancellation_days_from_settings()`.
 
 ## 5. Regression
 
