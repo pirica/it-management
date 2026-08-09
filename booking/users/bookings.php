@@ -26,34 +26,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $manageLastName = $lastName;
     $manageReservationId = $reservationId;
     $manageAuth2 = $auth2;
-
-    if (!empty($_POST['cancel_booking'])) {
-        itm_require_post_csrf();
-        $cancelResult = itm_hotel_booking_portal_cancel_booking_for_guest($conn, $company_id, $reservationId, $lastName, $auth2);
-        if (!empty($cancelResult['ok'])) {
-            $success = 'Your reservation has been cancelled.';
-            $booking = hb_portal_load_booking_confirmation($conn, $company_id, $reservationId);
-            if (!$booking) {
-                $error = 'Reservation cancelled, but the confirmation could not be reloaded.';
-                $booking = null;
-            }
-        } else {
-            $error = (string) ($cancelResult['error'] ?? 'Unable to cancel this reservation.');
-            $verified = itm_hotel_booking_fetch_for_guest_manage($conn, $company_id, $reservationId, $lastName, $auth2);
-            if ($verified) {
-                $booking = hb_portal_load_booking_confirmation($conn, $company_id, (int) $verified['id']);
-            }
-        }
-    } elseif ($lastName === '' || $reservationId < 1 || $auth2 === '') {
-        $error = 'Enter your last name, reservation ID, and auth code.';
+    $rl = itm_hotel_booking_portal_manage_rate_limit_check();
+    if (empty($rl['ok'])) {
+        $error = (string) ($rl['error'] ?? 'Too many attempts. Please wait and try again.');
     } else {
-        $verified = itm_hotel_booking_fetch_for_guest_manage($conn, $company_id, $reservationId, $lastName, $auth2);
-        if (!$verified) {
-            $error = 'No reservation found. Check your last name, reservation ID, and auth code.';
+        itm_hotel_booking_portal_manage_rate_limit_record();
+        if (!empty($_POST['cancel_booking'])) {
+            itm_require_post_csrf();
+            $cancelResult = itm_hotel_booking_portal_cancel_booking_for_guest($conn, $company_id, $reservationId, $lastName, $auth2);
+            if (!empty($cancelResult['ok'])) {
+                $success = 'Your reservation has been cancelled.';
+                $booking = hb_portal_load_booking_confirmation($conn, $company_id, $reservationId);
+                if (!$booking) {
+                    $error = 'Reservation cancelled, but the confirmation could not be reloaded.';
+                    $booking = null;
+                }
+            } else {
+                $error = (string) ($cancelResult['error'] ?? 'Unable to cancel this reservation.');
+                $verified = itm_hotel_booking_fetch_for_guest_manage($conn, $company_id, $reservationId, $lastName, $auth2);
+                if ($verified) {
+                    $booking = hb_portal_load_booking_confirmation($conn, $company_id, (int) $verified['id']);
+                }
+            }
+        } elseif ($lastName === '' || $reservationId < 1 || $auth2 === '') {
+            $error = 'Enter your last name, reservation ID, and auth code.';
         } else {
-            $booking = hb_portal_load_booking_confirmation($conn, $company_id, (int) $verified['id']);
-            if (!$booking) {
+            $verified = itm_hotel_booking_fetch_for_guest_manage($conn, $company_id, $reservationId, $lastName, $auth2);
+            if (!$verified) {
                 $error = 'No reservation found. Check your last name, reservation ID, and auth code.';
+            } else {
+                $booking = hb_portal_load_booking_confirmation($conn, $company_id, (int) $verified['id']);
+                if (!$booking) {
+                    $error = 'No reservation found. Check your last name, reservation ID, and auth code.';
+                }
             }
         }
     }

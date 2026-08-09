@@ -51,6 +51,9 @@ sequenceDiagram
 |-------|------|
 | `booking/bootstrap.php` | Session, `ITM_HOTEL_BOOKING_PUBLIC_PORTAL`, `APPURL`, `hb_public_company_id()`, `hb_load_active_hotel_row()` |
 | `hb_public_company_id()` | Welcome copy / default portal tenant (session `company_id` or first `public_portal_enabled` among companies 1–5) |
+| `hb_company_public_portal_enabled()` / `hb_require_company_public_portal()` | Hard gate: browse/book and calendar JSON require the hotel’s company `public_portal_enabled`; home list skips disabled tenants |
+| `itm_hotel_booking_portal_insert_booking_locked()` | Step 4 create: room row `FOR UPDATE` + overlap re-check + INSERT in one transaction |
+| `itm_hotel_booking_portal_manage_rate_limit_check()` / `_record()` | Session throttle for manage lookup/cancel POSTs |
 | `hb_load_active_hotel_row()` | Active hotel by `id` across all companies (used by `rooms.php`, `calendar.php`) |
 | `config/config.php` | Shared DB connection, CSRF, date helpers |
 
@@ -195,20 +198,19 @@ Seed example: company 1 **TechCorp Retreat**, reservation IDs from `hotel_bookin
 | Area | Notes |
 |------|--------|
 | **No online payment** | By design; confirmation copy must stay accurate if payment is added later. |
-| **Manage auth** | Last name + reservation ID + **auth2** (random 4-digit PIN issued at create and shown on confirmation). Still not MFA-grade; rate-limit manage/cancel if public. |
+| **Manage auth** | Last name + reservation ID + **auth2** (random 4-digit PIN issued at create and shown on confirmation). Still not MFA-grade; manage/cancel POSTs are session rate-limited (12 / 15 min). |
 | **`hotel_booking_portal_rate_plans`** | Required for cancellation policy links; verify script fails if migration not applied on live DB (`db/migrations/hotel_booking_portal_rate_plans.sql`). |
 | **Portal pricing columns** | `hotel_booking_hotels` portal pricing fields — apply `db/migrations/hotel_booking_portal_hotel_pricing.sql` on existing DBs (destructive; back up hotel rows first). |
 | **Portal user accounts** | Optional `auth/*` rarely used; logout currently redirects to login, not home (pending UX tweak). |
 | **Stay bar on manage** | Shows **Edit stay** (same as checkout) rather than exit/logout — may confuse guests who only wanted to leave manage view. |
-| **Single company in session** | Welcome banner still uses `hb_public_company_id()`; hotel grid is cross-tenant. Booking steps resolve tenant from the selected hotel row. |
+| **Single company in session** | Welcome banner still uses `hb_public_company_id()`; hotel grid lists only portal-enabled companies. Booking steps resolve tenant from the selected hotel row and enforce `public_portal_enabled`. |
 
 ### Recommended follow-ups (not implemented here)
 
 1. Apply `hotel_booking_portal_rate_plans` migration on all environments; keep `01_schema.sql` in sync.
 2. On manage booking: **Logout** → `auth/logout.php` → `index.php` (stay-bar occupancy is already read-only outside `rooms.php`).
-3. Rate-limit manage lookup and cancel POSTs if exposed to the public internet (auth2 reduces enumeration risk vs last name + id alone).
-4. MBQA browser step for full portal flow (index → payment → manage cancel).
-5. Apply `db/migrations/hotel_bookings_auth2.sql` on existing databases (destructive to `hotel_bookings` rows — back up first).
+3. MBQA browser step for full portal flow (index → payment → manage cancel).
+4. Apply `db/migrations/hotel_bookings_auth2.sql` on existing databases (destructive to `hotel_bookings` rows — back up first).
 
 ---
 

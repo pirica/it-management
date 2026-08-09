@@ -44,6 +44,40 @@ function hb_public_company_id($conn) {
     return 1;
 }
 
+/**
+ * Why: public_portal_enabled must gate browse/book for that tenant, not only welcome copy.
+ */
+function hb_company_public_portal_enabled($conn, $companyId) {
+    $companyId = (int) $companyId;
+    if ($companyId < 1) {
+        return false;
+    }
+    $row = itm_hotel_booking_settings_row($conn, $companyId);
+    return $row && !empty($row['public_portal_enabled']);
+}
+
+/**
+ * Why: Block Step 1–4 / calendar when the hotel's company disabled the public portal.
+ *
+ * @param array $options json=true for calendar API; redirect override optional
+ */
+function hb_require_company_public_portal($conn, $companyId, array $options = []) {
+    if (hb_company_public_portal_enabled($conn, $companyId)) {
+        return;
+    }
+    if (!empty($options['json'])) {
+        http_response_code(403);
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8');
+        }
+        echo json_encode(['error' => 'Public booking portal is disabled for this hotel.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+    $redirect = isset($options['redirect']) ? (string) $options['redirect'] : (APPURL . '/');
+    header('Location: ' . $redirect);
+    exit;
+}
+
 function hb_portal_customer_id() {
     return (int) ($_SESSION['hotel_booking_customer_id'] ?? 0);
 }

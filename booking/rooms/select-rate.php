@@ -11,6 +11,7 @@ if ($roomId > 0) {
 if ($company_id <= 0) {
     $company_id = hb_public_company_id($conn);
 }
+hb_require_company_public_portal($conn, $company_id);
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 $checkInParam = trim((string) ($_GET['check_in'] ?? $_POST['check_in'] ?? ''));
 $nights = max(1, (int) ($_GET['nights'] ?? $_POST['nights'] ?? 1));

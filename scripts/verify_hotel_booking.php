@@ -985,5 +985,49 @@ if (itm_format_hotel_date_display('2026-10-01') === '01/Oct/2026') {
     hb_fail('hotel date display expected 01/Oct/2026 got ' . itm_format_hotel_date_display('2026-10-01'));
 }
 
+if (function_exists('itm_hotel_booking_portal_manage_rate_limit_check')
+    && function_exists('itm_hotel_booking_portal_manage_rate_limit_record')) {
+    $rlKey = itm_hotel_booking_portal_manage_rate_limit_session_key();
+    $_SESSION[$rlKey] = [];
+    $rlOk = itm_hotel_booking_portal_manage_rate_limit_check(3, 900);
+    for ($i = 0; $i < 3; $i++) {
+        itm_hotel_booking_portal_manage_rate_limit_record();
+    }
+    $rlBlocked = itm_hotel_booking_portal_manage_rate_limit_check(3, 900);
+    $_SESSION[$rlKey] = [];
+    if (!empty($rlOk['ok']) && empty($rlBlocked['ok'])) {
+        hb_pass('portal manage rate limit blocks after max attempts');
+    } else {
+        hb_fail('portal manage rate limit expected block after 3 records');
+    }
+} else {
+    hb_fail('portal manage rate limit helpers missing');
+}
+
+if (function_exists('itm_hotel_booking_portal_insert_booking_locked')) {
+    $lockSrc = file_get_contents(dirname(__DIR__) . '/includes/itm_hotel_booking.php');
+    $fnPos = strpos($lockSrc, 'function itm_hotel_booking_portal_insert_booking_locked');
+    $slice = $fnPos !== false ? substr($lockSrc, $fnPos, 1800) : '';
+    $bad = itm_hotel_booking_portal_insert_booking_locked($conn, 0, 0, 0, '', '', 0, '', 0, '', '', 0, 0, 0);
+    if (stripos($slice, 'FOR UPDATE') !== false && empty($bad['ok'])) {
+        hb_pass('portal insert booking locked uses FOR UPDATE');
+    } else {
+        hb_fail('portal insert booking locked contract');
+    }
+} else {
+    hb_fail('portal insert booking locked helper missing');
+}
+
+$roomSingleSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms/room-single.php');
+$bootstrapSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/bootstrap.php');
+if (strpos($roomSingleSrc, 'itm_hotel_booking_portal_insert_booking_locked') !== false
+    && strpos($roomSingleSrc, 'Lock quoted stay to draft occupancy') !== false
+    && strpos($bootstrapSrc, 'function hb_require_company_public_portal') !== false
+    && strpos($bootstrapSrc, 'function hb_company_public_portal_enabled') !== false) {
+    hb_pass('portal step4 occupancy lock + tenant portal gate wiring');
+} else {
+    hb_fail('portal step4 occupancy lock / tenant portal gate wiring missing');
+}
+
 itm_script_output_end();
 exit($fail > 0 ? 1 : 0);

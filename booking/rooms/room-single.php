@@ -15,6 +15,7 @@ if ($company_id <= 0 && $roomId > 0) {
 if ($company_id <= 0) {
     $company_id = hb_public_company_id($conn);
 }
+hb_require_company_public_portal($conn, $company_id);
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 $error = '';
 $formFullName = '';
@@ -33,7 +34,12 @@ if ($draft && is_array($draft['occupancy'] ?? null)) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
     itm_require_post_csrf();
-    $occupancy = itm_hotel_booking_portal_parse_occupancy($_POST);
+    // Why: Lock quoted stay to draft occupancy — never re-price from crafted POST guest counts.
+    if ($draft && is_array($draft['occupancy'] ?? null)) {
+        $occupancy = $draft['occupancy'];
+    } else {
+        $occupancy = itm_hotel_booking_portal_parse_occupancy($_POST);
+    }
     if ($draft) {
         $checkIn = (string) ($draft['check_in'] ?? '');
         $checkOut = (string) ($draft['check_out'] ?? '');
@@ -55,8 +61,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
         $error = 'Please enter a valid phone number with country code (e.g. +351912345678).';
     } elseif ($checkIn === '' || $checkOut === '' || $checkOut <= $checkIn) {
         $error = 'Invalid dates.';
-    } elseif (itm_hotel_booking_room_unavailable_for_stay($conn, $company_id, $roomId, $checkIn, $checkOut, 0, $room)) {
-        $error = 'Room not available.';
     } else {
         $customerId = itm_hotel_booking_ensure_customer_for_portal($conn, $company_id, $email, $fullName, $phone);
         if (!$customerId) {
@@ -89,8 +93,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
                 }
             }
             $portalRatePlanId = (int) ($draftForPay['portal_rate_plan_id'] ?? 0);
+            $basePerNight = (float) ($draft && isset($draft['base_price_per_night'])
+                ? $draft['base_price_per_night']
+                : $room['price_per_night']);
             $amount = itm_hotel_booking_portal_compute_checkout_total(
-                $room['price_per_night'],
+                $basePerNight,
                 $checkIn,
                 $checkOut,
                 $occupancy,
@@ -107,19 +114,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
             $hs = (int) ($status['history_status_id'] ?? 0);
             $bookingColor = itm_hotel_booking_resolve_booking_color('', mt_rand(1, 99999));
             $auth2 = itm_hotel_booking_generate_auth2();
-            $ins = mysqli_prepare($conn, 'INSERT INTO hotel_bookings (company_id, customer_id, room_id, check_in, check_out, payment_amount, auth2, portal_rate_plan_id, notes, booking_color, future_status_id, present_status_id, history_status_id, active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), 1, NOW())');
-            if ($ins) {
-                mysqli_stmt_bind_param($ins, 'iiissdsissiii', $company_id, $customerId, $roomId, $checkIn, $checkOut, $amount, $auth2, $portalRatePlanId, $notes, $bookingColor, $fs, $ps, $hs);
-                if (mysqli_stmt_execute($ins)) {
-                    $bid = (int) mysqli_insert_id($conn);
-                    $_SESSION['hotel_booking_last_id'] = $bid;
-                    $_SESSION['hotel_booking_last_occupancy'] = itm_hotel_booking_portal_occupancy_query_params($occupancy);
-                    itm_hotel_booking_portal_draft_clear();
-                    header('Location: ' . APPURL . '/rooms/payment.php');
-                    exit;
-                }
+            $insertResult = itm_hotel_booking_portal_insert_booking_locked(
+                $conn,
+                $company_id,
+                $customerId,
+                $roomId,
+                $checkIn,
+                $checkOut,
+                $amount,
+                $auth2,
+                $portalRatePlanId,
+                $notes,
+                $bookingColor,
+                $fs,
+                $ps,
+                $hs
+            );
+            if (!empty($insertResult['ok']) && (int) ($insertResult['booking_id'] ?? 0) > 0) {
+                $bid = (int) $insertResult['booking_id'];
+                $_SESSION['hotel_booking_last_id'] = $bid;
+                $_SESSION['hotel_booking_last_occupancy'] = itm_hotel_booking_portal_occupancy_query_params($occupancy);
+                itm_hotel_booking_portal_draft_clear();
+                header('Location: ' . APPURL . '/rooms/payment.php');
+                exit;
             }
-            $error = 'Booking failed.';
+            $error = (string) ($insertResult['error'] ?? 'Booking failed.');
         }
     }
 }
