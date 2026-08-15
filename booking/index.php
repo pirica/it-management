@@ -144,7 +144,11 @@ $hbSettingsPublic = [
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?php echo htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?></title>
-<link rel="stylesheet" href="<?php echo APPURL; ?>/css/hotel-booking-modern.css">
+<?php
+$hbModernCssVer = (int) (@filemtime(__DIR__ . '/css/hotel-booking-modern.css') ?: time());
+$hbPublicJsVer = (int) (@filemtime(__DIR__ . '/js/hotel-booking-public.js') ?: time());
+?>
+<link rel="stylesheet" href="<?php echo APPURL; ?>/css/hotel-booking-modern.css?v=<?php echo $hbModernCssVer; ?>">
 </head>
 <body class="hb-public">
 <header class="hb-header">
@@ -201,7 +205,7 @@ window.HB_SETTINGS = <?php echo json_encode($hbSettingsPublic, JSON_UNESCAPED_UN
 <script src="<?php echo APPURL; ?>/js/hotel-booking-gallery.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-amenity-icons.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-gallery.js"></script>
-<script src="<?php echo APPURL; ?>/js/hotel-booking-public.js"></script>
+<script src="<?php echo APPURL; ?>/js/hotel-booking-public.js?v=<?php echo $hbPublicJsVer; ?>"></script>
 <script src="<?php echo htmlspecialchars(BASE_URL . 'js/hotel-date-input.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-dates.js"></script>
 </body>
