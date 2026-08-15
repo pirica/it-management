@@ -9,7 +9,7 @@ Comprehensive review and reference for the guest-facing hotel booking portal und
 
 ## 1. Intent & purpose
 
-The **public booking portal** (`booking/`) lets guests browse hotels, select dates and rooms, complete a four-step checkout without ITM employee login, and manage an existing reservation with **last name + confirmation number (`hotel_bookings.id`) + auth2 PIN** (`hotel_bookings.auth2`, random 4 digits generated at booking create).
+The **public booking portal** (`booking/`) lets guests browse hotels, select dates and rooms, complete a four-step checkout without ITM employee login, and manage an existing reservation with **last name + confirmation number (`hotel_bookings.id`) + auth2 code** (`hotel_bookings.auth2` — 12-character complex code on new bookings; legacy 4-digit PINs remain valid) plus a **6-digit email OTP** before the manage view loads.
 
 Staff configure inventory, rates, and policies in ITM **Hospitality** modules (`modules/hotel_bookings/`, `modules/hotel_booking_hotels/`, etc.). The portal reads that data through MySQLi helpers scoped by `company_id`.
 
@@ -96,13 +96,15 @@ Hotel photos are managed in **Hotels** (`modules/hotel_booking_hotels/`). **Room
 
 Draft state (dates, rate, occupancy, upgrade) is stored in session via `itm_hotel_booking_portal_draft_*` helpers until step 4 succeeds.
 
+**Step 4 charge:** `itm_hotel_booking_portal_resolve_step4_charge()` re-reads BAR (`itm_hotel_booking_resolve_room_type_nightly_bar`), special-rate discount, and plan discount/surcharge from the database at INSERT time — session draft money fields are not trusted.
+
 **Pricing:** nightly room charges use the base price per night defined per room type and hotel in `hotel_booking_room_type_base_prices.price_per_night` plus per-hotel portal rules on `hotel_booking_hotels` (breakfast adult/child add-on, child nightly supplement, extra-adult %, pet daily fee — edited in **Portal Rate Plans** admin, not hardcoded in `booking/`). Special-rate discount % comes from `hotel_booking_special_rates`. Step 2 plans add `plan_discount_percent` then optional `plan_surcharge_percent` (0–50 each; surcharge raises after discount). Tourist tax is company-level (`hotel_booking_settings.tourist_tax_per_person_per_night`, default €2/guest/night in seeds). Breakdown: `itm_hotel_booking_portal_checkout_breakdown()` → `itm_hotel_booking_portal_hotel_pricing()`.
 
 **Availability:** `itm_hotel_booking_has_overlap()` blocks double-booking; cancelled bookings are excluded from overlap.
 
 ### B. Manage existing reservation
 
-[users/bookings.php](http://localhost/it-management/booking/users/bookings.php) — guest enters **last name** + **reservation ID** + **auth code** (`auth2`, 4 digits from the confirmation) (no account required).
+[users/bookings.php](http://localhost/it-management/booking/users/bookings.php) — guest enters **last name** + **reservation ID** + **auth code** (`auth2`, 12-character complex code on new bookings; legacy 4-digit PINs still accepted). After PIN verification the portal emails a **6-digit OTP** (10-minute expiry) before showing the confirmation or allowing cancel (no account required).
 
 After lookup:
 
@@ -133,7 +135,7 @@ After lookup:
 | `hotel_booking_room_type_base_prices` | Base price per night per room type and hotel |
 | `hotel_booking_rooms` | Inventory, link to room type |
 | `booking_rooms_types` | Type name, bed summary, upgrade pricing |
-| `hotel_bookings` | Reservations; segment status FKs; **`auth2`** (4-digit guest manage PIN); `notes` (rate plan, occupancy meta, comments) |
+| `hotel_bookings` | Reservations; segment status FKs; **`auth2`** (12-char complex guest manage code; legacy 4-digit rows remain valid); `notes` (rate plan, occupancy meta, comments) |
 | `hotel_bookings_future` / `present` / `history` | Status lookups (`PENDING`, `CANCELLED`, etc.) — no ENUM |
 | `customers` | Guest PII; ensured on book via `itm_hotel_booking_ensure_customer_for_portal()` |
 | `hotel_booking_portal_rate_plans` | Per-hotel cancellation policy URLs (slots 1–4) |
@@ -198,7 +200,7 @@ Seed example: company 1 **TechCorp Retreat**, reservation IDs from `hotel_bookin
 | Area | Notes |
 |------|--------|
 | **No online payment** | By design; confirmation copy must stay accurate if payment is added later. |
-| **Manage auth** | Last name + reservation ID + **auth2** (random 4-digit PIN issued at create and shown on confirmation). Still not MFA-grade; manage/cancel POSTs are session rate-limited (12 / 15 min). |
+| **Manage auth** | Last name + reservation ID + **auth2** (12-character complex code on new bookings; legacy 4-digit PINs still accepted) + **email OTP** before manage/cancel. Session **and client IP** rate limits (12 / 15 min). |
 | **`hotel_booking_portal_rate_plans`** | Required for cancellation policy links; verify script fails if migration not applied on live DB (`db/migrations/hotel_booking_portal_rate_plans.sql`). |
 | **Portal pricing columns** | `hotel_booking_hotels` portal pricing fields — apply `db/migrations/hotel_booking_portal_hotel_pricing.sql` on existing DBs (destructive; back up hotel rows first). |
 | **Portal user accounts** | Optional `auth/*` rarely used; logout currently redirects to login, not home (pending UX tweak). |
@@ -210,7 +212,7 @@ Seed example: company 1 **TechCorp Retreat**, reservation IDs from `hotel_bookin
 1. Apply `hotel_booking_portal_rate_plans` migration on all environments; keep `01_schema.sql` in sync.
 2. On manage booking: **Logout** → `auth/logout.php` → `index.php` (stay-bar occupancy is already read-only outside `rooms.php`).
 3. MBQA browser step for full portal flow (index → payment → manage cancel).
-4. Apply `db/migrations/hotel_bookings_auth2.sql` on existing databases (destructive to `hotel_bookings` rows — back up first).
+4. Apply `db/migrations/hotel_bookings_auth2_strong.sql` on existing databases (destructive to `hotel_bookings` rows — back up first).
 
 ---
 
@@ -222,7 +224,7 @@ Seed example: company 1 **TechCorp Retreat**, reservation IDs from `hotel_bookin
 | Cancellation policy link missing | No `hotel_booking_portal_rate_plans` row or empty `cancellation_policy_url` |
 | `verify_hotel_booking.php` fails on rate plans table | Run `db/migrations/hotel_booking_portal_rate_plans.sql` on existing DB |
 | Room not available on book | Overlap with non-cancelled booking on same `room_id` |
-| Manage lookup fails | Last name must match `customers.name` (case-insensitive token match); ID = `hotel_bookings.id`; auth code = `hotel_bookings.auth2` (exactly 4 digits) |
+| Manage lookup fails | Last name must match `customers.name` (case-insensitive token match); ID = `hotel_bookings.id`; auth code = `hotel_bookings.auth2` (12-char complex code or legacy 4 digits); complete email OTP step |
 | Cancel button hidden | Stay not in `future` segment or already `CANCELLED` |
 | PDF download fails | CDN blocked for html2canvas/jsPDF; check browser console |
 | PDF “Manage my booking” not clickable | Regenerate after update — confirmation PDF must include a jsPDF `link()` annotation over `data-hb-pdf-manage-link` (html2canvas alone paints pixels only) |
