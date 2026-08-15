@@ -857,9 +857,9 @@ if (!function_exists('itm_hotel_booking_normalize_auth2')) {
     if ($raw === '') {
       return '';
     }
-    $digitsOnly = preg_replace('/\D+/', '', $raw);
-    if ($digitsOnly !== null && strlen($digitsOnly) === 4 && preg_match('/^\d{4}$/', $digitsOnly)) {
-      return $digitsOnly;
+    // Legacy manage PIN: exactly four digits — do not strip digits from 12-char codes.
+    if (preg_match('/^\d{4}$/', $raw)) {
+      return $raw;
     }
     if (strlen($raw) !== 12) {
       return '';

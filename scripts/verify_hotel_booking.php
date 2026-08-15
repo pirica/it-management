@@ -77,6 +77,8 @@ $auth2Strong = strlen($auth2Sample) === 12
     && preg_match('/[!@#$%&*?]/', $auth2Sample);
 if ($auth2Strong
     && itm_hotel_booking_normalize_auth2('1234') === '1234'
+    && itm_hotel_booking_normalize_auth2('Ab#3699cD@eF') === 'Ab#3699cD@eF'
+    && itm_hotel_booking_normalize_auth2($auth2Sample) === $auth2Sample
     && itm_hotel_booking_auth2_matches('0042', '42') === false
     && itm_hotel_booking_auth2_matches('0042', '0042')
     && itm_hotel_booking_auth2_matches($auth2Sample, $auth2Sample)) {

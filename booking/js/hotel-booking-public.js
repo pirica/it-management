@@ -264,37 +264,6 @@
     modal.hidden = false;
     document.body.classList.add('hb-modal-open');
 
-    // #region agent log
-    requestAnimationFrame(function () {
-      var card = modal.querySelector('.hb-modal-card');
-      var detail = body.querySelector('.hb-detail');
-      var cardStyle = card ? window.getComputedStyle(card) : null;
-      var payload = {
-        sessionId: '44bff2',
-        runId: 'post-fix',
-        hypothesisId: 'A',
-        location: 'hotel-booking-public.js:openModal',
-        message: 'detail modal scroll metrics',
-        data: {
-          cardClientHeight: card ? card.clientHeight : 0,
-          cardScrollHeight: card ? card.scrollHeight : 0,
-          cardOverflowY: cardStyle ? cardStyle.overflowY : '',
-          cardMaxHeight: cardStyle ? cardStyle.maxHeight : '',
-          cardHasInnerScroll: card ? card.scrollHeight > card.clientHeight : false,
-          detailScrollHeight: detail ? detail.scrollHeight : 0,
-          viewportHeight: window.innerHeight,
-          modalOverflowY: window.getComputedStyle(modal).overflowY
-        },
-        timestamp: Date.now()
-      };
-      fetch('http://127.0.0.1:7624/ingest/b18ba1fd-1a78-47ec-84ed-a0734d1c48a6', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '44bff2' },
-        body: JSON.stringify(payload)
-      }).catch(function () {});
-    });
-    // #endregion
-
     bindGallery(body, urls);
     bindReadMore(body);
     bindTabs(body);
