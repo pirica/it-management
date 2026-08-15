@@ -309,8 +309,8 @@ body.hb-modal-open { overflow: hidden; }
 .hb-checkout-page-step4 .hb-step-label { margin: 0 0 4px; font-size: .85rem; }
 .hb-checkout-page-step4 .hb-page-title { font-size: 1.45rem; margin: 0 0 12px; padding-bottom: 2px; border-bottom-width: 3px; }
 .hb-checkout-page-step4 .hb-select-room-layout { padding-top: 16px; padding-bottom: 12px; }
-.hb-checkout-page-step4 .hb-checkout-stepper { display: none; }
 .hb-checkout-page-step4 .hb-checkout-aside-stack { position: sticky; top: 12px; align-self: start; }
+.hb-checkout-page-step4 .hb-step4-total-line { margin: 0 0 12px; font-size: 1.05rem; }
 .hb-checkout-page-step4 .hb-special-requests-review {
   margin: 0 0 10px;
   padding: 10px 12px;
@@ -319,12 +319,12 @@ body.hb-modal-open { overflow: hidden; }
   border-radius: 4px;
 }
 .hb-checkout-page-step4 .hb-special-requests-review .hb-checkout-section-title { margin: 0 0 4px; font-size: .85rem; }
-.hb-checkout-page-step4 .hb-special-requests-review .hb-checkout-hint { display: none; }
+.hb-checkout-page-step4 .hb-special-requests-review .hb-checkout-hint { margin: 6px 0 0; font-size: .78rem; line-height: 1.35; }
 .hb-checkout-page-step4 .hb-special-request-line { margin: 0; font-size: .82rem; line-height: 1.35; }
 .hb-checkout-page-step4 .hb-special-requests-comments-title { margin: 6px 0 2px; font-size: .82rem; }
 .hb-checkout-page-step4 .hb-special-request-comments { margin: 0; font-size: .82rem; line-height: 1.35; }
 .hb-checkout-page-step4 .hb-guest-form .form-group { margin-bottom: 8px; }
-.hb-checkout-page-step4 .hb-field-hint { display: none; }
+.hb-checkout-page-step4 .hb-field-hint { margin: 4px 0 0; font-size: .78rem; line-height: 1.35; }
 .hb-checkout-page-step4 .hb-input { padding: 8px 10px; }
 .hb-checkout-page-step4 .hb-step4-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .hb-checkout-sticky-cta {
@@ -355,7 +355,6 @@ body.hb-modal-open { overflow: hidden; }
 @media (max-width: 900px) {
   .hb-checkout-sticky-cta-inner { grid-template-columns: 1fr; }
   .hb-checkout-sticky-actions { justify-content: space-between; width: 100%; }
-  .hb-checkout-page-step4 .hb-checkout-stepper { display: block; }
   .hb-checkout-page-step4 .hb-checkout-aside-stack { position: static; }
 }
 @media (max-width: 640px) {

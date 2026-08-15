@@ -208,6 +208,8 @@ $reservationSummaryContext = [
 <?php hb_portal_render_draft_special_requests_review($draft); ?>
 <?php endif; ?>
 
+<p class="hb-checkout-total-line hb-step4-total-line">Total due: <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($estimatedTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></p>
+
 <form method="post" class="hb-guest-form" id="hb-guest-form">
 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
 <input type="hidden" name="rooms" value="<?php echo (int) $occupancy['rooms']; ?>">
@@ -223,7 +225,7 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 <?php endforeach; ?>
 <div class="form-group"><label>Full name</label><input type="text" name="full_name" class="hb-input" required autocomplete="name" value="<?php echo htmlspecialchars($formFullName, ENT_QUOTES, 'UTF-8'); ?>"></div>
 <div class="form-group"><label>Email</label><input type="email" name="email" class="hb-input" required autocomplete="email" inputmode="email" value="<?php echo htmlspecialchars($formEmail, ENT_QUOTES, 'UTF-8'); ?>"></div>
-<div class="form-group"><label>Phone</label><input type="tel" name="phone" class="hb-input" required autocomplete="tel" inputmode="tel" placeholder="+351912345678" pattern="\+\d{8,15}" title="Include country code, e.g. +351912345678" value="<?php echo htmlspecialchars($formPhone, ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="form-group"><label>Phone</label><input type="tel" name="phone" class="hb-input" required autocomplete="tel" inputmode="tel" placeholder="+351912345678" pattern="\+\d{8,15}" title="Include country code, e.g. +351912345678" value="<?php echo htmlspecialchars($formPhone, ENT_QUOTES, 'UTF-8'); ?>"><p class="hb-field-hint">Full number with country code (e.g. +351912345678).</p></div>
 <?php if ($draft): ?>
 <div class="hb-step4-dates">
 <div class="form-group"><label>Check-in</label><input type="text" class="hb-input hb-input-locked" readonly disabled value="<?php echo htmlspecialchars($prefillInDisplay, ENT_QUOTES, 'UTF-8'); ?>" aria-disabled="true"></div>
@@ -247,9 +249,6 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 ]); ?>
 <?php hb_portal_render_reservation_summary($reservationSummaryContext); ?>
 <?php hb_portal_render_cancellation_policy_button(hb_portal_draft_cancellation_policy_url($conn, $company_id, $draftForDisplay)); ?>
-<div class="hb-checkout-aside-cta">
-<button type="submit" class="hb-btn hb-btn-primary hb-btn-block" id="btn-book-submit-aside" form="hb-guest-form" title="Book and continue to payment">Book and continue to payment</button>
-</div>
 </aside>
 </div>
 
@@ -290,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    if (agreeCheckbox && submitButtons.length) {
+    if (agreeCheckbox && submitButton) {
         agreeCheckbox.addEventListener('change', syncButtonState);
         syncButtonState();
     }
