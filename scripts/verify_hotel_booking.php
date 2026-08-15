@@ -726,6 +726,16 @@ if (
     hb_fail('booking confirmation Manage my booking PDF link markup missing');
 }
 
+if (
+    $portalCheckoutBody !== ''
+    && strpos($portalCheckoutBody, '<dt>Full name</dt>') !== false
+    && strpos($portalCheckoutBody, 'htmlspecialchars($guestName') !== false
+) {
+    hb_pass('payment confirmation shows guest full name');
+} else {
+    hb_fail('payment confirmation missing guest full name row');
+}
+
 $_SESSION['employee_id'] = 1;
 $_SESSION['login_employee_id'] = 1;
 $_SESSION['company_id'] = 1;
