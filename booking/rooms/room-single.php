@@ -190,7 +190,7 @@ $reservationSummaryContext = [
 <title>Payment and Guest Details</title>
 <link rel="stylesheet" href="<?php echo APPURL; ?>/css/hotel-booking-modern.css">
 </head>
-<body class="hb-public hb-checkout-page">
+<body class="hb-public hb-checkout-page hb-checkout-page-step4">
 <?php hb_portal_render_header($settings); ?>
 <?php hb_portal_render_stay_bar($hotel, $checkInIso, $nights, $occupancy); ?>
 
@@ -208,9 +208,7 @@ $reservationSummaryContext = [
 <?php hb_portal_render_draft_special_requests_review($draft); ?>
 <?php endif; ?>
 
-<p class="hb-checkout-total-line">Total due: <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($estimatedTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></p>
-
-<form method="post" class="hb-guest-form">
+<form method="post" class="hb-guest-form" id="hb-guest-form">
 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
 <input type="hidden" name="rooms" value="<?php echo (int) $occupancy['rooms']; ?>">
 <input type="hidden" name="adults" value="<?php echo (int) $occupancy['adults']; ?>">
@@ -225,26 +223,20 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 <?php endforeach; ?>
 <div class="form-group"><label>Full name</label><input type="text" name="full_name" class="hb-input" required autocomplete="name" value="<?php echo htmlspecialchars($formFullName, ENT_QUOTES, 'UTF-8'); ?>"></div>
 <div class="form-group"><label>Email</label><input type="email" name="email" class="hb-input" required autocomplete="email" inputmode="email" value="<?php echo htmlspecialchars($formEmail, ENT_QUOTES, 'UTF-8'); ?>"></div>
-<div class="form-group"><label>Phone</label><input type="tel" name="phone" class="hb-input" required autocomplete="tel" inputmode="tel" placeholder="+351912345678" pattern="\+\d{8,15}" title="Include country code, e.g. +351912345678" value="<?php echo htmlspecialchars($formPhone, ENT_QUOTES, 'UTF-8'); ?>"><p class="hb-field-hint">Full number with country code (e.g. +351912345678).</p></div>
+<div class="form-group"><label>Phone</label><input type="tel" name="phone" class="hb-input" required autocomplete="tel" inputmode="tel" placeholder="+351912345678" pattern="\+\d{8,15}" title="Include country code, e.g. +351912345678" value="<?php echo htmlspecialchars($formPhone, ENT_QUOTES, 'UTF-8'); ?>"></div>
 <?php if ($draft): ?>
+<div class="hb-step4-dates">
 <div class="form-group"><label>Check-in</label><input type="text" class="hb-input hb-input-locked" readonly disabled value="<?php echo htmlspecialchars($prefillInDisplay, ENT_QUOTES, 'UTF-8'); ?>" aria-disabled="true"></div>
 <div class="form-group"><label>Check-out</label><input type="text" class="hb-input hb-input-locked" readonly disabled value="<?php echo htmlspecialchars($prefillOutDisplay, ENT_QUOTES, 'UTF-8'); ?>" aria-disabled="true"></div>
+</div>
 <input type="hidden" name="check_in" value="<?php echo htmlspecialchars($checkInIso, ENT_QUOTES, 'UTF-8'); ?>">
 <input type="hidden" name="check_out" value="<?php echo htmlspecialchars($checkOutIso, ENT_QUOTES, 'UTF-8'); ?>">
 <?php else: ?>
+<div class="hb-step4-dates">
 <div class="form-group"><label>Check-in</label><?php itm_render_hotel_date_input('check_in', 'hb-portal-check-in', $checkInIso, ['required' => true, 'class' => 'hb-input']); ?></div>
 <div class="form-group"><label>Check-out</label><?php itm_render_hotel_date_input('check_out', 'hb-portal-check-out', $checkOutIso, ['required' => true, 'class' => 'hb-input']); ?></div>
-<?php endif; ?>
-<div class="form-group hb-agreement-group" style="margin-top: 24px; margin-bottom: 16px;">
-    <p class="hb-agreement-text" style="font-size: 0.9rem; line-height: 1.4; color: var(--hb-text); margin-bottom: 8px;">
-        By completing this booking you agree to the booking conditions, general terms, privacy policy, and Wallet terms.
-    </p>
-    <label class="hb-filter-check hb-checkout-check" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600;">
-        <input type="checkbox" id="agree_terms" name="agree_terms" value="1">
-        <span>I agree to these terms</span>
-    </label>
 </div>
-<button type="submit" class="hb-btn hb-btn-primary" id="btn-book-submit" title="Book and continue to payment">Book and continue to payment</button>
+<?php endif; ?>
 </form>
 </main>
 
@@ -257,26 +249,46 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 <?php hb_portal_render_cancellation_policy_button(hb_portal_draft_cancellation_policy_url($conn, $company_id, $draftForDisplay)); ?>
 </aside>
 </div>
+
+<div class="hb-checkout-sticky-cta" role="region" aria-label="Complete booking">
+<div class="hb-checkout-sticky-cta-inner">
+<div class="hb-checkout-sticky-terms">
+<p class="hb-agreement-text">By completing this booking you agree to the booking conditions, general terms, privacy policy, and Wallet terms.</p>
+<label class="hb-checkout-sticky-check" for="agree_terms">
+<input type="checkbox" id="agree_terms" name="agree_terms" value="1" form="hb-guest-form">
+<span>I agree to these terms</span>
+</label>
+</div>
+<div class="hb-checkout-sticky-actions">
+<p class="hb-checkout-sticky-total">Total due: <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($estimatedTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></p>
+<button type="submit" class="hb-btn hb-btn-primary" id="btn-book-submit" form="hb-guest-form" title="Book and continue to payment">Book and continue to payment</button>
+</div>
+</div>
+</div>
 <script src="<?php echo htmlspecialchars(BASE_URL . 'js/hotel-date-input.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var agreeCheckbox = document.getElementById('agree_terms');
     var submitButton = document.getElementById('btn-book-submit');
-    var form = document.querySelector('.hb-guest-form');
+    var form = document.getElementById('hb-guest-form');
 
     function syncButtonState() {
+        if (!agreeCheckbox || !submitButton) {
+            return;
+        }
         if (agreeCheckbox.checked) {
             submitButton.classList.remove('hb-btn-disabled');
+            submitButton.disabled = false;
             submitButton.style.cursor = 'pointer';
         } else {
             submitButton.classList.add('hb-btn-disabled');
+            submitButton.disabled = true;
             submitButton.style.cursor = 'not-allowed';
         }
     }
 
     if (agreeCheckbox && submitButton) {
         agreeCheckbox.addEventListener('change', syncButtonState);
-        // Initial state sync
         syncButtonState();
     }
 
