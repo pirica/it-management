@@ -39,6 +39,7 @@ body.hb-modal-open { overflow: hidden; }
 
 .hb-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 0; min-height: 480px; }
 .hb-detail-left { padding: 24px 28px 28px; border-right: 1px solid var(--hb-border); }
+.hb-detail-left .hb-gallery { min-height: 220px; }
 .hb-detail-right { padding: 24px 28px 28px; background: #fafbfc; }
 .hb-block { margin-bottom: 20px; }
 .hb-block h3 { font-size: 1rem; font-weight: 700; margin: 0 0 12px; color: var(--hb-text); }
@@ -99,7 +100,8 @@ body.hb-modal-open { overflow: hidden; }
 .hb-read-more { font-size: .9rem; color: var(--hb-primary); font-weight: 600; text-decoration: none; }
 .hb-read-more:hover { text-decoration: underline; }
 
-.hb-rating-block { padding-bottom: 12px; border-bottom: 1px solid var(--hb-border); margin-bottom: 20px; }
+.hb-rating-block { padding-bottom: 12px; margin-bottom: 0; }
+.hb-price-cta { padding-bottom: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--hb-border); }
 .hb-rating-bubbles { display: flex; gap: 4px; margin-bottom: 10px; }
 .hb-rating-bubbles span { width: 28px; height: 28px; border-radius: 50% 50% 50% 0; background: #00aa6c; transform: rotate(-45deg); display: inline-block; }
 .hb-rating-bubbles span.partial { opacity: .42; }
