@@ -39,7 +39,7 @@ $checkOutIso = date('Y-m-d', strtotime($checkInIso . ' +' . $nights . ' day'));
 
 $roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
 $activeDraft = itm_hotel_booking_portal_draft_get() ?: [];
-$roomLines = itm_hotel_booking_portal_room_lines_from_draft(array_merge($activeDraft, ['room_id' => $roomId]));
+$roomLines = itm_hotel_booking_portal_draft_room_lines_for_display(array_merge($activeDraft, ['room_id' => $roomId]));
 // #region agent log
 @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
     'sessionId' => '44bff2',
@@ -177,7 +177,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Please select a rate.';
         } else {
             $existingDraft = itm_hotel_booking_portal_draft_get();
-            $existingLines = is_array($existingDraft['room_lines'] ?? null) ? $existingDraft['room_lines'] : $roomLines;
+            $existingLines = is_array($existingDraft['room_lines'] ?? null) && $existingDraft['room_lines'] !== []
+                ? $existingDraft['room_lines']
+                : $roomLines;
             $planEffectiveDiscount = itm_hotel_booking_portal_rate_plan_effective_discount($discountPercent, $slug, $planRow);
             $planEffectiveSurcharge = itm_hotel_booking_portal_rate_plan_effective_surcharge($slug, $planRow);
             $draft = [

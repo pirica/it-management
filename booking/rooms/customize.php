@@ -50,7 +50,15 @@ $basePerNight = (float) ($draft['base_price_per_night'] ?? $room['price_per_nigh
 $touristTaxPerPerson = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings);
 
 $roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
-$draftRoomLines = itm_hotel_booking_portal_room_lines_from_draft($draft);
+$draftRoomLines = itm_hotel_booking_portal_draft_room_lines_for_display($draft);
+if ($roomsNeeded > 1 && count($draftRoomLines) < $roomsNeeded) {
+    $pickQuery = http_build_query(array_merge(
+        ['id' => $hotelId, 'check_in' => $checkInIso, 'nights' => $nights],
+        itm_hotel_booking_portal_occupancy_query_params($occupancy)
+    ));
+    header('Location: ' . APPURL . '/rooms.php?' . $pickQuery);
+    exit;
+}
 $hideUpsellOptions = $roomsNeeded > 1 || count($draftRoomLines) > 1;
 // #region agent log
 if ($hideUpsellOptions) {
@@ -209,6 +217,7 @@ $reservationSummaryContext = [
     'change_rate_url' => $changeRateUrl,
     'currency' => $currency,
     'draft' => $draftForBreakdown,
+    'occupancy' => $occupancy,
 ];
 
 $upgradeRoomDetailHtml = '';
