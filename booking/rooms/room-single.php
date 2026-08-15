@@ -104,9 +104,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
             );
             if (!empty($insertResult['ok']) && (int) ($insertResult['booking_id'] ?? 0) > 0) {
                 $bid = (int) $insertResult['booking_id'];
-                $_SESSION['hotel_booking_last_id'] = $bid;
+                $companionIds = [];
                 if (!empty($insertResult['booking_ids']) && is_array($insertResult['booking_ids'])) {
-                    $_SESSION['hotel_booking_last_ids'] = array_values(array_map('intval', $insertResult['booking_ids']));
+                    $companionIds = array_values(array_map('intval', $insertResult['booking_ids']));
+                }
+                $bookingRow = hb_portal_load_booking_confirmation($conn, $company_id, $bid);
+                if ($bookingRow) {
+                    itm_hotel_booking_portal_send_booking_confirmation_emails($conn, $company_id, $bookingRow, [
+                        'companion_booking_ids' => $companionIds,
+                        'occupancy' => $occupancy,
+                    ]);
+                }
+                $_SESSION['hotel_booking_last_id'] = $bid;
+                if ($companionIds !== []) {
+                    $_SESSION['hotel_booking_last_ids'] = $companionIds;
                 } else {
                     unset($_SESSION['hotel_booking_last_ids']);
                 }

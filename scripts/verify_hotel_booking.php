@@ -1157,6 +1157,7 @@ $roomSingleSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms/
 $bootstrapSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/bootstrap.php');
 if (strpos($roomSingleSrc, 'itm_hotel_booking_portal_insert_stay_bookings_locked') !== false
     && strpos($roomSingleSrc, 'itm_hotel_booking_portal_resolve_step4_charge') !== false
+    && strpos($roomSingleSrc, 'itm_hotel_booking_portal_send_booking_confirmation_emails') !== false
     && strpos($roomSingleSrc, 'Lock quoted stay to draft occupancy') !== false
     && strpos($roomSingleSrc, "parse_occupancy(\$_POST)") === false
     && strpos($roomSingleSrc, "Checkout session expired. Please start your reservation again.") !== false
@@ -1183,6 +1184,13 @@ if (function_exists('itm_hotel_booking_portal_room_line_pick')
     hb_pass('portal multi-room pick queue + stay insert wiring');
 } else {
     hb_fail('portal multi-room pick queue + stay insert wiring missing');
+}
+
+if (strpos($portalBookingSrc, 'function itm_hotel_booking_portal_send_booking_confirmation_emails') !== false
+    && strpos($portalBookingSrc, 'hotel_reservations_email') !== false) {
+    hb_pass('portal step4 confirmation emails to guest and reservations desk');
+} else {
+    hb_fail('portal step4 confirmation email helper missing');
 }
 
 $customizeSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms/customize.php');

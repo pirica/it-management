@@ -4436,6 +4436,254 @@ if (!function_exists('itm_hotel_booking_portal_manage_otp_issue')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_format_money_display')) {
+  function itm_hotel_booking_portal_format_money_display($amount, $currencyCode = 'EUR') {
+    $currencyCode = strtoupper(trim((string) $currencyCode));
+    if ($currencyCode === '') {
+      $currencyCode = 'EUR';
+    }
+    $formatted = number_format((float) $amount, 2, '.', '');
+    if ($currencyCode === 'EUR') {
+      return $formatted . '€';
+    }
+    return $formatted . ' ' . $currencyCode;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_confirmation_email_manage_url')) {
+  function itm_hotel_booking_portal_confirmation_email_manage_url($conn, $companyId) {
+    $companyId = (int) $companyId;
+    $manageBookingUrl = '';
+    if ($conn && $companyId > 0) {
+      $settingsRow = itm_hotel_booking_settings_row($conn, $companyId) ?: [];
+      $manageBookingUrl = trim((string) ($settingsRow['urlmybooking'] ?? ''));
+    }
+    if ($manageBookingUrl === '') {
+      $manageBookingUrl = 'https://localhost/it-management/booking/users/bookings.php';
+    }
+    $normalized = itm_hotel_booking_normalize_reviews_url($manageBookingUrl);
+    return $normalized !== '' ? $normalized : $manageBookingUrl;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_confirmation_email_template_options')) {
+  /**
+   * @return array<string,mixed>
+   */
+  function itm_hotel_booking_portal_confirmation_email_template_options($hotelName, $reservationsEmail, $manageBookingUrl, $subtitle) {
+    $hotelName = trim((string) $hotelName);
+    if ($hotelName === '') {
+      $hotelName = 'Hotel booking';
+    }
+    return array_merge(
+      itm_hotel_booking_portal_reservations_email_send_options($hotelName, $reservationsEmail),
+      [
+        'email_template' => [
+          'subtitle' => (string) $subtitle,
+          'app_name' => $hotelName,
+          'show_gear_icon' => false,
+          'footer_link_text' => 'Manage my booking',
+          'footer_link_url' => (string) $manageBookingUrl,
+        ],
+      ]
+    );
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_build_confirmation_email_rows_html')) {
+  /**
+   * @param array<int,int> $companionBookingIds
+   */
+  function itm_hotel_booking_portal_build_confirmation_email_rows_html(array $bookingRow, array $companionBookingIds = [], array $occupancy = null) {
+    $reservationId = (int) ($bookingRow['id'] ?? 0);
+    $guestName = trim((string) ($bookingRow['customer_name'] ?? ''));
+    $guestEmail = trim((string) ($bookingRow['customer_email'] ?? ''));
+    $guestPhone = trim((string) ($bookingRow['customer_phone'] ?? ''));
+    $hotelName = trim((string) ($bookingRow['hotel_name'] ?? ''));
+    $checkInIso = (string) ($bookingRow['check_in'] ?? '');
+    $checkOutIso = (string) ($bookingRow['check_out'] ?? '');
+    $checkInDisplay = $checkInIso !== '' && function_exists('itm_format_hotel_date_display')
+      ? itm_format_hotel_date_display($checkInIso)
+      : $checkInIso;
+    $checkOutDisplay = $checkOutIso !== '' && function_exists('itm_format_hotel_date_display')
+      ? itm_format_hotel_date_display($checkOutIso)
+      : $checkOutIso;
+    $currency = (string) ($bookingRow['currency_code'] ?? 'EUR');
+    $amount = (float) ($bookingRow['payment_amount'] ?? 0);
+    $auth2Display = itm_hotel_booking_normalize_auth2($bookingRow['auth2'] ?? '');
+    $typeName = trim((string) ($bookingRow['type_name'] ?? ''));
+    $bedSummary = trim((string) ($bookingRow['bed_summary'] ?? ''));
+    $roomLabel = $typeName;
+    if ($bedSummary !== '' && stripos($roomLabel, $bedSummary) === false) {
+      $roomLabel = trim($roomLabel . ' ' . $bedSummary);
+    }
+    if ($roomLabel === '') {
+      $roomLabel = trim((string) ($bookingRow['room_name'] ?? 'Room'));
+    }
+    $planLabel = trim((string) ($bookingRow['portal_rate_plan_name'] ?? ''));
+    if ($planLabel === '') {
+      $slug = strtolower((string) ($bookingRow['portal_rate_plan_slug'] ?? ''));
+      $planLabel = $slug === 'breakfast' ? 'Breakfast included' : 'Best available rate';
+    }
+    if (!is_array($occupancy)) {
+      $occupancy = itm_hotel_booking_portal_parse_occupancy_meta_from_notes((string) ($bookingRow['notes'] ?? ''));
+    }
+    if (!is_array($occupancy)) {
+      $occupancy = itm_hotel_booking_portal_parse_occupancy(['rooms' => 1, 'adults' => 2]);
+    }
+    $occupancy = itm_hotel_booking_portal_parse_occupancy($occupancy);
+    $occupancyLabel = itm_hotel_booking_portal_occupancy_label($occupancy);
+    $nights = 1;
+    if ($checkInIso !== '' && $checkOutIso !== '' && $checkOutIso > $checkInIso) {
+      $in = DateTime::createFromFormat('Y-m-d', $checkInIso);
+      $out = DateTime::createFromFormat('Y-m-d', $checkOutIso);
+      if ($in && $out) {
+        $nights = max(1, (int) $in->diff($out)->days);
+      }
+    }
+    $nightsLabel = $nights === 1 ? '1 night' : $nights . ' nights';
+    $amountDisplay = itm_hotel_booking_portal_format_money_display($amount, $currency);
+
+    $rows = [];
+    $rows[] = ['Confirmation number', (string) $reservationId];
+    if ($companionBookingIds !== []) {
+      $rows[] = ['Additional rooms', implode(', ', $companionBookingIds)];
+    }
+    if ($auth2Display !== '') {
+      $rows[] = ['Auth code', $auth2Display];
+    }
+    if ($hotelName !== '') {
+      $rows[] = ['Hotel', $hotelName];
+    }
+    if ($guestName !== '') {
+      $rows[] = ['Guest', $guestName];
+    }
+    if ($guestEmail !== '') {
+      $rows[] = ['Email', $guestEmail];
+    }
+    if ($guestPhone !== '') {
+      $rows[] = ['Phone', $guestPhone];
+    }
+    $rows[] = ['Room', $roomLabel];
+    $rows[] = ['Rate', $planLabel];
+    $rows[] = ['Check-in', $checkInDisplay];
+    $rows[] = ['Check-out', $checkOutDisplay];
+    $rows[] = ['Nights', $nightsLabel];
+    $rows[] = ['Guests', $occupancyLabel];
+    $rows[] = ['Total', $amountDisplay];
+
+    $html = '<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;max-width:520px;">';
+    foreach ($rows as $row) {
+      $html .= '<tr><td style="padding:4px 12px 4px 0;font-weight:600;vertical-align:top;">'
+        . htmlspecialchars((string) $row[0], ENT_QUOTES, 'UTF-8')
+        . '</td><td style="padding:4px 0;vertical-align:top;">'
+        . htmlspecialchars((string) $row[1], ENT_QUOTES, 'UTF-8')
+        . '</td></tr>';
+    }
+    $html .= '</table>';
+    return $html;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_send_booking_confirmation_emails')) {
+  /**
+   * Guest + hotel reservations desk copies after Step 4 INSERT.
+   *
+   * @param array<int,int> $companionBookingIds
+   * @return array{ok:bool,guest_sent:bool,hotel_sent:bool}
+   */
+  function itm_hotel_booking_portal_send_booking_confirmation_emails($conn, $companyId, array $bookingRow, array $options = []) {
+    $companyId = (int) $companyId;
+    $reservationId = (int) ($bookingRow['id'] ?? 0);
+    $guestEmail = trim((string) ($bookingRow['customer_email'] ?? ''));
+    $hotelName = trim((string) ($bookingRow['hotel_name'] ?? ''));
+    $reservationsEmail = trim((string) ($bookingRow['hotel_reservations_email'] ?? ''));
+    $guestSent = false;
+    $hotelSent = false;
+    if ($companyId < 1 || $reservationId < 1 || !function_exists('itm_send_email')) {
+      // #region agent log
+      @file_put_contents(dirname(__DIR__) . '/debug-44bff2.log', json_encode([
+        'sessionId' => '44bff2',
+        'timestamp' => (int) round(microtime(true) * 1000),
+        'location' => 'includes/itm_hotel_booking.php:send_booking_confirmation_emails',
+        'message' => 'confirmation email skipped — invalid context',
+        'data' => ['companyId' => $companyId, 'reservationId' => $reservationId],
+        'hypothesisId' => 'G',
+        'runId' => 'step4-email',
+      ]) . "\n", FILE_APPEND);
+      // #endregion
+      return ['ok' => false, 'guest_sent' => false, 'hotel_sent' => false];
+    }
+
+    $companionIds = [];
+    if (!empty($options['companion_booking_ids']) && is_array($options['companion_booking_ids'])) {
+      foreach ($options['companion_booking_ids'] as $cid) {
+        $cid = (int) $cid;
+        if ($cid > 0 && $cid !== $reservationId) {
+          $companionIds[] = $cid;
+        }
+      }
+      $companionIds = array_values(array_unique($companionIds));
+    }
+    $occupancy = isset($options['occupancy']) && is_array($options['occupancy'])
+      ? itm_hotel_booking_portal_parse_occupancy($options['occupancy'])
+      : null;
+    $manageUrl = itm_hotel_booking_portal_confirmation_email_manage_url($conn, $companyId);
+    $detailsHtml = itm_hotel_booking_portal_build_confirmation_email_rows_html($bookingRow, $companionIds, $occupancy);
+    $guestName = trim((string) ($bookingRow['customer_name'] ?? ''));
+
+    if ($guestEmail !== '' && filter_var($guestEmail, FILTER_VALIDATE_EMAIL)) {
+      $guestSubject = 'Your reservation confirmation'
+        . ($hotelName !== '' ? ' — ' . $hotelName : '')
+        . ' #' . $reservationId;
+      $guestBody = '<p>Thank you'
+        . ($guestName !== '' ? ', ' . htmlspecialchars($guestName, ENT_QUOTES, 'UTF-8') : '')
+        . '. Your stay is confirmed.</p>'
+        . $detailsHtml
+        . '<p style="margin-top:16px;">Use your confirmation number, last name, and auth code on <strong>Manage my booking</strong> to view or change this reservation.</p>';
+      $guestOptions = itm_hotel_booking_portal_confirmation_email_template_options(
+        $hotelName,
+        $reservationsEmail,
+        $manageUrl,
+        'Reservation confirmed'
+      );
+      $guestSent = (bool) itm_send_email($guestEmail, $guestSubject, $guestBody, $companyId, $guestOptions);
+    }
+
+    if ($reservationsEmail !== '' && filter_var($reservationsEmail, FILTER_VALIDATE_EMAIL)) {
+      $hotelSubject = 'New portal reservation #' . $reservationId
+        . ($guestName !== '' ? ' — ' . $guestName : '');
+      $hotelBody = '<p>A new booking was completed on the public portal.</p>' . $detailsHtml;
+      $hotelOptions = itm_hotel_booking_portal_confirmation_email_template_options(
+        $hotelName,
+        $reservationsEmail,
+        $manageUrl,
+        'New portal reservation'
+      );
+      $hotelSent = (bool) itm_send_email($reservationsEmail, $hotelSubject, $hotelBody, $companyId, $hotelOptions);
+    }
+
+    // #region agent log
+    @file_put_contents(dirname(__DIR__) . '/debug-44bff2.log', json_encode([
+      'sessionId' => '44bff2',
+      'timestamp' => (int) round(microtime(true) * 1000),
+      'location' => 'includes/itm_hotel_booking.php:send_booking_confirmation_emails',
+      'message' => 'confirmation email dispatch',
+      'data' => [
+        'reservationId' => $reservationId,
+        'guestSent' => $guestSent,
+        'hotelSent' => $hotelSent,
+        'hasReservationsEmail' => $reservationsEmail !== '',
+      ],
+      'hypothesisId' => 'G',
+      'runId' => 'step4-email',
+    ]) . "\n", FILE_APPEND);
+    // #endregion
+
+    return ['ok' => $guestSent || $hotelSent, 'guest_sent' => $guestSent, 'hotel_sent' => $hotelSent];
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_manage_otp_verify')) {
   /**
    * @return array{ok:bool,error?:string,reservation_id?:int,company_id?:int}
