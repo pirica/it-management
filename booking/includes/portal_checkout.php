@@ -428,6 +428,12 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <dd><span class="hb-payment-status-badge hb-payment-status-badge--cancelled">Cancelled</span></dd>
 </div>
 <?php endif; ?>
+<?php if ($guestName !== ''): ?>
+<div class="hb-payment-detail-row">
+<dt>Full name</dt>
+<dd><?php echo htmlspecialchars($guestName, ENT_QUOTES, 'UTF-8'); ?></dd>
+</div>
+<?php endif; ?>
 <div class="hb-payment-detail-row">
 <dt>Room</dt>
 <dd><?php echo htmlspecialchars($roomTitle, ENT_QUOTES, 'UTF-8'); ?></dd>
