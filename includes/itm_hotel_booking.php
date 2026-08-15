@@ -3970,6 +3970,30 @@ if (!function_exists('itm_hotel_booking_portal_manage_otp_clear')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_reservations_email_send_options')) {
+  /**
+   * Portal transactional mail From header: hotel name + reservations_email (Email column).
+   *
+   * @return array{from_email?:string,from_name?:string,log_from_email?:string}
+   */
+  function itm_hotel_booking_portal_reservations_email_send_options($hotelName, $reservationsEmail) {
+    $hotelName = trim((string) $hotelName);
+    $reservationsEmail = trim((string) $reservationsEmail);
+    if ($reservationsEmail === '' || !filter_var($reservationsEmail, FILTER_VALIDATE_EMAIL)) {
+      return [];
+    }
+    if ($hotelName === '') {
+      $hotelName = 'Reservations';
+    }
+
+    return [
+      'from_email' => $reservationsEmail,
+      'from_name' => $hotelName,
+      'log_from_email' => $reservationsEmail,
+    ];
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_manage_otp_issue')) {
   /**
    * @return array{ok:bool,error?:string,masked_email?:string}
@@ -3986,15 +4010,11 @@ if (!function_exists('itm_hotel_booking_portal_manage_otp_issue')) {
     $body = '<p>Your one-time code to manage reservation <strong>#' . (int) $reservationId . '</strong> is:</p>'
       . '<p style="font-size:1.4em;"><strong>' . htmlspecialchars($otp, ENT_QUOTES, 'UTF-8') . '</strong></p>'
       . '<p>This code expires in 10 minutes. If you did not request this, you can ignore this email.</p>';
-    $reservationsEmail = trim((string) ($verifiedBookingRow['hotel_reservations_email'] ?? ''));
-    if ($reservationsEmail !== '' && filter_var($reservationsEmail, FILTER_VALIDATE_EMAIL)) {
-      $body .= '<p>For reservation questions, email <a href="mailto:' . htmlspecialchars($reservationsEmail, ENT_QUOTES, 'UTF-8') . '">'
-        . htmlspecialchars($reservationsEmail, ENT_QUOTES, 'UTF-8') . '</a>.</p>';
-    }
     $hotelName = trim((string) ($verifiedBookingRow['hotel_name'] ?? ''));
     if ($hotelName === '') {
       $hotelName = 'Hotel booking';
     }
+    $reservationsEmail = trim((string) ($verifiedBookingRow['hotel_reservations_email'] ?? ''));
     $settingsRow = itm_hotel_booking_settings_row($conn, $companyId) ?: [];
     $manageBookingUrl = trim((string) ($settingsRow['urlmybooking'] ?? ''));
     if ($manageBookingUrl === '') {
@@ -4004,15 +4024,18 @@ if (!function_exists('itm_hotel_booking_portal_manage_otp_issue')) {
     if ($manageBookingUrlNorm !== '') {
       $manageBookingUrl = $manageBookingUrlNorm;
     }
-    $emailOptions = [
-      'email_template' => [
-        'subtitle' => 'Your booking verification code',
-        'app_name' => $hotelName,
-        'show_gear_icon' => false,
-        'footer_link_text' => 'Manage my booking',
-        'footer_link_url' => $manageBookingUrl,
-      ],
-    ];
+    $emailOptions = array_merge(
+      itm_hotel_booking_portal_reservations_email_send_options($hotelName, $reservationsEmail),
+      [
+        'email_template' => [
+          'subtitle' => 'Your booking verification code',
+          'app_name' => $hotelName,
+          'show_gear_icon' => false,
+          'footer_link_text' => 'Manage my booking',
+          'footer_link_url' => $manageBookingUrl,
+        ],
+      ]
+    );
     $sent = function_exists('itm_send_email') ? itm_send_email($email, $subject, $body, $companyId, $emailOptions) : false;
     if (!$sent) {
       return ['ok' => false, 'error' => 'Could not send the verification email. Please try again later.'];
