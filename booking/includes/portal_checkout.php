@@ -123,6 +123,25 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
         $roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
         $roomLines = is_array($draft) ? itm_hotel_booking_portal_draft_room_lines_for_display($draft) : [];
         $showMultiRoomList = $roomsNeeded > 1 && count($roomLines) > 0;
+        global $conn;
+        $checkInIso = (string) ($draft['check_in'] ?? '');
+        $checkOutIso = (string) ($draft['check_out'] ?? '');
+        $discountPercent = (float) ($draft['discount_percent'] ?? 0);
+        $basePerNight = (float) ($draft['base_price_per_night'] ?? 0);
+        $companyId = (int) ($room['company_id'] ?? $draft['company_id'] ?? 0);
+        $lineChargeAmounts = [];
+        if ($showMultiRoomList && $checkInIso !== '' && $checkOutIso !== '') {
+            $lineChargeAmounts = itm_hotel_booking_portal_room_line_stay_charges(
+                $basePerNight,
+                $checkInIso,
+                $checkOutIso,
+                $occupancy,
+                $discountPercent,
+                $draft,
+                $conn,
+                $companyId
+            );
+        }
         // #region agent log
         @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
             'sessionId' => '44bff2',
@@ -134,9 +153,10 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
                 'lineCount' => count($roomLines),
                 'showMultiRoomList' => $showMultiRoomList,
                 'rawLineCount' => is_array($draft['room_lines'] ?? null) ? count($draft['room_lines']) : 0,
+                'lineChargeAmounts' => $lineChargeAmounts,
             ],
             'hypothesisId' => 'E',
-            'runId' => 'verify',
+            'runId' => 'per-room-price',
         ]) . "\n", FILE_APPEND);
         // #endregion
         $hasPet = !empty($draft['traveling_with_pet']);
@@ -157,15 +177,22 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
 <h2 class="hb-reservation-summary-title">Reservation summary</h2>
 <?php if ($showMultiRoomList): ?>
 <div class="hb-reservation-summary-rooms" aria-label="Selected rooms">
-<ol class="hb-reservation-summary-room-list">
+<ul class="hb-reservation-summary-room-list">
 <?php foreach ($roomLines as $idx => $line): ?>
+<?php
+    $lineAmount = isset($lineChargeAmounts[$idx]) ? (float) $lineChargeAmounts[$idx] : null;
+?>
 <li class="hb-reservation-summary-room-item">
+<div class="hb-reservation-summary-room-item-main">
 <span class="hb-reservation-summary-room-slot">Room <?php echo (int) $idx + 1; ?></span>
 <span class="hb-reservation-room-name"><?php echo htmlspecialchars(itm_hotel_booking_portal_room_line_label($line), ENT_QUOTES, 'UTF-8'); ?></span>
+</div>
+<?php if ($lineAmount !== null): ?>
+<span class="hb-reservation-room-line-price"><?php echo htmlspecialchars(hb_portal_money_format_decimal($lineAmount, $currency), ENT_QUOTES, 'UTF-8'); ?></span>
+<?php endif; ?>
 </li>
 <?php endforeach; ?>
-</ol>
-<p class="hb-reservation-room-price"><?php echo htmlspecialchars(hb_portal_money_format_decimal($roomCharges, $currency), ENT_QUOTES, 'UTF-8'); ?></p>
+</ul>
 </div>
 <?php else: ?>
 <div class="hb-reservation-summary-room">

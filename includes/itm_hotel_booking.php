@@ -2513,6 +2513,55 @@ if (!function_exists('itm_hotel_booking_portal_room_charges_subtotal')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_room_line_stay_charges')) {
+  /**
+   * Per-room stay charges (room rate only — no breakfast/pet/upgrade extras).
+   *
+   * @return array<int,float>
+   */
+  function itm_hotel_booking_portal_room_line_stay_charges($basePerNight, $checkIn, $checkOut, array $occupancy, $discountPercent, array $draft, $conn = null, $companyId = 0) {
+    $roomLines = itm_hotel_booking_portal_room_lines_from_draft($draft);
+    $lineCount = count($roomLines);
+    if ($lineCount < 2) {
+      return [];
+    }
+    $companyId = (int) ($draft['company_id'] ?? $companyId);
+    $hotelId = (int) ($draft['hotel_id'] ?? 0);
+    $pricing = ($conn && $companyId > 0 && $hotelId > 0)
+      ? itm_hotel_booking_portal_hotel_pricing($conn, $companyId, $hotelId)
+      : itm_hotel_booking_portal_pricing_defaults();
+    $surchargePercent = max(0.0, min(50.0, (float) ($draft['surcharge_percent'] ?? 0)));
+    $amounts = [];
+    foreach ($roomLines as $idx => $line) {
+      $lineOcc = itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, (int) $idx, $lineCount);
+      $base = (float) ($line['base_price_per_night'] ?? 0);
+      if ($base <= 0 && $conn && $companyId > 0 && $hotelId > 0) {
+        $base = itm_hotel_booking_portal_check_in_display_bar($conn, $companyId, $hotelId, (int) ($line['room_type_id'] ?? 0), $checkIn, 0);
+      }
+      if ($conn && $companyId > 0 && $hotelId > 0 && (int) ($line['room_type_id'] ?? 0) > 0) {
+        $amounts[] = itm_hotel_booking_compute_stay_payment_dated_rates(
+          $conn,
+          $companyId,
+          $hotelId,
+          (int) ($line['room_type_id'] ?? 0),
+          $base,
+          $checkIn,
+          $checkOut,
+          $lineOcc,
+          $discountPercent,
+          $pricing,
+          $surchargePercent
+        );
+      } else {
+        $amounts[] = itm_hotel_booking_compute_stay_payment($base, $checkIn, $checkOut, $lineOcc, $discountPercent, $pricing, $surchargePercent);
+      }
+    }
+    return array_map(static function ($amount) {
+      return round((float) $amount, 2);
+    }, $amounts);
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_tourist_tax_amount')) {
   function itm_hotel_booking_portal_tourist_tax_amount(array $occupancy, $nights, $perPersonPerNight) {
     $nights = max(1, (int) $nights);

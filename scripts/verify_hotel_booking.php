@@ -1198,10 +1198,19 @@ if (strpos($customizeSrc, '$hideUpsellOptions') !== false
 $portalCheckoutSrcMulti = (string) @file_get_contents(dirname(__DIR__) . '/booking/includes/portal_checkout.php');
 if (strpos($portalCheckoutSrcMulti, 'itm_hotel_booking_portal_draft_room_lines_for_display') !== false
     && strpos($portalCheckoutSrcMulti, 'hb-reservation-summary-room-list') !== false
+    && strpos($portalCheckoutSrcMulti, 'hb-reservation-room-line-price') !== false
+    && strpos($portalCheckoutSrcMulti, 'itm_hotel_booking_portal_room_line_stay_charges') !== false
     && strpos($customizeSrc, 'itm_hotel_booking_portal_draft_room_lines_for_display') !== false) {
     hb_pass('portal reservation summary lists multi-room draft lines');
 } else {
     hb_fail('portal reservation summary multi-room list missing');
+}
+
+$bookingHelperSrc = (string) @file_get_contents(dirname(__DIR__) . '/includes/itm_hotel_booking.php');
+if (strpos($bookingHelperSrc, 'function itm_hotel_booking_portal_room_line_stay_charges') !== false) {
+    hb_pass('portal multi-room per-line stay charge helper');
+} else {
+    hb_fail('portal multi-room per-line stay charge helper missing');
 }
 
 $manageSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/users/bookings.php');
