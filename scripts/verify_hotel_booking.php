@@ -170,6 +170,24 @@ if ($resPricingCol && mysqli_num_rows($resPricingCol) > 0) {
     hb_fail('missing hotel_booking_hotels portal pricing columns — apply db/migrations/hotel_booking_portal_hotel_pricing.sql');
 }
 
+$resContactEmailCol = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_hotels LIKE 'contact_email'");
+$resReservationsEmailCol = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_hotels LIKE 'reservations_email'");
+if ($resContactEmailCol && mysqli_num_rows($resContactEmailCol) > 0 && $resReservationsEmailCol && mysqli_num_rows($resReservationsEmailCol) > 0) {
+    hb_pass('hotel_booking_hotels contact and reservations email columns');
+    $seededHotelsWithEmails = 0;
+    $hotelEmailRes = mysqli_query($conn, "SELECT id FROM hotel_booking_hotels WHERE deleted_at IS NULL AND contact_email IS NOT NULL AND contact_email <> '' AND reservations_email IS NOT NULL AND reservations_email <> '' AND company_id BETWEEN 1 AND 5");
+    if ($hotelEmailRes) {
+        $seededHotelsWithEmails = mysqli_num_rows($hotelEmailRes);
+    }
+    if ($seededHotelsWithEmails >= 5) {
+        hb_pass('hotel_booking_hotels sample contact/reservations emails for five properties');
+    } else {
+        hb_fail('expected contact_email and reservations_email on five seeded hotels — found ' . (int) $seededHotelsWithEmails);
+    }
+} else {
+    hb_fail('missing hotel_booking_hotels contact_email or reservations_email — apply db/migrations/hotel_booking_hotels_contact_emails.sql');
+}
+
 $upgradeDraft = [
     'base_price_per_night' => 100,
     'rate_plan' => 'room_only',
