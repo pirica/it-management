@@ -1152,7 +1152,7 @@ if (function_exists('itm_hotel_booking_portal_insert_booking_locked')) {
 
 $roomSingleSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms/room-single.php');
 $bootstrapSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/bootstrap.php');
-if (strpos($roomSingleSrc, 'itm_hotel_booking_portal_insert_booking_locked') !== false
+if (strpos($roomSingleSrc, 'itm_hotel_booking_portal_insert_stay_bookings_locked') !== false
     && strpos($roomSingleSrc, 'itm_hotel_booking_portal_resolve_step4_charge') !== false
     && strpos($roomSingleSrc, 'Lock quoted stay to draft occupancy') !== false
     && strpos($roomSingleSrc, "parse_occupancy(\$_POST)") === false
@@ -1163,6 +1163,23 @@ if (strpos($roomSingleSrc, 'itm_hotel_booking_portal_insert_booking_locked') !==
     hb_pass('portal step4 draft required + occupancy lock + tenant portal gate wiring');
 } else {
     hb_fail('portal step4 draft required / occupancy lock / tenant portal gate wiring missing');
+}
+
+$roomsPhpSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms.php');
+$selectRateSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms/select-rate.php');
+$portalBookingSrc = (string) @file_get_contents(dirname(__DIR__) . '/includes/itm_hotel_booking.php');
+if (function_exists('itm_hotel_booking_portal_room_line_pick')
+    && function_exists('itm_hotel_booking_portal_room_lines_from_draft')
+    && function_exists('itm_hotel_booking_portal_insert_stay_bookings_locked')
+    && strpos($roomsPhpSrc, 'hb-room-lines-banner') !== false
+    && strpos($roomsPhpSrc, 'pick_room_id') !== false
+    && strpos($roomsPhpSrc, 'hb_select_room_book_href') !== false
+    && strpos($selectRateSrc, 'hb_portal_render_room_lines_summary') !== false
+    && strpos($selectRateSrc, 'count($roomLines) < $roomsNeeded') !== false
+    && strpos($portalBookingSrc, 'itm_hotel_booking_portal_split_occupancy_for_room_line') !== false) {
+    hb_pass('portal multi-room pick queue + stay insert wiring');
+} else {
+    hb_fail('portal multi-room pick queue + stay insert wiring missing');
 }
 
 $manageSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/users/bookings.php');
