@@ -3985,7 +3985,29 @@ if (!function_exists('itm_hotel_booking_portal_manage_otp_issue')) {
     $body = '<p>Your one-time code to manage reservation <strong>#' . (int) $reservationId . '</strong> is:</p>'
       . '<p style="font-size:1.4em;"><strong>' . htmlspecialchars($otp, ENT_QUOTES, 'UTF-8') . '</strong></p>'
       . '<p>This code expires in 10 minutes. If you did not request this, you can ignore this email.</p>';
-    $sent = function_exists('itm_send_email') ? itm_send_email($email, $subject, $body, $companyId) : false;
+    $hotelName = trim((string) ($verifiedBookingRow['hotel_name'] ?? ''));
+    if ($hotelName === '') {
+      $hotelName = 'Hotel booking';
+    }
+    $settingsRow = itm_hotel_booking_settings_row($conn, $companyId) ?: [];
+    $manageBookingUrl = trim((string) ($settingsRow['urlmybooking'] ?? ''));
+    if ($manageBookingUrl === '') {
+      $manageBookingUrl = 'https://localhost/it-management/booking/users/bookings.php';
+    }
+    $manageBookingUrlNorm = itm_hotel_booking_normalize_reviews_url($manageBookingUrl);
+    if ($manageBookingUrlNorm !== '') {
+      $manageBookingUrl = $manageBookingUrlNorm;
+    }
+    $emailOptions = [
+      'email_template' => [
+        'subtitle' => 'Your booking verification code',
+        'app_name' => $hotelName,
+        'show_gear_icon' => false,
+        'footer_link_text' => 'Manage my booking',
+        'footer_link_url' => $manageBookingUrl,
+      ],
+    ];
+    $sent = function_exists('itm_send_email') ? itm_send_email($email, $subject, $body, $companyId, $emailOptions) : false;
     if (!$sent) {
       return ['ok' => false, 'error' => 'Could not send the verification email. Please try again later.'];
     }
