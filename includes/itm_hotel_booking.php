@@ -2710,6 +2710,141 @@ if (!function_exists('itm_hotel_booking_portal_room_line_stay_charges')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_multi_room_payment_shares')) {
+  /**
+   * Split checkout total across room lines using each line's room-rate weight (pet/tax/extras allocated proportionally).
+   *
+   * @param array<int,float> $roomLineRoomOnlyAmounts
+   * @return array<int,float>
+   */
+  function itm_hotel_booking_portal_multi_room_payment_shares($totalAmount, array $roomLineRoomOnlyAmounts) {
+    $lineCount = count($roomLineRoomOnlyAmounts);
+    $totalAmount = round((float) $totalAmount, 2);
+    if ($lineCount < 2) {
+      return [$totalAmount];
+    }
+    $roomSubtotal = round(array_sum($roomLineRoomOnlyAmounts), 2);
+    if ($roomSubtotal <= 0) {
+      $shares = [];
+      $running = 0.0;
+      $share = round($totalAmount / $lineCount, 2);
+      for ($i = 0; $i < $lineCount; $i++) {
+        if ($i === $lineCount - 1) {
+          $shares[] = round($totalAmount - $running, 2);
+        } else {
+          $shares[] = $share;
+          $running += $share;
+        }
+      }
+      return $shares;
+    }
+    $extras = round($totalAmount - $roomSubtotal, 2);
+    $shares = [];
+    $running = 0.0;
+    $idx = 0;
+    foreach ($roomLineRoomOnlyAmounts as $roomAmt) {
+      $roomAmt = round((float) $roomAmt, 2);
+      if ($idx === $lineCount - 1) {
+        $shares[] = round($totalAmount - $running, 2);
+      } else {
+        $weight = $roomAmt / $roomSubtotal;
+        $lineShare = round($roomAmt + ($extras * $weight), 2);
+        $shares[] = $lineShare;
+        $running += $lineShare;
+      }
+      $idx++;
+    }
+    return $shares;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_resolve_multi_room_insert_payment_shares')) {
+  /**
+   * @return array<int,float>
+   */
+  function itm_hotel_booking_portal_resolve_multi_room_insert_payment_shares($conn, $companyId, $totalAmount, array $draft, $checkIn, $checkOut, array $occupancy) {
+    $roomLines = itm_hotel_booking_portal_room_lines_from_draft($draft);
+    $lineCount = count($roomLines);
+    if ($lineCount < 2) {
+      return [round((float) $totalAmount, 2)];
+    }
+    $occupancy = itm_hotel_booking_portal_parse_occupancy($occupancy);
+    $discountPercent = (float) ($draft['discount_percent'] ?? 0);
+    $basePerNight = (float) ($draft['base_price_per_night'] ?? 0);
+    $roomOnly = itm_hotel_booking_portal_room_line_stay_charges(
+      $basePerNight,
+      $checkIn,
+      $checkOut,
+      $occupancy,
+      $discountPercent,
+      $draft,
+      $conn,
+      (int) $companyId
+    );
+    if (count($roomOnly) !== $lineCount) {
+      return itm_hotel_booking_portal_multi_room_payment_shares($totalAmount, array_fill(0, $lineCount, round((float) $totalAmount / $lineCount, 2)));
+    }
+    return itm_hotel_booking_portal_multi_room_payment_shares($totalAmount, $roomOnly);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_confirmation_group_room_display_amounts')) {
+  /**
+   * Per-room room-rate amounts for confirmation UI (excludes pet/tax — same as Step 3 sidebar).
+   *
+   * @param array<int,array> $groupRows
+   * @return array<int,float>
+   */
+  function itm_hotel_booking_portal_confirmation_group_room_display_amounts($conn, $companyId, array $groupRows, array $occupancy) {
+    if (count($groupRows) < 2) {
+      return [];
+    }
+    $companyId = (int) $companyId;
+    $primary = $groupRows[0];
+    $checkIn = (string) ($primary['check_in'] ?? '');
+    $checkOut = (string) ($primary['check_out'] ?? '');
+    $hotelId = (int) ($primary['hotel_id'] ?? 0);
+    if ($companyId < 1 || $hotelId < 1 || $checkIn === '' || $checkOut === '') {
+      return [];
+    }
+    $occupancy = itm_hotel_booking_portal_parse_occupancy($occupancy);
+    $roomLines = [];
+    foreach ($groupRows as $row) {
+      $roomLines[] = [
+        'room_type_id' => (int) ($row['room_type_id'] ?? 0),
+        'base_price_per_night' => (float) ($row['price_per_night'] ?? 0),
+        'type_name' => (string) ($row['type_name'] ?? ''),
+        'bed_summary' => (string) ($row['bed_summary'] ?? ''),
+      ];
+    }
+    $planId = (int) ($primary['portal_rate_plan_id'] ?? 0);
+    $planRow = $planId > 0 ? itm_hotel_booking_portal_rate_plan_row_by_id($conn, $companyId, $planId) : null;
+    $planSlug = strtolower((string) ($primary['portal_rate_plan_slug'] ?? 'room_only'));
+    $rateSlug = itm_hotel_booking_portal_resolved_rate_slug($occupancy);
+    $specialDiscount = itm_hotel_booking_special_rate_discount($conn, $companyId, $hotelId, $rateSlug);
+    $discountPercent = $planRow
+      ? itm_hotel_booking_portal_rate_plan_effective_discount($specialDiscount, $planSlug, $planRow)
+      : 0.0;
+    $draft = [
+      'company_id' => $companyId,
+      'hotel_id' => $hotelId,
+      'room_lines' => $roomLines,
+      'surcharge_percent' => $planRow ? itm_hotel_booking_portal_rate_plan_effective_surcharge($planSlug, $planRow) : 0.0,
+    ];
+    $basePerNight = (float) ($primary['price_per_night'] ?? 0);
+    return itm_hotel_booking_portal_room_line_stay_charges(
+      $basePerNight,
+      $checkIn,
+      $checkOut,
+      $occupancy,
+      $discountPercent,
+      $draft,
+      $conn,
+      $companyId
+    );
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_tourist_tax_amount')) {
   function itm_hotel_booking_portal_tourist_tax_amount(array $occupancy, $nights, $perPersonPerNight) {
     $nights = max(1, (int) $nights);
@@ -4699,7 +4834,7 @@ if (!function_exists('itm_hotel_booking_portal_fetch_confirmation_booking_row'))
             h.id AS hotel_id, h.name AS hotel_name, h.location AS hotel_location, h.phone AS hotel_phone,
             h.contact_email AS hotel_contact_email, h.reservations_email AS hotel_reservations_email,
             h.website_url AS hotel_website_url, h.currency_code,
-            r.name AS room_name, COALESCE(bp.price_per_night, 0.00) AS price_per_night,
+            r.name AS room_name, r.room_type_id, COALESCE(bp.price_per_night, 0.00) AS price_per_night,
             t.name AS type_name, t.bed_summary,
             rp.name AS portal_rate_plan_name, rp.rate_plan_slug AS portal_rate_plan_slug
             FROM hotel_bookings b
@@ -4749,7 +4884,7 @@ if (!function_exists('itm_hotel_booking_portal_load_confirmation_group_rows')) {
             h.id AS hotel_id, h.name AS hotel_name, h.location AS hotel_location, h.phone AS hotel_phone,
             h.contact_email AS hotel_contact_email, h.reservations_email AS hotel_reservations_email,
             h.website_url AS hotel_website_url, h.currency_code,
-            r.name AS room_name, COALESCE(bp.price_per_night, 0.00) AS price_per_night,
+            r.name AS room_name, r.room_type_id, COALESCE(bp.price_per_night, 0.00) AS price_per_night,
             t.name AS type_name, t.bed_summary,
             rp.name AS portal_rate_plan_name, rp.rate_plan_slug AS portal_rate_plan_slug
             FROM hotel_bookings b
@@ -4853,9 +4988,15 @@ if (!function_exists('itm_hotel_booking_portal_build_confirmation_email_rows_htm
       $rows[] = ['Phone', $guestPhone];
     }
     if (count($groupRows) > 1) {
+      $lineDisplayAmounts = ($conn && $companyId > 0 && function_exists('itm_hotel_booking_portal_confirmation_group_room_display_amounts'))
+        ? itm_hotel_booking_portal_confirmation_group_room_display_amounts($conn, $companyId, $groupRows, $occupancy)
+        : [];
       foreach ($groupRows as $idx => $lineRow) {
         $lineLabel = itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow);
-        $lineAmount = itm_hotel_booking_portal_format_money_display((float) ($lineRow['payment_amount'] ?? 0), $currency);
+        $lineAmountValue = isset($lineDisplayAmounts[$idx])
+          ? (float) $lineDisplayAmounts[$idx]
+          : (float) ($lineRow['payment_amount'] ?? 0);
+        $lineAmount = itm_hotel_booking_portal_format_money_display($lineAmountValue, $currency);
         $rows[] = ['Room ' . ((int) $idx + 1), $lineLabel . ' — ' . $lineAmount];
       }
     } else {
@@ -5204,15 +5345,32 @@ if (!function_exists('itm_hotel_booking_portal_insert_stay_bookings_locked')) {
     $allocated = [];
     $bookingIds = [];
     $lineCount = count($roomLines);
-    $amountShares = [];
-    $running = 0.0;
-    $share = round(((float) $totalAmount) / $lineCount, 2);
-    for ($i = 0; $i < $lineCount; $i++) {
-      if ($i === $lineCount - 1) {
-        $amountShares[] = round((float) $totalAmount - $running, 2);
-      } else {
-        $amountShares[] = $share;
-        $running += $share;
+    $occupancy = is_array($draft['occupancy'] ?? null)
+      ? $draft['occupancy']
+      : itm_hotel_booking_portal_parse_occupancy_meta_from_notes((string) $notes);
+    if (!is_array($occupancy)) {
+      $occupancy = itm_hotel_booking_portal_parse_occupancy(['rooms' => $lineCount, 'adults' => 2]);
+    }
+    $amountShares = itm_hotel_booking_portal_resolve_multi_room_insert_payment_shares(
+      $conn,
+      $companyId,
+      $totalAmount,
+      $draft,
+      $checkIn,
+      $checkOut,
+      $occupancy
+    );
+    if (count($amountShares) !== $lineCount) {
+      $amountShares = [];
+      $running = 0.0;
+      $share = round(((float) $totalAmount) / $lineCount, 2);
+      for ($i = 0; $i < $lineCount; $i++) {
+        if ($i === $lineCount - 1) {
+          $amountShares[] = round((float) $totalAmount - $running, 2);
+        } else {
+          $amountShares[] = $share;
+          $running += $share;
+        }
       }
     }
     foreach ($roomLines as $idx => $line) {

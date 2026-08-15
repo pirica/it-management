@@ -391,7 +391,7 @@ if (!function_exists('hb_portal_load_booking_confirmation')) {
             h.id AS hotel_id, h.name AS hotel_name, h.location AS hotel_location, h.phone AS hotel_phone,
             h.contact_email AS hotel_contact_email, h.reservations_email AS hotel_reservations_email,
             h.website_url AS hotel_website_url, h.currency_code,
-            r.name AS room_name, COALESCE(bp.price_per_night, 0.00) AS price_per_night,
+            r.name AS room_name, r.room_type_id, COALESCE(bp.price_per_night, 0.00) AS price_per_night,
             t.name AS type_name, t.bed_summary,
             rp.name AS portal_rate_plan_name, rp.rate_plan_slug AS portal_rate_plan_slug
             FROM hotel_bookings b
@@ -631,6 +631,9 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
         $petDailyFee = ($conn && $company_id > 0 && $hotelId > 0)
             ? itm_hotel_booking_portal_pet_daily_fee($conn, $company_id, $hotelId)
             : 0.0;
+        $groupRoomDisplayAmounts = ($showMultiRoomGroup && $conn && $company_id > 0 && function_exists('itm_hotel_booking_portal_confirmation_group_room_display_amounts'))
+            ? itm_hotel_booking_portal_confirmation_group_room_display_amounts($conn, $company_id, $groupRows, $occupancy)
+            : [];
         // #region agent log
         @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
             'sessionId' => '44bff2',
@@ -649,6 +652,10 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
                 'notesMetaPet' => !empty($notesMeta['traveling_with_pet']),
                 'notesMetaUpgrade' => !empty($notesMeta['room_upgrade']['accepted']),
                 'roomsNeeded' => $roomsNeeded,
+                'groupRoomDisplayAmounts' => $groupRoomDisplayAmounts,
+                'storedPaymentAmounts' => array_map(static function ($row) {
+                    return (float) ($row['payment_amount'] ?? 0);
+                }, $groupRows),
                 'groupTotal' => $amount,
             ],
             'hypothesisId' => 'H',
@@ -704,7 +711,12 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <dd>
 <ul class="hb-payment-room-group-list">
 <?php foreach ($groupRows as $idx => $lineRow): ?>
-<li><span class="hb-payment-room-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow), ENT_QUOTES, 'UTF-8'); ?> — <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal((float) ($lineRow['payment_amount'] ?? 0), $currency), ENT_QUOTES, 'UTF-8'); ?></strong></li>
+<?php
+    $lineDisplayAmount = isset($groupRoomDisplayAmounts[$idx])
+        ? (float) $groupRoomDisplayAmounts[$idx]
+        : (float) ($lineRow['payment_amount'] ?? 0);
+?>
+<li><span class="hb-payment-room-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow), ENT_QUOTES, 'UTF-8'); ?> — <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($lineDisplayAmount, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></li>
 <?php endforeach; ?>
 </ul>
 </dd>
@@ -811,6 +823,12 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
             : 0.0;
         $hasPetFee = $petFeeTotal > 0;
         $showMultiRoomGroup = count($groupRows) > 1;
+        $occupancy = isset($options['occupancy']) && is_array($options['occupancy'])
+            ? itm_hotel_booking_portal_parse_occupancy($options['occupancy'])
+            : hb_portal_booking_resolve_occupancy($groupRows[0]);
+        $groupRoomDisplayAmounts = ($showMultiRoomGroup && $conn && $company_id > 0 && function_exists('itm_hotel_booking_portal_confirmation_group_room_display_amounts'))
+            ? itm_hotel_booking_portal_confirmation_group_room_display_amounts($conn, $company_id, $groupRows, $occupancy)
+            : [];
         $asideClass = 'hb-reservation-summary card hb-confirmation-summary-aside' . ($isCancelled ? ' hb-confirmation-summary-aside--cancelled' : '');
         ?>
 <div class="<?php echo htmlspecialchars($asideClass, ENT_QUOTES, 'UTF-8'); ?>">
@@ -821,12 +839,17 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
 <?php if ($showMultiRoomGroup): ?>
 <ul class="hb-reservation-summary-room-list hb-confirmation-room-group-list">
 <?php foreach ($groupRows as $idx => $lineRow): ?>
+<?php
+    $lineDisplayAmount = isset($groupRoomDisplayAmounts[$idx])
+        ? (float) $groupRoomDisplayAmounts[$idx]
+        : (float) ($lineRow['payment_amount'] ?? 0);
+?>
 <li class="hb-reservation-summary-room-item">
 <div class="hb-reservation-summary-room-item-main">
 <span class="hb-reservation-summary-room-slot">Room <?php echo (int) $idx + 1; ?></span>
 <span class="hb-reservation-room-name"><?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow), ENT_QUOTES, 'UTF-8'); ?></span>
 </div>
-<span class="hb-reservation-room-line-price"><?php echo htmlspecialchars(hb_portal_money_format_decimal((float) ($lineRow['payment_amount'] ?? 0), $currency), ENT_QUOTES, 'UTF-8'); ?></span>
+<span class="hb-reservation-room-line-price"><?php echo htmlspecialchars(hb_portal_money_format_decimal($lineDisplayAmount, $currency), ENT_QUOTES, 'UTF-8'); ?></span>
 </li>
 <?php endforeach; ?>
 </ul>
