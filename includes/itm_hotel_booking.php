@@ -1933,6 +1933,39 @@ if (!function_exists('itm_hotel_booking_portal_pet_daily_fee')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_notes_has_traveling_pet')) {
+  /** Whether saved booking notes indicate the guest travels with a pet. */
+  function itm_hotel_booking_portal_notes_has_traveling_pet($notesRaw) {
+    return (bool) preg_match('/^Traveling with pet:\s*yes\s*$/im', (string) $notesRaw);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_pet_fee_total_for_stay')) {
+  function itm_hotel_booking_portal_pet_fee_total_for_stay($conn, $companyId, $hotelId, $checkIn, $checkOut) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $nights = itm_hotel_booking_portal_stay_nights($checkIn, $checkOut);
+    if ($companyId < 1 || $hotelId < 1 || $nights < 1) {
+      return 0.0;
+    }
+    return round(itm_hotel_booking_portal_pet_daily_fee($conn, $companyId, $hotelId) * $nights, 2);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_confirmation_pet_fee')) {
+  /**
+   * Pet surcharge for a saved booking group (parsed from notes + hotel pricing).
+   */
+  function itm_hotel_booking_portal_confirmation_pet_fee($conn, $companyId, array $bookingRow, $checkIn, $checkOut) {
+    $notes = (string) ($bookingRow['notes'] ?? '');
+    if (!itm_hotel_booking_portal_notes_has_traveling_pet($notes)) {
+      return 0.0;
+    }
+    $hotelId = (int) ($bookingRow['hotel_id'] ?? 0);
+    return itm_hotel_booking_portal_pet_fee_total_for_stay($conn, (int) $companyId, $hotelId, $checkIn, $checkOut);
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_breakfast_supplement_per_night')) {
   function itm_hotel_booking_portal_breakfast_supplement_per_night(array $occupancy, $conn = null, $companyId = 0, $hotelId = 0) {
     $adults = max(0, (int) ($occupancy['adults'] ?? 0));
@@ -4638,7 +4671,7 @@ if (!function_exists('itm_hotel_booking_portal_build_confirmation_email_rows_htm
   /**
    * @param array<int,array> $groupRows
    */
-  function itm_hotel_booking_portal_build_confirmation_email_rows_html(array $bookingRow, array $groupRows = [], array $occupancy = null) {
+  function itm_hotel_booking_portal_build_confirmation_email_rows_html(array $bookingRow, array $groupRows = [], array $occupancy = null, $conn = null, $companyId = 0) {
     if ($groupRows === []) {
       $groupRows = [$bookingRow];
     }
@@ -4718,6 +4751,17 @@ if (!function_exists('itm_hotel_booking_portal_build_confirmation_email_rows_htm
     $rows[] = ['Check-out', $checkOutDisplay];
     $rows[] = ['Nights', $nightsLabel];
     $rows[] = ['Guests', $occupancyLabel];
+    $petFeeTotal = 0.0;
+    $companyId = (int) $companyId;
+    if ($companyId < 1) {
+      $companyId = (int) ($bookingRow['company_id'] ?? ($groupRows[0]['company_id'] ?? 0));
+    }
+    if ($conn && $companyId > 0 && function_exists('itm_hotel_booking_portal_confirmation_pet_fee')) {
+      $petFeeTotal = itm_hotel_booking_portal_confirmation_pet_fee($conn, $companyId, $bookingRow, $checkInIso, $checkOutIso);
+    }
+    if ($petFeeTotal > 0) {
+      $rows[] = ['Traveling with a pet', itm_hotel_booking_portal_format_money_display($petFeeTotal, $currency)];
+    }
     $rows[] = ['Total', $amountDisplay];
 
     $html = '<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;max-width:520px;">';
@@ -4775,7 +4819,7 @@ if (!function_exists('itm_hotel_booking_portal_send_booking_confirmation_emails'
       ? itm_hotel_booking_portal_parse_occupancy($options['occupancy'])
       : null;
     $manageUrl = itm_hotel_booking_portal_confirmation_email_manage_url($conn, $companyId);
-    $detailsHtml = itm_hotel_booking_portal_build_confirmation_email_rows_html($bookingRow, $groupRows, $occupancy);
+    $detailsHtml = itm_hotel_booking_portal_build_confirmation_email_rows_html($bookingRow, $groupRows, $occupancy, $conn, $companyId);
     $guestName = trim((string) ($bookingRow['customer_name'] ?? ''));
 
     if ($guestEmail !== '' && filter_var($guestEmail, FILTER_VALIDATE_EMAIL)) {

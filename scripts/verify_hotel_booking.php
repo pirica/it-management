@@ -1231,6 +1231,18 @@ if (strpos($bookingHelperSrc, 'function itm_hotel_booking_portal_room_line_stay_
     hb_fail('portal multi-room per-line stay charge helper missing');
 }
 
+if (function_exists('itm_hotel_booking_portal_notes_has_traveling_pet')
+    && function_exists('itm_hotel_booking_portal_confirmation_pet_fee')
+    && itm_hotel_booking_portal_notes_has_traveling_pet("Rate: Best available\nTraveling with pet: yes")
+    && !itm_hotel_booking_portal_notes_has_traveling_pet("Traveling with pet: no")
+    && strpos($portalCheckoutSrcMulti, 'Traveling with a pet') !== false
+    && strpos($portalCheckoutSrcMulti, 'itm_hotel_booking_portal_confirmation_pet_fee') !== false
+    && strpos($bookingHelperSrc, 'Traveling with a pet') !== false) {
+    hb_pass('portal confirmation pet fee line from booking notes');
+} else {
+    hb_fail('portal confirmation pet fee line missing');
+}
+
 $manageSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/users/bookings.php');
 $otpIssueSrc = (string) @file_get_contents(dirname(__DIR__) . '/includes/itm_hotel_booking.php');
 if (strpos($manageSrc, 'verify_manage_otp') !== false && strpos($manageSrc, 'itm_hotel_booking_portal_manage_otp_issue') !== false) {

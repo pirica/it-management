@@ -71,6 +71,7 @@
   if (petCheckbox) {
     petCheckbox.addEventListener('change', refreshTotals);
   }
+  refreshTotals();
 })();
 
 (function () {

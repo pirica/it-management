@@ -83,7 +83,7 @@ Per-hotel portal math is **not** hardcoded in `booking/*.php` or `booking/js/*.j
 | `portal_breakfast_child_price_per_night` | Breakfast rate plan add-on (children); Step 2 info banner |
 | `portal_child_nightly_supplement` | Extra per child on nightly room quote |
 | `portal_extra_adult_supplement_percent` | % of base rate per adult above 2 per room |
-| `portal_pet_daily_fee` | Pet checkbox add-on per night (Step 2) |
+| `portal_pet_daily_fee` | Pet checkbox add-on per night (Step 3 customize); shown as **Traveling with a pet** line on reservation summary, payment confirmation, and confirmation email when selected |
 
 **Admin:** [Portal Rate Plans](http://localhost/it-management/modules/hotel_booking_portal_rate_plans/index.php) — **Portal step pricing** form (per selected hotel). Schema defaults match `itm_hotel_booking_portal_pricing_defaults()` when columns are unset.
 

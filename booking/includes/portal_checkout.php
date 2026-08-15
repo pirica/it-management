@@ -163,15 +163,30 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
         $petFeeTotal = 0.0;
         if ($hasPet) {
             global $conn;
-            $companyId = (int) ($room['company_id'] ?? 0);
-            $hotelId = (int) ($room['hotel_id'] ?? 0);
+            $companyId = (int) ($room['company_id'] ?? $draft['company_id'] ?? 0);
+            $hotelId = (int) ($room['hotel_id'] ?? $draft['hotel_id'] ?? 0);
             $nights = (int) ($breakdown['nights'] ?? 1);
             if ($conn && $companyId > 0 && $hotelId > 0) {
-                $petDailyFee = itm_hotel_booking_portal_pet_daily_fee($conn, $companyId, $hotelId);
-                $petFeeTotal = $petDailyFee * $nights;
+                $petFeeTotal = itm_hotel_booking_portal_pet_fee_total_for_stay($conn, $companyId, $hotelId, $checkInIso, $checkOutIso);
                 $roomCharges -= $petFeeTotal;
             }
         }
+        // #region agent log
+        @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
+            'sessionId' => '44bff2',
+            'timestamp' => (int) round(microtime(true) * 1000),
+            'location' => 'booking/includes/portal_checkout.php:reservation_summary_pet',
+            'message' => 'pet fee breakdown',
+            'data' => [
+                'hasPet' => $hasPet,
+                'travelingWithPetDraft' => !empty($draft['traveling_with_pet']) ? 1 : 0,
+                'petFeeTotal' => $petFeeTotal,
+                'roomChargesAfterPet' => $roomCharges,
+            ],
+            'hypothesisId' => 'PET',
+            'runId' => 'pet-fee-display',
+        ]) . "\n", FILE_APPEND);
+        // #endregion
         ?>
 <div class="hb-reservation-summary card">
 <h2 class="hb-reservation-summary-title">Reservation summary</h2>
@@ -484,6 +499,10 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
         $amount = function_exists('itm_hotel_booking_portal_confirmation_group_total')
             ? itm_hotel_booking_portal_confirmation_group_total($groupRows)
             : (float) ($booking['payment_amount'] ?? 0);
+        $petFeeTotal = ($conn && $company_id > 0 && function_exists('itm_hotel_booking_portal_confirmation_pet_fee'))
+            ? itm_hotel_booking_portal_confirmation_pet_fee($conn, $company_id, $primaryRow, $checkInIso, $checkOutIso)
+            : 0.0;
+        $hasPetFee = $petFeeTotal > 0;
         $isCancelled = hb_portal_booking_display_is_cancelled($booking, $options);
         $occupancy = isset($options['occupancy']) && is_array($options['occupancy'])
             ? itm_hotel_booking_portal_parse_occupancy($options['occupancy'])
@@ -512,6 +531,11 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
                 'primaryId' => $reservationId,
                 'groupCount' => count($groupRows),
                 'showMultiRoomGroup' => $showMultiRoomGroup,
+                'petFeeTotal' => $petFeeTotal,
+                'hasPetFee' => $hasPetFee,
+                'notesHasPet' => function_exists('itm_hotel_booking_portal_notes_has_traveling_pet')
+                    ? itm_hotel_booking_portal_notes_has_traveling_pet((string) ($primaryRow['notes'] ?? ''))
+                    : false,
                 'groupTotal' => $amount,
             ],
             'hypothesisId' => 'H',
@@ -608,6 +632,12 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <dd><?php echo htmlspecialchars($phone, ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <?php endif; ?>
+<?php if ($hasPetFee): ?>
+<div class="hb-payment-detail-row">
+<dt>Traveling with a pet</dt>
+<dd><?php echo htmlspecialchars(hb_portal_money_format_decimal($petFeeTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
+</div>
+<?php endif; ?>
 <div class="hb-payment-detail-row hb-payment-detail-total">
 <dt>Total for stay</dt>
 <dd><strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($amount, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></dd>
@@ -658,6 +688,12 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
         $total = function_exists('itm_hotel_booking_portal_confirmation_group_total')
             ? itm_hotel_booking_portal_confirmation_group_total($groupRows)
             : (float) ($booking['payment_amount'] ?? 0);
+        $checkInIso = (string) ($groupRows[0]['check_in'] ?? $booking['check_in'] ?? '');
+        $checkOutIso = (string) ($groupRows[0]['check_out'] ?? $booking['check_out'] ?? '');
+        $petFeeTotal = ($conn && $company_id > 0 && function_exists('itm_hotel_booking_portal_confirmation_pet_fee'))
+            ? itm_hotel_booking_portal_confirmation_pet_fee($conn, $company_id, $groupRows[0], $checkInIso, $checkOutIso)
+            : 0.0;
+        $hasPetFee = $petFeeTotal > 0;
         $showMultiRoomGroup = count($groupRows) > 1;
         $asideClass = 'hb-reservation-summary card hb-confirmation-summary-aside' . ($isCancelled ? ' hb-confirmation-summary-aside--cancelled' : '');
         ?>
@@ -684,6 +720,12 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
 </div>
 <?php endif; ?>
 <dl class="hb-reservation-totals">
+<?php if ($hasPetFee): ?>
+<div class="hb-reservation-total-row">
+<dt>Traveling with a pet</dt>
+<dd><?php echo htmlspecialchars(hb_portal_money_format_decimal($petFeeTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
+</div>
+<?php endif; ?>
 <div class="hb-reservation-total-row hb-reservation-grand-total">
 <dt>Total for stay:</dt>
 <dd><?php echo htmlspecialchars(hb_portal_money_format_decimal($total, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
