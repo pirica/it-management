@@ -247,33 +247,128 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
     }
 }
 
-if (!function_exists('hb_portal_render_draft_special_requests_review')) {
+if (!function_exists('hb_portal_render_confirmation_special_requests')) {
     /**
-     * Read-only special requests from step 2 draft (shown on step 4).
+     * Read-only Step 3 special requests (payment confirmation + step 4 review).
+     *
+     * @param array $meta itm_hotel_booking_portal_parse_booking_notes_meta() or draft-shaped array
      */
-    function hb_portal_render_draft_special_requests_review(array $draft) {
-        $hasPet = !empty($draft['traveling_with_pet']);
-        $hasAnimal = !empty($draft['service_animal']);
-        $comments = trim((string) ($draft['additional_comments'] ?? ''));
+    function hb_portal_render_confirmation_special_requests(array $meta, array $options = []) {
+        $hasPet = !empty($meta['traveling_with_pet']);
+        $hasAnimal = !empty($meta['service_animal']);
+        $comments = trim((string) ($meta['guest_comments'] ?? $meta['additional_comments'] ?? ''));
+        $petDailyFee = (float) ($options['pet_daily_fee'] ?? 0);
         if (!$hasPet && !$hasAnimal && $comments === '') {
             return;
         }
         ?>
-<section class="hb-checkout-section hb-special-requests-review">
+<section class="hb-checkout-section hb-special-requests-review hb-confirmation-special-requests">
 <h2 class="hb-checkout-section-title">Special requests</h2>
 <?php if ($hasPet): ?>
-<p class="hb-special-request-line">Traveling with a pet (daily fee included in room charges).</p>
+<label class="hb-filter-check hb-checkout-check hb-checkout-check--readonly">
+<input type="checkbox" checked disabled aria-label="Traveling with a pet">
+<span>Traveling with a pet</span>
+</label>
+<?php if ($petDailyFee > 0): ?>
+<p class="hb-checkout-hint">Pets allowed, <?php echo htmlspecialchars(number_format($petDailyFee, 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>€ non-refundable fee, 30 kg maximum, Daily Fee Applies, fee in euros</p>
+<?php endif; ?>
 <?php endif; ?>
 <?php if ($hasAnimal): ?>
-<p class="hb-special-request-line">Service animal noted.</p>
+<label class="hb-filter-check hb-checkout-check hb-checkout-check--readonly">
+<input type="checkbox" checked disabled aria-label="Traveling with a service animal">
+<span>Traveling with a service animal</span>
+</label>
 <?php endif; ?>
+<?php if ($comments === ''): ?>
+<p class="hb-checkout-hint">The hotel staff cannot guarantee additional requests.</p>
+<?php endif; ?>
+</section>
 <?php if ($comments !== ''): ?>
-<h3 class="hb-special-requests-comments-title">Additional comments</h3>
+<section class="hb-checkout-section hb-confirmation-additional-comments">
+<h2 class="hb-checkout-section-title">Additional comments</h2>
 <p class="hb-special-request-comments"><?php echo htmlspecialchars($comments, ENT_QUOTES, 'UTF-8'); ?></p>
-<?php endif; ?>
 <p class="hb-checkout-hint">The hotel staff cannot guarantee additional requests.</p>
 </section>
+<?php endif; ?>
         <?php
+    }
+}
+
+if (!function_exists('hb_portal_render_confirmation_room_upgrade')) {
+    /**
+     * Read-only Step 3 room upgrade card (single-room bookings only).
+     */
+    function hb_portal_render_confirmation_room_upgrade(array $upgrade, $currency = 'EUR') {
+        if (empty($upgrade['accepted'])) {
+            return;
+        }
+        $title = trim((string) ($upgrade['title'] ?? ''));
+        if ($title === '') {
+            return;
+        }
+        $pitch = trim((string) ($upgrade['pitch'] ?? ''));
+        if ($pitch === '') {
+            $pitch = 'You deserve a little extra. Enjoy a room with added perks.';
+        }
+        $perNight = (float) ($upgrade['per_night'] ?? 0);
+        ?>
+<h2 class="hb-upgrade-heading">We found a better room for you!</h2>
+<article class="hb-upgrade-card hb-upgrade-card--confirmed">
+<div class="hb-upgrade-card-body hb-upgrade-card-body--full">
+<label class="hb-upgrade-card-select hb-upgrade-card-select--readonly">
+<input type="checkbox" checked disabled aria-label="Room upgrade selected">
+<span class="hb-upgrade-card-title"><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></span>
+</label>
+<p class="hb-upgrade-card-pitch"><?php echo htmlspecialchars($pitch, ENT_QUOTES, 'UTF-8'); ?></p>
+</div>
+<?php if ($perNight > 0): ?>
+<div class="hb-upgrade-card-price">
+<p class="hb-upgrade-price-amount">+<?php echo htmlspecialchars(hb_portal_money_format($perNight, $currency), ENT_QUOTES, 'UTF-8'); ?></p>
+<p class="hb-upgrade-price-meta">per night</p>
+</div>
+<?php endif; ?>
+</article>
+        <?php
+    }
+}
+
+if (!function_exists('hb_portal_draft_to_notes_meta')) {
+    function hb_portal_draft_to_notes_meta(array $draft) {
+        return [
+            'traveling_with_pet' => !empty($draft['traveling_with_pet']),
+            'service_animal' => !empty($draft['service_animal']),
+            'guest_comments' => trim((string) ($draft['additional_comments'] ?? '')),
+            'room_upgrade' => [
+                'accepted' => !empty($draft['upgrade_accepted']),
+                'title' => trim((string) ($draft['upgrade_target_name'] ?? '')),
+                'pitch' => trim((string) ($draft['upgrade_pitch'] ?? '')),
+                'per_night' => (float) ($draft['upgrade_price_per_night'] ?? 0),
+            ],
+        ];
+    }
+}
+
+if (!function_exists('hb_portal_render_draft_special_requests_review')) {
+    /**
+     * Read-only special requests from step 3 draft (shown on step 4).
+     */
+    function hb_portal_render_draft_special_requests_review(array $draft, array $options = []) {
+        global $conn;
+        $companyId = (int) ($options['company_id'] ?? $draft['company_id'] ?? 0);
+        $hotelId = (int) ($options['hotel_id'] ?? $draft['hotel_id'] ?? 0);
+        $petDailyFee = (float) ($options['pet_daily_fee'] ?? 0);
+        if ($petDailyFee <= 0 && $conn && $companyId > 0 && $hotelId > 0) {
+            $petDailyFee = itm_hotel_booking_portal_pet_daily_fee($conn, $companyId, $hotelId);
+        }
+        $meta = hb_portal_draft_to_notes_meta($draft);
+        if (!empty($meta['room_upgrade']['accepted'])) {
+            $title = trim((string) $meta['room_upgrade']['title']);
+            $bedSummary = trim((string) ($draft['upgrade_bed_summary'] ?? ''));
+            if ($bedSummary !== '' && $title !== '' && stripos($title, $bedSummary) === false) {
+                $meta['room_upgrade']['title'] = $title . ' ' . $bedSummary;
+            }
+        }
+        hb_portal_render_confirmation_special_requests($meta, ['pet_daily_fee' => $petDailyFee]);
     }
 }
 
@@ -378,6 +473,12 @@ if (!function_exists('hb_portal_booking_notes_display_items')) {
                 continue;
             }
             if (preg_match('/^Multi-room stay —/i', $line)) {
+                continue;
+            }
+            if (preg_match('/^(Traveling with pet:|Service animal:|Room upgrade:|Guest comments:)/i', $line)) {
+                continue;
+            }
+            if (preg_match('/^Rate plan:/i', $line)) {
                 continue;
             }
             if (preg_match('/^Guest comments:\s*(.*)$/iu', $line, $m)) {
@@ -521,6 +622,15 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
                 'name' => $primaryRow['room_name'] ?? '',
             ]);
         $showMultiRoomGroup = count($groupRows) > 1;
+        $roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
+        $notesRaw = (string) ($primaryRow['notes'] ?? $booking['notes'] ?? '');
+        $notesMeta = function_exists('itm_hotel_booking_portal_parse_booking_notes_meta')
+            ? itm_hotel_booking_portal_parse_booking_notes_meta($notesRaw)
+            : ['traveling_with_pet' => false, 'service_animal' => false, 'guest_comments' => '', 'room_upgrade' => ['accepted' => false, 'title' => '', 'pitch' => '', 'per_night' => 0.0]];
+        $hotelId = (int) ($primaryRow['hotel_id'] ?? $booking['hotel_id'] ?? 0);
+        $petDailyFee = ($conn && $company_id > 0 && $hotelId > 0)
+            ? itm_hotel_booking_portal_pet_daily_fee($conn, $company_id, $hotelId)
+            : 0.0;
         // #region agent log
         @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
             'sessionId' => '44bff2',
@@ -536,6 +646,9 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
                 'notesHasPet' => function_exists('itm_hotel_booking_portal_notes_has_traveling_pet')
                     ? itm_hotel_booking_portal_notes_has_traveling_pet((string) ($primaryRow['notes'] ?? ''))
                     : false,
+                'notesMetaPet' => !empty($notesMeta['traveling_with_pet']),
+                'notesMetaUpgrade' => !empty($notesMeta['room_upgrade']['accepted']),
+                'roomsNeeded' => $roomsNeeded,
                 'groupTotal' => $amount,
             ],
             'hypothesisId' => 'H',
@@ -643,7 +756,10 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <dd><strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($amount, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></dd>
 </div>
 </dl>
-<?php hb_portal_render_payment_reservation_notes((string) ($booking['notes'] ?? '')); ?>
+<?php if ($roomsNeeded === 1 && !empty($notesMeta['room_upgrade']['accepted'])): ?>
+<?php hb_portal_render_confirmation_room_upgrade($notesMeta['room_upgrade'], $currency); ?>
+<?php endif; ?>
+<?php hb_portal_render_confirmation_special_requests($notesMeta, ['pet_daily_fee' => $petDailyFee]); ?>
 <?php if ($isCancelled): ?>
 <div class="hb-payment-confirmation-notice hb-payment-confirmation-notice--cancelled" role="status">
 <p>No further action is required. If you have questions about charges or refunds, please contact the hotel using <strong>Change booking</strong> in the sidebar.</p>

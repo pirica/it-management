@@ -630,6 +630,16 @@ body.hb-modal-open { overflow: hidden; }
   .hb-upgrade-card-price { border-left: none; border-top: 1px solid var(--hb-border); text-align: left; flex-direction: row; align-items: baseline; gap: 8px; }
 }
 
+.hb-payment-page .hb-confirmation-special-requests,
+.hb-payment-page .hb-confirmation-additional-comments { margin-top: 20px; }
+.hb-payment-page .hb-upgrade-heading { margin-top: 20px; }
+.hb-checkout-check--readonly,
+.hb-upgrade-card-select--readonly { cursor: default; }
+.hb-checkout-check--readonly input[type="checkbox"],
+.hb-upgrade-card-select--readonly input[type="checkbox"] { cursor: default; }
+.hb-upgrade-card--confirmed { margin-bottom: 20px; }
+.hb-upgrade-card-body--full { grid-column: 1 / -1; }
+
 /* Room details modal (View room details) */
 .hb-room-detail-modal { align-items: flex-start; padding: 24px 16px; }
 .hb-room-detail-modal-card { max-width: 1040px; width: 100%; max-height: 92vh; overflow: auto; padding: 28px 32px 32px; position: relative; border-radius: 4px; }
