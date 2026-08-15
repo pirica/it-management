@@ -2923,30 +2923,40 @@ if (!function_exists('itm_hotel_booking_portal_cancel_booking_for_guest')) {
     if (itm_hotel_booking_booking_is_cancelled($conn, $companyId, $booking)) {
       return ['ok' => false, 'error' => 'This reservation is already cancelled.'];
     }
-    if (!itm_hotel_booking_portal_guest_can_cancel_booking($conn, $companyId, $booking)) {
-      return ['ok' => false, 'error' => 'This reservation can no longer be cancelled online. Please contact the hotel.'];
+    $groupRows = itm_hotel_booking_portal_load_confirmation_group_rows($conn, $companyId, $booking);
+    if ($groupRows === []) {
+      $groupRows = [$booking];
     }
-    $segment = itm_hotel_booking_resolve_segment($booking['check_in'], $booking['check_out']);
-    $statusCol = $segment . '_status_id';
-    $allowedCols = ['future_status_id', 'present_status_id', 'history_status_id'];
-    if (!in_array($statusCol, $allowedCols, true)) {
-      return ['ok' => false, 'error' => 'Unable to cancel this reservation.'];
-    }
-    $table = itm_hotel_booking_status_table_for_segment($segment);
-    $cancelId = itm_hotel_booking_status_id_by_name($conn, $companyId, $table, 'CANCELLED');
-    if ($cancelId === null || $cancelId < 1) {
-      return ['ok' => false, 'error' => 'Cancellation is not available right now. Please contact the hotel.'];
-    }
-    $sql = 'UPDATE hotel_bookings SET `' . $statusCol . '` = ?, updated_at = NOW() WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
-    $stmt = mysqli_prepare($conn, $sql);
-    if (!$stmt) {
-      return ['ok' => false, 'error' => 'Unable to cancel this reservation.'];
-    }
-    mysqli_stmt_bind_param($stmt, 'iii', $cancelId, $reservationId, $companyId);
-    $ok = mysqli_stmt_execute($stmt);
-    mysqli_stmt_close($stmt);
-    if (!$ok) {
-      return ['ok' => false, 'error' => 'Unable to cancel this reservation.'];
+    foreach ($groupRows as $groupRow) {
+      if (itm_hotel_booking_booking_is_cancelled($conn, $companyId, $groupRow)) {
+        continue;
+      }
+      if (!itm_hotel_booking_portal_guest_can_cancel_booking($conn, $companyId, $groupRow)) {
+        return ['ok' => false, 'error' => 'This reservation can no longer be cancelled online. Please contact the hotel.'];
+      }
+      $segment = itm_hotel_booking_resolve_segment($groupRow['check_in'], $groupRow['check_out']);
+      $statusCol = $segment . '_status_id';
+      $allowedCols = ['future_status_id', 'present_status_id', 'history_status_id'];
+      if (!in_array($statusCol, $allowedCols, true)) {
+        return ['ok' => false, 'error' => 'Unable to cancel this reservation.'];
+      }
+      $table = itm_hotel_booking_status_table_for_segment($segment);
+      $cancelId = itm_hotel_booking_status_id_by_name($conn, $companyId, $table, 'CANCELLED');
+      if ($cancelId === null || $cancelId < 1) {
+        return ['ok' => false, 'error' => 'Cancellation is not available right now. Please contact the hotel.'];
+      }
+      $cancelReservationId = (int) ($groupRow['id'] ?? 0);
+      $sql = 'UPDATE hotel_bookings SET `' . $statusCol . '` = ?, updated_at = NOW() WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
+      $stmt = mysqli_prepare($conn, $sql);
+      if (!$stmt) {
+        return ['ok' => false, 'error' => 'Unable to cancel this reservation.'];
+      }
+      mysqli_stmt_bind_param($stmt, 'iii', $cancelId, $cancelReservationId, $companyId);
+      $ok = mysqli_stmt_execute($stmt);
+      mysqli_stmt_close($stmt);
+      if (!$ok) {
+        return ['ok' => false, 'error' => 'Unable to cancel this reservation.'];
+      }
     }
     return ['ok' => true];
   }
@@ -4490,12 +4500,152 @@ if (!function_exists('itm_hotel_booking_portal_confirmation_email_template_optio
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_confirmation_room_label_from_row')) {
+  function itm_hotel_booking_portal_confirmation_room_label_from_row(array $row) {
+    $typeName = trim((string) ($row['type_name'] ?? ''));
+    $bedSummary = trim((string) ($row['bed_summary'] ?? ''));
+    $label = $typeName;
+    if ($bedSummary !== '' && stripos($label, $bedSummary) === false) {
+      $label = trim($label . ' ' . $bedSummary);
+    }
+    if ($label === '') {
+      $label = trim((string) ($row['room_name'] ?? 'Room'));
+    }
+    return $label !== '' ? $label : 'Room';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_confirmation_group_total')) {
+  function itm_hotel_booking_portal_confirmation_group_total(array $groupRows) {
+    $total = 0.0;
+    foreach ($groupRows as $row) {
+      $total += (float) ($row['payment_amount'] ?? 0);
+    }
+    return round($total, 2);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_confirmation_primary_id')) {
+  function itm_hotel_booking_portal_confirmation_primary_id(array $groupRows) {
+    $primaryId = 0;
+    foreach ($groupRows as $row) {
+      $id = (int) ($row['id'] ?? 0);
+      if ($id > 0 && ($primaryId < 1 || $id < $primaryId)) {
+        $primaryId = $id;
+      }
+    }
+    return $primaryId;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_fetch_confirmation_booking_row')) {
+  function itm_hotel_booking_portal_fetch_confirmation_booking_row($conn, $companyId, $bookingId) {
+    $companyId = (int) $companyId;
+    $bookingId = (int) $bookingId;
+    if ($companyId < 1 || $bookingId < 1) {
+      return null;
+    }
+    $sql = 'SELECT b.id, b.customer_id, b.check_in, b.check_out, b.payment_amount, b.auth2, b.notes, b.room_id, b.portal_rate_plan_id,
+            b.future_status_id, b.present_status_id, b.history_status_id,
+            c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
+            h.id AS hotel_id, h.name AS hotel_name, h.location AS hotel_location, h.phone AS hotel_phone,
+            h.contact_email AS hotel_contact_email, h.reservations_email AS hotel_reservations_email,
+            h.website_url AS hotel_website_url, h.currency_code,
+            r.name AS room_name, COALESCE(bp.price_per_night, 0.00) AS price_per_night,
+            t.name AS type_name, t.bed_summary,
+            rp.name AS portal_rate_plan_name, rp.rate_plan_slug AS portal_rate_plan_slug
+            FROM hotel_bookings b
+            INNER JOIN customers c ON c.id = b.customer_id AND c.company_id = b.company_id
+            INNER JOIN hotel_booking_rooms r ON r.id = b.room_id AND r.company_id = b.company_id
+            INNER JOIN hotel_booking_hotels h ON h.id = r.hotel_id AND h.company_id = r.company_id
+            LEFT JOIN booking_rooms_types t ON t.id = r.room_type_id AND t.company_id = r.company_id
+            LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL
+            LEFT JOIN hotel_booking_portal_rate_plans rp ON rp.id = b.portal_rate_plan_id AND rp.company_id = b.company_id AND rp.deleted_at IS NULL
+            WHERE b.id = ? AND b.company_id = ? AND b.deleted_at IS NULL LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return null;
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $bookingId, $companyId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    return $row ?: null;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_load_confirmation_group_rows')) {
+  /**
+   * Multi-room stays share one guest-facing confirmation id (lowest booking id) and auth2.
+   *
+   * @return array<int,array>
+   */
+  function itm_hotel_booking_portal_load_confirmation_group_rows($conn, $companyId, array $primaryRow) {
+    $companyId = (int) $companyId;
+    $primaryId = (int) ($primaryRow['id'] ?? 0);
+    if ($primaryId < 1) {
+      return [];
+    }
+    $customerId = (int) ($primaryRow['customer_id'] ?? 0);
+    $auth2 = itm_hotel_booking_normalize_auth2($primaryRow['auth2'] ?? '');
+    $checkIn = (string) ($primaryRow['check_in'] ?? '');
+    $checkOut = (string) ($primaryRow['check_out'] ?? '');
+    if ($customerId < 1 || $auth2 === '' || $checkIn === '' || $checkOut === '') {
+      $single = itm_hotel_booking_portal_fetch_confirmation_booking_row($conn, $companyId, $primaryId);
+      return $single ? [$single] : [];
+    }
+    $sql = 'SELECT b.id, b.customer_id, b.check_in, b.check_out, b.payment_amount, b.auth2, b.notes, b.room_id, b.portal_rate_plan_id,
+            b.future_status_id, b.present_status_id, b.history_status_id,
+            c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
+            h.id AS hotel_id, h.name AS hotel_name, h.location AS hotel_location, h.phone AS hotel_phone,
+            h.contact_email AS hotel_contact_email, h.reservations_email AS hotel_reservations_email,
+            h.website_url AS hotel_website_url, h.currency_code,
+            r.name AS room_name, COALESCE(bp.price_per_night, 0.00) AS price_per_night,
+            t.name AS type_name, t.bed_summary,
+            rp.name AS portal_rate_plan_name, rp.rate_plan_slug AS portal_rate_plan_slug
+            FROM hotel_bookings b
+            INNER JOIN customers c ON c.id = b.customer_id AND c.company_id = b.company_id
+            INNER JOIN hotel_booking_rooms r ON r.id = b.room_id AND r.company_id = b.company_id
+            INNER JOIN hotel_booking_hotels h ON h.id = r.hotel_id AND h.company_id = r.company_id
+            LEFT JOIN booking_rooms_types t ON t.id = r.room_type_id AND t.company_id = r.company_id
+            LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL
+            LEFT JOIN hotel_booking_portal_rate_plans rp ON rp.id = b.portal_rate_plan_id AND rp.company_id = b.company_id AND rp.deleted_at IS NULL
+            WHERE b.company_id = ? AND b.customer_id = ? AND b.auth2 = ? AND b.check_in = ? AND b.check_out = ? AND b.deleted_at IS NULL
+            ORDER BY b.id ASC';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      $single = itm_hotel_booking_portal_fetch_confirmation_booking_row($conn, $companyId, $primaryId);
+      return $single ? [$single] : [];
+    }
+    mysqli_stmt_bind_param($stmt, 'iisss', $companyId, $customerId, $auth2, $checkIn, $checkOut);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $rows = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+      $rows[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+    if ($rows === []) {
+      $single = itm_hotel_booking_portal_fetch_confirmation_booking_row($conn, $companyId, $primaryId);
+      return $single ? [$single] : [];
+    }
+    return $rows;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_build_confirmation_email_rows_html')) {
   /**
-   * @param array<int,int> $companionBookingIds
+   * @param array<int,array> $groupRows
    */
-  function itm_hotel_booking_portal_build_confirmation_email_rows_html(array $bookingRow, array $companionBookingIds = [], array $occupancy = null) {
-    $reservationId = (int) ($bookingRow['id'] ?? 0);
+  function itm_hotel_booking_portal_build_confirmation_email_rows_html(array $bookingRow, array $groupRows = [], array $occupancy = null) {
+    if ($groupRows === []) {
+      $groupRows = [$bookingRow];
+    }
+    $primaryId = itm_hotel_booking_portal_confirmation_primary_id($groupRows);
+    if ($primaryId < 1) {
+      $primaryId = (int) ($bookingRow['id'] ?? 0);
+    }
     $guestName = trim((string) ($bookingRow['customer_name'] ?? ''));
     $guestEmail = trim((string) ($bookingRow['customer_email'] ?? ''));
     $guestPhone = trim((string) ($bookingRow['customer_phone'] ?? ''));
@@ -4509,17 +4659,7 @@ if (!function_exists('itm_hotel_booking_portal_build_confirmation_email_rows_htm
       ? itm_format_hotel_date_display($checkOutIso)
       : $checkOutIso;
     $currency = (string) ($bookingRow['currency_code'] ?? 'EUR');
-    $amount = (float) ($bookingRow['payment_amount'] ?? 0);
     $auth2Display = itm_hotel_booking_normalize_auth2($bookingRow['auth2'] ?? '');
-    $typeName = trim((string) ($bookingRow['type_name'] ?? ''));
-    $bedSummary = trim((string) ($bookingRow['bed_summary'] ?? ''));
-    $roomLabel = $typeName;
-    if ($bedSummary !== '' && stripos($roomLabel, $bedSummary) === false) {
-      $roomLabel = trim($roomLabel . ' ' . $bedSummary);
-    }
-    if ($roomLabel === '') {
-      $roomLabel = trim((string) ($bookingRow['room_name'] ?? 'Room'));
-    }
     $planLabel = trim((string) ($bookingRow['portal_rate_plan_name'] ?? ''));
     if ($planLabel === '') {
       $slug = strtolower((string) ($bookingRow['portal_rate_plan_slug'] ?? ''));
@@ -4542,13 +4682,13 @@ if (!function_exists('itm_hotel_booking_portal_build_confirmation_email_rows_htm
       }
     }
     $nightsLabel = $nights === 1 ? '1 night' : $nights . ' nights';
-    $amountDisplay = itm_hotel_booking_portal_format_money_display($amount, $currency);
+    $amountDisplay = itm_hotel_booking_portal_format_money_display(
+      itm_hotel_booking_portal_confirmation_group_total($groupRows),
+      $currency
+    );
 
     $rows = [];
-    $rows[] = ['Confirmation number', (string) $reservationId];
-    if ($companionBookingIds !== []) {
-      $rows[] = ['Additional rooms', implode(', ', $companionBookingIds)];
-    }
+    $rows[] = ['Confirmation number', (string) $primaryId];
     if ($auth2Display !== '') {
       $rows[] = ['Auth code', $auth2Display];
     }
@@ -4564,7 +4704,15 @@ if (!function_exists('itm_hotel_booking_portal_build_confirmation_email_rows_htm
     if ($guestPhone !== '') {
       $rows[] = ['Phone', $guestPhone];
     }
-    $rows[] = ['Room', $roomLabel];
+    if (count($groupRows) > 1) {
+      foreach ($groupRows as $idx => $lineRow) {
+        $lineLabel = itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow);
+        $lineAmount = itm_hotel_booking_portal_format_money_display((float) ($lineRow['payment_amount'] ?? 0), $currency);
+        $rows[] = ['Room ' . ((int) $idx + 1), $lineLabel . ' — ' . $lineAmount];
+      }
+    } else {
+      $rows[] = ['Room', itm_hotel_booking_portal_confirmation_room_label_from_row($groupRows[0])];
+    }
     $rows[] = ['Rate', $planLabel];
     $rows[] = ['Check-in', $checkInDisplay];
     $rows[] = ['Check-out', $checkOutDisplay];
@@ -4615,27 +4763,25 @@ if (!function_exists('itm_hotel_booking_portal_send_booking_confirmation_emails'
       return ['ok' => false, 'guest_sent' => false, 'hotel_sent' => false];
     }
 
-    $companionIds = [];
-    if (!empty($options['companion_booking_ids']) && is_array($options['companion_booking_ids'])) {
-      foreach ($options['companion_booking_ids'] as $cid) {
-        $cid = (int) $cid;
-        if ($cid > 0 && $cid !== $reservationId) {
-          $companionIds[] = $cid;
-        }
-      }
-      $companionIds = array_values(array_unique($companionIds));
+    $groupRows = itm_hotel_booking_portal_load_confirmation_group_rows($conn, $companyId, $bookingRow);
+    if ($groupRows === []) {
+      $groupRows = [$bookingRow];
+    }
+    $primaryId = itm_hotel_booking_portal_confirmation_primary_id($groupRows);
+    if ($primaryId < 1) {
+      $primaryId = $reservationId;
     }
     $occupancy = isset($options['occupancy']) && is_array($options['occupancy'])
       ? itm_hotel_booking_portal_parse_occupancy($options['occupancy'])
       : null;
     $manageUrl = itm_hotel_booking_portal_confirmation_email_manage_url($conn, $companyId);
-    $detailsHtml = itm_hotel_booking_portal_build_confirmation_email_rows_html($bookingRow, $companionIds, $occupancy);
+    $detailsHtml = itm_hotel_booking_portal_build_confirmation_email_rows_html($bookingRow, $groupRows, $occupancy);
     $guestName = trim((string) ($bookingRow['customer_name'] ?? ''));
 
     if ($guestEmail !== '' && filter_var($guestEmail, FILTER_VALIDATE_EMAIL)) {
       $guestSubject = 'Your reservation confirmation'
         . ($hotelName !== '' ? ' — ' . $hotelName : '')
-        . ' #' . $reservationId;
+        . ' #' . $primaryId;
       $guestBody = '<p>Thank you'
         . ($guestName !== '' ? ', ' . htmlspecialchars($guestName, ENT_QUOTES, 'UTF-8') : '')
         . '. Your stay is confirmed.</p>'
@@ -4651,7 +4797,7 @@ if (!function_exists('itm_hotel_booking_portal_send_booking_confirmation_emails'
     }
 
     if ($reservationsEmail !== '' && filter_var($reservationsEmail, FILTER_VALIDATE_EMAIL)) {
-      $hotelSubject = 'New portal reservation #' . $reservationId
+      $hotelSubject = 'New portal reservation #' . $primaryId
         . ($guestName !== '' ? ' — ' . $guestName : '');
       $hotelBody = '<p>A new booking was completed on the public portal.</p>' . $detailsHtml;
       $hotelOptions = itm_hotel_booking_portal_confirmation_email_template_options(
@@ -4669,8 +4815,10 @@ if (!function_exists('itm_hotel_booking_portal_send_booking_confirmation_emails'
       'timestamp' => (int) round(microtime(true) * 1000),
       'location' => 'includes/itm_hotel_booking.php:send_booking_confirmation_emails',
       'message' => 'confirmation email dispatch',
-      'data' => [
+        'data' => [
         'reservationId' => $reservationId,
+        'primaryId' => $primaryId,
+        'groupCount' => count($groupRows),
         'guestSent' => $guestSent,
         'hotelSent' => $hotelSent,
         'hasReservationsEmail' => $reservationsEmail !== '',
@@ -4917,7 +5065,8 @@ if (!function_exists('itm_hotel_booking_portal_insert_stay_bookings_locked')) {
       $bookingIds[] = (int) $result['booking_id'];
     }
     if (count($bookingIds) > 1) {
-      $groupNote = "\nMulti-room stay — confirmation numbers: " . implode(', ', $bookingIds) . '.';
+      $primaryId = (int) $bookingIds[0];
+      $groupNote = "\nMulti-room stay — confirmation #" . $primaryId . '.';
       $upd = mysqli_prepare($conn, 'UPDATE hotel_bookings SET notes = CONCAT(notes, ?) WHERE company_id = ? AND id = ? LIMIT 1');
       if ($upd) {
         foreach ($bookingIds as $bid) {

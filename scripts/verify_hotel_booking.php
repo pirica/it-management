@@ -1187,10 +1187,20 @@ if (function_exists('itm_hotel_booking_portal_room_line_pick')
 }
 
 if (strpos($portalBookingSrc, 'function itm_hotel_booking_portal_send_booking_confirmation_emails') !== false
-    && strpos($portalBookingSrc, 'hotel_reservations_email') !== false) {
+    && strpos($portalBookingSrc, 'hotel_reservations_email') !== false
+    && strpos($portalBookingSrc, 'function itm_hotel_booking_portal_load_confirmation_group_rows') !== false) {
     hb_pass('portal step4 confirmation emails to guest and reservations desk');
 } else {
     hb_fail('portal step4 confirmation email helper missing');
+}
+
+$portalCheckoutPaymentSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/includes/portal_checkout.php');
+if (strpos($portalCheckoutPaymentSrc, 'hb-payment-room-group-list') !== false
+    && strpos($portalCheckoutPaymentSrc, 'itm_hotel_booking_portal_load_confirmation_group_rows') !== false
+    && strpos($portalCheckoutPaymentSrc, 'Additional rooms') === false) {
+    hb_pass('portal payment confirmation single id multi-room list');
+} else {
+    hb_fail('portal payment confirmation multi-room group list missing');
 }
 
 $customizeSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms/customize.php');
