@@ -1294,6 +1294,15 @@ if (strpos($portalCheckoutSrcMulti, 'hb_portal_render_confirmation_special_reque
 }
 
 $manageSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/users/bookings.php');
+if (strpos($portalCheckoutSrcMulti, 'function hb_portal_booking_rate_plan_label') !== false
+    && strpos($portalCheckoutSrcMulti, '<dt>Rate</dt>') !== false
+    && strpos($portalCheckoutSrcMulti, 'hb-reservation-rate-line') !== false
+    && strpos($manageSrc, 'hb_portal_render_payment_confirmation') !== false) {
+    hb_pass('portal manage booking shows selected rate plan');
+} else {
+    hb_fail('portal manage booking selected rate plan display missing');
+}
+
 $otpIssueSrc = (string) @file_get_contents(dirname(__DIR__) . '/includes/itm_hotel_booking.php');
 if (strpos($manageSrc, 'verify_manage_otp') !== false && strpos($manageSrc, 'itm_hotel_booking_portal_manage_otp_issue') !== false) {
     hb_pass('portal manage email OTP flow wiring');

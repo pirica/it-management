@@ -454,6 +454,36 @@ if (!function_exists('hb_portal_booking_resolve_occupancy')) {
     }
 }
 
+if (!function_exists('hb_portal_booking_rate_plan_label')) {
+    /**
+     * Guest-facing rate plan label for stored bookings (manage booking, payment confirmation).
+     */
+    function hb_portal_booking_rate_plan_label(array $booking) {
+        $planLabel = trim((string) ($booking['portal_rate_plan_name'] ?? ''));
+        if ($planLabel === '') {
+            $slug = strtolower((string) ($booking['portal_rate_plan_slug'] ?? ''));
+            if ($slug === 'breakfast') {
+                $planLabel = 'Breakfast included';
+            } elseif ($slug !== '' && function_exists('itm_hotel_booking_portal_rate_plan_offer')) {
+                $offer = itm_hotel_booking_portal_rate_plan_offer($slug);
+                if (is_array($offer) && trim((string) ($offer['label'] ?? '')) !== '') {
+                    $planLabel = trim((string) $offer['label']);
+                }
+            }
+        }
+        if ($planLabel === '') {
+            $notes = (string) ($booking['notes'] ?? '');
+            if (preg_match('/^Rate:\s*(.+)$/im', $notes, $m)) {
+                $planLabel = trim((string) ($m[1] ?? ''));
+            }
+        }
+        if ($planLabel === '') {
+            $planLabel = 'Best available rate';
+        }
+        return $planLabel;
+    }
+}
+
 if (!function_exists('hb_portal_booking_notes_display_items')) {
     /**
      * Parse hotel_bookings.notes into display rows (payment confirmation, PDF).
@@ -637,6 +667,24 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
         $groupRoomDisplayAmounts = ($showMultiRoomGroup && $conn && $company_id > 0 && function_exists('itm_hotel_booking_portal_confirmation_group_room_display_amounts'))
             ? itm_hotel_booking_portal_confirmation_group_room_display_amounts($conn, $company_id, $groupRows, $occupancy)
             : [];
+        $ratePlanLabel = hb_portal_booking_rate_plan_label($primaryRow);
+        // #region agent log
+        @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
+            'sessionId' => '44bff2',
+            'timestamp' => (int) round(microtime(true) * 1000),
+            'location' => 'booking/includes/portal_checkout.php:payment_confirmation_rate',
+            'message' => 'confirmation rate plan label',
+            'data' => [
+                'primaryId' => $reservationId,
+                'ratePlanLabel' => $ratePlanLabel,
+                'portalRatePlanId' => (int) ($primaryRow['portal_rate_plan_id'] ?? 0),
+                'portalRatePlanName' => (string) ($primaryRow['portal_rate_plan_name'] ?? ''),
+                'portalRatePlanSlug' => (string) ($primaryRow['portal_rate_plan_slug'] ?? ''),
+            ],
+            'hypothesisId' => 'RATE1',
+            'runId' => 'manage-booking-rate',
+        ]) . "\n", FILE_APPEND);
+        // #endregion
         // #region agent log
         @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
             'sessionId' => '44bff2',
@@ -731,6 +779,12 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <div class="hb-payment-detail-row">
 <dt>Room</dt>
 <dd><?php echo htmlspecialchars($roomTitle, ENT_QUOTES, 'UTF-8'); ?></dd>
+</div>
+<?php endif; ?>
+<?php if ($ratePlanLabel !== ''): ?>
+<div class="hb-payment-detail-row">
+<dt>Rate</dt>
+<dd><?php echo htmlspecialchars($ratePlanLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <?php endif; ?>
 <?php if ($checkInDisplay !== '' && $checkOutDisplay !== ''): ?>
@@ -835,6 +889,7 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
         $groupRoomDisplayAmounts = ($showMultiRoomGroup && $conn && $company_id > 0 && function_exists('itm_hotel_booking_portal_confirmation_group_room_display_amounts'))
             ? itm_hotel_booking_portal_confirmation_group_room_display_amounts($conn, $company_id, $groupRows, $occupancy)
             : [];
+        $ratePlanLabel = hb_portal_booking_rate_plan_label($groupRows[0]);
         $asideClass = 'hb-reservation-summary card hb-confirmation-summary-aside' . ($isCancelled ? ' hb-confirmation-summary-aside--cancelled' : '');
         ?>
 <div class="<?php echo htmlspecialchars($asideClass, ENT_QUOTES, 'UTF-8'); ?>">
@@ -863,6 +918,9 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
 <div class="hb-reservation-summary-room">
 <p class="hb-reservation-room-name"><?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($groupRows[0]), ENT_QUOTES, 'UTF-8'); ?></p>
 </div>
+<?php endif; ?>
+<?php if ($ratePlanLabel !== ''): ?>
+<p class="hb-reservation-rate-line"><span class="hb-reservation-muted">Rate:</span> <?php echo htmlspecialchars($ratePlanLabel, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php endif; ?>
 <dl class="hb-reservation-totals">
 <?php if ($hasPetFee): ?>
