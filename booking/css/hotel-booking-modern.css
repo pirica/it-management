@@ -302,6 +302,33 @@ body.hb-modal-open { overflow: hidden; }
 
 /* Checkout steps 2–4 */
 .hb-checkout-page { background: #f4f5f7; }
+.hb-checkout-page-step4 { padding-bottom: 88px; }
+.hb-checkout-sticky-cta {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 500;
+  background: #fff;
+  border-top: 1px solid var(--hb-border);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, .1);
+  padding: 12px 24px;
+}
+.hb-checkout-sticky-cta-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.hb-checkout-sticky-total { margin: 0; font-size: 1rem; font-weight: 600; }
+.hb-checkout-sticky-cta .hb-btn-primary { margin: 0; padding: 14px 28px; white-space: nowrap; }
+@media (max-width: 640px) {
+  .hb-checkout-sticky-cta-inner { flex-direction: column; align-items: stretch; }
+  .hb-checkout-sticky-cta .hb-btn-primary { width: 100%; text-align: center; }
+}
 .hb-checkout-layout { align-items: start; }
 .hb-checkout-layout--summary-left { grid-template-columns: minmax(260px, 300px) 1fr minmax(240px, 280px); }
 .hb-checkout-summary-aside { position: sticky; top: 16px; }
