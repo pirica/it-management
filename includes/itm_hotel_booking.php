@@ -819,35 +819,73 @@ if (!function_exists('itm_hotel_booking_customer_last_name_matches')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_auth2_is_legacy_digits')) {
+  /** Legacy bookings store a 4-digit numeric PIN; new bookings use a 12-char complex code. */
+  function itm_hotel_booking_auth2_is_legacy_digits($value) {
+    return (bool) preg_match('/^\d{4}$/', (string) $value);
+  }
+}
+
 if (!function_exists('itm_hotel_booking_generate_auth2')) {
-  /** Random 4-digit guest manage PIN (zero-padded), stored on hotel_bookings.auth2. */
+  /** Random 12-char guest manage code (upper, lower, digit, symbol), stored on hotel_bookings.auth2. */
   function itm_hotel_booking_generate_auth2() {
-    return str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
+    $upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $lower = 'abcdefghijklmnopqrstuvwxyz';
+    $digits = '0123456789';
+    $symbols = '!@#$%&*?';
+    $all = $upper . $lower . $digits . $symbols;
+    $chars = [
+      $upper[random_int(0, strlen($upper) - 1)],
+      $lower[random_int(0, strlen($lower) - 1)],
+      $digits[random_int(0, strlen($digits) - 1)],
+      $symbols[random_int(0, strlen($symbols) - 1)],
+    ];
+    for ($i = 4; $i < 12; $i++) {
+      $chars[] = $all[random_int(0, strlen($all) - 1)];
+    }
+    shuffle($chars);
+    return implode('', $chars);
   }
 }
 
 if (!function_exists('itm_hotel_booking_normalize_auth2')) {
-  /** Keep digits only; require exactly 4 for a usable guest PIN. */
+  /**
+   * Accept legacy 4-digit numeric PINs or new 12-char codes with upper, lower, digit, and symbol.
+   */
   function itm_hotel_booking_normalize_auth2($value) {
-    $digits = preg_replace('/\D+/', '', (string) $value);
-    if ($digits === null) {
+    $raw = trim((string) $value);
+    if ($raw === '') {
       return '';
     }
-    if (strlen($digits) > 4) {
-      $digits = substr($digits, -4);
+    $digitsOnly = preg_replace('/\D+/', '', $raw);
+    if ($digitsOnly !== null && strlen($digitsOnly) === 4 && preg_match('/^\d{4}$/', $digitsOnly)) {
+      return $digitsOnly;
     }
-    if (strlen($digits) !== 4) {
+    if (strlen($raw) !== 12) {
       return '';
     }
-    return $digits;
+    if (!preg_match('/^[A-Za-z0-9!@#$%&*?]{12}$/', $raw)) {
+      return '';
+    }
+    if (!preg_match('/[A-Z]/', $raw) || !preg_match('/[a-z]/', $raw) || !preg_match('/[0-9]/', $raw) || !preg_match('/[!@#$%&*?]/', $raw)) {
+      return '';
+    }
+    return $raw;
   }
 }
 
 if (!function_exists('itm_hotel_booking_auth2_matches')) {
   function itm_hotel_booking_auth2_matches($storedAuth2, $inputAuth2) {
-    $stored = itm_hotel_booking_normalize_auth2($storedAuth2);
+    $stored = trim((string) $storedAuth2);
     $input = itm_hotel_booking_normalize_auth2($inputAuth2);
     if ($stored === '' || $input === '') {
+      return false;
+    }
+    if (itm_hotel_booking_auth2_is_legacy_digits($stored)) {
+      $storedNorm = itm_hotel_booking_normalize_auth2($stored);
+      return $storedNorm !== '' && hash_equals($storedNorm, $input);
+    }
+    if (strlen($stored) !== 12) {
       return false;
     }
     return hash_equals($stored, $input);
@@ -2055,9 +2093,80 @@ if (!function_exists('itm_hotel_booking_portal_build_booking_notes')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_resolve_step4_charge')) {
+  /**
+   * Why: Step 4 charge must re-read BAR, special-rate discount, and plan discount/surcharge from DB — not session draft money fields.
+   *
+   * @return array{ok:bool,error?:string,base_per_night?:float,discount_percent?:float,surcharge_percent?:float,portal_rate_plan_id?:int,draft_for_pay?:array,check_in?:string,check_out?:string}
+   */
+  function itm_hotel_booking_portal_resolve_step4_charge($conn, $companyId, array $room, array $draft, array $occupancy) {
+    $companyId = (int) $companyId;
+    $checkIn = (string) ($draft['check_in'] ?? '');
+    $checkOut = (string) ($draft['check_out'] ?? '');
+    if ($companyId < 1 || $checkIn === '' || $checkOut === '' || $checkOut <= $checkIn) {
+      return ['ok' => false, 'error' => 'Checkout session expired. Please start again.'];
+    }
+    $hotelId = (int) ($room['hotel_id'] ?? $draft['hotel_id'] ?? 0);
+    $roomTypeId = (int) ($room['room_type_id'] ?? $draft['room_type_id'] ?? 0);
+    $planId = (int) ($draft['portal_rate_plan_id'] ?? 0);
+    $planRow = $planId > 0 ? itm_hotel_booking_portal_rate_plan_row_by_id($conn, $companyId, $planId) : null;
+    if (!$planRow || (int) ($planRow['hotel_id'] ?? 0) !== $hotelId || empty($planRow['active'])) {
+      return ['ok' => false, 'error' => 'Selected rate is no longer available. Please choose a rate again.'];
+    }
+    $planSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($planRow['rate_plan_slug'] ?? '')));
+    if ($planSlug === '') {
+      return ['ok' => false, 'error' => 'Selected rate is no longer available. Please choose a rate again.'];
+    }
+    $rateSlug = trim((string) ($draft['resolved_rate_slug'] ?? ''));
+    if ($rateSlug === '') {
+      $rateSlug = itm_hotel_booking_portal_resolved_rate_slug($occupancy);
+    }
+    $specialDiscount = itm_hotel_booking_special_rate_discount($conn, $companyId, $hotelId, $rateSlug);
+    $discountPercent = itm_hotel_booking_portal_rate_plan_effective_discount($specialDiscount, $planSlug, $planRow);
+    $surchargePercent = itm_hotel_booking_portal_rate_plan_effective_surcharge($planSlug, $planRow);
+    $defaultBar = (float) ($room['price_per_night'] ?? 0);
+    if ($defaultBar <= 0 && $roomTypeId > 0) {
+      $defaultBar = itm_hotel_booking_get_room_type_base_price($conn, $companyId, $hotelId, $roomTypeId);
+    }
+    $basePerNight = itm_hotel_booking_portal_check_in_display_bar($conn, $companyId, $hotelId, $roomTypeId, $checkIn, $defaultBar);
+    $draftForPay = [
+      'company_id' => $companyId,
+      'hotel_id' => $hotelId,
+      'room_type_id' => $roomTypeId,
+      'rate_plan' => $planSlug,
+      'portal_rate_plan_id' => $planId,
+      'portal_rate_plan_name' => (string) ($planRow['name'] ?? ''),
+      'traveling_with_pet' => !empty($draft['traveling_with_pet']) ? 1 : 0,
+      'service_animal' => !empty($draft['service_animal']) ? 1 : 0,
+      'additional_comments' => (string) ($draft['additional_comments'] ?? ''),
+      'resolved_rate_slug' => $rateSlug,
+      'surcharge_percent' => $surchargePercent,
+    ];
+    if (!empty($draft['upgrade_accepted'])) {
+      $origTypeId = (int) ($draft['room_type_id'] ?? 0);
+      $upgradeOffer = $origTypeId > 0 ? itm_hotel_booking_portal_room_type_upgrade_offer($conn, $companyId, $origTypeId) : null;
+      if ($upgradeOffer) {
+        $draftForPay['upgrade_accepted'] = 1;
+        $draftForPay['upgrade_price_per_night'] = (float) ($upgradeOffer['upgrade_price_per_night'] ?? 0);
+        $draftForPay['upgrade_target_name'] = (string) ($upgradeOffer['target_name'] ?? '');
+      }
+    }
+    return [
+      'ok' => true,
+      'base_per_night' => $basePerNight,
+      'discount_percent' => $discountPercent,
+      'surcharge_percent' => $surchargePercent,
+      'portal_rate_plan_id' => $planId,
+      'draft_for_pay' => $draftForPay,
+      'check_in' => $checkIn,
+      'check_out' => $checkOut,
+    ];
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_room_charges_subtotal')) {
-  function itm_hotel_booking_portal_room_charges_subtotal($basePerNight, $checkIn, $checkOut, array $occupancy, $discountPercent, array $draft, $conn = null, $companyId = 0) {
-    if (isset($draft['base_price_per_night']) && $draft['base_price_per_night'] !== '') {
+  function itm_hotel_booking_portal_room_charges_subtotal($basePerNight, $checkIn, $checkOut, array $occupancy, $discountPercent, array $draft, $conn = null, $companyId = 0, $trustDraftPricing = true) {
+    if ($trustDraftPricing && isset($draft['base_price_per_night']) && $draft['base_price_per_night'] !== '') {
       $basePerNight = (float) $draft['base_price_per_night'];
     }
     $companyId = (int) ($draft['company_id'] ?? $companyId);
@@ -3739,8 +3848,58 @@ if (!function_exists('itm_hotel_booking_portal_manage_rate_limit_session_key')) 
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_manage_rate_limit_ip_dir')) {
+  function itm_hotel_booking_portal_manage_rate_limit_ip_dir() {
+    return rtrim((string) ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . 'files' . DIRECTORY_SEPARATOR . 'rate_limits' . DIRECTORY_SEPARATOR . 'hb_manage';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_manage_rate_limit_prune_events')) {
+  function itm_hotel_booking_portal_manage_rate_limit_prune_events(array $events, $now, $windowSeconds) {
+    $fresh = [];
+    foreach ($events as $ts) {
+      $ts = (int) $ts;
+      if ($ts > 0 && ($now - $ts) < $windowSeconds) {
+        $fresh[] = $ts;
+      }
+    }
+    return $fresh;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_manage_rate_limit_ip_events')) {
+  function itm_hotel_booking_portal_manage_rate_limit_ip_events($windowSeconds, $writeEvents = null) {
+    $windowSeconds = max(60, (int) $windowSeconds);
+    $ip = function_exists('itm_get_client_ip_address') ? trim((string) itm_get_client_ip_address()) : trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+    if ($ip === '') {
+      $ip = 'unknown';
+    }
+    $dir = itm_hotel_booking_portal_manage_rate_limit_ip_dir();
+    if (function_exists('itm_ensure_upload_directory')) {
+      itm_ensure_upload_directory($dir, 'deny_all');
+    } elseif (!is_dir($dir)) {
+      @mkdir($dir, 0755, true);
+    }
+    $path = $dir . DIRECTORY_SEPARATOR . hash('sha256', $ip) . '.json';
+    $now = time();
+    $events = [];
+    if (is_file($path)) {
+      $raw = @file_get_contents($path);
+      $decoded = $raw !== false ? json_decode($raw, true) : null;
+      if (is_array($decoded) && isset($decoded['events']) && is_array($decoded['events'])) {
+        $events = itm_hotel_booking_portal_manage_rate_limit_prune_events($decoded['events'], $now, $windowSeconds);
+      }
+    }
+    if ($writeEvents !== null) {
+      $events = itm_hotel_booking_portal_manage_rate_limit_prune_events((array) $writeEvents, $now, $windowSeconds);
+      @file_put_contents($path, json_encode(['events' => $events], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX);
+    }
+    return $events;
+  }
+}
+
 /**
- * Why: Manage lookup/cancel are public POSTs — throttle by PHP session window before DB verify.
+ * Why: Manage lookup/cancel are public POSTs — throttle by PHP session and client IP before DB verify.
  *
  * @return array{ok:bool,error?:string,count?:int,max?:int}
  */
@@ -3750,24 +3909,21 @@ if (!function_exists('itm_hotel_booking_portal_manage_rate_limit_check')) {
     $windowSeconds = max(60, (int) $windowSeconds);
     $now = time();
     $key = itm_hotel_booking_portal_manage_rate_limit_session_key();
-    $events = (isset($_SESSION[$key]) && is_array($_SESSION[$key])) ? $_SESSION[$key] : [];
-    $fresh = [];
-    foreach ($events as $ts) {
-      $ts = (int) $ts;
-      if ($ts > 0 && ($now - $ts) < $windowSeconds) {
-        $fresh[] = $ts;
-      }
-    }
-    $_SESSION[$key] = $fresh;
-    if (count($fresh) >= $maxAttempts) {
+    $sessionEvents = (isset($_SESSION[$key]) && is_array($_SESSION[$key])) ? $_SESSION[$key] : [];
+    $sessionFresh = itm_hotel_booking_portal_manage_rate_limit_prune_events($sessionEvents, $now, $windowSeconds);
+    $_SESSION[$key] = $sessionFresh;
+    $ipFresh = itm_hotel_booking_portal_manage_rate_limit_ip_events($windowSeconds);
+    $sessionCount = count($sessionFresh);
+    $ipCount = count($ipFresh);
+    if ($sessionCount >= $maxAttempts || $ipCount >= $maxAttempts) {
       return [
         'ok' => false,
         'error' => 'Too many attempts. Please wait and try again.',
-        'count' => count($fresh),
+        'count' => max($sessionCount, $ipCount),
         'max' => $maxAttempts,
       ];
     }
-    return ['ok' => true, 'count' => count($fresh), 'max' => $maxAttempts];
+    return ['ok' => true, 'count' => max($sessionCount, $ipCount), 'max' => $maxAttempts];
   }
 }
 
@@ -3777,6 +3933,108 @@ if (!function_exists('itm_hotel_booking_portal_manage_rate_limit_record')) {
     $events = (isset($_SESSION[$key]) && is_array($_SESSION[$key])) ? $_SESSION[$key] : [];
     $events[] = time();
     $_SESSION[$key] = $events;
+    $windowSeconds = 900;
+    $ipEvents = itm_hotel_booking_portal_manage_rate_limit_ip_events($windowSeconds);
+    $ipEvents[] = time();
+    itm_hotel_booking_portal_manage_rate_limit_ip_events($windowSeconds, $ipEvents);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_manage_otp_session_key')) {
+  function itm_hotel_booking_portal_manage_otp_session_key() {
+    return 'hotel_booking_manage_otp';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_mask_email')) {
+  function itm_hotel_booking_portal_mask_email($email) {
+    $email = trim((string) $email);
+    if ($email === '' || strpos($email, '@') === false) {
+      return '';
+    }
+    $parts = explode('@', $email, 2);
+    $local = (string) ($parts[0] ?? '');
+    $domain = (string) ($parts[1] ?? '');
+    if ($local === '' || $domain === '') {
+      return '';
+    }
+    $visible = mb_substr($local, 0, 1, 'UTF-8');
+    return $visible . '***@' . $domain;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_manage_otp_clear')) {
+  function itm_hotel_booking_portal_manage_otp_clear() {
+    unset($_SESSION[itm_hotel_booking_portal_manage_otp_session_key()]);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_manage_otp_issue')) {
+  /**
+   * @return array{ok:bool,error?:string,masked_email?:string}
+   */
+  function itm_hotel_booking_portal_manage_otp_issue($conn, $companyId, array $verifiedBookingRow) {
+    $companyId = (int) $companyId;
+    $reservationId = (int) ($verifiedBookingRow['id'] ?? 0);
+    $email = trim((string) ($verifiedBookingRow['customer_email'] ?? ''));
+    if ($companyId < 1 || $reservationId < 1 || $email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+      return ['ok' => false, 'error' => 'No valid email is on file for this reservation.'];
+    }
+    $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $subject = 'Your booking verification code';
+    $body = '<p>Your one-time code to manage reservation <strong>#' . (int) $reservationId . '</strong> is:</p>'
+      . '<p style="font-size:1.4em;"><strong>' . htmlspecialchars($otp, ENT_QUOTES, 'UTF-8') . '</strong></p>'
+      . '<p>This code expires in 10 minutes. If you did not request this, you can ignore this email.</p>';
+    $sent = function_exists('itm_send_email') ? itm_send_email($email, $subject, $body, $companyId) : false;
+    if (!$sent) {
+      return ['ok' => false, 'error' => 'Could not send the verification email. Please try again later.'];
+    }
+    $_SESSION[itm_hotel_booking_portal_manage_otp_session_key()] = [
+      'company_id' => $companyId,
+      'reservation_id' => $reservationId,
+      'otp_hash' => hash('sha256', $otp),
+      'expires_at' => time() + 600,
+      'verified' => false,
+    ];
+    return ['ok' => true, 'masked_email' => itm_hotel_booking_portal_mask_email($email)];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_manage_otp_verify')) {
+  /**
+   * @return array{ok:bool,error?:string,reservation_id?:int,company_id?:int}
+   */
+  function itm_hotel_booking_portal_manage_otp_verify($otp) {
+    $key = itm_hotel_booking_portal_manage_otp_session_key();
+    $state = (isset($_SESSION[$key]) && is_array($_SESSION[$key])) ? $_SESSION[$key] : null;
+    if (!is_array($state) || time() > (int) ($state['expires_at'] ?? 0)) {
+      itm_hotel_booking_portal_manage_otp_clear();
+      return ['ok' => false, 'error' => 'Verification expired. Please start again.'];
+    }
+    $otpDigits = preg_replace('/\D+/', '', (string) $otp);
+    if ($otpDigits === null || strlen($otpDigits) !== 6) {
+      return ['ok' => false, 'error' => 'Enter the 6-digit code from your email.'];
+    }
+    if (!hash_equals((string) ($state['otp_hash'] ?? ''), hash('sha256', $otpDigits))) {
+      return ['ok' => false, 'error' => 'Invalid verification code.'];
+    }
+    $_SESSION[$key]['verified'] = true;
+    return [
+      'ok' => true,
+      'reservation_id' => (int) ($state['reservation_id'] ?? 0),
+      'company_id' => (int) ($state['company_id'] ?? 0),
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_manage_otp_is_verified')) {
+  function itm_hotel_booking_portal_manage_otp_is_verified($companyId, $reservationId) {
+    $key = itm_hotel_booking_portal_manage_otp_session_key();
+    $state = (isset($_SESSION[$key]) && is_array($_SESSION[$key])) ? $_SESSION[$key] : null;
+    if (!is_array($state) || empty($state['verified']) || time() > (int) ($state['expires_at'] ?? 0)) {
+      return false;
+    }
+    return (int) ($state['company_id'] ?? 0) === (int) $companyId && (int) ($state['reservation_id'] ?? 0) === (int) $reservationId;
   }
 }
 

@@ -18,6 +18,8 @@ $booking = null;
 $manageLastName = '';
 $manageReservationId = 0;
 $manageAuth2 = '';
+$otpStep = false;
+$otpMaskedEmail = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $lastName = trim((string) ($_POST['last_name'] ?? ''));
@@ -29,10 +31,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $rl = itm_hotel_booking_portal_manage_rate_limit_check();
     if (empty($rl['ok'])) {
         $error = (string) ($rl['error'] ?? 'Too many attempts. Please wait and try again.');
-    } else {
+    } elseif (!empty($_POST['verify_manage_otp'])) {
+        itm_require_post_csrf();
         itm_hotel_booking_portal_manage_rate_limit_record();
-        if (!empty($_POST['cancel_booking'])) {
-            itm_require_post_csrf();
+        $otpResult = itm_hotel_booking_portal_manage_otp_verify($_POST['otp_code'] ?? '');
+        if (empty($otpResult['ok'])) {
+            $error = (string) ($otpResult['error'] ?? 'Invalid verification code.');
+            $otpStep = true;
+            $otpState = $_SESSION[itm_hotel_booking_portal_manage_otp_session_key()] ?? null;
+            if (is_array($otpState)) {
+                $manageReservationId = (int) ($otpState['reservation_id'] ?? $manageReservationId);
+                $company_id = (int) ($otpState['company_id'] ?? $company_id);
+            }
+        } else {
+            $reservationId = (int) ($otpResult['reservation_id'] ?? $reservationId);
+            $company_id = (int) ($otpResult['company_id'] ?? $company_id);
+            $manageReservationId = $reservationId;
+            $booking = hb_portal_load_booking_confirmation($conn, $company_id, $reservationId);
+            if (!$booking) {
+                $error = 'No reservation found. Check your last name, reservation ID, and auth code.';
+                itm_hotel_booking_portal_manage_otp_clear();
+            }
+        }
+    } elseif (!empty($_POST['cancel_booking'])) {
+        itm_require_post_csrf();
+        itm_hotel_booking_portal_manage_rate_limit_record();
+        if (!itm_hotel_booking_portal_manage_otp_is_verified($company_id, $reservationId)) {
+            $error = 'Email verification is required before cancelling. Please find your reservation again.';
+        } else {
             $cancelResult = itm_hotel_booking_portal_cancel_booking_for_guest($conn, $company_id, $reservationId, $lastName, $auth2);
             if (!empty($cancelResult['ok'])) {
                 $success = 'Your reservation has been cancelled.';
@@ -41,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = 'Reservation cancelled, but the confirmation could not be reloaded.';
                     $booking = null;
                 }
+                itm_hotel_booking_portal_manage_otp_clear();
             } else {
                 $error = (string) ($cancelResult['error'] ?? 'Unable to cancel this reservation.');
                 $verified = itm_hotel_booking_fetch_for_guest_manage($conn, $company_id, $reservationId, $lastName, $auth2);
@@ -48,17 +75,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $booking = hb_portal_load_booking_confirmation($conn, $company_id, (int) $verified['id']);
                 }
             }
-        } elseif ($lastName === '' || $reservationId < 1 || $auth2 === '') {
-            $error = 'Enter your last name, reservation ID, and auth code.';
+        }
+    } elseif ($lastName === '' || $reservationId < 1 || $auth2 === '') {
+        $error = 'Enter your last name, reservation ID, and auth code.';
+    } else {
+        itm_require_post_csrf();
+        itm_hotel_booking_portal_manage_rate_limit_record();
+        $verified = itm_hotel_booking_fetch_for_guest_manage($conn, $company_id, $reservationId, $lastName, $auth2);
+        if (!$verified) {
+            $error = 'No reservation found. Check your last name, reservation ID, and auth code.';
         } else {
-            $verified = itm_hotel_booking_fetch_for_guest_manage($conn, $company_id, $reservationId, $lastName, $auth2);
-            if (!$verified) {
-                $error = 'No reservation found. Check your last name, reservation ID, and auth code.';
+            $otpIssue = itm_hotel_booking_portal_manage_otp_issue($conn, $company_id, $verified);
+            if (empty($otpIssue['ok'])) {
+                $error = (string) ($otpIssue['error'] ?? 'Could not send verification email.');
             } else {
-                $booking = hb_portal_load_booking_confirmation($conn, $company_id, (int) $verified['id']);
-                if (!$booking) {
-                    $error = 'No reservation found. Check your last name, reservation ID, and auth code.';
-                }
+                $otpStep = true;
+                $otpMaskedEmail = (string) ($otpIssue['masked_email'] ?? '');
+                $manageReservationId = $reservationId;
             }
         }
     }
@@ -84,6 +117,9 @@ if ($booking) {
     }
     if ($manageAuth2 === '') {
         $manageAuth2 = itm_hotel_booking_normalize_auth2($booking['auth2'] ?? '');
+        if ($manageAuth2 === '' && !empty($booking['auth2'])) {
+            $manageAuth2 = trim((string) $booking['auth2']);
+        }
     }
     $hotel = [
         'id' => (int) ($booking['hotel_id'] ?? 0),
@@ -151,18 +187,35 @@ $manageConfirmationOptions = [
 </div>
 <?php hb_portal_render_confirmation_pdf_assets(); ?>
 <?php hb_portal_render_change_booking_assets(); ?>
+<?php elseif ($otpStep): ?>
+<main class="hb-main auth-card hb-manage-booking-card">
+<h1>Verify your email</h1>
+<p class="hb-sub">We sent a 6-digit code<?php echo $otpMaskedEmail !== '' ? ' to <strong>' . htmlspecialchars($otpMaskedEmail, ENT_QUOTES, 'UTF-8') . '</strong>' : ''; ?>. Enter it below to view your reservation.</p>
+<?php if ($error): ?><p class="hb-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
+<form method="post" class="hb-manage-booking-form">
+<input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
+<input type="hidden" name="verify_manage_otp" value="1">
+<label>Verification code</label>
+<input type="text" name="otp_code" required inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="6-digit code">
+<div class="hb-checkout-actions">
+<button type="submit" class="hb-btn hb-btn-primary" title="Verify">Verify</button>
+<a class="hb-btn hb-checkout-skip" href="<?php echo APPURL; ?>/users/bookings.php" title="Back">Back</a>
+</div>
+</form>
+</main>
 <?php else: ?>
 <main class="hb-main auth-card hb-manage-booking-card">
 <h1>Manage my booking</h1>
-<p class="hb-sub">Enter the last name on the reservation, the reservation ID, and the 4-digit auth code from your confirmation.</p>
+<p class="hb-sub">Enter the last name on the reservation, the reservation ID, and the 12-character auth code from your confirmation (uppercase, lowercase, numbers, and symbols). We will email you a one-time code to continue.</p>
 <?php if ($error): ?><p class="hb-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
 <form method="post" class="hb-manage-booking-form">
+<input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
 <label>Last name</label>
 <input type="text" name="last_name" required autocomplete="family-name" value="<?php echo htmlspecialchars((string) ($_POST['last_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
 <label>Reservation ID</label>
 <input type="number" name="reservation_id" min="1" required inputmode="numeric" value="<?php echo (int) ($_POST['reservation_id'] ?? 0) ?: ''; ?>">
 <label>Auth code</label>
-<input type="text" name="auth2" required inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" value="<?php echo htmlspecialchars(itm_hotel_booking_normalize_auth2($_POST['auth2'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+<input type="text" name="auth2" required minlength="4" maxlength="12" autocomplete="one-time-code" value="<?php echo htmlspecialchars(itm_hotel_booking_normalize_auth2($_POST['auth2'] ?? '') !== '' ? itm_hotel_booking_normalize_auth2($_POST['auth2'] ?? '') : (string) ($_POST['auth2'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
 <div class="hb-checkout-actions">
 <button type="submit" class="hb-btn hb-btn-primary" title="Find reservation">Find reservation</button>
 <a class="hb-btn hb-checkout-skip" href="<?php echo APPURL; ?>/" title="Back">Back</a>

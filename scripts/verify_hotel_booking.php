@@ -70,17 +70,26 @@ if (itm_hotel_booking_customer_last_name_matches('John Smith', 'smith') && !itm_
 }
 
 $auth2Sample = itm_hotel_booking_generate_auth2();
-if (preg_match('/^\d{4}$/', $auth2Sample) && itm_hotel_booking_normalize_auth2('12-34') === '1234' && itm_hotel_booking_auth2_matches('0042', '42') === false && itm_hotel_booking_auth2_matches('0042', '0042')) {
+$auth2Strong = strlen($auth2Sample) === 12
+    && preg_match('/[A-Z]/', $auth2Sample)
+    && preg_match('/[a-z]/', $auth2Sample)
+    && preg_match('/[0-9]/', $auth2Sample)
+    && preg_match('/[!@#$%&*?]/', $auth2Sample);
+if ($auth2Strong
+    && itm_hotel_booking_normalize_auth2('1234') === '1234'
+    && itm_hotel_booking_auth2_matches('0042', '42') === false
+    && itm_hotel_booking_auth2_matches('0042', '0042')
+    && itm_hotel_booking_auth2_matches($auth2Sample, $auth2Sample)) {
     hb_pass('guest auth2 generate/normalize/match');
 } else {
     hb_fail('guest auth2 generate/normalize/match got ' . $auth2Sample);
 }
 
-$resAuth2Col = mysqli_query($conn, "SHOW COLUMNS FROM hotel_bookings LIKE 'auth2'");
-if ($resAuth2Col && mysqli_num_rows($resAuth2Col) > 0) {
-    hb_pass('hotel_bookings.auth2 column');
+$resAuth2Type = mysqli_query($conn, "SHOW COLUMNS FROM hotel_bookings LIKE 'auth2'");
+if ($resAuth2Type && ($auth2Col = mysqli_fetch_assoc($resAuth2Type)) && stripos((string) ($auth2Col['Type'] ?? ''), 'varchar(12)') !== false) {
+    hb_pass('hotel_bookings.auth2 varchar(12) column');
 } else {
-    hb_fail('missing hotel_bookings.auth2 — apply db/migrations/hotel_bookings_auth2.sql');
+    hb_fail('hotel_bookings.auth2 must be varchar(12) — apply db/migrations/hotel_bookings_auth2_strong.sql');
 }
 
 $quote = itm_hotel_booking_portal_quote_nightly(100, ['rooms' => 1, 'adults' => 2, 'children' => 1, 'babies' => 0], 0);
@@ -989,12 +998,18 @@ if (function_exists('itm_hotel_booking_portal_manage_rate_limit_check')
     && function_exists('itm_hotel_booking_portal_manage_rate_limit_record')) {
     $rlKey = itm_hotel_booking_portal_manage_rate_limit_session_key();
     $_SESSION[$rlKey] = [];
+    if (function_exists('itm_hotel_booking_portal_manage_rate_limit_ip_events')) {
+        itm_hotel_booking_portal_manage_rate_limit_ip_events(900, []);
+    }
     $rlOk = itm_hotel_booking_portal_manage_rate_limit_check(3, 900);
     for ($i = 0; $i < 3; $i++) {
         itm_hotel_booking_portal_manage_rate_limit_record();
     }
     $rlBlocked = itm_hotel_booking_portal_manage_rate_limit_check(3, 900);
     $_SESSION[$rlKey] = [];
+    if (function_exists('itm_hotel_booking_portal_manage_rate_limit_ip_events')) {
+        itm_hotel_booking_portal_manage_rate_limit_ip_events(900, []);
+    }
     if (!empty($rlOk['ok']) && empty($rlBlocked['ok'])) {
         hb_pass('portal manage rate limit blocks after max attempts');
     } else {
@@ -1002,6 +1017,64 @@ if (function_exists('itm_hotel_booking_portal_manage_rate_limit_check')
     }
 } else {
     hb_fail('portal manage rate limit helpers missing');
+}
+
+if (function_exists('itm_hotel_booking_portal_resolve_step4_charge')) {
+    $resolveDraft = [
+        'check_in' => '2030-06-01',
+        'check_out' => '2030-06-03',
+        'portal_rate_plan_id' => 0,
+        'resolved_rate_slug' => '',
+        'discount_percent' => 99.0,
+        'base_price_per_night' => 1.0,
+        'surcharge_percent' => 0,
+        'room_type_id' => 1,
+        'rate_plan' => 'non_refundable',
+    ];
+    $roomProbe = mysqli_query($conn, 'SELECT r.id, r.hotel_id, r.room_type_id, COALESCE(bp.price_per_night, 0) AS price_per_night FROM hotel_booking_rooms r LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL WHERE r.company_id = 1 AND r.deleted_at IS NULL AND r.active = 1 LIMIT 1');
+    $roomRow = $roomProbe ? mysqli_fetch_assoc($roomProbe) : null;
+    if ($roomRow) {
+        $plans = itm_hotel_booking_portal_rate_plans_active_for_hotel($conn, 1, (int) $roomRow['hotel_id']);
+        foreach ($plans as $plan) {
+            if (strtolower((string) ($plan['rate_plan_slug'] ?? '')) === 'non_refundable') {
+                $resolveDraft['portal_rate_plan_id'] = (int) ($plan['id'] ?? 0);
+                break;
+            }
+        }
+        $occ = ['rooms' => 1, 'adults' => 2, 'children' => 0, 'babies' => 0];
+        $resolved = itm_hotel_booking_portal_resolve_step4_charge($conn, 1, $roomRow, $resolveDraft, $occ);
+        if (!empty($resolved['ok']) && (float) ($resolved['discount_percent'] ?? 0) < 50.0 && (float) ($resolved['base_per_night'] ?? 0) > 1.0) {
+            hb_pass('portal step4 charge re-resolves BAR/discount from DB');
+        } else {
+            hb_fail('portal step4 charge DB resolve rejected tampered draft');
+        }
+    } else {
+        hb_fail('portal step4 charge DB resolve — no sample room');
+    }
+} else {
+    hb_fail('portal step4 charge resolver missing');
+}
+
+if (function_exists('itm_hotel_booking_portal_manage_otp_verify')
+    && function_exists('itm_hotel_booking_portal_manage_otp_is_verified')) {
+    $_SESSION[itm_hotel_booking_portal_manage_otp_session_key()] = [
+        'company_id' => 1,
+        'reservation_id' => 42,
+        'otp_hash' => hash('sha256', '123456'),
+        'expires_at' => time() + 300,
+        'verified' => false,
+    ];
+    $badOtp = itm_hotel_booking_portal_manage_otp_verify('000000');
+    $goodOtp = itm_hotel_booking_portal_manage_otp_verify('123456');
+    $verified = itm_hotel_booking_portal_manage_otp_is_verified(1, 42);
+    itm_hotel_booking_portal_manage_otp_clear();
+    if (empty($badOtp['ok']) && !empty($goodOtp['ok']) && $verified) {
+        hb_pass('portal manage email OTP verify');
+    } else {
+        hb_fail('portal manage email OTP verify');
+    }
+} else {
+    hb_fail('portal manage email OTP helpers missing');
 }
 
 if (function_exists('itm_hotel_booking_portal_insert_booking_locked')) {
@@ -1021,12 +1094,20 @@ if (function_exists('itm_hotel_booking_portal_insert_booking_locked')) {
 $roomSingleSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms/room-single.php');
 $bootstrapSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/bootstrap.php');
 if (strpos($roomSingleSrc, 'itm_hotel_booking_portal_insert_booking_locked') !== false
+    && strpos($roomSingleSrc, 'itm_hotel_booking_portal_resolve_step4_charge') !== false
     && strpos($roomSingleSrc, 'Lock quoted stay to draft occupancy') !== false
     && strpos($bootstrapSrc, 'function hb_require_company_public_portal') !== false
     && strpos($bootstrapSrc, 'function hb_company_public_portal_enabled') !== false) {
     hb_pass('portal step4 occupancy lock + tenant portal gate wiring');
 } else {
     hb_fail('portal step4 occupancy lock / tenant portal gate wiring missing');
+}
+
+$manageSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/users/bookings.php');
+if (strpos($manageSrc, 'verify_manage_otp') !== false && strpos($manageSrc, 'itm_hotel_booking_portal_manage_otp_issue') !== false) {
+    hb_pass('portal manage email OTP flow wiring');
+} else {
+    hb_fail('portal manage email OTP flow wiring missing');
 }
 
 itm_script_output_end();
