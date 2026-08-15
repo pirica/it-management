@@ -372,6 +372,10 @@ body.hb-modal-open { overflow: hidden; }
 .hb-reservation-summary { background: #fff; border: 1px solid var(--hb-border); border-radius: 4px; padding: 18px 16px; margin: 0; }
 .hb-reservation-summary-title { margin: 0 0 14px; font-size: 1rem; font-weight: 800; }
 .hb-reservation-summary-room { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--hb-border); }
+.hb-reservation-summary-rooms { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--hb-border); }
+.hb-reservation-summary-room-list { margin: 0 0 10px; padding-left: 1.15rem; font-size: .9rem; }
+.hb-reservation-summary-room-item { margin-bottom: 6px; }
+.hb-reservation-summary-room-slot { font-weight: 700; margin-right: 6px; }
 .hb-reservation-room-name { margin: 0 0 4px; font-weight: 700; font-size: .95rem; }
 .hb-reservation-room-price { margin: 0; font-size: 1.25rem; font-weight: 800; }
 .hb-reservation-rate-line { margin: 0 0 4px; font-size: .85rem; }

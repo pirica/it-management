@@ -117,6 +117,21 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
 
         // Why: Separate "Traveling with a pet" fee from "Total room charges"
         $draft = is_array($context['draft'] ?? null) ? $context['draft'] : itm_hotel_booking_portal_draft_get();
+        $roomLines = is_array($draft) ? itm_hotel_booking_portal_room_lines_from_draft($draft) : [];
+        $showMultiRoomList = count($roomLines) > 1;
+        // #region agent log
+        if ($showMultiRoomList) {
+            @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
+                'sessionId' => '44bff2',
+                'timestamp' => (int) round(microtime(true) * 1000),
+                'location' => 'booking/includes/portal_checkout.php:reservation_summary',
+                'message' => 'multi-room reservation summary list',
+                'data' => ['lineCount' => count($roomLines)],
+                'hypothesisId' => 'E',
+                'runId' => 'verify',
+            ]) . "\n", FILE_APPEND);
+        }
+        // #endregion
         $hasPet = !empty($draft['traveling_with_pet']);
         $petFeeTotal = 0.0;
         if ($hasPet) {
@@ -133,10 +148,24 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
         ?>
 <div class="hb-reservation-summary card">
 <h2 class="hb-reservation-summary-title">Reservation summary</h2>
+<?php if ($showMultiRoomList): ?>
+<div class="hb-reservation-summary-rooms" aria-label="Selected rooms">
+<ol class="hb-reservation-summary-room-list">
+<?php foreach ($roomLines as $idx => $line): ?>
+<li class="hb-reservation-summary-room-item">
+<span class="hb-reservation-summary-room-slot">Room <?php echo (int) $idx + 1; ?></span>
+<span class="hb-reservation-room-name"><?php echo htmlspecialchars(itm_hotel_booking_portal_room_line_label($line), ENT_QUOTES, 'UTF-8'); ?></span>
+</li>
+<?php endforeach; ?>
+</ol>
+<p class="hb-reservation-room-price"><?php echo htmlspecialchars(hb_portal_money_format_decimal($roomCharges, $currency), ENT_QUOTES, 'UTF-8'); ?></p>
+</div>
+<?php else: ?>
 <div class="hb-reservation-summary-room">
 <p class="hb-reservation-room-name"><?php echo htmlspecialchars($roomTitle, ENT_QUOTES, 'UTF-8'); ?></p>
 <p class="hb-reservation-room-price"><?php echo htmlspecialchars(hb_portal_money_format_decimal($roomCharges, $currency), ENT_QUOTES, 'UTF-8'); ?></p>
 </div>
+<?php endif; ?>
 <?php if ($planLabel !== ''): ?>
 <p class="hb-reservation-rate-line"><span class="hb-reservation-muted">Rate:</span> <?php echo htmlspecialchars($planLabel, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php endif; ?>
