@@ -653,6 +653,9 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
                 'notesMetaUpgrade' => !empty($notesMeta['room_upgrade']['accepted']),
                 'roomsNeeded' => $roomsNeeded,
                 'groupRoomDisplayAmounts' => $groupRoomDisplayAmounts,
+                'groupRoomLineIds' => array_map(static function ($row) {
+                    return (int) ($row['room_id'] ?? 0);
+                }, $groupRows),
                 'storedPaymentAmounts' => array_map(static function ($row) {
                     return (float) ($row['payment_amount'] ?? 0);
                 }, $groupRows),
