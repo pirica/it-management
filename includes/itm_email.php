@@ -524,6 +524,9 @@ if (!function_exists('itm_email_build_transactional_html')) {
         $buttonText = trim((string)($options['button_text'] ?? ''));
         $buttonUrl = trim((string)($options['button_url'] ?? ''));
         $footerText = trim((string)($options['footer_text'] ?? ''));
+        $footerLinkText = trim((string)($options['footer_link_text'] ?? ''));
+        $footerLinkUrl = trim((string)($options['footer_link_url'] ?? ''));
+        $showGearIcon = !array_key_exists('show_gear_icon', $options) || (bool) $options['show_gear_icon'];
         $loginUrl = defined('BASE_URL') ? (string)BASE_URL . 'login.php' : '';
 
         $safeBrandName = htmlspecialchars($brandName, ENT_QUOTES, 'UTF-8');
@@ -531,7 +534,11 @@ if (!function_exists('itm_email_build_transactional_html')) {
         $safeButtonText = htmlspecialchars($buttonText, ENT_QUOTES, 'UTF-8');
         $safeButtonUrl = htmlspecialchars($buttonUrl, ENT_QUOTES, 'UTF-8');
         $safeFooterText = htmlspecialchars($footerText, ENT_QUOTES, 'UTF-8');
+        $safeFooterLinkText = htmlspecialchars($footerLinkText, ENT_QUOTES, 'UTF-8');
+        $safeFooterLinkUrl = htmlspecialchars($footerLinkUrl, ENT_QUOTES, 'UTF-8');
         $safeLoginUrl = htmlspecialchars($loginUrl, ENT_QUOTES, 'UTF-8');
+        $gearPrefix = $showGearIcon ? '&#9881;&#65039; ' : '';
+        $titleBrand = $gearPrefix . $safeBrandName;
 
         $subtitleBlock = $subtitle !== ''
             ? '<p style="margin:0 0 24px;font-size:14px;line-height:1.5;color:#666666;text-align:center;">' . $safeSubtitle . '</p>'
@@ -547,7 +554,10 @@ if (!function_exists('itm_email_build_transactional_html')) {
         }
 
         $footerBlock = '';
-        if ($footerText !== '') {
+        if ($footerLinkText !== '' && $footerLinkUrl !== '') {
+            $footerBlock = '<p style="margin:24px 0 0;font-size:12px;line-height:1.5;color:#666666;text-align:center;">'
+                . '<a href="' . $safeFooterLinkUrl . '" style="color:#0969da;text-decoration:none;">' . $safeFooterLinkText . '</a></p>';
+        } elseif ($footerText !== '') {
             $footerBlock = '<p style="margin:24px 0 0;font-size:12px;line-height:1.5;color:#666666;text-align:center;">' . $safeFooterText . '</p>';
         } elseif ($loginUrl !== '') {
             $footerBlock = '<p style="margin:24px 0 0;font-size:12px;line-height:1.5;color:#666666;text-align:center;">'
@@ -556,14 +566,14 @@ if (!function_exists('itm_email_build_transactional_html')) {
 
         return '<!DOCTYPE html>'
             . '<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">'
-            . '<title>&#9881;&#65039; ' . $safeBrandName . '</title></head>'
+            . '<title>' . $titleBrand . '</title></head>'
             . '<body style="margin:0;padding:0;background:#667eea;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;">'
             . '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#667eea;min-height:100%;">'
             . '<tr><td align="center" style="padding:40px 20px;">'
             . '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:500px;background:#ffffff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">'
             . '<tr><td style="padding:40px;">'
             . '<div style="text-align:center;margin-bottom:24px;">'
-            . '<h1 style="margin:0 0 8px;font-size:28px;line-height:1.2;color:#0969da;">&#9881;&#65039; ' . $safeBrandName . '</h1>'
+            . '<h1 style="margin:0 0 8px;font-size:28px;line-height:1.2;color:#0969da;">' . $titleBrand . '</h1>'
             . $subtitleBlock
             . '</div>'
             . '<div style="font-size:14px;line-height:1.6;color:#24292f;">' . (string)$bodyHtml . '</div>'

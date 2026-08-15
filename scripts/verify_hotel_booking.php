@@ -1107,10 +1107,19 @@ if (strpos($roomSingleSrc, 'itm_hotel_booking_portal_insert_booking_locked') !==
 }
 
 $manageSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/users/bookings.php');
+$otpIssueSrc = (string) @file_get_contents(dirname(__DIR__) . '/includes/itm_hotel_booking.php');
 if (strpos($manageSrc, 'verify_manage_otp') !== false && strpos($manageSrc, 'itm_hotel_booking_portal_manage_otp_issue') !== false) {
     hb_pass('portal manage email OTP flow wiring');
 } else {
     hb_fail('portal manage email OTP flow wiring missing');
+}
+if (strpos($otpIssueSrc, "'footer_link_text' => 'Manage my booking'") !== false
+    && strpos($otpIssueSrc, "'show_gear_icon' => false") !== false
+    && strpos($otpIssueSrc, "(\$settingsRow['urlmybooking']") !== false
+    && strpos($otpIssueSrc, "(\$verifiedBookingRow['hotel_name']") !== false) {
+    hb_pass('portal manage OTP email uses hotel name + urlmybooking footer');
+} else {
+    hb_fail('portal manage OTP email hotel branding missing');
 }
 
 itm_script_output_end();
