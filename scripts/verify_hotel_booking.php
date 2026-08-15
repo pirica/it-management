@@ -1170,10 +1170,33 @@ if (strpos($otpIssueSrc, "'footer_link_text' => 'Manage my booking'") !== false
     && strpos($otpIssueSrc, "'show_gear_icon' => false") !== false
     && strpos($otpIssueSrc, "(\$settingsRow['urlmybooking']") !== false
     && strpos($otpIssueSrc, "(\$verifiedBookingRow['hotel_name']") !== false
+    && strpos($otpIssueSrc, 'itm_hotel_booking_portal_reservations_email_send_options') !== false
     && strpos($otpIssueSrc, 'hotel_reservations_email') !== false) {
     hb_pass('portal manage OTP email uses hotel name + urlmybooking footer');
 } else {
     hb_fail('portal manage OTP email hotel branding missing');
+}
+
+if (function_exists('itm_hotel_booking_portal_reservations_email_send_options')) {
+    $fromOpts = itm_hotel_booking_portal_reservations_email_send_options('TechCorp Retreat', 'reservations@techcorp-retreat.example');
+    if (($fromOpts['from_email'] ?? '') === 'reservations@techcorp-retreat.example'
+        && ($fromOpts['from_name'] ?? '') === 'TechCorp Retreat'
+        && ($fromOpts['log_from_email'] ?? '') === 'reservations@techcorp-retreat.example'
+        && itm_hotel_booking_portal_reservations_email_send_options('Hotel', 'not-an-email') === []) {
+        hb_pass('portal OTP From uses hotel reservations_email');
+    } else {
+        hb_fail('portal OTP From reservations_email options');
+    }
+} else {
+    hb_fail('portal reservations email send options helper missing');
+}
+
+$emailHelperSrc = (string) @file_get_contents(dirname(__DIR__) . '/includes/itm_email.php');
+if (strpos($emailHelperSrc, "array_key_exists('from_email', \$options)") !== false
+    && strpos($emailHelperSrc, "\$smtpSendConfig['from_email']") !== false) {
+    hb_pass('itm_send_email supports from_email override');
+} else {
+    hb_fail('itm_send_email from_email override missing');
 }
 
 itm_script_output_end();

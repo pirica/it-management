@@ -615,7 +615,7 @@ if (!function_exists('itm_send_email')) {
      * @param string $subject Subject line
      * @param string $htmlBody HTML body
      * @param int|null $companyId Tenant scope (falls back to session company_id)
-     * @param array $options Optional overrides: smtp_config_id, log (bool, default true), email_template (array|false)
+     * @param array $options Optional overrides: smtp_config_id, log (bool, default true), email_template (array|false), from_email, from_name, log_from_email
      * @return bool
      */
     function itm_send_email($to, $subject, $htmlBody, $companyId = null, array $options = [])
@@ -639,20 +639,39 @@ if (!function_exists('itm_send_email')) {
             $smtpConfig = itm_email_get_default_smtp_config($conn, $resolvedCompanyId);
         }
 
+        $overrideFromEmail = array_key_exists('from_email', $options) ? trim((string) $options['from_email']) : '';
+        $overrideFromName = array_key_exists('from_name', $options) ? trim((string) $options['from_name']) : '';
+
         $sendResult = ['ok' => false, 'error' => 'No mail transport configured.'];
         $usedConfigId = null;
+        $smtpSendConfig = null;
 
         if (is_array($smtpConfig)) {
-            $sendResult = itm_email_send_via_smtp($smtpConfig, $to, $subject, $htmlBody);
+            $smtpSendConfig = $smtpConfig;
+            if ($overrideFromEmail !== '') {
+                $smtpSendConfig['from_email'] = $overrideFromEmail;
+            }
+            if ($overrideFromName !== '') {
+                $smtpSendConfig['from_name'] = $overrideFromName;
+            }
+            $sendResult = itm_email_send_via_smtp($smtpSendConfig, $to, $subject, $htmlBody);
             $usedConfigId = (int)$smtpConfig['id'];
         } else {
-            $sendResult = itm_email_send_via_resend($to, $subject, $htmlBody);
+            $resendFrom = $overrideFromEmail;
+            if ($resendFrom !== '' && $overrideFromName !== '') {
+                $resendFrom = $overrideFromName . ' <' . $overrideFromEmail . '>';
+            }
+            $sendResult = itm_email_send_via_resend($to, $subject, $htmlBody, $resendFrom !== '' ? $resendFrom : null);
         }
 
         if ($shouldLog && $resolvedCompanyId > 0) {
             $logFromEmail = '';
             if (array_key_exists('log_from_email', $options)) {
                 $logFromEmail = trim((string)$options['log_from_email']);
+            } elseif ($overrideFromEmail !== '') {
+                $logFromEmail = $overrideFromEmail;
+            } elseif (is_array($smtpSendConfig)) {
+                $logFromEmail = trim((string)($smtpSendConfig['from_email'] ?? ''));
             } elseif (is_array($smtpConfig)) {
                 $logFromEmail = trim((string)($smtpConfig['from_email'] ?? ''));
             }
