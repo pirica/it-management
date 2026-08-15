@@ -105,7 +105,10 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
         $planLabel = trim((string) ($context['plan_label'] ?? ''));
         $changeRateUrl = (string) ($context['change_rate_url'] ?? '');
         $currency = (string) ($context['currency'] ?? 'EUR');
-        $roomTitle = hb_portal_reservation_room_title($room);
+        $roomTitle = trim((string) ($context['display_room_title'] ?? ''));
+        if ($roomTitle === '') {
+            $roomTitle = hb_portal_reservation_room_title($room);
+        }
         $roomCharges = (float) ($breakdown['room_charges'] ?? 0);
         $touristTax = (float) ($breakdown['tourist_tax'] ?? 0);
         $taxPerPerson = (float) ($breakdown['tourist_tax_per_person_per_night'] ?? 0);

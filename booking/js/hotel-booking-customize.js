@@ -10,9 +10,42 @@
   var petRowEl = document.getElementById('hb-reservation-pet-row');
   var petFeeEl = document.getElementById('hb-reservation-pet-fee');
   var roomPriceEl = document.querySelector('.hb-reservation-summary-room .hb-reservation-room-price');
+  var roomNameEl = document.querySelector('.hb-reservation-summary-room .hb-reservation-room-name');
 
   if (!roomChargesEl || !stayTotalEl) {
     return;
+  }
+
+  function logUpsellSummary(data) {
+    // #region agent log
+    fetch('http://127.0.0.1:7624/ingest/b18ba1fd-1a78-47ec-84ed-a0734d1c48a6', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '44bff2' },
+      body: JSON.stringify({
+        sessionId: '44bff2',
+        location: 'booking/js/hotel-booking-customize.js:refreshTotals',
+        message: 'upsell summary room title',
+        timestamp: Date.now(),
+        hypothesisId: 'UP1',
+        runId: 'upsell-room-name',
+        data: data
+      })
+    }).catch(function () {});
+    // #endregion
+  }
+
+  function refreshRoomTitle() {
+    if (!roomNameEl || !cfg.baseRoomTitle || !cfg.upgradeRoomTitle) {
+      return;
+    }
+    var upgradeSelected = upgradeCheckbox && upgradeCheckbox.checked;
+    roomNameEl.textContent = upgradeSelected ? cfg.upgradeRoomTitle : cfg.baseRoomTitle;
+    logUpsellSummary({
+      upgradeSelected: upgradeSelected,
+      roomNameText: roomNameEl.textContent,
+      baseRoomTitle: cfg.baseRoomTitle,
+      upgradeRoomTitle: cfg.upgradeRoomTitle
+    });
   }
 
   function formatDecimal(amount) {
@@ -63,6 +96,7 @@
 
     var total = currentRoomCharges + petFeeTotal + (cfg.touristTax || 0);
     stayTotalEl.textContent = formatDecimal(total);
+    refreshRoomTitle();
   }
 
   if (upgradeCheckbox) {
