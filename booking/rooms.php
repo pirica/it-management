@@ -93,7 +93,28 @@ $cheapestPlanSurcharge = max(0.0, min(50.0, (float) ($cheapestOffer['surcharge_p
 // Why: Step 1 From matches home/calendar cheapest plan (usually NR), stacked with special rates like Step 2.
 $displayDiscountPercent = min(50.0, (float) $discountPercent + $cheapestPlanDiscount);
 $touristTaxRate = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings);
-$taxPerNight = itm_hotel_booking_portal_tourist_tax_amount($occupancy, 1, $touristTaxRate);
+$cardQuoteOccupancy = $occupancy;
+if ($roomsNeeded > 1) {
+    $cardQuoteOccupancy = itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, count($roomLines), $roomsNeeded);
+}
+$taxPerNightCard = itm_hotel_booking_portal_tourist_tax_amount($cardQuoteOccupancy, 1, $touristTaxRate);
+// #region agent log
+@file_put_contents(dirname(__DIR__) . '/debug-44bff2.log', json_encode([
+    'sessionId' => '44bff2',
+    'timestamp' => (int) round(microtime(true) * 1000),
+    'location' => 'booking/rooms.php:cardQuoteOccupancy',
+    'message' => 'step1 per-room card quote occupancy',
+    'data' => [
+        'roomsNeeded' => $roomsNeeded,
+        'roomLinesCount' => count($roomLines),
+        'fullOccupancyRooms' => (int) ($occupancy['rooms'] ?? 1),
+        'cardQuoteRooms' => (int) ($cardQuoteOccupancy['rooms'] ?? 1),
+        'cardQuoteAdults' => (int) ($cardQuoteOccupancy['adults'] ?? 1),
+    ],
+    'hypothesisId' => 'D',
+    'runId' => 'verify',
+]) . "\n", FILE_APPEND);
+// #endregion
 $showDiscountStrikethrough = itm_hotel_booking_portal_show_discount_strikethrough_from_settings($settings);
 $resolvedRateSlug = itm_hotel_booking_portal_resolved_rate_slug($occupancy);
 $rateDiscountMap = itm_hotel_booking_special_rate_discount_map($conn, $company_id, $hotelId);
@@ -192,8 +213,8 @@ foreach ($rooms as $room) {
         ];
         $fits = itm_hotel_booking_room_type_fits_occupancy($typeRow, $occupancy);
         $basePrice = itm_hotel_booking_portal_check_in_display_bar($conn, $company_id, $hotelId, $typeKey, $checkInIso, (float) $room['price_per_night']);
-        $listQuoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, 0, $portalPricing, 0) + $taxPerNight, 2);
-        $quoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, $displayDiscountPercent, $portalPricing, $cheapestPlanSurcharge) + $taxPerNight, 2);
+        $listQuoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $cardQuoteOccupancy, 0, $portalPricing, 0) + $taxPerNightCard, 2);
+        $quoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $cardQuoteOccupancy, $displayDiscountPercent, $portalPricing, $cheapestPlanSurcharge) + $taxPerNightCard, 2);
 
         $cards[$typeKey] = [
             'type_id' => $typeKey,
@@ -226,8 +247,8 @@ foreach ($rooms as $room) {
             if ($resolvedBar < $cards[$typeKey]['base_price']) {
                 $cards[$typeKey]['base_price'] = $resolvedBar;
                 $cards[$typeKey]['book_room_id'] = $roomId;
-                $cards[$typeKey]['list_quoted_price'] = round(itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $occupancy, 0, $portalPricing, 0) + $taxPerNight, 2);
-                $cards[$typeKey]['quoted_price'] = round(itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $occupancy, $displayDiscountPercent, $portalPricing, $cheapestPlanSurcharge) + $taxPerNight, 2);
+                $cards[$typeKey]['list_quoted_price'] = round(itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $cardQuoteOccupancy, 0, $portalPricing, 0) + $taxPerNightCard, 2);
+                $cards[$typeKey]['quoted_price'] = round(itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $cardQuoteOccupancy, $displayDiscountPercent, $portalPricing, $cheapestPlanSurcharge) + $taxPerNightCard, 2);
             }
         }
         $cards[$typeKey]['available'] = $cards[$typeKey]['available_units'] > 0;
@@ -561,6 +582,7 @@ echo hb_portal_render_image_gallery(
 <script>
 window.HB_SELECT_ROOM = <?php echo json_encode([
     'occupancy' => $occupancy,
+    'cardQuoteOccupancy' => $cardQuoteOccupancy,
     'occupancyLabel' => $occupancyLabel,
     'discountPercent' => $discountPercent,
     'cheapestPlanDiscountPercent' => $cheapestPlanDiscount,
