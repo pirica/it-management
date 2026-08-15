@@ -65,7 +65,7 @@ Room-type uploads from **Room Types** are mirrored into every active hotel folde
 ### Gallery UI
 
 - Shared gallery: `js/hotel-booking-gallery.js` — `HB_galleryMarkup()`, `HB_bindGallery()`, `HB_initGalleries()`.
-- **Hotel detail modal** (`index.php` → `hotel-booking-public.js`): prev/next arrows + `1 / N` counter overlay on all hotel photos.
+- **Hotel detail modal** (`index.php` → `hotel-booking-public.js`): prev/next arrows + `1 / N` counter overlay on all hotel photos; left column order is gallery → title → links → description → **From price + Select Dates** → guest rating (CTA above the fold).
 - **Room cards and detail modal** (`rooms.php`, `rooms/customize.php` → `portal_room_detail.php`): `hb_portal_room_type_photo_urls()` + `hb_portal_render_image_gallery()` (detail modal uses `hb_portal_gallery_html()` wrapper); arrows hidden when only one image (`hb-gallery-wrap--single`).
 - Counter format uses spaces: `1 / 12`. Arrow controls use dark translucent squares (see `css/hotel-booking-modern.css` `.hb-gallery-*`).
 

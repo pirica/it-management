@@ -220,6 +220,11 @@
       '<p class="hb-desc-text">' + escapeHtml(descFull) + '</p>' +
       (descFull ? '<a href="#" class="hb-read-more">Read more</a>' : '') +
       '</section>' +
+      '<div class="hb-price-cta hb-block">' +
+      '<p class="hb-from-price">From<sup>*</sup> <strong>' + escapeHtml(formatPrice(h)) + '</strong> <span class="hb-from-tax-note">incl. tax</span></p>' +
+      '<p class="hb-price-label">' + escapeHtml(h.cheapest_rate_label || 'Best available rate') + '</p>' +
+      '<button type="button" class="hb-btn hb-btn-primary hb-btn-block hb-select-dates" data-hotel-id="' + h.id + '" title="Select dates">Select Dates</button>' +
+      '</div>' +
       '<section class="hb-block hb-rating-block">' +
       '<div class="hb-rating-bubbles" aria-hidden="true"><span></span><span></span><span></span><span></span><span class="partial"></span></div>' +
       '<div class="hb-rating-meta">' +
@@ -227,11 +232,6 @@
       reviewsLinkHtml(h) +
       '</div>' +
       '</section>' +
-      '<div class="hb-price-cta">' +
-      '<p class="hb-from-price">From<sup>*</sup> <strong>' + escapeHtml(formatPrice(h)) + '</strong> <span class="hb-from-tax-note">incl. tax</span></p>' +
-      '<p class="hb-price-label">' + escapeHtml(h.cheapest_rate_label || 'Best available rate') + '</p>' +
-      '<button type="button" class="hb-btn hb-btn-primary hb-btn-block hb-select-dates" data-hotel-id="' + h.id + '" title="Select dates">Select Dates</button>' +
-      '</div>' +
       '</div>' +
       '<div class="hb-detail-right">' +
       '<section class="hb-block"><h3>Amenities</h3>' +
