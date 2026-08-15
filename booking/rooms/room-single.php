@@ -247,6 +247,9 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 ]); ?>
 <?php hb_portal_render_reservation_summary($reservationSummaryContext); ?>
 <?php hb_portal_render_cancellation_policy_button(hb_portal_draft_cancellation_policy_url($conn, $company_id, $draftForDisplay)); ?>
+<div class="hb-checkout-aside-cta">
+<button type="submit" class="hb-btn hb-btn-primary hb-btn-block" id="btn-book-submit-aside" form="hb-guest-form" title="Book and continue to payment">Book and continue to payment</button>
+</div>
 </aside>
 </div>
 
@@ -287,7 +290,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    if (agreeCheckbox && submitButton) {
+    if (agreeCheckbox && submitButtons.length) {
         agreeCheckbox.addEventListener('change', syncButtonState);
         syncButtonState();
     }

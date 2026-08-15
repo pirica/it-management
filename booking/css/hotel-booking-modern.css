@@ -426,7 +426,7 @@ body.hb-modal-open { overflow: hidden; }
 .hb-checkout-change-room:hover { text-decoration: underline; }
 .hb-checkout-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 8px; }
 .hb-checkout-skip { background: #fff; color: var(--hb-primary); border: 2px solid var(--hb-primary); }
-.hb-checkout-aside-stack { display: flex; flex-direction: column; gap: 20px; }
+.hb-checkout-aside-stack { display: flex; flex-direction: column; gap: 20px; min-height: 100%; }
 .hb-checkout-aside-stack .hb-reservation-summary { margin: 0; }
 .hb-cancellation-policy-card { padding: 16px; margin: 0; }
 .hb-btn.hb-btn-block { display: block; width: 100%; text-align: center; box-sizing: border-box; }
