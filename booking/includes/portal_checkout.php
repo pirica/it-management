@@ -267,12 +267,15 @@ if (!function_exists('hb_portal_load_booking_confirmation')) {
      * Load a saved booking for the post-checkout confirmation screen.
      */
     function hb_portal_load_booking_confirmation($conn, $companyId, $bookingId) {
+        if (function_exists('itm_hotel_booking_portal_fetch_confirmation_booking_row')) {
+            return itm_hotel_booking_portal_fetch_confirmation_booking_row($conn, $companyId, $bookingId);
+        }
         $companyId = (int) $companyId;
         $bookingId = (int) $bookingId;
         if ($bookingId < 1) {
             return null;
         }
-        $sql = 'SELECT b.id, b.check_in, b.check_out, b.payment_amount, b.auth2, b.notes, b.room_id, b.portal_rate_plan_id,
+        $sql = 'SELECT b.id, b.customer_id, b.check_in, b.check_out, b.payment_amount, b.auth2, b.notes, b.room_id, b.portal_rate_plan_id,
             b.future_status_id, b.present_status_id, b.history_status_id,
             c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
             h.id AS hotel_id, h.name AS hotel_name, h.location AS hotel_location, h.phone AS hotel_phone,
@@ -359,6 +362,9 @@ if (!function_exists('hb_portal_booking_notes_display_items')) {
             if ($line === '' || preg_match('/^Occupancy:\s*rooms=\d+/i', $line)) {
                 continue;
             }
+            if (preg_match('/^Multi-room stay —/i', $line)) {
+                continue;
+            }
             if (preg_match('/^Guest comments:\s*(.*)$/iu', $line, $m)) {
                 $body = trim((string) ($m[1] ?? ''));
                 if ($body === '') {
@@ -429,10 +435,27 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
      * @param array $options occupancy (array), nights (int), conn, company_id
      */
     function hb_portal_render_payment_confirmation(array $booking, array $options = []) {
-        $reservationId = (int) ($booking['id'] ?? 0);
-        $guestName = trim((string) ($booking['customer_name'] ?? ''));
-        $email = trim((string) ($booking['customer_email'] ?? ''));
-        $phone = trim((string) ($booking['customer_phone'] ?? ''));
+        global $conn;
+        $company_id = (int) ($options['company_id'] ?? 0);
+        if ($company_id <= 0 && $conn) {
+            $company_id = hb_public_company_id($conn);
+        }
+        $groupRows = ($conn && $company_id > 0 && function_exists('itm_hotel_booking_portal_load_confirmation_group_rows'))
+            ? itm_hotel_booking_portal_load_confirmation_group_rows($conn, $company_id, $booking)
+            : [$booking];
+        if ($groupRows === []) {
+            $groupRows = [$booking];
+        }
+        $primaryRow = $groupRows[0];
+        $reservationId = function_exists('itm_hotel_booking_portal_confirmation_primary_id')
+            ? itm_hotel_booking_portal_confirmation_primary_id($groupRows)
+            : (int) ($primaryRow['id'] ?? 0);
+        if ($reservationId < 1) {
+            $reservationId = (int) ($booking['id'] ?? 0);
+        }
+        $guestName = trim((string) ($primaryRow['customer_name'] ?? $booking['customer_name'] ?? ''));
+        $email = trim((string) ($primaryRow['customer_email'] ?? $booking['customer_email'] ?? ''));
+        $phone = trim((string) ($primaryRow['customer_phone'] ?? $booking['customer_phone'] ?? ''));
 
         $lastname = '';
         if ($guestName !== '') {
@@ -440,12 +463,11 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
             $lastname = (string) end($parts);
         }
         $numberconfirmation = $reservationId;
-        $auth2Display = itm_hotel_booking_normalize_auth2($booking['auth2'] ?? '');
+        $auth2Display = itm_hotel_booking_normalize_auth2($primaryRow['auth2'] ?? $booking['auth2'] ?? '');
 
-        global $conn;
         $urlmybooking = APPURL . '/users/bookings.php';
         $company_id = (int) ($options['company_id'] ?? 0);
-        if ($company_id <= 0 && isset($conn)) {
+        if ($company_id <= 0 && $conn) {
             $company_id = hb_public_company_id($conn);
         }
         if (isset($conn) && $company_id > 0) {
@@ -454,28 +476,48 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
                 $urlmybooking = $settings['urlmybooking'];
             }
         }
-        $checkInIso = (string) ($booking['check_in'] ?? '');
-        $checkOutIso = (string) ($booking['check_out'] ?? '');
+        $checkInIso = (string) ($primaryRow['check_in'] ?? $booking['check_in'] ?? '');
+        $checkOutIso = (string) ($primaryRow['check_out'] ?? $booking['check_out'] ?? '');
         $checkInDisplay = $checkInIso !== '' ? itm_format_hotel_date_display($checkInIso) : '';
         $checkOutDisplay = $checkOutIso !== '' ? itm_format_hotel_date_display($checkOutIso) : '';
-        $currency = (string) ($booking['currency_code'] ?? 'EUR');
-        $amount = (float) ($booking['payment_amount'] ?? 0);
+        $currency = (string) ($primaryRow['currency_code'] ?? $booking['currency_code'] ?? 'EUR');
+        $amount = function_exists('itm_hotel_booking_portal_confirmation_group_total')
+            ? itm_hotel_booking_portal_confirmation_group_total($groupRows)
+            : (float) ($booking['payment_amount'] ?? 0);
         $isCancelled = hb_portal_booking_display_is_cancelled($booking, $options);
         $occupancy = isset($options['occupancy']) && is_array($options['occupancy'])
             ? itm_hotel_booking_portal_parse_occupancy($options['occupancy'])
-            : hb_portal_booking_resolve_occupancy($booking);
+            : hb_portal_booking_resolve_occupancy($primaryRow);
         $nights = isset($options['nights'])
             ? max(1, (int) $options['nights'])
             : hb_portal_booking_stay_nights($checkInIso, $checkOutIso);
         $nightsLabel = hb_portal_booking_nights_parenthetical($nights);
         $occupancyLabel = '👤 ' . itm_hotel_booking_portal_occupancy_label($occupancy);
         $pdfFilename = 'booking-confirmation-' . $reservationId . '.pdf';
-        $room = [
-            'type_name' => $booking['type_name'] ?? '',
-            'bed_summary' => $booking['bed_summary'] ?? '',
-            'name' => $booking['room_name'] ?? '',
-        ];
-        $roomTitle = hb_portal_reservation_room_title($room);
+        $roomTitle = function_exists('itm_hotel_booking_portal_confirmation_room_label_from_row')
+            ? itm_hotel_booking_portal_confirmation_room_label_from_row($primaryRow)
+            : hb_portal_reservation_room_title([
+                'type_name' => $primaryRow['type_name'] ?? '',
+                'bed_summary' => $primaryRow['bed_summary'] ?? '',
+                'name' => $primaryRow['room_name'] ?? '',
+            ]);
+        $showMultiRoomGroup = count($groupRows) > 1;
+        // #region agent log
+        @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
+            'sessionId' => '44bff2',
+            'timestamp' => (int) round(microtime(true) * 1000),
+            'location' => 'booking/includes/portal_checkout.php:payment_confirmation',
+            'message' => 'confirmation group render',
+            'data' => [
+                'primaryId' => $reservationId,
+                'groupCount' => count($groupRows),
+                'showMultiRoomGroup' => $showMultiRoomGroup,
+                'groupTotal' => $amount,
+            ],
+            'hypothesisId' => 'H',
+            'runId' => 'single-conf-id',
+        ]) . "\n", FILE_APPEND);
+        // #endregion
         $cardClass = 'hb-payment-confirmation card' . ($isCancelled ? ' hb-payment-confirmation--cancelled' : '');
         $iconChar = $isCancelled ? '✕' : '✓';
         $title = $isCancelled ? 'Reservation cancelled' : 'Reservation confirmed';
@@ -501,23 +543,6 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <dt>Confirmation number</dt>
 <dd><strong><?php echo (int) $reservationId; ?></strong></dd>
 </div>
-<?php
-        $companionIds = [];
-        if (!empty($options['companion_booking_ids']) && is_array($options['companion_booking_ids'])) {
-            foreach ($options['companion_booking_ids'] as $cid) {
-                $cid = (int) $cid;
-                if ($cid > 0 && $cid !== (int) $reservationId) {
-                    $companionIds[] = $cid;
-                }
-            }
-            $companionIds = array_values(array_unique($companionIds));
-        }
-        if ($companionIds !== []): ?>
-<div class="hb-payment-detail-row">
-<dt>Additional rooms</dt>
-<dd><strong><?php echo htmlspecialchars(implode(', ', $companionIds), ENT_QUOTES, 'UTF-8'); ?></strong></dd>
-</div>
-<?php endif; ?>
 <?php if ($auth2Display !== ''): ?>
 <div class="hb-payment-detail-row">
 <dt>Auth code</dt>
@@ -536,10 +561,23 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <dd><?php echo htmlspecialchars($guestName, ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <?php endif; ?>
+<?php if ($showMultiRoomGroup): ?>
+<div class="hb-payment-detail-row hb-payment-detail-rooms">
+<dt>Your rooms</dt>
+<dd>
+<ul class="hb-payment-room-group-list">
+<?php foreach ($groupRows as $idx => $lineRow): ?>
+<li><span class="hb-payment-room-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow), ENT_QUOTES, 'UTF-8'); ?> — <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal((float) ($lineRow['payment_amount'] ?? 0), $currency), ENT_QUOTES, 'UTF-8'); ?></strong></li>
+<?php endforeach; ?>
+</ul>
+</dd>
+</div>
+<?php else: ?>
 <div class="hb-payment-detail-row">
 <dt>Room</dt>
 <dd><?php echo htmlspecialchars($roomTitle, ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
+<?php endif; ?>
 <?php if ($checkInDisplay !== '' && $checkOutDisplay !== ''): ?>
 <div class="hb-payment-detail-row">
 <dt>Check-in</dt>
@@ -604,15 +642,23 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
     /** Compact totals card on confirmation (uses stored payment_amount). */
     function hb_portal_render_confirmation_summary_aside(array $booking, array $options = []) {
+        global $conn;
+        $company_id = (int) ($options['company_id'] ?? 0);
+        if ($company_id <= 0 && $conn) {
+            $company_id = hb_public_company_id($conn);
+        }
+        $groupRows = ($conn && $company_id > 0 && function_exists('itm_hotel_booking_portal_load_confirmation_group_rows'))
+            ? itm_hotel_booking_portal_load_confirmation_group_rows($conn, $company_id, $booking)
+            : [$booking];
+        if ($groupRows === []) {
+            $groupRows = [$booking];
+        }
         $isCancelled = hb_portal_booking_display_is_cancelled($booking, $options);
-        $room = [
-            'type_name' => $booking['type_name'] ?? '',
-            'bed_summary' => $booking['bed_summary'] ?? '',
-            'name' => $booking['room_name'] ?? '',
-        ];
-        $roomTitle = hb_portal_reservation_room_title($room);
-        $currency = (string) ($booking['currency_code'] ?? 'EUR');
-        $total = (float) ($booking['payment_amount'] ?? 0);
+        $currency = (string) ($groupRows[0]['currency_code'] ?? $booking['currency_code'] ?? 'EUR');
+        $total = function_exists('itm_hotel_booking_portal_confirmation_group_total')
+            ? itm_hotel_booking_portal_confirmation_group_total($groupRows)
+            : (float) ($booking['payment_amount'] ?? 0);
+        $showMultiRoomGroup = count($groupRows) > 1;
         $asideClass = 'hb-reservation-summary card hb-confirmation-summary-aside' . ($isCancelled ? ' hb-confirmation-summary-aside--cancelled' : '');
         ?>
 <div class="<?php echo htmlspecialchars($asideClass, ENT_QUOTES, 'UTF-8'); ?>">
@@ -620,9 +666,23 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
 <?php if ($isCancelled): ?>
 <p class="hb-confirmation-summary-status"><span class="hb-payment-status-badge hb-payment-status-badge--cancelled">Cancelled</span></p>
 <?php endif; ?>
-<div class="hb-reservation-summary-room">
-<p class="hb-reservation-room-name"><?php echo htmlspecialchars($roomTitle, ENT_QUOTES, 'UTF-8'); ?></p>
+<?php if ($showMultiRoomGroup): ?>
+<ul class="hb-reservation-summary-room-list hb-confirmation-room-group-list">
+<?php foreach ($groupRows as $idx => $lineRow): ?>
+<li class="hb-reservation-summary-room-item">
+<div class="hb-reservation-summary-room-item-main">
+<span class="hb-reservation-summary-room-slot">Room <?php echo (int) $idx + 1; ?></span>
+<span class="hb-reservation-room-name"><?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow), ENT_QUOTES, 'UTF-8'); ?></span>
 </div>
+<span class="hb-reservation-room-line-price"><?php echo htmlspecialchars(hb_portal_money_format_decimal((float) ($lineRow['payment_amount'] ?? 0), $currency), ENT_QUOTES, 'UTF-8'); ?></span>
+</li>
+<?php endforeach; ?>
+</ul>
+<?php else: ?>
+<div class="hb-reservation-summary-room">
+<p class="hb-reservation-room-name"><?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($groupRows[0]), ENT_QUOTES, 'UTF-8'); ?></p>
+</div>
+<?php endif; ?>
 <dl class="hb-reservation-totals">
 <div class="hb-reservation-total-row hb-reservation-grand-total">
 <dt>Total for stay:</dt>
