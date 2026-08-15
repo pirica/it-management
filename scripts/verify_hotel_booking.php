@@ -877,6 +877,10 @@ if (!is_file($bookingGalleryJs)) {
         hb_fail('booking gallery JS must expose HB_bindGallery and spaced counter format');
     } elseif (strpos($galleryCss, '.hb-gallery-counter') === false || strpos($galleryCss, '.hb-gallery-prev') === false) {
         hb_fail('booking gallery CSS must style arrows and counter');
+    } elseif (strpos((string) file_get_contents($repoRoot . '/booking/index.php'), 'hb-detail-modal-card') === false) {
+        hb_fail('booking index hotel Details modal must use hb-detail-modal-card (no inner vertical scrollbar)');
+    } elseif (strpos($galleryCss, '.hb-detail-modal-card') === false || strpos($galleryCss, 'overflow: visible') === false) {
+        hb_fail('booking CSS must set hb-detail-modal-card overflow visible without max-height trap');
     } elseif (strpos($chromeSrc, 'occupancy_interactive') === false || strpos($chromeSrc, 'hb-stay-occupancy-readonly') === false) {
         hb_fail('stay bar must support occupancy_interactive and readonly occupancy markup');
     } elseif (strpos($roomsSrc, "'occupancy_interactive' => true") === false && strpos($roomsSrc, '"occupancy_interactive" => true') === false) {

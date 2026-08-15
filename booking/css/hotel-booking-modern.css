@@ -35,6 +35,9 @@ body.hb-modal-open { overflow: hidden; }
 .hb-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 1000; }
 .hb-modal[hidden] { display: none !important; }
 .hb-modal-card { background: #fff; border-radius: 4px; max-width: 1080px; width: 100%; max-height: 92vh; overflow: auto; padding: 0; position: relative; box-shadow: 0 24px 48px rgba(0,0,0,.2); }
+/* Why: Hotel Details on index.php — no inner vertical scrollbar; tall content scrolls on the overlay (same pattern as Select Dates). */
+.hb-modal.hb-detail-modal { overflow-y: auto; }
+.hb-detail-modal-card { max-height: none; overflow: visible; }
 .hb-modal-close { position: absolute; top: 12px; right: 12px; z-index: 5; border: none; background: rgba(255,255,255,.9); width: 36px; height: 36px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
 
 .hb-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 0; min-height: 480px; }

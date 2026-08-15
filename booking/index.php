@@ -184,8 +184,8 @@ $imgUrl = !empty($hotel['photos'][0]['public_url'])
 <?php endforeach; ?>
 </div>
 </main>
-<div id="hb-detail-modal" class="hb-modal" hidden role="dialog" aria-modal="true">
-<div class="hb-modal-card">
+<div id="hb-detail-modal" class="hb-modal hb-detail-modal" hidden role="dialog" aria-modal="true">
+<div class="hb-modal-card hb-detail-modal-card">
 <button type="button" class="hb-modal-close" title="Close">✖</button>
 <div id="hb-modal-body">Loading…</div>
 </div>
