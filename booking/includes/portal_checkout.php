@@ -117,20 +117,27 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
 
         // Why: Separate "Traveling with a pet" fee from "Total room charges"
         $draft = is_array($context['draft'] ?? null) ? $context['draft'] : itm_hotel_booking_portal_draft_get();
-        $roomLines = is_array($draft) ? itm_hotel_booking_portal_room_lines_from_draft($draft) : [];
-        $showMultiRoomList = count($roomLines) > 1;
+        $occupancy = is_array($context['occupancy'] ?? null)
+            ? itm_hotel_booking_portal_parse_occupancy($context['occupancy'])
+            : itm_hotel_booking_portal_parse_occupancy(is_array($draft['occupancy'] ?? null) ? $draft['occupancy'] : []);
+        $roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
+        $roomLines = is_array($draft) ? itm_hotel_booking_portal_draft_room_lines_for_display($draft) : [];
+        $showMultiRoomList = $roomsNeeded > 1 && count($roomLines) > 0;
         // #region agent log
-        if ($showMultiRoomList) {
-            @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
-                'sessionId' => '44bff2',
-                'timestamp' => (int) round(microtime(true) * 1000),
-                'location' => 'booking/includes/portal_checkout.php:reservation_summary',
-                'message' => 'multi-room reservation summary list',
-                'data' => ['lineCount' => count($roomLines)],
-                'hypothesisId' => 'E',
-                'runId' => 'verify',
-            ]) . "\n", FILE_APPEND);
-        }
+        @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
+            'sessionId' => '44bff2',
+            'timestamp' => (int) round(microtime(true) * 1000),
+            'location' => 'booking/includes/portal_checkout.php:reservation_summary',
+            'message' => 'reservation summary room lines',
+            'data' => [
+                'roomsNeeded' => $roomsNeeded,
+                'lineCount' => count($roomLines),
+                'showMultiRoomList' => $showMultiRoomList,
+                'rawLineCount' => is_array($draft['room_lines'] ?? null) ? count($draft['room_lines']) : 0,
+            ],
+            'hypothesisId' => 'E',
+            'runId' => 'verify',
+        ]) . "\n", FILE_APPEND);
         // #endregion
         $hasPet = !empty($draft['traveling_with_pet']);
         $petFeeTotal = 0.0;

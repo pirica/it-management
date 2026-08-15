@@ -2070,6 +2070,37 @@ if (!function_exists('itm_hotel_booking_portal_room_lines_from_draft')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_draft_room_lines_for_display')) {
+  /**
+   * Reservation UI: use persisted room_lines rows without collapsing multi-room to one fallback line.
+   *
+   * @return array<int,array>
+   */
+  function itm_hotel_booking_portal_draft_room_lines_for_display(array $draft) {
+    $raw = $draft['room_lines'] ?? null;
+    $lines = [];
+    if (is_array($raw)) {
+      foreach ($raw as $line) {
+        if (!is_array($line)) {
+          continue;
+        }
+        $normalized = itm_hotel_booking_portal_room_line_normalize($line);
+        if ($normalized['room_id'] > 0) {
+          $lines[] = $normalized;
+        }
+      }
+    }
+    if ($lines !== []) {
+      return $lines;
+    }
+    $occupancy = itm_hotel_booking_portal_parse_occupancy($draft['occupancy'] ?? []);
+    if (max(1, (int) ($occupancy['rooms'] ?? 1)) > 1) {
+      return [];
+    }
+    return itm_hotel_booking_portal_room_lines_from_draft($draft);
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_room_line_pick')) {
   /**
    * @return array{ok:bool,error?:string,lines?:array}

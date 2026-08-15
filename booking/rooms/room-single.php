@@ -185,6 +185,7 @@ $reservationSummaryContext = [
     'change_rate_url' => $changeRateUrl,
     'currency' => $currency,
     'draft' => $draftForDisplay,
+    'occupancy' => $occupancy,
 ];
 ?>
 <!DOCTYPE html>

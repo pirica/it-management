@@ -1195,6 +1195,15 @@ if (strpos($customizeSrc, '$hideUpsellOptions') !== false
     hb_fail('customize multi-room upsell hide missing');
 }
 
+$portalCheckoutSrcMulti = (string) @file_get_contents(dirname(__DIR__) . '/booking/includes/portal_checkout.php');
+if (strpos($portalCheckoutSrcMulti, 'itm_hotel_booking_portal_draft_room_lines_for_display') !== false
+    && strpos($portalCheckoutSrcMulti, 'hb-reservation-summary-room-list') !== false
+    && strpos($customizeSrc, 'itm_hotel_booking_portal_draft_room_lines_for_display') !== false) {
+    hb_pass('portal reservation summary lists multi-room draft lines');
+} else {
+    hb_fail('portal reservation summary multi-room list missing');
+}
+
 $manageSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/users/bookings.php');
 $otpIssueSrc = (string) @file_get_contents(dirname(__DIR__) . '/includes/itm_hotel_booking.php');
 if (strpos($manageSrc, 'verify_manage_otp') !== false && strpos($manageSrc, 'itm_hotel_booking_portal_manage_otp_issue') !== false) {
