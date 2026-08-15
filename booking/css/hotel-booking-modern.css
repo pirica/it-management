@@ -157,7 +157,7 @@ body.hb-modal-open { overflow: hidden; }
 .hb-manage-result td { padding: 8px; border-bottom: 1px solid #eee; }
 
 /* Select Dates modal */
-.hb-dates-modal-card { background: #fff; max-width: 720px; width: 100%; max-height: 92vh; overflow: auto; padding: 28px 32px 24px; position: relative; border-radius: 4px; box-shadow: 0 24px 48px rgba(0,0,0,.22); }
+.hb-dates-modal-card { background: #fff; max-width: 720px; width: 100%; overflow: visible; padding: 28px 32px 24px; position: relative; border-radius: 4px; box-shadow: 0 24px 48px rgba(0,0,0,.22); }
 .hb-dates-close { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border: 1px solid #333; background: #fff; font-size: 1.1rem; cursor: pointer; }
 .hb-dates-heading { text-align: center; font-size: 1.35rem; font-weight: 700; margin: 0 0 20px; padding-right: 40px; }
 .hb-dates-hotel { font-size: 1.05rem; margin-bottom: 8px; }
