@@ -222,7 +222,22 @@ $reservationSummaryContext = [
 <?php if ($error): ?><p class="hb-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
 
 <?php if ($draft): ?>
-<?php hb_portal_render_draft_special_requests_review($draft); ?>
+<?php
+$roomsNeededStep4 = max(1, (int) ($occupancy['rooms'] ?? 1));
+if ($roomsNeededStep4 === 1 && !empty($draft['upgrade_accepted'])) {
+    $upgradeMeta = hb_portal_draft_to_notes_meta($draft)['room_upgrade'];
+    $upgradeTitle = trim((string) ($upgradeMeta['title'] ?? ''));
+    $bedSummary = trim((string) ($draft['upgrade_bed_summary'] ?? ''));
+    if ($bedSummary !== '' && $upgradeTitle !== '' && stripos($upgradeTitle, $bedSummary) === false) {
+        $upgradeMeta['title'] = $upgradeTitle . ' ' . $bedSummary;
+    }
+    hb_portal_render_confirmation_room_upgrade($upgradeMeta, $currency);
+}
+hb_portal_render_draft_special_requests_review($draft, [
+    'company_id' => $company_id,
+    'hotel_id' => $hotelId,
+]);
+?>
 <?php endif; ?>
 
 <p class="hb-checkout-total-line hb-step4-total-line">Total due: <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($estimatedTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></p>

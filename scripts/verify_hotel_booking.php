@@ -464,19 +464,32 @@ $occMeta = itm_hotel_booking_portal_occupancy_meta_line(['rooms' => 2, 'adults' 
 $notesBuilt = itm_hotel_booking_portal_build_booking_notes([
     'rate_plan' => 'breakfast',
     'service_animal' => 1,
+    'traveling_with_pet' => 1,
     'upgrade_accepted' => 1,
     'upgrade_target_name' => 'King Grand Deluxe Room with Pool View',
+    'upgrade_bed_summary' => '1 King bed',
+    'upgrade_pitch' => 'You deserve a little extra. Enjoy a room with added perks.',
+    'upgrade_price_per_night' => 121,
     'additional_comments' => 'Late arrival',
 ], ['rooms' => 2, 'adults' => 2, 'children' => 1, 'babies' => 1]);
 $parsedOcc = itm_hotel_booking_portal_parse_occupancy_meta_from_notes($notesBuilt);
+$parsedMeta = itm_hotel_booking_portal_parse_booking_notes_meta($notesBuilt);
 if (strpos($notesBuilt, $occMeta) === 0
     && strpos($notesBuilt, 'Rate: Breakfast included') !== false
     && strpos($notesBuilt, 'Rate plan: breakfast') !== false
+    && strpos($notesBuilt, 'Room upgrade: yes') !== false
+    && strpos($notesBuilt, 'Room upgrade title: King Grand Deluxe Room with Pool View 1 King bed') !== false
+    && strpos($notesBuilt, 'Traveling with pet: yes') !== false
     && strpos($notesBuilt, 'Room: King Grand Deluxe Room with Pool View') !== false
     && strpos($notesBuilt, "Guest comments:\nLate arrival") !== false
     && is_array($parsedOcc)
     && (int) ($parsedOcc['rooms'] ?? 0) === 2
-    && (int) ($parsedOcc['children'] ?? 0) === 1) {
+    && (int) ($parsedOcc['children'] ?? 0) === 1
+    && !empty($parsedMeta['traveling_with_pet'])
+    && !empty($parsedMeta['service_animal'])
+    && !empty($parsedMeta['room_upgrade']['accepted'])
+    && (float) ($parsedMeta['room_upgrade']['per_night'] ?? 0) === 121.0
+    && trim((string) ($parsedMeta['guest_comments'] ?? '')) === 'Late arrival') {
     hb_pass('portal booking notes with occupancy meta');
 } else {
     hb_fail('portal booking notes with occupancy meta');
@@ -1229,6 +1242,26 @@ if (strpos($bookingHelperSrc, 'function itm_hotel_booking_portal_room_line_stay_
     hb_pass('portal multi-room per-line stay charge helper');
 } else {
     hb_fail('portal multi-room per-line stay charge helper missing');
+}
+
+if (function_exists('itm_hotel_booking_portal_notes_has_traveling_pet')
+    && function_exists('itm_hotel_booking_portal_confirmation_pet_fee')
+    && itm_hotel_booking_portal_notes_has_traveling_pet("Rate: Best available\nTraveling with pet: yes")
+    && !itm_hotel_booking_portal_notes_has_traveling_pet("Traveling with pet: no")
+    && strpos($portalCheckoutSrcMulti, 'Traveling with a pet') !== false
+    && strpos($portalCheckoutSrcMulti, 'itm_hotel_booking_portal_confirmation_pet_fee') !== false
+    && strpos($bookingHelperSrc, 'Traveling with a pet') !== false) {
+    hb_pass('portal confirmation pet fee line from booking notes');
+} else {
+    hb_fail('portal confirmation pet fee line missing');
+}
+
+if (strpos($portalCheckoutSrcMulti, 'hb_portal_render_confirmation_special_requests') !== false
+    && strpos($portalCheckoutSrcMulti, 'hb_portal_render_confirmation_room_upgrade') !== false
+    && strpos($portalCheckoutSrcMulti, 'hb-confirmation-special-requests') !== false) {
+    hb_pass('portal payment confirmation customize sections');
+} else {
+    hb_fail('portal payment confirmation customize sections missing');
 }
 
 $manageSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/users/bookings.php');

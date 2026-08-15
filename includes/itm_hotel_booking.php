@@ -1933,6 +1933,39 @@ if (!function_exists('itm_hotel_booking_portal_pet_daily_fee')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_notes_has_traveling_pet')) {
+  /** Whether saved booking notes indicate the guest travels with a pet. */
+  function itm_hotel_booking_portal_notes_has_traveling_pet($notesRaw) {
+    return (bool) preg_match('/^Traveling with pet:\s*yes\s*$/im', (string) $notesRaw);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_pet_fee_total_for_stay')) {
+  function itm_hotel_booking_portal_pet_fee_total_for_stay($conn, $companyId, $hotelId, $checkIn, $checkOut) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $nights = itm_hotel_booking_portal_stay_nights($checkIn, $checkOut);
+    if ($companyId < 1 || $hotelId < 1 || $nights < 1) {
+      return 0.0;
+    }
+    return round(itm_hotel_booking_portal_pet_daily_fee($conn, $companyId, $hotelId) * $nights, 2);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_confirmation_pet_fee')) {
+  /**
+   * Pet surcharge for a saved booking group (parsed from notes + hotel pricing).
+   */
+  function itm_hotel_booking_portal_confirmation_pet_fee($conn, $companyId, array $bookingRow, $checkIn, $checkOut) {
+    $notes = (string) ($bookingRow['notes'] ?? '');
+    if (!itm_hotel_booking_portal_notes_has_traveling_pet($notes)) {
+      return 0.0;
+    }
+    $hotelId = (int) ($bookingRow['hotel_id'] ?? 0);
+    return itm_hotel_booking_portal_pet_fee_total_for_stay($conn, (int) $companyId, $hotelId, $checkIn, $checkOut);
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_breakfast_supplement_per_night')) {
   function itm_hotel_booking_portal_breakfast_supplement_per_night(array $occupancy, $conn = null, $companyId = 0, $hotelId = 0) {
     $adults = max(0, (int) ($occupancy['adults'] ?? 0));
@@ -2349,6 +2382,22 @@ if (!function_exists('itm_hotel_booking_portal_build_booking_notes')) {
       $parts[] = 'Service animal: yes';
     }
     if (!empty($draft['upgrade_accepted']) && !empty($draft['upgrade_target_name'])) {
+      $upgradeTitle = trim((string) $draft['upgrade_target_name']);
+      $bedSummary = trim((string) ($draft['upgrade_bed_summary'] ?? ''));
+      if ($bedSummary !== '' && stripos($upgradeTitle, $bedSummary) === false) {
+        $upgradeTitle .= ' ' . $bedSummary;
+      }
+      $parts[] = 'Room upgrade: yes';
+      $parts[] = 'Room upgrade title: ' . $upgradeTitle;
+      $upgradePitch = trim((string) ($draft['upgrade_pitch'] ?? ''));
+      if ($upgradePitch === '') {
+        $upgradePitch = 'You deserve a little extra. Enjoy a room with added perks.';
+      }
+      $parts[] = 'Room upgrade pitch: ' . $upgradePitch;
+      $upgradePerNight = (float) ($draft['upgrade_price_per_night'] ?? 0);
+      if ($upgradePerNight > 0) {
+        $parts[] = 'Room upgrade per night: ' . number_format($upgradePerNight, 2, '.', '');
+      }
       $parts[] = 'Room: ' . (string) $draft['upgrade_target_name'];
     }
     $comments = trim((string) ($draft['additional_comments'] ?? ''));
@@ -2357,6 +2406,97 @@ if (!function_exists('itm_hotel_booking_portal_build_booking_notes')) {
       $parts[] = $comments;
     }
     return implode("\n", $parts);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_parse_booking_notes_meta')) {
+  /**
+   * Structured customize-step fields persisted in hotel_bookings.notes.
+   *
+   * @return array{
+   *   traveling_with_pet:bool,
+   *   service_animal:bool,
+   *   guest_comments:string,
+   *   room_upgrade:array{accepted:bool,title:string,pitch:string,per_night:float}
+   * }
+   */
+  function itm_hotel_booking_portal_parse_booking_notes_meta($notesRaw) {
+    $meta = [
+      'traveling_with_pet' => false,
+      'service_animal' => false,
+      'guest_comments' => '',
+      'room_upgrade' => [
+        'accepted' => false,
+        'title' => '',
+        'pitch' => '',
+        'per_night' => 0.0,
+      ],
+    ];
+    $notesRaw = trim((string) $notesRaw);
+    if ($notesRaw === '') {
+      return $meta;
+    }
+    $text = str_replace(["\r\n", "\r"], "\n", $notesRaw);
+    $lines = explode("\n", $text);
+    $count = count($lines);
+    for ($i = 0; $i < $count; $i++) {
+      $line = trim($lines[$i]);
+      if ($line === '') {
+        continue;
+      }
+      if (preg_match('/^Traveling with pet:\s*yes\s*$/i', $line)) {
+        $meta['traveling_with_pet'] = true;
+        continue;
+      }
+      if (preg_match('/^Service animal:\s*yes\s*$/i', $line)) {
+        $meta['service_animal'] = true;
+        continue;
+      }
+      if (preg_match('/^Room upgrade:\s*yes\s*$/i', $line)) {
+        $meta['room_upgrade']['accepted'] = true;
+        continue;
+      }
+      if (preg_match('/^Room upgrade title:\s*(.+)$/i', $line, $m)) {
+        $meta['room_upgrade']['title'] = trim((string) ($m[1] ?? ''));
+        $meta['room_upgrade']['accepted'] = true;
+        continue;
+      }
+      if (preg_match('/^Room upgrade pitch:\s*(.+)$/i', $line, $m)) {
+        $meta['room_upgrade']['pitch'] = trim((string) ($m[1] ?? ''));
+        continue;
+      }
+      if (preg_match('/^Room upgrade per night:\s*([0-9]+(?:\.[0-9]+)?)\s*$/i', $line, $m)) {
+        $meta['room_upgrade']['per_night'] = (float) ($m[1] ?? 0);
+        continue;
+      }
+      if (preg_match('/^Guest comments:\s*(.*)$/iu', $line, $m)) {
+        $body = trim((string) ($m[1] ?? ''));
+        if ($body === '') {
+          for ($j = $i + 1; $j < $count; $j++) {
+            $next = trim($lines[$j]);
+            if ($next === '') {
+              break;
+            }
+            if (preg_match('/^(Occupancy:|Rate:|Rate plan:|Traveling with pet:|Service animal:|Room upgrade:|Room:|Multi-room stay —)/i', $next)) {
+              break;
+            }
+            $body .= ($body === '' ? '' : "\n") . $next;
+            $i = $j;
+          }
+        }
+        $meta['guest_comments'] = $body;
+      }
+    }
+    if (!$meta['room_upgrade']['accepted'] && $meta['room_upgrade']['title'] === '' && $meta['room_upgrade']['per_night'] <= 0) {
+      foreach ($lines as $line) {
+        $line = trim($line);
+        if (preg_match('/^Room:\s*(.+)$/i', $line, $m) && !preg_match('/^Room upgrade/i', $line)) {
+          $meta['room_upgrade']['title'] = trim((string) ($m[1] ?? ''));
+          break;
+        }
+      }
+    }
+    return $meta;
   }
 }
 
@@ -2416,8 +2556,16 @@ if (!function_exists('itm_hotel_booking_portal_resolve_step4_charge')) {
       $upgradeOffer = $origTypeId > 0 ? itm_hotel_booking_portal_room_type_upgrade_offer($conn, $companyId, $origTypeId) : null;
       if ($upgradeOffer) {
         $draftForPay['upgrade_accepted'] = 1;
-        $draftForPay['upgrade_price_per_night'] = (float) ($upgradeOffer['upgrade_price_per_night'] ?? 0);
-        $draftForPay['upgrade_target_name'] = (string) ($upgradeOffer['target_name'] ?? '');
+        $draftForPay['upgrade_price_per_night'] = (float) ($draft['upgrade_price_per_night'] ?? $upgradeOffer['upgrade_price_per_night'] ?? 0);
+        $draftForPay['upgrade_target_name'] = (string) ($draft['upgrade_target_name'] ?? $upgradeOffer['target_name'] ?? '');
+        $draftForPay['upgrade_bed_summary'] = (string) ($draft['upgrade_bed_summary'] ?? $upgradeOffer['target_bed_summary'] ?? '');
+        $draftForPay['upgrade_pitch'] = trim((string) ($draft['upgrade_pitch'] ?? $upgradeOffer['upgrade_pitch'] ?? ''));
+      } elseif (!empty($draft['upgrade_target_name'])) {
+        $draftForPay['upgrade_accepted'] = 1;
+        $draftForPay['upgrade_price_per_night'] = (float) ($draft['upgrade_price_per_night'] ?? 0);
+        $draftForPay['upgrade_target_name'] = (string) $draft['upgrade_target_name'];
+        $draftForPay['upgrade_bed_summary'] = (string) ($draft['upgrade_bed_summary'] ?? '');
+        $draftForPay['upgrade_pitch'] = trim((string) ($draft['upgrade_pitch'] ?? ''));
       }
     }
     return [
@@ -4638,7 +4786,7 @@ if (!function_exists('itm_hotel_booking_portal_build_confirmation_email_rows_htm
   /**
    * @param array<int,array> $groupRows
    */
-  function itm_hotel_booking_portal_build_confirmation_email_rows_html(array $bookingRow, array $groupRows = [], array $occupancy = null) {
+  function itm_hotel_booking_portal_build_confirmation_email_rows_html(array $bookingRow, array $groupRows = [], array $occupancy = null, $conn = null, $companyId = 0) {
     if ($groupRows === []) {
       $groupRows = [$bookingRow];
     }
@@ -4718,6 +4866,37 @@ if (!function_exists('itm_hotel_booking_portal_build_confirmation_email_rows_htm
     $rows[] = ['Check-out', $checkOutDisplay];
     $rows[] = ['Nights', $nightsLabel];
     $rows[] = ['Guests', $occupancyLabel];
+    $notesMeta = function_exists('itm_hotel_booking_portal_parse_booking_notes_meta')
+      ? itm_hotel_booking_portal_parse_booking_notes_meta((string) ($bookingRow['notes'] ?? ''))
+      : ['traveling_with_pet' => false, 'service_animal' => false, 'guest_comments' => '', 'room_upgrade' => ['accepted' => false, 'title' => '', 'pitch' => '', 'per_night' => 0.0]];
+    $roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
+    if ($roomsNeeded === 1 && !empty($notesMeta['room_upgrade']['accepted'])) {
+      $upgradeTitle = trim((string) ($notesMeta['room_upgrade']['title'] ?? ''));
+      if ($upgradeTitle !== '') {
+        $rows[] = ['Room upgrade', $upgradeTitle];
+      }
+      $upgradePerNight = (float) ($notesMeta['room_upgrade']['per_night'] ?? 0);
+      if ($upgradePerNight > 0) {
+        $rows[] = ['Upgrade surcharge', '+' . itm_hotel_booking_portal_format_money_display($upgradePerNight, $currency) . ' per night'];
+      }
+    }
+    if (!empty($notesMeta['service_animal'])) {
+      $rows[] = ['Service animal', 'Yes'];
+    }
+    if (trim((string) ($notesMeta['guest_comments'] ?? '')) !== '') {
+      $rows[] = ['Additional comments', trim((string) $notesMeta['guest_comments'])];
+    }
+    $petFeeTotal = 0.0;
+    $companyId = (int) $companyId;
+    if ($companyId < 1) {
+      $companyId = (int) ($bookingRow['company_id'] ?? ($groupRows[0]['company_id'] ?? 0));
+    }
+    if ($conn && $companyId > 0 && function_exists('itm_hotel_booking_portal_confirmation_pet_fee')) {
+      $petFeeTotal = itm_hotel_booking_portal_confirmation_pet_fee($conn, $companyId, $bookingRow, $checkInIso, $checkOutIso);
+    }
+    if ($petFeeTotal > 0) {
+      $rows[] = ['Traveling with a pet', itm_hotel_booking_portal_format_money_display($petFeeTotal, $currency)];
+    }
     $rows[] = ['Total', $amountDisplay];
 
     $html = '<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;max-width:520px;">';
@@ -4775,7 +4954,7 @@ if (!function_exists('itm_hotel_booking_portal_send_booking_confirmation_emails'
       ? itm_hotel_booking_portal_parse_occupancy($options['occupancy'])
       : null;
     $manageUrl = itm_hotel_booking_portal_confirmation_email_manage_url($conn, $companyId);
-    $detailsHtml = itm_hotel_booking_portal_build_confirmation_email_rows_html($bookingRow, $groupRows, $occupancy);
+    $detailsHtml = itm_hotel_booking_portal_build_confirmation_email_rows_html($bookingRow, $groupRows, $occupancy, $conn, $companyId);
     $guestName = trim((string) ($bookingRow['customer_name'] ?? ''));
 
     if ($guestEmail !== '' && filter_var($guestEmail, FILTER_VALIDATE_EMAIL)) {

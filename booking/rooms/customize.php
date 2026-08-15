@@ -132,6 +132,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $draft['upgrade_price_per_night'] = (float) ($postUpgradeOffer['upgrade_price_per_night'] ?? 0);
             $draft['upgrade_target_name'] = (string) ($postUpgradeOffer['target_name'] ?? '');
             $draft['upgrade_target_type_id'] = $targetTypeId;
+            $draft['upgrade_bed_summary'] = (string) ($postUpgradeOffer['target_bed_summary'] ?? '');
+            $draft['upgrade_pitch'] = trim((string) ($postUpgradeOffer['upgrade_pitch'] ?? ''));
             $draft['room_id'] = (int) $swapRoom['id'];
         }
     }
