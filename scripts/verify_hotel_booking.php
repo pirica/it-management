@@ -566,14 +566,39 @@ $contactsSample = hb_portal_hotel_contacts_from_booking([
     'hotel_location' => 'Lisbon, Portugal',
     'hotel_phone' => '+351 210 000 001',
     'hotel_website_url' => 'https://example.com/techcorp-retreat',
+    'hotel_contact_email' => 'info@techcorp-retreat.example',
+    'hotel_reservations_email' => 'reservations@techcorp-retreat.example',
 ]);
 if ($contactsSample['name'] === 'TechCorp Retreat'
     && $contactsSample['phone'] === '+351 210 000 001'
+    && $contactsSample['contact_email'] === 'info@techcorp-retreat.example'
+    && $contactsSample['reservations_email'] === 'reservations@techcorp-retreat.example'
+    && hb_portal_hotel_mailto_href($contactsSample['reservations_email']) === 'mailto:reservations@techcorp-retreat.example'
+    && hb_portal_hotel_mailto_href($contactsSample['contact_email']) === 'mailto:info@techcorp-retreat.example'
     && strpos(hb_portal_hotel_directions_url($contactsSample['location']), 'maps.google.com') !== false
     && hb_portal_hotel_phone_tel_href($contactsSample['phone']) === 'tel:+351210000001') {
     hb_pass('portal change booking hotel contacts helpers');
 } else {
     hb_fail('portal change booking hotel contacts helpers');
+}
+
+$publicJsSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/js/hotel-booking-public.js');
+if (strpos($publicJsSrc, 'contact_email') !== false
+    && strpos($publicJsSrc, 'reservations_email') !== false
+    && strpos($publicJsSrc, 'Info</a>') !== false
+    && strpos($publicJsSrc, 'Email</a>') !== false) {
+    hb_pass('public hotel details Info/Email contact links');
+} else {
+    hb_fail('public hotel details missing Info (contact_email) / Email (reservations_email) links');
+}
+
+$portalCheckoutSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/includes/portal_checkout.php');
+if (strpos($portalCheckoutSrc, 'hb_portal_render_hotel_action_links') !== false
+    && strpos($portalCheckoutSrc, 'hotel_contact_email') !== false
+    && strpos($portalCheckoutSrc, 'hotel_reservations_email') !== false) {
+    hb_pass('portal checkout hotel Info/Email wiring');
+} else {
+    hb_fail('portal checkout hotel Info/Email wiring missing');
 }
 
 $cancelledDisplay = hb_portal_booking_display_is_cancelled([
@@ -1134,7 +1159,8 @@ if (strpos($manageSrc, 'verify_manage_otp') !== false && strpos($manageSrc, 'itm
 if (strpos($otpIssueSrc, "'footer_link_text' => 'Manage my booking'") !== false
     && strpos($otpIssueSrc, "'show_gear_icon' => false") !== false
     && strpos($otpIssueSrc, "(\$settingsRow['urlmybooking']") !== false
-    && strpos($otpIssueSrc, "(\$verifiedBookingRow['hotel_name']") !== false) {
+    && strpos($otpIssueSrc, "(\$verifiedBookingRow['hotel_name']") !== false
+    && strpos($otpIssueSrc, 'hotel_reservations_email') !== false) {
     hb_pass('portal manage OTP email uses hotel name + urlmybooking footer');
 } else {
     hb_fail('portal manage OTP email hotel branding missing');

@@ -39,7 +39,7 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, hotel filter), **F
 - Portal rate plan options filter by selected room’s `hotel_id`; defaults seeded per hotel when the form loads. **➕** is the standard `__add_new__` option inside the plan `<select>` (opens create modal without requiring a room — embed form includes hotel select; room choice only pre-fills `hotel_id`). **🔎** / **✏️** beside the select open view/edit in a modal iframe (`embed=1`). `hb_booking_end_form_page()` renders the modal outside `.content`. Regression: `php scripts/check_hotel_bookings_rate_plan_form.php` and `php scripts/lib/itm_hospitality_booking_form_probe.php create|edit`.
 - Check-in / check-out use hospitality date fields (`d/M/Y` + 📅 via `js/hotel-date-input.js`); planning **Anchor** uses the same widget; `js/hotel-bookings-date-picker.js` enforces check-out after check-in.
 - Audit meta (`created_by`, `created_at`, `updated_by`, `updated_at`) via hidden inputs from `itm_crud_render_form_hidden_audit_inputs()`; `company_id` stays session-scoped (not on form).
-- `view.php` shows every stored column including segment status labels and audit fields.
+- `view.php` shows every stored column including segment status labels and audit fields; also joins the room’s hotel for **Info** (`contact_email`) and **Email** (`reservations_email`) mailto links plus phone.
 
 ## 6. Public portal
 

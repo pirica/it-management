@@ -50,10 +50,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_portal_pricing']
 $portalPricing = $hotelId > 0 ? itm_hotel_booking_portal_hotel_pricing($conn, $company_id, $hotelId) : itm_hotel_booking_portal_pricing_defaults();
 
 $hotelName = '';
+$hotelContactRow = null;
 foreach ($hotels as $h) {
     if ((int) $h['id'] === $hotelId) {
         $hotelName = (string) ($h['name'] ?? '');
         break;
+    }
+}
+if ($hotelId > 0) {
+    $cstmt = mysqli_prepare($conn, 'SELECT name, location, phone, website_url, contact_email, reservations_email FROM hotel_booking_hotels WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
+    if ($cstmt) {
+        mysqli_stmt_bind_param($cstmt, 'ii', $hotelId, $company_id);
+        mysqli_stmt_execute($cstmt);
+        $cres = mysqli_stmt_get_result($cstmt);
+        $hotelContactRow = $cres ? mysqli_fetch_assoc($cres) : null;
+        mysqli_stmt_close($cstmt);
     }
 }
 
@@ -88,6 +99,18 @@ itm_hospitality_admin_layout_begin($crud_title);
 </form>
 <?php if ($hotelName !== ''): ?>
 <p><strong>Hotel:</strong> <?php echo sanitize($hotelName); ?></p>
+<?php
+if (is_array($hotelContactRow)) {
+    $infoEmail = trim((string) ($hotelContactRow['contact_email'] ?? ''));
+    $resEmail = trim((string) ($hotelContactRow['reservations_email'] ?? ''));
+    if ($infoEmail !== ''): ?>
+<p><strong>Info:</strong> <a href="mailto:<?php echo sanitize($infoEmail); ?>" title="General information email"><?php echo sanitize($infoEmail); ?></a></p>
+<?php endif;
+    if ($resEmail !== ''): ?>
+<p><strong>Email:</strong> <a href="mailto:<?php echo sanitize($resEmail); ?>" title="Reservations email"><?php echo sanitize($resEmail); ?></a></p>
+<?php endif;
+}
+?>
 <?php endif; ?>
 <?php if ($pricingSaved): ?>
 <p class="badge badge-success">Portal pricing saved.</p>
