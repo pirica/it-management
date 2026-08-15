@@ -41,6 +41,21 @@
     }, special);
   }
 
+  function cardQuoteOccupancy() {
+    if (cfg.cardQuoteOccupancy && typeof cfg.cardQuoteOccupancy === 'object') {
+      var o = cfg.cardQuoteOccupancy;
+      var special = specialRateFieldsFromOccupancy(cfg.occupancy || {});
+      return Object.assign({
+        rooms: parseIntSafe(o.rooms, 1),
+        adults: parseIntSafe(o.adults, 1),
+        children: parseIntSafe(o.children, 0),
+        babies: parseIntSafe(o.babies, 0),
+        rate: String((cfg.occupancy && cfg.occupancy.rate) || '')
+      }, special);
+    }
+    return currentOccupancy();
+  }
+
   var SPECIAL_RATE_BOOL_KEYS = ['use_points', 'travel_agents', 'aaa_rate', 'senior_rate', 'gov_military'];
   var SPECIAL_RATE_CODE_KEYS = ['promo_code', 'group_code', 'corporate_account', 'member_account'];
 
@@ -156,7 +171,7 @@
     if (!(rate > 0)) {
       return 0;
     }
-    var occ = currentOccupancy();
+    var occ = cardQuoteOccupancy();
     var guests = Math.max(0, parseInt(occ.adults, 10) || 0) + Math.max(0, parseInt(occ.children, 10) || 0);
     if (guests < 1) {
       guests = 1;
@@ -165,7 +180,7 @@
   }
 
   function quoteNightlyUndiscounted(base) {
-    var occ = currentOccupancy();
+    var occ = cardQuoteOccupancy();
     var pricing = portalPricing();
     var rooms = Math.max(1, Math.min(4, occ.rooms));
     var adults = Math.max(1, Math.min(12, occ.adults));

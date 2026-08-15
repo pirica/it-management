@@ -905,6 +905,9 @@ if (!is_file($selectRoomJs)) {
         hb_fail('select-room JS must add tourist tax when re-rendering card prices');
     } elseif (strpos($roomsSrcForTax, 'touristTaxPerPersonPerNight') === false) {
         hb_fail('rooms.php must pass touristTaxPerPersonPerNight into HB_SELECT_ROOM');
+    } elseif (strpos($roomsSrcForTax, 'cardQuoteOccupancy') === false
+        || strpos($selectRoomJsSrc, 'cardQuoteOccupancy') === false) {
+        hb_fail('rooms Step 1 must quote card prices per room slot (cardQuoteOccupancy)');
     } else {
         hb_pass('rooms list JS prices include tourist tax');
     }
