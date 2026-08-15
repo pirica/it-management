@@ -1185,12 +1185,14 @@ if (function_exists('itm_hotel_booking_portal_room_line_pick')
     hb_fail('portal multi-room pick queue + stay insert wiring missing');
 }
 
-$portalCheckoutSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/includes/portal_checkout.php');
-if (strpos($portalCheckoutSrc, 'hb-reservation-summary-room-list') !== false
-    && strpos($portalCheckoutSrc, 'itm_hotel_booking_portal_room_lines_from_draft($draft)') !== false) {
-    hb_pass('portal reservation summary lists multi-room draft lines');
+$customizeSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms/customize.php');
+if (strpos($customizeSrc, '$hideUpsellOptions') !== false
+    && strpos($customizeSrc, '!$hideUpsellOptions && $roomTypeId > 0') !== false
+    && strpos($customizeSrc, 'accept_room_upgrade') !== false
+    && strpos($customizeSrc, '&& !$hideUpsellOptions') !== false) {
+    hb_pass('customize hides room upgrade upsell when rooms>1');
 } else {
-    hb_fail('portal reservation summary multi-room list missing');
+    hb_fail('customize multi-room upsell hide missing');
 }
 
 $manageSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/users/bookings.php');

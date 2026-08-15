@@ -49,9 +49,30 @@ $surchargePercent = (float) ($draft['surcharge_percent'] ?? 0);
 $basePerNight = (float) ($draft['base_price_per_night'] ?? $room['price_per_night']);
 $touristTaxPerPerson = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings);
 
-$upgradeOffer = $roomTypeId > 0
-    ? itm_hotel_booking_portal_room_type_upgrade_offer($conn, $company_id, $roomTypeId)
-    : null;
+$roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
+$draftRoomLines = itm_hotel_booking_portal_room_lines_from_draft($draft);
+$hideUpsellOptions = $roomsNeeded > 1 || count($draftRoomLines) > 1;
+// #region agent log
+if ($hideUpsellOptions) {
+    @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
+        'sessionId' => '44bff2',
+        'timestamp' => (int) round(microtime(true) * 1000),
+        'location' => 'booking/rooms/customize.php:hideUpsell',
+        'message' => 'upsell hidden for multi-room',
+        'data' => [
+            'roomsNeeded' => $roomsNeeded,
+            'roomLineCount' => count($draftRoomLines),
+        ],
+        'hypothesisId' => 'F',
+        'runId' => 'verify',
+    ]) . "\n", FILE_APPEND);
+}
+// #endregion
+
+$upgradeOffer = null;
+if (!$hideUpsellOptions && $roomTypeId > 0) {
+    $upgradeOffer = itm_hotel_booking_portal_room_type_upgrade_offer($conn, $company_id, $roomTypeId);
+}
 
 $upgradeImageUrl = APPURL . '/images/room-5.jpg';
 if ($upgradeOffer) {
@@ -88,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $draft['upgrade_price_per_night'] = 0;
     $draft['upgrade_target_name'] = '';
     $draft['upgrade_target_type_id'] = 0;
-    if (!empty($_POST['accept_room_upgrade']) && $postUpgradeOffer) {
+    if (!empty($_POST['accept_room_upgrade']) && $postUpgradeOffer && !$hideUpsellOptions) {
         $targetTypeId = (int) ($postUpgradeOffer['target_type_id'] ?? 0);
         $swapRoom = itm_hotel_booking_portal_find_available_room_for_type(
             $conn,
