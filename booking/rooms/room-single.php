@@ -210,7 +210,7 @@ $reservationSummaryContext = [
 
 <p class="hb-checkout-total-line">Total due: <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($estimatedTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></p>
 
-<form method="post" class="hb-guest-form">
+<form method="post" class="hb-guest-form" id="hb-guest-form">
 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
 <input type="hidden" name="rooms" value="<?php echo (int) $occupancy['rooms']; ?>">
 <input type="hidden" name="adults" value="<?php echo (int) $occupancy['adults']; ?>">
@@ -244,7 +244,9 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
         <span>I agree to these terms</span>
     </label>
 </div>
+<div class="hb-checkout-actions hb-guest-form-actions">
 <button type="submit" class="hb-btn hb-btn-primary" id="btn-book-submit" title="Book and continue to payment">Book and continue to payment</button>
+</div>
 </form>
 </main>
 
@@ -255,28 +257,35 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 ]); ?>
 <?php hb_portal_render_reservation_summary($reservationSummaryContext); ?>
 <?php hb_portal_render_cancellation_policy_button(hb_portal_draft_cancellation_policy_url($conn, $company_id, $draftForDisplay)); ?>
+<div class="hb-checkout-aside-cta">
+<button type="submit" class="hb-btn hb-btn-primary hb-btn-block" id="btn-book-submit-aside" form="hb-guest-form" title="Book and continue to payment">Book and continue to payment</button>
+</div>
 </aside>
 </div>
 <script src="<?php echo htmlspecialchars(BASE_URL . 'js/hotel-date-input.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var agreeCheckbox = document.getElementById('agree_terms');
-    var submitButton = document.getElementById('btn-book-submit');
-    var form = document.querySelector('.hb-guest-form');
+    var submitButtons = document.querySelectorAll('#btn-book-submit, #btn-book-submit-aside');
+    var form = document.getElementById('hb-guest-form');
 
     function syncButtonState() {
-        if (agreeCheckbox.checked) {
-            submitButton.classList.remove('hb-btn-disabled');
-            submitButton.style.cursor = 'pointer';
-        } else {
-            submitButton.classList.add('hb-btn-disabled');
-            submitButton.style.cursor = 'not-allowed';
-        }
+        var enabled = agreeCheckbox && agreeCheckbox.checked;
+        submitButtons.forEach(function (submitButton) {
+            if (enabled) {
+                submitButton.classList.remove('hb-btn-disabled');
+                submitButton.disabled = false;
+                submitButton.style.cursor = 'pointer';
+            } else {
+                submitButton.classList.add('hb-btn-disabled');
+                submitButton.disabled = true;
+                submitButton.style.cursor = 'not-allowed';
+            }
+        });
     }
 
-    if (agreeCheckbox && submitButton) {
+    if (agreeCheckbox && submitButtons.length) {
         agreeCheckbox.addEventListener('change', syncButtonState);
-        // Initial state sync
         syncButtonState();
     }
 
