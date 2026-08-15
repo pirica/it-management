@@ -36,13 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
     itm_require_post_csrf();
     if (!$draft || empty($draft['room_id']) || (int) ($draft['room_id'] ?? 0) !== $roomId) {
         $error = 'Checkout session expired. Please start your reservation again.';
+    } elseif (!is_array($draft['occupancy'] ?? null)) {
+        $error = 'Checkout session expired. Please start your reservation again.';
     } else {
-    // Why: Lock quoted stay to draft occupancy — never re-price from crafted POST guest counts.
-    if (is_array($draft['occupancy'] ?? null)) {
-        $occupancy = $draft['occupancy'];
-    } else {
-        $occupancy = itm_hotel_booking_portal_parse_occupancy($_POST);
-    }
+    // Why: Lock quoted stay to draft occupancy — never accept crafted POST guest counts.
+    $occupancy = $draft['occupancy'];
     $checkIn = (string) ($draft['check_in'] ?? '');
     $checkOut = (string) ($draft['check_out'] ?? '');
     $fullName = trim((string) ($_POST['full_name'] ?? ''));
