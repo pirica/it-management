@@ -34,19 +34,17 @@ if ($draft && is_array($draft['occupancy'] ?? null)) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
     itm_require_post_csrf();
+    if (!$draft || empty($draft['room_id']) || (int) ($draft['room_id'] ?? 0) !== $roomId) {
+        $error = 'Checkout session expired. Please start your reservation again.';
+    } else {
     // Why: Lock quoted stay to draft occupancy — never re-price from crafted POST guest counts.
-    if ($draft && is_array($draft['occupancy'] ?? null)) {
+    if (is_array($draft['occupancy'] ?? null)) {
         $occupancy = $draft['occupancy'];
     } else {
         $occupancy = itm_hotel_booking_portal_parse_occupancy($_POST);
     }
-    if ($draft) {
-        $checkIn = (string) ($draft['check_in'] ?? '');
-        $checkOut = (string) ($draft['check_out'] ?? '');
-    } else {
-        $checkIn = itm_parse_date_input($_POST['check_in'] ?? '') ?: '';
-        $checkOut = itm_parse_date_input($_POST['check_out'] ?? '') ?: '';
-    }
+    $checkIn = (string) ($draft['check_in'] ?? '');
+    $checkOut = (string) ($draft['check_out'] ?? '');
     $fullName = trim((string) ($_POST['full_name'] ?? ''));
     $email = trim((string) ($_POST['email'] ?? ''));
     $phone = itm_hotel_booking_portal_normalize_guest_phone($_POST['phone'] ?? '');
@@ -62,46 +60,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
     } elseif ($checkIn === '' || $checkOut === '' || $checkOut <= $checkIn) {
         $error = 'Invalid dates.';
     } else {
+        $charge = itm_hotel_booking_portal_resolve_step4_charge($conn, $company_id, $room, $draft, $occupancy);
+        // #region agent log
+        $dbgPath = dirname(__DIR__, 2) . '/debug-261195.log';
+        if (is_array($charge) && !empty($charge['ok'])) {
+            $tamperedDraftTotal = itm_hotel_booking_portal_compute_checkout_total(
+                (float) ($draft['base_price_per_night'] ?? $room['price_per_night']),
+                $checkIn,
+                $checkOut,
+                $occupancy,
+                (float) ($draft['discount_percent'] ?? 0),
+                $draft,
+                (float) ($settings['tourist_tax_per_person_per_night'] ?? 0),
+                $conn,
+                $company_id
+            );
+            $trustedTotal = itm_hotel_booking_portal_compute_checkout_total(
+                (float) $charge['base_per_night'],
+                (string) $charge['check_in'],
+                (string) $charge['check_out'],
+                $occupancy,
+                (float) $charge['discount_percent'],
+                (array) $charge['draft_for_pay'],
+                (float) ($settings['tourist_tax_per_person_per_night'] ?? 0),
+                $conn,
+                $company_id
+            );
+            @file_put_contents($dbgPath, json_encode([
+                'sessionId' => '261195',
+                'hypothesisId' => 'H1',
+                'location' => 'booking/rooms/room-single.php:charge',
+                'message' => 'step4 charge draft vs db resolve',
+                'data' => [
+                    'draft_discount' => (float) ($draft['discount_percent'] ?? 0),
+                    'db_discount' => (float) ($charge['discount_percent'] ?? 0),
+                    'draft_base' => (float) ($draft['base_price_per_night'] ?? 0),
+                    'db_base' => (float) ($charge['base_per_night'] ?? 0),
+                    'tampered_total' => $tamperedDraftTotal,
+                    'trusted_total' => $trustedTotal,
+                ],
+                'timestamp' => (int) round(microtime(true) * 1000),
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND | LOCK_EX);
+        }
+        // #endregion
+        if (empty($charge['ok'])) {
+            $error = (string) ($charge['error'] ?? 'Unable to price this stay. Please start again.');
+        } else {
         $customerId = itm_hotel_booking_ensure_customer_for_portal($conn, $company_id, $email, $fullName, $phone);
         if (!$customerId) {
             $error = 'Could not save guest details.';
         } else {
-            $hotelIdForRate = (int) ($room['hotel_id'] ?? 0);
-            $resolvedRate = $draft ? (string) ($draft['resolved_rate_slug'] ?? '') : itm_hotel_booking_portal_resolved_rate_slug($occupancy);
-            if ($resolvedRate === '') {
-                $resolvedRate = itm_hotel_booking_portal_resolved_rate_slug($occupancy);
-            }
-            $discount = $draft ? (float) ($draft['discount_percent'] ?? 0) : itm_hotel_booking_special_rate_discount($conn, $company_id, $hotelIdForRate, $resolvedRate);
-            $draftForPay = $draft ?: [
-                'rate_plan' => 'room_only',
-                'traveling_with_pet' => 0,
-                'service_animal' => 0,
-                'additional_comments' => '',
-            ];
-            $draftForPay['company_id'] = $company_id;
-            $draftForPay['hotel_id'] = $hotelIdForRate;
-            $draftForPay['room_type_id'] = (int) ($room['room_type_id'] ?? 0);
-            if ($draft && (int) ($draft['portal_rate_plan_id'] ?? 0) < 1) {
-                $defaultPlans = itm_hotel_booking_portal_rate_plans_active_for_hotel($conn, $company_id, $hotelIdForRate);
-                foreach ($defaultPlans as $defPlan) {
-                    $defSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($defPlan['rate_plan_slug'] ?? '')));
-                    if ($defSlug === (string) ($draftForPay['rate_plan'] ?? 'room_only')) {
-                        $draftForPay['portal_rate_plan_id'] = (int) ($defPlan['id'] ?? 0);
-                        $draftForPay['portal_rate_plan_name'] = (string) ($defPlan['name'] ?? '');
-                        break;
-                    }
-                }
-            }
-            $portalRatePlanId = (int) ($draftForPay['portal_rate_plan_id'] ?? 0);
-            $basePerNight = (float) ($draft && isset($draft['base_price_per_night'])
-                ? $draft['base_price_per_night']
-                : $room['price_per_night']);
+            $draftForPay = (array) ($charge['draft_for_pay'] ?? []);
+            $portalRatePlanId = (int) ($charge['portal_rate_plan_id'] ?? 0);
             $amount = itm_hotel_booking_portal_compute_checkout_total(
-                $basePerNight,
-                $checkIn,
-                $checkOut,
+                (float) $charge['base_per_night'],
+                (string) $charge['check_in'],
+                (string) $charge['check_out'],
                 $occupancy,
-                $discount,
+                (float) $charge['discount_percent'],
                 $draftForPay,
                 (float) ($settings['tourist_tax_per_person_per_night'] ?? 0),
                 $conn,
@@ -140,6 +156,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
             }
             $error = (string) ($insertResult['error'] ?? 'Booking failed.');
         }
+        }
+    }
     }
 }
 

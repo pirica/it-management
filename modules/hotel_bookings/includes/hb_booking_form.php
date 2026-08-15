@@ -303,7 +303,7 @@ if (!function_exists('hb_booking_render_form_fields')) {
             echo '<div class="form-group"><label>Auth code (auth2)</label>';
             echo '<input type="text" class="form-control" value="' . sanitize($auth2Display !== '' ? $auth2Display : '—') . '" readonly title="Guest manage PIN — generated on create"></div>';
         } else {
-            echo '<p class="text-muted" style="margin:0 0 12px;font-size:0.9em;">A random 4-digit <strong>auth2</strong> PIN is generated when the booking is saved (required for Manage my booking).</p>';
+            echo '<p class="text-muted" style="margin:0 0 12px;font-size:0.9em;">A random 12-character <strong>auth2</strong> code (uppercase, lowercase, numbers, symbols) is generated when the booking is saved. Legacy 4-digit codes remain valid for older reservations.</p>';
         }
 
         echo '<div class="form-group"><label>Planning color</label>';
