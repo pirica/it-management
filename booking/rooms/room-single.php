@@ -190,7 +190,7 @@ $reservationSummaryContext = [
 <title>Payment and Guest Details</title>
 <link rel="stylesheet" href="<?php echo APPURL; ?>/css/hotel-booking-modern.css">
 </head>
-<body class="hb-public hb-checkout-page">
+<body class="hb-public hb-checkout-page hb-checkout-page-step4">
 <?php hb_portal_render_header($settings); ?>
 <?php hb_portal_render_stay_bar($hotel, $checkInIso, $nights, $occupancy); ?>
 
@@ -244,9 +244,6 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
         <span>I agree to these terms</span>
     </label>
 </div>
-<div class="hb-checkout-actions hb-guest-form-actions">
-<button type="submit" class="hb-btn hb-btn-primary" id="btn-book-submit" title="Book and continue to payment">Book and continue to payment</button>
-</div>
 </form>
 </main>
 
@@ -262,26 +259,33 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 </div>
 </aside>
 </div>
+
+<div class="hb-checkout-sticky-cta" role="region" aria-label="Complete booking">
+<div class="hb-checkout-sticky-cta-inner">
+<p class="hb-checkout-sticky-total">Total due: <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($estimatedTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></p>
+<button type="submit" class="hb-btn hb-btn-primary" id="btn-book-submit" form="hb-guest-form" title="Book and continue to payment">Book and continue to payment</button>
+</div>
+</div>
 <script src="<?php echo htmlspecialchars(BASE_URL . 'js/hotel-date-input.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var agreeCheckbox = document.getElementById('agree_terms');
-    var submitButtons = document.querySelectorAll('#btn-book-submit, #btn-book-submit-aside');
+    var submitButton = document.getElementById('btn-book-submit');
     var form = document.getElementById('hb-guest-form');
 
     function syncButtonState() {
-        var enabled = agreeCheckbox && agreeCheckbox.checked;
-        submitButtons.forEach(function (submitButton) {
-            if (enabled) {
-                submitButton.classList.remove('hb-btn-disabled');
-                submitButton.disabled = false;
-                submitButton.style.cursor = 'pointer';
-            } else {
-                submitButton.classList.add('hb-btn-disabled');
-                submitButton.disabled = true;
-                submitButton.style.cursor = 'not-allowed';
-            }
-        });
+        if (!agreeCheckbox || !submitButton) {
+            return;
+        }
+        if (agreeCheckbox.checked) {
+            submitButton.classList.remove('hb-btn-disabled');
+            submitButton.disabled = false;
+            submitButton.style.cursor = 'pointer';
+        } else {
+            submitButton.classList.add('hb-btn-disabled');
+            submitButton.disabled = true;
+            submitButton.style.cursor = 'not-allowed';
+        }
     }
 
     if (agreeCheckbox && submitButtons.length) {
