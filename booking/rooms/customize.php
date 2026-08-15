@@ -212,6 +212,18 @@ $changeRateUrl = APPURL . '/rooms/select-rate.php?' . http_build_query(array_mer
     ['id' => $roomId, 'check_in' => $checkInIso, 'nights' => $nights],
     itm_hotel_booking_portal_occupancy_query_params($occupancy)
 ));
+$baseReservationRoomTitle = hb_portal_reservation_room_title($room);
+$upgradeReservationRoomTitle = '';
+if ($upgradeOffer) {
+    $upgradeReservationRoomTitle = hb_portal_reservation_room_title([
+        'type_name' => (string) ($upgradeOffer['target_name'] ?? ''),
+        'bed_summary' => (string) ($upgradeOffer['target_bed_summary'] ?? ''),
+        'name' => '',
+    ]);
+}
+$displayReservationRoomTitle = ($upgradeChecked && $upgradeReservationRoomTitle !== '')
+    ? $upgradeReservationRoomTitle
+    : $baseReservationRoomTitle;
 $reservationSummaryContext = [
     'room' => $room,
     'breakdown' => $breakdown,
@@ -220,6 +232,7 @@ $reservationSummaryContext = [
     'currency' => $currency,
     'draft' => $draftForBreakdown,
     'occupancy' => $occupancy,
+    'display_room_title' => $displayReservationRoomTitle,
 ];
 
 $upgradeRoomDetailHtml = '';
@@ -348,6 +361,8 @@ window.HB_CUSTOMIZE_UPGRADE = <?php echo json_encode([
     'hasUpgradeCheckbox' => (bool) $upgradeOffer,
     'petDailyFee' => $petDailyFee,
     'initialTravelingWithPet' => (bool) $travelingWithPet,
+    'baseRoomTitle' => $baseReservationRoomTitle,
+    'upgradeRoomTitle' => $upgradeReservationRoomTitle,
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 <?php if ($upgradeRoomDetailHtml !== ''): ?>
 window.HB_CUSTOMIZE_ROOM_DETAIL = <?php echo json_encode([

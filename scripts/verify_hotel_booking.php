@@ -1227,6 +1227,18 @@ if (strpos($customizeSrc, '$hideUpsellOptions') !== false
 }
 
 $portalCheckoutSrcMulti = (string) @file_get_contents(dirname(__DIR__) . '/booking/includes/portal_checkout.php');
+$customizeJsSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/js/hotel-booking-customize.js');
+if (strpos($customizeSrc, "'baseRoomTitle' => \$baseReservationRoomTitle") !== false
+    && strpos($customizeSrc, "'upgradeRoomTitle' => \$upgradeReservationRoomTitle") !== false
+    && strpos($customizeSrc, "'display_room_title' => \$displayReservationRoomTitle") !== false
+    && strpos($portalCheckoutSrcMulti, 'display_room_title') !== false
+    && strpos($customizeJsSrc, 'refreshRoomTitle') !== false
+    && strpos($customizeJsSrc, 'cfg.upgradeRoomTitle') !== false) {
+    hb_pass('customize upsell updates reservation summary room title');
+} else {
+    hb_fail('customize upsell reservation summary room title wiring missing');
+}
+
 if (strpos($portalCheckoutSrcMulti, 'itm_hotel_booking_portal_draft_room_lines_for_display') !== false
     && strpos($portalCheckoutSrcMulti, 'hb-reservation-summary-room-list') !== false
     && strpos($portalCheckoutSrcMulti, 'hb-reservation-room-line-price') !== false
