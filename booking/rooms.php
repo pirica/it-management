@@ -30,6 +30,57 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkInIso) || $checkInIso < $today) {
 }
 $checkOutIso = date('Y-m-d', strtotime($checkInIso . ' +' . $nights . ' day'));
 
+$roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
+$roomLinesContext = itm_hotel_booking_portal_room_lines_context_fingerprint($hotelId, $checkInIso, $nights, $occupancy);
+$roomLines = itm_hotel_booking_portal_room_lines_get_active($roomLinesContext);
+$pickError = '';
+$pickRoomId = (int) ($_GET['pick_room_id'] ?? 0);
+if ($pickRoomId > 0 && $roomsNeeded > 1) {
+    $pickResult = itm_hotel_booking_portal_room_line_pick($conn, $company_id, $hotelId, $pickRoomId, $checkInIso, $checkOutIso, $roomLines);
+    if (empty($pickResult['ok'])) {
+        $pickError = (string) ($pickResult['error'] ?? 'Room not available.');
+    } else {
+        $roomLines = (array) ($pickResult['lines'] ?? []);
+        itm_hotel_booking_portal_room_lines_persist_active($roomLinesContext, $roomLines);
+        // #region agent log
+        @file_put_contents(dirname(__DIR__) . '/debug-44bff2.log', json_encode([
+            'sessionId' => '44bff2',
+            'timestamp' => (int) round(microtime(true) * 1000),
+            'location' => 'booking/rooms.php:pick',
+            'message' => 'room line picked',
+            'data' => [
+                'pickRoomId' => $pickRoomId,
+                'lineCount' => count($roomLines),
+                'roomsNeeded' => $roomsNeeded,
+                'complete' => count($roomLines) >= $roomsNeeded,
+            ],
+            'hypothesisId' => 'B',
+            'runId' => 'verify',
+        ]) . "\n", FILE_APPEND);
+        // #endregion
+        if (count($roomLines) < $roomsNeeded) {
+            header('Location: ' . APPURL . '/rooms.php?' . hb_select_room_page_query($hotelId, $checkInIso, $nights, $occupancy));
+            exit;
+        }
+        $firstLine = $roomLines[0];
+        itm_hotel_booking_portal_draft_save([
+            'company_id' => $company_id,
+            'hotel_id' => $hotelId,
+            'room_id' => (int) ($firstLine['room_id'] ?? 0),
+            'room_type_id' => (int) ($firstLine['room_type_id'] ?? 0),
+            'check_in' => $checkInIso,
+            'check_out' => $checkOutIso,
+            'nights' => $nights,
+            'occupancy' => $occupancy,
+            'room_lines' => $roomLines,
+            'room_lines_context' => $roomLinesContext,
+        ]);
+        itm_hotel_booking_portal_room_lines_clear_active();
+        header('Location: ' . APPURL . '/rooms/select-rate.php?' . hb_select_room_book_query((int) $firstLine['room_id'], $checkInIso, $nights, $occupancy));
+        exit;
+    }
+}
+
 $discountPercent = itm_hotel_booking_special_rate_discount(
     $conn,
     $company_id,
@@ -188,7 +239,7 @@ $currency = $hotel['currency_code'] ?? 'EUR';
 $cardList = array_values($cards);
 $typeDetailsHtml = [];
 foreach ($cardList as $card) {
-    $bookUrl = APPURL . '/rooms/select-rate.php?' . hb_select_room_book_query((int) $card['book_room_id'], $checkInIso, $nights, $occupancy);
+    $bookUrl = hb_select_room_book_href($hotelId, (int) $card['book_room_id'], $checkInIso, $nights, $occupancy);
         $typeDetailsHtml[(string) $card['type_id']] = hb_portal_room_detail_modal_html(
         $card,
         $amenityRows,
@@ -235,6 +286,27 @@ function hb_select_room_book_query($roomId, $checkInIso, $nights, array $occupan
     return http_build_query($params);
 }
 
+function hb_select_room_pick_query($hotelId, $roomId, $checkInIso, $nights, array $occupancy) {
+    $params = array_merge(
+        [
+            'id' => (int) $hotelId,
+            'pick_room_id' => (int) $roomId,
+            'check_in' => $checkInIso,
+            'nights' => max(1, (int) $nights),
+        ],
+        itm_hotel_booking_portal_occupancy_query_params($occupancy)
+    );
+    return http_build_query($params);
+}
+
+function hb_select_room_book_href($hotelId, $roomId, $checkInIso, $nights, array $occupancy) {
+    $roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
+    if ($roomsNeeded > 1) {
+        return APPURL . '/rooms.php?' . hb_select_room_pick_query($hotelId, $roomId, $checkInIso, $nights, $occupancy);
+    }
+    return APPURL . '/rooms/select-rate.php?' . hb_select_room_book_query($roomId, $checkInIso, $nights, $occupancy);
+}
+
 $filterOptions = [
     'king' => 'King bed',
     'twin' => 'Twin beds',
@@ -263,6 +335,22 @@ $filterOptions = [
 <p class="hb-step-label">Step 1 of 4</p>
 <h1 class="hb-page-title">Select a Room</h1>
 
+<?php if ($roomsNeeded > 1): ?>
+<div class="hb-room-lines-banner" role="status">
+<p class="hb-room-lines-banner-lead"><strong>Room <?php echo min($roomsNeeded, count($roomLines) + 1); ?> of <?php echo (int) $roomsNeeded; ?></strong> — choose a room type for this slot.</p>
+<?php if (!empty($roomLines)): ?>
+<ul class="hb-room-lines-banner-list">
+<?php foreach ($roomLines as $idx => $line): ?>
+<li><span class="hb-room-lines-slot">Room <?php echo (int) $idx + 1; ?>:</span> <?php echo htmlspecialchars(itm_hotel_booking_portal_room_line_label($line), ENT_QUOTES, 'UTF-8'); ?></li>
+<?php endforeach; ?>
+</ul>
+<?php endif; ?>
+</div>
+<?php endif; ?>
+<?php if ($pickError !== ''): ?>
+<p class="hb-error"><?php echo htmlspecialchars($pickError, ENT_QUOTES, 'UTF-8'); ?></p>
+<?php endif; ?>
+
 <div class="hb-honors-banner">
 <span aria-hidden="true">💡</span>
 <span>Book direct for the best available rate and flexible stay options.</span>
@@ -287,7 +375,7 @@ $filterOptions = [
 
 <div class="hb-room-grid">
 <?php foreach ($cardList as $card):
-    $bookUrl = APPURL . '/rooms/select-rate.php?' . hb_select_room_book_query((int) $card['book_room_id'], $checkInIso, $nights, $occupancy);
+    $bookUrl = hb_select_room_book_href($hotelId, (int) $card['book_room_id'], $checkInIso, $nights, $occupancy);
 ?>
 <article class="hb-room-card<?php echo empty($card['available']) ? ' is-sold-out' : ''; ?>" data-base-price="<?php echo htmlspecialchars((string) $card['base_price'], ENT_QUOTES, 'UTF-8'); ?>" data-filter-tags="<?php echo htmlspecialchars($card['filter_tags'], ENT_QUOTES, 'UTF-8'); ?>" data-type-id="<?php echo (int) $card['type_id']; ?>">
 <div class="hb-room-card-head">

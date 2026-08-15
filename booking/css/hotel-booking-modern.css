@@ -400,6 +400,14 @@ body.hb-modal-open { overflow: hidden; }
 .hb-rate-price-stay-label { font-size: .75rem; font-weight: 600; color: var(--hb-muted); }
 .hb-rate-select-outline { background: #fff; color: var(--hb-primary); border: 2px solid var(--hb-primary); padding: 8px 28px; }
 .hb-rate-select-primary { padding: 8px 28px; }
+.hb-room-lines-banner { background: #eef4fb; border: 1px solid #c5d9f0; border-radius: 6px; padding: 14px 16px; margin: 0 0 20px; }
+.hb-room-lines-banner-lead { margin: 0 0 8px; font-size: .95rem; }
+.hb-room-lines-banner-list { margin: 0; padding-left: 1.2rem; font-size: .9rem; }
+.hb-room-lines-slot { font-weight: 600; }
+.hb-room-lines-summary { margin-bottom: 20px; }
+.hb-room-lines-summary-title { margin: 0 0 10px; font-size: 1rem; font-weight: 700; }
+.hb-room-lines-summary-list { margin: 0; padding-left: 1.2rem; font-size: .9rem; }
+.hb-room-lines-summary-slot { font-weight: 600; margin-right: 6px; }
 .hb-checkout-section { margin-top: 28px; }
 .hb-checkout-section-title { margin: 0 0 12px; font-size: 1rem; font-weight: 700; }
 .hb-checkout-check { display: block; margin-bottom: 8px; }

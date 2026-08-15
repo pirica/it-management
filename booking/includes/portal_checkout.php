@@ -71,6 +71,28 @@ if (!function_exists('hb_portal_render_checkout_stepper')) {
     }
 }
 
+if (!function_exists('hb_portal_render_room_lines_summary')) {
+    /**
+     * @param array<int,array> $roomLines
+     */
+    function hb_portal_render_room_lines_summary(array $roomLines, $roomsNeeded = 1) {
+        $roomsNeeded = max(1, (int) $roomsNeeded);
+        if ($roomsNeeded < 2 || count($roomLines) < 1) {
+            return;
+        }
+        ?>
+<section class="hb-room-lines-summary card" aria-label="Selected rooms">
+<h2 class="hb-room-lines-summary-title">Your rooms (<?php echo count($roomLines); ?> of <?php echo (int) $roomsNeeded; ?>)</h2>
+<ol class="hb-room-lines-summary-list">
+<?php foreach ($roomLines as $idx => $line): ?>
+<li><span class="hb-room-lines-summary-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars(itm_hotel_booking_portal_room_line_label($line), ENT_QUOTES, 'UTF-8'); ?></li>
+<?php endforeach; ?>
+</ol>
+</section>
+        <?php
+    }
+}
+
 if (!function_exists('hb_portal_render_reservation_summary')) {
     /**
      * Left-column reservation breakdown (steps 3–4).
@@ -416,6 +438,23 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <dt>Confirmation number</dt>
 <dd><strong><?php echo (int) $reservationId; ?></strong></dd>
 </div>
+<?php
+        $companionIds = [];
+        if (!empty($options['companion_booking_ids']) && is_array($options['companion_booking_ids'])) {
+            foreach ($options['companion_booking_ids'] as $cid) {
+                $cid = (int) $cid;
+                if ($cid > 0 && $cid !== (int) $reservationId) {
+                    $companionIds[] = $cid;
+                }
+            }
+            $companionIds = array_values(array_unique($companionIds));
+        }
+        if ($companionIds !== []): ?>
+<div class="hb-payment-detail-row">
+<dt>Additional rooms</dt>
+<dd><strong><?php echo htmlspecialchars(implode(', ', $companionIds), ENT_QUOTES, 'UTF-8'); ?></strong></dd>
+</div>
+<?php endif; ?>
 <?php if ($auth2Display !== ''): ?>
 <div class="hb-payment-detail-row">
 <dt>Auth code</dt>

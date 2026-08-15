@@ -92,6 +92,9 @@ $paymentConfirmationOptions = [
     'nights' => $nights,
     'conn' => $conn,
     'company_id' => $company_id,
+    'companion_booking_ids' => isset($_SESSION['hotel_booking_last_ids']) && is_array($_SESSION['hotel_booking_last_ids'])
+        ? $_SESSION['hotel_booking_last_ids']
+        : [],
 ];
 ?>
 <!DOCTYPE html>

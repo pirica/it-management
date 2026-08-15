@@ -86,11 +86,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
             $hs = (int) ($status['history_status_id'] ?? 0);
             $bookingColor = itm_hotel_booking_resolve_booking_color('', mt_rand(1, 99999));
             $auth2 = itm_hotel_booking_generate_auth2();
-            $insertResult = itm_hotel_booking_portal_insert_booking_locked(
+            $insertResult = itm_hotel_booking_portal_insert_stay_bookings_locked(
                 $conn,
                 $company_id,
                 $customerId,
-                $roomId,
+                array_merge($draft, ['room_id' => $roomId]),
                 $checkIn,
                 $checkOut,
                 $amount,
@@ -105,6 +105,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
             if (!empty($insertResult['ok']) && (int) ($insertResult['booking_id'] ?? 0) > 0) {
                 $bid = (int) $insertResult['booking_id'];
                 $_SESSION['hotel_booking_last_id'] = $bid;
+                if (!empty($insertResult['booking_ids']) && is_array($insertResult['booking_ids'])) {
+                    $_SESSION['hotel_booking_last_ids'] = array_values(array_map('intval', $insertResult['booking_ids']));
+                } else {
+                    unset($_SESSION['hotel_booking_last_ids']);
+                }
                 $_SESSION['hotel_booking_last_occupancy'] = itm_hotel_booking_portal_occupancy_query_params($occupancy);
                 itm_hotel_booking_portal_draft_clear();
                 header('Location: ' . APPURL . '/rooms/payment.php');

@@ -37,6 +37,33 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkInIso) || $checkInIso < $today) {
 }
 $checkOutIso = date('Y-m-d', strtotime($checkInIso . ' +' . $nights . ' day'));
 
+$roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
+$activeDraft = itm_hotel_booking_portal_draft_get() ?: [];
+$roomLines = itm_hotel_booking_portal_room_lines_from_draft(array_merge($activeDraft, ['room_id' => $roomId]));
+// #region agent log
+@file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
+    'sessionId' => '44bff2',
+    'timestamp' => (int) round(microtime(true) * 1000),
+    'location' => 'booking/rooms/select-rate.php:gate',
+    'message' => 'multi-room select-rate gate',
+    'data' => [
+        'roomsNeeded' => $roomsNeeded,
+        'lineCount' => count($roomLines),
+        'willRedirect' => $roomsNeeded > 1 && count($roomLines) < $roomsNeeded,
+        'roomId' => $roomId,
+    ],
+    'hypothesisId' => 'A',
+    'runId' => 'verify',
+]) . "\n", FILE_APPEND);
+// #endregion
+if ($roomsNeeded > 1 && count($roomLines) < $roomsNeeded) {
+    header('Location: ' . APPURL . '/rooms.php?' . http_build_query(array_merge(
+        ['id' => $hotelId, 'check_in' => $checkInIso, 'nights' => $nights],
+        itm_hotel_booking_portal_occupancy_query_params($occupancy)
+    )));
+    exit;
+}
+
 $resolvedRate = itm_hotel_booking_portal_resolved_rate_slug($occupancy);
 $discountPercent = itm_hotel_booking_special_rate_discount($conn, $company_id, $hotelId, $resolvedRate);
 $basePerNight = itm_hotel_booking_portal_check_in_display_bar(
@@ -150,6 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Please select a rate.';
         } else {
             $existingDraft = itm_hotel_booking_portal_draft_get();
+            $existingLines = is_array($existingDraft['room_lines'] ?? null) ? $existingDraft['room_lines'] : $roomLines;
             $planEffectiveDiscount = itm_hotel_booking_portal_rate_plan_effective_discount($discountPercent, $slug, $planRow);
             $planEffectiveSurcharge = itm_hotel_booking_portal_rate_plan_effective_surcharge($slug, $planRow);
             $draft = [
@@ -171,6 +199,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'resolved_rate_slug' => $resolvedRate,
                 'base_price_per_night' => $basePerNight,
                 'room_type_id' => (int) ($room['room_type_id'] ?? 0),
+                'room_lines' => $existingLines,
+                'room_lines_context' => itm_hotel_booking_portal_room_lines_context_fingerprint($hotelId, $checkInIso, $nights, $occupancy),
             ];
             itm_hotel_booking_portal_draft_save($draft);
             header('Location: ' . APPURL . '/rooms/customize.php');
@@ -208,6 +238,8 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
 <p><?php echo htmlspecialchars($breakfastInfo, ENT_QUOTES, 'UTF-8'); ?></p>
 </div>
 <p class="hb-rate-tax-note" style="margin:0 0 16px;font-size:.95rem;opacity:.9;">All prices shown include tourist tax for your guest count.</p>
+
+<?php hb_portal_render_room_lines_summary($roomLines, $roomsNeeded); ?>
 
 <?php if ($error !== ''): ?>
 <p class="hb-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>

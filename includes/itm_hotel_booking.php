@@ -1975,6 +1975,218 @@ if (!function_exists('itm_hotel_booking_portal_draft_save')) {
 if (!function_exists('itm_hotel_booking_portal_draft_clear')) {
   function itm_hotel_booking_portal_draft_clear() {
     unset($_SESSION[itm_hotel_booking_portal_draft_session_key()]);
+    unset($_SESSION['hotel_booking_portal_room_lines_active']);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_lines_context_fingerprint')) {
+  function itm_hotel_booking_portal_room_lines_context_fingerprint($hotelId, $checkIn, $nights, array $occupancy) {
+    $occ = itm_hotel_booking_portal_parse_occupancy($occupancy);
+    return (int) $hotelId . '|' . (string) $checkIn . '|' . max(1, (int) $nights)
+      . '|' . (int) $occ['rooms'] . '|' . (int) $occ['adults'] . '|' . (int) $occ['children'] . '|' . (int) $occ['babies'];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_lines_get_active')) {
+  function itm_hotel_booking_portal_room_lines_get_active($contextFingerprint) {
+    $bucket = $_SESSION['hotel_booking_portal_room_lines_active'] ?? null;
+    if (!is_array($bucket) || ($bucket['context'] ?? '') !== (string) $contextFingerprint) {
+      return [];
+    }
+    $lines = $bucket['lines'] ?? [];
+    return is_array($lines) ? $lines : [];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_lines_persist_active')) {
+  function itm_hotel_booking_portal_room_lines_persist_active($contextFingerprint, array $lines) {
+    $_SESSION['hotel_booking_portal_room_lines_active'] = [
+      'context' => (string) $contextFingerprint,
+      'lines' => array_values($lines),
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_lines_clear_active')) {
+  function itm_hotel_booking_portal_room_lines_clear_active() {
+    unset($_SESSION['hotel_booking_portal_room_lines_active']);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_line_normalize')) {
+  function itm_hotel_booking_portal_room_line_normalize(array $line) {
+    return [
+      'room_id' => (int) ($line['room_id'] ?? 0),
+      'room_type_id' => (int) ($line['room_type_id'] ?? 0),
+      'type_name' => trim((string) ($line['type_name'] ?? '')),
+      'type_code' => trim((string) ($line['type_code'] ?? '')),
+      'bed_summary' => trim((string) ($line['bed_summary'] ?? '')),
+      'base_price_per_night' => (float) ($line['base_price_per_night'] ?? 0),
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_line_label')) {
+  function itm_hotel_booking_portal_room_line_label(array $line) {
+    $name = trim((string) ($line['type_name'] ?? ''));
+    $bed = trim((string) ($line['bed_summary'] ?? ''));
+    if ($name === '') {
+      return 'Room';
+    }
+    if ($bed !== '' && stripos($name, $bed) === false) {
+      return $name . ' ' . $bed;
+    }
+    return $name;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_lines_from_draft')) {
+  function itm_hotel_booking_portal_room_lines_from_draft(array $draft) {
+    $raw = $draft['room_lines'] ?? [];
+    if (!is_array($raw) || $raw === []) {
+      $roomId = (int) ($draft['room_id'] ?? 0);
+      if ($roomId < 1) {
+        return [];
+      }
+      return [itm_hotel_booking_portal_room_line_normalize([
+        'room_id' => $roomId,
+        'room_type_id' => (int) ($draft['room_type_id'] ?? 0),
+        'type_name' => (string) ($draft['type_name'] ?? ''),
+        'bed_summary' => (string) ($draft['bed_summary'] ?? ''),
+        'base_price_per_night' => (float) ($draft['base_price_per_night'] ?? 0),
+      ])];
+    }
+    $lines = [];
+    foreach ($raw as $line) {
+      if (!is_array($line)) {
+        continue;
+      }
+      $normalized = itm_hotel_booking_portal_room_line_normalize($line);
+      if ($normalized['room_id'] > 0) {
+        $lines[] = $normalized;
+      }
+    }
+    return $lines;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_line_pick')) {
+  /**
+   * @return array{ok:bool,error?:string,lines?:array}
+   */
+  function itm_hotel_booking_portal_room_line_pick($conn, $companyId, $hotelId, $roomId, $checkIn, $checkOut, array $existingLines) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $roomId = (int) $roomId;
+    if ($companyId < 1 || $hotelId < 1 || $roomId < 1) {
+      return ['ok' => false, 'error' => 'Invalid room selection.'];
+    }
+    $sql = 'SELECT r.id, r.hotel_id, r.room_type_id, COALESCE(bp.price_per_night, 0.00) AS price_per_night,
+            r.is_out_of_order, r.is_out_of_service, t.name AS type_name, t.code AS type_code, t.bed_summary
+            FROM hotel_booking_rooms r
+            INNER JOIN booking_rooms_types t ON t.id = r.room_type_id AND t.company_id = r.company_id
+            LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL
+            WHERE r.id = ? AND r.company_id = ? AND r.hotel_id = ? AND r.deleted_at IS NULL AND r.active = 1 LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return ['ok' => false, 'error' => 'Room not available.'];
+    }
+    mysqli_stmt_bind_param($stmt, 'iii', $roomId, $companyId, $hotelId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    if (!$row) {
+      return ['ok' => false, 'error' => 'Room not available.'];
+    }
+    if (!empty($row['is_out_of_order']) || !empty($row['is_out_of_service'])) {
+      return ['ok' => false, 'error' => 'That room type is sold out for your dates.'];
+    }
+    $typeId = (int) ($row['room_type_id'] ?? 0);
+    $availableUnits = itm_hotel_booking_portal_count_available_rooms_for_type($conn, $companyId, $hotelId, $typeId, $checkIn, $checkOut, []);
+    $alreadyPicked = 0;
+    foreach ($existingLines as $line) {
+      if ((int) ($line['room_type_id'] ?? 0) === $typeId) {
+        $alreadyPicked++;
+      }
+    }
+    if ($alreadyPicked >= $availableUnits) {
+      return ['ok' => false, 'error' => 'Not enough availability for that room type.'];
+    }
+    $baseBar = itm_hotel_booking_portal_check_in_display_bar($conn, $companyId, $hotelId, $typeId, $checkIn, (float) ($row['price_per_night'] ?? 0));
+    $line = itm_hotel_booking_portal_room_line_normalize([
+      'room_id' => $roomId,
+      'room_type_id' => $typeId,
+      'type_name' => (string) ($row['type_name'] ?? ''),
+      'type_code' => (string) ($row['type_code'] ?? ''),
+      'bed_summary' => (string) ($row['bed_summary'] ?? ''),
+      'base_price_per_night' => $baseBar,
+    ]);
+    $lines = $existingLines;
+    $lines[] = $line;
+    return ['ok' => true, 'lines' => $lines];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_count_available_rooms_for_type')) {
+  function itm_hotel_booking_portal_count_available_rooms_for_type($conn, $companyId, $hotelId, $roomTypeId, $checkIn, $checkOut, array $excludeRoomIds = []) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $roomTypeId = (int) $roomTypeId;
+    $excludeRoomIds = array_values(array_unique(array_map('intval', $excludeRoomIds)));
+    $sql = 'SELECT r.id, r.is_out_of_order, r.is_out_of_service, COALESCE(bp.price_per_night, 0.00) AS price_per_night
+            FROM hotel_booking_rooms r
+            LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL
+            WHERE r.company_id = ? AND r.hotel_id = ? AND r.room_type_id = ? AND r.deleted_at IS NULL AND r.active = 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return 0;
+    }
+    mysqli_stmt_bind_param($stmt, 'iii', $companyId, $hotelId, $roomTypeId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $count = 0;
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+      $rid = (int) ($row['id'] ?? 0);
+      if ($rid < 1 || in_array($rid, $excludeRoomIds, true)) {
+        continue;
+      }
+      if (!empty($row['is_out_of_order']) || !empty($row['is_out_of_service'])) {
+        continue;
+      }
+      if (!itm_hotel_booking_room_unavailable_for_stay($conn, $companyId, $rid, $checkIn, $checkOut, 0, $row)) {
+        $count++;
+      }
+    }
+    mysqli_stmt_close($stmt);
+    return $count;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_allocate_room_id_for_line')) {
+  function itm_hotel_booking_portal_allocate_room_id_for_line($conn, $companyId, $hotelId, array $line, $checkIn, $checkOut, array $excludeRoomIds) {
+    $preferredId = (int) ($line['room_id'] ?? 0);
+    $typeId = (int) ($line['room_type_id'] ?? 0);
+    if ($preferredId > 0 && !in_array($preferredId, $excludeRoomIds, true)) {
+      $sql = 'SELECT r.id, r.is_out_of_order, r.is_out_of_service, COALESCE(bp.price_per_night, 0.00) AS price_per_night
+              FROM hotel_booking_rooms r
+              LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL
+              WHERE r.id = ? AND r.company_id = ? AND r.hotel_id = ? AND r.deleted_at IS NULL AND r.active = 1 LIMIT 1';
+      $stmt = mysqli_prepare($conn, $sql);
+      if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'iii', $preferredId, $companyId, $hotelId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        if ($row && empty($row['is_out_of_order']) && empty($row['is_out_of_service'])
+          && !itm_hotel_booking_room_unavailable_for_stay($conn, $companyId, $preferredId, $checkIn, $checkOut, 0, $row)) {
+          return $preferredId;
+        }
+      }
+    }
+    $pick = itm_hotel_booking_portal_find_available_room_for_type($conn, $companyId, $hotelId, $typeId, $checkIn, $checkOut, $excludeRoomIds);
+    return $pick ? (int) ($pick['id'] ?? 0) : 0;
   }
 }
 
@@ -2142,6 +2354,8 @@ if (!function_exists('itm_hotel_booking_portal_resolve_step4_charge')) {
       'additional_comments' => (string) ($draft['additional_comments'] ?? ''),
       'resolved_rate_slug' => $rateSlug,
       'surcharge_percent' => $surchargePercent,
+      'room_lines' => itm_hotel_booking_portal_room_lines_from_draft($draft),
+      'room_id' => (int) ($draft['room_id'] ?? 0),
     ];
     if (!empty($draft['upgrade_accepted'])) {
       $origTypeId = (int) ($draft['room_type_id'] ?? 0);
@@ -2167,9 +2381,6 @@ if (!function_exists('itm_hotel_booking_portal_resolve_step4_charge')) {
 
 if (!function_exists('itm_hotel_booking_portal_room_charges_subtotal')) {
   function itm_hotel_booking_portal_room_charges_subtotal($basePerNight, $checkIn, $checkOut, array $occupancy, $discountPercent, array $draft, $conn = null, $companyId = 0, $trustDraftPricing = true) {
-    if ($trustDraftPricing && isset($draft['base_price_per_night']) && $draft['base_price_per_night'] !== '') {
-      $basePerNight = (float) $draft['base_price_per_night'];
-    }
     $companyId = (int) ($draft['company_id'] ?? $companyId);
     $hotelId = (int) ($draft['hotel_id'] ?? 0);
     $roomTypeId = (int) ($draft['room_type_id'] ?? 0);
@@ -2177,6 +2388,54 @@ if (!function_exists('itm_hotel_booking_portal_room_charges_subtotal')) {
       ? itm_hotel_booking_portal_hotel_pricing($conn, $companyId, $hotelId)
       : itm_hotel_booking_portal_pricing_defaults();
     $surchargePercent = max(0.0, min(50.0, (float) ($draft['surcharge_percent'] ?? 0)));
+    $roomLines = itm_hotel_booking_portal_room_lines_from_draft($draft);
+    $lineTypeIds = [];
+    foreach ($roomLines as $line) {
+      $lineTypeIds[(int) ($line['room_type_id'] ?? 0)] = true;
+    }
+    unset($lineTypeIds[0]);
+    if (count($roomLines) > 1 && count($lineTypeIds) > 1 && $conn && $companyId > 0 && $hotelId > 0) {
+      $roomTotal = 0.0;
+      $lineCount = count($roomLines);
+      foreach ($roomLines as $idx => $line) {
+        $lineOcc = itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, (int) $idx, $lineCount);
+        $base = (float) ($line['base_price_per_night'] ?? 0);
+        if ($base <= 0) {
+          $base = itm_hotel_booking_portal_check_in_display_bar($conn, $companyId, $hotelId, (int) ($line['room_type_id'] ?? 0), $checkIn, 0);
+        }
+        $roomTotal += itm_hotel_booking_compute_stay_payment_dated_rates(
+          $conn,
+          $companyId,
+          $hotelId,
+          (int) ($line['room_type_id'] ?? 0),
+          $base,
+          $checkIn,
+          $checkOut,
+          $lineOcc,
+          $discountPercent,
+          $pricing,
+          $surchargePercent
+        );
+      }
+      $nights = itm_hotel_booking_portal_stay_nights($checkIn, $checkOut);
+      $extras = 0.0;
+      if (($draft['rate_plan'] ?? '') === 'breakfast' && $nights > 0) {
+        $extras += itm_hotel_booking_portal_breakfast_supplement_per_night($occupancy, $conn, $companyId, $hotelId) * $nights;
+      }
+      if (!empty($draft['traveling_with_pet']) && $nights > 0) {
+        $extras += itm_hotel_booking_portal_pet_daily_fee($conn, $companyId, $hotelId) * $nights;
+      }
+      if (!empty($draft['upgrade_accepted']) && $nights > 0) {
+        $upgradePerNight = (float) ($draft['upgrade_price_per_night'] ?? 0);
+        if ($upgradePerNight > 0) {
+          $extras += $upgradePerNight * $nights;
+        }
+      }
+      return round($roomTotal + $extras, 2);
+    }
+    if ($trustDraftPricing && isset($draft['base_price_per_night']) && $draft['base_price_per_night'] !== '') {
+      $basePerNight = (float) $draft['base_price_per_night'];
+    }
     if ($conn && $companyId > 0 && $hotelId > 0 && $roomTypeId > 0) {
       $roomTotal = itm_hotel_booking_compute_stay_payment_dated_rates($conn, $companyId, $hotelId, $roomTypeId, $basePerNight, $checkIn, $checkOut, $occupancy, $discountPercent, $pricing, $surchargePercent);
     } else {
@@ -2466,10 +2725,11 @@ if (!function_exists('itm_hotel_booking_portal_room_type_upgrade_offer')) {
 }
 
 if (!function_exists('itm_hotel_booking_portal_find_available_room_for_type')) {
-  function itm_hotel_booking_portal_find_available_room_for_type($conn, $companyId, $hotelId, $roomTypeId, $checkIn, $checkOut) {
+  function itm_hotel_booking_portal_find_available_room_for_type($conn, $companyId, $hotelId, $roomTypeId, $checkIn, $checkOut, array $excludeRoomIds = []) {
     $companyId = (int) $companyId;
     $hotelId = (int) $hotelId;
     $roomTypeId = (int) $roomTypeId;
+    $excludeRoomIds = array_values(array_unique(array_map('intval', $excludeRoomIds)));
     $sql = 'SELECT r.id, r.hotel_id, r.room_type_id, COALESCE(bp.price_per_night, 0.00) AS price_per_night, r.is_out_of_order, r.is_out_of_service FROM hotel_booking_rooms r
             LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL
             WHERE r.company_id = ? AND r.hotel_id = ? AND r.room_type_id = ? AND r.deleted_at IS NULL AND r.active = 1
@@ -2484,13 +2744,35 @@ if (!function_exists('itm_hotel_booking_portal_find_available_room_for_type')) {
     $pick = null;
     while ($res && ($row = mysqli_fetch_assoc($res))) {
       $rid = (int) ($row['id'] ?? 0);
-      if ($rid > 0 && !itm_hotel_booking_room_unavailable_for_stay($conn, $companyId, $rid, $checkIn, $checkOut, 0, $row)) {
+      if ($rid > 0 && !in_array($rid, $excludeRoomIds, true) && !itm_hotel_booking_room_unavailable_for_stay($conn, $companyId, $rid, $checkIn, $checkOut, 0, $row)) {
         $pick = $row;
         break;
       }
     }
     mysqli_stmt_close($stmt);
     return $pick;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_split_occupancy_for_room_line')) {
+  function itm_hotel_booking_portal_split_occupancy_for_room_line(array $occupancy, $lineIndex, $lineCount) {
+    $occ = itm_hotel_booking_portal_parse_occupancy($occupancy);
+    $occ['rooms'] = 1;
+    $lineCount = max(1, (int) $lineCount);
+    $lineIndex = max(0, min($lineCount - 1, (int) $lineIndex));
+    $adults = max(1, (int) ($occ['adults'] ?? 1));
+    $children = max(0, (int) ($occ['children'] ?? 0));
+    $babies = max(0, (int) ($occ['babies'] ?? 0));
+    $adultsPer = (int) floor($adults / $lineCount);
+    $adultsRem = $adults % $lineCount;
+    $childrenPer = (int) floor($children / $lineCount);
+    $childrenRem = $children % $lineCount;
+    $babiesPer = (int) floor($babies / $lineCount);
+    $babiesRem = $babies % $lineCount;
+    $occ['adults'] = max(1, $adultsPer + ($lineIndex < $adultsRem ? 1 : 0));
+    $occ['children'] = $childrenPer + ($lineIndex < $childrenRem ? 1 : 0);
+    $occ['babies'] = $babiesPer + ($lineIndex < $babiesRem ? 1 : 0);
+    return $occ;
   }
 }
 
@@ -4193,5 +4475,108 @@ if (!function_exists('itm_hotel_booking_portal_insert_booking_locked')) {
       return ['ok' => false, 'error' => 'Booking failed.'];
     }
     return ['ok' => true, 'booking_id' => $bookingId];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_insert_stay_bookings_locked')) {
+  /**
+   * @return array{ok:bool,booking_id?:int,booking_ids?:int[],error?:string}
+   */
+  function itm_hotel_booking_portal_insert_stay_bookings_locked(
+    $conn,
+    $companyId,
+    $customerId,
+    array $draft,
+    $checkIn,
+    $checkOut,
+    $totalAmount,
+    $auth2,
+    $portalRatePlanId,
+    $notes,
+    $bookingColor,
+    $futureStatusId,
+    $presentStatusId,
+    $historyStatusId
+  ) {
+    $roomLines = itm_hotel_booking_portal_room_lines_from_draft($draft);
+    $hotelId = (int) ($draft['hotel_id'] ?? 0);
+    if (count($roomLines) < 2) {
+      $roomId = (int) ($draft['room_id'] ?? ($roomLines[0]['room_id'] ?? 0));
+      $single = itm_hotel_booking_portal_insert_booking_locked(
+        $conn,
+        $companyId,
+        $customerId,
+        $roomId,
+        $checkIn,
+        $checkOut,
+        $totalAmount,
+        $auth2,
+        $portalRatePlanId,
+        $notes,
+        $bookingColor,
+        $futureStatusId,
+        $presentStatusId,
+        $historyStatusId
+      );
+      if (!empty($single['ok'])) {
+        $single['booking_ids'] = [(int) ($single['booking_id'] ?? 0)];
+      }
+      return $single;
+    }
+    $allocated = [];
+    $bookingIds = [];
+    $lineCount = count($roomLines);
+    $amountShares = [];
+    $running = 0.0;
+    $share = round(((float) $totalAmount) / $lineCount, 2);
+    for ($i = 0; $i < $lineCount; $i++) {
+      if ($i === $lineCount - 1) {
+        $amountShares[] = round((float) $totalAmount - $running, 2);
+      } else {
+        $amountShares[] = $share;
+        $running += $share;
+      }
+    }
+    foreach ($roomLines as $idx => $line) {
+      $roomId = itm_hotel_booking_portal_allocate_room_id_for_line($conn, $companyId, $hotelId, $line, $checkIn, $checkOut, $allocated);
+      if ($roomId < 1) {
+        return ['ok' => false, 'error' => 'Room not available.'];
+      }
+      $allocated[] = $roomId;
+      $lineNotes = (string) $notes;
+      $result = itm_hotel_booking_portal_insert_booking_locked(
+        $conn,
+        $companyId,
+        $customerId,
+        $roomId,
+        $checkIn,
+        $checkOut,
+        (float) ($amountShares[$idx] ?? 0),
+        $auth2,
+        $portalRatePlanId,
+        $lineNotes,
+        $bookingColor,
+        $futureStatusId,
+        $presentStatusId,
+        $historyStatusId
+      );
+      if (empty($result['ok']) || (int) ($result['booking_id'] ?? 0) < 1) {
+        return ['ok' => false, 'error' => (string) ($result['error'] ?? 'Booking failed.')];
+      }
+      $bookingIds[] = (int) $result['booking_id'];
+    }
+    if (count($bookingIds) > 1) {
+      $groupNote = "\nMulti-room stay — confirmation numbers: " . implode(', ', $bookingIds) . '.';
+      $upd = mysqli_prepare($conn, 'UPDATE hotel_bookings SET notes = CONCAT(notes, ?) WHERE company_id = ? AND id = ? LIMIT 1');
+      if ($upd) {
+        foreach ($bookingIds as $bid) {
+          $bid = (int) $bid;
+          mysqli_stmt_bind_param($upd, 'sii', $groupNote, $companyId, $bid);
+          mysqli_stmt_execute($upd);
+        }
+        mysqli_stmt_close($upd);
+      }
+    }
+    return ['ok' => true, 'booking_id' => (int) $bookingIds[0], 'booking_ids' => $bookingIds];
   }
 }
