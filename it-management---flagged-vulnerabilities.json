@@ -2,7 +2,7 @@
     "findings": [
         {
             "title": "Remote Code Execution (RCE) via Cancellation Policy URL Uploads in Rate Plans",
-            "status": "active",
+            "status": "remediated",
             "commit_hash": "9201b3f87a67471d1d6963072b007b0bc651ee57",
             "detected_at_pst": "2026-06-08T13:00:00-07:00",
             "reported_link": "",
