@@ -234,6 +234,46 @@ foreach ($rooms as $room) {
     }
 }
 
+if ($roomsNeeded > 1 && $roomLines !== []) {
+    $pickedRoomIds = [];
+    $pickedByType = [];
+    foreach ($roomLines as $pickedLine) {
+        $pickedRid = (int) ($pickedLine['room_id'] ?? 0);
+        $pickedTid = (int) ($pickedLine['room_type_id'] ?? 0);
+        if ($pickedRid > 0) {
+            $pickedRoomIds[] = $pickedRid;
+        }
+        if ($pickedTid > 0) {
+            $pickedByType[$pickedTid] = (int) ($pickedByType[$pickedTid] ?? 0) + 1;
+        }
+    }
+    foreach ($cards as $typeKey => &$cardRef) {
+        $pickedCount = (int) ($pickedByType[$typeKey] ?? 0);
+        if ($pickedCount > 0) {
+            $cardRef['available_units'] = max(0, (int) $cardRef['available_units'] - $pickedCount);
+        }
+        $cardRef['available'] = (int) $cardRef['available_units'] > 0 && !empty($cardRef['fits_occupancy']);
+        if (!empty($cardRef['available'])) {
+            $allocPick = itm_hotel_booking_portal_find_available_room_for_type(
+                $conn,
+                $company_id,
+                $hotelId,
+                (int) $typeKey,
+                $checkInIso,
+                $checkOutIso,
+                $pickedRoomIds
+            );
+            if ($allocPick) {
+                $cardRef['book_room_id'] = (int) ($allocPick['id'] ?? $cardRef['book_room_id']);
+            } else {
+                $cardRef['available'] = false;
+                $cardRef['available_units'] = 0;
+            }
+        }
+    }
+    unset($cardRef);
+}
+
 $currency = $hotel['currency_code'] ?? 'EUR';
 
 $cardList = array_values($cards);
@@ -337,7 +377,7 @@ $filterOptions = [
 
 <?php if ($roomsNeeded > 1): ?>
 <div class="hb-room-lines-banner" role="status">
-<p class="hb-room-lines-banner-lead"><strong>Room <?php echo min($roomsNeeded, count($roomLines) + 1); ?> of <?php echo (int) $roomsNeeded; ?></strong> — choose a room type for this slot.</p>
+<p class="hb-room-lines-banner-lead"><strong>Room <?php echo min($roomsNeeded, count($roomLines) + 1); ?> of <?php echo (int) $roomsNeeded; ?></strong> — choose a room type for this slot.<?php if (count($roomLines) > 0): ?> Types already chosen with no more units show as unavailable — pick a different room type.<?php endif; ?></p>
 <?php if (!empty($roomLines)): ?>
 <ul class="hb-room-lines-banner-list">
 <?php foreach ($roomLines as $idx => $line): ?>

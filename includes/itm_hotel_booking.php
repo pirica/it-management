@@ -2103,15 +2103,38 @@ if (!function_exists('itm_hotel_booking_portal_room_line_pick')) {
       return ['ok' => false, 'error' => 'That room type is sold out for your dates.'];
     }
     $typeId = (int) ($row['room_type_id'] ?? 0);
-    $availableUnits = itm_hotel_booking_portal_count_available_rooms_for_type($conn, $companyId, $hotelId, $typeId, $checkIn, $checkOut, []);
-    $alreadyPicked = 0;
+    $excludeRoomIds = [];
     foreach ($existingLines as $line) {
-      if ((int) ($line['room_type_id'] ?? 0) === $typeId) {
-        $alreadyPicked++;
+      $rid = (int) ($line['room_id'] ?? 0);
+      if ($rid > 0) {
+        $excludeRoomIds[] = $rid;
       }
     }
-    if ($alreadyPicked >= $availableUnits) {
-      return ['ok' => false, 'error' => 'Not enough availability for that room type.'];
+    $alloc = itm_hotel_booking_portal_find_available_room_for_type($conn, $companyId, $hotelId, $typeId, $checkIn, $checkOut, $excludeRoomIds);
+    // #region agent log
+    @file_put_contents(dirname(__DIR__) . '/debug-44bff2.log', json_encode([
+      'sessionId' => '44bff2',
+      'timestamp' => (int) round(microtime(true) * 1000),
+      'location' => 'includes/itm_hotel_booking.php:room_line_pick',
+      'message' => 'room line pick availability',
+      'data' => [
+        'pickRoomId' => $roomId,
+        'typeId' => $typeId,
+        'excludeRoomIds' => $excludeRoomIds,
+        'allocRoomId' => $alloc ? (int) ($alloc['id'] ?? 0) : 0,
+        'existingLineCount' => count($existingLines),
+      ],
+      'hypothesisId' => 'C',
+      'runId' => 'verify',
+    ]) . "\n", FILE_APPEND);
+    // #endregion
+    if (!$alloc) {
+      return ['ok' => false, 'error' => 'Not enough availability for that room type. Choose another room type.'];
+    }
+    $roomId = (int) ($alloc['id'] ?? 0);
+    if ($roomId > 0) {
+      $row['id'] = $roomId;
+      $row['price_per_night'] = $alloc['price_per_night'] ?? $row['price_per_night'];
     }
     $baseBar = itm_hotel_booking_portal_check_in_display_bar($conn, $companyId, $hotelId, $typeId, $checkIn, (float) ($row['price_per_night'] ?? 0));
     $line = itm_hotel_booking_portal_room_line_normalize([
