@@ -61,6 +61,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
         $error = 'Invalid dates.';
     } else {
         $charge = itm_hotel_booking_portal_resolve_step4_charge($conn, $company_id, $room, $draft, $occupancy);
+        // #region agent log
+        $dbgPath = dirname(__DIR__, 2) . '/debug-261195.log';
+        if (is_array($charge) && !empty($charge['ok'])) {
+            $tamperedDraftTotal = itm_hotel_booking_portal_compute_checkout_total(
+                (float) ($draft['base_price_per_night'] ?? $room['price_per_night']),
+                $checkIn,
+                $checkOut,
+                $occupancy,
+                (float) ($draft['discount_percent'] ?? 0),
+                $draft,
+                (float) ($settings['tourist_tax_per_person_per_night'] ?? 0),
+                $conn,
+                $company_id
+            );
+            $trustedTotal = itm_hotel_booking_portal_compute_checkout_total(
+                (float) $charge['base_per_night'],
+                (string) $charge['check_in'],
+                (string) $charge['check_out'],
+                $occupancy,
+                (float) $charge['discount_percent'],
+                (array) $charge['draft_for_pay'],
+                (float) ($settings['tourist_tax_per_person_per_night'] ?? 0),
+                $conn,
+                $company_id
+            );
+            @file_put_contents($dbgPath, json_encode([
+                'sessionId' => '261195',
+                'hypothesisId' => 'H1',
+                'location' => 'booking/rooms/room-single.php:charge',
+                'message' => 'step4 charge draft vs db resolve',
+                'data' => [
+                    'draft_discount' => (float) ($draft['discount_percent'] ?? 0),
+                    'db_discount' => (float) ($charge['discount_percent'] ?? 0),
+                    'draft_base' => (float) ($draft['base_price_per_night'] ?? 0),
+                    'db_base' => (float) ($charge['base_per_night'] ?? 0),
+                    'tampered_total' => $tamperedDraftTotal,
+                    'trusted_total' => $trustedTotal,
+                ],
+                'timestamp' => (int) round(microtime(true) * 1000),
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND | LOCK_EX);
+        }
+        // #endregion
         if (empty($charge['ok'])) {
             $error = (string) ($charge['error'] ?? 'Unable to price this stay. Please start again.');
         } else {
