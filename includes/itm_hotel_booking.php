@@ -2811,6 +2811,7 @@ if (!function_exists('itm_hotel_booking_portal_confirmation_group_room_display_a
     $roomLines = [];
     foreach ($groupRows as $row) {
       $roomLines[] = [
+        'room_id' => (int) ($row['room_id'] ?? 0),
         'room_type_id' => (int) ($row['room_type_id'] ?? 0),
         'base_price_per_night' => (float) ($row['price_per_night'] ?? 0),
         'type_name' => (string) ($row['type_name'] ?? ''),

@@ -1251,7 +1251,8 @@ if (function_exists('itm_hotel_booking_portal_multi_room_payment_shares')) {
         && $shareSum === 211.0
         && (float) ($proportionalShares[0] ?? 0) !== (float) ($proportionalShares[1] ?? 0)
         && strpos($bookingHelperSrc, 'itm_hotel_booking_portal_confirmation_group_room_display_amounts') !== false
-        && strpos($portalCheckoutSrcMulti, 'groupRoomDisplayAmounts') !== false) {
+        && strpos($portalCheckoutSrcMulti, 'groupRoomDisplayAmounts') !== false
+    && strpos($bookingHelperSrc, "'room_id' => (int) (\$row['room_id']") !== false) {
         hb_pass('portal multi-room payment shares weighted by room rate');
     } else {
         hb_fail('portal multi-room payment shares weighted by room rate');
