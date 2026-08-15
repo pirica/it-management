@@ -214,6 +214,8 @@
       '<div class="hb-action-links">' +
       (h.location ? '<a href="https://maps.google.com/?q=' + encodeURIComponent(h.location) + '" target="_blank" rel="noopener"><span aria-hidden="true">📍</span> Directions</a>' : '') +
       (h.website_url ? '<a href="' + escapeHtml(h.website_url) + '" target="_blank" rel="noopener"><span aria-hidden="true">🌐</span> Visit website</a>' : '') +
+      (h.contact_email ? '<a href="mailto:' + escapeHtml(h.contact_email) + '" title="General information email"><span aria-hidden="true">ℹ️</span> Info</a>' : '') +
+      (h.reservations_email ? '<a href="mailto:' + escapeHtml(h.reservations_email) + '" title="Reservations email"><span aria-hidden="true">📧</span> Email</a>' : '') +
       (h.phone ? '<a href="tel:' + escapeHtml(h.phone) + '"><span aria-hidden="true">📞</span> ' + escapeHtml(h.phone) + '</a>' : '') +
       '</div>' +
       '<section class="hb-block"><h3>Description</h3>' +

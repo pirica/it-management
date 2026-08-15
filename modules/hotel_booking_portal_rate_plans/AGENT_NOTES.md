@@ -13,6 +13,7 @@ Admin UI for **Step 2** portal rate plans (`hotel_booking_portal_rate_plans`) an
 
 - `itm_hotel_booking_ensure_portal_rate_plans_for_hotel()` seeds four default slots when a hotel is opened in admin (including merchandising defaults from `itm_hotel_booking_portal_rate_plan_offer()`).
 - **Portal step pricing** on `index.php` (hotel selector) saves via `itm_hotel_booking_portal_save_hotel_pricing()` — one set of values per hotel, used by `itm_hotel_booking_portal_hotel_pricing()` in checkout math.
+- Hotel selector header shows **Info** (`contact_email`) and **Email** (`reservations_email`) mailto links for the active property (same labels as the public portal).
 - List: `itm_hotel_booking_portal_rate_plans_admin_rows()` returns all DB rows for the hotel (ordered by `plan_slot`).
 - Public Step 2 (`booking/rooms/select-rate.php`) lists active plans; cancel `{date}` uses plan override days or company `hotel_booking_settings.free_cancellation_days_before_check_in`.
 - Pricing: `plan_discount_percent` (0–50) reduces BAR; `plan_surcharge_percent` (0–50) multiplies after discount. Checkout draft stores `discount_percent` + `surcharge_percent`.

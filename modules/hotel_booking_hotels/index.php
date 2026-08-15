@@ -143,6 +143,8 @@ function cr_humanize_field($field) {
         'purchase_date' => 'Purchase Date',
         'expiry_date' => 'Expiry Date',
         'supplier_id' => 'Supplier',
+        'contact_email' => 'Info',
+        'reservations_email' => 'Email',
     ];
 
     if (isset($map[$label])) {
@@ -220,6 +222,14 @@ if ($field === 'active') {
     $text = (string)($value ?? '');
     if (function_exists('itm_format_cell_scalar_display')) {
         $text = itm_format_cell_scalar_display($field, $text);
+    }
+
+    if (in_array($field, ['contact_email', 'reservations_email'], true) && $text !== '') {
+        $mailto = filter_var($text, FILTER_VALIDATE_EMAIL);
+        if ($mailto) {
+            $label = cr_humanize_field($field);
+            return '<a href="mailto:' . sanitize($mailto) . '" title="' . sanitize($label) . '">' . sanitize($mailto) . '</a>';
+        }
     }
 
     return sanitize($text);

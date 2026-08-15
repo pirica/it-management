@@ -9,7 +9,13 @@ if ($company_id < 1 || $id < 1) {
     exit;
 }
 
-$stmt = mysqli_prepare($conn, 'SELECT b.*, c.name AS customer_name, r.room_number, r.name AS room_name FROM hotel_bookings b INNER JOIN customers c ON c.id = b.customer_id AND c.company_id = b.company_id INNER JOIN hotel_booking_rooms r ON r.id = b.room_id WHERE b.id = ? AND b.company_id = ? AND b.deleted_at IS NULL LIMIT 1');
+$stmt = mysqli_prepare($conn, 'SELECT b.*, c.name AS customer_name, r.room_number, r.name AS room_name,
+    h.name AS hotel_name, h.contact_email AS hotel_contact_email, h.reservations_email AS hotel_reservations_email, h.phone AS hotel_phone
+    FROM hotel_bookings b
+    INNER JOIN customers c ON c.id = b.customer_id AND c.company_id = b.company_id
+    INNER JOIN hotel_booking_rooms r ON r.id = b.room_id AND r.company_id = b.company_id
+    INNER JOIN hotel_booking_hotels h ON h.id = r.hotel_id AND h.company_id = r.company_id
+    WHERE b.id = ? AND b.company_id = ? AND b.deleted_at IS NULL LIMIT 1');
 $row = null;
 if ($stmt) {
     mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
@@ -35,6 +41,21 @@ itm_hospitality_admin_layout_begin($crud_title, ['css/hotel-bookings.css']);
 <p><strong>Auth code (auth2):</strong> <?php echo sanitize(itm_hotel_booking_normalize_auth2($row['auth2'] ?? '') ?: '—'); ?></p>
 <p><strong>Customer:</strong> <?php echo sanitize($row['customer_name']); ?></p>
 <p><strong>Room:</strong> <?php echo sanitize($row['room_number'] . ' — ' . $row['room_name']); ?></p>
+<p><strong>Hotel:</strong> <?php echo sanitize($row['hotel_name'] ?? '—'); ?></p>
+<?php
+$hotelInfoEmail = trim((string) ($row['hotel_contact_email'] ?? ''));
+$hotelResEmail = trim((string) ($row['hotel_reservations_email'] ?? ''));
+$hotelPhone = trim((string) ($row['hotel_phone'] ?? ''));
+?>
+<?php if ($hotelInfoEmail !== ''): ?>
+<p><strong>Info:</strong> <a href="mailto:<?php echo sanitize($hotelInfoEmail); ?>" title="General information email"><?php echo sanitize($hotelInfoEmail); ?></a></p>
+<?php endif; ?>
+<?php if ($hotelResEmail !== ''): ?>
+<p><strong>Email:</strong> <a href="mailto:<?php echo sanitize($hotelResEmail); ?>" title="Reservations email"><?php echo sanitize($hotelResEmail); ?></a></p>
+<?php endif; ?>
+<?php if ($hotelPhone !== ''): ?>
+<p><strong>Phone:</strong> <?php echo sanitize($hotelPhone); ?></p>
+<?php endif; ?>
 <p><strong>Check-in:</strong> <?php echo sanitize(itm_format_hotel_date_display($row['check_in'])); ?></p>
 <p><strong>Check-out:</strong> <?php echo sanitize(itm_format_hotel_date_display($row['check_out'])); ?></p>
 <p><strong>Payment:</strong> <?php echo sanitize(number_format((float) $row['payment_amount'], 2)); ?></p>

@@ -904,7 +904,8 @@ if (!function_exists('itm_hotel_booking_fetch_for_guest_manage')) {
       return null;
     }
     $sql = 'SELECT b.*, c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
-                   r.room_number, r.name AS room_name, h.name AS hotel_name
+                   r.room_number, r.name AS room_name, h.name AS hotel_name,
+                   h.contact_email AS hotel_contact_email, h.reservations_email AS hotel_reservations_email
             FROM hotel_bookings b
             INNER JOIN customers c ON c.id = b.customer_id AND c.company_id = b.company_id
             INNER JOIN hotel_booking_rooms r ON r.id = b.room_id AND r.company_id = b.company_id
@@ -3985,6 +3986,11 @@ if (!function_exists('itm_hotel_booking_portal_manage_otp_issue')) {
     $body = '<p>Your one-time code to manage reservation <strong>#' . (int) $reservationId . '</strong> is:</p>'
       . '<p style="font-size:1.4em;"><strong>' . htmlspecialchars($otp, ENT_QUOTES, 'UTF-8') . '</strong></p>'
       . '<p>This code expires in 10 minutes. If you did not request this, you can ignore this email.</p>';
+    $reservationsEmail = trim((string) ($verifiedBookingRow['hotel_reservations_email'] ?? ''));
+    if ($reservationsEmail !== '' && filter_var($reservationsEmail, FILTER_VALIDATE_EMAIL)) {
+      $body .= '<p>For reservation questions, email <a href="mailto:' . htmlspecialchars($reservationsEmail, ENT_QUOTES, 'UTF-8') . '">'
+        . htmlspecialchars($reservationsEmail, ENT_QUOTES, 'UTF-8') . '</a>.</p>';
+    }
     $hotelName = trim((string) ($verifiedBookingRow['hotel_name'] ?? ''));
     if ($hotelName === '') {
       $hotelName = 'Hotel booking';
