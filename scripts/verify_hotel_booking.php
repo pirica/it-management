@@ -1096,11 +1096,14 @@ $bootstrapSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/bootstr
 if (strpos($roomSingleSrc, 'itm_hotel_booking_portal_insert_booking_locked') !== false
     && strpos($roomSingleSrc, 'itm_hotel_booking_portal_resolve_step4_charge') !== false
     && strpos($roomSingleSrc, 'Lock quoted stay to draft occupancy') !== false
+    && strpos($roomSingleSrc, "parse_occupancy(\$_POST)") === false
+    && strpos($roomSingleSrc, "Checkout session expired. Please start your reservation again.") !== false
+    && strpos($roomSingleSrc, "!\$draft || empty(\$draft['room_id'])") !== false
     && strpos($bootstrapSrc, 'function hb_require_company_public_portal') !== false
     && strpos($bootstrapSrc, 'function hb_company_public_portal_enabled') !== false) {
-    hb_pass('portal step4 occupancy lock + tenant portal gate wiring');
+    hb_pass('portal step4 draft required + occupancy lock + tenant portal gate wiring');
 } else {
-    hb_fail('portal step4 occupancy lock / tenant portal gate wiring missing');
+    hb_fail('portal step4 draft required / occupancy lock / tenant portal gate wiring missing');
 }
 
 $manageSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/users/bookings.php');
