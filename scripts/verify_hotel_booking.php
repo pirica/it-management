@@ -1185,6 +1185,14 @@ if (function_exists('itm_hotel_booking_portal_room_line_pick')
     hb_fail('portal multi-room pick queue + stay insert wiring missing');
 }
 
+$portalCheckoutSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/includes/portal_checkout.php');
+if (strpos($portalCheckoutSrc, 'hb-reservation-summary-room-list') !== false
+    && strpos($portalCheckoutSrc, 'itm_hotel_booking_portal_room_lines_from_draft($draft)') !== false) {
+    hb_pass('portal reservation summary lists multi-room draft lines');
+} else {
+    hb_fail('portal reservation summary multi-room list missing');
+}
+
 $manageSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/users/bookings.php');
 $otpIssueSrc = (string) @file_get_contents(dirname(__DIR__) . '/includes/itm_hotel_booking.php');
 if (strpos($manageSrc, 'verify_manage_otp') !== false && strpos($manageSrc, 'itm_hotel_booking_portal_manage_otp_issue') !== false) {
