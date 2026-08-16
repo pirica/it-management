@@ -54,22 +54,6 @@ if ($pickRoomId > 0 && $roomsNeeded > 1) {
         $pickedLines = (array) ($pickResult['lines'] ?? []);
         $newLine = $pickedLines !== [] ? itm_hotel_booking_portal_room_line_normalize($pickedLines[count($pickedLines) - 1]) : [];
         $newRoomId = (int) ($newLine['room_id'] ?? 0);
-        // #region agent log
-        @file_put_contents(dirname(__DIR__) . '/debug-44bff2.log', json_encode([
-            'sessionId' => '44bff2',
-            'timestamp' => (int) round(microtime(true) * 1000),
-            'location' => 'booking/rooms.php:pick',
-            'message' => 'room picked -> select-rate',
-            'data' => [
-                'pickRoomId' => $pickRoomId,
-                'ratedCount' => count($ratedRoomLines),
-                'roomsNeeded' => $roomsNeeded,
-                'newRoomId' => $newRoomId,
-            ],
-            'hypothesisId' => 'WF1',
-            'runId' => 'per-room-rate-flow',
-        ]) . "\n", FILE_APPEND);
-        // #endregion
         itm_hotel_booking_portal_room_lines_clear_active();
         if ($newRoomId > 0) {
             header('Location: ' . APPURL . '/rooms/select-rate.php?' . hb_select_room_book_query($newRoomId, $checkInIso, $nights, $occupancy));
@@ -96,23 +80,6 @@ if ($roomsNeeded > 1) {
     $cardQuoteOccupancy = itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, count($roomLines), $roomsNeeded);
 }
 $taxPerNightCard = itm_hotel_booking_portal_tourist_tax_amount($cardQuoteOccupancy, 1, $touristTaxRate);
-// #region agent log
-@file_put_contents(dirname(__DIR__) . '/debug-44bff2.log', json_encode([
-    'sessionId' => '44bff2',
-    'timestamp' => (int) round(microtime(true) * 1000),
-    'location' => 'booking/rooms.php:cardQuoteOccupancy',
-    'message' => 'step1 per-room card quote occupancy',
-    'data' => [
-        'roomsNeeded' => $roomsNeeded,
-        'roomLinesCount' => count($roomLines),
-        'fullOccupancyRooms' => (int) ($occupancy['rooms'] ?? 1),
-        'cardQuoteRooms' => (int) ($cardQuoteOccupancy['rooms'] ?? 1),
-        'cardQuoteAdults' => (int) ($cardQuoteOccupancy['adults'] ?? 1),
-    ],
-    'hypothesisId' => 'D',
-    'runId' => 'verify',
-]) . "\n", FILE_APPEND);
-// #endregion
 $showDiscountStrikethrough = itm_hotel_booking_portal_show_discount_strikethrough_from_settings($settings);
 $resolvedRateSlug = itm_hotel_booking_portal_resolved_rate_slug($occupancy);
 $rateDiscountMap = itm_hotel_booking_special_rate_discount_map($conn, $company_id, $hotelId);

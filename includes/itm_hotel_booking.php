@@ -2295,23 +2295,6 @@ if (!function_exists('itm_hotel_booking_portal_room_line_pick')) {
       }
     }
     $alloc = itm_hotel_booking_portal_find_available_room_for_type($conn, $companyId, $hotelId, $typeId, $checkIn, $checkOut, $excludeRoomIds);
-    // #region agent log
-    @file_put_contents(dirname(__DIR__) . '/debug-44bff2.log', json_encode([
-      'sessionId' => '44bff2',
-      'timestamp' => (int) round(microtime(true) * 1000),
-      'location' => 'includes/itm_hotel_booking.php:room_line_pick',
-      'message' => 'room line pick availability',
-      'data' => [
-        'pickRoomId' => $roomId,
-        'typeId' => $typeId,
-        'excludeRoomIds' => $excludeRoomIds,
-        'allocRoomId' => $alloc ? (int) ($alloc['id'] ?? 0) : 0,
-        'existingLineCount' => count($existingLines),
-      ],
-      'hypothesisId' => 'C',
-      'runId' => 'verify',
-    ]) . "\n", FILE_APPEND);
-    // #endregion
     if (!$alloc) {
       return ['ok' => false, 'error' => 'Not enough availability for that room type. Choose another room type.'];
     }
@@ -2739,6 +2722,66 @@ if (!function_exists('itm_hotel_booking_portal_parse_booking_notes_meta')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_resolve_room_line_pricing_from_db')) {
+  /**
+   * Why: Step 4 must not trust session room_lines money fields — re-read BAR and plan from DB per line.
+   *
+   * @return array{ok:bool,error?:string,line?:array}
+   */
+  function itm_hotel_booking_portal_resolve_room_line_pricing_from_db($conn, $companyId, $hotelId, array $line, $checkIn, $rateSlug) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $checkIn = (string) $checkIn;
+    $line = itm_hotel_booking_portal_room_line_normalize($line);
+    $roomTypeId = (int) ($line['room_type_id'] ?? 0);
+    $planId = (int) ($line['portal_rate_plan_id'] ?? 0);
+    if ($companyId < 1 || $hotelId < 1 || $roomTypeId < 1 || $checkIn === '' || $planId < 1) {
+      return ['ok' => false, 'error' => 'Selected rate is no longer available. Please choose a rate again.'];
+    }
+    $planRow = itm_hotel_booking_portal_rate_plan_row_by_id($conn, $companyId, $planId);
+    if (!$planRow || (int) ($planRow['hotel_id'] ?? 0) !== $hotelId || empty($planRow['active'])) {
+      return ['ok' => false, 'error' => 'Selected rate is no longer available. Please choose a rate again.'];
+    }
+    $planSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($planRow['rate_plan_slug'] ?? '')));
+    if ($planSlug === '') {
+      return ['ok' => false, 'error' => 'Selected rate is no longer available. Please choose a rate again.'];
+    }
+    $rateSlug = trim((string) $rateSlug);
+    if ($rateSlug === '') {
+      $rateSlug = 'standard';
+    }
+    $specialDiscount = itm_hotel_booking_special_rate_discount($conn, $companyId, $hotelId, $rateSlug);
+    $defaultBar = itm_hotel_booking_get_room_type_base_price($conn, $companyId, $hotelId, $roomTypeId);
+    $basePerNight = itm_hotel_booking_portal_check_in_display_bar($conn, $companyId, $hotelId, $roomTypeId, $checkIn, $defaultBar);
+    $resolved = itm_hotel_booking_portal_room_line_apply_rate_plan($line, $planRow, $planSlug, $specialDiscount);
+    $resolved['base_price_per_night'] = $basePerNight;
+    return ['ok' => true, 'line' => $resolved];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_resolve_room_lines_pricing_from_db')) {
+  /**
+   * @return array{ok:bool,error?:string,lines?:array}
+   */
+  function itm_hotel_booking_portal_resolve_room_lines_pricing_from_db($conn, $companyId, $hotelId, array $roomLines, $checkIn, $rateSlug) {
+    $resolved = [];
+    foreach ($roomLines as $line) {
+      if (!is_array($line)) {
+        continue;
+      }
+      $row = itm_hotel_booking_portal_resolve_room_line_pricing_from_db($conn, $companyId, $hotelId, $line, $checkIn, $rateSlug);
+      if (empty($row['ok']) || !is_array($row['line'] ?? null)) {
+        return ['ok' => false, 'error' => (string) ($row['error'] ?? 'Selected rate is no longer available. Please choose a rate again.')];
+      }
+      $resolved[] = $row['line'];
+    }
+    if ($resolved === []) {
+      return ['ok' => false, 'error' => 'Selected rate is no longer available. Please choose a rate again.'];
+    }
+    return ['ok' => true, 'lines' => $resolved];
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_resolve_step4_charge')) {
   /**
    * Why: Step 4 charge must re-read BAR, special-rate discount, and plan discount/surcharge from DB — not session draft money fields.
@@ -2766,6 +2809,51 @@ if (!function_exists('itm_hotel_booking_portal_resolve_step4_charge')) {
     $rateSlug = trim((string) ($draft['resolved_rate_slug'] ?? ''));
     if ($rateSlug === '') {
       $rateSlug = itm_hotel_booking_portal_resolved_rate_slug($occupancy);
+    }
+    $roomLines = itm_hotel_booking_portal_room_lines_from_draft($draft);
+    if (count($roomLines) >= 2) {
+      $resolvedLines = itm_hotel_booking_portal_resolve_room_lines_pricing_from_db($conn, $companyId, $hotelId, $roomLines, $checkIn, $rateSlug);
+      if (empty($resolvedLines['ok']) || !is_array($resolvedLines['lines'] ?? null)) {
+        return ['ok' => false, 'error' => (string) ($resolvedLines['error'] ?? 'Selected rate is no longer available. Please choose a rate again.')];
+      }
+      $resolvedRoomLines = $resolvedLines['lines'];
+      $primaryLine = $resolvedRoomLines[0];
+      $primaryPlanId = (int) ($primaryLine['portal_rate_plan_id'] ?? 0);
+      $primaryPlanRow = $primaryPlanId > 0 ? itm_hotel_booking_portal_rate_plan_row_by_id($conn, $companyId, $primaryPlanId) : null;
+      $primarySlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($primaryLine['rate_plan'] ?? '')));
+      $specialDiscount = itm_hotel_booking_special_rate_discount($conn, $companyId, $hotelId, $rateSlug);
+      $discountPercent = $primaryPlanRow
+        ? itm_hotel_booking_portal_rate_plan_effective_discount($specialDiscount, $primarySlug, $primaryPlanRow)
+        : itm_hotel_booking_portal_room_line_effective_discount($primaryLine, 0.0);
+      $surchargePercent = $primaryPlanRow
+        ? itm_hotel_booking_portal_rate_plan_effective_surcharge($primarySlug, $primaryPlanRow)
+        : itm_hotel_booking_portal_room_line_effective_surcharge($primaryLine, 0.0);
+      $basePerNight = (float) ($primaryLine['base_price_per_night'] ?? 0);
+      $draftForPay = [
+        'company_id' => $companyId,
+        'hotel_id' => $hotelId,
+        'room_type_id' => (int) ($primaryLine['room_type_id'] ?? 0),
+        'rate_plan' => $primarySlug,
+        'portal_rate_plan_id' => $primaryPlanId,
+        'portal_rate_plan_name' => (string) ($primaryLine['portal_rate_plan_name'] ?? ($primaryPlanRow['name'] ?? '')),
+        'traveling_with_pet' => !empty($draft['traveling_with_pet']) ? 1 : 0,
+        'service_animal' => !empty($draft['service_animal']) ? 1 : 0,
+        'additional_comments' => (string) ($draft['additional_comments'] ?? ''),
+        'resolved_rate_slug' => $rateSlug,
+        'surcharge_percent' => $surchargePercent,
+        'room_lines' => $resolvedRoomLines,
+        'room_id' => (int) ($primaryLine['room_id'] ?? ($draft['room_id'] ?? 0)),
+      ];
+      return [
+        'ok' => true,
+        'base_per_night' => $basePerNight,
+        'discount_percent' => $discountPercent,
+        'surcharge_percent' => $surchargePercent,
+        'portal_rate_plan_id' => $primaryPlanId,
+        'draft_for_pay' => $draftForPay,
+        'check_in' => $checkIn,
+        'check_out' => $checkOut,
+      ];
     }
     $specialDiscount = itm_hotel_booking_special_rate_discount($conn, $companyId, $hotelId, $rateSlug);
     $discountPercent = itm_hotel_booking_portal_rate_plan_effective_discount($specialDiscount, $planSlug, $planRow);
@@ -4774,6 +4862,18 @@ if (!function_exists('itm_hotel_booking_room_type_options_for_hotel')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_manage_lookup_failure_message')) {
+  function itm_hotel_booking_portal_manage_lookup_failure_message() {
+    return 'No reservation found. Check your last name, reservation ID, and auth code.';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_manage_verification_failure_message')) {
+  function itm_hotel_booking_portal_manage_verification_failure_message() {
+    return 'Could not complete verification. Please try again later.';
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_manage_rate_limit_session_key')) {
   function itm_hotel_booking_portal_manage_rate_limit_session_key() {
     return 'hotel_booking_manage_rl_events';
@@ -4872,6 +4972,91 @@ if (!function_exists('itm_hotel_booking_portal_manage_rate_limit_record')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_manage_otp_rate_limit_session_key')) {
+  function itm_hotel_booking_portal_manage_otp_rate_limit_session_key() {
+    return 'hotel_booking_manage_otp_rl_events';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_manage_otp_rate_limit_ip_dir')) {
+  function itm_hotel_booking_portal_manage_otp_rate_limit_ip_dir() {
+    return rtrim((string) ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . 'files' . DIRECTORY_SEPARATOR . 'rate_limits' . DIRECTORY_SEPARATOR . 'hb_manage_otp';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_manage_otp_rate_limit_ip_events')) {
+  function itm_hotel_booking_portal_manage_otp_rate_limit_ip_events($windowSeconds, $writeEvents = null) {
+    $windowSeconds = max(60, (int) $windowSeconds);
+    $ip = function_exists('itm_get_client_ip_address') ? trim((string) itm_get_client_ip_address()) : trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+    if ($ip === '') {
+      $ip = 'unknown';
+    }
+    $dir = itm_hotel_booking_portal_manage_otp_rate_limit_ip_dir();
+    if (function_exists('itm_ensure_upload_directory')) {
+      itm_ensure_upload_directory($dir, 'deny_all');
+    } elseif (!is_dir($dir)) {
+      @mkdir($dir, 0755, true);
+    }
+    $path = $dir . DIRECTORY_SEPARATOR . hash('sha256', $ip) . '.json';
+    $now = time();
+    $events = [];
+    if (is_file($path)) {
+      $raw = @file_get_contents($path);
+      $decoded = $raw !== false ? json_decode($raw, true) : null;
+      if (is_array($decoded) && isset($decoded['events']) && is_array($decoded['events'])) {
+        $events = itm_hotel_booking_portal_manage_rate_limit_prune_events($decoded['events'], $now, $windowSeconds);
+      }
+    }
+    if ($writeEvents !== null) {
+      $events = itm_hotel_booking_portal_manage_rate_limit_prune_events((array) $writeEvents, $now, $windowSeconds);
+      @file_put_contents($path, json_encode(['events' => $events], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX);
+    }
+    return $events;
+  }
+}
+
+/**
+ * Why: OTP brute-force is separate from lookup throttle — tighter cap on verify attempts only.
+ *
+ * @return array{ok:bool,error?:string,count?:int,max?:int}
+ */
+if (!function_exists('itm_hotel_booking_portal_manage_otp_rate_limit_check')) {
+  function itm_hotel_booking_portal_manage_otp_rate_limit_check($maxAttempts = 5, $windowSeconds = 600) {
+    $maxAttempts = max(1, (int) $maxAttempts);
+    $windowSeconds = max(60, (int) $windowSeconds);
+    $now = time();
+    $key = itm_hotel_booking_portal_manage_otp_rate_limit_session_key();
+    $sessionEvents = (isset($_SESSION[$key]) && is_array($_SESSION[$key])) ? $_SESSION[$key] : [];
+    $sessionFresh = itm_hotel_booking_portal_manage_rate_limit_prune_events($sessionEvents, $now, $windowSeconds);
+    $_SESSION[$key] = $sessionFresh;
+    $ipFresh = itm_hotel_booking_portal_manage_otp_rate_limit_ip_events($windowSeconds);
+    $sessionCount = count($sessionFresh);
+    $ipCount = count($ipFresh);
+    if ($sessionCount >= $maxAttempts || $ipCount >= $maxAttempts) {
+      return [
+        'ok' => false,
+        'error' => 'Too many verification attempts. Please wait and try again.',
+        'count' => max($sessionCount, $ipCount),
+        'max' => $maxAttempts,
+      ];
+    }
+    return ['ok' => true, 'count' => max($sessionCount, $ipCount), 'max' => $maxAttempts];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_manage_otp_rate_limit_record')) {
+  function itm_hotel_booking_portal_manage_otp_rate_limit_record() {
+    $key = itm_hotel_booking_portal_manage_otp_rate_limit_session_key();
+    $events = (isset($_SESSION[$key]) && is_array($_SESSION[$key])) ? $_SESSION[$key] : [];
+    $events[] = time();
+    $_SESSION[$key] = $events;
+    $windowSeconds = 600;
+    $ipEvents = itm_hotel_booking_portal_manage_otp_rate_limit_ip_events($windowSeconds);
+    $ipEvents[] = time();
+    itm_hotel_booking_portal_manage_otp_rate_limit_ip_events($windowSeconds, $ipEvents);
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_manage_otp_session_key')) {
   function itm_hotel_booking_portal_manage_otp_session_key() {
     return 'hotel_booking_manage_otp';
@@ -4934,7 +5119,7 @@ if (!function_exists('itm_hotel_booking_portal_manage_otp_issue')) {
     $reservationId = (int) ($verifiedBookingRow['id'] ?? 0);
     $email = trim((string) ($verifiedBookingRow['customer_email'] ?? ''));
     if ($companyId < 1 || $reservationId < 1 || $email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-      return ['ok' => false, 'error' => 'No valid email is on file for this reservation.'];
+      return ['ok' => false, 'error' => itm_hotel_booking_portal_manage_lookup_failure_message()];
     }
     $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     $subject = 'Your booking verification code';
@@ -4969,7 +5154,7 @@ if (!function_exists('itm_hotel_booking_portal_manage_otp_issue')) {
     );
     $sent = function_exists('itm_send_email') ? itm_send_email($email, $subject, $body, $companyId, $emailOptions) : false;
     if (!$sent) {
-      return ['ok' => false, 'error' => 'Could not send the verification email. Please try again later.'];
+      return ['ok' => false, 'error' => itm_hotel_booking_portal_manage_verification_failure_message()];
     }
     $_SESSION[itm_hotel_booking_portal_manage_otp_session_key()] = [
       'company_id' => $companyId,
@@ -4978,7 +5163,7 @@ if (!function_exists('itm_hotel_booking_portal_manage_otp_issue')) {
       'expires_at' => time() + 600,
       'verified' => false,
     ];
-    return ['ok' => true, 'masked_email' => itm_hotel_booking_portal_mask_email($email)];
+    return ['ok' => true];
   }
 }
 
@@ -5037,22 +5222,6 @@ if (!function_exists('itm_hotel_booking_portal_manage_booking_hint_html')) {
       . $safeLast . '</strong>, confirmation number: <strong>' . $confirmationId
       . '</strong>, and auth code: <strong>' . $safeAuth
       . '</strong> on <a ' . $linkAttrs . '><strong>Manage my booking</strong></a>.</p>';
-
-    // #region agent log
-    @file_put_contents(dirname(__DIR__) . '/debug-44bff2.log', json_encode([
-      'sessionId' => '44bff2',
-      'timestamp' => (int) round(microtime(true) * 1000),
-      'location' => 'includes/itm_hotel_booking.php:manage_booking_hint_html',
-      'message' => 'canonical manage hint rendered',
-      'data' => [
-        'confirmationId' => $confirmationId,
-        'forEmail' => $forEmail,
-        'phrase' => 'view or cancel',
-      ],
-      'hypothesisId' => 'MH2',
-      'runId' => 'manage-hint-unify',
-    ]) . "\n", FILE_APPEND);
-    // #endregion
 
     return $html;
   }
@@ -5368,17 +5537,6 @@ if (!function_exists('itm_hotel_booking_portal_send_booking_confirmation_emails'
     $guestSent = false;
     $hotelSent = false;
     if ($companyId < 1 || $reservationId < 1 || !function_exists('itm_send_email')) {
-      // #region agent log
-      @file_put_contents(dirname(__DIR__) . '/debug-44bff2.log', json_encode([
-        'sessionId' => '44bff2',
-        'timestamp' => (int) round(microtime(true) * 1000),
-        'location' => 'includes/itm_hotel_booking.php:send_booking_confirmation_emails',
-        'message' => 'confirmation email skipped — invalid context',
-        'data' => ['companyId' => $companyId, 'reservationId' => $reservationId],
-        'hypothesisId' => 'G',
-        'runId' => 'step4-email',
-      ]) . "\n", FILE_APPEND);
-      // #endregion
       return ['ok' => false, 'guest_sent' => false, 'hotel_sent' => false];
     }
 
@@ -5434,25 +5592,6 @@ if (!function_exists('itm_hotel_booking_portal_send_booking_confirmation_emails'
       );
       $hotelSent = (bool) itm_send_email($reservationsEmail, $hotelSubject, $hotelBody, $companyId, $hotelOptions);
     }
-
-    // #region agent log
-    @file_put_contents(dirname(__DIR__) . '/debug-44bff2.log', json_encode([
-      'sessionId' => '44bff2',
-      'timestamp' => (int) round(microtime(true) * 1000),
-      'location' => 'includes/itm_hotel_booking.php:send_booking_confirmation_emails',
-      'message' => 'confirmation email dispatch',
-        'data' => [
-        'reservationId' => $reservationId,
-        'primaryId' => $primaryId,
-        'groupCount' => count($groupRows),
-        'guestSent' => $guestSent,
-        'hotelSent' => $hotelSent,
-        'hasReservationsEmail' => $reservationsEmail !== '',
-      ],
-      'hypothesisId' => 'G',
-      'runId' => 'step4-email',
-    ]) . "\n", FILE_APPEND);
-    // #endregion
 
     return ['ok' => $guestSent || $hotelSent, 'guest_sent' => $guestSent, 'hotel_sent' => $hotelSent];
   }
@@ -5516,7 +5655,8 @@ if (!function_exists('itm_hotel_booking_portal_insert_booking_locked')) {
     $bookingColor,
     $futureStatusId,
     $presentStatusId,
-    $historyStatusId
+    $historyStatusId,
+    array $options = []
   ) {
     $companyId = (int) $companyId;
     $customerId = (int) $customerId;
@@ -5531,35 +5671,44 @@ if (!function_exists('itm_hotel_booking_portal_insert_booking_locked')) {
     $futureStatusId = (int) $futureStatusId;
     $presentStatusId = (int) $presentStatusId;
     $historyStatusId = (int) $historyStatusId;
+    $nested = !empty($options['nested']);
 
     if ($companyId < 1 || $customerId < 1 || $roomId < 1 || $checkIn === '' || $checkOut === '' || $checkOut <= $checkIn || $auth2 === '') {
       return ['ok' => false, 'error' => 'Invalid booking payload.'];
     }
-    if (!mysqli_begin_transaction($conn)) {
+    if (!$nested && !mysqli_begin_transaction($conn)) {
       return ['ok' => false, 'error' => 'Booking failed.'];
     }
 
     $lock = mysqli_prepare($conn, 'SELECT id FROM hotel_booking_rooms WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1 FOR UPDATE');
     if (!$lock) {
-      mysqli_rollback($conn);
+      if (!$nested) {
+        mysqli_rollback($conn);
+      }
       return ['ok' => false, 'error' => 'Booking failed.'];
     }
     mysqli_stmt_bind_param($lock, 'ii', $roomId, $companyId);
     if (!mysqli_stmt_execute($lock)) {
       mysqli_stmt_close($lock);
-      mysqli_rollback($conn);
+      if (!$nested) {
+        mysqli_rollback($conn);
+      }
       return ['ok' => false, 'error' => 'Booking failed.'];
     }
     $lockRes = mysqli_stmt_get_result($lock);
     $lockedRow = $lockRes ? mysqli_fetch_assoc($lockRes) : null;
     mysqli_stmt_close($lock);
     if (!$lockedRow) {
-      mysqli_rollback($conn);
+      if (!$nested) {
+        mysqli_rollback($conn);
+      }
       return ['ok' => false, 'error' => 'Room not available.'];
     }
 
     if (itm_hotel_booking_room_unavailable_for_stay($conn, $companyId, $roomId, $checkIn, $checkOut, 0, null)) {
-      mysqli_rollback($conn);
+      if (!$nested) {
+        mysqli_rollback($conn);
+      }
       return ['ok' => false, 'error' => 'Room not available.'];
     }
 
@@ -5568,7 +5717,9 @@ if (!function_exists('itm_hotel_booking_portal_insert_booking_locked')) {
       'INSERT INTO hotel_bookings (company_id, customer_id, room_id, check_in, check_out, payment_amount, auth2, portal_rate_plan_id, notes, booking_color, future_status_id, present_status_id, history_status_id, active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), 1, NOW())'
     );
     if (!$ins) {
-      mysqli_rollback($conn);
+      if (!$nested) {
+        mysqli_rollback($conn);
+      }
       return ['ok' => false, 'error' => 'Booking failed.'];
     }
     mysqli_stmt_bind_param(
@@ -5590,12 +5741,20 @@ if (!function_exists('itm_hotel_booking_portal_insert_booking_locked')) {
     );
     if (!mysqli_stmt_execute($ins)) {
       mysqli_stmt_close($ins);
-      mysqli_rollback($conn);
+      if (!$nested) {
+        mysqli_rollback($conn);
+      }
       return ['ok' => false, 'error' => 'Booking failed.'];
     }
     $bookingId = (int) mysqli_insert_id($conn);
     mysqli_stmt_close($ins);
-    if ($bookingId < 1 || !mysqli_commit($conn)) {
+    if ($bookingId < 1) {
+      if (!$nested) {
+        mysqli_rollback($conn);
+      }
+      return ['ok' => false, 'error' => 'Booking failed.'];
+    }
+    if (!$nested && !mysqli_commit($conn)) {
       mysqli_rollback($conn);
       return ['ok' => false, 'error' => 'Booking failed.'];
     }
@@ -5648,6 +5807,9 @@ if (!function_exists('itm_hotel_booking_portal_insert_stay_bookings_locked')) {
       }
       return $single;
     }
+    if (!mysqli_begin_transaction($conn)) {
+      return ['ok' => false, 'error' => 'Booking failed.'];
+    }
     $allocated = [];
     $bookingIds = [];
     $lineCount = count($roomLines);
@@ -5682,6 +5844,7 @@ if (!function_exists('itm_hotel_booking_portal_insert_stay_bookings_locked')) {
     foreach ($roomLines as $idx => $line) {
       $roomId = itm_hotel_booking_portal_allocate_room_id_for_line($conn, $companyId, $hotelId, $line, $checkIn, $checkOut, $allocated);
       if ($roomId < 1) {
+        mysqli_rollback($conn);
         return ['ok' => false, 'error' => 'Room not available.'];
       }
       $allocated[] = $roomId;
@@ -5704,9 +5867,11 @@ if (!function_exists('itm_hotel_booking_portal_insert_stay_bookings_locked')) {
         $bookingColor,
         $futureStatusId,
         $presentStatusId,
-        $historyStatusId
+        $historyStatusId,
+        ['nested' => true]
       );
       if (empty($result['ok']) || (int) ($result['booking_id'] ?? 0) < 1) {
+        mysqli_rollback($conn);
         return ['ok' => false, 'error' => (string) ($result['error'] ?? 'Booking failed.')];
       }
       $bookingIds[] = (int) $result['booking_id'];
@@ -5715,14 +5880,24 @@ if (!function_exists('itm_hotel_booking_portal_insert_stay_bookings_locked')) {
       $primaryId = (int) $bookingIds[0];
       $groupNote = "\nMulti-room stay — confirmation #" . $primaryId . '.';
       $upd = mysqli_prepare($conn, 'UPDATE hotel_bookings SET notes = CONCAT(notes, ?) WHERE company_id = ? AND id = ? LIMIT 1');
-      if ($upd) {
-        foreach ($bookingIds as $bid) {
-          $bid = (int) $bid;
-          mysqli_stmt_bind_param($upd, 'sii', $groupNote, $companyId, $bid);
-          mysqli_stmt_execute($upd);
-        }
-        mysqli_stmt_close($upd);
+      if (!$upd) {
+        mysqli_rollback($conn);
+        return ['ok' => false, 'error' => 'Booking failed.'];
       }
+      foreach ($bookingIds as $bid) {
+        $bid = (int) $bid;
+        mysqli_stmt_bind_param($upd, 'sii', $groupNote, $companyId, $bid);
+        if (!mysqli_stmt_execute($upd)) {
+          mysqli_stmt_close($upd);
+          mysqli_rollback($conn);
+          return ['ok' => false, 'error' => 'Booking failed.'];
+        }
+      }
+      mysqli_stmt_close($upd);
+    }
+    if (!mysqli_commit($conn)) {
+      mysqli_rollback($conn);
+      return ['ok' => false, 'error' => 'Booking failed.'];
     }
     return ['ok' => true, 'booking_id' => (int) $bookingIds[0], 'booking_ids' => $bookingIds];
   }

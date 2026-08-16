@@ -154,23 +154,6 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
                 $companyId
             );
         }
-        // #region agent log
-        @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
-            'sessionId' => '44bff2',
-            'timestamp' => (int) round(microtime(true) * 1000),
-            'location' => 'booking/includes/portal_checkout.php:reservation_summary',
-            'message' => 'reservation summary room lines',
-            'data' => [
-                'roomsNeeded' => $roomsNeeded,
-                'lineCount' => count($roomLines),
-                'showMultiRoomList' => $showMultiRoomList,
-                'rawLineCount' => is_array($draft['room_lines'] ?? null) ? count($draft['room_lines']) : 0,
-                'lineChargeAmounts' => $lineChargeAmounts,
-            ],
-            'hypothesisId' => 'E',
-            'runId' => 'per-room-price',
-        ]) . "\n", FILE_APPEND);
-        // #endregion
         $hasPet = !empty($draft['traveling_with_pet']);
         $petFeeTotal = 0.0;
         if ($hasPet) {
@@ -183,22 +166,6 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
                 $roomCharges -= $petFeeTotal;
             }
         }
-        // #region agent log
-        @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
-            'sessionId' => '44bff2',
-            'timestamp' => (int) round(microtime(true) * 1000),
-            'location' => 'booking/includes/portal_checkout.php:reservation_summary_pet',
-            'message' => 'pet fee breakdown',
-            'data' => [
-                'hasPet' => $hasPet,
-                'travelingWithPetDraft' => !empty($draft['traveling_with_pet']) ? 1 : 0,
-                'petFeeTotal' => $petFeeTotal,
-                'roomChargesAfterPet' => $roomCharges,
-            ],
-            'hypothesisId' => 'PET',
-            'runId' => 'pet-fee-display',
-        ]) . "\n", FILE_APPEND);
-        // #endregion
         ?>
 <div class="hb-reservation-summary card">
 <h2 class="hb-reservation-summary-title">Reservation summary</h2>
@@ -700,58 +667,6 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
             ? itm_hotel_booking_portal_confirmation_group_room_display_amounts($conn, $company_id, $groupRows, $occupancy)
             : [];
         $ratePlanLabel = hb_portal_booking_rate_plan_label($primaryRow);
-        // #region agent log
-        if ($showMultiRoomGroup) {
-            $perLineRates = [];
-            foreach ($groupRows as $idx => $lineRow) {
-                $perLineRates[(int) $idx] = hb_portal_booking_rate_plan_label($lineRow);
-            }
-            @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
-                'sessionId' => '44bff2',
-                'timestamp' => (int) round(microtime(true) * 1000),
-                'location' => 'booking/includes/portal_checkout.php:payment_confirmation_per_line_rates',
-                'message' => 'confirmation per-room rate labels',
-                'data' => [
-                    'primaryId' => $reservationId,
-                    'groupCount' => count($groupRows),
-                    'perLineRates' => $perLineRates,
-                ],
-                'hypothesisId' => 'RATE2',
-                'runId' => 'confirmation-per-room-rate',
-            ]) . "\n", FILE_APPEND);
-        }
-        // #endregion
-        // #region agent log
-        @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
-            'sessionId' => '44bff2',
-            'timestamp' => (int) round(microtime(true) * 1000),
-            'location' => 'booking/includes/portal_checkout.php:payment_confirmation',
-            'message' => 'confirmation group render',
-            'data' => [
-                'primaryId' => $reservationId,
-                'groupCount' => count($groupRows),
-                'showMultiRoomGroup' => $showMultiRoomGroup,
-                'petFeeTotal' => $petFeeTotal,
-                'hasPetFee' => $hasPetFee,
-                'notesHasPet' => function_exists('itm_hotel_booking_portal_notes_has_traveling_pet')
-                    ? itm_hotel_booking_portal_notes_has_traveling_pet((string) ($primaryRow['notes'] ?? ''))
-                    : false,
-                'notesMetaPet' => !empty($notesMeta['traveling_with_pet']),
-                'notesMetaUpgrade' => !empty($notesMeta['room_upgrade']['accepted']),
-                'roomsNeeded' => $roomsNeeded,
-                'groupRoomDisplayAmounts' => $groupRoomDisplayAmounts,
-                'groupRoomLineIds' => array_map(static function ($row) {
-                    return (int) ($row['room_id'] ?? 0);
-                }, $groupRows),
-                'storedPaymentAmounts' => array_map(static function ($row) {
-                    return (float) ($row['payment_amount'] ?? 0);
-                }, $groupRows),
-                'groupTotal' => $amount,
-            ],
-            'hypothesisId' => 'H',
-            'runId' => 'single-conf-id',
-        ]) . "\n", FILE_APPEND);
-        // #endregion
         $cardClass = 'hb-payment-confirmation card' . ($isCancelled ? ' hb-payment-confirmation--cancelled' : '');
         $iconChar = $isCancelled ? '✕' : '✓';
         $title = $isCancelled ? 'Reservation cancelled' : 'Reservation confirmed';
