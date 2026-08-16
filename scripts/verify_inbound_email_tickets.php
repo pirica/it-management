@@ -235,6 +235,26 @@ if (itm_inbound_email_mailpit_reachable($mailpitProbe)) {
                     mysqli_stmt_close($tStmt);
                 }
                 if ($ticketId > 0) {
+                    $statusClosed = 1;
+                    $stStmt = mysqli_prepare(
+                        $conn,
+                        'SELECT ts.is_closed FROM tickets t
+                         INNER JOIN ticket_statuses ts ON ts.id = t.status_id AND ts.company_id = t.company_id
+                         WHERE t.id = ? AND t.company_id = 1 LIMIT 1'
+                    );
+                    if ($stStmt) {
+                        mysqli_stmt_bind_param($stStmt, 'i', $ticketId);
+                        mysqli_stmt_execute($stStmt);
+                        mysqli_stmt_bind_result($stStmt, $statusClosed);
+                        mysqli_stmt_fetch($stStmt);
+                        mysqli_stmt_close($stStmt);
+                    }
+                    if ((int)$statusClosed === 1) {
+                        inbound_verify_fail('Mailpit E2E ticket was created with a closed status.');
+                    } else {
+                        inbound_verify_pass('Mailpit E2E ticket uses a non-closed status.');
+                    }
+
                     $delInbound = mysqli_prepare(
                         $conn,
                         'DELETE FROM ticket_inbound_email_messages WHERE company_id = 1 AND message_id = ?'
