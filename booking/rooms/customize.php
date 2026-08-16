@@ -326,7 +326,7 @@ if ($upgradeOffer) {
 <section class="hb-checkout-section">
 <h2 class="hb-checkout-section-title">Additional comments</h2>
 <textarea name="additional_comments" class="hb-checkout-comments" maxlength="130" rows="3" placeholder="Optional requests (130 characters max)"><?php echo htmlspecialchars($additionalComments, ENT_QUOTES, 'UTF-8'); ?></textarea>
-<p class="hb-checkout-hint">The hotel staff cannot guarantee additional requests.</p>
+<p class="hb-checkout-hint">The hotel cannot guarantee additional requests.</p>
 </section>
 
 <div class="hb-checkout-actions">

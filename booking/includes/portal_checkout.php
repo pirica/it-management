@@ -298,14 +298,14 @@ if (!function_exists('hb_portal_render_confirmation_special_requests')) {
 </label>
 <?php endif; ?>
 <?php if ($comments === ''): ?>
-<p class="hb-checkout-hint">The hotel staff cannot guarantee additional requests.</p>
+<p class="hb-checkout-hint">The hotel cannot guarantee additional requests.</p>
 <?php endif; ?>
 </section>
 <?php if ($comments !== ''): ?>
 <section class="hb-checkout-section hb-confirmation-additional-comments">
 <h2 class="hb-checkout-section-title">Additional comments</h2>
 <p class="hb-special-request-comments"><?php echo htmlspecialchars($comments, ENT_QUOTES, 'UTF-8'); ?></p>
-<p class="hb-checkout-hint">The hotel staff cannot guarantee additional requests.</p>
+<p class="hb-checkout-hint">The hotel cannot guarantee additional requests.</p>
 </section>
 <?php endif; ?>
         <?php
