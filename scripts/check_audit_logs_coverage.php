@@ -6,7 +6,7 @@
  * Modules can satisfy that via PHP helpers (itm_run_query / itm_log_audit / bulk helpers)
  * or database triggers defined in db/03_triggers.sql (trg_{table}_audit_*).
  * Also compares every CREATE TABLE in db/01_schema.sql against trg_{table}_audit_insert
- * (audit_logs and private-data tables per AGENTS.md are exempt) and exits non-zero
+ * (audit_logs, private-data, and system/derived tables per AGENTS.md are exempt) and exits non-zero
  * when other schema tables are missing triggers.
  *
  * Usage (PHP 7.4+ with MySQLi, from repository root):
@@ -131,6 +131,20 @@ function audit_logs_load_database_sql_maps(string $schemaSqlPath, string $trigge
 }
 
 /**
+ * System / derived tables with no audit triggers (migration history, denormalized caches).
+ * Keep aligned with AGENTS.md → System / derived tables — no audit trail.
+ *
+ * @return array<string, bool>
+ */
+function audit_logs_system_derived_tables(): array
+{
+    return [
+        'schema_migrations' => true,
+        'search_index' => true,
+    ];
+}
+
+/**
  * Tables that intentionally have no audit triggers (audit destination, private user data, etc.).
  * Keep aligned with AGENTS.md → Private data — no audit trail.
  *
@@ -165,6 +179,7 @@ function audit_logs_trigger_exempt_tables(): array
 {
     return array_merge(
         ['audit_logs' => true],
+        audit_logs_system_derived_tables(),
         audit_logs_private_data_tables()
     );
 }
