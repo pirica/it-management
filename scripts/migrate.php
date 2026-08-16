@@ -99,7 +99,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
         require_once __DIR__ . '/../config/config.php';
         require_once __DIR__ . '/../includes/itm_database_migrations.php';
 
-        $fileRow = itm_database_migrations_resolve_discovered_file($sqlView);
+        $fileRow = itm_database_migrations_resolve_file_row($sqlView);
         if ($fileRow === null) {
             http_response_code(404);
             header('Content-Type: text/plain; charset=utf-8');

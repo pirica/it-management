@@ -39,7 +39,7 @@ $filename = (string)($row['filename'] ?? '');
 $recordedChecksum = (string)($row['checksum'] ?? '');
 $appliedAtDisplay = itm_format_audit_timestamp_display($row['applied_at'] ?? '');
 
-$discovered = itm_database_migrations_resolve_discovered_file($filename);
+$discovered = itm_database_migrations_resolve_file_row($filename);
 $onDisk = $discovered !== null;
 $currentChecksum = $onDisk ? (string)($discovered['checksum'] ?? '') : '';
 $hasDrift = $onDisk && $recordedChecksum !== '' && $currentChecksum !== '' && $recordedChecksum !== $currentChecksum;
@@ -110,6 +110,9 @@ $sqlHref = BASE_URL . 'scripts/migrate.php?run=1&sql=' . rawurlencode($filename)
                     <dd>
                         <?php if ($onDisk): ?>
                             Present in <code>db/migrations/</code>
+                            <?php if (in_array($filename, itm_database_migrations_bootstrap_filenames(), true)): ?>
+                                <span class="badge badge-success" style="margin-left:8px;">Bootstrap</span>
+                            <?php endif; ?>
                             <?php if ($hasDrift): ?>
                                 <span class="badge badge-danger" style="margin-left:8px;">Checksum drift</span>
                             <?php endif; ?>
