@@ -378,8 +378,9 @@ body.hb-modal-open { overflow: hidden; }
 .hb-reservation-summary-room-item-main { flex: 1; min-width: 0; }
 .hb-reservation-summary-room-slot { font-weight: 700; margin-right: 6px; }
 .hb-reservation-room-line-price { font-weight: 800; font-size: 1rem; white-space: nowrap; }
-.hb-reservation-room-name { margin: 0; font-weight: 700; font-size: .95rem; display: inline; }
-.hb-reservation-room-rate { display: block; margin: 2px 0 0; font-size: .82rem; font-weight: 600; color: var(--hb-muted); }
+.hb-reservation-room-name { margin: 0; font-weight: 700; font-size: .95rem; display: block; }
+.hb-reservation-room-name-block { flex: 1; min-width: 0; }
+.hb-reservation-room-rate { display: block; margin: 4px 0 0; font-size: .82rem; font-weight: 600; color: var(--hb-muted); }
 .hb-reservation-room-price { margin: 0; font-size: 1.25rem; font-weight: 800; }
 .hb-reservation-rate-line { margin: 0 0 4px; font-size: .85rem; }
 .hb-reservation-muted { color: var(--hb-muted); }
@@ -576,9 +577,9 @@ body.hb-modal-open { overflow: hidden; }
   font-size: 1.05rem;
 }
 .hb-payment-room-group-list { margin: 0; padding: 0; list-style: none; }
-.hb-payment-room-group-list li { margin-bottom: 6px; }
-.hb-payment-room-group-item-main { display: block; }
-.hb-payment-room-rate { display: block; margin-top: 2px; font-size: .85rem; font-weight: 600; color: var(--hb-muted); }
+.hb-payment-room-group-list li { margin-bottom: 10px; }
+.hb-payment-room-group-line { display: block; margin: 0; line-height: 1.4; }
+.hb-payment-room-rate { display: block; margin: 4px 0 0; font-size: .85rem; font-weight: 600; color: var(--hb-muted); line-height: 1.35; }
 .hb-payment-room-slot { font-weight: 700; margin-right: 6px; }
 .hb-confirmation-room-group-list { margin-bottom: 12px; }
 .hb-payment-confirmation-notice {
