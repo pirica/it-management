@@ -153,6 +153,7 @@ $migrateApplyUrl = BASE_URL . 'scripts/migrate.php?run=1&apply=1';
         .sm-badge { display:inline-block; padding:3px 8px; border-radius:999px; font-size:11px; font-weight:700; border:1px solid transparent; }
         .sm-badge.removed { background:#f3f4f6; border-color:#d1d5db; color:#4b5563; }
         .sm-badge.drift { background:#fdecec; border-color:#f0b6b6; color:#a52727; }
+        .sm-sort-link { text-decoration:none; color:inherit; }
         @media (max-width:900px) { .sm-kpis { grid-template-columns:1fr 1fr; } .sm-filters form { grid-template-columns:1fr; } }
     </style>
 </head>
@@ -231,23 +232,23 @@ $migrateApplyUrl = BASE_URL . 'scripts/migrate.php?run=1&apply=1';
                 <table class="table" data-itm-no-import-excel="1" data-itm-no-export-excel="1" data-itm-no-export-pdf="1">
                     <thead>
                         <tr>
+                            <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                             <th>
-                                <a href="?<?php echo sanitize(itm_schema_migrations_build_query(array_merge($listQueryBase, ['sort' => 'filename', 'dir' => ($sort === 'filename' && $dir === 'ASC') ? 'DESC' : 'ASC', 'page' => 1]))); ?>">
+                                <a class="sm-sort-link" href="?<?php echo sanitize(itm_schema_migrations_build_query(array_merge($listQueryBase, ['sort' => 'filename', 'dir' => ($sort === 'filename' && $dir === 'ASC') ? 'DESC' : 'ASC', 'page' => 1]))); ?>">
                                     Filename <?php echo $sort === 'filename' ? ($dir === 'ASC' ? '▲' : '▼') : ''; ?>
                                 </a>
                             </th>
                             <th>
-                                <a href="?<?php echo sanitize(itm_schema_migrations_build_query(array_merge($listQueryBase, ['sort' => 'checksum', 'dir' => ($sort === 'checksum' && $dir === 'ASC') ? 'DESC' : 'ASC', 'page' => 1]))); ?>">
+                                <a class="sm-sort-link" href="?<?php echo sanitize(itm_schema_migrations_build_query(array_merge($listQueryBase, ['sort' => 'checksum', 'dir' => ($sort === 'checksum' && $dir === 'ASC') ? 'DESC' : 'ASC', 'page' => 1]))); ?>">
                                     Checksum <?php echo $sort === 'checksum' ? ($dir === 'ASC' ? '▲' : '▼') : ''; ?>
                                 </a>
                             </th>
                             <th>
-                                <a href="?<?php echo sanitize(itm_schema_migrations_build_query(array_merge($listQueryBase, ['sort' => 'applied_at', 'dir' => ($sort === 'applied_at' && $dir === 'ASC') ? 'DESC' : 'ASC', 'page' => 1]))); ?>">
+                                <a class="sm-sort-link" href="?<?php echo sanitize(itm_schema_migrations_build_query(array_merge($listQueryBase, ['sort' => 'applied_at', 'dir' => ($sort === 'applied_at' && $dir === 'ASC') ? 'DESC' : 'ASC', 'page' => 1]))); ?>">
                                     Applied at <?php echo $sort === 'applied_at' ? ($dir === 'ASC' ? '▲' : '▼') : ''; ?>
                                 </a>
                             </th>
                             <th>File</th>
-                            <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -267,6 +268,11 @@ $migrateApplyUrl = BASE_URL . 'scripts/migrate.php?run=1&apply=1';
                             $sqlHref = BASE_URL . 'scripts/migrate.php?run=1&sql=' . rawurlencode($filename);
                             ?>
                             <tr>
+                                <td class="itm-actions-cell" data-itm-actions-origin="1">
+                                    <div class="itm-actions-wrap">
+                                        <a class="btn btn-sm" href="view.php?id=<?php echo $rowId; ?>" title="View">🔎</a>
+                                    </div>
+                                </td>
                                 <td><code><?php echo sanitize($filename); ?></code></td>
                                 <td>
                                     <span class="sm-checksum" title="<?php echo sanitize($recordedChecksum); ?>"><?php echo sanitize($recordedChecksum); ?></span>
@@ -281,11 +287,6 @@ $migrateApplyUrl = BASE_URL . 'scripts/migrate.php?run=1&apply=1';
                                     <?php else: ?>
                                         <span class="sm-badge removed" title="Migration file removed from db/migrations — history only">File removed</span>
                                     <?php endif; ?>
-                                </td>
-                                <td class="itm-actions-cell" data-itm-actions-origin="1">
-                                    <div class="itm-actions-wrap">
-                                        <a class="btn btn-sm" href="view.php?id=<?php echo $rowId; ?>" title="View">🔎</a>
-                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
