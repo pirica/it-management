@@ -91,7 +91,7 @@ A primary technical objective is verifying and adjusting the codebase to support
 
 ## 3. Feature Breakdown
 
-The application is composed of **13 central functional domains**, utilizing over 120 separate module directories under `modules/` and 130 database tables.
+The application is composed of **13 central functional domains**, with **220** module folders (`modules/*/index.php`) and **188** database tables (`db/01_schema.sql`).
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
@@ -233,7 +233,7 @@ The system features a highly functional `scripts/` library. The most critical ma
 *   **External Packages:** **Zero external packages**. The system does not utilize Composer or NPM. PDF generation is executed using lightweight native JavaScript libraries, and layout rendering uses custom-designed templates.
 
 ### 4.4 Database Structure & Multi-Tenant Model
-A fresh database import provisions **130 distinct tables** and seeds approximately **3,085 baseline rows**.
+A fresh database import provisions **188 distinct tables** (`grep -c '^CREATE TABLE' db/01_schema.sql` or `php scripts/verify_database_schema.php` after import) and seeds approximately **9,000+ rows** (literal `INSERT`/`SELECT` in `db/02_data.sql` plus derived rows such as `company_module_access` and `employee_sidebar_preferences`). **167+** explicit `modules_registry` INSERTs live in `02_data.sql`; seed **company_module_access** is 5 active companies × all registry rows; **employee_sidebar_preferences** seeds **540** rows (5 Admin users × 108 sidebar items). Live probe: `php scripts/count_db_tables.php` (no login; updates `scripts/number_db_tables.txt`).
 
 #### Multi-Tenant Data Split
 Data is separated across tenants using a strictly enforced, company-scoped architecture:
