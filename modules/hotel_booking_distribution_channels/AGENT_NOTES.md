@@ -22,7 +22,7 @@ Admin UI for **hotel booking distribution** partner channels: API keys, standard
 
 Bespoke hospitality admin (not flattened scaffold CRUD):
 
-- `index.php` — channel list with `data-itm-db-import-endpoint="index.php"` and JSON `import_excel_rows` handler (table-tools Import Excel); **Add sample data** when the tenant has zero channels (POST `add_sample_data`, CSRF) — calls `itm_hotel_booking_distribution_seed_sample_data()` to insert `itm_demo`, `booking_com`, and `opentravel` with hotel/room-type/rate-plan mappings
+- `index.php` — channel list with server-side **search** (all visible columns + `id`), **sort** (▲/▼ on Code, Name, Standard, Key prefix, Hourly limit, Active), and **pagination** (`itm_resolve_records_per_page()`); `data-itm-db-import-endpoint="index.php"` and JSON `import_excel_rows` handler (table-tools Import Excel); **Add sample data** when the tenant has zero channels (POST `add_sample_data`, CSRF) — calls `itm_hotel_booking_distribution_seed_sample_data()` to insert `itm_demo`, `booking_com`, and `opentravel` with hotel/room-type/rate-plan mappings
 - `create.php` — new channel; plain API key shown once via session on redirect to `view.php`
 - `edit.php` — update channel, rotate API key, partner credentials (Booking.com), generate webhook signing secret, outbound webhook API key, rate-plan mapping CRUD, add mapping rows, **Map all room types** / **Map all hotels** (auto-suggest OTA `external_code` values for unmapped rows)
 - `view.php` — details + API endpoint documentation
