@@ -1,58 +1,28 @@
 # AGENT_NOTES.md - db/migrations/
 
 ## 1. Module Purpose
-Incremental DDL scripts for **existing** databases. Fresh installs use the matching `CREATE TABLE` blocks in `db/01_schema.sql` (and seeds in `db/02_data.sql` when needed).
+
+Incremental DDL/DML scripts for **existing** databases that predate the current `db/01_schema.sql` bundle. **Fresh installs** import `db/01_schema.sql` → `db/02_data.sql` → `db/03_triggers.sql` only (`bash scripts/import_database_split.sh`).
+
+Historical migration SQL files were **pruned** once live databases matched canonical schema and rows were recorded in `schema_migrations`. Upgrade history remains in the `schema_migrations` audit table and git history; new schema changes ship in `db/01_schema.sql` (+ optional new migration file until the next prune).
 
 ## 4. Business Rules (Critical for Agents)
-- **Naming:** `db/migrations/{module}_{subject}.sql` (lowercase module slug, underscore subject). Examples: `explorer_share.sql`, `employee_totp.sql`, `floor_plans_share.sql`.
-- **No `ALTER TABLE` in migrations (hard rule):** copy the current table definition from `db/01_schema.sql`, paste it into the migration file, apply the change, and ship the **full `CREATE TABLE`** block. Do not use `ALTER TABLE` / `MODIFY` / `ADD COLUMN` in `db/migrations/`.
-- **No staging tables (hard rule):** do not use `{table}_new`, `RENAME TABLE`, or `INSERT … SELECT` swap patterns. Migrations use **copy/paste replacement** only:
-  1. `SET FOREIGN_KEY_CHECKS = 0`
-  2. `DROP TABLE IF EXISTS \`{table}\`;`
-  3. `CREATE TABLE \`{table}\` ( … full target definition copied from `db/01_schema.sql` with your change … );`
-  4. `SET FOREIGN_KEY_CHECKS = 1`
-- **Data warning:** `DROP TABLE` removes existing rows. Back up or export data before applying on production; re-seed or restore manually when needed.
-- **Pair every migration with canonical schema:** mirror the same table shape in `db/01_schema.sql` (and `db/02_data.sql` when seeds change) in the **same PR**.
-- **Apply order:** filename order under `db/migrations/*.sql`. **Runner (live DBs):** `php scripts/migrate.php --status` probes live schema/data for every file — **Applied/Pending never comes from `schema_migrations` alone**. `php scripts/migrate.php --apply` runs SQL only when the live probe fails; satisfied migrations are recorded without re-executing destructive files. `schema_migrations.sql` bootstraps the history table only — excluded from the runner loop.
+
+- **Naming:** `db/migrations/{module}_{subject}.sql` (lowercase module slug, underscore subject).
+- **No `ALTER TABLE` in migrations (hard rule):** copy the current table definition from `db/01_schema.sql`, apply the change in the migration file, ship **full `CREATE TABLE`** via `DROP TABLE IF EXISTS` + `CREATE TABLE`.
+- **Pair every migration with canonical schema:** mirror the final shape in `db/01_schema.sql` (and `db/02_data.sql` when seeds change) in the **same PR**.
+- **Runner:** `php scripts/migrate.php --status` probes the **live database** for every `*.sql` file (except bootstrap). `php scripts/migrate.php --apply` runs SQL only when the probe fails; satisfied migrations are **recorded** without re-executing destructive files. **`schema_migrations`** table is audit/history only.
+- **Prune applied migrations:** when all environments show **0 Pending** and canonical `db/` matches live schema, delete obsolete `db/migrations/*.sql` files (keep `schema_migrations.sql` bootstrap). Record applied files with `--apply` before delete. Browser Admin 🗑️ on [migrate.php?run=1](http://localhost/it-management/scripts/migrate.php?run=1) deletes one file at a time.
 - **No audit triggers** on private-data tables listed in `AGENTS.md` → Private data — no audit trail.
 
 ## 7. File Structure
-- `{module}_{subject}.sql` — one focused table replacement per file (`DROP TABLE` + full `CREATE TABLE`, not `ALTER`)
-- `employee_totp.sql` — `employees` table with `totp_secret` + `totp_enabled` (mirrors `db/01_schema.sql`; destructive — re-seed employees after apply)
-- `employee_roles_sidebar_show.sql` — `employee_roles` table with `sidebar_show` (`TINYINT(1) NOT NULL DEFAULT 1`; destructive — re-seed roles after apply)
-- `employee_roles_admin_sidebar_personalize.sql` — DML only: `UPDATE employee_roles` sets Admin `sidebar_show = 0`, Helpdesk `sidebar_show = 1` (idempotent)
-- `employees_seed_admin_role_id.sql` — DML only: sets `role_id` on seed admins (`username LIKE 'Admin%'`) to each tenant's `Admin` `employee_roles` row (idempotent)
-- `employees_employee_departments.sql` — adds `employee_departments` junction table + backfill from `employees.department_id` (mirrors `db/01_schema.sql`)
-- `employee_sidebar_preferences_seed_admins.sql` — DML only: reassigns sidebar layout rows to each company's seed admin employee (`username LIKE 'Admin%'`)
-- `demo_module_users.sql` — DML only: idempotent seed for `demo1`–`demo5` roles, RBAC rows, employees, `employee_companies`, and `ui_configuration` (company 1; `enable_chatbot = 1`); prefer `php scripts/fast_create_acc.php --seed-demo-bundle` for sidebar prefs refresh
-- `seed_replicate_location_rack_supplier_fk_remap.sql` — DML only: remaps cross-tenant `type_id` / `location_id` / `status_id` / `rack_id` on companies 2–5 for `it_locations`, `racks`, `suppliers`, `idfs` (pairs with fixed `@replicate_source_company_id` block in `db/02_data.sql`)
-- `ui_configuration_enable_chatbot_active.sql` — DML only: `UPDATE ui_configuration SET enable_chatbot = 1 WHERE enable_chatbot = 0` (idempotent backfill to schema default)
-- `companies_audit_triggers.sql` — trigger-only: fixes `trg_companies_audit_*` `audit_logs.company_id` fallback (`NEW.id` / `OLD.id`)
-- `employee_departments_audit_triggers.sql` — trigger-only: adds `trg_employee_departments_audit_*` (mirrors `db/03_triggers.sql`; run after `employees_employee_departments.sql` on live DBs)
-- `it_settings_chat_same_tenant.sql` — `it_settings` with `chat_same_tenant` (`TINYINT(1) NOT NULL DEFAULT 1`; destructive — includes seed INSERT for companies 1–5)
-- `expenses_quotation_order.sql` — `expenses` with `quotation_order` + `quotation_order_accepted` after PO fields (mirrors `db/01_schema.sql`; destructive — re-seed or restore expenses after apply)
-- `live_chat_typing_audit_columns.sql` — `live_chat_typing` with standard soft-delete/meta columns (mirrors `db/01_schema.sql`; destructive — typing rows are ephemeral)
-- `appointment.sql` — all four `appointment_*` tables (mirrors `db/01_schema.sql`; destructive)
-- `appointment_booking_lock.sql` — `appointments` with `booking_lock` unique slot index (destructive — drops appointment rows; requires `appointment_type` table when using current schema)
-- `appointment_type.sql` — `appointment_type` lookup + `appointments.appointment_type_id` (destructive — drops `appointments`; seeds `in_person` / `remote` per company)
-- `appointments_assigned_confirmed.sql` — `appointments` with `assigned_to_employee_id` (FK `employees`, SET NULL) and `is_confirmed` (destructive — drops appointment rows)
-- `appointment_settings_default_modality.sql` — `appointment_settings.default_appointment_modality` enum (`remote` default; preserves rows via backup table)
-- `hotel_booking_portal_rate_plans.sql` — `hotel_booking_portal_rate_plans` per-hotel Step 2 cancellation policy URLs (mirrors `db/01_schema.sql`; new table — run seeds or admin ensure for rows)
-- `hotel_booking_portal_rate_plans_plan_surcharge_percent.sql` — `plan_surcharge_percent` (default 0; backup/restore preserves rows)
-- `hotel_booking_portal_hotel_pricing.sql` — `hotel_booking_hotels` portal Step 2 pricing columns (breakfast, child supplement, extra-adult %, pet fee)
-- `hotel_booking_hotels_contact_emails.sql` — `hotel_booking_hotels` `contact_email` + `reservations_email` (destructive — re-seed hotels from `db/02_data.sql` after apply)
-- `booking_rooms_types_upgrade.sql` — `booking_rooms_types` with `upgrade_to_room_type_id`, `upgrade_price_per_night`, `upgrade_pitch` (destructive — re-seed room types from `db/02_data.sql` after apply)
-- `hotel_booking_registry_icons.sql` — DML only: fixes mojibake `modules_registry.icon` values for hospitality slugs (matches `includes/ui_config.php` catalog)
-- `hotel_bookings_booking_color.sql` — `hotel_bookings.booking_color` varchar(7) `#rrggbb` for planning grid bars (destructive — drops booking rows)
-- `hotel_bookings_auth2.sql` — `hotel_bookings.auth2` char(4) guest manage/cancel PIN (destructive — drops booking rows)
-- `hotel_bookings_guest_confirmation_code.sql` — `hotel_bookings.guest_confirmation_code` opaque 10-char guest confirmation (preserves rows via backup table)
-- `audit_logs_bigint.sql` — `audit_logs.id` + `record_id` as `BIGINT` (preserves rows via `_itm_audit_logs_backup`; mirrors `db/01_schema.sql`)
-- `hotel_booking_hk_status_code.sql` — `hotel_booking_housekeeping_statuses` with tenant-unique `code` (destructive — re-seed HK statuses from `db/02_data.sql` after apply)
-- `hotel_booking_distribution.sql` — four `hotel_booking_distribution_*` tables (channels, mappings, reservation links, ARI event log; mirrors `db/01_schema.sql`; new tables only)
-- `search_index.sql` — `search_index` denormalized FULLTEXT table for phase-2 command palette (new table; destructive only to existing index rows)
-- `hotel_booking_settings_calendar_month_advance_days_left.sql` — `hotel_booking_settings.calendar_month_advance_days_left` (default 3; backup/restore preserves rows)
-- `hotel_booking_settings_show_discount_strikethrough.sql` — `hotel_booking_settings.show_discount_strikethrough` (default 1; backup/restore preserves rows)
-- `schema_migrations.sql` — `schema_migrations` history table for `scripts/migrate.php` (`CREATE TABLE IF NOT EXISTS`; bootstrap only — not executed by the runner loop)
 
-## 12. Module Owner Notes (Optional)
-Catalog pointer: `AGENTS.md` → Database & Schema Rules → **Incremental migrations (`db/migrations/`)**.
+| File | Role |
+|------|------|
+| `schema_migrations.sql` | Bootstrap `schema_migrations` history table (`CREATE TABLE IF NOT EXISTS`); **not** executed by the runner loop |
+
+## 12. Module Owner Notes
+
+- Operator UI: [migrate.php?run=1](http://localhost/it-management/scripts/migrate.php?run=1) (Admin) · verify: [verify_db_migrations.php?run=1](http://localhost/it-management/scripts/verify_db_migrations.php?run=1)
+- Module CRUD (audit history): [schema_migrations/index.php](http://localhost/it-management/modules/schema_migrations/index.php)
+- Catalog pointer: `AGENTS.md` → Database & Schema Rules → **Incremental migrations (`db/migrations/`)**

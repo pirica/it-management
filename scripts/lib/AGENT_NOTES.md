@@ -52,7 +52,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 | `itm_ops_report_search.php` | Ops Report cross-date search helpers + `opr_search_cross_date_hit_line_text()` for `verify_ops_report.php` and `seed_ops_report_search_demo.php` |
 | `itm_repro_vulnerabilities.php` | `repro_vulnerabilities.php` isolated CLI subprocess helpers (Laragon `php.exe`, session before `config.php`, CSRF mock) |
 | `itm_perform_audit.php` | `perform_audit.php` subprocess discovery/exclusions; skips `health.php` (shell bootstrap), session-mock harnesses (`test_ajax.php`, `test_edit.php`), Tier 4/5 maintenance, `repro_*`, `verify_*`, `_tmp_*`, `run_tier2_checks.php` |
-| `itm_verify_db_migrations_report.php` | Glob `db/migrations/*.sql` (natural sort); generic probes parse `CREATE TABLE` / `CREATE TRIGGER`; custom handlers for `explorer_share.sql`, `employee_roles_admin_sidebar_personalize.sql`, `demo_module_users.sql`; used by `verify_db_migrations.php` |
+| `itm_verify_db_migrations_report.php` | Glob `db/migrations/*.sql` (natural sort); generic probes parse `CREATE TABLE` / `CREATE TRIGGER`; custom handlers for `explorer_share.sql`, `employee_roles_admin_sidebar_personalize.sql`, `demo_module_users.sql`, superseded `hotel_bookings_auth2.sql`, hospitality DML probes, `appointment_type_label_allowed_json.sql`, `news_module_registry.sql`, etc.; used by `verify_db_migrations.php` |
 
 ## 4. Business Rules (Critical for Agents)
 - New shared script code belongs here when used by two or more scripts.
