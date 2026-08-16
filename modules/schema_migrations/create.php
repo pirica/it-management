@@ -1,11 +1,6 @@
 <?php
 /**
-
- * 
- * Configures the action to 'create' and delegates to index.php.
+ * Schema Migrations — mutations blocked; use scripts/migrate.php.
  */
-
-$crud_table = 'schema_migrations';
-$crud_title = 'Schema Migrations';
-$crud_action = 'create';
-require 'index.php';
+header('Location: index.php');
+exit;

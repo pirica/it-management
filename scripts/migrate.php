@@ -208,6 +208,7 @@ if ($showStatus) {
         echo 'Pending: <strong>' . (int)$status['pending_count'] . '</strong>. ';
         echo 'Drift: <strong>' . (int)$status['drift_count'] . '</strong>. ';
         echo 'Live DB probe is authoritative — <code>schema_migrations</code> is audit/history only.</p>';
+        echo '<p>Full audit history: <a href="' . htmlspecialchars(BASE_URL . 'modules/schema_migrations/index.php', ENT_QUOTES, 'UTF-8') . '">modules/schema_migrations/index.php</a> (Admin session).</p>';
         itm_migrate_render_browser_table($status['migrations'], $allowDelete, $csrfToken);
     }
 
