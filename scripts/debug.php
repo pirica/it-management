@@ -67,13 +67,24 @@ echo PHP_EOL . "🐘 PHP Version: " . phpversion() . PHP_EOL;
 // 4. Check Required PHP Extensions
 echo PHP_EOL . "📦 MySQL Extension: " . (extension_loaded('mysqli') ? '✅ Loaded' : '❌ Not Loaded') . PHP_EOL;
 
-// 5. Verify Critical Directory Permissions
-// The application needs write access to several directories for uploads and configuration
-echo PHP_EOL . "📁 File Permissions:" . PHP_EOL;
+// 5. Verify directory permissions for every top-level project folder
 $root = dirname(__DIR__);
-echo "  config/: " . (is_writable($root . '/config') ? '✅ Writable' : '❌ Not Writable') . PHP_EOL;
-echo "  tickets_photos/: " . (is_writable($root . '/tickets_photos') ? '✅ Writable' : '❌ Not Writable') . PHP_EOL;
-echo "  images/: " . (is_writable($root . '/images') ? '✅ Writable' : '❌ Not Writable') . PHP_EOL;
-echo "  backups/: " . (is_writable($root . '/backups') ? '✅ Writable' : '❌ Not Writable') . PHP_EOL;
+$folderNames = [];
+foreach (scandir($root) as $entry) {
+    if ($entry === '.' || $entry === '..') {
+        continue;
+    }
+    $absolutePath = $root . DIRECTORY_SEPARATOR . $entry;
+    if (is_dir($absolutePath)) {
+        $folderNames[] = $entry;
+    }
+}
+sort($folderNames, SORT_NATURAL | SORT_FLAG_CASE);
+echo PHP_EOL . '📁 File Permissions: (' . count($folderNames) . ')' . PHP_EOL;
+foreach ($folderNames as $folderName) {
+    $absolutePath = $root . DIRECTORY_SEPARATOR . $folderName;
+    $status = is_writable($absolutePath) ? '✅ Writable' : '❌ Not Writable';
+    echo '  ' . $folderName . '/: ' . $status . PHP_EOL;
+}
 
 itm_script_output_end();
