@@ -530,9 +530,10 @@ The email management module (`modules/emails/` and `modules/email_smtp_configura
 4. **UI tabs:** Send Logs (XLSX export), SMTP Configurations (toggle **Set as default SMTP**), Alert Rules (warranty, license, certificate, alerts, notes, to-do, events).
 5. **Project integration:** `send-email.php`, `forgot-password.php`, `register.php`, `modules/employee_onboarding_requests/` approval emails, and alert runner must call **`itm_send_email()`** — not MailerLite/Resend directly (Resend remains fallback when no SMTP profile exists).
 6. **Alert runner:** `php scripts/run_email_alert_rules.php` — schedule daily; respects `email_alert_rules.enabled` and `notify_emails`.
-7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_emails_module.php`.
-8. **Audit logging:** `email_smtp_configurations` and `email_alert_rules` use `trg_*_audit_*` triggers in `db/03_triggers.sql`. The **`emails`** send log is **private-data exempt** (no audit triggers — see **Private data — no audit trail**).
-9. **Sidebar:** **Admin → 📧 Email Management** in `includes/ui_config.php`.
+7. **Inbound email → tickets:** `companies.email` is the tenant routing To address. Default SMTP profile fields `imap_host` + `inbound_ticket_enabled` enable IMAP polling via `php scripts/run_inbound_email_tickets.php` (cron). Core: `includes/itm_inbound_email_tickets.php`; dedupe table `ticket_inbound_email_messages`. **Requires PHP `imap` extension on the CLI binary** used for cron (`extension=imap` in `php.ini` — see **Setup & Debugging** and `scripts/SCRIPTS.md` → Email Management scripts).
+8. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_emails_module.php`; inbound: `php scripts/verify_inbound_email_tickets.php`.
+9. **Audit logging:** `email_smtp_configurations` and `email_alert_rules` use `trg_*_audit_*` triggers in `db/03_triggers.sql`. The **`emails`** send log is **private-data exempt** (no audit triggers — see **Private data — no audit trail**).
+10. **Sidebar:** **Admin → 📧 Email Management** in `includes/ui_config.php`.
 
 #### In-app notification center (mandatory)
 
@@ -1069,6 +1070,7 @@ On **Linux, macOS, CI, and any host where `php` is on PATH**, bare `php scripts/
 * **Logs:** System errors are piped to `ROOT_PATH . 'error_log.txt'`.
 * **Testing:** Browser screenshots are not supported; rely on verbose error logging. Script suites and full-module QA: **`scripts/SCRIPTS.md`**.
 * **CLI scripts:** Run from the repository root with **PHP 7.4.33** and **MySQLi** enabled — conventions and catalog in **`scripts/SCRIPTS.md`**; Dunebox binary path in **PHP CLI tests** above.
+* **Inbound email → tickets (IMAP):** `scripts/run_inbound_email_tickets.php` requires the PHP **`imap`** extension on the **CLI** binary (not Apache mod_php unless you run the script via web admin). **Dunebox:** uncomment or add `extension=imap` in `D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.ini` (or re-run `scripts/setup_dunebox_php_from_laragon.ps1` after updating `scripts/data/php.ini.dunebox-7.4.template`). **Laragon:** enable `extension=imap` in the matching `php.ini` for the CLI `php.exe` you use in cron. Verify: `php -m | findstr imap` (Windows) or `php -r "echo function_exists('imap_open') ? 'ok' : 'missing';"`.
 
 ---
 

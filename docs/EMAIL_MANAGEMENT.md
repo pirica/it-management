@@ -68,7 +68,10 @@ erDiagram
 | Table | Column | Type / Constraints | Role |
 |---|---|---|---|
 | **`email_smtp_configurations`** | `smtp_pass` | `TEXT` | Encrypted at rest via the internal `itm_email_encrypt_password()` helper. |
+| | `imap_host` | `VARCHAR(255)` NULL | IMAP server for inbound ticket polling (paired with `imap_port`). |
+| | `inbound_ticket_enabled` | `TINYINT DEFAULT 0` | When `1` on the default profile, `run_inbound_email_tickets.php` polls the mailbox. |
 | | `is_default` | `TINYINT(1) DEFAULT 0` | Exactly one active profile per company is designated as the default transport. |
+| **`ticket_inbound_email_messages`** | `message_id` | `VARCHAR(255)` | RFC Message-ID dedupe per `company_id`; links optional `ticket_id` / `email_log_id`. |
 | **`emails`** | `status` | `VARCHAR(50)` | Delivery states: `sent`, `failed`, or `received`. |
 | | `is_archived`, `is_deleted` | `TINYINT(1) DEFAULT 0` | Controls visibility in Send Logs view. Soft-delete flips `is_deleted = 1`. |
 | **`email_alert_rules`** | `rule_slug` | `VARCHAR(100)` | Expiration types: `warranty`, `license`, `certificate`, `alerts`, `notes`, `todo`, `events`. |
@@ -153,7 +156,20 @@ Per-tenant helpdesk intake polls each company's **default SMTP profile** IMAP ma
 - **Threading:** replies with `TCK-####` or `[#id]` in the subject append `ticket_comments` instead of creating a duplicate ticket.
 - **Dedupe:** `ticket_inbound_email_messages` stores RFC Message-ID per company.
 - **Regression:** `php scripts/verify_inbound_email_tickets.php`.
-- **PHP requirement:** enable the `imap` extension on the CLI PHP binary used for cron.
+- **PHP requirement:** enable the **`imap`** extension on the **CLI** PHP binary used for cron (not required for outbound SMTP or `verify_emails_module.php`).
+
+### Enable PHP `imap` (Windows Dunebox / Laragon)
+
+1. Locate the **CLI** `php.ini` beside the `php.exe` you use for `scripts/run_inbound_email_tickets.php` (Dunebox: `D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.ini`).
+2. Ensure `php_imap.dll` exists under the `ext\` folder (copy from Laragon portable `bin\php\php-7.4.33-…\ext\` when missing on Dunebox).
+3. Add or uncomment: `extension=imap`
+4. Verify:
+
+```powershell
+& "D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" -r "echo function_exists('imap_open') ? 'imap ok' : 'imap missing';"
+```
+
+Canonical Dunebox template: `scripts/data/php.ini.dunebox-7.4.template` (applied by `scripts/setup_dunebox_php_from_laragon.ps1`).
 
 ---
 
@@ -196,4 +212,10 @@ To perform localized delivery testing or trigger alert dispatchers manually, exe
 4. **Verify password reset delivery flow:**
    ```bash
    php scripts/test_email_forgot.php email=your-test@example.com
+   ```
+
+5. **Poll inbound mailboxes for ticket creation (requires PHP `imap` on CLI):**
+   ```bash
+   php scripts/run_inbound_email_tickets.php --verbose
+   php scripts/verify_inbound_email_tickets.php
    ```

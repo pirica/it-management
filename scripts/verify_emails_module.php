@@ -46,7 +46,7 @@ if (!$conn) {
     exit(1);
 }
 
-$requiredTables = ['emails', 'email_smtp_configurations', 'email_alert_rules'];
+$requiredTables = ['emails', 'email_smtp_configurations', 'email_alert_rules', 'ticket_inbound_email_messages'];
 foreach ($requiredTables as $table) {
     $stmt = mysqli_prepare(
         $conn,
@@ -131,7 +131,9 @@ $imapColumnStmt = mysqli_prepare(
      WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?'
 );
 $imapPop3Columns = [
+    'imap_host' => null,
     'imap_port' => '143',
+    'inbound_ticket_enabled' => '0',
     'pop3_port' => '110',
     'pop3_tls_mode' => 'None',
     'pop3_require_secure_connection' => '0',
