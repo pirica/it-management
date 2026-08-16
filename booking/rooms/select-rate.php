@@ -111,6 +111,37 @@ $rateDisplayOccupancy = itm_hotel_booking_portal_select_rate_display_occupancy($
 ]) . "\n", FILE_APPEND);
 // #endregion
 
+$summaryLineNightlyAmounts = [];
+if ($roomsNeeded > 1 && count($roomLines) >= $roomsNeeded && function_exists('itm_hotel_booking_portal_per_line_nightly_incl_tax_for_rate')) {
+    $cheapestOffer = itm_hotel_booking_portal_cheapest_rate_offer_for_hotel($conn, $company_id, $hotelId);
+    $cheapestSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($cheapestOffer['slug'] ?? 'non_refundable')));
+    $cheapestPlanRow = null;
+    foreach ($ratePlans as $plan) {
+        $planSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($plan['rate_plan_slug'] ?? '')));
+        if ($planSlug === $cheapestSlug) {
+            $cheapestPlanRow = $plan;
+            break;
+        }
+    }
+    $summaryDisc = itm_hotel_booking_portal_rate_plan_effective_discount($discountPercent, $cheapestSlug, $cheapestPlanRow);
+    $summarySurcharge = itm_hotel_booking_portal_rate_plan_effective_surcharge($cheapestSlug, $cheapestPlanRow);
+    $priorLineAmounts = itm_hotel_booking_portal_per_line_nightly_incl_tax_for_rate(
+        $conn,
+        $company_id,
+        $hotelId,
+        $checkInIso,
+        $occupancy,
+        $summaryDisc,
+        $summarySurcharge,
+        $roomLines,
+        $touristTaxRate
+    );
+    $lastLineIdx = count($roomLines) - 1;
+    foreach ($priorLineAmounts as $idx => $amount) {
+        $summaryLineNightlyAmounts[(int) $idx] = ((int) $idx === $lastLineIdx) ? null : (float) $amount;
+    }
+}
+
 $ratePlanRows = [];
 foreach ($ratePlans as $plan) {
     $slug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($plan['rate_plan_slug'] ?? '')));
@@ -277,7 +308,7 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
 </div>
 <p class="hb-rate-tax-note" style="margin:0 0 16px;font-size:.95rem;opacity:.9;">All prices shown include tourist tax for your guest count<?php if ($roomsNeeded > 1): ?> for this room<?php endif; ?>.</p>
 
-<?php hb_portal_render_room_lines_summary($roomLines, $roomsNeeded); ?>
+<?php hb_portal_render_room_lines_summary($roomLines, $roomsNeeded, $summaryLineNightlyAmounts, $currency); ?>
 
 <?php if ($error !== ''): ?>
 <p class="hb-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>

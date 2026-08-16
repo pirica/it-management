@@ -1346,7 +1346,10 @@ $roomsSrcPick = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms.p
 if (function_exists('itm_hotel_booking_portal_select_rate_display_occupancy')
     && strpos($selectRateSrc, 'itm_hotel_booking_portal_select_rate_display_occupancy') !== false
     && strpos($selectRateSrc, '$rateDisplayOccupancy') !== false
-    && strpos($roomsSrcPick, 'activeLine') !== false) {
+    && strpos($roomsSrcPick, 'activeLine') !== false
+    && strpos($selectRateSrc, '$summaryLineNightlyAmounts') !== false
+    && strpos($portalCheckoutSrcMulti, 'hb-room-lines-summary-intro') !== false
+    && strpos($portalCheckoutSrcMulti, 'hb-room-lines-summary-nightly') !== false) {
     hb_pass('portal select-rate quotes current room only for multi-room');
 } else {
     hb_fail('portal select-rate current-room quote wiring missing');

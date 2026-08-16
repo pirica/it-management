@@ -74,18 +74,26 @@ if (!function_exists('hb_portal_render_checkout_stepper')) {
 if (!function_exists('hb_portal_render_room_lines_summary')) {
     /**
      * @param array<int,array> $roomLines
+     * @param array<int,float|null> $lineNightlyAmounts per-line /night incl. tax; null omits price (e.g. last room on select-rate)
      */
-    function hb_portal_render_room_lines_summary(array $roomLines, $roomsNeeded = 1) {
+    function hb_portal_render_room_lines_summary(array $roomLines, $roomsNeeded = 1, array $lineNightlyAmounts = [], $currency = 'EUR') {
         $roomsNeeded = max(1, (int) $roomsNeeded);
         if ($roomsNeeded < 2 || count($roomLines) < 1) {
             return;
         }
+        $showLinePrices = $lineNightlyAmounts !== [];
         ?>
 <section class="hb-room-lines-summary card" aria-label="Selected rooms">
 <h2 class="hb-room-lines-summary-title">Your rooms (<?php echo count($roomLines); ?> of <?php echo (int) $roomsNeeded; ?>)</h2>
+<?php if ($showLinePrices): ?>
+<p class="hb-room-lines-summary-intro" style="margin:0 0 12px;font-size:.95rem;opacity:.92;">Per-night prices incl. tax for each room already chosen. Select a rate for the last room on this page.</p>
+<?php endif; ?>
 <ol class="hb-room-lines-summary-list">
-<?php foreach ($roomLines as $idx => $line): ?>
-<li><span class="hb-room-lines-summary-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars(itm_hotel_booking_portal_room_line_label($line), ENT_QUOTES, 'UTF-8'); ?></li>
+<?php foreach ($roomLines as $idx => $line):
+    $lineNightly = array_key_exists($idx, $lineNightlyAmounts) ? $lineNightlyAmounts[$idx] : null;
+    $lineLabel = itm_hotel_booking_portal_room_line_label($line);
+?>
+<li><span class="hb-room-lines-summary-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars($lineLabel, ENT_QUOTES, 'UTF-8'); ?><?php if ($lineNightly !== null && (float) $lineNightly > 0): ?> <span class="hb-room-lines-summary-nightly">— <?php echo htmlspecialchars(hb_portal_money_format((float) $lineNightly, $currency), ENT_QUOTES, 'UTF-8'); ?> / night incl. tax</span><?php endif; ?></li>
 <?php endforeach; ?>
 </ol>
 </section>
