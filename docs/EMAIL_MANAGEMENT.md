@@ -144,6 +144,19 @@ The dispatcher matches records against tenant-active rules in `email_alert_rules
 
 ---
 
+## 5b. Inbound email → tickets
+
+Per-tenant helpdesk intake polls each company's **default SMTP profile** IMAP mailbox when **Create tickets from inbound mail** is enabled (`email_smtp_configurations.inbound_ticket_enabled`).
+
+- **Routing address:** `companies.email` (e.g. `info@techcorp.example`) — senders should use this To address; the runner logs a warning when To/Cc does not include it but still processes under the profile's `company_id`.
+- **Runner:** `php scripts/run_inbound_email_tickets.php` (schedule via cron; optional `--company=1`, `--verbose`, `--dry-run`).
+- **Threading:** replies with `TCK-####` or `[#id]` in the subject append `ticket_comments` instead of creating a duplicate ticket.
+- **Dedupe:** `ticket_inbound_email_messages` stores RFC Message-ID per company.
+- **Regression:** `php scripts/verify_inbound_email_tickets.php`.
+- **PHP requirement:** enable the `imap` extension on the CLI PHP binary used for cron.
+
+---
+
 ## 6. Business Rules & Security
 
 ### A. Credentials Security

@@ -602,6 +602,20 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
+                    <td><a href="run_inbound_email_tickets.php" target="_blank" rel="nofollow noreferrer">run_inbound_email_tickets.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Polls per-company IMAP (default SMTP profile with inbound tickets enabled) and creates or updates <code>tickets</code> from mail sent to <code>companies.email</code>; requires PHP <code>imap</code> extension.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="verify_inbound_email_tickets.php" target="_blank" rel="nofollow noreferrer">verify_inbound_email_tickets.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Regression for inbound email-to-ticket parsers, dedupe table, requester resolution, and schema columns (no live IMAP mailbox required).</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Mixed">
                     <td><a href="run_notification_digest.php" target="_blank" rel="nofollow noreferrer">run_notification_digest.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
