@@ -168,7 +168,7 @@ Mailpit has **no IMAP**. For local dev, set **`imap_host` = `mailpit`** on the d
 | Inbound API | `http://localhost/mailpit/api/v1` (override with env `ITM_MAILPIT_API_URL`) |
 | Outbound SMTP | `127.0.0.1:1025` (override with `ITM_MAILPIT_SMTP_HOST` / `ITM_MAILPIT_SMTP_PORT`) |
 
-The runner lists unread messages via the Mailpit HTTP API instead of `imap_open()` when `imap_host` is `mailpit` or an `http(s)://…/mailpit` URL.
+The runner lists unread messages via the Mailpit HTTP API instead of `imap_open()` when `imap_host` is `mailpit` or an `http(s)://…/mailpit` URL. **Dedupe** uses `ticket_inbound_email_messages` — opening a message in the Mailpit UI (Read flag) does not block ticket creation.
 
 ### Production IMAP mailboxes
 

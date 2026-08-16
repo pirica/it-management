@@ -318,7 +318,8 @@ if (!function_exists('itm_inbound_email_fetch_unseen_mailpit')) {
         }
 
         foreach ($decoded['messages'] as $msg) {
-            if (!is_array($msg) || !empty($msg['Read'])) {
+            // Why: Mailpit marks messages read when opened in the web UI; dedupe is ticket_inbound_email_messages, not Read.
+            if (!is_array($msg)) {
                 continue;
             }
             $mailpitId = (string)($msg['ID'] ?? '');
@@ -337,8 +338,9 @@ if (!function_exists('itm_inbound_email_fetch_unseen_mailpit')) {
             $ccList = itm_inbound_email_mailpit_parse_address_list($msg['Cc'] ?? []);
             $subject = (string)($msg['Subject'] ?? '');
             $body = (string)($msg['Snippet'] ?? '');
+            $alreadyRead = !empty($msg['Read']);
 
-            if ($fetchBody) {
+            if ($fetchBody && !$alreadyRead) {
                 $detailResponse = itm_inbound_email_mailpit_http('GET', $base . '/message/' . rawurlencode($mailpitId));
                 if ($detailResponse['ok']) {
                     $detail = json_decode($detailResponse['body'], true);
@@ -1009,6 +1011,13 @@ if (!function_exists('itm_inbound_email_process_company')) {
             $toList = is_array($message['to'] ?? null) ? $message['to'] : [];
             $ccList = is_array($message['cc'] ?? null) ? $message['cc'] : [];
             if ($companyEmail !== '' && !itm_inbound_email_to_matches_company($toList, $ccList, $companyEmail)) {
+                if ($transport === 'mailpit') {
+                    $summary['skipped']++;
+                    if ($verbose) {
+                        $summary['warnings'][] = 'Skipped (To/Cc not ' . $companyEmail . '): Message-ID ' . $messageId;
+                    }
+                    continue;
+                }
                 $summary['warnings'][] = 'To/Cc does not include companies.email (' . $companyEmail . ') for Message-ID ' . $messageId;
             }
 

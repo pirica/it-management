@@ -1132,7 +1132,7 @@ Run `verify_inbound_email_tickets.php` when changing `includes/itm_inbound_email
 
 #### PHP `imap` extension and local Mailpit (inbound email → tickets)
 
-**Local dev (Laragon/Dunebox):** set `imap_host` to **`mailpit`** on the default SMTP profile (seed data and `apply_mailpit_inbound_email_config.php`). Outbound mail uses SMTP **`127.0.0.1:1025`**; inbound polling uses the Mailpit HTTP API at **`http://localhost/mailpit/api/v1`** (web UI: [http://localhost/mailpit/](http://localhost/mailpit/)). No PHP `imap` extension required when all enabled profiles use Mailpit.
+**Local dev (Laragon/Dunebox):** set `imap_host` to **`mailpit`** on the default SMTP profile (seed data and `apply_mailpit_inbound_email_config.php`). Outbound mail uses SMTP **`127.0.0.1:1025`**; inbound polling uses the Mailpit HTTP API at **`http://localhost/mailpit/api/v1`** (web UI: [http://localhost/mailpit/](http://localhost/mailpit/)). No PHP `imap` extension required when all enabled profiles use Mailpit. Mailpit is a **shared** local inbox — the runner skips messages whose To/Cc does not include that tenant `companies.email` (opening mail in the Mailpit UI does not block processing; dedupe is `ticket_inbound_email_messages`).
 
 **Production IMAP:** `run_inbound_email_tickets.php` calls `imap_open()` when `imap_host` is a real mailbox host — the extension must be loaded on the **CLI** `php.exe` used for cron, not only Apache.
 
