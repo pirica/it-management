@@ -92,8 +92,9 @@ if (!function_exists('hb_portal_render_room_lines_summary')) {
 <?php foreach ($roomLines as $idx => $line):
     $lineNightly = array_key_exists($idx, $lineNightlyAmounts) ? $lineNightlyAmounts[$idx] : null;
     $lineLabel = itm_hotel_booking_portal_room_line_label($line);
+    $lineRateLabel = hb_portal_room_line_rate_plan_label($line);
 ?>
-<li><span class="hb-room-lines-summary-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars($lineLabel, ENT_QUOTES, 'UTF-8'); ?><?php if ($lineNightly !== null && (float) $lineNightly > 0): ?> <span class="hb-room-lines-summary-nightly">— <?php echo htmlspecialchars(hb_portal_money_format((float) $lineNightly, $currency), ENT_QUOTES, 'UTF-8'); ?> / night incl. tax</span><?php endif; ?></li>
+<li><span class="hb-room-lines-summary-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars($lineLabel, ENT_QUOTES, 'UTF-8'); ?><?php if ($lineRateLabel !== ''): ?> <span class="hb-room-lines-summary-rate">— <?php echo htmlspecialchars($lineRateLabel, ENT_QUOTES, 'UTF-8'); ?></span><?php endif; ?><?php if ($lineNightly !== null && (float) $lineNightly > 0): ?> <span class="hb-room-lines-summary-nightly">— <?php echo htmlspecialchars(hb_portal_money_format((float) $lineNightly, $currency), ENT_QUOTES, 'UTF-8'); ?> / night incl. tax</span><?php endif; ?></li>
 <?php endforeach; ?>
 </ol>
 </section>
@@ -207,11 +208,15 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
 <?php foreach ($roomLines as $idx => $line): ?>
 <?php
     $lineAmount = isset($lineChargeAmounts[$idx]) ? (float) $lineChargeAmounts[$idx] : null;
+    $lineRateLabel = hb_portal_room_line_rate_plan_label($line);
 ?>
 <li class="hb-reservation-summary-room-item">
 <div class="hb-reservation-summary-room-item-main">
 <span class="hb-reservation-summary-room-slot">Room <?php echo (int) $idx + 1; ?></span>
 <span class="hb-reservation-room-name"><?php echo htmlspecialchars(itm_hotel_booking_portal_room_line_label($line), ENT_QUOTES, 'UTF-8'); ?></span>
+<?php if ($lineRateLabel !== ''): ?>
+<span class="hb-reservation-room-rate"><?php echo htmlspecialchars($lineRateLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+<?php endif; ?>
 </div>
 <?php if ($lineAmount !== null): ?>
 <span class="hb-reservation-room-line-price"><?php echo htmlspecialchars(hb_portal_money_format_decimal($lineAmount, $currency), ENT_QUOTES, 'UTF-8'); ?></span>
@@ -226,10 +231,10 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
 <p class="hb-reservation-room-price"><?php echo htmlspecialchars(hb_portal_money_format_decimal($roomCharges, $currency), ENT_QUOTES, 'UTF-8'); ?></p>
 </div>
 <?php endif; ?>
-<?php if ($planLabel !== ''): ?>
+<?php if (!$showMultiRoomList && $planLabel !== ''): ?>
 <p class="hb-reservation-rate-line"><span class="hb-reservation-muted">Rate:</span> <?php echo htmlspecialchars($planLabel, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php endif; ?>
-<?php if ($changeRateUrl !== ''): ?>
+<?php if (!$showMultiRoomList && $changeRateUrl !== ''): ?>
 <p class="hb-reservation-change-rate"><a href="<?php echo htmlspecialchars($changeRateUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Change rate">Change rate</a></p>
 <?php endif; ?>
 <dl class="hb-reservation-totals">
@@ -469,7 +474,7 @@ if (!function_exists('hb_portal_booking_rate_plan_label')) {
     function hb_portal_booking_rate_plan_label(array $booking) {
         $planLabel = trim((string) ($booking['portal_rate_plan_name'] ?? ''));
         if ($planLabel === '') {
-            $slug = strtolower((string) ($booking['portal_rate_plan_slug'] ?? ''));
+            $slug = strtolower((string) ($booking['portal_rate_plan_slug'] ?? $booking['rate_plan'] ?? ''));
             if ($slug === 'breakfast') {
                 $planLabel = 'Breakfast included';
             } elseif ($slug !== '' && function_exists('itm_hotel_booking_portal_rate_plan_offer')) {
@@ -489,6 +494,23 @@ if (!function_exists('hb_portal_booking_rate_plan_label')) {
             $planLabel = 'Best available rate';
         }
         return $planLabel;
+    }
+}
+
+if (!function_exists('hb_portal_room_line_rate_plan_label')) {
+    /**
+     * Guest-facing rate name for a draft room_lines row (multi-room checkout).
+     */
+    function hb_portal_room_line_rate_plan_label(array $line) {
+        if (!function_exists('itm_hotel_booking_portal_room_line_has_rate')
+            || !itm_hotel_booking_portal_room_line_has_rate($line)) {
+            return '';
+        }
+        $line = itm_hotel_booking_portal_room_line_normalize($line);
+        return hb_portal_booking_rate_plan_label([
+            'portal_rate_plan_name' => (string) ($line['portal_rate_plan_name'] ?? ''),
+            'portal_rate_plan_slug' => (string) ($line['rate_plan'] ?? ''),
+        ]);
     }
 }
 
@@ -912,11 +934,15 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
     $lineDisplayAmount = isset($groupRoomDisplayAmounts[$idx])
         ? (float) $groupRoomDisplayAmounts[$idx]
         : (float) ($lineRow['payment_amount'] ?? 0);
+    $lineRateLabel = hb_portal_booking_rate_plan_label($lineRow);
 ?>
 <li class="hb-reservation-summary-room-item">
 <div class="hb-reservation-summary-room-item-main">
 <span class="hb-reservation-summary-room-slot">Room <?php echo (int) $idx + 1; ?></span>
 <span class="hb-reservation-room-name"><?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow), ENT_QUOTES, 'UTF-8'); ?></span>
+<?php if ($lineRateLabel !== ''): ?>
+<span class="hb-reservation-room-rate"><?php echo htmlspecialchars($lineRateLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+<?php endif; ?>
 </div>
 <span class="hb-reservation-room-line-price"><?php echo htmlspecialchars(hb_portal_money_format_decimal($lineDisplayAmount, $currency), ENT_QUOTES, 'UTF-8'); ?></span>
 </li>
@@ -927,7 +953,7 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
 <p class="hb-reservation-room-name"><?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($groupRows[0]), ENT_QUOTES, 'UTF-8'); ?></p>
 </div>
 <?php endif; ?>
-<?php if ($ratePlanLabel !== ''): ?>
+<?php if (!$showMultiRoomGroup && $ratePlanLabel !== ''): ?>
 <p class="hb-reservation-rate-line"><span class="hb-reservation-muted">Rate:</span> <?php echo htmlspecialchars($ratePlanLabel, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php endif; ?>
 <dl class="hb-reservation-totals">

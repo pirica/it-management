@@ -1190,7 +1190,8 @@ if (function_exists('itm_hotel_booking_portal_room_line_pick')
     && function_exists('itm_hotel_booking_portal_insert_stay_bookings_locked')
     && strpos($roomsPhpSrc, 'hb-room-lines-banner') !== false
     && strpos($roomsPhpSrc, 'pick_room_id') !== false
-    && strpos($roomsPhpSrc, 'hb_select_room_book_href') !== false
+    && strpos($roomsPhpSrc, 'hb_portal_render_reservation_summary') !== false
+    && strpos($roomsPhpSrc, 'hb-checkout-aside-stack') !== false
     && strpos($selectRateSrc, 'hb_portal_render_room_lines_summary') !== false
     && strpos($selectRateSrc, 'itm_hotel_booking_portal_draft_rated_room_lines') !== false
     && strpos($selectRateSrc, 'itm_hotel_booking_portal_room_line_apply_rate_plan') !== false
@@ -1241,7 +1242,8 @@ if (strpos($customizeSrc, "'baseRoomTitle' => \$baseReservationRoomTitle") !== f
 }
 
 if (strpos($portalCheckoutSrcMulti, 'itm_hotel_booking_portal_draft_room_lines_for_display') !== false
-    && strpos($portalCheckoutSrcMulti, 'hb-reservation-summary-room-list') !== false
+    && strpos($portalCheckoutSrcMulti, 'hb_portal_room_line_rate_plan_label') !== false
+    && strpos($portalCheckoutSrcMulti, 'hb-reservation-room-rate') !== false
     && strpos($portalCheckoutSrcMulti, 'hb-reservation-room-line-price') !== false
     && strpos($portalCheckoutSrcMulti, 'itm_hotel_booking_portal_room_line_stay_charges') !== false
     && strpos($customizeSrc, 'itm_hotel_booking_portal_draft_all_rooms_rated') !== false) {

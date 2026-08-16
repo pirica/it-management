@@ -2,6 +2,7 @@
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/includes/portal_chrome.php';
 require __DIR__ . '/includes/portal_room_detail.php';
+require __DIR__ . '/includes/portal_checkout.php';
 
 $hotelId = (int) ($_GET['id'] ?? 0);
 $checkInParam = trim((string) ($_GET['check_in'] ?? ''));
@@ -373,6 +374,89 @@ $filterOptions = [
     'city_view' => 'City view',
     'balcony' => 'Balcony',
 ];
+
+$multiRoomReservationSummary = null;
+$multiRoomStepperContext = null;
+if ($roomsNeeded > 1) {
+    $changeRoomQuery = http_build_query(array_merge(
+        ['id' => $hotelId, 'check_in' => $checkInIso, 'nights' => $nights],
+        itm_hotel_booking_portal_occupancy_query_params($occupancy)
+    ));
+    $changeRoomUrl = APPURL . '/rooms.php?' . $changeRoomQuery;
+    $stepperRoomLabel = 'Select a Room';
+    if ($ratedRoomLines !== []) {
+        $stepperRoomLabel = itm_hotel_booking_portal_room_line_label($ratedRoomLines[count($ratedRoomLines) - 1]);
+    }
+    $multiRoomStepperContext = [
+        'room_label' => $stepperRoomLabel,
+        'change_room_url' => $changeRoomUrl,
+    ];
+    $summaryDraft = [
+        'company_id' => $company_id,
+        'hotel_id' => $hotelId,
+        'check_in' => $checkInIso,
+        'check_out' => $checkOutIso,
+        'nights' => $nights,
+        'occupancy' => $occupancy,
+        'room_lines' => $ratedRoomLines,
+        'room_lines_context' => $roomLinesContext,
+        'traveling_with_pet' => !empty($activeDraft['traveling_with_pet']) ? 1 : 0,
+        'service_animal' => !empty($activeDraft['service_animal']) ? 1 : 0,
+    ];
+    if (itm_hotel_booking_portal_draft_room_lines_context_matches($activeDraft, $roomLinesContext)) {
+        $summaryDraft = array_merge($activeDraft, $summaryDraft);
+    }
+    $summaryRoom = [
+        'company_id' => $company_id,
+        'hotel_id' => $hotelId,
+        'type_name' => '',
+        'bed_summary' => '',
+        'name' => '',
+    ];
+    $planLabel = '';
+    $changeRateUrl = '';
+    $summaryBasePerNight = 0.0;
+    $summaryDiscountPercent = (float) $discountPercent;
+    if ($ratedRoomLines !== []) {
+        $lastRatedLine = $ratedRoomLines[count($ratedRoomLines) - 1];
+        $summaryRoomId = (int) ($lastRatedLine['room_id'] ?? 0);
+        $loadedSummaryRoom = $summaryRoomId > 0 ? hb_portal_checkout_load_room($conn, $company_id, $summaryRoomId) : null;
+        if ($loadedSummaryRoom) {
+            $summaryRoom = $loadedSummaryRoom;
+        }
+        $summaryBasePerNight = (float) ($lastRatedLine['base_price_per_night'] ?? 0);
+        if (isset($lastRatedLine['discount_percent'])) {
+            $summaryDiscountPercent = itm_hotel_booking_portal_room_line_effective_discount($lastRatedLine, $discountPercent);
+        }
+        $planLabel = trim((string) ($lastRatedLine['portal_rate_plan_name'] ?? ''));
+        if ($planLabel === '' && !empty($lastRatedLine['rate_plan'])) {
+            $planLabel = (string) $lastRatedLine['rate_plan'] === 'breakfast' ? 'Breakfast included' : 'Best available rate';
+        }
+        if ($summaryRoomId > 0) {
+            $changeRateUrl = APPURL . '/rooms/select-rate.php?' . hb_select_room_book_query($summaryRoomId, $checkInIso, $nights, $occupancy);
+        }
+    }
+    $summaryBreakdown = itm_hotel_booking_portal_checkout_breakdown(
+        $summaryBasePerNight,
+        $checkInIso,
+        $checkOutIso,
+        $occupancy,
+        $summaryDiscountPercent,
+        $summaryDraft,
+        $touristTaxRate,
+        $conn,
+        $company_id
+    );
+    $multiRoomReservationSummary = [
+        'room' => $summaryRoom,
+        'breakdown' => $summaryBreakdown,
+        'plan_label' => $planLabel,
+        'change_rate_url' => $changeRateUrl,
+        'currency' => $currency,
+        'draft' => $summaryDraft,
+        'occupancy' => $occupancy,
+    ];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -388,7 +472,7 @@ $filterOptions = [
     'occupancy_interactive' => true,
 ]); ?>
 
-<div class="hb-select-room-layout">
+<div class="hb-select-room-layout<?php echo $roomsNeeded > 1 ? ' hb-checkout-layout' : ''; ?>">
 <main class="hb-select-room-main">
 <p class="hb-step-label">Step 1 of 4</p>
 <h1 class="hb-page-title">Select a Room</h1>
@@ -399,7 +483,9 @@ $filterOptions = [
 <?php if (!empty($roomLines)): ?>
 <ul class="hb-room-lines-banner-list">
 <?php foreach ($roomLines as $idx => $line): ?>
-<li><span class="hb-room-lines-slot">Room <?php echo (int) $idx + 1; ?>:</span> <?php echo htmlspecialchars(itm_hotel_booking_portal_room_line_label($line), ENT_QUOTES, 'UTF-8'); ?><?php if (!empty($line['portal_rate_plan_name'])): ?> <span class="hb-room-lines-rate">(<?php echo htmlspecialchars((string) $line['portal_rate_plan_name'], ENT_QUOTES, 'UTF-8'); ?>)</span><?php endif; ?></li>
+<li><span class="hb-room-lines-slot">Room <?php echo (int) $idx + 1; ?>:</span> <?php echo htmlspecialchars(itm_hotel_booking_portal_room_line_label($line), ENT_QUOTES, 'UTF-8'); ?><?php
+    $bannerRateLabel = hb_portal_room_line_rate_plan_label($line);
+    if ($bannerRateLabel !== ''): ?> <span class="hb-room-lines-rate">(<?php echo htmlspecialchars($bannerRateLabel, ENT_QUOTES, 'UTF-8'); ?>)</span><?php endif; ?></li>
 <?php endforeach; ?>
 </ul>
 <?php endif; ?>
@@ -483,7 +569,11 @@ echo hb_portal_render_image_gallery(
 </div>
 </main>
 
-<aside class="hb-select-room-aside">
+<aside class="hb-select-room-aside<?php echo $roomsNeeded > 1 ? ' hb-checkout-aside-stack' : ''; ?>">
+<?php if ($roomsNeeded > 1 && is_array($multiRoomStepperContext) && is_array($multiRoomReservationSummary)): ?>
+<?php hb_portal_render_checkout_stepper(1, $multiRoomStepperContext); ?>
+<?php hb_portal_render_reservation_summary($multiRoomReservationSummary); ?>
+<?php else: ?>
 <div class="hb-hotel-side-card">
 <?php echo hb_portal_render_image_gallery($hotelPhotoUrls, 'hb-hotel-side-gallery', 'hb-gallery hb-hotel-side-img'); ?>
 <h2><?php echo htmlspecialchars($hotel['name'], ENT_QUOTES, 'UTF-8'); ?></h2>
@@ -497,6 +587,7 @@ echo hb_portal_render_image_gallery(
 <?php endif; ?>
 <a class="hb-hotel-details-link" href="<?php echo htmlspecialchars($hotelDetailsUrl, ENT_QUOTES, 'UTF-8'); ?>">Hotel details</a>
 </div>
+<?php endif; ?>
 </aside>
 </div>
 

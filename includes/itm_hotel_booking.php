@@ -2915,11 +2915,14 @@ if (!function_exists('itm_hotel_booking_portal_room_line_stay_charges')) {
    * @return array<int,float>
    */
   function itm_hotel_booking_portal_room_line_stay_charges($basePerNight, $checkIn, $checkOut, array $occupancy, $discountPercent, array $draft, $conn = null, $companyId = 0) {
+    $occupancy = itm_hotel_booking_portal_parse_occupancy($occupancy);
+    $roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
     $roomLines = itm_hotel_booking_portal_room_lines_from_draft($draft);
     $lineCount = count($roomLines);
-    if ($lineCount < 2) {
+    if ($lineCount < 1 || ($roomsNeeded < 2 && $lineCount < 2)) {
       return [];
     }
+    $splitLineCount = $roomsNeeded > 1 ? $roomsNeeded : $lineCount;
     $companyId = (int) ($draft['company_id'] ?? $companyId);
     $hotelId = (int) ($draft['hotel_id'] ?? 0);
     $pricing = ($conn && $companyId > 0 && $hotelId > 0)
@@ -2928,7 +2931,7 @@ if (!function_exists('itm_hotel_booking_portal_room_line_stay_charges')) {
     $surchargePercent = max(0.0, min(50.0, (float) ($draft['surcharge_percent'] ?? 0)));
     $amounts = [];
     foreach ($roomLines as $idx => $line) {
-      $lineOcc = itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, (int) $idx, $lineCount);
+      $lineOcc = itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, (int) $idx, $splitLineCount);
       $base = (float) ($line['base_price_per_night'] ?? 0);
       if ($base <= 0 && $conn && $companyId > 0 && $hotelId > 0) {
         $base = itm_hotel_booking_portal_check_in_display_bar($conn, $companyId, $hotelId, (int) ($line['room_type_id'] ?? 0), $checkIn, 0);
