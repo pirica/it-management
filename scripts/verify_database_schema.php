@@ -1,6 +1,6 @@
 <?php
 /**
- * Why: Deploy scripts can report "success" while MySQL stopped early (e.g. 73/126 tables).
+ * Why: Deploy scripts can report "success" while MySQL stopped early (e.g. partial import — live count below grep -c '^CREATE TABLE' on db/01_schema.sql).
  * Compare tables defined in db/ with information_schema for itmanagement.
  */
 

@@ -47,7 +47,7 @@ cd /d C:\Users\NelsonSalvador\Downloads\laragon-portable\www\it-management
 
 Do **not** run schema, data, and triggers as three separate `mysql` CLI imports.
 
-**Verify after import:** `php scripts/verify_database_schema.php` — compares live `information_schema` to `CREATE TABLE` names in `db/01_schema.sql` (currently **148** tables).
+**Verify after import:** `php scripts/verify_database_schema.php` — compares live `information_schema` to every `CREATE TABLE` name in `db/01_schema.sql` (expected count: `grep -c '^CREATE TABLE' db/01_schema.sql`).
 
 ## Finance tables (AP/AR, payments, budget actuals)
 - Lookups: `tax_rates`, `paid_statuses`, `payment_modes` (tenant-scoped; replicated from company 1 in `02_data.sql`).
