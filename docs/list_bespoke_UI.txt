@@ -55,6 +55,7 @@ settings
 switch_ports
 system_access
 system_status
+schema_migrations
 todo
 visitors_access_log
 vlans

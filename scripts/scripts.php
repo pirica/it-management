@@ -794,6 +794,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Migration runner for <code>db/migrations/*.sql</code>: <code>--status</code> probes the <strong>live database</strong> for every file (Applied vs Pending); <code>schema_migrations</code> is audit/history only. <code>--apply</code> runs SQL only when the live probe failed; records satisfied migrations without re-executing destructive files (Admin browser <code>?apply=1</code>). Browser status table: per-row <code>?run=1&amp;sql={filename}</code> opens migration SQL in a new tab; Admin 🗑️ delete removes the file from disk (JS confirm). Helpers: <code>includes/itm_database_migrations.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="Codebase">
+                    <td><a href="verify_schema_migrations_module.php" target="_blank" rel="nofollow noreferrer">verify_schema_migrations_module.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Regression checks for admin read-only <code>modules/schema_migrations/</code>: admin gate, no bulk/clear/sample-data in <code>index.php</code>, mutation wrappers redirect to <code>index.php</code>, and <code>schema_migrations</code> table / <code>itm_database_migrations_fetch_applied_map()</code> probe.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_db_migrations.php" target="_blank" rel="nofollow noreferrer">verify_db_migrations.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

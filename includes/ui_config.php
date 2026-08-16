@@ -187,6 +187,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'import', 'label' => '📥 Bulk Import', 'href' => 'modules/import/', 'match_dir' => 'import'],
                 ['id' => 'ops_report', 'label' => '📋 Ops Report', 'href' => 'modules/ops_report/', 'match_dir' => 'ops_report'],
                 ['id' => 'system_status', 'label' => '🖥️ System Status', 'href' => 'modules/system_status/', 'match_dir' => 'system_status'],
+                ['id' => 'schema_migrations', 'label' => '📜 Schema Migrations', 'href' => 'modules/schema_migrations/', 'match_dir' => 'schema_migrations'],
             ],
         ],
         [
@@ -311,6 +312,7 @@ function itm_sidebar_module_default_label($moduleName) {
         'reports' => '📊 Reports Hub',
         'backup_tape_log' => '📼 Backup Tape Log File',
         'system_status' => '🖥️ System Status',
+        'schema_migrations' => '📜 Schema Migrations',
     ];
 
     return $labels[$moduleName] ?? null;
