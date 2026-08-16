@@ -483,7 +483,9 @@ if ($roomsNeeded > 1) {
 <?php if (!empty($roomLines)): ?>
 <ul class="hb-room-lines-banner-list">
 <?php foreach ($roomLines as $idx => $line): ?>
-<li><span class="hb-room-lines-slot">Room <?php echo (int) $idx + 1; ?>:</span> <?php echo htmlspecialchars(itm_hotel_booking_portal_room_line_label($line), ENT_QUOTES, 'UTF-8'); ?><?php if (!empty($line['portal_rate_plan_name'])): ?> <span class="hb-room-lines-rate">(<?php echo htmlspecialchars((string) $line['portal_rate_plan_name'], ENT_QUOTES, 'UTF-8'); ?>)</span><?php endif; ?></li>
+<li><span class="hb-room-lines-slot">Room <?php echo (int) $idx + 1; ?>:</span> <?php echo htmlspecialchars(itm_hotel_booking_portal_room_line_label($line), ENT_QUOTES, 'UTF-8'); ?><?php
+    $bannerRateLabel = hb_portal_room_line_rate_plan_label($line);
+    if ($bannerRateLabel !== ''): ?> <span class="hb-room-lines-rate">(<?php echo htmlspecialchars($bannerRateLabel, ENT_QUOTES, 'UTF-8'); ?>)</span><?php endif; ?></li>
 <?php endforeach; ?>
 </ul>
 <?php endif; ?>
