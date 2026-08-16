@@ -47,7 +47,7 @@ Hotel administration lives in ITM modules: `modules/hotel_bookings/`, `modules/h
 | Bootstrap | `bootstrap.php` |
 | Includes | `includes/portal_chrome.php`, `portal_checkout.php`, `portal_room_detail.php` |
 | CSS | `css/hotel-booking-modern.css` only |
-| JS | `js/hotel-booking-{public,dates,amenity-icons,gallery,select-room,customize,change-booking,confirmation-pdf}.js` |
+| JS | `js/hotel-booking-{public,dates,amenity-icons,gallery,select-room,customize,change-booking,confirmation-pdf}.js`; confirmation PDF libs vendored in `js/vendor/` (`html2canvas-1.4.1`, `jspdf-2.5.1`) |
 | Images | `images/amenities/*.svg` (+ `ATTRIBUTION.md`); committed portal fallbacks `image_2.jpg`, `image_3.jpg`, `services-2.jpg`, `room-3.jpg`, `room-5.jpg`, `room-6.jpg`; uploaded hotel photos in `booking/images/{hotel_id}/hotel_photos/`; room-type photos in `booking/images/{hotel_id}/room_types_photos/` (served as `APPURL/images/{hotel_id}/…`) |
 
 ## 8. Photo storage and galleries

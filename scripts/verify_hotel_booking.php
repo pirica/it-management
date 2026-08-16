@@ -750,6 +750,22 @@ if (
     hb_fail('booking confirmation pdf download script missing Manage my booking PDF link helper');
 }
 
+$portalCheckoutPdfSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/includes/portal_checkout.php');
+$vendorHtml2canvas = dirname(__DIR__) . '/booking/js/vendor/html2canvas-1.4.1.min.js';
+$vendorJspdf = dirname(__DIR__) . '/booking/js/vendor/jspdf-2.5.1.umd.min.js';
+if (
+    is_file($vendorHtml2canvas)
+    && is_file($vendorJspdf)
+    && strpos($portalCheckoutPdfSrc, '/js/vendor/html2canvas-1.4.1.min.js') !== false
+    && strpos($portalCheckoutPdfSrc, '/js/vendor/jspdf-2.5.1.umd.min.js') !== false
+    && stripos($portalCheckoutPdfSrc, 'cdn.jsdelivr.net') === false
+    && stripos($portalCheckoutPdfSrc, 'html2canvas@') === false
+) {
+    hb_pass('booking confirmation pdf vendored html2canvas + jspdf (no CDN)');
+} else {
+    hb_fail('booking confirmation pdf must load vendored html2canvas/jspdf under booking/js/vendor/');
+}
+
 $portalCheckoutPhp = dirname(__DIR__) . '/booking/includes/portal_checkout.php';
 $portalCheckoutBody = is_file($portalCheckoutPhp) ? (string) file_get_contents($portalCheckoutPhp) : '';
 $portalBookingHintSrc = (string) @file_get_contents(dirname(__DIR__) . '/includes/itm_hotel_booking.php');

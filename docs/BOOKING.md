@@ -75,7 +75,7 @@ sequenceDiagram
 | `hotel-booking-amenity-icons.js` | Amenity SVG resolution |
 | `hotel-booking-select-room.js` | `rooms.php` — filters, occupancy/rates modals, room detail |
 | `hotel-booking-customize.js` | `rooms/customize.php` — upgrade totals, room detail modal |
-| `hotel-booking-confirmation-pdf.js` | Confirmation PDF (html2canvas + jsPDF); adds a `/URI` link annotation over **Manage my booking** |
+| `hotel-booking-confirmation-pdf.js` | Confirmation PDF (self-hosted html2canvas + jsPDF from `js/vendor/`); adds a `/URI` link annotation over **Manage my booking** |
 | `hotel-booking-change-booking.js` | Manage booking — hotel contacts modal |
 
 Hotel photos are managed in **Hotels** (`modules/hotel_booking_hotels/`). **Room gallery images are managed per room type** in **Room Types** (`modules/booking_rooms_types/`). Files live under `booking/images/{hotel_id}/hotel_photos/` and `booking/images/{hotel_id}/room_types_photos/`; the portal serves them as `APPURL/images/{hotel_id}/…`. Committed portal fallbacks (`image_2.jpg`, `room-3.jpg`, `room-5.jpg`, `room-6.jpg`, plus seed helpers `image_3.jpg` / `services-2.jpg`) live under `booking/images/` when uploads are missing. Static amenity SVGs remain under `booking/images/amenities/` only.
@@ -227,7 +227,7 @@ Seed example: company 1 **TechCorp Retreat**, reservation IDs from `hotel_bookin
 | Room not available on book | Overlap with non-cancelled booking on same `room_id` |
 | Manage lookup fails | Last name must match `customers.name` (case-insensitive token match); confirmation number = `hotel_bookings.guest_confirmation_code`; auth code = `hotel_bookings.auth2` (12-char complex code); complete email OTP step |
 | Cancel button hidden | Stay not in `future` segment or already `CANCELLED` |
-| PDF download fails | CDN blocked for html2canvas/jsPDF; check browser console |
+| PDF download fails | Confirm `booking/js/vendor/html2canvas-1.4.1.min.js` and `jspdf-2.5.1.umd.min.js` load (200); check browser console |
 | PDF “Manage my booking” not clickable | Regenerate after update — confirmation PDF must include a jsPDF `link()` annotation over `data-hb-pdf-manage-link` (html2canvas alone paints pixels only) |
 
 ### Verification commands
