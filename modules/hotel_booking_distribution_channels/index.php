@@ -194,6 +194,63 @@ if (!empty($_SESSION['hb_dist_seed_demo_api_key'])) {
     unset($_SESSION['hb_dist_seed_demo_api_key']);
 }
 
+$ui_config = itm_get_ui_configuration($conn, $company_id, $employee_id);
+$perPage = itm_resolve_records_per_page($ui_config ?? null);
+
+$searchRaw = trim((string) ($_GET['search'] ?? ''));
+$sortableColumns = ['channel_code', 'name', 'standard', 'api_key_prefix', 'hourly_rate_limit', 'active', 'created_at'];
+$sort = (string) ($_GET['sort'] ?? 'channel_code');
+$dir = strtoupper((string) ($_GET['dir'] ?? 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
+if (!in_array($sort, $sortableColumns, true)) {
+    $sort = 'channel_code';
+}
+
+$whereSql = 'company_id = ? AND deleted_at IS NULL';
+$listBindTypes = 'i';
+$listBindValues = [$company_id];
+
+if ($searchRaw !== '') {
+    $searchPattern = (strpos($searchRaw, '%') !== false || strpos($searchRaw, '_') !== false)
+        ? $searchRaw
+        : '%' . $searchRaw . '%';
+    $searchFields = ['id', 'channel_code', 'name', 'standard', 'api_key_prefix', 'hourly_rate_limit', 'active'];
+    $searchParts = [];
+    foreach ($searchFields as $searchField) {
+        $searchParts[] = 'CAST(`' . $searchField . '` AS CHAR) LIKE ?';
+        $listBindTypes .= 's';
+        $listBindValues[] = $searchPattern;
+    }
+    $whereSql .= ' AND (' . implode(' OR ', $searchParts) . ')';
+}
+
+$totalRows = 0;
+$countStmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS cnt FROM hotel_booking_distribution_channels WHERE ' . $whereSql);
+if ($countStmt) {
+    mysqli_stmt_bind_param($countStmt, $listBindTypes, ...$listBindValues);
+    mysqli_stmt_execute($countStmt);
+    $countRes = mysqli_stmt_get_result($countStmt);
+    $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
+    $totalRows = (int) ($countRow['cnt'] ?? 0);
+    mysqli_stmt_close($countStmt);
+}
+
+$page = max(1, (int) ($_GET['page'] ?? 1));
+$totalPages = max(1, (int) ceil($totalRows / $perPage));
+if ($page > $totalPages) {
+    $page = $totalPages;
+}
+$offset = ($page - 1) * $perPage;
+
+$sortColumn = str_replace('`', '', $sort);
+$sortSql = '`' . $sortColumn . '` ' . $dir;
+$listSql = 'SELECT id, channel_code, name, standard, api_key_prefix, hourly_rate_limit, active, created_at
+     FROM hotel_booking_distribution_channels
+     WHERE ' . $whereSql . '
+     ORDER BY ' . $sortSql . '
+     LIMIT ?, ?';
+$listBindTypesWithLimit = $listBindTypes . 'ii';
+$listBindValuesWithLimit = array_merge($listBindValues, [$offset, $perPage]);
+
 $deadByChannel = [];
 $deadStmt = mysqli_prepare(
     $conn,
@@ -212,22 +269,25 @@ if ($deadStmt) {
     mysqli_stmt_close($deadStmt);
 }
 
-$stmt = mysqli_prepare(
-    $conn,
-    'SELECT id, channel_code, name, standard, api_key_prefix, hourly_rate_limit, active, created_at
-     FROM hotel_booking_distribution_channels
-     WHERE company_id = ? AND deleted_at IS NULL
-     ORDER BY channel_code ASC'
-);
-if ($stmt) {
-    mysqli_stmt_bind_param($stmt, 'i', $company_id);
-    mysqli_stmt_execute($stmt);
-    $res = mysqli_stmt_get_result($stmt);
+$listStmt = mysqli_prepare($conn, $listSql);
+if ($listStmt) {
+    mysqli_stmt_bind_param($listStmt, $listBindTypesWithLimit, ...$listBindValuesWithLimit);
+    mysqli_stmt_execute($listStmt);
+    $res = mysqli_stmt_get_result($listStmt);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $rows[] = $row;
     }
-    mysqli_stmt_close($stmt);
+    mysqli_stmt_close($listStmt);
 }
+
+$columnLabels = [
+    'channel_code' => 'Code',
+    'name' => 'Name',
+    'standard' => 'Standard',
+    'api_key_prefix' => 'Key prefix',
+    'hourly_rate_limit' => 'Hourly limit',
+    'active' => 'Active',
+];
 
 $crud_title = 'Distribution Channels';
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_booking_distribution_channels', $crud_title);
@@ -247,16 +307,37 @@ itm_hospitality_admin_layout_begin($crud_title);
 <p class="muted">Demo API key (ITM Demo Channel): <code><?php echo sanitize($seedDemoApiKey); ?></code> — use with <code>ITM_DIST_API_KEY</code> in api-examples.</p>
 <?php endif; ?>
 <?php endif; ?>
+<div class="card" style="margin-bottom:16px;">
+<form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+<input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
+<input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
+<input type="hidden" name="page" value="1">
+<div class="form-group" style="margin:0;min-width:260px;flex:1;">
+<label for="hb-dist-channel-search">Search (all fields)</label>
+<input type="text" id="hb-dist-channel-search" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search records...">
+</div>
+<div class="form-actions" style="margin:0;display:flex;gap:8px;">
+<button type="submit" class="btn btn-primary">Search</button>
+<a href="index.php" class="btn" title="Clear">🔙</a>
+</div>
+</form>
+</div>
 <table class="table" data-itm-db-import-endpoint="index.php">
 <thead>
 <tr>
-<th>Code</th>
-<th>Name</th>
-<th>Standard</th>
-<th>Key prefix</th>
-<th>Hourly limit</th>
+<?php foreach ($sortableColumns as $sortCol): ?>
+<?php if (!isset($columnLabels[$sortCol])) { continue; } ?>
+<?php $nextDir = ($sort === $sortCol && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
+<th>
+<a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sortCol); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int) $page; ?>" style="text-decoration:none;color:inherit;">
+<?php echo sanitize($columnLabels[$sortCol]); ?>
+<?php if ($sort === $sortCol): ?>
+<?php echo $dir === 'ASC' ? '▲' : '▼'; ?>
+<?php endif; ?>
+</a>
+</th>
+<?php endforeach; ?>
 <th>Dead webhooks</th>
-<th>Active</th>
 <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
 </tr>
 </thead>
@@ -292,6 +373,22 @@ if ($deadCount > 0) {
 <?php endif; ?>
 </tbody>
 </table>
+<?php if ($totalRows > $perPage): ?>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;flex-wrap:wrap;gap:8px;">
+<div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
+<div style="display:flex;gap:4px;align-items:center;">
+<?php if ($page > 1): ?>
+<a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=1" title="First page">⏮️</a>
+<a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page - 1; ?>" title="Previous page">◀️</a>
+<?php endif; ?>
+<span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+<?php if ($page < $totalPages): ?>
+<a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page + 1; ?>" title="Next page">▶️</a>
+<a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $totalPages; ?>" title="Last page">⏭️</a>
+<?php endif; ?>
+</div>
+</div>
+<?php endif; ?>
 <?php if ($showSampleDataButton): ?>
 <form method="post" style="margin-top:16px;">
 <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
