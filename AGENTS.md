@@ -308,6 +308,17 @@ Tables that store **private user content** must **not** be copied into `audit_lo
 
 `scripts/check_audit_logs_coverage.php` treats these tables as intentionally exempt from database triggers.
 
+#### System / derived tables — no audit trail (mandatory)
+
+These tables must **not** define `trg_{table}_audit_*` triggers in `db/03_triggers.sql` and must **not** receive routine `audit_logs` rows for maintenance or cache sync writes:
+
+| Table | Module / notes |
+|-------|----------------|
+| `schema_migrations` | Migration runner history (`scripts/migrate.php`, `includes/itm_database_migrations.php`); global, no `company_id`; admin UI is read-only (`modules/schema_migrations/`). |
+| `search_index` | Denormalized command-palette cache (`includes/itm_search_index.php`); source modules remain auditable; index upserts must not flood `audit_logs`. |
+
+`scripts/check_audit_logs_coverage.php` merges these into `audit_logs_trigger_exempt_tables()` via `audit_logs_system_derived_tables()`.
+
 #### API keys and rate limits (mandatory)
 
 Per-user integration keys and hourly quotas live on **`ui_configuration`**. Logic: **`includes/itm_api_rate_limit.php`** (loaded from `config/config.php`).
