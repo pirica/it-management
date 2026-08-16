@@ -1198,11 +1198,11 @@ if (!function_exists('hb_portal_render_cancel_booking_button')) {
 }
 
 if (!function_exists('hb_portal_render_confirmation_pdf_assets')) {
-    /** html2canvas + jsPDF for direct PDF download (payment confirmation). */
+    /** html2canvas + jsPDF for direct PDF download (payment confirmation) — vendored under booking/js/vendor/. */
     function hb_portal_render_confirmation_pdf_assets() {
         ?>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="<?php echo APPURL; ?>/js/vendor/html2canvas-1.4.1.min.js"></script>
+<script src="<?php echo APPURL; ?>/js/vendor/jspdf-2.5.1.umd.min.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-confirmation-pdf.js"></script>
         <?php
     }
