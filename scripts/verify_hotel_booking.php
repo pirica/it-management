@@ -1342,25 +1342,24 @@ if (strpos($emailHelperSrc, "array_key_exists('from_email', \$options)") !== fal
     hb_fail('itm_send_email from_email override missing');
 }
 
-if (function_exists('itm_hotel_booking_portal_select_rate_pricing_draft')
-    && strpos($selectRateSrc, 'itm_hotel_booking_portal_select_rate_pricing_draft') !== false
-    && strpos($bookingHelperSrc, 'count($roomLines) > 1') !== false
-    && function_exists('itm_hotel_booking_portal_per_line_nightly_incl_tax_for_rate')
-    && strpos($selectRateSrc, 'itm_hotel_booking_portal_per_line_nightly_incl_tax_for_rate') !== false
-    && strpos($portalCheckoutSrcMulti, 'hb-room-lines-summary-nightly') !== false) {
-    hb_pass('portal select-rate multi-room draft room_lines pricing wiring');
+$roomsSrcPick = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms.php');
+if (function_exists('itm_hotel_booking_portal_select_rate_display_occupancy')
+    && strpos($selectRateSrc, 'itm_hotel_booking_portal_select_rate_display_occupancy') !== false
+    && strpos($selectRateSrc, '$rateDisplayOccupancy') !== false
+    && strpos($roomsSrcPick, 'activeLine') !== false) {
+    hb_pass('portal select-rate quotes current room only for multi-room');
 } else {
-    hb_fail('portal select-rate multi-room draft room_lines pricing wiring missing');
+    hb_fail('portal select-rate current-room quote wiring missing');
 }
 
-if (function_exists('itm_hotel_booking_portal_select_rate_pricing_draft')
+if (function_exists('itm_hotel_booking_portal_select_rate_display_occupancy')
     && function_exists('itm_hotel_booking_portal_compute_checkout_total')
     && function_exists('itm_hotel_booking_portal_quote_nightly')) {
     $mrCompanyId = 1;
     $mrHotelId = 1;
     $mrCheckIn = date('Y-m-d', strtotime('+14 days'));
     $mrCheckOut = date('Y-m-d', strtotime($mrCheckIn . ' +1 day'));
-    $mrOccupancy = itm_hotel_booking_portal_parse_occupancy(['rooms' => 2, 'adults' => 4, 'children' => 0, 'babies' => 0]);
+    $mrOccupancy = itm_hotel_booking_portal_parse_occupancy(['rooms' => 2, 'adults' => 2, 'children' => 0, 'babies' => 0]);
     $mrSettings = itm_hotel_booking_settings_row($conn, $mrCompanyId) ?: [];
     $mrTaxRate = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($mrSettings);
     $mrPortalPricing = itm_hotel_booking_portal_hotel_pricing($conn, $mrCompanyId, $mrHotelId);
@@ -1368,6 +1367,7 @@ if (function_exists('itm_hotel_booking_portal_select_rate_pricing_draft')
     $mrCheapest = itm_hotel_booking_portal_cheapest_rate_offer_for_hotel($conn, $mrCompanyId, $mrHotelId);
     $mrDisplayDisc = min(50.0, $mrDisc + (float) ($mrCheapest['discount_percent'] ?? 0));
     $mrLines = [];
+    $mrDlxLine = null;
     $mrStmt = mysqli_prepare($conn, 'SELECT r.id, t.id AS type_id, COALESCE(bp.price_per_night, 0.00) AS price_per_night, t.code
         FROM hotel_booking_rooms r
         INNER JOIN booking_rooms_types t ON t.id = r.room_type_id AND t.company_id = r.company_id
@@ -1381,69 +1381,68 @@ if (function_exists('itm_hotel_booking_portal_select_rate_pricing_draft')
         $mrRes = mysqli_stmt_get_result($mrStmt);
         while ($mrRes && ($mrRow = mysqli_fetch_assoc($mrRes))) {
             $mrBar = itm_hotel_booking_portal_check_in_display_bar($conn, $mrCompanyId, $mrHotelId, (int) $mrRow['type_id'], $mrCheckIn, (float) $mrRow['price_per_night']);
-            $mrLines[] = itm_hotel_booking_portal_room_line_normalize([
+            $mrLine = itm_hotel_booking_portal_room_line_normalize([
                 'room_id' => (int) $mrRow['id'],
                 'room_type_id' => (int) $mrRow['type_id'],
                 'type_code' => (string) ($mrRow['code'] ?? ''),
                 'base_price_per_night' => $mrBar,
             ]);
+            $mrLines[] = $mrLine;
+            if (($mrRow['code'] ?? '') === 'DLX') {
+                $mrDlxLine = $mrLine;
+            }
         }
         mysqli_stmt_close($mrStmt);
     }
-    if (count($mrLines) >= 2) {
-        $mrCardSum = 0.0;
-        foreach ($mrLines as $mrIdx => $mrLine) {
-            $mrLineOcc = itm_hotel_booking_portal_split_occupancy_for_room_line($mrOccupancy, (int) $mrIdx, 2);
-            $mrLineTax = itm_hotel_booking_portal_tourist_tax_amount($mrLineOcc, 1, $mrTaxRate);
-            $mrCardSum += itm_hotel_booking_portal_quote_nightly((float) $mrLine['base_price_per_night'], $mrLineOcc, $mrDisplayDisc, $mrPortalPricing, 0) + $mrLineTax;
-        }
-        $mrCardSum = round($mrCardSum, 2);
-        $mrBaseSlice = [
+    if (count($mrLines) >= 2 && is_array($mrDlxLine)) {
+        $mrDlxIdx = 1;
+        $mrLineOcc = itm_hotel_booking_portal_split_occupancy_for_room_line($mrOccupancy, $mrDlxIdx, 2);
+        $mrLineTax = itm_hotel_booking_portal_tourist_tax_amount($mrLineOcc, 1, $mrTaxRate);
+        $mrStep1Card = round(itm_hotel_booking_portal_quote_nightly((float) $mrDlxLine['base_price_per_night'], $mrLineOcc, $mrDisplayDisc, $mrPortalPricing, 0) + $mrLineTax, 2);
+        $mrDisplayOcc = itm_hotel_booking_portal_select_rate_display_occupancy($mrOccupancy, $mrLines, (int) $mrDlxLine['room_id'], 2);
+        $mrNrDisc = itm_hotel_booking_portal_rate_plan_effective_discount($mrDisc, 'non_refundable', $mrCheapest);
+        $mrSlice = [
             'company_id' => $mrCompanyId,
             'hotel_id' => $mrHotelId,
-            'room_type_id' => (int) $mrLines[0]['room_type_id'],
+            'room_type_id' => (int) $mrDlxLine['room_type_id'],
             'rate_plan' => 'non_refundable',
             'traveling_with_pet' => 0,
             'service_animal' => 0,
-            'base_price_per_night' => (float) $mrLines[0]['base_price_per_night'],
+            'base_price_per_night' => (float) $mrDlxLine['base_price_per_night'],
             'surcharge_percent' => 0.0,
         ];
-        $mrDraftSlice = itm_hotel_booking_portal_select_rate_pricing_draft($mrBaseSlice, $mrLines, 2);
-        $mrNrDisc = itm_hotel_booking_portal_rate_plan_effective_discount($mrDisc, 'non_refundable', $mrCheapest);
-        $mrStayTotal = itm_hotel_booking_portal_compute_checkout_total(
-            (float) $mrLines[0]['base_price_per_night'],
+        $mrStep2Nightly = itm_hotel_booking_portal_compute_checkout_total(
+            (float) $mrDlxLine['base_price_per_night'],
             $mrCheckIn,
             $mrCheckOut,
-            $mrOccupancy,
+            $mrDisplayOcc,
             $mrNrDisc,
-            $mrDraftSlice,
+            $mrSlice,
             $mrTaxRate,
             $conn,
             $mrCompanyId
         );
-        $mrNightly = round($mrStayTotal, 2);
-        $mrWrongSlice = $mrBaseSlice;
-        $mrWrongTotal = itm_hotel_booking_portal_compute_checkout_total(
-            (float) $mrLines[0]['base_price_per_night'],
+        $mrCombinedWrong = itm_hotel_booking_portal_compute_checkout_total(
+            (float) $mrDlxLine['base_price_per_night'],
             $mrCheckIn,
             $mrCheckOut,
             $mrOccupancy,
             $mrNrDisc,
-            $mrWrongSlice,
+            itm_hotel_booking_portal_select_rate_pricing_draft($mrSlice, $mrLines, 2),
             $mrTaxRate,
             $conn,
             $mrCompanyId
         );
-        if (abs($mrNightly - $mrCardSum) < 0.02 && $mrWrongTotal > $mrStayTotal + 0.5) {
-            hb_pass('portal select-rate multi-room nightly matches step1 card sum');
+        if (abs($mrStep2Nightly - $mrStep1Card) < 0.02 && $mrCombinedWrong > $mrStep2Nightly + 0.5) {
+            hb_pass('portal select-rate multi-room nightly matches step1 card for current room');
         } else {
-            hb_fail('portal select-rate multi-room nightly mismatch (card=' . $mrCardSum . ' nightly=' . $mrNightly . ' wrong=' . $mrWrongTotal . ')');
+            hb_fail('portal select-rate current-room nightly mismatch (card=' . $mrStep1Card . ' step2=' . $mrStep2Nightly . ' combined=' . $mrCombinedWrong . ')');
         }
     } else {
-        hb_fail('portal select-rate multi-room probe could not load STD+DLX lines');
+        hb_fail('portal select-rate current-room probe could not load DLX line');
     }
 } else {
-    hb_fail('portal select-rate multi-room nightly probe helpers missing');
+    hb_fail('portal select-rate current-room nightly probe helpers missing');
 }
 
 itm_script_output_end();
