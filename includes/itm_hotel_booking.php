@@ -2281,6 +2281,33 @@ if (!function_exists('itm_hotel_booking_portal_per_line_nightly_incl_tax_for_rat
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_select_rate_display_occupancy')) {
+  /**
+   * Step 2 rate cards: quote only the room in the URL (split occupancy), not all picked room_lines.
+   *
+   * @param array<int,array> $roomLines
+   */
+  function itm_hotel_booking_portal_select_rate_display_occupancy(array $occupancy, array $roomLines, $currentRoomId, $roomsNeeded) {
+    $roomsNeeded = max(1, (int) $roomsNeeded);
+    $roomLines = is_array($roomLines) ? array_values($roomLines) : [];
+    if ($roomsNeeded < 2 || count($roomLines) < $roomsNeeded) {
+      return itm_hotel_booking_portal_parse_occupancy($occupancy);
+    }
+    $currentRoomId = (int) $currentRoomId;
+    $lineIndex = 0;
+    foreach ($roomLines as $idx => $line) {
+      if (!is_array($line)) {
+        continue;
+      }
+      if ((int) ($line['room_id'] ?? 0) === $currentRoomId) {
+        $lineIndex = (int) $idx;
+        break;
+      }
+    }
+    return itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, $lineIndex, count($roomLines));
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_count_available_rooms_for_type')) {
   function itm_hotel_booking_portal_count_available_rooms_for_type($conn, $companyId, $hotelId, $roomTypeId, $checkIn, $checkOut, array $excludeRoomIds = []) {
     $companyId = (int) $companyId;

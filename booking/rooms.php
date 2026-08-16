@@ -62,12 +62,12 @@ if ($pickRoomId > 0 && $roomsNeeded > 1) {
             header('Location: ' . APPURL . '/rooms.php?' . hb_select_room_page_query($hotelId, $checkInIso, $nights, $occupancy));
             exit;
         }
-        $firstLine = $roomLines[0];
+        $activeLine = $roomLines[count($roomLines) - 1];
         itm_hotel_booking_portal_draft_save([
             'company_id' => $company_id,
             'hotel_id' => $hotelId,
-            'room_id' => (int) ($firstLine['room_id'] ?? 0),
-            'room_type_id' => (int) ($firstLine['room_type_id'] ?? 0),
+            'room_id' => (int) ($activeLine['room_id'] ?? 0),
+            'room_type_id' => (int) ($activeLine['room_type_id'] ?? 0),
             'check_in' => $checkInIso,
             'check_out' => $checkOutIso,
             'nights' => $nights,
@@ -76,7 +76,7 @@ if ($pickRoomId > 0 && $roomsNeeded > 1) {
             'room_lines_context' => $roomLinesContext,
         ]);
         itm_hotel_booking_portal_room_lines_clear_active();
-        header('Location: ' . APPURL . '/rooms/select-rate.php?' . hb_select_room_book_query((int) $firstLine['room_id'], $checkInIso, $nights, $occupancy));
+        header('Location: ' . APPURL . '/rooms/select-rate.php?' . hb_select_room_book_query((int) ($activeLine['room_id'] ?? 0), $checkInIso, $nights, $occupancy));
         exit;
     }
 }
