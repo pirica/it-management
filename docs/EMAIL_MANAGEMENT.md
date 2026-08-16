@@ -156,6 +156,7 @@ Per-tenant helpdesk intake polls each company's **default SMTP profile** when **
 - **Threading:** replies with `TCK-####` or `[#id]` in the subject append `ticket_comments` instead of creating a duplicate ticket.
 - **Dedupe:** `ticket_inbound_email_messages` stores RFC Message-ID per company.
 - **Regression:** `php scripts/verify_inbound_email_tickets.php` (includes live Mailpit E2E when the API responds).
+- **Manual test send:** `php scripts/send_mailpit_inbound_test_email.php --company=1` (optional `--process` to create a ticket immediately).
 
 ### Local Mailpit (Laragon / Dunebox)
 
