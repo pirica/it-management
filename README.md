@@ -146,18 +146,18 @@
 
 <h2 align="center">Database Structure Overview</h2>
 
-<p align="center">Fresh import of <code>db/</code> split bundle provisions <strong>130 tables</strong> and approximately <strong>3,085 sample rows</strong> (literal seed data plus derived rows such as <code>company_module_access</code> and <code>employee_sidebar_preferences</code>). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
+<p align="center">Fresh import of <code>db/</code> split bundle provisions <strong>188 tables</strong> and approximately <strong>9,000+ seed rows</strong> (literal <code>INSERT</code>/<code>SELECT</code> data in <code>db/02_data.sql</code> plus derived rows such as <code>company_module_access</code> and <code>employee_sidebar_preferences</code>). Table count matches <code>grep -c '^CREATE TABLE' db/01_schema.sql</code> (or <code>php scripts/verify_database_schema.php</code> after import). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
 
 <h3 align="center">High-level summary</h3>
 
 | Metric | Value |
 | --- | --- |
-| **Tables** | 130 |
-| **Sample rows** | ~3,085 (from <code>db/</code> split bundle) |
-| **Module folders** | 125 under <code>modules/</code> |
-| **Registry entries** | 149 in <code>modules_registry</code> (catalog slugs; not 1:1 with table count) |
-| **Company × module matrix** | 745 rows (5 seed companies × registry modules) |
-| **Sidebar preferences** | 540 rows (5 companies × 108 default sidebar items) |
+| **Tables** | 188 (<code>db/01_schema.sql</code>; live check: [count_db_tables.php](http://localhost/it-management/scripts/count_db_tables.php)) |
+| **Sample rows** | ~9,000+ after full <code>db/</code> import (literal seeds + derived matrix/sidebar rows) |
+| **Module folders** | 220 with <code>index.php</code> under <code>modules/</code> |
+| **Registry entries** | 167+ explicit <code>modules_registry</code> INSERTs in <code>02_data.sql</code> (hospitality/finance blocks add more; catalog slugs are not 1:1 with table count) |
+| **Company × module matrix** | 5 active seed companies × all <code>modules_registry</code> rows (<code>company_module_access</code> CROSS JOIN) |
+| **Sidebar preferences** | 540 rows (5 seed Admin users × 108 default sidebar items) |
 | **Functional domains** | 13 (see breakdown below) |
 
 <h3 align="center">Domain breakdown</h3>
@@ -166,11 +166,11 @@
 
 #### Core system and access control
 
-`companies`, `employees`, `employee_companies`, `employee_roles`, `role_hierarchy`, `role_module_permissions`, `role_assignment_rights`, `system_access`, `company_module_access`, `employee_sidebar_preferences`, `audit_logs`, `registration_invitations`, `modules_registry`, `ui_configuration`, `settings`, `access_levels`
+`companies`, `employees`, `employee_companies`, `employee_roles`, `role_hierarchy`, `role_module_permissions`, `role_assignment_rights`, `system_access`, `company_module_access`, `employee_sidebar_preferences`, `audit_logs`, `registration_invitations`, `modules_registry`, `schema_migrations`, `ui_configuration`, `settings`, `access_levels`
 
 **Purpose:** Identity, RBAC, multi-tenant isolation, per-company module toggles, sidebar layout, audit trail, and system-wide UI configuration.
 
-**Modules:** `companies`, `employees`, `employee_companies`, `employee_roles`, `role_hierarchy`, `role_module_permissions`, `role_assignment_rights`, `system_access`, `company_module_access`, `employee_sidebar_preferences`, `audit_logs`, `registration_invitations`, `modules_registry`, `settings`, `ui_configuration`, `access_levels`
+**Modules:** `companies`, `employees`, `employee_companies`, `employee_roles`, `role_hierarchy`, `role_module_permissions`, `role_assignment_rights`, `system_access`, `company_module_access`, `employee_sidebar_preferences`, `audit_logs`, `registration_invitations`, `modules_registry`, `schema_migrations`, `settings`, `ui_configuration`, `access_levels`
 
 #### Tickets and support workflow
 
@@ -250,7 +250,7 @@
 
 #### Hospitality and hotel booking
 
-`hotel_booking_hotels`, `hotel_booking_rooms`, `booking_rooms_types`, `hotel_bookings`, `customers`, `hotel_booking_portal_rate_plans`, `hotel_booking_special_rates`, `hotel_booking_amenities`, `hotel_booking_room_utilities`, `hotel_booking_settings`, `hotel_booking_housekeeping_*`, `hotel_bookings_future`, `hotel_bookings_present`, `hotel_bookings_history`, `hotel_booking_portal_users`, `hotel_booking_distribution_channels`, `hotel_booking_distribution_mappings`, `hotel_booking_distribution_reservations`, `hotel_booking_distribution_ari_events`
+`hotel_booking_hotels`, `hotel_booking_rooms`, `booking_rooms_types`, `hotel_bookings`, `customers`, `hotel_booking_portal_rate_plans`, `hotel_booking_special_rates`, `hotel_booking_amenities`, `hotel_booking_room_utilities`, `hotel_booking_settings`, `hotel_booking_housekeeping_*`, `hotel_bookings_future`, `hotel_bookings_present`, `hotel_bookings_history`, `hotel_booking_portal_users`, `hotel_booking_distribution_channels`, `hotel_booking_distribution_mappings`, `hotel_booking_distribution_reservations`, `hotel_booking_distribution_rate_plan_mappings`, `hotel_booking_distribution_ari_events`, `hotel_booking_distribution_ari_restrictions`, `hotel_booking_distribution_webhook_queue`
 
 **Purpose:** Guest hotel reservations via the public **`booking/`** portal (four-step checkout, manage reservation, payment at hotel); staff configuration in Admin → **🏨 Hospitality**; partner OTAs and channel managers via the distribution JSON/XML API (`modules/hotel_booking_api/api.php`) with keys in **Distribution Channels**.
 
@@ -268,7 +268,7 @@
 
 | Category | Tables | Sample rows (approx.) |
 | --- | ---: | ---: |
-| Core system and access | 16 | ~1,300+ |
+| Core system and access | 17 | ~1,300+ |
 | Tickets and workflows | 6 | ~100 |
 | HR and employees | 8 | ~70 |
 | Finance and approvals | 12 | ~120 |
@@ -278,10 +278,11 @@
 | Password vault | 3 | 0 |
 | Notes, bookmarks, productivity | 10 | ~5 |
 | Planning and events | 7 | ~11 |
-| Hospitality and hotel booking | 24 | ~80 |
+| Hospitality and hotel booking | 30 | ~400+ |
 | Operations | 10 | ~15 |
 | Workstation reference | 7 | ~280 |
-| **Total** | **130** | **~3,075** |
+| Live chat and notifications | 6+ | ~50+ |
+| **Total** | **188** | **~9,000+** |
 
 <h3 align="center">What this means</h3>
 
