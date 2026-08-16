@@ -161,9 +161,104 @@ if ((int)($requester['employee_id'] ?? 0) <= 0) {
 }
 
 if (itm_inbound_email_imap_available()) {
-    inbound_verify_pass('PHP imap extension is loaded (live mailbox polling available).');
+    inbound_verify_pass('PHP imap extension is loaded (live IMAP mailbox polling available).');
 } else {
-    inbound_verify_pass('PHP imap extension not loaded — core logic verified; enable imap for live polling.');
+    inbound_verify_pass('PHP imap extension not loaded — use imap_host=mailpit for local Mailpit API polling.');
+}
+
+$mailpitProbe = ['imap_host' => 'mailpit'];
+if (itm_inbound_email_mailpit_reachable($mailpitProbe)) {
+    inbound_verify_pass('Mailpit API reachable (http://localhost/mailpit/api/v1).');
+
+    $mailpitHost = 'mailpit';
+    $cfgStmt = mysqli_prepare(
+        $conn,
+        'UPDATE email_smtp_configurations SET imap_host = ?, inbound_ticket_enabled = 1
+         WHERE company_id = 1 AND is_default = 1 AND active = 1'
+    );
+    if ($cfgStmt) {
+        mysqli_stmt_bind_param($cfgStmt, 's', $mailpitHost);
+        mysqli_stmt_execute($cfgStmt);
+        mysqli_stmt_close($cfgStmt);
+    }
+
+    $companyEmail = 'info@techcorp.example';
+    $coStmt = mysqli_prepare($conn, 'SELECT email FROM companies WHERE id = 1 LIMIT 1');
+    if ($coStmt) {
+        mysqli_stmt_execute($coStmt);
+        mysqli_stmt_bind_result($coStmt, $dbCompanyEmail);
+        if (mysqli_stmt_fetch($coStmt) && trim((string)$dbCompanyEmail) !== '') {
+            $companyEmail = trim((string)$dbCompanyEmail);
+        }
+        mysqli_stmt_close($coStmt);
+    }
+
+    $e2eSubject = 'ITM Mailpit inbound verify ' . time();
+    $e2eMessageId = 'verify-mailpit-e2e-' . bin2hex(random_bytes(6)) . '@itm.local';
+    $inject = itm_inbound_email_mailpit_inject_message(
+        $companyEmail,
+        'verify-inbound@example.com',
+        $e2eSubject,
+        'Mailpit end-to-end verify body',
+        $e2eMessageId
+    );
+    if (empty($inject['ok'])) {
+        inbound_verify_fail('Mailpit SMTP inject failed: ' . (string)($inject['error'] ?? 'unknown'));
+    } else {
+        inbound_verify_pass('Mailpit SMTP inject delivered test message.');
+        $profiles = itm_inbound_email_list_enabled_profiles($conn, 1);
+        if ($profiles === []) {
+            inbound_verify_fail('No inbound-enabled profile for company 1 after Mailpit config.');
+        } else {
+            $summary = itm_inbound_email_process_company($conn, $profiles[0], ['verbose' => false]);
+            if ((int)($summary['created'] ?? 0) < 1) {
+                inbound_verify_fail(
+                    'Mailpit E2E did not create a ticket (status=' . (string)($summary['status'] ?? '') . ').'
+                );
+                foreach ($summary['errors'] as $err) {
+                    inbound_verify_fail((string)$err);
+                }
+            } else {
+                inbound_verify_pass('Mailpit E2E created ticket from injected message.');
+                $ticketId = 0;
+                $normE2e = itm_inbound_email_normalize_message_id($e2eMessageId);
+                $tStmt = mysqli_prepare(
+                    $conn,
+                    'SELECT ticket_id FROM ticket_inbound_email_messages
+                     WHERE company_id = 1 AND message_id = ? LIMIT 1'
+                );
+                if ($tStmt) {
+                    mysqli_stmt_bind_param($tStmt, 's', $normE2e);
+                    mysqli_stmt_execute($tStmt);
+                    mysqli_stmt_bind_result($tStmt, $ticketId);
+                    mysqli_stmt_fetch($tStmt);
+                    mysqli_stmt_close($tStmt);
+                }
+                if ($ticketId > 0) {
+                    $delInbound = mysqli_prepare(
+                        $conn,
+                        'DELETE FROM ticket_inbound_email_messages WHERE company_id = 1 AND message_id = ?'
+                    );
+                    if ($delInbound) {
+                        mysqli_stmt_bind_param($delInbound, 's', $normE2e);
+                        mysqli_stmt_execute($delInbound);
+                        mysqli_stmt_close($delInbound);
+                    }
+                    $softDel = mysqli_prepare(
+                        $conn,
+                        'UPDATE tickets SET active = 0, deleted_at = NOW() WHERE id = ? AND company_id = 1'
+                    );
+                    if ($softDel) {
+                        mysqli_stmt_bind_param($softDel, 'i', $ticketId);
+                        mysqli_stmt_execute($softDel);
+                        mysqli_stmt_close($softDel);
+                    }
+                }
+            }
+        }
+    }
+} else {
+    inbound_verify_pass('Mailpit API not reachable — skipped live Mailpit E2E (start Mailpit at http://localhost/mailpit/).');
 }
 
 if ($failures > 0) {

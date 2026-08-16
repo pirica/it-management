@@ -149,16 +149,29 @@ The dispatcher matches records against tenant-active rules in `email_alert_rules
 
 ## 5b. Inbound email → tickets
 
-Per-tenant helpdesk intake polls each company's **default SMTP profile** IMAP mailbox when **Create tickets from inbound mail** is enabled (`email_smtp_configurations.inbound_ticket_enabled`).
+Per-tenant helpdesk intake polls each company's **default SMTP profile** when **Create tickets from inbound mail** is enabled (`email_smtp_configurations.inbound_ticket_enabled`).
 
 - **Routing address:** `companies.email` (e.g. `info@techcorp.example`) — senders should use this To address; the runner logs a warning when To/Cc does not include it but still processes under the profile's `company_id`.
 - **Runner:** `php scripts/run_inbound_email_tickets.php` (schedule via cron; optional `--company=1`, `--verbose`, `--dry-run`).
 - **Threading:** replies with `TCK-####` or `[#id]` in the subject append `ticket_comments` instead of creating a duplicate ticket.
 - **Dedupe:** `ticket_inbound_email_messages` stores RFC Message-ID per company.
-- **Regression:** `php scripts/verify_inbound_email_tickets.php`.
-- **PHP requirement:** enable the **`imap`** extension on the **CLI** PHP binary used for cron (not required for outbound SMTP or `verify_emails_module.php`).
+- **Regression:** `php scripts/verify_inbound_email_tickets.php` (includes live Mailpit E2E when the API responds).
 
-### Enable PHP `imap` (Windows Dunebox / Laragon)
+### Local Mailpit (Laragon / Dunebox)
+
+Mailpit has **no IMAP**. For local dev, set **`imap_host` = `mailpit`** on the default SMTP profile (fresh seeds in `db/02_data.sql`, or `php scripts/apply_mailpit_inbound_email_config.php --apply`).
+
+| Path | Value |
+|------|--------|
+| Web UI | [http://localhost/mailpit/](http://localhost/mailpit/) |
+| Inbound API | `http://localhost/mailpit/api/v1` (override with env `ITM_MAILPIT_API_URL`) |
+| Outbound SMTP | `127.0.0.1:1025` (override with `ITM_MAILPIT_SMTP_HOST` / `ITM_MAILPIT_SMTP_PORT`) |
+
+The runner lists unread messages via the Mailpit HTTP API instead of `imap_open()` when `imap_host` is `mailpit` or an `http(s)://…/mailpit` URL.
+
+### Production IMAP mailboxes
+
+When `imap_host` is a real mailbox hostname, polling uses PHP **`imap_open()`** on the **CLI** binary used for cron (not required for outbound SMTP, Mailpit profiles, or `verify_emails_module.php`).
 
 1. Locate the **CLI** `php.ini` beside the `php.exe` you use for `scripts/run_inbound_email_tickets.php` (Dunebox: `D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.ini`).
 2. Ensure `php_imap.dll` exists under the `ext\` folder (copy from Laragon portable `bin\php\php-7.4.33-…\ext\` when missing on Dunebox).
