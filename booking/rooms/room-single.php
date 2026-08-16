@@ -295,7 +295,7 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 </div>
 <div class="hb-checkout-sticky-actions">
 <p class="hb-checkout-sticky-total">Total due: <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($estimatedTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></p>
-<button type="submit" class="hb-btn hb-btn-primary" id="btn-book-submit" form="hb-guest-form" title="Book and continue to payment">Book and continue to payment</button>
+<button type="submit" class="hb-btn hb-btn-primary" id="btn-book-submit" form="hb-guest-form" title="Book Reservation">Book Reservation</button>
 </div>
 </div>
 </div>
