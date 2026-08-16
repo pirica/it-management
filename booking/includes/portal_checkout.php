@@ -75,7 +75,7 @@ if (!function_exists('hb_portal_render_room_lines_summary')) {
     /**
      * @param array<int,array> $roomLines
      */
-    function hb_portal_render_room_lines_summary(array $roomLines, $roomsNeeded = 1) {
+    function hb_portal_render_room_lines_summary(array $roomLines, $roomsNeeded = 1, array $lineNightlyAmounts = [], $currency = 'EUR') {
         $roomsNeeded = max(1, (int) $roomsNeeded);
         if ($roomsNeeded < 2 || count($roomLines) < 1) {
             return;
@@ -84,8 +84,10 @@ if (!function_exists('hb_portal_render_room_lines_summary')) {
 <section class="hb-room-lines-summary card" aria-label="Selected rooms">
 <h2 class="hb-room-lines-summary-title">Your rooms (<?php echo count($roomLines); ?> of <?php echo (int) $roomsNeeded; ?>)</h2>
 <ol class="hb-room-lines-summary-list">
-<?php foreach ($roomLines as $idx => $line): ?>
-<li><span class="hb-room-lines-summary-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars(itm_hotel_booking_portal_room_line_label($line), ENT_QUOTES, 'UTF-8'); ?></li>
+<?php foreach ($roomLines as $idx => $line):
+    $lineNightly = isset($lineNightlyAmounts[$idx]) ? (float) $lineNightlyAmounts[$idx] : 0.0;
+?>
+<li><span class="hb-room-lines-summary-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars(itm_hotel_booking_portal_room_line_label($line), ENT_QUOTES, 'UTF-8'); ?><?php if ($lineNightly > 0): ?> <span class="hb-room-lines-summary-nightly"><?php echo htmlspecialchars(hb_portal_money_format($lineNightly, $currency), ENT_QUOTES, 'UTF-8'); ?> / night incl. tax</span><?php endif; ?></li>
 <?php endforeach; ?>
 </ol>
 </section>
