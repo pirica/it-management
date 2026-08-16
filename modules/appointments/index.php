@@ -128,7 +128,7 @@ if ($crud_action === 'list_all' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
             }
         }
     }
-    header('Location: list_all.php');
+    header('Location: list_all.php' . appt_list_all_query_string());
     exit;
 }
 
@@ -152,6 +152,15 @@ if ($crud_action === 'delete') {
 
 $listRows = [];
 $listAssigneeEmployees = [];
+$listSearchRaw = '';
+$listSort = 'appointment_date';
+$listDir = 'DESC';
+$listPage = 1;
+$listPerPage = itm_resolve_records_per_page($ui_config ?? null);
+$listTotalRows = 0;
+$listTotalPages = 1;
+$listOffset = 0;
+$listSortableColumns = appt_list_all_sortable_columns();
 $canEditListRows = true;
 $canDeleteListRows = true;
 if (function_exists('itm_user_has_role_module_permission') && function_exists('itm_resolve_rbac_module_name_for_slug')) {
@@ -175,20 +184,75 @@ if ($crud_action === 'list_all') {
         }
         mysqli_stmt_close($empStmt);
     }
-    $sql = "SELECT a.*, r.name AS reason_name, t.name AS appointment_type_name,
-            CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,'')) AS employee_name,
-            CONCAT(COALESCE(ae.first_name,''), ' ', COALESCE(ae.last_name,'')) AS assigned_to_name
-            FROM appointments a
+
+    $listState = appt_list_all_request_state();
+    $listSearchRaw = $listState['search'];
+    $listSort = $listState['sort'];
+    $listDir = $listState['dir'];
+    $listPage = $listState['page'];
+
+    $listFromSql = ' FROM appointments a
             LEFT JOIN appointment_visit_reasons r ON r.id = a.visit_reason_id AND r.company_id = a.company_id
             LEFT JOIN appointment_type t ON t.id = a.appointment_type_id AND t.company_id = a.company_id
             LEFT JOIN employees e ON e.id = a.employee_id
-            LEFT JOIN employees ae ON ae.id = a.assigned_to_employee_id AND ae.company_id = a.company_id
-            WHERE a.company_id = ? AND a.deleted_at IS NULL
-            ORDER BY a.appointment_date DESC, a.start_time DESC
-            LIMIT 200";
-    $stmt = mysqli_prepare($conn, $sql);
+            LEFT JOIN employees ae ON ae.id = a.assigned_to_employee_id AND ae.company_id = a.company_id';
+    $listWhereSql = ' WHERE a.company_id = ? AND a.deleted_at IS NULL';
+    $listBindTypes = 'i';
+    $listBindValues = [$company_id];
+
+    if ($listSearchRaw !== '') {
+        $searchPattern = (strpos($listSearchRaw, '%') !== false || strpos($listSearchRaw, '_') !== false)
+            ? $listSearchRaw
+            : '%' . $listSearchRaw . '%';
+        $searchParts = [
+            'CAST(a.id AS CHAR) LIKE ?',
+            'CAST(a.appointment_date AS CHAR) LIKE ?',
+            'CAST(a.start_time AS CHAR) LIKE ?',
+            'CAST(a.end_time AS CHAR) LIKE ?',
+            'CAST(a.status AS CHAR) LIKE ?',
+            'CAST(a.is_confirmed AS CHAR) LIKE ?',
+            "CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,'')) LIKE ?",
+            'r.name LIKE ?',
+            't.name LIKE ?',
+            't.label LIKE ?',
+            "CONCAT(COALESCE(ae.first_name,''), ' ', COALESCE(ae.last_name,'')) LIKE ?",
+        ];
+        foreach ($searchParts as $ignored) {
+            $listBindTypes .= 's';
+            $listBindValues[] = $searchPattern;
+        }
+        $listWhereSql .= ' AND (' . implode(' OR ', $searchParts) . ')';
+    }
+
+    $countSql = 'SELECT COUNT(*) AS cnt' . $listFromSql . $listWhereSql;
+    $countStmt = mysqli_prepare($conn, $countSql);
+    if ($countStmt) {
+        mysqli_stmt_bind_param($countStmt, $listBindTypes, ...$listBindValues);
+        mysqli_stmt_execute($countStmt);
+        $countRes = mysqli_stmt_get_result($countStmt);
+        $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
+        $listTotalRows = (int)($countRow['cnt'] ?? 0);
+        mysqli_stmt_close($countStmt);
+    }
+
+    $listTotalPages = max(1, (int)ceil($listTotalRows / $listPerPage));
+    if ($listPage > $listTotalPages) {
+        $listPage = $listTotalPages;
+    }
+    $listOffset = ($listPage - 1) * $listPerPage;
+
+    $sortExpr = appt_list_all_sort_sql_expression($listSort);
+    $listSql = "SELECT a.*, r.name AS reason_name, t.name AS appointment_type_name,
+            CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,'')) AS employee_name,
+            CONCAT(COALESCE(ae.first_name,''), ' ', COALESCE(ae.last_name,'')) AS assigned_to_name"
+        . $listFromSql . $listWhereSql
+        . ' ORDER BY ' . $sortExpr . ' ' . $listDir . ', a.appointment_date DESC, a.start_time DESC
+            LIMIT ?, ?';
+    $listBindTypesWithLimit = $listBindTypes . 'ii';
+    $listBindValuesWithLimit = array_merge($listBindValues, [$listOffset, $listPerPage]);
+    $stmt = mysqli_prepare($conn, $listSql);
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'i', $company_id);
+        mysqli_stmt_bind_param($stmt, $listBindTypesWithLimit, ...$listBindValuesWithLimit);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         while ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -218,6 +282,67 @@ if ($crud_action === 'view') {
         $viewRow = $res ? mysqli_fetch_assoc($res) : null;
         mysqli_stmt_close($stmt);
     }
+}
+
+function appt_list_all_sortable_columns(): array
+{
+    return [
+        'appointment_date' => 'Date',
+        'start_time' => 'Time',
+        'employee_name' => 'Employee',
+        'reason_name' => 'Reason',
+        'appointment_type_name' => 'Type',
+        'status' => 'Status',
+        'assigned_to_name' => 'Assigned to',
+        'is_confirmed' => 'Confirmed',
+    ];
+}
+
+function appt_list_all_sort_sql_expression(string $sortKey): string
+{
+    $map = [
+        'appointment_date' => 'a.appointment_date',
+        'start_time' => 'a.start_time',
+        'employee_name' => "TRIM(CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,'')))",
+        'reason_name' => 'r.name',
+        'appointment_type_name' => 't.name',
+        'status' => 'a.status',
+        'assigned_to_name' => "TRIM(CONCAT(COALESCE(ae.first_name,''), ' ', COALESCE(ae.last_name,'')))",
+        'is_confirmed' => 'a.is_confirmed',
+    ];
+
+    return $map[$sortKey] ?? 'a.appointment_date';
+}
+
+function appt_list_all_request_state(): array
+{
+    $sortable = array_keys(appt_list_all_sortable_columns());
+    $sort = (string)($_REQUEST['sort'] ?? 'appointment_date');
+    if (!in_array($sort, $sortable, true)) {
+        $sort = 'appointment_date';
+    }
+    $dir = strtoupper((string)($_REQUEST['dir'] ?? 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
+
+    return [
+        'search' => trim((string)($_REQUEST['search'] ?? '')),
+        'sort' => $sort,
+        'dir' => $dir,
+        'page' => max(1, (int)($_REQUEST['page'] ?? 1)),
+    ];
+}
+
+function appt_list_all_query_string(array $overrides = []): string
+{
+    $state = array_merge(appt_list_all_request_state(), $overrides);
+    $params = [
+        'search' => $state['search'],
+        'sort' => $state['sort'],
+        'dir' => $state['dir'],
+        'page' => $state['page'],
+    ];
+    $built = http_build_query($params);
+
+    return $built === '' ? '' : ('?' . $built);
 }
 
 function appt_format_date_display($ymd)
@@ -271,17 +396,35 @@ function appt_employee_select_label(array $empRow)
                         <a href="../appointment_settings/" class="btn btn-sm" title="Appointment settings">⚙️</a>
                     <?php endif; ?>
                        <a href="index.php" class="btn btn-sm" title="Back">🔙</a></p>
+                    <div class="card" style="margin-bottom:16px;">
+                        <form method="GET" action="list_all.php" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                            <input type="hidden" name="sort" value="<?php echo sanitize($listSort); ?>">
+                            <input type="hidden" name="dir" value="<?php echo sanitize($listDir); ?>">
+                            <input type="hidden" name="page" value="1">
+                            <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                                <label for="appt-list-search">Search (all fields)</label>
+                                <input type="text" id="appt-list-search" name="search" value="<?php echo sanitize($listSearchRaw); ?>" placeholder="Type to search records...">
+                            </div>
+                            <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                                <button type="submit" class="btn btn-primary">Search</button>
+                                <a href="list_all.php" class="btn" title="Clear">🔙</a>
+                            </div>
+                        </form>
+                    </div>
                     <table class="appointment-list-table" data-itm-no-import-excel="1">
                         <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Time</th>
-                            <th>Employee</th>
-                            <th>Reason</th>
-                            <th>Type</th>
-                            <th>Status</th>
-                            <th>Assigned to</th>
-                            <th>Confirmed</th>
+                            <?php foreach ($listSortableColumns as $sortCol => $sortLabel): ?>
+                                <?php $nextDir = ($listSort === $sortCol && $listDir === 'ASC') ? 'DESC' : 'ASC'; ?>
+                                <th>
+                                    <a href="list_all.php?search=<?php echo urlencode($listSearchRaw); ?>&sort=<?php echo urlencode($sortCol); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$listPage; ?>" style="text-decoration:none;color:inherit;">
+                                        <?php echo sanitize($sortLabel); ?>
+                                        <?php if ($listSort === $sortCol): ?>
+                                            <?php echo $listDir === 'ASC' ? '▲' : '▼'; ?>
+                                        <?php endif; ?>
+                                    </a>
+                                </th>
+                            <?php endforeach; ?>
                             <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                         </tr>
                         </thead>
@@ -292,6 +435,10 @@ function appt_employee_select_label(array $empRow)
                                 <form method="post" action="list_all.php" class="appointment-list-row-form" style="display:contents;">
                                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                     <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                    <input type="hidden" name="search" value="<?php echo sanitize($listSearchRaw); ?>">
+                                    <input type="hidden" name="sort" value="<?php echo sanitize($listSort); ?>">
+                                    <input type="hidden" name="dir" value="<?php echo sanitize($listDir); ?>">
+                                    <input type="hidden" name="page" value="<?php echo (int)$listPage; ?>">
                                 <?php endif; ?>
                                 <td><?php echo sanitize(appt_format_date_display($row['appointment_date'])); ?></td>
                                 <td><?php echo sanitize(itm_appointment_slot_label(substr($row['start_time'], 0, 8), substr($row['end_time'], 0, 8))); ?></td>
@@ -341,6 +488,22 @@ function appt_employee_select_label(array $empRow)
                         <?php endif; ?>
                         </tbody>
                     </table>
+                    <?php if ($listTotalRows > $listPerPage): ?>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;flex-wrap:wrap;gap:8px;">
+                            <div>Showing <?php echo $listOffset + 1; ?>-<?php echo min($listOffset + $listPerPage, $listTotalRows); ?> of <?php echo $listTotalRows; ?></div>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <?php if ($listPage > 1): ?>
+                                    <a class="btn btn-sm" href="list_all.php?search=<?php echo urlencode($listSearchRaw); ?>&sort=<?php echo urlencode($listSort); ?>&dir=<?php echo urlencode($listDir); ?>&page=1" title="First page">⏮️</a>
+                                    <a class="btn btn-sm" href="list_all.php?search=<?php echo urlencode($listSearchRaw); ?>&sort=<?php echo urlencode($listSort); ?>&dir=<?php echo urlencode($listDir); ?>&page=<?php echo $listPage - 1; ?>" title="Previous page">◀️</a>
+                                <?php endif; ?>
+                                <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $listPage; ?> of <?php echo $listTotalPages; ?></span>
+                                <?php if ($listPage < $listTotalPages): ?>
+                                    <a class="btn btn-sm" href="list_all.php?search=<?php echo urlencode($listSearchRaw); ?>&sort=<?php echo urlencode($listSort); ?>&dir=<?php echo urlencode($listDir); ?>&page=<?php echo $listPage + 1; ?>" title="Next page">▶️</a>
+                                    <a class="btn btn-sm" href="list_all.php?search=<?php echo urlencode($listSearchRaw); ?>&sort=<?php echo urlencode($listSort); ?>&dir=<?php echo urlencode($listDir); ?>&page=<?php echo $listTotalPages; ?>" title="Last page">⏭️</a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 </div>
             <?php elseif ($crud_action === 'view'): ?>
                 <div class="card">

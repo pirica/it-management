@@ -45,14 +45,15 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 
 ### List / view (`list_all.php`, `view.php`)
 
-- List: up to **200** rows, all company appointments (no “mine only” filter), columns Date/Time/Employee/Reason/Type/Status/**Assigned to**/**Confirmed**; inline assignee `<select>` and **Confirmed** checkbox per row when RBAC **edit** is granted (POST `list_all.php`); actions **🔎 View** and **🗑️ Delete** (RBAC **delete**) — delete soft-removes the row, clears `booking_lock`, sets `status` to `cancelled`, and releases the slot for rebooking.
+- List: tenant appointments with server-side **search (all visible columns)**, **column sort** (▲/▼), and **pagination** via `itm_resolve_records_per_page()` on `list_all.php` (implemented in `index.php` when `$crud_action === 'list_all'`). Search matches employee/reason/type/assignee labels via JOIN `LIKE`, not raw FK IDs alone. Inline assignee `<select>` and **Confirmed** checkbox per row when RBAC **edit** is granted (POST `list_all.php`; redirect preserves `search` / `sort` / `dir` / `page`); actions **🔎 View** and **🗑️ Delete** (RBAC **delete**) — delete soft-removes the row, clears `booking_lock`, sets `status` to `cancelled`, and releases the slot for rebooking.
 - **Assignee notifications:** when `assigned_to_employee_id` changes on `list_all` inline POST, `itm_notify_appointment_assigned()` notifies the assignee (including self-assign). Row form already posts hidden `id`.
 - View: detail includes assignee and confirmed flags plus audit meta via `itm_crud_render_audit_cell_value()` when available.
 
 ### Not flattened scaffold CRUD
 
-- No search, pagination, bulk delete, Excel import/export, or `data-itm-db-import-endpoint`.
-- Bespoke by design (`AGENTS.md` Appointment scheduling).
+- Booking `index.php` (default action) has no search/pagination/bulk delete/Excel import — bespoke slot modal UI.
+- Admin **`list_all.php`** uses list search/sort/pagination; still no bulk delete, Excel import, or `data-itm-db-import-endpoint`.
+- Documented bespoke booking flow (`AGENTS.md` Appointment scheduling).
 
 ## 6. API Actions
 
