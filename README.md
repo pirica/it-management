@@ -8,7 +8,7 @@
 - ✅ GitHub Copilot-inspired light/dark theme
 - ✅ Equipment management with photo uploads
 - ✅ Printer and workstation tracking
-- ✅ Ticket management system
+- ✅ Ticket management system — including **inbound email → ticket** intake via `companies.email`
 - ✅ Floor Plans gallery (nested folders, tags, image/PDF/CAD uploads)
 - ✅ Divisional Organizational Structure (Org Chart) with drag-and-drop
 - ✅ Responsive design
@@ -16,7 +16,7 @@
 - ✅ Private Contacts (User-scoped, UK localization, multi-field CRUD)
 - ✅ API (with comprehensive PHP examples)
 - ✅ Alerts — Global and private alert management
-- ✅ Email Management — SMTP profiles, send logs, and automated expiry alert rules
+- ✅ Email Management — SMTP profiles, send logs, automated expiry alert rules, and **inbound email → tickets** (IMAP or local Mailpit)
 - ✅ Roles & Permissions — dual-pane role sidebar and six-column RBAC matrix (View, Add, Edit, Delete, Import, Export)
 - ✅ System Status — Real-time server monitoring (CPU, RAM, Disk, PHP, MySQL)
 - ✅ Employee Type lookup and Weekly Resignations report (from `employees.termination_date`)
@@ -51,7 +51,7 @@
 
 <p align="center"><img src="docs/readme/demo_license_management.png" alt="License Management module list" /></p>
 
-<p align="center"><strong>Email Management</strong> — send logs, SMTP configurations with default transport, and automated alert rules.</p>
+<p align="center"><strong>Email Management</strong> — send logs, SMTP/IMAP inbound settings, automated alert rules, and per-tenant routing to <code>companies.email</code> for ticket creation.</p>
 
 <p align="center"><img src="docs/readme/demo_emails.png" alt="Email Management module" /></p>
 
@@ -174,11 +174,11 @@
 
 #### Tickets and support workflow
 
-`tickets`, `ticket_categories`, `ticket_priorities`, `ticket_statuses`, `attempts`, `alerts`
+`tickets`, `ticket_categories`, `ticket_priorities`, `ticket_statuses`, `ticket_inbound_email_messages`, `attempts`, `alerts`
 
-**Purpose:** Helpdesk lifecycle with categorisation, priority, status, login-attempt tracking, and global/private alerts (ICS import supported).
+**Purpose:** Helpdesk lifecycle with categorisation, priority, status, login-attempt tracking, and global/private alerts (ICS import supported). **Inbound email → tickets:** mail to each tenant <code>companies.email</code> can create tickets or append threaded replies (<code>TCK-####</code> / <code>[#id]</code> in the subject). Dedupe table <code>ticket_inbound_email_messages</code>; runner <code>php scripts/run_inbound_email_tickets.php</code>. Local dev uses [Mailpit](http://localhost/mailpit/) (<code>imap_host=mailpit</code>, SMTP <code>127.0.0.1:1025</code>). Details: <code>docs/EMAIL_MANAGEMENT.md</code> §5b.
 
-**Modules:** `tickets`, `ticket_categories`, `ticket_priorities`, `ticket_statuses`, `attempts`, `alerts`
+**Modules:** `tickets`, `ticket_categories`, `ticket_priorities`, `ticket_statuses`, `attempts`, `alerts`, `emails` (SMTP profiles + inbound toggle)
 
 #### HR and employee management
 
@@ -322,6 +322,19 @@ Full API documentation is available in the `scripts/api.php` file (viewable in t
 6. Create a `backups/` directory for backup files.
 7. Create a `floor_plans/` directory for floor plan file uploads (company subfolders are created automatically).
 8. Open `http://localhost/it-management/` in your browser.
+
+<h3 align="center">Inbound email → tickets (local Mailpit)</h3>
+
+<p align="center">Fresh seeds point outbound SMTP at <code>127.0.0.1:1025</code> and inbound polling at <code>imap_host=mailpit</code> (HTTP API <a href="http://localhost/mailpit/">http://localhost/mailpit/</a>). Route test mail to the tenant <code>companies.email</code> address (e.g. <code>support@cloudtech.example</code> for company 4).</p>
+
+| Step | Command / link |
+| --- | --- |
+| Apply Mailpit inbound config (existing DB) | <code>php scripts/apply_mailpit_inbound_email_config.php --apply</code> or [apply_mailpit_inbound_email_config.php?run=1&apply=1](http://localhost/it-management/scripts/apply_mailpit_inbound_email_config.php?run=1&apply=1) (Admin) |
+| Send test email To <code>companies.email</code> | <code>php scripts/send_mailpit_inbound_test_email.php --company=4 --process</code> or [send_mailpit_inbound_test_email.php?run=1](http://localhost/it-management/scripts/send_mailpit_inbound_test_email.php?run=1) |
+| Poll mailboxes / create tickets | <code>php scripts/run_inbound_email_tickets.php</code> or [run_inbound_email_tickets.php?run=1](http://localhost/it-management/scripts/run_inbound_email_tickets.php?run=1) |
+| Regression | <code>php scripts/verify_inbound_email_tickets.php</code> or [verify_inbound_email_tickets.php?run=1](http://localhost/it-management/scripts/verify_inbound_email_tickets.php?run=1) |
+
+<p align="center">Production mailboxes: set a real <code>imap_host</code> on the default SMTP profile and enable <strong>Create tickets from inbound mail</strong> in Admin → Email Management. Requires PHP <code>imap</code> on the CLI binary used for cron. Full reference: <code>docs/EMAIL_MANAGEMENT.md</code>.</p>
 
 <h3 align="center">Developer testing (PHPUnit)</h3>
 
@@ -488,8 +501,9 @@ flowchart TB
 
 | Module | Path | Summary |
 | --- | --- | --- |
-| Tickets | `modules/tickets/` | Support ticket system |
+| Tickets | `modules/tickets/` | Support tickets; inbound email creates/updates rows when enabled on the default SMTP profile |
 | Ticket refs | `ticket_categories/`, `ticket_priorities/`, `ticket_statuses/` | Category, priority, and status lookups |
+| Email Management | `modules/emails/`, `email_smtp_configurations/` | SMTP send logs, alert rules, IMAP/Mailpit inbound polling → tickets (`companies.email`) |
 | Attempts | `modules/attempts/` | Login attempt tracking |
 | Alerts | `modules/alerts/` | Global and private alerts with ICS import |
 | Visitors Access Log | `modules/visitors_access_log/` | Manual visitor entry logs with immutability rules |
