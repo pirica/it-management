@@ -605,14 +605,21 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="run_inbound_email_tickets.php" target="_blank" rel="nofollow noreferrer">run_inbound_email_tickets.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Polls per-company IMAP (default SMTP profile with inbound tickets enabled) and creates or updates <code>tickets</code> from mail sent to <code>companies.email</code>; requires PHP <code>imap</code> extension.</td>
+                    <td>Polls per-company inbound mail (IMAP or Mailpit API when <code>imap_host</code> = <code>mailpit</code>) and creates or updates <code>tickets</code> from mail sent to <code>companies.email</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_inbound_email_tickets.php" target="_blank" rel="nofollow noreferrer">verify_inbound_email_tickets.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Regression for inbound email-to-ticket parsers, dedupe table, requester resolution, and schema columns (no live IMAP mailbox required).</td>
+                    <td>Regression for inbound email-to-ticket parsers, dedupe table, requester resolution, schema columns; live Mailpit E2E when API at <code>http://localhost/mailpit</code> responds.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="apply_mailpit_inbound_email_config.php" target="_blank" rel="nofollow noreferrer">apply_mailpit_inbound_email_config.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Sets <code>imap_host=mailpit</code> and enables inbound tickets on each default SMTP profile for local Mailpit (<code>127.0.0.1:1025</code> SMTP, <code>http://localhost/mailpit/api/v1</code> polling).</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">

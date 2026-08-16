@@ -14,7 +14,7 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/run_inbound_email_tickets.php</code>, <code>php scripts/run_inbound_email_tickets.php --company=1</code>, <code>php scripts/run_inbound_email_tickets.php --verbose</code>, or <code>php scripts/run_inbound_email_tickets.php --dry-run</code>. Schedule via cron (requires PHP <code>imap</code> extension). Each tenant polls its default SMTP profile when <strong>Create tickets from inbound mail</strong> is enabled; route mail to <code>companies.email</code>.
+<code>php scripts/run_inbound_email_tickets.php</code>, <code>php scripts/run_inbound_email_tickets.php --company=1</code>, <code>php scripts/run_inbound_email_tickets.php --verbose</code>, or <code>php scripts/run_inbound_email_tickets.php --dry-run</code>. Schedule via cron. Each tenant polls its default SMTP profile when <strong>Create tickets from inbound mail</strong> is enabled; route mail to <code>companies.email</code>. Local Laragon/Dunebox: set IMAP Host to <code>mailpit</code> (Mailpit API at <a href="http://localhost/mailpit/" target="_blank" rel="noopener">http://localhost/mailpit/</a>, SMTP <code>127.0.0.1:1025</code>). Production mailboxes use real IMAP (PHP <code>imap</code> extension).
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 
@@ -62,14 +62,6 @@ $totalCreated = 0;
 $totalComments = 0;
 $totalSkipped = 0;
 
-if (!itm_inbound_email_imap_available()) {
-    echo colorText('[FAIL] PHP imap extension is not loaded. Enable extension=imap in php.ini for the CLI PHP binary.', 'fail') . $nl;
-    if (PHP_SAPI !== 'cli') {
-        echo '</body></html>';
-    }
-    exit(1);
-}
-
 $profiles = itm_inbound_email_list_enabled_profiles($conn, $companyFilter);
 if ($profiles === []) {
     echo colorText('[SKIP] No companies with inbound ticket polling enabled.', 'warn') . $nl;
@@ -77,6 +69,14 @@ if ($profiles === []) {
         echo '</body></html>';
     }
     exit(0);
+}
+
+if (!itm_inbound_email_polling_available($profiles)) {
+    echo colorText('[FAIL] No inbound transport available. Enable PHP imap for real mailboxes, or set imap_host to mailpit and ensure Mailpit API responds (http://localhost/mailpit/api/v1/messages).', 'fail') . $nl;
+    if (PHP_SAPI !== 'cli') {
+        echo '</body></html>';
+    }
+    exit(1);
 }
 
 if ($dryRun) {

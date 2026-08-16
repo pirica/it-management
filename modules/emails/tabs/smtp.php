@@ -80,7 +80,7 @@
         <div class="email-form-grid">
             <div class="form-group">
                 <label for="imap_host">IMAP Host</label>
-                <input type="text" id="imap_host" name="imap_host" value="<?php echo sanitize((string)($editSmtp['imap_host'] ?? '')); ?>" placeholder="mail.example.com">
+                <input type="text" id="imap_host" name="imap_host" value="<?php echo sanitize((string)($editSmtp['imap_host'] ?? '')); ?>" placeholder="mail.example.com or mailpit (local)">
             </div>
             <div class="form-group">
                 <label for="imap_port">Port</label>

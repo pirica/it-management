@@ -1117,8 +1117,9 @@ Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking
 | `php scripts/verify_user_config_profile.php` | Regression for `user-config.php` profile fields: home-company UPDATE vs tenant switcher, birthday/theme/emergency round-trip, profile photo URL must be app-absolute `modules/explorer/file.php` (not `../../modules/…`); static `$ui_config` reload after sidebar save |
 | `php scripts/verify_sidebar_preferences.php` | Regression: canonical section normalize/reconcile (`explorer` → `employee`), section visibility sync, `employee_sidebar_preferences` DB round-trip, Settings SideMenu access-gate static wiring, `user-config.php` fresh `$ui_config` contract |
 | `php scripts/run_email_alert_rules.php` | Dispatches enabled alert rules per company (warranty, license, certificate, alerts, notes, to-do, events); warranty matches also enqueue in-app notifications for equipment assignees; optional `--company=1` and `--verbose` (per-rule match/sent notes when count is 0) |
-| `php scripts/run_inbound_email_tickets.php` | Polls per-company IMAP (default SMTP profile with inbound tickets enabled) and creates or updates `tickets` from mail routed to `companies.email`; requires PHP `imap` extension; optional `--company=1`, `--verbose`, `--dry-run` |
-| `php scripts/verify_inbound_email_tickets.php` | Regression for inbound parsers, dedupe table, requester resolution, and schema columns (no live mailbox required) |
+| `php scripts/run_inbound_email_tickets.php` | Polls per-company inbound mail (IMAP or local **Mailpit** API when `imap_host` = `mailpit`) and creates or updates `tickets` from mail routed to `companies.email`; optional `--company=1`, `--verbose`, `--dry-run` |
+| `php scripts/apply_mailpit_inbound_email_config.php` | Sets `imap_host=mailpit` and enables inbound tickets on each default SMTP profile (dry-run default; `--apply` or browser `apply=1`) for Laragon/Dunebox + [Mailpit](http://localhost/mailpit/) |
+| `php scripts/verify_inbound_email_tickets.php` | Regression for inbound parsers, dedupe, requester resolution, schema columns; live Mailpit E2E when API at `http://localhost/mailpit/api/v1` responds |
 | `php scripts/run_notification_digest.php` | Sends digest emails for employees with unread `employee_notifications` rows; optional `--company=1` |
 | `php scripts/verify_employee_notifications.php` | Regression for `itm_notify_employee()`, unread count, mark read, header API/JS assets |
 | `php scripts/test_email_forgot.php` | Manual forgot-password email test via `itm_send_email()` / tenant SMTP; creates a real 24-hour reset token for the matching employee before sending; CLI supports `--company=1` (defaults to session company or `1`) |
@@ -1128,9 +1129,11 @@ Run `verify_emails_module.php` when changing `modules/emails/`, `includes/itm_em
 
 Run `verify_inbound_email_tickets.php` when changing `includes/itm_inbound_email_tickets.php`, `scripts/run_inbound_email_tickets.php`, inbound SMTP columns, or `ticket_inbound_email_messages` in `db/01_schema.sql`.
 
-#### PHP `imap` extension (inbound email → tickets)
+#### PHP `imap` extension and local Mailpit (inbound email → tickets)
 
-Inbound ticket polling (`run_inbound_email_tickets.php`) calls `imap_open()` — the extension must be loaded on the **CLI** `php.exe` used for cron, not only Apache.
+**Local dev (Laragon/Dunebox):** set `imap_host` to **`mailpit`** on the default SMTP profile (seed data and `apply_mailpit_inbound_email_config.php`). Outbound mail uses SMTP **`127.0.0.1:1025`**; inbound polling uses the Mailpit HTTP API at **`http://localhost/mailpit/api/v1`** (web UI: [http://localhost/mailpit/](http://localhost/mailpit/)). No PHP `imap` extension required when all enabled profiles use Mailpit.
+
+**Production IMAP:** `run_inbound_email_tickets.php` calls `imap_open()` when `imap_host` is a real mailbox host — the extension must be loaded on the **CLI** `php.exe` used for cron, not only Apache.
 
 | Environment | Enable |
 |-------------|--------|
@@ -1141,10 +1144,13 @@ Inbound ticket polling (`run_inbound_email_tickets.php`) calls `imap_open()` —
 **Verify (CLI):**
 
 ```bash
+php scripts/apply_mailpit_inbound_email_config.php --apply
+php scripts/verify_inbound_email_tickets.php
+php scripts/run_inbound_email_tickets.php --dry-run
 php -r "echo function_exists('imap_open') ? 'imap ok' : 'imap missing';"
 ```
 
-`verify_inbound_email_tickets.php` reports whether `imap` is loaded; core parser/dedupe tests pass without it.
+`verify_inbound_email_tickets.php` runs a live Mailpit end-to-end when the API responds; parser/dedupe tests pass without Mailpit or `imap`.
 
 Run `verify_webmail_module.php` when changing `modules/webmail/` or webmail-related `itm_send_email()` log options.
 
