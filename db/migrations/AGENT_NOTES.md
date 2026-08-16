@@ -45,6 +45,7 @@ Incremental DDL scripts for **existing** databases. Fresh installs use the match
 - `hotel_booking_registry_icons.sql` — DML only: fixes mojibake `modules_registry.icon` values for hospitality slugs (matches `includes/ui_config.php` catalog)
 - `hotel_bookings_booking_color.sql` — `hotel_bookings.booking_color` varchar(7) `#rrggbb` for planning grid bars (destructive — drops booking rows)
 - `hotel_bookings_auth2.sql` — `hotel_bookings.auth2` char(4) guest manage/cancel PIN (destructive — drops booking rows)
+- `hotel_bookings_guest_confirmation_code.sql` — `hotel_bookings.guest_confirmation_code` opaque 10-char guest confirmation (preserves rows via backup table)
 - `audit_logs_bigint.sql` — `audit_logs.id` + `record_id` as `BIGINT` (preserves rows via `_itm_audit_logs_backup`; mirrors `db/01_schema.sql`)
 - `hotel_booking_hk_status_code.sql` — `hotel_booking_housekeeping_statuses` with tenant-unique `code` (destructive — re-seed HK statuses from `db/02_data.sql` after apply)
 - `hotel_booking_distribution.sql` — four `hotel_booking_distribution_*` tables (channels, mappings, reservation links, ARI event log; mirrors `db/01_schema.sql`; new tables only)

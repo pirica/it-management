@@ -370,7 +370,7 @@ if (!function_exists('hb_portal_load_booking_confirmation')) {
         if ($bookingId < 1) {
             return null;
         }
-        $sql = 'SELECT b.id, b.customer_id, b.check_in, b.check_out, b.payment_amount, b.auth2, b.notes, b.room_id, b.portal_rate_plan_id,
+        $sql = 'SELECT b.id, b.customer_id, b.check_in, b.check_out, b.payment_amount, b.auth2, b.guest_confirmation_code, b.notes, b.room_id, b.portal_rate_plan_id,
             b.future_status_id, b.present_status_id, b.history_status_id,
             c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
             h.id AS hotel_id, h.name AS hotel_name, h.location AS hotel_location, h.phone AS hotel_phone,
@@ -601,6 +601,12 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
         if ($reservationId < 1) {
             $reservationId = (int) ($booking['id'] ?? 0);
         }
+        $guestConfirmationCode = function_exists('itm_hotel_booking_portal_confirmation_primary_guest_code')
+            ? itm_hotel_booking_portal_confirmation_primary_guest_code($groupRows)
+            : '';
+        if ($guestConfirmationCode === '') {
+            $guestConfirmationCode = itm_hotel_booking_normalize_guest_confirmation_code($primaryRow['guest_confirmation_code'] ?? $booking['guest_confirmation_code'] ?? '');
+        }
         $guestName = trim((string) ($primaryRow['customer_name'] ?? $booking['customer_name'] ?? ''));
         $email = trim((string) ($primaryRow['customer_email'] ?? $booking['customer_email'] ?? ''));
         $phone = trim((string) ($primaryRow['customer_phone'] ?? $booking['customer_phone'] ?? ''));
@@ -610,7 +616,7 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
             $parts = preg_split('/\s+/', $guestName);
             $lastname = (string) end($parts);
         }
-        $numberconfirmation = $reservationId;
+        $numberconfirmation = $guestConfirmationCode !== '' ? $guestConfirmationCode : (string) $reservationId;
         $auth2Display = itm_hotel_booking_normalize_auth2($primaryRow['auth2'] ?? $booking['auth2'] ?? '');
 
         $urlmybooking = APPURL . '/users/bookings.php';
@@ -645,7 +651,7 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
             : hb_portal_booking_stay_nights($checkInIso, $checkOutIso);
         $nightsLabel = hb_portal_booking_nights_parenthetical($nights);
         $occupancyLabel = '👤 ' . itm_hotel_booking_portal_occupancy_label($occupancy);
-        $pdfFilename = 'booking-confirmation-' . $reservationId . '.pdf';
+        $pdfFilename = 'booking-confirmation-' . ($guestConfirmationCode !== '' ? $guestConfirmationCode : (string) $reservationId) . '.pdf';
         $roomTitle = function_exists('itm_hotel_booking_portal_confirmation_room_label_from_row')
             ? itm_hotel_booking_portal_confirmation_room_label_from_row($primaryRow)
             : hb_portal_reservation_room_title([
@@ -690,7 +696,7 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <dl class="hb-payment-confirmation-details">
 <div class="hb-payment-detail-row">
 <dt>Confirmation number</dt>
-<dd><strong><?php echo (int) $reservationId; ?></strong></dd>
+<dd><strong><?php echo htmlspecialchars($numberconfirmation, ENT_QUOTES, 'UTF-8'); ?></strong></dd>
 </div>
 <?php if ($auth2Display !== ''): ?>
 <div class="hb-payment-detail-row">

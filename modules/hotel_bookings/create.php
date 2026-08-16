@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (itm_hotel_booking_has_overlap($conn, $company_id, $roomId, $checkIn, $checkOut)) {
         $errors[] = 'Room overlap for selected dates.';
     } else {
-        $ins = mysqli_prepare($conn, 'INSERT INTO hotel_bookings (company_id, customer_id, room_id, check_in, check_out, payment_amount, auth2, future_status_id, present_status_id, history_status_id, portal_rate_plan_id, notes, booking_color, active, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?, ?, ?)');
+        $ins = mysqli_prepare($conn, 'INSERT INTO hotel_bookings (company_id, customer_id, room_id, check_in, check_out, payment_amount, guest_confirmation_code, auth2, future_status_id, present_status_id, history_status_id, portal_rate_plan_id, notes, booking_color, active, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), ?, ?, ?, ?, ?)');
         if ($ins) {
             $createdBy = (int) ($_POST['created_by'] ?? $employee_id);
             $createdAt = trim((string) ($_POST['created_at'] ?? ''));
@@ -49,15 +49,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $createdAt = date('Y-m-d H:i:s');
             }
             $auth2 = itm_hotel_booking_generate_auth2();
+            $guestConfirmationCode = itm_hotel_booking_generate_guest_confirmation_code($conn, $company_id);
+            if ($guestConfirmationCode === '') {
+                $errors[] = 'Insert failed.';
+            } else {
             mysqli_stmt_bind_param(
                 $ins,
-                'iiissdsiiiissiis',
+                'iiissdssiiiissiis',
                 $company_id,
                 $customerId,
                 $roomId,
                 $checkIn,
                 $checkOut,
                 $paymentAmount,
+                $guestConfirmationCode,
                 $auth2,
                 $fs,
                 $ps,
@@ -72,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (mysqli_stmt_execute($ins)) {
                 header('Location: index.php?mode=planning');
                 exit;
+            }
             }
         }
         $errors[] = 'Insert failed.';
