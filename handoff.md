@@ -226,10 +226,10 @@ The system features a highly functional `scripts/` library. The most critical ma
 | **Files HTAccess Hardening** | `php scripts/ensure_files_htaccess_chain.php` | Restores `deny_http` `.htaccess` rules on every segment of the multi-tenant `files/` storage tree. |
 | **UI Action Label Normalizer** | `php scripts/apply_ui_action_emoji.php --apply` | Audits interactive controls and page headings, enforcing standard **emoji-only** visible labels. |
 | **UTF-8 Mojibake Repair Tool** | `php scripts/apply_utf8_mojibake_fix.php --apply` | Scans text encodings across source files, converting Windows-1252 anomalies back to clean UTF-8. |
-| **Inbound Email → Tickets** | `php scripts/run_inbound_email_tickets.php` | Cron: poll tenant IMAP mailboxes (default SMTP profile + inbound toggle) and create/update helpdesk tickets for mail sent to `companies.email`. Requires PHP `imap` extension on the CLI binary. |
+| **Inbound Email → Tickets** | `php scripts/run_inbound_email_tickets.php` | Cron: poll inbound mail (IMAP or local **Mailpit** when `imap_host=mailpit`) from the default SMTP profile + inbound toggle; create tickets or append threaded replies for mail to `companies.email`. Dedupe `ticket_inbound_email_messages`; keyword routing `ticket_inbound_email_routing_rules`; event log in `emails.details`. Production IMAP requires PHP `imap` on the CLI binary. Verify: `php scripts/verify_inbound_email_tickets.php`. |
 
 ### 4.3 Dependencies & Sizing
-*   **PHP SAPI Requirements:** Runs on **PHP 7.4.33** (with ongoing PHP 8+ modernization). Requires the following extensions enabled in `php.ini`: `mysqli`, `dom`, `json`, `libxml`, `mbstring`, `tokenizer`, `xml`, `xmlwriter`, and **`imap`** when using inbound email-to-ticket polling (`scripts/run_inbound_email_tickets.php`).
+*   **PHP SAPI Requirements:** Runs on **PHP 7.4.33** (with ongoing PHP 8+ modernization). Requires the following extensions enabled in `php.ini`: `mysqli`, `dom`, `json`, `libxml`, `mbstring`, `tokenizer`, `xml`, `xmlwriter`, and **`imap`** when using production IMAP inbound polling (`scripts/run_inbound_email_tickets.php` with a real mailbox host — not required for Mailpit `imap_host=mailpit` local dev).
 *   **Database SAPI Requirements:** MySQL 8.0+ (supports strict modes like `ONLY_FULL_GROUP_BY` and `NO_ZERO_IN_DATE`).
 *   **External Packages:** **Zero external packages**. The system does not utilize Composer or NPM. PDF generation is executed using lightweight native JavaScript libraries, and layout rendering uses custom-designed templates.
 
