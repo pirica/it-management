@@ -27,6 +27,89 @@ if (!function_exists('itm_database_migrations_bootstrap_filenames')) {
     }
 }
 
+if (!function_exists('itm_database_migrations_resolve_bootstrap_file')) {
+    /**
+     * Resolve a bootstrap migration file on disk (not runner apply scope).
+     *
+     * @return array{filename: string, path: string, checksum: string}|null
+     */
+    function itm_database_migrations_resolve_bootstrap_file($filename)
+    {
+        $filename = basename((string)$filename);
+        if ($filename === '' || !preg_match('/^[A-Za-z0-9_.-]+\.sql$/', $filename)) {
+            return null;
+        }
+        if (!in_array($filename, itm_database_migrations_bootstrap_filenames(), true)) {
+            return null;
+        }
+
+        $path = itm_database_migrations_root_path() . '/' . $filename;
+        if (!is_file($path)) {
+            return null;
+        }
+
+        $checksum = itm_database_migrations_file_checksum($path);
+        if ($checksum === '') {
+            return null;
+        }
+
+        return [
+            'filename' => $filename,
+            'path' => $path,
+            'checksum' => $checksum,
+        ];
+    }
+}
+
+if (!function_exists('itm_database_migrations_resolve_file_row')) {
+    /**
+     * Resolve any migration SQL file on disk (bootstrap + runner-scoped) for read-only use.
+     *
+     * @return array{filename: string, path: string, checksum: string}|null
+     */
+    function itm_database_migrations_resolve_file_row($filename)
+    {
+        $bootstrap = itm_database_migrations_resolve_bootstrap_file($filename);
+        if ($bootstrap !== null) {
+            return $bootstrap;
+        }
+
+        return itm_database_migrations_resolve_discovered_file($filename);
+    }
+}
+
+if (!function_exists('itm_database_migrations_record_bootstrap_audit_rows')) {
+    /**
+     * Record bootstrap migration files in schema_migrations when the history table exists.
+     *
+     * Why: schema_migrations.sql is excluded from the runner loop but operators expect it in audit history.
+     */
+    function itm_database_migrations_record_bootstrap_audit_rows($conn)
+    {
+        if (!($conn instanceof mysqli) || !itm_database_migrations_table_exists($conn)) {
+            return;
+        }
+
+        $appliedMap = itm_database_migrations_fetch_applied_map($conn);
+        foreach (itm_database_migrations_bootstrap_filenames() as $filename) {
+            if (isset($appliedMap[$filename])) {
+                continue;
+            }
+
+            $fileRow = itm_database_migrations_resolve_bootstrap_file($filename);
+            if ($fileRow === null) {
+                continue;
+            }
+
+            itm_database_migrations_record_applied(
+                $conn,
+                (string)$fileRow['filename'],
+                (string)$fileRow['checksum']
+            );
+        }
+    }
+}
+
 if (!function_exists('itm_database_migrations_create_table_sql')) {
     function itm_database_migrations_create_table_sql()
     {
@@ -82,17 +165,30 @@ if (!function_exists('itm_database_migrations_ensure_table')) {
             return false;
         }
         if (itm_database_migrations_table_exists($conn)) {
+            itm_database_migrations_record_bootstrap_audit_rows($conn);
+
             return true;
         }
 
         $bootstrapPath = itm_database_migrations_root_path() . '/schema_migrations.sql';
         if (is_readable($bootstrapPath)) {
             [$executed] = itm_database_migrations_execute_sql_file($conn, $bootstrapPath);
+            if ($executed && itm_database_migrations_table_exists($conn)) {
+                itm_database_migrations_record_bootstrap_audit_rows($conn);
 
-            return $executed && itm_database_migrations_table_exists($conn);
+                return true;
+            }
+
+            return false;
         }
 
-        return mysqli_query($conn, itm_database_migrations_create_table_sql()) === true;
+        if (mysqli_query($conn, itm_database_migrations_create_table_sql()) === true) {
+            itm_database_migrations_record_bootstrap_audit_rows($conn);
+
+            return true;
+        }
+
+        return false;
     }
 }
 

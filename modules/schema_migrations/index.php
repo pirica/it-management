@@ -57,6 +57,13 @@ $discoveredByFilename = [];
 foreach (itm_database_migrations_discover_files() as $fileRow) {
     $discoveredByFilename[(string)$fileRow['filename']] = $fileRow;
 }
+foreach (itm_database_migrations_bootstrap_filenames() as $bootstrapName) {
+    $bootstrapRow = itm_database_migrations_resolve_bootstrap_file($bootstrapName);
+    if ($bootstrapRow !== null) {
+        $discoveredByFilename[$bootstrapName] = $bootstrapRow;
+    }
+}
+$bootstrapFilenames = array_fill_keys(itm_database_migrations_bootstrap_filenames(), true);
 
 $where = [];
 $params = [];
@@ -153,6 +160,7 @@ $migrateApplyUrl = BASE_URL . 'scripts/migrate.php?run=1&apply=1';
         .sm-badge { display:inline-block; padding:3px 8px; border-radius:999px; font-size:11px; font-weight:700; border:1px solid transparent; }
         .sm-badge.removed { background:#f3f4f6; border-color:#d1d5db; color:#4b5563; }
         .sm-badge.drift { background:#fdecec; border-color:#f0b6b6; color:#a52727; }
+        .sm-badge.bootstrap { background:#eef4ff; border-color:#9eb8ee; color:#1d4f91; }
         .sm-sort-link { text-decoration:none; color:inherit; }
         @media (max-width:900px) { .sm-kpis { grid-template-columns:1fr 1fr; } .sm-filters form { grid-template-columns:1fr; } }
     </style>
@@ -281,6 +289,9 @@ $migrateApplyUrl = BASE_URL . 'scripts/migrate.php?run=1&apply=1';
                                 <td>
                                     <?php if ($onDisk): ?>
                                         <a href="<?php echo sanitize($sqlHref); ?>" target="_blank" rel="noopener noreferrer" title="Open SQL in new tab">Open SQL</a>
+                                        <?php if (isset($bootstrapFilenames[$filename])): ?>
+                                            <span class="sm-badge bootstrap" title="Bootstrap file — not in runner apply loop">Bootstrap</span>
+                                        <?php endif; ?>
                                         <?php if ($hasDrift): ?>
                                             <span class="sm-badge drift" title="File checksum differs from recorded value">Drift</span>
                                         <?php endif; ?>

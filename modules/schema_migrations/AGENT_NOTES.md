@@ -19,7 +19,7 @@ Admin-only **read-only** UI for the **`schema_migrations`** history table popula
 - **Admin only:** `itm_is_admin()` gate on `index.php` and `view.php`; slug in `itm_crud_rbac_exempt_module_slugs()`.
 - **Not multi-tenant:** no `company_id` column; list is global DB history.
 - Do not hand-edit checksums to force re-apply — use `migrate.php` and fix probes in migration SQL / `scripts/lib/itm_verify_db_migrations_report.php`.
-- `schema_migrations.sql` bootstraps this table only; it is excluded from the runner apply loop.
+- `schema_migrations.sql` bootstraps this table only; it is excluded from the runner apply loop but is **recorded** in audit history via `itm_database_migrations_record_bootstrap_audit_rows()` when the table exists.
 - Canonical schema changes still require mirroring `db/01_schema.sql` in the same PR as optional `db/migrations/{module}_{subject}.sql`.
 
 ## 5. UI Behavior Requirements

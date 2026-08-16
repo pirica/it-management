@@ -100,11 +100,17 @@ if (!$conn instanceof mysqli) {
 } else {
     if (itm_database_migrations_table_exists($conn)) {
         sm_verify_pass('schema_migrations table exists.');
+        itm_database_migrations_ensure_table($conn);
         $map = itm_database_migrations_fetch_applied_map($conn);
         if (!is_array($map)) {
             sm_verify_fail('itm_database_migrations_fetch_applied_map() did not return an array.');
         } else {
             sm_verify_pass('itm_database_migrations_fetch_applied_map() returned array (' . count($map) . ' rows).');
+            if (!isset($map['schema_migrations.sql'])) {
+                sm_verify_fail('schema_migrations.sql bootstrap row missing after ensure_table.');
+            } else {
+                sm_verify_pass('schema_migrations.sql recorded in audit table.');
+            }
         }
     } else {
         sm_verify_fail('schema_migrations table missing — run migrate.php or import db/.');
