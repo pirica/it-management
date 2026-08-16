@@ -32,52 +32,49 @@ $checkOutIso = date('Y-m-d', strtotime($checkInIso . ' +' . $nights . ' day'));
 
 $roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
 $roomLinesContext = itm_hotel_booking_portal_room_lines_context_fingerprint($hotelId, $checkInIso, $nights, $occupancy);
-$roomLines = itm_hotel_booking_portal_room_lines_get_active($roomLinesContext);
+$activeDraft = itm_hotel_booking_portal_draft_get() ?: [];
+$ratedRoomLines = itm_hotel_booking_portal_draft_rated_room_lines($activeDraft, $roomLinesContext);
+if ($roomsNeeded > 1 && itm_hotel_booking_portal_draft_all_rooms_rated($activeDraft, $roomsNeeded, $roomLinesContext)) {
+    header('Location: ' . APPURL . '/rooms/customize.php');
+    exit;
+}
+$roomLines = $ratedRoomLines;
 $pickError = '';
 $pickRoomId = (int) ($_GET['pick_room_id'] ?? 0);
 if ($pickRoomId > 0 && $roomsNeeded > 1) {
-    $pickResult = itm_hotel_booking_portal_room_line_pick($conn, $company_id, $hotelId, $pickRoomId, $checkInIso, $checkOutIso, $roomLines);
+    if (count($ratedRoomLines) >= $roomsNeeded) {
+        header('Location: ' . APPURL . '/rooms/customize.php');
+        exit;
+    }
+    $pickResult = itm_hotel_booking_portal_room_line_pick($conn, $company_id, $hotelId, $pickRoomId, $checkInIso, $checkOutIso, $ratedRoomLines);
     if (empty($pickResult['ok'])) {
         $pickError = (string) ($pickResult['error'] ?? 'Room not available.');
     } else {
-        $roomLines = (array) ($pickResult['lines'] ?? []);
-        itm_hotel_booking_portal_room_lines_persist_active($roomLinesContext, $roomLines);
+        $pickedLines = (array) ($pickResult['lines'] ?? []);
+        $newLine = $pickedLines !== [] ? itm_hotel_booking_portal_room_line_normalize($pickedLines[count($pickedLines) - 1]) : [];
+        $newRoomId = (int) ($newLine['room_id'] ?? 0);
         // #region agent log
         @file_put_contents(dirname(__DIR__) . '/debug-44bff2.log', json_encode([
             'sessionId' => '44bff2',
             'timestamp' => (int) round(microtime(true) * 1000),
             'location' => 'booking/rooms.php:pick',
-            'message' => 'room line picked',
+            'message' => 'room picked -> select-rate',
             'data' => [
                 'pickRoomId' => $pickRoomId,
-                'lineCount' => count($roomLines),
+                'ratedCount' => count($ratedRoomLines),
                 'roomsNeeded' => $roomsNeeded,
-                'complete' => count($roomLines) >= $roomsNeeded,
+                'newRoomId' => $newRoomId,
             ],
-            'hypothesisId' => 'B',
-            'runId' => 'verify',
+            'hypothesisId' => 'WF1',
+            'runId' => 'per-room-rate-flow',
         ]) . "\n", FILE_APPEND);
         // #endregion
-        if (count($roomLines) < $roomsNeeded) {
-            header('Location: ' . APPURL . '/rooms.php?' . hb_select_room_page_query($hotelId, $checkInIso, $nights, $occupancy));
+        itm_hotel_booking_portal_room_lines_clear_active();
+        if ($newRoomId > 0) {
+            header('Location: ' . APPURL . '/rooms/select-rate.php?' . hb_select_room_book_query($newRoomId, $checkInIso, $nights, $occupancy));
             exit;
         }
-        $activeLine = $roomLines[count($roomLines) - 1];
-        itm_hotel_booking_portal_draft_save([
-            'company_id' => $company_id,
-            'hotel_id' => $hotelId,
-            'room_id' => (int) ($activeLine['room_id'] ?? 0),
-            'room_type_id' => (int) ($activeLine['room_type_id'] ?? 0),
-            'check_in' => $checkInIso,
-            'check_out' => $checkOutIso,
-            'nights' => $nights,
-            'occupancy' => $occupancy,
-            'room_lines' => $roomLines,
-            'room_lines_context' => $roomLinesContext,
-        ]);
-        itm_hotel_booking_portal_room_lines_clear_active();
-        header('Location: ' . APPURL . '/rooms/select-rate.php?' . hb_select_room_book_query((int) ($activeLine['room_id'] ?? 0), $checkInIso, $nights, $occupancy));
-        exit;
+        $pickError = 'Room not available.';
     }
 }
 
@@ -398,11 +395,11 @@ $filterOptions = [
 
 <?php if ($roomsNeeded > 1): ?>
 <div class="hb-room-lines-banner" role="status">
-<p class="hb-room-lines-banner-lead"><strong>Room <?php echo min($roomsNeeded, count($roomLines) + 1); ?> of <?php echo (int) $roomsNeeded; ?></strong> — choose a room type for this slot.<?php if (count($roomLines) > 0): ?> Types already chosen with no more units show as unavailable — pick a different room type.<?php endif; ?></p>
+<p class="hb-room-lines-banner-lead"><strong>Room <?php echo min($roomsNeeded, count($roomLines) + 1); ?> of <?php echo (int) $roomsNeeded; ?></strong> — choose a room, then select a rate. Repeat until all rooms are rated.<?php if (count($roomLines) > 0): ?> Types already chosen with no more units show as unavailable — pick a different room type.<?php endif; ?></p>
 <?php if (!empty($roomLines)): ?>
 <ul class="hb-room-lines-banner-list">
 <?php foreach ($roomLines as $idx => $line): ?>
-<li><span class="hb-room-lines-slot">Room <?php echo (int) $idx + 1; ?>:</span> <?php echo htmlspecialchars(itm_hotel_booking_portal_room_line_label($line), ENT_QUOTES, 'UTF-8'); ?></li>
+<li><span class="hb-room-lines-slot">Room <?php echo (int) $idx + 1; ?>:</span> <?php echo htmlspecialchars(itm_hotel_booking_portal_room_line_label($line), ENT_QUOTES, 'UTF-8'); ?><?php if (!empty($line['portal_rate_plan_name'])): ?> <span class="hb-room-lines-rate">(<?php echo htmlspecialchars((string) $line['portal_rate_plan_name'], ENT_QUOTES, 'UTF-8'); ?>)</span><?php endif; ?></li>
 <?php endforeach; ?>
 </ul>
 <?php endif; ?>

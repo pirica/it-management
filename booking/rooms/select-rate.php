@@ -38,31 +38,53 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkInIso) || $checkInIso < $today) {
 $checkOutIso = date('Y-m-d', strtotime($checkInIso . ' +' . $nights . ' day'));
 
 $roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
+$roomLinesContext = itm_hotel_booking_portal_room_lines_context_fingerprint($hotelId, $checkInIso, $nights, $occupancy);
 $activeDraft = itm_hotel_booking_portal_draft_get() ?: [];
-$roomLines = itm_hotel_booking_portal_draft_room_lines_for_display(array_merge($activeDraft, ['room_id' => $roomId]));
+$ratedRoomLines = itm_hotel_booking_portal_draft_rated_room_lines($activeDraft, $roomLinesContext);
+$currentRoomLine = itm_hotel_booking_portal_room_line_from_room_row($conn, $company_id, $hotelId, $room, $checkInIso);
+$currentSlotIndex = count($ratedRoomLines);
 // #region agent log
 @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
     'sessionId' => '44bff2',
     'timestamp' => (int) round(microtime(true) * 1000),
     'location' => 'booking/rooms/select-rate.php:gate',
-    'message' => 'multi-room select-rate gate',
+    'message' => 'sequential select-rate slot',
     'data' => [
         'roomsNeeded' => $roomsNeeded,
-        'lineCount' => count($roomLines),
-        'willRedirect' => $roomsNeeded > 1 && count($roomLines) < $roomsNeeded,
+        'ratedCount' => count($ratedRoomLines),
+        'currentSlotIndex' => $currentSlotIndex,
         'roomId' => $roomId,
+        'allRated' => itm_hotel_booking_portal_draft_all_rooms_rated($activeDraft, $roomsNeeded, $roomLinesContext),
     ],
-    'hypothesisId' => 'A',
-    'runId' => 'verify',
+    'hypothesisId' => 'WF1',
+    'runId' => 'per-room-rate-flow',
 ]) . "\n", FILE_APPEND);
 // #endregion
-if ($roomsNeeded > 1 && count($roomLines) < $roomsNeeded) {
-    header('Location: ' . APPURL . '/rooms.php?' . http_build_query(array_merge(
-        ['id' => $hotelId, 'check_in' => $checkInIso, 'nights' => $nights],
-        itm_hotel_booking_portal_occupancy_query_params($occupancy)
-    )));
-    exit;
+if ($roomsNeeded > 1) {
+    if (itm_hotel_booking_portal_draft_all_rooms_rated($activeDraft, $roomsNeeded, $roomLinesContext)) {
+        header('Location: ' . APPURL . '/rooms/customize.php');
+        exit;
+    }
+    if ($currentSlotIndex >= $roomsNeeded) {
+        header('Location: ' . APPURL . '/rooms.php?' . http_build_query(array_merge(
+            ['id' => $hotelId, 'check_in' => $checkInIso, 'nights' => $nights],
+            itm_hotel_booking_portal_occupancy_query_params($occupancy)
+        )));
+        exit;
+    }
+    foreach ($ratedRoomLines as $ratedLine) {
+        if ((int) ($ratedLine['room_id'] ?? 0) === $roomId) {
+            header('Location: ' . APPURL . '/rooms.php?' . http_build_query(array_merge(
+                ['id' => $hotelId, 'check_in' => $checkInIso, 'nights' => $nights],
+                itm_hotel_booking_portal_occupancy_query_params($occupancy)
+            )));
+            exit;
+        }
+    }
 }
+$roomLines = $roomsNeeded > 1
+    ? array_merge($ratedRoomLines, [$currentRoomLine])
+    : itm_hotel_booking_portal_draft_room_lines_for_display(array_merge($activeDraft, ['room_id' => $roomId]));
 
 $resolvedRate = itm_hotel_booking_portal_resolved_rate_slug($occupancy);
 $discountPercent = itm_hotel_booking_special_rate_discount($conn, $company_id, $hotelId, $resolvedRate);
@@ -87,12 +109,14 @@ $changeRoomQuery = http_build_query(array_merge(
     ['id' => $hotelId, 'check_in' => $checkInIso, 'nights' => $nights],
     itm_hotel_booking_portal_occupancy_query_params($occupancy)
 ));
-$changeRoomUrl = APPURL . '/rooms.php?' . $changeRoomQuery;
+$changeRoomUrl = $roomsNeeded > 1
+    ? APPURL . '/rooms.php?' . $changeRoomQuery
+    : APPURL . '/rooms.php?' . $changeRoomQuery;
 
 $hotel = ['id' => $hotelId, 'name' => $room['hotel_name'] ?? ''];
 $ratePlans = itm_hotel_booking_portal_rate_plans_active_for_hotel($conn, $company_id, $hotelId);
 $touristTaxRate = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings);
-$rateDisplayOccupancy = itm_hotel_booking_portal_select_rate_display_occupancy($occupancy, $roomLines, $roomId, $roomsNeeded);
+$rateDisplayOccupancy = itm_hotel_booking_portal_select_rate_display_occupancy($occupancy, $ratedRoomLines, $roomId, $roomsNeeded);
 // #region agent log
 @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
     'sessionId' => '44bff2',
@@ -112,34 +136,21 @@ $rateDisplayOccupancy = itm_hotel_booking_portal_select_rate_display_occupancy($
 // #endregion
 
 $summaryLineNightlyAmounts = [];
-if ($roomsNeeded > 1 && count($roomLines) >= $roomsNeeded && function_exists('itm_hotel_booking_portal_per_line_nightly_incl_tax_for_rate')) {
-    $cheapestOffer = itm_hotel_booking_portal_cheapest_rate_offer_for_hotel($conn, $company_id, $hotelId);
-    $cheapestSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($cheapestOffer['slug'] ?? 'non_refundable')));
-    $cheapestPlanRow = null;
-    foreach ($ratePlans as $plan) {
-        $planSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($plan['rate_plan_slug'] ?? '')));
-        if ($planSlug === $cheapestSlug) {
-            $cheapestPlanRow = $plan;
-            break;
-        }
+if ($roomsNeeded > 1 && count($roomLines) >= 1) {
+    foreach ($ratedRoomLines as $idx => $ratedLine) {
+        $summaryLineNightlyAmounts[(int) $idx] = itm_hotel_booking_portal_room_line_nightly_incl_tax(
+            $conn,
+            $company_id,
+            $hotelId,
+            $checkInIso,
+            $occupancy,
+            $ratedLine,
+            (int) $idx,
+            $roomsNeeded,
+            $touristTaxRate
+        );
     }
-    $summaryDisc = itm_hotel_booking_portal_rate_plan_effective_discount($discountPercent, $cheapestSlug, $cheapestPlanRow);
-    $summarySurcharge = itm_hotel_booking_portal_rate_plan_effective_surcharge($cheapestSlug, $cheapestPlanRow);
-    $priorLineAmounts = itm_hotel_booking_portal_per_line_nightly_incl_tax_for_rate(
-        $conn,
-        $company_id,
-        $hotelId,
-        $checkInIso,
-        $occupancy,
-        $summaryDisc,
-        $summarySurcharge,
-        $roomLines,
-        $touristTaxRate
-    );
-    $lastLineIdx = count($roomLines) - 1;
-    foreach ($priorLineAmounts as $idx => $amount) {
-        $summaryLineNightlyAmounts[(int) $idx] = ((int) $idx === $lastLineIdx) ? null : (float) $amount;
-    }
+    $summaryLineNightlyAmounts[$currentSlotIndex] = null;
 }
 
 $ratePlanRows = [];
@@ -197,7 +208,7 @@ foreach ($ratePlans as $plan) {
     $isBreakfast = $slug === 'breakfast';
     $nightlyInclTax = $nights > 0 ? round($stayTotal / $nights, 2) : $stayTotal;
     // #region agent log
-    if ($roomsNeeded > 1 && count($roomLines) >= $roomsNeeded) {
+    if ($roomsNeeded > 1) {
         @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
             'sessionId' => '44bff2',
             'timestamp' => (int) round(microtime(true) * 1000),
@@ -206,11 +217,12 @@ foreach ($ratePlans as $plan) {
             'data' => [
                 'slug' => $slug,
                 'roomId' => $roomId,
+                'slotIndex' => $currentSlotIndex,
                 'nightlyInclTax' => $nightlyInclTax,
                 'stayTotal' => $stayTotal,
             ],
-            'hypothesisId' => 'PRC2',
-            'runId' => 'select-rate-current-room',
+            'hypothesisId' => 'WF1',
+            'runId' => 'per-room-rate-flow',
         ]) . "\n", FILE_APPEND);
     }
     // #endregion
@@ -243,10 +255,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($slug === '') {
             $error = 'Please select a rate.';
         } else {
-            $existingDraft = itm_hotel_booking_portal_draft_get();
-            $existingLines = is_array($existingDraft['room_lines'] ?? null) && $existingDraft['room_lines'] !== []
-                ? $existingDraft['room_lines']
-                : $roomLines;
+            $existingDraft = itm_hotel_booking_portal_draft_get() ?: [];
+            $ratedLines = itm_hotel_booking_portal_draft_rated_room_lines($existingDraft, $roomLinesContext);
+            $baseLine = itm_hotel_booking_portal_room_line_from_room_row($conn, $company_id, $hotelId, $room, $checkInIso);
+            $ratedLine = itm_hotel_booking_portal_room_line_apply_rate_plan($baseLine, $planRow, $slug, $discountPercent);
+            $allLines = array_merge($ratedLines, [$ratedLine]);
             $planEffectiveDiscount = itm_hotel_booking_portal_rate_plan_effective_discount($discountPercent, $slug, $planRow);
             $planEffectiveSurcharge = itm_hotel_booking_portal_rate_plan_effective_surcharge($slug, $planRow);
             $draft = [
@@ -268,10 +281,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'resolved_rate_slug' => $resolvedRate,
                 'base_price_per_night' => $basePerNight,
                 'room_type_id' => (int) ($room['room_type_id'] ?? 0),
-                'room_lines' => $existingLines,
-                'room_lines_context' => itm_hotel_booking_portal_room_lines_context_fingerprint($hotelId, $checkInIso, $nights, $occupancy),
+                'room_lines' => $allLines,
+                'room_lines_context' => $roomLinesContext,
             ];
             itm_hotel_booking_portal_draft_save($draft);
+            // #region agent log
+            @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
+                'sessionId' => '44bff2',
+                'timestamp' => (int) round(microtime(true) * 1000),
+                'location' => 'booking/rooms/select-rate.php:post',
+                'message' => 'rate saved on room line',
+                'data' => [
+                    'ratedCount' => count($allLines),
+                    'roomsNeeded' => $roomsNeeded,
+                    'goCustomize' => count($allLines) >= $roomsNeeded,
+                ],
+                'hypothesisId' => 'WF1',
+                'runId' => 'per-room-rate-flow',
+            ]) . "\n", FILE_APPEND);
+            // #endregion
+            if ($roomsNeeded > 1 && count($allLines) < $roomsNeeded) {
+                header('Location: ' . APPURL . '/rooms.php?' . http_build_query(array_merge(
+                    ['id' => $hotelId, 'check_in' => $checkInIso, 'nights' => $nights],
+                    itm_hotel_booking_portal_occupancy_query_params($occupancy)
+                )));
+                exit;
+            }
             header('Location: ' . APPURL . '/rooms/customize.php');
             exit;
         }

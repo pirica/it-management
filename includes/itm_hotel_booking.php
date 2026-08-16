@@ -2048,7 +2048,7 @@ if (!function_exists('itm_hotel_booking_portal_room_lines_clear_active')) {
 
 if (!function_exists('itm_hotel_booking_portal_room_line_normalize')) {
   function itm_hotel_booking_portal_room_line_normalize(array $line) {
-    return [
+    $normalized = [
       'room_id' => (int) ($line['room_id'] ?? 0),
       'room_type_id' => (int) ($line['room_type_id'] ?? 0),
       'type_name' => trim((string) ($line['type_name'] ?? '')),
@@ -2056,6 +2056,126 @@ if (!function_exists('itm_hotel_booking_portal_room_line_normalize')) {
       'bed_summary' => trim((string) ($line['bed_summary'] ?? '')),
       'base_price_per_night' => (float) ($line['base_price_per_night'] ?? 0),
     ];
+    if (isset($line['portal_rate_plan_id'])) {
+      $normalized['portal_rate_plan_id'] = (int) $line['portal_rate_plan_id'];
+    }
+    if (isset($line['portal_rate_plan_name'])) {
+      $normalized['portal_rate_plan_name'] = trim((string) $line['portal_rate_plan_name']);
+    }
+    if (isset($line['rate_plan'])) {
+      $normalized['rate_plan'] = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) $line['rate_plan']));
+    }
+    if (isset($line['discount_percent'])) {
+      $normalized['discount_percent'] = (float) $line['discount_percent'];
+    }
+    if (isset($line['surcharge_percent'])) {
+      $normalized['surcharge_percent'] = (float) $line['surcharge_percent'];
+    }
+    return $normalized;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_line_has_rate')) {
+  function itm_hotel_booking_portal_room_line_has_rate(array $line) {
+    $line = itm_hotel_booking_portal_room_line_normalize($line);
+    return (int) ($line['portal_rate_plan_id'] ?? 0) > 0 || (string) ($line['rate_plan'] ?? '') !== '';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_draft_room_lines_context_matches')) {
+  function itm_hotel_booking_portal_draft_room_lines_context_matches(array $draft, $contextFingerprint) {
+    return (string) ($draft['room_lines_context'] ?? '') === (string) $contextFingerprint;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_draft_rated_room_lines')) {
+  /**
+   * @return array<int,array>
+   */
+  function itm_hotel_booking_portal_draft_rated_room_lines(array $draft, $contextFingerprint = '') {
+    if ($contextFingerprint !== '' && !itm_hotel_booking_portal_draft_room_lines_context_matches($draft, $contextFingerprint)) {
+      return [];
+    }
+    $lines = [];
+    $raw = $draft['room_lines'] ?? [];
+    if (!is_array($raw)) {
+      return [];
+    }
+    foreach ($raw as $line) {
+      if (!is_array($line)) {
+        continue;
+      }
+      $normalized = itm_hotel_booking_portal_room_line_normalize($line);
+      if ($normalized['room_id'] > 0 && itm_hotel_booking_portal_room_line_has_rate($normalized)) {
+        $lines[] = $normalized;
+      }
+    }
+    return $lines;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_draft_all_rooms_rated')) {
+  function itm_hotel_booking_portal_draft_all_rooms_rated(array $draft, $roomsNeeded, $contextFingerprint = '') {
+    $roomsNeeded = max(1, (int) $roomsNeeded);
+    if ($roomsNeeded < 2) {
+      return true;
+    }
+    return count(itm_hotel_booking_portal_draft_rated_room_lines($draft, $contextFingerprint)) >= $roomsNeeded;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_line_apply_rate_plan')) {
+  function itm_hotel_booking_portal_room_line_apply_rate_plan(array $line, array $planRow, $slug, $specialDiscountPercent) {
+    $line = itm_hotel_booking_portal_room_line_normalize($line);
+    $slug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) $slug));
+    $line['portal_rate_plan_id'] = (int) ($planRow['id'] ?? 0);
+    $line['portal_rate_plan_name'] = (string) ($planRow['name'] ?? '');
+    $line['rate_plan'] = $slug;
+    $line['discount_percent'] = itm_hotel_booking_portal_rate_plan_effective_discount($specialDiscountPercent, $slug, $planRow);
+    $line['surcharge_percent'] = itm_hotel_booking_portal_rate_plan_effective_surcharge($slug, $planRow);
+    return $line;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_line_effective_discount')) {
+  function itm_hotel_booking_portal_room_line_effective_discount(array $line, $fallbackPercent) {
+    if (isset($line['discount_percent'])) {
+      return max(0.0, min(50.0, (float) $line['discount_percent']));
+    }
+    return max(0.0, min(50.0, (float) $fallbackPercent));
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_line_effective_surcharge')) {
+  function itm_hotel_booking_portal_room_line_effective_surcharge(array $line, $fallbackPercent) {
+    if (isset($line['surcharge_percent'])) {
+      return max(0.0, min(50.0, (float) $line['surcharge_percent']));
+    }
+    return max(0.0, min(50.0, (float) $fallbackPercent));
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_line_nightly_incl_tax')) {
+  function itm_hotel_booking_portal_room_line_nightly_incl_tax($conn, $companyId, $hotelId, $checkIn, array $occupancy, array $line, $lineIdx, $lineCount, $touristTaxPerPersonPerNight = 0.0) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $line = itm_hotel_booking_portal_room_line_normalize($line);
+    $lineCount = max(1, (int) $lineCount);
+    $lineIdx = max(0, min($lineCount - 1, (int) $lineIdx));
+    $pricing = ($conn && $companyId > 0 && $hotelId > 0)
+      ? itm_hotel_booking_portal_hotel_pricing($conn, $companyId, $hotelId)
+      : itm_hotel_booking_portal_pricing_defaults();
+    $lineOcc = itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, $lineIdx, $lineCount);
+    $base = (float) ($line['base_price_per_night'] ?? 0);
+    if ($base <= 0 && $conn && $companyId > 0 && $hotelId > 0) {
+      $base = itm_hotel_booking_portal_check_in_display_bar($conn, $companyId, $hotelId, (int) ($line['room_type_id'] ?? 0), $checkIn, 0);
+    }
+    $disc = itm_hotel_booking_portal_room_line_effective_discount($line, 0.0);
+    $sur = itm_hotel_booking_portal_room_line_effective_surcharge($line, 0.0);
+    $roomNightly = itm_hotel_booking_portal_quote_nightly($base, $lineOcc, $disc, $pricing, $sur);
+    $taxRate = max(0.0, (float) $touristTaxPerPersonPerNight);
+    $lineTax = itm_hotel_booking_portal_tourist_tax_amount($lineOcc, 1, $taxRate);
+    return round($roomNightly + $lineTax, 2);
   }
 }
 
@@ -2215,6 +2335,30 @@ if (!function_exists('itm_hotel_booking_portal_room_line_pick')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_room_line_from_room_row')) {
+  function itm_hotel_booking_portal_room_line_from_room_row($conn, $companyId, $hotelId, array $roomRow, $checkIn) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $typeId = (int) ($roomRow['room_type_id'] ?? 0);
+    $baseBar = itm_hotel_booking_portal_check_in_display_bar(
+      $conn,
+      $companyId,
+      $hotelId,
+      $typeId,
+      $checkIn,
+      (float) ($roomRow['price_per_night'] ?? 0)
+    );
+    return itm_hotel_booking_portal_room_line_normalize([
+      'room_id' => (int) ($roomRow['id'] ?? $roomRow['room_id'] ?? 0),
+      'room_type_id' => $typeId,
+      'type_name' => (string) ($roomRow['type_name'] ?? ''),
+      'type_code' => (string) ($roomRow['type_code'] ?? ''),
+      'bed_summary' => (string) ($roomRow['bed_summary'] ?? ''),
+      'base_price_per_night' => $baseBar,
+    ]);
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_select_rate_pricing_draft')) {
   /**
    * Step 2 rate-plan totals: attach picked room_lines so multi-room stays price per line, not occupancy×rooms on one BAR.
@@ -2289,12 +2433,13 @@ if (!function_exists('itm_hotel_booking_portal_select_rate_display_occupancy')) 
    */
   function itm_hotel_booking_portal_select_rate_display_occupancy(array $occupancy, array $roomLines, $currentRoomId, $roomsNeeded) {
     $roomsNeeded = max(1, (int) $roomsNeeded);
-    $roomLines = is_array($roomLines) ? array_values($roomLines) : [];
-    if ($roomsNeeded < 2 || count($roomLines) < $roomsNeeded) {
-      return itm_hotel_booking_portal_parse_occupancy($occupancy);
+    $occupancy = itm_hotel_booking_portal_parse_occupancy($occupancy);
+    if ($roomsNeeded < 2) {
+      return $occupancy;
     }
+    $roomLines = is_array($roomLines) ? array_values($roomLines) : [];
     $currentRoomId = (int) $currentRoomId;
-    $lineIndex = 0;
+    $lineIndex = count($roomLines);
     foreach ($roomLines as $idx => $line) {
       if (!is_array($line)) {
         continue;
@@ -2304,7 +2449,8 @@ if (!function_exists('itm_hotel_booking_portal_select_rate_display_occupancy')) 
         break;
       }
     }
-    return itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, $lineIndex, count($roomLines));
+    $lineIndex = max(0, min($roomsNeeded - 1, $lineIndex));
+    return itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, $lineIndex, $roomsNeeded);
   }
 }
 
@@ -2698,6 +2844,8 @@ if (!function_exists('itm_hotel_booking_portal_room_charges_subtotal')) {
         if ($base <= 0) {
           $base = itm_hotel_booking_portal_check_in_display_bar($conn, $companyId, $hotelId, (int) ($line['room_type_id'] ?? 0), $checkIn, 0);
         }
+        $lineDiscount = itm_hotel_booking_portal_room_line_effective_discount($line, $discountPercent);
+        $lineSurcharge = itm_hotel_booking_portal_room_line_effective_surcharge($line, $surchargePercent);
         $roomTotal += itm_hotel_booking_compute_stay_payment_dated_rates(
           $conn,
           $companyId,
@@ -2707,14 +2855,20 @@ if (!function_exists('itm_hotel_booking_portal_room_charges_subtotal')) {
           $checkIn,
           $checkOut,
           $lineOcc,
-          $discountPercent,
+          $lineDiscount,
           $pricing,
-          $surchargePercent
+          $lineSurcharge
         );
       }
       $nights = itm_hotel_booking_portal_stay_nights($checkIn, $checkOut);
       $extras = 0.0;
-      if (($draft['rate_plan'] ?? '') === 'breakfast' && $nights > 0) {
+      foreach ($roomLines as $idx => $line) {
+        if (($line['rate_plan'] ?? '') === 'breakfast' && $nights > 0) {
+          $lineOcc = itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, (int) $idx, $lineCount);
+          $extras += itm_hotel_booking_portal_breakfast_supplement_per_night($lineOcc, $conn, $companyId, $hotelId) * $nights;
+        }
+      }
+      if (($draft['rate_plan'] ?? '') === 'breakfast' && $nights > 0 && $extras <= 0) {
         $extras += itm_hotel_booking_portal_breakfast_supplement_per_night($occupancy, $conn, $companyId, $hotelId) * $nights;
       }
       if (!empty($draft['traveling_with_pet']) && $nights > 0) {
@@ -2779,6 +2933,8 @@ if (!function_exists('itm_hotel_booking_portal_room_line_stay_charges')) {
       if ($base <= 0 && $conn && $companyId > 0 && $hotelId > 0) {
         $base = itm_hotel_booking_portal_check_in_display_bar($conn, $companyId, $hotelId, (int) ($line['room_type_id'] ?? 0), $checkIn, 0);
       }
+      $lineDiscount = itm_hotel_booking_portal_room_line_effective_discount($line, $discountPercent);
+      $lineSurcharge = itm_hotel_booking_portal_room_line_effective_surcharge($line, $surchargePercent);
       if ($conn && $companyId > 0 && $hotelId > 0 && (int) ($line['room_type_id'] ?? 0) > 0) {
         $amounts[] = itm_hotel_booking_compute_stay_payment_dated_rates(
           $conn,
@@ -2789,9 +2945,9 @@ if (!function_exists('itm_hotel_booking_portal_room_line_stay_charges')) {
           $checkIn,
           $checkOut,
           $lineOcc,
-          $discountPercent,
+          $lineDiscount,
           $pricing,
-          $surchargePercent
+          $lineSurcharge
         );
       } else {
         $amounts[] = itm_hotel_booking_compute_stay_payment($base, $checkIn, $checkOut, $lineOcc, $discountPercent, $pricing, $surchargePercent);
@@ -5474,6 +5630,10 @@ if (!function_exists('itm_hotel_booking_portal_insert_stay_bookings_locked')) {
       }
       $allocated[] = $roomId;
       $lineNotes = (string) $notes;
+      $linePlanId = (int) ($line['portal_rate_plan_id'] ?? 0);
+      if ($linePlanId < 1) {
+        $linePlanId = (int) $portalRatePlanId;
+      }
       $result = itm_hotel_booking_portal_insert_booking_locked(
         $conn,
         $companyId,
@@ -5483,7 +5643,7 @@ if (!function_exists('itm_hotel_booking_portal_insert_stay_bookings_locked')) {
         $checkOut,
         (float) ($amountShares[$idx] ?? 0),
         $auth2,
-        $portalRatePlanId,
+        $linePlanId,
         $lineNotes,
         $bookingColor,
         $futureStatusId,
