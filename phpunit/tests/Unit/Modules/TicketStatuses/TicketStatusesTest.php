@@ -8,6 +8,7 @@ class TicketStatusesTest extends TestCase
 {
     private $conn;
     private $companyId = 1;
+    private $createdId = null;
 
     protected function setUp(): void
     {
@@ -18,12 +19,22 @@ class TicketStatusesTest extends TestCase
         }
     }
 
+    protected function tearDown(): void
+    {
+        if ($this->conn && $this->createdId) {
+            $id = (int) $this->createdId;
+            mysqli_query($this->conn, "DELETE FROM `ticket_statuses` WHERE id = $id");
+            $this->createdId = null;
+        }
+    }
+
     public function testCRUD()
     {
         // 1. Create
         $data = [];
         $data['company_id'] = $this->companyId;
-        $data['name'] = 'Test name';
+        // Why: (company_id, name) is unique; a fixed label leaves orphan rows after failed runs.
+        $data['name'] = 'Test name ' . uniqid('', true);
         $data['active'] = 1;
 
         $sql = "INSERT INTO `ticket_statuses` (company_id, `name`, `active`) VALUES (?, ?, ?)";
@@ -37,8 +48,9 @@ class TicketStatusesTest extends TestCase
         $bindTypes = 'isi';
         mysqli_stmt_bind_param($stmt, $bindTypes, ...$bindValues);
         
-        $this->assertTrue(mysqli_stmt_execute($stmt));
+        $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
         $id = mysqli_insert_id($this->conn);
+        $this->createdId = $id;
         mysqli_stmt_close($stmt);
 
         // 2. Read
@@ -48,11 +60,11 @@ class TicketStatusesTest extends TestCase
         $this->assertEquals($this->companyId, $row['company_id']);
 
         // 3. Update
-        $updatedValue = 'Updated Value';
+        $updatedValue = 'Updated Value ' . uniqid('', true);
         $updateSql = "UPDATE `ticket_statuses` SET `name` = ? WHERE id = ?";
         $stmt = mysqli_prepare($this->conn, $updateSql);
         mysqli_stmt_bind_param($stmt, 'si', $updatedValue, $id);
-        $this->assertTrue(mysqli_stmt_execute($stmt));
+        $this->assertTrue(mysqli_stmt_execute($stmt), mysqli_stmt_error($stmt));
         mysqli_stmt_close($stmt);
 
         $res = mysqli_query($this->conn, "SELECT `name` FROM `ticket_statuses` WHERE id = $id");

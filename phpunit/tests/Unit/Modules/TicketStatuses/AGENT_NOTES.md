@@ -12,7 +12,8 @@ Unit/regression tests for `modules/ticket_statuses/`.
 
 ## 10. Common Pitfalls
 
-[Confirmed] No pitfalls documented
+- `ticket_statuses` enforces `UNIQUE (company_id, name)`; use per-run unique values for both create and update names in `testCRUD` so orphan rows from failed runs do not block INSERT/UPDATE.
+- Register `tearDown()` cleanup for the inserted row id when the test may fail before the hard `DELETE` step.
 
 ## 12. Module Owner Notes (Optional)
 Add or update tests when fixing module bugs; list new test commands in PR descriptions.
