@@ -1240,7 +1240,9 @@ CREATE TABLE `email_smtp_configurations` (
   `password_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `from_email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `from_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `imap_host` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `imap_port` int NOT NULL DEFAULT '143',
+  `inbound_ticket_enabled` tinyint NOT NULL DEFAULT '0',
   `pop3_port` int NOT NULL DEFAULT '110',
   `pop3_tls_mode` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'None',
   `pop3_require_secure_connection` tinyint NOT NULL DEFAULT '0',
@@ -2800,6 +2802,34 @@ CREATE TABLE `tickets` (
   CONSTRAINT `tickets_ibfk_5` FOREIGN KEY (`created_by_employee_id`) REFERENCES `employees` (`id`),
   CONSTRAINT `tickets_ibfk_6` FOREIGN KEY (`assigned_to_employee_id`) REFERENCES `employees` (`id`),
   CONSTRAINT `tickets_ibfk_7` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE SET NULL) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `ticket_inbound_email_messages`
+DROP TABLE IF EXISTS `ticket_inbound_email_messages`;
+
+CREATE TABLE `ticket_inbound_email_messages` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `message_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ticket_id` int DEFAULT NULL,
+  `email_log_id` int DEFAULT NULL,
+  `from_email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `subject` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `processed_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ticket_inbound_email_messages_scope` (`company_id`,`message_id`),
+  KEY `idx_ticket_inbound_email_messages_ticket` (`company_id`,`ticket_id`),
+  KEY `email_log_id` (`email_log_id`),
+  CONSTRAINT `ticket_inbound_email_messages_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `ticket_inbound_email_messages_ibfk_ticket` FOREIGN KEY (`ticket_id`) REFERENCES `tickets` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `ticket_inbound_email_messages_ibfk_email_log` FOREIGN KEY (`email_log_id`) REFERENCES `emails` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `ticket_activity`
 DROP TABLE IF EXISTS `ticket_activity`;

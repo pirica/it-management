@@ -10,7 +10,10 @@
                             <span class="badge badge-success">Default</span>
                         <?php endif; ?>
                         <div><?php echo sanitize((string)$cfg['smtp_host']); ?>:<?php echo sanitize((string)$cfg['smtp_port']); ?></div>
-                        <div>IMAP <?php echo sanitize((string)($cfg['imap_port'] ?? '143')); ?> · POP3 <?php echo sanitize((string)($cfg['pop3_port'] ?? '110')); ?><?php if (!empty($cfg['pop3_tls_mode'])): ?> (<?php echo sanitize((string)$cfg['pop3_tls_mode']); ?>)<?php endif; ?></div>
+                        <div>IMAP <?php echo sanitize((string)($cfg['imap_host'] ?? '')); ?><?php if (!empty($cfg['imap_host'])): ?>:<?php echo sanitize((string)($cfg['imap_port'] ?? '143')); ?><?php else: ?> <?php echo sanitize((string)($cfg['imap_port'] ?? '143')); ?><?php endif; ?> · POP3 <?php echo sanitize((string)($cfg['pop3_port'] ?? '110')); ?><?php if (!empty($cfg['pop3_tls_mode'])): ?> (<?php echo sanitize((string)$cfg['pop3_tls_mode']); ?>)<?php endif; ?></div>
+                        <?php if ((int)($cfg['inbound_ticket_enabled'] ?? 0) === 1): ?>
+                            <div><span class="badge badge-success">Inbound tickets</span></div>
+                        <?php endif; ?>
                         <div><?php echo sanitize((string)$cfg['from_email']); ?><?php if (!empty($cfg['from_name'])): ?> (<?php echo sanitize((string)$cfg['from_name']); ?>)<?php endif; ?></div>
                     </div>
                     <div class="itm-actions-wrap">
@@ -69,11 +72,27 @@
         </div>
 
         <h3 style="margin-top:20px;">IMAP</h3>
+        <?php if (!empty($companyInboundEmail)): ?>
+            <p style="margin:0 0 12px;color:var(--text-secondary);">Inbound tickets: mail sent to <strong><?php echo sanitize($companyInboundEmail); ?></strong> (<code>companies.email</code>) should arrive in this mailbox when polling is enabled.</p>
+        <?php else: ?>
+            <p style="margin:0 0 12px;color:var(--text-secondary);">Set <code>companies.email</code> on the company profile so senders know which address creates tickets for this tenant.</p>
+        <?php endif; ?>
         <div class="email-form-grid">
+            <div class="form-group">
+                <label for="imap_host">IMAP Host</label>
+                <input type="text" id="imap_host" name="imap_host" value="<?php echo sanitize((string)($editSmtp['imap_host'] ?? '')); ?>" placeholder="mail.example.com">
+            </div>
             <div class="form-group">
                 <label for="imap_port">Port</label>
                 <input type="number" id="imap_port" name="imap_port" min="1" max="65535" value="<?php echo sanitize((string)($editSmtp['imap_port'] ?? '143')); ?>">
             </div>
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+            <label class="itm-toggle">
+                <input type="checkbox" name="inbound_ticket_enabled" value="1" <?php echo ((int)($editSmtp['inbound_ticket_enabled'] ?? 0) === 1) ? 'checked' : ''; ?>>
+                <span class="itm-toggle-track" aria-hidden="true"></span>
+                <span>Create tickets from inbound mail</span>
+            </label>
         </div>
 
         <h3 style="margin-top:20px;">POP3</h3>

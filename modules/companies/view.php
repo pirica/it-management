@@ -114,7 +114,7 @@ if (!isset($crud_title)) {
                         <tr><th>City</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['city'])); ?></td></tr>
                         <tr><th>Country</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['country'])); ?></td></tr>
                         <tr><th>Phone</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['phone'])); ?></td></tr>
-                        <tr><th>Email</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['email'])); ?></td></tr>
+                        <tr><th>Email</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['email'])); ?><?php $companyEmail = trim(itm_company_view_value($itemNormalized, ['email'])); if ($companyEmail !== ''): ?><div style="margin-top:8px;color:var(--text-secondary);font-size:0.95em;">Inbound ticket address — configure IMAP polling under <a href="<?php echo sanitize(BASE_URL . 'modules/emails/index.php?tab=smtp'); ?>">Email Management → SMTP</a>.</div><?php endif; ?></td></tr>
                         <tr><th>Website</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['website'])); ?></td></tr>
                         <tr><th>VAT</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['vat'])); ?></td></tr>
                         <?php $unitNo = itm_company_view_value($itemNormalized, ['unit_no']); ?>
