@@ -144,7 +144,7 @@ function colorText($text, $type) {
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/count_db_tables.php` | Counts live tables in `information_schema` for `itmanagement`, echoes the total as plain text, and overwrites `scripts/number_db_tables.txt`. Fresh `db/` import: **189** tables (must match `CREATE TABLE` count in `db/01_schema.sql`). Browser and CLI; **no login** (exempt from `run=1` usage landing — see `itm_script_browser_usage_exempt_basenames()`). |
+| `php scripts/count_db_tables.php` | Counts live tables in `information_schema` for `itmanagement`, echoes the total as plain text, and overwrites `scripts/number_db_tables.txt`. Fresh `db/` import: **190** tables (must match `CREATE TABLE` count in `db/01_schema.sql`). Browser and CLI; **no login** (exempt from `run=1` usage landing — see `itm_script_browser_usage_exempt_basenames()`). |
 
 Catalog: `scripts/scripts.php`.
 

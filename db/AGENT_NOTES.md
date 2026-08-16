@@ -3,7 +3,7 @@
 ## 1. Module Purpose
 Canonical SQL schema, seed data, and audit triggers for the IT Management System.
 
-**Fresh-import scale (canonical bundle):** **189** tables (`CREATE TABLE` in `01_schema.sql`); **~9,000+** seed rows after full `02_data.sql` import (literal INSERT/SELECT plus derived `company_module_access` and `employee_sidebar_preferences`). Verify table count: `grep -c '^CREATE TABLE' db/01_schema.sql`, `php scripts/verify_database_schema.php`, or `php scripts/count_db_tables.php` (writes `scripts/number_db_tables.txt`). Overview copy: `README.md` → Database Structure Overview; handoff sizing: `handoff.md` §4.4.
+**Fresh-import scale (canonical bundle):** **190** tables (`CREATE TABLE` in `01_schema.sql`); **~9,000+** seed rows after full `02_data.sql` import (literal INSERT/SELECT plus derived `company_module_access` and `employee_sidebar_preferences`). Verify table count: `grep -c '^CREATE TABLE' db/01_schema.sql`, `php scripts/verify_database_schema.php`, or `php scripts/count_db_tables.php` (writes `scripts/number_db_tables.txt`). Overview copy: `README.md` → Database Structure Overview; handoff sizing: `handoff.md` §4.4.
 
 ## 4. Business Rules (Critical for Agents)
 - **Canonical source:** edit `db/01_schema.sql` (DDL), `db/02_data.sql` (DML/seeds), and `db/03_triggers.sql` (triggers) directly — ship schema changes in those files first; mirror them in `db/migrations/` only for existing databases.
