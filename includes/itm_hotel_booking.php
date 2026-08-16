@@ -5012,6 +5012,52 @@ if (!function_exists('itm_hotel_booking_portal_confirmation_email_manage_url')) 
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_manage_booking_hint_html')) {
+  /**
+   * Canonical manage-booking instructions (confirmation page + guest email).
+   *
+   * @param array{for_email?:bool} $options
+   */
+  function itm_hotel_booking_portal_manage_booking_hint_html($lastName, $confirmationId, $auth2Display, $manageUrl, array $options = []) {
+    $lastName = trim((string) $lastName);
+    $confirmationId = (int) $confirmationId;
+    $auth2Display = itm_hotel_booking_normalize_auth2($auth2Display);
+    $manageUrl = trim((string) $manageUrl);
+    $forEmail = !empty($options['for_email']);
+    $classAttr = $forEmail ? '' : ' class="hb-payment-confirmation-manage-hint"';
+    $styleAttr = $forEmail ? ' style="margin-top:16px;"' : '';
+    $safeLast = htmlspecialchars($lastName, ENT_QUOTES, 'UTF-8');
+    $safeAuth = htmlspecialchars($auth2Display, ENT_QUOTES, 'UTF-8');
+    $safeUrl = htmlspecialchars($manageUrl, ENT_QUOTES, 'UTF-8');
+    $linkAttrs = $forEmail
+      ? 'href="' . $safeUrl . '"'
+      : 'href="' . $safeUrl . '" class="hb-stay-edit" data-hb-pdf-manage-link="1" target="_blank" rel="noopener noreferrer"';
+
+    $html = '<p' . $classAttr . $styleAttr . '>To view or cancel your reservation later, use your last name: <strong>'
+      . $safeLast . '</strong>, confirmation number: <strong>' . $confirmationId
+      . '</strong>, and auth code: <strong>' . $safeAuth
+      . '</strong> on <a ' . $linkAttrs . '><strong>Manage my booking</strong></a>.</p>';
+
+    // #region agent log
+    @file_put_contents(dirname(__DIR__) . '/debug-44bff2.log', json_encode([
+      'sessionId' => '44bff2',
+      'timestamp' => (int) round(microtime(true) * 1000),
+      'location' => 'includes/itm_hotel_booking.php:manage_booking_hint_html',
+      'message' => 'canonical manage hint rendered',
+      'data' => [
+        'confirmationId' => $confirmationId,
+        'forEmail' => $forEmail,
+        'phrase' => 'view or cancel',
+      ],
+      'hypothesisId' => 'MH2',
+      'runId' => 'manage-hint-unify',
+    ]) . "\n", FILE_APPEND);
+    // #endregion
+
+    return $html;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_confirmation_email_template_options')) {
   /**
    * @return array<string,mixed>
@@ -5350,6 +5396,13 @@ if (!function_exists('itm_hotel_booking_portal_send_booking_confirmation_emails'
     $manageUrl = itm_hotel_booking_portal_confirmation_email_manage_url($conn, $companyId);
     $detailsHtml = itm_hotel_booking_portal_build_confirmation_email_rows_html($bookingRow, $groupRows, $occupancy, $conn, $companyId);
     $guestName = trim((string) ($bookingRow['customer_name'] ?? ''));
+    $guestLastName = $guestName;
+    if ($guestLastName !== '' && strpos($guestLastName, ' ') !== false) {
+      $nameParts = preg_split('/\s+/', $guestLastName);
+      $guestLastName = (string) end($nameParts);
+    }
+    $primaryRow = $groupRows[0];
+    $auth2Display = itm_hotel_booking_normalize_auth2($primaryRow['auth2'] ?? $bookingRow['auth2'] ?? '');
 
     if ($guestEmail !== '' && filter_var($guestEmail, FILTER_VALIDATE_EMAIL)) {
       $guestSubject = 'Your reservation confirmation'
@@ -5359,7 +5412,7 @@ if (!function_exists('itm_hotel_booking_portal_send_booking_confirmation_emails'
         . ($guestName !== '' ? ', ' . htmlspecialchars($guestName, ENT_QUOTES, 'UTF-8') : '')
         . '. Your stay is confirmed.</p>'
         . $detailsHtml
-        . '<p style="margin-top:16px;">Use your confirmation number, last name, and auth code on <strong>Manage my booking</strong> to view or change this reservation.</p>';
+        . itm_hotel_booking_portal_manage_booking_hint_html($guestLastName, $primaryId, $auth2Display, $manageUrl, ['for_email' => true]);
       $guestOptions = itm_hotel_booking_portal_confirmation_email_template_options(
         $hotelName,
         $reservationsEmail,
