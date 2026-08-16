@@ -447,6 +447,8 @@ if (!function_exists('itm_database_sql_unique_audit_run')) {
             'live_chat_participants' => 'Junction table; identity is UNIQUE (conversation_id, employee_id).',
             'live_chat_typing' => 'Ephemeral typing row per participant; identity is UNIQUE (conversation_id, employee_id).',
             'hotel_booking_room_utilities' => 'Many utilities per room; identity is PRIMARY KEY (id) only.',
+            'hotel_booking_distribution_ari_events' => 'ARI event log; many rows per channel; identity is PRIMARY KEY (id) only.',
+            'hotel_booking_distribution_webhook_queue' => 'Outbound webhook queue; many rows per channel; identity is PRIMARY KEY (id) only.',
             'webmail_signatures' => 'Per-employee signatures; duplicate names allowed per employee.',
         ];
 
