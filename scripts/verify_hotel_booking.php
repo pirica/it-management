@@ -1190,7 +1190,8 @@ if (function_exists('itm_hotel_booking_portal_room_line_pick')
     && function_exists('itm_hotel_booking_portal_insert_stay_bookings_locked')
     && strpos($roomsPhpSrc, 'hb-room-lines-banner') !== false
     && strpos($roomsPhpSrc, 'pick_room_id') !== false
-    && strpos($roomsPhpSrc, 'hb_select_room_book_href') !== false
+    && strpos($roomsPhpSrc, 'hb_portal_render_reservation_summary') !== false
+    && strpos($roomsPhpSrc, 'hb-checkout-aside-stack') !== false
     && strpos($selectRateSrc, 'hb_portal_render_room_lines_summary') !== false
     && strpos($selectRateSrc, 'itm_hotel_booking_portal_draft_rated_room_lines') !== false
     && strpos($selectRateSrc, 'itm_hotel_booking_portal_room_line_apply_rate_plan') !== false
