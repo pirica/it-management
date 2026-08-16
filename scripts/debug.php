@@ -1,12 +1,18 @@
 <?php
 /**
  * System Debug Utility
- * 
+ *
  * Provides a quick overview of the system status, including database connection,
  * table availability, PHP version, required extensions, and file permissions.
  * This should only be used during development or troubleshooting.
+ *
+ * Browser: open scripts/debug.php?run=1 (Administrator session).
+ * CLI: php scripts/debug.php
  */
 
+if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
+    define('ITM_CLI_SCRIPT', true);
+}
 
 /**
  * Browser catalog: How to use (shown on landing before run=1).
@@ -14,7 +20,7 @@
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-Open in browser for quick troubleshooting.
+Sign in as <strong>Administrator</strong>, then open <a href="debug.php?run=1">debug.php?run=1</a> in the browser for quick troubleshooting (DB connection, table list with count, PHP version, extensions, writable paths). CLI: <code>php scripts/debug.php</code>.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 require_once __DIR__ . '/../config/config.php';
@@ -42,10 +48,17 @@ if (!$conn) {
 }
 
 // 2. List Available Database Tables
-echo PHP_EOL . "📋 Database Tables:" . PHP_EOL;
-$tables = mysqli_query($conn, "SHOW TABLES");
-while ($table = mysqli_fetch_array($tables)) {
-    echo "  ✅ " . $table[0] . PHP_EOL;
+$tableNames = [];
+$tablesResult = mysqli_query($conn, 'SHOW TABLES');
+if ($tablesResult) {
+    while ($table = mysqli_fetch_array($tablesResult)) {
+        $tableNames[] = (string)$table[0];
+    }
+    mysqli_free_result($tablesResult);
+}
+echo PHP_EOL . '📋 Database Tables: (' . count($tableNames) . ')' . PHP_EOL;
+foreach ($tableNames as $tableName) {
+    echo '  ✅ ' . $tableName . PHP_EOL;
 }
 
 // 3. Display Environment Information
