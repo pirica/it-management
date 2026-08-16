@@ -699,21 +699,25 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
             : [];
         $ratePlanLabel = hb_portal_booking_rate_plan_label($primaryRow);
         // #region agent log
-        @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
-            'sessionId' => '44bff2',
-            'timestamp' => (int) round(microtime(true) * 1000),
-            'location' => 'booking/includes/portal_checkout.php:payment_confirmation_rate',
-            'message' => 'confirmation rate plan label',
-            'data' => [
-                'primaryId' => $reservationId,
-                'ratePlanLabel' => $ratePlanLabel,
-                'portalRatePlanId' => (int) ($primaryRow['portal_rate_plan_id'] ?? 0),
-                'portalRatePlanName' => (string) ($primaryRow['portal_rate_plan_name'] ?? ''),
-                'portalRatePlanSlug' => (string) ($primaryRow['portal_rate_plan_slug'] ?? ''),
-            ],
-            'hypothesisId' => 'RATE1',
-            'runId' => 'manage-booking-rate',
-        ]) . "\n", FILE_APPEND);
+        if ($showMultiRoomGroup) {
+            $perLineRates = [];
+            foreach ($groupRows as $idx => $lineRow) {
+                $perLineRates[(int) $idx] = hb_portal_booking_rate_plan_label($lineRow);
+            }
+            @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
+                'sessionId' => '44bff2',
+                'timestamp' => (int) round(microtime(true) * 1000),
+                'location' => 'booking/includes/portal_checkout.php:payment_confirmation_per_line_rates',
+                'message' => 'confirmation per-room rate labels',
+                'data' => [
+                    'primaryId' => $reservationId,
+                    'groupCount' => count($groupRows),
+                    'perLineRates' => $perLineRates,
+                ],
+                'hypothesisId' => 'RATE2',
+                'runId' => 'confirmation-per-room-rate',
+            ]) . "\n", FILE_APPEND);
+        }
         // #endregion
         // #region agent log
         @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
@@ -799,8 +803,16 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
     $lineDisplayAmount = isset($groupRoomDisplayAmounts[$idx])
         ? (float) $groupRoomDisplayAmounts[$idx]
         : (float) ($lineRow['payment_amount'] ?? 0);
+    $lineRateLabel = hb_portal_booking_rate_plan_label($lineRow);
 ?>
-<li><span class="hb-payment-room-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow), ENT_QUOTES, 'UTF-8'); ?> — <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($lineDisplayAmount, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></li>
+<li class="hb-payment-room-group-item">
+<div class="hb-payment-room-group-item-main">
+<span class="hb-payment-room-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow), ENT_QUOTES, 'UTF-8'); ?> — <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($lineDisplayAmount, $currency), ENT_QUOTES, 'UTF-8'); ?></strong>
+<?php if ($lineRateLabel !== ''): ?>
+<span class="hb-payment-room-rate"><?php echo htmlspecialchars($lineRateLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+<?php endif; ?>
+</div>
+</li>
 <?php endforeach; ?>
 </ul>
 </dd>
@@ -811,7 +823,7 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <dd><?php echo htmlspecialchars($roomTitle, ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <?php endif; ?>
-<?php if ($ratePlanLabel !== ''): ?>
+<?php if (!$showMultiRoomGroup && $ratePlanLabel !== ''): ?>
 <div class="hb-payment-detail-row">
 <dt>Rate</dt>
 <dd><?php echo htmlspecialchars($ratePlanLabel, ENT_QUOTES, 'UTF-8'); ?></dd>

@@ -577,6 +577,8 @@ body.hb-modal-open { overflow: hidden; }
 }
 .hb-payment-room-group-list { margin: 0; padding: 0; list-style: none; }
 .hb-payment-room-group-list li { margin-bottom: 6px; }
+.hb-payment-room-group-item-main { display: block; }
+.hb-payment-room-rate { display: block; margin-top: 2px; font-size: .85rem; font-weight: 600; color: var(--hb-muted); }
 .hb-payment-room-slot { font-weight: 700; margin-right: 6px; }
 .hb-confirmation-room-group-list { margin-bottom: 12px; }
 .hb-payment-confirmation-notice {
