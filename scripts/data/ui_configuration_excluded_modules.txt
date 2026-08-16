@@ -51,6 +51,7 @@ resignations
 roles_permissions
 switch_ports
 system_access
+schema_migrations
 system_status
 todo
 visitors_access_log

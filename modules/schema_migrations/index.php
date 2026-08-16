@@ -2,8 +2,9 @@
 /**
  * Schema Migrations Module - Index
  *
- * Admin read-only audit history for db/migrations apply records.
+ * Admin migration audit history for db/migrations apply records.
  * Live schema probe (migrate.php) is authoritative — this table is history only.
+ * Admins may delete history rows; create/edit and file removal use migrate.php.
  */
 
 require '../../config/config.php';
@@ -129,6 +130,9 @@ $crud_title = 'Schema Migrations';
 $migrateScriptUrl = BASE_URL . 'scripts/migrate.php?run=1';
 $verifyScriptUrl = BASE_URL . 'scripts/verify_db_migrations.php?run=1';
 $migrateApplyUrl = BASE_URL . 'scripts/migrate.php?run=1&apply=1';
+$listReturnQuery = itm_schema_migrations_build_query(array_merge($listQueryBase, ['page' => $page]));
+$flashMessage = trim((string)($_GET['msg'] ?? ''));
+$csrfToken = itm_get_csrf_token();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -193,7 +197,14 @@ $migrateApplyUrl = BASE_URL . 'scripts/migrate.php?run=1&apply=1';
             <p style="margin:0 0 16px;color:var(--text-muted, #6b7280);font-size:13px;line-height:1.45;">
                 Live database probes in <a href="<?php echo sanitize($migrateScriptUrl); ?>">migrate.php</a> decide Applied vs Pending.
                 This list is audit history only — satisfied migrations may be recorded without re-running destructive SQL.
+                Admins may delete history rows here; that does not change the live schema or remove files from <code>db/migrations/</code>.
             </p>
+
+            <?php if ($flashMessage !== ''): ?>
+            <div class="card" style="margin-bottom:16px;padding:12px 14px;border-color:#9eb8ee;background:#eef4ff;">
+                <?php echo sanitize($flashMessage); ?>
+            </div>
+            <?php endif; ?>
 
             <div class="card" style="margin-bottom:16px;">
                 <div class="sm-actions" style="margin-bottom:12px;">
@@ -279,6 +290,13 @@ $migrateApplyUrl = BASE_URL . 'scripts/migrate.php?run=1&apply=1';
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
                                         <a class="btn btn-sm" href="view.php?id=<?php echo $rowId; ?>" title="View">🔎</a>
+                                        <form method="POST" action="delete.php" style="display:inline;margin:0;" onsubmit="return confirm('Remove this migration history row? The live database schema is unchanged — only the audit record is deleted.');">
+                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                            <input type="hidden" name="id" value="<?php echo $rowId; ?>">
+                                            <input type="hidden" name="redirect" value="index.php">
+                                            <input type="hidden" name="return_query" value="<?php echo sanitize($listReturnQuery); ?>">
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
+                                        </form>
                                     </div>
                                 </td>
                                 <td><code><?php echo sanitize($filename); ?></code></td>

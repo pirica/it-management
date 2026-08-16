@@ -306,6 +306,53 @@ if (!function_exists('itm_database_migrations_delete_discovered_file')) {
     }
 }
 
+if (!function_exists('itm_database_migrations_delete_audit_row_by_id')) {
+    /**
+     * Remove one schema_migrations audit history row (does not change live schema).
+     *
+     * @return array{0: bool, 1: string}
+     */
+    function itm_database_migrations_delete_audit_row_by_id($conn, $id)
+    {
+        $rowId = (int)$id;
+        if (!$conn instanceof mysqli || $rowId <= 0) {
+            return [false, 'Invalid migration history row.'];
+        }
+
+        itm_database_migrations_ensure_table($conn);
+
+        $stmt = mysqli_prepare($conn, 'SELECT filename FROM schema_migrations WHERE id = ? LIMIT 1');
+        if (!$stmt) {
+            return [false, 'Could not load migration history row.'];
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $rowId);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $row = $result ? mysqli_fetch_assoc($result) : null;
+        mysqli_stmt_close($stmt);
+
+        if (!$row) {
+            return [false, 'Migration history row not found.'];
+        }
+
+        $filename = (string)($row['filename'] ?? '');
+        $deleteStmt = mysqli_prepare($conn, 'DELETE FROM schema_migrations WHERE id = ? LIMIT 1');
+        if (!$deleteStmt) {
+            return [false, 'Could not delete migration history row.'];
+        }
+        mysqli_stmt_bind_param($deleteStmt, 'i', $rowId);
+        $deleted = mysqli_stmt_execute($deleteStmt);
+        $affected = mysqli_stmt_affected_rows($deleteStmt);
+        mysqli_stmt_close($deleteStmt);
+
+        if (!$deleted || $affected < 1) {
+            return [false, 'Migration history row was not deleted.'];
+        }
+
+        return [true, 'Removed audit history for ' . $filename . '. Live schema is unchanged — use migrate.php to apply or remove migration files.'];
+    }
+}
+
 if (!function_exists('itm_database_migrations_probe_lib_path')) {
     function itm_database_migrations_probe_lib_path()
     {
