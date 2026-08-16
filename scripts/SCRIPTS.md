@@ -144,7 +144,7 @@ function colorText($text, $type) {
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/count_db_tables.php` | Counts live tables in `information_schema` for `itmanagement`, echoes the total as plain text, and overwrites `scripts/number_db_tables.txt`. Fresh `db/` import: **188** tables (must match `CREATE TABLE` count in `db/01_schema.sql`). Browser and CLI; **no login** (exempt from `run=1` usage landing — see `itm_script_browser_usage_exempt_basenames()`). |
+| `php scripts/count_db_tables.php` | Counts live tables in `information_schema` for `itmanagement`, echoes the total as plain text, and overwrites `scripts/number_db_tables.txt`. Fresh `db/` import: **189** tables (must match `CREATE TABLE` count in `db/01_schema.sql`). Browser and CLI; **no login** (exempt from `run=1` usage landing — see `itm_script_browser_usage_exempt_basenames()`). |
 
 Catalog: `scripts/scripts.php`.
 
@@ -1125,6 +1125,26 @@ Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking
 | `php scripts/test_register_mail.php` | Manual registration welcome email test via `itm_send_email()`; CLI supports `--company=1` |
 
 Run `verify_emails_module.php` when changing `modules/emails/`, `includes/itm_email.php`, `user-config.php` vault-key notification mail, or `email*` tables in `db/03_triggers.sql`.
+
+Run `verify_inbound_email_tickets.php` when changing `includes/itm_inbound_email_tickets.php`, `scripts/run_inbound_email_tickets.php`, inbound SMTP columns, or `ticket_inbound_email_messages` in `db/01_schema.sql`.
+
+#### PHP `imap` extension (inbound email → tickets)
+
+Inbound ticket polling (`run_inbound_email_tickets.php`) calls `imap_open()` — the extension must be loaded on the **CLI** `php.exe` used for cron, not only Apache.
+
+| Environment | Enable |
+|-------------|--------|
+| **Dunebox** | Add `extension=imap` to `D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.ini` (template: `scripts/data/php.ini.dunebox-7.4.template`). Copy `php_imap.dll` into `ext\` from Laragon portable if missing. Re-run `powershell -ExecutionPolicy Bypass -File scripts/setup_dunebox_php_from_laragon.ps1` when the template changes. |
+| **Laragon portable** | Uncomment `extension=imap` in the `php.ini` beside the PHP 7.4.33 binary under `bin\php\php-7.4.33-…\`. |
+| **Linux / CI** | Install `php-imap` (or enable `extension=imap` in distro `php.ini`) for the CLI SAPI. |
+
+**Verify (CLI):**
+
+```bash
+php -r "echo function_exists('imap_open') ? 'imap ok' : 'imap missing';"
+```
+
+`verify_inbound_email_tickets.php` reports whether `imap` is loaded; core parser/dedupe tests pass without it.
 
 Run `verify_webmail_module.php` when changing `modules/webmail/` or webmail-related `itm_send_email()` log options.
 
