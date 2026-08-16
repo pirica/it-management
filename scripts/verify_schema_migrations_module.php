@@ -65,6 +65,11 @@ if (!is_file($indexPath)) {
         } else {
             sm_verify_pass('index.php uses itm_database_migrations_build_status().');
         }
+        if (strpos($indexSource, 'action="delete.php"') === false) {
+            sm_verify_fail('index.php missing delete.php POST action for audit-row delete.');
+        } else {
+            sm_verify_pass('index.php posts audit-row delete to delete.php.');
+        }
     }
 }
 
@@ -80,17 +85,29 @@ if (!is_file($viewPath)) {
     }
 }
 
-foreach (['create.php', 'edit.php', 'delete.php'] as $wrapper) {
-    $wrapperPath = ROOT_PATH . 'modules/schema_migrations/' . $wrapper;
-    if (!is_file($wrapperPath)) {
-        sm_verify_fail('Missing wrapper: ' . $wrapper);
-        continue;
-    }
-    $wrapperSource = file_get_contents($wrapperPath);
-    if ($wrapperSource === false || strpos($wrapperSource, 'index.php') === false) {
-        sm_verify_fail($wrapper . ' does not redirect to index.php.');
+foreach (['create.php', 'edit.php'] as $missingEntry) {
+    $missingPath = ROOT_PATH . 'modules/schema_migrations/' . $missingEntry;
+    if (is_file($missingPath)) {
+        sm_verify_fail($missingEntry . ' must not exist — mutations use migrate.php only.');
     } else {
-        sm_verify_pass($wrapper . ' redirects to index.php.');
+        sm_verify_pass('No ' . $missingEntry . ' (create/edit blocked by design).');
+    }
+}
+
+$deletePath = ROOT_PATH . 'modules/schema_migrations/delete.php';
+if (!is_file($deletePath)) {
+    sm_verify_fail('Missing delete.php');
+} else {
+    $deleteSource = file_get_contents($deletePath);
+    if ($deleteSource === false) {
+        sm_verify_fail('Could not read delete.php');
+    } else {
+        foreach (['REQUEST_METHOD', 'itm_require_post_csrf', 'itm_database_migrations_delete_audit_row_by_id'] as $token) {
+            if (strpos($deleteSource, $token) === false) {
+                sm_verify_fail('delete.php missing expected token: ' . $token);
+            }
+        }
+        sm_verify_pass('delete.php includes POST guard, CSRF, and audit-row delete helper.');
     }
 }
 

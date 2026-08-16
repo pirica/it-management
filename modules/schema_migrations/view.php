@@ -2,7 +2,7 @@
 /**
  * Schema Migrations Module - View
  *
- * Read-only detail for one migration audit row.
+ * Read-only detail for one migration audit row; admins may delete the history row.
  */
 
 require '../../config/config.php';
@@ -48,6 +48,8 @@ $moduleSlug = basename(dirname($_SERVER['PHP_SELF']));
 $crud_title = 'Schema Migrations';
 $migrateScriptUrl = BASE_URL . 'scripts/migrate.php?run=1';
 $sqlHref = BASE_URL . 'scripts/migrate.php?run=1&sql=' . rawurlencode($filename);
+$csrfToken = itm_get_csrf_token();
+$flashMessage = trim((string)($_GET['msg'] ?? ''));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -81,14 +83,29 @@ $sqlHref = BASE_URL . 'scripts/migrate.php?run=1&sql=' . rawurlencode($filename)
         <div class="content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
                 <h1 title="View migration history record">🔎</h1>
-                <a href="index.php" class="btn" title="Back">🔙</a>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <form method="POST" action="delete.php" style="display:inline;margin:0;" onsubmit="return confirm('Remove this migration history row? The live database schema is unchanged — only the audit record is deleted.');">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <input type="hidden" name="id" value="<?php echo (int)($row['id'] ?? 0); ?>">
+                        <input type="hidden" name="redirect" value="view.php">
+                        <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
+                    </form>
+                    <a href="index.php" class="btn" title="Back">🔙</a>
+                </div>
             </div>
+
+            <?php if ($flashMessage !== ''): ?>
+            <div class="card" style="margin-bottom:16px;padding:12px 14px;border-color:#9eb8ee;background:#eef4ff;">
+                <?php echo sanitize($flashMessage); ?>
+            </div>
+            <?php endif; ?>
 
             <div class="card" style="margin-bottom:16px;">
                 <p style="margin:0;font-size:13px;line-height:1.45;color:var(--text-muted, #6b7280);">
                     Applied state is determined by live schema probes in
                     <a href="<?php echo sanitize($migrateScriptUrl); ?>">migrate.php</a>.
                     This row records when a migration file was satisfied and its checksum at record time.
+                    Deleting the row removes audit history only — it does not roll back schema changes or delete the SQL file.
                 </p>
             </div>
 

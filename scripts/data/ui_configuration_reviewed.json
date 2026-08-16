@@ -1513,6 +1513,52 @@
         }
       ]
     },
+    "schema_migrations": {
+      "reviewed_at": "2026-08-16",
+      "reason": "Admin migration audit history: no create.php or edit.php (migrate.php records rows); delete.php removes audit history only; bespoke KPI + searchable list on index.php.",
+      "checks": [
+        {
+          "check": "+ New Button",
+          "code": "ui_config_new_button",
+          "note": "No create.php — history rows come from migrate.php only"
+        },
+        {
+          "check": "New button position",
+          "code": "ui_config_new_button_position",
+          "note": "No create.php — toolbar uses migrate.php links instead"
+        },
+        {
+          "check": "New button style",
+          "code": "ui_config_new_button_style",
+          "note": "No create.php — list-header create button not applicable"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "No bulk delete — single-row audit delete via delete.php only"
+        },
+        {
+          "check": "Create entry (create.php)",
+          "code": "ui_config_create_entry",
+          "note": "No create.php by design"
+        },
+        {
+          "check": "Edit entry (edit.php)",
+          "code": "ui_config_edit_entry",
+          "note": "No edit.php by design"
+        },
+        {
+          "check": "Back & Save (create.php)",
+          "code": "ui_config_back_save_create",
+          "note": "No create.php form"
+        },
+        {
+          "check": "Back & Save (edit.php)",
+          "code": "ui_config_back_save_edit",
+          "note": "No edit.php form"
+        }
+      ]
+    },
     "system_status": {
       "reviewed_at": "2026-07-20",
       "reason": "Admin diagnostic tabbed dashboard (monitoring, PHP settings, database): bespoke metric cards and cache refresh — no flattened list table, no create/edit/list-all/delete entry files, and no bulk toolbar on index.php.",
