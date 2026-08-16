@@ -1211,7 +1211,7 @@ if (strpos($portalBookingSrc, 'function itm_hotel_booking_portal_send_booking_co
 
 $portalCheckoutPaymentSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/includes/portal_checkout.php');
 if (strpos($portalCheckoutPaymentSrc, 'hb-payment-room-group-list') !== false
-    && strpos($portalCheckoutPaymentSrc, 'hb-payment-room-rate') !== false
+    && strpos($portalCheckoutPaymentSrc, 'hb-payment-room-group-line') !== false
     && strpos($portalCheckoutPaymentSrc, '!$showMultiRoomGroup && $ratePlanLabel') !== false
     && strpos($portalCheckoutPaymentSrc, 'itm_hotel_booking_portal_load_confirmation_group_rows') !== false
     && strpos($portalCheckoutPaymentSrc, 'Additional rooms') === false) {
