@@ -116,6 +116,7 @@ foreach ($ratePlans as $plan) {
         'base_price_per_night' => $basePerNight,
         'surcharge_percent' => $planSurcharge,
     ];
+    $draftSlice = itm_hotel_booking_portal_select_rate_pricing_draft($draftSlice, $roomLines, $roomsNeeded);
     $stayTotal = itm_hotel_booking_portal_compute_checkout_total(
         $basePerNight,
         $checkInIso,
@@ -147,6 +148,26 @@ foreach ($ratePlans as $plan) {
         : $cancelTemplate;
     $isBreakfast = $slug === 'breakfast';
     $nightlyInclTax = $nights > 0 ? round($stayTotal / $nights, 2) : $stayTotal;
+    // #region agent log
+    if ($roomsNeeded > 1 && count($roomLines) >= $roomsNeeded) {
+        @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
+            'sessionId' => '44bff2',
+            'timestamp' => (int) round(microtime(true) * 1000),
+            'location' => 'booking/rooms/select-rate.php:ratePlanRows',
+            'message' => 'multi-room select-rate nightly',
+            'data' => [
+                'slug' => $slug,
+                'roomsNeeded' => $roomsNeeded,
+                'lineCount' => count($roomLines),
+                'usesRoomLines' => !empty($draftSlice['room_lines']),
+                'nightlyInclTax' => $nightlyInclTax,
+                'stayTotal' => $stayTotal,
+            ],
+            'hypothesisId' => 'PRC1',
+            'runId' => 'select-rate-multi-room',
+        ]) . "\n", FILE_APPEND);
+    }
+    // #endregion
     $ratePlanRows[] = [
         'id' => (int) ($plan['id'] ?? 0),
         'name' => (string) ($plan['name'] ?? ''),
@@ -239,7 +260,7 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
 <span class="hb-rate-info-icon" aria-hidden="true">ℹ</span>
 <p><?php echo htmlspecialchars($breakfastInfo, ENT_QUOTES, 'UTF-8'); ?></p>
 </div>
-<p class="hb-rate-tax-note" style="margin:0 0 16px;font-size:.95rem;opacity:.9;">All prices shown include tourist tax for your guest count.</p>
+<p class="hb-rate-tax-note" style="margin:0 0 16px;font-size:.95rem;opacity:.9;">All prices shown include tourist tax for your guest count.<?php if ($roomsNeeded > 1): ?> Nightly rates are the combined total for all <?php echo (int) $roomsNeeded; ?> rooms in your stay.<?php endif; ?></p>
 
 <?php hb_portal_render_room_lines_summary($roomLines, $roomsNeeded); ?>
 

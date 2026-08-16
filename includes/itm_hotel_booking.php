@@ -2215,6 +2215,31 @@ if (!function_exists('itm_hotel_booking_portal_room_line_pick')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_select_rate_pricing_draft')) {
+  /**
+   * Step 2 rate-plan totals: attach picked room_lines so multi-room stays price per line, not occupancy×rooms on one BAR.
+   *
+   * @param array<int,array> $roomLines
+   */
+  function itm_hotel_booking_portal_select_rate_pricing_draft(array $baseSlice, array $roomLines, $roomsNeeded) {
+    $roomsNeeded = max(1, (int) $roomsNeeded);
+    $roomLines = is_array($roomLines) ? array_values($roomLines) : [];
+    if ($roomsNeeded > 1 && count($roomLines) >= $roomsNeeded) {
+      $normalized = [];
+      foreach ($roomLines as $line) {
+        if (!is_array($line)) {
+          continue;
+        }
+        $normalized[] = itm_hotel_booking_portal_room_line_normalize($line);
+      }
+      if (count($normalized) >= $roomsNeeded) {
+        $baseSlice['room_lines'] = $normalized;
+      }
+    }
+    return $baseSlice;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_count_available_rooms_for_type')) {
   function itm_hotel_booking_portal_count_available_rooms_for_type($conn, $companyId, $hotelId, $roomTypeId, $checkIn, $checkOut, array $excludeRoomIds = []) {
     $companyId = (int) $companyId;
@@ -2596,7 +2621,7 @@ if (!function_exists('itm_hotel_booking_portal_room_charges_subtotal')) {
       $lineTypeIds[(int) ($line['room_type_id'] ?? 0)] = true;
     }
     unset($lineTypeIds[0]);
-    if (count($roomLines) > 1 && count($lineTypeIds) > 1 && $conn && $companyId > 0 && $hotelId > 0) {
+    if (count($roomLines) > 1 && $conn && $companyId > 0 && $hotelId > 0) {
       $roomTotal = 0.0;
       $lineCount = count($roomLines);
       foreach ($roomLines as $idx => $line) {
