@@ -61,22 +61,6 @@ if ($roomsNeeded > 1 && !itm_hotel_booking_portal_draft_all_rooms_rated($draft, 
     exit;
 }
 $hideUpsellOptions = $roomsNeeded > 1 || count($draftRoomLines) > 1;
-// #region agent log
-if ($hideUpsellOptions) {
-    @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
-        'sessionId' => '44bff2',
-        'timestamp' => (int) round(microtime(true) * 1000),
-        'location' => 'booking/rooms/customize.php:hideUpsell',
-        'message' => 'upsell hidden for multi-room',
-        'data' => [
-            'roomsNeeded' => $roomsNeeded,
-            'roomLineCount' => count($draftRoomLines),
-        ],
-        'hypothesisId' => 'F',
-        'runId' => 'verify',
-    ]) . "\n", FILE_APPEND);
-}
-// #endregion
 
 $upgradeOffer = null;
 if (!$hideUpsellOptions && $roomTypeId > 0) {

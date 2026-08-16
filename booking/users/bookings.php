@@ -19,7 +19,6 @@ $manageLastName = '';
 $manageReservationId = 0;
 $manageAuth2 = '';
 $otpStep = false;
-$otpMaskedEmail = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $lastName = trim((string) ($_POST['last_name'] ?? ''));
@@ -28,14 +27,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $manageLastName = $lastName;
     $manageReservationId = $reservationId;
     $manageAuth2 = $auth2;
+    $lookupFailureMessage = itm_hotel_booking_portal_manage_lookup_failure_message();
     $rl = itm_hotel_booking_portal_manage_rate_limit_check();
     if (empty($rl['ok'])) {
         $error = (string) ($rl['error'] ?? 'Too many attempts. Please wait and try again.');
     } elseif (!empty($_POST['verify_manage_otp'])) {
         itm_require_post_csrf();
-        itm_hotel_booking_portal_manage_rate_limit_record();
+        $otpRl = itm_hotel_booking_portal_manage_otp_rate_limit_check();
+        if (empty($otpRl['ok'])) {
+            $error = (string) ($otpRl['error'] ?? 'Too many verification attempts. Please wait and try again.');
+            $otpStep = true;
+            $otpState = $_SESSION[itm_hotel_booking_portal_manage_otp_session_key()] ?? null;
+            if (is_array($otpState)) {
+                $manageReservationId = (int) ($otpState['reservation_id'] ?? $manageReservationId);
+                $company_id = (int) ($otpState['company_id'] ?? $company_id);
+            }
+        } else {
         $otpResult = itm_hotel_booking_portal_manage_otp_verify($_POST['otp_code'] ?? '');
         if (empty($otpResult['ok'])) {
+            itm_hotel_booking_portal_manage_otp_rate_limit_record();
             $error = (string) ($otpResult['error'] ?? 'Invalid verification code.');
             $otpStep = true;
             $otpState = $_SESSION[itm_hotel_booking_portal_manage_otp_session_key()] ?? null;
@@ -49,9 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $manageReservationId = $reservationId;
             $booking = hb_portal_load_booking_confirmation($conn, $company_id, $reservationId);
             if (!$booking) {
-                $error = 'No reservation found. Check your last name, reservation ID, and auth code.';
+                $error = $lookupFailureMessage;
                 itm_hotel_booking_portal_manage_otp_clear();
             }
+        }
         }
     } elseif (!empty($_POST['cancel_booking'])) {
         itm_require_post_csrf();
@@ -83,14 +94,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         itm_hotel_booking_portal_manage_rate_limit_record();
         $verified = itm_hotel_booking_fetch_for_guest_manage($conn, $company_id, $reservationId, $lastName, $auth2);
         if (!$verified) {
-            $error = 'No reservation found. Check your last name, reservation ID, and auth code.';
+            $error = $lookupFailureMessage;
         } else {
             $otpIssue = itm_hotel_booking_portal_manage_otp_issue($conn, $company_id, $verified);
             if (empty($otpIssue['ok'])) {
-                $error = (string) ($otpIssue['error'] ?? 'Could not send verification email.');
+                $error = $lookupFailureMessage;
             } else {
                 $otpStep = true;
-                $otpMaskedEmail = (string) ($otpIssue['masked_email'] ?? '');
                 $manageReservationId = $reservationId;
             }
         }
@@ -190,7 +200,7 @@ $manageConfirmationOptions = [
 <?php elseif ($otpStep): ?>
 <main class="hb-main auth-card hb-manage-booking-card">
 <h1>Verify your email</h1>
-<p class="hb-sub">We sent a 6-digit code<?php echo $otpMaskedEmail !== '' ? ' to <strong>' . htmlspecialchars($otpMaskedEmail, ENT_QUOTES, 'UTF-8') . '</strong>' : ''; ?>. Enter it below to view your reservation.</p>
+<p class="hb-sub">If your reservation details are correct, we sent a 6-digit code to the email address on file. Enter it below to view your reservation.</p>
 <?php if ($error): ?><p class="hb-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
 <form method="post" class="hb-manage-booking-form">
 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">

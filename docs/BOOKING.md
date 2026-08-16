@@ -52,8 +52,9 @@ sequenceDiagram
 | `booking/bootstrap.php` | Session, `ITM_HOTEL_BOOKING_PUBLIC_PORTAL`, `APPURL`, `hb_public_company_id()`, `hb_load_active_hotel_row()` |
 | `hb_public_company_id()` | Welcome copy / default portal tenant (session `company_id` or first `public_portal_enabled` among companies 1–5) |
 | `hb_company_public_portal_enabled()` / `hb_require_company_public_portal()` | Hard gate: browse/book and calendar JSON require the hotel’s company `public_portal_enabled`; home list skips disabled tenants |
-| `itm_hotel_booking_portal_insert_booking_locked()` | Step 4 create: room row `FOR UPDATE` + overlap re-check + INSERT in one transaction |
+| `itm_hotel_booking_portal_insert_booking_locked()` | Step 4 create: room row `FOR UPDATE` + overlap re-check + INSERT in one transaction; multi-room uses nested locks inside `insert_stay_bookings_locked()` outer transaction |
 | `itm_hotel_booking_portal_manage_rate_limit_check()` / `_record()` | Session throttle for manage lookup/cancel POSTs |
+| `itm_hotel_booking_portal_manage_otp_rate_limit_check()` / `_record()` | Separate session + IP throttle for email OTP verify (default 5 / 10 min) |
 | `hb_load_active_hotel_row()` | Active hotel by `id` across all companies (used by `rooms.php`, `calendar.php`) |
 | `config/config.php` | Shared DB connection, CSRF, date helpers |
 
@@ -96,7 +97,7 @@ Hotel photos are managed in **Hotels** (`modules/hotel_booking_hotels/`). **Room
 
 Draft state (dates, rate, occupancy, upgrade) is stored in session via `itm_hotel_booking_portal_draft_*` helpers until step 4 succeeds.
 
-**Step 4 charge:** `itm_hotel_booking_portal_resolve_step4_charge()` re-reads BAR (`itm_hotel_booking_resolve_room_type_nightly_bar`), special-rate discount, and plan discount/surcharge from the database at INSERT time — session draft money fields are not trusted.
+**Step 4 charge:** `itm_hotel_booking_portal_resolve_step4_charge()` re-reads BAR (`itm_hotel_booking_resolve_room_type_nightly_bar`), special-rate discount, and plan discount/surcharge from the database at INSERT time — session draft money fields are not trusted. Multi-room stays re-resolve **each** `room_lines` row via `itm_hotel_booking_portal_resolve_room_lines_pricing_from_db()`.
 
 **Pricing:** nightly room charges use the base price per night defined per room type and hotel in `hotel_booking_room_type_base_prices.price_per_night` plus per-hotel portal rules on `hotel_booking_hotels` (breakfast adult/child add-on, child nightly supplement, extra-adult %, pet daily fee — edited in **Portal Rate Plans** admin, not hardcoded in `booking/`). Special-rate discount % comes from `hotel_booking_special_rates`. Step 2 plans add `plan_discount_percent` then optional `plan_surcharge_percent` (0–50 each; surcharge raises after discount). Tourist tax is company-level (`hotel_booking_settings.tourist_tax_per_person_per_night`, default €2/guest/night in seeds). Breakdown: `itm_hotel_booking_portal_checkout_breakdown()` → `itm_hotel_booking_portal_hotel_pricing()`.
 

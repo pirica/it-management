@@ -1096,6 +1096,41 @@ if (function_exists('itm_hotel_booking_portal_manage_rate_limit_check')
     hb_fail('portal manage rate limit helpers missing');
 }
 
+if (function_exists('itm_hotel_booking_portal_manage_otp_rate_limit_check')
+    && function_exists('itm_hotel_booking_portal_manage_otp_rate_limit_record')) {
+    $otpRlKey = itm_hotel_booking_portal_manage_otp_rate_limit_session_key();
+    $_SESSION[$otpRlKey] = [];
+    if (function_exists('itm_hotel_booking_portal_manage_otp_rate_limit_ip_events')) {
+        itm_hotel_booking_portal_manage_otp_rate_limit_ip_events(600, []);
+    }
+    $otpOk = itm_hotel_booking_portal_manage_otp_rate_limit_check(3, 600);
+    for ($i = 0; $i < 3; $i++) {
+        itm_hotel_booking_portal_manage_otp_rate_limit_record();
+    }
+    $otpBlocked = itm_hotel_booking_portal_manage_otp_rate_limit_check(3, 600);
+    $_SESSION[$otpRlKey] = [];
+    if (function_exists('itm_hotel_booking_portal_manage_otp_rate_limit_ip_events')) {
+        itm_hotel_booking_portal_manage_otp_rate_limit_ip_events(600, []);
+    }
+    if (!empty($otpOk['ok']) && empty($otpBlocked['ok'])) {
+        hb_pass('portal manage OTP rate limit blocks after max attempts');
+    } else {
+        hb_fail('portal manage OTP rate limit expected block after 3 records');
+    }
+} else {
+    hb_fail('portal manage OTP rate limit helpers missing');
+}
+
+$manageBookingsSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/users/bookings.php');
+if (strpos($manageBookingsSrc, 'itm_hotel_booking_portal_manage_otp_rate_limit_check') !== false
+    && strpos($manageBookingsSrc, 'itm_hotel_booking_portal_manage_lookup_failure_message') !== false
+    && strpos($manageBookingsSrc, 'masked_email') === false
+    && strpos($manageBookingsSrc, 'email address on file') !== false) {
+    hb_pass('portal manage lookup enumeration copy + OTP verify throttle wiring');
+} else {
+    hb_fail('portal manage lookup enumeration / OTP throttle wiring missing');
+}
+
 if (function_exists('itm_hotel_booking_portal_resolve_step4_charge')) {
     $resolveDraft = [
         'check_in' => '2030-06-01',
@@ -1157,15 +1192,96 @@ if (function_exists('itm_hotel_booking_portal_manage_otp_verify')
 if (function_exists('itm_hotel_booking_portal_insert_booking_locked')) {
     $lockSrc = file_get_contents(dirname(__DIR__) . '/includes/itm_hotel_booking.php');
     $fnPos = strpos($lockSrc, 'function itm_hotel_booking_portal_insert_booking_locked');
-    $slice = $fnPos !== false ? substr($lockSrc, $fnPos, 1800) : '';
+    $slice = $fnPos !== false ? substr($lockSrc, $fnPos, 2200) : '';
+    $stayPos = strpos($lockSrc, 'function itm_hotel_booking_portal_insert_stay_bookings_locked');
+    $staySlice = $stayPos !== false ? substr($lockSrc, $stayPos, 6000) : '';
     $bad = itm_hotel_booking_portal_insert_booking_locked($conn, 0, 0, 0, '', '', 0, '', 0, '', '', 0, 0, 0);
-    if (stripos($slice, 'FOR UPDATE') !== false && empty($bad['ok'])) {
+    if (stripos($slice, 'FOR UPDATE') !== false
+        && stripos($slice, "'nested'") !== false
+        && stripos($staySlice, 'mysqli_begin_transaction') !== false
+        && stripos($staySlice, "'nested' => true") !== false
+        && stripos($staySlice, 'mysqli_commit') !== false
+        && empty($bad['ok'])) {
         hb_pass('portal insert booking locked uses FOR UPDATE');
+        hb_pass('portal multi-room stay insert uses outer transaction + nested locks');
     } else {
-        hb_fail('portal insert booking locked contract');
+        hb_fail('portal insert booking locked / multi-room atomic contract');
     }
 } else {
     hb_fail('portal insert booking locked helper missing');
+}
+
+$portalBookingSrcEarly = (string) @file_get_contents(dirname(__DIR__) . '/includes/itm_hotel_booking.php');
+if (strpos($portalBookingSrcEarly, 'function itm_hotel_booking_portal_resolve_room_lines_pricing_from_db') !== false
+    && strpos($portalBookingSrcEarly, 'debug-44bff2') === false
+    && strpos((string) @file_get_contents(dirname(__DIR__) . '/booking/rooms.php'), 'debug-44bff2') === false
+    && strpos((string) @file_get_contents(dirname(__DIR__) . '/booking/js/hotel-booking-customize.js'), '7624/ingest') === false) {
+    hb_pass('portal step4 multi-room DB line resolve + debug instrumentation removed');
+} else {
+    hb_fail('portal multi-room DB resolve or debug strip missing');
+}
+
+if (function_exists('itm_hotel_booking_portal_resolve_step4_charge')
+    && function_exists('itm_hotel_booking_portal_resolve_room_lines_pricing_from_db')) {
+    $roomProbe = mysqli_query($conn, 'SELECT r.id, r.hotel_id, r.room_type_id, COALESCE(bp.price_per_night, 0) AS price_per_night FROM hotel_booking_rooms r LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL WHERE r.company_id = 1 AND r.deleted_at IS NULL AND r.active = 1 ORDER BY r.id ASC LIMIT 2');
+    $roomRows = [];
+    if ($roomProbe) {
+        while ($probeRow = mysqli_fetch_assoc($roomProbe)) {
+            $roomRows[] = $probeRow;
+        }
+    }
+    if (count($roomRows) >= 2) {
+        $hotelId = (int) ($roomRows[0]['hotel_id'] ?? 0);
+        $plans = itm_hotel_booking_portal_rate_plans_active_for_hotel($conn, 1, $hotelId);
+        $planId = 0;
+        foreach ($plans as $plan) {
+            if (strtolower((string) ($plan['rate_plan_slug'] ?? '')) === 'non_refundable') {
+                $planId = (int) ($plan['id'] ?? 0);
+                break;
+            }
+        }
+        if ($planId > 0) {
+            $multiDraft = [
+                'check_in' => '2030-06-01',
+                'check_out' => '2030-06-03',
+                'hotel_id' => $hotelId,
+                'portal_rate_plan_id' => $planId,
+                'resolved_rate_slug' => 'standard',
+                'room_lines' => [
+                    [
+                        'room_id' => (int) $roomRows[0]['id'],
+                        'room_type_id' => (int) $roomRows[0]['room_type_id'],
+                        'portal_rate_plan_id' => $planId,
+                        'base_price_per_night' => 1.0,
+                        'discount_percent' => 99.0,
+                    ],
+                    [
+                        'room_id' => (int) $roomRows[1]['id'],
+                        'room_type_id' => (int) $roomRows[1]['room_type_id'],
+                        'portal_rate_plan_id' => $planId,
+                        'base_price_per_night' => 1.0,
+                        'discount_percent' => 99.0,
+                    ],
+                ],
+            ];
+            $occ = ['rooms' => 2, 'adults' => 2, 'children' => 0, 'babies' => 0];
+            $multiResolved = itm_hotel_booking_portal_resolve_step4_charge($conn, 1, $roomRows[0], $multiDraft, $occ);
+            $payLines = is_array($multiResolved['draft_for_pay']['room_lines'] ?? null) ? $multiResolved['draft_for_pay']['room_lines'] : [];
+            $line0Base = (float) ($payLines[0]['base_price_per_night'] ?? 0);
+            $line0Disc = (float) ($payLines[0]['discount_percent'] ?? 99);
+            if (!empty($multiResolved['ok']) && $line0Base > 1.0 && $line0Disc < 50.0) {
+                hb_pass('portal step4 multi-room charge re-resolves each room_lines BAR/discount from DB');
+            } else {
+                hb_fail('portal step4 multi-room DB resolve rejected tampered room_lines');
+            }
+        } else {
+            hb_fail('portal step4 multi-room DB resolve — no NR plan');
+        }
+    } else {
+        hb_fail('portal step4 multi-room DB resolve — need two sample rooms');
+    }
+} else {
+    hb_fail('portal step4 multi-room DB resolve helpers missing');
 }
 
 $roomSingleSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms/room-single.php');
