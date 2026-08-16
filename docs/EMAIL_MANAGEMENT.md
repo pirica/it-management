@@ -151,11 +151,13 @@ The dispatcher matches records against tenant-active rules in `email_alert_rules
 
 Per-tenant helpdesk intake polls each company's **default SMTP profile** when **Create tickets from inbound mail** is enabled (`email_smtp_configurations.inbound_ticket_enabled`).
 
-- **Routing address:** `companies.email` (e.g. `info@techcorp.example`) — senders should use this To address; the runner logs a warning when To/Cc does not include it but still processes under the profile's `company_id`.
-- **Runner:** `php scripts/run_inbound_email_tickets.php` (schedule via cron; optional `--company=1`, `--verbose`, `--dry-run`).
-- **Threading:** replies with `TCK-####` or `[#id]` in the subject append `ticket_comments` instead of creating a duplicate ticket.
+- **Routing address:** `companies.email` (e.g. `info@techcorp.example`) — senders should use this To address; Mailpit profiles skip messages whose To/Cc does not match.
+- **Runner:** [run_inbound_email_tickets.php?run=1](http://localhost/it-management/scripts/run_inbound_email_tickets.php?run=1) (schedule via cron; optional `--company=1`, `--verbose`, `--dry-run`).
+- **Threading:** `TCK-####` / `[#id]` in subject or body; `In-Reply-To` / `References` Message-ID lookup via `ticket_inbound_email_messages`; `Re:` / `Fwd:` subject match against open ticket titles.
+- **Keyword rules:** `ticket_inbound_email_routing_rules` — seeds map `urgent`/`critical` → priorities, `billing` → category, `support` → assignee.
+- **Event log:** every inbound attempt writes **emails** (`status` `received` or `failed`) with JSON `details.inbound_event` and `raw_payload` on parse/handler failures.
 - **Dedupe:** `ticket_inbound_email_messages` stores RFC Message-ID per company.
-- **Regression:** `php scripts/verify_inbound_email_tickets.php` (includes live Mailpit E2E when the API responds).
+- **Regression:** [verify_inbound_email_tickets.php?run=1](http://localhost/it-management/scripts/verify_inbound_email_tickets.php?run=1) (includes live Mailpit E2E when the API responds).
 - **Manual test send:** `php scripts/send_mailpit_inbound_test_email.php --company=1` (optional `--process` to create a ticket immediately).
 
 ### Local Mailpit (Laragon / Dunebox)

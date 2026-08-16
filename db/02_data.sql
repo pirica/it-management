@@ -1376,6 +1376,22 @@ INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `
 
 INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `active`, `created_at`) VALUES ('1', '5', 'Critical', '5', '#8B0000', '1', '2026-01-01 00:00:01');
 
+INSERT INTO `ticket_inbound_email_routing_rules` (`company_id`, `keyword`, `priority_id`, `category_id`, `assigned_to_employee_id`, `sort_order`, `active`, `created_at`)
+SELECT 1, 'urgent', tp.`id`, NULL, NULL, 10, 1, '2026-01-01 00:00:01'
+FROM `ticket_priorities` tp WHERE tp.`company_id` = 1 AND LOWER(tp.`name`) = 'urgent' LIMIT 1;
+
+INSERT INTO `ticket_inbound_email_routing_rules` (`company_id`, `keyword`, `priority_id`, `category_id`, `assigned_to_employee_id`, `sort_order`, `active`, `created_at`)
+SELECT 1, 'critical', tp.`id`, NULL, NULL, 20, 1, '2026-01-01 00:00:01'
+FROM `ticket_priorities` tp WHERE tp.`company_id` = 1 AND LOWER(tp.`name`) = 'critical' LIMIT 1;
+
+INSERT INTO `ticket_inbound_email_routing_rules` (`company_id`, `keyword`, `priority_id`, `category_id`, `assigned_to_employee_id`, `sort_order`, `active`, `created_at`)
+SELECT 1, 'billing', NULL, tc.`id`, NULL, 30, 1, '2026-01-01 00:00:01'
+FROM `ticket_categories` tc WHERE tc.`company_id` = 1 AND LOWER(tc.`name`) = 'other' LIMIT 1;
+
+INSERT INTO `ticket_inbound_email_routing_rules` (`company_id`, `keyword`, `priority_id`, `category_id`, `assigned_to_employee_id`, `sort_order`, `active`, `created_at`)
+SELECT 1, 'support', NULL, NULL, e.`id`, 40, 1, '2026-01-01 00:00:01'
+FROM `employees` e WHERE e.`company_id` = 1 AND LOWER(e.`username`) = 'admin' AND e.`deleted_at` IS NULL LIMIT 1;
+
 INSERT INTO `ticket_sla_policies` (`company_id`, `priority_id`, `response_minutes`, `resolve_minutes`, `active`, `created_at`) VALUES
 ('1', 1, 480, 2880, 1, '2026-01-01 00:00:01'),
 ('1', 2, 240, 1440, 1, '2026-01-01 00:00:01'),
@@ -1756,6 +1772,16 @@ INSERT IGNORE INTO `switch_status` (`company_id`, `status`, `created_at`) SELECT
 INSERT IGNORE INTO `ticket_categories` (`company_id`, `name`, `code`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`code`, t.`active`, '2026-01-01 00:00:01' FROM `ticket_categories` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `ticket_priorities` (`company_id`, `name`, `level`, `color`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`level`, t.`color`, t.`active`, '2026-01-01 00:00:01' FROM `ticket_priorities` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+
+INSERT IGNORE INTO `ticket_inbound_email_routing_rules` (`company_id`, `keyword`, `priority_id`, `category_id`, `assigned_to_employee_id`, `sort_order`, `active`, `created_at`)
+SELECT c.`id`, r.`keyword`,
+  (SELECT tp_t.`id` FROM `ticket_priorities` tp_t INNER JOIN `ticket_priorities` tp_s ON tp_s.`company_id` = r.`company_id` AND tp_s.`id` = r.`priority_id` AND tp_t.`company_id` = c.`id` AND tp_t.`level` = tp_s.`level` LIMIT 1),
+  (SELECT tc_t.`id` FROM `ticket_categories` tc_t INNER JOIN `ticket_categories` tc_s ON tc_s.`company_id` = r.`company_id` AND tc_s.`id` = r.`category_id` AND tc_t.`company_id` = c.`id` AND tc_t.`name` = tc_s.`name` LIMIT 1),
+  (SELECT e_t.`id` FROM `employees` e_t INNER JOIN `employees` e_s ON e_s.`company_id` = r.`company_id` AND e_s.`id` = r.`assigned_to_employee_id` AND e_t.`company_id` = c.`id` AND e_t.`username` = e_s.`username` LIMIT 1),
+  r.`sort_order`, r.`active`, '2026-01-01 00:00:01'
+FROM `ticket_inbound_email_routing_rules` r
+JOIN `companies` c ON c.`id` <> r.`company_id`
+WHERE r.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `ticket_sla_policies` (`company_id`, `priority_id`, `response_minutes`, `resolve_minutes`, `active`, `created_at`)
 SELECT c.`id`, tp_target.`id`, t.`response_minutes`, t.`resolve_minutes`, t.`active`, '2026-01-01 00:00:01'

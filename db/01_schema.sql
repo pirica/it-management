@@ -2831,6 +2831,36 @@ CREATE TABLE `ticket_inbound_email_messages` (
   CONSTRAINT `ticket_inbound_email_messages_ibfk_email_log` FOREIGN KEY (`email_log_id`) REFERENCES `emails` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Table structure for `ticket_inbound_email_routing_rules`
+DROP TABLE IF EXISTS `ticket_inbound_email_routing_rules`;
+
+CREATE TABLE `ticket_inbound_email_routing_rules` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `keyword` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `assigned_to_employee_id` int DEFAULT NULL,
+  `category_id` int DEFAULT NULL,
+  `priority_id` int DEFAULT NULL,
+  `sort_order` int NOT NULL DEFAULT '0',
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ticket_inbound_email_routing_rules_scope` (`company_id`,`keyword`),
+  KEY `idx_ticket_inbound_email_routing_rules_sort` (`company_id`,`sort_order`),
+  KEY `assigned_to_employee_id` (`assigned_to_employee_id`),
+  KEY `category_id` (`category_id`),
+  KEY `priority_id` (`priority_id`),
+  CONSTRAINT `ticket_inbound_email_routing_rules_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `ticket_inbound_email_routing_rules_ibfk_assignee` FOREIGN KEY (`assigned_to_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `ticket_inbound_email_routing_rules_ibfk_category` FOREIGN KEY (`category_id`) REFERENCES `ticket_categories` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `ticket_inbound_email_routing_rules_ibfk_priority` FOREIGN KEY (`priority_id`) REFERENCES `ticket_priorities` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Table structure for `ticket_activity`
 DROP TABLE IF EXISTS `ticket_activity`;
 

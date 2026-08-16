@@ -1120,7 +1120,7 @@ Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking
 | `php scripts/run_inbound_email_tickets.php` | Polls per-company inbound mail (IMAP or local **Mailpit** API when `imap_host` = `mailpit`) and creates or updates `tickets` from mail routed to `companies.email`; optional `--company=1`, `--verbose`, `--dry-run` |
 | `php scripts/apply_mailpit_inbound_email_config.php` | Sets `imap_host=mailpit` and enables inbound tickets on each default SMTP profile (dry-run default; `--apply` or browser `apply=1`) for Laragon/Dunebox + [Mailpit](http://localhost/mailpit/) |
 | `php scripts/send_mailpit_inbound_test_email.php` | Sends a test message **To** a tenant `companies.email` via Mailpit SMTP (`127.0.0.1:1025`); optional `--process` runs inbound ticket creation for that company |
-| `php scripts/verify_inbound_email_tickets.php` | Regression for inbound parsers, dedupe, requester resolution, schema columns; live Mailpit E2E when API at `http://localhost/mailpit/api/v1` responds |
+| `php scripts/verify_inbound_email_tickets.php` | Regression for inbound parsers, dedupe, threading, keyword routing, event logging, requester resolution, schema columns; live Mailpit E2E when API at `http://localhost/mailpit/api/v1` responds |
 | `php scripts/run_notification_digest.php` | Sends digest emails for employees with unread `employee_notifications` rows; optional `--company=1` |
 | `php scripts/verify_employee_notifications.php` | Regression for `itm_notify_employee()`, unread count, mark read, header API/JS assets |
 | `php scripts/test_email_forgot.php` | Manual forgot-password email test via `itm_send_email()` / tenant SMTP; creates a real 24-hour reset token for the matching employee before sending; CLI supports `--company=1` (defaults to session company or `1`) |
@@ -1128,7 +1128,7 @@ Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking
 
 Run `verify_emails_module.php` when changing `modules/emails/`, `includes/itm_email.php`, `user-config.php` vault-key notification mail, or `email*` tables in `db/03_triggers.sql`.
 
-Run `verify_inbound_email_tickets.php` when changing `includes/itm_inbound_email_tickets.php`, `scripts/run_inbound_email_tickets.php`, inbound SMTP columns, or `ticket_inbound_email_messages` in `db/01_schema.sql`.
+Run `verify_inbound_email_tickets.php` when changing `includes/itm_inbound_email_tickets.php`, `scripts/run_inbound_email_tickets.php`, inbound SMTP columns, `ticket_inbound_email_messages`, or `ticket_inbound_email_routing_rules` in `db/01_schema.sql`.
 
 #### PHP `imap` extension and local Mailpit (inbound email → tickets)
 
@@ -1151,7 +1151,17 @@ php scripts/run_inbound_email_tickets.php --dry-run
 php -r "echo function_exists('imap_open') ? 'imap ok' : 'imap missing';"
 ```
 
-`verify_inbound_email_tickets.php` runs a live Mailpit end-to-end when the API responds; parser/dedupe tests pass without Mailpit or `imap`.
+`verify_inbound_email_tickets.php` runs a live Mailpit end-to-end when the API responds; parser/dedupe/routing/logging tests pass without Mailpit or `imap`.
+
+**Example tests covered** (see script landing `?run=1` for the full list):
+
+| Area | Examples |
+|------|----------|
+| Duplicate prevention | Message-ID dedupe row + skip on reprocess |
+| Threading | `TCK-####`, `[#id]`, `Re:`/`Fwd:` subject, `In-Reply-To` / `References` |
+| Keyword routing | `urgent`, `critical`, `billing`, `support` → priority / category / assignee |
+| Event logging | `emails.details` JSON (`inbound_event`, `raw_payload` on `failed`) |
+| Mailpit E2E | New ticket, `URGENT` priority, threaded reply comment |
 
 Run `verify_webmail_module.php` when changing `modules/webmail/` or webmail-related `itm_send_email()` log options.
 
