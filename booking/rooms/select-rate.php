@@ -93,6 +93,33 @@ $hotel = ['id' => $hotelId, 'name' => $room['hotel_name'] ?? ''];
 $ratePlans = itm_hotel_booking_portal_rate_plans_active_for_hotel($conn, $company_id, $hotelId);
 $touristTaxRate = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings);
 
+$summaryLineNightlyAmounts = [];
+if ($roomsNeeded > 1 && count($roomLines) >= $roomsNeeded && function_exists('itm_hotel_booking_portal_per_line_nightly_incl_tax_for_rate')) {
+    $cheapestOffer = itm_hotel_booking_portal_cheapest_rate_offer_for_hotel($conn, $company_id, $hotelId);
+    $cheapestSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($cheapestOffer['slug'] ?? 'non_refundable')));
+    $cheapestPlanRow = null;
+    foreach ($ratePlans as $plan) {
+        $planSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($plan['rate_plan_slug'] ?? '')));
+        if ($planSlug === $cheapestSlug) {
+            $cheapestPlanRow = $plan;
+            break;
+        }
+    }
+    $summaryDisc = itm_hotel_booking_portal_rate_plan_effective_discount($discountPercent, $cheapestSlug, $cheapestPlanRow);
+    $summarySurcharge = itm_hotel_booking_portal_rate_plan_effective_surcharge($cheapestSlug, $cheapestPlanRow);
+    $summaryLineNightlyAmounts = itm_hotel_booking_portal_per_line_nightly_incl_tax_for_rate(
+        $conn,
+        $company_id,
+        $hotelId,
+        $checkInIso,
+        $occupancy,
+        $summaryDisc,
+        $summarySurcharge,
+        $roomLines,
+        $touristTaxRate
+    );
+}
+
 $ratePlanRows = [];
 foreach ($ratePlans as $plan) {
     $slug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($plan['rate_plan_slug'] ?? '')));
@@ -147,7 +174,26 @@ foreach ($ratePlans as $plan) {
         ? str_replace('{date}', $cancelBy, $cancelTemplate)
         : $cancelTemplate;
     $isBreakfast = $slug === 'breakfast';
-    $nightlyInclTax = $nights > 0 ? round($stayTotal / $nights, 2) : $stayTotal;
+    $lineNightlyAmounts = [];
+    if ($roomsNeeded > 1 && count($roomLines) >= $roomsNeeded && function_exists('itm_hotel_booking_portal_per_line_nightly_incl_tax_for_rate')) {
+        $lineNightlyAmounts = itm_hotel_booking_portal_per_line_nightly_incl_tax_for_rate(
+            $conn,
+            $company_id,
+            $hotelId,
+            $checkInIso,
+            $occupancy,
+            $effectiveDiscount,
+            $planSurcharge,
+            $roomLines,
+            $touristTaxRate
+        );
+        $nightlyInclTax = round(array_sum($lineNightlyAmounts), 2);
+        if ($isBreakfast && $nights > 0) {
+            $nightlyInclTax = round($nightlyInclTax + itm_hotel_booking_portal_breakfast_supplement_per_night($occupancy, $conn, $company_id, $hotelId), 2);
+        }
+    } else {
+        $nightlyInclTax = $nights > 0 ? round($stayTotal / $nights, 2) : $stayTotal;
+    }
     // #region agent log
     if ($roomsNeeded > 1 && count($roomLines) >= $roomsNeeded) {
         @file_put_contents(dirname(__DIR__, 2) . '/debug-44bff2.log', json_encode([
@@ -162,6 +208,7 @@ foreach ($ratePlans as $plan) {
                 'usesRoomLines' => !empty($draftSlice['room_lines']),
                 'nightlyInclTax' => $nightlyInclTax,
                 'stayTotal' => $stayTotal,
+                'lineNightly' => $lineNightlyAmounts,
             ],
             'hypothesisId' => 'PRC1',
             'runId' => 'select-rate-multi-room',
@@ -175,6 +222,7 @@ foreach ($ratePlans as $plan) {
         'stay_total' => $stayTotal,
         'list_stay_total' => $listStayTotal,
         'nightly_incl_tax' => $nightlyInclTax,
+        'line_nightly_amounts' => $lineNightlyAmounts,
         'pay_badge' => (string) ($offer['pay_badge'] ?? 'Pay when you stay'),
         'price_label' => (string) ($offer['price_label'] ?? 'Best available rate'),
         'cancel_text' => $cancelText,
@@ -262,7 +310,7 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
 </div>
 <p class="hb-rate-tax-note" style="margin:0 0 16px;font-size:.95rem;opacity:.9;">All prices shown include tourist tax for your guest count.<?php if ($roomsNeeded > 1): ?> Nightly rates are the combined total for all <?php echo (int) $roomsNeeded; ?> rooms in your stay.<?php endif; ?></p>
 
-<?php hb_portal_render_room_lines_summary($roomLines, $roomsNeeded); ?>
+<?php hb_portal_render_room_lines_summary($roomLines, $roomsNeeded, $summaryLineNightlyAmounts, $currency); ?>
 
 <?php if ($error !== ''): ?>
 <p class="hb-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>
@@ -287,6 +335,7 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
     $stayTotal = (float) ($planRow['stay_total'] ?? 0);
     $listStayTotal = (float) ($planRow['list_stay_total'] ?? 0);
     $nightlyIncl = (float) ($planRow['nightly_incl_tax'] ?? 0);
+    $lineNightlyAmounts = is_array($planRow['line_nightly_amounts'] ?? null) ? $planRow['line_nightly_amounts'] : [];
     $effectiveDiscount = (float) ($planRow['effective_discount'] ?? 0);
     $payBadge = (string) ($planRow['pay_badge'] ?? 'Pay when you stay');
     $priceLabel = (string) ($planRow['price_label'] ?? 'Best available rate');
@@ -305,7 +354,20 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
 </div>
 <div class="hb-rate-option-price-col">
 <p class="hb-rate-price-label"><?php echo htmlspecialchars($priceLabel, ENT_QUOTES, 'UTF-8'); ?></p>
-<p class="hb-rate-price-nightly" title="Average per night including tourist tax"><?php echo htmlspecialchars(hb_portal_money_format($nightlyIncl, $currency), ENT_QUOTES, 'UTF-8'); ?> / night</p>
+<?php if ($lineNightlyAmounts !== []): ?>
+<p class="hb-rate-line-nightly-breakdown" style="margin:0 0 6px;font-size:.9rem;opacity:.92;">
+<?php foreach ($lineNightlyAmounts as $lineIdx => $lineAmt):
+    $lineAmt = (float) $lineAmt;
+    if ($lineAmt <= 0) {
+        continue;
+    }
+    $lineLabel = isset($roomLines[$lineIdx]) ? itm_hotel_booking_portal_room_line_label($roomLines[$lineIdx]) : ('Room ' . ((int) $lineIdx + 1));
+?>
+<span class="hb-rate-line-nightly-item"><?php echo htmlspecialchars($lineLabel, ENT_QUOTES, 'UTF-8'); ?>: <?php echo htmlspecialchars(hb_portal_money_format($lineAmt, $currency), ENT_QUOTES, 'UTF-8'); ?>/night</span><?php if ($lineIdx < count($lineNightlyAmounts) - 1): ?> · <?php endif; ?>
+<?php endforeach; ?>
+</p>
+<?php endif; ?>
+<p class="hb-rate-price-nightly" title="<?php echo $lineNightlyAmounts !== [] ? 'Combined per night for all rooms including tourist tax' : 'Average per night including tourist tax'; ?>"><?php echo htmlspecialchars(hb_portal_money_format($nightlyIncl, $currency), ENT_QUOTES, 'UTF-8'); ?> / night<?php if ($lineNightlyAmounts !== []): ?> <span class="hb-rate-price-combined-label">(all rooms)</span><?php endif; ?></p>
 <p class="hb-rate-price-total"><?php if ($showDiscountStrikethrough && $effectiveDiscount > 0 && $listStayTotal > $stayTotal + 0.009): ?><span class="hb-room-price-compare"><?php echo htmlspecialchars(hb_portal_money_format($listStayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <?php endif; ?><span class="hb-rate-price-amount"><?php echo htmlspecialchars(hb_portal_money_format($stayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <span class="hb-rate-price-stay-label">stay total</span></p>
 <button type="submit" class="hb-btn<?php echo $isPrimary ? ' hb-btn-primary hb-rate-select-primary' : ' hb-rate-select-outline'; ?>" name="portal_rate_plan_id" value="<?php echo $planId; ?>" title="Select <?php echo htmlspecialchars($planRow['name'], ENT_QUOTES, 'UTF-8'); ?>">Select</button>
 </div>

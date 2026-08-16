@@ -2240,6 +2240,47 @@ if (!function_exists('itm_hotel_booking_portal_select_rate_pricing_draft')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_per_line_nightly_incl_tax_for_rate')) {
+  /**
+   * Step 2 multi-room: per-room /night incl. tax matching Step 1 card quotes (split occupancy per line).
+   *
+   * @param array<int,array> $roomLines
+   * @return array<int,float>
+   */
+  function itm_hotel_booking_portal_per_line_nightly_incl_tax_for_rate($conn, $companyId, $hotelId, $checkIn, array $occupancy, $discountPercent, $planSurcharge, array $roomLines, $touristTaxPerPersonPerNight = 0.0) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $roomLines = is_array($roomLines) ? array_values($roomLines) : [];
+    $lineCount = count($roomLines);
+    if ($lineCount < 1) {
+      return [];
+    }
+    $pricing = ($conn && $companyId > 0 && $hotelId > 0)
+      ? itm_hotel_booking_portal_hotel_pricing($conn, $companyId, $hotelId)
+      : itm_hotel_booking_portal_pricing_defaults();
+    $discountPercent = max(0.0, min(50.0, (float) $discountPercent));
+    $planSurcharge = max(0.0, min(50.0, (float) $planSurcharge));
+    $taxRate = max(0.0, (float) $touristTaxPerPersonPerNight);
+    $amounts = [];
+    foreach ($roomLines as $idx => $line) {
+      if (!is_array($line)) {
+        $amounts[] = 0.0;
+        continue;
+      }
+      $line = itm_hotel_booking_portal_room_line_normalize($line);
+      $lineOcc = itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, (int) $idx, $lineCount);
+      $base = (float) ($line['base_price_per_night'] ?? 0);
+      if ($base <= 0 && $conn && $companyId > 0 && $hotelId > 0) {
+        $base = itm_hotel_booking_portal_check_in_display_bar($conn, $companyId, $hotelId, (int) ($line['room_type_id'] ?? 0), $checkIn, 0);
+      }
+      $roomNightly = itm_hotel_booking_portal_quote_nightly($base, $lineOcc, $discountPercent, $pricing, $planSurcharge);
+      $lineTax = itm_hotel_booking_portal_tourist_tax_amount($lineOcc, 1, $taxRate);
+      $amounts[] = round($roomNightly + $lineTax, 2);
+    }
+    return $amounts;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_count_available_rooms_for_type')) {
   function itm_hotel_booking_portal_count_available_rooms_for_type($conn, $companyId, $hotelId, $roomTypeId, $checkIn, $checkOut, array $excludeRoomIds = []) {
     $companyId = (int) $companyId;

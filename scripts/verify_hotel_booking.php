@@ -1344,7 +1344,10 @@ if (strpos($emailHelperSrc, "array_key_exists('from_email', \$options)") !== fal
 
 if (function_exists('itm_hotel_booking_portal_select_rate_pricing_draft')
     && strpos($selectRateSrc, 'itm_hotel_booking_portal_select_rate_pricing_draft') !== false
-    && strpos($bookingHelperSrc, 'count($roomLines) > 1') !== false) {
+    && strpos($bookingHelperSrc, 'count($roomLines) > 1') !== false
+    && function_exists('itm_hotel_booking_portal_per_line_nightly_incl_tax_for_rate')
+    && strpos($selectRateSrc, 'itm_hotel_booking_portal_per_line_nightly_incl_tax_for_rate') !== false
+    && strpos($portalCheckoutSrcMulti, 'hb-room-lines-summary-nightly') !== false) {
     hb_pass('portal select-rate multi-room draft room_lines pricing wiring');
 } else {
     hb_fail('portal select-rate multi-room draft room_lines pricing wiring missing');
