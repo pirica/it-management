@@ -50,8 +50,9 @@ $basePerNight = (float) ($draft['base_price_per_night'] ?? $room['price_per_nigh
 $touristTaxPerPerson = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings);
 
 $roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
+$roomLinesContext = itm_hotel_booking_portal_room_lines_context_fingerprint($hotelId, $checkInIso, $nights, $occupancy);
 $draftRoomLines = itm_hotel_booking_portal_draft_room_lines_for_display($draft);
-if ($roomsNeeded > 1 && count($draftRoomLines) < $roomsNeeded) {
+if ($roomsNeeded > 1 && !itm_hotel_booking_portal_draft_all_rooms_rated($draft, $roomsNeeded, $roomLinesContext)) {
     $pickQuery = http_build_query(array_merge(
         ['id' => $hotelId, 'check_in' => $checkInIso, 'nights' => $nights],
         itm_hotel_booking_portal_occupancy_query_params($occupancy)

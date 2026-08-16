@@ -86,7 +86,7 @@ if (!function_exists('hb_portal_render_room_lines_summary')) {
 <section class="hb-room-lines-summary card" aria-label="Selected rooms">
 <h2 class="hb-room-lines-summary-title">Your rooms (<?php echo count($roomLines); ?> of <?php echo (int) $roomsNeeded; ?>)</h2>
 <?php if ($showLinePrices): ?>
-<p class="hb-room-lines-summary-intro" style="margin:0 0 12px;font-size:.95rem;opacity:.92;">Per-night prices incl. tax for each room already chosen. Select a rate for the last room on this page.</p>
+<p class="hb-room-lines-summary-intro" style="margin:0 0 12px;font-size:.95rem;opacity:.92;">Per-night prices incl. tax for rooms you already rated. Select a rate for this room below.</p>
 <?php endif; ?>
 <ol class="hb-room-lines-summary-list">
 <?php foreach ($roomLines as $idx => $line):
