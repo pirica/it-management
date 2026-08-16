@@ -2389,6 +2389,9 @@ INSERT INTO `appointment_business_hours` (`company_id`, `day_of_week`, `display_
 (1, 5, 'Fri', '10:00:00', '18:00:00', 0, 1, 1, '{"in_person":1,"remote":1}', 1, '2026-01-01 00:00:01'),
 (1, 6, 'Sat', NULL, NULL, 1, 0, 0, '{"in_person":0,"remote":0}', 1, '2026-01-01 00:00:01');
 
+INSERT INTO `appointments` (`company_id`, `employee_id`, `visit_reason_id`, `appointment_date`, `start_time`, `end_time`, `appointment_type_id`, `status`, `timezone`, `booking_lock`, `active`, `created_by`, `created_at`) VALUES
+(1, 1, 1, '2026-08-06', '09:00:00', '10:00:00', 1, 'scheduled', 'US/Central', '2026-08-06#09:00:00', 1, 1, '2026-01-01 00:00:01');
+
 -- Additional Sample Data for Knowledge Base
 INSERT INTO `knowledge_base` (`company_id`, `category`, `title`, `content`, `active`) VALUES
 (1, 'Network', 'VPN Setup Guide', 'To set up your VPN:\n1. Open Cisco AnyConnect.\n2. Enter vpn.techcorp.example.\n3. Log in with your windows credentials.\n4. Approve the DUO push notification.', 1),
@@ -2630,6 +2633,12 @@ INSERT INTO `hotel_booking_distribution_channels` (`company_id`, `channel_code`,
 (5, 'itm_demo', 'ITM Demo Channel', 'itm_native', 'itm_hbd_seed_dem', '$2y$10$ibyWdVkQGqWRdZy3OnJXHOFJA7QHu8ztVKQ.Lt4xZH44fJPaJ6dyG', NULL, 0, 1000, 1, '2026-01-01 00:00:01'),
 (5, 'booking_com', 'Booking.com Sandbox', 'booking_com', 'itm_hbd_seed_dem', '$2y$10$qGv9gguPONVzx9Uo6umaAuDvbEJ7PPg5c3E/GObgEtvhthzL3aKCG', 'DEMO-PROP-5', 1, 1000, 1, '2026-01-01 00:00:01'),
 (5, 'opentravel', 'OpenTravel OTA', 'opentravel', 'itm_hbd_seed_dem', '$2y$10$e9MHCTG7apABZ3Hv2PKH1OjK1vHsXur5AFbp5xL1vxEh5nprSQWQG', NULL, 0, 1000, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_bookings` (`company_id`, `customer_id`, `room_id`, `check_in`, `check_out`, `payment_amount`, `guest_confirmation_code`, `auth2`, `future_status_id`, `portal_rate_plan_id`, `notes`, `booking_color`, `active`, `created_at`) VALUES
+(1, 1, 1, '2026-09-01', '2026-09-03', 240.00, 'HBSEED001', 'AUTH2SEED01', 1, 1, 'Seed reservation for MBQA and portal smoke.', '#4A90D9', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_booking_distribution_reservations` (`company_id`, `channel_id`, `hotel_booking_id`, `external_reservation_id`, `external_status`, `ack_status`, `active`, `created_at`) VALUES
+(1, 2, 1, 'EXT-RES-SEED-001', 'confirmed', 'acked', 1, '2026-01-01 00:00:01');
 
 INSERT INTO `hotel_booking_distribution_mappings` (`company_id`, `channel_id`, `entity_type`, `internal_id`, `external_code`, `active`, `created_at`)
 SELECT ch.`company_id`, ch.`id`, 'hotel', h.`id`, CONCAT('HTL', h.`id`), 1, '2026-01-01 00:00:01'

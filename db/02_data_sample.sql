@@ -10,38 +10,40 @@ INSERT INTO `access_levels` (`company_id`, `id`, `name`, `created_at`) VALUES
 ('1', NULL, 'Read Only', '2026-01-01 00:00:01');
 
 INSERT INTO `alerts` (`company_id`, `title`, `description`, `start_datetime`, `end_datetime`, `location`, `category_id`, `assigned_to_employee_id`, `active`) VALUES
-(1, 'Sample eead8e05', 'Sample be66da8b', '2026-07-20 23:56:01', '2026-07-20 23:56:01', 'Sample f563e85a', 1, NULL, 1);
+(1, 'Sample 986232fe', 'Sample 43b0af2f', '2026-08-16 10:37:51', '2026-08-16 10:37:51', 'Sample a1ae4b77', 1, 1, 1);
 
 INSERT INTO `annual_budgets` (`company_id`, `cost_center_id`, `gl_account_id`, `year`, `amount`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
 (1, '1', '1', '2026', '48000.00', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
 
-INSERT INTO `appointment_type` (`company_id`, `name`, `active`, `created_at`) VALUES
-(1, 'in_person', 0, '2026-01-01 00:00:01'),
-(1, 'remote', 1, '2026-01-01 00:00:01');
+INSERT INTO `appointment_business_hours` (`company_id`, `day_of_week`, `display_label`, `open_time`, `close_time`, `is_closed`, `allows_in_person`, `allows_remote`, `allowed_types_json`, `active`, `created_at`) VALUES
+(1, 0, 'Sun', NULL, NULL, 1, 0, 0, '{"in_person":0,"remote":0}', 1, '2026-01-01 00:00:01'),
+(1, 1, 'Mon', '10:00:00', '18:00:00', 0, 1, 1, '{"in_person":1,"remote":1}', 1, '2026-01-01 00:00:01'),
+(1, 2, 'Tue', '10:00:00', '18:00:00', 0, 1, 1, '{"in_person":1,"remote":1}', 1, '2026-01-01 00:00:01'),
+(1, 3, 'Wed', '10:00:00', '18:00:00', 0, 0, 1, '{"in_person":0,"remote":1}', 1, '2026-01-01 00:00:01'),
+(1, 4, 'Thu', '10:00:00', '18:00:00', 0, 1, 1, '{"in_person":1,"remote":1}', 1, '2026-01-01 00:00:01'),
+(1, 5, 'Fri', '10:00:00', '18:00:00', 0, 1, 1, '{"in_person":1,"remote":1}', 1, '2026-01-01 00:00:01'),
+(1, 6, 'Sat', NULL, NULL, 1, 0, 0, '{"in_person":0,"remote":0}', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `appointment_settings` (`company_id`, `timezone`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `default_appointment_modality`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
+(1, 'US/Central', '60', '09:00:00', '14:00:00', '30', 'remote', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
+
+INSERT INTO `appointment_type` (`company_id`, `name`, `label`, `active`, `created_at`) VALUES
+(1, 'in_person', 'In-person', 1, '2026-01-01 00:00:01'),
+(1, 'remote', 'Remote', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `appointment_visit_reasons` (`company_id`, `name`, `sort_order`, `active`, `created_at`) VALUES
+(1, 'General IT support', 10, 1, '2026-01-01 00:00:01'),
+(1, 'Equipment pickup or return', 20, 1, '2026-01-01 00:00:01'),
+(1, 'New employee onboarding', 30, 1, '2026-01-01 00:00:01'),
+(1, 'Security consultation', 40, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `appointments` (`company_id`, `employee_id`, `visit_reason_id`, `appointment_date`, `start_time`, `end_time`, `appointment_type_id`, `status`, `timezone`, `booking_lock`, `active`, `created_by`, `created_at`) VALUES
 (1, 1, 1, '2026-08-06', '09:00:00', '10:00:00', 1, 'scheduled', 'US/Central', '2026-08-06#09:00:00', 1, 1, '2026-01-01 00:00:01');
 
-INSERT INTO `appointment_settings` (`company_id`, `timezone`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `active`, `created_at`) VALUES
-(1, 'US/Central', 60, '09:00:00', '14:00:00', 30, 1, '2026-01-01 00:00:01');
-
-INSERT INTO `appointment_visit_reasons` (`company_id`, `name`, `sort_order`, `active`, `created_at`) VALUES
-(1, 'General IT support', 10, 1, '2026-01-01 00:00:01');
-
-INSERT INTO `appointment_business_hours` (`company_id`, `day_of_week`, `display_label`, `open_time`, `close_time`, `is_closed`, `allows_in_person`, `allows_remote`, `active`, `created_at`) VALUES
-(1, 0, 'Sun', NULL, NULL, 1, 0, 0, 1, '2026-01-01 00:00:01'),
-(1, 1, 'Mon', '10:00:00', '18:00:00', 0, 1, 1, 1, '2026-01-01 00:00:01'),
-(1, 2, 'Tue', '10:00:00', '18:00:00', 0, 1, 1, 1, '2026-01-01 00:00:01'),
-(1, 3, 'Wed', '10:00:00', '18:00:00', 0, 0, 1, 1, '2026-01-01 00:00:01'),
-(1, 4, 'Thu', '10:00:00', '18:00:00', 0, 1, 1, 1, '2026-01-01 00:00:01'),
-(1, 5, 'Fri', '10:00:00', '18:00:00', 0, 1, 1, 1, '2026-01-01 00:00:01'),
-(1, 6, 'Sat', NULL, NULL, 1, 0, 0, 1, '2026-01-01 00:00:01');
-
 INSERT INTO `approvals` (`company_id`, `forecast_revision_id`, `stage`, `status`, `approved_by`, `approved_at`, `comments`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
-(1, '1', '1', '1', NULL, NULL, 'Awaiting finance validation for submission batch.', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
+(1, '2', '1', '3', NULL, NULL, 'Awaiting finance validation for submission batch.', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
 
 INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`, `created_at`) VALUES
-(NULL, '1', 'Finance Review', 'Finance team review stage before general manager approval.', '1', '2026-01-01 00:00:01'),
 (NULL, '1', 'GM Review', 'General manager review stage before final approval.', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`, `created_at`) VALUES
@@ -69,13 +71,33 @@ INSERT INTO `attempts` (`employee_id`, `email`, `active`, `attempt_source`, `att
 ('1', 'admin@techcorp.example', '1', 'login', 'success', '192.168.1.50', '2026-01-05 07:45:01');
 
 INSERT INTO `backup_tape_log` (`company_id`, `server_id`, `log_date`, `tape_to_be_used`, `time_tape_inserted`, `time_returned_to_safe`, `print_name`, `backup_status`, `problem_details`, `tape_used_for_restore`, `ism_review`, `active`) VALUES
-(1, 1, '2026-07-20', 'Sample 13a28a38', '2026-07-20 23:56:01', '2026-07-20 23:56:01', 'Sample d610d3c0', 'Full', 'Sample bd0e5f0b', 1, 1, 1);
+(1, 1, '2026-08-16', 'Sample dcbbf3e2', '2026-08-16 10:37:51', '2026-08-16 10:37:51', 'Sample efa60443', 'Full', 'Sample 8b5faae3', 1, 1, 1);
+
+INSERT INTO `bank_accounts` (`id`, `company_id`, `institution_name`, `account_name`, `balance`, `currency_code`, `account_number`, `category`, `active`, `created_at`) VALUES
+(1, 1, 'Sample Bank', 'Operating EUR', 12500.00, 'EUR', '****4521', 'Operating', 1, '2026-01-01 00:00:01'),
+(2, 1, 'Sample Bank', 'Payroll EUR', 45000.00, 'EUR', '****4522', 'Payroll', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `bill_line_items` (`id`, `company_id`, `bill_id`, `line_number`, `tax_rate_id`, `tax_rate_snapshot`, `integration_account_id`, `description`, `quantity`, `unit_amount`, `sub_total`, `tax_amount`, `total_amount`, `active`, `created_at`) VALUES
+(1, 1, 1, 1, 3, 23.00, 1, 'Network cables bulk pack', 10.0000, 50.00, 500.00, 115.00, 615.00, 1, '2026-01-01 00:00:01'),
+(2, 1, 1, 2, 3, 23.00, 1, 'Rack mounting kit', 5.0000, 100.00, 500.00, 115.00, 615.00, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `bills` (`id`, `company_id`, `document_number`, `memo`, `posted_date`, `due_date`, `currency_code`, `exchange_rate`, `paid_status_id`, `total_amount`, `sub_total`, `tax_amount`, `amount_due`, `supplier_id`, `cost_center_id`, `gl_account_id`, `active`, `created_at`) VALUES
+(1, 1, 'BILL-2026-0001', 'Sample AP bill for IT supplies', '2026-01-10', '2026-02-10', 'EUR', 1.000000, 3, 1230.00, 1000.00, 230.00, 1230.00, 1, 1, 1, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `booking_rooms_type_photos` (`company_id`, `room_type_id`, `stored_filename`, `original_filename`, `sort_order`, `is_cover`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
+(1, '1', 'hb_rt_dlx_01.jpg', 'deluxe-room-1.jpg', '0', '1', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
+
+INSERT INTO `booking_rooms_types` (`company_id`, `name`, `code`, `description`, `bed_summary`, `room_size_sqm`, `max_adults`, `max_children`, `max_babies`, `filter_tags`, `details_bullets`, `active`, `created_at`) VALUES
+(1, 'Deluxe', 'DLX', 'Spacious deluxe accommodation with garden outlook and private balcony.', '1 King bed', 32.00, 2, 2, 1, 'king,garden_view,balcony', '55" smart TV|Rain shower|Nespresso machine|Balcony seating|Mini bar', 1, '2026-01-01 00:00:01'),
+(1, 'Superior', 'SUP', 'Bright superior room ideal for business or leisure stays.', '2 Twin beds', 28.00, 2, 1, 1, 'twin,city_view', 'City view windows|Work desk|Walk-in shower|Complimentary WiFi', 1, '2026-01-01 00:00:01'),
+(1, 'Standard', 'STD', 'Comfortable standard room with essential amenities.', '1 Queen bed', 24.00, 2, 1, 1, 'queen,city_view', 'Queen bed|In-room safe|Shower|Daily housekeeping', 1, '2026-01-01 00:00:01'),
+(1, 'King Grand Deluxe Room with Pool View', 'POOL', 'Premium corner room with sweeping pool and garden views.', '1 King bed', 38.00, 2, 2, 1, 'king,pool_view,balcony', 'Private balcony|Pool view|Soaking tub|Executive lounge access', 1, '2026-01-01 00:00:01');
 
 INSERT INTO `bookmark_folders` (`company_id`, `employee_id`, `name`, `name_hash`, `position`, `shared`, `active`) VALUES
-(1, 1, 'Sample 27e14487', 'Sample 2faa5394', 1, 1, 1);
+(1, 1, 'Sample 821c8d61', 'Sample 7aa171d5', 1, 1, 1);
 
 INSERT INTO `bookmarks` (`company_id`, `employee_id`, `folder_id`, `title`, `url`, `url_hash`, `notes`, `position`, `shared`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
-(1, '1', NULL, 'ServiceNow', 'https://www.servicenow.com/', 'e76619ad9660a1c181a33522ddeb5503070639508be9f84e096fb967ad0f632c', NULL, '0', '1', '1', NULL, NULL, NULL, '2026-07-20 23:12:30', NULL, NULL);
+(1, '1', NULL, 'ServiceNow', 'https://www.servicenow.com/', 'e76619ad9660a1c181a33522ddeb5503070639508be9f84e096fb967ad0f632c', NULL, '0', '1', '1', NULL, NULL, NULL, '2026-08-16 11:22:02', NULL, NULL);
 
 INSERT INTO `budget_categories` (`id`, `company_id`, `name`, `description`, `active`, `created_at`) VALUES
 (NULL, '1', 'Revenue', 'Revenue-related general ledger accounts', '1', '2026-01-01 00:00:01'),
@@ -117,6 +139,13 @@ INSERT INTO `cost_centers` (`id`, `company_id`, `department_id`, `name`, `code`,
 (NULL, '1', '2', 'Restaurant Operations', 'CC-FNB-OPS', '1', '2026-01-01 00:00:01'),
 (NULL, '1', '4', 'Room Maintenance', 'CC-HSK-RM', '1', '2026-01-01 00:00:01');
 
+INSERT INTO `customer_statuses` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES
+(1, 1, 'Active', 1, '2026-01-01 00:00:01'),
+(2, 1, 'Inactive', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `customers` (`id`, `company_id`, `name`, `customer_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`) VALUES
+(1, 1, 'Acme Hospitality Ltd', 'CUST-001', 'Accounts Payable', 'ap@acme-hospitality.example', '+1-555-0200', 1, 1, '2026-01-01 00:00:01');
+
 INSERT INTO `departments` (`id`, `company_id`, `name`, `code`, `description`, `email`, `phone`, `dect`, `extension`, `active`, `created_at`) VALUES
 (NULL, '1', 'Food and Drinks', 'FNB', 'Food and Beverages department', 'fnb@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01'),
 (NULL, '1', 'Human Resources', 'HR', 'Human resources department', 'hr@example.com', NULL, NULL, NULL, '1', '2026-01-01 00:00:01'),
@@ -139,7 +168,7 @@ INSERT INTO `emails` (`id`, `company_id`, `smtp_config_id`, `to_email`, `from_em
 ('1', '1', '1', 'nelson.salvador@gmail.com', 'noreply@example.com', '', 'Test Email from IT Manager Pro', 'sent', NULL, '2026-06-18 02:06:00', '1', '0', '0', '0', '2026-06-18 02:06:00');
 
 INSERT INTO `employee_assignment_history` (`company_id`, `employee_id`, `equipment_id`, `inventory_item_id`, `asset_description`, `sim_imei`, `assigned_date`, `returned_date`, `condition_on_return`, `signed_handover`, `comments`, `assigned_by_employee_id`, `received_by_employee_id`, `active`) VALUES
-(1, 1, 1, 1, 'Sample 80554882', 'Sample 25fafca8', '2026-07-20', '2026-07-20', 'Sample 08337c80', 1, 'Sample 6222879b', 1, 1, 1);
+(1, 1, 1, 1, 'Sample cf722915', 'Sample 056973fb', '2026-08-16', '2026-08-16', 'Sample e9d86c9a', 1, 'Sample e2b937f3', 1, 1, 1);
 
 INSERT INTO `employee_onboarding_requests` (`id`, `company_id`, `employee_id`, `employee_position_id`, `first_name`, `last_name`, `department_name`, `request_date`, `termination_date`, `network_access`, `micros_emc`, `opera`, `micros_card`, `pms_id`, `synergy_mms`, `email_account`, `landline_phone`, `hu_the_lobby`, `mobile_phone`, `navision`, `mobile_email`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `office_key_card_dep`, `comments`, `starting_date`, `requested_by`, `requested_by_date`, `requested_on`, `hod_approval`, `hod_approval_date`, `hrd_approval`, `hrd_approval_date`, `ism_approval`, `ism_approval_date`, `gm_approval`, `gm_approval_date`, `fin_approval`, `fin_approval_date`, `status_hod`, `status_hrd`, `status_ism`, `status_gm`, `status_fin`, `email_sent_hod`, `email_sent_hod_at`, `email_sent_hrd`, `email_sent_hrd_at`, `email_sent_ism`, `email_sent_ism_at`, `email_sent_gm`, `email_sent_gm_at`, `email_sent_fin`, `email_sent_fin_at`, `active`, `created_at`, `updated_at`) VALUES
 (NULL, 1, NULL, 3, 'SAMPLE', 'NAME', 'FOOD AND DRINKS', '2026-03-24', NULL, 'N/A', 'N/A', 'N/A', 'Waiter', 'N/A', 'N/A', 'N/A', 'N/A', 'SAMPLE NAME', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'Via HR', 'N/A', 'N/A', 'Room Service', NULL, 'Starting date: 16/03/2026 || email@student.com', '2026-03-16', 'HR Recruiter Name', '2026-03-24', '2026-03-24', 'HOD Name', NULL, 'HR Name', NULL, 'ISM Manager Name', NULL, 'GM Name', NULL, 'FIN Name', NULL, 'Waiting', 'Waiting', 'Waiting', 'Waiting', 'Waiting', 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 1, '2026-01-01 00:00:01', NULL);
@@ -153,7 +182,12 @@ INSERT INTO `employee_roles` (`company_id`, `name`, `created_at`) VALUES
 (1, 'IT Manager', '2026-01-01 00:00:01'),
 (1, 'IT Assistant', '2026-01-01 00:00:01'),
 (1, 'Helpdesk', '2026-01-01 00:00:01'),
-(1, 'User', '2026-01-01 00:00:01');
+(1, 'User', '2026-01-01 00:00:01'),
+(1, 'Demo Tickets', '2026-01-01 00:00:01'),
+(1, 'Demo Audit', '2026-01-01 00:00:01'),
+(1, 'Demo Visitors', '2026-01-01 00:00:01'),
+(1, 'Demo Request Password', '2026-01-01 00:00:01'),
+(1, 'Demo Equipment', '2026-01-01 00:00:01');
 
 INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES
 ('1', NULL, 'Active', '2026-01-01 00:00:01'),
@@ -162,18 +196,18 @@ INSERT INTO `employee_statuses` (`company_id`, `id`, `name`, `created_at`) VALUE
 ('1', NULL, 'On Leave', '2026-01-01 00:00:01'),
 ('1', NULL, 'Terminated', '2026-01-01 00:00:01');
 
-INSERT INTO `employee_system_access` (`company_id`, `employee_id`, `network_access`, `micros_emc`, `opera_username`, `micros_card`, `pms_id`, `synergy_mms`, `email_account`, `landline_phone`, `hu_the_lobby`, `mobile_phone`, `navision`, `mobile_email`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `active`) VALUES
-(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+INSERT INTO `employee_system_access` (`company_id`, `employee_id`, `network_access`, `micros_emc`, `opera_username`, `micros_card`, `pms_id`, `synergy_mms`, `email_account`, `landline_phone`, `hu_the_lobby`, `mobile_phone`, `navision`, `mobile_email`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
+(1, '4', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '1', NULL, NULL, NULL, '2026-08-16 11:22:54', NULL, NULL);
 
 INSERT INTO `employee_type` (`company_id`, `id`, `name_type`, `created_at`) VALUES
 ('1', '1', 'Team member', '2026-01-01 00:00:01'),
 ('1', '2', 'Internship', '2026-01-01 00:00:01');
 
 INSERT INTO `employees` (`id`, `duplicate`, `company_id`, `first_name`, `last_name`, `display_name`, `work_email`, `personal_email`, `theme`, `emergency_contact_name`, `emergency_contact_relationship`, `emergency_contact_phone`, `mobile_phone`, `external_number`, `dect`, `extension`, `employee_code`, `external_id`, `password`, `vault_key_hash`, `reset_token`, `reset_token_hash`, `reset_token_expires_at`, `role_id`, `access_level_id`, `username`, `department_id`, `job_code`, `comments`, `request_date`, `start_date`, `requested_by`, `termination_requested_by`, `termination_date`, `network_access`, `micros_emc`, `opera_username`, `micros_card`, `pms_id`, `synergy_mms`, `hu_the_lobby`, `navision`, `onq_ri`, `birchstreet`, `delphi`, `omina`, `vingcard_system`, `digital_rev`, `office_key_card`, `office_key_card_department_id`, `workstation_mode_id`, `assignment_type_id`, `location_id`, `employment_status_id`, `employee_position_id`, `reports_to`, `on_contacts`, `on_orgchart`, `photo`, `employee_type_id`, `birthday`, `hide_year`, `is_hidden`, `raw_status_code`, `created_at`, `updated_at`) VALUES
-(NULL, 0, 1, 'System', 'Admin', 'System Admin1', 'admin@techcorp.example1.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, NULL, (SELECT `id` FROM `access_levels` WHERE `company_id` = 1 AND `name` = 'Full' LIMIT 1), 'Admin', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_statuses` WHERE `company_id` = 1 AND `name` = 'Active' LIMIT 1), NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', NULL);
+(NULL, 0, 1, 'System1', 'Admin1', 'System Admin1', 'admin@techcorp.example1.com', NULL, 'light', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '$2y$10$uICOCOSxZPMi8xEcyJKTjuupQ.MiicyPXuh..kzO.J8VWlfYoqJAi', NULL, NULL, NULL, NULL, NULL, (SELECT `id` FROM `access_levels` WHERE `company_id` = 1 AND `name` = 'Full' LIMIT 1), 'Admin', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, (SELECT `id` FROM `employee_statuses` WHERE `company_id` = 1 AND `name` = 'Active' LIMIT 1), NULL, NULL, 0, 0, NULL, NULL, NULL, 0, 0, NULL, '2026-01-01 00:00:01', NULL);
 
 INSERT INTO `equipment` (`company_id`, `equipment_type_id`, `manufacturer_id`, `location_id`, `rack_id`, `idf_id`, `name`, `serial_number`, `model`, `hostname`, `ip_address`, `patch_port`, `mac_address`, `department_id`, `supplier_id`, `assigned_to_employee_id`, `status_id`, `purchase_date`, `purchase_cost`, `warranty_expiry`, `certificate_expiry`, `warranty_type_id`, `printer_device_type_id`, `printer_color_capable`, `printer_scan`, `workstation_device_type_id`, `workstation_os_type_id`, `workstation_office_id`, `workstation_processor`, `workstation_storage`, `workstation_os_installed_on`, `workstation_ram_id`, `workstation_os_version_id`, `rj45_speed_id`, `switch_rj45_id`, `switch_port_numbering_layout_id`, `switch_fiber_id`, `switch_fiber_patch_id`, `switch_fiber_rack_id`, `switch_fiber_ports_number`, `switch_fiber_port_label`, `switch_poe_id`, `switch_environment_id`, `notes`, `photo_filename`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
-(1, '2', NULL, '1', NULL, NULL, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, '1', NULL, NULL, '1', '2026-06-05', '8500.00', '2026-08-03', NULL, NULL, NULL, '0', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, '2026-04-26 22:07:32');
+(1, '2', NULL, '1', NULL, NULL, 'Primary File Server', 'SN-SRV-001', 'PowerEdge R760', 'srv-file-01', '192.168.10.20', NULL, NULL, '1', NULL, NULL, '1', '2026-06-05', '8500.00', '2026-08-30', NULL, NULL, NULL, '0', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, '2026-04-26 22:07:32');
 
 INSERT INTO `equipment_environment` (`company_id`, `id`, `name`, `created_at`) VALUES
 ('1', '1', 'Managed', '2026-01-01 00:00:01'),
@@ -244,71 +278,36 @@ INSERT INTO `events` (`company_id`, `employee_id`, `assigned_to_employee_id`, `c
 (1, 1, NULL, NULL, 'Server Maintenance', 'f78625785dce5adc93b013e1962ff81f09c6f4908c1277469c95d5cfc02c96cd', 'Monthly server updates and backup verification', '2026-05-15 22:00:00', '2026-05-16 02:00:00', 'Data Center', 2, 1),
 (1, 1, NULL, NULL, 'Team Lunch', 'af65330d1edc5952b1f4283b470c6d2a5b8a14f334a785016235f16c45986610', 'Monthly team building lunch', '2026-05-20 12:00:00', '2026-05-20 13:30:00', 'Local Restaurant', 4, 1);
 
-INSERT INTO `tax_rates` (`id`, `company_id`, `name`, `rate_percent`, `active`, `created_at`) VALUES
-('1', '1', 'VAT 6%', '6.00', '1', '2026-01-01 00:00:01'),
-('2', '1', 'VAT 13%', '13.00', '1', '2026-01-01 00:00:01'),
-('3', '1', 'VAT 23%', '23.00', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `paid_statuses` (`id`, `company_id`, `name`, `sort_order`, `active`, `created_at`) VALUES
-('1', '1', 'Draft', '1', '1', '2026-01-01 00:00:01'),
-('2', '1', 'Approved', '2', '1', '2026-01-01 00:00:01'),
-('3', '1', 'Posted', '3', '1', '2026-01-01 00:00:01'),
-('4', '1', 'Paid', '4', '1', '2026-01-01 00:00:01'),
-('5', '1', 'Voided', '5', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `payment_modes` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES
-('1', '1', 'Bank transfer', '1', '2026-01-01 00:00:01'),
-('2', '1', 'Card', '1', '2026-01-01 00:00:01'),
-('3', '1', 'Cash', '1', '2026-01-01 00:00:01'),
-('4', '1', 'Direct debit', '1', '2026-01-01 00:00:01');
-
 INSERT INTO `expense_recurrence` (`id`, `company_id`, `name`, `code`, `sort_order`, `active`, `created_at`) VALUES
-('1', '1', 'Hourly', 'hourly', '1', '1', '2026-01-01 00:00:01'),
-('2', '1', 'Daily', 'daily', '2', '1', '2026-01-01 00:00:01'),
-('3', '1', 'Weekly', 'weekly', '3', '1', '2026-01-01 00:00:01'),
-('4', '1', 'Monthly', 'monthly', '4', '1', '2026-01-01 00:00:01'),
-('5', '1', 'Quarterly', 'quarterly', '5', '1', '2026-01-01 00:00:01'),
-('6', '1', 'Yearly', 'yearly', '6', '1', '2026-01-01 00:00:01'),
-('7', '1', 'Every 2 years', 'every_2_years', '7', '1', '2026-01-01 00:00:01'),
-('8', '1', 'Every 3 years', 'every_3_years', '8', '1', '2026-01-01 00:00:01'),
-('9', '1', 'Every 4 years', 'every_4_years', '9', '1', '2026-01-01 00:00:01'),
-('10', '1', 'Every 5 years', 'every_5_years', '10', '1', '2026-01-01 00:00:01');
+(1, 1, 'Hourly', 'hourly', 1, 1, '2026-01-01 00:00:01'),
+(2, 1, 'Daily', 'daily', 2, 1, '2026-01-01 00:00:01'),
+(3, 1, 'Weekly', 'weekly', 3, 1, '2026-01-01 00:00:01'),
+(4, 1, 'Monthly', 'monthly', 4, 1, '2026-01-01 00:00:01'),
+(5, 1, 'Quarterly', 'quarterly', 5, 1, '2026-01-01 00:00:01'),
+(6, 1, 'Yearly', 'yearly', 6, 1, '2026-01-01 00:00:01'),
+(7, 1, 'Every 2 years', 'every_2_years', 7, 1, '2026-01-01 00:00:01'),
+(8, 1, 'Every 3 years', 'every_3_years', 8, 1, '2026-01-01 00:00:01'),
+(9, 1, 'Every 4 years', 'every_4_years', 9, 1, '2026-01-01 00:00:01'),
+(10, 1, 'Every 5 years', 'every_5_years', 10, 1, '2026-01-01 00:00:01');
 
-INSERT INTO `customer_statuses` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES
-('1', '1', 'Active', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `customers` (`id`, `company_id`, `name`, `customer_code`, `contact_person`, `email`, `phone`, `status_id`, `active`, `created_at`) VALUES
-('1', '1', 'Acme Hospitality Ltd', 'CUST-001', 'Accounts Payable', 'ap@acme-hospitality.example', '+1-555-0200', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `integration_accounts` (`id`, `company_id`, `nominal_code`, `name`, `currency_code`, `current_balance`, `gl_account_id`, `active`, `created_at`) VALUES
-('1', '1', '6100', 'IT Operating Expense (integration)', 'EUR', '0.00', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `bank_accounts` (`id`, `company_id`, `institution_name`, `account_name`, `balance`, `currency_code`, `account_number`, `category`, `active`, `created_at`) VALUES
-('1', '1', 'Sample Bank', 'Operating Account', '10000.00', 'EUR', 'SAMPLE-0001', 'Operating', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `bills` (`id`, `company_id`, `document_number`, `memo`, `posted_date`, `due_date`, `currency_code`, `exchange_rate`, `paid_status_id`, `total_amount`, `sub_total`, `tax_amount`, `amount_due`, `supplier_id`, `cost_center_id`, `gl_account_id`, `active`, `created_at`) VALUES
-('1', '1', 'BILL-2026-0001', 'Sample AP bill for IT supplies', '2026-01-10', '2026-02-10', 'EUR', '1.000000', '3', '1230.00', '1000.00', '230.00', '1230.00', '1', '1', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `bill_line_items` (`id`, `company_id`, `bill_id`, `line_number`, `tax_rate_id`, `tax_rate_snapshot`, `integration_account_id`, `description`, `quantity`, `unit_amount`, `sub_total`, `tax_amount`, `total_amount`, `active`, `created_at`) VALUES
-('1', '1', '1', '1', '3', '23.00', '1', 'Network cables bulk pack', '10.0000', '50.00', '500.00', '115.00', '615.00', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `invoices` (`id`, `company_id`, `document_number`, `contact_name`, `customer_id`, `posted_date`, `due_date`, `currency_code`, `exchange_rate`, `paid_status_id`, `total_amount`, `sub_total`, `tax_amount`, `amount_due`, `memo`, `cost_center_id`, `gl_account_id`, `active`, `created_at`) VALUES
-('1', '1', 'INV-AR-2026-0001', 'Acme Hospitality Ltd', '1', '2026-02-01', '2026-03-01', 'EUR', '1.000000', '3', '615.00', '500.00', '115.00', '615.00', 'Sample AR invoice', '1', '1', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `invoice_line_items` (`id`, `company_id`, `invoice_id`, `line_number`, `tax_rate_id`, `tax_rate_snapshot`, `integration_account_id`, `description`, `quantity`, `unit_amount`, `sub_total`, `tax_amount`, `total_amount`, `active`, `created_at`) VALUES
-('1', '1', '1', '1', '3', '23.00', '1', 'Managed Wi-Fi monthly', '1.0000', '500.00', '500.00', '115.00', '615.00', '1', '2026-01-01 00:00:01');
-
-INSERT INTO `expenses` (`company_id`, `gl_account_id`, `cost_center_id`, `date`, `posting_date`, `invoice_date`, `amount`, `paid_status_id`, `currency_code`, `exchange_rate`, `description`, `invoice_number`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
-(1, '1', '1', '2026-01-15', '2026-01-15', '2026-01-15', '3890.00', '3', 'EUR', '1.000000', 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', '1', NULL, NULL, '1', '2026-01-01 00:00:01', NULL, NULL);
+INSERT INTO `expenses` (`id`, `company_id`, `cost_center_id`, `gl_account_id`, `date`, `posting_date`, `invoice_date`, `amount`, `net_amount`, `vat_amount`, `tax_rate_id`, `tax_rate_snapshot`, `paid_status_id`, `currency_code`, `exchange_rate`, `description`, `invoice_number`, `created_by`, `active`, `created_at`, `updated_at`) VALUES
+(NULL, 1, 1, 1, '2026-01-15', '2026-01-15', '2026-01-15', 3890.00, 3162.60, 727.40, 3, 23.00, 3, 'EUR', 1.000000, 'Quarterly preventive maintenance contract renewal', 'INV-IT-2026-0001', 1, 1, '2026-01-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-02-12', '2026-02-12', '2026-02-12', 2450.00, 1991.87, 458.13, 3, 23.00, 3, 'EUR', 1.000000, 'Network switch refresh spares', 'INV-IT-2026-0002', 1, 1, '2026-02-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-03-18', '2026-03-18', '2026-03-18', 3125.50, 2541.06, 584.44, 3, 23.00, 3, 'EUR', 1.000000, 'Endpoint security subscription', 'INV-IT-2026-0003', 1, 1, '2026-03-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-04-09', '2026-04-09', '2026-04-09', 1980.00, 1609.76, 370.24, 3, 23.00, 3, 'EUR', 1.000000, 'UPS battery replacement', 'INV-IT-2026-0004', 1, 1, '2026-04-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-05-22', '2026-05-22', '2026-05-22', 4275.00, 3475.61, 799.39, 3, 23.00, 3, 'EUR', 1.000000, 'Wi-Fi controller licence renewal', 'INV-IT-2026-0005', 1, 1, '2026-05-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-06-11', '2026-06-11', '2026-06-11', 2650.00, 2154.47, 495.53, 3, 23.00, 3, 'EUR', 1.000000, 'Helpdesk tooling annual fee', 'INV-IT-2026-0006', 1, 1, '2026-06-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2026-07-08', '2026-07-08', '2026-07-08', 3510.00, 2853.66, 656.34, 3, 23.00, 3, 'EUR', 1.000000, 'Server rack PDU upgrade', 'INV-IT-2026-0007', 1, 1, '2026-07-01 00:00:01', NULL),
+(NULL, 1, 1, 1, '2025-07-14', '2025-07-14', '2025-07-14', 2990.00, 2422.76, 567.24, 3, 23.00, 3, 'EUR', 1.000000, 'Prior-year July infrastructure spend', 'INV-IT-2025-0007', 1, 1, '2025-07-01 00:00:01', NULL);
 
 INSERT INTO `explorer` (`company_id`, `employee_id`, `department_id`, `folder_path`, `file_name`, `file_type`, `is_favorite`, `is_private`, `active`) VALUES
-(1, 1, 1, 'Sample 91ad19f8', 'Sample f5b13182', 'Sample 21373015', 1, 1, 1);
+(1, 1, 1, 'Sample 9373621b', 'Sample ea06bfc1', 'Sample 9b174c4a', 1, 1, 1);
 
 INSERT INTO `floor_designer` (`company_id`, `name`, `it_location_id`, `sq_meters`, `shape_type`, `floor_plan_id`, `active`) VALUES
-(1, 'Sample d76f94d9', 1, 1, 'Square', 1, 1);
+(1, 'Sample 100a8b6e', 1, 1, 'Square', 1, 1);
 
 INSERT INTO `floor_designer_points` (`company_id`, `floor_designer_id`, `point_type_id`, `x`, `y`, `comment_x`, `comment_y`, `wlan_address`, `ip_address`, `mac_address`, `patch_port`, `switch_id`, `switch_port_id`, `cable_color_id`, `label`, `rotation`, `active`) VALUES
-(1, 1, 1, 1, 1, 1, 1, 'Sample c581bb62', 'Sample 9edf285e', 'Sample a66ea8f7', 'Sample b49d96c8', 1, 1, 1, 'Sample 23b88e75', 1, 1);
+(1, 1, 1, 1, 1, 1, 1, 'Sample 3c72e9db', 'Sample 8987c679', 'Sample 97617232', 'Sample 410e8a53', 1, 1, 1, 'Sample 23463217', 1, 1);
 
 INSERT INTO `floor_plan_folders` (`id`, `company_id`, `parent_folder_id`, `name`, `active`, `created_at`) VALUES
 (NULL, '1', '1', 'Level 1', '1', '2026-01-01 00:00:01');
@@ -321,7 +320,7 @@ INSERT INTO `floor_plan_tags` (`id`, `company_id`, `name`, `active`, `created_at
 (NULL, '1', 'Building A', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `floor_plans` (`company_id`, `folder_id`, `it_location_id`, `display_name`, `stored_filename`, `mime_type`, `file_ext`, `file_size`, `active`) VALUES
-(1, 1, 1, 'Sample 046d3868', 'Sample ac348eac', 'Sample 9223b3c5', 'Sample d224e154', 1, 1);
+(1, 1, 1, 'Sample e8ea2441', 'Sample cfd50a73', 'Sample 486a3763', 'Sample 8b564039', 1, 1);
 
 INSERT INTO `forecast_revisions` (`company_id`, `cost_center_id`, `gl_account_id`, `year`, `month`, `forecast_amount`, `status`, `locked`, `submitted_by`, `finance_reviewed_by`, `gm_approved_by`, `notes`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
 (1, '1', '1', '2026', '2', '4200.00', '1', '0', NULL, NULL, NULL, 'Draft projection before finance review', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
@@ -335,7 +334,130 @@ INSERT INTO `forecast_revisions_status` (`id`, `company_id`, `status`, `notes`, 
 (NULL, 1, 'Rejected', NULL, 1, '2026-01-01 00:00:01', NULL);
 
 INSERT INTO `gl_accounts` (`company_id`, `account_code`, `account_name`, `category_id`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
-(1, '6100', 'IT Maintenance Contracts', '6', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
+(1, '6100', 'IT Maintenance Contracts', '2', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
+
+INSERT INTO `hotel_booking_amenities` (`company_id`, `name`, `icon_slug`, `sort_order`, `active`, `created_at`) VALUES
+(1, 'Free WiFi', 'wifi', 10, 1, '2026-01-01 00:00:01'),
+(1, 'Outdoor pool', 'pool', 20, 1, '2026-01-01 00:00:01'),
+(1, 'Indoor pool', 'pool', 25, 1, '2026-01-01 00:00:01'),
+(1, 'Fitness center', 'fitness', 30, 1, '2026-01-01 00:00:01'),
+(1, 'Spa', 'spa', 40, 1, '2026-01-01 00:00:01'),
+(1, 'Parking', 'parking', 50, 1, '2026-01-01 00:00:01'),
+(1, 'Restaurant', 'restaurant', 60, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_booking_distribution_ari_events` (`company_id`, `channel_id`, `hotel_id`, `room_type_id`, `event_type`, `direction`, `status`, `request_json`, `response_json`, `active`) VALUES
+(1, 1, 1, 1, 'Sample e5c68ba3', 'Sample 739869bf', 'Sample 0c9a3377', 'Sample 1f8e31d6', 'Sample bdbbed26', 1);
+
+INSERT INTO `hotel_booking_distribution_ari_restrictions` (`company_id`, `channel_id`, `hotel_id`, `room_type_id`, `rate_plan_mapping_id`, `stay_date`, `min_los`, `max_los`, `closed_to_arrival`, `closed_to_departure`, `stop_sell`, `derived_price_multiplier`, `base_price_override`, `active`) VALUES
+(1, 1, 1, 1, 1, '2026-08-16', 1, 1, 1, 1, 1, 1, 1, 1);
+
+INSERT INTO `hotel_booking_distribution_channels` (`company_id`, `channel_code`, `name`, `standard`, `api_key_prefix`, `api_key_hash`, `webhook_url`, `partner_api_username`, `partner_api_password_encrypted`, `partner_property_id`, `partner_sandbox_mode`, `webhook_signing_secret_encrypted`, `outbound_webhook_api_key_encrypted`, `last_ari_push_checksum`, `webhook_max_attempts`, `hourly_rate_limit`, `api_requests_count`, `api_window_started_at`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
+(1, 'itm_demo', 'ITM Demo Channel', 'itm_native', 'itm_hbd_seed_dem', '$2y$10$azYgPlW7lxMUNQQsS1qveurtHepVpBLbnEcmPsJbKXre55Qs7hVsG', NULL, NULL, NULL, NULL, '0', NULL, NULL, NULL, '5', '1000', '0', NULL, '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
+
+INSERT INTO `hotel_booking_distribution_mappings` (`company_id`, `channel_id`, `entity_type`, `internal_id`, `external_code`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
+(1, '1', 'hotel', '1', 'HTL1', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
+
+INSERT INTO `hotel_booking_distribution_rate_plan_mappings` (`company_id`, `channel_id`, `hotel_id`, `portal_rate_plan_id`, `external_rate_plan_code`, `min_los`, `max_los`, `price_multiplier`, `restrictions_json`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
+(1, '2', '1', '1', 'RP1', '1', NULL, '1.0000', NULL, '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
+
+INSERT INTO `hotel_booking_distribution_reservations` (`company_id`, `channel_id`, `hotel_booking_id`, `external_reservation_id`, `external_status`, `ack_status`, `active`, `created_at`) VALUES
+(1, 2, 1, 'EXT-RES-SEED-001', 'confirmed', 'acked', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_booking_distribution_webhook_queue` (`company_id`, `channel_id`, `hotel_id`, `direction`, `event_type`, `target_url`, `content_type`, `payload_body`, `status`, `attempt_count`, `max_attempts`, `next_retry_at`, `last_http_code`, `last_error`, `delivered_at`, `active`) VALUES
+(1, 1, 1, 'Sample 5b3a2709', 'Sample d1931814', 'Sample ae65ecc5', 'Sample 34d76661', 'Sample 5dcbb304', 'Sample 75c1d450', 1, 1, '2026-08-16 10:37:51', 1, 'Sample b09a8b35', '2026-08-16 10:37:51', 1);
+
+INSERT INTO `hotel_booking_hotel_nearby` (`company_id`, `hotel_id`, `place_name`, `distance_km`, `sort_order`, `active`, `created_at`) VALUES
+(1, 1, 'City center', 12.60, 10, 1, '2026-01-01 00:00:01'),
+(1, 1, 'Airport', 8.20, 20, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_booking_hotel_photos` (`company_id`, `hotel_id`, `stored_filename`, `original_filename`, `sort_order`, `is_cover`, `active`, `created_at`) VALUES
+(1, 1, 'hb_seed_01.jpg', 'hotel-sample-exterior.jpg', 0, 1, 1, '2026-01-01 00:00:01'),
+(1, 1, 'hb_seed_02.jpg', 'hotel-sample-lobby.jpg', 1, 0, 1, '2026-01-01 00:00:01'),
+(1, 1, 'hb_seed_03.jpg', 'hotel-sample-room.jpg', 2, 0, 1, '2026-01-01 00:00:01'),
+(1, 1, 'hb_seed_04.jpg', 'hotel-sample-pool.jpg', 3, 0, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_booking_hotels` (`company_id`, `name`, `description`, `location`, `phone`, `contact_email`, `reservations_email`, `website_url`, `reviews_url`, `check_in_time`, `check_out_time`, `currency_code`, `parking_info`, `pets_policy`, `active`, `created_at`) VALUES
+(1, 'TechCorp Retreat', 'A comfortable property for business and leisure.', 'Lisbon, Portugal', '+351 210 000 001', 'info@techcorp-retreat.example', 'reservations@techcorp-retreat.example', 'https://example.com/techcorp-retreat', 'https://www.tripadvisor.pt/Hotel_Review-g262054-d2142716-Reviews-Conrad_Algarve-Almancil_Loule_Faro_District_Algarve.html#REVIEWS', '15:00:00', '12:00:00', 'EUR', 'Self and valet parking complimentary.', 'Pets allowed under 15kg with fee.', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_booking_housekeeping_maintenance` (`company_id`, `room_id`, `from_date`, `through_date`, `return_status_id`, `maintenance_status_id`, `comments`, `active`) VALUES
+(1, 1, '2026-08-16', '2026-08-16', 1, 1, 'Sample f1b01062', 1);
+
+INSERT INTO `hotel_booking_housekeeping_maintenance_status` (`company_id`, `name`, `code`, `active`, `created_at`) VALUES
+(1, 'Out of Order', 'ooo', 1, '2026-01-01 00:00:01'),
+(1, 'Out of Service', 'oos', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_booking_housekeeping_statuses` (`company_id`, `name`, `code`, `color_hex`, `active`, `created_at`) VALUES
+(1, 'Inspected', 'INSP', '#28a745', 1, '2026-01-01 00:00:01'),
+(1, 'Clean', 'CLN', '#17a2b8', 1, '2026-01-01 00:00:01'),
+(1, 'Dirty', 'DIRTY', '#dc3545', 1, '2026-01-01 00:00:01'),
+(1, 'Pickup', 'PICK', '#ffc107', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_booking_portal_rate_plans` (`company_id`, `hotel_id`, `plan_slot`, `name`, `rate_plan_slug`, `cancellation_policy_url`, `pay_badge`, `price_label`, `cancel_template`, `plan_discount_percent`, `plan_surcharge_percent`, `free_cancellation_days_before_check_in`, `active`, `created_at`) VALUES
+(1, 1, 1, 'Best Available Rate', 'room_only', 'cancellation_policy/1_cancellation_policy.html', 'Pay when you stay', 'Best available rate', 'Change or cancel by {date}.', 0.00, 0.00, NULL, 1, '2026-01-01 00:00:01'),
+(1, 1, 2, 'Breakfast Included', 'breakfast', 'cancellation_policy/2_cancellation_policy.html', 'Pay when you stay', 'With breakfast', 'Change or cancel by {date}.', 0.00, 0.00, NULL, 1, '2026-01-01 00:00:01'),
+(1, 1, 3, 'Flexible Rate', 'flexible', 'cancellation_policy/3_cancellation_policy.html', 'Pay when you stay', 'Flexible rate', 'Free cancellation until {date}.', 0.00, 0.00, NULL, 1, '2026-01-01 00:00:01'),
+(1, 1, 4, 'Non-Refundable Rate', 'non_refundable', 'cancellation_policy/4_cancellation_policy.html', 'Non-refundable', 'Non-refundable rate', 'Non-refundable. No free cancellation after booking.', 10.00, 0.00, NULL, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_booking_portal_users` (`company_id`, `customer_id`, `email`, `password_hash`, `active`) VALUES
+(1, 1, 'sample-00362dad@example.com', 'Sample 27492d02', 1);
+
+INSERT INTO `hotel_booking_room_photos` (`company_id`, `room_id`, `stored_filename`, `original_filename`, `sort_order`, `is_cover`, `active`) VALUES
+(1, 1, 'Sample f5601aeb', 'Sample 3d54f5e4', 1, 1, 1);
+
+INSERT INTO `hotel_booking_room_type_base_prices` (`company_id`, `hotel_id`, `room_type_id`, `price_per_night`, `active`, `created_at`) VALUES
+(1, 1, 1, 120.00, 1, '2026-01-01 00:00:01'),
+(1, 1, 2, 95.00, 1, '2026-01-01 00:00:01'),
+(1, 1, 3, 75.00, 1, '2026-01-01 00:00:01'),
+(1, 1, 4, 145.00, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_booking_room_type_blocks` (`company_id`, `hotel_id`, `room_type_id`, `start_date`, `end_date`, `reason`, `active`) VALUES
+(1, 1, 1, '2026-08-16', '2026-08-16', 'Sample 58dd88e0', 1);
+
+INSERT INTO `hotel_booking_room_type_rate_overrides` (`company_id`, `hotel_id`, `room_type_id`, `start_date`, `end_date`, `price_per_night`, `notes`, `active`) VALUES
+(1, 1, 1, '2026-08-16', '2026-08-16', 1, 'Sample e80d1a7e', 1);
+
+INSERT INTO `hotel_booking_room_utilities` (`company_id`, `room_id`, `amenity_id`, `icon_class`, `name`, `description`, `active`) VALUES
+(1, 1, 1, 'Sample 105d6a69', 'Sample 1524f25d', 'Sample 07502c1b', 1);
+
+INSERT INTO `hotel_booking_rooms` (`company_id`, `hotel_id`, `room_type_id`, `housekeeping_status_id`, `room_number`, `name`, `floor`, `num_persons`, `num_beds`, `size_sqm`, `view_label`, `active`, `created_at`) VALUES
+(1, 1, 3, 1, '101', 'Standard Queen 101', '1', 2, 1, 24.00, 'City', 1, '2026-01-01 00:00:01'),
+(1, 1, 2, 2, '202', 'Superior Twin 202', '2', 2, 2, 28.00, 'City', 1, '2026-01-01 00:00:01'),
+(1, 1, 1, 1, '201', 'Deluxe King 201', '2', 2, 1, 32.00, 'Garden', 1, '2026-01-01 00:00:01'),
+(1, 1, 4, 1, '301', 'Grand Deluxe Pool 301', '3', 2, 1, 38.00, 'Pool', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_booking_settings` (`company_id`, `public_portal_enabled`, `welcome_title`, `welcome_subtitle`, `price_footnote`, `reviews_url`, `tourist_tax_per_person_per_night`, `free_cancellation_days_before_check_in`, `calendar_month_advance_days_left`, `show_discount_strikethrough`, `urlmybooking`, `active`, `created_at`) VALUES
+(1, 1, 'Find your stay', 'Browse hotels and book with confidence.', 'Prices include tourist tax and may vary by date and availability.', 'https://www.tripadvisor.pt/Hotel_Review-g262054-d2142716-Reviews-Conrad_Algarve-Almancil_Loule_Faro_District_Algarve.html#REVIEWS', 2.00, 5, 3, 1, 'https://localhost/it-management/booking/users/bookings.php', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_booking_special_rates` (`company_id`, `hotel_id`, `rate_slug`, `name`, `discount_percent`, `description`, `active`, `created_at`) VALUES
+(1, 1, 'member', 'Member rate', 15.00, 'Sign in or join to save on your stay.', 1, '2026-01-01 00:00:01'),
+(1, 1, 'aaa', 'AAA / CAA', 12.00, 'Valid membership card required at check-in.', 1, '2026-01-01 00:00:01'),
+(1, 1, 'government', 'Government', 8.00, 'Eligible government and military ID required.', 1, '2026-01-01 00:00:01'),
+(1, 1, 'points', 'Use Points', 0.00, 'Redeem loyalty points at checkout.', 1, '2026-01-01 00:00:01'),
+(1, 1, 'travel_agent', 'Travel agents', 5.00, 'Valid IATA or agency credentials required.', 1, '2026-01-01 00:00:01'),
+(1, 1, 'senior', 'Senior rate', 10.00, 'Guest must meet property age requirements.', 1, '2026-01-01 00:00:01'),
+(1, 1, 'promo', 'Promotion code', 15.00, 'Enter a valid promotion code.', 1, '2026-01-01 00:00:01'),
+(1, 1, 'group', 'Group code', 15.00, 'Enter a valid group code.', 1, '2026-01-01 00:00:01'),
+(1, 1, 'corporate', 'Corporate account', 15.00, 'Enter a valid corporate account number.', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_bookings` (`company_id`, `customer_id`, `room_id`, `check_in`, `check_out`, `payment_amount`, `guest_confirmation_code`, `auth2`, `future_status_id`, `portal_rate_plan_id`, `notes`, `booking_color`, `active`, `created_at`) VALUES
+(1, 1, 1, '2026-09-01', '2026-09-03', 240.00, 'HBSEED001', 'AUTH2SEED01', 1, 1, 'Seed reservation for MBQA and portal smoke.', '#4A90D9', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_bookings_future` (`company_id`, `name`, `active`, `created_at`) VALUES
+(1, 'CONFIRMED', 1, '2026-01-01 00:00:01'),
+(1, 'CANCELLED', 1, '2026-01-01 00:00:01'),
+(1, 'PENDING', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_bookings_history` (`company_id`, `name`, `active`, `created_at`) VALUES
+(1, 'CHECKED-OUT', 1, '2026-01-01 00:00:01'),
+(1, 'CANCELLED', 1, '2026-01-01 00:00:01'),
+(1, 'NO-SHOW', 1, '2026-01-01 00:00:01');
+
+INSERT INTO `hotel_bookings_present` (`company_id`, `name`, `active`, `created_at`) VALUES
+(1, 'IN-HOUSE', 1, '2026-01-01 00:00:01'),
+(1, 'DUE-IN', 1, '2026-01-01 00:00:01'),
+(1, 'DUE-OUT', 1, '2026-01-01 00:00:01'),
+(1, 'NO-SHOW', 1, '2026-01-01 00:00:01'),
+(1, 'CANCELLED', 1, '2026-01-01 00:00:01');
 
 INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_edit_emoji`, `active`, `created_at`, `updated_at`) VALUES
 ('1', '1', 'switch', '🔀', '1', '2026-01-01 00:00:01', NULL),
@@ -348,17 +470,20 @@ INSERT INTO `idf_device_type` (`id`, `company_id`, `idfdevicetype_name`, `field_
 ('28', '1', 'pdu', '🔌', '1', '2026-01-01 00:00:01', NULL);
 
 INSERT INTO `idf_links` (`company_id`, `port_id_a`, `port_id_b`, `equipment_id`, `equipment_hostname`, `equipment_port_type`, `equipment_port`, `equipment_vlan_id`, `equipment_rj45_speed_id`, `equipment_fiber_port_id`, `equipment_fiber_patch_id`, `equipment_fiber_rack_id`, `equipment_to_idf_id`, `equipment_to_rack_id`, `equipment_to_location_id`, `equipment_label`, `equipment_comments`, `equipment_status_id`, `equipment_color_id`, `cable_color_id`, `cable_color_hex`, `cable_label`, `notes`, `active`) VALUES
-(1, 1, 1, 'Sample 7fb10a82', 'Sample 7cc945a6', 'Sample cba41b1a', 'Sample 88d72b44', 1, 1, 1, 1, 1, 1, 1, 1, 'Sample ffc788b6', 'Sample 59897e5b', 1, 1, 1, 'Sample aa598166', 'Sample 047632d4', 'Sample 9b6a8a84', 1);
+(1, 1, 1, 'Sample 3b8c950a', 'Sample e953584f', 'Sample 72e5eb4d', 'Sample aca5ab0d', 1, 1, 1, 1, 1, 1, 1, 1, 'Sample 7dd5b604', 'Sample cbb9a4a9', 1, 1, 1, 'Sample 0efaefba', 'Sample 604813a5', 'Sample 49732e4f', 1);
 
 INSERT INTO `idf_ports` (`company_id`, `position_id`, `port_no`, `port_type`, `label`, `status_id`, `connected_to`, `vlan_id`, `speed_id`, `fiber_patch_id`, `fiber_rack_id`, `to_idf_id`, `to_rack_id`, `to_location_id`, `rj45_speed_id`, `fiber_ports_number`, `switch_port_numbering_layout_id`, `management_id`, `poe_id`, `cable_color`, `hex_color`, `notes`, `active`) VALUES
-(1, 1, 1, 1, 'Sample b2c7912f', 10, 'Sample f15ad97f', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 'Sample a7ab575a', '#808080', 'Sample f5e4c67b', 1),
-(1, 1, 2, 1, 'Sample b2c7912f', 10, 'Sample f15ad97f', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 'Sample a7ab575a', '#808080', 'Sample f5e4c67b', 1);
+(1, 1, 1, 1, 'Sample 1aef1ec7', 10, 'Sample bc4edcce', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 'Sample 311ae015', '#808080', 'Sample 5b2257a4', 1),
+(1, 1, 2, 1, 'Sample 1aef1ec7', 10, 'Sample bc4edcce', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 'Sample 311ae015', '#808080', 'Sample 5b2257a4', 1);
 
 INSERT INTO `idf_positions` (`company_id`, `idf_id`, `position_no`, `device_type`, `device_name`, `equipment_id`, `rj45_count`, `sfp_count`, `price`, `switch_port_numbering_layout_id`, `notes`, `active`) VALUES
-(1, 1, 1, 1, 'Sample Device', 'Sample 74a80b23', 1, 1, 1, 1, 'Sample 2269de8e', 1);
+(1, 1, 1, 1, 'Sample Device', 'Sample eda43995', 1, 1, 1, 1, 'Sample 41c3537d', 1);
 
 INSERT INTO `idfs` (`id`, `company_id`, `location_id`, `rack_id`, `name`, `idf_code`, `notes`, `active`, `created_at`) VALUES
 ('1', '1', '1', '1', 'FO B1.2', 'IDF B1.2', 'FO', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `integration_accounts` (`id`, `company_id`, `nominal_code`, `name`, `currency_code`, `current_balance`, `gl_account_id`, `active`, `created_at`) VALUES
+(1, 1, '6100', 'IT Operating Expense (integration)', 'EUR', 0.00, 1, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES
 ('1', '1', 'Cables - Ethernet', 'CBL-ETH', '1', '2026-01-01 00:00:01'),
@@ -371,8 +496,14 @@ INSERT INTO `inventory_categories` (`company_id`, `id`, `name`, `code`, `active`
 INSERT INTO `inventory_items` (`id`, `company_id`, `name`, `item_code`, `serial`, `storage_date`, `category_id`, `manufacturer_id`, `quantity_on_hand`, `quantity_minimum`, `price_eur`, `last_employee_id`, `last_employee_manual`, `comments`, `location_id`, `supplier_id`, `active`, `created_at`, `updated_at`) VALUES
 (1, 1, 'Cat6 Cable 2m', 'INV-CAT6-2M', 'SER-CAT6-2M', '2024-01-15', 1, 1, 50, 10, 4.99, NULL, NULL, 'Stock for patching and desktop setups', 1, 1, 1, '2026-01-01 00:00:01', '2026-05-17 05:08:05');
 
+INSERT INTO `invoice_line_items` (`id`, `company_id`, `invoice_id`, `line_number`, `tax_rate_id`, `tax_rate_snapshot`, `integration_account_id`, `description`, `quantity`, `unit_amount`, `sub_total`, `tax_amount`, `total_amount`, `active`, `created_at`) VALUES
+(1, 1, 1, 1, 3, 23.00, 1, 'Managed Wi-Fi monthly', 1.0000, 500.00, 500.00, 115.00, 615.00, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `invoices` (`id`, `company_id`, `document_number`, `contact_name`, `customer_id`, `posted_date`, `due_date`, `currency_code`, `exchange_rate`, `paid_status_id`, `total_amount`, `sub_total`, `tax_amount`, `amount_due`, `memo`, `cost_center_id`, `gl_account_id`, `active`, `created_at`) VALUES
+(1, 1, 'INV-AR-2026-0001', 'Acme Hospitality Ltd', 1, '2026-02-01', '2026-03-01', 'EUR', 1.000000, 3, 615.00, 500.00, 115.00, 615.00, 'Sample AR invoice', 1, 1, 1, '2026-01-01 00:00:01');
+
 INSERT INTO `ip_addresses` (`company_id`, `subnet_id`, `ip_text`, `status`, `equipment_id`, `hostname`, `is_gateway`, `is_dns`, `dhcp_managed`, `notes`, `active`) VALUES
-(1, 1, '192.168.1.10', 'free', 1, 'Sample 353bdb17', 1, 1, 1, 'Sample e2465c95', 1);
+(1, 1, '192.168.1.10', 'free', 1, 'Sample de95b6a7', 1, 1, 1, 'Sample e4c32e39', 1);
 
 INSERT INTO `ip_subnets` (`company_id`, `vlan_id`, `cidr`, `network_ip`, `prefix_length`, `gateway_ip`, `dns1_ip`, `dns2_ip`, `dhcp_enabled`, `description`, `active`, `created_at`) VALUES
 ('1', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '1', NULL, '1', '2026-01-01 00:00:01');
@@ -380,18 +511,19 @@ INSERT INTO `ip_subnets` (`company_id`, `vlan_id`, `cidr`, `network_ip`, `prefix
 INSERT INTO `it_locations` (`id`, `company_id`, `name`, `location_code`, `address`, `city`, `state`, `country`, `postal_code`, `phone`, `type_id`, `active`, `created_at`, `updated_at`) VALUES
 ('1', '1', 'HQ NYC', 'LOC-NY-01', NULL, 'New York', NULL, 'USA', NULL, NULL, '1', '1', '2026-01-01 00:00:01', NULL);
 
-INSERT INTO `it_settings` (`company_id`, `contact_email`, `contact_phone`, `hours_of_operation`, `escalation_procedure`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
-(1, 'it-support@techcorp.example', '+1-212-555-0199', '24/7', 'For critical outages, call the On-Call Manager at +1-212-555-0911.', '1', NULL, NULL, NULL, '2026-07-20 23:12:30', NULL, NULL);
+INSERT INTO `it_settings` (`company_id`, `contact_email`, `contact_phone`, `hours_of_operation`, `escalation_procedure`, `chat_same_tenant`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
+(1, 'it-support@techcorp.example', '+1-212-555-0199', '24/7', 'For critical outages, call the On-Call Manager at +1-212-555-0911.', '1', '1', NULL, NULL, NULL, '2026-08-16 11:22:02', NULL, NULL);
 
-INSERT INTO `knowledge_base` (`company_id`, `employee_id`, `category`, `title`, `content`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
-(1, '1', 'Network', 'VPN Setup Guide', 'To set up your VPN:
-1. Open Cisco AnyConnect.
-2. Enter vpn.techcorp.example.
-3. Log in with your windows credentials.
-4. Approve the DUO push notification.', '1', NULL, NULL, NULL, '2026-07-20 23:12:30', NULL, NULL);
+INSERT INTO `knowledge_base` (`company_id`, `category`, `title`, `content`, `active`) VALUES
+(1, 'Network', 'VPN Setup Guide', 'To set up your VPN:\n1. Open Cisco AnyConnect.\n2. Enter vpn.techcorp.example.\n3. Log in with your windows credentials.\n4. Approve the DUO push notification.', 1),
+(1, 'Password Management', 'How to reset your password', 'To reset your domain password:\n1. Press Ctrl+Alt+Del\n2. Select "Change a password"\n3. Follow the on-screen instructions.\nIf you are locked out, please call the IT helpdesk.', 1),
+(1, 'Printers', 'Troubleshooting Printer Issues', 'If your printer is not working:\n1. Check if it is turned on and connected to the network.\n2. Ensure there is paper and toner.\n3. Restart the printer spooler on your PC.\n4. If issues persist, contact IT with the printer name/IP.', 1),
+(1, 'Network', 'Connecting to Office WiFi', 'To connect to the "TechCorp_Internal" WiFi:\n1. Select the SSID from your device.\n2. Use your windows credentials (domain username and password).\n3. Accept the security certificate if prompted.', 1),
+(1, 'Software', 'Installing Authorized Software', 'Software must be requested via the IT Portal. Once approved, it will appear in the "Software Center" on your desktop for one-click installation.', 1),
+(1, 'Security', 'Reporting Suspicious Emails', 'If you receive a suspicious email (phishing):\n1. Do not click any links or download attachments.\n2. Click the "Report Phish" button in Outlook.\n3. Delete the email immediately.', 1);
 
 INSERT INTO `license_management` (`company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `notes`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
-(1, 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '1', '1', '1', '2025-01-15', '2026-08-09', '150.00', 'Sample per-user subscription', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
+(1, 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '1', '1', '1', '2025-01-15', '2026-09-05', '150.00', 'Sample per-user subscription', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
 
 INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES
 ('1', '1', 'Per User', '1', '2026-01-01 00:00:01'),
@@ -423,7 +555,8 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 ("access_levels", "Access Levels", 0, 1),
 ("alerts", "Alerts", 0, 1),
 ("annual_budgets", "Annual Budgets", 0, 1),
-("appointment", "Appointment", 0, 1, "📅"),
+("appointments", "Appointments", 0, 1, "📅"),
+("appointment_settings", "Appointment Settings", 0, 1, "⚙️"),
 ("approvals", "Approvals", 0, 1),
 ("approvals_stage", "Approvals Stage", 0, 1),
 ("approver_type", "Approver Type", 0, 1),
@@ -433,7 +566,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 ("audit_logs", "Audit Logs", 1, 1),
 ("backup_tape_log", "Backup Tape Log File", 0, 1),
 ("birthdays", "Birthdays", 0, 1),
-("myactivity", "My Activity", 0, 1),
+("myactivity", "My Activity", 0, 1, "🕒"),
 ("bookmark_folders", "Bookmark Folders", 0, 1),
 ("bookmarks", "Bookmarks", 0, 1),
 ("budget_categories", "Budget Categories", 0, 1),
@@ -443,7 +576,11 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 ("catalogs", "Catalogs", 0, 1),
 ("companies", "Companies", 1, 1),
 ("company_module_access", "Company Module Access", 1, 1),
+("share_modules", "Share Modules", 1, 1),
 ("contacts", "Contacts", 0, 1),
+("customer_statuses", "Customer Statuses", 0, 1),
+("customers", "Customers", 0, 1),
+("news", "News", 0, 1, "📰"),
 ("cost_centers", "Cost Centers", 0, 1),
 ("departments", "Departments", 0, 1),
 ("employee_assignment_history", "Employee Assignment History", 0, 1),
@@ -452,6 +589,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 ("employee_statuses", "Employee Statuses", 0, 1),
 ("employee_type", "Employee Type", 0, 1),
 ("emails", "Email Management", 0, 1, "📧"),
+("webmail", "Webmail", 0, 1, "📬"),
 ("employee_system_access", "Employee System Access", 0, 1),
 ("employees", "Employees", 0, 1),
 ("equipment", "Equipment", 0, 1),
@@ -467,6 +605,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 ("event_categories", "Event Categories", 0, 1),
 ("events", "Events", 0, 1),
 ("expenses", "Expenses", 0, 1),
+("expense_recurrence", "Expense Recurrence", 0, 1),
 ("expiring", "Expiring", 0, 1),
 ("explorer", "Explorer", 0, 1),
 ("floor_designer", "Floor Designer", 0, 1),
@@ -500,6 +639,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 ("is_switch", "Is Switch", 0, 1),
 ("is_workstation", "Is Workstation", 0, 1),
 ("license_management", "License Management", 0, 1),
+("live_chat", "Live Chat", 0, 1, "💬"),
 ("it_locations", "It Locations", 0, 1),
 ("location_types", "Location Types", 0, 1),
 ("manufacturers", "Manufacturers", 0, 1),
@@ -557,18 +697,37 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 ("workstation_ram", "Workstation Ram", 0, 1),
 ("import", "Bulk Import", 1, 1, "📥"),
 ("system_status", "System Status", 1, 1, "🖥️"),
+("schema_migrations", "Schema Migrations", 1, 1, "📜"),
 ("knowledge_base", "Knowledge Base", 0, 1, "🧩"),
 ("it_settings", "IT Settings", 0, 1, "⚙️"),
-("request_password", "Request Password", 0, 1, "🔑");
+("request_password", "Request Password", 0, 1, "🔑"),
+("hotel_bookings", "Hotel Bookings", 0, 1, "🏨"),
+("hotel_booking_hotels", "Hotels", 0, 1, "🏨"),
+("booking_rooms_types", "Room Types", 0, 1, "🛏️"),
+("hotel_booking_rooms", "Hotel Rooms", 0, 1, "🚪"),
+("hotel_booking_amenities", "Booking Amenities", 0, 1, "✨"),
+("hotel_booking_special_rates", "Booking Special Rates", 0, 1, "🏷️"),
+("hotel_booking_room_type_calendar", "Room Type Calendar", 0, 1, "📆"),
+("hotel_booking_portal_rate_plans", "Portal Rate Plans", 0, 1, "📋"),
+("hotel_booking_room_utilities", "Room Utilities", 0, 1, "✨"),
+("hotel_booking_housekeeping_statuses", "HSK Statuses", 0, 1, "🧹"),
+("hotel_booking_housekeeping_maintenance_status", "HSK Maintenance Status", 0, 1, "🔧"),
+("hotel_booking_housekeeping_maintenance", "HSK Maintenance", 0, 1, "🛠️"),
+("hotel_bookings_future", "Booking Future Status", 0, 1, "📅"),
+("hotel_bookings_present", "Booking Present Status", 0, 1, "🏠"),
+("hotel_bookings_history", "Booking History Status", 0, 1, "📜"),
+("hotel_booking_settings", "Hotel Booking Settings", 0, 1, "⚙️"),
+("hotel_booking_distribution_channels", "Distribution Channels", 0, 1, "📡"),
+("hotel_booking_room_photos", "Room Photos", 0, 1, "🖼️");
 
 INSERT INTO `monthly_budgets` (`company_id`, `annual_budget_id`, `month`, `amount`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
 (1, '1', '1', '4000.00', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
 
 INSERT INTO `note_labels` (`company_id`, `employee_id`, `note_id`, `label`, `label_hash`, `active`) VALUES
-(1, 1, 1, 'Sample f0e0b4c7', 'Sample 4bc3441a', 1);
+(1, 1, 1, 'Sample e1a85a2c', 'Sample 55cb1f02', 1);
 
 INSERT INTO `notes` (`company_id`, `employee_id`, `title`, `title_hash`, `content`, `is_checklist`, `color`, `is_pinned`, `is_important`, `is_archived`, `reminder_at`, `active`) VALUES
-(1, 1, 'Sample af829245', '4a9f2aa5b5022b17f5e9c9702df70345a8120a0a82ba3f87e801865588758aa4', 'Sample 812eeee4', 1, 'Sample 200d646b', 1, 1, 1, '2026-07-20 23:56:01', 1);
+(1, 1, 'Sample 594db80d', '4a9f2aa5b5022b17f5e9c9702df70345a8120a0a82ba3f87e801865588758aa4', 'Sample bb54f03d', 1, 'Sample 5ca6e44c', 1, 1, 0, '2026-08-16 10:37:51', 1);
 
 INSERT INTO `ops_report` (`company_id`, `report_date`, `occupancy_pct`, `average_daily_rate`, `revpar`, `room_revenue`, `fb_revenue`, `spa_revenue`, `kids_club_revenue`, `hsk_revenue`, `fo_upgrade_rooms`, `total_revenue`, `active`, `created_at`) VALUES
 (1, '2025-01-15', '70.0', 165.00, 115.50, 32798.00, 9800.00, 2400.00, 600.00, 1100.00, 800.00, 52900.00, 1, '2025-01-15 08:00:00'),
@@ -620,34 +779,41 @@ INSERT INTO `ops_report` (`company_id`, `report_date`, `occupancy_pct`, `average
 (1, '2026-07-16', '77.0', 187.00, 143.99, 42350.00, 12160.00, 3235.00, 795.00, 1490.00, 1132.00, 61162.00, 1, '2026-07-16 08:00:00');
 
 INSERT INTO `ops_report_butler` (`company_id`, `ops_report_id`, `room_number`, `notes`, `sort_order`, `active`) VALUES
-(1, 1, 'Sample ea7b4586', 'Sample 5f4bfa0e', 1, 1);
+(1, 1, 'Sample 29950686', 'Sample 1ce28579', 1, 1);
 
 INSERT INTO `ops_report_courtesy_call` (`company_id`, `ops_report_id`, `guest_name`, `room_number`, `time_reported`, `checkout_date`, `notes`, `action_taken`, `case_closed`, `monitor`, `sort_order`, `active`) VALUES
-(1, 1, 'Sample 2b0bfa25', 'Sample 47aa3812', 'Sample 9ef064a9', '2026-07-20', 'Sample 2dfd60c9', 'Sample 3c851312', 'Sample 67e5d139', 'Sample 236d35fc', 1, 1);
+(1, 1, 'Sample f6cd204b', 'Sample bf7b419b', 'Sample c18e26c8', '2026-08-16', 'Sample b677d02d', 'Sample 86a4b051', 'Sample 10361a0b', 'Sample df4e8379', 1, 1);
 
 INSERT INTO `ops_report_fb_outlet` (`company_id`, `ops_report_id`, `outlet_name`, `covers_breakfast`, `covers_lunch`, `covers_dinner`, `covers_dado`, `covers_pool`, `covers_brunch`, `sort_order`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
-(1, '32', 'OLIVEIRA BRASSERIE', '40', '55', '70', NULL, NULL, NULL, '0', '1', NULL, NULL, NULL, '2026-07-20 23:12:30', NULL, NULL);
+(1, '32', 'OLIVEIRA BRASSERIE', '40', '55', '70', NULL, NULL, NULL, '0', '1', NULL, NULL, NULL, '2026-08-16 11:22:02', NULL, NULL);
 
 INSERT INTO `ops_report_guest_experience` (`company_id`, `ops_report_id`, `ref_id`, `guest_name`, `room_number`, `time_reported`, `checkout_date`, `feedback`, `action_taken`, `case_closed`, `monitor`, `sort_order`, `active`) VALUES
-(1, 1, 'Sample 71f0ba94', 'Sample e8469699', 'Sample 28229e58', 'Sample 5e791521', '2026-07-20', 'Sample 48cfb624', 'Sample c4f2a21c', 'Sample 82f23e8b', 'Sample dbdc0d9c', 1, 1);
+(1, 1, 'Sample 4f77a872', 'Sample be21c2e7', 'Sample 13e97371', 'Sample f9e5749b', '2026-08-16', 'Sample 5dc29f0c', 'Sample 190b5bc8', 'Sample 6263a252', 'Sample c9074759', 1, 1);
 
 INSERT INTO `ops_report_hotel_figure` (`company_id`, `ops_report_id`, `field_label`, `field_value`, `sort_order`, `active`) VALUES
-(1, 1, 'Sample f552cc90', 'Sample 43d5d767', 1, 1);
+(1, 1, 'Sample 330a5bc9', 'Sample 6cc05b2f', 1, 1);
 
 INSERT INTO `ops_report_night_shift` (`company_id`, `ops_report_id`, `guest_name`, `notes`, `sort_order`, `active`) VALUES
-(1, 1, 'Sample 357207db', 'Sample 90db5f09', 1, 1);
+(1, 1, 'Sample 383a5eb1', 'Sample 56facea7', 1, 1);
 
 INSERT INTO `ops_report_walk_round` (`company_id`, `ops_report_id`, `area_name`, `early_shift`, `late_shift`, `sort_order`, `active`) VALUES
-(1, 1, 'Sample d6890664', 'Sample 7e4143f9', 'Sample 253619b2', 1, 1);
+(1, 1, 'Sample dfab7443', 'Sample b79cadbb', 'Sample 96013832', 1, 1);
+
+INSERT INTO `paid_statuses` (`id`, `company_id`, `name`, `sort_order`, `active`, `created_at`) VALUES
+(1, 1, 'Draft', 1, 1, '2026-01-01 00:00:01'),
+(2, 1, 'Approved', 2, 1, '2026-01-01 00:00:01'),
+(3, 1, 'Posted', 3, 1, '2026-01-01 00:00:01'),
+(4, 1, 'Paid', 4, 1, '2026-01-01 00:00:01'),
+(5, 1, 'Voided', 5, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `password_entries` (`company_id`, `employee_id`, `folder_id`, `account`, `login_name`, `password`, `website`, `comments`, `active`) VALUES
-(1, 1, 1, 'Sample db63a7c9', 'Sample b17f74ad', 'Sample 3a3777da', 'Sample 5c70d5b4', 'Sample 213609b9', 1);
+(1, 1, 1, 'Sample d98f379c', 'Sample fbdc8c7a', 'Sample 84f41291', 'Sample 8292dfc5', 'Sample 5b3eafa0', 1);
 
 INSERT INTO `password_folders` (`company_id`, `employee_id`, `name`, `active`) VALUES
-(1, 1, 'Sample 77c0b73b', 1);
+(1, 1, 'Sample d6f84a37', 1);
 
 INSERT INTO `patches_updates` (`company_id`, `equipment_id`, `hostname`, `ip`, `id_external`, `inncode`, `dest`, `dest_ip`, `severity`, `vuln_description`, `base_score`, `remediation`, `cve`, `host_ip`, `host_mac_manufacturer`, `days_since_last_seen`, `host_health_score`, `host_health_reason`, `host_resolution_priority`, `host_workload_type`, `operating_system`, `business_function`, `data_source`, `date`, `last_user_department`, `problem`, `troubleshooting`, `patches_updates_photos`, `status_id`, `level_id`, `due_date`, `active`) VALUES
-(1, 1, 'Sample df2948a0', 'Sample 1bfdd0b9', 'Sample afcbc24d', 'Sample 1970ade2', 'Sample 226cef1b', 'Sample cd14cd5f', 'Sample c461736e', 'Sample 0f631b18', 1, 'Sample 2f285fa5', 'Sample f00e647c', 'Sample a4db670e', 'Sample 21aeabe3', 1, 1, 'Sample 59e534f6', 1, 'Sample 52f4346b', 'Sample c0f26ba1', 'Sample d8be4e98', 'Sample a7bfbf7b', '2026-07-20', 'Sample 6d184fd0', 'Sample d2422a7b', 'Sample 17875e47', '2026-07-20', 1, 1, '2026-07-20', 1);
+(1, 1, 'Sample 636d4b63', 'Sample bc26a99b', 'Sample 03372d9c', 'Sample 42832e56', 'Sample 30110987', 'Sample 58091abb', 'Sample 9825d068', 'Sample d1189082', 1, 'Sample 045de5e5', 'Sample f9631e00', 'Sample e2f257cd', 'Sample a56bb36c', 1, 1, 'Sample 0a6c17b2', 1, 'Sample 857e2826', 'Sample dbf6b4c2', 'Sample 9e430985', 'Sample e31073f2', '2026-08-16', 'Sample dd4fb3a9', 'Sample 4ada09eb', 'Sample 4ffac5cd', '2026-08-16', 1, 1, '2026-08-16', 1);
 
 INSERT INTO `patches_updates_level` (`company_id`, `id`, `level`, `created_at`) VALUES
 ('1', '1', 'Critical', '2026-01-01 00:00:01'),
@@ -662,6 +828,12 @@ INSERT INTO `patches_updates_status` (`company_id`, `id`, `name`, `color`, `is_c
 ('1', '3', 'Resolved', '#00FF00', '0', '1', '2026-01-01 00:00:01'),
 ('1', '4', 'Closed', '#808080', '1', '1', '2026-01-01 00:00:01');
 
+INSERT INTO `payment_modes` (`id`, `company_id`, `name`, `active`, `created_at`) VALUES
+(1, 1, 'Bank transfer', 1, '2026-01-01 00:00:01'),
+(2, 1, 'Card', 1, '2026-01-01 00:00:01'),
+(3, 1, 'Cash', 1, '2026-01-01 00:00:01'),
+(4, 1, 'Direct debit', 1, '2026-01-01 00:00:01');
+
 INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VALUES
 ('1', '3', 'All-in-One', '2026-01-01 00:00:01'),
 ('1', '8', 'Dotmatrix', '2026-01-01 00:00:01'),
@@ -674,7 +846,7 @@ INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VA
 ('1', '5', 'Wide-Format', '2026-01-01 00:00:01');
 
 INSERT INTO `private_contacts` (`company_id`, `employee_id`, `name_prefix`, `first_name`, `middle_name`, `last_name`, `name_suffix`, `phonetic_first_name`, `phonetic_middle_name`, `phonetic_last_name`, `nickname`, `file_as`, `email1_label`, `email1_value`, `phone1_label`, `phone1_value`, `address1_label`, `address1_country`, `address1_street`, `address1_extended`, `address1_city`, `address1_region`, `address1_postcode`, `address1_po_box`, `organization_name`, `organization_title`, `organization_department`, `event1_label`, `relation1_label`, `relation1_value`, `website1_label`, `website1_value`, `custom_field1_label`, `custom_field1_value`, `notes`, `labels`, `photo`, `is_favorite`, `active`) VALUES
-(1, 1, 'Sample e5758c11', 'Sample 15f566d5', 'Sample 310fa832', 'Sample 0f31db95', 'Sample db5a1940', 'Sample 9fa8eb2c', 'Sample 06f8e9b7', 'Sample 446b1cbb', 'Sample 022fe128', 'Sample 2542bcd7', 'sample-f0723ec2@example.com', 'sample-ff9b56eb@example.com', 'Sample a0894d88', 'Sample f59e1e6f', 'Sample 061a371e', 'Sample 54e34bc9', 'Sample 14486028', 'Sample 866f288d', 'Sample d09beacd', 'Sample 4d748666', 'Sample 054a6d8c', 'Sample 97c53118', 'Sample a7ec3665', 'Sample 9518df4d', 'Sample e692d606', 'Sample ca87ee29', 'Sample f8554641', 'Sample 034a073e', 'Sample 7c2579ac', 'Sample c10dc3d3', 'Sample aa342332', 'Sample 138bb3af', 'Sample ce4ea9e4', 'Sample b37e91f9', 'Sample 1b1876f4', 1, 1);
+(1, 1, 'Sample f09290a7', 'Sample 0bb4875a', 'Sample 17587b85', 'Sample fedd1c0f', 'Sample 6b9d5f68', 'Sample 54f80fe6', 'Sample 16d0f04a', 'Sample 6ae96655', 'Sample 15afcf95', 'Sample 5aa77d1e', 'sample-b946a060@example.com', 'sample-4e819b54@example.com', 'Sample b6f9c3eb', 'Sample 635ab2dc', 'Sample a56f7e4a', 'Sample 5f553986', 'Sample 1228f906', 'Sample 9f6dad69', 'Sample 26189fdf', 'Sample e27eaee6', 'Sample 5c975d96', 'Sample 345a36e6', 'Sample 3b2bac83', 'Sample 06485427', 'Sample 191f2786', 'Sample 5ba2298a', 'Sample cb31c67e', 'Sample 1844f20b', 'Sample c4530c79', 'Sample 1b1ac042', 'Sample b3082703', 'Sample 04d67049', 'Sample eaec7732', 'Sample 765e5b50', 'Sample 673467e7', 1, 1);
 
 INSERT INTO `rack_planner` (`company_id`, `employee_id`, `name`, `rack_units`, `layout_json`, `notes`, `status_id`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
 (1, '1', 'Core Rack A', '42', '{"version":1,"units":42,"devices":[]}', 'Sample empty rack plan for company 1.', '1', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
@@ -689,13 +861,16 @@ INSERT INTO `racks` (`id`, `company_id`, `location_id`, `name`, `rack_code`, `st
 ('1', '1', '1', 'Main Rack A', 'RACK-A', '1', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `registration_invitations` (`company_id`, `email`, `invitation_code`, `invited_by_employee_id`, `role_id`, `access_level_id`, `expires_at`, `accepted_at`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
-(1, 'new.user@datacenterplus.example', 'INVITE-DATACENTERPLUS-001', '2', '6', '2', NULL, NULL, '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
+(1, 'new.user@techcorp.example', 'INVITE-TECHCORP-001', '1', '1', '1', NULL, NULL, '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
 
 INSERT INTO `request_password` (`company_id`, `employee_id`, `requested_by_employee_id`, `application`, `reason`, `applicant_signature_date`, `ism_signature_date`, `hr_approval_status`, `hr_signature_date`, `hod_approval_status`, `hod_signature_date`, `active`) VALUES
-(1, 1, 1, 'Sample Application', 'Cannot recall password', '2026-07-20', '2026-07-20', 'Waiting', '2026-07-20', 'Waiting', '2026-07-20', 1);
+(1, 1, 1, 'Sample Application', 'Cannot recall password', '2026-08-16', '2026-08-16', 'Waiting', '2026-08-16', 'Waiting', '2026-08-16', 1);
 
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES
 ('3', '1', 'Cat6', '10 Gbps (up to 55 m), 1 Gbps (100 m)', '250 MHz', '55 m @ 10G', 'Good for most offices/homes.', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `search_index` (`company_id`, `module_slug`, `record_id`, `title`, `subtitle`, `keywords`) VALUES
+(1, 'Sample a57a3a76', 1, 'Sample c18921a6', 'Sample ebba4c05', 'Sample e26b56ac');
 
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES
 ('1', '4', 'Backup', '2026-01-01 00:00:01'),
@@ -717,7 +892,7 @@ INSERT INTO `switch_port_types` (`company_id`, `id`, `type`, `created_at`) VALUE
 ('1', '16', 'Access Point', '2026-01-01 00:00:01');
 
 INSERT INTO `switch_ports` (`company_id`, `equipment_id`, `hostname`, `port_type`, `port_number`, `to_patch_port`, `status_id`, `color_id`, `rj45_speed_id`, `vlan_id`, `fiber_port_id`, `fiber_patch_id`, `fiber_rack_id`, `idf_id`, `to_idf_id`, `to_rack_id`, `rack_id`, `location_id`, `to_location_id`, `management_id`, `comments`, `active`) VALUES
-(1, 1, 'Sample c6339d26', 1, 1, 'Sample 757c8959', 10, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 'Sample 1341e33f', 1);
+(1, 1, 'Sample 15f47b58', 1, 1, 'Sample 4c368cc6', 10, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 'Sample 6efd32a2', 1);
 
 INSERT INTO `switch_status` (`company_id`, `id`, `status`, `color_id`, `created_at`) VALUES
 ('1', '10', 'Disabled', '1', '2026-01-01 00:00:01'),
@@ -752,7 +927,10 @@ INSERT INTO `system_access` (`id`, `company_id`, `code`, `name`, `active`, `crea
 ('91', '1', 'mobile_email', 'Mobile Email', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `system_status` (`company_id`, `tab_key`, `payload_json`, `active`) VALUES
-(1, 'Sample e211167b', 'Sample d389a596', 1);
+(1, 'Sample 6436048f', 'Sample 6b411a6a', 1);
+
+INSERT INTO `tax_rates` (`company_id`, `name`, `rate_percent`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
+(1, 'VAT 6%', '6.00', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
 
 INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES
 ('1', '1', 'Hardware Issue', 'HW', '1', '2026-01-01 00:00:01'),
@@ -768,6 +946,13 @@ INSERT INTO `ticket_priorities` (`company_id`, `id`, `name`, `level`, `color`, `
 ('1', '4', 'Urgent', '4', '#FF0000', '1', '2026-01-01 00:00:01'),
 ('1', '5', 'Critical', '5', '#8B0000', '1', '2026-01-01 00:00:01');
 
+INSERT INTO `ticket_sla_policies` (`company_id`, `priority_id`, `response_minutes`, `resolve_minutes`, `active`, `created_at`) VALUES
+('1', 1, 480, 2880, 1, '2026-01-01 00:00:01'),
+('1', 2, 240, 1440, 1, '2026-01-01 00:00:01'),
+('1', 3, 60, 480, 1, '2026-01-01 00:00:01'),
+('1', 4, 30, 240, 1, '2026-01-01 00:00:01'),
+('1', 5, 15, 120, 1, '2026-01-01 00:00:01');
+
 INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES
 ('1', '1', 'Open', '#FF0000', '0', '1', '2026-01-01 00:00:01'),
 ('1', '2', 'In Progress', '#FFA500', '0', '1', '2026-01-01 00:00:01'),
@@ -777,13 +962,13 @@ INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `des
 ('1', '1', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '4', '1', '2', '1', '1', '1', NULL, '2026-01-01 00:00:01');
 
 INSERT INTO `todo` (`company_id`, `title`, `title_hash`, `description`, `due_date`, `reminder_at`, `repeat_pattern`, `category_id`, `department_id`, `assigned_to_employee_id`, `completed`, `importance`, `active`) VALUES
-(1, 'Sample 9fc3fe79', '4a9f2aa5b5022b17f5e9c9702df70345a8120a0a82ba3f87e801865588758aa4', 'Sample deb54639', '2026-07-20 23:56:01', '2026-07-20 23:56:01', 'Sample 3fd08250', 'Sample 0244f5e0', 'Sample 7a9f5b25', 'Sample 8e2a2c1b', 1, 1, 1);
+(1, 'Sample 5ac33c50', '4a9f2aa5b5022b17f5e9c9702df70345a8120a0a82ba3f87e801865588758aa4', 'Sample c0c73a3d', '2026-08-16 10:37:51', '2026-08-16 10:37:51', 'Sample 71f87eaf', 'Sample d4d67f10', 'Sample 406fdb3a', 'Sample f98434f4', 1, 1, 1);
 
 INSERT INTO `todo_categories` (`company_id`, `cat_from_employee_id`, `name`, `active`) VALUES
-(1, 1, 'Sample 3ddd7b9d', 1);
+(1, 1, 'Sample 9707f863', 1);
 
 INSERT INTO `visitors_access_log` (`company_id`, `visitor_name`, `company_department`, `reason_for_visit`, `pre_approved_by`, `room_opened_by`, `date_time_in`, `date_time_out`, `active`) VALUES
-(1, 'Sample 9ad1ce06', 'Sample 888c86e7', 'Sample 90acfdcf', 'Sample bee511ba', 'Sample 6005f54b', '2026-07-20 23:56:01', '2026-07-20 23:56:01', 1);
+(1, 'Sample e979fc70', 'Sample f275fedf', 'Sample e95d8b38', 'Sample 8f076b6c', 'Sample 89a29292', '2026-08-16 10:37:51', '2026-08-16 10:37:51', 1);
 
 INSERT INTO `vlans` (`company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
 (1, '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
