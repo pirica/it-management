@@ -1,0 +1,10 @@
+<?php
+/**
+ * 
+ * Handles row deletion via POST in index.php.
+ */
+
+$crud_table = 'license_types';
+$crud_title = 'License Types';
+$crud_action = 'delete';
+require 'index.php';

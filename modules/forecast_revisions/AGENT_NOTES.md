@@ -1,0 +1,57 @@
+# AGENT_NOTES.md - Forecast Revisions
+
+## 1. Module Purpose
+Manages revisions to financial forecasts for a specific month and year.
+
+## 2. Key Tables
+- **forecast_revisions** — main revision data.
+
+## 3. Required Relationships
+- **forecast_revisions** → depends on **companies**.
+- **forecast_revisions** → depends on **cost_centers**.
+- **forecast_revisions** → depends on **gl_accounts**.
+- **forecast_revisions** → depends on **forecast_revisions_status**.
+
+## 4. Business Rules (Critical for Agents)
+- **Unique Revision**: Only one revision record allowed per combination of company, cost center, GL account, year, and month.
+- **Locking**: Once a revision is "Approved" or "Locked", it should generally not be editable without proper permissions.
+
+## 5. UI Behavior Requirements
+- **Standard CRUD**.
+- **Approval Flow**: Integrates with the Approvals module for multi-stage reviews.
+
+## 6. API Actions (If Applicable)
+- **import_excel_rows** — handles bulk JSON import.
+
+## 7. File Structure
+- Standard CRUD structure.
+
+## 8. Multi-Tenant Rules
+- Scoped by `company_id`.
+
+## 9. Audit Logging Requirements
+- Managed via database triggers.
+
+## 10. Common Pitfalls
+
+- **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
+- Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
+- **Duplicate Forecasts**: Unique constraint violations on inserts. [Cursor-Valid]
+- **Locked Edits**: Attempting to edit a revision that has been finalized. [Cursor-Valid]
+
+## 11. Examples of Safe Code Patterns
+
+### Safe SELECT
+```php
+$stmt = $conn->prepare("SELECT * FROM forecast_revisions WHERE company_id = ? AND year = ? AND month = ?");
+$stmt->bind_param("iii", $companyId, $year, $month);
+$stmt->execute();
+```
+
+## 12. Module Owner Notes (Optional)
+The dynamic part of the budgeting system.
+## Share (temporary QR / code)
+- **Capable:** `itm_qr_share_capable_module_slugs()`.
+- **UI:** Share buttons on index.php inline view block.
+- **Wiring:** `includes/itm_crud_record_share.php`; public `join.php`; AJAX `index.php?ajax_action=create_share_session`. Company gate: `modules/share_modules/`.
+- **Doc:** `docs/CRUD_RECORD_SHARE.md`.

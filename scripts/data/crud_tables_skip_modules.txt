@@ -1,0 +1,6 @@
+# Modules without $crud_table in index.php — expected Skip for crud_tables.php.
+# Bespoke / dashboard modules are listed in docs/list_bespoke_UI.txt; add extras here only.
+# One slug per line. Lines starting with # and blank lines are ignored.
+
+birthdays
+import
