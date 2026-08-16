@@ -192,12 +192,14 @@ if (!function_exists('itm_verify_db_migrations_discover_files')) {
         if ($paths === false) {
             return [];
         }
+        $skipBootstrap = ['schema_migrations.sql'];
         $files = [];
         foreach ($paths as $path) {
             $base = basename($path);
-            if ($base !== '' && strtolower($base) !== 'index.sql') {
-                $files[] = $base;
+            if ($base === '' || strtolower($base) === 'index.sql' || in_array($base, $skipBootstrap, true)) {
+                continue;
             }
+            $files[] = $base;
         }
         sort($files, SORT_NATURAL | SORT_FLAG_CASE);
 
@@ -478,6 +480,175 @@ if (!function_exists('itm_verify_db_migrations_probe_custom')) {
             );
         }
 
+        if ($filename === 'hotel_bookings_auth2.sql') {
+            [$strongSatisfied, $strongDetail] = itm_database_migrations_schema_satisfied($conn, 'hotel_bookings_auth2_strong.sql');
+            if ($strongSatisfied) {
+                return itm_verify_db_migrations_row(
+                    $filename,
+                    'superseded',
+                    'Superseded',
+                    'hotel_bookings.auth2 widened to varchar(12) via hotel_bookings_auth2_strong.sql'
+                    . ($strongDetail !== '' ? ' (' . $strongDetail . ')' : '')
+                );
+            }
+
+            return itm_verify_db_migrations_probe_generic($conn, $filename, $sql, $parsed);
+        }
+
+        if ($filename === 'appointment_type_label_allowed_json.sql') {
+            $ok = itm_verify_db_migrations_column_exists($conn, 'appointment_type', 'label')
+                && itm_verify_db_migrations_column_exists($conn, 'appointment_business_hours', 'allowed_types_json');
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'fail',
+                $ok ? 'Applied' : 'Not applied',
+                $ok
+                    ? 'appointment_type.label and appointment_business_hours.allowed_types_json present.'
+                    : 'Missing label or allowed_types_json — apply migration or fresh db/ import.'
+            );
+        }
+
+        if ($filename === 'hotel_booking_portal_occupancy.sql') {
+            $ok = itm_verify_db_migrations_table_exists($conn, 'hotel_booking_special_rates');
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'fail',
+                $ok ? 'Applied' : 'Not applied',
+                $ok
+                    ? 'hotel_booking_special_rates table present.'
+                    : 'hotel_booking_special_rates missing — apply migration or fresh db/ import.'
+            );
+        }
+
+        if ($filename === 'hotel_booking_registry_icons.sql') {
+            $badIcons = itm_verify_db_migrations_scalar_count(
+                $conn,
+                "SELECT COUNT(*) FROM modules_registry WHERE module_slug IN (
+                    'hotel_bookings','hotel_booking_hotels','booking_rooms_types','hotel_booking_rooms',
+                    'hotel_booking_amenities','hotel_booking_special_rates','hotel_booking_portal_rate_plans',
+                    'hotel_booking_room_utilities','hotel_booking_housekeeping_statuses','hotel_bookings_future',
+                    'hotel_bookings_present','hotel_bookings_history','hotel_booking_settings'
+                ) AND (icon IS NULL OR TRIM(icon) = '' OR icon = '?')"
+            );
+            $ok = ($badIcons === 0);
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'fail',
+                $ok ? 'Applied' : 'Not applied',
+                $ok
+                    ? 'Hospitality modules_registry icons populated.'
+                    : (int)$badIcons . ' hospitality registry row(s) still missing icons.'
+            );
+        }
+
+        if ($filename === 'hotel_booking_room_type_base_prices.sql') {
+            $tableOk = itm_verify_db_migrations_table_exists($conn, 'hotel_booking_room_type_base_prices');
+            $legacyPriceCol = itm_verify_db_migrations_column_exists($conn, 'booking_rooms_types', 'price_per_night');
+            $ok = $tableOk && !$legacyPriceCol;
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'fail',
+                $ok ? 'Applied' : 'Not applied',
+                $ok
+                    ? 'hotel_booking_room_type_base_prices present; booking_rooms_types.price_per_night removed.'
+                    : 'Base prices table missing or legacy price_per_night column still on booking_rooms_types.'
+            );
+        }
+
+        if ($filename === 'hotel_booking_settings_reviews_url_example.sql') {
+            $emptyReviews = itm_verify_db_migrations_scalar_count(
+                $conn,
+                "SELECT COUNT(*) FROM hotel_booking_settings
+                 WHERE deleted_at IS NULL
+                   AND (reviews_url IS NULL OR TRIM(reviews_url) = '' OR reviews_url = 'https://www.tripadvisor.com/')"
+            );
+            $ok = ($emptyReviews === 0);
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'info',
+                $ok ? 'Applied' : 'DML only',
+                $ok
+                    ? 'hotel_booking_settings.reviews_url populated for active rows.'
+                    : (int)$emptyReviews . ' active settings row(s) still need reviews_url.'
+            );
+        }
+
+        if ($filename === 'hotel_booking_settings_tourist_tax_seed.sql') {
+            $unsetTax = itm_verify_db_migrations_scalar_count(
+                $conn,
+                'SELECT COUNT(*) FROM hotel_booking_settings
+                 WHERE deleted_at IS NULL
+                   AND (tourist_tax_per_person_per_night IS NULL OR tourist_tax_per_person_per_night = 0)'
+            );
+            $ok = ($unsetTax === 0);
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'info',
+                $ok ? 'Applied' : 'DML only',
+                $ok
+                    ? 'tourist_tax_per_person_per_night set on active hotel_booking_settings rows.'
+                    : (int)$unsetTax . ' active settings row(s) still have NULL/0 tourist tax.'
+            );
+        }
+
+        if ($filename === 'news_module_registry.sql') {
+            $newsRows = itm_verify_db_migrations_scalar_count(
+                $conn,
+                "SELECT COUNT(*) FROM modules_registry WHERE module_slug = 'news'"
+            );
+            $ok = ($newsRows > 0);
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'fail',
+                $ok ? 'Applied' : 'Not applied',
+                $ok
+                    ? 'modules_registry news slug present.'
+                    : 'modules_registry row for news missing — apply migration or sync_modules_registry.'
+            );
+        }
+
+        if ($filename === 'seed_replicate_location_rack_supplier_fk_remap.sql') {
+            $crossFk = itm_verify_db_migrations_scalar_count(
+                $conn,
+                'SELECT COUNT(*) FROM it_locations child
+                 INNER JOIN location_types src ON src.id = child.type_id AND src.company_id <> child.company_id'
+            );
+            $ok = ($crossFk === 0);
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'info',
+                $ok ? 'Applied' : 'DML only',
+                $ok
+                    ? 'No cross-tenant location_types FK mismatches on it_locations.'
+                    : (int)$crossFk . ' it_locations row(s) still reference foreign-company location_types.'
+            );
+        }
+
+        if ($filename === 'ui_configuration_enable_chatbot_active.sql') {
+            $disabled = itm_verify_db_migrations_scalar_count(
+                $conn,
+                'SELECT COUNT(*) FROM ui_configuration WHERE enable_chatbot = 0'
+            );
+            $ok = ($disabled === 0);
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'info',
+                $ok ? 'Applied' : 'DML only',
+                $ok
+                    ? 'All ui_configuration rows have enable_chatbot = 1.'
+                    : (int)$disabled . ' ui_configuration row(s) still have enable_chatbot = 0.'
+            );
+        }
+
         return null;
     }
 }
@@ -571,9 +742,9 @@ if (!function_exists('itm_verify_db_migrations_report')) {
         if ($files === []) {
             $add(itm_verify_db_migrations_row(
                 '(migrations)',
-                'fail',
-                'No files',
-                'No *.sql files found under db/migrations/.'
+                'pass',
+                'No incremental files',
+                'db/migrations/ has no runner-scoped *.sql — canonical schema is db/01_schema.sql; history in schema_migrations table.'
             ));
         }
 
