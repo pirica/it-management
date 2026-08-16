@@ -203,9 +203,10 @@ if (!function_exists('itm_inbound_email_mailpit_inject_message')) {
     /**
      * Deliver a test message to local Mailpit SMTP (for verify scripts).
      *
+     * @param array<string,string> $extraHeaders Optional RFC headers (e.g. In-Reply-To).
      * @return array{ok:bool,error:string,message_id:string}
      */
-    function itm_inbound_email_mailpit_inject_message($toEmail, $fromEmail, $subject, $body, $messageId = '')
+    function itm_inbound_email_mailpit_inject_message($toEmail, $fromEmail, $subject, $body, $messageId = '', array $extraHeaders = [])
     {
         $result = ['ok' => false, 'error' => '', 'message_id' => ''];
         $host = trim((string)(getenv('ITM_MAILPIT_SMTP_HOST') ?: '127.0.0.1'));
@@ -255,6 +256,16 @@ if (!function_exists('itm_inbound_email_mailpit_inject_message')) {
         $readLine();
         $write('Subject: ' . str_replace(["\r", "\n"], ' ', (string)$subject));
         $write('Message-ID: <' . $messageId . '>');
+        if (is_array($extraHeaders)) {
+            foreach ($extraHeaders as $headerName => $headerValue) {
+                $headerName = trim((string)$headerName);
+                $headerValue = trim((string)$headerValue);
+                if ($headerName === '' || $headerValue === '') {
+                    continue;
+                }
+                $write($headerName . ': ' . str_replace(["\r", "\n"], ' ', $headerValue));
+            }
+        }
         $write('From: ' . $fromEmail);
         $write('To: ' . $toEmail);
         $write('');
@@ -339,12 +350,14 @@ if (!function_exists('itm_inbound_email_fetch_unseen_mailpit')) {
             $subject = (string)($msg['Subject'] ?? '');
             $body = (string)($msg['Snippet'] ?? '');
             $alreadyRead = !empty($msg['Read']);
+            $inReplyTo = '';
+            $references = '';
 
-            if ($fetchBody && !$alreadyRead) {
-                $detailResponse = itm_inbound_email_mailpit_http('GET', $base . '/message/' . rawurlencode($mailpitId));
-                if ($detailResponse['ok']) {
-                    $detail = json_decode($detailResponse['body'], true);
-                    if (is_array($detail)) {
+            $detailResponse = itm_inbound_email_mailpit_http('GET', $base . '/message/' . rawurlencode($mailpitId));
+            if ($detailResponse['ok']) {
+                $detail = json_decode($detailResponse['body'], true);
+                if (is_array($detail)) {
+                    if ($fetchBody) {
                         if (!empty($detail['Text'])) {
                             $body = (string)$detail['Text'];
                         } elseif (!empty($detail['HTML'])) {
@@ -353,6 +366,9 @@ if (!function_exists('itm_inbound_email_fetch_unseen_mailpit')) {
                             $body = (string)$detail['Snippet'];
                         }
                     }
+                    $headers = $detail['Headers'] ?? [];
+                    $inReplyTo = itm_inbound_email_header_value($headers, 'In-Reply-To');
+                    $references = itm_inbound_email_header_value($headers, 'References');
                 }
             }
 
@@ -364,6 +380,8 @@ if (!function_exists('itm_inbound_email_fetch_unseen_mailpit')) {
                 'cc' => $ccList,
                 'subject' => $subject,
                 'body' => $body,
+                'in_reply_to' => $inReplyTo,
+                'references' => $references,
                 'transport' => 'mailpit',
             ];
         }
@@ -422,6 +440,130 @@ if (!function_exists('itm_inbound_email_strip_body')) {
         $body = preg_replace("/\n{3,}/", "\n\n", $body);
 
         return trim((string)$body);
+    }
+}
+
+if (!function_exists('itm_inbound_email_is_reply_subject')) {
+    function itm_inbound_email_is_reply_subject($subject)
+    {
+        return (bool)preg_match('/^\s*(re|fw|fwd)\s*:/i', trim((string)$subject));
+    }
+}
+
+if (!function_exists('itm_inbound_email_normalize_subject_thread')) {
+    function itm_inbound_email_normalize_subject_thread($subject)
+    {
+        $subject = trim((string)$subject);
+        while ($subject !== '' && preg_match('/^\s*(re|fw|fwd)\s*:\s*/i', $subject)) {
+            $subject = preg_replace('/^\s*(re|fw|fwd)\s*:\s*/i', '', $subject);
+            $subject = trim($subject);
+        }
+
+        return $subject;
+    }
+}
+
+if (!function_exists('itm_inbound_email_header_value')) {
+    /**
+     * @param mixed $headers Mailpit Headers map or flat header lines.
+     */
+    function itm_inbound_email_header_value($headers, $name)
+    {
+        $name = strtolower(trim((string)$name));
+        if ($name === '' || $headers === null) {
+            return '';
+        }
+        if (is_array($headers)) {
+            foreach ($headers as $key => $value) {
+                if (strtolower((string)$key) !== $name) {
+                    continue;
+                }
+                if (is_array($value)) {
+                    return trim((string)($value[0] ?? ''));
+                }
+
+                return trim((string)$value);
+            }
+
+            return '';
+        }
+
+        return '';
+    }
+}
+
+if (!function_exists('itm_inbound_email_parse_references_header')) {
+    /**
+     * @return array<int,string>
+     */
+    function itm_inbound_email_parse_references_header($references)
+    {
+        $references = trim((string)$references);
+        if ($references === '') {
+            return [];
+        }
+        $ids = [];
+        if (preg_match_all('/<([^>]+)>/', $references, $matches)) {
+            foreach ($matches[1] as $id) {
+                $norm = itm_inbound_email_normalize_message_id($id);
+                if ($norm !== '') {
+                    $ids[] = $norm;
+                }
+            }
+        }
+        $bare = itm_inbound_email_normalize_message_id($references);
+        if ($bare !== '' && !in_array($bare, $ids, true)) {
+            $ids[] = $bare;
+        }
+
+        return $ids;
+    }
+}
+
+if (!function_exists('itm_inbound_email_message_raw_payload')) {
+    /**
+     * @param array<string,mixed> $message
+     */
+    function itm_inbound_email_message_raw_payload(array $message)
+    {
+        $payload = [
+            'message_id' => (string)($message['message_id'] ?? ''),
+            'from' => (string)($message['from'] ?? ''),
+            'to' => $message['to'] ?? [],
+            'cc' => $message['cc'] ?? [],
+            'subject' => (string)($message['subject'] ?? ''),
+            'body' => (string)($message['body'] ?? ''),
+            'in_reply_to' => (string)($message['in_reply_to'] ?? ''),
+            'references' => (string)($message['references'] ?? ''),
+        ];
+        $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if (!is_string($json)) {
+            return '';
+        }
+        if (strlen($json) > 60000) {
+            $json = substr($json, 0, 60000) . '…[truncated]';
+        }
+
+        return $json;
+    }
+}
+
+if (!function_exists('itm_inbound_email_build_event_details')) {
+    /**
+     * @param array<string,mixed> $meta
+     */
+    function itm_inbound_email_build_event_details($eventType, array $meta, $rawPayload = '')
+    {
+        $event = [
+            'inbound_event' => trim((string)$eventType),
+            'meta' => $meta,
+        ];
+        if ($rawPayload !== '') {
+            $event['raw_payload'] = $rawPayload;
+        }
+        $json = json_encode($event, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        return is_string($json) ? $json : '';
     }
 }
 
@@ -586,6 +728,251 @@ if (!function_exists('itm_inbound_email_resolve_ticket_id')) {
     }
 }
 
+if (!function_exists('itm_inbound_email_resolve_ticket_by_message_ids')) {
+    /**
+     * @param array<int,string> $messageIds
+     */
+    function itm_inbound_email_resolve_ticket_by_message_ids($conn, $companyId, array $messageIds)
+    {
+        $companyId = (int)$companyId;
+        if ($companyId <= 0 || $messageIds === []) {
+            return 0;
+        }
+        foreach ($messageIds as $messageId) {
+            $norm = itm_inbound_email_normalize_message_id($messageId);
+            if ($norm === '') {
+                continue;
+            }
+            $stmt = mysqli_prepare(
+                $conn,
+                'SELECT ticket_id FROM ticket_inbound_email_messages
+                 WHERE company_id = ? AND message_id = ? AND ticket_id IS NOT NULL AND ticket_id > 0
+                 LIMIT 1'
+            );
+            if (!$stmt) {
+                continue;
+            }
+            mysqli_stmt_bind_param($stmt, 'is', $companyId, $norm);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            $row = $res ? mysqli_fetch_assoc($res) : null;
+            mysqli_stmt_close($stmt);
+            if ($row && (int)$row['ticket_id'] > 0) {
+                return (int)$row['ticket_id'];
+            }
+        }
+
+        return 0;
+    }
+}
+
+if (!function_exists('itm_inbound_email_resolve_ticket_by_subject_thread')) {
+    function itm_inbound_email_resolve_ticket_by_subject_thread($conn, $companyId, $subject)
+    {
+        if (!itm_inbound_email_is_reply_subject($subject)) {
+            return 0;
+        }
+        $companyId = (int)$companyId;
+        $normalized = itm_inbound_email_normalize_subject_thread($subject);
+        if ($companyId <= 0 || $normalized === '') {
+            return 0;
+        }
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT t.id FROM tickets t
+             INNER JOIN ticket_statuses ts ON ts.id = t.status_id AND ts.company_id = t.company_id
+             WHERE t.company_id = ? AND t.deleted_at IS NULL AND t.active = 1 AND ts.is_closed = 0
+               AND LOWER(TRIM(t.title)) = LOWER(?)
+             ORDER BY t.id DESC
+             LIMIT 1'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'is', $companyId, $normalized);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+
+        return $row ? (int)$row['id'] : 0;
+    }
+}
+
+if (!function_exists('itm_inbound_email_resolve_thread_ticket')) {
+    /**
+     * @param array<string,mixed> $message
+     */
+    function itm_inbound_email_resolve_thread_ticket($conn, $companyId, array $message)
+    {
+        $subject = (string)($message['subject'] ?? '');
+        $body = (string)($message['body'] ?? '');
+        $ref = itm_inbound_email_parse_ticket_ref($subject, $body);
+        $ticketId = itm_inbound_email_resolve_ticket_id($conn, $companyId, $ref);
+        if ($ticketId > 0) {
+            return $ticketId;
+        }
+
+        $headerIds = [];
+        $inReplyTo = trim((string)($message['in_reply_to'] ?? ''));
+        if ($inReplyTo !== '') {
+            $headerIds[] = $inReplyTo;
+        }
+        $headerIds = array_merge($headerIds, itm_inbound_email_parse_references_header((string)($message['references'] ?? '')));
+        $ticketId = itm_inbound_email_resolve_ticket_by_message_ids($conn, $companyId, $headerIds);
+        if ($ticketId > 0) {
+            return $ticketId;
+        }
+
+        if (itm_inbound_email_is_reply_subject($subject)) {
+            return itm_inbound_email_resolve_ticket_by_subject_thread($conn, $companyId, $subject);
+        }
+
+        return 0;
+    }
+}
+
+if (!function_exists('itm_inbound_email_list_routing_rules')) {
+    /**
+     * @return array<int,array<string,mixed>>
+     */
+    function itm_inbound_email_list_routing_rules($conn, $companyId)
+    {
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            return [];
+        }
+        $rows = [];
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id, keyword, assigned_to_employee_id, category_id, priority_id, sort_order
+             FROM ticket_inbound_email_routing_rules
+             WHERE company_id = ? AND active = 1 AND deleted_at IS NULL
+             ORDER BY sort_order ASC, id ASC'
+        );
+        if (!$stmt) {
+            return [];
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        if ($res) {
+            while ($row = mysqli_fetch_assoc($res)) {
+                $rows[] = $row;
+            }
+            mysqli_free_result($res);
+        }
+        mysqli_stmt_close($stmt);
+
+        return $rows;
+    }
+}
+
+if (!function_exists('itm_inbound_email_apply_routing_rules')) {
+    /**
+     * @return array{priority_id:int,category_id:int,assigned_to_employee_id:int,matched_keywords:array<int,string>}
+     */
+    function itm_inbound_email_apply_routing_rules($conn, $companyId, $subject, $body = '')
+    {
+        $result = [
+            'priority_id' => 0,
+            'category_id' => 0,
+            'assigned_to_employee_id' => 0,
+            'matched_keywords' => [],
+        ];
+        $haystack = strtolower(trim((string)$subject) . ' ' . trim((string)$body));
+        if ($haystack === '') {
+            return $result;
+        }
+        foreach (itm_inbound_email_list_routing_rules($conn, $companyId) as $rule) {
+            $keyword = strtolower(trim((string)($rule['keyword'] ?? '')));
+            if ($keyword === '') {
+                continue;
+            }
+            $pattern = '/\b' . preg_quote($keyword, '/') . '\b/i';
+            if (!preg_match($pattern, $haystack)) {
+                continue;
+            }
+            $result['matched_keywords'][] = $keyword;
+            $priorityId = (int)($rule['priority_id'] ?? 0);
+            $categoryId = (int)($rule['category_id'] ?? 0);
+            $assigneeId = (int)($rule['assigned_to_employee_id'] ?? 0);
+            if ($priorityId > 0 && $result['priority_id'] <= 0) {
+                $result['priority_id'] = $priorityId;
+            }
+            if ($categoryId > 0 && $result['category_id'] <= 0) {
+                $result['category_id'] = $categoryId;
+            }
+            if ($assigneeId > 0 && $result['assigned_to_employee_id'] <= 0) {
+                $result['assigned_to_employee_id'] = $assigneeId;
+            }
+        }
+
+        return $result;
+    }
+}
+
+if (!function_exists('itm_inbound_email_update_ticket_routing')) {
+    /**
+     * @param array{priority_id?:int,category_id?:int,assigned_to_employee_id?:int} $routing
+     */
+    function itm_inbound_email_update_ticket_routing($conn, $companyId, $ticketId, array $routing)
+    {
+        $companyId = (int)$companyId;
+        $ticketId = (int)$ticketId;
+        if ($companyId <= 0 || $ticketId <= 0) {
+            return false;
+        }
+        $priorityId = (int)($routing['priority_id'] ?? 0);
+        $categoryId = (int)($routing['category_id'] ?? 0);
+        $assigneeId = (int)($routing['assigned_to_employee_id'] ?? 0);
+        if ($priorityId <= 0 && $categoryId <= 0 && $assigneeId <= 0) {
+            return true;
+        }
+
+        $sets = [];
+        $types = '';
+        $params = [];
+        if ($priorityId > 0) {
+            $sets[] = 'priority_id = ?';
+            $types .= 'i';
+            $params[] = $priorityId;
+        }
+        if ($categoryId > 0) {
+            $sets[] = 'category_id = ?';
+            $types .= 'i';
+            $params[] = $categoryId;
+        }
+        if ($assigneeId > 0) {
+            $sets[] = 'assigned_to_employee_id = ?';
+            $types .= 'i';
+            $params[] = $assigneeId;
+        }
+        if ($sets === []) {
+            return true;
+        }
+        $sql = 'UPDATE tickets SET ' . implode(', ', $sets) . ' WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
+        $types .= 'ii';
+        $params[] = $ticketId;
+        $params[] = $companyId;
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, $types, ...$params);
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+        if ($ok && $priorityId > 0) {
+            if (!function_exists('itm_ticket_sla_apply_on_create')) {
+                require_once ROOT_PATH . 'includes/itm_ticket_sla.php';
+            }
+            itm_ticket_sla_apply_on_create($conn, $ticketId, $companyId, $priorityId);
+        }
+
+        return $ok;
+    }
+}
+
 if (!function_exists('itm_inbound_email_resolve_requester')) {
     /**
      * @return array{employee_id:int,is_fallback:bool,from_email:string}
@@ -696,7 +1083,7 @@ if (!function_exists('itm_inbound_email_record_processed')) {
 }
 
 if (!function_exists('itm_inbound_email_log_received')) {
-    function itm_inbound_email_log_received($conn, $companyId, $smtpConfigId, $toEmail, $fromEmail, $ccEmail, $subject, $details)
+    function itm_inbound_email_log_received($conn, $companyId, $smtpConfigId, $toEmail, $fromEmail, $ccEmail, $subject, $details, $status = 'received')
     {
         if (!function_exists('itm_email_log_send')) {
             require_once ROOT_PATH . 'includes/itm_email.php';
@@ -706,7 +1093,7 @@ if (!function_exists('itm_inbound_email_log_received')) {
             $companyId,
             $toEmail,
             $subject,
-            'received',
+            $status,
             $details,
             $smtpConfigId,
             $fromEmail,
@@ -718,6 +1105,60 @@ if (!function_exists('itm_inbound_email_log_received')) {
         }
 
         return (int)mysqli_insert_id($conn);
+    }
+}
+
+if (!function_exists('itm_inbound_email_log_event')) {
+    /**
+     * @param array<string,mixed> $meta
+     */
+    function itm_inbound_email_log_event(
+        $conn,
+        $companyId,
+        $smtpConfigId,
+        $toEmail,
+        $fromEmail,
+        $ccEmail,
+        $subject,
+        $eventType,
+        $rawPayload,
+        array $meta = [],
+        $status = 'received'
+    ) {
+        $details = itm_inbound_email_build_event_details($eventType, $meta, $rawPayload);
+        $logStatus = strtolower((string)$status);
+        if (!in_array($logStatus, ['sent', 'failed', 'received'], true)) {
+            $logStatus = $eventType === 'parse_error' || $eventType === 'requester_missing' ? 'failed' : 'received';
+        }
+
+        return itm_inbound_email_log_received(
+            $conn,
+            $companyId,
+            $smtpConfigId,
+            $toEmail,
+            $fromEmail,
+            $ccEmail,
+            $subject,
+            $details,
+            $logStatus
+        );
+    }
+}
+
+if (!function_exists('itm_inbound_email_mark_message_handled')) {
+    /**
+     * @param array<string,mixed> $message
+     */
+    function itm_inbound_email_mark_message_handled($imap, $transport, $mailpitBase, array $message)
+    {
+        if ($imap) {
+            @imap_setflag_full($imap, (string)$message['msgno'], '\\Seen');
+
+            return;
+        }
+        if ($transport === 'mailpit' && $mailpitBase !== '') {
+            itm_inbound_email_mailpit_mark_read($mailpitBase, [(string)$message['msgno']], true);
+        }
     }
 }
 
@@ -747,10 +1188,19 @@ if (!function_exists('itm_inbound_email_assign_external_code')) {
 
 if (!function_exists('itm_inbound_email_create_ticket')) {
     /**
+     * @param array{priority_id?:int,category_id?:int,assigned_to_employee_id?:int,matched_keywords?:array<int,string>} $routing
      * @return array{ticket_id:int,ticket_external_code:string}|false
      */
-    function itm_inbound_email_create_ticket($conn, $companyId, $requesterEmployeeId, $title, $description, $fromEmail, $sendAutoReply = true)
-    {
+    function itm_inbound_email_create_ticket(
+        $conn,
+        $companyId,
+        $requesterEmployeeId,
+        $title,
+        $description,
+        $fromEmail,
+        $sendAutoReply = true,
+        array $routing = []
+    ) {
         if (!function_exists('itm_live_chat_create_ticket')) {
             require_once ROOT_PATH . 'includes/itm_live_chat_ticket.php';
         }
@@ -766,10 +1216,19 @@ if (!function_exists('itm_inbound_email_create_ticket')) {
             $description = 'Inbound email from ' . $fromEmail;
         }
 
-        $ticketId = itm_live_chat_create_ticket($conn, $companyId, $requesterEmployeeId, $title, $description);
+        $priorityId = (int)($routing['priority_id'] ?? 0);
+        $ticketId = itm_live_chat_create_ticket(
+            $conn,
+            $companyId,
+            $requesterEmployeeId,
+            $title,
+            $description,
+            $priorityId > 0 ? $priorityId : null
+        );
         if (!$ticketId) {
             return false;
         }
+        itm_inbound_email_update_ticket_routing($conn, $companyId, (int)$ticketId, $routing);
         $externalCode = itm_inbound_email_assign_external_code($conn, $companyId, $ticketId);
 
         if (function_exists('itm_search_index_after_module_save')) {
@@ -890,6 +1349,8 @@ if (!function_exists('itm_inbound_email_fetch_unseen')) {
             if ($body === '') {
                 $body = (string)imap_body($imap, (int)$msgno);
             }
+            $inReplyTo = isset($header->in_reply_to) ? (string)$header->in_reply_to : '';
+            $references = isset($header->references) ? (string)$header->references : '';
 
             $result['messages'][] = [
                 'msgno' => (int)$msgno,
@@ -899,6 +1360,8 @@ if (!function_exists('itm_inbound_email_fetch_unseen')) {
                 'cc' => $ccList,
                 'subject' => isset($header->subject) ? (string)$header->subject : '',
                 'body' => $body,
+                'in_reply_to' => $inReplyTo,
+                'references' => $references,
             ];
         }
 
@@ -992,8 +1455,31 @@ if (!function_exists('itm_inbound_email_process_company')) {
         foreach ($fetch['messages'] as $message) {
             $messageId = (string)($message['message_id'] ?? '');
             $normalizedId = itm_inbound_email_normalize_message_id($messageId);
+            $rawPayload = itm_inbound_email_message_raw_payload($message);
+            $fromEmail = (string)($message['from'] ?? '');
+            $subject = (string)($message['subject'] ?? '');
+            $body = (string)($message['body'] ?? '');
+            $toList = is_array($message['to'] ?? null) ? $message['to'] : [];
+            $ccList = is_array($message['cc'] ?? null) ? $message['cc'] : [];
+            $toEmail = $companyEmail !== '' ? $companyEmail : implode(', ', $toList);
+
             if ($normalizedId === '') {
                 $summary['skipped']++;
+                if (!$dryRun) {
+                    itm_inbound_email_log_event(
+                        $conn,
+                        $companyId,
+                        $smtpConfigId,
+                        $toEmail,
+                        $fromEmail,
+                        implode(', ', $ccList),
+                        $subject !== '' ? $subject : '(No subject)',
+                        'parse_error',
+                        $rawPayload,
+                        ['reason' => 'missing_message_id'],
+                        'failed'
+                    );
+                }
                 continue;
             }
             if (itm_inbound_email_is_processed($conn, $companyId, $messageId)) {
@@ -1001,39 +1487,116 @@ if (!function_exists('itm_inbound_email_process_company')) {
                 if ($verbose) {
                     $summary['passes'][] = 'Already processed Message-ID: ' . $messageId;
                 }
-                if (!$dryRun && $imap) {
-                    @imap_setflag_full($imap, (string)$message['msgno'], '\\Seen');
-                } elseif (!$dryRun && $transport === 'mailpit' && $mailpitBase !== '') {
-                    itm_inbound_email_mailpit_mark_read($mailpitBase, [(string)$message['msgno']], true);
+                if (!$dryRun) {
+                    itm_inbound_email_log_event(
+                        $conn,
+                        $companyId,
+                        $smtpConfigId,
+                        $toEmail,
+                        $fromEmail,
+                        implode(', ', $ccList),
+                        $subject,
+                        'duplicate_skip',
+                        '',
+                        ['message_id' => $normalizedId],
+                        'received'
+                    );
+                    itm_inbound_email_mark_message_handled($imap, $transport, $mailpitBase, $message);
                 }
                 continue;
             }
 
-            $toList = is_array($message['to'] ?? null) ? $message['to'] : [];
-            $ccList = is_array($message['cc'] ?? null) ? $message['cc'] : [];
             if ($companyEmail !== '' && !itm_inbound_email_to_matches_company($toList, $ccList, $companyEmail)) {
                 if ($transport === 'mailpit') {
                     $summary['skipped']++;
                     if ($verbose) {
                         $summary['passes'][] = 'Skipped (To/Cc not ' . $companyEmail . '): Message-ID ' . $messageId;
                     }
+                    if (!$dryRun) {
+                        itm_inbound_email_log_event(
+                            $conn,
+                            $companyId,
+                            $smtpConfigId,
+                            $toEmail,
+                            $fromEmail,
+                            implode(', ', $ccList),
+                            $subject,
+                            'wrong_recipient_skip',
+                            $rawPayload,
+                            ['company_email' => $companyEmail],
+                            'received'
+                        );
+                        itm_inbound_email_record_processed(
+                            $conn,
+                            $companyId,
+                            $messageId,
+                            0,
+                            0,
+                            $fromEmail,
+                            $subject
+                        );
+                        itm_inbound_email_mark_message_handled($imap, $transport, $mailpitBase, $message);
+                    }
                     continue;
                 }
                 $summary['warnings'][] = 'To/Cc does not include companies.email (' . $companyEmail . ') for Message-ID ' . $messageId;
             }
 
-            $fromEmail = (string)($message['from'] ?? '');
-            $subject = (string)($message['subject'] ?? '');
-            $body = (string)($message['body'] ?? '');
+            $parseFailed = ($body === '' && $subject === '' && $fromEmail === '');
+            if ($parseFailed) {
+                $summary['skipped']++;
+                if (!$dryRun) {
+                    itm_inbound_email_log_event(
+                        $conn,
+                        $companyId,
+                        $smtpConfigId,
+                        $toEmail,
+                        $fromEmail,
+                        implode(', ', $ccList),
+                        '(Unparseable email)',
+                        'parse_error',
+                        $rawPayload,
+                        ['reason' => 'empty_message'],
+                        'failed'
+                    );
+                    itm_inbound_email_record_processed(
+                        $conn,
+                        $companyId,
+                        $messageId,
+                        0,
+                        0,
+                        $fromEmail,
+                        $subject
+                    );
+                    itm_inbound_email_mark_message_handled($imap, $transport, $mailpitBase, $message);
+                }
+                continue;
+            }
+
             $requester = itm_inbound_email_resolve_requester($conn, $companyId, $fromEmail);
             if ($requester['employee_id'] <= 0) {
                 $summary['errors'][] = 'No requester employee for Message-ID ' . $messageId;
                 $summary['status'] = 'fail';
+                if (!$dryRun) {
+                    itm_inbound_email_log_event(
+                        $conn,
+                        $companyId,
+                        $smtpConfigId,
+                        $toEmail,
+                        $fromEmail,
+                        implode(', ', $ccList),
+                        $subject,
+                        'requester_missing',
+                        $rawPayload,
+                        ['from_email' => $fromEmail],
+                        'failed'
+                    );
+                }
                 continue;
             }
 
-            $ref = itm_inbound_email_parse_ticket_ref($subject, $body);
-            $existingTicketId = itm_inbound_email_resolve_ticket_id($conn, $companyId, $ref);
+            $existingTicketId = itm_inbound_email_resolve_thread_ticket($conn, $companyId, $message);
+            $routing = itm_inbound_email_apply_routing_rules($conn, $companyId, $subject, $body);
             $ticketId = 0;
             $externalCode = '';
 
@@ -1052,19 +1615,20 @@ if (!function_exists('itm_inbound_email_process_company')) {
                 continue;
             }
 
-            $toEmail = $companyEmail !== '' ? $companyEmail : implode(', ', $toList);
-            $emailLogId = itm_inbound_email_log_received(
-                $conn,
-                $companyId,
-                $smtpConfigId,
-                $toEmail,
-                $fromEmail,
-                implode(', ', $ccList),
-                $subject,
-                itm_inbound_email_strip_body($body)
-            );
-
             if ($existingTicketId > 0) {
+                $emailLogId = itm_inbound_email_log_event(
+                    $conn,
+                    $companyId,
+                    $smtpConfigId,
+                    $toEmail,
+                    $fromEmail,
+                    implode(', ', $ccList),
+                    $subject,
+                    'comment_appended',
+                    $rawPayload,
+                    ['ticket_id' => $existingTicketId],
+                    'received'
+                );
                 $commentId = itm_inbound_email_append_comment(
                     $conn,
                     $companyId,
@@ -1077,6 +1641,19 @@ if (!function_exists('itm_inbound_email_process_company')) {
                 if (!$commentId) {
                     $summary['errors'][] = 'Failed to append comment for ticket #' . $existingTicketId;
                     $summary['status'] = 'fail';
+                    itm_inbound_email_log_event(
+                        $conn,
+                        $companyId,
+                        $smtpConfigId,
+                        $toEmail,
+                        $fromEmail,
+                        implode(', ', $ccList),
+                        $subject,
+                        'comment_failed',
+                        $rawPayload,
+                        ['ticket_id' => $existingTicketId],
+                        'failed'
+                    );
                     continue;
                 }
                 $ticketId = $existingTicketId;
@@ -1089,16 +1666,50 @@ if (!function_exists('itm_inbound_email_process_company')) {
                     $subject,
                     $body,
                     $requester['from_email'],
-                    true
+                    true,
+                    $routing
                 );
                 if (!$created) {
                     $summary['errors'][] = 'Failed to create ticket for Message-ID ' . $messageId;
                     $summary['status'] = 'fail';
+                    itm_inbound_email_log_event(
+                        $conn,
+                        $companyId,
+                        $smtpConfigId,
+                        $toEmail,
+                        $fromEmail,
+                        implode(', ', $ccList),
+                        $subject,
+                        'ticket_create_failed',
+                        $rawPayload,
+                        ['matched_keywords' => $routing['matched_keywords'] ?? []],
+                        'failed'
+                    );
                     continue;
                 }
                 $ticketId = (int)$created['ticket_id'];
                 $externalCode = (string)$created['ticket_external_code'];
                 $summary['created']++;
+                $emailLogId = itm_inbound_email_log_event(
+                    $conn,
+                    $companyId,
+                    $smtpConfigId,
+                    $toEmail,
+                    $fromEmail,
+                    implode(', ', $ccList),
+                    $subject,
+                    'ticket_created',
+                    $rawPayload,
+                    [
+                        'ticket_id' => $ticketId,
+                        'ticket_external_code' => $externalCode,
+                        'matched_keywords' => $routing['matched_keywords'] ?? [],
+                        'priority_id' => (int)($routing['priority_id'] ?? 0),
+                        'category_id' => (int)($routing['category_id'] ?? 0),
+                        'assigned_to_employee_id' => (int)($routing['assigned_to_employee_id'] ?? 0),
+                    ],
+                    'received'
+                );
             }
 
             itm_inbound_email_record_processed(
@@ -1106,16 +1717,12 @@ if (!function_exists('itm_inbound_email_process_company')) {
                 $companyId,
                 $messageId,
                 $ticketId,
-                $emailLogId,
+                $emailLogId ?? 0,
                 $requester['from_email'],
                 $subject
             );
 
-            if ($imap) {
-                @imap_setflag_full($imap, (string)$message['msgno'], '\\Seen');
-            } elseif ($transport === 'mailpit' && $mailpitBase !== '') {
-                itm_inbound_email_mailpit_mark_read($mailpitBase, [(string)$message['msgno']], true);
-            }
+            itm_inbound_email_mark_message_handled($imap, $transport, $mailpitBase, $message);
 
             if ($verbose && $externalCode !== '') {
                 $summary['passes'][] = 'Created ' . $externalCode;

@@ -612,7 +612,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_inbound_email_tickets.php" target="_blank" rel="nofollow noreferrer">verify_inbound_email_tickets.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Regression for inbound email-to-ticket parsers, dedupe table, requester resolution, schema columns; live Mailpit E2E when API at <code>http://localhost/mailpit</code> responds.</td>
+                    <td>Regression for inbound email-to-ticket parsers, dedupe, threading (Re/Fwd, In-Reply-To, TCK codes), keyword routing, event logging, requester resolution, schema columns; live Mailpit E2E (create, URGENT priority, reply comment) when API responds.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
