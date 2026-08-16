@@ -4,8 +4,11 @@ require __DIR__ . '/../includes/portal_chrome.php';
 require __DIR__ . '/../includes/portal_checkout.php';
 
 $reservationId = (int) ($_POST['reservation_id'] ?? $_GET['reservation_id'] ?? 0);
+$confirmationCode = itm_hotel_booking_normalize_guest_confirmation_code($_POST['confirmation_code'] ?? $_GET['confirmation_code'] ?? '');
 $company_id = 0;
-if ($reservationId > 0) {
+if ($confirmationCode !== '') {
+    $company_id = hb_portal_get_booking_company_id_by_confirmation_code($conn, $confirmationCode);
+} elseif ($reservationId > 0) {
     $company_id = hb_portal_get_booking_company_id($conn, $reservationId);
 }
 if ($company_id <= 0) {
@@ -17,14 +20,17 @@ $success = '';
 $booking = null;
 $manageLastName = '';
 $manageReservationId = 0;
+$manageConfirmationCode = '';
 $manageAuth2 = '';
 $otpStep = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $lastName = trim((string) ($_POST['last_name'] ?? ''));
+    $confirmationCode = itm_hotel_booking_normalize_guest_confirmation_code($_POST['confirmation_code'] ?? '');
     $reservationId = (int) ($_POST['reservation_id'] ?? 0);
     $auth2 = itm_hotel_booking_normalize_auth2($_POST['auth2'] ?? '');
     $manageLastName = $lastName;
+    $manageConfirmationCode = $confirmationCode;
     $manageReservationId = $reservationId;
     $manageAuth2 = $auth2;
     $lookupFailureMessage = itm_hotel_booking_portal_manage_lookup_failure_message();
@@ -81,27 +87,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 itm_hotel_booking_portal_manage_otp_clear();
             } else {
                 $error = (string) ($cancelResult['error'] ?? 'Unable to cancel this reservation.');
-                $verified = itm_hotel_booking_fetch_for_guest_manage($conn, $company_id, $reservationId, $lastName, $auth2);
+                $verified = itm_hotel_booking_fetch_for_guest_manage(
+                    $conn,
+                    $company_id,
+                    $manageConfirmationCode !== '' ? $manageConfirmationCode : $confirmationCode,
+                    $lastName,
+                    $auth2
+                );
                 if ($verified) {
                     $booking = hb_portal_load_booking_confirmation($conn, $company_id, (int) $verified['id']);
                 }
             }
         }
-    } elseif ($lastName === '' || $reservationId < 1 || $auth2 === '') {
-        $error = 'Enter your last name, reservation ID, and auth code.';
+    } elseif ($lastName === '' || $confirmationCode === '' || $auth2 === '') {
+        $error = 'Enter your last name, confirmation number, and auth code.';
     } else {
         itm_require_post_csrf();
         itm_hotel_booking_portal_manage_rate_limit_record();
-        $verified = itm_hotel_booking_fetch_for_guest_manage($conn, $company_id, $reservationId, $lastName, $auth2);
+        $verified = itm_hotel_booking_fetch_for_guest_manage($conn, $company_id, $confirmationCode, $lastName, $auth2);
         if (!$verified) {
             $error = $lookupFailureMessage;
         } else {
+            $reservationId = (int) ($verified['id'] ?? 0);
+            $manageReservationId = $reservationId;
+            $manageConfirmationCode = $confirmationCode;
             $otpIssue = itm_hotel_booking_portal_manage_otp_issue($conn, $company_id, $verified);
             if (empty($otpIssue['ok'])) {
                 $error = $lookupFailureMessage;
             } else {
                 $otpStep = true;
-                $manageReservationId = $reservationId;
             }
         }
     }
@@ -124,6 +138,9 @@ if ($booking) {
     }
     if ($manageReservationId < 1) {
         $manageReservationId = (int) ($booking['id'] ?? 0);
+    }
+    if ($manageConfirmationCode === '' && !empty($booking['guest_confirmation_code'])) {
+        $manageConfirmationCode = itm_hotel_booking_normalize_guest_confirmation_code($booking['guest_confirmation_code']);
     }
     if ($manageAuth2 === '') {
         $manageAuth2 = itm_hotel_booking_normalize_auth2($booking['auth2'] ?? '');
@@ -216,14 +233,14 @@ $manageConfirmationOptions = [
 <?php else: ?>
 <main class="hb-main auth-card hb-manage-booking-card">
 <h1>Manage my booking</h1>
-<p class="hb-sub">Enter the last name on the reservation, the reservation ID, and the 12-character auth code from your confirmation (uppercase, lowercase, numbers, and symbols). We will email you a one-time code to continue.</p>
+<p class="hb-sub">Enter the last name on the reservation, the 10-character confirmation number from your email, and the 12-character auth code (uppercase, lowercase, numbers, and symbols). We will email you a one-time code to continue.</p>
 <?php if ($error): ?><p class="hb-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
 <form method="post" class="hb-manage-booking-form">
 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
 <label>Last name</label>
 <input type="text" name="last_name" required autocomplete="family-name" value="<?php echo htmlspecialchars((string) ($_POST['last_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
-<label>Reservation ID</label>
-<input type="number" name="reservation_id" min="1" required inputmode="numeric" value="<?php echo (int) ($_POST['reservation_id'] ?? 0) ?: ''; ?>">
+<label>Confirmation number</label>
+<input type="text" name="confirmation_code" required minlength="10" maxlength="10" autocomplete="off" pattern="[A-Za-z0-9]{10}" value="<?php echo htmlspecialchars(itm_hotel_booking_normalize_guest_confirmation_code($_POST['confirmation_code'] ?? '') !== '' ? itm_hotel_booking_normalize_guest_confirmation_code($_POST['confirmation_code'] ?? '') : strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) ($_POST['confirmation_code'] ?? ''))), ENT_QUOTES, 'UTF-8'); ?>">
 <label>Auth code</label>
 <input type="text" name="auth2" required minlength="4" maxlength="12" autocomplete="one-time-code" value="<?php echo htmlspecialchars(itm_hotel_booking_normalize_auth2($_POST['auth2'] ?? '') !== '' ? itm_hotel_booking_normalize_auth2($_POST['auth2'] ?? '') : (string) ($_POST['auth2'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
 <div class="hb-checkout-actions">

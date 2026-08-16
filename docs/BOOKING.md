@@ -9,7 +9,7 @@ Comprehensive review and reference for the guest-facing hotel booking portal und
 
 ## 1. Intent & purpose
 
-The **public booking portal** (`booking/`) lets guests browse hotels, select dates and rooms, complete a four-step checkout without ITM employee login, and manage an existing reservation with **last name + confirmation number (`hotel_bookings.id`) + auth2 code** (`hotel_bookings.auth2` — 12-character complex code on new bookings; legacy 4-digit PINs remain valid) plus a **6-digit email OTP** before the manage view loads.
+The **public booking portal** (`booking/`) lets guests browse hotels, select dates and rooms, complete a four-step checkout without ITM employee login, and manage an existing reservation with **last name + guest confirmation code** (`hotel_bookings.guest_confirmation_code` — opaque 10-character code, not sequential `hotel_bookings.id`) **+ auth2 code** (`hotel_bookings.auth2` — 12-character complex code on new bookings; legacy 4-digit PINs are retired via `itm_hotel_booking_portal_backfill_legacy_auth2_groups()`) plus a **6-digit email OTP** before the manage view loads.
 
 Staff configure inventory, rates, and policies in ITM **Hospitality** modules (`modules/hotel_bookings/`, `modules/hotel_booking_hotels/`, etc.). The portal reads that data through MySQLi helpers scoped by `company_id`.
 
@@ -105,7 +105,7 @@ Draft state (dates, rate, occupancy, upgrade) is stored in session via `itm_hote
 
 ### B. Manage existing reservation
 
-[users/bookings.php](http://localhost/it-management/booking/users/bookings.php) — guest enters **last name** + **reservation ID** + **auth code** (`auth2`, 12-character complex code on new bookings; legacy 4-digit PINs still accepted). After PIN verification the portal emails a **6-digit OTP** (10-minute expiry) before showing the confirmation or allowing cancel (no account required).
+[users/bookings.php](http://localhost/it-management/booking/users/bookings.php) — guest enters **last name** + **confirmation number** (`guest_confirmation_code`, 10 characters) + **auth code** (`auth2`, 12-character complex code). After PIN verification the portal emails a **6-digit OTP** (10-minute expiry) before showing the confirmation or allowing cancel (no account required).
 
 After lookup:
 
@@ -136,9 +136,9 @@ After lookup:
 | `hotel_booking_room_type_base_prices` | Base price per night per room type and hotel |
 | `hotel_booking_rooms` | Inventory, link to room type |
 | `booking_rooms_types` | Type name, bed summary, upgrade pricing |
-| `hotel_bookings` | Reservations; segment status FKs; **`auth2`** (12-char complex guest manage code; legacy 4-digit rows remain valid); `notes` (rate plan, occupancy meta, comments) |
+| `hotel_bookings` | Reservations; segment status FKs; **`guest_confirmation_code`** (opaque 10-char guest-facing confirmation); **`auth2`** (12-char complex guest manage code); `notes` (rate plan, occupancy meta, comments) |
 | `hotel_bookings_future` / `present` / `history` | Status lookups (`PENDING`, `CANCELLED`, etc.) — no ENUM |
-| `customers` | Guest PII; ensured on book via `itm_hotel_booking_ensure_customer_for_portal()` |
+| `customers` | Guest PII; ensured on book via `itm_hotel_booking_ensure_customer_for_portal()` (repeat book by email refreshes `name` / `phone`) |
 | `hotel_booking_portal_rate_plans` | Per-hotel cancellation policy URLs (slots 1–4) |
 | `hotel_booking_special_rates` | Member, AAA, promo, etc. — discount % per hotel |
 | `hotel_booking_amenities` | Icons (`icon_slug` → `booking/images/amenities/*.svg`) |
@@ -201,7 +201,7 @@ Seed example: company 1 **TechCorp Retreat**, reservation IDs from `hotel_bookin
 | Area | Notes |
 |------|--------|
 | **No online payment** | By design; confirmation copy must stay accurate if payment is added later. |
-| **Manage auth** | Last name + reservation ID + **auth2** (12-character complex code on new bookings; legacy 4-digit PINs still accepted) + **email OTP** before manage/cancel. Session **and client IP** rate limits (12 / 15 min). |
+| **Manage auth** | Last name + **guest confirmation code** + **auth2** (12-character complex code) + **email OTP** before manage/cancel. Session **and client IP** rate limits (lookup/cancel 12 / 15 min; OTP verify 5 / 10 min). |
 | **`hotel_booking_portal_rate_plans`** | Required for cancellation policy links; verify script fails if migration not applied on live DB (`db/migrations/hotel_booking_portal_rate_plans.sql`). |
 | **Portal pricing columns** | `hotel_booking_hotels` portal pricing fields — apply `db/migrations/hotel_booking_portal_hotel_pricing.sql` on existing DBs (destructive; back up hotel rows first). |
 | **Portal user accounts** | Optional `auth/*` rarely used; logout currently redirects to login, not home (pending UX tweak). |
@@ -225,7 +225,7 @@ Seed example: company 1 **TechCorp Retreat**, reservation IDs from `hotel_bookin
 | Cancellation policy link missing | No `hotel_booking_portal_rate_plans` row or empty `cancellation_policy_url` |
 | `verify_hotel_booking.php` fails on rate plans table | Run `db/migrations/hotel_booking_portal_rate_plans.sql` on existing DB |
 | Room not available on book | Overlap with non-cancelled booking on same `room_id` |
-| Manage lookup fails | Last name must match `customers.name` (case-insensitive token match); ID = `hotel_bookings.id`; auth code = `hotel_bookings.auth2` (12-char complex code or legacy 4 digits); complete email OTP step |
+| Manage lookup fails | Last name must match `customers.name` (case-insensitive token match); confirmation number = `hotel_bookings.guest_confirmation_code`; auth code = `hotel_bookings.auth2` (12-char complex code); complete email OTP step |
 | Cancel button hidden | Stay not in `future` segment or already `CANCELLED` |
 | PDF download fails | CDN blocked for html2canvas/jsPDF; check browser console |
 | PDF “Manage my booking” not clickable | Regenerate after update — confirmation PDF must include a jsPDF `link()` annotation over `data-hb-pdf-manage-link` (html2canvas alone paints pixels only) |

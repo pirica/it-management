@@ -80,11 +80,32 @@ if ($auth2Strong
     && itm_hotel_booking_normalize_auth2('Ab#3699cD@eF') === 'Ab#3699cD@eF'
     && itm_hotel_booking_normalize_auth2($auth2Sample) === $auth2Sample
     && itm_hotel_booking_auth2_matches('0042', '42') === false
-    && itm_hotel_booking_auth2_matches('0042', '0042')
+    && itm_hotel_booking_auth2_matches('0042', '0042') === false
     && itm_hotel_booking_auth2_matches($auth2Sample, $auth2Sample)) {
     hb_pass('guest auth2 generate/normalize/match');
 } else {
     hb_fail('guest auth2 generate/normalize/match got ' . $auth2Sample);
+}
+
+$resGuestCode = mysqli_query($conn, "SHOW COLUMNS FROM hotel_bookings LIKE 'guest_confirmation_code'");
+if ($resGuestCode && mysqli_fetch_assoc($resGuestCode)) {
+    itm_hotel_booking_portal_backfill_legacy_auth2_groups($conn);
+    itm_hotel_booking_portal_backfill_guest_confirmation_codes($conn);
+    $sampleCode = itm_hotel_booking_generate_guest_confirmation_code($conn, 1);
+    if (strlen($sampleCode) === 10 && itm_hotel_booking_normalize_guest_confirmation_code($sampleCode) === $sampleCode) {
+        hb_pass('guest confirmation code generate/normalize');
+    } else {
+        hb_fail('guest confirmation code generate/normalize got ' . $sampleCode);
+    }
+    $legacyLeft = mysqli_query($conn, "SELECT COUNT(*) AS c FROM hotel_bookings WHERE deleted_at IS NULL AND auth2 REGEXP '^[0-9]{4}$'");
+    $legacyCount = ($legacyLeft && ($lr = mysqli_fetch_assoc($legacyLeft))) ? (int) ($lr['c'] ?? 0) : -1;
+    if ($legacyCount === 0) {
+        hb_pass('legacy auth2 retired from hotel_bookings');
+    } else {
+        hb_fail('legacy auth2 rows remain: ' . $legacyCount);
+    }
+} else {
+    hb_fail('hotel_bookings.guest_confirmation_code column missing — apply db/migrations/hotel_bookings_guest_confirmation_code.sql');
 }
 
 $resAuth2Type = mysqli_query($conn, "SHOW COLUMNS FROM hotel_bookings LIKE 'auth2'");
@@ -1122,6 +1143,23 @@ if (function_exists('itm_hotel_booking_portal_manage_otp_rate_limit_check')
 }
 
 $manageBookingsSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/users/bookings.php');
+if (strpos($manageBookingsSrc, 'confirmation_code') !== false
+    && strpos($manageBookingsSrc, 'name="reservation_id"') === false) {
+    hb_pass('portal manage lookup uses guest confirmation code');
+} else {
+    hb_fail('portal manage lookup must use confirmation_code (not sequential reservation id)');
+}
+
+$bookingHelperSrc = (string) @file_get_contents(dirname(__DIR__) . '/includes/itm_hotel_booking.php');
+if (strpos($bookingHelperSrc, 'UPDATE customers SET name = ?, phone = ?') !== false
+    && strpos($bookingHelperSrc, 'guest_confirmation_code = ?') !== false
+    && strpos($bookingHelperSrc, 'itm_hotel_booking_auth2_is_legacy_digits($stored)') !== false
+    && strpos($bookingHelperSrc, 'return false') !== false) {
+    hb_pass('portal customer refresh + guest code + legacy auth2 sunset wiring');
+} else {
+    hb_fail('portal customer refresh / guest code / legacy auth2 wiring missing');
+}
+
 if (strpos($manageBookingsSrc, 'itm_hotel_booking_portal_manage_otp_rate_limit_check') !== false
     && strpos($manageBookingsSrc, 'itm_hotel_booking_portal_manage_lookup_failure_message') !== false
     && strpos($manageBookingsSrc, 'masked_email') === false
