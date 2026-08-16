@@ -954,6 +954,7 @@ if (!function_exists('itm_inbound_email_process_company')) {
             'created' => 0,
             'comments' => 0,
             'skipped' => 0,
+            'passes' => [],
             'warnings' => [],
             'errors' => [],
         ];
@@ -998,7 +999,7 @@ if (!function_exists('itm_inbound_email_process_company')) {
             if (itm_inbound_email_is_processed($conn, $companyId, $messageId)) {
                 $summary['skipped']++;
                 if ($verbose) {
-                    $summary['warnings'][] = 'Already processed Message-ID: ' . $messageId;
+                    $summary['passes'][] = 'Already processed Message-ID: ' . $messageId;
                 }
                 if (!$dryRun && $imap) {
                     @imap_setflag_full($imap, (string)$message['msgno'], '\\Seen');
@@ -1014,7 +1015,7 @@ if (!function_exists('itm_inbound_email_process_company')) {
                 if ($transport === 'mailpit') {
                     $summary['skipped']++;
                     if ($verbose) {
-                        $summary['warnings'][] = 'Skipped (To/Cc not ' . $companyEmail . '): Message-ID ' . $messageId;
+                        $summary['passes'][] = 'Skipped (To/Cc not ' . $companyEmail . '): Message-ID ' . $messageId;
                     }
                     continue;
                 }
@@ -1040,12 +1041,12 @@ if (!function_exists('itm_inbound_email_process_company')) {
                 if ($existingTicketId > 0) {
                     $summary['comments']++;
                     if ($verbose) {
-                        $summary['warnings'][] = '[dry-run] Would append comment to ticket #' . $existingTicketId;
+                        $summary['passes'][] = '[dry-run] Would append comment to ticket #' . $existingTicketId;
                     }
                 } else {
                     $summary['created']++;
                     if ($verbose) {
-                        $summary['warnings'][] = '[dry-run] Would create ticket: ' . $subject;
+                        $summary['passes'][] = '[dry-run] Would create ticket: ' . $subject;
                     }
                 }
                 continue;
@@ -1117,7 +1118,7 @@ if (!function_exists('itm_inbound_email_process_company')) {
             }
 
             if ($verbose && $externalCode !== '') {
-                $summary['warnings'][] = 'Created ' . $externalCode;
+                $summary['passes'][] = 'Created ' . $externalCode;
             }
         }
 
@@ -1126,5 +1127,23 @@ if (!function_exists('itm_inbound_email_process_company')) {
         }
 
         return $summary;
+    }
+}
+
+if (!function_exists('itm_inbound_email_echo_summary_verbose')) {
+    /**
+     * @param array<string,mixed> $summary
+     */
+    function itm_inbound_email_echo_summary_verbose(array $summary, $linePrefix = '')
+    {
+        $nl = function_exists('itm_script_output_nl') ? itm_script_output_nl() : PHP_EOL;
+        $passes = is_array($summary['passes'] ?? null) ? $summary['passes'] : [];
+        $warnings = is_array($summary['warnings'] ?? null) ? $summary['warnings'] : [];
+        foreach ($passes as $line) {
+            echo colorText($linePrefix . '[PASS] ' . (string)$line, 'pass') . $nl;
+        }
+        foreach ($warnings as $line) {
+            echo colorText($linePrefix . '[WARN] ' . (string)$line, 'warn') . $nl;
+        }
     }
 }

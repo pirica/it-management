@@ -101,13 +101,11 @@ foreach ($profiles as $profile) {
     $totalComments += (int)$summary['comments'];
     $totalSkipped += (int)$summary['skipped'];
 
-    foreach ($summary['warnings'] as $warning) {
-        echo colorText('  [WARN] ' . $warning, 'warn') . $nl;
-    }
     foreach ($summary['errors'] as $error) {
         echo colorText('  [FAIL] ' . $error, 'fail') . $nl;
         $failures++;
     }
+    itm_inbound_email_echo_summary_verbose($summary, '  ');
 
     if ($summary['status'] === 'fail') {
         echo colorText('  [FAIL] Company ' . $companyId . ' processing failed.', 'fail') . $nl;

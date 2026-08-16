@@ -206,9 +206,7 @@ if ($processTickets) {
             }
             exit(1);
         }
-        foreach ($summary['warnings'] as $warn) {
-            echo colorText('[WARN] ' . (string)$warn, 'warn') . $nl;
-        }
+        itm_inbound_email_echo_summary_verbose($summary);
     }
 } else {
     echo colorText('[INFO] Next: php scripts/run_inbound_email_tickets.php --company=' . $companyId, 'info') . $nl;
