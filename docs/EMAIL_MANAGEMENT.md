@@ -72,7 +72,9 @@ erDiagram
 | | `inbound_ticket_enabled` | `TINYINT DEFAULT 0` | When `1` on the default profile, `run_inbound_email_tickets.php` polls the mailbox. |
 | | `is_default` | `TINYINT(1) DEFAULT 0` | Exactly one active profile per company is designated as the default transport. |
 | **`ticket_inbound_email_messages`** | `message_id` | `VARCHAR(255)` | RFC Message-ID dedupe per `company_id`; links optional `ticket_id` / `email_log_id`. |
-| **`emails`** | `status` | `VARCHAR(50)` | Delivery states: `sent`, `failed`, or `received`. |
+| **`ticket_inbound_email_routing_rules`** | `keyword` | `VARCHAR(64)` | Per-tenant subject/body keyword match (`sort_order` ASC); optional `priority_id`, `category_id`, `assigned_to_employee_id` applied on **new** inbound tickets only. |
+| **`emails`** | `status` | `VARCHAR(50)` | Delivery states: `sent`, `failed`, or `received`. Inbound runner also logs `received`/`failed` rows with JSON `details` (`inbound_event`, optional `raw_payload`). |
+| | `details` | `TEXT` | Outbound: stripped body snippet. Inbound: JSON `{ "inbound_event": "…", "meta": {…}, "raw_payload": "…" }` on parse/handler paths. |
 | | `is_archived`, `is_deleted` | `TINYINT(1) DEFAULT 0` | Controls visibility in Send Logs view. Soft-delete flips `is_deleted = 1`. |
 | **`email_alert_rules`** | `rule_slug` | `VARCHAR(100)` | Expiration types: `warranty`, `license`, `certificate`, `alerts`, `notes`, `todo`, `events`. |
 
@@ -157,6 +159,7 @@ Per-tenant helpdesk intake polls each company's **default SMTP profile** when **
 - **Keyword rules:** `ticket_inbound_email_routing_rules` — seeds map `urgent`/`critical` → priorities, `billing` → category, `support` → assignee.
 - **Event log:** every inbound attempt writes **emails** (`status` `received` or `failed`) with JSON `details.inbound_event` and `raw_payload` on parse/handler failures.
 - **Dedupe:** `ticket_inbound_email_messages` stores RFC Message-ID per company.
+- **Inbound event types** (`emails.details.inbound_event`): `duplicate_skip`, `wrong_recipient_skip`, `parse_error`, `requester_missing`, `ticket_created`, `comment_appended`, `comment_failed`, `ticket_create_failed`.
 - **Regression:** [verify_inbound_email_tickets.php?run=1](http://localhost/it-management/scripts/verify_inbound_email_tickets.php?run=1) (includes live Mailpit E2E when the API responds).
 - **Manual test send:** `php scripts/send_mailpit_inbound_test_email.php --company=1` (optional `--process` to create a ticket immediately).
 
