@@ -3,6 +3,34 @@
  * Minimal ticket creation for Live Agent flow.
  */
 
+if (!function_exists('itm_ticket_resolve_default_open_status_id')) {
+    /**
+     * Prefer Open (then In Progress) among non-closed statuses — not lowest id (replicated tenants may have Closed first).
+     */
+    function itm_ticket_resolve_default_open_status_id($conn, $companyId)
+    {
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            return null;
+        }
+        $sqlOpen = 'SELECT id FROM ticket_statuses
+                    WHERE company_id = ? AND active = 1 AND is_closed = 0
+                    ORDER BY CASE WHEN LOWER(name) = \'open\' THEN 0 WHEN LOWER(name) = \'in progress\' THEN 1 ELSE 2 END, id ASC
+                    LIMIT 1';
+        $stmtOpen = mysqli_prepare($conn, $sqlOpen);
+        if (!$stmtOpen) {
+            return null;
+        }
+        mysqli_stmt_bind_param($stmtOpen, 'i', $companyId);
+        mysqli_stmt_execute($stmtOpen);
+        $resOpen = mysqli_stmt_get_result($stmtOpen);
+        $openRow = $resOpen ? mysqli_fetch_assoc($resOpen) : null;
+        mysqli_stmt_close($stmtOpen);
+
+        return $openRow ? (int)$openRow['id'] : null;
+    }
+}
+
 if (!function_exists('itm_live_chat_create_ticket')) {
     function itm_live_chat_create_ticket($conn, $companyId, $requesterEmployeeId, $title, $description = '', $priorityId = null)
     {
@@ -28,17 +56,7 @@ if (!function_exists('itm_live_chat_create_ticket')) {
             $priorityId = (int)$priorityId;
         }
 
-        $statusId = null;
-        $sqlSt = 'SELECT id FROM ticket_statuses WHERE company_id = ? AND active = 1 ORDER BY id ASC LIMIT 1';
-        $stmtSt = mysqli_prepare($conn, $sqlSt);
-        if ($stmtSt) {
-            mysqli_stmt_bind_param($stmtSt, 'i', $companyId);
-            mysqli_stmt_execute($stmtSt);
-            $resSt = mysqli_stmt_get_result($stmtSt);
-            $stRow = $resSt ? mysqli_fetch_assoc($resSt) : null;
-            mysqli_stmt_close($stmtSt);
-            $statusId = $stRow ? (int)$stRow['id'] : null;
-        }
+        $statusId = itm_ticket_resolve_default_open_status_id($conn, $companyId);
 
         $sql = 'INSERT INTO tickets (company_id, title, description, status_id, priority_id, created_by_employee_id, active, created_by)
                 VALUES (?, ?, ?, ?, ?, ?, 1, ?)';
@@ -120,20 +138,7 @@ if (!function_exists('itm_live_chat_reopen_ticket')) {
             return false;
         }
 
-        $openStatusId = null;
-        $sqlOpen = 'SELECT id FROM ticket_statuses
-                    WHERE company_id = ? AND active = 1 AND is_closed = 0
-                    ORDER BY CASE WHEN LOWER(name) = \'open\' THEN 0 WHEN LOWER(name) = \'in progress\' THEN 1 ELSE 2 END, id ASC
-                    LIMIT 1';
-        $stmtOpen = mysqli_prepare($conn, $sqlOpen);
-        if ($stmtOpen) {
-            mysqli_stmt_bind_param($stmtOpen, 'i', $companyId);
-            mysqli_stmt_execute($stmtOpen);
-            $resOpen = mysqli_stmt_get_result($stmtOpen);
-            $openRow = $resOpen ? mysqli_fetch_assoc($resOpen) : null;
-            mysqli_stmt_close($stmtOpen);
-            $openStatusId = $openRow ? (int)$openRow['id'] : null;
-        }
+        $openStatusId = itm_ticket_resolve_default_open_status_id($conn, $companyId);
         if ($openStatusId === null || $openStatusId <= 0) {
             return false;
         }
