@@ -8,6 +8,116 @@ function itm_qr_share_session_ttl_seconds()
     return 1800;
 }
 
+function itm_qr_share_code_length()
+{
+    return 8;
+}
+
+function itm_qr_share_legacy_code_length()
+{
+    return 6;
+}
+
+/**
+ * Vault- and file-heavy modules accept token links only (no numeric join codes).
+ *
+ * @return string[]
+ */
+function itm_qr_share_token_only_module_slugs()
+{
+    return [
+        'passwords',
+        'private_contacts',
+        'explorer',
+        'notes',
+        'webmail',
+    ];
+}
+
+function itm_qr_share_module_allows_numeric_code($moduleSlugOrLegacyTable)
+{
+    $moduleSlug = itm_qr_share_resolve_module_slug($moduleSlugOrLegacyTable);
+    if ($moduleSlug === '') {
+        return false;
+    }
+
+    return !in_array($moduleSlug, itm_qr_share_token_only_module_slugs(), true);
+}
+
+function itm_qr_share_join_rate_limit_ip_dir()
+{
+    return rtrim((string) ROOT_PATH, '/\\') . DIRECTORY_SEPARATOR . 'files'
+        . DIRECTORY_SEPARATOR . 'rate_limits' . DIRECTORY_SEPARATOR . 'qr_share_join';
+}
+
+function itm_qr_share_join_rate_limit_prune_events(array $events, $now, $windowSeconds)
+{
+    $fresh = [];
+    foreach ($events as $ts) {
+        $ts = (int) $ts;
+        if ($ts > 0 && ($now - $ts) < $windowSeconds) {
+            $fresh[] = $ts;
+        }
+    }
+
+    return $fresh;
+}
+
+/**
+ * Why: Public join.php POSTs are unauthenticated — throttle per client IP before DB lookup.
+ *
+ * @return array{ok:bool,error?:string,count?:int,max?:int}
+ */
+function itm_qr_share_join_rate_limit_check($recordAttempt = false, $maxAttempts = 20, $windowSeconds = 900)
+{
+    $maxAttempts = max(1, (int) $maxAttempts);
+    $windowSeconds = max(60, (int) $windowSeconds);
+    $ip = function_exists('itm_get_client_ip_address')
+        ? trim((string) itm_get_client_ip_address())
+        : trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+    if ($ip === '') {
+        $ip = 'unknown';
+    }
+
+    $dir = itm_qr_share_join_rate_limit_ip_dir();
+    if (function_exists('itm_ensure_upload_directory')) {
+        itm_ensure_upload_directory($dir, 'deny_all');
+    } elseif (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+
+    $path = $dir . DIRECTORY_SEPARATOR . hash('sha256', $ip) . '.json';
+    $now = time();
+    $events = [];
+    if (is_file($path)) {
+        $raw = @file_get_contents($path);
+        $decoded = $raw !== false ? json_decode($raw, true) : null;
+        if (is_array($decoded) && isset($decoded['events']) && is_array($decoded['events'])) {
+            $events = itm_qr_share_join_rate_limit_prune_events($decoded['events'], $now, $windowSeconds);
+        }
+    }
+
+    if (count($events) >= $maxAttempts) {
+        return [
+            'ok' => false,
+            'error' => 'Too many join attempts. Please wait and try again.',
+            'count' => count($events),
+            'max' => $maxAttempts,
+        ];
+    }
+
+    if ($recordAttempt) {
+        $events[] = $now;
+        @file_put_contents(
+            $path,
+            json_encode(['events' => $events], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            LOCK_EX
+        );
+    }
+
+    return ['ok' => true, 'count' => count($events), 'max' => $maxAttempts];
+}
+
 function itm_qr_share_table_name()
 {
     return 'share_sessions';
@@ -136,8 +246,16 @@ function itm_qr_share_legacy_table_to_module_slug($tableName)
 function itm_qr_share_normalize_code($code)
 {
     $code = preg_replace('/\D+/', '', (string)$code);
+    $len = strlen($code);
+    if ($len === itm_qr_share_code_length()) {
+        return $code;
+    }
+    // Why: Legacy six-digit sessions may still be active until TTL expiry after the length bump.
+    if ($len === itm_qr_share_legacy_code_length()) {
+        return $code;
+    }
 
-    return strlen($code) === 6 ? $code : '';
+    return '';
 }
 
 function itm_qr_share_generate_code($conn, $moduleSlugOrLegacyTable = '')
@@ -147,7 +265,8 @@ function itm_qr_share_generate_code($conn, $moduleSlugOrLegacyTable = '')
     }
     $tableName = itm_qr_share_table_name();
     for ($attempt = 0; $attempt < 40; $attempt++) {
-        $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $max = (int) pow(10, itm_qr_share_code_length()) - 1;
+        $code = str_pad((string) random_int(0, $max), itm_qr_share_code_length(), '0', STR_PAD_LEFT);
         $sql = 'SELECT id FROM `' . $tableName . '` WHERE share_code = ? AND expires_at > NOW() AND active = 1 AND deleted_at IS NULL LIMIT 1';
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
@@ -224,12 +343,18 @@ function itm_qr_share_fetch_session_by_token($conn, $moduleSlugOrLegacyTable, $a
  */
 function itm_qr_share_fetch_session_by_code($conn, $moduleSlugOrLegacyTable, $shareCode)
 {
-    $shareCode = itm_qr_share_normalize_code($shareCode);
-    if ($shareCode === '' || !($conn instanceof mysqli)) {
+    $moduleSlug = itm_qr_share_resolve_module_slug($moduleSlugOrLegacyTable);
+    if ($moduleSlug === '' || !itm_qr_share_module_allows_numeric_code($moduleSlug)) {
         return null;
     }
-    $moduleSlug = itm_qr_share_resolve_module_slug($moduleSlugOrLegacyTable);
-    if ($moduleSlug === '') {
+
+    $rateLimit = itm_qr_share_join_rate_limit_check(true);
+    if (empty($rateLimit['ok'])) {
+        return null;
+    }
+
+    $shareCode = itm_qr_share_normalize_code($shareCode);
+    if ($shareCode === '' || !($conn instanceof mysqli)) {
         return null;
     }
     $tableName = itm_qr_share_table_name();
@@ -309,9 +434,13 @@ function itm_qr_share_create_session($conn, $moduleSlugOrLegacyTable, array $opt
         return ['ok' => false, 'error' => 'QR share is disabled for this module in your company.'];
     }
 
-    $shareCode = itm_qr_share_generate_code($conn);
+    $allowsNumericCode = itm_qr_share_module_allows_numeric_code($moduleSlug);
+    $shareCode = $allowsNumericCode ? itm_qr_share_generate_code($conn) : '';
     $accessToken = itm_qr_share_generate_access_token();
-    if ($shareCode === '' || $accessToken === '') {
+    if ($accessToken === '') {
+        return ['ok' => false, 'error' => 'Could not generate share link.'];
+    }
+    if ($allowsNumericCode && $shareCode === '') {
         return ['ok' => false, 'error' => 'Could not generate share code.'];
     }
 

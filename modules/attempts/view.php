@@ -5,6 +5,7 @@ $crud_action = 'view';
 ?>
 <?php
 require '../../config/config.php';
+itm_require_crud_role_module_permission($conn, 'view', 'attempts');
 
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
     die('Invalid table configuration');

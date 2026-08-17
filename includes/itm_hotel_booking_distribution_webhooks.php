@@ -77,6 +77,72 @@ if (!function_exists('itm_hotel_booking_distribution_webhook_backoff_seconds')) 
     }
 }
 
+if (!function_exists('itm_hotel_booking_distribution_webhook_host_is_blocked')) {
+    function itm_hotel_booking_distribution_webhook_host_is_blocked($host) {
+        $host = strtolower(trim((string) $host));
+        if ($host === '') {
+            return true;
+        }
+
+        if (in_array($host, ['localhost', 'metadata', 'metadata.google.internal'], true)) {
+            return true;
+        }
+        if (substr($host, -6) === '.local' || substr($host, -9) === '.internal') {
+            return true;
+        }
+
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            return !filter_var(
+                $host,
+                FILTER_VALIDATE_IP,
+                FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+            );
+        }
+
+        $resolved = @gethostbyname($host);
+        if ($resolved !== false && $resolved !== $host && filter_var($resolved, FILTER_VALIDATE_IP)) {
+            return !filter_var(
+                $resolved,
+                FILTER_VALIDATE_IP,
+                FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+            );
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_hotel_booking_distribution_validate_webhook_url')) {
+    /**
+     * @return array{ok:bool,url?:string,error?:string}
+     */
+    function itm_hotel_booking_distribution_validate_webhook_url($targetUrl) {
+        $targetUrl = trim((string) $targetUrl);
+        if ($targetUrl === '') {
+            return ['ok' => true, 'url' => ''];
+        }
+        if (!preg_match('#^https?://#i', $targetUrl)) {
+            return ['ok' => false, 'error' => 'Webhook URL must start with http:// or https://'];
+        }
+
+        $parts = parse_url($targetUrl);
+        if (!is_array($parts) || empty($parts['host'])) {
+            return ['ok' => false, 'error' => 'Invalid webhook URL.'];
+        }
+
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            return ['ok' => false, 'error' => 'Webhook URL must use http or https.'];
+        }
+
+        if (itm_hotel_booking_distribution_webhook_host_is_blocked((string) $parts['host'])) {
+            return ['ok' => false, 'error' => 'Webhook URL must not target private, link-local, or metadata addresses.'];
+        }
+
+        return ['ok' => true, 'url' => $targetUrl];
+    }
+}
+
 if (!function_exists('itm_hotel_booking_distribution_deliver_webhook_queue_row')) {
     function itm_hotel_booking_distribution_deliver_webhook_queue_row($conn, array $queueRow, array $channelRow) {
         $queueId = (int) ($queueRow['id'] ?? 0);
@@ -85,6 +151,35 @@ if (!function_exists('itm_hotel_booking_distribution_deliver_webhook_queue_row')
         $targetUrl = (string) ($queueRow['target_url'] ?? '');
         $payloadBody = (string) ($queueRow['payload_body'] ?? '');
         $contentType = (string) ($queueRow['content_type'] ?? 'application/json; charset=utf-8');
+
+        $urlValidation = itm_hotel_booking_distribution_validate_webhook_url($targetUrl);
+        if (empty($urlValidation['ok'])) {
+            $lastError = substr((string) ($urlValidation['error'] ?? 'Blocked webhook URL.'), 0, 500);
+            $status = $attempt >= $maxAttempts ? 'dead' : 'failed';
+            $nextRetry = $status === 'failed'
+                ? date('Y-m-d H:i:s', time() + itm_hotel_booking_distribution_webhook_backoff_seconds($attempt))
+                : null;
+            $upd = mysqli_prepare(
+                $conn,
+                'UPDATE hotel_booking_distribution_webhook_queue
+                 SET status = ?, attempt_count = ?, next_retry_at = ?, last_http_code = ?, last_error = NULLIF(?, \'\'), delivered_at = NULL, updated_at = NOW()
+                 WHERE id = ?'
+            );
+            if ($upd) {
+                $httpCode = 0;
+                mysqli_stmt_bind_param($upd, 'sisisi', $status, $attempt, $nextRetry, $httpCode, $lastError, $queueId);
+                mysqli_stmt_execute($upd);
+                mysqli_stmt_close($upd);
+            }
+
+            return [
+                'success' => false,
+                'queue_id' => $queueId,
+                'http_code' => 0,
+                'status' => $status,
+                'attempt_count' => $attempt,
+            ];
+        }
 
         if (!function_exists('itm_hotel_booking_distribution_decrypt_secret')) {
             require_once ROOT_PATH . 'includes/itm_hotel_booking_distribution_secrets.php';
