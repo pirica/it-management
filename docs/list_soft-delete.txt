@@ -13,6 +13,7 @@ approver_type
 approvers
 assignment_types
 attempts
+automation_rules
 budget_categories
 catalogs
 cost_centers

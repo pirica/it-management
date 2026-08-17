@@ -64,3 +64,35 @@ jobs:
 
       - name: Verify FK label search regression
         run: php scripts/verify_crud_fk_label_search.php
+
+  tier2:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mysqli
+          coverage: none
+
+      - name: Run Tier 2 static checks
+        run: php scripts/run_tier2_checks.php
+
+  phpunit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mysqli, dom, json, libxml, mbstring, tokenizer, xml, xmlwriter
+          coverage: none
+
+      - name: Run PHPUnit (skip DB tests)
+        run: ITM_SKIP_DB_TESTS=1 php scripts/run_tests.php

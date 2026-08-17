@@ -630,6 +630,27 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
+                    <td><a href="run_asset_depreciation.php" target="_blank" rel="nofollow noreferrer">run_asset_depreciation.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">equipment</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">equipment_lifecycle_events</span></span></td>
+                    <td>Monthly cron: straight-line depreciation snapshots logged to <code>equipment_lifecycle_events</code> via <code>includes/itm_asset_depreciation.php</code>. Optional <code>--company=ID</code>.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/run_asset_depreciation.php</code></td>
+                </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="run_scheduled_reports.php" target="_blank" rel="nofollow noreferrer">run_scheduled_reports.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">scheduled_reports</span></span></td>
+                    <td>Cron runner for due <code>scheduled_reports</code> rows — emails Reports Hub datasets via <code>includes/itm_scheduled_reports.php</code>. Optional <code>--company=ID</code>. See <code>docs/SCHEDULED_REPORTS.md</code>.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/run_scheduled_reports.php</code></td>
+                </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="run_webhook_queue.php" target="_blank" rel="nofollow noreferrer">run_webhook_queue.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">integration_webhook_deliveries</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">integration_webhooks</span></span></td>
+                    <td>Processes pending/failed rows in <code>integration_webhook_deliveries</code> with exponential backoff. Optional <code>--limit=N</code>.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/run_webhook_queue.php</code></td>
+                </tr>
+                <tr data-tags="Mixed">
                     <td><a href="run_notification_digest.php" target="_blank" rel="nofollow noreferrer">run_notification_digest.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
@@ -637,10 +658,31 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
+                    <td><a href="run_ticket_sla_monitor.php" target="_blank" rel="nofollow noreferrer">run_ticket_sla_monitor.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Stamps <code>sla_*_breached_at</code> on overdue tickets, logs <code>ticket_activity</code>, and notifies assignees. Schedule every 15 minutes.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="verify_ticket_sla_dashboard.php" target="_blank" rel="nofollow noreferrer">verify_ticket_sla_dashboard.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="verify">Verify</span></span></td>
+                    <td>Regression for SLA Command Center helpers, breach columns, monitor stats, and dashboard module files.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Mixed">
                     <td><a href="verify_employee_notifications.php" target="_blank" rel="nofollow noreferrer">verify_employee_notifications.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
                     <td>Regression for in-app notification center: <code>itm_notify_employee()</code>, unread count, mark read, API/JS assets.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="verify_approval_inbox.php" target="_blank" rel="nofollow noreferrer">verify_approval_inbox.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Regression for unified approval inbox helpers, <code>approval_inbox_items</code> upsert/fetch, and adapter registry.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">
@@ -2013,6 +2055,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="hotel_bookings">
+                    <td><a href="verify_stripe_checkout.php" target="_blank" rel="nofollow noreferrer">verify_stripe_checkout.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_bookings</span></span></td>
+                    <td>Stripe Checkout regression: payment columns, <code>hotel_booking_payment_events</code>, encrypt round-trip, webhook signature probe, mock session payload (no live Stripe API).</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_stripe_checkout.php</code></td>
+                </tr>
+                <tr data-tags="hotel_bookings">
                     <td><a href="check_hotel_bookings_rate_plan_form.php" target="_blank" rel="nofollow noreferrer">check_hotel_bookings_rate_plan_form.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_bookings</span></span></td>
@@ -2069,6 +2118,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
+                    <td><a href="verify_approval_inbox.php" target="_blank" rel="nofollow noreferrer">verify_approval_inbox.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Regression for <code>includes/itm_approval_inbox.php</code> and <code>modules/approval_inbox/</code>: helper load, adapter slugs, upsert/fetch/count, and probe row cleanup.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Mixed">
                     <td><a href="verify_request_password.php" target="_blank" rel="nofollow noreferrer">verify_request_password.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
@@ -2081,6 +2137,27 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">modules_registry</span></span></td>
                     <td>Regression for <code>modules/reports/</code> Reports Hub: exercises every <code>api/helpers.php</code> chart payload, Hotel Operations MTD metrics (<code>ops_report</code>, <code>ops_report_fb_outlet</code>), budget vs actual / YoY totals, <code>modules_registry</code> slug <code>reports</code>, and core Chart.js canvas ids in <code>index.php</code>. Expects <code>db/</code> split bundle Reports Hub sample seeds.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="scheduled_reports">
+                    <td><a href="verify_scheduled_reports.php" target="_blank" rel="nofollow noreferrer">verify_scheduled_reports.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">scheduled_reports</span></span></td>
+                    <td>Regression for scheduled executive reports: <code>scheduled_reports</code> schema, cron matcher, dataset loader (<code>includes/itm_scheduled_reports.php</code>). See <code>docs/SCHEDULED_REPORTS.md</code>.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_scheduled_reports.php</code></td>
+                </tr>
+                <tr data-tags="integration_webhooks integration_webhook_deliveries">
+                    <td><a href="verify_integration_webhooks.php" target="_blank" rel="nofollow noreferrer">verify_integration_webhooks.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">integration_webhooks</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">integration_webhook_deliveries</span></span></td>
+                    <td>Regression for outbound integration webhooks: tables, secret encrypt/decrypt, SSRF URL guard, enqueue probe (<code>includes/itm_webhook_queue.php</code>).</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_integration_webhooks.php</code></td>
+                </tr>
+                <tr data-tags="equipment equipment_lifecycle_events">
+                    <td><a href="verify_asset_depreciation.php" target="_blank" rel="nofollow noreferrer">verify_asset_depreciation.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">equipment</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">equipment_lifecycle_events</span></span></td>
+                    <td>Regression for equipment lifecycle columns, straight-line book value math, and <code>equipment_lifecycle_events</code> table (<code>includes/itm_asset_depreciation.php</code>).</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_asset_depreciation.php</code></td>
                 </tr>
                 <tr data-tags="Mixed">
                     <td><a href="benchmark_sidebar_module_access.php" target="_blank" rel="nofollow noreferrer">benchmark_sidebar_module_access.php</a></td>
@@ -2115,6 +2192,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
                     <td>Regression: at least one of <code>work_email</code> / <code>personal_email</code> on employee create/edit/import (<code>includes/itm_employee_contact_email.php</code>); helper checks, create/edit wiring, <code>fast_create_acc</code> both email fields, disposable employee create.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="verify_sso_ldap.php" target="_blank" rel="nofollow noreferrer">verify_sso_ldap.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Regression: LDAP SSO schema columns, <code>itm_ldap_encrypt_config</code> round-trip, PHP <code>ldap</code> extension check (N/A when missing), <code>sso-ldap.php</code> + <code>includes/itm_ldap_auth.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
@@ -2721,6 +2805,27 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
                     <td>Regression for Live Chat: schema tables, SLA on ticket create, chat_with ACL, employee notifications, ticket activity/comments helpers.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="automation_rules automation_rule_runs tickets">
+                    <td><a href="verify_automation_rules.php" target="_blank" rel="nofollow noreferrer">verify_automation_rules.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">automation_rules</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">automation_rule_runs</span></span></td>
+                    <td>Workflow automation regression: schema, audit triggers, seed rule, dispatch <code>ticket.created</code>, verify run log <code>success</code>.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_automation_rules.php</code></td>
+                </tr>
+                <tr data-tags="automation_rules equipment">
+                    <td><a href="run_automation_rules.php" target="_blank" rel="nofollow noreferrer">run_automation_rules.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">automation_rules</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">equipment</span></span></td>
+                    <td>Daily cron runner for date-based automation triggers (<code>equipment.warranty_expiring</code> within 30 days).</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/run_automation_rules.php</code></td>
+                </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="verify_ticket_productivity.php" target="_blank" rel="nofollow noreferrer">verify_ticket_productivity.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Ticket productivity pack: canned responses, CSAT token/URL, merge smoke.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_ticket_productivity.php</code></td>
                 </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_notes_vault.php" target="_blank" rel="nofollow noreferrer">verify_notes_vault.php</a></td>

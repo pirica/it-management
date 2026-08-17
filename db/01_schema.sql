@@ -83,6 +83,9 @@ CREATE TABLE `companies` (
   `vat` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `unit_no` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `comments` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `sso_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `sso_provider` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'ldap',
+  `sso_config_json_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -93,7 +96,8 @@ CREATE TABLE `companies` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `company` (`company`),
   UNIQUE KEY `incode` (`incode`),
-  KEY `active` (`active`)
+  KEY `active` (`active`),
+  KEY `idx_companies_sso_enabled` (`sso_enabled`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `modules_registry`
@@ -1444,6 +1448,7 @@ CREATE TABLE `employees` (
   `extension` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `employee_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `external_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sso_subject` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `insurance_n` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
 
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -1508,6 +1513,7 @@ CREATE TABLE `employees` (
   KEY `location_id` (`location_id`),
   KEY `company_id` (`company_id`),
   KEY `idx_employees_external_id` (`external_id`),
+  KEY `idx_employees_company_sso_subject` (`company_id`,`sso_subject`),
   KEY `idx_employees_username` (`username`),
   KEY `employment_status_id` (`employment_status_id`),
   KEY `idx_employees_office_key_department` (`office_key_card_department_id`),
@@ -1587,6 +1593,12 @@ CREATE TABLE `equipment` (
   `status_id` int NOT NULL,
   `purchase_date` date DEFAULT NULL,
   `purchase_cost` decimal(15,2) DEFAULT NULL,
+  `lifecycle_stage` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'in_service',
+  `depreciation_start_date` date DEFAULT NULL,
+  `useful_life_months` int DEFAULT NULL,
+  `salvage_value` decimal(15,2) DEFAULT NULL,
+  `disposal_date` date DEFAULT NULL,
+  `disposal_reason` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `warranty_expiry` date DEFAULT NULL,
   `certificate_expiry` date DEFAULT NULL,
   `warranty_type_id` int DEFAULT NULL,
@@ -2777,7 +2789,13 @@ CREATE TABLE `tickets` (
   `resolved_at` timestamp NULL DEFAULT NULL,
   `sla_response_due_at` timestamp NULL DEFAULT NULL,
   `sla_resolve_due_at` timestamp NULL DEFAULT NULL,
+  `sla_response_breached_at` timestamp NULL DEFAULT NULL,
+  `sla_resolve_breached_at` timestamp NULL DEFAULT NULL,
   `is_archived` tinyint(1) NOT NULL DEFAULT '0',
+  `merged_into_ticket_id` int DEFAULT NULL,
+  `csat_score` tinyint DEFAULT NULL,
+  `csat_comment` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `csat_submitted_at` timestamp NULL DEFAULT NULL,
   `tickets_photos` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
@@ -2795,7 +2813,9 @@ CREATE TABLE `tickets` (
   KEY `assigned_to_employee_id` (`assigned_to_employee_id`),
   KEY `equipment_id` (`equipment_id`),
   KEY `company_id` (`company_id`),
+  KEY `idx_tickets_merged_into` (`merged_into_ticket_id`),
   CONSTRAINT `tickets_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tickets_merged_into` FOREIGN KEY (`merged_into_ticket_id`) REFERENCES `tickets` (`id`) ON DELETE SET NULL,
   CONSTRAINT `tickets_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `ticket_categories` (`id`),
   CONSTRAINT `tickets_ibfk_3` FOREIGN KEY (`status_id`) REFERENCES `ticket_statuses` (`id`),
   CONSTRAINT `tickets_ibfk_4` FOREIGN KEY (`priority_id`) REFERENCES `ticket_priorities` (`id`),
@@ -2908,6 +2928,81 @@ CREATE TABLE `ticket_comments` (
   CONSTRAINT `fk_ticket_comments_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`),
   CONSTRAINT `fk_ticket_comments_ticket` FOREIGN KEY (`ticket_id`) REFERENCES `tickets` (`id`),
   CONSTRAINT `fk_ticket_comments_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Table structure for `ticket_canned_responses`
+DROP TABLE IF EXISTS `ticket_canned_responses`;
+
+-- Table structure for `automation_rules`
+DROP TABLE IF EXISTS `automation_rules`;
+
+CREATE TABLE `automation_rules` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `trigger_slug` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `conditions_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `actions_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `enabled` tinyint(1) DEFAULT '1',
+  `last_run_at` datetime DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `trigger_slug` (`trigger_slug`),
+  CONSTRAINT `fk_automation_rules_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `automation_rule_runs`
+DROP TABLE IF EXISTS `automation_rule_runs`;
+
+CREATE TABLE `automation_rule_runs` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `rule_id` int NOT NULL,
+  `status` enum('pending','success','failed','skipped') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `context_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `ran_at` datetime DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `rule_id` (`rule_id`),
+  KEY `status` (`status`),
+  CONSTRAINT `fk_automation_rule_runs_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_automation_rule_runs_rule` FOREIGN KEY (`rule_id`) REFERENCES `automation_rules` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `ticket_canned_responses` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `body` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `category_id` int DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `category_id` (`category_id`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `fk_ticket_canned_responses_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ticket_canned_responses_category` FOREIGN KEY (`category_id`) REFERENCES `ticket_categories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `ticket_sla_policies`
@@ -4558,7 +4653,7 @@ CREATE TABLE `appointments` (
   `appointment_type_id` int NOT NULL,
   `assigned_to_employee_id` int DEFAULT NULL,
   `is_confirmed` tinyint(1) NOT NULL DEFAULT '0',
-  `status` enum('scheduled','cancelled','completed') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'scheduled',
+  `status` enum('scheduled','cancelled','completed','no_show') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'scheduled',
   `timezone` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'US/Central',
   `booking_lock` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Set for scheduled rows to enforce one booking per company slot; cleared on soft-delete',
   `active` tinyint(1) DEFAULT '1',
@@ -4581,6 +4676,37 @@ CREATE TABLE `appointments` (
   CONSTRAINT `fk_appointments_assigned_to` FOREIGN KEY (`assigned_to_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_appointments_visit_reason` FOREIGN KEY (`visit_reason_id`) REFERENCES `appointment_visit_reasons` (`id`),
   CONSTRAINT `fk_appointments_appointment_type` FOREIGN KEY (`appointment_type_id`) REFERENCES `appointment_type` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `approval_inbox_items`
+DROP TABLE IF EXISTS `approval_inbox_items`;
+CREATE TABLE `approval_inbox_items` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `module_slug` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `record_id` int NOT NULL,
+  `approval_stage` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `requester_employee_id` int DEFAULT NULL,
+  `assignee_employee_id` int DEFAULT NULL,
+  `status` enum('pending','approved','rejected','cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `due_at` datetime DEFAULT NULL,
+  `action_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `payload_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_approval_inbox_items_stage` (`company_id`,`module_slug`,`record_id`,`approval_stage`),
+  KEY `idx_approval_inbox_assignee_status` (`company_id`,`assignee_employee_id`,`status`),
+  KEY `idx_approval_inbox_module_record` (`company_id`,`module_slug`,`record_id`),
+  CONSTRAINT `fk_approval_inbox_items_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_approval_inbox_items_requester` FOREIGN KEY (`requester_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_approval_inbox_items_assignee` FOREIGN KEY (`assignee_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `request_password`
@@ -4624,6 +4750,7 @@ DROP TABLE IF EXISTS `hotel_booking_distribution_ari_events`;
 DROP TABLE IF EXISTS `hotel_booking_distribution_reservations`;
 DROP TABLE IF EXISTS `hotel_booking_distribution_mappings`;
 DROP TABLE IF EXISTS `hotel_booking_distribution_channels`;
+DROP TABLE IF EXISTS `hotel_booking_payment_events`;
 DROP TABLE IF EXISTS `hotel_bookings`;
 DROP TABLE IF EXISTS `hotel_booking_portal_users`;
 DROP TABLE IF EXISTS `booking_rooms_type_photos`;
@@ -5129,6 +5256,10 @@ CREATE TABLE `hotel_bookings` (
   `check_in` date NOT NULL,
   `check_out` date NOT NULL,
   `payment_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `payment_status` enum('unpaid','pending','paid','refunded') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'unpaid',
+  `stripe_checkout_session_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `stripe_payment_intent_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `amount_paid` decimal(12,2) NOT NULL DEFAULT '0.00',
   `guest_confirmation_code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `auth2` varchar(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `future_status_id` int DEFAULT NULL,
@@ -5392,10 +5523,37 @@ CREATE TABLE `hotel_booking_portal_users` (
   CONSTRAINT `hotel_booking_portal_users_ibfk_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `hotel_booking_payment_events` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `booking_id` int NOT NULL,
+  `event_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `booking_id` (`booking_id`),
+  KEY `idx_hb_payment_events_company_booking` (`company_id`,`booking_id`),
+  CONSTRAINT `hb_payment_events_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `hb_payment_events_ibfk_booking` FOREIGN KEY (`booking_id`) REFERENCES `hotel_bookings` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE `hotel_booking_settings` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `public_portal_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `stripe_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `stripe_mode` enum('test','live') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'test',
+  `stripe_publishable_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `stripe_secret_key_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `stripe_webhook_signing_secret_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `deposit_percent` decimal(5,2) NOT NULL DEFAULT '100.00',
   `welcome_title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `welcome_subtitle` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `accessible_features_default` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
@@ -5417,6 +5575,105 @@ CREATE TABLE `hotel_booking_settings` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_hotel_booking_settings_company` (`company_id`),
   CONSTRAINT `hotel_booking_settings_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+DROP TABLE IF EXISTS `scheduled_reports`;
+
+CREATE TABLE `scheduled_reports` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `report_slug` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `schedule_cron` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'minute hour dom month dow',
+  `recipients_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `format` enum('pdf','xlsx') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pdf',
+  `last_sent_at` datetime DEFAULT NULL,
+  `enabled` tinyint(1) NOT NULL DEFAULT '1',
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_scheduled_reports_company_enabled` (`company_id`,`enabled`),
+  KEY `idx_scheduled_reports_slug` (`company_id`,`report_slug`),
+  CONSTRAINT `fk_scheduled_reports_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `integration_webhook_deliveries`;
+DROP TABLE IF EXISTS `integration_webhooks`;
+
+CREATE TABLE `integration_webhooks` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `target_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `event_types` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Comma-separated subscribed event types',
+  `secret_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `max_attempts` int NOT NULL DEFAULT '5',
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_integration_webhooks_company` (`company_id`),
+  CONSTRAINT `fk_integration_webhooks_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `integration_webhook_deliveries` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `webhook_id` int NOT NULL,
+  `event_type` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload_json` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` enum('pending','delivered','failed','dead') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `attempt_count` int NOT NULL DEFAULT '0',
+  `max_attempts` int NOT NULL DEFAULT '5',
+  `next_retry_at` datetime DEFAULT NULL,
+  `last_http_code` int DEFAULT NULL,
+  `last_error` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `delivered_at` datetime DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_integration_webhook_deliveries_queue` (`status`,`next_retry_at`),
+  KEY `idx_integration_webhook_deliveries_webhook` (`webhook_id`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `fk_integration_webhook_deliveries_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_integration_webhook_deliveries_webhook` FOREIGN KEY (`webhook_id`) REFERENCES `integration_webhooks` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `equipment_lifecycle_events`;
+
+CREATE TABLE `equipment_lifecycle_events` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `equipment_id` int NOT NULL,
+  `event_type` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `event_date` date DEFAULT NULL,
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `payload_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_equipment_lifecycle_events_equipment` (`company_id`,`equipment_id`),
+  CONSTRAINT `fk_equipment_lifecycle_events_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_equipment_lifecycle_events_equipment` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Migration runner history (scripts/migrate.php)

@@ -22,6 +22,7 @@ Manages requests for setting up new employees, including system access and equip
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import.
 - **Approval email** — `cr_onboarding_send_approval_email_via_api()` sends HOD/HRD/ISM/GM/FIN approval requests via `itm_send_email()` and the tenant default SMTP profile in **Email Management** (`modules/emails/`). Optional seventh arg passes `email_template` options (primary **View request** CTA). Logs appear in **emails** send log.
+- **Unified Approval Inbox** — after create/edit save, `approval_api` email-link decisions, and successful `send_approval_email` POSTs, call `itm_approval_inbox_sync_module_record($conn, $company_id, 'employee_onboarding_requests', $recordId)` (`includes/itm_approval_inbox.php`). Doc: `docs/APPROVAL_INBOX.md`.
 - **Display helper** — `cr_onboarding_display_value($value, $isDateField, $fieldName)` requires `$fieldName` when calling `itm_format_cell_scalar_display()` (fixes undefined `$field` notice).
 
 ## 7. File Structure

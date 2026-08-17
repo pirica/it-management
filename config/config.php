@@ -332,6 +332,7 @@ itm_ensure_upload_directory(itm_files_storage_root(), 'deny_http');
 require_once ROOT_PATH . 'includes/ui_config.php';
 require_once ROOT_PATH . 'includes/itm_api_rate_limit.php';
 require_once ROOT_PATH . 'includes/itm_login_attempt_identifier.php';
+require_once ROOT_PATH . 'includes/itm_ldap_auth.php';
 require_once ROOT_PATH . 'includes/itm_password_reset.php';
 require_once ROOT_PATH . 'includes/itm_explorer_paths.php';
 require_once ROOT_PATH . 'includes/audit_functions.php';
@@ -347,7 +348,11 @@ require_once ROOT_PATH . 'includes/equipment_poe_helpers.php';
 require_once ROOT_PATH . 'includes/itm_ticket_activity.php';
 require_once ROOT_PATH . 'includes/itm_ticket_comments.php';
 require_once ROOT_PATH . 'includes/itm_ticket_sla.php';
+require_once ROOT_PATH . 'includes/itm_ticket_csat.php';
+require_once ROOT_PATH . 'includes/itm_ticket_merge.php';
 require_once ROOT_PATH . 'includes/itm_employee_notifications.php';
+require_once ROOT_PATH . 'includes/itm_automation_rules.php';
+require_once ROOT_PATH . 'includes/itm_approval_inbox.php';
 require_once ROOT_PATH . 'includes/itm_live_chat_support.php';
 require_once ROOT_PATH . 'includes/itm_live_chat_storage.php';
 require_once ROOT_PATH . 'includes/itm_live_chat_launch_options.php';
@@ -465,6 +470,11 @@ if (defined('ITM_HOTEL_BOOKING_PUBLIC_PORTAL') && ITM_HOTEL_BOOKING_PUBLIC_PORTA
     $itmSkipWebAuth = true;
 }
 
+// Why: booking/stripe-webhook.php verifies Stripe signatures without an employee session.
+if (defined('ITM_STRIPE_WEBHOOK') && ITM_STRIPE_WEBHOOK) {
+    $itmSkipWebAuth = true;
+}
+
 // Why: modules/hotel_booking_api/api.php authenticates channel partners via distribution API keys.
 if (defined('ITM_HOTEL_BOOKING_DISTRIBUTION_API') && ITM_HOTEL_BOOKING_DISTRIBUTION_API) {
     $itmSkipWebAuth = true;
@@ -516,11 +526,15 @@ if (
     }
 }
 
+if (defined('ITM_TICKET_CSAT_PUBLIC') && ITM_TICKET_CSAT_PUBLIC) {
+    $itmSkipWebAuth = true;
+}
+
 // Redirect to login if session is missing, excluding auth pages
 if (
     !$itmSkipWebAuth
     && !isset($_SESSION['employee_id'])
-    && !in_array($current_file, ['login.php', 'register.php', 'forgot-password.php', 'reset-password.php', 'logout.php'], true)
+    && !in_array($current_file, ['login.php', 'sso-ldap.php', 'register.php', 'forgot-password.php', 'reset-password.php', 'logout.php'], true)
 ) {
     header('Location: ' . BASE_URL . 'login.php');
     exit();

@@ -321,11 +321,61 @@ if (!function_exists('itm_email_smtp_command')) {
     }
 }
 
+if (!function_exists('itm_email_build_mime_message')) {
+    /**
+     * @param array<int,array{filename:string,content_type?:string,body:string}> $attachments
+     */
+    function itm_email_build_mime_message($fromHeader, $toHeaderParts, $subject, $htmlBody, array $attachments = [])
+    {
+        $encodedSubject = '=?UTF-8?B?' . base64_encode((string) $subject) . '?=';
+        $toHeader = implode(', ', $toHeaderParts);
+        $baseHeaders = [
+            'From: ' . $fromHeader,
+            'To: ' . $toHeader,
+            'Subject: ' . $encodedSubject,
+            'MIME-Version: 1.0',
+            'Date: ' . date('r'),
+        ];
+
+        if ($attachments === []) {
+            $headers = array_merge($baseHeaders, [
+                'Content-Type: text/html; charset=UTF-8',
+                'Content-Transfer-Encoding: 8bit',
+            ]);
+            return implode("\r\n", $headers) . "\r\n\r\n" . (string) $htmlBody;
+        }
+
+        $boundary = 'itm_' . bin2hex(random_bytes(8));
+        $headers = array_merge($baseHeaders, [
+            'Content-Type: multipart/mixed; boundary="' . $boundary . '"',
+        ]);
+        $parts = [];
+        $parts[] = '--' . $boundary;
+        $parts[] = 'Content-Type: text/html; charset=UTF-8';
+        $parts[] = 'Content-Transfer-Encoding: 8bit';
+        $parts[] = '';
+        $parts[] = (string) $htmlBody;
+        foreach ($attachments as $attachment) {
+            $filename = (string) ($attachment['filename'] ?? 'attachment.bin');
+            $contentType = (string) ($attachment['content_type'] ?? 'application/octet-stream');
+            $body = (string) ($attachment['body'] ?? '');
+            $parts[] = '--' . $boundary;
+            $parts[] = 'Content-Type: ' . $contentType . '; name="' . $filename . '"';
+            $parts[] = 'Content-Transfer-Encoding: base64';
+            $parts[] = 'Content-Disposition: attachment; filename="' . $filename . '"';
+            $parts[] = '';
+            $parts[] = chunk_split(base64_encode($body));
+        }
+        $parts[] = '--' . $boundary . '--';
+        return implode("\r\n", $headers) . "\r\n\r\n" . implode("\r\n", $parts);
+    }
+}
+
 if (!function_exists('itm_email_send_via_smtp')) {
     /**
      * @return array{ok:bool,error:string}
      */
-    function itm_email_send_via_smtp(array $config, $toEmail, $subject, $htmlBody)
+    function itm_email_send_via_smtp(array $config, $toEmail, $subject, $htmlBody, array $attachments = [])
     {
         $host = trim((string)($config['smtp_host'] ?? ''));
         $port = (int)($config['smtp_port'] ?? 587);
@@ -413,16 +463,10 @@ if (!function_exists('itm_email_send_via_smtp')) {
         foreach ($toList as $rcptEmail) {
             $toHeaderParts[] = '<' . $rcptEmail . '>';
         }
-        $headers = [
-            'From: ' . $fromHeader,
-            'To: ' . implode(', ', $toHeaderParts),
-            'Subject: ' . $encodedSubject,
-            'MIME-Version: 1.0',
-            'Content-Type: text/html; charset=UTF-8',
-            'Content-Transfer-Encoding: 8bit',
-            'Date: ' . date('r'),
-        ];
-        $body = implode("\r\n", $headers) . "\r\n\r\n" . (string)$htmlBody;
+        if ($attachments === [] && !empty($config['attachments']) && is_array($config['attachments'])) {
+            $attachments = $config['attachments'];
+        }
+        $body = itm_email_build_mime_message($fromHeader, $toHeaderParts, (string) $subject, (string) $htmlBody, $attachments);
         $body = str_replace(["\r\n.\r\n", "\n.\n", "\r.\r"], ["\r\n..\r\n", "\n..\n", "\r..\r"], $body);
         fwrite($socket, $body . "\r\n.\r\n");
 
@@ -654,7 +698,13 @@ if (!function_exists('itm_send_email')) {
             if ($overrideFromName !== '') {
                 $smtpSendConfig['from_name'] = $overrideFromName;
             }
-            $sendResult = itm_email_send_via_smtp($smtpSendConfig, $to, $subject, $htmlBody);
+            $sendResult = itm_email_send_via_smtp(
+                $smtpSendConfig,
+                $to,
+                $subject,
+                $htmlBody,
+                isset($options['attachments']) && is_array($options['attachments']) ? $options['attachments'] : []
+            );
             $usedConfigId = (int)$smtpConfig['id'];
         } else {
             $resendFrom = $overrideFromEmail;

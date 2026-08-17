@@ -5493,7 +5493,7 @@ if (!function_exists('itm_hotel_booking_portal_fetch_confirmation_booking_row'))
     if ($companyId < 1 || $bookingId < 1) {
       return null;
     }
-    $sql = 'SELECT b.id, b.customer_id, b.check_in, b.check_out, b.payment_amount, b.auth2, b.guest_confirmation_code, b.notes, b.room_id, b.portal_rate_plan_id,
+    $sql = 'SELECT b.id, b.customer_id, b.check_in, b.check_out, b.payment_amount, b.payment_status, b.stripe_checkout_session_id, b.stripe_payment_intent_id, b.amount_paid, b.auth2, b.guest_confirmation_code, b.notes, b.room_id, b.portal_rate_plan_id,
             b.future_status_id, b.present_status_id, b.history_status_id,
             c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
             h.id AS hotel_id, h.name AS hotel_name, h.location AS hotel_location, h.phone AS hotel_phone,
@@ -5543,7 +5543,7 @@ if (!function_exists('itm_hotel_booking_portal_load_confirmation_group_rows')) {
       $single = itm_hotel_booking_portal_fetch_confirmation_booking_row($conn, $companyId, $primaryId);
       return $single ? [$single] : [];
     }
-    $sql = 'SELECT b.id, b.customer_id, b.check_in, b.check_out, b.payment_amount, b.auth2, b.guest_confirmation_code, b.notes, b.room_id, b.portal_rate_plan_id,
+    $sql = 'SELECT b.id, b.customer_id, b.check_in, b.check_out, b.payment_amount, b.payment_status, b.stripe_checkout_session_id, b.stripe_payment_intent_id, b.amount_paid, b.auth2, b.guest_confirmation_code, b.notes, b.room_id, b.portal_rate_plan_id,
             b.future_status_id, b.present_status_id, b.history_status_id,
             c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
             h.id AS hotel_id, h.name AS hotel_name, h.location AS hotel_location, h.phone AS hotel_phone,

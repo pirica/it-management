@@ -604,12 +604,14 @@ Materialized examples: `modules/note_labels/`, `modules/modules_registry/`.
 
 #### Smoke tests (CI — `scripts/smoke_test.sh`)
 
-GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
+GitHub Actions (`.github/workflows/smoke.yml`) runs four jobs:
 
 | Job | Command | Purpose |
 |-----|---------|---------|
 | **smoke** | `bash scripts/smoke_test.sh` | PHP syntax lint + CSRF + SQLi + FK label search coverage audits (no MySQL) |
 | **database-import** | `bash scripts/verify_database_sql_import.sh` then `php scripts/verify_crud_fk_label_search.php` | Full `db/` import on MySQL 8.0 service (`MYSQL_PORT=3306` in workflow — GHA maps `3306:3306`; local Dunebox uses `MYSQL_PORT=3307` or `.env`); asserts live table count matches `CREATE TABLE` entries in `db/01_schema.sql` (derived at runtime — `grep -c '^CREATE TABLE' db/01_schema.sql`); runtime FK label search regression |
+| **tier2** | `php scripts/run_tier2_checks.php` | Tier 2 static `check_*` batch from `SCRIPTS_TEST_MATRIX.md` (no MySQL) |
+| **phpunit** | `ITM_SKIP_DB_TESTS=1 php scripts/run_tests.php` | PHPUnit unit suite without live-database tests |
 
 **smoke** job steps only:
 
@@ -995,6 +997,7 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 | `php scripts/verify_roles_permissions.php` | Regression: `modules_registry` row, module folder + JS, RBAC exempt slug, Admin `ALL` wildcard with six flags, seeded roles/hierarchy for company 1, `can_import`/`can_export` columns, role sidebar `active_count` (role_id + HR Active) |
 | `php scripts/verify_demo_module_restrictions.php` | Regression: seed admins (`Admin`, `Admin2`–`Admin5`) password + `itm_is_admin()`; demo users `demo1`–`demo5` single-module `has_module_access` / RBAC `can_view` + subprocess index probes (contract: `lib/itm_demo_module_restrictions_contract.php`) |
 | `php scripts/verify_employee_contact_email.php` | Regression: at least one of `work_email` / `personal_email` required (`includes/itm_employee_contact_email.php`); helper unit checks, create/edit static wiring, `fast_create_acc` both fields, disposable employee create |
+| `php scripts/verify_sso_ldap.php` | Regression: LDAP SSO schema columns (`companies.sso_*`, `employees.sso_subject`), `itm_ldap_encrypt_config` / `decrypt_config` round-trip, PHP `ldap` extension probe (N/A when missing), `sso-ldap.php` + `includes/itm_ldap_auth.php` helpers |
 | `php scripts/fast_create_acc.php` | CLI `--seed-demo-bundle`; browser UI at `scripts/fast_create_acc.php` (catalog) |
 | `scripts/fast_create_acc_browser.php` | Browser alias — same UI as `scripts/fast_create_acc.php` |
 | `modules/employees/fast_create_acc.php` | Same UI via module toolbar 🚀; shared form in `fast_create_acc_browser.php` |
@@ -1011,6 +1014,8 @@ Run `verify_roles_permissions.php` when changing `modules/roles_permissions/`, `
 Run `verify_demo_module_restrictions.php` when changing demo user seeds (`demo1`–`demo5`), their dedicated `employee_roles` / `role_module_permissions` rows, or company-module / RBAC enforcement for single-module demo accounts.
 
 Run `verify_employee_contact_email.php` when changing employee email validation, `includes/itm_employee_contact_email.php`, employees create/edit/import paths, or `fast_create_acc.php` email fields.
+
+Run `verify_sso_ldap.php` when changing LDAP SSO login (`includes/itm_ldap_auth.php`, `sso-ldap.php`, `login.php` SSO link, or Companies edit SSO fields).
 
 Run `verify_dashboard_active_employees.php` when changing `admin.php` or `includes/itm_employee_employment_status.php` Active/On Leave count logic.
 
@@ -1083,6 +1088,19 @@ Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*`
 
 Run `verify_reports_hub.php` when changing `modules/reports/`, `modules/reports/api/helpers.php`, or Reports Hub-related seeds in `db/03_triggers.sql`.
 
+### Scheduled reports, webhooks, and asset depreciation
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/run_scheduled_reports.php` | Cron: email due `scheduled_reports` rows (`includes/itm_scheduled_reports.php`). Optional `--company=ID`. See `docs/SCHEDULED_REPORTS.md`. |
+| `php scripts/verify_scheduled_reports.php` | Regression: `scheduled_reports` schema, cron matcher, dataset loader |
+| `php scripts/run_webhook_queue.php` | Cron: deliver `integration_webhook_deliveries` with retry/backoff. Optional `--limit=N`. |
+| `php scripts/verify_integration_webhooks.php` | Regression: webhook tables, secret round-trip, URL SSRF guard, enqueue |
+| `php scripts/run_asset_depreciation.php` | Monthly cron: depreciation snapshots on `equipment_lifecycle_events`. Optional `--company=ID`. |
+| `php scripts/verify_asset_depreciation.php` | Regression: equipment lifecycle columns, months-elapsed math, book value sample |
+
+Run the matching `verify_*.php` after changing `includes/itm_scheduled_reports.php`, `includes/itm_webhook_queue.php`, `includes/itm_asset_depreciation.php`, or related `db/` DDL.
+
 ### Appointment scripts
 
 | Script | Purpose |
@@ -1097,6 +1115,7 @@ Run `verify_appointment.php` when changing `modules/appointments/`, `includes/it
 |--------|---------|
 | `php scripts/verify_hotel_booking.php` | Regression: core `hotel_booking_*` / `booking_rooms_types` tables, segment helper (`future`), company 1 `PENDING` future status seed, portal rate plan form contract, confirmation PDF Manage my booking `/URI` link helper + markup, **`hotel_bookings.auth2`** strong guest code helpers (`varchar(12)`), **manage session + IP rate-limit**, **email OTP verify**, **Step 4 DB charge resolve** (`itm_hotel_booking_portal_resolve_step4_charge`) + **locked INSERT (`FOR UPDATE`)**, **Step 4 draft occupancy lock** + **`public_portal_enabled` browse/book gate** wiring, sample hotel photo seeds (`hb_seed_*.jpg`), portal fallback JPGs (`image_2.jpg`, `room-3.jpg`, `room-5.jpg`, `room-6.jpg`), stay-bar occupancy interactive only on `rooms.php`, cancellation-policy URL extension allowlist (`.html`/`.htm`/`.txt` only) + `booking/cancellation_policy/.htaccess`, calendar/From/Step 1 show **cheapest** tax-inclusive rate (STD BAR **75.00** × NR **10%** + tourist tax ≈ **69.50**; `prices_include_tax`; money format keeps cents; Select Dates auto-advance from `hotel_booking_settings.calendar_month_advance_days_left`, seed **3**; `show_discount_strikethrough` admin toggle + portal Step 1/2 wiring, seed **1**), seed room `id=1` STD, portal rate-plan offer labels (Flexible vs Non-refundable + NR 10% discount + `plan_surcharge_percent`), rooms list JS `updatePrices()` includes tourist tax + cheapest plan discount, **free cancellation days** settings + rate-plan merchandising seeded for companies **1–5**, hotel list **From** uses `itm_hotel_booking_portal_cheapest_rate_offer_for_hotel()`, and subprocess render probe for all 13 Hospitality sidebar `index.php` modules |
 | `php scripts/verify_hotel_booking_distribution.php` | Regression: `hotel_booking_distribution_*` tables (including rate-plan mappings, ARI restrictions, webhook queue), API key helpers, inbound signature, delta checksum, ACK/NACK, OpenTravel XML parse/encode, modify + webhook helpers, availability builder |
+| `php scripts/verify_stripe_checkout.php` | Regression: Stripe Checkout columns on `hotel_bookings` / `hotel_booking_settings`, `hotel_booking_payment_events` table, encrypt round-trip, webhook HMAC probe, mock `checkout.session.completed` payload (no live Stripe API) |
 | `php scripts/verify_hotel_booking_distribution_http.php` | HTTP regression: disposable channel, `probe` auth (401 without key, 200 with key), availability GET over curl. Default target is a built-in PHP server (not Apache); browser `?run=1` uses the same path to avoid gateway timeout |
 | `php scripts/verify_hotel_booking_distribution_opentravel_coverage.php` | OpenTravel OTA parse/encode: AvailRQ, ResNotifRQ, AvailNotifRQ, PingRQ |
 | `php scripts/verify_hotel_booking_distribution_booking_com_cert.php` | Booking.com Connectivity offline cert checklist (ACK/NACK, notify, rates payload) |
@@ -1109,7 +1128,7 @@ Run `verify_appointment.php` when changing `modules/appointments/`, `includes/it
 | `php scripts/check_hospitality_date_format.php` | Hospitality-only subset of `check_date_format.php` (stay-date static + helper contracts) |
 | `php scripts/check_date_format.php` | Project-wide date format gate: UK `dd/mm/yyyy`, hospitality `d/M/Y`, audit stamps, hospitality static scan, scaffold cell-hook info |
 
-Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking/`, `includes/itm_hotel_booking.php`, or hotel booking DDL/seeds/triggers in `db/`. Run `verify_hotel_booking_distribution.php` when changing `modules/hotel_booking_api/`, `modules/hotel_booking_distribution_channels/`, distribution adapter includes, or distribution DDL in `db/`. Run `verify_hotel_booking_distribution_http.php` after HTTP/auth/router changes to `modules/hotel_booking_api/api.php`. Run `verify_hotel_booking_distribution_opentravel_coverage.php` after OpenTravel parse/encode changes. Run `verify_hotel_booking_distribution_booking_com_cert.php` after Booking.com adapter or credential changes. Run `report_hotel_booking_distribution_webhook_ops.php` for dead-letter monitoring (cron/ops). Run `run_hotel_booking_distribution_ari_sync.php` after webhook or outbound ARI changes. Run `run_hotel_booking_distribution_webhook_queue.php` after webhook queue or retry logic changes. Run `check_hotel_bookings_rate_plan_form.php` when changing hotel bookings create/edit form or `js/hotel-bookings-rate-plan-select.js`. Run `check_hospitality_date_format.php` or `check_date_format.php` when changing date display, parse, or form widgets (`includes/itm_date_format.php`, `includes/itm_hotel_date_input.php`).
+Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking/`, `includes/itm_hotel_booking.php`, or hotel booking DDL/seeds/triggers in `db/`. Run `verify_stripe_checkout.php` when changing `includes/itm_stripe_checkout.php`, `booking/payment-stripe.php`, `booking/stripe-webhook.php`, portal Step 4 Stripe flow, or Stripe columns in `hotel_booking_settings` / `hotel_bookings`. Run `verify_hotel_booking_distribution.php` when changing `modules/hotel_booking_api/`, `modules/hotel_booking_distribution_channels/`, distribution adapter includes, or distribution DDL in `db/`. Run `verify_hotel_booking_distribution_http.php` after HTTP/auth/router changes to `modules/hotel_booking_api/api.php`. Run `verify_hotel_booking_distribution_opentravel_coverage.php` after OpenTravel parse/encode changes. Run `verify_hotel_booking_distribution_booking_com_cert.php` after Booking.com adapter or credential changes. Run `report_hotel_booking_distribution_webhook_ops.php` for dead-letter monitoring (cron/ops). Run `run_hotel_booking_distribution_ari_sync.php` after webhook or outbound ARI changes. Run `run_hotel_booking_distribution_webhook_queue.php` after webhook queue or retry logic changes. Run `check_hotel_bookings_rate_plan_form.php` when changing hotel bookings create/edit form or `js/hotel-bookings-rate-plan-select.js`. Run `check_hospitality_date_format.php` or `check_date_format.php` when changing date display, parse, or form widgets (`includes/itm_date_format.php`, `includes/itm_hotel_date_input.php`).
 
 ### Email Management scripts
 
@@ -1125,7 +1144,10 @@ Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking
 | `php scripts/send_mailpit_inbound_test_email.php` | Sends a test message **To** a tenant `companies.email` via Mailpit SMTP (`127.0.0.1:1025`); optional `--process` runs inbound ticket creation for that company |
 | `php scripts/verify_inbound_email_tickets.php` | Regression for inbound parsers, dedupe, threading, keyword routing, event logging, requester resolution, schema columns; live Mailpit E2E when API at `http://localhost/mailpit/api/v1` responds |
 | `php scripts/run_notification_digest.php` | Sends digest emails for employees with unread `employee_notifications` rows; optional `--company=1` |
+| `php scripts/run_ticket_sla_monitor.php` | Stamps `sla_*_breached_at`, logs `ticket_activity`, notifies assignees; optional `--company=1`; schedule every 15 min |
+| `php scripts/verify_ticket_sla_dashboard.php` | Regression for SLA Command Center (`includes/itm_ticket_sla.php`, `modules/ticket_sla_dashboard/`, breach columns) |
 | `php scripts/verify_employee_notifications.php` | Regression for `itm_notify_employee()`, unread count, mark read, header API/JS assets |
+| `php scripts/verify_approval_inbox.php` | Regression for `includes/itm_approval_inbox.php`, `approval_inbox_items` upsert/fetch, adapter registry |
 | `php scripts/test_email_forgot.php` | Manual forgot-password email test via `itm_send_email()` / tenant SMTP; creates a real 24-hour reset token for the matching employee before sending; CLI supports `--company=1` (defaults to session company or `1`) |
 | `php scripts/test_register_mail.php` | Manual registration welcome email test via `itm_send_email()`; CLI supports `--company=1` |
 
@@ -1279,6 +1301,9 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/apply_search_index_backfill.php` — dry-run default; `--apply` / `?apply=1` syncs `search_index` for palette modules per company (`--company=`, `--module=`)
 - `php scripts/verify_appointment.php` — `modules/appointments/`, `includes/itm_appointment.php`, appointment `db/` bundle
 - `php scripts/verify_live_chat.php` — Live Chat schema, SLA, ACL, notifications, ticket activity/comments helpers
+- `php scripts/verify_ticket_productivity.php` — Ticket canned responses, merge, CSAT token/public URL, merge smoke
+- `php scripts/verify_automation_rules.php` — Workflow automation: tables, audit triggers, seed rule, `ticket.created` dispatch, `automation_rule_runs` success row
+- `php scripts/run_automation_rules.php` — Cron: date-based triggers (`equipment.warranty_expiring` within 30 days)
 - `php scripts/debug_peer_options.php` — Debug Chat-with peer picker: `it_settings.chat_same_tenant`, accessible companies, merged peer options vs `list_employees` (CLI `--company_id=` `--employee_id=`; browser query params)
 
 ### Performance benchmarks

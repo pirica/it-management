@@ -9,8 +9,20 @@
 
 include('config/config.php');
 require_once __DIR__ . '/includes/itm_employee_employment_status.php';
-$csrfToken = itm_get_csrf_token();
 $error = '';
+$csrfToken = itm_get_csrf_token();
+$ssoLinkCompanyId = 0;
+if (function_exists('itm_sso_any_company_enabled') && itm_sso_any_company_enabled($conn)) {
+    $ssoCompany = itm_sso_resolve_company_for_login($conn, $_GET['company'] ?? $_GET['company_id'] ?? '');
+    if (is_array($ssoCompany)) {
+        $ssoLinkCompanyId = (int)($ssoCompany['id'] ?? 0);
+    }
+} elseif (!empty($_SESSION['company_id']) && function_exists('itm_sso_fetch_company_row')) {
+    $sessionCompany = itm_sso_fetch_company_row($conn, (int)$_SESSION['company_id']);
+    if (is_array($sessionCompany) && (int)($sessionCompany['sso_enabled'] ?? 0) === 1) {
+        $ssoLinkCompanyId = (int)($sessionCompany['id'] ?? 0);
+    }
+}
 
 /**
  * Why: Login endpoint is public and attractive for credential stuffing, so we
@@ -302,6 +314,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit">Login</button>
         </form>
         <div class="links">
+            <?php if ($ssoLinkCompanyId > 0): ?>
+                <a href="<?php echo sanitize(BASE_URL . 'sso-ldap.php?company_id=' . $ssoLinkCompanyId); ?>" title="Sign in with SSO">Sign in with SSO</a> ·
+            <?php endif; ?>
             <a href="forgot-password.php">Forgot Password?</a> ·
             <a href="register.php">Register with Invite</a>
         </div>

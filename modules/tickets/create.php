@@ -448,8 +448,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     elseif ($created_by_employee_id <= 0) { $error = 'Created by user is required.'; }
     else {
         $previousAssigneeId = 0;
+        $previousStatusId = 0;
         if ($is_edit && $id > 0) {
-            $prevStmt = mysqli_prepare($conn, 'SELECT assigned_to_employee_id FROM tickets WHERE id = ? AND company_id = ? LIMIT 1');
+            $prevStmt = mysqli_prepare($conn, 'SELECT assigned_to_employee_id, status_id FROM tickets WHERE id = ? AND company_id = ? LIMIT 1');
             if ($prevStmt) {
                 mysqli_stmt_bind_param($prevStmt, 'ii', $id, $company_id);
                 mysqli_stmt_execute($prevStmt);
@@ -457,6 +458,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $prevRow = $prevRes ? mysqli_fetch_assoc($prevRes) : null;
                 mysqli_stmt_close($prevStmt);
                 $previousAssigneeId = (int)($prevRow['assigned_to_employee_id'] ?? 0);
+                $previousStatusId = (int)($prevRow['status_id'] ?? 0);
             }
         }
         $newAssigneeId = ($assigned_to_employee_id === 'NULL' || $assigned_to_employee_id === null) ? 0 : (int)$assigned_to_employee_id;
@@ -485,6 +487,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($savedTicketId > 0) {
                 require_once '../../includes/itm_search_index.php';
                 itm_search_index_after_module_save($conn, 'tickets', (int)$company_id, $savedTicketId);
+                if (!$is_edit) {
+                    if (function_exists('itm_ticket_sla_apply_on_create')) {
+                        $slaPriorityId = ($priority_id === 'NULL' || $priority_id === null) ? 0 : (int)$priority_id;
+                        itm_ticket_sla_apply_on_create($conn, $savedTicketId, (int)$company_id, $slaPriorityId);
+                    }
+                    if (function_exists('itm_webhook_queue_emit_ticket_created')) {
+                        require_once ROOT_PATH . 'includes/itm_webhook_queue.php';
+                        itm_webhook_queue_emit_ticket_created($conn, (int)$company_id, [
+                            'id' => $savedTicketId,
+                            'ticket_external_code' => $ticket_external_code,
+                            'title' => $title,
+                            'created_at' => date('Y-m-d H:i:s'),
+                        ]);
+                    }
+                }
+                if (function_exists('itm_automation_rules_dispatch')) {
+                    if (!$is_edit) {
+                        $ticketContext = itm_automation_rules_build_ticket_context($conn, (int)$company_id, $savedTicketId, [
+                            'automation_depth' => 0,
+                        ]);
+                        itm_automation_rules_dispatch($conn, (int)$company_id, 'ticket.created', $ticketContext);
+                    } else {
+                        $newStatusId = ($status_id === 'NULL' || $status_id === null) ? 0 : (int)$status_id;
+                        if ($newStatusId > 0 && $newStatusId !== $previousStatusId) {
+                            $statusContext = itm_automation_rules_build_ticket_context($conn, (int)$company_id, $savedTicketId, [
+                                'automation_depth' => 0,
+                            ]);
+                            $statusContext['previous_status_id'] = $previousStatusId;
+                            $statusContext['previous_status_name'] = itm_automation_rules_resolve_ticket_status_name($conn, (int)$company_id, $previousStatusId);
+                            itm_automation_rules_dispatch($conn, (int)$company_id, 'ticket.status_changed', $statusContext);
+                        }
+                    }
+                }
                 if ($newAssigneeId > 0 && $newAssigneeId !== $previousAssigneeId) {
                     itm_notify_ticket_assigned($conn, (int)$company_id, $newAssigneeId, $savedTicketId, $title, $ticket_external_code);
                 }

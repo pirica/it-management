@@ -287,7 +287,7 @@ if ($searchRaw !== '') {
 }
 
 // Sorting logic
-$uiColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'due_date'];
+$uiColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'sla_status', 'due_date'];
 // Why: Search and list share visible columns; alias matches role/ui_configuration modules.
 $displayFieldColumns = $uiColumns;
 
@@ -439,7 +439,7 @@ if (!isset($crud_title)) {
                     <thead>
                     <tr>
                         <?php if ($showBulkActions): ?><th>Select</th><?php endif; ?>
-                        <?php foreach (['id' => 'ID', 'ticket_external_code' => 'External Code', 'title' => 'Title', 'status_name' => 'Status', 'priority_name' => 'Priority', 'due_date' => 'Due Date'] as $field => $label): ?>
+                        <?php foreach (['id' => 'ID', 'ticket_external_code' => 'External Code', 'title' => 'Title', 'status_name' => 'Status', 'priority_name' => 'Priority', 'sla_status' => 'SLA', 'due_date' => 'Due Date'] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?search=<?php echo urlencode($searchRaw); ?>&show_archived=<?php echo $showArchived ? '1' : '0'; ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
@@ -455,6 +455,7 @@ if (!isset($crud_title)) {
                             <td><?php echo sanitize($t['title']); ?></td>
                             <td><?php echo ticket_render_lookup_badge((string)($t['status_name'] ?? ''), (string)($t['status_color'] ?? ''), 'Open'); ?></td>
                             <td><?php echo ticket_render_lookup_badge((string)($t['priority_name'] ?? ''), (string)($t['priority_color'] ?? '')); ?></td>
+                            <td><?php echo itm_ticket_sla_render_badge($t); ?></td>
                             <td><?php echo sanitize($t['due_date'] ?? '—'); ?></td>
                             <td class="itm-actions-cell" data-itm-actions-origin="1">
                                 <div class="itm-actions-wrap">

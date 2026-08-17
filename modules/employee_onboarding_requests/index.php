@@ -1544,6 +1544,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['approval_api'])) {
         exit;
     }
 
+    itm_approval_inbox_sync_module_record($conn, $recordCompanyId, 'employee_onboarding_requests', $recordId);
+
     echo 'Approval status updated: ' . sanitize($statusValue) . '. You may close this tab.';
     exit;
 }
@@ -1763,6 +1765,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $crud_action === 'view' && isset($_
             itm_run_query($conn, $trackSql, $trackErrCode, $trackErrMessage);
         }
         $_SESSION['crud_success'] = $approvalType . ' email sent to ' . $approverEmail . '.';
+        itm_approval_inbox_sync_module_record($conn, (int)$company_id, 'employee_onboarding_requests', $recordId);
     }
 
     header('Location: view.php?id=' . $recordId);
@@ -2101,6 +2104,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $dbErrorCode = 0;
         $dbErrorMessage = '';
         if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+            $savedId = ($crud_action === 'create') ? (int)mysqli_insert_id($conn) : (int)$editId;
+            if ($savedId > 0) {
+                itm_approval_inbox_sync_module_record($conn, (int)$company_id, 'employee_onboarding_requests', $savedId);
+            }
             header('Location: ' . $listUrl);
             exit;
         }

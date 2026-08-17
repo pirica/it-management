@@ -1,6 +1,7 @@
 <?php
 require '../../config/config.php';
 require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
+require_once ROOT_PATH . 'includes/itm_asset_depreciation.php';
 require_once __DIR__ . '/../../includes/ipam_helpers.php';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -257,6 +258,57 @@ if (!isset($crud_title)) {
 <a class="btn" href="<?php echo sanitize($equipmentViewBackPath); ?>" title="Back">🔙</a> <a class="btn btn-primary" href="<?php echo sanitize($equipmentViewEditPath); ?>?id=<?php echo (int)$item['id']; ?>" title="Edit">✏️</a></p>
 </div>
 
+<?php endif; ?>
+
+<?php if ($item): ?>
+<?php
+$lifecycleStages = itm_asset_lifecycle_stages();
+$lifecycleStageKey = (string)($item['lifecycle_stage'] ?? 'in_service');
+$lifecycleStageLabel = $lifecycleStages[$lifecycleStageKey] ?? $lifecycleStageKey;
+$depreciation = itm_asset_depreciation_compute_book_value($item);
+$lifecycleTimeline = itm_asset_lifecycle_fetch_timeline($conn, (int)$company_id, (int)$item['id']);
+?>
+<div class="card" style="margin-top:20px;">
+    <h2 style="margin-top:0;">Asset lifecycle</h2>
+    <table><tbody>
+        <tr><th style="width:240px;">Stage</th><td><?php echo sanitize($lifecycleStageLabel); ?></td></tr>
+        <tr><th>Depreciation start</th><td><?php echo sanitize(itm_format_cell_scalar_display($item['depreciation_start_date'] ?? '')); ?></td></tr>
+        <tr><th>Useful life (months)</th><td><?php echo sanitize((string)($item['useful_life_months'] ?? '—')); ?></td></tr>
+        <tr><th>Salvage value</th><td><?php echo sanitize((string)($item['salvage_value'] ?? '—')); ?></td></tr>
+        <tr><th>Book value (today)</th><td><?php echo sanitize(number_format((float)$depreciation['book_value'], 2)); ?></td></tr>
+        <tr><th>Monthly depreciation</th><td><?php echo sanitize(number_format((float)$depreciation['monthly_depreciation'], 2)); ?></td></tr>
+        <tr><th>Disposal date</th><td><?php echo sanitize(itm_format_cell_scalar_display($item['disposal_date'] ?? '')); ?></td></tr>
+        <tr><th>Disposal reason</th><td><?php echo sanitize((string)($item['disposal_reason'] ?? '')); ?></td></tr>
+    </tbody></table>
+</div>
+<div class="card" style="margin-top:20px;">
+    <h2 style="margin-top:0;">Lifecycle timeline</h2>
+    <?php if ($lifecycleTimeline): ?>
+        <table>
+            <thead><tr><th>Date</th><th>Event</th><th>Notes</th><th>By</th></tr></thead>
+            <tbody>
+            <?php foreach ($lifecycleTimeline as $event): ?>
+                <?php
+                $actor = trim(((string)($event['first_name'] ?? '')) . ' ' . ((string)($event['last_name'] ?? '')));
+                if ($actor === '') {
+                    $actor = (string)($event['username'] ?? '');
+                }
+                ?>
+                <tr>
+                    <td><?php echo sanitize(itm_format_cell_scalar_display($event['event_date'] ?? $event['created_at'] ?? '')); ?></td>
+                    <td><?php echo sanitize((string)($event['event_type'] ?? '')); ?></td>
+                    <td><?php echo sanitize((string)($event['notes'] ?? '')); ?></td>
+                    <td><?php echo sanitize($actor !== '' ? $actor : '—'); ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php else: ?>
+        <p>No lifecycle events recorded yet.</p>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
+
 <?php if (function_exists('itm_ipam_table_exists') && itm_ipam_table_exists($conn, 'ip_addresses')): ?>
 <div class="card" style="margin-top:20px;">
     <h2 style="margin-top:0;">IPAM assignments</h2>
@@ -290,7 +342,6 @@ if (!isset($crud_title)) {
         </table>
     </div>
 </div>
-<?php endif; ?>
 <?php endif; ?>
 </div></div></div><script src="../../js/theme.js"></script><?php itm_crud_record_share_include_modal(); ?>
 </body></html>

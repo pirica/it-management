@@ -14,6 +14,14 @@ if ($company_id <= 0) {
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 $error = '';
 $success = '';
+$stripeFlash = trim((string) ($_GET['stripe'] ?? ''));
+if ($stripeFlash === 'success') {
+    $success = 'Payment received. Your reservation is confirmed.';
+} elseif ($stripeFlash === 'cancel') {
+    $error = 'Online payment was cancelled. Your reservation is saved — you can pay at the hotel or try again from Manage my booking.';
+} elseif ($stripeFlash === 'error') {
+    $error = 'Online payment could not be started. Please contact the hotel or try again later.';
+}
 $booking = $bid > 0 ? hb_portal_load_booking_confirmation($conn, $company_id, $bid) : null;
 $cancelLastName = '';
 $cancelReservationId = 0;

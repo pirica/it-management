@@ -365,6 +365,7 @@ $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
 
 $itmTicketMentionUsers = [];
+$itmTicketCannedResponses = [];
 if (in_array($crud_action, ['create', 'edit'], true) && $company_id > 0) {
     $mentionSql = 'SELECT id, username, first_name, last_name FROM employees
                    WHERE company_id = ? AND deleted_at IS NULL AND active = 1
@@ -383,6 +384,22 @@ if (in_array($crud_action, ['create', 'edit'], true) && $company_id > 0) {
             ];
         }
         mysqli_stmt_close($mentionStmt);
+    }
+    $cannedSql = 'SELECT id, title, body, category_id FROM ticket_canned_responses WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY title ASC';
+    $cannedStmt = mysqli_prepare($conn, $cannedSql);
+    if ($cannedStmt) {
+        mysqli_stmt_bind_param($cannedStmt, 'i', $company_id);
+        mysqli_stmt_execute($cannedStmt);
+        $cannedRes = mysqli_stmt_get_result($cannedStmt);
+        while ($cannedRes && ($cannedRow = mysqli_fetch_assoc($cannedRes))) {
+            $itmTicketCannedResponses[] = [
+                'id' => (int)$cannedRow['id'],
+                'title' => (string)($cannedRow['title'] ?? ''),
+                'body' => (string)($cannedRow['body'] ?? ''),
+                'category_id' => isset($cannedRow['category_id']) ? (int)$cannedRow['category_id'] : null,
+            ];
+        }
+        mysqli_stmt_close($cannedStmt);
     }
 }
 
@@ -845,6 +862,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                     if ($commentId > 0 && $ticketId > 0 && $body !== '') {
                         itm_notify_ticket_comment_mentions($conn, (int)$company_id, $ticketId, $commentId, $body, (int)($_SESSION['employee_id'] ?? 0));
                     }
+                    if ($ticketId > 0) {
+                        itm_ticket_sla_stamp_first_response($conn, $ticketId, (int)$company_id);
+                    }
                 } elseif ($crud_action === 'edit' && $editId > 0 && $ticketId > 0 && $body !== '') {
                     itm_notify_ticket_comment_mentions($conn, (int)$company_id, $ticketId, (int)$editId, $body, (int)($_SESSION['employee_id'] ?? 0), $previousCommentBody);
                 }
@@ -1159,7 +1179,18 @@ if (!isset($crud_title)) {
                             <?php elseif ($isDate): ?>
                                 <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
                             <?php elseif ($isText): ?>
-                                <textarea name="<?php echo sanitize($name); ?>" rows="4"<?php echo $name === 'body' ? ' title="Press F2 to mention a user"' : ''; ?>><?php echo sanitize($displayVal); ?></textarea>
+                                <textarea name="<?php echo sanitize($name); ?>" rows="4"<?php echo $name === 'body' ? ' title="Press F2 to mention a user; Shift+F2 for canned response"' : ''; ?>><?php echo sanitize($displayVal); ?></textarea>
+                                <?php if ($name === 'body' && !empty($itmTicketCannedResponses)): ?>
+                                    <div class="itm-ticket-canned-toolbar">
+                                        <label for="itm-canned-response-select">Canned response</label>
+                                        <select id="itm-canned-response-select" title="Insert canned response (or press Shift+F2)">
+                                            <option value="">-- Insert canned response --</option>
+                                            <?php foreach ($itmTicketCannedResponses as $cannedOpt): ?>
+                                                <option value="<?php echo (int)$cannedOpt['id']; ?>"><?php echo sanitize($cannedOpt['title']); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                <?php endif; ?>
                             <?php else: ?>
                                 <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
                             <?php endif; ?>
@@ -1200,10 +1231,13 @@ window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 <script src="../../js/select-add-option.js"></script>
 <?php if (in_array($crud_action, ['create', 'edit'], true)): ?>
 <link rel="stylesheet" href="../../css/ticket-comment-mentions.css">
+<link rel="stylesheet" href="../../css/ticket-comment-canned-responses.css">
 <script>
 window.ITM_TICKET_MENTION_USERS = <?php echo json_encode($itmTicketMentionUsers, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+window.ITM_TICKET_CANNED_RESPONSES = <?php echo json_encode($itmTicketCannedResponses, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
 <script src="../../js/ticket-comment-mentions.js"></script>
+<script src="../../js/ticket-comment-canned-responses.js"></script>
 <?php endif; ?>
 
 <script>
