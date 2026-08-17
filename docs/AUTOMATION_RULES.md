@@ -18,20 +18,30 @@ Canonical DDL: `db/01_schema.sql`. Existing DBs: `db/migrations/automation_rules
 | `ticket.created` | After successful ticket create in `modules/tickets/create.php` |
 | `ticket.status_changed` | After ticket edit when `status_id` changes |
 | `alert.created` | After alert create in `modules/alerts/index.php` |
+| `expense.created` | After expense create in `modules/expenses/index.php` |
 | `equipment.warranty_expiring` | Daily cron via `scripts/run_automation_rules.php` (warranty within 30 days) |
 | `equipment.certificate_expiring` | Daily cron via `scripts/run_automation_rules.php` (certificate within 30 days) |
 
 ## Conditions JSON
 
-Array of objects. Supported operators: `equals` (case-insensitive string match).
+Array of objects. Supported operators:
+
+| `op` | Meaning |
+|------|---------|
+| `equals` | Case-insensitive string match |
+| `not_equals` | Case-insensitive inequality |
+| `contains` | Case-insensitive substring |
+| `not_empty` | Field has non-blank scalar value |
+| `empty` | Field is blank |
 
 ```json
 [
-  {"field": "status_name", "op": "equals", "value": "Open"}
+  {"field": "status_name", "op": "equals", "value": "Open"},
+  {"field": "title", "op": "contains", "value": "printer"}
 ]
 ```
 
-Context fields depend on trigger (ticket rows include `ticket_id`, `title`, `status_name`, etc.; equipment rows include `equipment_id`, `hostname`, `warranty_expiry`).
+Context fields depend on trigger (ticket rows include `ticket_id`, `title`, `status_name`, etc.; expense rows include `expense_id`, `amount`, `date`; equipment rows include `equipment_id`, `hostname`, `warranty_expiry`).
 
 Empty array `[]` matches all events for that trigger.
 
@@ -44,6 +54,7 @@ Empty array `[]` matches all events for that trigger.
 | `set_ticket_status` | `status_id` or `status_name` (updates ticket; may chain `ticket.status_changed` with depth guard) |
 | `assign_ticket` | `employee_id` — sets `tickets.assigned_to_employee_id` |
 | `set_ticket_priority` | `priority_id` or `priority_name` |
+| `create_ticket` | `title`, optional `description`, `status_id`/`status_name`, `priority_id`/`priority_name`, `assigned_to_employee_id`, `created_by_employee_id` — inserts ticket, stamps `TCK-####`, fires `ticket.created` + webhooks |
 | `emit_webhook` | `event_type` — queues matching integration webhooks (`includes/itm_webhook_queue.php`) |
 
 Example:
@@ -67,6 +78,7 @@ Example:
 - `itm_automation_rules_dispatch($conn, $companyId, $triggerSlug, $context)` — max 20 rules per dispatch; skips when `automation_depth > 2`
 - `itm_automation_rules_run_scheduled($conn)` — date-based triggers
 - `itm_automation_rules_build_ticket_context()` / `itm_automation_rules_resolve_ticket_status_name()`
+- `itm_automation_rules_create_ticket()` — shared insert path for `create_ticket` action
 
 Loaded from `config/config.php`.
 

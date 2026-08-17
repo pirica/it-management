@@ -10,6 +10,7 @@ if (!function_exists('itm_automation_rules_trigger_slugs')) {
             'ticket.created',
             'ticket.status_changed',
             'alert.created',
+            'expense.created',
             'equipment.warranty_expiring',
             'equipment.certificate_expiring',
         ];
@@ -136,6 +137,18 @@ if (!function_exists('itm_automation_rules_conditions_match')) {
             if ($op === 'equals' && strcasecmp($actualStr, $expectedStr) !== 0) {
                 return false;
             }
+            if ($op === 'not_equals' && strcasecmp($actualStr, $expectedStr) === 0) {
+                return false;
+            }
+            if ($op === 'contains' && stripos($actualStr, $expectedStr) === false) {
+                return false;
+            }
+            if ($op === 'not_empty' && $actualStr === '') {
+                return false;
+            }
+            if ($op === 'empty' && $actualStr !== '') {
+                return false;
+            }
         }
         return true;
     }
@@ -181,6 +194,139 @@ if (!function_exists('itm_automation_rules_stamp_last_run')) {
         }
         $sql = 'UPDATE automation_rules SET last_run_at = NOW() WHERE id = ' . $ruleId . ' AND company_id = ' . $companyId;
         return (bool)itm_run_query($conn, $sql);
+    }
+}
+
+if (!function_exists('itm_automation_rules_create_ticket')) {
+    /**
+     * Create a ticket from automation actions (prepared INSERT + hooks).
+     *
+     * @return array{ok:bool,ticket_id?:int,message?:string}
+     */
+    function itm_automation_rules_create_ticket($conn, $companyId, array $action, array $context)
+    {
+        $companyId = (int)$companyId;
+        if (!$conn instanceof mysqli || $companyId <= 0) {
+            return ['ok' => false, 'message' => 'invalid company'];
+        }
+
+        $title = trim((string)($action['title'] ?? $context['title'] ?? ''));
+        if ($title === '') {
+            $title = 'Automation ticket';
+        }
+        $description = (string)($action['description'] ?? $context['description'] ?? '');
+        $createdBy = (int)($action['created_by_employee_id'] ?? $context['created_by_employee_id'] ?? ($_SESSION['employee_id'] ?? 0));
+        if ($createdBy <= 0) {
+            $empRes = mysqli_query($conn, 'SELECT id FROM employees WHERE company_id = ' . $companyId . ' AND deleted_at IS NULL ORDER BY id ASC LIMIT 1');
+            $empRow = $empRes ? mysqli_fetch_assoc($empRes) : null;
+            $createdBy = (int)($empRow['id'] ?? 0);
+        }
+        if ($createdBy <= 0) {
+            return ['ok' => false, 'message' => 'create_ticket missing created_by employee'];
+        }
+
+        if (!function_exists('itm_ticket_resolve_default_open_status_id')) {
+            require_once ROOT_PATH . 'includes/itm_live_chat_ticket.php';
+        }
+        $statusId = (int)($action['status_id'] ?? 0);
+        if ($statusId <= 0 && !empty($action['status_name'])) {
+            $nameEsc = mysqli_real_escape_string($conn, trim((string)$action['status_name']));
+            $lookup = mysqli_query(
+                $conn,
+                "SELECT id FROM ticket_statuses WHERE company_id = {$companyId} AND name = '{$nameEsc}' LIMIT 1"
+            );
+            if ($lookup && ($lookupRow = mysqli_fetch_assoc($lookup))) {
+                $statusId = (int)$lookupRow['id'];
+            }
+        }
+        if ($statusId <= 0) {
+            $resolvedStatus = itm_ticket_resolve_default_open_status_id($conn, $companyId);
+            $statusId = $resolvedStatus !== null ? (int)$resolvedStatus : 0;
+        }
+
+        $priorityId = (int)($action['priority_id'] ?? 0);
+        if ($priorityId <= 0 && !empty($action['priority_name'])) {
+            $nameEsc = mysqli_real_escape_string($conn, trim((string)$action['priority_name']));
+            $lookup = mysqli_query(
+                $conn,
+                "SELECT id FROM ticket_priorities WHERE company_id = {$companyId} AND name = '{$nameEsc}' LIMIT 1"
+            );
+            if ($lookup && ($lookupRow = mysqli_fetch_assoc($lookup))) {
+                $priorityId = (int)$lookupRow['id'];
+            }
+        }
+        if ($priorityId <= 0) {
+            $priRes = mysqli_query($conn, 'SELECT id FROM ticket_priorities WHERE company_id = ' . $companyId . ' AND active = 1 ORDER BY level ASC LIMIT 1');
+            $priRow = $priRes ? mysqli_fetch_assoc($priRes) : null;
+            $priorityId = (int)($priRow['id'] ?? 0);
+        }
+
+        $assignedTo = (int)($action['assigned_to_employee_id'] ?? $context['assigned_to_employee_id'] ?? 0);
+        $assignedParam = $assignedTo > 0 ? $assignedTo : null;
+        $statusParam = $statusId > 0 ? $statusId : null;
+        $priorityParam = $priorityId > 0 ? $priorityId : null;
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO tickets (company_id, title, description, status_id, priority_id, created_by_employee_id, assigned_to_employee_id, active, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)'
+        );
+        if (!$stmt) {
+            return ['ok' => false, 'message' => 'create_ticket prepare failed'];
+        }
+        mysqli_stmt_bind_param(
+            $stmt,
+            'issiiiii',
+            $companyId,
+            $title,
+            $description,
+            $statusParam,
+            $priorityParam,
+            $createdBy,
+            $assignedParam,
+            $createdBy
+        );
+        if (!mysqli_stmt_execute($stmt)) {
+            mysqli_stmt_close($stmt);
+            return ['ok' => false, 'message' => 'create_ticket insert failed'];
+        }
+        $ticketId = (int)mysqli_insert_id($conn);
+        mysqli_stmt_close($stmt);
+        if ($ticketId <= 0) {
+            return ['ok' => false, 'message' => 'create_ticket missing id'];
+        }
+
+        $externalCode = 'TCK-' . str_pad((string)$ticketId, 4, '0', STR_PAD_LEFT);
+        $codeStmt = mysqli_prepare($conn, 'UPDATE tickets SET ticket_external_code = ? WHERE id = ? AND company_id = ? LIMIT 1');
+        if ($codeStmt) {
+            mysqli_stmt_bind_param($codeStmt, 'sii', $externalCode, $ticketId, $companyId);
+            mysqli_stmt_execute($codeStmt);
+            mysqli_stmt_close($codeStmt);
+        }
+
+        if (function_exists('itm_ticket_sla_apply_on_create') && $priorityId > 0) {
+            itm_ticket_sla_apply_on_create($conn, $ticketId, $companyId, $priorityId);
+        }
+        if (function_exists('itm_search_index_after_module_save')) {
+            require_once ROOT_PATH . 'includes/itm_search_index.php';
+            itm_search_index_after_module_save($conn, 'tickets', $companyId, $ticketId);
+        }
+        if (function_exists('itm_webhook_queue_emit_ticket_created')) {
+            require_once ROOT_PATH . 'includes/itm_webhook_queue.php';
+            itm_webhook_queue_emit_ticket_created($conn, $companyId, [
+                'id' => $ticketId,
+                'ticket_external_code' => $externalCode,
+                'title' => $title,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+        $depth = (int)($context['automation_depth'] ?? 0);
+        $ticketContext = itm_automation_rules_build_ticket_context($conn, $companyId, $ticketId, [
+            'automation_depth' => $depth + 1,
+        ]);
+        itm_automation_rules_dispatch($conn, $companyId, 'ticket.created', $ticketContext);
+
+        return ['ok' => true, 'ticket_id' => $ticketId];
     }
 }
 
@@ -349,6 +495,17 @@ if (!function_exists('itm_automation_rules_execute_actions')) {
                     $messages[] = 'emit_webhook queued 0 deliveries for ' . $eventType;
                 } else {
                     $messages[] = 'emit_webhook queued ' . $queued . ' for ' . $eventType;
+                }
+                continue;
+            }
+
+            if ($type === 'create_ticket') {
+                $result = itm_automation_rules_create_ticket($conn, $companyId, $action, $context);
+                if (empty($result['ok'])) {
+                    $ok = false;
+                    $messages[] = 'create_ticket failed: ' . (string)($result['message'] ?? 'unknown');
+                } else {
+                    $messages[] = 'create_ticket id ' . (int)($result['ticket_id'] ?? 0);
                 }
                 continue;
             }

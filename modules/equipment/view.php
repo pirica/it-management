@@ -3,6 +3,28 @@ require '../../config/config.php';
 require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
 require_once ROOT_PATH . 'includes/itm_asset_depreciation.php';
 require_once __DIR__ . '/../../includes/ipam_helpers.php';
+
+$equipmentDisposalFlash = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_asset_disposal'])) {
+    itm_require_post_csrf();
+    $disposeEquipmentId = isset($_POST['equipment_id']) ? (int)$_POST['equipment_id'] : 0;
+    $disposalDateInput = trim((string)($_POST['disposal_date'] ?? ''));
+    $disposalReasonInput = trim((string)($_POST['disposal_reason'] ?? ''));
+    $disposalResult = itm_asset_lifecycle_record_disposal(
+        $conn,
+        (int)$company_id,
+        $disposeEquipmentId,
+        $disposalDateInput,
+        $disposalReasonInput,
+        (int)($_SESSION['employee_id'] ?? 0)
+    );
+    if (!empty($disposalResult['ok'])) {
+        header('Location: view.php?id=' . $disposeEquipmentId . '&disposal=1');
+        exit;
+    }
+    $equipmentDisposalFlash = (string)($disposalResult['message'] ?? 'Disposal failed.');
+}
+
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 function equipment_view_table_has_column(mysqli $conn, string $table, string $column): bool
@@ -267,9 +289,16 @@ $lifecycleStageKey = (string)($item['lifecycle_stage'] ?? 'in_service');
 $lifecycleStageLabel = $lifecycleStages[$lifecycleStageKey] ?? $lifecycleStageKey;
 $depreciation = itm_asset_depreciation_compute_book_value($item);
 $lifecycleTimeline = itm_asset_lifecycle_fetch_timeline($conn, (int)$company_id, (int)$item['id']);
+$canRecordDisposal = ((string)($item['lifecycle_stage'] ?? '') !== 'disposed' && empty($item['disposal_date']));
+if (isset($_GET['disposal']) && (string)$_GET['disposal'] === '1') {
+    $equipmentDisposalFlash = 'Disposal recorded successfully.';
+}
 ?>
 <div class="card" style="margin-top:20px;">
     <h2 style="margin-top:0;">Asset lifecycle</h2>
+    <?php if ($equipmentDisposalFlash !== ''): ?>
+        <p class="badge badge-success" style="display:inline-block;margin-bottom:12px;"><?php echo sanitize($equipmentDisposalFlash); ?></p>
+    <?php endif; ?>
     <table><tbody>
         <tr><th style="width:240px;">Stage</th><td><?php echo sanitize($lifecycleStageLabel); ?></td></tr>
         <tr><th>Depreciation start</th><td><?php echo sanitize(itm_format_cell_scalar_display($item['depreciation_start_date'] ?? '')); ?></td></tr>
@@ -280,6 +309,24 @@ $lifecycleTimeline = itm_asset_lifecycle_fetch_timeline($conn, (int)$company_id,
         <tr><th>Disposal date</th><td><?php echo sanitize(itm_format_cell_scalar_display($item['disposal_date'] ?? '')); ?></td></tr>
         <tr><th>Disposal reason</th><td><?php echo sanitize((string)($item['disposal_reason'] ?? '')); ?></td></tr>
     </tbody></table>
+    <?php if ($canRecordDisposal): ?>
+        <form method="POST" style="margin-top:16px;max-width:640px;" class="form-grid">
+            <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+            <input type="hidden" name="record_asset_disposal" value="1">
+            <input type="hidden" name="equipment_id" value="<?php echo (int)$item['id']; ?>">
+            <div class="form-group">
+                <label>Disposal date</label>
+                <input type="date" name="disposal_date" value="<?php echo sanitize(date('Y-m-d')); ?>">
+            </div>
+            <div class="form-group">
+                <label>Disposal reason</label>
+                <input name="disposal_reason" required maxlength="500" placeholder="Reason for disposal">
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-danger" title="Record disposal">🗑️</button>
+            </div>
+        </form>
+    <?php endif; ?>
 </div>
 <div class="card" style="margin-top:20px;">
     <h2 style="margin-top:0;">Lifecycle timeline</h2>

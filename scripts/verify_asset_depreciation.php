@@ -85,4 +85,53 @@ if (strpos($reportsSource, 'function get_asset_lifecycle_stage_summary') === fal
     ad_pass('Reports helper get_asset_lifecycle_stage_summary() present');
 }
 
-itm_script_output_end($failures === 0 ? 0 : 1);
+if (!function_exists('itm_asset_lifecycle_record_disposal')) {
+    ad_fail('itm_asset_lifecycle_record_disposal() missing');
+} else {
+    ad_pass('itm_asset_lifecycle_record_disposal() loaded');
+}
+
+$companyId = 1;
+$equipRes = mysqli_query($conn, "SELECT id FROM equipment WHERE company_id = {$companyId} AND deleted_at IS NULL AND disposal_date IS NULL AND lifecycle_stage <> 'disposed' ORDER BY id ASC LIMIT 1");
+$equipRow = $equipRes ? mysqli_fetch_assoc($equipRes) : null;
+$testEquipId = (int)($equipRow['id'] ?? 0);
+if ($testEquipId <= 0) {
+    $typeRes = mysqli_query($conn, "SELECT id FROM equipment_types WHERE company_id = {$companyId} ORDER BY id ASC LIMIT 1");
+    $typeRow = $typeRes ? mysqli_fetch_assoc($typeRes) : null;
+    $typeId = (int)($typeRow['id'] ?? 0);
+    $statusRes = mysqli_query($conn, "SELECT id FROM equipment_statuses WHERE company_id = {$companyId} ORDER BY id ASC LIMIT 1");
+    $statusRow = $statusRes ? mysqli_fetch_assoc($statusRes) : null;
+    $statusId = (int)($statusRow['id'] ?? 0);
+    if ($typeId > 0 && $statusId > 0) {
+        $name = 'MBQA-Disposal-Verify-' . bin2hex(random_bytes(3));
+        $nameEsc = mysqli_real_escape_string($conn, $name);
+        $insertSql = "INSERT INTO equipment (company_id, equipment_type_id, status_id, name, lifecycle_stage, active)
+                      VALUES ({$companyId}, {$typeId}, {$statusId}, '{$nameEsc}', 'in_service', 1)";
+        if (itm_run_query($conn, $insertSql)) {
+            $testEquipId = (int)mysqli_insert_id($conn);
+        }
+    }
+}
+if ($testEquipId <= 0) {
+    ad_fail('No equipment row available for disposal test');
+} else {
+    $reason = 'MBQA disposal verify ' . bin2hex(random_bytes(4));
+    $result = itm_asset_lifecycle_record_disposal($conn, $companyId, $testEquipId, date('Y-m-d'), $reason, 1);
+    if (empty($result['ok'])) {
+        ad_fail('Disposal helper failed: ' . (string)($result['message'] ?? ''));
+    } else {
+        ad_pass('Disposal helper recorded event for equipment ' . $testEquipId);
+        mysqli_query($conn, "DELETE FROM equipment_lifecycle_events WHERE company_id = {$companyId} AND equipment_id = {$testEquipId} AND notes = '" . mysqli_real_escape_string($conn, $reason) . "'");
+        $nameRes = mysqli_query($conn, "SELECT name FROM equipment WHERE id = {$testEquipId} AND company_id = {$companyId} LIMIT 1");
+        $nameRow = $nameRes ? mysqli_fetch_assoc($nameRes) : null;
+        $equipName = (string)($nameRow['name'] ?? '');
+        if (strpos($equipName, 'MBQA-Disposal-Verify-') === 0) {
+            mysqli_query($conn, "DELETE FROM equipment WHERE id = {$testEquipId} AND company_id = {$companyId} LIMIT 1");
+        } else {
+            mysqli_query($conn, "UPDATE equipment SET lifecycle_stage = 'in_service', disposal_date = NULL, disposal_reason = NULL WHERE id = {$testEquipId} AND company_id = {$companyId} LIMIT 1");
+        }
+    }
+}
+
+itm_script_output_end();
+exit($failures > 0 ? 1 : 0);

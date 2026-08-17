@@ -1000,6 +1000,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
             if (!$attachSave['ok']) {
                 $errors[] = $attachSave['error'];
             } else {
+            if ($crud_action === 'create' && $crud_table === 'expenses' && $savedParentId > 0) {
+                $expenseRow = [
+                    'id' => $savedParentId,
+                    'amount' => (float)($data['amount'] ?? 0),
+                    'date' => (string)($data['date'] ?? ''),
+                    'description' => (string)($data['description'] ?? ''),
+                    'supplier_id' => (int)($data['supplier_id'] ?? 0),
+                    'created_at' => date('Y-m-d H:i:s'),
+                ];
+                if (function_exists('itm_webhook_queue_emit_expense_created')) {
+                    require_once ROOT_PATH . 'includes/itm_webhook_queue.php';
+                    itm_webhook_queue_emit_expense_created($conn, (int)$company_id, $expenseRow);
+                }
+                if (function_exists('itm_automation_rules_dispatch')) {
+                    itm_automation_rules_dispatch($conn, (int)$company_id, 'expense.created', [
+                        'expense_id' => $savedParentId,
+                        'amount' => $expenseRow['amount'],
+                        'date' => $expenseRow['date'],
+                        'description' => $expenseRow['description'],
+                        'supplier_id' => $expenseRow['supplier_id'],
+                        'company_id' => (int)$company_id,
+                        'automation_depth' => 0,
+                    ]);
+                }
+            }
             header('Location: ' . $listUrl);
             exit;
             }

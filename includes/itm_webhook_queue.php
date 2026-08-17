@@ -47,7 +47,7 @@ if (!function_exists('itm_webhook_queue_generate_secret')) {
 if (!function_exists('itm_webhook_queue_event_types')) {
     function itm_webhook_queue_event_types()
     {
-        return ['ticket.created', 'ticket.status_changed', 'alert.created', 'hotel_booking.confirmed'];
+        return ['ticket.created', 'ticket.status_changed', 'alert.created', 'hotel_booking.confirmed', 'expense.created', 'employee_onboarding.approved', 'equipment.disposed'];
     }
 }
 
@@ -323,5 +323,57 @@ if (!function_exists('itm_webhook_queue_emit_hotel_booking_confirmed')) {
             'status' => (string) ($bookingRow['status'] ?? ''),
         ];
         return itm_webhook_queue_enqueue($conn, (int) $companyId, 'hotel_booking.confirmed', $payload);
+    }
+}
+
+if (!function_exists('itm_webhook_queue_emit_expense_created')) {
+    function itm_webhook_queue_emit_expense_created($conn, $companyId, array $expenseRow)
+    {
+        $payload = [
+            'event' => 'expense.created',
+            'company_id' => (int) $companyId,
+            'expense_id' => (int) ($expenseRow['id'] ?? 0),
+            'amount' => (float) ($expenseRow['amount'] ?? 0),
+            'date' => (string) ($expenseRow['date'] ?? ''),
+            'description' => (string) ($expenseRow['description'] ?? ''),
+            'supplier_id' => (int) ($expenseRow['supplier_id'] ?? 0),
+            'created_at' => (string) ($expenseRow['created_at'] ?? date('Y-m-d H:i:s')),
+        ];
+        return itm_webhook_queue_enqueue($conn, (int) $companyId, 'expense.created', $payload);
+    }
+}
+
+if (!function_exists('itm_webhook_queue_emit_employee_onboarding_approved')) {
+    function itm_webhook_queue_emit_employee_onboarding_approved($conn, $companyId, array $requestRow, $approvalTarget = 'ism')
+    {
+        $payload = [
+            'event' => 'employee_onboarding.approved',
+            'company_id' => (int) $companyId,
+            'request_id' => (int) ($requestRow['id'] ?? 0),
+            'employee_id' => (int) ($requestRow['employee_id'] ?? 0),
+            'first_name' => (string) ($requestRow['first_name'] ?? ''),
+            'last_name' => (string) ($requestRow['last_name'] ?? ''),
+            'department_name' => (string) ($requestRow['department_name'] ?? ''),
+            'approval_target' => (string) $approvalTarget,
+            'approved_at' => date('Y-m-d H:i:s'),
+        ];
+        return itm_webhook_queue_enqueue($conn, (int) $companyId, 'employee_onboarding.approved', $payload);
+    }
+}
+
+if (!function_exists('itm_webhook_queue_emit_equipment_disposed')) {
+    function itm_webhook_queue_emit_equipment_disposed($conn, $companyId, array $equipmentRow)
+    {
+        $payload = [
+            'event' => 'equipment.disposed',
+            'company_id' => (int) $companyId,
+            'equipment_id' => (int) ($equipmentRow['id'] ?? 0),
+            'hostname' => (string) ($equipmentRow['hostname'] ?? $equipmentRow['name'] ?? ''),
+            'lifecycle_stage' => (string) ($equipmentRow['lifecycle_stage'] ?? 'disposed'),
+            'disposal_date' => (string) ($equipmentRow['disposal_date'] ?? ''),
+            'disposal_reason' => (string) ($equipmentRow['disposal_reason'] ?? ''),
+            'disposed_at' => date('Y-m-d H:i:s'),
+        ];
+        return itm_webhook_queue_enqueue($conn, (int) $companyId, 'equipment.disposed', $payload);
     }
 }

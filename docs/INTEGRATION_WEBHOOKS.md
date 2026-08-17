@@ -22,12 +22,18 @@ Canonical DDL: `db/01_schema.sql`. Helpers: `includes/itm_webhook_queue.php`.
 | `ticket.created` | After successful ticket create |
 | `ticket.status_changed` | After ticket edit when `status_id` changes (`modules/tickets/create.php`) |
 | `alert.created` | After alert create (`modules/alerts/index.php`) |
+| `expense.created` | After expense create (`modules/expenses/index.php`) |
+| `employee_onboarding.approved` | After email-link approval decision **approve** on `modules/employee_onboarding_requests/index.php?approval_api=1` |
+| `equipment.disposed` | After disposal recorded via `itm_asset_lifecycle_record_disposal()` (`modules/equipment/view.php`) |
 | `hotel_booking.confirmed` | Hotel booking distribution flows |
 
 Helpers:
 
-- `itm_webhook_queue_emit_ticket_status_changed($conn, $companyId, $ticketId, $oldStatusId, $newStatusId)`
-- `itm_webhook_queue_emit_alert_created($conn, $companyId, $alertId, array $snapshot)`
+- `itm_webhook_queue_emit_ticket_status_changed($conn, $companyId, $ticketRow, $extra)`
+- `itm_webhook_queue_emit_alert_created($conn, $companyId, $alertRow)`
+- `itm_webhook_queue_emit_expense_created($conn, $companyId, $expenseRow)`
+- `itm_webhook_queue_emit_employee_onboarding_approved($conn, $companyId, $requestRow, $approvalTarget)`
+- `itm_webhook_queue_emit_equipment_disposed($conn, $companyId, $equipmentRow)`
 
 Automation rules may also queue events via action `emit_webhook` (`includes/itm_automation_rules.php`).
 
