@@ -98,7 +98,7 @@ if ($hookId <= 0) {
 }
 
 $eventTypes = itm_webhook_queue_event_types();
-foreach (['ticket.status_changed', 'alert.created', 'expense.created', 'employee_onboarding.approved', 'equipment.disposed'] as $eventType) {
+foreach (['ticket.status_changed', 'ticket.priority_changed', 'ticket.comment_created', 'alert.created', 'expense.created', 'expense.approved', 'employee_onboarding.approved', 'equipment.disposed'] as $eventType) {
     if (!in_array($eventType, $eventTypes, true)) {
         iw_fail('Event type missing: ' . $eventType);
     }
@@ -109,8 +109,11 @@ if ($failures === 0) {
 
 foreach ([
     'itm_webhook_queue_emit_ticket_status_changed',
+    'itm_webhook_queue_emit_ticket_priority_changed',
+    'itm_webhook_queue_emit_ticket_comment_created',
     'itm_webhook_queue_emit_alert_created',
     'itm_webhook_queue_emit_expense_created',
+    'itm_webhook_queue_emit_expense_approved',
     'itm_webhook_queue_emit_employee_onboarding_approved',
     'itm_webhook_queue_emit_equipment_disposed',
 ] as $fn) {

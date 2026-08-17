@@ -449,8 +449,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     else {
         $previousAssigneeId = 0;
         $previousStatusId = 0;
+        $previousPriorityId = 0;
         if ($is_edit && $id > 0) {
-            $prevStmt = mysqli_prepare($conn, 'SELECT assigned_to_employee_id, status_id FROM tickets WHERE id = ? AND company_id = ? LIMIT 1');
+            $prevStmt = mysqli_prepare($conn, 'SELECT assigned_to_employee_id, status_id, priority_id FROM tickets WHERE id = ? AND company_id = ? LIMIT 1');
             if ($prevStmt) {
                 mysqli_stmt_bind_param($prevStmt, 'ii', $id, $company_id);
                 mysqli_stmt_execute($prevStmt);
@@ -459,6 +460,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mysqli_stmt_close($prevStmt);
                 $previousAssigneeId = (int)($prevRow['assigned_to_employee_id'] ?? 0);
                 $previousStatusId = (int)($prevRow['status_id'] ?? 0);
+                $previousPriorityId = (int)($prevRow['priority_id'] ?? 0);
             }
         }
         $newAssigneeId = ($assigned_to_employee_id === 'NULL' || $assigned_to_employee_id === null) ? 0 : (int)$assigned_to_employee_id;
@@ -528,6 +530,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 ], [
                                     'previous_status_id' => $previousStatusId,
                                     'previous_status_name' => (string)($statusContext['previous_status_name'] ?? ''),
+                                ]);
+                            }
+                        }
+                        $newPriorityId = ($priority_id === 'NULL' || $priority_id === null) ? 0 : (int)$priority_id;
+                        if ($newPriorityId > 0 && $newPriorityId !== $previousPriorityId) {
+                            $priorityContext = itm_automation_rules_build_ticket_context($conn, (int)$company_id, $savedTicketId, [
+                                'automation_depth' => 0,
+                            ]);
+                            $priorityContext['previous_priority_id'] = $previousPriorityId;
+                            $priorityContext['previous_priority_name'] = itm_automation_rules_resolve_ticket_priority_name($conn, (int)$company_id, $previousPriorityId);
+                            itm_automation_rules_dispatch($conn, (int)$company_id, 'ticket.priority_changed', $priorityContext);
+                            if (function_exists('itm_webhook_queue_emit_ticket_priority_changed')) {
+                                require_once ROOT_PATH . 'includes/itm_webhook_queue.php';
+                                itm_webhook_queue_emit_ticket_priority_changed($conn, (int)$company_id, [
+                                    'id' => $savedTicketId,
+                                    'ticket_external_code' => $ticket_external_code,
+                                    'title' => $title,
+                                    'priority_id' => $newPriorityId,
+                                    'priority_name' => (string)($priorityContext['priority_name'] ?? ''),
+                                ], [
+                                    'previous_priority_id' => $previousPriorityId,
+                                    'previous_priority_name' => (string)($priorityContext['previous_priority_name'] ?? ''),
                                 ]);
                             }
                         }

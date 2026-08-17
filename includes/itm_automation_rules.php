@@ -9,11 +9,37 @@ if (!function_exists('itm_automation_rules_trigger_slugs')) {
         return [
             'ticket.created',
             'ticket.status_changed',
+            'ticket.priority_changed',
             'alert.created',
             'expense.created',
             'equipment.warranty_expiring',
             'equipment.certificate_expiring',
+            'equipment.disposed',
         ];
+    }
+}
+
+if (!function_exists('itm_automation_rules_resolve_ticket_priority_name')) {
+    function itm_automation_rules_resolve_ticket_priority_name($conn, $companyId, $priorityId)
+    {
+        if (!$conn instanceof mysqli) {
+            return '';
+        }
+        $companyId = (int)$companyId;
+        $priorityId = (int)$priorityId;
+        if ($companyId <= 0 || $priorityId <= 0) {
+            return '';
+        }
+        $stmt = mysqli_prepare($conn, 'SELECT name FROM ticket_priorities WHERE id = ? AND company_id = ? LIMIT 1');
+        if (!$stmt) {
+            return '';
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $priorityId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        return trim((string)($row['name'] ?? ''));
     }
 }
 
@@ -81,6 +107,51 @@ if (!function_exists('itm_automation_rules_build_ticket_context')) {
         $context['assigned_to_employee_id'] = (int)($row['assigned_to_employee_id'] ?? 0);
         $context['category_id'] = (int)($row['category_id'] ?? 0);
         $context['status_name'] = itm_automation_rules_resolve_ticket_status_name($conn, $companyId, (int)$context['status_id']);
+        $context['priority_name'] = itm_automation_rules_resolve_ticket_priority_name($conn, $companyId, (int)$context['priority_id']);
+
+        return $context;
+    }
+}
+
+if (!function_exists('itm_automation_rules_build_equipment_context')) {
+    function itm_automation_rules_build_equipment_context($conn, $companyId, $equipmentId, array $extra = [])
+    {
+        $companyId = (int)$companyId;
+        $equipmentId = (int)$equipmentId;
+        $context = array_merge([
+            'equipment_id' => $equipmentId,
+            'company_id' => $companyId,
+            'automation_depth' => 0,
+        ], $extra);
+
+        if (!$conn instanceof mysqli || $companyId <= 0 || $equipmentId <= 0) {
+            return $context;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id, hostname, name, lifecycle_stage, disposal_date, disposal_reason, warranty_expiry, certificate_expiry
+             FROM equipment WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1'
+        );
+        if (!$stmt) {
+            return $context;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $equipmentId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        if (!$row) {
+            return $context;
+        }
+
+        $context['hostname'] = (string)($row['hostname'] ?? '');
+        $context['name'] = (string)($row['name'] ?? '');
+        $context['lifecycle_stage'] = (string)($row['lifecycle_stage'] ?? '');
+        $context['disposal_date'] = (string)($row['disposal_date'] ?? '');
+        $context['disposal_reason'] = (string)($row['disposal_reason'] ?? '');
+        $context['warranty_expiry'] = (string)($row['warranty_expiry'] ?? '');
+        $context['certificate_expiry'] = (string)($row['certificate_expiry'] ?? '');
 
         return $context;
     }

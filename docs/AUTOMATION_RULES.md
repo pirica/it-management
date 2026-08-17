@@ -17,8 +17,10 @@ Canonical DDL: `db/01_schema.sql`. Existing DBs: `db/migrations/automation_rules
 |------|------------|
 | `ticket.created` | After successful ticket create in `modules/tickets/create.php` |
 | `ticket.status_changed` | After ticket edit when `status_id` changes |
+| `ticket.priority_changed` | After ticket edit when `priority_id` changes |
 | `alert.created` | After alert create in `modules/alerts/index.php` |
 | `expense.created` | After expense create in `modules/expenses/index.php` |
+| `equipment.disposed` | After disposal recorded via `itm_asset_lifecycle_record_disposal()` |
 | `equipment.warranty_expiring` | Daily cron via `scripts/run_automation_rules.php` (warranty within 30 days) |
 | `equipment.certificate_expiring` | Daily cron via `scripts/run_automation_rules.php` (certificate within 30 days) |
 
@@ -77,7 +79,8 @@ Example:
 - `itm_automation_rules_trigger_slugs()`
 - `itm_automation_rules_dispatch($conn, $companyId, $triggerSlug, $context)` — max 20 rules per dispatch; skips when `automation_depth > 2`
 - `itm_automation_rules_run_scheduled($conn)` — date-based triggers
-- `itm_automation_rules_build_ticket_context()` / `itm_automation_rules_resolve_ticket_status_name()`
+- `itm_automation_rules_build_ticket_context()` / `itm_automation_rules_resolve_ticket_status_name()` / `itm_automation_rules_resolve_ticket_priority_name()`
+- `itm_automation_rules_build_equipment_context()` — disposal and equipment cron triggers
 - `itm_automation_rules_create_ticket()` — shared insert path for `create_ticket` action
 
 Loaded from `config/config.php`.

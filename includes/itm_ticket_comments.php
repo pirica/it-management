@@ -44,6 +44,17 @@ if (!function_exists('itm_ticket_comment_create')) {
                 'body_preview' => itm_ticket_comment_body_preview($body),
                 'source' => 'ticket_comments',
             ]);
+            if (function_exists('itm_webhook_queue_emit_ticket_comment_created')) {
+                require_once ROOT_PATH . 'includes/itm_webhook_queue.php';
+                itm_webhook_queue_emit_ticket_comment_created($conn, $companyId, [
+                    'id' => $commentId,
+                    'ticket_id' => $ticketId,
+                    'employee_id' => $employeeId,
+                    'is_internal' => $isInternal,
+                    'body' => $body,
+                    'created_at' => date('Y-m-d H:i:s'),
+                ]);
+            }
         }
         return $ok ? $commentId : false;
     }
