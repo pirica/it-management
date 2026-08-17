@@ -17,7 +17,7 @@ Admin UI for **Step 2** portal rate plans (`hotel_booking_portal_rate_plans`) an
 - List: `itm_hotel_booking_portal_rate_plans_admin_rows()` returns all DB rows for the hotel (ordered by `plan_slot`).
 - Public Step 2 (`booking/rooms/select-rate.php`) lists active plans; cancel `{date}` uses plan override days or company `hotel_booking_settings.free_cancellation_days_before_check_in`.
 - Pricing: `plan_discount_percent` (0–`portal_max_discount_percent` from settings, default cap **50**) reduces BAR; `plan_surcharge_percent` (same cap) multiplies after discount. Checkout draft stores `discount_percent` + `surcharge_percent`.
-- **Cancellation policy files:** `cancellation_policy_url` relative paths must normalize to `.html` / `.htm` / `.txt` only (`itm_hotel_booking_normalize_cancellation_policy_url()`). Defense in depth: `booking/cancellation_policy/.htaccess` denies PHP/CGI under that folder.
+- **Cancellation policy files:** `cancellation_policy_url` relative paths must normalize to `.html` / `.htm` / `.txt` only (`itm_hotel_booking_normalize_cancellation_policy_url()`). Guest checkout/modal links use **`booking/cancellation-policy.php`** (`itm_hotel_booking_portal_cancellation_policy_guest_url()`) so DB `cancellation_policy_html` is served without relying on static files alone. Defense in depth: `booking/cancellation_policy/.htaccess` denies PHP/CGI under that folder.
 
 ## 4. Helpers
 

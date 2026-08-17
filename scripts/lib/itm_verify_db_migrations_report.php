@@ -630,6 +630,22 @@ if (!function_exists('itm_verify_db_migrations_probe_custom')) {
             );
         }
 
+        if ($filename === 'hotel_booking_portal_display_config.sql') {
+            $ok = itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_maps_base_url')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_calendar_month_horizon')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_occupancy_max_rooms')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_default_included_adults_per_room');
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'fail',
+                $ok ? 'Applied' : 'Not applied',
+                $ok
+                    ? 'Portal display/maps/occupancy settings columns present.'
+                    : 'Missing portal display config columns — apply migration or fresh db/ import.'
+            );
+        }
+
         if ($filename === 'news_module_registry.sql') {
             $newsRows = itm_verify_db_migrations_scalar_count(
                 $conn,

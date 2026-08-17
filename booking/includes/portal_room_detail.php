@@ -37,7 +37,8 @@ if (!function_exists('hb_portal_render_image_gallery')) {
     function hb_portal_render_image_gallery(array $urls, $wrapClass = '', $galleryImgClass = 'hb-gallery', $innerHtml = '') {
         $urls = array_values(array_filter(array_map('strval', $urls)));
         if (empty($urls)) {
-            $urls = [APPURL . '/images/room-5.jpg'];
+            $settings = function_exists('hb_portal_money_settings_bound') ? hb_portal_money_settings_bound() : [];
+            $urls = [itm_hotel_booking_portal_room_fallback_image_url('', $settings, APPURL)];
         }
         $count = count($urls);
         $singleClass = $count <= 1 ? ' hb-gallery-wrap--single' : '';
@@ -155,13 +156,9 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
             return null;
         }
 
-        $typeDefaultImages = [
-            'DLX' => '/images/room-5.jpg',
-            'SUP' => '/images/room-6.jpg',
-            'STD' => '/images/room-3.jpg',
-        ];
         $code = strtoupper((string) ($typeRow['code'] ?? ''));
-        $fallbackImg = APPURL . ($typeDefaultImages[$code] ?? '/images/room-5.jpg');
+        $portalSettings = hb_portal_money_settings_bound();
+        $fallbackImg = itm_hotel_booking_portal_room_fallback_image_url($code, $portalSettings, APPURL);
         $imageUrlOverride = trim((string) $imageUrlOverride);
 
         $sampleRoom = null;

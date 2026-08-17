@@ -30,15 +30,17 @@ function hb_public_company_id($conn) {
     if (!empty($_SESSION['company_id'])) {
         return (int) $_SESSION['company_id'];
     }
-    $cid = 1;
-    $row = itm_hotel_booking_settings_row($conn, $cid);
-    if ($row && !empty($row['public_portal_enabled'])) {
-        return $cid;
-    }
-    for ($i = 1; $i <= 5; $i++) {
-        $row = itm_hotel_booking_settings_row($conn, $i);
-        if ($row && !empty($row['public_portal_enabled'])) {
-            return $i;
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT company_id FROM hotel_booking_settings WHERE public_portal_enabled = 1 AND deleted_at IS NULL ORDER BY company_id ASC LIMIT 1'
+    );
+    if ($stmt) {
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        if ($row && (int) ($row['company_id'] ?? 0) > 0) {
+            return (int) $row['company_id'];
         }
     }
     return 1;

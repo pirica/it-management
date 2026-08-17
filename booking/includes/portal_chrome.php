@@ -130,11 +130,14 @@ if (!function_exists('hb_portal_render_guest_rating_reviews')) {
         if ($reviewsUrl === '') {
             return;
         }
+        $portalSettings = hb_portal_money_settings_bound();
+        $ratingTitle = itm_hotel_booking_portal_rating_title_from_settings($portalSettings);
+        $ratingSubtitle = itm_hotel_booking_portal_rating_subtitle_from_settings($portalSettings);
         ?>
 <div class="hb-side-rating">
 <div class="hb-rating-bubbles" aria-hidden="true"><span></span><span></span><span></span><span></span><span class="partial"></span></div>
 <div class="hb-rating-meta">
-<p class="hb-rating-copy"><strong>Guest rating</strong><span class="hb-rating-sub"> — based on recent stays</span></p>
+<p class="hb-rating-copy"><strong><?php echo htmlspecialchars($ratingTitle, ENT_QUOTES, 'UTF-8'); ?></strong><span class="hb-rating-sub"><?php echo htmlspecialchars($ratingSubtitle, ENT_QUOTES, 'UTF-8'); ?></span></p>
 <a class="hb-reviews-link" href="<?php echo htmlspecialchars($reviewsUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" title="Read reviews (opens in new tab)">Read reviews <span class="hb-external-icon" aria-hidden="true">↗</span></a>
 </div>
 </div>

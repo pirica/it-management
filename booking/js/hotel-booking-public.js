@@ -11,6 +11,24 @@
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   }
 
+  function mapsUrlForHotel(h) {
+    var location = String((h && h.location) || '').trim();
+    if (!location) {
+      return '';
+    }
+    var base = String(settings.maps_base_url || 'https://maps.google.com/?q=').trim();
+    if (base.indexOf('{location}') !== -1) {
+      return base.replace('{location}', encodeURIComponent(location));
+    }
+    if (/[?&]q=$/.test(base) || base.charAt(base.length - 1) === '=') {
+      return base + encodeURIComponent(location);
+    }
+    if (base.indexOf('?') !== -1) {
+      return base.replace(/&$/, '') + '&q=' + encodeURIComponent(location);
+    }
+    return base.replace(/\/$/, '') + '/' + encodeURIComponent(location);
+  }
+
   function formatPrice(h) {
     if (typeof window.hbPortalFormatMoney === 'function') {
       return window.hbPortalFormatMoney(h.min_price || 0, settings, 'short');
@@ -215,7 +233,7 @@
       '<button type="button" class="hb-fav" title="Save to favorites" aria-label="Favorite">♡</button>' +
       '</div>' +
       '<div class="hb-action-links">' +
-      (h.location ? '<a href="https://maps.google.com/?q=' + encodeURIComponent(h.location) + '" target="_blank" rel="noopener"><span aria-hidden="true">📍</span> Directions</a>' : '') +
+      (h.location ? '<a href="' + escapeHtml(mapsUrlForHotel(h)) + '" target="_blank" rel="noopener"><span aria-hidden="true">📍</span> Directions</a>' : '') +
       (h.website_url ? '<a href="' + escapeHtml(h.website_url) + '" target="_blank" rel="noopener"><span aria-hidden="true">🌐</span> Visit website</a>' : '') +
       (h.contact_email ? '<a href="mailto:' + escapeHtml(h.contact_email) + '" title="General information email"><span aria-hidden="true">ℹ️</span> Info</a>' : '') +
       (h.reservations_email ? '<a href="mailto:' + escapeHtml(h.reservations_email) + '" title="Reservations email"><span aria-hidden="true">📧</span> Email</a>' : '') +
@@ -233,7 +251,7 @@
       '<section class="hb-block hb-rating-block">' +
       '<div class="hb-rating-bubbles" aria-hidden="true"><span></span><span></span><span></span><span></span><span class="partial"></span></div>' +
       '<div class="hb-rating-meta">' +
-      '<p class="hb-rating-copy"><strong>Guest rating</strong><span class="hb-rating-sub"> — based on recent stays</span></p>' +
+      '<p class="hb-rating-copy"><strong>' + escapeHtml(settings.rating_title || 'Guest rating') + '</strong><span class="hb-rating-sub">' + escapeHtml(settings.rating_subtitle || ' — based on recent stays') + '</span></p>' +
       reviewsLinkHtml(h) +
       '</div>' +
       '</section>' +

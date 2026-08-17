@@ -182,7 +182,7 @@ $imgUrl = !empty($hotel['photos'][0]['public_url'])
 </div>
 <h2><?php echo htmlspecialchars($hotel['name'], ENT_QUOTES, 'UTF-8'); ?></h2>
 <p class="hb-loc"><?php echo htmlspecialchars($hotel['location'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
-<p class="hb-from">From <?php echo htmlspecialchars(number_format((float) ($hotel['min_price'] ?? 0), 2), ENT_QUOTES, 'UTF-8'); ?> <?php echo htmlspecialchars($hotel['currency_code'] ?? 'EUR', ENT_QUOTES, 'UTF-8'); ?> <span class="hb-from-tax-note"><?php echo htmlspecialchars((string) ($hotel['price_includes_tax_label'] ?? itm_hotel_booking_portal_price_includes_tax_label_from_settings($settings)), ENT_QUOTES, 'UTF-8'); ?></span></p>
+<p class="hb-from">From <?php echo htmlspecialchars(hb_portal_money_format((float) ($hotel['min_price'] ?? 0), $hotel['currency_code'] ?? 'EUR'), ENT_QUOTES, 'UTF-8'); ?> <span class="hb-from-tax-note"><?php echo htmlspecialchars((string) ($hotel['price_includes_tax_label'] ?? itm_hotel_booking_portal_price_includes_tax_label_from_settings($settings)), ENT_QUOTES, 'UTF-8'); ?></span></p>
 <button type="button" class="hb-btn hb-btn-primary hb-open-hotel" data-hotel-id="<?php echo (int) $hotel['id']; ?>" title="View details">Details</button>
 </article>
 <?php endforeach; ?>
