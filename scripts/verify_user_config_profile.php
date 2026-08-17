@@ -2,8 +2,9 @@
 /**
  * user-config.php profile field regression checks.
  *
- * Verifies home-company profile UPDATEs and profile photo URL/serve contract
- * (root page must not use module-relative ../../ explorer paths).
+ * Verifies home-company profile UPDATEs, profile photo URL/serve contract
+ * (root page must not use module-relative ../../ explorer paths), and Explorer
+ * file.php tenant ACL for cross-tenant profile photo reads.
  *
  * CLI: php scripts/verify_user_config_profile.php
  * Browser: scripts/verify_user_config_profile.php
@@ -18,7 +19,7 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/verify_user_config_profile.php</code> — exit <code>1</code> on failure. Run when changing <code>user-config.php</code>, <code>includes/employee_profile_photo.php</code>, or Explorer <code>file.php</code> profile photo serving.
+<code>php scripts/verify_user_config_profile.php</code> — exit <code>1</code> on failure. Run when changing <code>user-config.php</code>, <code>includes/employee_profile_photo.php</code>, or Explorer <code>file.php</code> profile photo serving (URL contract, home-company UPDATE scoping, cross-tenant <code>file.php</code> deny).
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 define('ITM_CLI_SCRIPT', true);
@@ -26,6 +27,7 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../includes/employee_profile_photo.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
+require_once __DIR__ . '/lib/itm_verify_explorer_file_probe.php';
 
 itm_script_output_begin('User Config Profile Verification');
 
@@ -232,6 +234,52 @@ if ($userConfig === false) {
     } else {
         ucp_pass('user-config.php reloads $ui_config after sidebar save.');
     }
+}
+
+// --- Explorer file.php: cross-tenant profile photo must be denied ---
+$foreignCompanyId = $wrongCompanyId;
+$foreignReader = itm_script_test_employee_create($conn, $foreignCompanyId, [
+    'script_slug' => 'ucp-profile-foreign',
+    'first_name' => 'UCP',
+    'last_name' => 'Foreign',
+]);
+if (!is_array($foreignReader) || (int)($foreignReader['id'] ?? 0) <= 0) {
+    ucp_fail('Could not create foreign-tenant reader for profile photo ACL probe.');
+} else {
+    $foreignReaderId = (int)$foreignReader['id'];
+    $foreignUsername = (string)$foreignReader['username'];
+    itm_script_test_employee_register_teardown($conn, $foreignReaderId, [], [
+        'company_id' => $foreignCompanyId,
+        'username' => $foreignUsername,
+    ]);
+
+    if (!emp_profile_photo_request_allowed_for_employee($conn, $foreignReaderId, $homeCompanyId)) {
+        ucp_pass('Foreign tenant reader denied by emp_profile_photo_request_allowed_for_employee().');
+    } else {
+        ucp_fail('Foreign tenant reader unexpectedly allowed for home-company profile photo.');
+    }
+
+    $filePath = ROOT_PATH . 'modules/explorer/file.php';
+    $foreignSession = [
+        'employee_id' => $foreignReaderId,
+        'company_id' => $foreignCompanyId,
+        'username' => $foreignUsername,
+    ];
+    $foreignOutput = itm_verify_explorer_file_probe_run($filePath, $foreignSession, [
+        'path' => $servePath,
+    ]);
+    if ($foreignOutput === '') {
+        ucp_fail('Cross-tenant file.php probe produced no output (shell_exec blocked?).');
+    } elseif (stripos($foreignOutput, 'Access denied') !== false) {
+        ucp_pass('Cross-tenant file.php profile photo read blocked.');
+    } elseif (stripos($foreignOutput, 'Content-Type: image/png') !== false
+        || stripos($foreignOutput, 'PNG') !== false) {
+        ucp_fail('Cross-tenant file.php profile photo read leaked image bytes.');
+    } else {
+        ucp_fail('Cross-tenant file.php probe returned unexpected body.');
+    }
+
+    itm_script_test_employee_delete($conn, $foreignReaderId);
 }
 
 @unlink($tmpPng);

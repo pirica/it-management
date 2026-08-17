@@ -91,6 +91,33 @@ function emp_profile_photo_absolute_dir($company_id, $username, $employee_id) {
 }
 }
 
+if (!function_exists('emp_profile_photo_request_allowed_for_employee')) {
+/**
+ * Whether the signed-in employee may fetch a profile photo stored under another user's Private/profile tree.
+ *
+ * Why: Same-tenant peers need thumbnails on lists/org chart; cross-tenant reads must use employee_companies grants.
+ */
+function emp_profile_photo_request_allowed_for_employee(mysqli $conn, int $requesterEmployeeId, int $photoOwnerHomeCompanyId): bool
+{
+    if ($requesterEmployeeId <= 0 || $photoOwnerHomeCompanyId <= 0) {
+        return false;
+    }
+
+    if (!function_exists('itm_employee_has_company_access')) {
+        require_once ROOT_PATH . 'includes/itm_company_session.php';
+    }
+
+    $loginEmployeeId = function_exists('itm_company_session_login_employee_id')
+        ? itm_company_session_login_employee_id()
+        : $requesterEmployeeId;
+    if ($loginEmployeeId <= 0) {
+        $loginEmployeeId = $requesterEmployeeId;
+    }
+
+    return itm_employee_has_company_access($conn, $loginEmployeeId, $photoOwnerHomeCompanyId);
+}
+}
+
 if (!function_exists('emp_profile_photo_store_upload')) {
 function emp_profile_photo_store_upload($company_id, array $employee, array $uploadFile) {
     $username = trim((string)($employee['username'] ?? ''));

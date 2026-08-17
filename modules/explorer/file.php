@@ -43,6 +43,8 @@ if (!$vaultCheck['ok']) {
 
 // Why: Access control logic (mirroring api.php) with segment-boundary checks.
 $isEmployeeProfilePhotoPath = (bool)preg_match('#^Private/[^/]+/profile/#', $relative_path);
+$photoOwnerEmployeeId = 0;
+$photoHomeCompanyId = 0;
 
 // Why: profile photos are stored under the employee's home company_id; session
 // company_id is the tenant switcher and often differs for multi-company admins.
@@ -60,6 +62,19 @@ if ($isEmployeeProfilePhotoPath && preg_match('#^Private/[^/]+_([0-9]+)/profile/
                 $storage_root = ROOT_PATH . 'files/' . $photoHomeCompanyId;
             }
         }
+    }
+}
+
+if ($isEmployeeProfilePhotoPath) {
+    if ($photoHomeCompanyId <= 0) {
+        http_response_code(404);
+        exit('File not found.');
+    }
+
+    require_once ROOT_PATH . 'includes/employee_profile_photo.php';
+    if (!emp_profile_photo_request_allowed_for_employee($conn, $user_id, $photoHomeCompanyId)) {
+        http_response_code(403);
+        exit('Access denied.');
     }
 }
 

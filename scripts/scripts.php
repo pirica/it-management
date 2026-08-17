@@ -570,7 +570,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_user_config_profile.php" target="_blank" rel="nofollow noreferrer">verify_user_config_profile.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Regression for <code>user-config.php</code> profile fields: home-company UPDATE (vs tenant switcher), birthday/theme/emergency round-trip, and profile photo URL/serve contract (app-absolute Explorer proxy, not <code>../../modules/…</code>).</td>
+                    <td>Regression for <code>user-config.php</code> profile fields: home-company UPDATE (vs tenant switcher), birthday/theme/emergency round-trip, profile photo URL/serve contract, and cross-tenant Explorer <code>file.php</code> profile deny.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
@@ -2810,7 +2810,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_explorer_profile_photo_acl.php" target="_blank" rel="nofollow noreferrer">verify_explorer_profile_photo_acl.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Accepted-risk regression: intentional cross-user read of Explorer <code>Private/{user}/profile/</code> thumbnails; other Private paths stay owner-scoped.</td>
+                    <td>Explorer <code>file.php</code> profile ACL: same-tenant peer read of <code>Private/{user}/profile/</code> allowed; cross-tenant without <code>employee_companies</code> grant denied; other Private paths owner-scoped.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">

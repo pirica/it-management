@@ -1,0 +1,19 @@
+{
+    "findings": [
+        {
+            "title": "Cross-tenant employee profile photos readable by any authenticated user via Explorer file.php path parameter.",
+            "status": "fixed",
+            "commit_hash": "e42d65df1cd75f41085f26447ef15b230eb4b23f",
+            "detected_at_pst": "2026-08-16T16:49:00-07:00",
+            "reported_link": "docs/security-validated-findings.md",
+            "severity": "medium",
+            "location": "modules/explorer/file.php",
+            "attacker": "Any authenticated employee session (including low-privilege users in a different tenant).",
+            "controlled_input": "GET path parameter pointing at Private/{username}_{employee_id}/profile/{filename}.",
+            "attack_path": "Sign in as company-2 user, request modules/explorer/file.php?path=Private/Admin_1/profile/Admin_1.png. file.php classifies the path as a profile photo, skips Private-folder ACL checks, resolves storage to the victim home company_id, and readfile() serves the bytes without verifying tenant access.",
+            "impact": "Cross-tenant read of employee profile images stored under Private/ trees; enables harvesting PII-bearing photos across companies when usernames and employee IDs are known or enumerable.",
+            "remediation": "emp_profile_photo_request_allowed_for_employee() + verify_user_config_profile.php / verify_explorer_profile_photo_acl.php cross-tenant deny",
+            "evidence": "Validated by seeding Admin_1 profile PNG under files/1/Private/Admin_1/profile/ and confirming company-2 session logic resolves and reads the file while skipping private ACL and vault gates."
+        }
+    ]
+}
