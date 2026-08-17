@@ -1284,6 +1284,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/apply_search_index_backfill.php` — dry-run default; `--apply` / `?apply=1` syncs `search_index` for palette modules per company (`--company=`, `--module=`)
 - `php scripts/verify_appointment.php` — `modules/appointments/`, `includes/itm_appointment.php`, appointment `db/` bundle
 - `php scripts/verify_live_chat.php` — Live Chat schema, SLA, ACL, notifications, ticket activity/comments helpers
+- `php scripts/verify_ticket_productivity.php` — Ticket canned responses, merge, CSAT token/public URL, merge smoke
 - `php scripts/debug_peer_options.php` — Debug Chat-with peer picker: `it_settings.chat_same_tenant`, accessible companies, merged peer options vs `list_employees` (CLI `--company_id=` `--employee_id=`; browser query params)
 
 ### Performance benchmarks

@@ -40,6 +40,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("appointments", "Appointments", 0, 1, "📅");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("appointment_settings", "Appointment Settings", 0, 1, "⚙️");
 
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("approval_inbox", "Approval Inbox", 0, 1, "📥");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("approvals", "Approvals", 0, 1);
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("approvals_stage", "Approvals Stage", 0, 1);
@@ -278,6 +279,8 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("system_access", "System Access", 0, 1);
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("ticket_categories", "Ticket Categories", 0, 1);
+
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("ticket_canned_responses", "Ticket Canned Responses", 0, 1, "💬");
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("ticket_priorities", "Ticket Priorities", 0, 1);
 
@@ -1400,6 +1403,11 @@ INSERT INTO `ticket_sla_policies` (`company_id`, `priority_id`, `response_minute
 ('1', 3, 60, 480, 1, '2026-01-01 00:00:01'),
 ('1', 4, 30, 240, 1, '2026-01-01 00:00:01'),
 ('1', 5, 15, 120, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `ticket_canned_responses` (`company_id`, `title`, `body`, `category_id`, `active`, `created_at`) VALUES
+('1', 'Acknowledge receipt', 'Thank you for contacting IT. We have received your request and will respond shortly.', 5, 1, '2026-01-01 00:00:01'),
+('1', 'Request more information', 'Could you provide additional details (screenshots, error messages, or steps to reproduce) so we can assist you faster?', 5, 1, '2026-01-01 00:00:01'),
+('1', 'Resolved — please confirm', 'We believe this issue has been resolved. Please reply if you still need assistance.', 5, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('1', '1', 'Open', '#FF0000', '0', '1', '2026-01-01 00:00:01');
 

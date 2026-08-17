@@ -347,6 +347,8 @@ require_once ROOT_PATH . 'includes/equipment_poe_helpers.php';
 require_once ROOT_PATH . 'includes/itm_ticket_activity.php';
 require_once ROOT_PATH . 'includes/itm_ticket_comments.php';
 require_once ROOT_PATH . 'includes/itm_ticket_sla.php';
+require_once ROOT_PATH . 'includes/itm_ticket_csat.php';
+require_once ROOT_PATH . 'includes/itm_ticket_merge.php';
 require_once ROOT_PATH . 'includes/itm_employee_notifications.php';
 require_once ROOT_PATH . 'includes/itm_live_chat_support.php';
 require_once ROOT_PATH . 'includes/itm_live_chat_storage.php';
@@ -514,6 +516,10 @@ if (
             $itmSkipWebAuth = true;
         }
     }
+}
+
+if (defined('ITM_TICKET_CSAT_PUBLIC') && ITM_TICKET_CSAT_PUBLIC) {
+    $itmSkipWebAuth = true;
 }
 
 // Redirect to login if session is missing, excluding auth pages
