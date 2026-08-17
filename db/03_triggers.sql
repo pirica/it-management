@@ -3570,6 +3570,42 @@ CREATE TRIGGER `trg_ticket_canned_responses_audit_delete` AFTER DELETE ON `ticke
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_canned_responses', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'body', OLD.`body`, 'category_id', OLD.`category_id`, 'active', OLD.`active`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
 
+DROP TRIGGER IF EXISTS `trg_ticket_inbound_email_messages_audit_insert`$$
+CREATE TRIGGER `trg_ticket_inbound_email_messages_audit_insert` AFTER INSERT ON `ticket_inbound_email_messages` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_inbound_email_messages', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'message_id', NEW.`message_id`, 'ticket_id', NEW.`ticket_id`, 'email_log_id', NEW.`email_log_id`, 'from_email', NEW.`from_email`, 'subject', NEW.`subject`, 'processed_at', NEW.`processed_at`, 'active', NEW.`active`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_ticket_inbound_email_messages_audit_update`$$
+CREATE TRIGGER `trg_ticket_inbound_email_messages_audit_update` AFTER UPDATE ON `ticket_inbound_email_messages` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_inbound_email_messages', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'message_id', OLD.`message_id`, 'ticket_id', OLD.`ticket_id`, 'email_log_id', OLD.`email_log_id`, 'from_email', OLD.`from_email`, 'subject', OLD.`subject`, 'processed_at', OLD.`processed_at`, 'active', OLD.`active`, 'created_at', OLD.`created_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'message_id', NEW.`message_id`, 'ticket_id', NEW.`ticket_id`, 'email_log_id', NEW.`email_log_id`, 'from_email', NEW.`from_email`, 'subject', NEW.`subject`, 'processed_at', NEW.`processed_at`, 'active', NEW.`active`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_ticket_inbound_email_messages_audit_delete`$$
+CREATE TRIGGER `trg_ticket_inbound_email_messages_audit_delete` AFTER DELETE ON `ticket_inbound_email_messages` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_inbound_email_messages', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'message_id', OLD.`message_id`, 'ticket_id', OLD.`ticket_id`, 'email_log_id', OLD.`email_log_id`, 'from_email', OLD.`from_email`, 'subject', OLD.`subject`, 'processed_at', OLD.`processed_at`, 'active', OLD.`active`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_ticket_inbound_email_routing_rules_audit_insert`$$
+CREATE TRIGGER `trg_ticket_inbound_email_routing_rules_audit_insert` AFTER INSERT ON `ticket_inbound_email_routing_rules` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_inbound_email_routing_rules', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'keyword', NEW.`keyword`, 'assigned_to_employee_id', NEW.`assigned_to_employee_id`, 'category_id', NEW.`category_id`, 'priority_id', NEW.`priority_id`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_ticket_inbound_email_routing_rules_audit_update`$$
+CREATE TRIGGER `trg_ticket_inbound_email_routing_rules_audit_update` AFTER UPDATE ON `ticket_inbound_email_routing_rules` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_inbound_email_routing_rules', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'keyword', OLD.`keyword`, 'assigned_to_employee_id', OLD.`assigned_to_employee_id`, 'category_id', OLD.`category_id`, 'priority_id', OLD.`priority_id`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`, 'created_at', OLD.`created_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'keyword', NEW.`keyword`, 'assigned_to_employee_id', NEW.`assigned_to_employee_id`, 'category_id', NEW.`category_id`, 'priority_id', NEW.`priority_id`, 'sort_order', NEW.`sort_order`, 'active', NEW.`active`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_ticket_inbound_email_routing_rules_audit_delete`$$
+CREATE TRIGGER `trg_ticket_inbound_email_routing_rules_audit_delete` AFTER DELETE ON `ticket_inbound_email_routing_rules` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_inbound_email_routing_rules', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'keyword', OLD.`keyword`, 'assigned_to_employee_id', OLD.`assigned_to_employee_id`, 'category_id', OLD.`category_id`, 'priority_id', OLD.`priority_id`, 'sort_order', OLD.`sort_order`, 'active', OLD.`active`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
 DROP TRIGGER IF EXISTS `trg_live_chat_conversations_audit_insert`$$
 CREATE TRIGGER `trg_live_chat_conversations_audit_insert` AFTER INSERT ON `live_chat_conversations` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
