@@ -163,12 +163,13 @@ if (!itm_run_query($conn, $insertSql)) {
     itm_script_output_end(1);
     exit(1);
 }
-$ruleId = (int)mysqli_insert_id($conn);
-if ($ruleId <= 0) {
-    $lookup = mysqli_query($conn, "SELECT id FROM automation_rules WHERE company_id = {$companyId} AND name = '{$nameEsc}' ORDER BY id DESC LIMIT 1");
-    $lookupRow = $lookup ? mysqli_fetch_assoc($lookup) : null;
-    $ruleId = (int)($lookupRow['id'] ?? 0);
-}
+// Why: itm_run_query() may INSERT into audit_logs after automation_rules, clobbering mysqli_insert_id().
+$lookup = mysqli_query(
+    $conn,
+    "SELECT id FROM automation_rules WHERE company_id = {$companyId} AND name = '{$nameEsc}' AND deleted_at IS NULL ORDER BY id DESC LIMIT 1"
+);
+$lookupRow = $lookup ? mysqli_fetch_assoc($lookup) : null;
+$ruleId = (int)($lookupRow['id'] ?? 0);
 if ($ruleId <= 0) {
     ar_verify_fail('Could not resolve test automation rule id after insert');
     itm_script_output_end(1);
