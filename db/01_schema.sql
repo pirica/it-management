@@ -83,6 +83,9 @@ CREATE TABLE `companies` (
   `vat` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `unit_no` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `comments` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `sso_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `sso_provider` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'ldap',
+  `sso_config_json_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -93,7 +96,8 @@ CREATE TABLE `companies` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `company` (`company`),
   UNIQUE KEY `incode` (`incode`),
-  KEY `active` (`active`)
+  KEY `active` (`active`),
+  KEY `idx_companies_sso_enabled` (`sso_enabled`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `modules_registry`
@@ -1444,6 +1448,7 @@ CREATE TABLE `employees` (
   `extension` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `employee_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `external_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sso_subject` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `insurance_n` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
 
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -1508,6 +1513,7 @@ CREATE TABLE `employees` (
   KEY `location_id` (`location_id`),
   KEY `company_id` (`company_id`),
   KEY `idx_employees_external_id` (`external_id`),
+  KEY `idx_employees_company_sso_subject` (`company_id`,`sso_subject`),
   KEY `idx_employees_username` (`username`),
   KEY `employment_status_id` (`employment_status_id`),
   KEY `idx_employees_office_key_department` (`office_key_card_department_id`),
