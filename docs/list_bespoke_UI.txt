@@ -3,6 +3,9 @@
 # One module slug per line. Lines starting with # and blank lines are ignored.
 
 audit_logs
+appointment_settings
+appointments
+approval_inbox
 backup_tape_log
 birthdays
 bookmarks
@@ -57,6 +60,7 @@ system_access
 system_status
 schema_migrations
 todo
+ticket_sla_dashboard
 visitors_access_log
 vlans
 webmail

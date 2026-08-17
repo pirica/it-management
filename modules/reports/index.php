@@ -270,7 +270,7 @@ if (!isset($crud_title)) {
                     <?php if ($scheduledReportsFlash !== ''): ?>
                         <p><?php echo sanitize($scheduledReportsFlash); ?></p>
                     <?php endif; ?>
-                    <table class="table" style="width:100%;margin-bottom:16px;">
+                    <table class="table" style="width:100%;margin-bottom:16px;" data-itm-no-import-excel="1">
                         <thead>
                             <tr>
                                 <th>Report</th>

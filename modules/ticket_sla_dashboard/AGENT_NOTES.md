@@ -27,7 +27,7 @@ Proactive SLA breach dashboard for open tickets that have `sla_response_due_at` 
 
 ## 5. UI Behavior Requirements
 
-- Bespoke dashboard (`index.php`) — not flattened scaffold CRUD.
+- Bespoke dashboard (`index.php`) — not flattened scaffold CRUD. List tables opt out of table-tools import (`data-itm-no-import-excel="1"`).
 - Tabs with server-rendered list + optional JSON poll (`api.php?action=summary` every 120s).
 - Ticket list/view in `modules/tickets/` show SLA badge via `itm_ticket_sla_render_badge()` (green/amber/red).
 - Emoji-only action buttons per `AGENTS.md` NO MIXED rules.

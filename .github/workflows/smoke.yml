@@ -66,7 +66,6 @@ jobs:
         run: php scripts/verify_crud_fk_label_search.php
 
   tier2:
-    if: false # Why: temporarily disabled — re-enable when tier2 static checks are green again.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -83,7 +82,6 @@ jobs:
         run: php scripts/run_tier2_checks.php
 
   phpunit:
-    if: false # Why: temporarily disabled — re-enable when PHPUnit suite is 100% green in CI.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

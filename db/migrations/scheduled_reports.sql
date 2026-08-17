@@ -17,7 +17,7 @@ CREATE TABLE `scheduled_reports` (
   `updated_by` int DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_scheduled_reports_company_slug` (`company_id`,`report_slug`),
   KEY `idx_scheduled_reports_company_enabled` (`company_id`,`enabled`),
-  KEY `idx_scheduled_reports_slug` (`company_id`,`report_slug`),
   CONSTRAINT `fk_scheduled_reports_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -19,6 +19,7 @@ CREATE TABLE `automation_rules` (
   `updated_by` int DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_automation_rules_company_name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   KEY `trigger_slug` (`trigger_slug`),
   CONSTRAINT `fk_automation_rules_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
