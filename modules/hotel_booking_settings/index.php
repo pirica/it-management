@@ -70,6 +70,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!$moneySymbolSuffix) {
         $moneySymbolSuffix = 1;
     }
+    $showInternalRates = !empty($_POST['portal_show_internal_rates']) ? 1 : 0;
+    $portalDateFormat = strtolower(trim((string) ($_POST['portal_date_format'] ?? 'european_ddmmyyyy')));
+    if (!in_array($portalDateFormat, ['european_ddmmyyyy', 'us_mmddyyyy', 'iso_yyyymmdd'], true)) {
+        $portalDateFormat = 'european_ddmmyyyy';
+    }
+    $portalTimeFormat = strtolower(trim((string) ($_POST['portal_time_format'] ?? 'h24')));
+    if ($portalTimeFormat !== 'h12') {
+        $portalTimeFormat = 'h24';
+    }
+    $dtEuropean1 = !empty($_POST['portal_datetime_european1_enabled']) ? 1 : 0;
+    $dtEuropean2 = !empty($_POST['portal_datetime_european2_enabled']) ? 1 : 0;
+    $dtIso = !empty($_POST['portal_datetime_iso_enabled']) ? 1 : 0;
+    $dtReadable = !empty($_POST['portal_datetime_readable_enabled']) ? 1 : 0;
+    if (!$dtEuropean1 && !$dtEuropean2 && !$dtIso && !$dtReadable) {
+        $dtEuropean2 = 1;
+    }
+    $dtDefault = strtolower(trim((string) ($_POST['portal_datetime_format_default'] ?? 'european2')));
+    if (!in_array($dtDefault, ['european1', 'european2', 'iso', 'readable'], true)) {
+        $dtDefault = 'european2';
+    }
+    $enabledMap = [
+        'european1' => $dtEuropean1,
+        'european2' => $dtEuropean2,
+        'iso' => $dtIso,
+        'readable' => $dtReadable,
+    ];
+    if (empty($enabledMap[$dtDefault])) {
+        foreach (['european2', 'european1', 'readable', 'iso'] as $candidate) {
+            if (!empty($enabledMap[$candidate])) {
+                $dtDefault = $candidate;
+                break;
+            }
+        }
+    }
     if (trim((string) ($_POST['reviews_url'] ?? '')) !== '' && $reviewsUrl === '') {
         $errors[] = 'Reviews URL must start with http:// or https://';
     }
@@ -112,9 +146,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $sid = (int) ($row['id'] ?? 0);
     if (empty($errors)) {
-    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, stripe_enabled = ?, stripe_mode = ?, stripe_publishable_key = ?, stripe_secret_key_encrypted = ?, stripe_webhook_signing_secret_encrypted = ?, deposit_percent = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, portal_complimentary_min_rooms_paid = ?, portal_complimentary_rooms_free = ?, portal_confirmation_email_guest = ?, portal_confirmation_email_reservations = ?, portal_show_room_number_on_confirmation = ?, portal_hide_upgrade_upsell_when_multi_room = ?, portal_money_symbol = ?, portal_money_symbol_suffix = ?, portal_money_symbol_prefix = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
+    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, stripe_enabled = ?, stripe_mode = ?, stripe_publishable_key = ?, stripe_secret_key_encrypted = ?, stripe_webhook_signing_secret_encrypted = ?, deposit_percent = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, portal_complimentary_min_rooms_paid = ?, portal_complimentary_rooms_free = ?, portal_confirmation_email_guest = ?, portal_confirmation_email_reservations = ?, portal_show_room_number_on_confirmation = ?, portal_hide_upgrade_upsell_when_multi_room = ?, portal_money_symbol = ?, portal_money_symbol_suffix = ?, portal_money_symbol_prefix = ?, portal_show_internal_rates = ?, portal_date_format = ?, portal_time_format = ?, portal_datetime_european1_enabled = ?, portal_datetime_european2_enabled = ?, portal_datetime_iso_enabled = ?, portal_datetime_readable_enabled = ?, portal_datetime_format_default = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
     if ($upd) {
-        mysqli_stmt_bind_param($upd, 'iissssdssssssdiiiiiiiiisiisiii', $enabled, $stripeEnabled, $stripeMode, $stripePublishableKey, $stripeSecretEnc, $stripeWebhookEnc, $depositPercent, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $complimentaryMinRooms, $complimentaryRoomsFree, $confirmEmailGuest, $confirmEmailReservations, $showRoomNumberOnConfirmation, $hideUpgradeUpsellMultiRoom, $moneySymbol, $moneySymbolSuffix, $moneySymbolPrefix, $urlmybooking, $employee_id, $sid, $company_id);
+        mysqli_stmt_bind_param($upd, 'iissssdssssssdiiiiiiiiisiiissiiiisssiii', $enabled, $stripeEnabled, $stripeMode, $stripePublishableKey, $stripeSecretEnc, $stripeWebhookEnc, $depositPercent, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $complimentaryMinRooms, $complimentaryRoomsFree, $confirmEmailGuest, $confirmEmailReservations, $showRoomNumberOnConfirmation, $hideUpgradeUpsellMultiRoom, $moneySymbol, $moneySymbolSuffix, $moneySymbolPrefix, $showInternalRates, $portalDateFormat, $portalTimeFormat, $dtEuropean1, $dtEuropean2, $dtIso, $dtReadable, $dtDefault, $urlmybooking, $employee_id, $sid, $company_id);
         mysqli_stmt_execute($upd);
         mysqli_stmt_close($upd);
         header('Location: index.php?saved=1');
@@ -127,6 +161,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $row = itm_hotel_booking_settings_row($conn, $company_id);
 $confirmEmailFlags = itm_hotel_booking_portal_confirmation_email_flags_from_settings($row ?: []);
 $moneyFormatOptions = itm_hotel_booking_portal_money_format_options_from_settings($row ?: []);
+$portalDateFormat = itm_hotel_booking_portal_date_format_from_settings($row ?: []);
+$portalTimeFormat = itm_hotel_booking_portal_time_format_from_settings($row ?: []);
+$portalDatetimeEnabled = itm_hotel_booking_portal_datetime_format_enabled_map($row ?: []);
+$portalDatetimeDefault = itm_hotel_booking_portal_datetime_format_default_from_settings($row ?: []);
 $crud_title = 'Hotel Booking Settings';
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_booking_settings', $crud_title);
 require_once ROOT_PATH . 'includes/itm_hospitality_admin_layout.php';
@@ -247,6 +285,43 @@ itm_hospitality_admin_layout_begin($crud_title);
 <input type="checkbox" name="portal_money_symbol_prefix" id="itm-hb-money-prefix" value="1" <?php echo empty($moneyFormatOptions['suffix']) ? 'checked' : ''; ?>>
 <span>Prefix style (e.g. <?php echo htmlspecialchars($moneyFormatOptions['symbol'], ENT_QUOTES, 'UTF-8'); ?>69.50)</span>
 </label>
+</div>
+</div>
+<div class="card" style="margin-top:24px;">
+<h2 style="margin-top:0;">Portal date and time</h2>
+<div class="form-group">
+<label class="itm-checkbox-control">
+<input type="checkbox" name="portal_show_internal_rates" value="1" <?php echo !empty($row['portal_show_internal_rates']) ? 'checked' : ''; ?>>
+<span>Show internal rates on booking portal</span>
+</label>
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">When enabled, guests can select <strong>HOUSE USE (USE)</strong> or <strong>COMPLIMENTARY (COMP)</strong> in Special rates. Admin reservations always allow internal rates on create/edit.</p>
+</div>
+<div class="form-group">
+<label>Date positioning</label>
+<label class="itm-checkbox-control"><input type="radio" name="portal_date_format" value="european_ddmmyyyy" <?php echo $portalDateFormat === 'european_ddmmyyyy' ? 'checked' : ''; ?>> European — DD/MM/YYYY</label>
+<label class="itm-checkbox-control"><input type="radio" name="portal_date_format" value="us_mmddyyyy" <?php echo $portalDateFormat === 'us_mmddyyyy' ? 'checked' : ''; ?>> US — MM/DD/YYYY</label>
+<label class="itm-checkbox-control"><input type="radio" name="portal_date_format" value="iso_yyyymmdd" <?php echo $portalDateFormat === 'iso_yyyymmdd' ? 'checked' : ''; ?>> ISO — YYYY-MM-DD</label>
+</div>
+<div class="form-group">
+<label>Time format</label>
+<label class="itm-checkbox-control"><input type="radio" name="portal_time_format" value="h24" <?php echo $portalTimeFormat === 'h24' ? 'checked' : ''; ?>> 24-hour format</label>
+<label class="itm-checkbox-control"><input type="radio" name="portal_time_format" value="h12" <?php echo $portalTimeFormat === 'h12' ? 'checked' : ''; ?>> 12-hour format</label>
+</div>
+<div class="form-group">
+<label>Combined date-time formats</label>
+<label class="itm-checkbox-control"><input type="checkbox" name="portal_datetime_european1_enabled" value="1" <?php echo !empty($portalDatetimeEnabled['european1']) ? 'checked' : ''; ?>> European datetime1 — 17/08/2026 22:58</label>
+<label class="itm-checkbox-control"><input type="checkbox" name="portal_datetime_european2_enabled" value="1" <?php echo !empty($portalDatetimeEnabled['european2']) ? 'checked' : ''; ?>> European datetime2 — 17/AUG/2026 22:58</label>
+<label class="itm-checkbox-control"><input type="checkbox" name="portal_datetime_iso_enabled" value="1" <?php echo !empty($portalDatetimeEnabled['iso']) ? 'checked' : ''; ?>> ISO datetime — 2026-08-17T22:58:00Z</label>
+<label class="itm-checkbox-control"><input type="checkbox" name="portal_datetime_readable_enabled" value="1" <?php echo !empty($portalDatetimeEnabled['readable']) ? 'checked' : ''; ?>> Readable datetime — 17 Aug 2026, 22:58</label>
+</div>
+<div class="form-group">
+<label>Default datetime display</label>
+<select name="portal_datetime_format_default" class="form-control">
+<option value="european1" <?php echo $portalDatetimeDefault === 'european1' ? 'selected' : ''; ?>>European datetime1</option>
+<option value="european2" <?php echo $portalDatetimeDefault === 'european2' ? 'selected' : ''; ?>>European datetime2 (default)</option>
+<option value="iso" <?php echo $portalDatetimeDefault === 'iso' ? 'selected' : ''; ?>>ISO datetime</option>
+<option value="readable" <?php echo $portalDatetimeDefault === 'readable' ? 'selected' : ''; ?>>Readable datetime</option>
+</select>
 </div>
 </div>
 <div class="card" style="margin-top:24px;">

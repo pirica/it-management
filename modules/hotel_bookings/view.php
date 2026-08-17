@@ -72,6 +72,11 @@ $portalPlanLabel = $portalPlanId > 0 ? itm_hotel_booking_portal_rate_plan_label(
 <a class="btn btn-sm" href="../hotel_booking_portal_rate_plans/edit.php?id=<?php echo $portalPlanId; ?>" title="Edit rate plan">✏️</a>
 <?php endif; ?>
 </p>
+<?php
+$internalRateCode = itm_hotel_booking_normalize_internal_rate_code($row['internal_rate_code'] ?? '');
+$internalRateLabel = $internalRateCode !== '' ? itm_hotel_booking_internal_rate_label($internalRateCode) : '';
+?>
+<p><strong>Internal rate:</strong> <?php echo $internalRateLabel !== '' ? sanitize($internalRateLabel) : '—'; ?></p>
 <p><strong>Segment:</strong> <?php echo sanitize($segment); ?></p>
 <p><strong>Notes:</strong> <?php echo sanitize($row['notes'] ?? ''); ?></p>
 <?php

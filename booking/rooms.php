@@ -23,6 +23,10 @@ $company_id = (int) ($hotel['company_id'] ?? hb_public_company_id($conn));
 hb_require_company_public_portal($conn, $company_id);
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 hb_portal_bind_money_settings($settings);
+$internalRateFromGuest = itm_hotel_booking_portal_parse_internal_rate_code($_GET, $settings);
+if ($internalRateFromGuest !== '') {
+    $occupancy['internal_rate_code'] = $internalRateFromGuest;
+}
 $portalPricing = itm_hotel_booking_portal_hotel_pricing($conn, $company_id, $hotelId);
 
 $today = date('Y-m-d');
@@ -674,6 +678,19 @@ echo hb_portal_render_image_gallery(
 ?>
 <label class="hb-filter-check"><input type="checkbox" class="hb-rate-exclusive" data-hb-rate-exclusive="1" id="<?php echo htmlspecialchars($inputId, ENT_QUOTES, 'UTF-8'); ?>" name="<?php echo htmlspecialchars($param, ENT_QUOTES, 'UTF-8'); ?>" value="1"<?php echo !empty($occupancy[$param]) ? ' checked' : ''; ?>> <?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?> <?php echo htmlspecialchars($pct, ENT_QUOTES, 'UTF-8'); ?>%</label>
 <?php endforeach; ?>
+<?php if (itm_hotel_booking_portal_show_internal_rates_from_settings($settings)): ?>
+<?php foreach (itm_hotel_booking_internal_rate_definitions() as $internalOpt):
+    $internalCode = (string) ($internalOpt['code'] ?? '');
+    if ($internalCode === '') {
+        continue;
+    }
+    $internalId = 'hb-rate-internal-' . $internalCode;
+    $checked = (($occupancy['internal_rate_code'] ?? '') === $internalCode) ? ' checked' : '';
+?>
+<label class="hb-filter-check"><input type="radio" class="hb-rate-internal" name="internal_rate_code" id="<?php echo htmlspecialchars($internalId, ENT_QUOTES, 'UTF-8'); ?>" value="<?php echo htmlspecialchars($internalCode, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $checked; ?>> <?php echo htmlspecialchars((string) ($internalOpt['label'] ?? $internalCode), ENT_QUOTES, 'UTF-8'); ?> — price 0</label>
+<?php endforeach; ?>
+<label class="hb-filter-check"><input type="radio" class="hb-rate-internal" name="internal_rate_code" id="hb-rate-internal-none" value=""<?php echo empty($occupancy['internal_rate_code']) ? ' checked' : ''; ?>> Standard rate</label>
+<?php endif; ?>
 </fieldset>
 <div class="hb-rates-codes">
 <?php foreach ($codeRateOptions as $codeOpt):
@@ -727,6 +744,7 @@ window.HB_SELECT_ROOM = <?php echo json_encode(array_merge([
 ], itm_hotel_booking_portal_public_settings_for_js($settings)), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-money.js"></script>
+<script src="<?php echo APPURL; ?>/js/hotel-booking-date-format.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-gallery.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-select-room.js"></script>
 </body>

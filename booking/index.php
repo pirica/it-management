@@ -203,11 +203,13 @@ window.HB_HOTELS = <?php echo json_encode($hotels, JSON_UNESCAPED_UNICODE | JSON
 window.HB_SETTINGS = <?php echo json_encode($hbSettingsPublic, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-money.js"></script>
+<script src="<?php echo APPURL; ?>/js/hotel-booking-date-format.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-gallery.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-amenity-icons.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-gallery.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-public.js?v=<?php echo $hbPublicJsVer; ?>"></script>
 <script src="<?php echo htmlspecialchars(BASE_URL . 'js/hotel-date-input.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script src="<?php echo APPURL; ?>/js/hotel-booking-date-format.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-dates.js"></script>
 </body>
 </html>

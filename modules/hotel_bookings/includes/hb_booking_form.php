@@ -151,6 +151,25 @@ if (!function_exists('hb_booking_compute_room_payment')) {
     }
 }
 
+if (!function_exists('hb_booking_compute_suggested_payment')) {
+    function hb_booking_compute_suggested_payment($conn, $companyId, $roomId, $checkIn, $checkOut, $internalRateCode = '')
+    {
+        $code = itm_hotel_booking_normalize_internal_rate_code($internalRateCode);
+        $roomPayment = hb_booking_compute_room_payment($conn, $companyId, $roomId, $checkIn, $checkOut);
+        if ($code === 'comp') {
+            return 0.0;
+        }
+        if ($code === 'use') {
+            $settings = itm_hotel_booking_settings_row($conn, (int) $companyId) ?: [];
+            $taxRate = (float) ($settings['tourist_tax_per_person_per_night'] ?? 0);
+            $nights = itm_hotel_booking_portal_stay_nights($checkIn, $checkOut);
+            $occupancy = ['rooms' => 1, 'adults' => 2, 'children' => 0, 'babies' => 0];
+            return itm_hotel_booking_portal_tourist_tax_amount($occupancy, $nights, $taxRate);
+        }
+        return $roomPayment;
+    }
+}
+
 if (!function_exists('hb_booking_resolve_status_ids_from_post')) {
     function hb_booking_resolve_status_ids_from_post($conn, $companyId, $checkIn, $checkOut, array $post)
     {
@@ -234,6 +253,7 @@ if (!function_exists('hb_booking_render_form_fields')) {
         $presentId = (int) ($row['present_status_id'] ?? 0);
         $historyId = (int) ($row['history_status_id'] ?? 0);
         $portalRatePlanId = (int) ($row['portal_rate_plan_id'] ?? 0);
+        $internalRateCode = itm_hotel_booking_normalize_internal_rate_code($row['internal_rate_code'] ?? '');
         $notes = (string) ($row['notes'] ?? '');
         $colorSeed = (int) ($row['id'] ?? 0);
         if ($colorSeed < 1) {
@@ -293,6 +313,21 @@ if (!function_exists('hb_booking_render_form_fields')) {
         echo '<div class="form-group"><label>Check-out</label>';
         itm_render_hotel_date_input('check_out', 'hb-booking-check-out', $row['check_out'] ?? '', ['required' => true, 'min' => $todayMin]);
         echo '</div>';
+        echo '</div>';
+
+        echo '<div class="form-group"><label for="hb-booking-internal-rate">Internal rate</label>';
+        echo '<select name="internal_rate_code" id="hb-booking-internal-rate" class="form-control">';
+        echo '<option value="">— Standard —</option>';
+        foreach (itm_hotel_booking_internal_rate_definitions() as $def) {
+            $code = (string) ($def['code'] ?? '');
+            if ($code === '') {
+                continue;
+            }
+            $sel = $code === $internalRateCode ? ' selected' : '';
+            echo '<option value="' . sanitize($code) . '"' . $sel . '>' . sanitize((string) ($def['label'] ?? $code)) . '</option>';
+        }
+        echo '</select>';
+        echo '<p class="text-muted" style="font-size:.85rem;margin-top:4px;"><strong>USE</strong> waives room charges only; <strong>COMP</strong> waives all charges.</p>';
         echo '</div>';
 
         echo '<div class="form-group"><label>Payment amount</label>';

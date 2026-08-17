@@ -37,7 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $checkOut = itm_parse_date_input($_POST['check_out'] ?? '') ?: '';
     $notes = trim((string) ($_POST['notes'] ?? ''));
     $active = isset($_POST['active']) ? 1 : 0;
-    $computedPayment = hb_booking_compute_room_payment($conn, $company_id, $roomId, $checkIn, $checkOut);
+    $internalRateCode = itm_hotel_booking_normalize_internal_rate_code($_POST['internal_rate_code'] ?? '');
+    $computedPayment = hb_booking_compute_suggested_payment($conn, $company_id, $roomId, $checkIn, $checkOut, $internalRateCode);
     $paymentAmount = hb_booking_parse_payment_amount($_POST['payment_amount'] ?? '', $computedPayment);
     $statusIds = hb_booking_resolve_status_ids_from_post($conn, $company_id, $checkIn, $checkOut, $_POST);
     $fs = (int) ($statusIds['future_status_id'] ?? 0);
@@ -54,11 +55,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Room overlap for selected dates.';
     } else {
         $updatedBy = (int) ($_POST['updated_by'] ?? $employee_id);
-        $upd = mysqli_prepare($conn, 'UPDATE hotel_bookings SET customer_id = ?, room_id = ?, check_in = ?, check_out = ?, payment_amount = ?, future_status_id = NULLIF(?,0), present_status_id = NULLIF(?,0), history_status_id = NULLIF(?,0), portal_rate_plan_id = NULLIF(?,0), notes = ?, booking_color = ?, active = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
+        $upd = mysqli_prepare($conn, 'UPDATE hotel_bookings SET customer_id = ?, room_id = ?, check_in = ?, check_out = ?, payment_amount = ?, future_status_id = NULLIF(?,0), present_status_id = NULLIF(?,0), history_status_id = NULLIF(?,0), portal_rate_plan_id = NULLIF(?,0), internal_rate_code = ?, notes = ?, booking_color = ?, active = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
         if ($upd) {
             mysqli_stmt_bind_param(
                 $upd,
-                'iissdiiiissiii',
+                'iissdiiiisssiii',
                 $customerId,
                 $roomId,
                 $checkIn,
@@ -68,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ps,
                 $hs,
                 $portalRatePlanId,
+                $internalRateCode,
                 $notes,
                 $bookingColor,
                 $active,
@@ -91,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $formRow['present_status_id'] = $ps;
     $formRow['history_status_id'] = $hs;
     $formRow['portal_rate_plan_id'] = $portalRatePlanId;
+    $formRow['internal_rate_code'] = $internalRateCode;
     $formRow['notes'] = $notes;
     $formRow['booking_color'] = $bookingColor;
     $formRow['active'] = $active;

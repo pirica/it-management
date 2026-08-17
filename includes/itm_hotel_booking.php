@@ -4047,7 +4047,7 @@ if (!function_exists('itm_hotel_booking_portal_checkout_breakdown')) {
     $roomCharges = itm_hotel_booking_portal_room_charges_subtotal($basePerNight, $checkIn, $checkOut, $occupancy, $discountPercent, $draft, $conn, $companyId);
     $taxRate = max(0.0, (float) $touristTaxPerPersonPerNight);
     $touristTax = itm_hotel_booking_portal_tourist_tax_amount($occupancy, $nights, $taxRate);
-    return [
+    $breakdown = [
       'nights' => $nights,
       'room_charges' => $roomCharges,
       'complimentary_credit' => $complimentaryCredit,
@@ -4056,6 +4056,8 @@ if (!function_exists('itm_hotel_booking_portal_checkout_breakdown')) {
       'total' => round($roomCharges + $touristTax, 2),
       'requires_approval' => ($conn && $companyId > 0) ? itm_hotel_booking_portal_draft_requires_approval($conn, $companyId, $draft) : false,
     ];
+    $internalCode = itm_hotel_booking_normalize_internal_rate_code($draft['internal_rate_code'] ?? ($occupancy['internal_rate_code'] ?? ''));
+    return itm_hotel_booking_apply_internal_rate_to_breakdown($breakdown, $internalCode);
   }
 }
 
@@ -5872,10 +5874,19 @@ if (!function_exists('itm_hotel_booking_portal_public_settings_for_js')) {
   function itm_hotel_booking_portal_public_settings_for_js($settings) {
     $settings = is_array($settings) ? $settings : [];
     $money = itm_hotel_booking_portal_money_format_options_from_settings($settings);
+    $enabled = itm_hotel_booking_portal_datetime_format_enabled_map($settings);
     return [
       'money_symbol' => $money['symbol'],
       'money_suffix' => !empty($money['suffix']) ? 1 : 0,
       'money_prefix' => empty($money['suffix']) ? 1 : 0,
+      'date_format' => itm_hotel_booking_portal_date_format_from_settings($settings),
+      'time_format' => itm_hotel_booking_portal_time_format_from_settings($settings),
+      'datetime_format_default' => itm_hotel_booking_portal_datetime_format_default_from_settings($settings),
+      'datetime_european1_enabled' => !empty($enabled['european1']) ? 1 : 0,
+      'datetime_european2_enabled' => !empty($enabled['european2']) ? 1 : 0,
+      'datetime_iso_enabled' => !empty($enabled['iso']) ? 1 : 0,
+      'datetime_readable_enabled' => !empty($enabled['readable']) ? 1 : 0,
+      'show_internal_rates' => itm_hotel_booking_portal_show_internal_rates_from_settings($settings) ? 1 : 0,
     ];
   }
 }
@@ -5894,6 +5905,239 @@ if (!function_exists('itm_hotel_booking_portal_hide_upgrade_upsell_when_multi_ro
       return true;
     }
     return !empty($settings['portal_hide_upgrade_upsell_when_multi_room']);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_internal_rate_definitions')) {
+  function itm_hotel_booking_internal_rate_definitions() {
+    return [
+      [
+        'code' => 'use',
+        'label' => 'HOUSE USE (USE)',
+        'aliases' => ['USE', 'HOUSE_USE', 'HOUSEUSE'],
+        'waive_scope' => 'room_only',
+      ],
+      [
+        'code' => 'comp',
+        'label' => 'COMPLIMENTARY (COMP)',
+        'aliases' => ['COMP', 'COMPIMENTARY', 'COMPLIMENTARY'],
+        'waive_scope' => 'all',
+      ],
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_normalize_internal_rate_code')) {
+  function itm_hotel_booking_normalize_internal_rate_code($raw) {
+    $text = strtoupper(preg_replace('/[^A-Za-z0-9_]/', '', (string) $raw));
+    if ($text === '') {
+      return '';
+    }
+    foreach (itm_hotel_booking_internal_rate_definitions() as $def) {
+      $code = (string) ($def['code'] ?? '');
+      if ($code !== '' && $text === strtoupper($code)) {
+        return $code;
+      }
+      foreach ((array) ($def['aliases'] ?? []) as $alias) {
+        if ($text === strtoupper((string) $alias)) {
+          return $code;
+        }
+      }
+    }
+    return '';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_internal_rate_waive_scope')) {
+  function itm_hotel_booking_internal_rate_waive_scope($code) {
+    $code = itm_hotel_booking_normalize_internal_rate_code($code);
+    if ($code === '') {
+      return 'none';
+    }
+    foreach (itm_hotel_booking_internal_rate_definitions() as $def) {
+      if ((string) ($def['code'] ?? '') === $code) {
+        return (string) ($def['waive_scope'] ?? 'none');
+      }
+    }
+    return 'none';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_internal_rate_label')) {
+  function itm_hotel_booking_internal_rate_label($code) {
+    $code = itm_hotel_booking_normalize_internal_rate_code($code);
+    if ($code === '') {
+      return '';
+    }
+    foreach (itm_hotel_booking_internal_rate_definitions() as $def) {
+      if ((string) ($def['code'] ?? '') === $code) {
+        return (string) ($def['label'] ?? $code);
+      }
+    }
+    return $code;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_show_internal_rates_from_settings')) {
+  function itm_hotel_booking_portal_show_internal_rates_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    return !empty($settings['portal_show_internal_rates']);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_parse_internal_rate_code')) {
+  function itm_hotel_booking_portal_parse_internal_rate_code($source, $settings, $allowGuest = true) {
+    if (!is_array($source)) {
+      return '';
+    }
+    $settings = is_array($settings) ? $settings : [];
+    $fromField = itm_hotel_booking_normalize_internal_rate_code($source['internal_rate_code'] ?? '');
+    if ($fromField !== '') {
+      if ($allowGuest && !itm_hotel_booking_portal_show_internal_rates_from_settings($settings)) {
+        return '';
+      }
+      return $fromField;
+    }
+    if (!$allowGuest || !itm_hotel_booking_portal_show_internal_rates_from_settings($settings)) {
+      return '';
+    }
+    foreach (['promo_code', 'group_code', 'corporate_account', 'member_account'] as $key) {
+      $alias = itm_hotel_booking_normalize_internal_rate_code($source[$key] ?? '');
+      if ($alias !== '') {
+        return $alias;
+      }
+    }
+    return '';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_apply_internal_rate_to_breakdown')) {
+  function itm_hotel_booking_apply_internal_rate_to_breakdown(array $breakdown, $internalRateCode) {
+    $scope = itm_hotel_booking_internal_rate_waive_scope($internalRateCode);
+    if ($scope === 'none') {
+      return $breakdown;
+    }
+    if ($scope === 'room_only') {
+      $breakdown['room_charges'] = 0.0;
+      $breakdown['complimentary_credit'] = 0.0;
+      $breakdown['total'] = round((float) ($breakdown['tourist_tax'] ?? 0), 2);
+      return $breakdown;
+    }
+    $breakdown['room_charges'] = 0.0;
+    $breakdown['complimentary_credit'] = 0.0;
+    $breakdown['tourist_tax'] = 0.0;
+    $breakdown['tourist_tax_per_person_per_night'] = 0.0;
+    $breakdown['total'] = 0.0;
+    return $breakdown;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_date_format_from_settings')) {
+  function itm_hotel_booking_portal_date_format_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $fmt = strtolower(trim((string) ($settings['portal_date_format'] ?? 'european_ddmmyyyy')));
+    if (!in_array($fmt, ['european_ddmmyyyy', 'us_mmddyyyy', 'iso_yyyymmdd'], true)) {
+      return 'european_ddmmyyyy';
+    }
+    return $fmt;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_time_format_from_settings')) {
+  function itm_hotel_booking_portal_time_format_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $fmt = strtolower(trim((string) ($settings['portal_time_format'] ?? 'h24')));
+    return $fmt === 'h12' ? 'h12' : 'h24';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_datetime_format_enabled_map')) {
+  function itm_hotel_booking_portal_datetime_format_enabled_map($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    return [
+      'european1' => !empty($settings['portal_datetime_european1_enabled']),
+      'european2' => array_key_exists('portal_datetime_european2_enabled', $settings)
+        ? !empty($settings['portal_datetime_european2_enabled'])
+        : true,
+      'iso' => !empty($settings['portal_datetime_iso_enabled']),
+      'readable' => !empty($settings['portal_datetime_readable_enabled']),
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_datetime_format_default_from_settings')) {
+  function itm_hotel_booking_portal_datetime_format_default_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $enabled = itm_hotel_booking_portal_datetime_format_enabled_map($settings);
+    $default = strtolower(trim((string) ($settings['portal_datetime_format_default'] ?? 'european2')));
+    if (!in_array($default, ['european1', 'european2', 'iso', 'readable'], true)) {
+      $default = 'european2';
+    }
+    if (!empty($enabled[$default])) {
+      return $default;
+    }
+    foreach (['european2', 'european1', 'readable', 'iso'] as $candidate) {
+      if (!empty($enabled[$candidate])) {
+        return $candidate;
+      }
+    }
+    return 'european2';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_format_date_display')) {
+  function itm_hotel_booking_portal_format_date_display($rawValue, $settings = null) {
+    $canonical = itm_parse_date_input($rawValue);
+    if ($canonical === null) {
+      $text = trim((string) $rawValue);
+      return ($text === '' || $text === '0000-00-00') ? '' : $text;
+    }
+    $dt = DateTimeImmutable::createFromFormat('!Y-m-d', $canonical);
+    if (!$dt instanceof DateTimeImmutable) {
+      return trim((string) $rawValue);
+    }
+    $fmt = itm_hotel_booking_portal_date_format_from_settings(is_array($settings) ? $settings : []);
+    if ($fmt === 'us_mmddyyyy') {
+      return $dt->format('m/d/Y');
+    }
+    if ($fmt === 'iso_yyyymmdd') {
+      return $dt->format('Y-m-d');
+    }
+    return $dt->format('d/m/Y');
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_format_datetime_display')) {
+  function itm_hotel_booking_portal_format_datetime_display($rawValue, $settings = null) {
+    $settings = is_array($settings) ? $settings : [];
+    $raw = trim((string) $rawValue);
+    if ($raw === '' || $raw === '0000-00-00 00:00:00') {
+      return '';
+    }
+    $canonical = function_exists('itm_parse_datetime_input') ? itm_parse_datetime_input($raw) : null;
+    if ($canonical === null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw)) {
+      $canonical = $raw . ' 00:00:00';
+    }
+    if ($canonical === null) {
+      return $raw;
+    }
+    $dt = DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', $canonical);
+    if (!$dt instanceof DateTimeImmutable) {
+      return $raw;
+    }
+    $style = itm_hotel_booking_portal_datetime_format_default_from_settings($settings);
+    $use12 = itm_hotel_booking_portal_time_format_from_settings($settings) === 'h12';
+    $timeFmt = $use12 ? 'g:i A' : 'H:i';
+    if ($style === 'european1') {
+      return $dt->format('d/m/Y ' . $timeFmt);
+    }
+    if ($style === 'iso') {
+      return gmdate('Y-m-d\TH:i:s\Z', $dt->getTimestamp());
+    }
+    if ($style === 'readable') {
+      return $dt->format('j M Y, ' . $timeFmt);
+    }
+    return strtoupper($dt->format('d/M/Y ' . $timeFmt));
   }
 }
 
@@ -6493,6 +6737,10 @@ if (!function_exists('itm_hotel_booking_portal_insert_booking_locked')) {
     $historyStatusId = (int) $historyStatusId;
     $nested = !empty($options['nested']);
     $guestConfirmationCode = itm_hotel_booking_normalize_guest_confirmation_code($options['guest_confirmation_code'] ?? '');
+    $internalRateCode = itm_hotel_booking_normalize_internal_rate_code($options['internal_rate_code'] ?? '');
+    if ($internalRateCode === '') {
+      $internalRateCode = '';
+    }
     if ($guestConfirmationCode === '' && $companyId > 0) {
       $guestConfirmationCode = itm_hotel_booking_generate_guest_confirmation_code($conn, $companyId);
     }
@@ -6538,7 +6786,7 @@ if (!function_exists('itm_hotel_booking_portal_insert_booking_locked')) {
 
     $ins = mysqli_prepare(
       $conn,
-      'INSERT INTO hotel_bookings (company_id, customer_id, room_id, check_in, check_out, payment_amount, guest_confirmation_code, auth2, portal_rate_plan_id, notes, booking_color, future_status_id, present_status_id, history_status_id, active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), 1, NOW())'
+      'INSERT INTO hotel_bookings (company_id, customer_id, room_id, check_in, check_out, payment_amount, guest_confirmation_code, auth2, portal_rate_plan_id, internal_rate_code, notes, booking_color, future_status_id, present_status_id, history_status_id, active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), ?, ?, ?, NULLIF(?,0), NULLIF(?,0), NULLIF(?,0), 1, NOW())'
     );
     if (!$ins) {
       if (!$nested) {
@@ -6548,7 +6796,7 @@ if (!function_exists('itm_hotel_booking_portal_insert_booking_locked')) {
     }
     mysqli_stmt_bind_param(
       $ins,
-      'iiissdssissiii',
+      'iiissdssisssiii',
       $companyId,
       $customerId,
       $roomId,
@@ -6558,6 +6806,7 @@ if (!function_exists('itm_hotel_booking_portal_insert_booking_locked')) {
       $guestConfirmationCode,
       $auth2,
       $portalRatePlanId,
+      $internalRateCode,
       $notes,
       $bookingColor,
       $futureStatusId,
@@ -6613,7 +6862,10 @@ if (!function_exists('itm_hotel_booking_portal_insert_stay_bookings_locked')) {
     if ($guestConfirmationCode === '') {
       return ['ok' => false, 'error' => 'Booking failed.'];
     }
-    $insertOptions = ['guest_confirmation_code' => $guestConfirmationCode];
+    $insertOptions = [
+      'guest_confirmation_code' => $guestConfirmationCode,
+      'internal_rate_code' => itm_hotel_booking_normalize_internal_rate_code($draft['internal_rate_code'] ?? ''),
+    ];
     if (count($roomLines) < 2) {
       $roomId = (int) ($draft['room_id'] ?? ($roomLines[0]['room_id'] ?? 0));
       $single = itm_hotel_booking_portal_insert_booking_locked(
