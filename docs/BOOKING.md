@@ -131,11 +131,11 @@ After lookup:
 
 | Table | Portal use |
 |-------|------------|
-| `hotel_booking_settings` | `public_portal_enabled`, welcome copy, tourist tax, free-cancellation days before check-in (default 5), Select Dates calendar advance threshold `calendar_month_advance_days_left` (default 3), `show_discount_strikethrough` (default 1 — list-price strikethrough on Step 1/2), reviews URL |
+| `hotel_booking_settings` | `public_portal_enabled`, welcome copy, tourist tax, free-cancellation days before check-in (default 5), Select Dates calendar advance threshold `calendar_month_advance_days_left` (default 3), `show_discount_strikethrough` (default 1 — list-price strikethrough on Step 1/2), reviews URL, **`portal_complimentary_min_rooms_paid`** / **`portal_complimentary_rooms_free`** (multi-room complimentary credit; `0` min = disabled) |
 | `hotel_booking_hotels` | Property name, location, phone, website, currency, check-in/out times, **portal step pricing** (`portal_breakfast_*`, `portal_child_nightly_supplement`, `portal_extra_adult_supplement_percent`, `portal_pet_daily_fee`) |
 | `hotel_booking_room_type_base_prices` | Base price per night per room type and hotel |
 | `hotel_booking_rooms` | Inventory, link to room type |
-| `booking_rooms_types` | Type name, bed summary, upgrade pricing |
+| `booking_rooms_types` | Type name, bed summary, upgrade pricing, **portal rule columns** (occupancy caps, stay/CTA/CTD, pricing overrides with `NULL` = inherit hotel, `portal_bookable`, `requires_approval`, pets, connecting room type, mixed-type groups) |
 | `hotel_bookings` | Reservations; segment status FKs; **`guest_confirmation_code`** (opaque 10-char guest-facing confirmation); **`auth2`** (12-char complex guest manage code); `notes` (rate plan, occupancy meta, comments) |
 | `hotel_bookings_future` / `present` / `history` | Status lookups (`PENDING`, `CANCELLED`, etc.) — no ENUM |
 | `customers` | Guest PII; ensured on book via `itm_hotel_booking_ensure_customer_for_portal()` (repeat book by email refreshes `name` / `phone`) |
@@ -146,6 +146,21 @@ After lookup:
 **Segment resolution:** `itm_hotel_booking_resolve_segment(check_in, check_out)` picks which status column applies (`future_status_id`, `present_status_id`, `history_status_id`). Online cancel only when segment is `future` and status is not already `CANCELLED`.
 
 **Notes contract:** `itm_hotel_booking_portal_build_booking_notes()` stores rate plan, guest comments, upgrade lines, and a machine-readable occupancy line (`Occupancy: rooms=…`) parsed on confirmation display.
+
+### Room type portal rules (guest enforcement)
+
+Rules live on `booking_rooms_types` (fresh installs: `db/01_schema.sql` only — no migration file). Helpers in `includes/itm_hotel_booking.php`:
+
+| Area | Behaviour |
+|------|-----------|
+| Step 1 (`rooms.php`) | `portal_bookable`, `itm_hotel_booking_portal_room_type_validate_stay()`, per-slot `cardQuoteOccupancy` for fits + quote, mixed-type lock when `allow_mixed_types_in_group = 0`, `max_rooms_per_booking`, connecting-room banner |
+| Step 2 (`select-rate.php`) | Re-validates bookable + stay for selected type |
+| Step 3 (`customize.php`) | Pets block only when **all** rated lines allow pets (`itm_hotel_booking_portal_draft_pet_policy()`); otherwise “No special requests available.” |
+| Checkout | `requires_approval` → “Subject to hotel approval”; complimentary credit from settings when room count exceeds threshold |
+| Pricing overrides | `portal_*` columns on the type row; `NULL` inherits `hotel_booking_hotels` portal pricing |
+| Multi-room guests | `itm_hotel_booking_portal_split_occupancy_for_room_line()` splits adults/children/babies across rooms for quotes and banners |
+
+Regression: `php scripts/run_tests.php --filter HotelBookingRoomTypePortalRules` and `php scripts/verify_hotel_booking.php`.
 
 ---
 

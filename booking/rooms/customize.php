@@ -39,7 +39,11 @@ $hotel = ['id' => $hotelId, 'name' => $room['hotel_name'] ?? ''];
 $currency = $room['currency_code'] ?? 'EUR';
 
 $portalPricing = itm_hotel_booking_portal_hotel_pricing($conn, $company_id, $hotelId);
-$petDailyFee = (float) ($portalPricing['pet_daily_fee'] ?? 0);
+$petPolicy = itm_hotel_booking_portal_draft_pet_policy($conn, $company_id, $hotelId, $draft);
+$petsAllowed = !empty($petPolicy['allowed']);
+$petDailyFee = (float) ($petPolicy['daily_fee'] ?? $portalPricing['pet_daily_fee'] ?? 0);
+$petMaxWeight = (int) ($petPolicy['max_weight_kg'] ?? 30);
+$petNonRefundable = (float) ($petPolicy['non_refundable_fee'] ?? $petDailyFee);
 $travelingWithPet = !empty($draft['traveling_with_pet']) ? 1 : 0;
 $serviceAnimal = !empty($draft['service_animal']) ? 1 : 0;
 $additionalComments = (string) ($draft['additional_comments'] ?? '');
@@ -296,15 +300,19 @@ if ($upgradeOffer) {
 
 <section class="hb-checkout-section">
 <h2 class="hb-checkout-section-title">Special requests</h2>
+<?php if (!$petsAllowed): ?>
+<p class="hb-checkout-hint">No special requests available.</p>
+<?php else: ?>
 <label class="hb-filter-check hb-checkout-check">
 <input type="checkbox" name="traveling_with_pet" id="hb-traveling-with-pet" value="1"<?php echo $travelingWithPet ? ' checked' : ''; ?>>
 <span>Traveling with a pet</span>
 </label>
-<p class="hb-checkout-hint">Pets allowed, <?php echo htmlspecialchars(number_format($petDailyFee, 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>€ non-refundable fee, 30 kg maximum, Daily Fee Applies, fee in euros</p>
+<p class="hb-checkout-hint">Pets allowed, <?php echo htmlspecialchars(number_format($petNonRefundable, 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>€ non-refundable fee, <?php echo (int) $petMaxWeight; ?> kg maximum, daily fee <?php echo htmlspecialchars(number_format($petDailyFee, 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>€ per night</p>
 <label class="hb-filter-check hb-checkout-check">
 <input type="checkbox" name="service_animal" value="1"<?php echo $serviceAnimal ? ' checked' : ''; ?>>
 <span>Traveling with a service animal</span>
 </label>
+<?php endif; ?>
 </section>
 
 <section class="hb-checkout-section">
@@ -345,6 +353,7 @@ window.HB_CUSTOMIZE_UPGRADE = <?php echo json_encode([
     'currencyCode' => $currency,
     'hasUpgradeCheckbox' => (bool) $upgradeOffer,
     'petDailyFee' => $petDailyFee,
+    'petsAllowed' => $petsAllowed,
     'initialTravelingWithPet' => (bool) $travelingWithPet,
     'baseRoomTitle' => $baseReservationRoomTitle,
     'upgradeRoomTitle' => $upgradeReservationRoomTitle,
