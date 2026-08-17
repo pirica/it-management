@@ -333,6 +333,7 @@ require_once ROOT_PATH . 'includes/ui_config.php';
 require_once ROOT_PATH . 'includes/itm_api_rate_limit.php';
 require_once ROOT_PATH . 'includes/itm_login_attempt_identifier.php';
 require_once ROOT_PATH . 'includes/itm_ldap_auth.php';
+require_once ROOT_PATH . 'includes/itm_vault_org_recovery.php';
 require_once ROOT_PATH . 'includes/itm_password_reset.php';
 require_once ROOT_PATH . 'includes/itm_explorer_paths.php';
 require_once ROOT_PATH . 'includes/audit_functions.php';

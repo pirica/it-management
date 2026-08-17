@@ -4312,6 +4312,27 @@ CREATE TRIGGER `trg_equipment_lifecycle_events_audit_delete` AFTER DELETE ON `eq
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'equipment_lifecycle_events', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'event_type', OLD.`event_type`), NULL, @app_ip_address, @app_user_agent);
 END$$
 
+DROP TRIGGER IF EXISTS `trg_vault_org_recovery_requests_audit_insert`$$
+
+CREATE TRIGGER `trg_vault_org_recovery_requests_audit_insert` AFTER INSERT ON `vault_org_recovery_requests` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vault_org_recovery_requests', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'status', NEW.`status`, 'legal_reference', NEW.`legal_reference`, 'consent_reference', NEW.`consent_reference`, 'requester_employee_id', NEW.`requester_employee_id`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_vault_org_recovery_requests_audit_update`$$
+
+CREATE TRIGGER `trg_vault_org_recovery_requests_audit_update` AFTER UPDATE ON `vault_org_recovery_requests` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vault_org_recovery_requests', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'status', OLD.`status`, 'legal_reference', OLD.`legal_reference`, 'completed_by_employee_id', OLD.`completed_by_employee_id`, 'completed_at', OLD.`completed_at`), JSON_OBJECT('id', NEW.`id`, 'status', NEW.`status`, 'legal_reference', NEW.`legal_reference`, 'completed_by_employee_id', NEW.`completed_by_employee_id`, 'completed_at', NEW.`completed_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_vault_org_recovery_requests_audit_delete`$$
+
+CREATE TRIGGER `trg_vault_org_recovery_requests_audit_delete` AFTER DELETE ON `vault_org_recovery_requests` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'vault_org_recovery_requests', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'status', OLD.`status`, 'employee_id', OLD.`employee_id`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
 DELIMITER ;
 
 SET FOREIGN_KEY_CHECKS=1;

@@ -65,6 +65,7 @@ $data = [
     'sso_jit_enabled' => 0,
     'sso_provider' => 'ldap',
     'asset_disposal_approval_required' => 0,
+    'vault_org_recovery_enabled' => 0,
 ];
 $ldapConfig = itm_ldap_default_config();
 $samlConfig = function_exists('itm_saml_default_config') ? itm_saml_default_config() : [];
@@ -121,6 +122,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ssoProviderRaw = strtolower(trim((string)($_POST['sso_provider'] ?? 'ldap')));
     $ssoProvider = in_array($ssoProviderRaw, ['ldap', 'saml'], true) ? $ssoProviderRaw : 'ldap';
     $assetDisposalApprovalRequired = ($is_edit && isset($_POST['asset_disposal_approval_required'])) ? 1 : 0;
+    $vaultOrgRecoveryEnabled = ($is_edit && isset($_POST['vault_org_recovery_enabled'])) ? 1 : 0;
+    $vaultOrgRecoveryPassphrase = (string)($_POST['vault_org_recovery_passphrase'] ?? '');
     $ldapHost = trim((string)($_POST['ldap_host'] ?? ''));
     $ldapPort = (int)($_POST['ldap_port'] ?? 389);
     $ldapBindDn = trim((string)($_POST['ldap_bind_dn'] ?? ''));
@@ -152,6 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'sso_jit_enabled' => $ssoJitEnabled,
         'sso_provider' => $ssoProvider,
         'asset_disposal_approval_required' => $assetDisposalApprovalRequired,
+        'vault_org_recovery_enabled' => $vaultOrgRecoveryEnabled,
     ];
 
     if ($is_edit) {
@@ -210,14 +214,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $encryptedValue = (string)($old['sso_config_json_encrypted'] ?? '');
             }
             if ($error === '') {
-            $sql = 'UPDATE companies SET company=?, incode=?, unit_no=?, city=?, country=?, phone=?, email=?, website=?, vat=?, comments=?, active=?, sso_enabled=?, sso_jit_enabled=?, sso_provider=?, sso_config_json_encrypted=?, asset_disposal_approval_required=? WHERE id=? AND id > 0';
+            $vaultPassphraseHash = (string)($old['vault_org_recovery_passphrase_hash'] ?? '');
+            if ($vaultOrgRecoveryPassphrase !== '') {
+                $newHash = itm_vault_org_recovery_hash_admin_passphrase($vaultOrgRecoveryPassphrase);
+                if ($newHash === null) {
+                    $error = 'Failed to hash recovery authorization passphrase.';
+                } else {
+                    $vaultPassphraseHash = $newHash;
+                }
+            } elseif ($vaultOrgRecoveryEnabled === 1 && $vaultPassphraseHash === '') {
+                $error = 'Set a recovery authorization passphrase before enabling org recovery.';
+            }
+            $vaultEscrowEncrypted = (string)($old['vault_org_recovery_escrow_key_encrypted'] ?? '');
+            if ($error === '' && $vaultOrgRecoveryEnabled === 1) {
+                $ensure = itm_vault_org_recovery_ensure_company_escrow_key($conn, $id, is_array($old) ? $old : null);
+                if (empty($ensure['ok'])) {
+                    $error = (string)($ensure['message'] ?? 'Failed to prepare company escrow key.');
+                } elseif (!empty($ensure['escrow_key_encrypted'])) {
+                    $vaultEscrowEncrypted = (string)$ensure['escrow_key_encrypted'];
+                }
+            }
+            if ($error === '') {
+            $sql = 'UPDATE companies SET company=?, incode=?, unit_no=?, city=?, country=?, phone=?, email=?, website=?, vat=?, comments=?, active=?, sso_enabled=?, sso_jit_enabled=?, sso_provider=?, sso_config_json_encrypted=?, asset_disposal_approval_required=?, vault_org_recovery_enabled=?, vault_org_recovery_passphrase_hash=?, vault_org_recovery_escrow_key_encrypted=? WHERE id=? AND id > 0';
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
-                mysqli_stmt_bind_param($stmt, 'ssssssssssiiissii', $company, $incode, $unit_no, $city, $country, $phone, $email, $website, $vat, $comments, $active, $ssoEnabled, $ssoJitEnabled, $ssoProvider, $encryptedValue, $assetDisposalApprovalRequired, $id);
+                mysqli_stmt_bind_param($stmt, 'ssssssssssiiissiissi', $company, $incode, $unit_no, $city, $country, $phone, $email, $website, $vat, $comments, $active, $ssoEnabled, $ssoJitEnabled, $ssoProvider, $encryptedValue, $assetDisposalApprovalRequired, $vaultOrgRecoveryEnabled, $vaultPassphraseHash, $vaultEscrowEncrypted, $id);
                 try {
                     if (mysqli_stmt_execute($stmt)) {
                         $auditData = $data;
                         $auditData['sso_config_json_encrypted'] = $ssoEnabled === 1 ? '[encrypted]' : '';
+                        $auditData['vault_org_recovery_passphrase_hash'] = $vaultPassphraseHash !== '' ? '[hashed]' : '';
+                        $auditData['vault_org_recovery_escrow_key_encrypted'] = $vaultEscrowEncrypted !== '' ? '[encrypted]' : '';
                         itm_log_audit($conn, 'companies', $id, 'UPDATE', $old, $auditData);
                         mysqli_stmt_close($stmt);
                         header('Location: index.php');
@@ -230,6 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mysqli_stmt_close($stmt);
             } else {
                 $error = 'Failed to update company.';
+            }
             }
             }
         } else {
@@ -346,6 +374,20 @@ if (!isset($crud_title)) {
                                 <span>Require admin approval for equipment disposal <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)($data['asset_disposal_approval_required'] ?? 0) === 1) ? '✅' : '❌'; ?></span></span>
                             </label>
                             <p class="form-hint" style="margin-top:6px;opacity:.85;">When enabled, disposal requests on equipment view stay pending until an administrator approves.</p>
+                        </div>
+                        <div class="card" style="margin-top:16px;padding:12px;">
+                            <h3 style="margin-top:0;">Vault Org Recovery</h3>
+                            <div class="form-group">
+                                <label class="itm-checkbox-control">
+                                    <input type="checkbox" name="vault_org_recovery_enabled" value="1" <?php echo (int)($data['vault_org_recovery_enabled'] ?? 0) === 1 ? 'checked' : ''; ?>>
+                                    <span>Enable tenant-controlled vault org recovery <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)($data['vault_org_recovery_enabled'] ?? 0) === 1) ? '✅' : '❌'; ?></span></span>
+                                </label>
+                                <p class="form-hint" style="margin-top:6px;opacity:.85;">Optional Legal/HR policy: employees may consent to an escrow snapshot; admins complete recovery with authorization passphrase + audit trail. Disables zero-knowledge lockout for consenting employees only.</p>
+                            </div>
+                            <div class="form-group">
+                                <label>Recovery authorization passphrase</label>
+                                <input type="password" name="vault_org_recovery_passphrase" value="" placeholder="<?php echo !empty($data['vault_org_recovery_passphrase_hash']) ? 'Leave blank to keep existing' : 'Required when enabling'; ?>" autocomplete="new-password">
+                            </div>
                         </div>
                         <div id="company-sso-ldap-panel">
                             <div class="form-group">

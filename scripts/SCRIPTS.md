@@ -998,6 +998,7 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 | `php scripts/verify_demo_module_restrictions.php` | Regression: seed admins (`Admin`, `Admin2`–`Admin5`) password + `itm_is_admin()`; demo users `demo1`–`demo5` single-module `has_module_access` / RBAC `can_view` + subprocess index probes (contract: `lib/itm_demo_module_restrictions_contract.php`) |
 | `php scripts/verify_employee_contact_email.php` | Regression: at least one of `work_email` / `personal_email` required (`includes/itm_employee_contact_email.php`); helper unit checks, create/edit static wiring, `fast_create_acc` both fields, disposable employee create |
 | `php scripts/verify_sso_ldap.php` | Regression: LDAP SSO schema columns (`companies.sso_*`, `employees.sso_subject`), `itm_ldap_encrypt_config` / `decrypt_config` round-trip, PHP `ldap` extension probe (N/A when missing), `sso-ldap.php` + `includes/itm_ldap_auth.php` helpers |
+| `php scripts/verify_vault_org_recovery.php` | Regression: vault org recovery schema, escrow crypto, consent + request + complete workflow (`includes/itm_vault_org_recovery.php`, `modules/vault_org_recovery/`, `user-config.php` consent hooks) |
 | `php scripts/fast_create_acc.php` | CLI `--seed-demo-bundle`; browser UI at `scripts/fast_create_acc.php` (catalog) |
 | `scripts/fast_create_acc_browser.php` | Browser alias — same UI as `scripts/fast_create_acc.php` |
 | `modules/employees/fast_create_acc.php` | Same UI via module toolbar 🚀; shared form in `fast_create_acc_browser.php` |

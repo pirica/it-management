@@ -126,6 +126,22 @@ Zero-knowledge design: the plaintext master key is **never** stored server-side.
 2. Create a **new** master key via Vault Security.
 3. Rebuild passwords, notes, bookmarks, contacts, and private files from scratch.
 
+### E. Optional tenant-controlled org recovery (Legal/HR)
+
+When a company enables **Vault Org Recovery** (`companies.vault_org_recovery_enabled`), employees may opt in on **Profile → Vault Security**:
+
+| Step | Actor | Detail |
+|------|-------|--------|
+| **Policy** | Admin | Companies → edit → **Vault Org Recovery** card: enable policy + set **recovery authorization passphrase** (bcrypt). Generates a per-company escrow key (encrypted at rest). |
+| **Consent** | Employee | Checkbox + optional policy reference (`employees.vault_org_recovery_consent_at`, `vault_org_recovery_consent_reference`). |
+| **Escrow** | Employee | On vault key create/change, if policy + consent: encrypt plaintext master key into `employees.vault_key_escrow_encrypted` via `includes/itm_vault_org_recovery.php`. |
+| **Request** | Admin | [Vault Org Recovery](http://localhost/it-management/modules/vault_org_recovery/index.php) — create request with **legal/HR reference**; requires consent + escrow. |
+| **Complete** | Admin | Enter authorization passphrase on request view; one-time master key display; escrow cleared; `vault_org_recovery_requests` row completed with full `audit_logs` triggers. |
+
+**Trade-off:** consenting employees are **not** fully zero-knowledge — admins with policy + passphrase can recover the master key under audit. Employees who do not consent keep zero-knowledge lockout (§2.A).
+
+Regression: `php scripts/verify_vault_org_recovery.php`. Migration: `db/migrations/vault_org_recovery.sql` (destructive — back up before apply).
+
 ---
 
 ## 3. Email integration
@@ -165,6 +181,8 @@ Same pattern as forgot-password, registration welcome mail, and employee onboard
 | `includes/itm_totp_helpers.php` | `PHPGangsta_GoogleAuthenticator`, encrypted `totp_secret` storage, verification helpers |
 | `includes/itm_vault_unlock.php` | Shared vault lock screen + unlock POST handler (master key + optional TOTP) |
 | `includes/itm_vault_master_key.php` | Re-encryption helpers during key change |
+| `includes/itm_vault_org_recovery.php` | Optional tenant org recovery policy, consent, escrow, admin request workflow |
+| `modules/vault_org_recovery/` | Admin recovery request inbox |
 | `includes/itm_email.php` | `itm_send_email()` transport + transactional template |
 | `modules/emails/` | Operator UI for send logs and SMTP configuration |
 | `modules/passwords/`, `modules/notes/`, … | Vault-gated modules consuming `$_SESSION['vault_key']` |
