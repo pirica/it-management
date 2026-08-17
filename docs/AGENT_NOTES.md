@@ -19,7 +19,9 @@ Canonical documentation that is not source code: upload maps, README assets, mod
 - **docs/COMPANY_MODULE_ACCESS.md** — admin-only multi-tenant module enablement, opt-out access rules, global registry catalogs, auto-registration self-discovery, and matrix AJAX settings.
 - **docs/LICENSE_MANAGEMENT.md** — software license tracking, lookup dependencies, localized dates and normalized price formatting, soft-delete audit meta details, and import/export layouts.
 - **docs/LIVE_CHAT.md** — Real-time messaging subsystem with Live Agent and Chat-with support, ticket/SLA integration, secure non-audited messaging, ephemeral typing presence, and local file/photo storage mapping.
+- **docs/TICKET_SLA_DASHBOARD.md** — SLA Command Center dashboard (`modules/ticket_sla_dashboard/`), breach columns on `tickets`, cron monitor, badges on ticket list/view, JSON API summary/list.
 - **docs/NOTIFICATIONS.md** — in-app notification center: `employee_notifications` table, `itm_notify_employee()` emitters, header bell API/JS, digest email runner.
+- **docs/APPROVAL_INBOX.md** — unified approval inbox: `approval_inbox_items` table, `includes/itm_approval_inbox.php` helpers, wired modules, regression script.
 - **docs/ORG_CHART.md** — interactive hierarchical org chart from self-referential reporting lines, recursive cycle loops detection, dynamic drag-and-drop AJAX persistence, and responsive layouts.
 - **docs/SYSTEM_STATUS.md** — Admin-only server diagnostics dashboard covering CPU/RAM/disk metrics, native Linux proc reporting vs Windows PowerShell fallbacks, and real-time SQL/on-disk storage caching.
 - **docs/BOOKING.md** — guest-facing `booking/` portal: four-step checkout, manage reservation (lookup, cancel, change contacts), ITM Hospitality admin modules, schema, local URLs, and review of strengths/gaps.

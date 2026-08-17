@@ -132,6 +132,7 @@ if (!isset($crud_title)) {
                             'assigned_to_employee_id' => 'Assigned To', 'equipment_id' => 'Related Equipment',
                             'due_date' => 'Due Date', 'first_response_at' => 'First Response', 'resolved_at' => 'Resolved At',
                             'sla_response_due_at' => 'SLA Response Due', 'sla_resolve_due_at' => 'SLA Resolve Due',
+                            'sla_response_breached_at' => 'SLA Response Breached', 'sla_resolve_breached_at' => 'SLA Resolve Breached',
                             'is_archived' => 'Archived', 'tickets_photos' => 'Photos',
                             'created_by' => 'Created By (Audit)', 'created_at' => 'Created At',
                             'updated_by' => 'Updated By', 'updated_at' => 'Updated At',
@@ -189,6 +190,10 @@ if (!isset($crud_title)) {
                                 <tr>
                                     <th style="width:220px;"><?php echo sanitize($label); ?></th>
                                     <td><?php echo ticket_render_lookup_badge((string)($item['priority_name'] ?? ''), (string)($item['priority_color'] ?? '')); ?></td>
+                                </tr>
+                                <tr>
+                                    <th style="width:220px;">SLA Status</th>
+                                    <td><?php echo itm_ticket_sla_render_badge($item); ?></td>
                                 </tr>
                                 <?php continue; ?>
                             <?php endif; ?>
