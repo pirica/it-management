@@ -428,6 +428,10 @@ body.hb-modal-open { overflow: hidden; }
 .hb-checkout-check { display: block; margin-bottom: 8px; }
 .hb-checkout-hint { margin: 0 0 16px; font-size: .85rem; color: var(--hb-muted); max-width: 40rem; }
 .hb-checkout-comments { width: 100%; max-width: 40rem; border: 1px solid var(--hb-border); padding: 10px; font-family: inherit; font-size: .9rem; resize: vertical; }
+.hb-checkout-select { width: 100%; max-width: 40rem; border: 1px solid var(--hb-border); padding: 10px; font-family: inherit; font-size: .9rem; background: #fff; }
+.hb-checkout-field-label { display: block; font-weight: 600; margin: 0 0 8px; font-size: .9rem; }
+.hb-accessible-room-banner { margin-bottom: 20px; }
+.hb-accessibility-pep-wrap { margin-top: 12px; }
 .hb-checkout-summary { background: #fff; border: 1px solid var(--hb-border); padding: 16px 20px; margin-bottom: 20px; border-radius: 4px; }
 .hb-checkout-total-line { font-size: 1.1rem; margin-bottom: 20px; }
 .hb-guest-form .form-group { margin-bottom: 14px; }

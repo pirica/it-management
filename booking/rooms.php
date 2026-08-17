@@ -147,7 +147,7 @@ $sql = 'SELECT r.*, COALESCE(bp.price_per_night, 0.00) AS price_per_night, t.nam
     t.portal_included_children_free, t.portal_single_occupancy_discount_percent,
     t.min_stay_nights, t.max_stay_nights, t.min_advance_booking_days, t.max_advance_booking_days,
     t.closed_to_arrival_days, t.closed_to_departure_days,
-    t.portal_bookable, t.requires_approval, t.adults_only, t.smoking_allowed, t.accessible_room,
+    t.portal_bookable, t.requires_approval, t.adults_only, t.smoking_allowed, t.accessible_room AS type_accessible_room,
     t.extra_bed_allowed, t.max_extra_beds, t.crib_included, t.pets_allowed, t.pet_max_weight_kg,
     t.pet_non_refundable_fee, t.portal_pet_daily_fee,
     t.filter_tags, t.details_bullets
@@ -252,7 +252,7 @@ foreach ($rooms as $room) {
             'child_max_age' => (int) ($room['child_max_age'] ?? 12),
             'adults_only' => !empty($room['adults_only']),
             'smoking_allowed' => !empty($room['smoking_allowed']),
-            'accessible_room' => !empty($room['accessible_room']),
+            'accessible_room' => itm_hotel_booking_portal_room_is_accessible($room),
             'crib_included' => !empty($room['crib_included']),
             'extra_bed_allowed' => !empty($room['extra_bed_allowed']),
             'connecting_type_code' => (string) ($connectingCard['connecting_type_code'] ?? ''),
@@ -499,6 +499,7 @@ if ($roomsNeeded > 1) {
         'occupancy' => $occupancy,
     ];
 }
+$showAccessibleBanner = itm_hotel_booking_portal_accessible_banner_enabled_from_settings($settings);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -548,6 +549,12 @@ if ($roomsNeeded > 1) {
 <span aria-hidden="true">💡</span>
 <span>Book direct for the best available rate and flexible stay options.</span>
 </div>
+<?php if ($showAccessibleBanner): ?>
+<div class="hb-rate-info-banner hb-accessible-room-banner" role="note">
+<span aria-hidden="true">♿</span>
+<span>Accessible rooms are available at this property. Use <strong>Room Filters</strong> and select <strong>Accessible room</strong> to narrow results.</span>
+</div>
+<?php endif; ?>
 
 <section class="hb-block hb-select-room-amenities">
 <h3>Amenities</h3>

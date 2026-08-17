@@ -117,6 +117,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $urlmybooking = $urlmybooking_norm;
     }
+    $portalAccessibleBanner = !empty($_POST['portal_accessible_banner_enabled']) ? 1 : 0;
+    $portalAccessibilityOptions = !empty($_POST['portal_accessibility_options_enabled']) ? 1 : 0;
+    $urlaccessibilitypep = trim((string) ($_POST['urlaccessibilitypep'] ?? ''));
+    if ($urlaccessibilitypep === '') {
+        $urlaccessibilitypep = 'https://localhost/it-management/booking/accessibility/pep.html';
+    }
+    $urlaccessibilitypep_norm = itm_hotel_booking_normalize_reviews_url($urlaccessibilitypep);
+    if ($urlaccessibilitypep_norm === '') {
+        $errors[] = 'Accessibility PEP URL must start with http:// or https://';
+    } else {
+        $urlaccessibilitypep = $urlaccessibilitypep_norm;
+    }
     $stripeEnabled = !empty($_POST['stripe_enabled']) ? 1 : 0;
     $stripeMode = trim((string) ($_POST['stripe_mode'] ?? 'test'));
     if ($stripeMode !== 'live') {
@@ -146,9 +158,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $sid = (int) ($row['id'] ?? 0);
     if (empty($errors)) {
-    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, stripe_enabled = ?, stripe_mode = ?, stripe_publishable_key = ?, stripe_secret_key_encrypted = ?, stripe_webhook_signing_secret_encrypted = ?, deposit_percent = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, portal_complimentary_min_rooms_paid = ?, portal_complimentary_rooms_free = ?, portal_confirmation_email_guest = ?, portal_confirmation_email_reservations = ?, portal_show_room_number_on_confirmation = ?, portal_hide_upgrade_upsell_when_multi_room = ?, portal_money_symbol = ?, portal_money_symbol_suffix = ?, portal_money_symbol_prefix = ?, portal_show_internal_rates = ?, portal_date_format = ?, portal_time_format = ?, portal_datetime_european1_enabled = ?, portal_datetime_european2_enabled = ?, portal_datetime_iso_enabled = ?, portal_datetime_readable_enabled = ?, portal_datetime_format_default = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
+    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, stripe_enabled = ?, stripe_mode = ?, stripe_publishable_key = ?, stripe_secret_key_encrypted = ?, stripe_webhook_signing_secret_encrypted = ?, deposit_percent = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, portal_complimentary_min_rooms_paid = ?, portal_complimentary_rooms_free = ?, portal_confirmation_email_guest = ?, portal_confirmation_email_reservations = ?, portal_show_room_number_on_confirmation = ?, portal_hide_upgrade_upsell_when_multi_room = ?, portal_money_symbol = ?, portal_money_symbol_suffix = ?, portal_money_symbol_prefix = ?, portal_show_internal_rates = ?, portal_date_format = ?, portal_time_format = ?, portal_datetime_european1_enabled = ?, portal_datetime_european2_enabled = ?, portal_datetime_iso_enabled = ?, portal_datetime_readable_enabled = ?, portal_datetime_format_default = ?, portal_accessible_banner_enabled = ?, portal_accessibility_options_enabled = ?, urlaccessibilitypep = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
     if ($upd) {
-        mysqli_stmt_bind_param($upd, 'iissssdssssssdiiiiiiiiisiiissiiiisssiii', $enabled, $stripeEnabled, $stripeMode, $stripePublishableKey, $stripeSecretEnc, $stripeWebhookEnc, $depositPercent, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $complimentaryMinRooms, $complimentaryRoomsFree, $confirmEmailGuest, $confirmEmailReservations, $showRoomNumberOnConfirmation, $hideUpgradeUpsellMultiRoom, $moneySymbol, $moneySymbolSuffix, $moneySymbolPrefix, $showInternalRates, $portalDateFormat, $portalTimeFormat, $dtEuropean1, $dtEuropean2, $dtIso, $dtReadable, $dtDefault, $urlmybooking, $employee_id, $sid, $company_id);
+        mysqli_stmt_bind_param($upd, 'iisssdssssssdiiiiiiiiiiisiiissiiiisssiisiii', $enabled, $stripeEnabled, $stripeMode, $stripePublishableKey, $stripeSecretEnc, $stripeWebhookEnc, $depositPercent, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $complimentaryMinRooms, $complimentaryRoomsFree, $confirmEmailGuest, $confirmEmailReservations, $showRoomNumberOnConfirmation, $hideUpgradeUpsellMultiRoom, $moneySymbol, $moneySymbolSuffix, $moneySymbolPrefix, $showInternalRates, $portalDateFormat, $portalTimeFormat, $dtEuropean1, $dtEuropean2, $dtIso, $dtReadable, $dtDefault, $portalAccessibleBanner, $portalAccessibilityOptions, $urlaccessibilitypep, $urlmybooking, $employee_id, $sid, $company_id);
         mysqli_stmt_execute($upd);
         mysqli_stmt_close($upd);
         header('Location: index.php?saved=1');
@@ -218,6 +230,23 @@ itm_hospitality_admin_layout_begin($crud_title);
 <label>Manage my booking URL</label>
 <input type="url" name="urlmybooking" class="form-control" maxlength="500" placeholder="https://localhost/it-management/booking/users/bookings.php" value="<?php echo sanitize($row['urlmybooking'] ?? 'https://localhost/it-management/booking/users/bookings.php'); ?>">
 <p class="text-muted" style="font-size:.85rem;margin-top:4px;">Shown under “Manage my booking” as target blank link.</p>
+</div>
+<div class="form-group">
+<label>Accessibility PEP URL</label>
+<input type="url" name="urlaccessibilitypep" class="form-control" maxlength="500" placeholder="https://localhost/it-management/booking/accessibility/pep.html" value="<?php echo sanitize($row['urlaccessibilitypep'] ?? 'https://localhost/it-management/booking/accessibility/pep.html'); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Opened from portal Step 3 when a guest selects an accessibility need (new tab).</p>
+</div>
+<div class="form-group">
+<label class="itm-checkbox-control">
+<input type="checkbox" name="portal_accessible_banner_enabled" value="1" <?php echo itm_hotel_booking_portal_accessible_banner_enabled_from_settings($row ?: []) ? 'checked' : ''; ?>>
+<span>Show accessible room banner on portal Step 1</span>
+</label>
+</div>
+<div class="form-group">
+<label class="itm-checkbox-control">
+<input type="checkbox" name="portal_accessibility_options_enabled" value="1" <?php echo itm_hotel_booking_portal_accessibility_options_enabled_from_settings($row ?: []) ? 'checked' : ''; ?>>
+<span>Show accessibility options on portal Step 3</span>
+</label>
 </div>
 <div class="form-group">
 <label>Tourist tax (per person per night)</label>

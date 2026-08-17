@@ -48,6 +48,13 @@ $petNonRefundable = (float) ($petPolicy['non_refundable_fee'] ?? $petDailyFee);
 $travelingWithPet = !empty($draft['traveling_with_pet']) ? 1 : 0;
 $serviceAnimal = !empty($draft['service_animal']) ? 1 : 0;
 $additionalComments = (string) ($draft['additional_comments'] ?? '');
+$accessibilityOptionsEnabled = itm_hotel_booking_portal_accessibility_options_enabled_from_settings($settings);
+$accessibilityNeedOptions = itm_hotel_booking_portal_accessibility_need_options();
+$accessibilityNeed = itm_hotel_booking_portal_normalize_accessibility_need($draft['accessibility_need'] ?? 'none');
+$accessibilityPepAcknowledged = !empty($draft['accessibility_pep_acknowledged']) ? 1 : 0;
+$accessibilityPepUrl = itm_hotel_booking_portal_accessibility_pep_url_from_settings($settings);
+$accessibilityPepRequired = itm_hotel_booking_portal_accessibility_pep_required($accessibilityNeed);
+$customizeErrors = [];
 $roomTypeId = (int) ($room['room_type_id'] ?? 0);
 $discountPercent = (float) ($draft['discount_percent'] ?? 0);
 $surchargePercent = (float) ($draft['surcharge_percent'] ?? 0);
@@ -132,7 +139,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $draft['traveling_with_pet'] = !empty($_POST['traveling_with_pet']) ? 1 : 0;
     $draft['service_animal'] = !empty($_POST['service_animal']) ? 1 : 0;
     $draft['additional_comments'] = itm_hotel_booking_portal_sanitize_comments($_POST['additional_comments'] ?? '');
+    if ($accessibilityOptionsEnabled) {
+        $postedNeed = itm_hotel_booking_portal_normalize_accessibility_need($_POST['accessibility_need'] ?? 'none');
+        $draft['accessibility_need'] = $postedNeed;
+        $draft['accessibility_pep_acknowledged'] = !empty($_POST['accessibility_pep_acknowledged']) ? 1 : 0;
+        if (itm_hotel_booking_portal_accessibility_pep_required($postedNeed) && empty($draft['accessibility_pep_acknowledged'])) {
+            $customizeErrors[] = 'Please confirm you have read the Personal Emergency Plan (PEP) before continuing.';
+            $accessibilityNeed = $postedNeed;
+            $accessibilityPepAcknowledged = 0;
+            $accessibilityPepRequired = true;
+        }
+    } else {
+        $draft['accessibility_need'] = 'none';
+        $draft['accessibility_pep_acknowledged'] = 0;
+    }
 
+    if ($customizeErrors === []) {
     itm_hotel_booking_portal_draft_save($draft);
     $guestUrl = APPURL . '/rooms/room-single.php?' . http_build_query(array_merge(
         ['id' => (int) $draft['room_id'], 'check_in' => $checkInIso, 'check_out' => $checkOutIso],
@@ -140,6 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ));
     header('Location: ' . $guestUrl);
     exit;
+    }
 }
 
 $upgradePrice = $upgradeOffer ? (float) ($upgradeOffer['upgrade_price_per_night'] ?? 0) : 0;
@@ -273,6 +296,9 @@ if ($upgradeOffer) {
 </div>
 <p class="hb-step-label">Step 3 of 4</p>
 <h1 class="hb-page-title">Customize Your Stay</h1>
+<?php foreach ($customizeErrors as $customizeError): ?>
+<p class="hb-error" role="alert"><?php echo htmlspecialchars($customizeError, ENT_QUOTES, 'UTF-8'); ?></p>
+<?php endforeach; ?>
 
 <form method="post" class="hb-customize-form" id="hb-customize-form">
 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
@@ -317,6 +343,25 @@ if ($upgradeOffer) {
 <?php endif; ?>
 </section>
 
+<?php if ($accessibilityOptionsEnabled): ?>
+<section class="hb-checkout-section" id="hb-accessibility-section">
+<h2 class="hb-checkout-section-title">Accessibility</h2>
+<label class="hb-checkout-field-label" for="hb-accessibility-need">Do you have any accessibility needs?</label>
+<select name="accessibility_need" id="hb-accessibility-need" class="hb-checkout-select">
+<?php foreach ($accessibilityNeedOptions as $needSlug => $needLabel): ?>
+<option value="<?php echo htmlspecialchars($needSlug, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $accessibilityNeed === $needSlug ? ' selected' : ''; ?>><?php echo htmlspecialchars($needLabel, ENT_QUOTES, 'UTF-8'); ?></option>
+<?php endforeach; ?>
+</select>
+<div class="hb-accessibility-pep-wrap" id="hb-accessibility-pep-wrap"<?php echo $accessibilityPepRequired ? '' : ' hidden'; ?>>
+<p class="hb-checkout-hint">A Personal Emergency Plan (PEP) applies when accessibility needs are selected. <a href="<?php echo htmlspecialchars($accessibilityPepUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" title="Open PEP document">Read the PEP document ↗</a></p>
+<label class="hb-filter-check hb-checkout-check">
+<input type="checkbox" name="accessibility_pep_acknowledged" id="hb-accessibility-pep-ack" value="1"<?php echo $accessibilityPepAcknowledged ? ' checked' : ''; ?>>
+<span>I have read the Personal Emergency Plan (PEP)</span>
+</label>
+</div>
+</section>
+<?php endif; ?>
+
 <section class="hb-checkout-section">
 <h2 class="hb-checkout-section-title">Additional comments</h2>
 <textarea name="additional_comments" class="hb-checkout-comments" maxlength="130" rows="3" placeholder="Optional requests (130 characters max)"><?php echo htmlspecialchars($additionalComments, ENT_QUOTES, 'UTF-8'); ?></textarea>
@@ -324,7 +369,7 @@ if ($upgradeOffer) {
 </section>
 
 <div class="hb-checkout-actions">
-<button type="submit" class="hb-btn hb-btn-primary" title="Continue to guest details">Continue</button>
+<button type="submit" class="hb-btn hb-btn-primary" id="hb-customize-continue" title="Continue to guest details">Continue</button>
 </div>
 </form>
 </main>
@@ -360,6 +405,12 @@ window.HB_CUSTOMIZE_UPGRADE = <?php echo json_encode(array_merge([
     'baseRoomTitle' => $baseReservationRoomTitle,
     'upgradeRoomTitle' => $upgradeReservationRoomTitle,
 ], itm_hotel_booking_portal_public_settings_for_js($settings)), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+window.HB_CUSTOMIZE_ACCESSIBILITY = <?php echo json_encode([
+    'enabled' => $accessibilityOptionsEnabled,
+    'need' => $accessibilityNeed,
+    'pepRequired' => $accessibilityPepRequired,
+    'pepAcknowledged' => (bool) $accessibilityPepAcknowledged,
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 <?php if ($upgradeRoomDetailHtml !== ''): ?>
 window.HB_CUSTOMIZE_ROOM_DETAIL = <?php echo json_encode([
     'html' => $upgradeRoomDetailHtml,

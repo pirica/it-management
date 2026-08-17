@@ -6,7 +6,7 @@ Flattened CRUD for physical hotel inventory (`hotel_booking_rooms`): room number
 
 ## 2. Key Tables
 
-- **hotel_booking_rooms** — main room records (`room_number`, `name`, `hotel_id`, `room_type_id`, `housekeeping_status_id`, capacity fields, **`connecting_room_id`** self-FK to partner room, **`connected_to`** partner room number for list/admin display)
+- **hotel_booking_rooms** — main room records (`room_number`, `name`, `hotel_id`, `room_type_id`, `housekeeping_status_id`, capacity fields, **`accessible_room`** tinyint default **0** (physical room; portal Step 1 `data-accessible` uses room flag with type fallback via `itm_hotel_booking_portal_room_is_accessible()`), **`connecting_room_id`** self-FK to partner room, **`connected_to`** partner room number for list/admin display)
 - **hotel_booking_room_photos** — optional per-room images (upload on create/edit)
 - **hotel_booking_room_utilities** — amenity links (separate module)
 
