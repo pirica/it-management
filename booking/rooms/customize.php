@@ -23,6 +23,7 @@ if ($company_id <= 0) {
 }
 hb_require_company_public_portal($conn, $company_id);
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
+hb_portal_bind_money_settings($settings);
 $room = hb_portal_checkout_load_room($conn, $company_id, $roomId);
 if (!$room) {
     itm_hotel_booking_portal_draft_clear();
@@ -64,7 +65,8 @@ if ($roomsNeeded > 1 && !itm_hotel_booking_portal_draft_all_rooms_rated($draft, 
     header('Location: ' . APPURL . '/rooms.php?' . $pickQuery);
     exit;
 }
-$hideUpsellOptions = $roomsNeeded > 1 || count($draftRoomLines) > 1;
+$hideUpsellOptions = itm_hotel_booking_portal_hide_upgrade_upsell_when_multi_room_from_settings($settings)
+    && ($roomsNeeded > 1 || count($draftRoomLines) > 1);
 
 $upgradeOffer = null;
 if (!$hideUpsellOptions && $roomTypeId > 0) {
@@ -201,7 +203,7 @@ $changeRateUrl = APPURL . '/rooms/select-rate.php?' . http_build_query(array_mer
     ['id' => $roomId, 'check_in' => $checkInIso, 'nights' => $nights],
     itm_hotel_booking_portal_occupancy_query_params($occupancy)
 ));
-$baseReservationRoomTitle = hb_portal_reservation_room_title($room);
+$baseReservationRoomTitle = hb_portal_reservation_room_title($room, $settings);
 $upgradeReservationRoomTitle = '';
 if ($upgradeOffer) {
     $upgradeReservationRoomTitle = hb_portal_reservation_room_title([
@@ -307,7 +309,7 @@ if ($upgradeOffer) {
 <input type="checkbox" name="traveling_with_pet" id="hb-traveling-with-pet" value="1"<?php echo $travelingWithPet ? ' checked' : ''; ?>>
 <span>Traveling with a pet</span>
 </label>
-<p class="hb-checkout-hint">Pets allowed, <?php echo htmlspecialchars(number_format($petNonRefundable, 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>€ non-refundable fee, <?php echo (int) $petMaxWeight; ?> kg maximum, daily fee <?php echo htmlspecialchars(number_format($petDailyFee, 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>€ per night</p>
+<p class="hb-checkout-hint">Pets allowed, <?php echo htmlspecialchars(hb_portal_money_format_decimal($petNonRefundable, 'EUR'), ENT_QUOTES, 'UTF-8'); ?> non-refundable fee, <?php echo (int) $petMaxWeight; ?> kg maximum, daily fee <?php echo htmlspecialchars(hb_portal_money_format_decimal($petDailyFee, 'EUR'), ENT_QUOTES, 'UTF-8'); ?> per night</p>
 <label class="hb-filter-check hb-checkout-check">
 <input type="checkbox" name="service_animal" value="1"<?php echo $serviceAnimal ? ' checked' : ''; ?>>
 <span>Traveling with a service animal</span>
@@ -345,7 +347,7 @@ if ($upgradeOffer) {
 </div>
 <?php endif; ?>
 <script>
-window.HB_CUSTOMIZE_UPGRADE = <?php echo json_encode([
+window.HB_CUSTOMIZE_UPGRADE = <?php echo json_encode(array_merge([
     'nights' => $nights,
     'upgradePerNight' => $upgradePrice,
     'roomChargesBase' => (float) ($breakdownNoUpgrade['room_charges'] ?? 0),
@@ -357,13 +359,14 @@ window.HB_CUSTOMIZE_UPGRADE = <?php echo json_encode([
     'initialTravelingWithPet' => (bool) $travelingWithPet,
     'baseRoomTitle' => $baseReservationRoomTitle,
     'upgradeRoomTitle' => $upgradeReservationRoomTitle,
-], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+], itm_hotel_booking_portal_public_settings_for_js($settings)), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 <?php if ($upgradeRoomDetailHtml !== ''): ?>
 window.HB_CUSTOMIZE_ROOM_DETAIL = <?php echo json_encode([
     'html' => $upgradeRoomDetailHtml,
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 <?php endif; ?>
 </script>
+<script src="<?php echo APPURL; ?>/js/hotel-booking-money.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-gallery.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-customize.js"></script>
 </body>

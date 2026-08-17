@@ -25,13 +25,21 @@
   }
 
   function formatDecimal(amount) {
+    if (typeof window.hbPortalFormatMoneyDecimal === 'function') {
+      return window.hbPortalFormatMoneyDecimal(amount, cfg);
+    }
     var n = Math.round(amount * 100) / 100;
     var parts = n.toFixed(2).split('.');
-    var code = (cfg.currencyCode || 'EUR').toUpperCase();
-    if (code === 'EUR') {
-      return parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + parts[1] + '€';
+    var sym = cfg.money_symbol || '€';
+    var suffix = cfg.money_suffix !== 0 && cfg.money_suffix !== false;
+    if (cfg.money_prefix === 1 || cfg.money_prefix === true) {
+      suffix = false;
     }
-    return code + ' ' + parts[0] + '.' + parts[1];
+    var body = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + parts[1];
+    if (suffix) {
+      return body + sym;
+    }
+    return sym + body;
   }
 
   function refreshTotals() {

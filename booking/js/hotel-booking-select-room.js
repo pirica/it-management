@@ -242,7 +242,10 @@
   }
 
   function formatMoney(amount) {
-    var sym = cfg.currencySymbol || '€';
+    if (typeof window.hbPortalFormatMoney === 'function') {
+      return window.hbPortalFormatMoney(amount, cfg, 'short');
+    }
+    var sym = cfg.money_symbol || cfg.currencySymbol || '€';
     var n = Math.round((parseFloat(amount) || 0) * 100) / 100;
     return sym + n.toFixed(2).replace(/\.00$/, '');
   }

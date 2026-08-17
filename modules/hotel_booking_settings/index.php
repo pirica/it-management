@@ -57,6 +57,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $confirmEmailGuest = !empty($_POST['portal_confirmation_email_guest']) ? 1 : 0;
     $confirmEmailReservations = !empty($_POST['portal_confirmation_email_reservations']) ? 1 : 0;
+    $showRoomNumberOnConfirmation = !empty($_POST['portal_show_room_number_on_confirmation']) ? 1 : 0;
+    $hideUpgradeUpsellMultiRoom = !empty($_POST['portal_hide_upgrade_upsell_when_multi_room']) ? 1 : 0;
+    $moneySymbol = strtoupper(trim((string) ($_POST['portal_money_symbol'] ?? 'EUR')));
+    if (!in_array($moneySymbol, ['EUR', 'GBP', 'USD'], true)) {
+        $moneySymbol = 'EUR';
+    }
+    $moneySymbolSuffix = !empty($_POST['portal_money_symbol_suffix']) ? 1 : 0;
+    $moneySymbolPrefix = !empty($_POST['portal_money_symbol_prefix']) ? 1 : 0;
+    if ($moneySymbolPrefix) {
+        $moneySymbolSuffix = 0;
+    } elseif (!$moneySymbolSuffix) {
+        $moneySymbolSuffix = 1;
+    }
     if (trim((string) ($_POST['reviews_url'] ?? '')) !== '' && $reviewsUrl === '') {
         $errors[] = 'Reviews URL must start with http:// or https://';
     }
@@ -99,9 +112,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $sid = (int) ($row['id'] ?? 0);
     if (empty($errors)) {
-    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, stripe_enabled = ?, stripe_mode = ?, stripe_publishable_key = ?, stripe_secret_key_encrypted = ?, stripe_webhook_signing_secret_encrypted = ?, deposit_percent = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, portal_complimentary_min_rooms_paid = ?, portal_complimentary_rooms_free = ?, portal_confirmation_email_guest = ?, portal_confirmation_email_reservations = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
+    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, stripe_enabled = ?, stripe_mode = ?, stripe_publishable_key = ?, stripe_secret_key_encrypted = ?, stripe_webhook_signing_secret_encrypted = ?, deposit_percent = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, portal_complimentary_min_rooms_paid = ?, portal_complimentary_rooms_free = ?, portal_confirmation_email_guest = ?, portal_confirmation_email_reservations = ?, portal_show_room_number_on_confirmation = ?, portal_hide_upgrade_upsell_when_multi_room = ?, portal_money_symbol = ?, portal_money_symbol_suffix = ?, portal_money_symbol_prefix = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
     if ($upd) {
-        mysqli_stmt_bind_param($upd, 'iissssdssssssdiiiiiiiisiii', $enabled, $stripeEnabled, $stripeMode, $stripePublishableKey, $stripeSecretEnc, $stripeWebhookEnc, $depositPercent, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $complimentaryMinRooms, $complimentaryRoomsFree, $confirmEmailGuest, $confirmEmailReservations, $urlmybooking, $employee_id, $sid, $company_id);
+        mysqli_stmt_bind_param($upd, 'iissssdssssssdiiiiiiiiisiisiii', $enabled, $stripeEnabled, $stripeMode, $stripePublishableKey, $stripeSecretEnc, $stripeWebhookEnc, $depositPercent, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $complimentaryMinRooms, $complimentaryRoomsFree, $confirmEmailGuest, $confirmEmailReservations, $showRoomNumberOnConfirmation, $hideUpgradeUpsellMultiRoom, $moneySymbol, $moneySymbolSuffix, $moneySymbolPrefix, $urlmybooking, $employee_id, $sid, $company_id);
         mysqli_stmt_execute($upd);
         mysqli_stmt_close($upd);
         header('Location: index.php?saved=1');
@@ -113,6 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $row = itm_hotel_booking_settings_row($conn, $company_id);
 $confirmEmailFlags = itm_hotel_booking_portal_confirmation_email_flags_from_settings($row ?: []);
+$moneyFormatOptions = itm_hotel_booking_portal_money_format_options_from_settings($row ?: []);
 $crud_title = 'Hotel Booking Settings';
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_booking_settings', $crud_title);
 require_once ROOT_PATH . 'includes/itm_hospitality_admin_layout.php';
@@ -200,6 +214,42 @@ itm_hospitality_admin_layout_begin($crud_title);
 <p class="text-muted" style="font-size:.85rem;margin-top:4px;">Number of lowest-priced room stays credited once the minimum paid rooms threshold is exceeded.</p>
 </div>
 <div class="card" style="margin-top:24px;">
+<h2 style="margin-top:0;">Portal display</h2>
+<div class="form-group">
+<label class="itm-checkbox-control">
+<input type="checkbox" name="portal_show_room_number_on_confirmation" value="1" <?php echo !empty($row['portal_show_room_number_on_confirmation']) ? 'checked' : ''; ?>>
+<span>Show room number on booking / confirmation</span>
+</label>
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">When enabled, guest-facing summaries and confirmation cards prefix the assigned room number (e.g. <strong>101 — Standard Double</strong>).</p>
+</div>
+<div class="form-group">
+<label class="itm-checkbox-control">
+<input type="checkbox" name="portal_hide_upgrade_upsell_when_multi_room" value="1" <?php echo itm_hotel_booking_portal_hide_upgrade_upsell_when_multi_room_from_settings($row ?: []) ? 'checked' : ''; ?>>
+<span>Hide room upgrade upsell when rooms &gt; 1</span>
+</label>
+</div>
+<div class="form-group">
+<label>Money symbol</label>
+<select name="portal_money_symbol" class="form-control">
+<option value="EUR" <?php echo itm_hotel_booking_portal_money_symbol_code_from_settings($row ?: []) === 'EUR' ? 'selected' : ''; ?>>€ Euro</option>
+<option value="GBP" <?php echo itm_hotel_booking_portal_money_symbol_code_from_settings($row ?: []) === 'GBP' ? 'selected' : ''; ?>>£ Pound</option>
+<option value="USD" <?php echo itm_hotel_booking_portal_money_symbol_code_from_settings($row ?: []) === 'USD' ? 'selected' : ''; ?>>$ Dollar</option>
+</select>
+</div>
+<div class="form-group">
+<label class="itm-checkbox-control">
+<input type="checkbox" name="portal_money_symbol_suffix" id="itm-hb-money-suffix" value="1" <?php echo !empty($moneyFormatOptions['suffix']) ? 'checked' : ''; ?>>
+<span>Suffix style (e.g. 69.50<?php echo htmlspecialchars($moneyFormatOptions['symbol'], ENT_QUOTES, 'UTF-8'); ?>)</span>
+</label>
+</div>
+<div class="form-group">
+<label class="itm-checkbox-control">
+<input type="checkbox" name="portal_money_symbol_prefix" id="itm-hb-money-prefix" value="1" <?php echo empty($moneyFormatOptions['suffix']) ? 'checked' : ''; ?>>
+<span>Prefix style (e.g. <?php echo htmlspecialchars($moneyFormatOptions['symbol'], ENT_QUOTES, 'UTF-8'); ?>69.50)</span>
+</label>
+</div>
+</div>
+<div class="card" style="margin-top:24px;">
 <h2 style="margin-top:0;">Step 4 — Confirmation emails</h2>
 <p class="text-muted" style="font-size:.85rem;">After a portal booking is saved (or after Stripe payment completes), the system can email the guest and/or the hotel reservations desk.</p>
 <div class="form-group">
@@ -277,6 +327,27 @@ document.addEventListener('DOMContentLoaded', function () {
   desk.addEventListener('change', syncBothFromChildren);
   both.addEventListener('change', applyBothMaster);
   syncBothFromChildren();
+});
+document.addEventListener('DOMContentLoaded', function () {
+  var suffix = document.getElementById('itm-hb-money-suffix');
+  var prefix = document.getElementById('itm-hb-money-prefix');
+  if (!suffix || !prefix) {
+    return;
+  }
+  suffix.addEventListener('change', function () {
+    if (suffix.checked) {
+      prefix.checked = false;
+    } else if (!prefix.checked) {
+      suffix.checked = true;
+    }
+  });
+  prefix.addEventListener('change', function () {
+    if (prefix.checked) {
+      suffix.checked = false;
+    } else if (!suffix.checked) {
+      suffix.checked = true;
+    }
+  });
 });
 </script>
 </div>

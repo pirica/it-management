@@ -345,11 +345,13 @@ if (abs(itm_hotel_booking_portal_price_incl_tourist_tax(75.0, 2.0, ['rooms' => 1
 }
 
 require_once dirname(__DIR__) . '/booking/includes/portal_chrome.php';
+hb_portal_bind_money_settings(['portal_money_symbol' => 'EUR', 'portal_money_symbol_suffix' => 1]);
 if (hb_portal_money_format(69.5, 'EUR') === '€69.50' && hb_portal_money_format(77.0, 'EUR') === '€77') {
     hb_pass('portal money format keeps NR cents (69.50) without rounding to 70');
 } else {
     hb_fail('portal money format expected €69.50 / €77 got ' . hb_portal_money_format(69.5, 'EUR') . ' / ' . hb_portal_money_format(77.0, 'EUR'));
 }
+unset($GLOBALS['hb_portal_money_settings']);
 
 $datesJsPath = dirname(__DIR__) . '/booking/js/hotel-booking-dates.js';
 $datesJsSrc = is_file($datesJsPath) ? (string) file_get_contents($datesJsPath) : '';
@@ -1689,16 +1691,61 @@ $colComplimentaryMin = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_sett
 $colComplimentaryFree = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_complimentary_rooms_free'");
 $colConfirmEmailGuest = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_confirmation_email_guest'");
 $colConfirmEmailReservations = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_confirmation_email_reservations'");
+$colShowRoomNumber = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_show_room_number_on_confirmation'");
+$colHideUpgradeMulti = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_hide_upgrade_upsell_when_multi_room'");
+$colMoneySymbol = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_money_symbol'");
+$colMoneySuffix = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_money_symbol_suffix'");
+$colMoneyPrefix = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_money_symbol_prefix'");
 $colPortalBookable = mysqli_query($conn, "SHOW COLUMNS FROM booking_rooms_types LIKE 'portal_bookable'");
 if ($colComplimentaryMin && mysqli_num_rows($colComplimentaryMin) === 1
     && $colComplimentaryFree && mysqli_num_rows($colComplimentaryFree) === 1
     && $colConfirmEmailGuest && mysqli_num_rows($colConfirmEmailGuest) === 1
     && $colConfirmEmailReservations && mysqli_num_rows($colConfirmEmailReservations) === 1
+    && $colShowRoomNumber && mysqli_num_rows($colShowRoomNumber) === 1
+    && $colHideUpgradeMulti && mysqli_num_rows($colHideUpgradeMulti) === 1
+    && $colMoneySymbol && mysqli_num_rows($colMoneySymbol) === 1
+    && $colMoneySuffix && mysqli_num_rows($colMoneySuffix) === 1
+    && $colMoneyPrefix && mysqli_num_rows($colMoneyPrefix) === 1
     && $colPortalBookable && mysqli_num_rows($colPortalBookable) === 1) {
     hb_pass('booking_rooms_types portal rule columns + complimentary settings columns');
 } else {
     hb_fail('booking_rooms_types portal rule columns or complimentary settings columns missing');
 }
+
+if (function_exists('itm_hotel_booking_portal_money_format_options_from_settings')
+    && itm_hotel_booking_portal_money_format_options_from_settings(['portal_money_symbol' => 'GBP'])['symbol'] === '£'
+    && itm_hotel_booking_portal_money_format_options_from_settings(['portal_money_symbol' => 'USD', 'portal_money_symbol_prefix' => 1])['suffix'] === false
+    && itm_hotel_booking_portal_format_money_with_options(69.5, ['symbol' => '$', 'suffix' => false], 'short') === '$69.50'
+    && itm_hotel_booking_portal_format_money_with_options(77.0, ['symbol' => '£', 'suffix' => true], 'decimal') === '77.00£'
+    && !itm_hotel_booking_portal_show_room_number_from_settings([])
+    && itm_hotel_booking_portal_show_room_number_from_settings(['portal_show_room_number_on_confirmation' => 1])
+    && itm_hotel_booking_portal_hide_upgrade_upsell_when_multi_room_from_settings([])
+    && !itm_hotel_booking_portal_hide_upgrade_upsell_when_multi_room_from_settings(['portal_hide_upgrade_upsell_when_multi_room' => 0])) {
+    hb_pass('portal display money + room number + upgrade upsell helpers');
+} else {
+    hb_fail('portal display money + room number + upgrade upsell helpers');
+}
+
+$customizeSrcDisplay = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms/customize.php');
+$moneyJsSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/js/hotel-booking-money.js');
+if (strpos($settingsIndexSrc, 'portal_show_room_number_on_confirmation') !== false
+    && strpos($settingsIndexSrc, 'portal_hide_upgrade_upsell_when_multi_room') !== false
+    && strpos($settingsIndexSrc, 'portal_money_symbol') !== false
+    && strpos($customizeSrcDisplay, 'itm_hotel_booking_portal_hide_upgrade_upsell_when_multi_room_from_settings') !== false
+    && strpos($moneyJsSrc, 'hbPortalFormatMoney') !== false
+    && is_file(dirname(__DIR__) . '/booking/js/hotel-booking-money.js')) {
+    hb_pass('portal display admin toggles + customize upsell + money JS');
+} else {
+    hb_fail('portal display admin toggles + customize upsell + money JS missing');
+}
+
+hb_portal_bind_money_settings(['portal_money_symbol' => 'USD', 'portal_money_symbol_prefix' => 1]);
+if (hb_portal_money_format(12.5, 'USD') === '$12.50') {
+    hb_pass('portal money format respects USD prefix settings');
+} else {
+    hb_fail('portal money format USD prefix expected $12.50 got ' . hb_portal_money_format(12.5, 'USD'));
+}
+unset($GLOBALS['hb_portal_money_settings']);
 
 itm_script_output_end();
 exit($fail > 0 ? 1 : 0);

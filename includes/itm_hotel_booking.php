@@ -5836,9 +5836,90 @@ if (!function_exists('itm_hotel_booking_portal_manage_otp_issue')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_money_symbol_code_from_settings')) {
+  function itm_hotel_booking_portal_money_symbol_code_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $code = strtoupper(trim((string) ($settings['portal_money_symbol'] ?? 'EUR')));
+    if (!in_array($code, ['EUR', 'GBP', 'USD'], true)) {
+      return 'EUR';
+    }
+    return $code;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_money_format_options_from_settings')) {
+  /**
+   * @return array{symbol:string,suffix:bool}
+   */
+  function itm_hotel_booking_portal_money_format_options_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $code = itm_hotel_booking_portal_money_symbol_code_from_settings($settings);
+    $symbolMap = ['EUR' => '€', 'GBP' => '£', 'USD' => '$'];
+    $suffix = true;
+    if (array_key_exists('portal_money_symbol_prefix', $settings) && !empty($settings['portal_money_symbol_prefix'])) {
+      $suffix = false;
+    } elseif (array_key_exists('portal_money_symbol_suffix', $settings)) {
+      $suffix = !empty($settings['portal_money_symbol_suffix']);
+    }
+    return [
+      'symbol' => $symbolMap[$code] ?? '€',
+      'suffix' => $suffix,
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_public_settings_for_js')) {
+  function itm_hotel_booking_portal_public_settings_for_js($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $money = itm_hotel_booking_portal_money_format_options_from_settings($settings);
+    return [
+      'money_symbol' => $money['symbol'],
+      'money_suffix' => !empty($money['suffix']) ? 1 : 0,
+      'money_prefix' => empty($money['suffix']) ? 1 : 0,
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_show_room_number_from_settings')) {
+  function itm_hotel_booking_portal_show_room_number_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    return !empty($settings['portal_show_room_number_on_confirmation']);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_hide_upgrade_upsell_when_multi_room_from_settings')) {
+  function itm_hotel_booking_portal_hide_upgrade_upsell_when_multi_room_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    if (!array_key_exists('portal_hide_upgrade_upsell_when_multi_room', $settings)) {
+      return true;
+    }
+    return !empty($settings['portal_hide_upgrade_upsell_when_multi_room']);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_format_money_with_options')) {
+  function itm_hotel_booking_portal_format_money_with_options($amount, array $moneyOptions, $style = 'decimal') {
+    $amount = (float) $amount;
+    $symbol = (string) ($moneyOptions['symbol'] ?? '€');
+    $suffix = !empty($moneyOptions['suffix']);
+    $formatted = number_format($amount, 2, '.', $style === 'short' ? '' : ',');
+    if ($style === 'short' && substr($formatted, -3) === '.00') {
+      $formatted = substr($formatted, 0, -3);
+    }
+    if ($suffix) {
+      return $formatted . $symbol;
+    }
+    return $symbol . $formatted;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_format_money_display')) {
-  function itm_hotel_booking_portal_format_money_display($amount, $currencyCode = 'EUR') {
-    $currencyCode = strtoupper(trim((string) $currencyCode));
+  function itm_hotel_booking_portal_format_money_display($amount, $settingsOrCurrency = 'EUR', array $options = []) {
+    if (is_array($settingsOrCurrency)) {
+      $moneyOptions = itm_hotel_booking_portal_money_format_options_from_settings($settingsOrCurrency);
+      return itm_hotel_booking_portal_format_money_with_options($amount, $moneyOptions, 'decimal');
+    }
+    $currencyCode = strtoupper(trim((string) $settingsOrCurrency));
     if ($currencyCode === '') {
       $currencyCode = 'EUR';
     }
@@ -5922,7 +6003,7 @@ if (!function_exists('itm_hotel_booking_portal_confirmation_email_template_optio
 }
 
 if (!function_exists('itm_hotel_booking_portal_confirmation_room_label_from_row')) {
-  function itm_hotel_booking_portal_confirmation_room_label_from_row(array $row) {
+  function itm_hotel_booking_portal_confirmation_room_label_from_row(array $row, $settings = null) {
     $typeName = trim((string) ($row['type_name'] ?? ''));
     $bedSummary = trim((string) ($row['bed_summary'] ?? ''));
     $label = $typeName;
@@ -5932,7 +6013,16 @@ if (!function_exists('itm_hotel_booking_portal_confirmation_room_label_from_row'
     if ($label === '') {
       $label = trim((string) ($row['room_name'] ?? 'Room'));
     }
-    return $label !== '' ? $label : 'Room';
+    if ($label === '') {
+      $label = 'Room';
+    }
+    if (is_array($settings) && itm_hotel_booking_portal_show_room_number_from_settings($settings)) {
+      $roomNumber = trim((string) ($row['room_number'] ?? ''));
+      if ($roomNumber !== '') {
+        $label = $roomNumber . ' — ' . $label;
+      }
+    }
+    return $label;
   }
 }
 
@@ -6125,9 +6215,10 @@ if (!function_exists('itm_hotel_booking_portal_build_confirmation_email_rows_htm
       }
     }
     $nightsLabel = $nights === 1 ? '1 night' : $nights . ' nights';
+    $settingsRow = ($conn && (int) $companyId > 0) ? (itm_hotel_booking_settings_row($conn, (int) $companyId) ?: []) : [];
     $amountDisplay = itm_hotel_booking_portal_format_money_display(
       itm_hotel_booking_portal_confirmation_group_total($groupRows),
-      $currency
+      $settingsRow
     );
 
     $rows = [];
@@ -6156,15 +6247,15 @@ if (!function_exists('itm_hotel_booking_portal_build_confirmation_email_rows_htm
         ? itm_hotel_booking_portal_confirmation_group_room_display_amounts($conn, $companyId, $groupRows, $occupancy)
         : [];
       foreach ($groupRows as $idx => $lineRow) {
-        $lineLabel = itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow);
+        $lineLabel = itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow, $settingsRow);
         $lineAmountValue = isset($lineDisplayAmounts[$idx])
           ? (float) $lineDisplayAmounts[$idx]
           : (float) ($lineRow['payment_amount'] ?? 0);
-        $lineAmount = itm_hotel_booking_portal_format_money_display($lineAmountValue, $currency);
+        $lineAmount = itm_hotel_booking_portal_format_money_display($lineAmountValue, $settingsRow);
         $rows[] = ['Room ' . ((int) $idx + 1), $lineLabel . ' — ' . $lineAmount];
       }
     } else {
-      $rows[] = ['Room', itm_hotel_booking_portal_confirmation_room_label_from_row($groupRows[0])];
+      $rows[] = ['Room', itm_hotel_booking_portal_confirmation_room_label_from_row($groupRows[0], $settingsRow)];
     }
     $rows[] = ['Rate', $planLabel];
     $rows[] = ['Check-in', $checkInDisplay];
@@ -6182,7 +6273,7 @@ if (!function_exists('itm_hotel_booking_portal_build_confirmation_email_rows_htm
       }
       $upgradePerNight = (float) ($notesMeta['room_upgrade']['per_night'] ?? 0);
       if ($upgradePerNight > 0) {
-        $rows[] = ['Upgrade surcharge', '+' . itm_hotel_booking_portal_format_money_display($upgradePerNight, $currency) . ' per night'];
+        $rows[] = ['Upgrade surcharge', '+' . itm_hotel_booking_portal_format_money_display($upgradePerNight, $settingsRow) . ' per night'];
       }
     }
     if (!empty($notesMeta['service_animal'])) {
@@ -6200,7 +6291,7 @@ if (!function_exists('itm_hotel_booking_portal_build_confirmation_email_rows_htm
       $petFeeTotal = itm_hotel_booking_portal_confirmation_pet_fee($conn, $companyId, $bookingRow, $checkInIso, $checkOutIso);
     }
     if ($petFeeTotal > 0) {
-      $rows[] = ['Traveling with a pet', itm_hotel_booking_portal_format_money_display($petFeeTotal, $currency)];
+      $rows[] = ['Traveling with a pet', itm_hotel_booking_portal_format_money_display($petFeeTotal, $settingsRow)];
     }
     $rows[] = ['Total', $amountDisplay];
 

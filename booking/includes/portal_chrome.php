@@ -3,6 +3,20 @@
  * Shared chrome for full-width booking flow pages (select room, etc.).
  */
 
+if (!function_exists('hb_portal_bind_money_settings')) {
+  function hb_portal_bind_money_settings($settings) {
+    $GLOBALS['hb_portal_money_settings'] = is_array($settings) ? $settings : [];
+  }
+}
+
+if (!function_exists('hb_portal_money_settings_bound')) {
+  function hb_portal_money_settings_bound() {
+    return isset($GLOBALS['hb_portal_money_settings']) && is_array($GLOBALS['hb_portal_money_settings'])
+      ? $GLOBALS['hb_portal_money_settings']
+      : [];
+  }
+}
+
 if (!function_exists('hb_portal_format_stay_range_label')) {
     function hb_portal_format_stay_range_label($checkInIso, $nights = 1) {
         $nights = max(1, (int) $nights);
@@ -23,9 +37,16 @@ if (!function_exists('hb_portal_format_stay_range_label')) {
 
 if (!function_exists('hb_portal_money_format')) {
     function hb_portal_money_format($amount, $currencyCode = 'EUR') {
+        $settings = hb_portal_money_settings_bound();
+        if ($settings !== []) {
+            return itm_hotel_booking_portal_format_money_with_options(
+                $amount,
+                itm_hotel_booking_portal_money_format_options_from_settings($settings),
+                'short'
+            );
+        }
         $amount = (float) $amount;
         $code = strtoupper((string) $currencyCode);
-        // Why: Guest From/calendar use cents (e.g. NR 69.50); whole-euro round made 69.50 look like 70.
         $formatted = number_format($amount, 2, '.', $code === 'EUR' ? '' : ',');
         if (substr($formatted, -3) === '.00') {
             $formatted = substr($formatted, 0, -3);
@@ -40,6 +61,14 @@ if (!function_exists('hb_portal_money_format')) {
 if (!function_exists('hb_portal_money_format_decimal')) {
     /** Portal checkout lines (e.g. 781.00€). */
     function hb_portal_money_format_decimal($amount, $currencyCode = 'EUR') {
+        $settings = hb_portal_money_settings_bound();
+        if ($settings !== []) {
+            return itm_hotel_booking_portal_format_money_with_options(
+                $amount,
+                itm_hotel_booking_portal_money_format_options_from_settings($settings),
+                'decimal'
+            );
+        }
         $amount = (float) $amount;
         $formatted = number_format($amount, 2, '.', '');
         $code = strtoupper((string) $currencyCode);
@@ -51,16 +80,23 @@ if (!function_exists('hb_portal_money_format_decimal')) {
 }
 
 if (!function_exists('hb_portal_reservation_room_title')) {
-    function hb_portal_reservation_room_title(array $room) {
+    function hb_portal_reservation_room_title(array $room, $settings = null) {
         $type = trim((string) ($room['type_name'] ?? ''));
         $bed = trim((string) ($room['bed_summary'] ?? ''));
         if ($bed !== '' && $type !== '') {
-            return $bed . ' ' . $type . ' Room';
+            $title = $bed . ' ' . $type . ' Room';
+        } elseif ($type !== '') {
+            $title = $type;
+        } else {
+            $title = trim((string) ($room['name'] ?? 'Room'));
         }
-        if ($type !== '') {
-            return $type;
+        if (is_array($settings) && itm_hotel_booking_portal_show_room_number_from_settings($settings)) {
+            $roomNumber = trim((string) ($room['room_number'] ?? ''));
+            if ($roomNumber !== '') {
+                $title = $roomNumber . ' — ' . $title;
+            }
         }
-        return trim((string) ($room['name'] ?? 'Room'));
+        return $title;
     }
 }
 
