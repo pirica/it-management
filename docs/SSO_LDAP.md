@@ -59,6 +59,26 @@ Checks: schema columns, encrypt/decrypt round-trip, `ldap` extension presence (N
 
 ## Operations notes
 
-- **PHP ldap extension** must be enabled on the web server for live LDAP auth (`php -m | grep ldap`).
 - Map directory users to ITM employees before SSO (username or work email alignment).
 - After first successful login, `employees.sso_subject` is stored for faster DN-based matching.
+
+## PHP `ldap` extension
+
+**Required for live LDAP SSO:** [sso-ldap.php](http://localhost/it-management/sso-ldap.php) calls `ldap_connect()` / `ldap_bind()` via `itm_ldap_auth_attempt()`. When the extension is missing, users see **LDAP extension is not loaded on this server.** (`includes/itm_ldap_auth.php` → `itm_ldap_extension_available()` probes `function_exists('ldap_connect')`).
+
+**Apache vs CLI:** LDAP login is a **web** request — enable `ldap` in the **`php.ini` used by Apache** (the SAPI that serves `http://localhost/it-management/`), not only the CLI binary used for `php scripts/verify_sso_ldap.php`. On Laragon/Dunebox, Apache and CLI usually share the same PHP 7.4.33 folder; if SSO fails in the browser but `php -m` shows `ldap` in a terminal, check which `php.ini` Apache loads (`phpinfo()` → *Loaded Configuration File*).
+
+| Environment | Enable `ldap` |
+|-------------|----------------|
+| **Dunebox** | `extension=ldap` in `D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.ini` (canonical template: `scripts/data/php.ini.dunebox-7.4.template`). Copy `php_ldap.dll` into `ext\` from Laragon portable if missing. Re-run `powershell -ExecutionPolicy Bypass -File scripts/setup_dunebox_php_from_laragon.ps1` after template changes. **Restart Apache** after editing `php.ini`. |
+| **Laragon portable** | Uncomment or add `extension=ldap` in `bin\php\php-7.4.33-nts-Win32-vc15-x64\php.ini` (same folder as `php.exe`). Confirm `ext\php_ldap.dll` exists. Restart Apache from Laragon. |
+| **Linux / CI** | Install `php-ldap` (or enable `extension=ldap` in the distro `php.ini` for the **Apache** SAPI). |
+
+**Verify (PowerShell — use full PHP path on Dunebox):**
+
+```powershell
+& "D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" -m | findstr /i ldap
+& "D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" -r "echo function_exists('ldap_connect') ? 'ldap ok' : 'ldap missing';"
+```
+
+**Regression:** [verify_sso_ldap.php?run=1](http://localhost/it-management/scripts/verify_sso_ldap.php?run=1) reports **N/A** when `ldap` is not loaded (encrypt/decrypt, schema, JIT helpers still run). A **PASS** on the extension probe means the current CLI binary has `ldap`; confirm the **Apache** binary matches before testing [sso-ldap.php](http://localhost/it-management/sso-ldap.php) in a browser.

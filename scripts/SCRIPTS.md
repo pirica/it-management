@@ -1018,6 +1018,26 @@ Run `verify_employee_contact_email.php` when changing employee email validation,
 
 Run `verify_sso_ldap.php` when changing LDAP SSO login (`includes/itm_ldap_auth.php`, `sso-ldap.php`, `login.php` SSO link, or Companies edit SSO fields).
 
+#### PHP `ldap` extension (LDAP SSO login)
+
+**Live LDAP auth:** [sso-ldap.php](http://localhost/it-management/sso-ldap.php) requires PHP **`ldap`** on the **Apache** SAPI (`ldap_connect()` in `itm_ldap_auth_attempt()`). Missing extension → user-facing error *LDAP extension is not loaded on this server.*
+
+**Not the same as IMAP:** inbound email (`run_inbound_email_tickets.php`) needs **`imap`** on the **CLI** cron binary; LDAP SSO needs **`ldap`** on the **web** server. Enable both in the same `php.ini` when Apache and CLI share one PHP 7.4.33 install (typical Laragon/Dunebox).
+
+| Environment | Enable `ldap` |
+|-------------|----------------|
+| **Dunebox** | `extension=ldap` in `D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.ini` (template: `scripts/data/php.ini.dunebox-7.4.template`). Copy `php_ldap.dll` into `ext\` from Laragon portable if missing. Re-run `powershell -ExecutionPolicy Bypass -File scripts/setup_dunebox_php_from_laragon.ps1` when the template changes; **restart Apache**. |
+| **Laragon portable** | `extension=ldap` in `bin\php\php-7.4.33-nts-Win32-vc15-x64\php.ini`; confirm `ext\php_ldap.dll`. Restart Apache. |
+| **Linux** | `php-ldap` package (or `extension=ldap` in Apache `php.ini`). |
+
+**Verify:**
+
+```powershell
+& "D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" -r "echo function_exists('ldap_connect') ? 'ldap ok' : 'ldap missing';"
+```
+
+Browser regression: [verify_sso_ldap.php?run=1](http://localhost/it-management/scripts/verify_sso_ldap.php?run=1) (extension probe is **N/A** when missing — see `docs/SSO_LDAP.md`).
+
 Run `verify_dashboard_active_employees.php` when changing `admin.php` or `includes/itm_employee_employment_status.php` Active/On Leave count logic.
 
 Run `verify_dashboard_online_employees.php` when changing `admin.php`, `includes/itm_active_sessions.php`, or the session presence hook in `config/config.php`.

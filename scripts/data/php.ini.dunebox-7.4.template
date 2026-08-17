@@ -10,6 +10,7 @@ extension=fileinfo
 extension=gd2
 extension=intl
 extension=imap
+extension=ldap
 
 zend_extension="__EXT_DIR__/php_xdebug.dll"
 xdebug.mode=debug,coverage
