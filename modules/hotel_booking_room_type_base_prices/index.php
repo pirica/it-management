@@ -186,6 +186,14 @@ function cr_render_cell_value($table, $field, $value) {
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
 
+    if (function_exists('itm_crud_render_checkbox_boolean_cell_value')) {
+        $checkboxHtml = itm_crud_render_checkbox_boolean_cell_value($field, $value);
+        if ($checkboxHtml !== null) {
+            return $checkboxHtml;
+        }
+    }
+
+
     // Special boolean mapping for Employee Access module.
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
@@ -314,6 +322,9 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 
 // DATA LOADING & INITIALIZATION
 $columns = cr_table_columns($conn, $crud_table);
+if (function_exists('itm_crud_register_column_type_map')) {
+    itm_crud_register_column_type_map($columns);
+}
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {

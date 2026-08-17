@@ -385,6 +385,63 @@ if (!function_exists('itm_crud_render_view_audit_meta_rows')) {
     }
 }
 
+if (!function_exists('itm_crud_register_column_type_map')) {
+    /**
+     * Cache information_schema column types for list/view checkbox rendering.
+     *
+     * @param array $columns cr_table_columns() rows
+     */
+    function itm_crud_register_column_type_map(array $columns)
+    {
+        $map = [];
+        foreach ($columns as $column) {
+            if (!is_array($column)) {
+                continue;
+            }
+            $field = (string)($column['Field'] ?? '');
+            if ($field === '') {
+                continue;
+            }
+            $map[$field] = (string)($column['Type'] ?? '');
+        }
+        $GLOBALS['crud_column_type_map'] = $map;
+    }
+}
+
+if (!function_exists('itm_crud_is_checkbox_tinyint_field')) {
+    /**
+     * True for tinyint(1) checkbox columns (excludes row active — badges handle that).
+     */
+    function itm_crud_is_checkbox_tinyint_field($field, $columnType = null)
+    {
+        $field = (string)$field;
+        if ($field === '' || $field === 'active') {
+            return false;
+        }
+        if ($columnType === null && isset($GLOBALS['crud_column_type_map'][$field])) {
+            $columnType = $GLOBALS['crud_column_type_map'][$field];
+        }
+        return $columnType !== null && $columnType !== ''
+            && (bool)preg_match('/^tinyint\(1\)/i', (string)$columnType);
+    }
+}
+
+if (!function_exists('itm_crud_render_checkbox_boolean_cell_value')) {
+    /**
+     * Render ✅/❌ for non-active tinyint(1) checkbox columns. Returns null when not applicable.
+     */
+    function itm_crud_render_checkbox_boolean_cell_value($field, $value)
+    {
+        if (!itm_crud_is_checkbox_tinyint_field($field)) {
+            return null;
+        }
+        if ($value === null || $value === '') {
+            return '';
+        }
+        return ((int)$value === 1) ? '✅' : '❌';
+    }
+}
+
 if (!function_exists('itm_crud_render_audit_cell_value')) {
     /**
      * Render audit meta for list/view cells. Returns null when $field is not an audit meta column.
