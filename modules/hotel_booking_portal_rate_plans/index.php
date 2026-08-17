@@ -39,6 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_portal_pricing']
         'child_nightly_supplement' => $_POST['child_nightly_supplement'] ?? '',
         'extra_adult_supplement_percent' => $_POST['extra_adult_supplement_percent'] ?? '',
         'pet_daily_fee' => $_POST['pet_daily_fee'] ?? '',
+        'breakfast_child_age_min' => $_POST['breakfast_child_age_min'] ?? '',
+        'breakfast_child_age_max' => $_POST['breakfast_child_age_max'] ?? '',
     ]);
     if (!empty($saveResult['ok'])) {
         $pricingSaved = true;
@@ -145,6 +147,15 @@ if (is_array($hotelContactRow)) {
 <div class="form-group">
 <label for="pet_daily_fee">Pet daily fee</label>
 <input type="text" inputmode="decimal" name="pet_daily_fee" id="pet_daily_fee" class="form-control" required value="<?php echo sanitize(number_format((float) $portalPricing['pet_daily_fee'], 2, '.', '')); ?>">
+</div>
+<div class="form-group">
+<label for="breakfast_child_age_min">Breakfast child age from</label>
+<input type="number" name="breakfast_child_age_min" id="breakfast_child_age_min" class="form-control" min="0" max="21" step="1" required value="<?php echo (int) ($portalPricing['breakfast_child_age_min'] ?? 11); ?>">
+</div>
+<div class="form-group">
+<label for="breakfast_child_age_max">Breakfast child age to</label>
+<input type="number" name="breakfast_child_age_max" id="breakfast_child_age_max" class="form-control" min="0" max="21" step="1" required value="<?php echo (int) ($portalPricing['breakfast_child_age_max'] ?? 17); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Step 2 breakfast info copy for charged child breakfast band.</p>
 </div>
 </div>
 <button type="submit" class="btn btn-primary" title="Save portal pricing">💾</button>

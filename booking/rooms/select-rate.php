@@ -201,7 +201,7 @@ foreach ($ratePlans as $plan) {
         'list_stay_total' => $listStayTotal,
         'nightly_incl_tax' => $nightlyInclTax,
         'pay_badge' => (string) ($offer['pay_badge'] ?? 'Pay when you stay'),
-        'price_label' => (string) ($offer['price_label'] ?? 'Best available rate'),
+        'price_label' => itm_hotel_booking_portal_plan_label_from_slug($slug, $settings, (string) ($offer['price_label'] ?? '')),
         'cancel_text' => $cancelText,
         'effective_discount' => $effectiveDiscount,
         'plan_surcharge_percent' => $planSurcharge,
@@ -332,9 +332,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$breakfastInfo = "Rates including breakfast reflect adults only. Children's breakfast is charged directly at the Hotel. Children aged 11 up to and including 17 years old pay a supplement of "
+$breakfastChildAgeMin = (int) ($portalPricing['breakfast_child_age_min'] ?? 11);
+$breakfastChildAgeMax = (int) ($portalPricing['breakfast_child_age_max'] ?? 17);
+$breakfastInfo = "Rates including breakfast reflect adults only. Children's breakfast is charged directly at the Hotel. Children aged "
+    . $breakfastChildAgeMin . ' up to and including ' . $breakfastChildAgeMax . ' years old pay a supplement of '
     . number_format($breakfastChildPrice, 2, '.', '')
     . ' per day per child should they wish to have breakfast.';
+$portalDefaultRateLabel = itm_hotel_booking_portal_default_rate_label_from_settings($settings);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -389,7 +393,7 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
     $nightlyIncl = (float) ($planRow['nightly_incl_tax'] ?? 0);
     $effectiveDiscount = (float) ($planRow['effective_discount'] ?? 0);
     $payBadge = (string) ($planRow['pay_badge'] ?? 'Pay when you stay');
-    $priceLabel = (string) ($planRow['price_label'] ?? 'Best available rate');
+    $priceLabel = itm_hotel_booking_portal_plan_label_from_slug($slug, $settings, (string) ($planRow['price_label'] ?? ''));
     $cancelText = (string) ($planRow['cancel_text'] ?? '');
 ?>
 <article class="hb-rate-option-row" data-rate-slug="<?php echo htmlspecialchars((string) ($planRow['slug'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">

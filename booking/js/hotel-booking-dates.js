@@ -19,6 +19,15 @@
     calendar: null,
     calendarCache: {}
   };
+  var settings = window.HB_SETTINGS || {};
+
+  function portalTaxLongLabel() {
+    return settings.price_includes_tax_long_label || 'incl. taxes';
+  }
+
+  function portalDefaultRateLabel() {
+    return settings.default_rate_label || 'Best available rate';
+  }
 
   function escapeHtml(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -199,7 +208,6 @@
     if (fromHotel != null && fromHotel !== '') {
       return Math.max(0, Math.min(31, parseInt(fromHotel, 10) || 0));
     }
-    var settings = window.HB_SETTINGS || {};
     if (settings.calendar_month_advance_days_left != null && settings.calendar_month_advance_days_left !== '') {
       return Math.max(0, Math.min(31, parseInt(settings.calendar_month_advance_days_left, 10) || 0));
     }
@@ -507,10 +515,10 @@
       var nightWord = nights === 1 ? 'night' : 'nights';
       var rateLabel = (state.calendar && state.calendar.cheapest_rate_label)
         || (state.hotel && state.hotel.cheapest_rate_label)
-        || 'Best available rate';
+        || portalDefaultRateLabel();
       summary.innerHTML =
         '<p class="hb-dates-sum-price">' + escapeHtml(formatMoney(avg, code)) + '</p>' +
-        '<p class="hb-dates-sum-meta">avg/night for ' + nights + ' ' + nightWord + ' (incl. taxes)</p>' +
+        '<p class="hb-dates-sum-meta">avg/night for ' + nights + ' ' + nightWord + ' (' + escapeHtml(portalTaxLongLabel()) + ')</p>' +
         '<p class="hb-dates-sum-label">' + escapeHtml(rateLabel) + '</p>' +
         '<p class="hb-dates-sum-range">' + escapeHtml(displayRange(state.checkInYmd, checkOut)) + '</p>';
       choose.disabled = false;

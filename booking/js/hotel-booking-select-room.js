@@ -185,10 +185,22 @@
     closeModal('hb-rates-modal');
   }
 
+  function maxDiscountPercent() {
+    var cap = parseFloat(cfg.max_discount_percent);
+    if (isNaN(cap) || cap < 0) {
+      cap = 50;
+    }
+    if (cap > 100) {
+      cap = 100;
+    }
+    return cap;
+  }
+
   function discountPercent() {
     var special = parseFloat(cfg.discountPercent || 0) || 0;
     var plan = parseFloat(cfg.cheapestPlanDiscountPercent || 0) || 0;
-    return Math.min(50, special + plan);
+    var cap = maxDiscountPercent();
+    return Math.min(cap, special + plan);
   }
 
   function portalPricing() {
@@ -213,14 +225,21 @@
     return Math.round(rate * guests * 100) / 100;
   }
 
-  function quoteNightlyUndiscounted(base) {
+  function quoteNightlyUndiscounted(base, cardEl) {
     var occ = cardQuoteOccupancy();
     var pricing = portalPricing();
     var rooms = Math.max(1, Math.min(4, occ.rooms));
     var adults = Math.max(1, Math.min(12, occ.adults));
     var children = Math.max(0, Math.min(6, occ.children));
     var baseF = parseFloat(base) || 0;
-    var included = 2 * rooms;
+    var includedPerRoom = 2;
+    if (cardEl && cardEl.getAttribute) {
+      var rawIncluded = parseInt(cardEl.getAttribute('data-included-adults-per-room'), 10);
+      if (!isNaN(rawIncluded) && rawIncluded > 0) {
+        includedPerRoom = rawIncluded;
+      }
+    }
+    var included = includedPerRoom * rooms;
     var extraAdults = Math.max(0, adults - included);
     var extraPct = (parseFloat(pricing.extra_adult_supplement_percent) || 0) / 100;
     var childSupp = parseFloat(pricing.child_nightly_supplement) || 0;
@@ -232,8 +251,8 @@
     if (isNaN(s) || s < 0) {
       s = 0;
     }
-    if (s > 50) {
-      s = 50;
+    if (s > maxDiscountPercent()) {
+      s = maxDiscountPercent();
     }
     return s;
   }
@@ -267,7 +286,7 @@
     if (ir === 'comp') {
       tax = 0;
     }
-    var list = Math.round((quoteNightlyUndiscounted(base) + tax) * 100) / 100;
+    var list = Math.round((quoteNightlyUndiscounted(base, card) + tax) * 100) / 100;
     var sale = Math.round((quoteNightly(base) + tax) * 100) / 100;
     var disc = discountPercent();
     if (compareEl) {

@@ -6,6 +6,10 @@
 if (!function_exists('hb_portal_bind_money_settings')) {
   function hb_portal_bind_money_settings($settings) {
     $GLOBALS['hb_portal_money_settings'] = is_array($settings) ? $settings : [];
+    if (function_exists('itm_hotel_booking_portal_max_discount_percent_from_settings')) {
+      global $itm_hb_portal_offer_percent_cap;
+      $itm_hb_portal_offer_percent_cap = itm_hotel_booking_portal_max_discount_percent_from_settings($GLOBALS['hb_portal_money_settings']);
+    }
   }
 }
 

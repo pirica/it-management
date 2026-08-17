@@ -1838,6 +1838,39 @@ if ($colInternalRate && mysqli_num_rows($colInternalRate) === 1
     hb_fail('internal rate + portal date/time format schema columns missing');
 }
 
+$colMaxDiscount = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_max_discount_percent'");
+$colTaxLabel = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_tourist_tax_label'");
+$colPetKg = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_default_pet_max_weight_kg'");
+$colBreakfastAgeMin = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_hotels LIKE 'portal_breakfast_child_age_min'");
+if ($colMaxDiscount && mysqli_num_rows($colMaxDiscount) === 1
+    && $colTaxLabel && mysqli_num_rows($colTaxLabel) === 1
+    && $colPetKg && mysqli_num_rows($colPetKg) === 1
+    && $colBreakfastAgeMin && mysqli_num_rows($colBreakfastAgeMin) === 1) {
+    hb_pass('portal money/tax label + breakfast child age schema columns');
+} else {
+    hb_fail('portal money/tax label + breakfast child age schema columns missing');
+}
+
+if (function_exists('itm_hotel_booking_portal_max_discount_percent_from_settings')
+    && itm_hotel_booking_portal_max_discount_percent_from_settings(['portal_max_discount_percent' => 40]) === 40.0
+    && itm_hotel_booking_portal_tourist_tax_label_from_settings(['portal_tourist_tax_label' => 'City tax']) === 'City tax'
+    && itm_hotel_booking_portal_plan_label_from_slug('breakfast', [], '') === 'Breakfast included'
+    && strpos($settingsIndexSrc, 'portal_max_discount_percent') !== false
+    && strpos($settingsIndexSrc, 'portal_tourist_tax_label') !== false
+    && strpos((string) @file_get_contents(dirname(__DIR__) . '/modules/hotel_booking_portal_rate_plans/index.php'), 'breakfast_child_age_min') !== false) {
+    hb_pass('portal money/tax admin fields + label helpers');
+} else {
+    hb_fail('portal money/tax admin fields + label helpers');
+}
+
+hb_portal_bind_money_settings(['portal_max_discount_percent' => 40]);
+if (itm_hotel_booking_portal_clamp_combined_discount_percent(30, 20) === 40.0) {
+    hb_pass('portal offer percent cap from settings');
+} else {
+    hb_fail('portal offer percent cap from settings');
+}
+unset($GLOBALS['hb_portal_money_settings'], $itm_hb_portal_offer_percent_cap);
+
 if (itm_hotel_booking_normalize_internal_rate_code('COMPIMENTARY') === 'comp'
     && itm_hotel_booking_normalize_internal_rate_code('HOUSE_USE') === 'use'
     && itm_hotel_booking_internal_rate_waive_scope('comp') === 'all'

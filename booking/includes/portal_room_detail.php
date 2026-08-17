@@ -220,7 +220,7 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
         $settingsRow = itm_hotel_booking_settings_row($conn, $companyId) ?: [];
         $taxRate = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settingsRow);
         $taxPerNight = itm_hotel_booking_portal_tourist_tax_amount($occupancy, 1, $taxRate);
-        $surchargePercent = max(0.0, min(50.0, (float) $surchargePercent));
+        $surchargePercent = itm_hotel_booking_portal_clamp_offer_percent((float) $surchargePercent);
         $listQuoted = round(itm_hotel_booking_portal_connecting_unit_card_quote_nightly($conn, $companyId, $hotelId, $sampleRoom, $typeOcc, $basePrice, $cardQuoteOcc, 0, $pricing, 0, $checkInIso, $checkOutIso) + $taxPerNight, 2);
         $quoted = round(itm_hotel_booking_portal_connecting_unit_card_quote_nightly($conn, $companyId, $hotelId, $sampleRoom, $typeOcc, $basePrice, $cardQuoteOcc, (float) $discountPercent, $pricing, $surchargePercent, $checkInIso, $checkOutIso) + $taxPerNight, 2);
 

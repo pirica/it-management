@@ -43,7 +43,7 @@ $portalPricing = itm_hotel_booking_portal_hotel_pricing($conn, $company_id, $hot
 $petPolicy = itm_hotel_booking_portal_draft_pet_policy($conn, $company_id, $hotelId, $draft);
 $petsAllowed = !empty($petPolicy['allowed']);
 $petDailyFee = (float) ($petPolicy['daily_fee'] ?? $portalPricing['pet_daily_fee'] ?? 0);
-$petMaxWeight = (int) ($petPolicy['max_weight_kg'] ?? 30);
+$petMaxWeight = (int) ($petPolicy['max_weight_kg'] ?? itm_hotel_booking_portal_default_pet_max_weight_kg_from_settings($settings));
 $petNonRefundable = (float) ($petPolicy['non_refundable_fee'] ?? $petDailyFee);
 $travelingWithPet = !empty($draft['traveling_with_pet']) ? 1 : 0;
 $serviceAnimal = !empty($draft['service_animal']) ? 1 : 0;
@@ -220,7 +220,7 @@ $changeRoomQuery = http_build_query(array_merge(
 $changeRoomUrl = APPURL . '/rooms.php?' . $changeRoomQuery;
 $planLabel = trim((string) ($draft['portal_rate_plan_name'] ?? ''));
 if ($planLabel === '') {
-    $planLabel = ($draft['rate_plan'] ?? '') === 'breakfast' ? 'Breakfast included' : 'Best available rate';
+    $planLabel = itm_hotel_booking_portal_plan_label_from_slug((string) ($draft['rate_plan'] ?? ''), $settings, '');
 }
 $changeRateUrl = APPURL . '/rooms/select-rate.php?' . http_build_query(array_merge(
     ['id' => $roomId, 'check_in' => $checkInIso, 'nights' => $nights],
@@ -335,7 +335,7 @@ if ($upgradeOffer) {
 <input type="checkbox" name="traveling_with_pet" id="hb-traveling-with-pet" value="1"<?php echo $travelingWithPet ? ' checked' : ''; ?>>
 <span>Traveling with a pet</span>
 </label>
-<p class="hb-checkout-hint">Pets allowed, <?php echo htmlspecialchars(hb_portal_money_format_decimal($petNonRefundable, 'EUR'), ENT_QUOTES, 'UTF-8'); ?> non-refundable fee, <?php echo (int) $petMaxWeight; ?> kg maximum, daily fee <?php echo htmlspecialchars(hb_portal_money_format_decimal($petDailyFee, 'EUR'), ENT_QUOTES, 'UTF-8'); ?> per night</p>
+<p class="hb-checkout-hint">Pets allowed, <?php echo htmlspecialchars(hb_portal_money_format_decimal($petNonRefundable, $currency), ENT_QUOTES, 'UTF-8'); ?> non-refundable fee, <?php echo (int) $petMaxWeight; ?> kg maximum, daily fee <?php echo htmlspecialchars(hb_portal_money_format_decimal($petDailyFee, $currency), ENT_QUOTES, 'UTF-8'); ?> per night</p>
 <label class="hb-filter-check hb-checkout-check">
 <input type="checkbox" name="service_animal" value="1"<?php echo $serviceAnimal ? ' checked' : ''; ?>>
 <span>Traveling with a service animal</span>

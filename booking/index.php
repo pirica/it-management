@@ -1,5 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
+require __DIR__ . '/includes/portal_chrome.php';
 $company_id = hb_public_company_id($conn);
 
 function hb_format_hotel_time_display($time) {
@@ -72,6 +73,7 @@ $settings = itm_hotel_booking_settings_row($conn, $company_id);
 if (!is_array($settings)) {
     $settings = [];
 }
+hb_portal_bind_money_settings($settings);
 
 // Why: Public home lists every active hotel across tenants — not session company_id.
 $hotels = [];
@@ -94,10 +96,11 @@ if ($stmt) {
             $taxRateByCompany[$hotelCompanyId] = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($hotelSettings);
             $calendarAdvanceByCompany[$hotelCompanyId] = itm_hotel_booking_portal_calendar_month_advance_days_left_from_settings($hotelSettings);
         }
+        $hotelSettings = $hotelCompanyId > 0 ? (itm_hotel_booking_settings_row($conn, $hotelCompanyId) ?: []) : [];
         $minExcl = (float) ($row['min_price'] ?? 0);
         $cheapest = itm_hotel_booking_portal_cheapest_rate_offer_for_hotel($conn, $hotelCompanyId, $hid);
-        $planDisc = max(0.0, min(50.0, (float) ($cheapest['discount_percent'] ?? 0)));
-        $planSur = max(0.0, min(50.0, (float) ($cheapest['surcharge_percent'] ?? 0)));
+        $planDisc = itm_hotel_booking_portal_clamp_offer_percent((float) ($cheapest['discount_percent'] ?? 0), $hotelSettings);
+        $planSur = itm_hotel_booking_portal_clamp_offer_percent((float) ($cheapest['surcharge_percent'] ?? 0), $hotelSettings);
         $minAfterPlan = round($minExcl * (1 - ($planDisc / 100)) * (1 + ($planSur / 100)), 2);
         $row['min_price_excl_tax'] = $minExcl;
         $row['min_price_rate_excl_tax'] = $minAfterPlan;
@@ -105,7 +108,8 @@ if ($stmt) {
         $row['min_price'] = itm_hotel_booking_portal_price_incl_tourist_tax($minAfterPlan, $taxRateByCompany[$hotelCompanyId], $defaultOcc);
         $row['prices_include_tax'] = true;
         $row['cheapest_rate_plan_slug'] = (string) ($cheapest['slug'] ?? '');
-        $row['cheapest_rate_label'] = (string) ($cheapest['price_label'] ?? 'Best available rate');
+        $row['cheapest_rate_label'] = itm_hotel_booking_portal_plan_label_from_slug((string) ($cheapest['slug'] ?? ''), $hotelSettings, (string) ($cheapest['price_label'] ?? ''));
+        $row['price_includes_tax_label'] = itm_hotel_booking_portal_price_includes_tax_label_from_settings($hotelSettings);
         $row['plan_discount_percent'] = $planDisc;
         $row['plan_surcharge_percent'] = $planSur;
         $row['calendar_month_advance_days_left'] = (int) ($calendarAdvanceByCompany[$hotelCompanyId] ?? 3);
@@ -178,7 +182,7 @@ $imgUrl = !empty($hotel['photos'][0]['public_url'])
 </div>
 <h2><?php echo htmlspecialchars($hotel['name'], ENT_QUOTES, 'UTF-8'); ?></h2>
 <p class="hb-loc"><?php echo htmlspecialchars($hotel['location'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
-<p class="hb-from">From <?php echo htmlspecialchars(number_format((float) ($hotel['min_price'] ?? 0), 2), ENT_QUOTES, 'UTF-8'); ?> <?php echo htmlspecialchars($hotel['currency_code'] ?? 'EUR', ENT_QUOTES, 'UTF-8'); ?> <span class="hb-from-tax-note">incl. tax</span></p>
+<p class="hb-from">From <?php echo htmlspecialchars(number_format((float) ($hotel['min_price'] ?? 0), 2), ENT_QUOTES, 'UTF-8'); ?> <?php echo htmlspecialchars($hotel['currency_code'] ?? 'EUR', ENT_QUOTES, 'UTF-8'); ?> <span class="hb-from-tax-note"><?php echo htmlspecialchars((string) ($hotel['price_includes_tax_label'] ?? itm_hotel_booking_portal_price_includes_tax_label_from_settings($settings)), ENT_QUOTES, 'UTF-8'); ?></span></p>
 <button type="button" class="hb-btn hb-btn-primary hb-open-hotel" data-hotel-id="<?php echo (int) $hotel['id']; ?>" title="View details">Details</button>
 </article>
 <?php endforeach; ?>

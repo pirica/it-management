@@ -89,7 +89,7 @@ Per-hotel portal math is **not** hardcoded in `booking/*.php` or `booking/js/*.j
 
 **Room type calendar:** [Room Type Calendar](http://localhost/it-management/modules/hotel_booking_room_type_calendar/index.php) — date-range BAR overrides and stop-sell blocks per room type. Portal uses `itm_hotel_booking_resolve_room_type_nightly_bar()` for card/check-in display and `itm_hotel_booking_compute_stay_payment_dated_rates()` for multi-night checkout when `room_type_id` is on the checkout draft. Availability: `itm_hotel_booking_room_unavailable_for_stay()` (bookings + OOO/OOS + HSK maintenance + type blocks). Migration: `db/migrations/hotel_booking_room_type_calendar.sql`.
 
-**Tourist tax** remains company-level on `hotel_booking_settings.tourist_tax_per_person_per_night` ([Hotel Booking Settings](http://localhost/it-management/modules/hotel_booking_settings/index.php)).
+**Tourist tax** amount and **guest-facing labels** (tax line, incl.-tax copy, BAR/breakfast fallbacks, discount cap, default pet max kg) are company-level on `hotel_booking_settings` ([Hotel Booking Settings](http://localhost/it-management/modules/hotel_booking_settings/index.php)). **Breakfast child age band** for Step 2 copy is per hotel on the [Portal Rate Plans](http://localhost/it-management/modules/hotel_booking_portal_rate_plans/index.php) pricing form.
 
 **JS:** `rooms.php` passes `portalPricing` + `pricingDefaults` on `window.HB_SELECT_ROOM` for live occupancy/rate recalculation (`hotel-booking-select-room.js`). Stay bar occupancy is interactive only when `hb_portal_render_stay_bar(…, ['occupancy_interactive' => true])` (rooms page); manage/confirmation/checkout steps render a read-only occupancy label (no inert button).
 
