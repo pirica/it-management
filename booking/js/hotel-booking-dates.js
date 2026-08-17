@@ -29,7 +29,9 @@
   }
 
   function formatMoney(amount, code) {
-    // Why: Calendar API returns cents (69.5); Math.round hid NR as 70 vs home From 69.50.
+    if (typeof window.hbPortalFormatMoney === 'function') {
+      return window.hbPortalFormatMoney(amount, window.HB_SETTINGS || {}, 'short');
+    }
     var n = Math.round((parseFloat(amount) || 0) * 100) / 100;
     var s = n.toFixed(2).replace(/\.00$/, '');
     return moneySym(code) + s;

@@ -128,7 +128,7 @@ if ($stmt) {
     mysqli_stmt_close($stmt);
 }
 $pageTitle = $settings['welcome_title'] ?? 'Find your stay';
-$hbSettingsPublic = [
+$hbSettingsPublic = array_merge([
     'price_footnote' => $settings['price_footnote'] ?? '',
     'accessible_features_default' => $settings['accessible_features_default'] ?? '',
     'airport_info' => $settings['airport_info'] ?? '',
@@ -136,7 +136,7 @@ $hbSettingsPublic = [
     'tourist_tax_per_person_per_night' => itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings),
     'calendar_month_advance_days_left' => itm_hotel_booking_portal_calendar_month_advance_days_left_from_settings($settings),
     'prices_include_tax' => true,
-];
+], itm_hotel_booking_portal_public_settings_for_js($settings));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -202,6 +202,7 @@ window.HB_APPURL = <?php echo json_encode(APPURL); ?>;
 window.HB_HOTELS = <?php echo json_encode($hotels, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 window.HB_SETTINGS = <?php echo json_encode($hbSettingsPublic, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
+<script src="<?php echo APPURL; ?>/js/hotel-booking-money.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-gallery.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-amenity-icons.js"></script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-gallery.js"></script>

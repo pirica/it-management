@@ -12,6 +12,9 @@
   }
 
   function formatPrice(h) {
+    if (typeof window.hbPortalFormatMoney === 'function') {
+      return window.hbPortalFormatMoney(h.min_price || 0, settings, 'short');
+    }
     var n = parseFloat(h.min_price || 0);
     var code = (h.currency_code || 'EUR').toUpperCase();
     var sym = code === 'EUR' ? '€' : code + ' ';

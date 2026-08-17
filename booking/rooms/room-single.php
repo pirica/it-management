@@ -18,6 +18,7 @@ if ($company_id <= 0) {
 }
 hb_require_company_public_portal($conn, $company_id);
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
+hb_portal_bind_money_settings($settings);
 $error = '';
 $formFullName = '';
 $formEmail = '';

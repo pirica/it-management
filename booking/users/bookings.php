@@ -15,6 +15,7 @@ if ($company_id <= 0) {
     $company_id = hb_public_company_id($conn);
 }
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
+hb_portal_bind_money_settings($settings);
 $error = '';
 $success = '';
 $booking = null;
@@ -160,8 +161,9 @@ if ($booking) {
         'type_name' => $booking['type_name'] ?? '',
         'bed_summary' => $booking['bed_summary'] ?? '',
         'name' => $booking['room_name'] ?? '',
+        'room_number' => $booking['room_number'] ?? '',
     ];
-    $roomLabel = hb_portal_reservation_room_title($room);
+    $roomLabel = hb_portal_reservation_room_title($room, $settings);
     $changeRoomUrl = APPURL . '/rooms.php?' . http_build_query([
         'id' => (int) ($booking['hotel_id'] ?? 0),
         'check_in' => $checkInIso,

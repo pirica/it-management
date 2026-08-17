@@ -122,7 +122,8 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
         $currency = (string) ($context['currency'] ?? 'EUR');
         $roomTitle = trim((string) ($context['display_room_title'] ?? ''));
         if ($roomTitle === '') {
-            $roomTitle = hb_portal_reservation_room_title($room);
+            $summarySettings = hb_portal_money_settings_bound();
+            $roomTitle = hb_portal_reservation_room_title($room, $summarySettings !== [] ? $summarySettings : null);
         }
         $roomCharges = (float) ($breakdown['room_charges'] ?? 0);
         $complimentaryCredit = (float) ($breakdown['complimentary_credit'] ?? 0);
@@ -272,7 +273,7 @@ if (!function_exists('hb_portal_render_confirmation_special_requests')) {
 <span>Traveling with a pet</span>
 </label>
 <?php if ($petDailyFee > 0): ?>
-<p class="hb-checkout-hint">Pets allowed, <?php echo htmlspecialchars(number_format($petDailyFee, 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>€ non-refundable fee, 30 kg maximum, Daily Fee Applies, fee in euros</p>
+<p class="hb-checkout-hint">Pets allowed, <?php echo htmlspecialchars(hb_portal_money_format_decimal($petDailyFee, 'EUR'), ENT_QUOTES, 'UTF-8'); ?> non-refundable fee, 30 kg maximum, Daily Fee Applies</p>
 <?php endif; ?>
 <?php endif; ?>
 <?php if ($hasAnimal): ?>
@@ -641,11 +642,16 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
         if ($company_id <= 0 && $conn) {
             $company_id = hb_public_company_id($conn);
         }
+        $settings = [];
         if (isset($conn) && $company_id > 0) {
-            $settings = itm_hotel_booking_settings_row($conn, $company_id);
+            $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
             if (!empty($settings['urlmybooking'])) {
                 $urlmybooking = $settings['urlmybooking'];
             }
+        }
+        $portalSettings = $settings;
+        if (function_exists('hb_portal_bind_money_settings')) {
+            hb_portal_bind_money_settings($portalSettings);
         }
         $checkInIso = (string) ($primaryRow['check_in'] ?? $booking['check_in'] ?? '');
         $checkOutIso = (string) ($primaryRow['check_out'] ?? $booking['check_out'] ?? '');
@@ -670,12 +676,13 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
         $occupancyLabel = '👤 ' . itm_hotel_booking_portal_occupancy_label($occupancy);
         $pdfFilename = 'booking-confirmation-' . ($guestConfirmationCode !== '' ? $guestConfirmationCode : (string) $reservationId) . '.pdf';
         $roomTitle = function_exists('itm_hotel_booking_portal_confirmation_room_label_from_row')
-            ? itm_hotel_booking_portal_confirmation_room_label_from_row($primaryRow)
+            ? itm_hotel_booking_portal_confirmation_room_label_from_row($primaryRow, $portalSettings)
             : hb_portal_reservation_room_title([
                 'type_name' => $primaryRow['type_name'] ?? '',
                 'bed_summary' => $primaryRow['bed_summary'] ?? '',
                 'name' => $primaryRow['room_name'] ?? '',
-            ]);
+                'room_number' => $primaryRow['room_number'] ?? '',
+            ], $portalSettings);
         $showMultiRoomGroup = count($groupRows) > 1;
         $roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
         $notesRaw = (string) ($primaryRow['notes'] ?? $booking['notes'] ?? '');
@@ -763,7 +770,7 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 ?>
 <li class="hb-payment-room-group-item">
 <div class="hb-payment-room-group-line">
-<span class="hb-payment-room-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow), ENT_QUOTES, 'UTF-8'); ?> — <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($lineDisplayAmount, $currency), ENT_QUOTES, 'UTF-8'); ?></strong>
+<span class="hb-payment-room-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow, $portalSettings), ENT_QUOTES, 'UTF-8'); ?> — <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($lineDisplayAmount, $currency), ENT_QUOTES, 'UTF-8'); ?></strong>
 </div>
 <?php if ($lineRateLabel !== ''): ?>
 <div class="hb-payment-room-rate"><?php echo htmlspecialchars($lineRateLabel, ENT_QUOTES, 'UTF-8'); ?></div>
@@ -879,6 +886,10 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
         if ($company_id <= 0 && $conn) {
             $company_id = hb_public_company_id($conn);
         }
+        $portalSettings = ($conn && $company_id > 0) ? (itm_hotel_booking_settings_row($conn, $company_id) ?: []) : [];
+        if (function_exists('hb_portal_bind_money_settings')) {
+            hb_portal_bind_money_settings($portalSettings);
+        }
         $groupRows = ($conn && $company_id > 0 && function_exists('itm_hotel_booking_portal_load_confirmation_group_rows'))
             ? itm_hotel_booking_portal_load_confirmation_group_rows($conn, $company_id, $booking)
             : [$booking];
@@ -924,7 +935,7 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
 <div class="hb-reservation-summary-room-item-main">
 <span class="hb-reservation-summary-room-slot">Room <?php echo (int) $idx + 1; ?></span>
 <div class="hb-reservation-room-name-block">
-<span class="hb-reservation-room-name"><?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow), ENT_QUOTES, 'UTF-8'); ?></span>
+<span class="hb-reservation-room-name"><?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow, $portalSettings), ENT_QUOTES, 'UTF-8'); ?></span>
 <?php if ($lineRateLabel !== ''): ?>
 <div class="hb-reservation-room-rate"><?php echo htmlspecialchars($lineRateLabel, ENT_QUOTES, 'UTF-8'); ?></div>
 <?php endif; ?>
@@ -936,7 +947,7 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
 </ul>
 <?php else: ?>
 <div class="hb-reservation-summary-room">
-<p class="hb-reservation-room-name"><?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($groupRows[0]), ENT_QUOTES, 'UTF-8'); ?></p>
+<p class="hb-reservation-room-name"><?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($groupRows[0], $portalSettings), ENT_QUOTES, 'UTF-8'); ?></p>
 </div>
 <?php endif; ?>
 <?php if (!$showMultiRoomGroup && $ratePlanLabel !== ''): ?>
