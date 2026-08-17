@@ -2202,6 +2202,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
+                    <td><a href="verify_vault_org_recovery.php" target="_blank" rel="nofollow noreferrer">verify_vault_org_recovery.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Regression: vault org recovery schema, escrow crypto round-trip, consent + request + complete workflow (<code>includes/itm_vault_org_recovery.php</code>, <code>modules/vault_org_recovery/</code>).</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Mixed">
                     <td><a href="fast_create_acc.php" target="_blank" rel="nofollow noreferrer">fast_create_acc.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>

@@ -36,7 +36,7 @@ All proposals below follow existing conventions: procedural PHP, MySQLi prepared
 | **Asset financial lifecycle** | `purchase_cost`, warranty fields | Depreciation schedule, disposal workflow, TCO |
 | **Outbound integrations** | Hotel ARI webhooks only | Generic webhook dispatcher for tickets, bookings, expenses |
 | **Mobile field experience** | Responsive CSS only | PWA shell for tickets, explorer, appointments |
-| **Vault org recovery** | Zero-knowledge lockout by design | Optional admin-assisted recovery with audit + consent |
+| **Vault org recovery** | Zero-knowledge lockout by design (default) | Optional tenant policy: consent + escrow + audited admin recovery (`modules/vault_org_recovery/`) |
 
 ### Pain points (from docs and module notes)
 
@@ -313,7 +313,7 @@ scheduled_reports (
 | 11 | **C: Workflow Automation Rules** | Platform play |
 | 12 | **H: SSO / LDAP** | Enterprise deals |
 | 13 | **PHP 8.2 certification** | Modern hosting prerequisite |
-| 14 | **Vault org recovery (optional policy)** | Legal/HR driven |
+| 14 | **Vault org recovery (optional policy)** | **Done** — company policy, employee consent, escrow, admin inbox + audit (`docs/VAULT.md` §2.E) |
 
 ---
 

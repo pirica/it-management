@@ -88,6 +88,9 @@ CREATE TABLE `companies` (
   `sso_provider` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'ldap',
   `sso_config_json_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `asset_disposal_approval_required` tinyint(1) NOT NULL DEFAULT '0',
+  `vault_org_recovery_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `vault_org_recovery_passphrase_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `vault_org_recovery_escrow_key_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -1455,6 +1458,9 @@ CREATE TABLE `employees` (
 
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `vault_key_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `vault_org_recovery_consent_at` timestamp NULL DEFAULT NULL,
+  `vault_org_recovery_consent_reference` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `vault_key_escrow_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `totp_secret` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `totp_enabled` tinyint(1) NOT NULL DEFAULT '0',
   `reset_token` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -4739,6 +4745,38 @@ CREATE TABLE `approval_inbox_items` (
   CONSTRAINT `fk_approval_inbox_items_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_approval_inbox_items_requester` FOREIGN KEY (`requester_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_approval_inbox_items_assignee` FOREIGN KEY (`assignee_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `vault_org_recovery_requests`
+DROP TABLE IF EXISTS `vault_org_recovery_requests`;
+
+CREATE TABLE `vault_org_recovery_requests` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `employee_id` int NOT NULL,
+  `status` enum('pending','completed','rejected','cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `legal_reference` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `consent_reference` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `consent_verified_at` datetime DEFAULT NULL,
+  `request_notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `completion_notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `requester_employee_id` int DEFAULT NULL,
+  `completed_by_employee_id` int DEFAULT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_vault_org_recovery_company_status` (`company_id`,`status`),
+  KEY `idx_vault_org_recovery_employee` (`company_id`,`employee_id`),
+  CONSTRAINT `fk_vault_org_recovery_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_vault_org_recovery_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_vault_org_recovery_requester` FOREIGN KEY (`requester_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_vault_org_recovery_completed_by` FOREIGN KEY (`completed_by_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for `request_password`

@@ -2,10 +2,6 @@
 require_once 'config/config.php';
 require_once ROOT_PATH . 'includes/itm_vault_master_key.php';
 require_once ROOT_PATH . 'includes/employee_profile_photo.php';
-
-/*
-SELECT COUNT(assigned_to_employee_id) FROM `events` WHERE `assigned_to_employee_id` = 1 AND `company_id` = 1;
-*/
 /**
  * user-config.php - Employee Profile & Preferences
  *
@@ -58,6 +54,9 @@ if (!$current_user) {
 // Why: profile self-updates must use the employee home company_id — session
 // company_id is the active tenant switcher and often differs for multi-company admins.
 $home_company_id = (int)($current_user['company_id'] ?? 0);
+$vaultOrgRecoveryCompany = itm_vault_org_recovery_company_row($conn, $home_company_id);
+$vaultOrgRecoveryPolicyEnabled = is_array($vaultOrgRecoveryCompany) && itm_vault_org_recovery_company_enabled($vaultOrgRecoveryCompany);
+$vaultOrgRecoveryHasConsent = itm_vault_org_recovery_employee_has_consent($current_user);
 
 // Ensure company_id is set from user record if missing in session
 if ($company_id <= 0) {
@@ -431,6 +430,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         mysqli_commit($conn);
                         itm_log_audit($conn, 'employees', $user_id, 'UPDATE', ['action'=>'vault_key_change'], ['action'=>'vault_key_change_success']);
                         if (isset($_SESSION['vault_key'])) $_SESSION['vault_key'] = hash('sha256', $new_vk);
+                        if ($vaultOrgRecoveryPolicyEnabled && $vaultOrgRecoveryHasConsent) {
+                            itm_vault_org_recovery_sync_employee_escrow($conn, $user_id, $home_company_id, $new_vk, $current_user, $vaultOrgRecoveryCompany);
+                        }
 
                         // Send informational notification email to employee (no plaintext secrets in transit)
                         $emailTarget = !empty($current_user['work_email']) ? $current_user['work_email'] : ($current_user['personal_email'] ?? '');
@@ -461,6 +463,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else { $message = 'Vault keys do not match.'; $message_type = 'error'; }
             }
         } else { $message = 'System password incorrect.'; $message_type = 'error'; }
+    } elseif ($action === 'vault_org_recovery_consent') {
+        $message_action = 'vault_org_recovery_consent';
+        $curr_pw = $_POST['current_password'] ?? '';
+        if (!password_verify($curr_pw, $current_user['password'])) {
+            $message = 'System password incorrect.';
+            $message_type = 'error';
+        } elseif (!isset($_POST['vault_org_recovery_consent_ack'])) {
+            $message = 'You must acknowledge org recovery consent.';
+            $message_type = 'error';
+        } else {
+            $consentRef = trim((string)($_POST['vault_org_recovery_consent_reference'] ?? ''));
+            $result = itm_vault_org_recovery_grant_consent($conn, $user_id, $home_company_id, $consentRef);
+            $message = (string)($result['message'] ?? 'Consent saved.');
+            $message_type = !empty($result['ok']) ? 'success' : 'error';
+            if (!empty($result['ok'])) {
+                $stmt_refresh = mysqli_prepare($conn, 'SELECT * FROM employees WHERE id = ? AND company_id = ?');
+                if ($stmt_refresh) {
+                    mysqli_stmt_bind_param($stmt_refresh, 'ii', $user_id, $home_company_id);
+                    mysqli_stmt_execute($stmt_refresh);
+                    $updated_user = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_refresh));
+                    mysqli_stmt_close($stmt_refresh);
+                    if (is_array($updated_user)) {
+                        $current_user = $updated_user;
+                        $vaultOrgRecoveryHasConsent = true;
+                    }
+                }
+            }
+        }
+    } elseif ($action === 'vault_org_recovery_revoke') {
+        $message_action = 'vault_org_recovery_revoke';
+        $curr_pw = $_POST['current_password'] ?? '';
+        if (!password_verify($curr_pw, $current_user['password'])) {
+            $message = 'System password incorrect.';
+            $message_type = 'error';
+        } else {
+            $result = itm_vault_org_recovery_revoke_consent($conn, $user_id, $home_company_id);
+            $message = (string)($result['message'] ?? 'Consent revoked.');
+            $message_type = !empty($result['ok']) ? 'success' : 'error';
+            if (!empty($result['ok'])) {
+                $vaultOrgRecoveryHasConsent = false;
+                $current_user['vault_org_recovery_consent_at'] = null;
+                $current_user['vault_org_recovery_consent_reference'] = null;
+                $current_user['vault_key_escrow_encrypted'] = null;
+            }
+        }
     } elseif ($action === 'totp_setup_start') {
         $curr_pw = $_POST['current_password'] ?? '';
         if (!password_verify($curr_pw, $current_user['password'])) {
@@ -900,6 +947,56 @@ foreach ($access_fields as $f):
                                     <?php $user_config_render_flash('vault_key_change'); ?>
                                     <button type="submit" class="btn btn-primary" title="Save">💾</button>
                                 </form>
+
+                                <?php if ($vaultOrgRecoveryPolicyEnabled): ?>
+                                <hr style="margin:20px 0; border:none; border-top:1px solid var(--border);">
+                                <h3 style="margin-top:0;">Org recovery consent</h3>
+                                <p style="font-size:13px;">Your company allows audited admin-assisted vault recovery when you forget your master key. Consent stores an encrypted escrow snapshot the next time you save your vault key.</p>
+                                <p style="font-size:13px;">
+                                    Status:
+                                    <?php if ($vaultOrgRecoveryHasConsent): ?>
+                                        <span class="badge badge-success">Consented</span>
+                                        <?php if (!empty($current_user['vault_org_recovery_consent_reference'])): ?>
+                                            (<?php echo sanitize((string)$current_user['vault_org_recovery_consent_reference']); ?>)
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="badge badge-danger">Not consented</span>
+                                    <?php endif; ?>
+                                </p>
+                                <?php if (!$vaultOrgRecoveryHasConsent): ?>
+                                    <form method="POST">
+                                        <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                                        <input type="hidden" name="action" value="vault_org_recovery_consent">
+                                        <div class="form-group">
+                                            <label>Policy / case reference (optional)</label>
+                                            <input type="text" name="vault_org_recovery_consent_reference" placeholder="HR policy §, handbook ref…">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="itm-checkbox-control">
+                                                <input type="checkbox" name="vault_org_recovery_consent_ack" value="1" required>
+                                                <span>I consent to encrypted escrow of my vault master key for audited org recovery <span class="itm-check-indicator" aria-hidden="true">✅</span></span>
+                                            </label>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>System Password</label>
+                                            <input type="password" name="current_password" required>
+                                        </div>
+                                        <?php $user_config_render_flash('vault_org_recovery_consent'); ?>
+                                        <button type="submit" class="btn btn-primary" title="Save consent">💾</button>
+                                    </form>
+                                <?php else: ?>
+                                    <form method="POST" onsubmit="return confirm('Revoke org recovery consent and delete escrow snapshot?');">
+                                        <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                                        <input type="hidden" name="action" value="vault_org_recovery_revoke">
+                                        <div class="form-group">
+                                            <label>System Password</label>
+                                            <input type="password" name="current_password" required>
+                                        </div>
+                                        <?php $user_config_render_flash('vault_org_recovery_revoke'); ?>
+                                        <button type="submit" class="btn btn-danger btn-sm" title="Revoke consent">🗑️</button>
+                                    </form>
+                                <?php endif; ?>
+                                <?php endif; ?>
 
                                 <hr style="margin:20px 0; border:none; border-top:1px solid var(--border);">
 

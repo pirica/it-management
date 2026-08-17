@@ -8,6 +8,7 @@ function itm_employees_auth_sensitive_field_names()
     return [
         'password',
         'vault_key_hash',
+        'vault_key_escrow_encrypted',
         'totp_secret',
         'reset_token',
         'reset_token_hash',

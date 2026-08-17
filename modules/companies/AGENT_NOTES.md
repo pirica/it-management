@@ -14,6 +14,7 @@ Manages the top-level tenant entities ("Companies") in the multi-tenant system. 
 - **Unique Incode**: `incode` (a 6-character short code) must be unique.
 - **Active Status**: Inactivating a company should theoretically block access to its data, though implementation depends on session logic.
 - **LDAP SSO (v1):** `sso_enabled`, `sso_jit_enabled`, `sso_provider` (`ldap` or `saml`), `sso_config_json_encrypted`, and `asset_disposal_approval_required` on `companies`. Configure on **edit** only (`create.php` SSO card). LDAP config via `itm_ldap_encrypt_config()`; SAML via `itm_saml_encrypt_config()` in `includes/itm_saml_auth.php`. When `sso_jit_enabled = 1`, first SSO login may create employee + home grant; otherwise match by `sso_subject`, `work_email`, or `username`. Docs: `docs/SSO_LDAP.md`, `docs/SSO_SAML.md`.
+- **Vault org recovery (optional):** `vault_org_recovery_enabled`, `vault_org_recovery_passphrase_hash`, `vault_org_recovery_escrow_key_encrypted` on `companies`. Configure on **edit** only (`create.php` Vault Org Recovery card). Helpers: `includes/itm_vault_org_recovery.php`. Admin inbox: `modules/vault_org_recovery/`. Doc: `docs/VAULT.md` §2.E.
 
 ## 5. UI Behavior Requirements
 - **List heading:** centered `h1` with `sanitize($moduleListHeading)` from `itm_sidebar_label_for_module()` inside `data-itm-new-button-managed="server"` row; `new_button_position` gates left/right ➕ create buttons.
