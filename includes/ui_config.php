@@ -115,6 +115,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'expense_recurrence', 'label' => '🔁 Expense Recurrence', 'href' => 'modules/expense_recurrence/', 'match_dir' => 'expense_recurrence'],
                 ['id' => 'customer_statuses', 'label' => '🟢 Customer Statuses', 'href' => 'modules/customer_statuses/', 'match_dir' => 'customer_statuses'],
                 ['id' => 'integration_accounts', 'label' => '🔗 Integration Accounts', 'href' => 'modules/integration_accounts/', 'match_dir' => 'integration_accounts'],
+                ['id' => 'integration_webhooks', 'label' => '🔔 Integration Webhooks', 'href' => 'modules/integration_webhooks/', 'match_dir' => 'integration_webhooks'],
             ],
         ],
         [
@@ -187,6 +188,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'share_sessions', 'label' => '🔗 Share Sessions', 'href' => 'modules/share_sessions/', 'match_dir' => 'share_sessions'],
                 ['id' => 'approval_inbox', 'label' => '📥 Approval Inbox', 'href' => 'modules/approval_inbox/', 'match_dir' => 'approval_inbox'],
                 ['id' => 'roles_permissions', 'label' => '🛡️ Roles & Permissions', 'href' => 'modules/roles_permissions/', 'match_dir' => 'roles_permissions'],
+                ['id' => 'approval_inbox', 'label' => '📥 Approval Inbox', 'href' => 'modules/approval_inbox/', 'match_dir' => 'approval_inbox'],
                 ['id' => 'emails', 'label' => '📧 Email Management', 'href' => 'modules/emails/', 'match_dir' => 'emails'],
                 ['id' => 'import', 'label' => '📥 Bulk Import', 'href' => 'modules/import/', 'match_dir' => 'import'],
                 ['id' => 'ops_report', 'label' => '📋 Ops Report', 'href' => 'modules/ops_report/', 'match_dir' => 'ops_report'],

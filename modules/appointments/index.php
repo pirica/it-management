@@ -58,7 +58,29 @@ $defaultAppointmentModality = itm_appointment_settings_default_modality_name($se
 require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, $moduleSlug, $moduleListHeading);
 
-if ($crud_action === 'list_all' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+if ($crud_action === 'list_all' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['appointment_status_update'])) {
+    itm_require_post_csrf();
+    $rowId = (int)($_POST['id'] ?? 0);
+    $newStatus = strtolower(trim((string)($_POST['status'] ?? '')));
+    if ($rowId > 0) {
+        appt_update_appointment_status($conn, $company_id, $employee_id, $rowId, $newStatus);
+    }
+    header('Location: list_all.php' . appt_list_all_query_string());
+    exit;
+}
+
+if ($crud_action === 'view' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['appointment_status_update'])) {
+    itm_require_post_csrf();
+    $rowId = (int)($_POST['id'] ?? 0);
+    $newStatus = strtolower(trim((string)($_POST['status'] ?? '')));
+    if ($rowId > 0) {
+        appt_update_appointment_status($conn, $company_id, $employee_id, $rowId, $newStatus);
+    }
+    header('Location: view.php?id=' . $rowId);
+    exit;
+}
+
+if ($crud_action === 'list_all' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && !isset($_POST['appointment_status_update'])) {
     itm_require_post_csrf();
     $rowId = (int)($_POST['id'] ?? 0);
     $assignedRaw = $_POST['assigned_to_employee_id'] ?? '';
@@ -284,6 +306,60 @@ if ($crud_action === 'view') {
     }
 }
 
+function appt_status_options(): array
+{
+    return [
+        'scheduled' => 'Scheduled',
+        'completed' => 'Completed',
+        'no_show' => 'No show',
+        'cancelled' => 'Cancelled',
+    ];
+}
+
+function appt_status_badge(string $status): string
+{
+    $status = strtolower(trim($status));
+    $class = 'badge-secondary';
+    if ($status === 'scheduled') {
+        $class = 'badge-warning';
+    } elseif ($status === 'completed') {
+        $class = 'badge-success';
+    } elseif ($status === 'no_show') {
+        $class = 'badge-danger';
+    } elseif ($status === 'cancelled') {
+        $class = 'badge-danger';
+    }
+    $label = appt_status_options()[$status] ?? ucfirst(str_replace('_', ' ', $status));
+    return '<span class="badge ' . $class . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span>';
+}
+
+function appt_update_appointment_status(mysqli $conn, int $companyId, int $sessionEmployeeId, int $rowId, string $newStatus): bool
+{
+    $allowed = array_keys(appt_status_options());
+    if (!in_array($newStatus, $allowed, true)) {
+        return false;
+    }
+    $clearLock = in_array($newStatus, ['completed', 'no_show', 'cancelled'], true);
+    if ($clearLock) {
+        $sql = 'UPDATE appointments SET status = ?, booking_lock = NULL, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 'siii', $newStatus, $sessionEmployeeId, $rowId, $companyId);
+    } else {
+        $sql = 'UPDATE appointments SET status = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 'siii', $newStatus, $sessionEmployeeId, $rowId, $companyId);
+    }
+    $ok = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+    return $ok;
+}
+
 function appt_list_all_sortable_columns(): array
 {
     return [
@@ -445,7 +521,26 @@ function appt_employee_select_label(array $empRow)
                                 <td><?php echo sanitize(trim($row['employee_name']) ?: '—'); ?></td>
                                 <td><?php echo sanitize($row['reason_name'] ?? '—'); ?></td>
                                 <td><?php echo sanitize(appt_type_label($row['appointment_type_name'] ?? '')); ?></td>
-                                <td><?php echo sanitize($row['status']); ?></td>
+                                <td>
+                                    <?php if ($canEditListRows): ?>
+                                        <select name="status" class="form-control" title="Status" form="appt-status-form-<?php echo (int)$row['id']; ?>" onchange="document.getElementById('appt-status-form-<?php echo (int)$row['id']; ?>').submit();">
+                                            <?php foreach (appt_status_options() as $statusValue => $statusLabel): ?>
+                                                <option value="<?php echo sanitize($statusValue); ?>"<?php echo strtolower((string)($row['status'] ?? '')) === $statusValue ? ' selected' : ''; ?>><?php echo sanitize($statusLabel); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <form id="appt-status-form-<?php echo (int)$row['id']; ?>" method="post" action="list_all.php" style="display:none;">
+                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                            <input type="hidden" name="appointment_status_update" value="1">
+                                            <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                            <input type="hidden" name="search" value="<?php echo sanitize($listSearchRaw); ?>">
+                                            <input type="hidden" name="sort" value="<?php echo sanitize($listSort); ?>">
+                                            <input type="hidden" name="dir" value="<?php echo sanitize($listDir); ?>">
+                                            <input type="hidden" name="page" value="<?php echo (int)$listPage; ?>">
+                                        </form>
+                                    <?php else: ?>
+                                        <?php echo appt_status_badge((string)($row['status'] ?? 'scheduled')); ?>
+                                    <?php endif; ?>
+                                </td>
                                 <td>
                                     <?php if ($canEditListRows): ?>
                                         <select name="assigned_to_employee_id" class="form-control" title="Assigned to" onchange="this.form.submit()">
@@ -521,7 +616,22 @@ function appt_employee_select_label(array $empRow)
                             <tr><th>Date</th><td><?php echo sanitize(appt_format_date_display($viewRow['appointment_date'])); ?></td></tr>
                             <tr><th>Time</th><td><?php echo sanitize(itm_appointment_slot_label(substr($viewRow['start_time'], 0, 8), substr($viewRow['end_time'], 0, 8))); ?></td></tr>
                             <tr><th>Type</th><td><?php echo sanitize(appt_type_label($viewRow['appointment_type_name'] ?? '')); ?></td></tr>
-                            <tr><th>Status</th><td><?php echo sanitize($viewRow['status']); ?></td></tr>
+                            <tr><th>Status</th><td>
+                                <?php echo appt_status_badge((string)($viewRow['status'] ?? 'scheduled')); ?>
+                                <?php if ($canEditListRows): ?>
+                                    <form method="post" action="view.php?id=<?php echo (int)$viewRow['id']; ?>" style="display:inline-flex;gap:8px;align-items:center;margin-left:12px;">
+                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                        <input type="hidden" name="appointment_status_update" value="1">
+                                        <input type="hidden" name="id" value="<?php echo (int)$viewRow['id']; ?>">
+                                        <select name="status" class="form-control" title="Status">
+                                            <?php foreach (appt_status_options() as $statusValue => $statusLabel): ?>
+                                                <option value="<?php echo sanitize($statusValue); ?>"<?php echo strtolower((string)($viewRow['status'] ?? '')) === $statusValue ? ' selected' : ''; ?>><?php echo sanitize($statusLabel); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-primary" title="Save">💾</button>
+                                    </form>
+                                <?php endif; ?>
+                            </td></tr>
                             <tr><th>Assigned to</th><td><?php echo sanitize(trim($viewRow['assigned_to_name'] ?? '') ?: '—'); ?></td></tr>
                             <tr><th>Confirmed</th><td><?php echo (int)($viewRow['is_confirmed'] ?? 0) === 1 ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-danger">No</span>'; ?></td></tr>
                             <tr><th>Time zone</th><td><?php echo sanitize($viewRow['timezone']); ?></td></tr>
