@@ -34,6 +34,7 @@ Tenant CRUD for hospitality room types (`booking_rooms_types`). **Photos are att
 ## 5. UI Behavior Requirements
 
 - Flattened CRUD in `index.php`; `create.php`, `edit.php`, `view.php`, `list_all.php` are thin wrappers (same pattern as `hotel_booking_hotels/`).
+- List hides detailed portal-rule columns; **create/edit** show a **Portal rules** card (`brt_portal_rule_form_columns()` / `brt_render_form_group()` in `index.php`) for occupancy caps, `child_max_age`, `extra_bed_allowed` / `max_extra_beds`, `crib_included`, `connecting_room_type_id`, mixed-type, and `max_rooms_per_booking`. `max_total_guests` and `portal_bookable` remain on the main form.
 - List **Photos** column shows all thumbnails per type; edit shows **Current photos** grid + **Add photos** file input.
 
 ---

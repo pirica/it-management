@@ -124,6 +124,80 @@ function cr_humanize_field($field) {
     return ucwords($label);
 }
 
+/**
+ * Render one create/edit form group for booking_rooms_types (shared main + Portal rules sections).
+ */
+function brt_render_form_group(array $col, array $data, $conn, $company_id, array $fkMap, $excludeFkSelfId = 0): void {
+    $name = (string) ($col['Field'] ?? '');
+    if ($name === '') {
+        return;
+    }
+    if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($name)) {
+        return;
+    }
+    $isTinyInt = str_starts_with((string) ($col['Type'] ?? ''), 'tinyint(1)');
+    $isDate = str_starts_with((string) ($col['Type'] ?? ''), 'date');
+    $isDateTime = str_starts_with((string) ($col['Type'] ?? ''), 'datetime');
+    $isText = str_contains((string) ($col['Type'] ?? ''), 'text');
+    $displayVal = cr_form_display_value($data[$name] ?? '');
+    ?>
+    <div class="form-group">
+        <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
+        <?php if ($name === 'company_id' && $company_id > 0): ?>
+            <input type="hidden" name="company_id" value="<?php echo (int) $company_id; ?>">
+        <?php elseif ($isTinyInt): ?>
+            <label class="itm-checkbox-control">
+                <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int) $displayVal === 1) ? 'checked' : ''; ?>>
+                <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int) $displayVal === 1) ? '✅' : '❌'; ?></span></span>
+            </label>
+        <?php elseif (isset($fkMap[$name])): ?>
+            <?php
+                $opts = brt_fk_options($conn, $fkMap[$name], (int) $company_id, $name);
+                $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
+                $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
+            ?>
+            <select
+                name="<?php echo sanitize($name); ?>"
+                data-addable-select="1"
+                data-add-table="<?php echo sanitize($fkMap[$name]['REFERENCED_TABLE_NAME']); ?>"
+                data-add-id-col="<?php echo sanitize($fkMap[$name]['REFERENCED_COLUMN_NAME']); ?>"
+                data-add-label-col="<?php echo sanitize($fkMeta['label_col']); ?>"
+                data-add-company-scoped="<?php echo $isCompanyScoped; ?>"
+                data-add-friendly="<?php echo sanitize(strtolower(cr_humanize_field($name))); ?>"
+            >
+                <option value="">-- Select --</option>
+                <?php foreach ($opts as $opt):
+                    $optId = (int) ($opt['id'] ?? 0);
+                    if ($name === 'connecting_room_type_id' && $excludeFkSelfId > 0 && $optId === $excludeFkSelfId) {
+                        continue;
+                    }
+                ?>
+                    <option value="<?php echo $optId; ?>" <?php echo ((string) $displayVal === (string) $optId) ? 'selected' : ''; ?>><?php echo sanitize((string) ($opt['label'] ?? '')); ?></option>
+                <?php endforeach; ?>
+                <option value="__add_new__">➕</option>
+            </select>
+        <?php elseif ($isDateTime): ?>
+            <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr((string) $displayVal, 0, 16))); ?>">
+        <?php elseif ($isDate): ?>
+            <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr((string) $displayVal, 0, 10)); ?>">
+        <?php elseif ($isText): ?>
+            <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
+        <?php else: ?>
+            <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
+        <?php endif; ?>
+        <?php if ($name === 'child_max_age'): ?>
+            <p class="form-hint" style="margin:6px 0 0;font-size:.9rem;opacity:.85;">Portal children counter: ages above baby band up to this age (babies assumed 0–2 or lower when this is &lt; 2).</p>
+        <?php elseif ($name === 'max_extra_beds'): ?>
+            <p class="form-hint" style="margin:6px 0 0;font-size:.9rem;opacity:.85;">Adds to max total guests when Extra Bed Allowed is on.</p>
+        <?php elseif ($name === 'crib_included'): ?>
+            <p class="form-hint" style="margin:6px 0 0;font-size:.9rem;opacity:.85;">Waives baby nightly supplement on the guest portal.</p>
+        <?php elseif ($name === 'connecting_room_type_id'): ?>
+            <p class="form-hint" style="margin:6px 0 0;font-size:.9rem;opacity:.85;">Guest portal books both rooms as one unit (two rates before checkout).</p>
+        <?php endif; ?>
+    </div>
+    <?php
+}
+
 function cr_is_hidden_employee_field($field) {
     if (($GLOBALS['crud_table'] ?? '') !== 'employees') {
         return false;
@@ -302,6 +376,7 @@ if (($crud_table ?? '') === 'booking_rooms_types') {
         return !in_array((string) ($col['Field'] ?? ''), $brtListHiddenFields, true);
     }));
     $displayFieldColumns = $uiColumns;
+    $brtFormPortalRuleColumns = brt_portal_rule_form_columns($fieldColumns);
 }
 
 // Why: View shows create/update/delete audit stamps while list hides them.
@@ -1015,61 +1090,23 @@ if (!isset($crud_title)) {
                     <?php if ($crud_action === 'edit' && $editId > 0): ?>
                     <input type="hidden" name="record_id" value="<?php echo (int) $editId; ?>">
                     <?php endif; ?>
-                    <?php foreach ($uiColumns as $col): $name = $col['Field'];
-                        $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
-                        $isDate = str_starts_with($col['Type'], 'date');
-                        $isDateTime = str_starts_with($col['Type'], 'datetime');
-                        $isText = str_contains($col['Type'], 'text');
-                        $displayVal = cr_form_display_value($data[$name] ?? '');
-                    ?>
+                    <?php foreach ($uiColumns as $col):
+                        brt_render_form_group($col, $data, $conn, $company_id, $fkMap);
+                    endforeach; ?>
+                    <?php if (($crud_table ?? '') === 'booking_rooms_types' && !empty($brtFormPortalRuleColumns)): ?>
+                    <div class="card" style="grid-column:1 / -1;margin-top:8px;padding:16px 20px;">
+                        <h2 style="margin:0 0 12px;font-size:1.15rem;">Portal rules</h2>
+                        <p style="margin:0 0 16px;font-size:.95rem;opacity:.9;">Occupancy and connecting-room settings enforced on the guest booking portal (<code>max_total_guests</code> and <code>portal_bookable</code> stay on the main form above).</p>
+                        <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px 16px;">
                         <?php
-                        // Why: Audit meta is stamped via hidden inputs; never show as editable widgets.
-                        if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($name)) {
-                            continue;
-                        }
+                        $brtExcludeConnectingSelfId = ($crud_action === 'edit' && $editId > 0) ? (int) $editId : 0;
+                        foreach ($brtFormPortalRuleColumns as $col):
+                            brt_render_form_group($col, $data, $conn, $company_id, $fkMap, $brtExcludeConnectingSelfId);
+                        endforeach;
                         ?>
-
-                        <div class="form-group">
-                            <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
-                            <?php if ($name === 'company_id' && $company_id > 0): ?>
-                                <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
-                            <?php elseif ($isTinyInt): ?>
-                                <label class="itm-checkbox-control">
-                                    <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
-                                    <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
-                                </label>
-                            <?php elseif (isset($fkMap[$name])): ?>
-                                <?php
-                                    $opts = brt_fk_options($conn, $fkMap[$name], (int)$company_id, $name);
-                                    $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
-                                    $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
-                                ?>
-                                <select
-                                    name="<?php echo sanitize($name); ?>"
-                                    data-addable-select="1"
-                                    data-add-table="<?php echo sanitize($fkMap[$name]['REFERENCED_TABLE_NAME']); ?>"
-                                    data-add-id-col="<?php echo sanitize($fkMap[$name]['REFERENCED_COLUMN_NAME']); ?>"
-                                    data-add-label-col="<?php echo sanitize($fkMeta['label_col']); ?>"
-                                    data-add-company-scoped="<?php echo $isCompanyScoped; ?>"
-                                    data-add-friendly="<?php echo sanitize(strtolower(cr_humanize_field($name))); ?>"
-                                >
-                                    <option value="">-- Select --</option>
-                                    <?php foreach ($opts as $opt): ?>
-                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
-                                    <?php endforeach; ?>
-                                    <option value="__add_new__">➕</option>
-                                </select>
-                            <?php elseif ($isDateTime): ?>
-                                <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
-                            <?php elseif ($isDate): ?>
-                                <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
-                            <?php elseif ($isText): ?>
-                                <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
-                            <?php else: ?>
-                                <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
-                            <?php endif; ?>
                         </div>
-                    <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
                     <?php if ($hbPhotoCfg): ?>
                     <?php if ($crud_action === 'edit' && !empty($editParentPhotos)): ?>
                     <div class="form-group" style="grid-column:1 / -1;">
