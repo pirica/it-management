@@ -47,7 +47,7 @@ if (!function_exists('itm_webhook_queue_generate_secret')) {
 if (!function_exists('itm_webhook_queue_event_types')) {
     function itm_webhook_queue_event_types()
     {
-        return ['ticket.created', 'ticket.status_changed', 'alert.created', 'hotel_booking.confirmed', 'expense.created', 'employee_onboarding.approved', 'equipment.disposed'];
+        return ['ticket.created', 'ticket.status_changed', 'ticket.priority_changed', 'ticket.comment_created', 'alert.created', 'hotel_booking.confirmed', 'expense.created', 'expense.approved', 'employee_onboarding.approved', 'equipment.disposed'];
     }
 }
 
@@ -375,5 +375,59 @@ if (!function_exists('itm_webhook_queue_emit_equipment_disposed')) {
             'disposed_at' => date('Y-m-d H:i:s'),
         ];
         return itm_webhook_queue_enqueue($conn, (int) $companyId, 'equipment.disposed', $payload);
+    }
+}
+
+if (!function_exists('itm_webhook_queue_emit_ticket_priority_changed')) {
+    function itm_webhook_queue_emit_ticket_priority_changed($conn, $companyId, array $ticketRow, array $extra = [])
+    {
+        $payload = array_merge([
+            'event' => 'ticket.priority_changed',
+            'company_id' => (int) $companyId,
+            'ticket_id' => (int) ($ticketRow['id'] ?? 0),
+            'ticket_external_code' => (string) ($ticketRow['ticket_external_code'] ?? ''),
+            'title' => (string) ($ticketRow['title'] ?? ''),
+            'priority_id' => (int) ($ticketRow['priority_id'] ?? 0),
+            'priority_name' => (string) ($ticketRow['priority_name'] ?? ''),
+            'changed_at' => date('Y-m-d H:i:s'),
+        ], $extra);
+        return itm_webhook_queue_enqueue($conn, (int) $companyId, 'ticket.priority_changed', $payload);
+    }
+}
+
+if (!function_exists('itm_webhook_queue_emit_ticket_comment_created')) {
+    function itm_webhook_queue_emit_ticket_comment_created($conn, $companyId, array $commentRow)
+    {
+        $payload = [
+            'event' => 'ticket.comment_created',
+            'company_id' => (int) $companyId,
+            'comment_id' => (int) ($commentRow['id'] ?? 0),
+            'ticket_id' => (int) ($commentRow['ticket_id'] ?? 0),
+            'employee_id' => (int) ($commentRow['employee_id'] ?? 0),
+            'is_internal' => (int) ($commentRow['is_internal'] ?? 0),
+            'body_preview' => function_exists('itm_ticket_comment_body_preview')
+                ? itm_ticket_comment_body_preview((string) ($commentRow['body'] ?? ''))
+                : substr((string) ($commentRow['body'] ?? ''), 0, 120),
+            'created_at' => (string) ($commentRow['created_at'] ?? date('Y-m-d H:i:s')),
+        ];
+        return itm_webhook_queue_enqueue($conn, (int) $companyId, 'ticket.comment_created', $payload);
+    }
+}
+
+if (!function_exists('itm_webhook_queue_emit_expense_approved')) {
+    function itm_webhook_queue_emit_expense_approved($conn, $companyId, array $expenseRow)
+    {
+        $payload = [
+            'event' => 'expense.approved',
+            'company_id' => (int) $companyId,
+            'expense_id' => (int) ($expenseRow['id'] ?? 0),
+            'amount' => (float) ($expenseRow['amount'] ?? 0),
+            'date' => (string) ($expenseRow['date'] ?? ''),
+            'description' => (string) ($expenseRow['description'] ?? ''),
+            'paid_status_id' => (int) ($expenseRow['paid_status_id'] ?? 0),
+            'paid_status_name' => (string) ($expenseRow['paid_status_name'] ?? ''),
+            'approved_at' => date('Y-m-d H:i:s'),
+        ];
+        return itm_webhook_queue_enqueue($conn, (int) $companyId, 'expense.approved', $payload);
     }
 }

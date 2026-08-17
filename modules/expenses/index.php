@@ -860,6 +860,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     itm_require_crud_role_module_permission($conn, $crud_action, $crud_table);
     cr_require_valid_csrf_token();
 
+    $previousPaidStatusId = 0;
+    if ($crud_action === 'edit' && $editId > 0) {
+        $prevPaidStmt = mysqli_prepare($conn, 'SELECT paid_status_id FROM expenses WHERE id = ? AND company_id = ? LIMIT 1');
+        if ($prevPaidStmt) {
+            mysqli_stmt_bind_param($prevPaidStmt, 'ii', $editId, $company_id);
+            mysqli_stmt_execute($prevPaidStmt);
+            $prevPaidRes = mysqli_stmt_get_result($prevPaidStmt);
+            $prevPaidRow = $prevPaidRes ? mysqli_fetch_assoc($prevPaidRes) : null;
+            mysqli_stmt_close($prevPaidStmt);
+            $previousPaidStatusId = (int)($prevPaidRow['paid_status_id'] ?? 0);
+        }
+    }
+
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
         $isTinyInt = (bool)preg_match('/^tinyint(\(\d+\))?/i', (string)$col['Type']);
@@ -1023,6 +1036,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                         'company_id' => (int)$company_id,
                         'automation_depth' => 0,
                     ]);
+                }
+            } elseif ($crud_action === 'edit' && $crud_table === 'expenses' && $savedParentId > 0) {
+                $newPaidStatusId = (int)($data['paid_status_id'] ?? 0);
+                if ($newPaidStatusId > 0
+                    && $newPaidStatusId !== $previousPaidStatusId
+                    && function_exists('itm_expenses_is_approved_paid_status_id')
+                    && itm_expenses_is_approved_paid_status_id($conn, (int)$company_id, $newPaidStatusId)
+                    && !itm_expenses_is_approved_paid_status_id($conn, (int)$company_id, $previousPaidStatusId)
+                ) {
+                    $paidStatusName = itm_expenses_resolve_paid_status_name($conn, (int)$company_id, $newPaidStatusId);
+                    $expenseRow = [
+                        'id' => $savedParentId,
+                        'amount' => (float)($data['amount'] ?? 0),
+                        'date' => (string)($data['date'] ?? ''),
+                        'description' => (string)($data['description'] ?? ''),
+                        'paid_status_id' => $newPaidStatusId,
+                        'paid_status_name' => $paidStatusName,
+                    ];
+                    if (function_exists('itm_webhook_queue_emit_expense_approved')) {
+                        require_once ROOT_PATH . 'includes/itm_webhook_queue.php';
+                        itm_webhook_queue_emit_expense_approved($conn, (int)$company_id, $expenseRow);
+                    }
                 }
             }
             header('Location: ' . $listUrl);

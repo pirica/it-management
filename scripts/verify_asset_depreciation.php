@@ -34,7 +34,7 @@ function ad_pass($msg)
     echo colorText('[PASS] ' . $msg, 'pass') . $nl;
 }
 
-$cols = ['lifecycle_stage', 'depreciation_start_date', 'useful_life_months', 'salvage_value', 'disposal_date', 'disposal_reason'];
+$cols = ['lifecycle_stage', 'depreciation_start_date', 'useful_life_months', 'salvage_value', 'disposal_date', 'disposal_reason', 'disposal_pending_at', 'disposal_pending_date', 'disposal_pending_reason', 'disposal_pending_by'];
 $colSql = "SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'equipment'";
 $res = mysqli_query($conn, $colSql);
 $found = [];
@@ -89,6 +89,29 @@ if (!function_exists('itm_asset_lifecycle_record_disposal')) {
     ad_fail('itm_asset_lifecycle_record_disposal() missing');
 } else {
     ad_pass('itm_asset_lifecycle_record_disposal() loaded');
+}
+
+$stages = itm_asset_lifecycle_stages();
+if (!isset($stages['written_off'])) {
+    ad_fail('written_off lifecycle stage missing from itm_asset_lifecycle_stages()');
+} else {
+    ad_pass('written_off lifecycle stage registered');
+}
+
+foreach (['itm_asset_lifecycle_company_requires_disposal_approval', 'itm_asset_lifecycle_request_disposal', 'itm_asset_lifecycle_approve_pending_disposal', 'itm_asset_lifecycle_submit_disposal'] as $fn) {
+    if (!function_exists($fn)) {
+        ad_fail('Missing helper ' . $fn . '()');
+    } else {
+        ad_pass('Helper ' . $fn . '() loaded');
+    }
+}
+
+$companyColRes = mysqli_query($conn, "SELECT COUNT(*) AS c FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'companies' AND column_name = 'asset_disposal_approval_required'");
+$companyColRow = $companyColRes ? mysqli_fetch_assoc($companyColRes) : null;
+if ((int)($companyColRow['c'] ?? 0) < 1) {
+    ad_fail('companies.asset_disposal_approval_required column missing');
+} else {
+    ad_pass('companies.asset_disposal_approval_required column present');
 }
 
 $companyId = 1;

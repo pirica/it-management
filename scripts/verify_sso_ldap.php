@@ -51,7 +51,7 @@ if (!$conn instanceof mysqli) {
 
 itm_script_output_begin('Verify SSO / LDAP');
 
-$requiredCompanyColumns = ['sso_enabled', 'sso_jit_enabled', 'sso_provider', 'sso_config_json_encrypted'];
+$requiredCompanyColumns = ['sso_enabled', 'sso_jit_enabled', 'sso_provider', 'sso_config_json_encrypted', 'asset_disposal_approval_required'];
 foreach ($requiredCompanyColumns as $column) {
     $stmt = mysqli_prepare(
         $conn,
@@ -133,6 +133,35 @@ if (is_file($ssoEntry)) {
     vsso_pass('sso-ldap.php entry point exists.');
 } else {
     vsso_fail('sso-ldap.php entry point missing.');
+}
+
+$samlEntry = dirname(__DIR__) . '/sso-saml.php';
+$samlAcs = dirname(__DIR__) . '/sso-saml-acs.php';
+if (is_file($samlEntry) && is_file($samlAcs)) {
+    vsso_pass('sso-saml.php and sso-saml-acs.php entry points exist.');
+} else {
+    vsso_fail('SAML entry points missing.');
+}
+
+$samlHelperPath = dirname(__DIR__) . '/includes/itm_saml_auth.php';
+if (is_file($samlHelperPath)) {
+    require_once $samlHelperPath;
+    $sampleSaml = itm_saml_normalize_config([
+        'idp_entity_id' => 'https://idp.example.com/metadata',
+        'idp_sso_url' => 'https://idp.example.com/sso',
+        'idp_x509_cert' => 'MIIBsample',
+        'attribute_username' => 'name',
+        'attribute_email' => 'email',
+    ]);
+    $samlEncrypted = itm_saml_encrypt_config($sampleSaml);
+    $samlRoundTrip = itm_saml_decrypt_config($samlEncrypted);
+    if (is_array($samlRoundTrip) && ($samlRoundTrip['idp_entity_id'] ?? '') === 'https://idp.example.com/metadata') {
+        vsso_pass('itm_saml_encrypt_config / decrypt_config round-trip.');
+    } else {
+        vsso_fail('itm_saml config round-trip mismatch.');
+    }
+} else {
+    vsso_fail('includes/itm_saml_auth.php missing.');
 }
 
 $helperPath = dirname(__DIR__) . '/includes/itm_ldap_auth.php';

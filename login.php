@@ -17,6 +17,16 @@ if (function_exists('itm_sso_any_company_enabled') && itm_sso_any_company_enable
     if (is_array($ssoCompany)) {
         $ssoLinkCompanyId = (int)($ssoCompany['id'] ?? 0);
     }
+}
+$ssoEntryUrl = '';
+if ($ssoLinkCompanyId > 0 && function_exists('itm_sso_fetch_company_row')) {
+    $ssoLinkCompany = itm_sso_fetch_company_row($conn, $ssoLinkCompanyId);
+    if (is_array($ssoLinkCompany)) {
+        $provider = strtolower(trim((string)($ssoLinkCompany['sso_provider'] ?? 'ldap')));
+        $ssoEntryUrl = $provider === 'saml'
+            ? BASE_URL . 'sso-saml.php?company_id=' . $ssoLinkCompanyId
+            : BASE_URL . 'sso-ldap.php?company_id=' . $ssoLinkCompanyId;
+    }
 } elseif (!empty($_SESSION['company_id']) && function_exists('itm_sso_fetch_company_row')) {
     $sessionCompany = itm_sso_fetch_company_row($conn, (int)$_SESSION['company_id']);
     if (is_array($sessionCompany) && (int)($sessionCompany['sso_enabled'] ?? 0) === 1) {
@@ -314,8 +324,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit">Login</button>
         </form>
         <div class="links">
-            <?php if ($ssoLinkCompanyId > 0): ?>
-                <a href="<?php echo sanitize(BASE_URL . 'sso-ldap.php?company_id=' . $ssoLinkCompanyId); ?>" title="Sign in with SSO">Sign in with SSO</a> ·
+            <?php if ($ssoLinkCompanyId > 0 && $ssoEntryUrl !== ''): ?>
+                <a href="<?php echo sanitize($ssoEntryUrl); ?>" title="Sign in with SSO">Sign in with SSO</a> ·
             <?php endif; ?>
             <a href="forgot-password.php">Forgot Password?</a> ·
             <a href="register.php">Register with Invite</a>

@@ -42,7 +42,8 @@ Tenant-scoped workflow automation: admins define rules with a trigger, JSON cond
 
 ## 8. Hooks
 
-- `modules/tickets/create.php` — `ticket.created` on create; `ticket.status_changed` when `status_id` changes on edit.
+- `modules/tickets/create.php` — `ticket.created` on create; `ticket.status_changed` when `status_id` changes on edit; `ticket.priority_changed` when `priority_id` changes on edit.
+- `includes/itm_asset_depreciation.php` — `equipment.disposed` after `itm_asset_lifecycle_record_disposal()`.
 - `modules/alerts/index.php` — `alert.created` on successful alert create.
 - `modules/expenses/index.php` — `expense.created` on successful expense create.
 - `scripts/run_automation_rules.php` — `equipment.warranty_expiring`, `equipment.certificate_expiring`.

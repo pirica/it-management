@@ -41,6 +41,36 @@ function itm_expenses_resolve_default_paid_status_id(mysqli $conn, int $companyI
     return $row ? (int) $row['id'] : null;
 }
 
+function itm_expenses_resolve_paid_status_name(mysqli $conn, int $companyId, int $paidStatusId): string
+{
+    if ($paidStatusId <= 0) {
+        return '';
+    }
+    $sql = 'SELECT name FROM paid_statuses WHERE company_id = ? AND id = ? AND deleted_at IS NULL LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return '';
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $paidStatusId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+
+    return trim((string) ($row['name'] ?? ''));
+}
+
+function itm_expenses_is_approved_paid_status_id(mysqli $conn, int $companyId, int $paidStatusId): bool
+{
+    if ($paidStatusId <= 0) {
+        return false;
+    }
+    $name = itm_expenses_resolve_paid_status_name($conn, $companyId, $paidStatusId);
+    $normalized = strtolower(trim($name));
+
+    return in_array($normalized, ['posted', 'paid'], true);
+}
+
 function itm_expenses_stamp_tax_rate_snapshot(mysqli $conn, int $companyId, ?int $taxRateId): ?string
 {
     if ($taxRateId === null || $taxRateId <= 0) {

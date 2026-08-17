@@ -1,10 +1,10 @@
 # SSO / LDAP Login
 
-LDAP single sign-on (v1) lets employees authenticate against a company directory instead of a local password hash. SAML and other providers are out of scope for this release.
+LDAP single sign-on (v1) lets employees authenticate against a company directory instead of a local password hash. **SAML 2.0** is available when `companies.sso_provider = saml` — see `docs/SSO_SAML.md`.
 
 ## Scope (v1)
 
-- **Provider:** LDAP bind + search only (`companies.sso_provider = ldap`).
+- **Provider:** LDAP bind + search (`companies.sso_provider = ldap`) or SAML 2.0 (`saml`).
 - **Provisioning:** match existing `employees` rows; optional **JIT** when `companies.sso_jit_enabled = 1` creates employee + home `employee_companies` grant on first LDAP login.
 - **Match order:** `sso_subject` (LDAP DN), then `work_email`, then `username` (tenant-scoped, active employment).
 - **Config storage:** encrypted JSON on `companies.sso_config_json_encrypted` via `includes/itm_ldap_auth.php`.
@@ -32,7 +32,7 @@ Fields: enable LDAP SSO, **JIT provision new LDAP users**, host, port, base DN, 
 ## User login flow
 
 1. [login.php](http://localhost/it-management/login.php) shows **Sign in with SSO** when any company has `sso_enabled = 1` (or the session company has SSO).
-2. Link targets [sso-ldap.php](http://localhost/it-management/sso-ldap.php) with `?company_id=`.
+2. Link targets [sso-ldap.php](http://localhost/it-management/sso-ldap.php) or [sso-saml.php](http://localhost/it-management/sso-saml.php) based on `sso_provider`.
 3. User submits LDAP username/password; `itm_ldap_auth_attempt()` validates against the directory and matches an employee.
 4. On success, `itm_sso_finalize_employee_login_session()` sets the same session keys as password login (`employee_id`, `login_employee_id`, `company_id` via `itm_switch_active_company_session`, etc.).
 

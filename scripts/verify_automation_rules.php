@@ -193,7 +193,7 @@ mysqli_query($conn, "DELETE FROM automation_rule_runs WHERE rule_id = {$ruleId}"
 mysqli_query($conn, "DELETE FROM automation_rules WHERE id = {$ruleId}");
 
 $triggerSlugs = itm_automation_rules_trigger_slugs();
-foreach (['alert.created', 'equipment.certificate_expiring', 'expense.created'] as $slug) {
+foreach (['alert.created', 'equipment.certificate_expiring', 'expense.created', 'ticket.priority_changed', 'equipment.disposed'] as $slug) {
     if (!in_array($slug, $triggerSlugs, true)) {
         ar_verify_fail("Trigger slug missing: {$slug}");
     }

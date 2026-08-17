@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_asset_disposal
     $disposeEquipmentId = isset($_POST['equipment_id']) ? (int)$_POST['equipment_id'] : 0;
     $disposalDateInput = trim((string)($_POST['disposal_date'] ?? ''));
     $disposalReasonInput = trim((string)($_POST['disposal_reason'] ?? ''));
-    $disposalResult = itm_asset_lifecycle_record_disposal(
+    $disposalResult = itm_asset_lifecycle_submit_disposal(
         $conn,
         (int)$company_id,
         $disposeEquipmentId,
@@ -19,10 +19,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_asset_disposal
         (int)($_SESSION['employee_id'] ?? 0)
     );
     if (!empty($disposalResult['ok'])) {
-        header('Location: view.php?id=' . $disposeEquipmentId . '&disposal=1');
+        $redirectSuffix = !empty($disposalResult['pending']) ? 'disposal_pending=1' : 'disposal=1';
+        header('Location: view.php?id=' . $disposeEquipmentId . '&' . $redirectSuffix);
         exit;
     }
     $equipmentDisposalFlash = (string)($disposalResult['message'] ?? 'Disposal failed.');
+}
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_asset_disposal'])) {
+    itm_require_post_csrf();
+    if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+        $equipmentDisposalFlash = 'Only administrators may approve disposal requests.';
+    } else {
+        $disposeEquipmentId = isset($_POST['equipment_id']) ? (int)$_POST['equipment_id'] : 0;
+        $approvalResult = itm_asset_lifecycle_approve_pending_disposal(
+            $conn,
+            (int)$company_id,
+            $disposeEquipmentId,
+            (int)($_SESSION['employee_id'] ?? 0)
+        );
+        if (!empty($approvalResult['ok'])) {
+            header('Location: view.php?id=' . $disposeEquipmentId . '&disposal=1');
+            exit;
+        }
+        $equipmentDisposalFlash = (string)($approvalResult['message'] ?? 'Disposal approval failed.');
+    }
 }
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -290,8 +310,13 @@ $lifecycleStageLabel = $lifecycleStages[$lifecycleStageKey] ?? $lifecycleStageKe
 $depreciation = itm_asset_depreciation_compute_book_value($item);
 $lifecycleTimeline = itm_asset_lifecycle_fetch_timeline($conn, (int)$company_id, (int)$item['id']);
 $canRecordDisposal = ((string)($item['lifecycle_stage'] ?? '') !== 'disposed' && empty($item['disposal_date']));
+$hasPendingDisposal = !empty($item['disposal_pending_at']);
+$disposalApprovalRequired = itm_asset_lifecycle_company_requires_disposal_approval($conn, (int)$company_id);
 if (isset($_GET['disposal']) && (string)$_GET['disposal'] === '1') {
     $equipmentDisposalFlash = 'Disposal recorded successfully.';
+}
+if (isset($_GET['disposal_pending']) && (string)$_GET['disposal_pending'] === '1') {
+    $equipmentDisposalFlash = 'Disposal request submitted for administrator approval.';
 }
 ?>
 <div class="card" style="margin-top:20px;">
@@ -308,12 +333,29 @@ if (isset($_GET['disposal']) && (string)$_GET['disposal'] === '1') {
         <tr><th>Monthly depreciation</th><td><?php echo sanitize(number_format((float)$depreciation['monthly_depreciation'], 2)); ?></td></tr>
         <tr><th>Disposal date</th><td><?php echo sanitize(itm_format_cell_scalar_display($item['disposal_date'] ?? '')); ?></td></tr>
         <tr><th>Disposal reason</th><td><?php echo sanitize((string)($item['disposal_reason'] ?? '')); ?></td></tr>
+        <?php if ($hasPendingDisposal): ?>
+        <tr><th>Pending disposal</th><td>
+            <?php echo sanitize(itm_format_cell_scalar_display($item['disposal_pending_date'] ?? '')); ?>
+            — <?php echo sanitize((string)($item['disposal_pending_reason'] ?? '')); ?>
+        </td></tr>
+        <?php endif; ?>
     </tbody></table>
-    <?php if ($canRecordDisposal): ?>
+    <?php if ($hasPendingDisposal && itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))): ?>
+        <form method="POST" style="margin-top:16px;">
+            <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+            <input type="hidden" name="approve_asset_disposal" value="1">
+            <input type="hidden" name="equipment_id" value="<?php echo (int)$item['id']; ?>">
+            <button type="submit" class="btn btn-primary" title="Approve disposal">✅</button>
+        </form>
+    <?php endif; ?>
+    <?php if ($canRecordDisposal && !$hasPendingDisposal): ?>
         <form method="POST" style="margin-top:16px;max-width:640px;" class="form-grid">
             <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
             <input type="hidden" name="record_asset_disposal" value="1">
             <input type="hidden" name="equipment_id" value="<?php echo (int)$item['id']; ?>">
+            <?php if ($disposalApprovalRequired): ?>
+                <p class="form-hint" style="margin-bottom:12px;opacity:.85;">Disposal requires administrator approval for this company.</p>
+            <?php endif; ?>
             <div class="form-group">
                 <label>Disposal date</label>
                 <input type="date" name="disposal_date" value="<?php echo sanitize(date('Y-m-d')); ?>">
