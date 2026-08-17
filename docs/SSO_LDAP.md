@@ -5,7 +5,7 @@ LDAP single sign-on (v1) lets employees authenticate against a company directory
 ## Scope (v1)
 
 - **Provider:** LDAP bind + search only (`companies.sso_provider = ldap`).
-- **Provisioning:** match existing `employees` rows only — no just-in-time user creation.
+- **Provisioning:** match existing `employees` rows; optional **JIT** when `companies.sso_jit_enabled = 1` creates employee + home `employee_companies` grant on first LDAP login.
 - **Match order:** `sso_subject` (LDAP DN), then `work_email`, then `username` (tenant-scoped, active employment).
 - **Config storage:** encrypted JSON on `companies.sso_config_json_encrypted` via `includes/itm_ldap_auth.php`.
 
@@ -14,6 +14,7 @@ LDAP single sign-on (v1) lets employees authenticate against a company directory
 | Table | Column | Purpose |
 |-------|--------|---------|
 | `companies` | `sso_enabled` | Toggle LDAP login for the tenant |
+| `companies` | `sso_jit_enabled` | When `1`, create employee on first successful LDAP match miss |
 | `companies` | `sso_provider` | Default `ldap` |
 | `companies` | `sso_config_json_encrypted` | AES-256-CBC JSON (host, port, bind DN/password, base DN, filter, attribute map) |
 | `employees` | `sso_subject` | Stable LDAP DN after first successful login |
@@ -26,7 +27,7 @@ Administrators configure SSO on the company edit form:
 
 - [modules/companies/edit.php](http://localhost/it-management/modules/companies/edit.php) (Admin session — open in a new browser tab)
 
-Fields: enable LDAP SSO, host, port, base DN, service bind DN/password, user filter (`%username%` placeholder), username attribute, email attribute.
+Fields: enable LDAP SSO, **JIT provision new LDAP users**, host, port, base DN, service bind DN/password, user filter (`%username%` placeholder), username attribute, email attribute.
 
 ## User login flow
 
@@ -41,7 +42,7 @@ Fields: enable LDAP SSO, host, port, base DN, service bind DN/password, user fil
 |----------|------|
 | `itm_ldap_encrypt_config` / `itm_ldap_decrypt_config` | Config JSON at rest |
 | `itm_ldap_auth_attempt` | LDAP connect, bind, search, user bind, employee match |
-| `itm_ldap_match_or_provision_employee` | Match existing employee (no JIT create) |
+| `itm_ldap_match_or_provision_employee` | Match existing employee; JIT create when `sso_jit_enabled` |
 | `itm_sso_resolve_company_for_login` | Resolve company from `company_id`, incode, or first SSO-enabled tenant |
 | `itm_sso_finalize_employee_login_session` | Session stamping after SSO success |
 

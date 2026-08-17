@@ -47,7 +47,7 @@ if (!function_exists('itm_webhook_queue_generate_secret')) {
 if (!function_exists('itm_webhook_queue_event_types')) {
     function itm_webhook_queue_event_types()
     {
-        return ['ticket.created', 'hotel_booking.confirmed'];
+        return ['ticket.created', 'ticket.status_changed', 'alert.created', 'hotel_booking.confirmed'];
     }
 }
 
@@ -275,6 +275,38 @@ if (!function_exists('itm_webhook_queue_emit_ticket_created')) {
             'created_at' => (string) ($ticketRow['created_at'] ?? date('Y-m-d H:i:s')),
         ];
         return itm_webhook_queue_enqueue($conn, (int) $companyId, 'ticket.created', $payload);
+    }
+}
+
+if (!function_exists('itm_webhook_queue_emit_ticket_status_changed')) {
+    function itm_webhook_queue_emit_ticket_status_changed($conn, $companyId, array $ticketRow, array $extra = [])
+    {
+        $payload = array_merge([
+            'event' => 'ticket.status_changed',
+            'company_id' => (int) $companyId,
+            'ticket_id' => (int) ($ticketRow['id'] ?? 0),
+            'ticket_external_code' => (string) ($ticketRow['ticket_external_code'] ?? ''),
+            'title' => (string) ($ticketRow['title'] ?? ''),
+            'status_id' => (int) ($ticketRow['status_id'] ?? 0),
+            'status_name' => (string) ($ticketRow['status_name'] ?? ''),
+            'changed_at' => date('Y-m-d H:i:s'),
+        ], $extra);
+        return itm_webhook_queue_enqueue($conn, (int) $companyId, 'ticket.status_changed', $payload);
+    }
+}
+
+if (!function_exists('itm_webhook_queue_emit_alert_created')) {
+    function itm_webhook_queue_emit_alert_created($conn, $companyId, array $alertRow)
+    {
+        $payload = [
+            'event' => 'alert.created',
+            'company_id' => (int) $companyId,
+            'alert_id' => (int) ($alertRow['id'] ?? 0),
+            'title' => (string) ($alertRow['title'] ?? ''),
+            'assigned_to_employee_id' => (int) ($alertRow['assigned_to_employee_id'] ?? 0),
+            'created_at' => date('Y-m-d H:i:s'),
+        ];
+        return itm_webhook_queue_enqueue($conn, (int) $companyId, 'alert.created', $payload);
     }
 }
 

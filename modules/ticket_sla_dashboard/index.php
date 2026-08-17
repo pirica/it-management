@@ -7,6 +7,48 @@ $crud_title = 'SLA Command Center';
 
 require_once dirname(__DIR__, 2) . '/config/config.php';
 
+$tsdFlash = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tsd_escalation_action'])) {
+    itm_require_post_csrf();
+    $tsdAction = strtolower(trim((string)$_POST['tsd_escalation_action']));
+    if ($tsdAction === 'save_rule') {
+        $ok = itm_ticket_sla_save_escalation_rule($conn, (int)$company_id, [
+            'priority_id' => (int)($_POST['priority_id'] ?? 0),
+            'breach_type' => (string)($_POST['breach_type'] ?? 'both'),
+            'escalate_to_employee_id' => (int)($_POST['escalate_to_employee_id'] ?? 0),
+            'created_by' => (int)($_SESSION['employee_id'] ?? 0),
+        ]);
+        $tsdFlash = $ok ? 'Escalation rule saved.' : 'Could not save escalation rule.';
+    } elseif ($tsdAction === 'delete_rule') {
+        $ok = itm_ticket_sla_delete_escalation_rule($conn, (int)$company_id, (int)($_POST['rule_id'] ?? 0), (int)($_SESSION['employee_id'] ?? 0));
+        $tsdFlash = $ok ? 'Escalation rule removed.' : 'Could not remove escalation rule.';
+    }
+}
+
+$escalationRules = itm_ticket_sla_list_escalation_rules($conn, (int)$company_id);
+$tsdPriorities = [];
+$prioStmt = mysqli_prepare($conn, 'SELECT id, name FROM ticket_priorities WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY name ASC');
+if ($prioStmt) {
+    mysqli_stmt_bind_param($prioStmt, 'i', $company_id);
+    mysqli_stmt_execute($prioStmt);
+    $prioRes = mysqli_stmt_get_result($prioStmt);
+    while ($prioRes && ($prioRow = mysqli_fetch_assoc($prioRes))) {
+        $tsdPriorities[] = $prioRow;
+    }
+    mysqli_stmt_close($prioStmt);
+}
+$tsdEmployees = [];
+$empStmt = mysqli_prepare($conn, 'SELECT id, first_name, last_name, username FROM employees WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY first_name ASC, last_name ASC');
+if ($empStmt) {
+    mysqli_stmt_bind_param($empStmt, 'i', $company_id);
+    mysqli_stmt_execute($empStmt);
+    $empRes = mysqli_stmt_get_result($empStmt);
+    while ($empRes && ($empRow = mysqli_fetch_assoc($empRes))) {
+        $tsdEmployees[] = $empRow;
+    }
+    mysqli_stmt_close($empStmt);
+}
+
 $activeTab = strtolower(trim((string)($_GET['tab'] ?? 'at_risk')));
 $allowedTabs = ['at_risk', 'breached', 'met', 'all'];
 if (!in_array($activeTab, $allowedTabs, true)) {
@@ -58,6 +100,7 @@ $tabLabels = [
         .tsd-tab:hover:not(.active) { background: var(--bg-secondary); }
         .tsd-tab-count { opacity: 0.85; font-size: 0.85em; margin-left: 4px; }
         .tsd-muted { color: var(--text-secondary); font-size: 0.875rem; }
+        .tsd-escalation-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end; margin-bottom: 16px; }
     </style>
 </head>
 <body>
@@ -67,7 +110,10 @@ $tabLabels = [
         <?php include '../../includes/header.php'; ?>
         <div class="content">
             <h1 title="SLA Command Center"><?php echo sanitize($moduleListHeading); ?></h1>
-            <p class="tsd-muted">Open tickets with SLA policies — calendar-hour deadlines (24/7). Schedule <code>php scripts/run_ticket_sla_monitor.php</code> every 15 minutes for breach stamps and assignee alerts.</p>
+            <p class="tsd-muted">Open tickets with SLA policies — calendar-hour deadlines (24/7). Schedule <code>php scripts/run_ticket_sla_monitor.php</code> every 15 minutes for breach stamps, assignee alerts, and auto-escalation.</p>
+            <?php if ($tsdFlash !== ''): ?>
+                <p class="tsd-muted"><?php echo sanitize($tsdFlash); ?></p>
+            <?php endif; ?>
 
             <div class="tsd-summary-grid" id="tsd-summary-cards">
                 <div class="tsd-summary-card"><span class="tsd-muted">At risk</span><strong id="tsd-count-at-risk"><?php echo (int)$summary['at_risk']; ?></strong></div>
@@ -143,6 +189,81 @@ $tabLabels = [
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
+            </div>
+
+            <div class="card" style="margin-top:24px;">
+                <h2 style="margin-top:0;" title="Escalation rules">Escalation rules</h2>
+                <p class="tsd-muted">When a breach is stamped, matching rules reassign the ticket and notify the escalation target (once per breach type).</p>
+                <form method="POST" class="tsd-escalation-form">
+                    <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                    <input type="hidden" name="tsd_escalation_action" value="save_rule">
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select name="priority_id" required>
+                            <option value="">— Select —</option>
+                            <?php foreach ($tsdPriorities as $prio): ?>
+                                <option value="<?php echo (int)$prio['id']; ?>"><?php echo sanitize($prio['name'] ?? ''); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Breach type</label>
+                        <select name="breach_type">
+                            <?php foreach (itm_ticket_sla_escalation_breach_types() as $breachType): ?>
+                                <option value="<?php echo sanitize($breachType); ?>"><?php echo sanitize(ucfirst($breachType)); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Escalate to</label>
+                        <select name="escalate_to_employee_id" required>
+                            <option value="">— Select —</option>
+                            <?php foreach ($tsdEmployees as $emp): ?>
+                                <?php
+                                $empLabel = trim((string)($emp['first_name'] ?? '') . ' ' . (string)($emp['last_name'] ?? ''));
+                                if ($empLabel === '') {
+                                    $empLabel = (string)($emp['username'] ?? 'Employee');
+                                }
+                                ?>
+                                <option value="<?php echo (int)$emp['id']; ?>"><?php echo sanitize($empLabel); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary" title="Save">💾</button>
+                    </div>
+                </form>
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Priority</th>
+                        <th>Breach</th>
+                        <th>Escalate to</th>
+                        <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php if (!empty($escalationRules)): ?>
+                        <?php foreach ($escalationRules as $rule): ?>
+                            <tr>
+                                <td><?php echo sanitize($rule['priority_name'] ?? '—'); ?></td>
+                                <td><?php echo sanitize(ucfirst((string)($rule['breach_type'] ?? ''))); ?></td>
+                                <td><?php echo sanitize(trim((string)($rule['escalate_to_name'] ?? '')) ?: '—'); ?></td>
+                                <td class="itm-actions-cell" data-itm-actions-origin="1">
+                                    <form method="POST" style="display:inline;">
+                                        <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                                        <input type="hidden" name="tsd_escalation_action" value="delete_rule">
+                                        <input type="hidden" name="rule_id" value="<?php echo (int)($rule['id'] ?? 0); ?>">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr><td colspan="4">No escalation rules configured.</td></tr>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

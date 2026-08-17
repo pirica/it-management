@@ -824,6 +824,98 @@ function get_ops_revenue_mix_mtd() {
 }
 
 /**
+ * Ticket CSAT average score trend (last 12 months).
+ */
+function get_ticket_csat_trend() {
+    global $conn, $company_id;
+
+    $labels = [];
+    for ($i = 11; $i >= 0; $i--) {
+        $labels[] = date('Y-m', strtotime("-$i month"));
+    }
+    $scores = array_fill_keys($labels, null);
+    $counts = array_fill_keys($labels, 0);
+
+    $sql = "SELECT DATE_FORMAT(csat_submitted_at, '%Y-%m') AS month_str,
+                   ROUND(AVG(csat_score), 2) AS avg_score,
+                   COUNT(*) AS response_count
+            FROM tickets
+            WHERE company_id = ?
+              AND csat_submitted_at IS NOT NULL
+              AND csat_score IS NOT NULL
+              AND csat_submitted_at >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 12 MONTH), '%Y-%m-01')
+            GROUP BY month_str
+            ORDER BY month_str ASC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $month = (string)($row['month_str'] ?? '');
+            if (isset($scores[$month])) {
+                $scores[$month] = (float)$row['avg_score'];
+                $counts[$month] = (int)$row['response_count'];
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    $data = [];
+    foreach ($labels as $label) {
+        $data[] = $scores[$label];
+    }
+
+    return [
+        'labels' => $labels,
+        'data' => $data,
+        'counts' => array_values($counts),
+    ];
+}
+
+/**
+ * Equipment lifecycle stage distribution.
+ */
+function get_asset_lifecycle_stage_summary() {
+    global $conn, $company_id;
+
+    if (!function_exists('itm_asset_lifecycle_stages')) {
+        require_once dirname(__DIR__, 3) . '/includes/itm_asset_depreciation.php';
+    }
+    $stages = itm_asset_lifecycle_stages();
+    $labels = array_values($stages);
+    $keys = array_keys($stages);
+    $counts = array_fill_keys($keys, 0);
+
+    $sql = "SELECT COALESCE(NULLIF(lifecycle_stage, ''), 'in_service') AS stage_key, COUNT(*) AS c
+            FROM equipment
+            WHERE company_id = ? AND deleted_at IS NULL
+            GROUP BY stage_key";
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $key = (string)($row['stage_key'] ?? 'in_service');
+            if (!isset($counts[$key])) {
+                $counts[$key] = 0;
+            }
+            $counts[$key] = (int)$row['c'];
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    $data = [];
+    foreach ($keys as $key) {
+        $data[] = (int)($counts[$key] ?? 0);
+    }
+
+    return ['labels' => $labels, 'data' => $data];
+}
+
+/**
  * F&B Outlet Covers Analysis (MTD)
  */
 function get_ops_fb_outlet_covers() {

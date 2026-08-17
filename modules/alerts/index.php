@@ -1119,6 +1119,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                     if ($savedAlertId > 0 && $assigneeId > 0) {
                         itm_notify_alert_assigned($conn, (int)$company_id, $assigneeId, $savedAlertId, (string)($data['title'] ?? ''), (int)$logged_user_id);
                     }
+                    if ($savedAlertId > 0 && function_exists('itm_automation_rules_dispatch')) {
+                        require_once ROOT_PATH . 'includes/itm_automation_rules.php';
+                        itm_automation_rules_dispatch($conn, (int)$company_id, 'alert.created', [
+                            'alert_id' => $savedAlertId,
+                            'title' => (string)($data['title'] ?? ''),
+                            'assigned_to_employee_id' => (int)($data['assigned_to_employee_id'] ?? 0),
+                            'company_id' => (int)$company_id,
+                            'automation_depth' => 0,
+                        ]);
+                    }
+                    if ($savedAlertId > 0 && function_exists('itm_webhook_queue_emit_alert_created')) {
+                        require_once ROOT_PATH . 'includes/itm_webhook_queue.php';
+                        itm_webhook_queue_emit_alert_created($conn, (int)$company_id, [
+                            'id' => $savedAlertId,
+                            'title' => (string)($data['title'] ?? ''),
+                            'assigned_to_employee_id' => (int)($data['assigned_to_employee_id'] ?? 0),
+                        ]);
+                    }
                     mysqli_stmt_close($stmt);
                     header('Location: ' . $listUrl);
                     exit;

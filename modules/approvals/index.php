@@ -896,6 +896,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
         $dbErrorCode = 0; $dbErrorMessage = '';
         if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
+            if (function_exists('itm_approval_inbox_sync_module_record')) {
+                require_once ROOT_PATH . 'includes/itm_approval_inbox.php';
+                $savedRecordId = $crud_action === 'create' ? (int)mysqli_insert_id($conn) : (int)$editId;
+                if ($savedRecordId > 0) {
+                    itm_approval_inbox_sync_module_record($conn, (int)$company_id, 'approvals', $savedRecordId);
+                }
+            }
             header('Location: ' . $listUrl);
             exit;
         }

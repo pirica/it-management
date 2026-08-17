@@ -2,7 +2,7 @@
 
 ## 1. Module Purpose
 
-Tenant-scoped workflow automation: admins define rules with a trigger, JSON conditions, and JSON actions. The dispatcher runs on ticket hooks and a scheduled cron for warranty expiry.
+Tenant-scoped workflow automation: admins define rules with a trigger, JSON conditions, and JSON actions. The dispatcher runs on ticket/alert hooks and a scheduled cron for warranty and certificate expiry.
 
 ## 2. Key Tables
 
@@ -43,6 +43,8 @@ Tenant-scoped workflow automation: admins define rules with a trigger, JSON cond
 ## 8. Hooks
 
 - `modules/tickets/create.php` — `ticket.created` on create; `ticket.status_changed` when `status_id` changes on edit.
+- `modules/alerts/index.php` — `alert.created` on successful alert create.
+- `scripts/run_automation_rules.php` — `equipment.warranty_expiring`, `equipment.certificate_expiring`.
 
 ## 9. Regression
 
@@ -53,7 +55,8 @@ php scripts/verify_automation_rules.php
 ## 10. Known Pitfalls
 
 - Invalid JSON in conditions/actions fails validation on save.
-- Scheduled warranty trigger only runs when enabled rules exist for `equipment.warranty_expiring`.
+- Scheduled warranty/certificate triggers only run when enabled rules exist for those slugs.
+- Action types: `notify_employee`, `send_email`, `set_ticket_status`, `assign_ticket`, `set_ticket_priority`, `emit_webhook`.
 
 ## 11. Change Log
 

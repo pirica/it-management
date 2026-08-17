@@ -77,4 +77,12 @@ if ((float) $calc['book_value'] < 650 || (float) $calc['book_value'] > 750) {
     ad_pass('Straight-line book value sample');
 }
 
+$reportsHelper = dirname(__DIR__) . '/modules/reports/api/helpers.php';
+$reportsSource = is_file($reportsHelper) ? (string) file_get_contents($reportsHelper) : '';
+if (strpos($reportsSource, 'function get_asset_lifecycle_stage_summary') === false) {
+    ad_fail('Reports helper get_asset_lifecycle_stage_summary() missing');
+} else {
+    ad_pass('Reports helper get_asset_lifecycle_stage_summary() present');
+}
+
 itm_script_output_end($failures === 0 ? 0 : 1);

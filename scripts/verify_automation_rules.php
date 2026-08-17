@@ -192,4 +192,24 @@ if ($runStatus !== 'success') {
 mysqli_query($conn, "DELETE FROM automation_rule_runs WHERE rule_id = {$ruleId}");
 mysqli_query($conn, "DELETE FROM automation_rules WHERE id = {$ruleId}");
 
+$triggerSlugs = itm_automation_rules_trigger_slugs();
+foreach (['alert.created', 'equipment.certificate_expiring'] as $slug) {
+    if (!in_array($slug, $triggerSlugs, true)) {
+        ar_verify_fail("Trigger slug missing: {$slug}");
+    }
+}
+if ($failures === 0) {
+    ar_verify_pass('Extended trigger slugs registered');
+}
+
+$helperSource = (string) file_get_contents(dirname(__DIR__) . '/includes/itm_automation_rules.php');
+foreach (['assign_ticket', 'set_ticket_priority', 'emit_webhook'] as $actionType) {
+    if (strpos($helperSource, "'{$actionType}'") === false && strpos($helperSource, "\"{$actionType}\"") === false) {
+        ar_verify_fail("Action handler missing: {$actionType}");
+    }
+}
+if ($failures === 0) {
+    ar_verify_pass('Extended action handlers present in itm_automation_rules.php');
+}
+
 itm_script_output_end($failures > 0 ? 1 : 0);

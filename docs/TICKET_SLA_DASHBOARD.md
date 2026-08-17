@@ -27,6 +27,19 @@ Proactive SLA breach management for the IT Management System tickets module.
    - Set `sla_response_breached_at` / `sla_resolve_breached_at`
    - Append `ticket_activity` events
    - Notify assignee via `itm_notify_employee()`
+   - Apply **escalation rules** (`ticket_sla_escalation_rules`) — reassign ticket and notify `escalate_to_employee_id` per priority + breach type
+
+## Escalation rules
+
+Admins configure rules on the SLA Command Center dashboard ([modules/ticket_sla_dashboard/index.php](http://localhost/it-management/modules/ticket_sla_dashboard/index.php)):
+
+| Field | Purpose |
+|-------|---------|
+| `priority_id` | Match ticket priority (NULL = any) |
+| `breach_type` | `response` or `resolve` |
+| `escalate_to_employee_id` | New assignee when breach is stamped |
+
+Table: `ticket_sla_escalation_rules` (migration `db/migrations/ticket_sla_escalation_rules.sql`). Helpers: `itm_ticket_sla_list_escalation_rules()`, `itm_ticket_sla_save_escalation_rule()`, `itm_ticket_sla_apply_escalation_for_breach()`.
 
 ## Database
 
@@ -67,10 +80,10 @@ GET modules/ticket_sla_dashboard/api.php?action=list&filter=at_risk|breached|met
 php scripts/run_ticket_sla_monitor.php
 php scripts/run_ticket_sla_monitor.php --company=1
 php scripts/verify_ticket_sla_dashboard.php
-php scripts/migrate.php --apply   # when ticket_sla_breach.sql is pending
+php scripts/migrate.php --apply   # when ticket_sla_breach.sql or ticket_sla_escalation_rules.sql is pending
 ```
 
-## Limitations (phase 1)
+## Limitations
 
 - Calendar-hour SLA (24/7); business-hours SLA is future work.
-- No auto-escalation rules table in this deliverable.
+- Escalation runs once per breach stamp (idempotent via activity log guard).

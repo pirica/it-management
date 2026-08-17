@@ -138,6 +138,8 @@ $asset_value = get_asset_financial_value();
 $maintenance_forecast = get_upcoming_maintenance_forecast();
 $employee_growth = get_employee_growth_trend();
 $monthly_comparison = get_monthly_actual_comparison();
+$csat_trend = get_ticket_csat_trend();
+$asset_lifecycle_summary = get_asset_lifecycle_stage_summary();
 
 // Summary Metrics
 $total_budget = array_sum($budget_vs_actual['budget']);
@@ -576,6 +578,14 @@ if (!isset($crud_title)) {
                             </div>
                             <p class="report-desc">Equipment allocation across company departments.</p>
                         </article>
+
+                        <article class="report-card">
+                            <h2>♻️ Asset Lifecycle Stages</h2>
+                            <div class="chart-container">
+                                <canvas id="assetLifecycleChart"></canvas>
+                            </div>
+                            <p class="report-desc">Equipment counts by lifecycle stage (procurement through disposal).</p>
+                        </article>
                     </div>
                 </section>
 
@@ -592,6 +602,14 @@ if (!isset($crud_title)) {
                                 <canvas id="ticketsChart"></canvas>
                             </div>
                             <p class="report-desc">Current state of IT support requests.</p>
+                        </article>
+
+                        <article class="report-card">
+                            <h2>⭐ Ticket CSAT Trend</h2>
+                            <div class="chart-container">
+                                <canvas id="csatTrendChart"></canvas>
+                            </div>
+                            <p class="report-desc">Average customer satisfaction score by month (last 12 months).</p>
                         </article>
 
                         <article class="report-card">
@@ -970,6 +988,21 @@ if (!isset($crud_title)) {
             options: baseOptions
         });
 
+        new Chart(document.getElementById('assetLifecycleChart'), {
+            type: 'doughnut',
+            data: {
+                labels: <?php echo json_encode($asset_lifecycle_summary['labels']); ?>,
+                datasets: [{
+                    data: <?php echo json_encode($asset_lifecycle_summary['data']); ?>,
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#94a3b8', '#6366f1']
+                }]
+            },
+            options: {
+                plugins: { legend: { display: true, position: 'right' } },
+                maintainAspectRatio: false
+            }
+        });
+
         // --- OPERATIONS CHARTS ---
 
         new Chart(document.getElementById('ticketsChart'), {
@@ -985,6 +1018,37 @@ if (!isset($crud_title)) {
                 plugins: { legend: { display: true, position: 'right' } },
                 maintainAspectRatio: false
             }
+        });
+
+        new Chart(document.getElementById('csatTrendChart'), {
+            type: 'line',
+            data: {
+                labels: <?php echo json_encode($csat_trend['labels']); ?>,
+                datasets: [{
+                    label: 'Avg CSAT',
+                    data: <?php echo json_encode($csat_trend['data']); ?>,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                    fill: true,
+                    tension: 0.35,
+                    spanGaps: true,
+                    pointRadius: 4
+                }]
+            },
+            options: Object.assign({}, baseOptions, {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 5,
+                        grid: { color: gridColor },
+                        ticks: { color: textColor }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: textColor }
+                    }
+                }
+            })
         });
 
         new Chart(document.getElementById('licenseChart'), {

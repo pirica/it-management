@@ -12,7 +12,7 @@ Unified list of pending approval stages across wired source modules. Assignees (
 
 - `company_id` → `companies`
 - `requester_employee_id` / `assignee_employee_id` → `employees` (SET NULL on delete)
-- Source records: `request_password`, `employee_onboarding_requests`
+- Source records: `request_password`, `employee_onboarding_requests`, `approvals`, `forecast_revisions`
 
 ## 4. Business Rules (Critical for Agents)
 
@@ -28,6 +28,7 @@ Unified list of pending approval stages across wired source modules. Assignees (
 - Status filter, search, pagination via `itm_resolve_records_per_page()`.
 - Table opts out of import/export (`data-itm-no-import-excel`, `data-itm-no-export-*`).
 - Actions: open source record (🔎), pending rows show ✅ approve / ❌ reject.
+- Header link in `includes/header.php` shows pending count badge (`itm_approval_inbox_count_for_assignee()`).
 
 ## 6. API / Integration
 

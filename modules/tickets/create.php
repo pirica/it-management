@@ -517,6 +517,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $statusContext['previous_status_id'] = $previousStatusId;
                             $statusContext['previous_status_name'] = itm_automation_rules_resolve_ticket_status_name($conn, (int)$company_id, $previousStatusId);
                             itm_automation_rules_dispatch($conn, (int)$company_id, 'ticket.status_changed', $statusContext);
+                            if (function_exists('itm_webhook_queue_emit_ticket_status_changed')) {
+                                require_once ROOT_PATH . 'includes/itm_webhook_queue.php';
+                                itm_webhook_queue_emit_ticket_status_changed($conn, (int)$company_id, [
+                                    'id' => $savedTicketId,
+                                    'ticket_external_code' => $ticket_external_code,
+                                    'title' => $title,
+                                    'status_id' => $newStatusId,
+                                    'status_name' => (string)($statusContext['status_name'] ?? ''),
+                                ], [
+                                    'previous_status_id' => $previousStatusId,
+                                    'previous_status_name' => (string)($statusContext['previous_status_name'] ?? ''),
+                                ]);
+                            }
                         }
                     }
                 }

@@ -51,7 +51,7 @@ if (!$conn instanceof mysqli) {
 
 itm_script_output_begin('Verify SSO / LDAP');
 
-$requiredCompanyColumns = ['sso_enabled', 'sso_provider', 'sso_config_json_encrypted'];
+$requiredCompanyColumns = ['sso_enabled', 'sso_jit_enabled', 'sso_provider', 'sso_config_json_encrypted'];
 foreach ($requiredCompanyColumns as $column) {
     $stmt = mysqli_prepare(
         $conn,
@@ -138,10 +138,11 @@ if (is_file($ssoEntry)) {
 $helperPath = dirname(__DIR__) . '/includes/itm_ldap_auth.php';
 $helperSource = is_file($helperPath) ? (string)file_get_contents($helperPath) : '';
 if (strpos($helperSource, 'function itm_sso_resolve_company_for_login') !== false
-    && strpos($helperSource, 'function itm_ldap_match_or_provision_employee') !== false) {
-    vsso_pass('itm_ldap_auth.php exports required helpers.');
+    && strpos($helperSource, 'function itm_ldap_match_or_provision_employee') !== false
+    && strpos($helperSource, 'sso_jit_enabled') !== false) {
+    vsso_pass('itm_ldap_auth.php exports required helpers and JIT gate.');
 } else {
-    vsso_fail('itm_ldap_auth.php missing required helpers.');
+    vsso_fail('itm_ldap_auth.php missing required helpers or JIT gate.');
 }
 
 itm_script_output_end();
