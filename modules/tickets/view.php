@@ -132,7 +132,9 @@ if (!isset($crud_title)) {
                             'assigned_to_employee_id' => 'Assigned To', 'equipment_id' => 'Related Equipment',
                             'due_date' => 'Due Date', 'first_response_at' => 'First Response', 'resolved_at' => 'Resolved At',
                             'sla_response_due_at' => 'SLA Response Due', 'sla_resolve_due_at' => 'SLA Resolve Due',
-                            'is_archived' => 'Archived', 'tickets_photos' => 'Photos',
+                            'is_archived' => 'Archived', 'merged_into_ticket_id' => 'Merged Into',
+                            'csat_score' => 'CSAT Score', 'csat_comment' => 'CSAT Comment', 'csat_submitted_at' => 'CSAT Submitted',
+                            'tickets_photos' => 'Photos',
                             'created_by' => 'Created By (Audit)', 'created_at' => 'Created At',
                             'updated_by' => 'Updated By', 'updated_at' => 'Updated At',
                             'deleted_by' => 'Deleted By', 'deleted_at' => 'Deleted At',
@@ -163,6 +165,14 @@ if (!isset($crud_title)) {
                                         <?php endif; ?>
                                     </td>
                                 </tr>
+                                <?php continue; ?>
+                            <?php endif; ?>
+                            <?php if ($field === 'merged_into_ticket_id'): ?>
+                                <tr><th style="width:220px;"><?php echo sanitize($label); ?></th><td><?php echo !empty($value) ? '<a href="view.php?id=' . (int)$value . '">#' . (int)$value . '</a>' : '—'; ?></td></tr>
+                                <?php continue; ?>
+                            <?php endif; ?>
+                            <?php if ($field === 'csat_submitted_at'): ?>
+                                <tr><th style="width:220px;"><?php echo sanitize($label); ?></th><td><?php echo $value ? sanitize(itm_format_audit_timestamp_display((string)$value)) : '—'; ?></td></tr>
                                 <?php continue; ?>
                             <?php endif; ?>
                             <?php if ($field === 'is_archived'): ?>
@@ -241,12 +251,24 @@ if (!isset($crud_title)) {
                             <button type="submit" name="add_ticket_comment" value="1" class="btn btn-primary" title="Save" style="margin-top:8px;">💾</button>
                         </form>
                     </div>
+                    <?php $csatPublicUrl = empty($item['csat_submitted_at']) ? itm_ticket_csat_build_public_url((int)$company_id, (int)$item['id']) : ''; ?>
+                    <?php if ($csatPublicUrl !== ''): ?>
+                        <div class="card" style="margin-top:16px;">
+                            <h3 title="Customer satisfaction">⭐</h3>
+                            <input type="text" class="form-control" readonly value="<?php echo sanitize($csatPublicUrl); ?>">
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
                 
-                <div style="display:flex;gap:10px;margin-top:20px;">
+                <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
                     <?php echo itm_crud_record_share_render_action_buttons('tickets', (int)($item['id'] ?? $id ?? 0), 'ticket'); ?>
                     <a href="index.php" class="btn">🔙</a>
-                    <?php if ($item): ?><a href="edit.php?id=<?php echo (int)$item['id']; ?>" class="btn btn-primary">✏️</a><?php endif; ?>
+                    <?php if ($item): ?>
+                        <a href="edit.php?id=<?php echo (int)$item['id']; ?>" class="btn btn-primary">✏️</a>
+                        <?php if (empty($item['merged_into_ticket_id']) && empty($item['deleted_at'])): ?>
+                            <a href="merge.php?source_id=<?php echo (int)$item['id']; ?>" class="btn" title="Merge ticket">🔗</a>
+                        <?php endif; ?>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
