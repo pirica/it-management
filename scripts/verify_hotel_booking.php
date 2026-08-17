@@ -713,7 +713,13 @@ if (is_file($changeBookingJs) && strpos((string) file_get_contents($changeBookin
 }
 
 $planningJs = dirname(__DIR__) . '/modules/hotel_bookings/js/hotel-bookings-planning.js';
-if (is_file($planningJs) && strpos((string) file_get_contents($planningJs), 'planning_move') !== false && strpos((string) file_get_contents($planningJs), 'hb-plan-draggable') !== false && strpos((string) file_get_contents($planningJs), 'openHkMaintModal') !== false) {
+$planningJsSrc = is_file($planningJs) ? (string) file_get_contents($planningJs) : '';
+if ($planningJsSrc !== ''
+    && strpos($planningJsSrc, 'planning_move') !== false
+    && strpos($planningJsSrc, 'hb-plan-draggable') !== false
+    && strpos($planningJsSrc, 'openHkMaintModal') !== false
+    && strpos($planningJsSrc, 'getRoomViewBase') !== false
+    && strpos($planningJsSrc, 'td.hb-plan-room-col') !== false) {
     hb_pass('planning grid drag-drop script');
 } else {
     hb_fail('planning grid drag-drop script missing');
