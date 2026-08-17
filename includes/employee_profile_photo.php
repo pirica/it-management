@@ -95,8 +95,8 @@ if (!function_exists('emp_profile_photo_request_allowed_for_employee')) {
 /**
  * Whether the signed-in employee may fetch a profile photo stored under another user's Private/profile tree.
  *
- * Why: Allow when the tenant switcher matches the photo owner's home company, or the login employee
- * has home/grant access via itm_employee_has_company_access() (employee_companies).
+ * Why: Allow when the tenant switcher matches the photo owner's home company, or the session
+ * requester has home/grant access via itm_employee_has_company_access() (employee_companies).
  */
 function emp_profile_photo_request_allowed_for_employee(
     mysqli $conn,
@@ -116,14 +116,7 @@ function emp_profile_photo_request_allowed_for_employee(
         require_once ROOT_PATH . 'includes/itm_company_session.php';
     }
 
-    $loginEmployeeId = function_exists('itm_company_session_login_employee_id')
-        ? itm_company_session_login_employee_id()
-        : $requesterEmployeeId;
-    if ($loginEmployeeId <= 0) {
-        $loginEmployeeId = $requesterEmployeeId;
-    }
-
-    return itm_employee_has_company_access($conn, $loginEmployeeId, $photoOwnerHomeCompanyId);
+    return itm_employee_has_company_access($conn, $requesterEmployeeId, $photoOwnerHomeCompanyId);
 }
 }
 

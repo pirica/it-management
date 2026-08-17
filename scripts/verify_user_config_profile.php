@@ -259,6 +259,17 @@ if (!is_array($foreignReader) || (int)($foreignReader['id'] ?? 0) <= 0) {
         ucp_fail('Foreign tenant reader unexpectedly allowed for home-company profile photo.');
     }
 
+    $savedSession = $_SESSION;
+    $_SESSION['login_employee_id'] = 1;
+    $_SESSION['employee_id'] = 1;
+    $_SESSION['company_id'] = 1;
+    if (!emp_profile_photo_request_allowed_for_employee($conn, $foreignReaderId, $foreignCompanyId, $homeCompanyId)) {
+        ucp_pass('Foreign tenant reader denied even when Admin login_employee_id is in session.');
+    } else {
+        ucp_fail('Foreign tenant reader allowed via polluted login_employee_id session.');
+    }
+    $_SESSION = $savedSession;
+
     $filePath = ROOT_PATH . 'modules/explorer/file.php';
     $foreignSession = [
         'employee_id' => $foreignReaderId,
