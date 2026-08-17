@@ -1,9 +1,10 @@
 <?php
 /**
- * Regression: intentional Explorer cross-user profile photo read contract.
+ * Regression: Explorer profile photo ACL in file.php.
  *
- * documents/modules/explorer/AGENT_NOTES.md — any authenticated user may read
- * profile folders under Private/{user}/profile/; other Private paths stay owner-scoped.
+ * Same-tenant peers may read Private/{user}/profile/ thumbnails; cross-tenant
+ * readers without employee_companies grants are denied. Non-profile Private paths
+ * stay owner-scoped.
  *
  * CLI: php scripts/verify_explorer_profile_photo_acl.php
  * Browser: scripts/verify_explorer_profile_photo_acl.php?run=1 (Administrator).
@@ -20,10 +21,11 @@ ITM_SCRIPT_BROWSER_HOW_TO_USE;
 
 define('ITM_CLI_SCRIPT', true);
 require_once dirname(__DIR__) . '/config/config.php';
-require_once ROOT_PATH . 'includes/itm_cli_binary.php';
+require_once ROOT_PATH . 'includes/employee_profile_photo.php';
 require_once ROOT_PATH . 'modules/explorer/explorer_vault_helpers.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_script_test_employee.php';
+require_once __DIR__ . '/lib/itm_verify_explorer_file_probe.php';
 
 itm_script_output_begin('Explorer profile photo ACL verification');
 
@@ -47,20 +49,19 @@ $agentNotesPath = dirname(__DIR__) . '/modules/explorer/AGENT_NOTES.md';
 $agentNotes = is_file($agentNotesPath) ? (string) file_get_contents($agentNotesPath) : '';
 if ($agentNotes === ''
     || stripos($agentNotes, 'Private/*/profile/') === false
-    || stripos($agentNotes, 'readable by any authenticated user') === false) {
-    vepp_fail('modules/explorer/AGENT_NOTES.md must document intentional cross-user profile photo reads');
+    || stripos($agentNotes, 'itm_employee_has_company_access') === false) {
+    vepp_fail('modules/explorer/AGENT_NOTES.md must document tenant-scoped profile photo reads');
 } else {
-    vepp_pass('AGENT_NOTES documents intentional profile photo sharing');
+    vepp_pass('AGENT_NOTES documents tenant-scoped profile photo sharing');
 }
 
 $fileSourcePath = dirname(__DIR__) . '/modules/explorer/file.php';
 $fileSource = is_file($fileSourcePath) ? (string) file_get_contents($fileSourcePath) : '';
 if ($fileSource === ''
-    || strpos($fileSource, '$isEmployeeProfilePhotoPath') === false
-    || strpos($fileSource, 'Private/[^/]+/profile/') === false) {
-    vepp_fail('file.php must detect Private/*/profile/ paths before owner-only Private checks');
+    || strpos($fileSource, 'emp_profile_photo_request_allowed_for_employee') === false) {
+    vepp_fail('file.php must call emp_profile_photo_request_allowed_for_employee() for profile paths');
 } else {
-    vepp_pass('file.php implements profile photo path bypass for owner ACL');
+    vepp_pass('file.php enforces tenant-scoped profile photo ACL');
 }
 
 if (!explorer_path_is_profile_storage('Private/Admin_1/profile/photo.png')) {
@@ -79,64 +80,6 @@ if (!explorer_path_requires_vault_unlock('Private/Admin_1/secret.txt', 'Admin_1'
     vepp_fail('Non-profile Private paths must still require vault unlock');
 } else {
     vepp_pass('Non-profile Private paths still vault-gated');
-}
-
-/**
- * @return string
- */
-function vepp_run_file_request($scriptPath, array $sessionData, array $getData = [])
-{
-    if (!function_exists('shell_exec')) {
-        return '';
-    }
-
-    $scriptPath = str_replace('\\', '/', (string) $scriptPath);
-    $configPath = str_replace('\\', '/', realpath(dirname(__DIR__) . '/config/config.php') ?: '');
-    if ($configPath === '' || !is_file($scriptPath)) {
-        return '';
-    }
-
-    $tmpFile = tempnam(sys_get_temp_dir(), 'explorer_profile');
-    if ($tmpFile === false) {
-        return '';
-    }
-
-    $repoRoot = str_replace('\\', '/', realpath(dirname(__DIR__)) ?: dirname(__DIR__));
-    $documentRoot = str_replace('\\', '/', dirname($repoRoot));
-    $scriptName = '/it-management/modules/explorer/file.php';
-
-    $code = '<?php
-define(\'ITM_CLI_SCRIPT\', true);
-$_SERVER[\'REQUEST_METHOD\'] = \'GET\';
-$_SERVER[\'REMOTE_ADDR\'] = \'127.0.0.1\';
-$_SERVER[\'HTTP_HOST\'] = \'localhost\';
-$_SERVER[\'SCRIPT_NAME\'] = ' . var_export($scriptName, true) . ';
-$_SERVER[\'PHP_SELF\'] = ' . var_export($scriptName, true) . ';
-$_SERVER[\'SCRIPT_FILENAME\'] = ' . var_export($scriptPath, true) . ';
-$_SERVER[\'DOCUMENT_ROOT\'] = ' . var_export($documentRoot, true) . ';
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
-$_SESSION = unserialize(' . var_export(serialize($sessionData), true) . ');
-$_GET = ' . var_export($getData, true) . ';
-require ' . var_export($configPath, true) . ';
-chdir(dirname(' . var_export($scriptPath, true) . '));
-ob_start();
-include basename(' . var_export($scriptPath, true) . ');
-echo ob_get_clean();
-';
-
-    file_put_contents($tmpFile, $code);
-    $phpBin = itm_resolve_cli_php_binary();
-    $phpIni = '';
-    $mysqliSocket = ini_get('mysqli.default_socket');
-    if (is_string($mysqliSocket) && $mysqliSocket !== '') {
-        $phpIni = ' -d mysqli.default_socket=' . escapeshellarg($mysqliSocket);
-    }
-    $output = shell_exec(escapeshellarg($phpBin) . $phpIni . ' ' . escapeshellarg($tmpFile) . ' 2>&1');
-    @unlink($tmpFile);
-
-    return is_string($output) ? $output : '';
 }
 
 $companyId = 1;
@@ -163,6 +106,7 @@ $ownerPrivate = (string) $owner['username'] . '_' . (int) $owner['id'];
 $profileDir = ROOT_PATH . 'files/' . $companyId . '/Private/' . $ownerPrivate . '/profile';
 $profileFile = $profileDir . '/vepp-test.png';
 $secretFile = ROOT_PATH . 'files/' . $companyId . '/Private/' . $ownerPrivate . '/vepp-secret.txt';
+$profileServePath = 'Private/' . $ownerPrivate . '/profile/vepp-test.png';
 
 if (function_exists('itm_ensure_files_storage_directory')) {
     itm_ensure_files_storage_directory($profileDir);
@@ -180,26 +124,61 @@ $readerSession = [
 ];
 
 $filePath = dirname(__DIR__) . '/modules/explorer/file.php';
-$profileOutput = vepp_run_file_request($filePath, $readerSession, [
-    'path' => 'Private/' . $ownerPrivate . '/profile/vepp-test.png',
+$profileOutput = itm_verify_explorer_file_probe_run($filePath, $readerSession, [
+    'path' => $profileServePath,
 ]);
 if (stripos($profileOutput, 'Access denied to private folder') !== false
+    || stripos($profileOutput, 'Access denied.') !== false
     || stripos($profileOutput, 'File not found') !== false) {
-    vepp_fail('Cross-user profile photo read blocked (expected intentional allow)');
+    vepp_fail('Same-tenant peer profile photo read blocked');
 } elseif (stripos($profileOutput, 'Content-Type: image/png') === false
     && stripos($profileOutput, 'PNG') === false) {
-    vepp_fail('Cross-user profile photo read did not return image content');
+    vepp_fail('Same-tenant peer profile photo read did not return image content');
 } else {
-    vepp_pass('Authenticated peer may read another user profile photo');
+    vepp_pass('Same-tenant peer may read another user profile photo');
 }
 
-$secretOutput = vepp_run_file_request($filePath, $readerSession, [
+$secretOutput = itm_verify_explorer_file_probe_run($filePath, $readerSession, [
     'path' => 'Private/' . $ownerPrivate . '/vepp-secret.txt',
 ]);
-if (stripos($secretOutput, 'Access denied to private folder') !== false) {
+if (stripos($secretOutput, 'Access denied to private folder') !== false
+    || stripos($secretOutput, 'Access denied.') !== false) {
     vepp_pass('Non-profile Private file remains owner-scoped');
 } else {
     vepp_fail('Non-profile Private file leaked to peer reader');
+}
+
+$foreignCompanyId = 2;
+$foreignReader = itm_script_test_employee_create($conn, $foreignCompanyId, [
+    'script_slug' => 'verify-explorer-profile-foreign',
+]);
+if (!is_array($foreignReader)) {
+    vepp_fail('Unable to create foreign-tenant reader');
+} else {
+    itm_script_test_employee_register_teardown($conn, (int) $foreignReader['id'], [], [
+        'cleanup' => true,
+        'company_id' => $foreignCompanyId,
+        'username' => (string) $foreignReader['username'],
+    ]);
+
+    $foreignSession = [
+        'employee_id' => (int) $foreignReader['id'],
+        'company_id' => $foreignCompanyId,
+        'username' => (string) $foreignReader['username'],
+    ];
+    $foreignOutput = itm_verify_explorer_file_probe_run($filePath, $foreignSession, [
+        'path' => $profileServePath,
+    ]);
+    if (stripos($foreignOutput, 'Access denied') !== false) {
+        vepp_pass('Cross-tenant profile photo read blocked');
+    } elseif (stripos($foreignOutput, 'Content-Type: image/png') !== false
+        || stripos($foreignOutput, 'PNG') !== false) {
+        vepp_fail('Cross-tenant profile photo read leaked image bytes');
+    } else {
+        vepp_fail('Cross-tenant profile photo probe returned unexpected body');
+    }
+
+    itm_script_test_employee_delete($conn, (int) $foreignReader['id']);
 }
 
 @unlink($profileFile);

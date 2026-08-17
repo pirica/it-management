@@ -349,7 +349,7 @@ Repro and verify runners that spawn temporary PHP subprocesses use `escapeshella
 | `php scripts/test_explorer_paths.php` | Path ACL logic for Explorer (`get_full_path`). Browser + CLI. |
 | `php scripts/explorer_human_test.php` | Human-flow Explorer API regression (list/create/rename/move/copy/delete, ACL, DB soft-delete sync, audit). **Mutates DB + filesystem** (temporary company). Browser (Admin) via `lib/itm_script_regression_entry.php`; disposable test user via `itm_script_with_test_session_context()`; coloured pass/fail log inside `<pre>` from `itm_script_output_begin()` (`itm_script_output_nl()` + `itm_script_format_status_line()`). CLI; exit `1` on failure. |
 | `php scripts/verify_explorer_zip_leak.php` | Step 1: blocked roots (Home, `Common`, `Private`, `Departments`, `Trash`). Step 2: exact `Private/{username}_{id}` only (session `vault_key` required — Explorer vault gate). Step 3: all other paths blocked (own subfolders, `Common`/`Departments`, other users). Subprocess harness: `itm_resolve_cli_php_binary()`, session before `config.php`. |
-| `php scripts/verify_explorer_profile_photo_acl.php` | Accepted-risk regression: intentional cross-user read of `Private/{user}/profile/` thumbnails in `file.php`; non-profile Private paths stay owner-scoped. Documents `modules/explorer/AGENT_NOTES.md` contract. |
+| `php scripts/verify_explorer_profile_photo_acl.php` | Explorer `file.php` profile ACL: same-tenant peer may read `Private/{user}/profile/` thumbnails; cross-tenant reader without `employee_companies` grant gets **403**; non-profile Private paths stay owner-scoped. |
 | `php scripts/repro_explorer_path_bypass_v4.php` | Regression — `./Private` and `./Private/{other}` blocked after path normalization |
 | `php scripts/repro_explorer_zip_slip_v2.php` | Regression — malicious ZIP traversal entries blocked during `unzip` |
 | `php scripts/verify_explorer_rce_htaccess.php` | PoC — malicious `.htaccess` upload must be blocked or overwritten |
@@ -1117,7 +1117,7 @@ Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking
 |--------|---------|
 | `php scripts/verify_emails_module.php` | Regression: `emails`, `email_smtp_configurations`, `email_alert_rules` tables, `modules_registry` row, default SMTP seed, alert rule seeds, `itm_send_email()` helper; static vault-key notification contract in `user-config.php` (subjects, transactional template, no master-key variables in `itm_send_email()` args); company 1 warranty/license **30-day alert window is a hard fail** (script inserts disposable license sample when empty, then deletes it). `db/` uses relative `DATE_ADD(CURDATE(), …)` expiry seeds so fresh imports stay in-window |
 | `php scripts/verify_webmail_module.php` | Regression: `modules/webmail/` folders (inbox, starred, sent, archived, trash), star/archive toggles, soft/hard delete, `modules_registry` row `webmail` on shared `emails` table |
-| `php scripts/verify_user_config_profile.php` | Regression for `user-config.php` profile fields: home-company UPDATE vs tenant switcher, birthday/theme/emergency round-trip, profile photo URL must be app-absolute `modules/explorer/file.php` (not `../../modules/…`); static `$ui_config` reload after sidebar save |
+| `php scripts/verify_user_config_profile.php` | Regression for `user-config.php` profile fields: home-company UPDATE vs tenant switcher, birthday/theme/emergency round-trip, profile photo URL must be app-absolute `modules/explorer/file.php` (not `../../modules/…`); cross-tenant `file.php` profile read denied; static `$ui_config` reload after sidebar save |
 | `php scripts/verify_sidebar_preferences.php` | Regression: canonical section normalize/reconcile (`explorer` → `employee`), section visibility sync, `employee_sidebar_preferences` DB round-trip, Settings SideMenu access-gate static wiring, `user-config.php` fresh `$ui_config` contract |
 | `php scripts/run_email_alert_rules.php` | Dispatches enabled alert rules per company (warranty, license, certificate, alerts, notes, to-do, events); warranty matches also enqueue in-app notifications for equipment assignees; optional `--company=1` and `--verbose` (per-rule match/sent notes when count is 0) |
 | `php scripts/run_inbound_email_tickets.php` | Polls per-company inbound mail (IMAP or local **Mailpit** API when `imap_host` = `mailpit`) and creates or updates `tickets` from mail routed to `companies.email`; optional `--company=1`, `--verbose`, `--dry-run` |
@@ -1168,7 +1168,7 @@ php -r "echo function_exists('imap_open') ? 'imap ok' : 'imap missing';"
 
 Run `verify_webmail_module.php` when changing `modules/webmail/` or webmail-related `itm_send_email()` log options.
 
-Run `verify_user_config_profile.php` when changing `user-config.php`, `includes/employee_profile_photo.php`, or Explorer `file.php` profile-photo serving.
+Run `verify_user_config_profile.php` when changing `user-config.php`, `includes/employee_profile_photo.php`, or Explorer `file.php` profile-photo serving (URL contract, home-company UPDATE scoping, cross-tenant deny).
 
 Run `verify_sidebar_preferences.php` when changing `user-config.php` Personalized Sidebar, `modules/settings/` SideMenu, or `includes/ui_config.php` sidebar save/load helpers.
 
