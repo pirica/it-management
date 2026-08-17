@@ -5823,13 +5823,9 @@ if (!function_exists('itm_hotel_booking_portal_rate_plan_hard_delete')) {
   }
 }
 
-if (!function_exists('itm_hotel_booking_load_cancellation_policy_html')) {
-  function itm_hotel_booking_load_cancellation_policy_html(array $planRow) {
-    $html = trim((string) ($planRow['cancellation_policy_html'] ?? ''));
-    if ($html !== '') {
-      return $html;
-    }
-    $url = itm_hotel_booking_normalize_cancellation_policy_url($planRow['cancellation_policy_url'] ?? '');
+if (!function_exists('itm_hotel_booking_load_cancellation_policy_file_html')) {
+  function itm_hotel_booking_load_cancellation_policy_file_html($relativeUrl) {
+    $url = itm_hotel_booking_normalize_cancellation_policy_url($relativeUrl);
     if ($url === '' || preg_match('#^https?://#i', $url)) {
       return '';
     }
@@ -5845,6 +5841,16 @@ if (!function_exists('itm_hotel_booking_load_cancellation_policy_html')) {
       return trim((string) $m[1]);
     }
     return trim($raw);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_load_cancellation_policy_html')) {
+  function itm_hotel_booking_load_cancellation_policy_html(array $planRow) {
+    $html = trim((string) ($planRow['cancellation_policy_html'] ?? ''));
+    if ($html !== '') {
+      return $html;
+    }
+    return itm_hotel_booking_load_cancellation_policy_file_html($planRow['cancellation_policy_url'] ?? '');
   }
 }
 
@@ -6806,6 +6812,45 @@ if (!function_exists('itm_hotel_booking_portal_default_included_adults_per_room_
     $settings = is_array($settings) ? $settings : [];
     $n = (int) ($settings['portal_default_included_adults_per_room'] ?? 2);
     return max(1, min(20, $n));
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_default_cancellation_policy_not_found_url')) {
+  function itm_hotel_booking_portal_default_cancellation_policy_not_found_url() {
+    return 'cancellation_policy/404.html';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_cancellation_policy_not_found_url_from_settings')) {
+  function itm_hotel_booking_portal_cancellation_policy_not_found_url_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $url = itm_hotel_booking_normalize_cancellation_policy_url(
+      (string) ($settings['portal_cancellation_policy_not_found_url'] ?? itm_hotel_booking_portal_default_cancellation_policy_not_found_url())
+    );
+    if ($url === '') {
+      return itm_hotel_booking_portal_default_cancellation_policy_not_found_url();
+    }
+    return $url;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_cancellation_policy_not_found_html')) {
+  function itm_hotel_booking_portal_cancellation_policy_not_found_html($conn, $companyId) {
+    $companyId = (int) $companyId;
+    $settings = $companyId > 0 ? itm_hotel_booking_settings_row($conn, $companyId) : [];
+    $url = itm_hotel_booking_portal_cancellation_policy_not_found_url_from_settings($settings ?: []);
+    $html = itm_hotel_booking_load_cancellation_policy_file_html($url);
+    if ($html !== '') {
+      return $html;
+    }
+    $defaultUrl = itm_hotel_booking_portal_default_cancellation_policy_not_found_url();
+    if ($url !== $defaultUrl) {
+      $html = itm_hotel_booking_load_cancellation_policy_file_html($defaultUrl);
+      if ($html !== '') {
+        return $html;
+      }
+    }
+    return '<p>Cancellation policy not found.</p>';
   }
 }
 

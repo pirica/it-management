@@ -5692,6 +5692,7 @@ CREATE TABLE `hotel_booking_settings` (
   `portal_occupancy_max_children` int NOT NULL DEFAULT '6',
   `portal_occupancy_max_babies` int NOT NULL DEFAULT '3',
   `portal_default_included_adults_per_room` int NOT NULL DEFAULT '2',
+  `portal_cancellation_policy_not_found_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'cancellation_policy/404.html',
   `free_cancellation_days_before_check_in` int NOT NULL DEFAULT '5',
   `calendar_month_advance_days_left` int NOT NULL DEFAULT '3',
   `show_discount_strikethrough` tinyint(1) NOT NULL DEFAULT '1',
