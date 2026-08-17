@@ -72,7 +72,7 @@ if ($isEmployeeProfilePhotoPath) {
     }
 
     require_once ROOT_PATH . 'includes/employee_profile_photo.php';
-    if (!emp_profile_photo_request_allowed_for_employee($conn, $user_id, $photoHomeCompanyId)) {
+    if (!emp_profile_photo_request_allowed_for_employee($conn, $user_id, $company_id, $photoHomeCompanyId)) {
         http_response_code(403);
         exit('Access denied.');
     }
