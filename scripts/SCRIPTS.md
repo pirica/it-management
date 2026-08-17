@@ -604,12 +604,14 @@ Materialized examples: `modules/note_labels/`, `modules/modules_registry/`.
 
 #### Smoke tests (CI — `scripts/smoke_test.sh`)
 
-GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
+GitHub Actions (`.github/workflows/smoke.yml`) runs four jobs:
 
 | Job | Command | Purpose |
 |-----|---------|---------|
 | **smoke** | `bash scripts/smoke_test.sh` | PHP syntax lint + CSRF + SQLi + FK label search coverage audits (no MySQL) |
 | **database-import** | `bash scripts/verify_database_sql_import.sh` then `php scripts/verify_crud_fk_label_search.php` | Full `db/` import on MySQL 8.0 service (`MYSQL_PORT=3306` in workflow — GHA maps `3306:3306`; local Dunebox uses `MYSQL_PORT=3307` or `.env`); asserts live table count matches `CREATE TABLE` entries in `db/01_schema.sql` (derived at runtime — `grep -c '^CREATE TABLE' db/01_schema.sql`); runtime FK label search regression |
+| **tier2** | `php scripts/run_tier2_checks.php` | Tier 2 static `check_*` cluster from `SCRIPTS_TEST_MATRIX.md` (no MySQL) |
+| **phpunit** | `ITM_SKIP_DB_TESTS=1 php scripts/run_tests.php` | PHPUnit unit suite without live-database tests |
 
 **smoke** job steps only:
 
@@ -1279,6 +1281,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/apply_search_index_backfill.php` — dry-run default; `--apply` / `?apply=1` syncs `search_index` for palette modules per company (`--company=`, `--module=`)
 - `php scripts/verify_appointment.php` — `modules/appointments/`, `includes/itm_appointment.php`, appointment `db/` bundle
 - `php scripts/verify_live_chat.php` — Live Chat schema, SLA, ACL, notifications, ticket activity/comments helpers
+- `php scripts/verify_ticket_productivity.php` — Ticket canned responses, merge, CSAT token/public URL, merge smoke
 - `php scripts/debug_peer_options.php` — Debug Chat-with peer picker: `it_settings.chat_same_tenant`, accessible companies, merged peer options vs `list_employees` (CLI `--company_id=` `--employee_id=`; browser query params)
 
 ### Performance benchmarks

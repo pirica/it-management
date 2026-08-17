@@ -3,20 +3,18 @@ function cr_form_display_value($value) {
     return itm_cr_form_display_value($value);
 }
 /**
- * Ticket Comments Module - Index
+ * Ticket Canned Responses Module - Index
  * 
  * Main list view for departments. Users can view, create, edit, and delete
  * department records defined for the company.
  */
 
-$crud_table = 'ticket_comments';
-$crud_title = 'Ticket Comments';
+$crud_table = 'ticket_canned_responses';
+$crud_title = 'Ticket Canned Responses';
 $crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require_once '../../config/config.php';
-require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
-itm_crud_record_share_handle_ajax_request($conn, 'ticket_comments');
 
 require_once '../../includes/itm_crud_fk_label_search.php';
 
@@ -364,45 +362,6 @@ $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
 
-$itmTicketMentionUsers = [];
-$itmTicketCannedResponses = [];
-if (in_array($crud_action, ['create', 'edit'], true) && $company_id > 0) {
-    $mentionSql = 'SELECT id, username, first_name, last_name FROM employees
-                   WHERE company_id = ? AND deleted_at IS NULL AND active = 1
-                   ORDER BY username ASC';
-    $mentionStmt = mysqli_prepare($conn, $mentionSql);
-    if ($mentionStmt) {
-        mysqli_stmt_bind_param($mentionStmt, 'i', $company_id);
-        mysqli_stmt_execute($mentionStmt);
-        $mentionRes = mysqli_stmt_get_result($mentionStmt);
-        while ($mentionRes && ($mentionRow = mysqli_fetch_assoc($mentionRes))) {
-            $itmTicketMentionUsers[] = [
-                'id' => (int)$mentionRow['id'],
-                'username' => (string)($mentionRow['username'] ?? ''),
-                'first_name' => (string)($mentionRow['first_name'] ?? ''),
-                'last_name' => (string)($mentionRow['last_name'] ?? ''),
-            ];
-        }
-        mysqli_stmt_close($mentionStmt);
-    }
-    $cannedSql = 'SELECT id, title, body, category_id FROM ticket_canned_responses WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY title ASC';
-    $cannedStmt = mysqli_prepare($conn, $cannedSql);
-    if ($cannedStmt) {
-        mysqli_stmt_bind_param($cannedStmt, 'i', $company_id);
-        mysqli_stmt_execute($cannedStmt);
-        $cannedRes = mysqli_stmt_get_result($cannedStmt);
-        while ($cannedRes && ($cannedRow = mysqli_fetch_assoc($cannedRes))) {
-            $itmTicketCannedResponses[] = [
-                'id' => (int)$cannedRow['id'],
-                'title' => (string)($cannedRow['title'] ?? ''),
-                'body' => (string)($cannedRow['body'] ?? ''),
-                'category_id' => isset($cannedRow['category_id']) ? (int)$cannedRow['category_id'] : null,
-            ];
-        }
-        mysqli_stmt_close($cannedStmt);
-    }
-}
-
 // Handle Excel/CSV database import requests from table-tools.js.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && strpos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== false) {
     $rawBody = file_get_contents('php://input');
@@ -640,9 +599,6 @@ foreach ($fieldColumns as $col) {
 }
 
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-if ($editId <= 0 && isset($_POST['id'])) {
-    $editId = (int)$_POST['id'];
-}
 
 // Fetch record details for Edit or View pages
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
@@ -811,18 +767,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     // Build and execute the dynamic query
     if (empty($errors)) {
-        $previousCommentBody = '';
-        if ($crud_action === 'edit' && $editId > 0 && $crud_table === 'ticket_comments') {
-            $prevStmt = mysqli_prepare($conn, 'SELECT body FROM ticket_comments WHERE id = ? AND company_id = ? LIMIT 1');
-            if ($prevStmt) {
-                mysqli_stmt_bind_param($prevStmt, 'ii', $editId, $company_id);
-                mysqli_stmt_execute($prevStmt);
-                $prevRes = mysqli_stmt_get_result($prevStmt);
-                $prevRow = $prevRes ? mysqli_fetch_assoc($prevRes) : null;
-                mysqli_stmt_close($prevStmt);
-                $previousCommentBody = (string)($prevRow['body'] ?? '');
-            }
-        }
         if ($crud_action === 'create') {
             if (function_exists('itm_crud_stamp_create_audit')) {
                 itm_crud_stamp_create_audit($data, $sqlValues);
@@ -854,18 +798,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $dbErrorCode = 0;
         $dbErrorMessage = '';
         if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
-            if ($crud_table === 'ticket_comments') {
-                $ticketId = (int)($data['ticket_id'] ?? 0);
-                $body = (string)($data['body'] ?? '');
-                if ($crud_action === 'create') {
-                    $commentId = (int)mysqli_insert_id($conn);
-                    if ($commentId > 0 && $ticketId > 0 && $body !== '') {
-                        itm_notify_ticket_comment_mentions($conn, (int)$company_id, $ticketId, $commentId, $body, (int)($_SESSION['employee_id'] ?? 0));
-                    }
-                } elseif ($crud_action === 'edit' && $editId > 0 && $ticketId > 0 && $body !== '') {
-                    itm_notify_ticket_comment_mentions($conn, (int)$company_id, $ticketId, (int)$editId, $body, (int)($_SESSION['employee_id'] ?? 0), $previousCommentBody);
-                }
-            }
             header('Location: ' . $listUrl);
             exit;
         }
@@ -973,7 +905,7 @@ if (!isset($currentUiConfig)) {
     $currentUiConfig = $ui_config ?? [];
 }
 if (!isset($crud_title)) {
-    $crud_title = 'Ticket Comments';
+    $crud_title = 'Ticket Canned Responses';
 }
     require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
         $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0), basename(dirname($_SERVER['PHP_SELF'])), (string)($crud_title ?? ''));
@@ -1126,9 +1058,6 @@ if (!isset($crud_title)) {
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <?php if ($crud_action === 'edit' && $editId > 0): ?>
-                        <input type="hidden" name="id" value="<?php echo (int)$editId; ?>">
-                    <?php endif; ?>
                     <?php
                     // Reuse UI column filtering so table-specific hidden fields (like company_id for departments)
                     // stay hidden in create/edit forms while remaining available to backend save logic.
@@ -1176,18 +1105,7 @@ if (!isset($crud_title)) {
                             <?php elseif ($isDate): ?>
                                 <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
                             <?php elseif ($isText): ?>
-                                <textarea name="<?php echo sanitize($name); ?>" rows="4"<?php echo $name === 'body' ? ' title="Press F2 to mention a user; Shift+F2 for canned response"' : ''; ?>><?php echo sanitize($displayVal); ?></textarea>
-                                <?php if ($name === 'body' && !empty($itmTicketCannedResponses)): ?>
-                                    <div class="itm-ticket-canned-toolbar">
-                                        <label for="itm-canned-response-select">Canned response</label>
-                                        <select id="itm-canned-response-select" title="Insert canned response (or press Shift+F2)">
-                                            <option value="">-- Insert canned response --</option>
-                                            <?php foreach ($itmTicketCannedResponses as $cannedOpt): ?>
-                                                <option value="<?php echo (int)$cannedOpt['id']; ?>"><?php echo sanitize($cannedOpt['title']); ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                <?php endif; ?>
+                                <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
                             <?php else: ?>
                                 <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
                             <?php endif; ?>
@@ -1214,7 +1132,6 @@ if (!isset($crud_title)) {
                         </tbody>
                     </table>
                     <p style="margin-top:16px;">
-                        <?php echo itm_crud_record_share_render_action_buttons('departments', (int)($data['id'] ?? 0), 'department'); ?>
                         <a href="index.php" class="btn" title="Back">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>" title="Edit">✏️</a></p>
                 </div>
             <?php endif; ?>
@@ -1226,16 +1143,6 @@ if (!isset($crud_title)) {
 window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 </script>
 <script src="../../js/select-add-option.js"></script>
-<?php if (in_array($crud_action, ['create', 'edit'], true)): ?>
-<link rel="stylesheet" href="../../css/ticket-comment-mentions.css">
-<link rel="stylesheet" href="../../css/ticket-comment-canned-responses.css">
-<script>
-window.ITM_TICKET_MENTION_USERS = <?php echo json_encode($itmTicketMentionUsers, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
-window.ITM_TICKET_CANNED_RESPONSES = <?php echo json_encode($itmTicketCannedResponses, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
-</script>
-<script src="../../js/ticket-comment-mentions.js"></script>
-<script src="../../js/ticket-comment-canned-responses.js"></script>
-<?php endif; ?>
 
 <script>
 /**
@@ -1259,6 +1166,5 @@ document.addEventListener('change', function (event) {
 });
 </script>
 
-<?php itm_crud_record_share_include_modal(); ?>
 </body>
 </html>

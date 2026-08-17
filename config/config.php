@@ -347,7 +347,10 @@ require_once ROOT_PATH . 'includes/equipment_poe_helpers.php';
 require_once ROOT_PATH . 'includes/itm_ticket_activity.php';
 require_once ROOT_PATH . 'includes/itm_ticket_comments.php';
 require_once ROOT_PATH . 'includes/itm_ticket_sla.php';
+require_once ROOT_PATH . 'includes/itm_ticket_csat.php';
+require_once ROOT_PATH . 'includes/itm_ticket_merge.php';
 require_once ROOT_PATH . 'includes/itm_employee_notifications.php';
+require_once ROOT_PATH . 'includes/itm_approval_inbox.php';
 require_once ROOT_PATH . 'includes/itm_live_chat_support.php';
 require_once ROOT_PATH . 'includes/itm_live_chat_storage.php';
 require_once ROOT_PATH . 'includes/itm_live_chat_launch_options.php';
@@ -462,6 +465,10 @@ if (defined('ITM_QR_SHARE_PUBLIC') && ITM_QR_SHARE_PUBLIC) {
 
 // Why: booking/* guest portal must not require ITM employee login (see booking/bootstrap.php).
 if (defined('ITM_HOTEL_BOOKING_PUBLIC_PORTAL') && ITM_HOTEL_BOOKING_PUBLIC_PORTAL) {
+    $itmSkipWebAuth = true;
+}
+
+if (defined('ITM_TICKET_CSAT_PUBLIC') && ITM_TICKET_CSAT_PUBLIC) {
     $itmSkipWebAuth = true;
 }
 
