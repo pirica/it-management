@@ -253,7 +253,7 @@ if (!is_array($foreignReader) || (int)($foreignReader['id'] ?? 0) <= 0) {
         'username' => $foreignUsername,
     ]);
 
-    if (!emp_profile_photo_request_allowed_for_employee($conn, $foreignReaderId, $homeCompanyId)) {
+    if (!emp_profile_photo_request_allowed_for_employee($conn, $foreignReaderId, $foreignCompanyId, $homeCompanyId)) {
         ucp_pass('Foreign tenant reader denied by emp_profile_photo_request_allowed_for_employee().');
     } else {
         ucp_fail('Foreign tenant reader unexpectedly allowed for home-company profile photo.');

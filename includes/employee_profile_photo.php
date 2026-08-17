@@ -95,12 +95,21 @@ if (!function_exists('emp_profile_photo_request_allowed_for_employee')) {
 /**
  * Whether the signed-in employee may fetch a profile photo stored under another user's Private/profile tree.
  *
- * Why: Same-tenant peers need thumbnails on lists/org chart; cross-tenant reads must use employee_companies grants.
+ * Why: Allow when the tenant switcher matches the photo owner's home company, or the login employee
+ * has home/grant access via itm_employee_has_company_access() (employee_companies).
  */
-function emp_profile_photo_request_allowed_for_employee(mysqli $conn, int $requesterEmployeeId, int $photoOwnerHomeCompanyId): bool
-{
+function emp_profile_photo_request_allowed_for_employee(
+    mysqli $conn,
+    int $requesterEmployeeId,
+    int $sessionCompanyId,
+    int $photoOwnerHomeCompanyId
+): bool {
     if ($requesterEmployeeId <= 0 || $photoOwnerHomeCompanyId <= 0) {
         return false;
+    }
+
+    if ($sessionCompanyId > 0 && $sessionCompanyId === $photoOwnerHomeCompanyId) {
+        return true;
     }
 
     if (!function_exists('itm_employee_has_company_access')) {
