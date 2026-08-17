@@ -279,6 +279,65 @@ if (!function_exists('itm_ldap_fetch_entry_attribute')) {
     }
 }
 
+if (!function_exists('itm_ldap_resolve_jit_default_role_id')) {
+    /**
+     * Prefer a non-Admin employee role for JIT users (User / Employee / Staff), else lowest id.
+     */
+    function itm_ldap_resolve_jit_default_role_id(mysqli $conn, int $companyId): int
+    {
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            return 0;
+        }
+        $sql = "SELECT id FROM employee_roles
+                WHERE company_id = ? AND deleted_at IS NULL AND active = 1
+                ORDER BY CASE
+                    WHEN LOWER(name) IN ('user', 'employee', 'staff') THEN 0
+                    WHEN LOWER(name) = 'admin' THEN 2
+                    ELSE 1
+                END, id ASC
+                LIMIT 1";
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        return (int)($row['id'] ?? 0);
+    }
+}
+
+if (!function_exists('itm_ldap_resolve_jit_default_access_level_id')) {
+    function itm_ldap_resolve_jit_default_access_level_id(mysqli $conn, int $companyId): int
+    {
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            return 0;
+        }
+        $sql = "SELECT id FROM access_levels
+                WHERE company_id = ? AND deleted_at IS NULL AND active = 1
+                ORDER BY CASE
+                    WHEN LOWER(name) IN ('user', 'employee', 'standard') THEN 0
+                    WHEN LOWER(name) = 'admin' THEN 2
+                    ELSE 1
+                END, id ASC
+                LIMIT 1";
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        return (int)($row['id'] ?? 0);
+    }
+}
+
 if (!function_exists('itm_ldap_match_or_provision_employee')) {
     /**
      * Match an existing employee row for LDAP user data; optionally JIT-provision when enabled on the company.
@@ -407,27 +466,9 @@ if (!function_exists('itm_ldap_match_or_provision_employee')) {
             return null;
         }
 
-        $roleId = 0;
-        $roleStmt = mysqli_prepare($conn, "SELECT id FROM employee_roles WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY id ASC LIMIT 1");
-        if ($roleStmt) {
-            mysqli_stmt_bind_param($roleStmt, 'i', $companyId);
-            mysqli_stmt_execute($roleStmt);
-            $roleRes = mysqli_stmt_get_result($roleStmt);
-            $roleRow = $roleRes ? mysqli_fetch_assoc($roleRes) : null;
-            mysqli_stmt_close($roleStmt);
-            $roleId = (int)($roleRow['id'] ?? 0);
-        }
+        $roleId = itm_ldap_resolve_jit_default_role_id($conn, $companyId);
 
-        $accessId = 0;
-        $accessStmt = mysqli_prepare($conn, 'SELECT id FROM access_levels WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY id ASC LIMIT 1');
-        if ($accessStmt) {
-            mysqli_stmt_bind_param($accessStmt, 'i', $companyId);
-            mysqli_stmt_execute($accessStmt);
-            $accessRes = mysqli_stmt_get_result($accessStmt);
-            $accessRow = $accessRes ? mysqli_fetch_assoc($accessRes) : null;
-            mysqli_stmt_close($accessStmt);
-            $accessId = (int)($accessRow['id'] ?? 0);
-        }
+        $accessId = itm_ldap_resolve_jit_default_access_level_id($conn, $companyId);
 
         $passwordHash = password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
         $ssoSubject = trim((string)($ldapUser['sso_subject'] ?? ''));

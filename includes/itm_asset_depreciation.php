@@ -184,3 +184,97 @@ if (!function_exists('itm_asset_depreciation_run_monthly_snapshots')) {
         return $summary;
     }
 }
+
+if (!function_exists('itm_asset_lifecycle_record_disposal')) {
+    /**
+     * Record equipment disposal: stage, dates, audit event, optional webhook.
+     *
+     * @return array{ok:bool,message?:string}
+     */
+    function itm_asset_lifecycle_record_disposal($conn, $companyId, $equipmentId, $disposalDate, $disposalReason, $employeeId = null)
+    {
+        $companyId = (int) $companyId;
+        $equipmentId = (int) $equipmentId;
+        $disposalReason = trim((string) $disposalReason);
+        if ($companyId <= 0 || $equipmentId <= 0) {
+            return ['ok' => false, 'message' => 'Invalid equipment scope.'];
+        }
+        if ($disposalReason === '') {
+            return ['ok' => false, 'message' => 'Disposal reason is required.'];
+        }
+
+        if (function_exists('itm_parse_date_input')) {
+            $parsed = itm_parse_date_input($disposalDate);
+            $disposalDate = $parsed !== '' ? $parsed : trim((string) $disposalDate);
+        } else {
+            $disposalDate = trim((string) $disposalDate);
+        }
+        if ($disposalDate === '') {
+            $disposalDate = date('Y-m-d');
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id, hostname, name, lifecycle_stage, disposal_date
+             FROM equipment
+             WHERE id = ? AND company_id = ? AND deleted_at IS NULL
+             LIMIT 1'
+        );
+        if (!$stmt) {
+            return ['ok' => false, 'message' => 'Could not load equipment.'];
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $equipmentId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        if (!$row) {
+            return ['ok' => false, 'message' => 'Equipment not found.'];
+        }
+        if ((string) ($row['lifecycle_stage'] ?? '') === 'disposed' || !empty($row['disposal_date'])) {
+            return ['ok' => false, 'message' => 'Equipment is already disposed.'];
+        }
+
+        $employeeId = $employeeId !== null ? (int) $employeeId : (int) ($_SESSION['employee_id'] ?? 0);
+        $upd = mysqli_prepare(
+            $conn,
+            'UPDATE equipment
+             SET lifecycle_stage = \'disposed\', disposal_date = ?, disposal_reason = ?, updated_by = NULLIF(?, 0), updated_at = NOW()
+             WHERE id = ? AND company_id = ? AND deleted_at IS NULL
+             LIMIT 1'
+        );
+        if (!$upd) {
+            return ['ok' => false, 'message' => 'Disposal update failed.'];
+        }
+        mysqli_stmt_bind_param($upd, 'ssiii', $disposalDate, $disposalReason, $employeeId, $equipmentId, $companyId);
+        if (!mysqli_stmt_execute($upd)) {
+            mysqli_stmt_close($upd);
+            return ['ok' => false, 'message' => 'Disposal update failed.'];
+        }
+        mysqli_stmt_close($upd);
+
+        itm_asset_lifecycle_log_event(
+            $conn,
+            $companyId,
+            $equipmentId,
+            'disposal',
+            $disposalReason,
+            ['disposal_date' => $disposalDate],
+            $employeeId > 0 ? $employeeId : null
+        );
+
+        if (function_exists('itm_webhook_queue_emit_equipment_disposed')) {
+            require_once ROOT_PATH . 'includes/itm_webhook_queue.php';
+            itm_webhook_queue_emit_equipment_disposed($conn, $companyId, [
+                'id' => $equipmentId,
+                'hostname' => (string) ($row['hostname'] ?? ''),
+                'name' => (string) ($row['name'] ?? ''),
+                'lifecycle_stage' => 'disposed',
+                'disposal_date' => $disposalDate,
+                'disposal_reason' => $disposalReason,
+            ]);
+        }
+
+        return ['ok' => true];
+    }
+}

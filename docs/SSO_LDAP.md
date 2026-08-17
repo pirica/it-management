@@ -43,6 +43,7 @@ Fields: enable LDAP SSO, **JIT provision new LDAP users**, host, port, base DN, 
 | `itm_ldap_encrypt_config` / `itm_ldap_decrypt_config` | Config JSON at rest |
 | `itm_ldap_auth_attempt` | LDAP connect, bind, search, user bind, employee match |
 | `itm_ldap_match_or_provision_employee` | Match existing employee; JIT create when `sso_jit_enabled` |
+| `itm_ldap_resolve_jit_default_role_id` / `itm_ldap_resolve_jit_default_access_level_id` | Prefer User/Employee/Staff role and access level over Admin for JIT rows |
 | `itm_sso_resolve_company_for_login` | Resolve company from `company_id`, incode, or first SSO-enabled tenant |
 | `itm_sso_finalize_employee_login_session` | Session stamping after SSO success |
 
@@ -54,7 +55,7 @@ php scripts/verify_sso_ldap.php
 
 Browser catalog: [verify_sso_ldap.php?run=1](http://localhost/it-management/scripts/verify_sso_ldap.php?run=1)
 
-Checks: schema columns, encrypt/decrypt round-trip, `ldap` extension presence (N/A when missing), entry files.
+Checks: schema columns, encrypt/decrypt round-trip, `ldap` extension presence (N/A when missing), entry files, JIT provisioning path (`itm_ldap_match_or_provision_employee` with `sso_jit_enabled = 1`).
 
 ## Operations notes
 

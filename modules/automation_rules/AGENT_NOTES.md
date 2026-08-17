@@ -44,6 +44,7 @@ Tenant-scoped workflow automation: admins define rules with a trigger, JSON cond
 
 - `modules/tickets/create.php` — `ticket.created` on create; `ticket.status_changed` when `status_id` changes on edit.
 - `modules/alerts/index.php` — `alert.created` on successful alert create.
+- `modules/expenses/index.php` — `expense.created` on successful expense create.
 - `scripts/run_automation_rules.php` — `equipment.warranty_expiring`, `equipment.certificate_expiring`.
 
 ## 9. Regression
@@ -56,7 +57,8 @@ php scripts/verify_automation_rules.php
 
 - Invalid JSON in conditions/actions fails validation on save.
 - Scheduled warranty/certificate triggers only run when enabled rules exist for those slugs.
-- Action types: `notify_employee`, `send_email`, `set_ticket_status`, `assign_ticket`, `set_ticket_priority`, `emit_webhook`.
+- Action types: `notify_employee`, `send_email`, `set_ticket_status`, `assign_ticket`, `set_ticket_priority`, `create_ticket`, `emit_webhook`.
+- Condition operators: `equals`, `not_equals`, `contains`, `not_empty`, `empty`.
 
 ## 11. Change Log
 

@@ -193,7 +193,7 @@ mysqli_query($conn, "DELETE FROM automation_rule_runs WHERE rule_id = {$ruleId}"
 mysqli_query($conn, "DELETE FROM automation_rules WHERE id = {$ruleId}");
 
 $triggerSlugs = itm_automation_rules_trigger_slugs();
-foreach (['alert.created', 'equipment.certificate_expiring'] as $slug) {
+foreach (['alert.created', 'equipment.certificate_expiring', 'expense.created'] as $slug) {
     if (!in_array($slug, $triggerSlugs, true)) {
         ar_verify_fail("Trigger slug missing: {$slug}");
     }
@@ -203,13 +203,39 @@ if ($failures === 0) {
 }
 
 $helperSource = (string) file_get_contents(dirname(__DIR__) . '/includes/itm_automation_rules.php');
-foreach (['assign_ticket', 'set_ticket_priority', 'emit_webhook'] as $actionType) {
+foreach (['assign_ticket', 'set_ticket_priority', 'emit_webhook', 'create_ticket'] as $actionType) {
     if (strpos($helperSource, "'{$actionType}'") === false && strpos($helperSource, "\"{$actionType}\"") === false) {
         ar_verify_fail("Action handler missing: {$actionType}");
     }
 }
 if ($failures === 0) {
     ar_verify_pass('Extended action handlers present in itm_automation_rules.php');
+}
+
+foreach (['contains', 'not_equals', 'not_empty'] as $conditionOp) {
+    if (strpos($helperSource, "'{$conditionOp}'") === false) {
+        ar_verify_fail("Condition operator missing: {$conditionOp}");
+    }
+}
+if ($failures === 0) {
+    ar_verify_pass('Extended condition operators present');
+}
+
+if (strpos($helperSource, 'function itm_automation_rules_create_ticket') === false) {
+    ar_verify_fail('create_ticket helper missing');
+} else {
+    ar_verify_pass('create_ticket helper present');
+}
+
+$conditions = [
+    ['field' => 'title', 'op' => 'contains', 'value' => 'Auto'],
+    ['field' => 'status_name', 'op' => 'not_empty', 'value' => ''],
+];
+$matchContext = ['title' => 'Automation verify', 'status_name' => 'Open'];
+if (!itm_automation_rules_conditions_match($conditions, $matchContext)) {
+    ar_verify_fail('Extended conditions should match sample context');
+} else {
+    ar_verify_pass('Extended conditions match sample context');
 }
 
 itm_script_output_end($failures > 0 ? 1 : 0);

@@ -139,10 +139,39 @@ $helperPath = dirname(__DIR__) . '/includes/itm_ldap_auth.php';
 $helperSource = is_file($helperPath) ? (string)file_get_contents($helperPath) : '';
 if (strpos($helperSource, 'function itm_sso_resolve_company_for_login') !== false
     && strpos($helperSource, 'function itm_ldap_match_or_provision_employee') !== false
+    && strpos($helperSource, 'function itm_ldap_resolve_jit_default_role_id') !== false
     && strpos($helperSource, 'sso_jit_enabled') !== false) {
     vsso_pass('itm_ldap_auth.php exports required helpers and JIT gate.');
 } else {
     vsso_fail('itm_ldap_auth.php missing required helpers or JIT gate.');
+}
+
+$jitCompanyId = 1;
+$jitUsername = 'jit-verify-' . bin2hex(random_bytes(4));
+$jitSubject = 'cn=' . $jitUsername . ',dc=verify,dc=local';
+$restoreJit = null;
+$jitColRes = mysqli_query($conn, 'SELECT sso_jit_enabled FROM companies WHERE id = ' . $jitCompanyId . ' LIMIT 1');
+$jitColRow = $jitColRes ? mysqli_fetch_assoc($jitColRes) : null;
+$restoreJit = (int)($jitColRow['sso_jit_enabled'] ?? 0);
+mysqli_query($conn, 'UPDATE companies SET sso_jit_enabled = 1 WHERE id = ' . $jitCompanyId . ' LIMIT 1');
+
+$ldapUser = [
+    'sso_subject' => $jitSubject,
+    'username' => $jitUsername,
+    'email' => $jitUsername . '@jit-verify.example.com',
+    'display_name' => 'JIT Verify User',
+];
+$provisioned = itm_ldap_match_or_provision_employee($conn, $jitCompanyId, $ldapUser);
+if (!is_array($provisioned) || (int)($provisioned['id'] ?? 0) <= 0) {
+    vsso_fail('JIT provisioning did not create employee row.');
+} else {
+    $newId = (int)$provisioned['id'];
+    vsso_pass('JIT provisioning created employee id ' . $newId . '.');
+    mysqli_query($conn, 'DELETE FROM employee_companies WHERE employee_id = ' . $newId);
+    mysqli_query($conn, 'DELETE FROM employees WHERE id = ' . $newId . ' AND company_id = ' . $jitCompanyId);
+}
+if ($restoreJit !== null) {
+    mysqli_query($conn, 'UPDATE companies SET sso_jit_enabled = ' . (int)$restoreJit . ' WHERE id = ' . $jitCompanyId . ' LIMIT 1');
 }
 
 itm_script_output_end();

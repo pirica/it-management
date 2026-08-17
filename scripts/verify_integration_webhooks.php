@@ -98,7 +98,7 @@ if ($hookId <= 0) {
 }
 
 $eventTypes = itm_webhook_queue_event_types();
-foreach (['ticket.status_changed', 'alert.created'] as $eventType) {
+foreach (['ticket.status_changed', 'alert.created', 'expense.created', 'employee_onboarding.approved', 'equipment.disposed'] as $eventType) {
     if (!in_array($eventType, $eventTypes, true)) {
         iw_fail('Event type missing: ' . $eventType);
     }
@@ -107,7 +107,13 @@ if ($failures === 0) {
     iw_pass('Extended webhook event types registered');
 }
 
-foreach (['itm_webhook_queue_emit_ticket_status_changed', 'itm_webhook_queue_emit_alert_created'] as $fn) {
+foreach ([
+    'itm_webhook_queue_emit_ticket_status_changed',
+    'itm_webhook_queue_emit_alert_created',
+    'itm_webhook_queue_emit_expense_created',
+    'itm_webhook_queue_emit_employee_onboarding_approved',
+    'itm_webhook_queue_emit_equipment_disposed',
+] as $fn) {
     if (!function_exists($fn)) {
         iw_fail('Missing emitter ' . $fn . '()');
     } else {

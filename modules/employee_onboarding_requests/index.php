@@ -1546,6 +1546,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['approval_api'])) {
 
     itm_approval_inbox_sync_module_record($conn, $recordCompanyId, 'employee_onboarding_requests', $recordId);
 
+    if ($decision === 'approve' && function_exists('itm_webhook_queue_emit_employee_onboarding_approved')) {
+        require_once ROOT_PATH . 'includes/itm_webhook_queue.php';
+        $fetchStmt = mysqli_prepare($conn, 'SELECT * FROM employee_onboarding_requests WHERE id = ? AND company_id = ? LIMIT 1');
+        if ($fetchStmt) {
+            mysqli_stmt_bind_param($fetchStmt, 'ii', $recordId, $recordCompanyId);
+            mysqli_stmt_execute($fetchStmt);
+            $fetchRes = mysqli_stmt_get_result($fetchStmt);
+            $onboardingRow = $fetchRes ? mysqli_fetch_assoc($fetchRes) : null;
+            mysqli_stmt_close($fetchStmt);
+            if (is_array($onboardingRow)) {
+                itm_webhook_queue_emit_employee_onboarding_approved($conn, $recordCompanyId, $onboardingRow, $target);
+            }
+        }
+    }
+
     echo 'Approval status updated: ' . sanitize($statusValue) . '. You may close this tab.';
     exit;
 }
