@@ -2799,6 +2799,20 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for Live Chat: schema tables, SLA on ticket create, chat_with ACL, employee notifications, ticket activity/comments helpers.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="automation_rules automation_rule_runs tickets">
+                    <td><a href="verify_automation_rules.php" target="_blank" rel="nofollow noreferrer">verify_automation_rules.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">automation_rules</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">automation_rule_runs</span></span></td>
+                    <td>Workflow automation regression: schema, audit triggers, seed rule, dispatch <code>ticket.created</code>, verify run log <code>success</code>.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_automation_rules.php</code></td>
+                </tr>
+                <tr data-tags="automation_rules equipment">
+                    <td><a href="run_automation_rules.php" target="_blank" rel="nofollow noreferrer">run_automation_rules.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">automation_rules</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">equipment</span></span></td>
+                    <td>Daily cron runner for date-based automation triggers (<code>equipment.warranty_expiring</code> within 30 days).</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/run_automation_rules.php</code></td>
+                </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_ticket_productivity.php" target="_blank" rel="nofollow noreferrer">verify_ticket_productivity.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

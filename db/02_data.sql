@@ -53,6 +53,8 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("attempts", "Attempts", 0, 1);
 
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("automation_rules", "Automation Rules", 0, 1, "⚙️");
+
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("audit_logs", "Audit Logs", 1, 1);
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("backup_tape_log", "Backup Tape Log File", 0, 1);

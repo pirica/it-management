@@ -1299,6 +1299,8 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_appointment.php` — `modules/appointments/`, `includes/itm_appointment.php`, appointment `db/` bundle
 - `php scripts/verify_live_chat.php` — Live Chat schema, SLA, ACL, notifications, ticket activity/comments helpers
 - `php scripts/verify_ticket_productivity.php` — Ticket canned responses, merge, CSAT token/public URL, merge smoke
+- `php scripts/verify_automation_rules.php` — Workflow automation: tables, audit triggers, seed rule, `ticket.created` dispatch, `automation_rule_runs` success row
+- `php scripts/run_automation_rules.php` — Cron: date-based triggers (`equipment.warranty_expiring` within 30 days)
 - `php scripts/debug_peer_options.php` — Debug Chat-with peer picker: `it_settings.chat_same_tenant`, accessible companies, merged peer options vs `list_employees` (CLI `--company_id=` `--employee_id=`; browser query params)
 
 ### Performance benchmarks
