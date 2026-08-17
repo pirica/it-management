@@ -11,7 +11,7 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/verify_automation_rules.php</code> — seeds a rule, dispatches <code>ticket.created</code>, and checks <code>automation_rule_runs</code> for <code>success</code>.
+<code>php scripts/verify_automation_rules.php</code> — seeds a rule, runs it by id via <code>itm_automation_rules_run_rule()</code>, and checks <code>automation_rule_runs</code> for <code>success</code>.
 Run when changing <code>includes/itm_automation_rules.php</code>, <code>modules/automation_rules/</code>, or automation tables in <code>db/</code>.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
@@ -177,14 +177,21 @@ if ($ruleId <= 0) {
 ar_verify_pass('Inserted test rule id ' . $ruleId);
 
 $context = itm_automation_rules_build_ticket_context($conn, $companyId, $ticketId, ['automation_depth' => 0]);
-itm_automation_rules_dispatch($conn, $companyId, 'ticket.created', $context);
+if (!itm_automation_rules_run_rule($conn, $companyId, $ruleId, $context)) {
+    ar_verify_fail('Could not execute test automation rule id ' . $ruleId);
+}
 
-$runSql = "SELECT status FROM automation_rule_runs WHERE company_id = {$companyId} AND rule_id = {$ruleId} ORDER BY id DESC LIMIT 1";
+$runSql = "SELECT status, message FROM automation_rule_runs WHERE company_id = {$companyId} AND rule_id = {$ruleId} ORDER BY id DESC LIMIT 1";
 $runRes = mysqli_query($conn, $runSql);
 $runRow = $runRes ? mysqli_fetch_assoc($runRes) : null;
 $runStatus = (string)($runRow['status'] ?? '');
 if ($runStatus !== 'success') {
-    ar_verify_fail('Expected automation_rule_runs status success, got ' . $runStatus);
+    $runMessage = trim((string)($runRow['message'] ?? ''));
+    $detail = $runStatus === '' ? 'no run row logged' : $runStatus;
+    if ($runMessage !== '') {
+        $detail .= ' — ' . $runMessage;
+    }
+    ar_verify_fail('Expected automation_rule_runs status success, got ' . $detail);
 } else {
     ar_verify_pass('Dispatch logged success run for rule ' . $ruleId);
 }

@@ -27,7 +27,7 @@ if (!has_module_access($conn, $company_id, 'reports')) {
 require_once ROOT_PATH . 'includes/itm_scheduled_reports.php';
 $scheduledReportsFlash = '';
 $scheduledReportsList = [];
-$isReportsAdmin = function_exists('itm_is_admin') && itm_is_admin();
+$isReportsAdmin = itm_is_admin($conn, (int)($current_user_id ?? 0));
 
 if ($isReportsAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['scheduled_report_action'])) {
     itm_require_post_csrf();
