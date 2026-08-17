@@ -419,11 +419,11 @@ INSERT INTO `hotel_booking_room_type_rate_overrides` (`company_id`, `hotel_id`, 
 INSERT INTO `hotel_booking_room_utilities` (`company_id`, `room_id`, `amenity_id`, `icon_class`, `name`, `description`, `active`) VALUES
 (1, 1, 1, 'Sample 105d6a69', 'Sample 1524f25d', 'Sample 07502c1b', 1);
 
-INSERT INTO `hotel_booking_rooms` (`company_id`, `hotel_id`, `room_type_id`, `housekeeping_status_id`, `room_number`, `name`, `floor`, `num_persons`, `num_beds`, `size_sqm`, `view_label`, `active`, `created_at`) VALUES
-(1, 1, 3, 1, '101', 'Standard Queen 101', '1', 2, 1, 24.00, 'City', 1, '2026-01-01 00:00:01'),
-(1, 1, 2, 2, '202', 'Superior Twin 202', '2', 2, 2, 28.00, 'City', 1, '2026-01-01 00:00:01'),
-(1, 1, 1, 1, '201', 'Deluxe King 201', '2', 2, 1, 32.00, 'Garden', 1, '2026-01-01 00:00:01'),
-(1, 1, 4, 1, '301', 'Grand Deluxe Pool 301', '3', 2, 1, 38.00, 'Pool', 1, '2026-01-01 00:00:01');
+INSERT INTO `hotel_booking_rooms` (`company_id`, `hotel_id`, `room_type_id`, `housekeeping_status_id`, `room_number`, `name`, `floor`, `num_persons`, `num_beds`, `size_sqm`, `view_label`, `accessible_room`, `active`, `created_at`) VALUES
+(1, 1, 3, 1, '101', 'Standard Queen 101', '1', 2, 1, 24.00, 'City', 1, 1, '2026-01-01 00:00:01'),
+(1, 1, 1, 1, '201', 'Deluxe King 201', '2', 2, 1, 32.00, 'Garden', 0, 1, '2026-01-01 00:00:01'),
+(1, 1, 2, 2, '202', 'Superior Twin 202', '2', 2, 2, 28.00, 'City', 0, 1, '2026-01-01 00:00:01'),
+(1, 1, 4, 1, '301', 'Grand Deluxe Pool 301', '3', 2, 1, 38.00, 'Pool', 0, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `hotel_booking_settings` (`company_id`, `public_portal_enabled`, `welcome_title`, `welcome_subtitle`, `price_footnote`, `reviews_url`, `tourist_tax_per_person_per_night`, `free_cancellation_days_before_check_in`, `calendar_month_advance_days_left`, `show_discount_strikethrough`, `urlmybooking`, `active`, `created_at`) VALUES
 (1, 1, 'Find your stay', 'Browse hotels and book with confidence.', 'Prices include tourist tax and may vary by date and availability.', 'https://www.tripadvisor.pt/Hotel_Review-g262054-d2142716-Reviews-Conrad_Algarve-Almancil_Loule_Faro_District_Algarve.html#REVIEWS', 2.00, 5, 3, 1, 'https://localhost/it-management/booking/users/bookings.php', 1, '2026-01-01 00:00:01');
