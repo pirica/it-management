@@ -145,6 +145,7 @@ function colorText($text, $type) {
 | Script | Purpose |
 |--------|---------|
 | `php scripts/count_db_tables.php` | Counts live tables in `information_schema` for `itmanagement`, echoes the total as plain text, and overwrites `scripts/number_db_tables.txt`. Fresh `db/` import: **190** tables (must match `CREATE TABLE` count in `db/01_schema.sql`). Browser and CLI; **no login** (exempt from `run=1` usage landing — see `itm_script_browser_usage_exempt_basenames()`). |
+| `php scripts/verify_count_db_tables_recon.php` | Low-impact recon contract: `count_db_tables.php` stays no-auth digits-only output (no table-name enumeration). |
 
 Catalog: `scripts/scripts.php`.
 
@@ -253,7 +254,7 @@ Loaded from **`config/config.php`** on every request. Enforces the contract that
 
 **CLI-only scripts** — bash wrappers (`smoke_test.sh`, `import_database_split.sh`, …), session hijack helpers (`bypass_login.php`, `bypass_v2.php`), catalog listing-only repro tools, or `itm_script_prepare_cli_entry()` before `config.php`. Repo/DB writers that previously blocked the browser now use **`itm_apply_script_bootstrap.php`** (dry-run default) instead of a hard CLI-only guard.
 
-**Skip-web-auth allowlist** (localhost / `ITM_MAINTENANCE_TOKEN`): `module_browser_qa_runner.php`, `run_tests.php`.
+**Skip-web-auth allowlist** (localhost / `ITM_MAINTENANCE_TOKEN`): `module_browser_qa_runner.php`, `run_tests.php`. Regression: `php scripts/verify_script_localhost_maintenance_auth.php`.
 
 **Recovery:** if the dashboard shows company info but **No companies available** and `scripts.php` returns admin 403, the browser cookie was likely replaced by a script test user — sign out and log in again as Admin.
 
@@ -348,6 +349,7 @@ Repro and verify runners that spawn temporary PHP subprocesses use `escapeshella
 | `php scripts/test_explorer_paths.php` | Path ACL logic for Explorer (`get_full_path`). Browser + CLI. |
 | `php scripts/explorer_human_test.php` | Human-flow Explorer API regression (list/create/rename/move/copy/delete, ACL, DB soft-delete sync, audit). **Mutates DB + filesystem** (temporary company). Browser (Admin) via `lib/itm_script_regression_entry.php`; disposable test user via `itm_script_with_test_session_context()`; coloured pass/fail log inside `<pre>` from `itm_script_output_begin()` (`itm_script_output_nl()` + `itm_script_format_status_line()`). CLI; exit `1` on failure. |
 | `php scripts/verify_explorer_zip_leak.php` | Step 1: blocked roots (Home, `Common`, `Private`, `Departments`, `Trash`). Step 2: exact `Private/{username}_{id}` only (session `vault_key` required — Explorer vault gate). Step 3: all other paths blocked (own subfolders, `Common`/`Departments`, other users). Subprocess harness: `itm_resolve_cli_php_binary()`, session before `config.php`. |
+| `php scripts/verify_explorer_profile_photo_acl.php` | Accepted-risk regression: intentional cross-user read of `Private/{user}/profile/` thumbnails in `file.php`; non-profile Private paths stay owner-scoped. Documents `modules/explorer/AGENT_NOTES.md` contract. |
 | `php scripts/repro_explorer_path_bypass_v4.php` | Regression — `./Private` and `./Private/{other}` blocked after path normalization |
 | `php scripts/repro_explorer_zip_slip_v2.php` | Regression — malicious ZIP traversal entries blocked during `unzip` |
 | `php scripts/verify_explorer_rce_htaccess.php` | PoC — malicious `.htaccess` upload must be blocked or overwritten |
