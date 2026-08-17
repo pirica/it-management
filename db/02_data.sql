@@ -2466,6 +2466,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_bookings_history", "Booking History Status", 0, 1, "📜");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_settings", "Hotel Booking Settings", 0, 1, "⚙️");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_distribution_channels", "Distribution Channels", 0, 1, "📡");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("integration_webhooks", "Integration Webhooks", 0, 1, "🔔");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("hotel_booking_room_photos", "Room Photos", 0, 1, "🖼️");
 
 INSERT INTO `hotel_bookings_future` (`company_id`, `name`, `active`, `created_at`) VALUES

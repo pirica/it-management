@@ -26,6 +26,16 @@ This module is read-only and aggregates data from:
 - **inventory_items**
 - **license_management**
 - **cost_centers** (linked to departments)
+- **scheduled_reports** (admin-managed email schedules; see `docs/SCHEDULED_REPORTS.md`)
+
+---
+
+## Scheduled executive reports
+
+- **Table:** `scheduled_reports` — tenant-scoped cron schedules (`report_slug`, five-field `schedule_cron`, `recipients_json`, `format` `pdf`|`xlsx`, `last_sent_at`, `enabled`).
+- **UI:** [modules/reports/index.php](http://localhost/it-management/modules/reports/index.php) — admins only (`itm_is_admin()`). Modal POST actions `save_scheduled_report` / `delete_scheduled_report`.
+- **Runner:** `includes/itm_scheduled_reports.php`; cron `php scripts/run_scheduled_reports.php`.
+- **Verify:** `php scripts/verify_scheduled_reports.php` — [browser](http://localhost/it-management/scripts/verify_scheduled_reports.php?run=1).
 
 ---
 

@@ -114,6 +114,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
                         'companion_booking_ids' => $companionIds,
                         'occupancy' => $occupancy,
                     ]);
+                    if (!function_exists('itm_webhook_queue_emit_hotel_booking_confirmed')) {
+                        require_once ROOT_PATH . 'includes/itm_webhook_queue.php';
+                    }
+                    itm_webhook_queue_emit_hotel_booking_confirmed($conn, (int) $company_id, $bookingRow);
                 }
                 $_SESSION['hotel_booking_last_id'] = $bid;
                 if ($companionIds !== []) {

@@ -112,6 +112,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'expense_recurrence', 'label' => '🔁 Expense Recurrence', 'href' => 'modules/expense_recurrence/', 'match_dir' => 'expense_recurrence'],
                 ['id' => 'customer_statuses', 'label' => '🟢 Customer Statuses', 'href' => 'modules/customer_statuses/', 'match_dir' => 'customer_statuses'],
                 ['id' => 'integration_accounts', 'label' => '🔗 Integration Accounts', 'href' => 'modules/integration_accounts/', 'match_dir' => 'integration_accounts'],
+                ['id' => 'integration_webhooks', 'label' => '🔔 Integration Webhooks', 'href' => 'modules/integration_webhooks/', 'match_dir' => 'integration_webhooks'],
             ],
         ],
         [

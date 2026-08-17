@@ -1083,6 +1083,19 @@ Run `verify_ops_report.php` when changing `modules/ops_report/` or `ops_report*`
 
 Run `verify_reports_hub.php` when changing `modules/reports/`, `modules/reports/api/helpers.php`, or Reports Hub-related seeds in `db/03_triggers.sql`.
 
+### Scheduled reports, webhooks, and asset depreciation
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/run_scheduled_reports.php` | Cron: email due `scheduled_reports` rows (`includes/itm_scheduled_reports.php`). Optional `--company=ID`. See `docs/SCHEDULED_REPORTS.md`. |
+| `php scripts/verify_scheduled_reports.php` | Regression: `scheduled_reports` schema, cron matcher, dataset loader |
+| `php scripts/run_webhook_queue.php` | Cron: deliver `integration_webhook_deliveries` with retry/backoff. Optional `--limit=N`. |
+| `php scripts/verify_integration_webhooks.php` | Regression: webhook tables, secret round-trip, URL SSRF guard, enqueue |
+| `php scripts/run_asset_depreciation.php` | Monthly cron: depreciation snapshots on `equipment_lifecycle_events`. Optional `--company=ID`. |
+| `php scripts/verify_asset_depreciation.php` | Regression: equipment lifecycle columns, months-elapsed math, book value sample |
+
+Run the matching `verify_*.php` after changing `includes/itm_scheduled_reports.php`, `includes/itm_webhook_queue.php`, `includes/itm_asset_depreciation.php`, or related `db/` DDL.
+
 ### Appointment scripts
 
 | Script | Purpose |

@@ -4069,4 +4069,92 @@ END$$
 
 DELIMITER ;
 
+DROP TRIGGER IF EXISTS `trg_scheduled_reports_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_scheduled_reports_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_scheduled_reports_audit_delete`;
+
+DROP TRIGGER IF EXISTS `trg_integration_webhooks_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_integration_webhooks_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_integration_webhooks_audit_delete`;
+
+DROP TRIGGER IF EXISTS `trg_integration_webhook_deliveries_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_integration_webhook_deliveries_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_integration_webhook_deliveries_audit_delete`;
+
+DROP TRIGGER IF EXISTS `trg_equipment_lifecycle_events_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_equipment_lifecycle_events_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_equipment_lifecycle_events_audit_delete`;
+
+DELIMITER $$
+
+CREATE TRIGGER `trg_scheduled_reports_audit_insert` AFTER INSERT ON `scheduled_reports` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'scheduled_reports', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'report_slug', NEW.`report_slug`, 'enabled', NEW.`enabled`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_scheduled_reports_audit_update` AFTER UPDATE ON `scheduled_reports` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'scheduled_reports', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'report_slug', OLD.`report_slug`, 'enabled', OLD.`enabled`), JSON_OBJECT('id', NEW.`id`, 'report_slug', NEW.`report_slug`, 'enabled', NEW.`enabled`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_scheduled_reports_audit_delete` AFTER DELETE ON `scheduled_reports` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'scheduled_reports', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'report_slug', OLD.`report_slug`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_integration_webhooks_audit_insert` AFTER INSERT ON `integration_webhooks` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'integration_webhooks', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'name', NEW.`name`, 'target_url', NEW.`target_url`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_integration_webhooks_audit_update` AFTER UPDATE ON `integration_webhooks` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'integration_webhooks', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'name', OLD.`name`), JSON_OBJECT('id', NEW.`id`, 'name', NEW.`name`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_integration_webhooks_audit_delete` AFTER DELETE ON `integration_webhooks` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'integration_webhooks', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_integration_webhook_deliveries_audit_insert` AFTER INSERT ON `integration_webhook_deliveries` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'integration_webhook_deliveries', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'event_type', NEW.`event_type`, 'status', NEW.`status`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_integration_webhook_deliveries_audit_update` AFTER UPDATE ON `integration_webhook_deliveries` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'integration_webhook_deliveries', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'status', OLD.`status`), JSON_OBJECT('id', NEW.`id`, 'status', NEW.`status`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_integration_webhook_deliveries_audit_delete` AFTER DELETE ON `integration_webhook_deliveries` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'integration_webhook_deliveries', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'status', OLD.`status`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_equipment_lifecycle_events_audit_insert` AFTER INSERT ON `equipment_lifecycle_events` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'equipment_lifecycle_events', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'equipment_id', NEW.`equipment_id`, 'event_type', NEW.`event_type`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_equipment_lifecycle_events_audit_update` AFTER UPDATE ON `equipment_lifecycle_events` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'equipment_lifecycle_events', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'event_type', OLD.`event_type`), JSON_OBJECT('id', NEW.`id`, 'event_type', NEW.`event_type`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_equipment_lifecycle_events_audit_delete` AFTER DELETE ON `equipment_lifecycle_events` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'equipment_lifecycle_events', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'event_type', OLD.`event_type`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DELIMITER ;
+
 SET FOREIGN_KEY_CHECKS=1;

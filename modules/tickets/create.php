@@ -485,6 +485,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($savedTicketId > 0) {
                 require_once '../../includes/itm_search_index.php';
                 itm_search_index_after_module_save($conn, 'tickets', (int)$company_id, $savedTicketId);
+                if (!$is_edit) {
+                    require_once ROOT_PATH . 'includes/itm_webhook_queue.php';
+                    itm_webhook_queue_emit_ticket_created($conn, (int)$company_id, [
+                        'id' => $savedTicketId,
+                        'ticket_external_code' => $ticket_external_code,
+                        'title' => $title,
+                        'created_at' => date('Y-m-d H:i:s'),
+                    ]);
+                }
                 if ($newAssigneeId > 0 && $newAssigneeId !== $previousAssigneeId) {
                     itm_notify_ticket_assigned($conn, (int)$company_id, $newAssigneeId, $savedTicketId, $title, $ticket_external_code);
                 }

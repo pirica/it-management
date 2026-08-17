@@ -1835,7 +1835,7 @@ foreach ($types as $typeItem) {
 $data = [
     'equipment_type_id' => '', 'manufacturer_id' => '', 'location_id' => '', 'rack_id' => '', 'idf_id' => '', 'name' => '',
     'serial_number' => '', 'model' => '', 'hostname' => '', 'ip_address' => '', 'patch_port' => '', 'mac_address' => '', 'department_id' => '', 'supplier_id' => '', 'assigned_to_employee_id' => '', 'equipment_id' => '', 'assigned_date' => '',
-    'status_id' => $defaultStatusId, 'purchase_date' => '', 'purchase_cost' => '', 'warranty_expiry' => '', 'certificate_expiry' => '', 'warranty_type_id' => '',
+    'status_id' => $defaultStatusId, 'purchase_date' => '', 'purchase_cost' => '', 'lifecycle_stage' => 'in_service', 'depreciation_start_date' => '', 'useful_life_months' => '', 'salvage_value' => '', 'disposal_date' => '', 'disposal_reason' => '', 'warranty_expiry' => '', 'certificate_expiry' => '', 'warranty_type_id' => '',
     'printer_device_type_id' => '', 'printer_color_capable' => 0, 'printer_scan' => 0,
     'workstation_device_type_id' => '', 'workstation_os_type_id' => '',
     'workstation_office_id' => '', 'rj45_speed_id' => '', 'workstation_os_version_id' => '', 'workstation_ram_id' => '',
@@ -2096,6 +2096,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $status_id = (int)$data['status_id'];
         $purchase_date = $data['purchase_date'] === '' ? 'NULL' : "'" . escape_sql($data['purchase_date'], $conn) . "'";
         $purchase_cost = $data['purchase_cost'] === '' ? 'NULL' : (float)$data['purchase_cost'];
+        $allowedStages = array_keys(function_exists('itm_asset_lifecycle_stages') ? itm_asset_lifecycle_stages() : ['in_service' => 'In service']);
+        $lifecycleStageRaw = trim((string)($data['lifecycle_stage'] ?? 'in_service'));
+        if (!in_array($lifecycleStageRaw, $allowedStages, true)) {
+            $lifecycleStageRaw = 'in_service';
+        }
+        $lifecycle_stage = "'" . escape_sql($lifecycleStageRaw, $conn) . "'";
+        $depreciation_start_date = $data['depreciation_start_date'] === '' ? 'NULL' : "'" . escape_sql($data['depreciation_start_date'], $conn) . "'";
+        $useful_life_months = $data['useful_life_months'] === '' ? 'NULL' : (int)$data['useful_life_months'];
+        $salvage_value = $data['salvage_value'] === '' ? 'NULL' : (float)$data['salvage_value'];
+        $disposal_date = $data['disposal_date'] === '' ? 'NULL' : "'" . escape_sql($data['disposal_date'], $conn) . "'";
+        $disposal_reason = $data['disposal_reason'] === '' ? 'NULL' : "'" . escape_sql($data['disposal_reason'], $conn) . "'";
         $warranty_expiry = $data['warranty_expiry'] === '' ? 'NULL' : "'" . escape_sql($data['warranty_expiry'], $conn) . "'";
         $certificate_expiry = ($isServerEquipment && $data['certificate_expiry'] !== '')
             ? "'" . escape_sql($data['certificate_expiry'], $conn) . "'"
@@ -2194,7 +2205,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($isEdit) {
             $sql = "UPDATE equipment SET equipment_type_id=$equipment_type_id, manufacturer_id=$manufacturer_id, location_id=$location_id, rack_id=$rack_id, idf_id=$idf_id, department_id=$department_id, supplier_id=$supplier_id,
                     name=$name, serial_number=$serial_number, model=$model, hostname=$hostname, ip_address=$ip_address, patch_port=$patch_port, mac_address=$mac_address,
-                    status_id=$status_id, purchase_date=$purchase_date, purchase_cost=$purchase_cost, warranty_expiry=$warranty_expiry, certificate_expiry=$certificate_expiry,
+                    status_id=$status_id, purchase_date=$purchase_date, purchase_cost=$purchase_cost,
+                    lifecycle_stage=$lifecycle_stage, depreciation_start_date=$depreciation_start_date, useful_life_months=$useful_life_months, salvage_value=$salvage_value, disposal_date=$disposal_date, disposal_reason=$disposal_reason,
+                    warranty_expiry=$warranty_expiry, certificate_expiry=$certificate_expiry,
                     warranty_type_id=$warranty_type_id, printer_device_type_id=$printer_device_type_id,
                     printer_color_capable=$printer_color_capable, printer_scan=$printer_scan,
                     workstation_device_type_id=$workstation_device_type_id, workstation_os_type_id=$workstation_os_type_id,
@@ -2208,12 +2221,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     WHERE id=$id AND company_id=$company_id";
         } else {
             $sql = "INSERT INTO equipment (company_id, equipment_type_id, manufacturer_id, location_id, rack_id, idf_id, department_id, supplier_id, name, serial_number, model, hostname,
-                    ip_address, patch_port, mac_address, status_id, purchase_date, purchase_cost, warranty_expiry, certificate_expiry, warranty_type_id,
+                    ip_address, patch_port, mac_address, status_id, purchase_date, purchase_cost, lifecycle_stage, depreciation_start_date, useful_life_months, salvage_value, disposal_date, disposal_reason, warranty_expiry, certificate_expiry, warranty_type_id,
                     printer_device_type_id, printer_color_capable, printer_scan, workstation_device_type_id,
                     workstation_os_type_id$workstationOfficeInsertColumns$rj45SpeedInsertColumns$workstationOsVersionInsertColumns$workstationRamInsertColumns, workstation_processor$workstationStorageInsertColumns$workstationOsInstalledOnInsertColumns, switch_rj45_id, switch_port_numbering_layout_id, switch_fiber_id, switch_fiber_patch_id, switch_fiber_rack_id, switch_fiber_ports_number$switchFiberPortLabelInsertColumns, switch_poe_id, switch_environment_id, notes, photo_filename,
                     active, created_by, created_at, updated_by, updated_at, deleted_by, deleted_at)
                     VALUES ($company_id, $equipment_type_id, $manufacturer_id, $location_id, $rack_id, $idf_id, $department_id, $supplier_id, $name, $serial_number, $model, $hostname,
-                    $ip_address, $patch_port, $mac_address, $status_id, $purchase_date, $purchase_cost, $warranty_expiry, $certificate_expiry, $warranty_type_id,
+                    $ip_address, $patch_port, $mac_address, $status_id, $purchase_date, $purchase_cost, $lifecycle_stage, $depreciation_start_date, $useful_life_months, $salvage_value, $disposal_date, $disposal_reason, $warranty_expiry, $certificate_expiry, $warranty_type_id,
                     $printer_device_type_id, $printer_color_capable, $printer_scan, $workstation_device_type_id,
                     $workstation_os_type_id$workstationOfficeInsertValues$rj45SpeedInsertValues$workstationOsVersionInsertValues$workstationRamInsertValues, $workstation_processor$workstationStorageInsertValues$workstationOsInstalledOnInsertValues, $switch_rj45_id, $switch_port_numbering_layout_id, $switch_fiber_id, $switch_fiber_patch_id, $switch_fiber_rack_id, $switch_fiber_ports_number$switchFiberPortLabelInsertValues, $switch_poe_id, $switch_environment_id, $notes, $photo,
                     $active, $created_by, $created_at, $updated_by, $updated_at, $deleted_by, $deleted_at)";
@@ -2344,6 +2357,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($error === '') {
+                require_once ROOT_PATH . 'includes/itm_asset_depreciation.php';
+                $previousStage = $isEdit && is_array($originalData) ? (string)($originalData['lifecycle_stage'] ?? '') : '';
+                if ($previousStage !== '' && $previousStage !== $lifecycleStageRaw) {
+                    itm_asset_lifecycle_log_event(
+                        $conn,
+                        (int)$company_id,
+                        (int)$id,
+                        'stage_change',
+                        'Lifecycle stage changed to ' . $lifecycleStageRaw,
+                        ['from' => $previousStage, 'to' => $lifecycleStageRaw]
+                    );
+                } elseif (!$isEdit) {
+                    itm_asset_lifecycle_log_event(
+                        $conn,
+                        (int)$company_id,
+                        (int)$id,
+                        'procurement',
+                        'Equipment record created',
+                        ['lifecycle_stage' => $lifecycleStageRaw]
+                    );
+                }
                 mysqli_commit($conn);
                 require_once '../../includes/itm_search_index.php';
                 itm_search_index_after_module_save($conn, 'equipment', (int)$company_id, (int)$id);
@@ -2657,6 +2691,32 @@ if (!isset($crud_title)) {
                 <div class="form-group"><label>Purchase Date</label><input type="date" name="purchase_date" value="<?php echo sanitize($data['purchase_date']); ?>"></div>
                 <div class="form-group"><label>Purchase Cost</label><input type="number" step="0.01" name="purchase_cost" value="<?php echo sanitize($data['purchase_cost']); ?>"></div>
                 <div class="form-group"></div>
+            </div>
+            <?php
+            if (!function_exists('itm_asset_lifecycle_stages')) {
+                require_once ROOT_PATH . 'includes/itm_asset_depreciation.php';
+            }
+            $lifecycleStages = itm_asset_lifecycle_stages();
+            ?>
+            <div class="card" style="margin:16px 0;padding:16px;">
+                <h2 style="margin-top:0;">Asset lifecycle &amp; depreciation</h2>
+                <div class="form-row form-row-3">
+                    <div class="form-group">
+                        <label>Lifecycle stage</label>
+                        <select name="lifecycle_stage">
+                            <?php foreach ($lifecycleStages as $stageKey => $stageLabel): ?>
+                                <option value="<?php echo sanitize($stageKey); ?>" <?php echo ((string)($data['lifecycle_stage'] ?? 'in_service') === (string)$stageKey) ? 'selected' : ''; ?>><?php echo sanitize($stageLabel); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Depreciation start</label><input type="date" name="depreciation_start_date" value="<?php echo sanitize($data['depreciation_start_date']); ?>"></div>
+                    <div class="form-group"><label>Useful life (months)</label><input type="number" min="1" name="useful_life_months" value="<?php echo sanitize($data['useful_life_months']); ?>"></div>
+                </div>
+                <div class="form-row form-row-3">
+                    <div class="form-group"><label>Salvage value</label><input type="number" step="0.01" name="salvage_value" value="<?php echo sanitize($data['salvage_value']); ?>"></div>
+                    <div class="form-group"><label>Disposal date</label><input type="date" name="disposal_date" value="<?php echo sanitize($data['disposal_date']); ?>"></div>
+                    <div class="form-group"><label>Disposal reason</label><input name="disposal_reason" value="<?php echo sanitize($data['disposal_reason']); ?>"></div>
+                </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
