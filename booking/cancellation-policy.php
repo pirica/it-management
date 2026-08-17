@@ -20,21 +20,21 @@ if ($companyId < 1 || $hotelId < 1) {
 
 hb_require_company_public_portal($conn, $companyId, ['json' => false, 'redirect' => APPURL . '/']);
 
+$sendPolicyHtml = static function ($html, $statusCode = 200) {
+    http_response_code((int) $statusCode);
+    header('Content-Type: text/html; charset=utf-8');
+    echo $html;
+    exit;
+};
+
 $planRow = itm_hotel_booking_portal_rate_plan_row_by_slug($conn, $companyId, $hotelId, $slug);
 if (!$planRow) {
-    http_response_code(404);
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<p>Cancellation policy not found.</p>';
-    exit;
+    $sendPolicyHtml(itm_hotel_booking_portal_cancellation_policy_not_found_html($conn, $companyId), 404);
 }
 
 $html = itm_hotel_booking_load_cancellation_policy_html($planRow);
 if ($html === '') {
-    http_response_code(404);
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<p>Cancellation policy content is not available.</p>';
-    exit;
+    $sendPolicyHtml(itm_hotel_booking_portal_cancellation_policy_not_found_html($conn, $companyId), 404);
 }
 
-header('Content-Type: text/html; charset=utf-8');
-echo $html;
+$sendPolicyHtml($html, 200);

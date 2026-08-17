@@ -646,6 +646,19 @@ if (!function_exists('itm_verify_db_migrations_probe_custom')) {
             );
         }
 
+        if ($filename === 'hotel_booking_portal_cancellation_404.sql') {
+            $ok = itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_cancellation_policy_not_found_url');
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'fail',
+                $ok ? 'Applied' : 'Not applied',
+                $ok
+                    ? 'Portal cancellation policy not-found URL column present.'
+                    : 'Missing portal_cancellation_policy_not_found_url — apply migration or fresh db/ import.'
+            );
+        }
+
         if ($filename === 'news_module_registry.sql') {
             $newsRows = itm_verify_db_migrations_scalar_count(
                 $conn,

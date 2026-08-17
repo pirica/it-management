@@ -1978,12 +1978,28 @@ if (strpos($guestPolicyUrl, 'cancellation-policy.php') !== false
 
 if (strpos($settingsIndexSrc, 'portal_maps_base_url') !== false
     && strpos($settingsIndexSrc, 'portal_occupancy_max_adults') !== false
+    && strpos($settingsIndexSrc, 'portal_cancellation_policy_not_found_url') !== false
     && strpos($selectRoomJsSrc, 'occupancyLimitsFromCfg') !== false
     && strpos((string) @file_get_contents(dirname(__DIR__) . '/booking/js/hotel-booking-dates.js'), 'calendar_month_horizon') !== false
     && is_file(dirname(__DIR__) . '/booking/cancellation-policy.php')) {
     hb_pass('portal display config admin + portal JS/endpoint wiring');
 } else {
     hb_fail('portal display config admin + portal JS/endpoint wiring');
+}
+
+if (is_file(dirname(__DIR__) . '/booking/cancellation_policy/404.html')
+    && strpos((string) @file_get_contents(dirname(__DIR__) . '/booking/cancellation_policy/404.html'), 'Cancellation policy not available') !== false) {
+    hb_pass('cancellation policy 404.html seed file');
+} else {
+    hb_fail('cancellation policy 404.html seed file missing');
+}
+
+$notFoundHtml = itm_hotel_booking_portal_cancellation_policy_not_found_html($conn, 1);
+if (strpos($notFoundHtml, 'Cancellation policy not available') !== false
+    || strpos($notFoundHtml, 'Cancellation policy not found') !== false) {
+    hb_pass('cancellation policy not-found HTML helper');
+} else {
+    hb_fail('cancellation policy not-found HTML helper');
 }
 
 itm_script_output_end();
