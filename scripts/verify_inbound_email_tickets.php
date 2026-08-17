@@ -297,11 +297,79 @@ if (!$createdThread) {
         'body' => 'Follow-up reply body',
         'in_reply_to' => '',
         'references' => '',
-    ]);
+    ], $requester);
     if ($replyTicketId !== $threadTicketId) {
         inbound_verify_fail('Example threading: Re: subject did not match original ticket.');
     } else {
         inbound_verify_pass('Example threading: Re: subject matches open ticket by normalized title.');
+    }
+
+    $dupTitle = 'ITM dup title verify ' . time();
+    $dupOlder = itm_inbound_email_create_ticket(
+        $conn,
+        $companyId,
+        (int)($requester['employee_id'] ?? 0),
+        $dupTitle,
+        'Older duplicate title ticket',
+        'admin@techcorp.example.com',
+        false,
+        $routing
+    );
+    $dupNewer = itm_inbound_email_create_ticket(
+        $conn,
+        $companyId,
+        (int)($requester['employee_id'] ?? 0),
+        $dupTitle,
+        'Newer duplicate title ticket',
+        'admin@techcorp.example.com',
+        false,
+        $routing
+    );
+    if (!$dupOlder || !$dupNewer) {
+        inbound_verify_fail('Could not create duplicate-title tickets for threading verify.');
+    } else {
+        $dupOlderId = (int)$dupOlder['ticket_id'];
+        $dupNewerId = (int)$dupNewer['ticket_id'];
+        if (!itm_inbound_email_record_processed(
+            $conn,
+            $companyId,
+            'verify-dup-parent-' . bin2hex(random_bytes(6)) . '@itm.local',
+            $dupOlderId,
+            0,
+            'admin@techcorp.example.com',
+            $dupTitle
+        )) {
+            inbound_verify_fail('Could not seed inbound row on older duplicate-title ticket.');
+        } else {
+            $dupThreadId = itm_inbound_email_resolve_thread_ticket($conn, $companyId, [
+                'subject' => 'Re: ' . $dupTitle,
+                'body' => 'Reply on older thread',
+                'in_reply_to' => '',
+                'references' => '',
+            ], $requester);
+            if ($dupThreadId === $dupOlderId) {
+                inbound_verify_pass('Duplicate title: Re: subject matches inbound-history ticket, not newer duplicate.');
+            } elseif ($dupThreadId === $dupNewerId) {
+                inbound_verify_fail('Duplicate title: Re: subject matched newer unrelated ticket.');
+            } else {
+                inbound_verify_fail('Duplicate title: expected older inbound-history ticket match.');
+            }
+
+            $ambiguousId = itm_inbound_email_resolve_ticket_by_subject_thread(
+                $conn,
+                $companyId,
+                'Re: ' . $dupTitle,
+                (int)($requester['employee_id'] ?? 0),
+                'unknown-outsider@example.com'
+            );
+            if ($ambiguousId === 0) {
+                inbound_verify_pass('Duplicate title: unknown sender does not match ambiguous subject thread.');
+            } else {
+                inbound_verify_fail('Duplicate title: unknown sender incorrectly matched ticket #' . $ambiguousId);
+            }
+        }
+        inbound_verify_soft_delete_ticket($conn, $companyId, $dupOlderId);
+        inbound_verify_soft_delete_ticket($conn, $companyId, $dupNewerId);
     }
 
     $parentMessageId = 'verify-parent-' . bin2hex(random_bytes(6)) . '@itm.local';
@@ -321,7 +389,7 @@ if (!$createdThread) {
             'body' => 'Reply via headers only',
             'in_reply_to' => '<' . $parentMessageId . '>',
             'references' => '<' . $parentMessageId . '>',
-        ]);
+        ], $requester);
         if ($headerThreadId !== $threadTicketId) {
             inbound_verify_fail('Example threading: In-Reply-To did not resolve parent ticket.');
         } else {
@@ -336,7 +404,7 @@ if (!$createdThread) {
             'body' => '',
             'in_reply_to' => '',
             'references' => '',
-        ]);
+        ], $requester);
         if ($codeThreadId !== $threadTicketId) {
             inbound_verify_fail('Example threading: TCK external code in subject did not resolve ticket.');
         } else {

@@ -767,8 +767,17 @@ if (!function_exists('itm_inbound_email_resolve_ticket_by_message_ids')) {
 }
 
 if (!function_exists('itm_inbound_email_resolve_ticket_by_subject_thread')) {
-    function itm_inbound_email_resolve_ticket_by_subject_thread($conn, $companyId, $subject)
-    {
+    /**
+     * Match open tickets by normalized reply subject. When requester context is provided,
+     * only tickets the sender already participated in are considered (avoids duplicate-title mis-threads).
+     */
+    function itm_inbound_email_resolve_ticket_by_subject_thread(
+        $conn,
+        $companyId,
+        $subject,
+        $requesterEmployeeId = 0,
+        $fromEmail = ''
+    ) {
         if (!itm_inbound_email_is_reply_subject($subject)) {
             return 0;
         }
@@ -777,33 +786,106 @@ if (!function_exists('itm_inbound_email_resolve_ticket_by_subject_thread')) {
         if ($companyId <= 0 || $normalized === '') {
             return 0;
         }
-        $stmt = mysqli_prepare(
-            $conn,
-            'SELECT t.id FROM tickets t
+
+        $requesterEmployeeId = (int)$requesterEmployeeId;
+        $fromEmail = strtolower(trim((string)$fromEmail));
+        $scopeToParticipant = $requesterEmployeeId > 0 || $fromEmail !== '';
+
+        $baseSql = 'SELECT t.id FROM tickets t
              INNER JOIN ticket_statuses ts ON ts.id = t.status_id AND ts.company_id = t.company_id
              WHERE t.company_id = ? AND t.deleted_at IS NULL AND t.active = 1 AND ts.is_closed = 0
-               AND LOWER(TRIM(t.title)) = LOWER(?)
-             ORDER BY t.id DESC
-             LIMIT 1'
-        );
-        if (!$stmt) {
-            return 0;
-        }
-        mysqli_stmt_bind_param($stmt, 'is', $companyId, $normalized);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        $row = $res ? mysqli_fetch_assoc($res) : null;
-        mysqli_stmt_close($stmt);
+               AND LOWER(TRIM(t.title)) = LOWER(?)';
 
-        return $row ? (int)$row['id'] : 0;
+        $fetchId = static function (mysqli $conn, string $sql, array $bindTypes, array $bindValues): int {
+            $stmt = mysqli_prepare($conn, $sql);
+            if (!$stmt) {
+                return 0;
+            }
+            if ($bindTypes !== []) {
+                mysqli_stmt_bind_param($stmt, implode('', $bindTypes), ...$bindValues);
+            }
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            $row = $res ? mysqli_fetch_assoc($res) : null;
+            mysqli_stmt_close($stmt);
+
+            return $row ? (int)$row['id'] : 0;
+        };
+
+        if (!$scopeToParticipant) {
+            return $fetchId(
+                $conn,
+                $baseSql . ' ORDER BY t.id DESC LIMIT 1',
+                ['i', 's'],
+                [$companyId, $normalized]
+            );
+        }
+
+        if ($fromEmail !== '') {
+            $ticketId = $fetchId(
+                $conn,
+                $baseSql . ' AND EXISTS (
+                    SELECT 1 FROM ticket_inbound_email_messages tim
+                    WHERE tim.ticket_id = t.id AND tim.company_id = t.company_id
+                      AND tim.active = 1 AND tim.deleted_at IS NULL
+                      AND LOWER(TRIM(tim.from_email)) = ?
+                ) ORDER BY t.id DESC LIMIT 1',
+                ['i', 's', 's'],
+                [$companyId, $normalized, $fromEmail]
+            );
+            if ($ticketId > 0) {
+                return $ticketId;
+            }
+        }
+
+        if ($requesterEmployeeId > 0) {
+            $ticketId = $fetchId(
+                $conn,
+                $baseSql . ' AND (
+                    t.assigned_to_employee_id = ?
+                    OR EXISTS (
+                        SELECT 1 FROM ticket_comments tc
+                        WHERE tc.ticket_id = t.id AND tc.company_id = t.company_id
+                          AND tc.deleted_at IS NULL AND tc.active = 1
+                          AND tc.employee_id = ?
+                    )
+                ) ORDER BY t.id DESC LIMIT 1',
+                ['i', 's', 'i', 'i'],
+                [$companyId, $normalized, $requesterEmployeeId, $requesterEmployeeId]
+            );
+            if ($ticketId > 0) {
+                return $ticketId;
+            }
+
+            $stmt = mysqli_prepare(
+                $conn,
+                $baseSql . ' AND t.created_by_employee_id = ? ORDER BY t.id DESC'
+            );
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'isi', $companyId, $normalized, $requesterEmployeeId);
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+                $matches = [];
+                while ($res && ($row = mysqli_fetch_assoc($res))) {
+                    $matches[] = (int)$row['id'];
+                }
+                mysqli_stmt_close($stmt);
+                if (count($matches) === 1) {
+                    return $matches[0];
+                }
+            }
+        }
+
+        return 0;
     }
 }
 
 if (!function_exists('itm_inbound_email_resolve_thread_ticket')) {
     /**
      * @param array<string,mixed> $message
+     * @param array{employee_id?:int,is_fallback?:bool,from_email?:string} $requesterContext
      */
-    function itm_inbound_email_resolve_thread_ticket($conn, $companyId, array $message)
+    function itm_inbound_email_resolve_thread_ticket($conn, $companyId, array $message, array $requesterContext = [])
     {
         $subject = (string)($message['subject'] ?? '');
         $body = (string)($message['body'] ?? '');
@@ -825,7 +907,16 @@ if (!function_exists('itm_inbound_email_resolve_thread_ticket')) {
         }
 
         if (itm_inbound_email_is_reply_subject($subject)) {
-            return itm_inbound_email_resolve_ticket_by_subject_thread($conn, $companyId, $subject);
+            $requesterEmployeeId = (int)($requesterContext['employee_id'] ?? 0);
+            $fromEmail = (string)($requesterContext['from_email'] ?? '');
+
+            return itm_inbound_email_resolve_ticket_by_subject_thread(
+                $conn,
+                $companyId,
+                $subject,
+                $requesterEmployeeId,
+                $fromEmail
+            );
         }
 
         return 0;
@@ -1595,7 +1686,7 @@ if (!function_exists('itm_inbound_email_process_company')) {
                 continue;
             }
 
-            $existingTicketId = itm_inbound_email_resolve_thread_ticket($conn, $companyId, $message);
+            $existingTicketId = itm_inbound_email_resolve_thread_ticket($conn, $companyId, $message, $requester);
             $routing = itm_inbound_email_apply_routing_rules($conn, $companyId, $subject, $body);
             $ticketId = 0;
             $externalCode = '';
