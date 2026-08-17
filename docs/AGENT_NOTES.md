@@ -27,7 +27,11 @@ Canonical documentation that is not source code: upload maps, README assets, mod
 - **docs/SYSTEM_STATUS.md** — Admin-only server diagnostics dashboard covering CPU/RAM/disk metrics, native Linux proc reporting vs Windows PowerShell fallbacks, and real-time SQL/on-disk storage caching.
 - **docs/BOOKING.md** — guest-facing `booking/` portal: four-step checkout, manage reservation (lookup, cancel, change contacts), ITM Hospitality admin modules, schema, local URLs, and review of strengths/gaps.
 - **docs/HOTEL_BOOKING_DISTRIBUTION.md** — partner distribution API (`modules/hotel_booking_api/`) with JSON/OpenTravel XML/Booking.com/OHIP wire adapters, channel admin, ARI push/pull, and reservation book/modify/cancel.
+<<<<<<< HEAD
 - **docs/STRIPE_CHECKOUT.md** — guest portal Stripe Checkout (`includes/itm_stripe_checkout.php`, `booking/payment-stripe.php`, `booking/stripe-webhook.php`, `hotel_booking_payment_events`).
+=======
+- **docs/SSO_LDAP.md** — LDAP SSO login (v1): `companies.sso_*` encrypted config, `employees.sso_subject`, `sso-ldap.php` entry, `includes/itm_ldap_auth.php` helpers, Companies edit admin UI, regression `php scripts/verify_sso_ldap.php`.
+>>>>>>> origin/cursor/sso-ldap-login-49e8
 - **docs/database_fixed/** — notes that the cancellation-policy RCE remediation needed no DB schema change (`AGENT_NOTES.md`); live fix is in `includes/itm_hotel_booking.php` + `booking/cancellation_policy/.htaccess`.
 - **docs/FEATURE_ROADMAP.md** — product and technical feature roadmap: gaps, 10 proposed features (SLA dashboard, approval inbox, automation, scheduled reports, Stripe, ticket productivity, asset lifecycle, SSO, webhooks, PWA), prioritized quick/medium/strategic tiers, and recommended implementation sequence.
 - **docs/SCHEDULED_REPORTS.md** — scheduled executive reports: `scheduled_reports` table, Reports Hub schedule modal, cron runner (`scripts/run_scheduled_reports.php`), catalog slugs, PDF/XLSX email formats, verification commands.
