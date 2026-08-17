@@ -2928,6 +2928,57 @@ CREATE TABLE `ticket_comments` (
 -- Table structure for `ticket_canned_responses`
 DROP TABLE IF EXISTS `ticket_canned_responses`;
 
+-- Table structure for `automation_rules`
+DROP TABLE IF EXISTS `automation_rules`;
+
+CREATE TABLE `automation_rules` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `trigger_slug` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `conditions_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `actions_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `enabled` tinyint(1) DEFAULT '1',
+  `last_run_at` datetime DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `trigger_slug` (`trigger_slug`),
+  CONSTRAINT `fk_automation_rules_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for `automation_rule_runs`
+DROP TABLE IF EXISTS `automation_rule_runs`;
+
+CREATE TABLE `automation_rule_runs` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `rule_id` int NOT NULL,
+  `status` enum('pending','success','failed','skipped') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `context_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `ran_at` datetime DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `rule_id` (`rule_id`),
+  KEY `status` (`status`),
+  CONSTRAINT `fk_automation_rule_runs_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_automation_rule_runs_rule` FOREIGN KEY (`rule_id`) REFERENCES `automation_rules` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE `ticket_canned_responses` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
@@ -4693,6 +4744,7 @@ DROP TABLE IF EXISTS `hotel_booking_distribution_ari_events`;
 DROP TABLE IF EXISTS `hotel_booking_distribution_reservations`;
 DROP TABLE IF EXISTS `hotel_booking_distribution_mappings`;
 DROP TABLE IF EXISTS `hotel_booking_distribution_channels`;
+DROP TABLE IF EXISTS `hotel_booking_payment_events`;
 DROP TABLE IF EXISTS `hotel_bookings`;
 DROP TABLE IF EXISTS `hotel_booking_portal_users`;
 DROP TABLE IF EXISTS `booking_rooms_type_photos`;
@@ -5198,6 +5250,10 @@ CREATE TABLE `hotel_bookings` (
   `check_in` date NOT NULL,
   `check_out` date NOT NULL,
   `payment_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `payment_status` enum('unpaid','pending','paid','refunded') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'unpaid',
+  `stripe_checkout_session_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `stripe_payment_intent_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `amount_paid` decimal(12,2) NOT NULL DEFAULT '0.00',
   `guest_confirmation_code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `auth2` varchar(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `future_status_id` int DEFAULT NULL,
@@ -5461,10 +5517,37 @@ CREATE TABLE `hotel_booking_portal_users` (
   CONSTRAINT `hotel_booking_portal_users_ibfk_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `hotel_booking_payment_events` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `booking_id` int NOT NULL,
+  `event_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  KEY `booking_id` (`booking_id`),
+  KEY `idx_hb_payment_events_company_booking` (`company_id`,`booking_id`),
+  CONSTRAINT `hb_payment_events_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `hb_payment_events_ibfk_booking` FOREIGN KEY (`booking_id`) REFERENCES `hotel_bookings` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE `hotel_booking_settings` (
   `id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
   `public_portal_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `stripe_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `stripe_mode` enum('test','live') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'test',
+  `stripe_publishable_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `stripe_secret_key_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `stripe_webhook_signing_secret_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `deposit_percent` decimal(5,2) NOT NULL DEFAULT '100.00',
   `welcome_title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `welcome_subtitle` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `accessible_features_default` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,

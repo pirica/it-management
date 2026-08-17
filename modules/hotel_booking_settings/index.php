@@ -1,5 +1,6 @@
 <?php
 require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_stripe_checkout.php';
 
 $company_id = (int) ($_SESSION['company_id'] ?? 0);
 $employee_id = (int) ($_SESSION['employee_id'] ?? 0);
@@ -62,11 +63,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $urlmybooking = $urlmybooking_norm;
     }
+    $stripeEnabled = !empty($_POST['stripe_enabled']) ? 1 : 0;
+    $stripeMode = trim((string) ($_POST['stripe_mode'] ?? 'test'));
+    if ($stripeMode !== 'live') {
+        $stripeMode = 'test';
+    }
+    $stripePublishableKey = trim((string) ($_POST['stripe_publishable_key'] ?? ''));
+    $stripeSecretPlain = trim((string) ($_POST['stripe_secret_key'] ?? ''));
+    $stripeWebhookPlain = trim((string) ($_POST['stripe_webhook_signing_secret'] ?? ''));
+    $stripeSecretEnc = (string) ($row['stripe_secret_key_encrypted'] ?? '');
+    $stripeWebhookEnc = (string) ($row['stripe_webhook_signing_secret_encrypted'] ?? '');
+    if ($stripeSecretPlain !== '') {
+        $stripeSecretEnc = itm_stripe_checkout_encrypt_secret($stripeSecretPlain);
+    }
+    if ($stripeWebhookPlain !== '') {
+        $stripeWebhookEnc = itm_stripe_checkout_encrypt_secret($stripeWebhookPlain);
+    }
+    $depositPercent = str_replace(',', '.', trim((string) ($_POST['deposit_percent'] ?? '100')));
+    if ($depositPercent === '' || !is_numeric($depositPercent)) {
+        $depositPercent = '100';
+    }
+    $depositPercent = (float) $depositPercent;
+    if ($depositPercent < 0) {
+        $depositPercent = 0;
+    }
+    if ($depositPercent > 100) {
+        $depositPercent = 100;
+    }
     $sid = (int) ($row['id'] ?? 0);
     if (empty($errors)) {
-    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
+    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, stripe_enabled = ?, stripe_mode = ?, stripe_publishable_key = ?, stripe_secret_key_encrypted = ?, stripe_webhook_signing_secret_encrypted = ?, deposit_percent = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
     if ($upd) {
-        mysqli_stmt_bind_param($upd, 'issssssdiiisiii', $enabled, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $urlmybooking, $employee_id, $sid, $company_id);
+        mysqli_stmt_bind_param($upd, 'iissssdssssssdiiisiii', $enabled, $stripeEnabled, $stripeMode, $stripePublishableKey, $stripeSecretEnc, $stripeWebhookEnc, $depositPercent, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $urlmybooking, $employee_id, $sid, $company_id);
         mysqli_stmt_execute($upd);
         mysqli_stmt_close($upd);
         header('Location: index.php?saved=1');
@@ -152,6 +180,40 @@ itm_hospitality_admin_layout_begin($crud_title);
 <span>Show discount as strikethrough</span>
 </label>
 <p class="text-muted" style="font-size:.85rem;margin-top:4px;">When enabled, Step 1 room cards and Step 2 rate totals show the list price struck through next to the discounted sale price. When disabled, only the sale price is shown.</p>
+</div>
+<div class="card" style="margin-top:24px;">
+<h2 style="margin-top:0;">Stripe Checkout</h2>
+<p class="text-muted" style="font-size:.85rem;">Guest portal Step 4 can redirect to Stripe Checkout. Webhook URL: <code><?php echo sanitize(rtrim(BASE_URL, '/') . '/booking/stripe-webhook.php?company_id=' . $company_id); ?></code></p>
+<div class="form-group">
+<label class="itm-checkbox-control">
+<input type="checkbox" name="stripe_enabled" value="1" <?php echo !empty($row['stripe_enabled']) ? 'checked' : ''; ?>>
+<span>Enable Stripe Checkout</span>
+</label>
+</div>
+<div class="form-group">
+<label>Stripe mode</label>
+<select name="stripe_mode" class="form-control">
+<option value="test" <?php echo (($row['stripe_mode'] ?? 'test') === 'test') ? 'selected' : ''; ?>>Test</option>
+<option value="live" <?php echo (($row['stripe_mode'] ?? '') === 'live') ? 'selected' : ''; ?>>Live</option>
+</select>
+</div>
+<div class="form-group">
+<label>Stripe publishable key</label>
+<input type="text" name="stripe_publishable_key" class="form-control" maxlength="255" value="<?php echo sanitize($row['stripe_publishable_key'] ?? ''); ?>">
+</div>
+<div class="form-group">
+<label>Stripe secret key</label>
+<input type="password" name="stripe_secret_key" class="form-control" autocomplete="new-password" placeholder="<?php echo !empty($row['stripe_secret_key_encrypted']) ? 'Leave blank to keep existing key' : 'sk_test_…'; ?>">
+</div>
+<div class="form-group">
+<label>Stripe webhook signing secret</label>
+<input type="password" name="stripe_webhook_signing_secret" class="form-control" autocomplete="new-password" placeholder="<?php echo !empty($row['stripe_webhook_signing_secret_encrypted']) ? 'Leave blank to keep existing secret' : 'whsec_…'; ?>">
+</div>
+<div class="form-group">
+<label>Deposit percent (online charge)</label>
+<input type="text" name="deposit_percent" class="form-control" inputmode="decimal" value="<?php echo sanitize(number_format((float) ($row['deposit_percent'] ?? 100), 2, '.', '')); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Percent of stay total charged online (100 = full prepayment).</p>
+</div>
 </div>
 <button type="submit" class="btn btn-primary" title="Save">💾</button>
 </form>

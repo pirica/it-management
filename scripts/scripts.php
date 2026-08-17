@@ -2055,6 +2055,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="hotel_bookings">
+                    <td><a href="verify_stripe_checkout.php" target="_blank" rel="nofollow noreferrer">verify_stripe_checkout.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_bookings</span></span></td>
+                    <td>Stripe Checkout regression: payment columns, <code>hotel_booking_payment_events</code>, encrypt round-trip, webhook signature probe, mock session payload (no live Stripe API).</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_stripe_checkout.php</code></td>
+                </tr>
+                <tr data-tags="hotel_bookings">
                     <td><a href="check_hotel_bookings_rate_plan_form.php" target="_blank" rel="nofollow noreferrer">check_hotel_bookings_rate_plan_form.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_bookings</span></span></td>

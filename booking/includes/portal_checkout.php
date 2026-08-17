@@ -370,7 +370,7 @@ if (!function_exists('hb_portal_load_booking_confirmation')) {
         if ($bookingId < 1) {
             return null;
         }
-        $sql = 'SELECT b.id, b.customer_id, b.check_in, b.check_out, b.payment_amount, b.auth2, b.guest_confirmation_code, b.notes, b.room_id, b.portal_rate_plan_id,
+        $sql = 'SELECT b.id, b.customer_id, b.check_in, b.check_out, b.payment_amount, b.payment_status, b.stripe_checkout_session_id, b.stripe_payment_intent_id, b.amount_paid, b.auth2, b.guest_confirmation_code, b.notes, b.room_id, b.portal_rate_plan_id,
             b.future_status_id, b.present_status_id, b.history_status_id,
             c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
             h.id AS hotel_id, h.name AS hotel_name, h.location AS hotel_location, h.phone AS hotel_phone,
@@ -802,8 +802,24 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <p>No further action is required. If you have questions about charges or refunds, please contact the hotel using <strong>Change booking</strong> in the sidebar.</p>
 </div>
 <?php else: ?>
+<?php
+        $paymentStatus = strtolower(trim((string) ($primaryRow['payment_status'] ?? $booking['payment_status'] ?? 'unpaid')));
+        $stripePortalEnabled = false;
+        if ($conn && $company_id > 0 && function_exists('itm_stripe_checkout_is_enabled')) {
+            require_once ROOT_PATH . 'includes/itm_stripe_checkout.php';
+            $stripePortalEnabled = itm_stripe_checkout_is_enabled($conn, $company_id);
+        }
+?>
 <div class="hb-payment-confirmation-notice" role="status">
-<p><strong>Payment at the hotel.</strong> Online payment is not enabled in this build. No charge was made online — the total above is due according to hotel policy.</p>
+<?php if ($paymentStatus === 'paid'): ?>
+<p><strong>Payment received online.</strong> Stripe Checkout completed for this reservation. Any remaining balance is due according to hotel policy.</p>
+<?php elseif ($paymentStatus === 'pending' && $stripePortalEnabled): ?>
+<p><strong>Payment pending.</strong> Complete card payment via Stripe or pay at the hotel according to policy.</p>
+<?php elseif ($stripePortalEnabled): ?>
+<p><strong>Payment options.</strong> Pay online with Stripe when offered at checkout, or pay at the hotel according to policy.</p>
+<?php else: ?>
+<p><strong>Payment at the hotel.</strong> Online payment is not enabled for this hotel. No charge was made online — the total above is due according to hotel policy.</p>
+<?php endif; ?>
 <?php echo itm_hotel_booking_portal_manage_booking_hint_html($lastname, $numberconfirmation, $auth2Display, $urlmybooking); ?>
 </div>
 <div class="hb-checkout-actions hb-payment-confirmation-actions hb-pdf-exclude">

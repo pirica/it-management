@@ -2,6 +2,7 @@
 require __DIR__ . '/../bootstrap.php';
 require __DIR__ . '/../includes/portal_chrome.php';
 require __DIR__ . '/../includes/portal_checkout.php';
+require_once ROOT_PATH . 'includes/itm_stripe_checkout.php';
 
 $roomId = (int) ($_GET['id'] ?? 0);
 $company_id = 0;
@@ -108,6 +109,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
                 if (!empty($insertResult['booking_ids']) && is_array($insertResult['booking_ids'])) {
                     $companionIds = array_values(array_map('intval', $insertResult['booking_ids']));
                 }
+                $payMethod = trim((string) ($_POST['pay_method'] ?? 'hotel'));
+                $stripeCheckout = ($payMethod === 'stripe' && itm_stripe_checkout_is_enabled($conn, $company_id));
+                if ($stripeCheckout) {
+                    $allIds = $companionIds !== [] ? $companionIds : [$bid];
+                    foreach ($allIds as $stripeBid) {
+                        itm_stripe_checkout_mark_booking_pending($conn, $company_id, (int) $stripeBid);
+                    }
+                    $_SESSION['hotel_booking_last_id'] = $bid;
+                    if ($companionIds !== []) {
+                        $_SESSION['hotel_booking_last_ids'] = $companionIds;
+                    } else {
+                        unset($_SESSION['hotel_booking_last_ids']);
+                    }
+                    $_SESSION['hotel_booking_last_occupancy'] = itm_hotel_booking_portal_occupancy_query_params($occupancy);
+                    itm_hotel_booking_portal_draft_clear();
+                    header('Location: ' . APPURL . '/payment-stripe.php?booking_id=' . $bid);
+                    exit;
+                }
                 $bookingRow = hb_portal_load_booking_confirmation($conn, $company_id, $bid);
                 if ($bookingRow) {
                     itm_hotel_booking_portal_send_booking_confirmation_emails($conn, $company_id, $bookingRow, [
@@ -185,6 +204,7 @@ $breakdown = itm_hotel_booking_portal_checkout_breakdown(
 );
 $estimatedTotal = $breakdown['total'];
 $currency = $room['currency_code'] ?? 'EUR';
+$stripeCheckoutEnabled = itm_stripe_checkout_is_enabled($conn, $company_id);
 $planLabel = trim((string) ($draftForDisplay['portal_rate_plan_name'] ?? ''));
 if ($planLabel === '') {
     $planLabel = ($draftForDisplay['rate_plan'] ?? '') === 'breakfast' ? 'Breakfast included' : 'Best available rate';
@@ -262,6 +282,13 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 <div class="form-group"><label>Full name</label><input type="text" name="full_name" class="hb-input" required autocomplete="name" value="<?php echo htmlspecialchars($formFullName, ENT_QUOTES, 'UTF-8'); ?>"></div>
 <div class="form-group"><label>Email</label><input type="email" name="email" class="hb-input" required autocomplete="email" inputmode="email" value="<?php echo htmlspecialchars($formEmail, ENT_QUOTES, 'UTF-8'); ?>"></div>
 <div class="form-group"><label>Phone</label><input type="tel" name="phone" class="hb-input" required autocomplete="tel" inputmode="tel" placeholder="+351912345678" pattern="\+\d{8,15}" title="Include country code, e.g. +351912345678" value="<?php echo htmlspecialchars($formPhone, ENT_QUOTES, 'UTF-8'); ?>"><p class="hb-field-hint">Full number with country code (e.g. +351912345678).</p></div>
+<?php if ($stripeCheckoutEnabled): ?>
+<div class="form-group hb-pay-method-group">
+<label>Payment</label>
+<label class="itm-checkbox-control"><input type="radio" name="pay_method" value="stripe" checked><span>Pay now with card (Stripe)</span></label>
+<label class="itm-checkbox-control"><input type="radio" name="pay_method" value="hotel"><span>Pay at the hotel</span></label>
+</div>
+<?php endif; ?>
 <?php if ($draft): ?>
 <div class="hb-step4-dates">
 <div class="form-group"><label>Check-in</label><input type="text" class="hb-input hb-input-locked" readonly disabled value="<?php echo htmlspecialchars($prefillInDisplay, ENT_QUOTES, 'UTF-8'); ?>" aria-disabled="true"></div>
