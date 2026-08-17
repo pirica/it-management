@@ -24,6 +24,89 @@ if (!has_module_access($conn, $company_id, 'reports')) {
     exit;
 }
 
+require_once ROOT_PATH . 'includes/itm_scheduled_reports.php';
+$scheduledReportsFlash = '';
+$scheduledReportsList = [];
+$isReportsAdmin = function_exists('itm_is_admin') && itm_is_admin();
+
+if ($isReportsAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['scheduled_report_action'])) {
+    itm_require_post_csrf();
+    $action = (string) ($_POST['scheduled_report_action'] ?? '');
+    if ($action === 'save_scheduled_report') {
+        $reportSlug = trim((string) ($_POST['report_slug'] ?? ''));
+        $scheduleCron = trim((string) ($_POST['schedule_cron'] ?? ''));
+        $format = strtolower((string) ($_POST['format'] ?? 'pdf'));
+        $enabled = isset($_POST['enabled']) ? 1 : 0;
+        $recipientsRaw = trim((string) ($_POST['recipients'] ?? ''));
+        $recipients = array_values(array_filter(array_map('trim', preg_split('/[\s,;]+/', $recipientsRaw))));
+        $catalog = itm_scheduled_reports_catalog();
+        if (!isset($catalog[$reportSlug])) {
+            $scheduledReportsFlash = 'Unknown report slug.';
+        } elseif ($scheduleCron === '' || count(preg_split('/\s+/', $scheduleCron)) !== 5) {
+            $scheduledReportsFlash = 'Cron must have five fields (minute hour day month weekday).';
+        } elseif ($recipients === []) {
+            $scheduledReportsFlash = 'Add at least one recipient email.';
+        } elseif (!in_array($format, ['pdf', 'xlsx'], true)) {
+            $scheduledReportsFlash = 'Invalid export format.';
+        } else {
+            $recipientsJson = json_encode($recipients, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $editId = (int) ($_POST['scheduled_report_id'] ?? 0);
+            if ($editId > 0) {
+                $stmt = mysqli_prepare(
+                    $conn,
+                    'UPDATE scheduled_reports SET report_slug = ?, schedule_cron = ?, recipients_json = ?, format = ?, enabled = ?, updated_by = ?, updated_at = NOW()
+                     WHERE id = ? AND company_id = ? AND deleted_at IS NULL'
+                );
+                if ($stmt) {
+                    $employeeId = (int) ($_SESSION['employee_id'] ?? 0);
+                    mysqli_stmt_bind_param($stmt, 'ssssiiii', $reportSlug, $scheduleCron, $recipientsJson, $format, $enabled, $employeeId, $editId, $company_id);
+                    mysqli_stmt_execute($stmt);
+                    mysqli_stmt_close($stmt);
+                    $scheduledReportsFlash = 'Schedule updated.';
+                }
+            } else {
+                $stmt = mysqli_prepare(
+                    $conn,
+                    'INSERT INTO scheduled_reports (company_id, report_slug, schedule_cron, recipients_json, format, enabled, created_by, active, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW())'
+                );
+                if ($stmt) {
+                    $employeeId = (int) ($_SESSION['employee_id'] ?? 0);
+                    mysqli_stmt_bind_param($stmt, 'issssii', $company_id, $reportSlug, $scheduleCron, $recipientsJson, $format, $enabled, $employeeId);
+                    mysqli_stmt_execute($stmt);
+                    mysqli_stmt_close($stmt);
+                    $scheduledReportsFlash = 'Schedule created.';
+                }
+            }
+        }
+    } elseif ($action === 'delete_scheduled_report') {
+        $deleteId = (int) ($_POST['scheduled_report_id'] ?? 0);
+        if ($deleteId > 0 && function_exists('itm_crud_build_soft_delete_sql')) {
+            $employeeId = (int) ($_SESSION['employee_id'] ?? 0);
+            $whereSql = 'id = ' . $deleteId . ' AND company_id = ' . (int) $company_id;
+            $sql = itm_crud_build_soft_delete_sql('scheduled_reports', $whereSql, $employeeId);
+            itm_run_query($conn, $sql);
+            $scheduledReportsFlash = 'Schedule removed.';
+        }
+    }
+}
+
+if ($isReportsAdmin) {
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT * FROM scheduled_reports WHERE company_id = ? AND deleted_at IS NULL ORDER BY id DESC'
+    );
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $company_id);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $scheduledReportsList[] = $row;
+        }
+        mysqli_stmt_close($stmt);
+    }
+}
+
 // Load chart data using helpers from api/helpers.php
 require_once __DIR__ . '/api/helpers.php';
 
@@ -178,6 +261,103 @@ if (!isset($crud_title)) {
                 <div class="reports-hub-header">
                     <h1 class="reports-hub-title">📊 Reports Hub</h1>
                 </div>
+
+                <?php if ($isReportsAdmin): ?>
+                <section class="card" style="margin-bottom:24px;">
+                    <h2 style="margin-top:0;">Scheduled executive reports</h2>
+                    <?php if ($scheduledReportsFlash !== ''): ?>
+                        <p><?php echo sanitize($scheduledReportsFlash); ?></p>
+                    <?php endif; ?>
+                    <table class="table" style="width:100%;margin-bottom:16px;">
+                        <thead>
+                            <tr>
+                                <th>Report</th>
+                                <th>Cron</th>
+                                <th>Format</th>
+                                <th>Enabled</th>
+                                <th>Last sent</th>
+                                <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php if ($scheduledReportsList): ?>
+                            <?php foreach ($scheduledReportsList as $sr): ?>
+                                <?php $catalog = itm_scheduled_reports_catalog(); ?>
+                                <tr>
+                                    <td><?php echo sanitize($catalog[$sr['report_slug']] ?? $sr['report_slug']); ?></td>
+                                    <td><code><?php echo sanitize($sr['schedule_cron']); ?></code></td>
+                                    <td><?php echo sanitize(strtoupper((string) $sr['format'])); ?></td>
+                                    <td><?php echo (int) $sr['enabled'] === 1 ? 'Yes' : 'No'; ?></td>
+                                    <td><?php echo $sr['last_sent_at'] ? sanitize(itm_format_cell_scalar_display($sr['last_sent_at'])) : '—'; ?></td>
+                                    <td class="itm-actions-cell" data-itm-actions-origin="1">
+                                        <button type="button" class="btn btn-sm js-edit-schedule" title="Edit"
+                                            data-id="<?php echo (int) $sr['id']; ?>"
+                                            data-slug="<?php echo sanitize($sr['report_slug']); ?>"
+                                            data-cron="<?php echo sanitize($sr['schedule_cron']); ?>"
+                                            data-format="<?php echo sanitize($sr['format']); ?>"
+                                            data-enabled="<?php echo (int) $sr['enabled']; ?>"
+                                            data-recipients="<?php echo sanitize(implode(', ', json_decode((string) $sr['recipients_json'], true) ?: [])); ?>">✏️</button>
+                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Remove this schedule?');">
+                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                                            <input type="hidden" name="scheduled_report_action" value="delete_scheduled_report">
+                                            <input type="hidden" name="scheduled_report_id" value="<?php echo (int) $sr['id']; ?>">
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr><td colspan="6">No schedules yet.</td></tr>
+                        <?php endif; ?>
+                        </tbody>
+                    </table>
+                    <button type="button" class="btn btn-primary" id="open-schedule-modal" title="Schedule report">➕</button>
+                </section>
+
+                <div id="schedule-report-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
+                    <div class="card" style="max-width:520px;width:92%;margin:auto;margin-top:10vh;">
+                        <h2 style="margin-top:0;">Schedule report</h2>
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                            <input type="hidden" name="scheduled_report_action" value="save_scheduled_report">
+                            <input type="hidden" name="scheduled_report_id" id="schedule-report-id" value="0">
+                            <div class="form-group">
+                                <label>Report</label>
+                                <select name="report_slug" id="schedule-report-slug" required>
+                                    <?php foreach (itm_scheduled_reports_catalog() as $slug => $label): ?>
+                                        <option value="<?php echo sanitize($slug); ?>"><?php echo sanitize($label); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Cron (minute hour dom month dow)</label>
+                                <input type="text" name="schedule_cron" id="schedule-report-cron" placeholder="0 8 * * 1" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Recipients (comma-separated emails)</label>
+                                <input type="text" name="recipients" id="schedule-report-recipients" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Format</label>
+                                <select name="format" id="schedule-report-format">
+                                    <option value="pdf">PDF (HTML email + attachment)</option>
+                                    <option value="xlsx">XLSX (CSV attachment)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="itm-checkbox-control">
+                                    <input type="checkbox" name="enabled" id="schedule-report-enabled" value="1" checked>
+                                    <span>Enabled</span>
+                                </label>
+                            </div>
+                            <div style="display:flex;gap:8px;">
+                                <button type="submit" class="btn btn-primary" title="Save">💾</button>
+                                <button type="button" class="btn" id="close-schedule-modal" title="Cancel">🔙</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <!-- Quick Stats Cards -->
                 <section class="stats-grid">
@@ -882,6 +1062,36 @@ if (!isset($crud_title)) {
     function exportAllReports() {
         alert('All report data prepared for export. Generating combined PDF/XLSX... (Simulated)');
     }
+
+    (function () {
+        var modal = document.getElementById('schedule-report-modal');
+        if (!modal) return;
+        var openBtn = document.getElementById('open-schedule-modal');
+        var closeBtn = document.getElementById('close-schedule-modal');
+        function openModal(reset) {
+            if (reset) {
+                document.getElementById('schedule-report-id').value = '0';
+                document.getElementById('schedule-report-cron').value = '0 8 * * 1';
+                document.getElementById('schedule-report-recipients').value = '';
+                document.getElementById('schedule-report-enabled').checked = true;
+            }
+            modal.style.display = 'flex';
+        }
+        function closeModal() { modal.style.display = 'none'; }
+        if (openBtn) openBtn.addEventListener('click', function () { openModal(true); });
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        document.querySelectorAll('.js-edit-schedule').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.getElementById('schedule-report-id').value = btn.getAttribute('data-id') || '0';
+                document.getElementById('schedule-report-slug').value = btn.getAttribute('data-slug') || '';
+                document.getElementById('schedule-report-cron').value = btn.getAttribute('data-cron') || '';
+                document.getElementById('schedule-report-format').value = btn.getAttribute('data-format') || 'pdf';
+                document.getElementById('schedule-report-recipients').value = btn.getAttribute('data-recipients') || '';
+                document.getElementById('schedule-report-enabled').checked = (btn.getAttribute('data-enabled') === '1');
+                openModal(false);
+            });
+        });
+    })();
     </script>
 </body>
 </html>

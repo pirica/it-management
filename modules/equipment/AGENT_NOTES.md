@@ -6,6 +6,7 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 ## 2. Key Tables
 - **equipment** — main asset records.
 - **employee_assignment_history** — one row per `(company_id, employee_id)`; synced from equipment assignee changes. Row shape, UPSERT rules, and manual CRUD pitfalls: **`modules/employee_assignment_history/AGENT_NOTES.md`**.
+- **equipment_lifecycle_events** — timeline rows (stage changes, depreciation snapshots).
 
 ## 3. Required Relationships
 - **equipment** → depends on **companies**.
@@ -29,6 +30,7 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 - **Type-Specific Logic:** `modules/is_*` façades delegate here; do not delete canonical `is_switch`, `is_server`, etc. Gate-excluded UI configuration list-contract gaps for façades are reviewed under registry key `is_*` in `scripts/data/ui_configuration_reviewed.json` (no local `index.php` table — list chrome is here).
 - **Switch port tiles:** RJ45/SFP icon mapping per AGENTS.md (Unknown vs active PNG paths).
 - **Add sample data:** `index.php` POST `add_sample_data` calls `itm_seed_insert_equipment_sample_rows()` (via `itm_seed_table_from_database_sql('equipment')`) — ensures **Primary File Server** (Server type) and **Core Switch** (`equipment_rj45` **24 ports**) plus **24 RJ45** `switch_ports` rows; bypasses `02_data_sample.sql` FK remap on empty tenants.
+- **Lifecycle & depreciation:** Columns `lifecycle_stage`, `depreciation_start_date`, `useful_life_months`, `salvage_value`, `disposal_date`, `disposal_reason` on `equipment`. Create/edit section in `create.php`; view card + timeline via `includes/itm_asset_depreciation.php`. Monthly cron: `php scripts/run_asset_depreciation.php`. Verify: `php scripts/verify_asset_depreciation.php`.
 
 ## 5. UI Behavior Requirements
 - **View audit meta:** Detail view lists all six scaffold audit columns (`deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) with employee names and `d-m-Y - H:i:s` timestamps; list hides meta fields. Employment/equipment/ticket **status** badges are separate from row `active` (soft-delete mirror).
