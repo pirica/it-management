@@ -25,7 +25,8 @@
       promo_code: sanitizeRateCode(o.promo_code),
       group_code: sanitizeRateCode(o.group_code),
       corporate_account: sanitizeRateCode(o.corporate_account),
-      member_account: sanitizeRateCode(o.member_account)
+      member_account: sanitizeRateCode(o.member_account),
+      internal_rate_code: String(o.internal_rate_code || '').toLowerCase()
     };
   }
 
@@ -59,6 +60,30 @@
   var SPECIAL_RATE_BOOL_KEYS = ['use_points', 'travel_agents', 'aaa_rate', 'senior_rate', 'gov_military'];
   var SPECIAL_RATE_CODE_KEYS = ['promo_code', 'group_code', 'corporate_account', 'member_account'];
 
+  function occupancyHasSpecialDiscount(occ) {
+    occ = occ || {};
+    var hasBool = SPECIAL_RATE_BOOL_KEYS.some(function (key) { return !!occ[key]; });
+    if (hasBool) {
+      return true;
+    }
+    return SPECIAL_RATE_CODE_KEYS.some(function (key) {
+      return sanitizeRateCode(occ[key]) !== '';
+    }) || String(occ.rate || '') !== '';
+  }
+
+  function applyInternalRateParams(params, occ) {
+    var code = String(occ.internal_rate_code || '').toLowerCase();
+    if (code === 'use' || code === 'comp') {
+      params.set('internal_rate_code', code);
+    } else {
+      params.delete('internal_rate_code');
+    }
+  }
+
+  function internalRateCodeFromOcc(occ) {
+    return String((occ && occ.internal_rate_code) || '').toLowerCase();
+  }
+
   function applySpecialRateParams(params, occ) {
     SPECIAL_RATE_BOOL_KEYS.forEach(function (key) {
       if (occ[key]) {
@@ -75,6 +100,7 @@
         params.delete(key);
       }
     });
+    applyInternalRateParams(params, occ);
   }
 
   function resolvedRateSlugFromOcc(occ) {
@@ -132,6 +158,14 @@
     SPECIAL_RATE_BOOL_KEYS.forEach(function (key) {
       merged[key] = merged[key] ? 1 : 0;
     });
+    merged.internal_rate_code = String(merged.internal_rate_code || '').toLowerCase();
+    if (merged.internal_rate_code === 'use' || merged.internal_rate_code === 'comp') {
+      SPECIAL_RATE_BOOL_KEYS.forEach(function (key) { merged[key] = 0; });
+      SPECIAL_RATE_CODE_KEYS.forEach(function (key) { merged[key] = ''; });
+      merged.rate = '';
+    } else if (occupancyHasSpecialDiscount(merged)) {
+      merged.internal_rate_code = '';
+    }
     var exclusiveKeep = null;
     SPECIAL_RATE_BOOL_KEYS.forEach(function (key) {
       if (merged[key]) {
@@ -205,6 +239,10 @@
   }
 
   function quoteNightly(base) {
+    var ir = internalRateCodeFromOcc(cardQuoteOccupancy());
+    if (ir === 'comp' || ir === 'use') {
+      return 0;
+    }
     var nightly = quoteNightlyUndiscounted(base);
     var disc = discountPercent();
     if (disc > 0) {
@@ -225,6 +263,10 @@
       return;
     }
     var tax = touristTaxPerNight();
+    var ir = internalRateCodeFromOcc(cardQuoteOccupancy());
+    if (ir === 'comp') {
+      tax = 0;
+    }
     var list = Math.round((quoteNightlyUndiscounted(base) + tax) * 100) / 100;
     var sale = Math.round((quoteNightly(base) + tax) * 100) / 100;
     var disc = discountPercent();
@@ -287,6 +329,10 @@
     if (!form) {
       return overrides;
     }
+    var internalEl = form.querySelector('input[name="internal_rate_code"]:checked');
+    if (internalEl) {
+      overrides.internal_rate_code = String(internalEl.value || '').toLowerCase();
+    }
     SPECIAL_RATE_BOOL_KEYS.forEach(function (key) {
       var el = form.querySelector('input[name="' + key + '"]');
       if (el && el.checked) {
@@ -316,6 +362,10 @@
         el.value = '';
       }
     });
+    var internalNone = form.querySelector('#hb-rate-internal-none');
+    if (internalNone) {
+      internalNone.checked = true;
+    }
   }
 
   function updatePrices() {
@@ -492,7 +542,8 @@
         promo_code: '',
         group_code: '',
         corporate_account: '',
-        member_account: ''
+        member_account: '',
+        internal_rate_code: ''
       });
     });
   }
@@ -507,6 +558,26 @@
         ratesForm.querySelectorAll('[data-hb-rate-exclusive]').forEach(function (other) {
           if (other !== cb) {
             other.checked = false;
+          }
+        });
+        var internalNone = ratesForm.querySelector('#hb-rate-internal-none');
+        if (internalNone) {
+          internalNone.checked = true;
+        }
+      });
+    });
+    ratesForm.querySelectorAll('.hb-rate-internal').forEach(function (rb) {
+      rb.addEventListener('change', function () {
+        if (!rb.checked || rb.value === '') {
+          return;
+        }
+        ratesForm.querySelectorAll('[data-hb-rate-exclusive]').forEach(function (other) {
+          other.checked = false;
+        });
+        SPECIAL_RATE_CODE_KEYS.forEach(function (key) {
+          var el = ratesForm.querySelector('input[name="' + key + '"]');
+          if (el) {
+            el.value = '';
           }
         });
       });

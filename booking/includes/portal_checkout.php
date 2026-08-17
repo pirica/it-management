@@ -655,8 +655,8 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
         }
         $checkInIso = (string) ($primaryRow['check_in'] ?? $booking['check_in'] ?? '');
         $checkOutIso = (string) ($primaryRow['check_out'] ?? $booking['check_out'] ?? '');
-        $checkInDisplay = $checkInIso !== '' ? itm_format_hotel_date_display($checkInIso) : '';
-        $checkOutDisplay = $checkOutIso !== '' ? itm_format_hotel_date_display($checkOutIso) : '';
+        $checkInDisplay = $checkInIso !== '' ? hb_portal_format_date_display($checkInIso) : '';
+        $checkOutDisplay = $checkOutIso !== '' ? hb_portal_format_date_display($checkOutIso) : '';
         $currency = (string) ($primaryRow['currency_code'] ?? $booking['currency_code'] ?? 'EUR');
         $amount = function_exists('itm_hotel_booking_portal_confirmation_group_total')
             ? itm_hotel_booking_portal_confirmation_group_total($groupRows)

@@ -17,6 +17,26 @@ if (!function_exists('hb_portal_money_settings_bound')) {
   }
 }
 
+if (!function_exists('hb_portal_format_date_display')) {
+    function hb_portal_format_date_display($isoDate) {
+        $settings = hb_portal_money_settings_bound();
+        if ($settings !== []) {
+            return itm_hotel_booking_portal_format_date_display($isoDate, $settings);
+        }
+        return itm_format_hotel_date_display($isoDate);
+    }
+}
+
+if (!function_exists('hb_portal_format_datetime_display')) {
+    function hb_portal_format_datetime_display($isoDatetime) {
+        $settings = hb_portal_money_settings_bound();
+        if ($settings !== []) {
+            return itm_hotel_booking_portal_format_datetime_display($isoDatetime, $settings);
+        }
+        return function_exists('itm_format_datetime_display') ? itm_format_datetime_display($isoDatetime) : (string) $isoDatetime;
+    }
+}
+
 if (!function_exists('hb_portal_format_stay_range_label')) {
     function hb_portal_format_stay_range_label($checkInIso, $nights = 1) {
         $nights = max(1, (int) $nights);
@@ -25,8 +45,8 @@ if (!function_exists('hb_portal_format_stay_range_label')) {
             return '';
         }
         $checkOutIso = date('Y-m-d', strtotime($checkInIso . ' +' . $nights . ' day'));
-        $inDisplay = itm_format_hotel_date_display($checkInIso);
-        $outDisplay = itm_format_hotel_date_display($checkOutIso);
+        $inDisplay = hb_portal_format_date_display($checkInIso);
+        $outDisplay = hb_portal_format_date_display($checkOutIso);
         if ($inDisplay === '' || $outDisplay === '') {
             return '';
         }

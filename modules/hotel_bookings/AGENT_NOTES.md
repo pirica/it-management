@@ -6,7 +6,7 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, hotel filter), **F
 
 ## 2. Key Tables
 
-- **hotel_bookings** — reservations (`room_id`, `check_in`, `check_out`, `payment_amount`, **`auth2`** guest manage PIN (random 4 digits), `portal_rate_plan_id` → `hotel_booking_portal_rate_plans`, `booking_color` planning bar `#rrggbb`, segment status FKs)
+- **hotel_bookings** — reservations (`room_id`, `check_in`, `check_out`, `payment_amount`, **`auth2`** guest manage PIN (random 4 digits), `portal_rate_plan_id` → `hotel_booking_portal_rate_plans`, **`internal_rate_code`** (`use` / `comp` / empty — USE waives room only, COMP all charges), `booking_color` planning bar `#rrggbb`, segment status FKs)
 - **hotel_bookings_future / present / history** — lifecycle status lookups (no ENUM)
 - **hotel_booking_rooms**, **hotel_booking_hotels**, **booking_rooms_types** — inventory (separate CRUD modules)
 
@@ -35,7 +35,7 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, hotel filter), **F
 
 ## 5a. Create / edit form
 
-- Shared markup: `includes/hb_booking_form.php` — all `hotel_bookings` business columns (customer, room, check-in/out, payment, **auth2** read-only on edit / auto-generated on create, **portal rate plan** select with ➕ modal create, Planning color via `type="color"` → `booking_color`, three segment status FKs, notes, `active` checkbox).
+- Shared markup: `includes/hb_booking_form.php` — all `hotel_bookings` business columns (customer, room, check-in/out, payment, **internal rate** select (`internal_rate_code`), **auth2** read-only on edit / auto-generated on create, **portal rate plan** select with ➕ modal create, Planning color via `type="color"` → `booking_color`, three segment status FKs, notes, `active` checkbox). `hb_booking_compute_suggested_payment()` applies internal waivers on save; `js/hotel-bookings-date-picker.js` suggests payment on room/date/internal-rate change.
 - Portal rate plan options filter by selected room’s `hotel_id`; defaults seeded per hotel when the form loads. **➕** is the standard `__add_new__` option inside the plan `<select>` (opens create modal without requiring a room — embed form includes hotel select; room choice only pre-fills `hotel_id`). **🔎** / **✏️** beside the select open view/edit in a modal iframe (`embed=1`). `hb_booking_end_form_page()` renders the modal outside `.content`. Regression: `php scripts/check_hotel_bookings_rate_plan_form.php` and `php scripts/lib/itm_hospitality_booking_form_probe.php create|edit`.
 - Check-in / check-out use hospitality date fields (`d/M/Y` + 📅 via `js/hotel-date-input.js`); planning **Anchor** uses the same widget; `js/hotel-bookings-date-picker.js` enforces check-out after check-in.
 - Audit meta (`created_by`, `created_at`, `updated_by`, `updated_at`) via hidden inputs from `itm_crud_render_form_hidden_audit_inputs()`; `company_id` stays session-scoped (not on form).

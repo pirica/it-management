@@ -1747,5 +1747,75 @@ if (hb_portal_money_format(12.5, 'USD') === '$12.50') {
 }
 unset($GLOBALS['hb_portal_money_settings']);
 
+$colInternalRate = mysqli_query($conn, "SHOW COLUMNS FROM hotel_bookings LIKE 'internal_rate_code'");
+$colShowInternalRates = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_show_internal_rates'");
+$colPortalDateFormat = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_date_format'");
+$colPortalTimeFormat = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_time_format'");
+$colDatetimeEuropean2 = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_datetime_european2_enabled'");
+$colDatetimeDefault = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_datetime_format_default'");
+if ($colInternalRate && mysqli_num_rows($colInternalRate) === 1
+    && $colShowInternalRates && mysqli_num_rows($colShowInternalRates) === 1
+    && $colPortalDateFormat && mysqli_num_rows($colPortalDateFormat) === 1
+    && $colPortalTimeFormat && mysqli_num_rows($colPortalTimeFormat) === 1
+    && $colDatetimeEuropean2 && mysqli_num_rows($colDatetimeEuropean2) === 1
+    && $colDatetimeDefault && mysqli_num_rows($colDatetimeDefault) === 1) {
+    hb_pass('internal rate + portal date/time format schema columns');
+} else {
+    hb_fail('internal rate + portal date/time format schema columns missing');
+}
+
+if (itm_hotel_booking_normalize_internal_rate_code('COMPIMENTARY') === 'comp'
+    && itm_hotel_booking_normalize_internal_rate_code('HOUSE_USE') === 'use'
+    && itm_hotel_booking_internal_rate_waive_scope('comp') === 'all'
+    && itm_hotel_booking_internal_rate_waive_scope('use') === 'room_only') {
+    hb_pass('internal rate alias normalization + waive scope');
+} else {
+    hb_fail('internal rate alias normalization + waive scope');
+}
+
+$useBreakdown = itm_hotel_booking_apply_internal_rate_to_breakdown([
+    'room_charges' => 200.0,
+    'tourist_tax' => 12.5,
+    'total' => 212.5,
+], 'use');
+$compBreakdown = itm_hotel_booking_apply_internal_rate_to_breakdown([
+    'room_charges' => 200.0,
+    'tourist_tax' => 12.5,
+    'total' => 212.5,
+], 'comp');
+if ((float) ($useBreakdown['room_charges'] ?? -1) === 0.0
+    && (float) ($useBreakdown['total'] ?? -1) === 12.5
+    && (float) ($compBreakdown['total'] ?? -1) === 0.0) {
+    hb_pass('internal rate breakdown USE room-only + COMP all waived');
+} else {
+    hb_fail('internal rate breakdown USE/COMP totals unexpected');
+}
+
+$defaultDatetimeMap = itm_hotel_booking_portal_datetime_format_enabled_map([]);
+if (!empty($defaultDatetimeMap['european2'])
+    && itm_hotel_booking_portal_datetime_format_default_from_settings([]) === 'european2'
+    && itm_hotel_booking_portal_format_date_display('2026-08-17', ['portal_date_format' => 'european_ddmmyyyy']) === '17/08/2026'
+    && itm_hotel_booking_portal_format_date_display('2026-08-17', ['portal_date_format' => 'us_mmddyyyy']) === '08/17/2026') {
+    hb_pass('portal date/time format helpers + default datetime2');
+} else {
+    hb_fail('portal date/time format helpers + default datetime2');
+}
+
+$hbFormSrc = (string) @file_get_contents(dirname(__DIR__) . '/modules/hotel_bookings/includes/hb_booking_form.php');
+$roomsSrcInternal = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms.php');
+$selectRoomJsSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/js/hotel-booking-select-room.js');
+$dateFormatJsSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/js/hotel-booking-date-format.js');
+if (strpos($hbFormSrc, 'internal_rate_code') !== false
+    && strpos($hbFormSrc, 'hb-booking-internal-rate') !== false
+    && strpos($settingsIndexSrc, 'portal_show_internal_rates') !== false
+    && strpos($settingsIndexSrc, 'portal_date_format') !== false
+    && strpos($roomsSrcInternal, 'hb-rate-internal') !== false
+    && strpos($selectRoomJsSrc, 'internal_rate_code') !== false
+    && strpos($dateFormatJsSrc, 'itmHotelDateFormatYmd') !== false) {
+    hb_pass('admin booking form + portal internal rates + date format JS wiring');
+} else {
+    hb_fail('admin booking form + portal internal rates + date format JS wiring missing');
+}
+
 itm_script_output_end();
 exit($fail > 0 ? 1 : 0);

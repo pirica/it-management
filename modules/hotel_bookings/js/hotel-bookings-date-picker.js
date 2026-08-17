@@ -7,6 +7,10 @@
         return;
     }
 
+    var paymentInput = document.getElementById('hb-booking-payment');
+    var roomSelect = document.getElementById('hb-booking-room-id');
+    var internalRateSelect = document.getElementById('hb-booking-internal-rate');
+
     function nativeInput(el) {
         if (!el) {
             return null;
@@ -39,6 +43,55 @@
         return y + '-' + m + '-' + d;
     }
 
+    function stayNights() {
+        var checkInNative = nativeInput(checkIn);
+        var checkOutNative = nativeInput(checkOut);
+        if (!checkInNative || !checkOutNative) {
+            return 0;
+        }
+        var start = parseYmd(checkInNative.value);
+        var end = parseYmd(checkOutNative.value);
+        if (!start || !end || end <= start) {
+            return 0;
+        }
+        return Math.max(1, Math.round((end - start) / 86400000));
+    }
+
+    function selectedRoomPrice() {
+        if (!roomSelect) {
+            return 0;
+        }
+        var opt = roomSelect.options[roomSelect.selectedIndex];
+        if (!opt) {
+            return 0;
+        }
+        return parseFloat(opt.getAttribute('data-price') || '0') || 0;
+    }
+
+    function suggestPaymentAmount() {
+        if (!paymentInput) {
+            return;
+        }
+        var internalCode = internalRateSelect ? String(internalRateSelect.value || '').toLowerCase() : '';
+        if (internalCode === 'comp') {
+            paymentInput.value = '0.00';
+            return;
+        }
+        var nights = stayNights();
+        var price = selectedRoomPrice();
+        if (nights < 1 || price <= 0) {
+            return;
+        }
+        var total = Math.round(price * nights * 100) / 100;
+        if (internalCode === 'use') {
+            paymentInput.value = '0.00';
+            paymentInput.title = 'Room charges waived (USE); tourist tax is calculated on save.';
+            return;
+        }
+        paymentInput.title = '';
+        paymentInput.value = total.toFixed(2);
+    }
+
     function syncCheckOutMin() {
         var checkInNative = nativeInput(checkIn);
         var checkOutNative = nativeInput(checkOut);
@@ -60,9 +113,16 @@
                 checkOut.value = window.itmHotelDateFormatYmd(minStr);
             }
         }
+        suggestPaymentAmount();
     }
 
     checkIn.addEventListener('change', syncCheckOutMin);
     checkOut.addEventListener('change', syncCheckOutMin);
+    if (roomSelect) {
+        roomSelect.addEventListener('change', suggestPaymentAmount);
+    }
+    if (internalRateSelect) {
+        internalRateSelect.addEventListener('change', suggestPaymentAmount);
+    }
     syncCheckOutMin();
 })();

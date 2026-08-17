@@ -247,6 +247,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'surcharge_percent' => $planEffectiveSurcharge,
                 'resolved_rate_slug' => $resolvedRate,
                 'base_price_per_night' => $basePerNight,
+                'internal_rate_code' => itm_hotel_booking_normalize_internal_rate_code($occupancy['internal_rate_code'] ?? ''),
                 'room_type_id' => (int) ($room['room_type_id'] ?? 0),
                 'room_lines' => $allLines,
                 'room_lines_context' => $roomLinesContext,

@@ -171,8 +171,8 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkInIso)) {
     $checkInIso = date('Y-m-d');
 }
 $checkOutIso = (string) ($draft['check_out'] ?? date('Y-m-d', strtotime($checkInIso . ' +' . $nights . ' day')));
-$prefillInDisplay = itm_format_hotel_date_display($checkInIso);
-$prefillOutDisplay = itm_format_hotel_date_display($checkOutIso);
+$prefillInDisplay = hb_portal_format_date_display($checkInIso);
+$prefillOutDisplay = hb_portal_format_date_display($checkOutIso);
 
 $hotelId = (int) ($room['hotel_id'] ?? 0);
 $hotel = ['id' => $hotelId, 'name' => $room['hotel_name'] ?? ''];
