@@ -161,8 +161,8 @@ Rules live on `booking_rooms_types` (fresh installs: `db/01_schema.sql` only —
 
 | Area | Behaviour |
 |------|-----------|
-| Step 1 (`rooms.php`) | `portal_bookable`, `itm_hotel_booking_portal_room_type_validate_stay()`, per-slot `cardQuoteOccupancy` for fits + quote, mixed-type lock when `allow_mixed_types_in_group = 0`, `max_rooms_per_booking`, connecting-room banner |
-| Step 2 (`select-rate.php`) | Re-validates bookable + stay for selected type |
+| Step 1 (`rooms.php`) | `portal_bookable`, `itm_hotel_booking_portal_room_type_validate_stay()`, per-slot `cardQuoteOccupancy` for fits + quote (`min_adults`, `max_total_guests` + `max_extra_beds`, `child_max_age` bands, connecting-unit combined capacity + inventory), mixed-type lock when `allow_mixed_types_in_group = 0`, `max_rooms_per_booking`, connecting-room **unit** banner |
+| Step 2 (`select-rate.php`) | Re-validates bookable + stay; connecting units pick + rate **both** `room_lines` before Step 3 (`crib_included` zeros baby supplement in quotes) |
 | Step 3 (`customize.php`) | Pets block only when **all** rated lines allow pets (`itm_hotel_booking_portal_draft_pet_policy()`); otherwise “No special requests available.” |
 | Checkout | `requires_approval` → “Subject to hotel approval”; complimentary credit from settings when room count exceeds threshold |
 | Pricing overrides | `portal_*` columns on the type row; `NULL` inherits `hotel_booking_hotels` portal pricing |

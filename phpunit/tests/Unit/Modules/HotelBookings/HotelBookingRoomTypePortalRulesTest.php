@@ -191,4 +191,70 @@ final class HotelBookingRoomTypePortalRulesTest extends TestCase
     {
         $this->assertTrue(function_exists('itm_hotel_booking_portal_draft_requires_approval'));
     }
+
+    public function testExtraBedsExtendEffectiveMaxTotal(): void
+    {
+        $typeRow = self::baseTypeRow([
+            'max_total_guests' => 4,
+            'max_adults' => 4,
+            'max_children' => 2,
+            'max_babies' => 2,
+            'extra_bed_allowed' => 1,
+            'max_extra_beds' => 2,
+        ]);
+        $this->assertSame(6, itm_hotel_booking_portal_effective_max_total_guests($typeRow));
+        $occ = ['rooms' => 1, 'adults' => 2, 'children' => 2, 'babies' => 2];
+        $this->assertTrue(itm_hotel_booking_room_type_fits_occupancy($typeRow, $occ));
+        $typeRow['max_extra_beds'] = 0;
+        $this->assertFalse(itm_hotel_booking_room_type_fits_occupancy($typeRow, $occ));
+    }
+
+    public function testChildMaxAgeRejectsChildrenWhenBandTooYoung(): void
+    {
+        $typeRow = self::baseTypeRow(['child_max_age' => 1]);
+        $this->assertFalse(itm_hotel_booking_room_type_fits_occupancy($typeRow, ['rooms' => 1, 'adults' => 2, 'children' => 1, 'babies' => 0]));
+        $this->assertTrue(itm_hotel_booking_room_type_fits_occupancy($typeRow, ['rooms' => 1, 'adults' => 2, 'children' => 0, 'babies' => 1]));
+    }
+
+    public function testCribIncludedZerosBabySupplement(): void
+    {
+        $pricing = self::pricingDefaults();
+        $typeRow = self::baseTypeRow([
+            'portal_baby_nightly_supplement' => 15.0,
+            'crib_included' => 1,
+        ]);
+        $rules = itm_hotel_booking_portal_room_type_effective_rules($typeRow, $pricing);
+        $this->assertTrue($rules['crib_included']);
+        $occ = ['rooms' => 1, 'adults' => 2, 'children' => 0, 'babies' => 1];
+        $withCrib = itm_hotel_booking_portal_quote_nightly(100.0, $occ, 0, $pricing, 0, $typeRow, $rules);
+        $withoutCrib = itm_hotel_booking_portal_quote_nightly(100.0, $occ, 0, $pricing, 0, self::baseTypeRow([
+            'portal_baby_nightly_supplement' => 15.0,
+            'crib_included' => 0,
+        ]));
+        $this->assertEqualsWithDelta(100.0, $withCrib, 0.01);
+        $this->assertEqualsWithDelta(115.0, $withoutCrib, 0.01);
+    }
+
+    public function testMultiRoomPerSliceMinAdultsAndMaxTotal(): void
+    {
+        $typeRow = self::baseTypeRow(['min_adults' => 2, 'max_total_guests' => 3]);
+        $occ = ['rooms' => 2, 'adults' => 3, 'children' => 0, 'babies' => 0];
+        $this->assertFalse(itm_hotel_booking_room_type_fits_occupancy($typeRow, $occ));
+        $occOk = ['rooms' => 2, 'adults' => 4, 'children' => 0, 'babies' => 0];
+        $this->assertTrue(itm_hotel_booking_room_type_fits_occupancy($typeRow, $occOk));
+    }
+
+    public function testConnectingUnitCheckoutLineCount(): void
+    {
+        $primary = self::baseTypeRow(['connecting_room_type_id' => 20]);
+        $this->assertSame(2, itm_hotel_booking_portal_checkout_required_room_line_count($primary, ['rooms' => 1]));
+        $this->assertFalse(itm_hotel_booking_portal_connecting_unit_fits_occupancy(null, 0, $primary, ['rooms' => 1, 'adults' => 2]));
+    }
+
+    public function testCheckoutRequiredLineCountForConnectingUnit(): void
+    {
+        $typeRow = self::baseTypeRow(['connecting_room_type_id' => 5]);
+        $this->assertSame(2, itm_hotel_booking_portal_checkout_required_room_line_count($typeRow, ['rooms' => 1, 'adults' => 2]));
+        $this->assertSame(3, itm_hotel_booking_portal_checkout_required_room_line_count($typeRow, ['rooms' => 3, 'adults' => 4]));
+    }
 }
