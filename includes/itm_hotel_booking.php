@@ -3331,6 +3331,13 @@ if (!function_exists('itm_hotel_booking_portal_build_booking_notes')) {
     if (!empty($draft['service_animal'])) {
       $parts[] = 'Service animal: yes';
     }
+    $accessibilityNeed = itm_hotel_booking_portal_normalize_accessibility_need($draft['accessibility_need'] ?? 'none');
+    if ($accessibilityNeed !== 'none') {
+      $parts[] = 'Accessibility need: ' . itm_hotel_booking_portal_accessibility_need_label($accessibilityNeed);
+      if (!empty($draft['accessibility_pep_acknowledged'])) {
+        $parts[] = 'Accessibility PEP acknowledged: yes';
+      }
+    }
     if (!empty($draft['upgrade_accepted']) && !empty($draft['upgrade_target_name'])) {
       $upgradeTitle = trim((string) $draft['upgrade_target_name']);
       $bedSummary = trim((string) ($draft['upgrade_bed_summary'] ?? ''));
@@ -3366,6 +3373,8 @@ if (!function_exists('itm_hotel_booking_portal_parse_booking_notes_meta')) {
    * @return array{
    *   traveling_with_pet:bool,
    *   service_animal:bool,
+   *   accessibility_need:string,
+   *   accessibility_pep_acknowledged:bool,
    *   guest_comments:string,
    *   room_upgrade:array{accepted:bool,title:string,pitch:string,per_night:float}
    * }
@@ -3374,6 +3383,8 @@ if (!function_exists('itm_hotel_booking_portal_parse_booking_notes_meta')) {
     $meta = [
       'traveling_with_pet' => false,
       'service_animal' => false,
+      'accessibility_need' => 'none',
+      'accessibility_pep_acknowledged' => false,
       'guest_comments' => '',
       'room_upgrade' => [
         'accepted' => false,
@@ -3402,6 +3413,20 @@ if (!function_exists('itm_hotel_booking_portal_parse_booking_notes_meta')) {
         $meta['service_animal'] = true;
         continue;
       }
+      if (preg_match('/^Accessibility need:\s*(.+)$/i', $line, $m)) {
+        $label = trim((string) ($m[1] ?? ''));
+        foreach (itm_hotel_booking_portal_accessibility_need_options() as $slug => $optionLabel) {
+          if (strcasecmp($label, $optionLabel) === 0) {
+            $meta['accessibility_need'] = $slug;
+            break;
+          }
+        }
+        continue;
+      }
+      if (preg_match('/^Accessibility PEP acknowledged:\s*yes\s*$/i', $line)) {
+        $meta['accessibility_pep_acknowledged'] = true;
+        continue;
+      }
       if (preg_match('/^Room upgrade:\s*yes\s*$/i', $line)) {
         $meta['room_upgrade']['accepted'] = true;
         continue;
@@ -3427,7 +3452,7 @@ if (!function_exists('itm_hotel_booking_portal_parse_booking_notes_meta')) {
             if ($next === '') {
               break;
             }
-            if (preg_match('/^(Occupancy:|Rate:|Rate plan:|Traveling with pet:|Service animal:|Room upgrade:|Room:|Multi-room stay —)/i', $next)) {
+            if (preg_match('/^(Occupancy:|Rate:|Rate plan:|Traveling with pet:|Service animal:|Accessibility need:|Accessibility PEP acknowledged:|Room upgrade:|Room:|Multi-room stay —)/i', $next)) {
               break;
             }
             $body .= ($body === '' ? '' : "\n") . $next;
@@ -3566,6 +3591,8 @@ if (!function_exists('itm_hotel_booking_portal_resolve_step4_charge')) {
         'portal_rate_plan_name' => (string) ($primaryLine['portal_rate_plan_name'] ?? ($primaryPlanRow['name'] ?? '')),
         'traveling_with_pet' => !empty($draft['traveling_with_pet']) ? 1 : 0,
         'service_animal' => !empty($draft['service_animal']) ? 1 : 0,
+        'accessibility_need' => itm_hotel_booking_portal_normalize_accessibility_need($draft['accessibility_need'] ?? 'none'),
+        'accessibility_pep_acknowledged' => !empty($draft['accessibility_pep_acknowledged']) ? 1 : 0,
         'additional_comments' => (string) ($draft['additional_comments'] ?? ''),
         'resolved_rate_slug' => $rateSlug,
         'surcharge_percent' => $surchargePercent,
@@ -3600,6 +3627,8 @@ if (!function_exists('itm_hotel_booking_portal_resolve_step4_charge')) {
       'portal_rate_plan_name' => (string) ($planRow['name'] ?? ''),
       'traveling_with_pet' => !empty($draft['traveling_with_pet']) ? 1 : 0,
       'service_animal' => !empty($draft['service_animal']) ? 1 : 0,
+      'accessibility_need' => itm_hotel_booking_portal_normalize_accessibility_need($draft['accessibility_need'] ?? 'none'),
+      'accessibility_pep_acknowledged' => !empty($draft['accessibility_pep_acknowledged']) ? 1 : 0,
       'additional_comments' => (string) ($draft['additional_comments'] ?? ''),
       'resolved_rate_slug' => $rateSlug,
       'surcharge_percent' => $surchargePercent,
@@ -4134,6 +4163,86 @@ if (!function_exists('itm_hotel_booking_portal_show_discount_strikethrough_from_
       return true;
     }
     return !empty($settingsRow['show_discount_strikethrough']);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_accessible_banner_enabled_from_settings')) {
+  function itm_hotel_booking_portal_accessible_banner_enabled_from_settings($settingsRow) {
+    if (!is_array($settingsRow) || !array_key_exists('portal_accessible_banner_enabled', $settingsRow)) {
+      return true;
+    }
+    return !empty($settingsRow['portal_accessible_banner_enabled']);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_accessibility_options_enabled_from_settings')) {
+  function itm_hotel_booking_portal_accessibility_options_enabled_from_settings($settingsRow) {
+    if (!is_array($settingsRow) || !array_key_exists('portal_accessibility_options_enabled', $settingsRow)) {
+      return true;
+    }
+    return !empty($settingsRow['portal_accessibility_options_enabled']);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_accessibility_pep_url_from_settings')) {
+  function itm_hotel_booking_portal_accessibility_pep_url_from_settings($settingsRow) {
+    $settingsRow = is_array($settingsRow) ? $settingsRow : [];
+    $url = trim((string) ($settingsRow['urlaccessibilitypep'] ?? ''));
+    if ($url === '') {
+      $url = 'https://localhost/it-management/booking/accessibility/pep.html';
+    }
+    $normalized = itm_hotel_booking_normalize_reviews_url($url);
+    return $normalized !== '' ? $normalized : 'https://localhost/it-management/booking/accessibility/pep.html';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_accessibility_need_options')) {
+  /**
+   * @return array<string, string> slug => label
+   */
+  function itm_hotel_booking_portal_accessibility_need_options() {
+    return [
+      'none' => 'None',
+      'mobility' => 'Mobility impairments (wheelchair users, walkers)',
+      'hearing' => 'Hearing impairments (visual alarms, flashing alerts)',
+      'visual' => 'Visual impairments (tactile signage, high-contrast design)',
+      'cognitive' => 'Cognitive impairments (clear layouts, simple controls)',
+      'other' => 'Other',
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_normalize_accessibility_need')) {
+  function itm_hotel_booking_portal_normalize_accessibility_need($value) {
+    $slug = strtolower(trim((string) $value));
+    $options = itm_hotel_booking_portal_accessibility_need_options();
+    return array_key_exists($slug, $options) ? $slug : 'none';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_accessibility_need_label')) {
+  function itm_hotel_booking_portal_accessibility_need_label($slug) {
+    $slug = itm_hotel_booking_portal_normalize_accessibility_need($slug);
+    $options = itm_hotel_booking_portal_accessibility_need_options();
+    return (string) ($options[$slug] ?? $options['none']);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_accessibility_pep_required')) {
+  function itm_hotel_booking_portal_accessibility_pep_required($needSlug) {
+    return itm_hotel_booking_portal_normalize_accessibility_need($needSlug) !== 'none';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_is_accessible')) {
+  function itm_hotel_booking_portal_room_is_accessible(array $roomRow) {
+    if (!empty($roomRow['accessible_room'])) {
+      return true;
+    }
+    if (!empty($roomRow['room_accessible_room'])) {
+      return true;
+    }
+    return !empty($roomRow['type_accessible_room']);
   }
 }
 
@@ -6986,7 +7095,7 @@ if (!function_exists('itm_hotel_booking_portal_build_confirmation_email_rows_htm
     $rows[] = ['Guests', $occupancyLabel];
     $notesMeta = function_exists('itm_hotel_booking_portal_parse_booking_notes_meta')
       ? itm_hotel_booking_portal_parse_booking_notes_meta((string) ($bookingRow['notes'] ?? ''))
-      : ['traveling_with_pet' => false, 'service_animal' => false, 'guest_comments' => '', 'room_upgrade' => ['accepted' => false, 'title' => '', 'pitch' => '', 'per_night' => 0.0]];
+      : ['traveling_with_pet' => false, 'service_animal' => false, 'accessibility_need' => 'none', 'accessibility_pep_acknowledged' => false, 'guest_comments' => '', 'room_upgrade' => ['accepted' => false, 'title' => '', 'pitch' => '', 'per_night' => 0.0]];
     $roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
     if ($roomsNeeded === 1 && !empty($notesMeta['room_upgrade']['accepted'])) {
       $upgradeTitle = trim((string) ($notesMeta['room_upgrade']['title'] ?? ''));

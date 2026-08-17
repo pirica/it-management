@@ -147,3 +147,43 @@
     readMore.setAttribute('title', expanded ? 'Read less' : 'Read more');
   });
 })();
+
+(function () {
+  var cfg = window.HB_CUSTOMIZE_ACCESSIBILITY;
+  if (!cfg || !cfg.enabled) {
+    return;
+  }
+  var needSelect = document.getElementById('hb-accessibility-need');
+  var pepWrap = document.getElementById('hb-accessibility-pep-wrap');
+  var pepCheckbox = document.getElementById('hb-accessibility-pep-ack');
+  var continueBtn = document.getElementById('hb-customize-continue');
+  var form = document.getElementById('hb-customize-form');
+  if (!needSelect || !pepWrap || !pepCheckbox || !continueBtn || !form) {
+    return;
+  }
+
+  function pepRequired() {
+    return (needSelect.value || 'none') !== 'none';
+  }
+
+  function refreshAccessibilityGate() {
+    var required = pepRequired();
+    pepWrap.hidden = !required;
+    if (!required) {
+      pepCheckbox.checked = false;
+    }
+    var blocked = required && !pepCheckbox.checked;
+    continueBtn.disabled = blocked;
+    continueBtn.setAttribute('aria-disabled', blocked ? 'true' : 'false');
+  }
+
+  needSelect.addEventListener('change', refreshAccessibilityGate);
+  pepCheckbox.addEventListener('change', refreshAccessibilityGate);
+  form.addEventListener('submit', function (e) {
+    if (pepRequired() && !pepCheckbox.checked) {
+      e.preventDefault();
+      refreshAccessibilityGate();
+    }
+  });
+  refreshAccessibilityGate();
+})();

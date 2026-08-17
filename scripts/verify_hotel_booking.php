@@ -518,6 +518,24 @@ if (strpos($notesBuilt, $occMeta) === 0
     hb_fail('portal booking notes with occupancy meta');
 }
 
+$accessNotes = itm_hotel_booking_portal_build_booking_notes([
+    'accessibility_need' => 'mobility',
+    'accessibility_pep_acknowledged' => 1,
+]);
+$accessParsed = itm_hotel_booking_portal_parse_booking_notes_meta($accessNotes);
+if (strpos($accessNotes, 'Accessibility need: Mobility impairments') !== false
+    && strpos($accessNotes, 'Accessibility PEP acknowledged: yes') !== false
+    && ($accessParsed['accessibility_need'] ?? '') === 'mobility'
+    && !empty($accessParsed['accessibility_pep_acknowledged'])
+    && itm_hotel_booking_portal_accessibility_pep_required('mobility')
+    && !itm_hotel_booking_portal_accessibility_pep_required('none')
+    && itm_hotel_booking_portal_room_is_accessible(['accessible_room' => 1])
+    && !itm_hotel_booking_portal_room_is_accessible(['accessible_room' => 0, 'type_accessible_room' => 0])) {
+    hb_pass('portal accessibility need notes and room flag');
+} else {
+    hb_fail('portal accessibility need notes and room flag');
+}
+
 $res = mysqli_query($conn, "SHOW TABLES LIKE 'hotel_booking_portal_rate_plans'");
 if ($res && mysqli_num_rows($res) > 0) {
     hb_pass('table hotel_booking_portal_rate_plans');
