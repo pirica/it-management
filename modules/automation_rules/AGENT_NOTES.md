@@ -37,7 +37,7 @@ Tenant-scoped workflow automation: admins define rules with a trigger, JSON cond
 
 - `includes/itm_automation_rules.php` — trigger catalog, condition evaluation, action execution, logging.
 - `scripts/run_automation_rules.php` — cron runner for date-based triggers.
-- `scripts/verify_automation_rules.php` — regression (seed rule, run rule by id, run log).
+- `scripts/verify_automation_rules.php` — regression (seed rule, run rule by id, run log). Resolves inserted rule id by `company_id` + unique name — not `mysqli_insert_id()` after `itm_run_query()` (PHP audit logging clobbers insert id).
 - `docs/AUTOMATION_RULES.md` — canonical JSON examples and commands.
 
 ## 8. Hooks
