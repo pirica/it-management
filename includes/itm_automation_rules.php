@@ -592,6 +592,66 @@ if (!function_exists('itm_automation_rules_execute_actions')) {
     }
 }
 
+if (!function_exists('itm_automation_rules_run_rule')) {
+    /**
+     * Execute one automation rule by id (conditions, actions, run log).
+     *
+     * @return bool True when the rule row was found and processed (even if skipped).
+     */
+    function itm_automation_rules_run_rule($conn, $companyId, $ruleId, array $context)
+    {
+        if (!$conn instanceof mysqli) {
+            return false;
+        }
+        $companyId = (int)$companyId;
+        $ruleId = (int)$ruleId;
+        if ($companyId <= 0 || $ruleId <= 0) {
+            return false;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id, name, conditions_json, actions_json
+             FROM automation_rules
+             WHERE id = ? AND company_id = ? AND enabled = 1 AND deleted_at IS NULL
+             LIMIT 1'
+        );
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $ruleId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $rule = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        if (!$rule) {
+            return false;
+        }
+
+        $conditions = itm_automation_rules_decode_json_array($rule['conditions_json'] ?? '');
+        $actions = itm_automation_rules_decode_json_array($rule['actions_json'] ?? '');
+
+        if (!itm_automation_rules_conditions_match($conditions, $context)) {
+            itm_automation_rules_log_run($conn, $companyId, $ruleId, 'skipped', 'Conditions did not match', $context);
+            itm_automation_rules_stamp_last_run($conn, $ruleId, $companyId);
+            return true;
+        }
+
+        if (empty($actions)) {
+            itm_automation_rules_log_run($conn, $companyId, $ruleId, 'skipped', 'No actions configured', $context);
+            itm_automation_rules_stamp_last_run($conn, $ruleId, $companyId);
+            return true;
+        }
+
+        $result = itm_automation_rules_execute_actions($conn, $companyId, $actions, $context);
+        $status = !empty($result['ok']) ? 'success' : 'failed';
+        itm_automation_rules_log_run($conn, $companyId, $ruleId, $status, (string)($result['message'] ?? ''), $context);
+        itm_automation_rules_stamp_last_run($conn, $ruleId, $companyId);
+
+        return true;
+    }
+}
+
 if (!function_exists('itm_automation_rules_dispatch')) {
     function itm_automation_rules_dispatch($conn, $companyId, $triggerSlug, array $context)
     {
@@ -624,25 +684,7 @@ if (!function_exists('itm_automation_rules_dispatch')) {
             if ($ruleId <= 0) {
                 continue;
             }
-            $conditions = itm_automation_rules_decode_json_array($rule['conditions_json'] ?? '');
-            $actions = itm_automation_rules_decode_json_array($rule['actions_json'] ?? '');
-
-            if (!itm_automation_rules_conditions_match($conditions, $context)) {
-                itm_automation_rules_log_run($conn, $companyId, $ruleId, 'skipped', 'Conditions did not match', $context);
-                itm_automation_rules_stamp_last_run($conn, $ruleId, $companyId);
-                continue;
-            }
-
-            if (empty($actions)) {
-                itm_automation_rules_log_run($conn, $companyId, $ruleId, 'skipped', 'No actions configured', $context);
-                itm_automation_rules_stamp_last_run($conn, $ruleId, $companyId);
-                continue;
-            }
-
-            $result = itm_automation_rules_execute_actions($conn, $companyId, $actions, $context);
-            $status = !empty($result['ok']) ? 'success' : 'failed';
-            itm_automation_rules_log_run($conn, $companyId, $ruleId, $status, (string)($result['message'] ?? ''), $context);
-            itm_automation_rules_stamp_last_run($conn, $ruleId, $companyId);
+            itm_automation_rules_run_rule($conn, $companyId, $ruleId, $context);
         }
     }
 }
