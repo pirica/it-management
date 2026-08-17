@@ -536,6 +536,43 @@ if (strpos($accessNotes, 'Accessibility need: Mobility impairments') !== false
     hb_fail('portal accessibility need notes and room flag');
 }
 
+$seedAccessibleConnectingOk = true;
+for ($seedCompanyId = 1; $seedCompanyId <= 5; $seedCompanyId++) {
+    $seedRoomsByNumber = [];
+    $seedRoomRes = mysqli_query(
+        $conn,
+        'SELECT id, room_number, accessible_room, connected_to, connecting_room_id FROM hotel_booking_rooms WHERE company_id = '
+        . (int) $seedCompanyId
+        . " AND deleted_at IS NULL AND room_number IN ('101','201','202')"
+    );
+    while ($seedRoomRes && ($seedRoomRow = mysqli_fetch_assoc($seedRoomRes))) {
+        $seedRoomsByNumber[(string) ($seedRoomRow['room_number'] ?? '')] = $seedRoomRow;
+    }
+    if (!isset($seedRoomsByNumber['101']) || (int) ($seedRoomsByNumber['101']['accessible_room'] ?? 0) !== 1) {
+        $seedAccessibleConnectingOk = false;
+        break;
+    }
+    if (!isset($seedRoomsByNumber['201'], $seedRoomsByNumber['202'])) {
+        $seedAccessibleConnectingOk = false;
+        break;
+    }
+    $seedId201 = (int) ($seedRoomsByNumber['201']['id'] ?? 0);
+    $seedId202 = (int) ($seedRoomsByNumber['202']['id'] ?? 0);
+    if ($seedId201 < 1 || $seedId202 < 1
+        || (string) ($seedRoomsByNumber['201']['connected_to'] ?? '') !== '202'
+        || (string) ($seedRoomsByNumber['202']['connected_to'] ?? '') !== '201'
+        || (int) ($seedRoomsByNumber['201']['connecting_room_id'] ?? 0) !== $seedId202
+        || (int) ($seedRoomsByNumber['202']['connecting_room_id'] ?? 0) !== $seedId201) {
+        $seedAccessibleConnectingOk = false;
+        break;
+    }
+}
+if ($seedAccessibleConnectingOk) {
+    hb_pass('seed hotel_booking_rooms accessible 101 + connecting 201/202 all companies');
+} else {
+    hb_fail('seed hotel_booking_rooms accessible 101 + connecting 201/202 all companies');
+}
+
 $res = mysqli_query($conn, "SHOW TABLES LIKE 'hotel_booking_portal_rate_plans'");
 if ($res && mysqli_num_rows($res) > 0) {
     hb_pass('table hotel_booking_portal_rate_plans');

@@ -21,6 +21,7 @@ Flattened CRUD for physical hotel inventory (`hotel_booking_rooms`): room number
 
 - **List/search:** standard flattened scaffold; FK labels for hotel, type, and HSK status; `company_id` hidden in UI.
 - **Connecting rooms (portal):** set **Connected to (room number)** on create/edit (`connected_to` + internal `connecting_room_id`). Same hotel only; cannot link to self. Guest portal books primary + partner as one unit when the picked physical room has a partner (`itm_hotel_booking_portal_connecting_unit_*` in `includes/itm_hotel_booking.php`). Duplicate clears both link fields.
+- **Seed data (`db/02_data.sql`):** all five hospitality tenants — room **101** has `accessible_room = 1`; rooms **201** and **202** are cross-linked (`connected_to` **202** / **201** with reciprocal `connecting_room_id`). Verified by `php scripts/verify_hotel_booking.php`.
 - **Duplicate action:** `duplicate.php` (POST + CSRF, `can_create`) clones a row via `itm_hotel_booking_room_duplicate_record()` in `includes/itm_hotel_booking.php`. New `room_number` gets a `-C` / `-C2` … suffix unique within the hotel; `name` gets ` Copy` / ` Copy 2` … suffix. Redirects to **edit** for the new row.
 - **Photos:** `itm_hotel_booking_photos_handle_upload()` on create/edit; duplicates do not copy photo rows (re-upload on the new room if needed).
 - **Delete:** soft-delete via shared scaffold; bookings referencing the room are RESTRICT-protected.
