@@ -95,3 +95,53 @@ if (!function_exists('brt_fk_options')) {
         return $rows;
     }
 }
+
+if (!function_exists('brt_portal_rule_form_field_order')) {
+    /**
+     * Portal rule fields editable on create/edit (hidden from list only).
+     *
+     * @return array<int,string>
+     */
+    function brt_portal_rule_form_field_order(): array
+    {
+        return [
+            'max_adults',
+            'max_children',
+            'max_babies',
+            'min_adults',
+            'child_max_age',
+            'included_adults_per_room',
+            'adults_only',
+            'extra_bed_allowed',
+            'max_extra_beds',
+            'crib_included',
+            'connecting_room_type_id',
+            'allow_mixed_types_in_group',
+            'max_rooms_per_booking',
+        ];
+    }
+}
+
+if (!function_exists('brt_portal_rule_form_columns')) {
+    /**
+     * @param array<int,array<string,mixed>> $fieldColumns
+     * @return array<int,array<string,mixed>>
+     */
+    function brt_portal_rule_form_columns(array $fieldColumns): array
+    {
+        $byField = [];
+        foreach ($fieldColumns as $col) {
+            $field = (string) ($col['Field'] ?? '');
+            if ($field !== '') {
+                $byField[$field] = $col;
+            }
+        }
+        $ordered = [];
+        foreach (brt_portal_rule_form_field_order() as $fieldName) {
+            if (isset($byField[$fieldName])) {
+                $ordered[] = $byField[$fieldName];
+            }
+        }
+        return $ordered;
+    }
+}
