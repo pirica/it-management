@@ -205,28 +205,26 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
             $cardQuoteOcc = itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, 0, (int) $occupancy['rooms']);
         }
         $fits = itm_hotel_booking_room_type_fits_occupancy($typeOcc, $cardQuoteOcc, $conn, $companyId);
+        if ($fits && (int) ($occupancy['rooms'] ?? 1) === 1 && $roomId > 0) {
+            $fits = itm_hotel_booking_portal_connecting_unit_fits_for_room($conn, $companyId, $sampleRoom, $typeOcc, $cardQuoteOcc);
+        }
         $blocked = !empty($sampleRoom['is_out_of_order']) || !empty($sampleRoom['is_out_of_service']);
         $available = $roomId > 0 && !$blocked && $fits
             && !itm_hotel_booking_room_unavailable_for_stay($conn, $companyId, $roomId, $checkInIso, $checkOutIso, 0, $sampleRoom);
+        if ($available && (int) ($occupancy['rooms'] ?? 1) === 1 && itm_hotel_booking_portal_connecting_room_id($sampleRoom) > 0
+            && !itm_hotel_booking_portal_connecting_unit_inventory_available($conn, $companyId, $hotelId, $sampleRoom, $checkInIso, $checkOutIso)) {
+            $available = false;
+        }
         $basePrice = itm_hotel_booking_portal_check_in_display_bar($conn, $companyId, $hotelId, $typeId, $checkInIso, (float) ($sampleRoom['price_per_night'] ?? 0));
         $pricing = itm_hotel_booking_portal_hotel_pricing($conn, $companyId, $hotelId);
         $settingsRow = itm_hotel_booking_settings_row($conn, $companyId) ?: [];
         $taxRate = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settingsRow);
         $taxPerNight = itm_hotel_booking_portal_tourist_tax_amount($occupancy, 1, $taxRate);
         $surchargePercent = max(0.0, min(50.0, (float) $surchargePercent));
-        $listQuoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $cardQuoteOcc, 0, $pricing, 0, $typeOcc) + $taxPerNight, 2);
-        $quoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $cardQuoteOcc, (float) $discountPercent, $pricing, $surchargePercent, $typeOcc) + $taxPerNight, 2);
+        $listQuoted = round(itm_hotel_booking_portal_connecting_unit_card_quote_nightly($conn, $companyId, $hotelId, $sampleRoom, $typeOcc, $basePrice, $cardQuoteOcc, 0, $pricing, 0, $checkInIso, $checkOutIso) + $taxPerNight, 2);
+        $quoted = round(itm_hotel_booking_portal_connecting_unit_card_quote_nightly($conn, $companyId, $hotelId, $sampleRoom, $typeOcc, $basePrice, $cardQuoteOcc, (float) $discountPercent, $pricing, $surchargePercent, $checkInIso, $checkOutIso) + $taxPerNight, 2);
 
-        $connectingCode = '';
-        $connectingName = '';
-        $connectingId = (int) ($typeRow['connecting_room_type_id'] ?? 0);
-        if ($connectingId > 0) {
-            $connRow = itm_hotel_booking_fetch_room_type_row($conn, $companyId, $connectingId);
-            if ($connRow) {
-                $connectingCode = (string) ($connRow['code'] ?? '');
-                $connectingName = (string) ($connRow['name'] ?? '');
-            }
-        }
+        $connectingCard = itm_hotel_booking_portal_room_connecting_card_fields($conn, $companyId, $sampleRoom);
 
         return [
             'type_id' => $typeId,
@@ -247,8 +245,9 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
             'accessible_room' => !empty($typeRow['accessible_room']),
             'crib_included' => !empty($typeRow['crib_included']),
             'extra_bed_allowed' => !empty($typeRow['extra_bed_allowed']),
-            'connecting_type_code' => $connectingCode,
-            'connecting_type_name' => $connectingName,
+            'connecting_type_code' => (string) ($connectingCard['connecting_type_code'] ?? ''),
+            'connecting_type_name' => (string) ($connectingCard['connecting_type_name'] ?? ''),
+            'connecting_room_number' => (string) ($connectingCard['connecting_room_number'] ?? ''),
             'type_row' => $typeOcc,
             'image_url' => $imgUrl,
             'photo_urls' => $photoUrls,

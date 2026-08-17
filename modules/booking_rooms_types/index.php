@@ -108,7 +108,6 @@ function cr_humanize_field($field) {
         'onq_ri' => 'OnQ R&I',
         'hu_the_lobby' => 'HU & The Lobby',
         'upgrade_to_room_type_id' => 'Upgrade To Room Type',
-        'connecting_room_type_id' => 'Connecting Room Type',
     ];
 
     if (isset($map[$label])) {
@@ -168,9 +167,6 @@ function brt_render_form_group(array $col, array $data, $conn, $company_id, arra
                 <option value="">-- Select --</option>
                 <?php foreach ($opts as $opt):
                     $optId = (int) ($opt['id'] ?? 0);
-                    if ($name === 'connecting_room_type_id' && $excludeFkSelfId > 0 && $optId === $excludeFkSelfId) {
-                        continue;
-                    }
                 ?>
                     <option value="<?php echo $optId; ?>" <?php echo ((string) $displayVal === (string) $optId) ? 'selected' : ''; ?>><?php echo sanitize((string) ($opt['label'] ?? '')); ?></option>
                 <?php endforeach; ?>
@@ -191,8 +187,6 @@ function brt_render_form_group(array $col, array $data, $conn, $company_id, arra
             <p class="form-hint" style="margin:6px 0 0;font-size:.9rem;opacity:.85;">Adds to max total guests when Extra Bed Allowed is on.</p>
         <?php elseif ($name === 'crib_included'): ?>
             <p class="form-hint" style="margin:6px 0 0;font-size:.9rem;opacity:.85;">Waives baby nightly supplement on the guest portal.</p>
-        <?php elseif ($name === 'connecting_room_type_id'): ?>
-            <p class="form-hint" style="margin:6px 0 0;font-size:.9rem;opacity:.85;">Guest portal books both rooms as one unit (two rates before checkout).</p>
         <?php endif; ?>
     </div>
     <?php
@@ -363,7 +357,7 @@ if (($crud_table ?? '') === 'booking_rooms_types') {
     $brtListHiddenFields = [
         'description', 'bed_summary', 'room_size_sqm', 'max_adults', 'max_children', 'max_babies',
         'included_adults_per_room', 'child_max_age', 'min_adults', 'allow_mixed_types_in_group',
-        'connecting_room_type_id', 'max_rooms_per_booking', 'portal_extra_adult_supplement_percent',
+        'max_rooms_per_booking', 'portal_extra_adult_supplement_percent',
         'portal_child_nightly_supplement', 'portal_baby_nightly_supplement', 'portal_included_children_free',
         'portal_single_occupancy_discount_percent', 'min_stay_nights', 'max_stay_nights',
         'min_advance_booking_days', 'max_advance_booking_days', 'closed_to_arrival_days', 'closed_to_departure_days',

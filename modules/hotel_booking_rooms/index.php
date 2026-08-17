@@ -142,6 +142,8 @@ function cr_humanize_field($field) {
         'purchase_date' => 'Purchase Date',
         'expiry_date' => 'Expiry Date',
         'supplier_id' => 'Supplier',
+        'connected_to' => 'Connected to (room number)',
+        'connecting_room_id' => 'Connecting room',
     ];
 
     if (isset($map[$label])) {
@@ -205,6 +207,19 @@ if ($field === 'active') {
     }
 
     if (isset($GLOBALS['fkMap'][$field])) {
+        if ($field === 'connecting_room_id') {
+            $roomNumber = trim((string) ($value ?? ''));
+            if ($roomNumber !== '') {
+                return sanitize($roomNumber);
+            }
+            $fkDisplayId = (int) $value;
+            if ($fkDisplayId > 0) {
+                $partnerNumber = itm_hotel_booking_room_connecting_partner_room_number($GLOBALS['conn'], (int) ($GLOBALS['company_id'] ?? 0), $fkDisplayId);
+                if ($partnerNumber !== '') {
+                    return sanitize($partnerNumber);
+                }
+            }
+        }
         $fkRow = $GLOBALS['fkMap'][$field];
         $fkDisplayId = (int)$value;
         if ($fkDisplayId > 0 && (int)($GLOBALS['company_id'] ?? 0) > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
@@ -318,7 +333,7 @@ $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_employee_field($col['Field']);
 }));
-$preferredOrder = ['room_number', 'name', 'hotel_id', 'room_type_id', 'housekeeping_status_id', 'floor', 'num_persons', 'num_beds', 'size_sqm', 'view_label', 'active'];
+$preferredOrder = ['room_number', 'name', 'connected_to', 'hotel_id', 'room_type_id', 'housekeeping_status_id', 'floor', 'num_persons', 'num_beds', 'size_sqm', 'view_label', 'active'];
 $fieldOrderMap = array_flip($preferredOrder);
 usort($fieldColumns, static function ($a, $b) use ($fieldOrderMap) {
     $aPos = $fieldOrderMap[$a['Field']] ?? 999;
@@ -357,6 +372,17 @@ $viewColumns = array_values(array_filter($fieldColumns, function ($col) use ($hi
     }
     return !in_array((string)($GLOBALS['crud_table'] ?? ''), $hideCompanyIdTables, true);
 }));
+
+if (($crud_table ?? '') === 'hotel_booking_rooms') {
+    $hbrListHiddenFields = ['connecting_room_id'];
+    $uiColumns = array_values(array_filter($uiColumns, function ($col) use ($hbrListHiddenFields) {
+        return !in_array((string) ($col['Field'] ?? ''), $hbrListHiddenFields, true);
+    }));
+    $displayFieldColumns = $uiColumns;
+    $viewColumns = array_values(array_filter($viewColumns, function ($col) use ($hbrListHiddenFields) {
+        return !in_array((string) ($col['Field'] ?? ''), $hbrListHiddenFields, true);
+    }));
+}
 
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
@@ -626,6 +652,10 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
     $data = ($q && mysqli_num_rows($q) === 1) ? mysqli_fetch_assoc($q) : [];
     if (!$data) {
         $errors[] = 'Record not found.';
+    } elseif ($crud_table === 'hotel_booking_rooms'
+        && trim((string) ($data['connected_to'] ?? '')) === ''
+        && (int) ($data['connecting_room_id'] ?? 0) > 0) {
+        $data['connected_to'] = itm_hotel_booking_room_connecting_partner_room_number($conn, (int) $company_id, (int) $data['connecting_room_id']);
     }
 }
 
@@ -679,6 +709,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     foreach ($fieldColumns as $col) {
         $name = $col['Field'];
+        if ($crud_table === 'hotel_booking_rooms' && $name === 'connecting_room_id') {
+            continue;
+        }
         $isTinyInt = str_starts_with($col['Type'], 'tinyint(1)');
         // Keep legacy active columns editable as human-friendly toggles even when schema uses int.
         $isBooleanToggle = $isTinyInt || $name === 'active';
@@ -789,6 +822,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         } else {
             $data[$name] = (string) $value;
             $sqlValues[$name] = "'" . mysqli_real_escape_string($conn, $value) . "'";
+        }
+    }
+
+    if ($crud_table === 'hotel_booking_rooms') {
+        $hotelIdForConnecting = (int) ($data['hotel_id'] ?? 0);
+        $selfRoomId = $crud_action === 'edit' ? $editId : 0;
+        $connectErrors = itm_hotel_booking_room_normalize_connecting_fields(
+            $conn,
+            (int) $company_id,
+            $data,
+            $sqlValues,
+            $hotelIdForConnecting,
+            $selfRoomId
+        );
+        if ($connectErrors !== []) {
+            $errors = array_merge($errors, $connectErrors);
         }
     }
 
@@ -1111,6 +1160,19 @@ if (!isset($crud_title)) {
                             <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                             <?php if ($name === 'company_id' && $company_id > 0): ?>
                                 <input type="hidden" name="company_id" value="<?php echo (int)$company_id; ?>">
+                            <?php elseif ($name === 'connected_to'): ?>
+                                <?php
+                                    $hotelIdForConnecting = (int) ($data['hotel_id'] ?? 0);
+                                    $excludeSelfId = $crud_action === 'edit' ? (int) ($data['id'] ?? $editId) : 0;
+                                    $connectingOptions = itm_hotel_booking_room_connecting_options_for_hotel($conn, (int) $company_id, $hotelIdForConnecting, $excludeSelfId);
+                                    $selectedConnectedTo = trim((string) $displayVal);
+                                ?>
+                                <select name="connected_to" id="hbr-connected-to">
+                                    <option value="">-- Select --</option>
+                                    <?php foreach ($connectingOptions as $opt): ?>
+                                        <option value="<?php echo sanitize((string) ($opt['room_number'] ?? '')); ?>" <?php echo $selectedConnectedTo === (string) ($opt['room_number'] ?? '') ? 'selected' : ''; ?>><?php echo sanitize((string) ($opt['label'] ?? '')); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             <?php elseif ($isBooleanToggle): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>

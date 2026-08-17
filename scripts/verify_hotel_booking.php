@@ -1675,7 +1675,7 @@ if (!itm_hotel_booking_room_type_fits_occupancy($typeRulesRow, ['rooms' => 1, 'a
     && itm_hotel_booking_portal_child_age_counters_valid(['child_max_age' => 12], 1, 1)
     && function_exists('itm_hotel_booking_portal_connecting_unit_fits_occupancy')
     && function_exists('itm_hotel_booking_portal_checkout_required_room_line_count')
-    && itm_hotel_booking_portal_checkout_required_room_line_count(['connecting_room_type_id' => 99], ['rooms' => 1]) === 2
+    && itm_hotel_booking_portal_checkout_required_room_line_count(['connecting_room_id' => 99], ['rooms' => 1]) === 2
     && itm_hotel_booking_portal_weekday_closed_list('5,6') === [5, 6]
     && abs(itm_hotel_booking_portal_complimentary_room_credit(['portal_complimentary_min_rooms_paid' => 10, 'portal_complimentary_rooms_free' => 1], 11, $lineTotalsRules) - 50.0) < 0.01
     && !empty(itm_hotel_booking_portal_room_type_card_available($typeRulesRow, ['rooms' => 1, 'adults' => 2, 'children' => 0, 'babies' => 0], '2026-08-10', '2026-08-11', true)['available'])) {
