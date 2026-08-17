@@ -55,6 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($complimentaryMinRooms < 1) {
         $complimentaryRoomsFree = max(0, $complimentaryRoomsFree);
     }
+    $confirmEmailGuest = !empty($_POST['portal_confirmation_email_guest']) ? 1 : 0;
+    $confirmEmailReservations = !empty($_POST['portal_confirmation_email_reservations']) ? 1 : 0;
     if (trim((string) ($_POST['reviews_url'] ?? '')) !== '' && $reviewsUrl === '') {
         $errors[] = 'Reviews URL must start with http:// or https://';
     }
@@ -97,9 +99,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $sid = (int) ($row['id'] ?? 0);
     if (empty($errors)) {
-    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, stripe_enabled = ?, stripe_mode = ?, stripe_publishable_key = ?, stripe_secret_key_encrypted = ?, stripe_webhook_signing_secret_encrypted = ?, deposit_percent = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, portal_complimentary_min_rooms_paid = ?, portal_complimentary_rooms_free = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
+    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, stripe_enabled = ?, stripe_mode = ?, stripe_publishable_key = ?, stripe_secret_key_encrypted = ?, stripe_webhook_signing_secret_encrypted = ?, deposit_percent = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, portal_complimentary_min_rooms_paid = ?, portal_complimentary_rooms_free = ?, portal_confirmation_email_guest = ?, portal_confirmation_email_reservations = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
     if ($upd) {
-        mysqli_stmt_bind_param($upd, 'iissssdssssssdiiiiiiisiii', $enabled, $stripeEnabled, $stripeMode, $stripePublishableKey, $stripeSecretEnc, $stripeWebhookEnc, $depositPercent, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $complimentaryMinRooms, $complimentaryRoomsFree, $urlmybooking, $employee_id, $sid, $company_id);
+        mysqli_stmt_bind_param($upd, 'iissssdssssssdiiiiiiiisiii', $enabled, $stripeEnabled, $stripeMode, $stripePublishableKey, $stripeSecretEnc, $stripeWebhookEnc, $depositPercent, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $complimentaryMinRooms, $complimentaryRoomsFree, $confirmEmailGuest, $confirmEmailReservations, $urlmybooking, $employee_id, $sid, $company_id);
         mysqli_stmt_execute($upd);
         mysqli_stmt_close($upd);
         header('Location: index.php?saved=1');
@@ -110,6 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $row = itm_hotel_booking_settings_row($conn, $company_id);
+$confirmEmailFlags = itm_hotel_booking_portal_confirmation_email_flags_from_settings($row ?: []);
 $crud_title = 'Hotel Booking Settings';
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, 'hotel_booking_settings', $crud_title);
 require_once ROOT_PATH . 'includes/itm_hospitality_admin_layout.php';
@@ -197,6 +200,29 @@ itm_hospitality_admin_layout_begin($crud_title);
 <p class="text-muted" style="font-size:.85rem;margin-top:4px;">Number of lowest-priced room stays credited once the minimum paid rooms threshold is exceeded.</p>
 </div>
 <div class="card" style="margin-top:24px;">
+<h2 style="margin-top:0;">Step 4 — Confirmation emails</h2>
+<p class="text-muted" style="font-size:.85rem;">After a portal booking is saved (or after Stripe payment completes), the system can email the guest and/or the hotel reservations desk.</p>
+<div class="form-group">
+<label class="itm-checkbox-control">
+<input type="checkbox" name="portal_confirmation_email_guest" id="itm-hb-confirm-email-guest" value="1" <?php echo !empty($confirmEmailFlags['guest']) ? 'checked' : ''; ?>>
+<span>Confirmation email to guest</span>
+</label>
+</div>
+<div class="form-group">
+<label class="itm-checkbox-control">
+<input type="checkbox" name="portal_confirmation_email_reservations" id="itm-hb-confirm-email-reservations" value="1" <?php echo !empty($confirmEmailFlags['reservations']) ? 'checked' : ''; ?>>
+<span>Confirmation email to reservations desk</span>
+</label>
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Uses each hotel’s <strong>Reservations email</strong> from Hotel Booking Hotels.</p>
+</div>
+<div class="form-group">
+<label class="itm-checkbox-control">
+<input type="checkbox" id="itm-hb-confirm-email-both" value="1" <?php echo (!empty($confirmEmailFlags['guest']) && !empty($confirmEmailFlags['reservations'])) ? 'checked' : ''; ?>>
+<span>Both (guest and reservations)</span>
+</label>
+</div>
+</div>
+<div class="card" style="margin-top:24px;">
 <h2 style="margin-top:0;">Stripe Checkout</h2>
 <p class="text-muted" style="font-size:.85rem;">Guest portal Step 4 can redirect to Stripe Checkout. Webhook URL: <code><?php echo sanitize(rtrim(BASE_URL, '/') . '/booking/stripe-webhook.php?company_id=' . $company_id); ?></code></p>
 <div class="form-group">
@@ -232,5 +258,26 @@ itm_hospitality_admin_layout_begin($crud_title);
 </div>
 <button type="submit" class="btn btn-primary" title="Save">💾</button>
 </form>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var guest = document.getElementById('itm-hb-confirm-email-guest');
+  var desk = document.getElementById('itm-hb-confirm-email-reservations');
+  var both = document.getElementById('itm-hb-confirm-email-both');
+  if (!guest || !desk || !both) {
+    return;
+  }
+  function syncBothFromChildren() {
+    both.checked = guest.checked && desk.checked;
+  }
+  function applyBothMaster() {
+    guest.checked = both.checked;
+    desk.checked = both.checked;
+  }
+  guest.addEventListener('change', syncBothFromChildren);
+  desk.addEventListener('change', syncBothFromChildren);
+  both.addEventListener('change', applyBothMaster);
+  syncBothFromChildren();
+});
+</script>
 </div>
 <?php itm_hospitality_admin_layout_end(); ?>

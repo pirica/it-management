@@ -1378,11 +1378,26 @@ if (strpos($portalBookingSrc, 'function itm_hotel_booking_portal_send_booking_co
     && strpos($portalBookingSrc, 'function itm_hotel_booking_portal_load_confirmation_group_rows') !== false
     && strpos($portalBookingSrc, 'function itm_hotel_booking_portal_manage_booking_hint_html') !== false
     && strpos($portalBookingSrc, 'itm_hotel_booking_portal_manage_booking_hint_html') !== false
+    && strpos($portalBookingSrc, 'itm_hotel_booking_portal_confirmation_email_flags_from_settings') !== false
+    && strpos($portalBookingSrc, '$emailFlags[\'guest\']') !== false
+    && strpos($portalBookingSrc, '$emailFlags[\'reservations\']') !== false
     && strpos($portalBookingSrc, 'To view or cancel your reservation later') !== false
     && strpos($portalBookingSrc, 'To view or change your reservation later') === false) {
     hb_pass('portal step4 confirmation emails to guest and reservations desk');
 } else {
     hb_fail('portal step4 confirmation email helper missing');
+}
+
+$settingsIndexSrc = (string) @file_get_contents(dirname(__DIR__) . '/modules/hotel_booking_settings/index.php');
+if (function_exists('itm_hotel_booking_portal_confirmation_email_flags_from_settings')
+    && !itm_hotel_booking_portal_confirmation_email_flags_from_settings(['portal_confirmation_email_guest' => 1, 'portal_confirmation_email_reservations' => 0])['reservations']
+    && itm_hotel_booking_portal_confirmation_email_flags_from_settings(['portal_confirmation_email_guest' => 0, 'portal_confirmation_email_reservations' => 0])['guest'] === false
+    && strpos($settingsIndexSrc, 'portal_confirmation_email_guest') !== false
+    && strpos($settingsIndexSrc, 'portal_confirmation_email_reservations') !== false
+    && strpos($settingsIndexSrc, 'itm-hb-confirm-email-both') !== false) {
+    hb_pass('portal step4 confirmation email admin toggles');
+} else {
+    hb_fail('portal step4 confirmation email admin toggles missing');
 }
 
 $portalCheckoutPaymentSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/includes/portal_checkout.php');
@@ -1672,9 +1687,13 @@ if (strpos($customizeSrcRules, 'No special requests available') !== false
 
 $colComplimentaryMin = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_complimentary_min_rooms_paid'");
 $colComplimentaryFree = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_complimentary_rooms_free'");
+$colConfirmEmailGuest = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_confirmation_email_guest'");
+$colConfirmEmailReservations = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_confirmation_email_reservations'");
 $colPortalBookable = mysqli_query($conn, "SHOW COLUMNS FROM booking_rooms_types LIKE 'portal_bookable'");
 if ($colComplimentaryMin && mysqli_num_rows($colComplimentaryMin) === 1
     && $colComplimentaryFree && mysqli_num_rows($colComplimentaryFree) === 1
+    && $colConfirmEmailGuest && mysqli_num_rows($colConfirmEmailGuest) === 1
+    && $colConfirmEmailReservations && mysqli_num_rows($colConfirmEmailReservations) === 1
     && $colPortalBookable && mysqli_num_rows($colPortalBookable) === 1) {
     hb_pass('booking_rooms_types portal rule columns + complimentary settings columns');
 } else {

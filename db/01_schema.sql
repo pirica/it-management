@@ -5668,6 +5668,8 @@ CREATE TABLE `hotel_booking_settings` (
   `show_discount_strikethrough` tinyint(1) NOT NULL DEFAULT '1',
   `portal_complimentary_min_rooms_paid` int NOT NULL DEFAULT '0',
   `portal_complimentary_rooms_free` int NOT NULL DEFAULT '1',
+  `portal_confirmation_email_guest` tinyint(1) NOT NULL DEFAULT '1',
+  `portal_confirmation_email_reservations` tinyint(1) NOT NULL DEFAULT '1',
   `urlmybooking` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'https://localhost/it-management/booking/users/bookings.php',
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,

@@ -6217,6 +6217,29 @@ if (!function_exists('itm_hotel_booking_portal_build_confirmation_email_rows_htm
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_confirmation_email_flags_from_settings')) {
+  /**
+   * Step 4 confirmation email toggles from hotel_booking_settings (default both on).
+   *
+   * @return array{guest:bool,reservations:bool}
+   */
+  function itm_hotel_booking_portal_confirmation_email_flags_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $guestDefault = true;
+    $reservationsDefault = true;
+    if (array_key_exists('portal_confirmation_email_guest', $settings)) {
+      $guestDefault = !empty($settings['portal_confirmation_email_guest']);
+    }
+    if (array_key_exists('portal_confirmation_email_reservations', $settings)) {
+      $reservationsDefault = !empty($settings['portal_confirmation_email_reservations']);
+    }
+    return [
+      'guest' => $guestDefault,
+      'reservations' => $reservationsDefault,
+    ];
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_send_booking_confirmation_emails')) {
   /**
    * Guest + hotel reservations desk copies after Step 4 INSERT.
@@ -6235,6 +6258,11 @@ if (!function_exists('itm_hotel_booking_portal_send_booking_confirmation_emails'
     if ($companyId < 1 || $reservationId < 1 || !function_exists('itm_send_email')) {
       return ['ok' => false, 'guest_sent' => false, 'hotel_sent' => false];
     }
+
+    $settingsRow = isset($options['settings']) && is_array($options['settings'])
+      ? $options['settings']
+      : (itm_hotel_booking_settings_row($conn, $companyId) ?: []);
+    $emailFlags = itm_hotel_booking_portal_confirmation_email_flags_from_settings($settingsRow);
 
     $groupRows = itm_hotel_booking_portal_load_confirmation_group_rows($conn, $companyId, $bookingRow);
     if ($groupRows === []) {
@@ -6263,7 +6291,7 @@ if (!function_exists('itm_hotel_booking_portal_send_booking_confirmation_emails'
     $primaryRow = $groupRows[0];
     $auth2Display = itm_hotel_booking_normalize_auth2($primaryRow['auth2'] ?? $bookingRow['auth2'] ?? '');
 
-    if ($guestEmail !== '' && filter_var($guestEmail, FILTER_VALIDATE_EMAIL)) {
+    if ($emailFlags['guest'] && $guestEmail !== '' && filter_var($guestEmail, FILTER_VALIDATE_EMAIL)) {
       $guestSubject = 'Your reservation confirmation'
         . ($hotelName !== '' ? ' — ' . $hotelName : '')
         . ' — ' . $guestConfirmationDisplay;
@@ -6281,7 +6309,7 @@ if (!function_exists('itm_hotel_booking_portal_send_booking_confirmation_emails'
       $guestSent = (bool) itm_send_email($guestEmail, $guestSubject, $guestBody, $companyId, $guestOptions);
     }
 
-    if ($reservationsEmail !== '' && filter_var($reservationsEmail, FILTER_VALIDATE_EMAIL)) {
+    if ($emailFlags['reservations'] && $reservationsEmail !== '' && filter_var($reservationsEmail, FILTER_VALIDATE_EMAIL)) {
       $hotelSubject = 'New portal reservation #' . $primaryId
         . ($guestName !== '' ? ' — ' . $guestName : '');
       $hotelBody = '<p>A new booking was completed on the public portal.</p>' . $detailsHtml;
