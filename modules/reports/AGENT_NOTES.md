@@ -28,6 +28,11 @@ This module is read-only and aggregates data from:
 - **cost_centers** (linked to departments)
 - **scheduled_reports** (admin-managed email schedules; see `docs/SCHEDULED_REPORTS.md`)
 
+**Reports Hub charts (phase 2):**
+
+- **Ticket CSAT trend** — `get_ticket_csat_trend()` (12-month average `tickets.csat_score`)
+- **Asset lifecycle stages** — `get_asset_lifecycle_stage_summary()` (equipment `lifecycle_stage` counts; see `docs/ASSET_LIFECYCLE.md`)
+
 ---
 
 ## Scheduled executive reports

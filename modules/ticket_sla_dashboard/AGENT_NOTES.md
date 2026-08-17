@@ -8,6 +8,7 @@ Proactive SLA breach dashboard for open tickets that have `sla_response_due_at` 
 
 - **tickets** — SLA due/breach timestamps (`sla_response_due_at`, `sla_resolve_due_at`, `sla_response_breached_at`, `sla_resolve_breached_at`, `first_response_at`, `resolved_at`)
 - **ticket_sla_policies** — per-priority response/resolve minute targets (configured in `modules/ticket_sla_policies/`)
+- **ticket_sla_escalation_rules** — priority + breach type → `escalate_to_employee_id` (admin UI on dashboard)
 - **ticket_activity** — breach events (`sla_response_breached`, `sla_resolve_breached`)
 
 ## 3. Required Relationships
@@ -21,7 +22,7 @@ Proactive SLA breach dashboard for open tickets that have `sla_response_due_at` 
 - **Breached:** stamped column set OR past due without `first_response_at` / `resolved_at`.
 - **At risk:** not breached; next open milestone due within 2 hours (calendar / 24×7).
 - **Met:** not breached/at risk; response and resolve milestones satisfied when applicable.
-- Cron uses `itm_ticket_sla_process_scheduled_breaches()` — idempotent breach stamps + `itm_notify_employee()` to assignee.
+- Cron uses `itm_ticket_sla_process_scheduled_breaches()` — idempotent breach stamps + `itm_notify_employee()` to assignee + escalation reassignment via `itm_ticket_sla_apply_escalation_for_breach()`.
 - First agent comment on a ticket should call `itm_ticket_sla_stamp_first_response()` (`modules/ticket_comments/`).
 
 ## 5. UI Behavior Requirements

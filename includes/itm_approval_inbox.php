@@ -7,7 +7,7 @@
 if (!function_exists('itm_approval_inbox_adapter_slugs')) {
     function itm_approval_inbox_adapter_slugs()
     {
-        return ['request_password', 'employee_onboarding_requests'];
+        return ['request_password', 'employee_onboarding_requests', 'approvals', 'forecast_revisions'];
     }
 }
 
@@ -351,6 +351,14 @@ if (!function_exists('itm_approval_inbox_apply_source_decision')) {
             return itm_run_query($conn, $sql, $errCode, $errMessage);
         }
 
+        if ($moduleSlug === 'approvals') {
+            return itm_approval_inbox_apply_forecast_decision($conn, (int)$companyId, $recordId, $stage, $decision, 'approvals');
+        }
+
+        if ($moduleSlug === 'forecast_revisions') {
+            return itm_approval_inbox_apply_forecast_decision($conn, (int)$companyId, $recordId, $stage, $decision, 'forecast_revisions');
+        }
+
         return false;
     }
 }
@@ -389,6 +397,242 @@ if (!function_exists('itm_approval_inbox_decide')) {
         ]);
         itm_approval_inbox_sync_module_record($conn, (int)$companyId, (string)$item['module_slug'], (int)$item['record_id']);
         return ['ok' => true, 'message' => $decision === 'approve' ? 'Approved.' : 'Rejected.'];
+    }
+}
+
+if (!function_exists('itm_approval_inbox_forecast_status_id')) {
+    function itm_approval_inbox_forecast_status_id(mysqli $conn, $companyId, $statusName)
+    {
+        $companyId = (int)$companyId;
+        $statusName = trim((string)$statusName);
+        if ($companyId <= 0 || $statusName === '') {
+            return 0;
+        }
+        $stmt = mysqli_prepare($conn, 'SELECT id FROM forecast_revisions_status WHERE company_id = ? AND status = ? AND deleted_at IS NULL LIMIT 1');
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'is', $companyId, $statusName);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        return (int)($row['id'] ?? 0);
+    }
+}
+
+if (!function_exists('itm_approval_inbox_apply_forecast_decision')) {
+    function itm_approval_inbox_apply_forecast_decision(mysqli $conn, $companyId, $recordId, $stage, $decision, $sourceModule = 'approvals')
+    {
+        $companyId = (int)$companyId;
+        $recordId = (int)$recordId;
+        $stage = strtolower(trim((string)$stage));
+        $decision = strtolower(trim((string)$decision));
+        $actorId = (int)($_SESSION['employee_id'] ?? 0);
+        if ($companyId <= 0 || $recordId <= 0 || !in_array($decision, ['approve', 'reject'], true)) {
+            return false;
+        }
+
+        $revisionId = $recordId;
+        if ($sourceModule === 'approvals') {
+            $stmt = mysqli_prepare($conn, 'SELECT forecast_revision_id FROM approvals WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1');
+            if (!$stmt) {
+                return false;
+            }
+            mysqli_stmt_bind_param($stmt, 'ii', $recordId, $companyId);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            $approvalRow = $res ? mysqli_fetch_assoc($res) : null;
+            mysqli_stmt_close($stmt);
+            if (!$approvalRow) {
+                return false;
+            }
+            $revisionId = (int)($approvalRow['forecast_revision_id'] ?? 0);
+        }
+
+        if ($revisionId <= 0) {
+            return false;
+        }
+
+        $nextStatus = $decision === 'approve'
+            ? ($stage === 'gm' ? 'Approved' : 'Gm Review')
+            : 'Rejected';
+        $statusId = itm_approval_inbox_forecast_status_id($conn, $companyId, $nextStatus);
+        if ($statusId <= 0) {
+            return false;
+        }
+
+        $revisionSql = 'UPDATE forecast_revisions SET status = ?, updated_by = ?';
+        $types = 'ii';
+        $params = [$statusId, $actorId];
+        if ($decision === 'approve' && $stage === 'finance') {
+            $revisionSql .= ', finance_reviewed_by = ?';
+            $types .= 'i';
+            $params[] = $actorId;
+        } elseif ($decision === 'approve' && $stage === 'gm') {
+            $revisionSql .= ', gm_approved_by = ?';
+            $types .= 'i';
+            $params[] = $actorId;
+        }
+        $revisionSql .= ' WHERE id = ? AND company_id = ? LIMIT 1';
+        $types .= 'ii';
+        $params[] = $revisionId;
+        $params[] = $companyId;
+        $revStmt = mysqli_prepare($conn, $revisionSql);
+        if (!$revStmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($revStmt, $types, ...$params);
+        $ok = mysqli_stmt_execute($revStmt);
+        mysqli_stmt_close($revStmt);
+        if (!$ok) {
+            return false;
+        }
+
+        if ($sourceModule === 'approvals') {
+            $approvalStatusId = $statusId;
+            $approvalSql = 'UPDATE approvals SET status = ?, approved_by = ?, approved_at = NOW(), updated_by = ? WHERE id = ? AND company_id = ? LIMIT 1';
+            $appStmt = mysqli_prepare($conn, $approvalSql);
+            if ($appStmt) {
+                mysqli_stmt_bind_param($appStmt, 'iiiii', $approvalStatusId, $actorId, $actorId, $recordId, $companyId);
+                mysqli_stmt_execute($appStmt);
+                mysqli_stmt_close($appStmt);
+            }
+        }
+
+        itm_approval_inbox_sync_forecast_revision($conn, $companyId, $revisionId);
+        if ($sourceModule === 'approvals') {
+            itm_approval_inbox_sync_approvals_record($conn, $companyId, $recordId);
+        }
+        return true;
+    }
+}
+
+if (!function_exists('itm_approval_inbox_sync_approvals_record')) {
+    function itm_approval_inbox_sync_approvals_record(mysqli $conn, $companyId, $recordId)
+    {
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT a.*, aps.stage AS stage_name, frs.status AS status_name,
+                    fr.year, fr.month, fr.submitted_by, cc.name AS cost_center_name
+             FROM approvals a
+             INNER JOIN approvals_stage aps ON aps.id = a.stage AND aps.company_id = a.company_id
+             INNER JOIN forecast_revisions_status frs ON frs.id = a.status AND frs.company_id = a.company_id
+             INNER JOIN forecast_revisions fr ON fr.id = a.forecast_revision_id AND fr.company_id = a.company_id
+             LEFT JOIN cost_centers cc ON cc.id = fr.cost_center_id AND cc.company_id = a.company_id
+             WHERE a.id = ? AND a.company_id = ? LIMIT 1'
+        );
+        if (!$stmt) {
+            return;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $recordId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+        mysqli_stmt_close($stmt);
+        if (!$row) {
+            return;
+        }
+        if ((int)($row['active'] ?? 1) !== 1 || !empty($row['deleted_at'])) {
+            foreach (['finance', 'gm'] as $stage) {
+                itm_approval_inbox_upsert($conn, [
+                    'company_id' => $companyId,
+                    'module_slug' => 'approvals',
+                    'record_id' => $recordId,
+                    'approval_stage' => $stage,
+                    'title' => 'Forecast approval #' . $recordId,
+                    'status' => 'cancelled',
+                ]);
+            }
+            return;
+        }
+
+        $stageName = strtolower(trim((string)($row['stage_name'] ?? '')));
+        $inboxStage = strpos($stageName, 'gm') !== false ? 'gm' : 'finance';
+        $statusName = trim((string)($row['status_name'] ?? ''));
+        $title = 'Forecast approval — ' . (int)($row['year'] ?? 0) . '/' . str_pad((string)(int)($row['month'] ?? 0), 2, '0', STR_PAD_LEFT);
+        if (!empty($row['cost_center_name'])) {
+            $title .= ' · ' . (string)$row['cost_center_name'];
+        }
+        $approverType = $inboxStage === 'gm' ? 'GM Approval' : 'HRD Approval';
+        itm_approval_inbox_upsert($conn, [
+            'company_id' => $companyId,
+            'module_slug' => 'approvals',
+            'record_id' => $recordId,
+            'approval_stage' => $inboxStage,
+            'title' => $title,
+            'requester_employee_id' => (int)($row['submitted_by'] ?? $row['created_by'] ?? 0),
+            'assignee_employee_id' => itm_approval_inbox_resolve_approver_employee_id($conn, $companyId, $approverType),
+            'status' => itm_approval_inbox_map_source_status($statusName),
+            'action_url' => 'modules/approvals/view.php?id=' . $recordId,
+        ]);
+    }
+}
+
+if (!function_exists('itm_approval_inbox_sync_forecast_revision')) {
+    function itm_approval_inbox_sync_forecast_revision(mysqli $conn, $companyId, $recordId)
+    {
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT fr.*, frs.status AS status_name, cc.name AS cost_center_name
+             FROM forecast_revisions fr
+             INNER JOIN forecast_revisions_status frs ON frs.id = fr.status AND frs.company_id = fr.company_id
+             LEFT JOIN cost_centers cc ON cc.id = fr.cost_center_id AND cc.company_id = fr.company_id
+             WHERE fr.id = ? AND fr.company_id = ? LIMIT 1'
+        );
+        if (!$stmt) {
+            return;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $recordId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+        mysqli_stmt_close($stmt);
+        if (!$row) {
+            return;
+        }
+        if ((int)($row['active'] ?? 1) !== 1 || !empty($row['deleted_at'])) {
+            foreach (['finance', 'gm'] as $stage) {
+                itm_approval_inbox_upsert($conn, [
+                    'company_id' => $companyId,
+                    'module_slug' => 'forecast_revisions',
+                    'record_id' => $recordId,
+                    'approval_stage' => $stage,
+                    'title' => 'Forecast revision #' . $recordId,
+                    'status' => 'cancelled',
+                ]);
+            }
+            return;
+        }
+
+        $statusName = trim((string)($row['status_name'] ?? ''));
+        $title = 'Forecast revision — ' . (int)($row['year'] ?? 0) . '/' . str_pad((string)(int)($row['month'] ?? 0), 2, '0', STR_PAD_LEFT);
+        if (!empty($row['cost_center_name'])) {
+            $title .= ' · ' . (string)$row['cost_center_name'];
+        }
+        $actionUrl = 'modules/forecast_revisions/view.php?id=' . $recordId;
+        $requesterId = (int)($row['submitted_by'] ?? $row['created_by'] ?? 0);
+        $stages = [
+            'finance' => ['pending_statuses' => ['Submitted', 'Finance Review'], 'approver' => 'HRD Approval'],
+            'gm' => ['pending_statuses' => ['Gm Review'], 'approver' => 'GM Approval'],
+        ];
+        foreach ($stages as $stage => $meta) {
+            $inboxStatus = in_array($statusName, $meta['pending_statuses'], true)
+                ? 'pending'
+                : itm_approval_inbox_map_source_status($statusName);
+            if ($statusName === 'Approved' || $statusName === 'Rejected' || $statusName === 'Draft') {
+                $inboxStatus = itm_approval_inbox_map_source_status($statusName);
+            }
+            itm_approval_inbox_upsert($conn, [
+                'company_id' => $companyId,
+                'module_slug' => 'forecast_revisions',
+                'record_id' => $recordId,
+                'approval_stage' => $stage,
+                'title' => $title . ' (' . strtoupper($stage) . ')',
+                'requester_employee_id' => $requesterId,
+                'assignee_employee_id' => itm_approval_inbox_resolve_approver_employee_id($conn, $companyId, $meta['approver']),
+                'status' => $inboxStatus,
+                'action_url' => $actionUrl,
+            ]);
+        }
     }
 }
 
@@ -518,6 +762,10 @@ if (!function_exists('itm_approval_inbox_sync_module_record')) {
             itm_approval_inbox_sync_request_password($conn, $companyId, $recordId);
         } elseif ($moduleSlug === 'employee_onboarding_requests') {
             itm_approval_inbox_sync_onboarding_record($conn, $companyId, $recordId);
+        } elseif ($moduleSlug === 'approvals') {
+            itm_approval_inbox_sync_approvals_record($conn, $companyId, $recordId);
+        } elseif ($moduleSlug === 'forecast_revisions') {
+            itm_approval_inbox_sync_forecast_revision($conn, $companyId, $recordId);
         }
     }
 }

@@ -10,7 +10,7 @@ Unified tenant-scoped list of pending approval stages mirrored from source modul
 
 `includes/itm_approval_inbox.php`:
 
-- `itm_approval_inbox_adapter_slugs()` — registered sources (`request_password`, `employee_onboarding_requests`)
+- `itm_approval_inbox_adapter_slugs()` — registered sources (`request_password`, `employee_onboarding_requests`, `approvals`, `forecast_revisions`)
 - `itm_approval_inbox_sync_module_record()` — rebuild inbox rows from a source record
 - `itm_approval_inbox_upsert()` — insert/update a single stage row
 - `itm_approval_inbox_fetch_for_assignee()` / `itm_approval_inbox_count_rows()` — list queries
@@ -18,7 +18,7 @@ Unified tenant-scoped list of pending approval stages mirrored from source modul
 
 ## Module UI
 
-[Open modules/approval_inbox/index.php](http://localhost/it-management/modules/approval_inbox/index.php) — Admin session. Non-admins see assignee-scoped rows; admins see all company items. Inline ✅/❌ actions call `itm_approval_inbox_decide()`.
+[Open modules/approval_inbox/index.php](http://localhost/it-management/modules/approval_inbox/index.php) — Admin session. Non-admins see assignee-scoped rows; admins see all company items. Inline ✅/❌ actions call `itm_approval_inbox_decide()`. Header bell area links to the inbox with a pending-count badge via `itm_approval_inbox_count_for_assignee()` in `includes/header.php`.
 
 ## Source wiring
 
@@ -26,6 +26,8 @@ Unified tenant-scoped list of pending approval stages mirrored from source modul
 |--------|----------------|
 | `modules/request_password/` | After create/edit save, email approval send, and email `approval_api` decision |
 | `modules/employee_onboarding_requests/` | After create/edit save, approval email send, and email `approval_api` decision |
+| `modules/approvals/` | After successful create/edit save |
+| `modules/forecast_revisions/` | After successful create/edit save |
 
 ## Regression
 

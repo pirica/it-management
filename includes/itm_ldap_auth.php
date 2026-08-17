@@ -127,7 +127,7 @@ if (!function_exists('itm_sso_fetch_company_row')) {
         }
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT id, company, incode, sso_enabled, sso_provider, sso_config_json_encrypted, active
+            'SELECT id, company, incode, sso_enabled, sso_jit_enabled, sso_provider, sso_config_json_encrypted, active
              FROM companies
              WHERE id = ? AND active = 1 AND deleted_at IS NULL
              LIMIT 1'
@@ -167,7 +167,7 @@ if (!function_exists('itm_sso_resolve_company_for_login')) {
             $incode = strtoupper(substr($companyHint, 0, 6));
             $stmt = mysqli_prepare(
                 $conn,
-                'SELECT id, company, incode, sso_enabled, sso_provider, sso_config_json_encrypted, active
+                'SELECT id, company, incode, sso_enabled, sso_jit_enabled, sso_provider, sso_config_json_encrypted, active
                  FROM companies
                  WHERE UPPER(TRIM(COALESCE(incode, ""))) = ?
                    AND active = 1
@@ -189,7 +189,7 @@ if (!function_exists('itm_sso_resolve_company_for_login')) {
 
         $res = mysqli_query(
             $conn,
-            'SELECT id, company, incode, sso_enabled, sso_provider, sso_config_json_encrypted, active
+            'SELECT id, company, incode, sso_enabled, sso_jit_enabled, sso_provider, sso_config_json_encrypted, active
              FROM companies
              WHERE active = 1 AND deleted_at IS NULL AND sso_enabled = 1
              ORDER BY company ASC
@@ -281,7 +281,7 @@ if (!function_exists('itm_ldap_fetch_entry_attribute')) {
 
 if (!function_exists('itm_ldap_match_or_provision_employee')) {
     /**
-     * Match an existing employee row for LDAP user data (no JIT provisioning in v1).
+     * Match an existing employee row for LDAP user data; optionally JIT-provision when enabled on the company.
      *
      * @param array<string, mixed> $ldapUser
      * @return array<string, mixed>|null
@@ -375,7 +375,122 @@ if (!function_exists('itm_ldap_match_or_provision_employee')) {
             }
         }
 
-        return null;
+        $company = itm_sso_fetch_company_row($conn, $companyId);
+        if (!$company || (int)($company['sso_jit_enabled'] ?? 0) !== 1) {
+            return null;
+        }
+
+        $jitUsername = $username !== '' ? $username : 'ldap-' . substr(sha1((string)($ldapUser['sso_subject'] ?? uniqid('', true))), 0, 8);
+        $jitEmail = $email !== '' ? $email : ($jitUsername . '@sso.local');
+        $nameParts = preg_split('/\s+/', trim((string)($ldapUser['display_name'] ?? $jitUsername)), 2);
+        $firstName = trim((string)($nameParts[0] ?? $jitUsername));
+        $lastName = trim((string)($nameParts[1] ?? 'User'));
+        if ($firstName === '') {
+            $firstName = 'LDAP';
+        }
+        if ($lastName === '') {
+            $lastName = 'User';
+        }
+
+        $statusId = 0;
+        $statusSql = "SELECT id FROM employee_statuses WHERE company_id = ? AND LOWER(name) = 'active' AND deleted_at IS NULL ORDER BY id ASC LIMIT 1";
+        $statusStmt = mysqli_prepare($conn, $statusSql);
+        if ($statusStmt) {
+            mysqli_stmt_bind_param($statusStmt, 'i', $companyId);
+            mysqli_stmt_execute($statusStmt);
+            $statusRes = mysqli_stmt_get_result($statusStmt);
+            $statusRow = $statusRes ? mysqli_fetch_assoc($statusRes) : null;
+            mysqli_stmt_close($statusStmt);
+            $statusId = (int)($statusRow['id'] ?? 0);
+        }
+        if ($statusId <= 0) {
+            return null;
+        }
+
+        $roleId = 0;
+        $roleStmt = mysqli_prepare($conn, "SELECT id FROM employee_roles WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY id ASC LIMIT 1");
+        if ($roleStmt) {
+            mysqli_stmt_bind_param($roleStmt, 'i', $companyId);
+            mysqli_stmt_execute($roleStmt);
+            $roleRes = mysqli_stmt_get_result($roleStmt);
+            $roleRow = $roleRes ? mysqli_fetch_assoc($roleRes) : null;
+            mysqli_stmt_close($roleStmt);
+            $roleId = (int)($roleRow['id'] ?? 0);
+        }
+
+        $accessId = 0;
+        $accessStmt = mysqli_prepare($conn, 'SELECT id FROM access_levels WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY id ASC LIMIT 1');
+        if ($accessStmt) {
+            mysqli_stmt_bind_param($accessStmt, 'i', $companyId);
+            mysqli_stmt_execute($accessStmt);
+            $accessRes = mysqli_stmt_get_result($accessStmt);
+            $accessRow = $accessRes ? mysqli_fetch_assoc($accessRes) : null;
+            mysqli_stmt_close($accessStmt);
+            $accessId = (int)($accessRow['id'] ?? 0);
+        }
+
+        $passwordHash = password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
+        $ssoSubject = trim((string)($ldapUser['sso_subject'] ?? ''));
+        $insertStmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO employees (company_id, first_name, last_name, username, work_email, password, role_id, access_level_id, employment_status_id, sso_subject, active)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)'
+        );
+        if (!$insertStmt) {
+            return null;
+        }
+        $roleParam = $roleId > 0 ? $roleId : null;
+        $accessParam = $accessId > 0 ? $accessId : null;
+        mysqli_stmt_bind_param(
+            $insertStmt,
+            'isssssiiis',
+            $companyId,
+            $firstName,
+            $lastName,
+            $jitUsername,
+            $jitEmail,
+            $passwordHash,
+            $roleParam,
+            $accessParam,
+            $statusId,
+            $ssoSubject
+        );
+        if (!mysqli_stmt_execute($insertStmt)) {
+            mysqli_stmt_close($insertStmt);
+            return null;
+        }
+        $newEmployeeId = (int)mysqli_insert_id($conn);
+        mysqli_stmt_close($insertStmt);
+        if ($newEmployeeId <= 0) {
+            return null;
+        }
+
+        $grantStmt = mysqli_prepare($conn, 'INSERT IGNORE INTO employee_companies (company_id, employee_id, active) VALUES (?, ?, 1)');
+        if ($grantStmt) {
+            mysqli_stmt_bind_param($grantStmt, 'ii', $companyId, $newEmployeeId);
+            mysqli_stmt_execute($grantStmt);
+            mysqli_stmt_close($grantStmt);
+        }
+
+        $fetchStmt = mysqli_prepare(
+            $conn,
+            'SELECT e.*, er.name AS role_name
+             FROM employees e'
+            . $join .
+            ' LEFT JOIN employee_roles er ON e.role_id = er.id
+             WHERE e.id = ? AND e.company_id = ?
+             LIMIT 1'
+        );
+        if (!$fetchStmt) {
+            return null;
+        }
+        mysqli_stmt_bind_param($fetchStmt, 'ii', $newEmployeeId, $companyId);
+        mysqli_stmt_execute($fetchStmt);
+        $fetchRes = mysqli_stmt_get_result($fetchStmt);
+        $created = $fetchRes ? mysqli_fetch_assoc($fetchRes) : null;
+        mysqli_stmt_close($fetchStmt);
+
+        return is_array($created) ? $created : null;
     }
 }
 

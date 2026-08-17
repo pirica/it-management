@@ -51,10 +51,19 @@ foreach (['itm_approval_inbox_adapter_slugs', 'itm_approval_inbox_map_source_sta
 }
 
 $slugs = itm_approval_inbox_adapter_slugs();
-if ($slugs !== ['request_password', 'employee_onboarding_requests']) {
+$expectedSlugs = ['request_password', 'employee_onboarding_requests', 'approvals', 'forecast_revisions'];
+sort($slugs);
+sort($expectedSlugs);
+if ($slugs !== $expectedSlugs) {
     ai_verify_fail('Adapter slugs mismatch: ' . implode(', ', $slugs));
 } else {
     ai_verify_pass('Adapter registry slugs');
+}
+
+if (!function_exists('itm_approval_inbox_count_for_assignee')) {
+    ai_verify_fail('Missing helper itm_approval_inbox_count_for_assignee()');
+} else {
+    ai_verify_pass('Helper itm_approval_inbox_count_for_assignee() loaded');
 }
 
 if (itm_approval_inbox_map_source_status('Waiting') !== 'pending' || itm_approval_inbox_map_source_status('Approved') !== 'approved' || itm_approval_inbox_map_source_status('Declined') !== 'rejected') {

@@ -9,7 +9,9 @@ if (!function_exists('itm_automation_rules_trigger_slugs')) {
         return [
             'ticket.created',
             'ticket.status_changed',
+            'alert.created',
             'equipment.warranty_expiring',
+            'equipment.certificate_expiring',
         ];
     }
 }
@@ -283,6 +285,74 @@ if (!function_exists('itm_automation_rules_execute_actions')) {
                 continue;
             }
 
+            if ($type === 'assign_ticket') {
+                $ticketId = (int)($context['ticket_id'] ?? 0);
+                $employeeId = (int)($action['employee_id'] ?? 0);
+                if ($ticketId <= 0 || $employeeId <= 0) {
+                    $ok = false;
+                    $messages[] = 'assign_ticket missing ticket or employee';
+                    continue;
+                }
+                $sql = 'UPDATE tickets SET assigned_to_employee_id = ' . $employeeId . ' WHERE id = ' . $ticketId . ' AND company_id = ' . $companyId;
+                if (!itm_run_query($conn, $sql)) {
+                    $ok = false;
+                    $messages[] = 'assign_ticket update failed';
+                } else {
+                    $messages[] = 'assign_ticket set employee ' . $employeeId;
+                }
+                continue;
+            }
+
+            if ($type === 'set_ticket_priority') {
+                $ticketId = (int)($context['ticket_id'] ?? 0);
+                $priorityId = (int)($action['priority_id'] ?? 0);
+                if ($priorityId <= 0 && !empty($action['priority_name'])) {
+                    $nameEsc = mysqli_real_escape_string($conn, trim((string)$action['priority_name']));
+                    $lookup = mysqli_query(
+                        $conn,
+                        "SELECT id FROM ticket_priorities WHERE company_id = {$companyId} AND name = '{$nameEsc}' LIMIT 1"
+                    );
+                    if ($lookup && ($lookupRow = mysqli_fetch_assoc($lookup))) {
+                        $priorityId = (int)$lookupRow['id'];
+                    }
+                }
+                if ($ticketId <= 0 || $priorityId <= 0) {
+                    $ok = false;
+                    $messages[] = 'set_ticket_priority missing ticket or priority';
+                    continue;
+                }
+                $sql = 'UPDATE tickets SET priority_id = ' . $priorityId . ' WHERE id = ' . $ticketId . ' AND company_id = ' . $companyId;
+                if (!itm_run_query($conn, $sql)) {
+                    $ok = false;
+                    $messages[] = 'set_ticket_priority update failed';
+                } else {
+                    $messages[] = 'set_ticket_priority set priority_id ' . $priorityId;
+                }
+                continue;
+            }
+
+            if ($type === 'emit_webhook') {
+                $eventType = trim((string)($action['event_type'] ?? ''));
+                if ($eventType === '') {
+                    $ok = false;
+                    $messages[] = 'emit_webhook missing event_type';
+                    continue;
+                }
+                if (!function_exists('itm_webhook_queue_enqueue')) {
+                    require_once ROOT_PATH . 'includes/itm_webhook_queue.php';
+                }
+                $payload = is_array($action['payload'] ?? null) ? $action['payload'] : $context;
+                $payload['event'] = $eventType;
+                $payload['company_id'] = $companyId;
+                $queued = itm_webhook_queue_enqueue($conn, $companyId, $eventType, $payload);
+                if ($queued <= 0) {
+                    $messages[] = 'emit_webhook queued 0 deliveries for ' . $eventType;
+                } else {
+                    $messages[] = 'emit_webhook queued ' . $queued . ' for ' . $eventType;
+                }
+                continue;
+            }
+
             $ok = false;
             $messages[] = 'unknown action type ' . $type;
         }
@@ -389,6 +459,28 @@ if (!function_exists('itm_automation_rules_run_scheduled')) {
                 ];
                 itm_automation_rules_dispatch($conn, $companyId, 'equipment.warranty_expiring', $context);
                 $dispatched++;
+            }
+            $certSql = "SELECT id, hostname, certificate_expiry, assigned_to_employee_id
+                         FROM equipment
+                         WHERE company_id = {$companyId}
+                           AND deleted_at IS NULL
+                           AND certificate_expiry IS NOT NULL
+                           AND certificate_expiry >= '{$today}'
+                           AND certificate_expiry <= '{$windowEnd}'";
+            $certRes = mysqli_query($conn, $certSql);
+            if ($certRes) {
+                while ($equip = mysqli_fetch_assoc($certRes)) {
+                    $context = [
+                        'equipment_id' => (int)($equip['id'] ?? 0),
+                        'hostname' => (string)($equip['hostname'] ?? ''),
+                        'certificate_expiry' => (string)($equip['certificate_expiry'] ?? ''),
+                        'assigned_to_employee_id' => (int)($equip['assigned_to_employee_id'] ?? 0),
+                        'company_id' => $companyId,
+                        'automation_depth' => 0,
+                    ];
+                    itm_automation_rules_dispatch($conn, $companyId, 'equipment.certificate_expiring', $context);
+                    $dispatched++;
+                }
             }
         }
         return $dispatched;

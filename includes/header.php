@@ -32,8 +32,17 @@ $csrfToken = itm_get_csrf_token();
         $itmNotificationsCssVersion = is_file($itmNotificationsCssPath) ? (string)filemtime($itmNotificationsCssPath) : '1';
         $itmNotificationsJsVersion = is_file($itmNotificationsJsPath) ? (string)filemtime($itmNotificationsJsPath) : '1';
         $itmNotificationsInboxUrl = itm_employee_notification_build_action_url('employee_notifications', null);
+        $itmApprovalInboxUrl = BASE_URL . 'modules/approval_inbox/index.php';
+        $itmApprovalPendingCount = 0;
+        if (isset($conn) && $conn instanceof mysqli && (int)$company_id > 0 && (int)($_SESSION['employee_id'] ?? 0) > 0) {
+            if (!function_exists('itm_approval_inbox_count_for_assignee')) {
+                require_once ROOT_PATH . 'includes/itm_approval_inbox.php';
+            }
+            $itmApprovalPendingCount = itm_approval_inbox_count_for_assignee($conn, (int)$company_id, (int)$_SESSION['employee_id'], 'pending');
+        }
         ?>
         <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/notifications.css?v=<?php echo sanitize($itmNotificationsCssVersion); ?>">
+        <a href="<?php echo sanitize($itmApprovalInboxUrl); ?>" class="btn btn-sm itm-notifications-btn" title="Approval inbox" aria-label="Approval inbox">📋<?php if ($itmApprovalPendingCount > 0): ?><span class="itm-notifications-badge" aria-hidden="true"><?php echo (int)$itmApprovalPendingCount; ?></span><?php endif; ?></a>
         <div id="itm-notifications-root" class="itm-notifications-wrap">
             <button type="button" class="btn btn-sm itm-notifications-btn" data-itm-notifications-toggle="1" title="Notifications" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">🔔
                 <span class="itm-notifications-badge hidden" data-itm-notifications-badge aria-hidden="true"></span>

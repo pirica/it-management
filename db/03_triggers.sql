@@ -3552,6 +3552,24 @@ CREATE TRIGGER `trg_ticket_sla_policies_audit_delete` AFTER DELETE ON `ticket_sl
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_sla_policies', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'priority_id', OLD.`priority_id`, 'response_minutes', OLD.`response_minutes`, 'resolve_minutes', OLD.`resolve_minutes`, 'active', OLD.`active`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
 
+DROP TRIGGER IF EXISTS `trg_ticket_sla_escalation_rules_audit_insert`$$
+CREATE TRIGGER `trg_ticket_sla_escalation_rules_audit_insert` AFTER INSERT ON `ticket_sla_escalation_rules` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_sla_escalation_rules', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'priority_id', NEW.`priority_id`, 'breach_type', NEW.`breach_type`, 'escalate_to_employee_id', NEW.`escalate_to_employee_id`, 'active', NEW.`active`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_ticket_sla_escalation_rules_audit_update`$$
+CREATE TRIGGER `trg_ticket_sla_escalation_rules_audit_update` AFTER UPDATE ON `ticket_sla_escalation_rules` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_sla_escalation_rules', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'priority_id', OLD.`priority_id`, 'breach_type', OLD.`breach_type`, 'escalate_to_employee_id', OLD.`escalate_to_employee_id`, 'active', OLD.`active`, 'created_at', OLD.`created_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'priority_id', NEW.`priority_id`, 'breach_type', NEW.`breach_type`, 'escalate_to_employee_id', NEW.`escalate_to_employee_id`, 'active', NEW.`active`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_ticket_sla_escalation_rules_audit_delete`$$
+CREATE TRIGGER `trg_ticket_sla_escalation_rules_audit_delete` AFTER DELETE ON `ticket_sla_escalation_rules` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_sla_escalation_rules', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'priority_id', OLD.`priority_id`, 'breach_type', OLD.`breach_type`, 'escalate_to_employee_id', OLD.`escalate_to_employee_id`, 'active', OLD.`active`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
 DROP TRIGGER IF EXISTS `trg_ticket_canned_responses_audit_insert`$$
 CREATE TRIGGER `trg_ticket_canned_responses_audit_insert` AFTER INSERT ON `ticket_canned_responses` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)

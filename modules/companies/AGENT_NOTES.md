@@ -13,7 +13,7 @@ Manages the top-level tenant entities ("Companies") in the multi-tenant system. 
 - **Unique Names**: `company` name must be unique.
 - **Unique Incode**: `incode` (a 6-character short code) must be unique.
 - **Active Status**: Inactivating a company should theoretically block access to its data, though implementation depends on session logic.
-- **LDAP SSO (v1):** `sso_enabled`, `sso_provider` (default `ldap`), and `sso_config_json_encrypted` on `companies`. Configure on **edit** only (`create.php` SSO card). Encrypted JSON via `itm_ldap_encrypt_config()` in `includes/itm_ldap_auth.php`. Employees must exist before SSO — match by `sso_subject`, `work_email`, or `username`. Canonical doc: `docs/SSO_LDAP.md`.
+- **LDAP SSO (v1):** `sso_enabled`, `sso_jit_enabled`, `sso_provider` (default `ldap`), and `sso_config_json_encrypted` on `companies`. Configure on **edit** only (`create.php` SSO card). Encrypted JSON via `itm_ldap_encrypt_config()` in `includes/itm_ldap_auth.php`. When `sso_jit_enabled = 1`, first LDAP login may create employee + home grant; otherwise match by `sso_subject`, `work_email`, or `username`. Canonical doc: `docs/SSO_LDAP.md`.
 
 ## 5. UI Behavior Requirements
 - **List heading:** centered `h1` with `sanitize($moduleListHeading)` from `itm_sidebar_label_for_module()` inside `data-itm-new-button-managed="server"` row; `new_button_position` gates left/right ➕ create buttons.

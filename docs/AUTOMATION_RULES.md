@@ -17,7 +17,9 @@ Canonical DDL: `db/01_schema.sql`. Existing DBs: `db/migrations/automation_rules
 |------|------------|
 | `ticket.created` | After successful ticket create in `modules/tickets/create.php` |
 | `ticket.status_changed` | After ticket edit when `status_id` changes |
+| `alert.created` | After alert create in `modules/alerts/index.php` |
 | `equipment.warranty_expiring` | Daily cron via `scripts/run_automation_rules.php` (warranty within 30 days) |
+| `equipment.certificate_expiring` | Daily cron via `scripts/run_automation_rules.php` (certificate within 30 days) |
 
 ## Conditions JSON
 
@@ -40,6 +42,9 @@ Empty array `[]` matches all events for that trigger.
 | `notify_employee` | `employee_id`, `title`, `body`, optional `action_url` |
 | `send_email` | `to_email`, `subject`, `body` (HTML) |
 | `set_ticket_status` | `status_id` or `status_name` (updates ticket; may chain `ticket.status_changed` with depth guard) |
+| `assign_ticket` | `employee_id` — sets `tickets.assigned_to_employee_id` |
+| `set_ticket_priority` | `priority_id` or `priority_name` |
+| `emit_webhook` | `event_type` — queues matching integration webhooks (`includes/itm_webhook_queue.php`) |
 
 Example:
 

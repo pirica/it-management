@@ -47,6 +47,9 @@ foreach ([
     'itm_ticket_sla_list_by_filter',
     'itm_ticket_sla_process_scheduled_breaches',
     'itm_ticket_sla_resolve_state',
+    'itm_ticket_sla_list_escalation_rules',
+    'itm_ticket_sla_save_escalation_rule',
+    'itm_ticket_sla_apply_escalation_for_breach',
 ] as $fn) {
     if (!function_exists($fn)) {
         tsd_verify_fail("Missing helper {$fn}()");
@@ -117,10 +120,24 @@ if (itm_ticket_sla_resolve_state([
 }
 
 $monitor = itm_ticket_sla_process_scheduled_breaches($conn, $companyId);
-if (!isset($monitor['response_stamped'], $monitor['resolve_stamped'])) {
+if (!isset($monitor['response_stamped'], $monitor['resolve_stamped'], $monitor['response_escalated'], $monitor['resolve_escalated'])) {
     tsd_verify_fail('itm_ticket_sla_process_scheduled_breaches() missing stats keys');
 } else {
     tsd_verify_pass('itm_ticket_sla_process_scheduled_breaches() returns stats');
+}
+
+$escTable = mysqli_query($conn, "SHOW TABLES LIKE 'ticket_sla_escalation_rules'");
+if (!$escTable || mysqli_num_rows($escTable) === 0) {
+    tsd_verify_fail('Table ticket_sla_escalation_rules missing — apply db/migrations/ticket_sla_escalation_rules.sql');
+} else {
+    tsd_verify_pass('Table ticket_sla_escalation_rules exists');
+}
+
+$rules = itm_ticket_sla_list_escalation_rules($conn, $companyId);
+if (!is_array($rules)) {
+    tsd_verify_fail('itm_ticket_sla_list_escalation_rules() did not return array');
+} else {
+    tsd_verify_pass('itm_ticket_sla_list_escalation_rules() returns array');
 }
 
 $apiPath = dirname(__DIR__) . '/modules/ticket_sla_dashboard/api.php';
