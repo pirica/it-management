@@ -28,7 +28,8 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 - Schedule without a visit reason or slot: `js/appointment.js` alerts `--Select a reason for your appointment--` and `Select an appointment time.` (schedule button stays enabled so alerts always run).
 - API accepts any **active** `appointment_type.name` allowed for the selected weekday (must resolve to `appointment_type_id`).
 - Visit reasons on schedule must be `active = 1` and not soft-deleted.
-- New bookings insert `status = 'scheduled'`; no status workflow UI yet.
+- New bookings insert `status = 'scheduled'`.
+- **Status workflow (list/view):** staff with RBAC **edit** may set `scheduled`, `completed`, `no_show`, or `cancelled` via inline list `<select>` (POST `appointment_status_update` on `list_all.php`) or view form (POST `appointment_status_update` on `view.php`). `completed`, `no_show`, and `cancelled` clear `booking_lock` so the slot can be rebooked. Helpers: `appt_status_options()`, `appt_status_badge()`, `appt_update_appointment_status()` in `index.php`. Schema enum includes `no_show` (`db/01_schema.sql`; migration `db/migrations/appointments_status_no_show.sql` for live DBs).
 - Soft-delete on **appointments** clears `booking_lock`, sets `status = cancelled`, and stamps `deleted_*` in the delete handler (`index.php` delete POST) so the slot is bookable again.
 - **`appointment_settings.active` is not checked** before booking — inactive settings still load and allow scheduling until code gates on `active = 1` (known gap).
 
@@ -45,9 +46,9 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 
 ### List / view (`list_all.php`, `view.php`)
 
-- List: tenant appointments with server-side **search (all visible columns)**, **column sort** (▲/▼), and **pagination** via `itm_resolve_records_per_page()` on `list_all.php` (implemented in `index.php` when `$crud_action === 'list_all'`). Search matches employee/reason/type/assignee labels via JOIN `LIKE`, not raw FK IDs alone. Inline assignee `<select>` and **Confirmed** checkbox per row when RBAC **edit** is granted (POST `list_all.php`; redirect preserves `search` / `sort` / `dir` / `page`); actions **🔎 View** and **🗑️ Delete** (RBAC **delete**) — delete soft-removes the row, clears `booking_lock`, sets `status` to `cancelled`, and releases the slot for rebooking.
+- List: tenant appointments with server-side **search (all visible columns)**, **column sort** (▲/▼), and **pagination** via `itm_resolve_records_per_page()` on `list_all.php` (implemented in `index.php` when `$crud_action === 'list_all'`). Search matches employee/reason/type/assignee labels via JOIN `LIKE`, not raw FK IDs alone. Inline **status** `<select>` (separate POST), assignee `<select>`, and **Confirmed** checkbox per row when RBAC **edit** is granted; actions **🔎 View** and **🗑️ Delete** (RBAC **delete**) — delete soft-removes the row, clears `booking_lock`, sets `status` to `cancelled`, and releases the slot for rebooking.
 - **Assignee notifications:** when `assigned_to_employee_id` changes on `list_all` inline POST, `itm_notify_appointment_assigned()` notifies the assignee (including self-assign). Row form already posts hidden `id`.
-- View: detail includes assignee and confirmed flags plus audit meta via `itm_crud_render_audit_cell_value()` when available.
+- View: detail includes status badge plus optional status change form (💾), assignee and confirmed flags plus audit meta via `itm_crud_render_audit_cell_value()` when available.
 
 ### Not flattened scaffold CRUD
 

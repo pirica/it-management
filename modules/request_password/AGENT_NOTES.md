@@ -23,6 +23,7 @@ Handles user requests for password changes/resets. Requires a multi-stage approv
   3. HR and HOD authorize/decline via one-click links in email.
   4. ISM "Submit Email" button only enables after BOTH HR and HOD have 'Approved'.
   5. ISM submits email to applicant, saving ISM Signature Date.
+- **Unified Approval Inbox:** after create/edit save, email approval API decisions, and HR/HOD/ISM email sends, call `itm_approval_inbox_sync_module_record($conn, $company_id, 'request_password', $recordId)` so `approval_inbox_items` mirrors pending HR/HOD stages for assignees (`includes/itm_approval_inbox.php`). Canonical doc: `docs/APPROVAL_INBOX.md`.
 - **Date Format**: DD/MM/YYYY in UI.
 - **View audit meta:** Detail view renders all six scaffold audit columns via `itm_crud_render_view_audit_meta_rows()` / `itm_crud_render_audit_cell_value()` (`*_by` employee names, `*_at` as `d-m-Y - H:i:s`).
 

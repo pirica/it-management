@@ -20,6 +20,7 @@ Canonical documentation that is not source code: upload maps, README assets, mod
 - **docs/LICENSE_MANAGEMENT.md** — software license tracking, lookup dependencies, localized dates and normalized price formatting, soft-delete audit meta details, and import/export layouts.
 - **docs/LIVE_CHAT.md** — Real-time messaging subsystem with Live Agent and Chat-with support, ticket/SLA integration, secure non-audited messaging, ephemeral typing presence, and local file/photo storage mapping.
 - **docs/NOTIFICATIONS.md** — in-app notification center: `employee_notifications` table, `itm_notify_employee()` emitters, header bell API/JS, digest email runner.
+- **docs/APPROVAL_INBOX.md** — unified approval queue (`approval_inbox_items`), adapter sync from `request_password` and `employee_onboarding_requests`, inbox UI decide proxy.
 - **docs/ORG_CHART.md** — interactive hierarchical org chart from self-referential reporting lines, recursive cycle loops detection, dynamic drag-and-drop AJAX persistence, and responsive layouts.
 - **docs/SYSTEM_STATUS.md** — Admin-only server diagnostics dashboard covering CPU/RAM/disk metrics, native Linux proc reporting vs Windows PowerShell fallbacks, and real-time SQL/on-disk storage caching.
 - **docs/BOOKING.md** — guest-facing `booking/` portal: four-step checkout, manage reservation (lookup, cancel, change contacts), ITM Hospitality admin modules, schema, local URLs, and review of strengths/gaps.

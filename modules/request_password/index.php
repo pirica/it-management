@@ -74,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['approval_api'])) {
     mysqli_stmt_bind_param($stmt, 'sii', $statusValue, $recordId, $company_id);
 
     if (mysqli_stmt_execute($stmt)) {
+        itm_approval_inbox_sync_module_record($conn, $company_id, 'request_password', $recordId);
         echo "<h2>Request " . htmlspecialchars($statusValue) . "</h2>";
         echo "<p>The password request has been updated. You may close this window.</p>";
     } else {
@@ -140,6 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_email_action']))
 
         if ($toEmail) {
             itm_send_email($toEmail, $subject, $message, $company_id);
+            itm_approval_inbox_sync_module_record($conn, $company_id, 'request_password', $recordId);
             $_SESSION['crud_success'] = "Email sent to $approverTypeDesc for authorization.";
         } else {
             $_SESSION['crud_error'] = "No approver found for $approverTypeDesc. Please check 'Approvers' settings.";
@@ -154,6 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_email_action']))
             $stmt = mysqli_prepare($conn, "UPDATE request_password SET ism_signature_date = CURDATE() WHERE id = ? AND company_id = ?");
             mysqli_stmt_bind_param($stmt, 'ii', $recordId, $company_id);
             mysqli_stmt_execute($stmt);
+            itm_approval_inbox_sync_module_record($conn, $company_id, 'request_password', $recordId);
             $_SESSION['crud_success'] = "Final notification sent to applicant.";
         } else {
             $_SESSION['crud_error'] = "Applicant email not found.";
@@ -349,6 +352,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     if (mysqli_stmt_execute($stmt)) {
         $last_id = ($crud_action == 'create') ? mysqli_insert_id($conn) : $id;
+        if ($last_id > 0) {
+            itm_approval_inbox_sync_module_record($conn, $company_id, 'request_password', (int)$last_id);
+        }
         header("Location: view.php?id=$last_id");
         exit;
     } else {

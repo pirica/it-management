@@ -348,6 +348,7 @@ require_once ROOT_PATH . 'includes/itm_ticket_activity.php';
 require_once ROOT_PATH . 'includes/itm_ticket_comments.php';
 require_once ROOT_PATH . 'includes/itm_ticket_sla.php';
 require_once ROOT_PATH . 'includes/itm_employee_notifications.php';
+require_once ROOT_PATH . 'includes/itm_approval_inbox.php';
 require_once ROOT_PATH . 'includes/itm_live_chat_support.php';
 require_once ROOT_PATH . 'includes/itm_live_chat_storage.php';
 require_once ROOT_PATH . 'includes/itm_live_chat_launch_options.php';
