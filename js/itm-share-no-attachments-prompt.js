@@ -1,6 +1,6 @@
 (function () {
     var STORAGE_KEY = 'itm_share_no_attachments_dismissed';
-    var DEFAULT_BODY = 'WhatsApp and email cannot attach files. Only the join link and 6-digit code will be sent. Images can be viewed on the join page.';
+    var DEFAULT_BODY = 'WhatsApp and email cannot attach files. Only the join link and numeric share code will be sent. Images can be viewed on the join page.';
 
     function ensureStyles() {
         if (document.getElementById('itmShareNoAttachStyles')) {

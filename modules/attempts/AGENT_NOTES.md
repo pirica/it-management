@@ -24,7 +24,7 @@ Tracks authentication-related attempts, including logins and password resets. It
 ## 7. File Structure
 - **index.php** — list view of attempts.
 - **delete.php** — handles log cleanup.
-- **view.php** — detailed view of an attempt.
+- **view.php** — detailed view of an attempt; calls `itm_require_crud_role_module_permission($conn, 'view', 'attempts')` before loading rows (same RBAC layer as `delete.php`). Regression: `php scripts/verify_attempts_view_rbac.php`.
 
 ## 8. Multi-Tenant Rules
 - **Multi-Tenant Scoping**: The table includes a `company_id` column.

@@ -77,6 +77,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($webhookUrl !== '' && !preg_match('#^https?://#i', $webhookUrl)) {
         $errors[] = 'Webhook URL must start with http:// or https://';
     }
+    if ($webhookUrl !== '' && empty($errors)) {
+        if (!function_exists('itm_hotel_booking_distribution_validate_webhook_url')) {
+            require_once ROOT_PATH . 'includes/itm_hotel_booking_distribution_webhooks.php';
+        }
+        $webhookValidation = itm_hotel_booking_distribution_validate_webhook_url($webhookUrl);
+        if (empty($webhookValidation['ok'])) {
+            $errors[] = (string) ($webhookValidation['error'] ?? 'Invalid webhook URL.');
+        } else {
+            $webhookUrl = (string) ($webhookValidation['url'] ?? $webhookUrl);
+        }
+    }
     if (empty($errors)) {
         $partnerPasswordEncrypted = (string) ($row['partner_api_password_encrypted'] ?? '');
         if ($partnerPassword !== '') {

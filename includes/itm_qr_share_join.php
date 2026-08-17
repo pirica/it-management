@@ -248,12 +248,17 @@ function itm_qr_share_render_join_page($moduleLabel, $joinScriptPath, $accessTok
             <?php endif; ?>
         <?php else: ?>
             <h1 title="Join shared <?php echo sanitize($moduleLabel); ?>">Join shared <?php echo sanitize($moduleLabel); ?></h1>
-            <p>Enter the 6-digit code from the device that is sharing.</p>
+            <?php
+            $joinCodeLength = itm_qr_share_code_length();
+            $joinCodePattern = '[0-9]{' . (int) $joinCodeLength . '}';
+            $joinCodePlaceholder = str_repeat('0', (int) $joinCodeLength);
+            ?>
+            <p>Enter the <?php echo (int) $joinCodeLength; ?>-digit code from the device that is sharing.</p>
             <?php if ($error !== ''): ?>
                 <p style="color:var(--danger);"><?php echo sanitize($error); ?></p>
             <?php endif; ?>
             <form method="POST" action="<?php echo sanitize(basename($joinScriptPath)); ?>" style="margin-top:20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-                <input class="join-code-input" type="text" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="000000" value="<?php echo sanitize($submittedCode); ?>" required autofocus>
+                <input class="join-code-input" type="text" name="code" inputmode="numeric" pattern="<?php echo sanitize($joinCodePattern); ?>" maxlength="<?php echo (int) $joinCodeLength; ?>" placeholder="<?php echo sanitize($joinCodePlaceholder); ?>" value="<?php echo sanitize($submittedCode); ?>" required autofocus>
                 <button type="submit" class="btn btn-primary">Join</button>
             </form>
             <p class="join-expiry" style="margin-top:20px;">Or open <code><?php echo sanitize($joinBase); ?></code> on your device.</p>

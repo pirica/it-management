@@ -43,6 +43,7 @@ Tenant-scoped email management: send logs, SMTP profiles, and automated alert ru
 
 ## 7. File Structure
 - `index.php` — tab shell, POST handlers, stats.
+- `view.php` — send-log detail; enforces `itm_require_crud_role_module_permission($conn, 'view', 'emails')` before SELECT. Regression: `php scripts/verify_emails_view_rbac.php`.
 - `tabs/send_logs.php`, `tabs/smtp.php`, `tabs/alert_rules.php`.
 - `delete.php` — send-log soft-delete (bulk / clear table).
 - Wrappers `create.php` / `edit.php` redirect to SMTP tab.

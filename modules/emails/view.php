@@ -5,6 +5,8 @@
 
 require_once dirname(__DIR__, 2) . '/config/config.php';
 
+itm_require_crud_role_module_permission($conn, 'view', 'emails');
+
 $company_id = (int)($_SESSION['company_id'] ?? 0);
 $id = (int)($_GET['id'] ?? 0);
 $row = null;

@@ -1101,6 +1101,7 @@ Run `verify_appointment.php` when changing `modules/appointments/`, `includes/it
 | `php scripts/report_hotel_booking_distribution_webhook_ops.php` | Ops report: dead-letter + failed webhook queue rows; exit `1` unless `--allow-dead` |
 | `php scripts/run_hotel_booking_distribution_ari_sync.php` | Push ARI snapshots to all active channels with `webhook_url` (optional `--company=`, `--days=`) |
 | `php scripts/run_hotel_booking_distribution_webhook_queue.php` | Process pending/failed outbound webhook queue rows with exponential backoff; dead-letter at `max_attempts` |
+| `php scripts/verify_hotel_booking_distribution_webhook_ssrf.php` | Regression: outbound `webhook_url` SSRF guard (`itm_hotel_booking_distribution_validate_webhook_url`, channel edit save, deliver without HTTP to blocked hosts) |
 | `php scripts/seed_hotel_booking_sample_photos.php` | Copy sample hotel + room-type images to `booking/images/{hotel_id}/hotel_photos/` and `room_types_photos/`; upsert photo rows (`--apply` writes; default dry-run) |
 | `php scripts/check_hotel_bookings_rate_plan_form.php` | Static gate: `__add_new__` portal rate plan select, `hb_booking_end_form_page()` body-level modal, rate-plan select JS quick-add handler |
 | `php scripts/check_hospitality_date_format.php` | Hospitality-only subset of `check_date_format.php` (stay-date static + helper contracts) |
@@ -1260,6 +1261,9 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_notes_share.php` — notes temporary QR/code share sessions (`note_share_sessions`, `join.php`, `notes_share_helpers.php`)
 - `php scripts/verify_private_contacts_vault.php` — private contacts vault encryption (`pc_vault_helpers.php`, list hydrate/search, master-key re-encrypt); browser catalog uses `itm_script_output_nl()` / `itm_script_format_status_line()` (not `fwrite(STDOUT)`).
 - `php scripts/verify_qr_share_modules.php` — Passwords, Bookmarks, Todo, Events, Private Contacts, Explorer, Floor Plans, Rack Planner, and CRUD record share (`departments` via `includes/itm_crud_record_share.php`) temporary QR/code sessions (`share_sessions`, `join.php`, module `*_share_helpers.php`, shared `includes/itm_qr_share.php`). Inventory: `docs/CRUD_RECORD_SHARE.md`.
+- `php scripts/verify_qr_share_join_hardening.php` — Public join hardening: eight-digit codes, token-only vault/file modules, per-IP join rate limit (`includes/itm_qr_share.php`)
+- `php scripts/verify_attempts_view_rbac.php` — `modules/attempts/view.php` enforces `can_view` RBAC for User roles without Attempts permission
+- `php scripts/verify_emails_view_rbac.php` — `modules/emails/view.php` enforces `can_view` RBAC for User roles without Email Management permission
 - `php scripts/verify_module_share.php` — `company_module_share` opt-out matrix + `has_module_share_access()`; requires `share_sessions` table
 - `php scripts/migrate.php --status` / `--apply` — `db/migrations/*.sql` runner + `schema_migrations` history; schema-satisfied migrations (fresh `db/` import) are not false PENDING (`includes/itm_database_migrations.php`)
 - `php scripts/verify_db_migrations.php` — each `db/migrations/*.sql` vs live schema/data (Applied / Superseded / Not applied)
