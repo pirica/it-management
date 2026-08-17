@@ -142,6 +142,14 @@ if ($field === 'active') {
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
 
+    if (function_exists('itm_crud_render_checkbox_boolean_cell_value')) {
+        $checkboxHtml = itm_crud_render_checkbox_boolean_cell_value($field, $value);
+        if ($checkboxHtml !== null) {
+            return $checkboxHtml;
+        }
+    }
+
+
     if ($field === 'icon_slug' && ($GLOBALS['crud_table'] ?? '') === 'hotel_booking_amenities') {
         return itm_hotel_booking_amenity_icon_markup((string) $value, 24) . ' <span class="hb-amenity-slug-label">' . sanitize((string) $value) . '</span>';
     }
@@ -253,6 +261,9 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 }
 
 $columns = cr_table_columns($conn, $crud_table);
+if (function_exists('itm_crud_register_column_type_map')) {
+    itm_crud_register_column_type_map($columns);
+}
 $fkMap = cr_fk_map($conn, $crud_table);
 $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {

@@ -1057,6 +1057,9 @@ if (!is_file($roomsDuplicate)) {
         hb_fail('hotel_booking_rooms index must expose Duplicate action');
     } elseif (strpos($helperSource, 'itm_hotel_booking_room_duplicate_record') === false) {
         hb_fail('itm_hotel_booking_room_duplicate_record helper missing');
+    } elseif (strpos($roomsIndexSource, 'itm_crud_render_checkbox_boolean_cell_value') === false
+        || strpos($roomsIndexSource, 'itm_crud_register_column_type_map') === false) {
+        hb_fail('hotel_booking_rooms index must render tinyint checkbox columns with ✅/❌ via shared CRUD helper');
     } else {
         hb_pass('hotel_booking_rooms duplicate action wiring');
     }
