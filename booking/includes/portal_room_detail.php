@@ -204,7 +204,7 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
         if ((int) ($occupancy['rooms'] ?? 1) > 1) {
             $cardQuoteOcc = itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, 0, (int) $occupancy['rooms']);
         }
-        $fits = itm_hotel_booking_room_type_fits_occupancy($typeOcc, $cardQuoteOcc);
+        $fits = itm_hotel_booking_room_type_fits_occupancy($typeOcc, $cardQuoteOcc, $conn, $companyId);
         $blocked = !empty($sampleRoom['is_out_of_order']) || !empty($sampleRoom['is_out_of_service']);
         $available = $roomId > 0 && !$blocked && $fits
             && !itm_hotel_booking_room_unavailable_for_stay($conn, $companyId, $roomId, $checkInIso, $checkOutIso, 0, $sampleRoom);

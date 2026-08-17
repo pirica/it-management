@@ -224,44 +224,109 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $existingDraft = itm_hotel_booking_portal_draft_get() ?: [];
             $ratedLines = itm_hotel_booking_portal_draft_rated_room_lines($existingDraft, $roomLinesContext);
+            $checkoutTypeRow = $roomTypeRowCheck ?: [];
+            if ($roomsNeeded === 1 && $ratedLines !== []) {
+                $primaryTypeId = (int) ($ratedLines[0]['room_type_id'] ?? 0);
+                if ($primaryTypeId > 0) {
+                    $primaryTypeRowDraft = itm_hotel_booking_fetch_room_type_row($conn, $company_id, $primaryTypeId);
+                    if ($primaryTypeRowDraft) {
+                        $checkoutTypeRow = $primaryTypeRowDraft;
+                    }
+                }
+            }
+            $requiredLineCount = itm_hotel_booking_portal_checkout_required_room_line_count($checkoutTypeRow, $occupancy);
             $baseLine = itm_hotel_booking_portal_room_line_from_room_row($conn, $company_id, $hotelId, $room, $checkInIso);
             $ratedLine = itm_hotel_booking_portal_room_line_apply_rate_plan($baseLine, $planRow, $slug, $discountPercent);
+            if (itm_hotel_booking_portal_connecting_room_type_id($roomTypeRowCheck ?: []) > 0) {
+                $ratedLine['connecting_unit_role'] = 'primary';
+            } elseif ($requiredLineCount > 1 && (int) ($room['room_type_id'] ?? 0) === itm_hotel_booking_portal_connecting_room_type_id($checkoutTypeRow)) {
+                $ratedLine['connecting_unit_role'] = 'connecting';
+            }
             $allLines = array_merge($ratedLines, [$ratedLine]);
-            $planEffectiveDiscount = itm_hotel_booking_portal_rate_plan_effective_discount($discountPercent, $slug, $planRow);
-            $planEffectiveSurcharge = itm_hotel_booking_portal_rate_plan_effective_surcharge($slug, $planRow);
-            $draft = [
-                'company_id' => $company_id,
-                'room_id' => $roomId,
-                'hotel_id' => $hotelId,
-                'check_in' => $checkInIso,
-                'check_out' => $checkOutIso,
-                'nights' => $nights,
-                'occupancy' => $occupancy,
-                'portal_rate_plan_id' => $planId,
-                'portal_rate_plan_name' => (string) ($planRow['name'] ?? ''),
-                'rate_plan' => $slug,
-                'traveling_with_pet' => !empty($existingDraft['traveling_with_pet']) ? 1 : 0,
-                'service_animal' => !empty($existingDraft['service_animal']) ? 1 : 0,
-                'additional_comments' => isset($existingDraft['additional_comments']) ? (string) $existingDraft['additional_comments'] : '',
-                'discount_percent' => $planEffectiveDiscount,
-                'surcharge_percent' => $planEffectiveSurcharge,
-                'resolved_rate_slug' => $resolvedRate,
-                'base_price_per_night' => $basePerNight,
-                'internal_rate_code' => itm_hotel_booking_normalize_internal_rate_code($occupancy['internal_rate_code'] ?? ''),
-                'room_type_id' => (int) ($room['room_type_id'] ?? 0),
-                'room_lines' => $allLines,
-                'room_lines_context' => $roomLinesContext,
-            ];
-            itm_hotel_booking_portal_draft_save($draft);
-            if ($roomsNeeded > 1 && count($allLines) < $roomsNeeded) {
-                header('Location: ' . APPURL . '/rooms.php?' . http_build_query(array_merge(
-                    ['id' => $hotelId, 'check_in' => $checkInIso, 'nights' => $nights],
-                    itm_hotel_booking_portal_occupancy_query_params($occupancy)
-                )));
+            if ($roomsNeeded === 1 && $requiredLineCount > 1 && itm_hotel_booking_portal_connecting_room_type_id($roomTypeRowCheck ?: []) > 0) {
+                $connectingPick = itm_hotel_booking_portal_connecting_unit_append_unrated_pick(
+                    $conn,
+                    $company_id,
+                    $hotelId,
+                    $roomTypeRowCheck,
+                    $checkInIso,
+                    $checkOutIso,
+                    $allLines
+                );
+                if (empty($connectingPick['ok'])) {
+                    $error = (string) ($connectingPick['error'] ?? 'Connecting room is not available for your dates.');
+                } else {
+                    if (!empty($connectingPick['line']) && is_array($connectingPick['line'])) {
+                        $allLines[] = $connectingPick['line'];
+                    }
+                }
+            }
+            if ($error === '') {
+                $planEffectiveDiscount = itm_hotel_booking_portal_rate_plan_effective_discount($discountPercent, $slug, $planRow);
+                $planEffectiveSurcharge = itm_hotel_booking_portal_rate_plan_effective_surcharge($slug, $planRow);
+                $draft = [
+                    'company_id' => $company_id,
+                    'room_id' => $roomId,
+                    'hotel_id' => $hotelId,
+                    'check_in' => $checkInIso,
+                    'check_out' => $checkOutIso,
+                    'nights' => $nights,
+                    'occupancy' => $occupancy,
+                    'portal_rate_plan_id' => $planId,
+                    'portal_rate_plan_name' => (string) ($planRow['name'] ?? ''),
+                    'rate_plan' => $slug,
+                    'traveling_with_pet' => !empty($existingDraft['traveling_with_pet']) ? 1 : 0,
+                    'service_animal' => !empty($existingDraft['service_animal']) ? 1 : 0,
+                    'additional_comments' => isset($existingDraft['additional_comments']) ? (string) $existingDraft['additional_comments'] : '',
+                    'discount_percent' => $planEffectiveDiscount,
+                    'surcharge_percent' => $planEffectiveSurcharge,
+                    'resolved_rate_slug' => $resolvedRate,
+                    'base_price_per_night' => $basePerNight,
+                    'internal_rate_code' => itm_hotel_booking_normalize_internal_rate_code($occupancy['internal_rate_code'] ?? ''),
+                    'room_type_id' => (int) ($room['room_type_id'] ?? 0),
+                    'room_lines' => $allLines,
+                    'room_lines_context' => $roomLinesContext,
+                ];
+                itm_hotel_booking_portal_draft_save($draft);
+                if ($roomsNeeded > 1 && count($allLines) < $roomsNeeded) {
+                    header('Location: ' . APPURL . '/rooms.php?' . http_build_query(array_merge(
+                        ['id' => $hotelId, 'check_in' => $checkInIso, 'nights' => $nights],
+                        itm_hotel_booking_portal_occupancy_query_params($occupancy)
+                    )));
+                    exit;
+                }
+                if ($roomsNeeded === 1 && $requiredLineCount > 1) {
+                    $ratedCount = 0;
+                    $pendingConnectingRoomId = 0;
+                    foreach ($allLines as $draftLine) {
+                        if (!is_array($draftLine)) {
+                            continue;
+                        }
+                        if (itm_hotel_booking_portal_room_line_has_rate($draftLine)) {
+                            $ratedCount++;
+                            continue;
+                        }
+                        $pendingConnectingRoomId = (int) ($draftLine['room_id'] ?? 0);
+                    }
+                    if ($ratedCount >= $requiredLineCount) {
+                        header('Location: ' . APPURL . '/rooms/customize.php');
+                        exit;
+                    }
+                    if ($pendingConnectingRoomId > 0) {
+                        header('Location: ' . APPURL . '/rooms/select-rate.php?' . http_build_query(array_merge(
+                            [
+                                'id' => $pendingConnectingRoomId,
+                                'check_in' => $checkInIso,
+                                'nights' => $nights,
+                            ],
+                            itm_hotel_booking_portal_occupancy_query_params($occupancy)
+                        )));
+                        exit;
+                    }
+                }
+                header('Location: ' . APPURL . '/rooms/customize.php');
                 exit;
             }
-            header('Location: ' . APPURL . '/rooms/customize.php');
-            exit;
         }
     }
 }

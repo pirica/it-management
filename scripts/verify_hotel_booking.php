@@ -1668,6 +1668,12 @@ $typeRulesRow = [
 $lineTotalsRules = array_fill(0, 11, 100.0);
 $lineTotalsRules[0] = 50.0;
 if (!itm_hotel_booking_room_type_fits_occupancy($typeRulesRow, ['rooms' => 1, 'adults' => 2, 'children' => 2, 'babies' => 1])
+    && itm_hotel_booking_portal_effective_max_total_guests(['max_total_guests' => 4, 'extra_bed_allowed' => 1, 'max_extra_beds' => 1]) === 5
+    && !itm_hotel_booking_portal_child_age_counters_valid(['child_max_age' => 1], 1, 0)
+    && itm_hotel_booking_portal_child_age_counters_valid(['child_max_age' => 12], 1, 1)
+    && function_exists('itm_hotel_booking_portal_connecting_unit_fits_occupancy')
+    && function_exists('itm_hotel_booking_portal_checkout_required_room_line_count')
+    && itm_hotel_booking_portal_checkout_required_room_line_count(['connecting_room_type_id' => 99], ['rooms' => 1]) === 2
     && itm_hotel_booking_portal_weekday_closed_list('5,6') === [5, 6]
     && abs(itm_hotel_booking_portal_complimentary_room_credit(['portal_complimentary_min_rooms_paid' => 10, 'portal_complimentary_rooms_free' => 1], 11, $lineTotalsRules) - 50.0) < 0.01
     && !empty(itm_hotel_booking_portal_room_type_card_available($typeRulesRow, ['rooms' => 1, 'adults' => 2, 'children' => 0, 'babies' => 0], '2026-08-10', '2026-08-11', true)['available'])) {
@@ -1680,7 +1686,9 @@ $customizeSrcRules = (string) @file_get_contents(dirname(__DIR__) . '/booking/ro
 $roomsSrcRules = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms.php');
 if (strpos($customizeSrcRules, 'No special requests available') !== false
     && strpos($roomsSrcRules, 'cardQuoteOccupancy') !== false
-    && strpos($roomsSrcRules, 'itm_hotel_booking_room_type_fits_occupancy($typeRow, $cardQuoteOccupancy)') !== false
+    && strpos($roomsSrcRules, 'itm_hotel_booking_room_type_fits_occupancy($typeRow, $cardQuoteOccupancy') !== false
+    && strpos($roomsSrcRules, 'itm_hotel_booking_portal_connecting_unit_inventory_available') !== false
+    && strpos((string) @file_get_contents(dirname(__DIR__) . '/booking/rooms/select-rate.php'), 'itm_hotel_booking_portal_connecting_unit_append_unrated_pick') !== false
     && strpos($roomsSrcRules, 'portal_bookable') !== false) {
     hb_pass('portal customize pets gate + rooms cardQuoteOccupancy wiring');
 } else {
