@@ -75,11 +75,15 @@ $discountPercent = itm_hotel_booking_special_rate_discount(
     itm_hotel_booking_portal_resolved_rate_slug($occupancy)
 );
 $cheapestOffer = itm_hotel_booking_portal_cheapest_rate_offer_for_hotel($conn, $company_id, $hotelId);
-$cheapestPlanDiscount = max(0.0, min(50.0, (float) ($cheapestOffer['discount_percent'] ?? 0)));
-$cheapestPlanSurcharge = max(0.0, min(50.0, (float) ($cheapestOffer['surcharge_percent'] ?? 0)));
+$cheapestPlanDiscount = itm_hotel_booking_portal_clamp_offer_percent((float) ($cheapestOffer['discount_percent'] ?? 0), $settings);
+$cheapestPlanSurcharge = itm_hotel_booking_portal_clamp_offer_percent((float) ($cheapestOffer['surcharge_percent'] ?? 0), $settings);
 // Why: Step 1 From matches home/calendar cheapest plan (usually NR), stacked with special rates like Step 2.
-$displayDiscountPercent = min(50.0, (float) $discountPercent + $cheapestPlanDiscount);
+$displayDiscountPercent = itm_hotel_booking_portal_clamp_combined_discount_percent((float) $discountPercent, (float) $cheapestPlanDiscount, $settings);
 $touristTaxRate = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settings);
+$portalTaxLabel = itm_hotel_booking_portal_tourist_tax_label_from_settings($settings);
+$portalPriceIncludesTaxLabel = itm_hotel_booking_portal_price_includes_tax_label_from_settings($settings);
+$portalDefaultRateLabel = itm_hotel_booking_portal_default_rate_label_from_settings($settings);
+$portalBreakfastRateLabel = itm_hotel_booking_portal_breakfast_rate_label_from_settings($settings);
 $cardQuoteOccupancy = $occupancy;
 if ($roomsNeeded > 1) {
     $cardQuoteOccupancy = itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, count($roomLines), $roomsNeeded);
@@ -250,6 +254,7 @@ foreach ($rooms as $room) {
             'max_children' => (int) ($room['max_children'] ?? 1),
             'max_babies' => (int) ($room['max_babies'] ?? 1),
             'child_max_age' => (int) ($room['child_max_age'] ?? 12),
+            'included_adults_per_room' => max(1, (int) ($room['included_adults_per_room'] ?? 2)),
             'adults_only' => !empty($room['adults_only']),
             'smoking_allowed' => !empty($room['smoking_allowed']),
             'accessible_room' => itm_hotel_booking_portal_room_is_accessible($room),
@@ -472,7 +477,7 @@ if ($roomsNeeded > 1) {
         }
         $planLabel = trim((string) ($lastRatedLine['portal_rate_plan_name'] ?? ''));
         if ($planLabel === '' && !empty($lastRatedLine['rate_plan'])) {
-            $planLabel = (string) $lastRatedLine['rate_plan'] === 'breakfast' ? 'Breakfast included' : 'Best available rate';
+            $planLabel = itm_hotel_booking_portal_plan_label_from_slug((string) ($lastRatedLine['rate_plan'] ?? ''), $settings, '');
         }
         if ($summaryRoomId > 0) {
             $changeRateUrl = APPURL . '/rooms/select-rate.php?' . hb_select_room_book_query($summaryRoomId, $checkInIso, $nights, $occupancy);
@@ -577,7 +582,7 @@ $showAccessibleBanner = itm_hotel_booking_portal_accessible_banner_enabled_from_
 <?php foreach ($cardList as $card):
     $bookUrl = hb_select_room_book_href($hotelId, (int) $card['book_room_id'], $checkInIso, $nights, $occupancy);
 ?>
-<article class="hb-room-card<?php echo empty($card['available']) ? ' is-sold-out' : ''; ?>" data-base-price="<?php echo htmlspecialchars((string) $card['base_price'], ENT_QUOTES, 'UTF-8'); ?>" data-filter-tags="<?php echo htmlspecialchars($card['filter_tags'], ENT_QUOTES, 'UTF-8'); ?>" data-type-id="<?php echo (int) $card['type_id']; ?>" data-accessible="<?php echo !empty($card['accessible_room']) ? '1' : '0'; ?>" data-smoking="<?php echo !empty($card['smoking_allowed']) ? '1' : '0'; ?>">
+<article class="hb-room-card<?php echo empty($card['available']) ? ' is-sold-out' : ''; ?>" data-base-price="<?php echo htmlspecialchars((string) $card['base_price'], ENT_QUOTES, 'UTF-8'); ?>" data-filter-tags="<?php echo htmlspecialchars($card['filter_tags'], ENT_QUOTES, 'UTF-8'); ?>" data-type-id="<?php echo (int) $card['type_id']; ?>" data-included-adults-per-room="<?php echo (int) ($card['included_adults_per_room'] ?? 2); ?>" data-accessible="<?php echo !empty($card['accessible_room']) ? '1' : '0'; ?>" data-smoking="<?php echo !empty($card['smoking_allowed']) ? '1' : '0'; ?>">
 <div class="hb-room-card-head">
 <div class="hb-room-card-title-row">
 <span class="hb-room-type-code"><?php echo htmlspecialchars($card['type_code'], ENT_QUOTES, 'UTF-8'); ?></span>
@@ -632,7 +637,7 @@ echo hb_portal_render_image_gallery(
     $listQuotedCard = (float) ($card['list_quoted_price'] ?? $card['quoted_price']);
     $saleQuotedCard = (float) ($card['quoted_price'] ?? 0);
     $showPriceCompare = $showDiscountStrikethrough && $displayDiscountPercent > 0 && $listQuotedCard > $saleQuotedCard;
-?><span class="hb-room-price-compare"<?php echo $showPriceCompare ? '' : ' hidden'; ?>><?php echo $showPriceCompare ? htmlspecialchars(hb_portal_money_format($listQuotedCard, $currency), ENT_QUOTES, 'UTF-8') : ''; ?></span><span class="hb-room-price-value"><?php echo htmlspecialchars(hb_portal_money_format($saleQuotedCard, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <span class="hb-room-price-suffix">/ night incl. tax</span></p>
+?><span class="hb-room-price-compare"<?php echo $showPriceCompare ? '' : ' hidden'; ?>><?php echo $showPriceCompare ? htmlspecialchars(hb_portal_money_format($listQuotedCard, $currency), ENT_QUOTES, 'UTF-8') : ''; ?></span><span class="hb-room-price-value"><?php echo htmlspecialchars(hb_portal_money_format($saleQuotedCard, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <span class="hb-room-price-suffix">/ night <?php echo htmlspecialchars($portalPriceIncludesTaxLabel, ENT_QUOTES, 'UTF-8'); ?></span></p>
 <?php if (!empty($card['available'])): ?>
 <a class="hb-btn hb-btn-primary hb-room-select" href="<?php echo htmlspecialchars($bookUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Select room">Select</a>
 <?php else: ?>
@@ -742,7 +747,7 @@ echo hb_portal_render_image_gallery(
 </div>
 <div class="hb-rates-actions">
 <button type="button" class="hb-btn hb-btn-primary" id="hb-rates-apply" title="Apply special rates">Apply</button>
-<button type="button" class="hb-btn" id="hb-rates-clear" title="Best available rate">Best available rate</button>
+<button type="button" class="hb-btn" id="hb-rates-clear" title="<?php echo htmlspecialchars($portalDefaultRateLabel, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($portalDefaultRateLabel, ENT_QUOTES, 'UTF-8'); ?></button>
 </div>
 </form>
 </div>
@@ -763,7 +768,7 @@ window.HB_SELECT_ROOM = <?php echo json_encode(array_merge([
     'discountPercent' => $discountPercent,
     'cheapestPlanDiscountPercent' => $cheapestPlanDiscount,
     'cheapestPlanSurchargePercent' => $cheapestPlanSurcharge,
-    'cheapestRateLabel' => (string) ($cheapestOffer['price_label'] ?? ''),
+    'cheapestRateLabel' => itm_hotel_booking_portal_plan_label_from_slug((string) ($cheapestOffer['slug'] ?? ''), $settings, (string) ($cheapestOffer['price_label'] ?? '')),
     'resolvedRateSlug' => $resolvedRateSlug,
     'rateDiscountPercents' => $rateDiscountMap,
     'currencySymbol' => ($currency === 'EUR' ? '€' : $currency . ' '),

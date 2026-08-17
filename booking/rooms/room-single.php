@@ -208,7 +208,7 @@ $currency = $room['currency_code'] ?? 'EUR';
 $stripeCheckoutEnabled = itm_stripe_checkout_is_enabled($conn, $company_id);
 $planLabel = trim((string) ($draftForDisplay['portal_rate_plan_name'] ?? ''));
 if ($planLabel === '') {
-    $planLabel = ($draftForDisplay['rate_plan'] ?? '') === 'breakfast' ? 'Breakfast included' : 'Best available rate';
+    $planLabel = itm_hotel_booking_portal_plan_label_from_slug((string) ($draftForDisplay['rate_plan'] ?? ''), $settings, '');
 }
 $changeRateUrl = APPURL . '/rooms/select-rate.php?' . http_build_query(array_merge(
     ['id' => $roomId, 'check_in' => $checkInIso, 'nights' => $nights],

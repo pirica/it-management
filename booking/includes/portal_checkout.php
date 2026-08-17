@@ -83,11 +83,15 @@ if (!function_exists('hb_portal_render_room_lines_summary')) {
         }
         $showLinePrices = $lineNightlyAmounts !== [];
         $occupancy = is_array($occupancy) ? itm_hotel_booking_portal_parse_occupancy($occupancy) : null;
+        $portalSettings = function_exists('hb_portal_money_settings_bound') ? hb_portal_money_settings_bound() : [];
+        $priceIncludesTaxLabel = function_exists('itm_hotel_booking_portal_price_includes_tax_label_from_settings')
+            ? itm_hotel_booking_portal_price_includes_tax_label_from_settings($portalSettings)
+            : 'incl. tax';
         ?>
 <section class="hb-room-lines-summary card" aria-label="Selected rooms">
 <h2 class="hb-room-lines-summary-title">Your rooms (<?php echo count($roomLines); ?> of <?php echo (int) $roomsNeeded; ?>)</h2>
 <?php if ($showLinePrices): ?>
-<p class="hb-room-lines-summary-intro" style="margin:0 0 12px;font-size:.95rem;opacity:.92;">Per-night prices incl. tax for rooms you already rated. Select a rate for this room below.</p>
+<p class="hb-room-lines-summary-intro" style="margin:0 0 12px;font-size:.95rem;opacity:.92;">Per-night prices <?php echo htmlspecialchars($priceIncludesTaxLabel, ENT_QUOTES, 'UTF-8'); ?> for rooms you already rated. Select a rate for this room below.</p>
 <?php endif; ?>
 <ol class="hb-room-lines-summary-list">
 <?php foreach ($roomLines as $idx => $line):
@@ -100,7 +104,7 @@ if (!function_exists('hb_portal_render_room_lines_summary')) {
         $lineOccLabel = itm_hotel_booking_portal_occupancy_line_label($lineOcc);
     }
 ?>
-<li><span class="hb-room-lines-summary-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars($lineLabel, ENT_QUOTES, 'UTF-8'); ?><?php if ($lineOccLabel !== ''): ?> <span class="hb-room-lines-summary-occ">(<?php echo htmlspecialchars($lineOccLabel, ENT_QUOTES, 'UTF-8'); ?>)</span><?php endif; ?><?php if ($lineRateLabel !== ''): ?> <span class="hb-room-lines-summary-rate">— <?php echo htmlspecialchars($lineRateLabel, ENT_QUOTES, 'UTF-8'); ?></span><?php endif; ?><?php if ($lineNightly !== null && (float) $lineNightly > 0): ?> <span class="hb-room-lines-summary-nightly">— <?php echo htmlspecialchars(hb_portal_money_format((float) $lineNightly, $currency), ENT_QUOTES, 'UTF-8'); ?> / night incl. tax</span><?php endif; ?></li>
+<li><span class="hb-room-lines-summary-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars($lineLabel, ENT_QUOTES, 'UTF-8'); ?><?php if ($lineOccLabel !== ''): ?> <span class="hb-room-lines-summary-occ">(<?php echo htmlspecialchars($lineOccLabel, ENT_QUOTES, 'UTF-8'); ?>)</span><?php endif; ?><?php if ($lineRateLabel !== ''): ?> <span class="hb-room-lines-summary-rate">— <?php echo htmlspecialchars($lineRateLabel, ENT_QUOTES, 'UTF-8'); ?></span><?php endif; ?><?php if ($lineNightly !== null && (float) $lineNightly > 0): ?> <span class="hb-room-lines-summary-nightly">— <?php echo htmlspecialchars(hb_portal_money_format((float) $lineNightly, $currency), ENT_QUOTES, 'UTF-8'); ?> / night <?php echo htmlspecialchars($priceIncludesTaxLabel, ENT_QUOTES, 'UTF-8'); ?></span><?php endif; ?></li>
 <?php endforeach; ?>
 </ol>
 </section>
@@ -131,7 +135,7 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
         $touristTax = (float) ($breakdown['tourist_tax'] ?? 0);
         $taxPerPerson = (float) ($breakdown['tourist_tax_per_person_per_night'] ?? 0);
         $total = (float) ($breakdown['total'] ?? ($roomCharges + $touristTax));
-        $taxLabel = 'Tourist tax';
+        $taxLabel = itm_hotel_booking_portal_tourist_tax_label_from_settings(hb_portal_money_settings_bound());
         if ($taxPerPerson > 0) {
             $taxLabel .= ' (' . hb_portal_money_format_decimal($taxPerPerson, $currency) . ' per person per night)';
         }
@@ -261,6 +265,8 @@ if (!function_exists('hb_portal_render_confirmation_special_requests')) {
         $hasAnimal = !empty($meta['service_animal']);
         $comments = trim((string) ($meta['guest_comments'] ?? $meta['additional_comments'] ?? ''));
         $petDailyFee = (float) ($options['pet_daily_fee'] ?? 0);
+        $petCurrency = (string) ($options['currency'] ?? 'EUR');
+        $petMaxWeightKg = (int) ($options['pet_max_weight_kg'] ?? itm_hotel_booking_portal_default_pet_max_weight_kg_from_settings(hb_portal_money_settings_bound()));
         if (!$hasPet && !$hasAnimal && $comments === '') {
             return;
         }
@@ -273,7 +279,7 @@ if (!function_exists('hb_portal_render_confirmation_special_requests')) {
 <span>Traveling with a pet</span>
 </label>
 <?php if ($petDailyFee > 0): ?>
-<p class="hb-checkout-hint">Pets allowed, <?php echo htmlspecialchars(hb_portal_money_format_decimal($petDailyFee, 'EUR'), ENT_QUOTES, 'UTF-8'); ?> non-refundable fee, 30 kg maximum, Daily Fee Applies</p>
+<p class="hb-checkout-hint">Pets allowed, <?php echo htmlspecialchars(hb_portal_money_format_decimal($petDailyFee, $petCurrency), ENT_QUOTES, 'UTF-8'); ?> non-refundable fee, <?php echo (int) $petMaxWeightKg; ?> kg maximum, Daily Fee Applies</p>
 <?php endif; ?>
 <?php endif; ?>
 <?php if ($hasAnimal): ?>
@@ -371,7 +377,11 @@ if (!function_exists('hb_portal_render_draft_special_requests_review')) {
                 $meta['room_upgrade']['title'] = $title . ' ' . $bedSummary;
             }
         }
-        hb_portal_render_confirmation_special_requests($meta, ['pet_daily_fee' => $petDailyFee]);
+        hb_portal_render_confirmation_special_requests($meta, [
+            'pet_daily_fee' => $petDailyFee,
+            'currency' => (string) ($options['currency'] ?? 'EUR'),
+            'pet_max_weight_kg' => (int) ($options['pet_max_weight_kg'] ?? itm_hotel_booking_portal_default_pet_max_weight_kg_from_settings(hb_portal_money_settings_bound())),
+        ]);
     }
 }
 
@@ -459,15 +469,15 @@ if (!function_exists('hb_portal_booking_rate_plan_label')) {
      * Guest-facing rate plan label for stored bookings (manage booking, payment confirmation).
      */
     function hb_portal_booking_rate_plan_label(array $booking) {
+        $settings = hb_portal_money_settings_bound();
         $planLabel = trim((string) ($booking['portal_rate_plan_name'] ?? ''));
         if ($planLabel === '') {
             $slug = strtolower((string) ($booking['portal_rate_plan_slug'] ?? $booking['rate_plan'] ?? ''));
-            if ($slug === 'breakfast') {
-                $planLabel = 'Breakfast included';
-            } elseif ($slug !== '' && function_exists('itm_hotel_booking_portal_rate_plan_offer')) {
-                $offer = itm_hotel_booking_portal_rate_plan_offer($slug);
-                if (is_array($offer) && trim((string) ($offer['label'] ?? '')) !== '') {
-                    $planLabel = trim((string) $offer['label']);
+            $planLabel = itm_hotel_booking_portal_plan_label_from_slug($slug, $settings, '');
+            if ($planLabel === itm_hotel_booking_portal_default_rate_label_from_settings($settings) && $slug !== '' && $slug !== 'breakfast' && function_exists('itm_hotel_booking_portal_rate_plan_offer')) {
+                $offer = itm_hotel_booking_portal_rate_plan_offer($slug, null, $settings);
+                if (is_array($offer) && trim((string) ($offer['price_label'] ?? '')) !== '') {
+                    $planLabel = trim((string) $offer['price_label']);
                 }
             }
         }
@@ -478,7 +488,7 @@ if (!function_exists('hb_portal_booking_rate_plan_label')) {
             }
         }
         if ($planLabel === '') {
-            $planLabel = 'Best available rate';
+            $planLabel = itm_hotel_booking_portal_default_rate_label_from_settings($settings);
         }
         return $planLabel;
     }
@@ -836,7 +846,11 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <?php if ($roomsNeeded === 1 && !empty($notesMeta['room_upgrade']['accepted'])): ?>
 <?php hb_portal_render_confirmation_room_upgrade($notesMeta['room_upgrade'], $currency); ?>
 <?php endif; ?>
-<?php hb_portal_render_confirmation_special_requests($notesMeta, ['pet_daily_fee' => $petDailyFee]); ?>
+<?php hb_portal_render_confirmation_special_requests($notesMeta, [
+    'pet_daily_fee' => $petDailyFee,
+    'currency' => $currency,
+    'pet_max_weight_kg' => itm_hotel_booking_portal_default_pet_max_weight_kg_from_settings(hb_portal_money_settings_bound()),
+]); ?>
 <?php if ($isCancelled): ?>
 <div class="hb-payment-confirmation-notice hb-payment-confirmation-notice--cancelled" role="status">
 <p>No further action is required. If you have questions about charges or refunds, please contact the hotel using <strong>Change booking</strong> in the sidebar.</p>

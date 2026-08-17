@@ -35,6 +35,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $touristTax = '0';
     }
     $touristTax = max(0, (float) $touristTax);
+    $portalMaxDiscount = str_replace(',', '.', trim((string) ($_POST['portal_max_discount_percent'] ?? '50')));
+    if ($portalMaxDiscount === '' || !is_numeric($portalMaxDiscount)) {
+        $portalMaxDiscount = '50';
+    }
+    $portalMaxDiscount = (float) $portalMaxDiscount;
+    if ($portalMaxDiscount < 0) {
+        $portalMaxDiscount = 0;
+    }
+    if ($portalMaxDiscount > 100) {
+        $portalMaxDiscount = 100;
+    }
+    $portalTouristTaxLabel = mb_substr(trim((string) ($_POST['portal_tourist_tax_label'] ?? 'Tourist tax')), 0, 100);
+    if ($portalTouristTaxLabel === '') {
+        $portalTouristTaxLabel = 'Tourist tax';
+    }
+    $portalPriceIncludesTaxLabel = mb_substr(trim((string) ($_POST['portal_price_includes_tax_label'] ?? 'incl. tax')), 0, 80);
+    if ($portalPriceIncludesTaxLabel === '') {
+        $portalPriceIncludesTaxLabel = 'incl. tax';
+    }
+    $portalPriceIncludesTaxLongLabel = mb_substr(trim((string) ($_POST['portal_price_includes_tax_long_label'] ?? 'incl. taxes')), 0, 80);
+    if ($portalPriceIncludesTaxLongLabel === '') {
+        $portalPriceIncludesTaxLongLabel = 'incl. taxes';
+    }
+    $portalDefaultRateLabel = mb_substr(trim((string) ($_POST['portal_default_rate_label'] ?? 'Best available rate')), 0, 120);
+    if ($portalDefaultRateLabel === '') {
+        $portalDefaultRateLabel = 'Best available rate';
+    }
+    $portalBreakfastRateLabel = mb_substr(trim((string) ($_POST['portal_breakfast_rate_label'] ?? 'Breakfast included')), 0, 120);
+    if ($portalBreakfastRateLabel === '') {
+        $portalBreakfastRateLabel = 'Breakfast included';
+    }
+    $portalDefaultPetMaxWeightKg = (int) ($_POST['portal_default_pet_max_weight_kg'] ?? 30);
+    if ($portalDefaultPetMaxWeightKg < 1) {
+        $portalDefaultPetMaxWeightKg = 1;
+    }
+    if ($portalDefaultPetMaxWeightKg > 200) {
+        $portalDefaultPetMaxWeightKg = 200;
+    }
     $freeCancelDays = (int) ($_POST['free_cancellation_days_before_check_in'] ?? 5);
     if ($freeCancelDays < 0) {
         $freeCancelDays = 0;
@@ -158,9 +196,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $sid = (int) ($row['id'] ?? 0);
     if (empty($errors)) {
-    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, stripe_enabled = ?, stripe_mode = ?, stripe_publishable_key = ?, stripe_secret_key_encrypted = ?, stripe_webhook_signing_secret_encrypted = ?, deposit_percent = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, portal_complimentary_min_rooms_paid = ?, portal_complimentary_rooms_free = ?, portal_confirmation_email_guest = ?, portal_confirmation_email_reservations = ?, portal_show_room_number_on_confirmation = ?, portal_hide_upgrade_upsell_when_multi_room = ?, portal_money_symbol = ?, portal_money_symbol_suffix = ?, portal_money_symbol_prefix = ?, portal_show_internal_rates = ?, portal_date_format = ?, portal_time_format = ?, portal_datetime_european1_enabled = ?, portal_datetime_european2_enabled = ?, portal_datetime_iso_enabled = ?, portal_datetime_readable_enabled = ?, portal_datetime_format_default = ?, portal_accessible_banner_enabled = ?, portal_accessibility_options_enabled = ?, urlaccessibilitypep = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
+    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, stripe_enabled = ?, stripe_mode = ?, stripe_publishable_key = ?, stripe_secret_key_encrypted = ?, stripe_webhook_signing_secret_encrypted = ?, deposit_percent = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, portal_max_discount_percent = ?, portal_tourist_tax_label = ?, portal_price_includes_tax_label = ?, portal_price_includes_tax_long_label = ?, portal_default_rate_label = ?, portal_breakfast_rate_label = ?, portal_default_pet_max_weight_kg = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, portal_complimentary_min_rooms_paid = ?, portal_complimentary_rooms_free = ?, portal_confirmation_email_guest = ?, portal_confirmation_email_reservations = ?, portal_show_room_number_on_confirmation = ?, portal_hide_upgrade_upsell_when_multi_room = ?, portal_money_symbol = ?, portal_money_symbol_suffix = ?, portal_money_symbol_prefix = ?, portal_show_internal_rates = ?, portal_date_format = ?, portal_time_format = ?, portal_datetime_european1_enabled = ?, portal_datetime_european2_enabled = ?, portal_datetime_iso_enabled = ?, portal_datetime_readable_enabled = ?, portal_datetime_format_default = ?, portal_accessible_banner_enabled = ?, portal_accessibility_options_enabled = ?, urlaccessibilitypep = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
     if ($upd) {
-        mysqli_stmt_bind_param($upd, 'iisssdssssssdiiiiiiiiiiisiiissiiiisssiisiii', $enabled, $stripeEnabled, $stripeMode, $stripePublishableKey, $stripeSecretEnc, $stripeWebhookEnc, $depositPercent, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $complimentaryMinRooms, $complimentaryRoomsFree, $confirmEmailGuest, $confirmEmailReservations, $showRoomNumberOnConfirmation, $hideUpgradeUpsellMultiRoom, $moneySymbol, $moneySymbolSuffix, $moneySymbolPrefix, $showInternalRates, $portalDateFormat, $portalTimeFormat, $dtEuropean1, $dtEuropean2, $dtIso, $dtReadable, $dtDefault, $portalAccessibleBanner, $portalAccessibilityOptions, $urlaccessibilitypep, $urlmybooking, $employee_id, $sid, $company_id);
+        mysqli_stmt_bind_param($upd, 'iisssdssssssddsssssiiiiiiiiiiiisiiissiiiisssiisiii', $enabled, $stripeEnabled, $stripeMode, $stripePublishableKey, $stripeSecretEnc, $stripeWebhookEnc, $depositPercent, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $portalMaxDiscount, $portalTouristTaxLabel, $portalPriceIncludesTaxLabel, $portalPriceIncludesTaxLongLabel, $portalDefaultRateLabel, $portalBreakfastRateLabel, $portalDefaultPetMaxWeightKg, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $complimentaryMinRooms, $complimentaryRoomsFree, $confirmEmailGuest, $confirmEmailReservations, $showRoomNumberOnConfirmation, $hideUpgradeUpsellMultiRoom, $moneySymbol, $moneySymbolSuffix, $moneySymbolPrefix, $showInternalRates, $portalDateFormat, $portalTimeFormat, $dtEuropean1, $dtEuropean2, $dtIso, $dtReadable, $dtDefault, $portalAccessibleBanner, $portalAccessibilityOptions, $urlaccessibilitypep, $urlmybooking, $employee_id, $sid, $company_id);
         mysqli_stmt_execute($upd);
         mysqli_stmt_close($upd);
         header('Location: index.php?saved=1');
@@ -252,6 +290,38 @@ itm_hospitality_admin_layout_begin($crud_title);
 <label>Tourist tax (per person per night)</label>
 <input type="text" name="tourist_tax_per_person_per_night" class="form-control" inputmode="decimal" placeholder="2.00" value="<?php echo sanitize(number_format((float) ($row['tourist_tax_per_person_per_night'] ?? 0), 2, '.', '')); ?>">
 <p class="text-muted" style="font-size:.85rem;margin-top:4px;">Added to portal checkout totals (steps 3–4) for adults and children.</p>
+</div>
+<div class="form-group">
+<label>Maximum discount / surcharge (%)</label>
+<input type="text" name="portal_max_discount_percent" class="form-control" inputmode="decimal" value="<?php echo sanitize(number_format((float) ($row['portal_max_discount_percent'] ?? 50), 2, '.', '')); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Caps combined special + plan discounts and plan surcharges on the guest portal (default 50).</p>
+</div>
+<div class="form-group">
+<label>Tourist tax label (checkout)</label>
+<input type="text" name="portal_tourist_tax_label" class="form-control" maxlength="100" value="<?php echo sanitize((string) ($row['portal_tourist_tax_label'] ?? 'Tourist tax')); ?>">
+</div>
+<div class="form-group">
+<label>Price includes tax — short label</label>
+<input type="text" name="portal_price_includes_tax_label" class="form-control" maxlength="80" value="<?php echo sanitize((string) ($row['portal_price_includes_tax_label'] ?? 'incl. tax')); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Shown beside From prices on hotel cards and room rates.</p>
+</div>
+<div class="form-group">
+<label>Price includes tax — long label</label>
+<input type="text" name="portal_price_includes_tax_long_label" class="form-control" maxlength="80" value="<?php echo sanitize((string) ($row['portal_price_includes_tax_long_label'] ?? 'incl. taxes')); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Used in Select Dates calendar summary.</p>
+</div>
+<div class="form-group">
+<label>Default rate label (BAR)</label>
+<input type="text" name="portal_default_rate_label" class="form-control" maxlength="120" value="<?php echo sanitize((string) ($row['portal_default_rate_label'] ?? 'Best available rate')); ?>">
+</div>
+<div class="form-group">
+<label>Breakfast rate label</label>
+<input type="text" name="portal_breakfast_rate_label" class="form-control" maxlength="120" value="<?php echo sanitize((string) ($row['portal_breakfast_rate_label'] ?? 'Breakfast included')); ?>">
+</div>
+<div class="form-group">
+<label>Default pet max weight (kg)</label>
+<input type="number" name="portal_default_pet_max_weight_kg" class="form-control" min="1" max="200" step="1" value="<?php echo (int) ($row['portal_default_pet_max_weight_kg'] ?? 30); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Checkout pet hint when the room type has no <code>pet_max_weight_kg</code>.</p>
 </div>
 <div class="form-group">
 <label>Free cancellation days before check-in</label>

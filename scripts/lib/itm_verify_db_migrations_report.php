@@ -613,6 +613,23 @@ if (!function_exists('itm_verify_db_migrations_probe_custom')) {
             );
         }
 
+        if ($filename === 'hotel_booking_portal_money_tax_labels.sql') {
+            $ok = itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_max_discount_percent')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_tourist_tax_label')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_default_pet_max_weight_kg')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_hotels', 'portal_breakfast_child_age_min')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_hotels', 'portal_breakfast_child_age_max');
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'fail',
+                $ok ? 'Applied' : 'Not applied',
+                $ok
+                    ? 'Portal money/tax label settings and hotel breakfast child age columns present.'
+                    : 'Missing portal money/tax columns — apply migration or fresh db/ import.'
+            );
+        }
+
         if ($filename === 'news_module_registry.sql') {
             $newsRows = itm_verify_db_migrations_scalar_count(
                 $conn,
