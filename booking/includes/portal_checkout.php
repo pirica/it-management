@@ -36,11 +36,12 @@ if (!function_exists('hb_portal_render_checkout_stepper')) {
         $activeStep = max(1, min(4, (int) $activeStep));
         $roomLabel = trim((string) ($context['room_label'] ?? 'Your room'));
         $changeRoomUrl = (string) ($context['change_room_url'] ?? '');
+        $portalSettings = is_array($context['settings'] ?? null) ? $context['settings'] : hb_portal_money_settings_bound();
         $steps = [
             1 => ['slug' => 'room', 'label' => $roomLabel, 'change_url' => $changeRoomUrl],
-            2 => ['slug' => 'rate', 'label' => 'Select a Rate'],
-            3 => ['slug' => 'customize', 'label' => 'Customize Your Stay'],
-            4 => ['slug' => 'payment', 'label' => 'Payment and Guest Details'],
+            2 => ['slug' => 'rate', 'label' => itm_hotel_booking_portal_step_label_from_settings($portalSettings, 'rate', 'Select a Rate')],
+            3 => ['slug' => 'customize', 'label' => itm_hotel_booking_portal_step_label_from_settings($portalSettings, 'customize', 'Customize Your Stay')],
+            4 => ['slug' => 'payment', 'label' => itm_hotel_booking_portal_step_label_from_settings($portalSettings, 'payment', 'Payment and Guest Details')],
         ];
         ?>
 <nav class="hb-checkout-stepper" aria-label="Booking progress">
@@ -1005,13 +1006,10 @@ if (!function_exists('hb_portal_draft_cancellation_policy_url')) {
         if ($planId > 0) {
             $planRow = itm_hotel_booking_portal_rate_plan_row_by_id($conn, $companyId, $planId);
             if ($planRow) {
-                $url = itm_hotel_booking_normalize_cancellation_policy_url($planRow['cancellation_policy_url'] ?? '');
-                if ($url !== '') {
-                    return $url;
-                }
                 $slug = (string) ($planRow['rate_plan_slug'] ?? '');
-                if ($slug !== '') {
-                    return itm_hotel_booking_portal_resolve_cancellation_policy_url($conn, $companyId, (int) ($planRow['hotel_id'] ?? $hotelId), $slug);
+                $planHotelId = (int) ($planRow['hotel_id'] ?? $hotelId);
+                if ($slug !== '' && $planHotelId > 0) {
+                    return itm_hotel_booking_portal_cancellation_policy_guest_url($companyId, $planHotelId, $slug);
                 }
             }
         }
@@ -1141,12 +1139,8 @@ if (!function_exists('hb_portal_hotel_contacts_from_hotel_row')) {
 
 if (!function_exists('hb_portal_hotel_directions_url')) {
     function hb_portal_hotel_directions_url($location) {
-        $location = trim((string) $location);
-        if ($location === '') {
-            return '';
-        }
-
-        return 'https://maps.google.com/?q=' . rawurlencode($location);
+        $settings = hb_portal_money_settings_bound();
+        return itm_hotel_booking_portal_maps_url($location, $settings);
     }
 }
 

@@ -23,6 +23,8 @@ $company_id = (int) ($hotel['company_id'] ?? hb_public_company_id($conn));
 hb_require_company_public_portal($conn, $company_id);
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 hb_portal_bind_money_settings($settings);
+$occupancyLimits = itm_hotel_booking_portal_occupancy_limits($settings, $conn, $company_id, $hotelId);
+$occupancy = itm_hotel_booking_portal_parse_occupancy($_GET, $occupancyLimits);
 $internalRateFromGuest = itm_hotel_booking_portal_parse_internal_rate_code($_GET, $settings);
 if ($internalRateFromGuest !== '') {
     $occupancy['internal_rate_code'] = $internalRateFromGuest;
@@ -136,11 +138,6 @@ $amenityNames = array_map(function ($row) {
     return $row['name'];
 }, $amenityRows);
 
-$typeDefaultImages = [
-    'DLX' => '/images/room-5.jpg',
-    'SUP' => '/images/room-6.jpg',
-    'STD' => '/images/room-3.jpg',
-];
 
 $rooms = [];
 $sql = 'SELECT r.*, COALESCE(bp.price_per_night, 0.00) AS price_per_night, t.name AS type_name, t.code AS type_code, t.description AS type_description,
@@ -198,7 +195,7 @@ foreach ($rooms as $room) {
 
     if (!isset($cards[$typeKey])) {
         $code = strtoupper((string) ($room['type_code'] ?? ''));
-        $fallbackImg = APPURL . ($typeDefaultImages[$code] ?? '/images/room-5.jpg');
+        $fallbackImg = itm_hotel_booking_portal_room_fallback_image_url($code, $settings, APPURL);
         $photoUrls = hb_portal_room_type_photo_urls($conn, $company_id, $hotelId, $typeKey, $fallbackImg);
         $imgUrl = $photoUrls[0] ?? $fallbackImg;
         $bullets = [];
@@ -361,7 +358,7 @@ foreach ($cardList as $c) {
     }
 }
 
-$mapsUrl = 'https://maps.google.com/?q=' . rawurlencode((string) ($hotel['location'] ?? ''));
+$mapsUrl = itm_hotel_booking_portal_maps_url((string) ($hotel['location'] ?? ''), $settings);
 $hotelDetailsUrl = APPURL . '/?hotel=' . $hotelId;
 $reviewsUrl = itm_hotel_booking_resolve_reviews_url($hotel, $settings);
 $occupancyLabel = itm_hotel_booking_portal_occupancy_label($occupancy);
@@ -552,7 +549,7 @@ $showAccessibleBanner = itm_hotel_booking_portal_accessible_banner_enabled_from_
 
 <div class="hb-honors-banner">
 <span aria-hidden="true">💡</span>
-<span>Book direct for the best available rate and flexible stay options.</span>
+<span><?php echo htmlspecialchars(itm_hotel_booking_portal_direct_book_banner_text_from_settings($settings), ENT_QUOTES, 'UTF-8'); ?></span>
 </div>
 <?php if ($showAccessibleBanner): ?>
 <div class="hb-rate-info-banner hb-accessible-room-banner" role="note">
@@ -675,10 +672,10 @@ echo hb_portal_render_image_gallery(
 <div class="hb-modal-card hb-portal-modal-card">
 <button type="button" class="hb-modal-close" data-hb-modal-close="hb-occupancy-modal" title="Close">✖</button>
 <h2 id="hb-occupancy-title">Rooms and guests</h2>
-<div class="hb-stepper-row"><span>Rooms</span><div class="hb-stepper"><button type="button" id="hb-occ-rooms-minus">−</button><input id="hb-occ-rooms" type="number" min="1" max="4" value="<?php echo (int) $occupancy['rooms']; ?>" readonly><button type="button" id="hb-occ-rooms-plus">+</button></div></div>
-<div class="hb-stepper-row"><span>Adults</span><div class="hb-stepper"><button type="button" id="hb-occ-adults-minus">−</button><input id="hb-occ-adults" type="number" min="1" max="12" value="<?php echo (int) $occupancy['adults']; ?>" readonly><button type="button" id="hb-occ-adults-plus">+</button></div></div>
-<div class="hb-stepper-row"><span>Children</span><div class="hb-stepper"><button type="button" id="hb-occ-children-minus">−</button><input id="hb-occ-children" type="number" min="0" max="6" value="<?php echo (int) $occupancy['children']; ?>" readonly><button type="button" id="hb-occ-children-plus">+</button></div></div>
-<div class="hb-stepper-row"><span>Babies</span><div class="hb-stepper"><button type="button" id="hb-occ-babies-minus">−</button><input id="hb-occ-babies" type="number" min="0" max="3" value="<?php echo (int) $occupancy['babies']; ?>" readonly><button type="button" id="hb-occ-babies-plus">+</button></div></div>
+<div class="hb-stepper-row"><span>Rooms</span><div class="hb-stepper"><button type="button" id="hb-occ-rooms-minus">−</button><input id="hb-occ-rooms" type="number" min="1" max="<?php echo (int) $occupancyLimits['rooms']; ?>" value="<?php echo (int) $occupancy['rooms']; ?>" readonly><button type="button" id="hb-occ-rooms-plus">+</button></div></div>
+<div class="hb-stepper-row"><span>Adults</span><div class="hb-stepper"><button type="button" id="hb-occ-adults-minus">−</button><input id="hb-occ-adults" type="number" min="1" max="<?php echo (int) $occupancyLimits['adults']; ?>" value="<?php echo (int) $occupancy['adults']; ?>" readonly><button type="button" id="hb-occ-adults-plus">+</button></div></div>
+<div class="hb-stepper-row"><span>Children</span><div class="hb-stepper"><button type="button" id="hb-occ-children-minus">−</button><input id="hb-occ-children" type="number" min="0" max="<?php echo (int) $occupancyLimits['children']; ?>" value="<?php echo (int) $occupancy['children']; ?>" readonly><button type="button" id="hb-occ-children-plus">+</button></div></div>
+<div class="hb-stepper-row"><span>Babies</span><div class="hb-stepper"><button type="button" id="hb-occ-babies-minus">−</button><input id="hb-occ-babies" type="number" min="0" max="<?php echo (int) $occupancyLimits['babies']; ?>" value="<?php echo (int) $occupancy['babies']; ?>" readonly><button type="button" id="hb-occ-babies-plus">+</button></div></div>
 <p class="hb-modal-note">Prices update for extra adults (beyond 2 per room), children, and number of rooms.</p>
 <button type="button" class="hb-btn hb-btn-primary" id="hb-occupancy-apply" title="Apply">Apply</button>
 </div>
@@ -763,6 +760,7 @@ echo hb_portal_render_image_gallery(
 <script>
 window.HB_SELECT_ROOM = <?php echo json_encode(array_merge([
     'occupancy' => $occupancy,
+    'occupancyLimits' => $occupancyLimits,
     'cardQuoteOccupancy' => $cardQuoteOccupancy,
     'occupancyLabel' => $occupancyLabel,
     'discountPercent' => $discountPercent,
@@ -771,7 +769,7 @@ window.HB_SELECT_ROOM = <?php echo json_encode(array_merge([
     'cheapestRateLabel' => itm_hotel_booking_portal_plan_label_from_slug((string) ($cheapestOffer['slug'] ?? ''), $settings, (string) ($cheapestOffer['price_label'] ?? '')),
     'resolvedRateSlug' => $resolvedRateSlug,
     'rateDiscountPercents' => $rateDiscountMap,
-    'currencySymbol' => ($currency === 'EUR' ? '€' : $currency . ' '),
+    'currencySymbol' => itm_hotel_booking_portal_money_format_options_from_settings($settings)['symbol'],
     'portalPricing' => $portalPricing,
     'pricingDefaults' => itm_hotel_booking_portal_pricing_defaults(),
     'touristTaxPerPersonPerNight' => $touristTaxRate,

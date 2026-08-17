@@ -225,14 +225,28 @@
     return Math.round(rate * guests * 100) / 100;
   }
 
+  function occupancyLimitsFromCfg() {
+    var limits = cfg.occupancyLimits || {};
+    return {
+      rooms: parseInt(limits.rooms, 10) > 0 ? parseInt(limits.rooms, 10) : 4,
+      adults: parseInt(limits.adults, 10) > 0 ? parseInt(limits.adults, 10) : 12,
+      children: parseInt(limits.children, 10) >= 0 ? parseInt(limits.children, 10) : 6,
+      babies: parseInt(limits.babies, 10) >= 0 ? parseInt(limits.babies, 10) : 3
+    };
+  }
+
   function quoteNightlyUndiscounted(base, cardEl) {
     var occ = cardQuoteOccupancy();
     var pricing = portalPricing();
-    var rooms = Math.max(1, Math.min(4, occ.rooms));
-    var adults = Math.max(1, Math.min(12, occ.adults));
-    var children = Math.max(0, Math.min(6, occ.children));
+    var limits = occupancyLimitsFromCfg();
+    var rooms = Math.max(1, Math.min(limits.rooms, occ.rooms));
+    var adults = Math.max(1, Math.min(limits.adults, occ.adults));
+    var children = Math.max(0, Math.min(limits.children, occ.children));
     var baseF = parseFloat(base) || 0;
-    var includedPerRoom = 2;
+    var includedPerRoom = parseInt(cfg.default_included_adults_per_room, 10);
+    if (isNaN(includedPerRoom) || includedPerRoom < 1) {
+      includedPerRoom = 2;
+    }
     if (cardEl && cardEl.getAttribute) {
       var rawIncluded = parseInt(cardEl.getAttribute('data-included-adults-per-room'), 10);
       if (!isNaN(rawIncluded) && rawIncluded > 0) {
@@ -478,10 +492,11 @@
     }
   }
 
-  bindStepper('hb-occ-rooms-minus', 'hb-occ-rooms-plus', 'hb-occ-rooms', 1, 4);
-  bindStepper('hb-occ-adults-minus', 'hb-occ-adults-plus', 'hb-occ-adults', 1, 12);
-  bindStepper('hb-occ-children-minus', 'hb-occ-children-plus', 'hb-occ-children', 0, 6);
-  bindStepper('hb-occ-babies-minus', 'hb-occ-babies-plus', 'hb-occ-babies', 0, 3);
+  var occLimits = occupancyLimitsFromCfg();
+  bindStepper('hb-occ-rooms-minus', 'hb-occ-rooms-plus', 'hb-occ-rooms', 1, occLimits.rooms);
+  bindStepper('hb-occ-adults-minus', 'hb-occ-adults-plus', 'hb-occ-adults', 1, occLimits.adults);
+  bindStepper('hb-occ-children-minus', 'hb-occ-children-plus', 'hb-occ-children', 0, occLimits.children);
+  bindStepper('hb-occ-babies-minus', 'hb-occ-babies-plus', 'hb-occ-babies', 0, occLimits.babies);
 
   var occApply = document.getElementById('hb-occupancy-apply');
   if (occApply) {

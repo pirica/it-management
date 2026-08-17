@@ -50,7 +50,7 @@ sequenceDiagram
 | Piece | Role |
 |-------|------|
 | `booking/bootstrap.php` | Session, `ITM_HOTEL_BOOKING_PUBLIC_PORTAL`, `APPURL`, `hb_public_company_id()`, `hb_load_active_hotel_row()` |
-| `hb_public_company_id()` | Welcome copy / default portal tenant (session `company_id` or first `public_portal_enabled` among companies 1–5) |
+| `hb_public_company_id()` | Welcome copy / default portal tenant (session `company_id` or first `public_portal_enabled` row in `hotel_booking_settings`, fallback company 1) |
 | `hb_company_public_portal_enabled()` / `hb_require_company_public_portal()` | Hard gate: browse/book and calendar JSON require the hotel’s company `public_portal_enabled`; home list skips disabled tenants |
 | `itm_hotel_booking_portal_insert_booking_locked()` | Step 4 create: room row `FOR UPDATE` + overlap re-check + INSERT in one transaction; multi-room uses nested locks inside `insert_stay_bookings_locked()` outer transaction |
 | `itm_hotel_booking_portal_manage_rate_limit_check()` / `_record()` | Session throttle for manage lookup/cancel POSTs |

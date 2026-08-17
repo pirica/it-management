@@ -21,6 +21,7 @@ ITM_SCRIPT_BROWSER_HOW_TO_USE;
 
 define('ITM_CLI_SCRIPT', true);
 require_once dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/lib/itm_verify_db_migrations_report.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 
 itm_script_output_begin('Hotel booking verification');
@@ -345,7 +346,7 @@ if (abs(itm_hotel_booking_portal_price_incl_tourist_tax(75.0, 2.0, ['rooms' => 1
 }
 
 require_once dirname(__DIR__) . '/booking/includes/portal_chrome.php';
-hb_portal_bind_money_settings(['portal_money_symbol' => 'EUR', 'portal_money_symbol_suffix' => 1]);
+hb_portal_bind_money_settings(['portal_money_symbol' => 'EUR', 'portal_money_symbol_suffix' => 0, 'portal_money_symbol_prefix' => 1]);
 if (hb_portal_money_format(69.5, 'EUR') === '€69.50' && hb_portal_money_format(77.0, 'EUR') === '€77') {
     hb_pass('portal money format keeps NR cents (69.50) without rounding to 70');
 } else {
@@ -588,7 +589,7 @@ if ($ratePlanParsed === 'breakfast') {
 }
 
 $policyUrl = itm_hotel_booking_portal_resolve_cancellation_policy_url($conn, 1, 1, 'room_only');
-if ($policyUrl !== '' && strpos($policyUrl, '1_cancellation_policy.html') !== false) {
+if ($policyUrl !== '' && strpos($policyUrl, 'cancellation-policy.php') !== false && strpos($policyUrl, 'slug=room_only') !== false) {
     hb_pass('resolve cancellation policy url room_only');
 } else {
     hb_fail('resolve cancellation policy url room_only got ' . $policyUrl);
@@ -1922,6 +1923,67 @@ if (strpos($hbFormSrc, 'internal_rate_code') !== false
     hb_pass('admin booking form + portal internal rates + date format JS wiring');
 } else {
     hb_fail('admin booking form + portal internal rates + date format JS wiring missing');
+}
+
+$bootstrapSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/bootstrap.php');
+if (strpos($bootstrapSrc, 'for ($i = 1; $i <= 5') === false
+    && strpos($bootstrapSrc, 'public_portal_enabled = 1') !== false) {
+    hb_pass('hb_public_company_id scans enabled portal settings (no companies 1-5 cap)');
+} else {
+    hb_fail('hb_public_company_id still uses hardcoded company loop or missing SQL scan');
+}
+
+$displayColsOk = itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_maps_base_url')
+    && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_calendar_month_horizon')
+    && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_occupancy_max_rooms')
+    && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_default_included_adults_per_room');
+if ($displayColsOk) {
+    hb_pass('portal display config schema columns');
+} else {
+    hb_fail('portal display config schema columns missing — apply hotel_booking_portal_display_config.sql');
+}
+
+$mapsTest = itm_hotel_booking_portal_maps_url('Lisbon', ['portal_maps_base_url' => 'https://example.test/?q=']);
+if (strpos($mapsTest, 'https://example.test/?q=') === 0 && strpos($mapsTest, 'Lisbon') !== false) {
+    hb_pass('portal maps URL builder');
+} else {
+    hb_fail('portal maps URL builder');
+}
+
+$fallbackImg = itm_hotel_booking_portal_room_fallback_image_url('DLX', [
+    'portal_room_type_code_fallback_json' => '{"DLX":"/images/room-5.jpg"}',
+    'portal_default_room_image_url' => '/images/room-9.jpg',
+], 'http://localhost/it-management/booking');
+if (strpos($fallbackImg, 'room-5.jpg') !== false) {
+    hb_pass('portal room fallback image helper (code JSON)');
+} else {
+    hb_fail('portal room fallback image helper (code JSON)');
+}
+
+$occParsed = itm_hotel_booking_portal_parse_occupancy(['rooms' => 99, 'adults' => 99, 'children' => 99], ['rooms' => 2, 'adults' => 4, 'children' => 1, 'babies' => 0]);
+if ((int) ($occParsed['rooms'] ?? 0) === 2 && (int) ($occParsed['adults'] ?? 0) === 4 && (int) ($occParsed['children'] ?? 0) === 1) {
+    hb_pass('portal parse_occupancy respects injected limits');
+} else {
+    hb_fail('portal parse_occupancy respects injected limits');
+}
+
+$guestPolicyUrl = itm_hotel_booking_portal_cancellation_policy_guest_url(1, 1, 'room_only');
+if (strpos($guestPolicyUrl, 'cancellation-policy.php') !== false
+    && strpos($guestPolicyUrl, 'company_id=1') !== false
+    && strpos($guestPolicyUrl, 'slug=room_only') !== false) {
+    hb_pass('cancellation policy guest endpoint URL helper');
+} else {
+    hb_fail('cancellation policy guest endpoint URL helper');
+}
+
+if (strpos($settingsIndexSrc, 'portal_maps_base_url') !== false
+    && strpos($settingsIndexSrc, 'portal_occupancy_max_adults') !== false
+    && strpos($selectRoomJsSrc, 'occupancyLimitsFromCfg') !== false
+    && strpos((string) @file_get_contents(dirname(__DIR__) . '/booking/js/hotel-booking-dates.js'), 'calendar_month_horizon') !== false
+    && is_file(dirname(__DIR__) . '/booking/cancellation-policy.php')) {
+    hb_pass('portal display config admin + portal JS/endpoint wiring');
+} else {
+    hb_fail('portal display config admin + portal JS/endpoint wiring');
 }
 
 itm_script_output_end();

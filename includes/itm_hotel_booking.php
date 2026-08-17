@@ -1141,11 +1141,18 @@ if (!function_exists('itm_hotel_booking_portal_parse_bool_param')) {
 }
 
 if (!function_exists('itm_hotel_booking_portal_parse_occupancy')) {
-  function itm_hotel_booking_portal_parse_occupancy(array $source) {
-    $rooms = max(1, min(4, (int) ($source['rooms'] ?? 1)));
-    $adults = max(1, min(12, (int) ($source['adults'] ?? 1)));
-    $children = max(0, min(6, (int) ($source['children'] ?? 0)));
-    $babies = max(0, min(3, (int) ($source['babies'] ?? 0)));
+  function itm_hotel_booking_portal_parse_occupancy(array $source, array $limits = null) {
+    if ($limits === null) {
+      $limits = itm_hotel_booking_portal_default_occupancy_limits();
+    }
+    $maxRooms = max(1, (int) ($limits['rooms'] ?? 4));
+    $maxAdults = max(1, (int) ($limits['adults'] ?? 12));
+    $maxChildren = max(0, (int) ($limits['children'] ?? 6));
+    $maxBabies = max(0, (int) ($limits['babies'] ?? 3));
+    $rooms = max(1, min($maxRooms, (int) ($source['rooms'] ?? 1)));
+    $adults = max(1, min($maxAdults, (int) ($source['adults'] ?? 1)));
+    $children = max(0, min($maxChildren, (int) ($source['children'] ?? 0)));
+    $babies = max(0, min($maxBabies, (int) ($source['babies'] ?? 0)));
     $rateSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($source['rate'] ?? '')));
     $occupancy = [
       'rooms' => $rooms,
@@ -1589,20 +1596,7 @@ if (!function_exists('itm_hotel_booking_portal_resolve_cancellation_policy_url')
     if ($companyId < 1 || $hotelId < 1) {
       return itm_hotel_booking_portal_default_cancellation_policy_path($ratePlanSlug);
     }
-    itm_hotel_booking_ensure_portal_rate_plans_for_hotel($conn, $companyId, $hotelId);
-    $stmt = mysqli_prepare($conn, 'SELECT cancellation_policy_url FROM hotel_booking_portal_rate_plans WHERE company_id = ? AND hotel_id = ? AND rate_plan_slug = ? AND deleted_at IS NULL AND active = 1 LIMIT 1');
-    if ($stmt) {
-      mysqli_stmt_bind_param($stmt, 'iis', $companyId, $hotelId, $ratePlanSlug);
-      mysqli_stmt_execute($stmt);
-      $res = mysqli_stmt_get_result($stmt);
-      $row = $res ? mysqli_fetch_assoc($res) : null;
-      mysqli_stmt_close($stmt);
-      $url = itm_hotel_booking_normalize_cancellation_policy_url($row['cancellation_policy_url'] ?? '');
-      if ($url !== '') {
-        return $url;
-      }
-    }
-    return itm_hotel_booking_portal_default_cancellation_policy_path($ratePlanSlug);
+    return itm_hotel_booking_portal_cancellation_policy_guest_url($companyId, $hotelId, $ratePlanSlug);
   }
 }
 
@@ -5782,6 +5776,31 @@ if (!function_exists('itm_hotel_booking_portal_rate_plan_row_by_id')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_rate_plan_row_by_slug')) {
+  function itm_hotel_booking_portal_rate_plan_row_by_slug($conn, $companyId, $hotelId, $ratePlanSlug) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $ratePlanSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) $ratePlanSlug));
+    if ($ratePlanSlug === '') {
+      $ratePlanSlug = 'room_only';
+    }
+    if ($companyId < 1 || $hotelId < 1) {
+      return null;
+    }
+    itm_hotel_booking_ensure_portal_rate_plans_for_hotel($conn, $companyId, $hotelId);
+    $stmt = mysqli_prepare($conn, 'SELECT p.*, h.name AS hotel_name FROM hotel_booking_portal_rate_plans p INNER JOIN hotel_booking_hotels h ON h.id = p.hotel_id AND h.company_id = p.company_id WHERE p.company_id = ? AND p.hotel_id = ? AND p.rate_plan_slug = ? AND p.deleted_at IS NULL AND p.active = 1 LIMIT 1');
+    if (!$stmt) {
+      return null;
+    }
+    mysqli_stmt_bind_param($stmt, 'iis', $companyId, $hotelId, $ratePlanSlug);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    return $row ?: null;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_rate_plan_hard_delete')) {
   function itm_hotel_booking_portal_rate_plan_hard_delete($conn, $companyId, $planId) {
     $companyId = (int) $companyId;
@@ -6548,6 +6567,263 @@ if (!function_exists('itm_hotel_booking_portal_default_pet_max_weight_kg_from_se
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_default_room_type_code_fallback_json')) {
+  function itm_hotel_booking_portal_default_room_type_code_fallback_json() {
+    return '{"DLX":"/images/room-5.jpg","STD":"/images/room-3.jpg","SUP":"/images/room-6.jpg"}';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_maps_base_url_from_settings')) {
+  function itm_hotel_booking_portal_maps_base_url_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $url = trim((string) ($settings['portal_maps_base_url'] ?? 'https://maps.google.com/?q='));
+    return $url !== '' ? $url : 'https://maps.google.com/?q=';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_maps_url')) {
+  function itm_hotel_booking_portal_maps_url($location, $settings) {
+    $location = trim((string) $location);
+    if ($location === '') {
+      return '';
+    }
+    $base = itm_hotel_booking_portal_maps_base_url_from_settings($settings);
+    if (strpos($base, '{location}') !== false) {
+      return str_replace('{location}', rawurlencode($location), $base);
+    }
+    if (preg_match('#[?&]q=$#', $base) || substr($base, -1) === '=') {
+      return $base . rawurlencode($location);
+    }
+    if (strpos($base, '?') !== false) {
+      return rtrim($base, '&') . '&q=' . rawurlencode($location);
+    }
+    return rtrim($base, '/') . '/' . rawurlencode($location);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_calendar_month_horizon_from_settings')) {
+  function itm_hotel_booking_portal_calendar_month_horizon_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $n = (int) ($settings['portal_calendar_month_horizon'] ?? 14);
+    if ($n < 1) {
+      return 1;
+    }
+    if ($n > 36) {
+      return 36;
+    }
+    return $n;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_phone_example_from_settings')) {
+  function itm_hotel_booking_portal_phone_example_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $phone = trim((string) ($settings['portal_phone_example'] ?? '+351912345678'));
+    return $phone !== '' ? $phone : '+351912345678';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_direct_book_banner_text_from_settings')) {
+  function itm_hotel_booking_portal_direct_book_banner_text_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $text = trim((string) ($settings['portal_direct_book_banner_text'] ?? 'Book direct for the best available rate and flexible stay options.'));
+    return $text !== '' ? $text : 'Book direct for the best available rate and flexible stay options.';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_rating_title_from_settings')) {
+  function itm_hotel_booking_portal_rating_title_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $text = trim((string) ($settings['portal_rating_title'] ?? 'Guest rating'));
+    return $text !== '' ? $text : 'Guest rating';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_rating_subtitle_from_settings')) {
+  function itm_hotel_booking_portal_rating_subtitle_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $text = (string) ($settings['portal_rating_subtitle'] ?? ' — based on recent stays');
+    return $text !== '' ? $text : ' — based on recent stays';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_step_label_from_settings')) {
+  function itm_hotel_booking_portal_step_label_from_settings($settings, $key, $fallback) {
+    $settings = is_array($settings) ? $settings : [];
+    $column = 'portal_step_label_' . preg_replace('/[^a-z_]/', '', (string) $key);
+    $text = trim((string) ($settings[$column] ?? ''));
+    if ($text !== '') {
+      return $text;
+    }
+    $fallback = trim((string) $fallback);
+    return $fallback !== '' ? $fallback : '';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_default_room_image_path_from_settings')) {
+  function itm_hotel_booking_portal_default_room_image_path_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $path = trim((string) ($settings['portal_default_room_image_url'] ?? '/images/room-5.jpg'));
+    if ($path === '') {
+      return '/images/room-5.jpg';
+    }
+    if (preg_match('#^https?://#i', $path)) {
+      return $path;
+    }
+    return '/' . ltrim(str_replace('\\', '/', $path), '/');
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_type_code_fallback_map_from_settings')) {
+  function itm_hotel_booking_portal_room_type_code_fallback_map_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $raw = trim((string) ($settings['portal_room_type_code_fallback_json'] ?? ''));
+    if ($raw === '') {
+      $raw = itm_hotel_booking_portal_default_room_type_code_fallback_json();
+    }
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded)) {
+      $decoded = json_decode(itm_hotel_booking_portal_default_room_type_code_fallback_json(), true);
+    }
+    $map = [];
+    if (is_array($decoded)) {
+      foreach ($decoded as $code => $path) {
+        $codeKey = strtoupper(trim((string) $code));
+        $pathVal = trim((string) $path);
+        if ($codeKey === '' || $pathVal === '') {
+          continue;
+        }
+        if (preg_match('#^https?://#i', $pathVal)) {
+          $map[$codeKey] = $pathVal;
+        } else {
+          $map[$codeKey] = '/' . ltrim(str_replace('\\', '/', $pathVal), '/');
+        }
+      }
+    }
+    return $map;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_fallback_image_path')) {
+  function itm_hotel_booking_portal_room_fallback_image_path($typeCode, $settings) {
+    $code = strtoupper(trim((string) $typeCode));
+    $map = itm_hotel_booking_portal_room_type_code_fallback_map_from_settings($settings);
+    if ($code !== '' && isset($map[$code])) {
+      return $map[$code];
+    }
+    return itm_hotel_booking_portal_default_room_image_path_from_settings($settings);
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_room_fallback_image_url')) {
+  function itm_hotel_booking_portal_room_fallback_image_url($typeCode, $settings, $appUrl = '') {
+    $path = itm_hotel_booking_portal_room_fallback_image_path($typeCode, $settings);
+    if (preg_match('#^https?://#i', $path)) {
+      return $path;
+    }
+    $base = rtrim((string) $appUrl, '/');
+    if ($base === '') {
+      return $path;
+    }
+    return $base . $path;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_occupancy_ceiling_from_settings')) {
+  function itm_hotel_booking_portal_occupancy_ceiling_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    return [
+      'rooms' => max(1, min(20, (int) ($settings['portal_occupancy_max_rooms'] ?? 4))),
+      'adults' => max(1, min(50, (int) ($settings['portal_occupancy_max_adults'] ?? 12))),
+      'children' => max(0, min(50, (int) ($settings['portal_occupancy_max_children'] ?? 6))),
+      'babies' => max(0, min(20, (int) ($settings['portal_occupancy_max_babies'] ?? 3))),
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_default_occupancy_limits')) {
+  function itm_hotel_booking_portal_default_occupancy_limits() {
+    return [
+      'rooms' => 4,
+      'adults' => 12,
+      'children' => 6,
+      'babies' => 3,
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_occupancy_inventory_limits')) {
+  function itm_hotel_booking_portal_occupancy_inventory_limits($conn, $companyId, $hotelId) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $defaults = itm_hotel_booking_portal_default_occupancy_limits();
+    if ($companyId < 1 || $hotelId < 1) {
+      return $defaults;
+    }
+    $sql = 'SELECT MAX(t.max_adults) AS max_adults, MAX(t.max_children) AS max_children, MAX(t.max_babies) AS max_babies,
+      MAX(t.max_rooms_per_booking) AS max_rooms_per_booking
+      FROM booking_rooms_types t
+      INNER JOIN hotel_booking_rooms r ON r.room_type_id = t.id AND r.company_id = t.company_id
+      WHERE t.company_id = ? AND r.hotel_id = ? AND t.deleted_at IS NULL AND t.portal_bookable = 1
+        AND r.deleted_at IS NULL AND r.active = 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return $defaults;
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $hotelId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    if (!$row) {
+      return $defaults;
+    }
+    $maxRooms = (int) ($row['max_rooms_per_booking'] ?? 0);
+    return [
+      'rooms' => $maxRooms > 0 ? $maxRooms : $defaults['rooms'],
+      'adults' => max(1, (int) ($row['max_adults'] ?? $defaults['adults'])),
+      'children' => max(0, (int) ($row['max_children'] ?? $defaults['children'])),
+      'babies' => max(0, (int) ($row['max_babies'] ?? $defaults['babies'])),
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_occupancy_limits')) {
+  function itm_hotel_booking_portal_occupancy_limits($settings, $conn, $companyId, $hotelId) {
+    $ceiling = itm_hotel_booking_portal_occupancy_ceiling_from_settings($settings);
+    $inventory = itm_hotel_booking_portal_occupancy_inventory_limits($conn, (int) $companyId, (int) $hotelId);
+    return [
+      'rooms' => min($ceiling['rooms'], max(1, (int) $inventory['rooms'])),
+      'adults' => min($ceiling['adults'], max(1, (int) $inventory['adults'])),
+      'children' => min($ceiling['children'], max(0, (int) $inventory['children'])),
+      'babies' => min($ceiling['babies'], max(0, (int) $inventory['babies'])),
+    ];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_default_included_adults_per_room_from_settings')) {
+  function itm_hotel_booking_portal_default_included_adults_per_room_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $n = (int) ($settings['portal_default_included_adults_per_room'] ?? 2);
+    return max(1, min(20, $n));
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_cancellation_policy_guest_url')) {
+  function itm_hotel_booking_portal_cancellation_policy_guest_url($companyId, $hotelId, $ratePlanSlug) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $slug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) $ratePlanSlug));
+    if ($slug === '') {
+      $slug = 'room_only';
+    }
+    if (!defined('APPURL')) {
+      return 'cancellation-policy.php?company_id=' . $companyId . '&hotel_id=' . $hotelId . '&slug=' . rawurlencode($slug);
+    }
+    return rtrim(APPURL, '/') . '/cancellation-policy.php?company_id=' . $companyId . '&hotel_id=' . $hotelId . '&slug=' . rawurlencode($slug);
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_plan_label_from_slug')) {
   function itm_hotel_booking_portal_plan_label_from_slug($slug, $settings, $priceLabel = '') {
     $priceLabel = trim((string) $priceLabel);
@@ -6618,6 +6894,20 @@ if (!function_exists('itm_hotel_booking_portal_public_settings_for_js')) {
       'default_rate_label' => itm_hotel_booking_portal_default_rate_label_from_settings($settings),
       'breakfast_rate_label' => itm_hotel_booking_portal_breakfast_rate_label_from_settings($settings),
       'default_pet_max_weight_kg' => itm_hotel_booking_portal_default_pet_max_weight_kg_from_settings($settings),
+      'maps_base_url' => itm_hotel_booking_portal_maps_base_url_from_settings($settings),
+      'calendar_month_horizon' => itm_hotel_booking_portal_calendar_month_horizon_from_settings($settings),
+      'phone_example' => itm_hotel_booking_portal_phone_example_from_settings($settings),
+      'direct_book_banner_text' => itm_hotel_booking_portal_direct_book_banner_text_from_settings($settings),
+      'rating_title' => itm_hotel_booking_portal_rating_title_from_settings($settings),
+      'rating_subtitle' => itm_hotel_booking_portal_rating_subtitle_from_settings($settings),
+      'step_label_rate' => itm_hotel_booking_portal_step_label_from_settings($settings, 'rate', 'Select a Rate'),
+      'step_label_customize' => itm_hotel_booking_portal_step_label_from_settings($settings, 'customize', 'Customize Your Stay'),
+      'step_label_payment' => itm_hotel_booking_portal_step_label_from_settings($settings, 'payment', 'Payment and Guest Details'),
+      'default_included_adults_per_room' => itm_hotel_booking_portal_default_included_adults_per_room_from_settings($settings),
+      'default_room_image_url' => itm_hotel_booking_portal_default_room_image_path_from_settings($settings),
+      'room_type_code_fallback_json' => trim((string) ($settings['portal_room_type_code_fallback_json'] ?? '')) !== ''
+        ? trim((string) $settings['portal_room_type_code_fallback_json'])
+        : itm_hotel_booking_portal_default_room_type_code_fallback_json(),
     ];
   }
 }

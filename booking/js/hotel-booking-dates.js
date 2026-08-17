@@ -34,6 +34,12 @@
   }
 
   function moneySym(code) {
+    if (settings.money_symbol) {
+      return String(settings.money_symbol);
+    }
+    if (settings.money_prefix) {
+      return String(settings.money_prefix);
+    }
     return (code || 'EUR').toUpperCase() === 'EUR' ? '€' : (code || '') + ' ';
   }
 
@@ -119,7 +125,14 @@
   function buildMonthTabs() {
     var tabs = [];
     var now = new Date();
-    for (var i = 0; i < 14; i++) {
+    var horizon = parseInt(settings.calendar_month_horizon, 10);
+    if (isNaN(horizon) || horizon < 1) {
+      horizon = 14;
+    }
+    if (horizon > 36) {
+      horizon = 36;
+    }
+    for (var i = 0; i < horizon; i++) {
       var d = new Date(now.getFullYear(), now.getMonth() + i, 1);
       tabs.push({ year: d.getFullYear(), month: d.getMonth() + 1 });
     }
