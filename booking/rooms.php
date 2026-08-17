@@ -136,9 +136,20 @@ $typeDefaultImages = [
 $rooms = [];
 $sql = 'SELECT r.*, COALESCE(bp.price_per_night, 0.00) AS price_per_night, t.name AS type_name, t.code AS type_code, t.description AS type_description,
     t.bed_summary, t.room_size_sqm AS type_size_sqm, t.max_adults, t.max_children, t.max_babies,
+    t.max_total_guests, t.included_adults_per_room, t.child_max_age, t.min_adults,
+    t.allow_mixed_types_in_group, t.connecting_room_type_id, t.max_rooms_per_booking,
+    t.portal_extra_adult_supplement_percent, t.portal_child_nightly_supplement, t.portal_baby_nightly_supplement,
+    t.portal_included_children_free, t.portal_single_occupancy_discount_percent,
+    t.min_stay_nights, t.max_stay_nights, t.min_advance_booking_days, t.max_advance_booking_days,
+    t.closed_to_arrival_days, t.closed_to_departure_days,
+    t.portal_bookable, t.requires_approval, t.adults_only, t.smoking_allowed, t.accessible_room,
+    t.extra_bed_allowed, t.max_extra_beds, t.crib_included, t.pets_allowed, t.pet_max_weight_kg,
+    t.pet_non_refundable_fee, t.portal_pet_daily_fee,
+    conn.code AS connecting_type_code, conn.name AS connecting_type_name,
     t.filter_tags, t.details_bullets
     FROM hotel_booking_rooms r
     INNER JOIN booking_rooms_types t ON t.id = r.room_type_id AND t.company_id = r.company_id
+    LEFT JOIN booking_rooms_types conn ON conn.id = t.connecting_room_type_id AND conn.company_id = t.company_id AND conn.deleted_at IS NULL
     LEFT JOIN hotel_booking_room_type_base_prices bp ON bp.company_id = r.company_id AND bp.hotel_id = r.hotel_id AND bp.room_type_id = r.room_type_id AND bp.deleted_at IS NULL
     WHERE r.company_id = ? AND r.hotel_id = ? AND r.deleted_at IS NULL AND r.active = 1
     ORDER BY COALESCE(bp.price_per_night, 0.00) ASC, r.room_number ASC';
@@ -151,6 +162,24 @@ if ($stmt) {
         $rooms[] = $row;
     }
     mysqli_stmt_close($stmt);
+}
+
+$lockedTypeId = 0;
+$pickedCountByType = [];
+if ($roomsNeeded > 1 && $ratedRoomLines !== []) {
+    $firstPickedTypeId = (int) ($ratedRoomLines[0]['room_type_id'] ?? 0);
+    if ($firstPickedTypeId > 0) {
+        $firstTypeRow = itm_hotel_booking_fetch_room_type_row($conn, $company_id, $firstPickedTypeId);
+        if ($firstTypeRow && empty($firstTypeRow['allow_mixed_types_in_group'])) {
+            $lockedTypeId = $firstPickedTypeId;
+        }
+    }
+    foreach ($ratedRoomLines as $pickedLine) {
+        $pickedTid = (int) ($pickedLine['room_type_id'] ?? 0);
+        if ($pickedTid > 0) {
+            $pickedCountByType[$pickedTid] = (int) ($pickedCountByType[$pickedTid] ?? 0) + 1;
+        }
+    }
 }
 
 $cards = [];
@@ -171,15 +200,27 @@ foreach ($rooms as $room) {
             $bullets = preg_split('/\|/', $rawBullets) ?: [];
             $bullets = array_values(array_filter(array_map('trim', $bullets)));
         }
-        $typeRow = [
-            'max_adults' => $room['max_adults'] ?? 2,
-            'max_children' => $room['max_children'] ?? 1,
-            'max_babies' => $room['max_babies'] ?? 1,
-        ];
-        $fits = itm_hotel_booking_room_type_fits_occupancy($typeRow, $occupancy);
+        $typeRow = itm_hotel_booking_portal_room_type_row_from_joined_sql($room);
+        $fits = itm_hotel_booking_room_type_fits_occupancy($typeRow, $cardQuoteOccupancy);
+        $inventoryAvailable = !$blocked && !itm_hotel_booking_room_unavailable_for_stay($conn, $company_id, $roomId, $checkInIso, $checkOutIso, 0, $room);
+        $availCheck = itm_hotel_booking_portal_room_type_card_available($typeRow, $cardQuoteOccupancy, $checkInIso, $checkOutIso, $inventoryAvailable);
+        $typeAvailable = !empty($availCheck['available']);
+        if ($lockedTypeId > 0 && $typeKey !== $lockedTypeId) {
+            $typeAvailable = false;
+            $availCheck['available'] = false;
+            $availCheck['reason'] = 'mixed_types';
+        }
+        $maxPerBooking = isset($typeRow['max_rooms_per_booking']) && $typeRow['max_rooms_per_booking'] !== null && $typeRow['max_rooms_per_booking'] !== ''
+            ? max(1, (int) $typeRow['max_rooms_per_booking'])
+            : 0;
+        if ($maxPerBooking > 0 && (int) ($pickedCountByType[$typeKey] ?? 0) >= $maxPerBooking) {
+            $typeAvailable = false;
+            $availCheck['available'] = false;
+            $availCheck['reason'] = 'max_rooms';
+        }
         $basePrice = itm_hotel_booking_portal_check_in_display_bar($conn, $company_id, $hotelId, $typeKey, $checkInIso, (float) $room['price_per_night']);
-        $listQuoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $cardQuoteOccupancy, 0, $portalPricing, 0) + $taxPerNightCard, 2);
-        $quoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $cardQuoteOccupancy, $displayDiscountPercent, $portalPricing, $cheapestPlanSurcharge) + $taxPerNightCard, 2);
+        $listQuoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $cardQuoteOccupancy, 0, $portalPricing, 0, $typeRow) + $taxPerNightCard, 2);
+        $quoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $cardQuoteOccupancy, $displayDiscountPercent, $portalPricing, $cheapestPlanSurcharge, $typeRow) + $taxPerNightCard, 2);
 
         $cards[$typeKey] = [
             'type_id' => $typeKey,
@@ -193,16 +234,27 @@ foreach ($rooms as $room) {
             'bullets' => $bullets,
             'max_adults' => (int) ($room['max_adults'] ?? 2),
             'max_children' => (int) ($room['max_children'] ?? 1),
+            'max_babies' => (int) ($room['max_babies'] ?? 1),
+            'child_max_age' => (int) ($room['child_max_age'] ?? 12),
+            'adults_only' => !empty($room['adults_only']),
+            'smoking_allowed' => !empty($room['smoking_allowed']),
+            'accessible_room' => !empty($room['accessible_room']),
+            'crib_included' => !empty($room['crib_included']),
+            'extra_bed_allowed' => !empty($room['extra_bed_allowed']),
+            'connecting_type_code' => (string) ($room['connecting_type_code'] ?? ''),
+            'connecting_type_name' => (string) ($room['connecting_type_name'] ?? ''),
+            'type_row' => $typeRow,
             'image_url' => $imgUrl,
             'photo_urls' => $photoUrls,
             'base_price' => $basePrice,
             'list_quoted_price' => $listQuoted,
             'quoted_price' => $quoted,
             'book_room_id' => $roomId,
-            'available' => $available && $fits,
-            'fits_occupancy' => $fits,
+            'available' => $typeAvailable && $fits,
+            'fits_occupancy' => $fits && !empty($availCheck['fits_occupancy']),
+            'unavailable_reason' => (string) ($availCheck['reason'] ?? ''),
             'total_units' => 1,
-            'available_units' => ($available && $fits) ? 1 : 0,
+            'available_units' => ($typeAvailable && $fits) ? 1 : 0,
         ];
     } else {
         $cards[$typeKey]['total_units']++;
@@ -212,8 +264,8 @@ foreach ($rooms as $room) {
             if ($resolvedBar < $cards[$typeKey]['base_price']) {
                 $cards[$typeKey]['base_price'] = $resolvedBar;
                 $cards[$typeKey]['book_room_id'] = $roomId;
-                $cards[$typeKey]['list_quoted_price'] = round(itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $cardQuoteOccupancy, 0, $portalPricing, 0) + $taxPerNightCard, 2);
-                $cards[$typeKey]['quoted_price'] = round(itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $cardQuoteOccupancy, $displayDiscountPercent, $portalPricing, $cheapestPlanSurcharge) + $taxPerNightCard, 2);
+                $cards[$typeKey]['list_quoted_price'] = round(itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $cardQuoteOccupancy, 0, $portalPricing, 0, $cards[$typeKey]['type_row'] ?? null) + $taxPerNightCard, 2);
+                $cards[$typeKey]['quoted_price'] = round(itm_hotel_booking_portal_quote_nightly($cards[$typeKey]['base_price'], $cardQuoteOccupancy, $displayDiscountPercent, $portalPricing, $cheapestPlanSurcharge, $cards[$typeKey]['type_row'] ?? null) + $taxPerNightCard, 2);
             }
         }
         $cards[$typeKey]['available'] = $cards[$typeKey]['available_units'] > 0;
@@ -340,6 +392,8 @@ $filterOptions = [
     'garden_view' => 'Garden view',
     'city_view' => 'City view',
     'balcony' => 'Balcony',
+    'accessible' => 'Accessible room',
+    'smoking' => 'Smoking allowed',
 ];
 
 $multiRoomReservationSummary = null;
@@ -447,6 +501,13 @@ if ($roomsNeeded > 1) {
 <?php if ($roomsNeeded > 1): ?>
 <div class="hb-room-lines-banner" role="status">
 <p class="hb-room-lines-banner-lead"><strong>Room <?php echo min($roomsNeeded, count($roomLines) + 1); ?> of <?php echo (int) $roomsNeeded; ?></strong> — choose a room, then select a rate. Repeat until all rooms are rated.<?php if (count($roomLines) > 0): ?> Types already chosen with no more units show as unavailable — pick a different room type.<?php endif; ?></p>
+<ul class="hb-room-lines-occupancy-split">
+<?php for ($slotIdx = 0; $slotIdx < $roomsNeeded; $slotIdx++):
+    $slotOcc = itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, $slotIdx, $roomsNeeded);
+?>
+<li><span class="hb-room-lines-slot">Room <?php echo (int) $slotIdx + 1; ?> guests:</span> <?php echo htmlspecialchars(itm_hotel_booking_portal_occupancy_line_label($slotOcc), ENT_QUOTES, 'UTF-8'); ?></li>
+<?php endfor; ?>
+</ul>
 <?php if (!empty($roomLines)): ?>
 <ul class="hb-room-lines-banner-list">
 <?php foreach ($roomLines as $idx => $line): ?>
@@ -488,7 +549,7 @@ if ($roomsNeeded > 1) {
 <?php foreach ($cardList as $card):
     $bookUrl = hb_select_room_book_href($hotelId, (int) $card['book_room_id'], $checkInIso, $nights, $occupancy);
 ?>
-<article class="hb-room-card<?php echo empty($card['available']) ? ' is-sold-out' : ''; ?>" data-base-price="<?php echo htmlspecialchars((string) $card['base_price'], ENT_QUOTES, 'UTF-8'); ?>" data-filter-tags="<?php echo htmlspecialchars($card['filter_tags'], ENT_QUOTES, 'UTF-8'); ?>" data-type-id="<?php echo (int) $card['type_id']; ?>">
+<article class="hb-room-card<?php echo empty($card['available']) ? ' is-sold-out' : ''; ?>" data-base-price="<?php echo htmlspecialchars((string) $card['base_price'], ENT_QUOTES, 'UTF-8'); ?>" data-filter-tags="<?php echo htmlspecialchars($card['filter_tags'], ENT_QUOTES, 'UTF-8'); ?>" data-type-id="<?php echo (int) $card['type_id']; ?>" data-accessible="<?php echo !empty($card['accessible_room']) ? '1' : '0'; ?>" data-smoking="<?php echo !empty($card['smoking_allowed']) ? '1' : '0'; ?>">
 <div class="hb-room-card-head">
 <div class="hb-room-card-title-row">
 <span class="hb-room-type-code"><?php echo htmlspecialchars($card['type_code'], ENT_QUOTES, 'UTF-8'); ?></span>
@@ -499,7 +560,15 @@ if ($roomsNeeded > 1) {
 <?php
 $soldOutInner = '';
 if (empty($card['available'])) {
-    $soldOutInner = '<span class="hb-sold-out-badge">' . htmlspecialchars(empty($card['fits_occupancy']) ? 'Guests exceed capacity' : 'Sold out', ENT_QUOTES, 'UTF-8') . '</span>';
+    $soldOutLabel = 'Sold out';
+    if (empty($card['fits_occupancy'])) {
+        $soldOutLabel = 'Guests exceed capacity';
+    } elseif (($card['unavailable_reason'] ?? '') === 'stay' || ($card['unavailable_reason'] ?? '') === 'min_stay' || ($card['unavailable_reason'] ?? '') === 'closed_arrival') {
+        $soldOutLabel = 'Not available for these dates';
+    } elseif (($card['unavailable_reason'] ?? '') === 'mixed_types') {
+        $soldOutLabel = 'Same room type required';
+    }
+    $soldOutInner = '<span class="hb-sold-out-badge">' . htmlspecialchars($soldOutLabel, ENT_QUOTES, 'UTF-8') . '</span>';
 }
 echo hb_portal_render_image_gallery(
     $card['photo_urls'] ?? [$card['image_url']],
@@ -509,6 +578,9 @@ echo hb_portal_render_image_gallery(
 );
 ?>
 <div class="hb-room-card-body">
+<?php if (!empty($card['connecting_type_code']) || !empty($card['connecting_type_name'])): ?>
+<p class="hb-rate-info-banner hb-connecting-room-banner" role="note">Connecting rooms available with <?php echo htmlspecialchars(trim((string) ($card['connecting_type_code'] ?: $card['connecting_type_name'])), ENT_QUOTES, 'UTF-8'); ?></p>
+<?php endif; ?>
 <p class="hb-room-meta"><?php echo htmlspecialchars($card['bed_summary'], ENT_QUOTES, 'UTF-8'); ?><?php if ($card['type_size_sqm'] !== ''): ?> · <?php echo htmlspecialchars((string) $card['type_size_sqm'], ENT_QUOTES, 'UTF-8'); ?> m²<?php endif; ?><?php if ($card['view_label'] !== ''): ?> · <?php echo htmlspecialchars($card['view_label'], ENT_QUOTES, 'UTF-8'); ?> view<?php endif; ?></p>
 <?php if (!empty($card['type_description'])): ?>
 <p class="hb-room-desc"><?php echo htmlspecialchars($card['type_description'], ENT_QUOTES, 'UTF-8'); ?></p>

@@ -1637,5 +1637,49 @@ if (function_exists('itm_hotel_booking_portal_select_rate_display_occupancy')
     hb_fail('portal select-rate current-room nightly probe helpers missing');
 }
 
+$typeRulesRow = [
+    'max_adults' => 2,
+    'max_children' => 2,
+    'max_babies' => 1,
+    'max_total_guests' => 4,
+    'min_adults' => 1,
+    'included_adults_per_room' => 2,
+    'portal_bookable' => 1,
+    'min_stay_nights' => 1,
+    'closed_to_arrival_days' => '5,6',
+];
+$lineTotalsRules = array_fill(0, 11, 100.0);
+$lineTotalsRules[0] = 50.0;
+if (!itm_hotel_booking_room_type_fits_occupancy($typeRulesRow, ['rooms' => 1, 'adults' => 2, 'children' => 2, 'babies' => 1])
+    && itm_hotel_booking_portal_weekday_closed_list('5,6') === [5, 6]
+    && abs(itm_hotel_booking_portal_complimentary_room_credit(['portal_complimentary_min_rooms_paid' => 10, 'portal_complimentary_rooms_free' => 1], 11, $lineTotalsRules) - 50.0) < 0.01
+    && !empty(itm_hotel_booking_portal_room_type_card_available($typeRulesRow, ['rooms' => 1, 'adults' => 2, 'children' => 0, 'babies' => 0], '2026-08-10', '2026-08-11', true)['available'])) {
+    hb_pass('portal room type rule helpers (occupancy, weekday, complimentary, bookable)');
+} else {
+    hb_fail('portal room type rule helpers regression');
+}
+
+$customizeSrcRules = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms/customize.php');
+$roomsSrcRules = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms.php');
+if (strpos($customizeSrcRules, 'No special requests available') !== false
+    && strpos($roomsSrcRules, 'cardQuoteOccupancy') !== false
+    && strpos($roomsSrcRules, 'itm_hotel_booking_room_type_fits_occupancy($typeRow, $cardQuoteOccupancy)') !== false
+    && strpos($roomsSrcRules, 'portal_bookable') !== false) {
+    hb_pass('portal customize pets gate + rooms cardQuoteOccupancy wiring');
+} else {
+    hb_fail('portal customize pets gate or rooms cardQuoteOccupancy wiring missing');
+}
+
+$colComplimentaryMin = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_complimentary_min_rooms_paid'");
+$colComplimentaryFree = mysqli_query($conn, "SHOW COLUMNS FROM hotel_booking_settings LIKE 'portal_complimentary_rooms_free'");
+$colPortalBookable = mysqli_query($conn, "SHOW COLUMNS FROM booking_rooms_types LIKE 'portal_bookable'");
+if ($colComplimentaryMin && mysqli_num_rows($colComplimentaryMin) === 1
+    && $colComplimentaryFree && mysqli_num_rows($colComplimentaryFree) === 1
+    && $colPortalBookable && mysqli_num_rows($colPortalBookable) === 1) {
+    hb_pass('booking_rooms_types portal rule columns + complimentary settings columns');
+} else {
+    hb_fail('booking_rooms_types portal rule columns or complimentary settings columns missing');
+}
+
 itm_script_output_end();
 exit($fail > 0 ? 1 : 0);

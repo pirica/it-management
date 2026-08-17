@@ -199,12 +199,12 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
             $bullets = array_values(array_filter(array_map('trim', $bullets)));
         }
 
-        $typeOcc = [
-            'max_adults' => $typeRow['max_adults'] ?? 2,
-            'max_children' => $typeRow['max_children'] ?? 1,
-            'max_babies' => $typeRow['max_babies'] ?? 1,
-        ];
-        $fits = itm_hotel_booking_room_type_fits_occupancy($typeOcc, $occupancy);
+        $typeOcc = itm_hotel_booking_portal_room_type_row_from_joined_sql(array_merge($typeRow, ['room_type_id' => $typeId]));
+        $cardQuoteOcc = $occupancy;
+        if ((int) ($occupancy['rooms'] ?? 1) > 1) {
+            $cardQuoteOcc = itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, 0, (int) $occupancy['rooms']);
+        }
+        $fits = itm_hotel_booking_room_type_fits_occupancy($typeOcc, $cardQuoteOcc);
         $blocked = !empty($sampleRoom['is_out_of_order']) || !empty($sampleRoom['is_out_of_service']);
         $available = $roomId > 0 && !$blocked && $fits
             && !itm_hotel_booking_room_unavailable_for_stay($conn, $companyId, $roomId, $checkInIso, $checkOutIso, 0, $sampleRoom);
@@ -214,8 +214,19 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
         $taxRate = itm_hotel_booking_portal_tourist_tax_per_person_from_settings($settingsRow);
         $taxPerNight = itm_hotel_booking_portal_tourist_tax_amount($occupancy, 1, $taxRate);
         $surchargePercent = max(0.0, min(50.0, (float) $surchargePercent));
-        $listQuoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, 0, $pricing, 0) + $taxPerNight, 2);
-        $quoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $occupancy, (float) $discountPercent, $pricing, $surchargePercent) + $taxPerNight, 2);
+        $listQuoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $cardQuoteOcc, 0, $pricing, 0, $typeOcc) + $taxPerNight, 2);
+        $quoted = round(itm_hotel_booking_portal_quote_nightly($basePrice, $cardQuoteOcc, (float) $discountPercent, $pricing, $surchargePercent, $typeOcc) + $taxPerNight, 2);
+
+        $connectingCode = '';
+        $connectingName = '';
+        $connectingId = (int) ($typeRow['connecting_room_type_id'] ?? 0);
+        if ($connectingId > 0) {
+            $connRow = itm_hotel_booking_fetch_room_type_row($conn, $companyId, $connectingId);
+            if ($connRow) {
+                $connectingCode = (string) ($connRow['code'] ?? '');
+                $connectingName = (string) ($connRow['name'] ?? '');
+            }
+        }
 
         return [
             'type_id' => $typeId,
@@ -229,6 +240,16 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
             'bullets' => $bullets,
             'max_adults' => (int) ($typeRow['max_adults'] ?? 2),
             'max_children' => (int) ($typeRow['max_children'] ?? 1),
+            'max_babies' => (int) ($typeRow['max_babies'] ?? 1),
+            'child_max_age' => (int) ($typeRow['child_max_age'] ?? 12),
+            'adults_only' => !empty($typeRow['adults_only']),
+            'smoking_allowed' => !empty($typeRow['smoking_allowed']),
+            'accessible_room' => !empty($typeRow['accessible_room']),
+            'crib_included' => !empty($typeRow['crib_included']),
+            'extra_bed_allowed' => !empty($typeRow['extra_bed_allowed']),
+            'connecting_type_code' => $connectingCode,
+            'connecting_type_name' => $connectingName,
+            'type_row' => $typeOcc,
             'image_url' => $imgUrl,
             'photo_urls' => $photoUrls,
             'base_price' => $basePrice,
@@ -260,6 +281,8 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
         $view = (string) ($card['view_label'] ?? '');
         $maxAdults = (int) ($card['max_adults'] ?? 2);
         $maxChildren = (int) ($card['max_children'] ?? 0);
+        $maxBabies = (int) ($card['max_babies'] ?? 0);
+        $childMaxAge = (int) ($card['child_max_age'] ?? 12);
         $bullets = is_array($card['bullets'] ?? null) ? $card['bullets'] : [];
         $cats = hb_portal_room_detail_categorize_bullets($bullets);
         $quoted = (float) ($card['quoted_price'] ?? 0);
@@ -283,7 +306,27 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
 
         $occLabel = 'Max. occupancy: ' . $maxAdults . ' adult' . ($maxAdults === 1 ? '' : 's');
         if ($maxChildren > 0) {
-            $occLabel .= ', ' . $maxChildren . ' child' . ($maxChildren === 1 ? '' : 'ren');
+            $occLabel .= ', ' . $maxChildren . ' child' . ($maxChildren === 1 ? '' : 'ren') . ' (up to ' . $childMaxAge . ' years)';
+        }
+        if ($maxBabies > 0) {
+            $occLabel .= ', ' . $maxBabies . ' bab' . ($maxBabies === 1 ? 'y' : 'ies');
+        }
+
+        $policyBadges = [];
+        if (!empty($card['adults_only'])) {
+            $policyBadges[] = 'Adults only';
+        }
+        if (!empty($card['smoking_allowed'])) {
+            $policyBadges[] = 'Smoking allowed';
+        }
+        if (!empty($card['accessible_room'])) {
+            $policyBadges[] = 'Accessible';
+        }
+        if (!empty($card['crib_included'])) {
+            $policyBadges[] = 'Crib included';
+        }
+        if (!empty($card['extra_bed_allowed'])) {
+            $policyBadges[] = 'Extra bed available';
         }
 
         $amenityHtml = '';
@@ -304,7 +347,10 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
 
         $guestItems = ['Sleeps ' . $maxAdults];
         if ($maxChildren > 0) {
-            $guestItems[] = 'Children welcome';
+            $guestItems[] = 'Children welcome (up to ' . $childMaxAge . ' years)';
+        }
+        if ($maxBabies > 0) {
+            $guestItems[] = 'Babies welcome';
         }
 
         $layoutItems = $cats['layout'];
@@ -367,7 +413,13 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
 <div class="hb-room-detail-left">
 <h2 class="hb-rd-title"><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></h2>
 <?php echo hb_portal_gallery_html($photoUrls); ?>
+<?php if (!empty($card['connecting_type_code']) || !empty($card['connecting_type_name'])): ?>
+<p class="hb-rate-info-banner hb-connecting-room-banner" role="note">Connecting rooms available with <?php echo htmlspecialchars(trim((string) ($card['connecting_type_code'] ?: $card['connecting_type_name'])), ENT_QUOTES, 'UTF-8'); ?></p>
+<?php endif; ?>
 <p class="hb-rd-occ"><?php echo htmlspecialchars($occLabel, ENT_QUOTES, 'UTF-8'); ?></p>
+<?php if ($policyBadges !== []): ?>
+<p class="hb-rd-policy-badges"><?php foreach ($policyBadges as $badge): ?><span class="hb-rd-policy-badge"><?php echo htmlspecialchars($badge, ENT_QUOTES, 'UTF-8'); ?></span><?php endforeach; ?></p>
+<?php endif; ?>
 <?php if ($specLine !== ''): ?>
 <p class="hb-rd-spec"><?php echo htmlspecialchars($specLine, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php endif; ?>

@@ -108,6 +108,7 @@ function cr_humanize_field($field) {
         'onq_ri' => 'OnQ R&I',
         'hu_the_lobby' => 'HU & The Lobby',
         'upgrade_to_room_type_id' => 'Upgrade To Room Type',
+        'connecting_room_type_id' => 'Connecting Room Type',
     ];
 
     if (isset($map[$label])) {
@@ -283,6 +284,25 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
 
 // Why: Search and list share visible columns; alias matches role/ui_configuration modules.
 $displayFieldColumns = $uiColumns;
+
+if (($crud_table ?? '') === 'booking_rooms_types') {
+    $brtListHiddenFields = [
+        'description', 'bed_summary', 'room_size_sqm', 'max_adults', 'max_children', 'max_babies',
+        'included_adults_per_room', 'child_max_age', 'min_adults', 'allow_mixed_types_in_group',
+        'connecting_room_type_id', 'max_rooms_per_booking', 'portal_extra_adult_supplement_percent',
+        'portal_child_nightly_supplement', 'portal_baby_nightly_supplement', 'portal_included_children_free',
+        'portal_single_occupancy_discount_percent', 'min_stay_nights', 'max_stay_nights',
+        'min_advance_booking_days', 'max_advance_booking_days', 'closed_to_arrival_days', 'closed_to_departure_days',
+        'requires_approval', 'adults_only', 'smoking_allowed', 'accessible_room', 'extra_bed_allowed',
+        'max_extra_beds', 'crib_included', 'pets_allowed', 'pet_max_weight_kg', 'pet_non_refundable_fee',
+        'portal_pet_daily_fee', 'filter_tags', 'details_bullets', 'upgrade_to_room_type_id',
+        'upgrade_price_per_night', 'upgrade_pitch',
+    ];
+    $uiColumns = array_values(array_filter($uiColumns, function ($col) use ($brtListHiddenFields) {
+        return !in_array((string) ($col['Field'] ?? ''), $brtListHiddenFields, true);
+    }));
+    $displayFieldColumns = $uiColumns;
+}
 
 // Why: View shows create/update/delete audit stamps while list hides them.
 $viewColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {

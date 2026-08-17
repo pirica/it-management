@@ -27,9 +27,6 @@ if (!$room) {
 }
 
 $hotelId = (int) ($room['hotel_id'] ?? 0);
-$portalPricing = itm_hotel_booking_portal_hotel_pricing($conn, $company_id, $hotelId);
-$breakfastChildPrice = (float) $portalPricing['breakfast_child_price_per_night'];
-$petDailyFee = (float) $portalPricing['pet_daily_fee'];
 $today = date('Y-m-d');
 $checkInIso = $checkInParam;
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkInIso) || $checkInIso < $today) {
@@ -37,6 +34,27 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkInIso) || $checkInIso < $today) {
 }
 $checkOutIso = date('Y-m-d', strtotime($checkInIso . ' +' . $nights . ' day'));
 
+$roomTypeIdCheck = (int) ($room['room_type_id'] ?? 0);
+$roomTypeRowCheck = $roomTypeIdCheck > 0 ? itm_hotel_booking_fetch_room_type_row($conn, $company_id, $roomTypeIdCheck) : null;
+if (!$roomTypeRowCheck || empty($roomTypeRowCheck['portal_bookable'])) {
+    header('Location: ' . APPURL . '/rooms.php?' . http_build_query(array_merge(
+        ['id' => $hotelId, 'check_in' => $checkInIso, 'nights' => $nights],
+        itm_hotel_booking_portal_occupancy_query_params($occupancy)
+    )));
+    exit;
+}
+$stayCheck = itm_hotel_booking_portal_room_type_validate_stay($roomTypeRowCheck, $checkInIso, $checkOutIso);
+if (empty($stayCheck['ok'])) {
+    header('Location: ' . APPURL . '/rooms.php?' . http_build_query(array_merge(
+        ['id' => $hotelId, 'check_in' => $checkInIso, 'nights' => $nights],
+        itm_hotel_booking_portal_occupancy_query_params($occupancy)
+    )));
+    exit;
+}
+
+$portalPricing = itm_hotel_booking_portal_hotel_pricing($conn, $company_id, $hotelId);
+$breakfastChildPrice = (float) $portalPricing['breakfast_child_price_per_night'];
+$petDailyFee = (float) $portalPricing['pet_daily_fee'];
 $roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
 $roomLinesContext = itm_hotel_booking_portal_room_lines_context_fingerprint($hotelId, $checkInIso, $nights, $occupancy);
 $activeDraft = itm_hotel_booking_portal_draft_get() ?: [];
@@ -276,7 +294,7 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
 </div>
 <p class="hb-rate-tax-note" style="margin:0 0 16px;font-size:.95rem;opacity:.9;">All prices shown include tourist tax for your guest count<?php if ($roomsNeeded > 1): ?> for this room<?php endif; ?>.</p>
 
-<?php hb_portal_render_room_lines_summary($roomLines, $roomsNeeded, $summaryLineNightlyAmounts, $currency); ?>
+<?php hb_portal_render_room_lines_summary($roomLines, $roomsNeeded, $summaryLineNightlyAmounts, $currency, $occupancy); ?>
 
 <?php if ($error !== ''): ?>
 <p class="hb-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>

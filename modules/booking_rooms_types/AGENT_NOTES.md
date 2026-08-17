@@ -26,6 +26,7 @@ Tenant CRUD for hospitality room types (`booking_rooms_types`). **Photos are att
 - **Photo storage:** `booking/images/{hotel_id}/room_types_photos/` (mirrored to every company hotel on upload). Admin thumbnails use the first hotel in the tenant.
 - **Upload field:** create/edit forms use `hb_photos[]` (multiple) via `itm_hotel_booking_photos_handle_upload()` after save. Edit POSTs `record_id` with `enctype="multipart/form-data"` and `action="edit.php?id=…"`.
 - **Portal:** `hb_portal_room_type_photo_urls()` / `itm_hotel_booking_portal_room_type_photo_urls()` load `booking_rooms_type_photos` from `booking/images/{hotel_id}/room_types_photos/` (shared gallery for every room of that type on `booking/rooms.php`).
+- **Portal rules (columns on `booking_rooms_types`):** occupancy (`max_total_guests`, `min_adults`, `adults_only`, `included_adults_per_room`, …), stay (`min_stay_nights`, CTA/CTD weekday CSV), pricing overrides (`portal_*` — `NULL` inherits hotel), `portal_bookable`, `requires_approval`, pets, `connecting_room_type_id` (FK label = `code` via `brt_fk_helpers.php`), `allow_mixed_types_in_group`, `max_rooms_per_booking`. Fresh schema only (`db/01_schema.sql`); no migration file.
 - **Sample seeds:** `db/02_data.sql` inserts `hb_rt_*` rows for STD/SUP/DLX; `php scripts/seed_hotel_booking_sample_photos.php --apply` backfills files on existing DBs.
 
 ---

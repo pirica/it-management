@@ -435,6 +435,12 @@
           return t.trim();
         }).filter(Boolean);
         var show = selected.length === 0 || selected.every(function (tag) {
+          if (tag === 'accessible') {
+            return card.getAttribute('data-accessible') === '1';
+          }
+          if (tag === 'smoking') {
+            return card.getAttribute('data-smoking') === '1';
+          }
           return tags.indexOf(tag) !== -1;
         });
         card.style.display = show ? '' : 'none';

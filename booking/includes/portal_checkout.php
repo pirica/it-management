@@ -76,12 +76,13 @@ if (!function_exists('hb_portal_render_room_lines_summary')) {
      * @param array<int,array> $roomLines
      * @param array<int,float|null> $lineNightlyAmounts per-line /night incl. tax; null omits price (e.g. last room on select-rate)
      */
-    function hb_portal_render_room_lines_summary(array $roomLines, $roomsNeeded = 1, array $lineNightlyAmounts = [], $currency = 'EUR') {
+    function hb_portal_render_room_lines_summary(array $roomLines, $roomsNeeded = 1, array $lineNightlyAmounts = [], $currency = 'EUR', array $occupancy = null) {
         $roomsNeeded = max(1, (int) $roomsNeeded);
         if ($roomsNeeded < 2 || count($roomLines) < 1) {
             return;
         }
         $showLinePrices = $lineNightlyAmounts !== [];
+        $occupancy = is_array($occupancy) ? itm_hotel_booking_portal_parse_occupancy($occupancy) : null;
         ?>
 <section class="hb-room-lines-summary card" aria-label="Selected rooms">
 <h2 class="hb-room-lines-summary-title">Your rooms (<?php echo count($roomLines); ?> of <?php echo (int) $roomsNeeded; ?>)</h2>
@@ -93,8 +94,13 @@ if (!function_exists('hb_portal_render_room_lines_summary')) {
     $lineNightly = array_key_exists($idx, $lineNightlyAmounts) ? $lineNightlyAmounts[$idx] : null;
     $lineLabel = itm_hotel_booking_portal_room_line_label($line);
     $lineRateLabel = hb_portal_room_line_rate_plan_label($line);
+    $lineOccLabel = '';
+    if (is_array($occupancy)) {
+        $lineOcc = itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, (int) $idx, $roomsNeeded);
+        $lineOccLabel = itm_hotel_booking_portal_occupancy_line_label($lineOcc);
+    }
 ?>
-<li><span class="hb-room-lines-summary-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars($lineLabel, ENT_QUOTES, 'UTF-8'); ?><?php if ($lineRateLabel !== ''): ?> <span class="hb-room-lines-summary-rate">— <?php echo htmlspecialchars($lineRateLabel, ENT_QUOTES, 'UTF-8'); ?></span><?php endif; ?><?php if ($lineNightly !== null && (float) $lineNightly > 0): ?> <span class="hb-room-lines-summary-nightly">— <?php echo htmlspecialchars(hb_portal_money_format((float) $lineNightly, $currency), ENT_QUOTES, 'UTF-8'); ?> / night incl. tax</span><?php endif; ?></li>
+<li><span class="hb-room-lines-summary-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars($lineLabel, ENT_QUOTES, 'UTF-8'); ?><?php if ($lineOccLabel !== ''): ?> <span class="hb-room-lines-summary-occ">(<?php echo htmlspecialchars($lineOccLabel, ENT_QUOTES, 'UTF-8'); ?>)</span><?php endif; ?><?php if ($lineRateLabel !== ''): ?> <span class="hb-room-lines-summary-rate">— <?php echo htmlspecialchars($lineRateLabel, ENT_QUOTES, 'UTF-8'); ?></span><?php endif; ?><?php if ($lineNightly !== null && (float) $lineNightly > 0): ?> <span class="hb-room-lines-summary-nightly">— <?php echo htmlspecialchars(hb_portal_money_format((float) $lineNightly, $currency), ENT_QUOTES, 'UTF-8'); ?> / night incl. tax</span><?php endif; ?></li>
 <?php endforeach; ?>
 </ol>
 </section>
@@ -119,6 +125,8 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
             $roomTitle = hb_portal_reservation_room_title($room);
         }
         $roomCharges = (float) ($breakdown['room_charges'] ?? 0);
+        $complimentaryCredit = (float) ($breakdown['complimentary_credit'] ?? 0);
+        $requiresApproval = !empty($breakdown['requires_approval']);
         $touristTax = (float) ($breakdown['tourist_tax'] ?? 0);
         $taxPerPerson = (float) ($breakdown['tourist_tax_per_person_per_night'] ?? 0);
         $total = (float) ($breakdown['total'] ?? ($roomCharges + $touristTax));
@@ -169,6 +177,9 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
         ?>
 <div class="hb-reservation-summary card">
 <h2 class="hb-reservation-summary-title">Reservation summary</h2>
+<?php if ($requiresApproval): ?>
+<p class="hb-rate-info-banner hb-approval-banner" role="status">Subject to hotel approval</p>
+<?php endif; ?>
 <?php if ($showMultiRoomList): ?>
 <div class="hb-reservation-summary-rooms" aria-label="Selected rooms">
 <ul class="hb-reservation-summary-room-list">
@@ -207,6 +218,12 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
 <p class="hb-reservation-change-rate"><a href="<?php echo htmlspecialchars($changeRateUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Change rate">Change rate</a></p>
 <?php endif; ?>
 <dl class="hb-reservation-totals">
+<?php if ($complimentaryCredit > 0): ?>
+<div class="hb-reservation-total-row hb-reservation-complimentary-row">
+<dt>Complimentary room credit</dt>
+<dd>−<?php echo htmlspecialchars(hb_portal_money_format_decimal($complimentaryCredit, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
+</div>
+<?php endif; ?>
 <div class="hb-reservation-total-row">
 <dt>Total room charges</dt>
 <dd id="hb-reservation-room-charges"><?php echo htmlspecialchars(hb_portal_money_format_decimal($roomCharges, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
@@ -673,6 +690,19 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
             ? itm_hotel_booking_portal_confirmation_group_room_display_amounts($conn, $company_id, $groupRows, $occupancy)
             : [];
         $ratePlanLabel = hb_portal_booking_rate_plan_label($primaryRow);
+        $requiresApprovalConfirm = false;
+        if ($conn && $company_id > 0) {
+            foreach ($groupRows as $groupRow) {
+                $typeId = (int) ($groupRow['room_type_id'] ?? 0);
+                if ($typeId > 0) {
+                    $typeApprovalRow = itm_hotel_booking_fetch_room_type_row($conn, $company_id, $typeId);
+                    if ($typeApprovalRow && !empty($typeApprovalRow['requires_approval'])) {
+                        $requiresApprovalConfirm = true;
+                        break;
+                    }
+                }
+            }
+        }
         $cardClass = 'hb-payment-confirmation card' . ($isCancelled ? ' hb-payment-confirmation--cancelled' : '');
         $iconChar = $isCancelled ? '✕' : '✓';
         $title = $isCancelled ? 'Reservation cancelled' : 'Reservation confirmed';
@@ -691,6 +721,9 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <div>
 <h1 class="hb-payment-confirmation-title"><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></h1>
 <p class="hb-payment-confirmation-lead"><?php echo htmlspecialchars($lead, ENT_QUOTES, 'UTF-8'); ?></p>
+<?php if ($requiresApprovalConfirm && !$isCancelled): ?>
+<p class="hb-rate-info-banner hb-approval-banner" role="status">Subject to hotel approval</p>
+<?php endif; ?>
 </div>
 </div>
 <dl class="hb-payment-confirmation-details">

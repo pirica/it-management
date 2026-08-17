@@ -411,6 +411,12 @@ body.hb-modal-open { overflow: hidden; }
 .hb-room-lines-banner { background: #eef4fb; border: 1px solid #c5d9f0; border-radius: 6px; padding: 14px 16px; margin: 0 0 20px; }
 .hb-room-lines-banner-lead { margin: 0 0 8px; font-size: .95rem; }
 .hb-room-lines-banner-list { margin: 0; padding-left: 1.2rem; font-size: .9rem; }
+.hb-room-lines-occupancy-split { margin: 0 0 10px; padding-left: 1.2rem; font-size: .88rem; }
+.hb-connecting-room-banner { margin: 0 0 10px; font-size: .88rem; background: #f5f0e6; border: 1px solid #e0d4bc; border-radius: 4px; padding: 8px 10px; }
+.hb-approval-banner { margin: 0 0 12px; font-size: .9rem; background: #fff8e6; border: 1px solid #e6c200; border-radius: 4px; padding: 8px 10px; font-weight: 600; }
+.hb-rd-policy-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.hb-rd-policy-badge { display: inline-block; font-size: .75rem; padding: 2px 8px; border-radius: 999px; background: #eef4fb; border: 1px solid #c5d9f0; }
+.hb-room-lines-summary-occ { opacity: .85; font-size: .88em; }
 .hb-room-lines-slot { font-weight: 600; }
 .hb-room-lines-summary { margin-bottom: 20px; }
 .hb-room-lines-summary-title { margin: 0 0 10px; font-size: 1rem; font-weight: 700; }

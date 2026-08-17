@@ -50,6 +50,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $calendarAdvanceDaysLeft = 31;
     }
     $showDiscountStrikethrough = !empty($_POST['show_discount_strikethrough']) ? 1 : 0;
+    $complimentaryMinRooms = max(0, (int) ($_POST['portal_complimentary_min_rooms_paid'] ?? 0));
+    $complimentaryRoomsFree = max(0, (int) ($_POST['portal_complimentary_rooms_free'] ?? 1));
+    if ($complimentaryMinRooms < 1) {
+        $complimentaryRoomsFree = max(0, $complimentaryRoomsFree);
+    }
     if (trim((string) ($_POST['reviews_url'] ?? '')) !== '' && $reviewsUrl === '') {
         $errors[] = 'Reviews URL must start with http:// or https://';
     }
@@ -92,9 +97,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $sid = (int) ($row['id'] ?? 0);
     if (empty($errors)) {
-    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, stripe_enabled = ?, stripe_mode = ?, stripe_publishable_key = ?, stripe_secret_key_encrypted = ?, stripe_webhook_signing_secret_encrypted = ?, deposit_percent = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
+    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, stripe_enabled = ?, stripe_mode = ?, stripe_publishable_key = ?, stripe_secret_key_encrypted = ?, stripe_webhook_signing_secret_encrypted = ?, deposit_percent = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, portal_complimentary_min_rooms_paid = ?, portal_complimentary_rooms_free = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
     if ($upd) {
-        mysqli_stmt_bind_param($upd, 'iissssdssssssdiiisiii', $enabled, $stripeEnabled, $stripeMode, $stripePublishableKey, $stripeSecretEnc, $stripeWebhookEnc, $depositPercent, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $urlmybooking, $employee_id, $sid, $company_id);
+        mysqli_stmt_bind_param($upd, 'iissssdssssssdiiiiiiisiii', $enabled, $stripeEnabled, $stripeMode, $stripePublishableKey, $stripeSecretEnc, $stripeWebhookEnc, $depositPercent, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $complimentaryMinRooms, $complimentaryRoomsFree, $urlmybooking, $employee_id, $sid, $company_id);
         mysqli_stmt_execute($upd);
         mysqli_stmt_close($upd);
         header('Location: index.php?saved=1');
@@ -180,6 +185,16 @@ itm_hospitality_admin_layout_begin($crud_title);
 <span>Show discount as strikethrough</span>
 </label>
 <p class="text-muted" style="font-size:.85rem;margin-top:4px;">When enabled, Step 1 room cards and Step 2 rate totals show the list price struck through next to the discounted sale price. When disabled, only the sale price is shown.</p>
+</div>
+<div class="form-group">
+<label>Complimentary rooms — minimum paid rooms</label>
+<input type="number" name="portal_complimentary_min_rooms_paid" class="form-control" min="0" max="20" step="1" value="<?php echo (int) ($row['portal_complimentary_min_rooms_paid'] ?? 0); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">When a guest books more than this many rooms, the cheapest room night(s) are credited. Use <strong>0</strong> to disable complimentary rooms.</p>
+</div>
+<div class="form-group">
+<label>Complimentary rooms — free room count</label>
+<input type="number" name="portal_complimentary_rooms_free" class="form-control" min="0" max="10" step="1" value="<?php echo (int) ($row['portal_complimentary_rooms_free'] ?? 1); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Number of lowest-priced room stays credited once the minimum paid rooms threshold is exceeded.</p>
 </div>
 <div class="card" style="margin-top:24px;">
 <h2 style="margin-top:0;">Stripe Checkout</h2>
