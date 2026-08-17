@@ -133,7 +133,7 @@ $tabLabels = [
             </div>
 
             <div class="card">
-                <table>
+                <table data-itm-no-import-excel="1">
                     <thead>
                     <tr>
                         <th>ID</th>
@@ -233,7 +233,7 @@ $tabLabels = [
                         <button type="submit" class="btn btn-primary" title="Save">💾</button>
                     </div>
                 </form>
-                <table>
+                <table data-itm-no-import-excel="1">
                     <thead>
                     <tr>
                         <th>Priority</th>

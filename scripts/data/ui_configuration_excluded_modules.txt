@@ -54,11 +54,14 @@ system_access
 schema_migrations
 system_status
 todo
+ticket_sla_dashboard
 visitors_access_log
 vlans
 webmail
 # Bespoke booking / scheduling UIs (not flattened CRUD list contract).
 appointment
+appointments
+approval_inbox
 appointment_settings
 hotel_bookings
 hotel_booking_amenities

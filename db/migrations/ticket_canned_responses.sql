@@ -14,6 +14,7 @@ CREATE TABLE `ticket_canned_responses` (
   `updated_by` int DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ticket_canned_responses_company_title` (`company_id`,`title`),
   KEY `category_id` (`category_id`),
   KEY `company_id` (`company_id`),
   CONSTRAINT `fk_ticket_canned_responses_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,

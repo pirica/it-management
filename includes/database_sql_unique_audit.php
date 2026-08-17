@@ -449,6 +449,10 @@ if (!function_exists('itm_database_sql_unique_audit_run')) {
             'hotel_booking_room_utilities' => 'Many utilities per room; identity is PRIMARY KEY (id) only.',
             'hotel_booking_distribution_ari_events' => 'ARI event log; many rows per channel; identity is PRIMARY KEY (id) only.',
             'hotel_booking_distribution_webhook_queue' => 'Outbound webhook queue; many rows per channel; identity is PRIMARY KEY (id) only.',
+            'hotel_booking_payment_events' => 'Stripe/payment event log; many rows per booking; identity is PRIMARY KEY (id) only.',
+            'integration_webhook_deliveries' => 'Outbound delivery queue; many rows per webhook; identity is PRIMARY KEY (id) only.',
+            'equipment_lifecycle_events' => 'Lifecycle audit log; many rows per equipment; identity is PRIMARY KEY (id) only.',
+            'automation_rule_runs' => 'Automation execution log; many rows per rule; identity is PRIMARY KEY (id) only.',
             'webmail_signatures' => 'Per-employee signatures; duplicate names allowed per employee.',
         ];
 
