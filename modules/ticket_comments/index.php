@@ -365,6 +365,7 @@ $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
 
 $itmTicketMentionUsers = [];
+$itmTicketCannedResponses = [];
 if (in_array($crud_action, ['create', 'edit'], true) && $company_id > 0) {
     $mentionSql = 'SELECT id, username, first_name, last_name FROM employees
                    WHERE company_id = ? AND deleted_at IS NULL AND active = 1
@@ -844,6 +845,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                     $commentId = (int)mysqli_insert_id($conn);
                     if ($commentId > 0 && $ticketId > 0 && $body !== '') {
                         itm_notify_ticket_comment_mentions($conn, (int)$company_id, $ticketId, $commentId, $body, (int)($_SESSION['employee_id'] ?? 0));
+                    }
+                    if ($ticketId > 0) {
+                        itm_ticket_sla_stamp_first_response($conn, $ticketId, (int)$company_id);
                     }
                 } elseif ($crud_action === 'edit' && $editId > 0 && $ticketId > 0 && $body !== '') {
                     itm_notify_ticket_comment_mentions($conn, (int)$company_id, $ticketId, (int)$editId, $body, (int)($_SESSION['employee_id'] ?? 0), $previousCommentBody);

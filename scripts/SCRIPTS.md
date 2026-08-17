@@ -604,12 +604,14 @@ Materialized examples: `modules/note_labels/`, `modules/modules_registry/`.
 
 #### Smoke tests (CI — `scripts/smoke_test.sh`)
 
-GitHub Actions (`.github/workflows/smoke.yml`) runs two jobs:
+GitHub Actions (`.github/workflows/smoke.yml`) runs four jobs:
 
 | Job | Command | Purpose |
 |-----|---------|---------|
 | **smoke** | `bash scripts/smoke_test.sh` | PHP syntax lint + CSRF + SQLi + FK label search coverage audits (no MySQL) |
 | **database-import** | `bash scripts/verify_database_sql_import.sh` then `php scripts/verify_crud_fk_label_search.php` | Full `db/` import on MySQL 8.0 service (`MYSQL_PORT=3306` in workflow — GHA maps `3306:3306`; local Dunebox uses `MYSQL_PORT=3307` or `.env`); asserts live table count matches `CREATE TABLE` entries in `db/01_schema.sql` (derived at runtime — `grep -c '^CREATE TABLE' db/01_schema.sql`); runtime FK label search regression |
+| **tier2** | `php scripts/run_tier2_checks.php` | Tier 2 static `check_*` batch from `SCRIPTS_TEST_MATRIX.md` (no MySQL) |
+| **phpunit** | `ITM_SKIP_DB_TESTS=1 php scripts/run_tests.php` | PHPUnit unit suite without live-database tests |
 
 **smoke** job steps only:
 
@@ -1125,7 +1127,10 @@ Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking
 | `php scripts/send_mailpit_inbound_test_email.php` | Sends a test message **To** a tenant `companies.email` via Mailpit SMTP (`127.0.0.1:1025`); optional `--process` runs inbound ticket creation for that company |
 | `php scripts/verify_inbound_email_tickets.php` | Regression for inbound parsers, dedupe, threading, keyword routing, event logging, requester resolution, schema columns; live Mailpit E2E when API at `http://localhost/mailpit/api/v1` responds |
 | `php scripts/run_notification_digest.php` | Sends digest emails for employees with unread `employee_notifications` rows; optional `--company=1` |
+| `php scripts/run_ticket_sla_monitor.php` | Stamps `sla_*_breached_at`, logs `ticket_activity`, notifies assignees; optional `--company=1`; schedule every 15 min |
+| `php scripts/verify_ticket_sla_dashboard.php` | Regression for SLA Command Center (`includes/itm_ticket_sla.php`, `modules/ticket_sla_dashboard/`, breach columns) |
 | `php scripts/verify_employee_notifications.php` | Regression for `itm_notify_employee()`, unread count, mark read, header API/JS assets |
+| `php scripts/verify_approval_inbox.php` | Regression for `includes/itm_approval_inbox.php`, `approval_inbox_items` upsert/fetch, adapter registry |
 | `php scripts/test_email_forgot.php` | Manual forgot-password email test via `itm_send_email()` / tenant SMTP; creates a real 24-hour reset token for the matching employee before sending; CLI supports `--company=1` (defaults to session company or `1`) |
 | `php scripts/test_register_mail.php` | Manual registration welcome email test via `itm_send_email()`; CLI supports `--company=1` |
 

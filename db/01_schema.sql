@@ -2777,6 +2777,8 @@ CREATE TABLE `tickets` (
   `resolved_at` timestamp NULL DEFAULT NULL,
   `sla_response_due_at` timestamp NULL DEFAULT NULL,
   `sla_resolve_due_at` timestamp NULL DEFAULT NULL,
+  `sla_response_breached_at` timestamp NULL DEFAULT NULL,
+  `sla_resolve_breached_at` timestamp NULL DEFAULT NULL,
   `is_archived` tinyint(1) NOT NULL DEFAULT '0',
   `tickets_photos` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `active` tinyint(1) DEFAULT '1',
