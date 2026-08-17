@@ -246,15 +246,15 @@ final class HotelBookingRoomTypePortalRulesTest extends TestCase
 
     public function testConnectingUnitCheckoutLineCount(): void
     {
-        $primary = self::baseTypeRow(['connecting_room_type_id' => 20]);
+        $primary = ['connecting_room_id' => 20];
         $this->assertSame(2, itm_hotel_booking_portal_checkout_required_room_line_count($primary, ['rooms' => 1]));
-        $this->assertFalse(itm_hotel_booking_portal_connecting_unit_fits_occupancy(null, 0, $primary, ['rooms' => 1, 'adults' => 2]));
+        $this->assertFalse(itm_hotel_booking_portal_connecting_unit_fits_occupancy(null, 0, ['id' => 1], ['id' => 2], ['rooms' => 1, 'adults' => 2]));
     }
 
     public function testCheckoutRequiredLineCountForConnectingUnit(): void
     {
-        $typeRow = self::baseTypeRow(['connecting_room_type_id' => 5]);
-        $this->assertSame(2, itm_hotel_booking_portal_checkout_required_room_line_count($typeRow, ['rooms' => 1, 'adults' => 2]));
-        $this->assertSame(3, itm_hotel_booking_portal_checkout_required_room_line_count($typeRow, ['rooms' => 3, 'adults' => 4]));
+        $roomRow = ['connecting_room_id' => 5];
+        $this->assertSame(2, itm_hotel_booking_portal_checkout_required_room_line_count($roomRow, ['rooms' => 1, 'adults' => 2]));
+        $this->assertSame(3, itm_hotel_booking_portal_checkout_required_room_line_count($roomRow, ['rooms' => 3, 'adults' => 4]));
     }
 }

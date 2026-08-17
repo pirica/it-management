@@ -11,9 +11,6 @@ if (!function_exists('brt_fk_label_column_for_field')) {
         if ($fieldName === 'upgrade_to_room_type_id' && in_array('code', $available, true)) {
             return 'code';
         }
-        if ($fieldName === 'connecting_room_type_id' && in_array('code', $available, true)) {
-            return 'code';
-        }
 
         return itm_fk_label_column_for_table($available);
     }
@@ -115,7 +112,6 @@ if (!function_exists('brt_portal_rule_form_field_order')) {
             'extra_bed_allowed',
             'max_extra_beds',
             'crib_included',
-            'connecting_room_type_id',
             'allow_mixed_types_in_group',
             'max_rooms_per_booking',
         ];

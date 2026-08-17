@@ -4911,7 +4911,6 @@ CREATE TABLE `booking_rooms_types` (
   `child_max_age` int NOT NULL DEFAULT '12',
   `min_adults` int NOT NULL DEFAULT '1',
   `allow_mixed_types_in_group` tinyint(1) NOT NULL DEFAULT '1',
-  `connecting_room_type_id` int DEFAULT NULL,
   `max_rooms_per_booking` int DEFAULT NULL,
   `portal_extra_adult_supplement_percent` decimal(5,2) DEFAULT NULL,
   `portal_child_nightly_supplement` decimal(10,2) DEFAULT NULL,
@@ -4952,10 +4951,8 @@ CREATE TABLE `booking_rooms_types` (
   UNIQUE KEY `uq_booking_rooms_types_company_name` (`company_id`,`name`),
   KEY `company_id` (`company_id`),
   KEY `upgrade_to_room_type_id` (`upgrade_to_room_type_id`),
-  KEY `connecting_room_type_id` (`connecting_room_type_id`),
   CONSTRAINT `booking_rooms_types_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `booking_rooms_types_ibfk_upgrade` FOREIGN KEY (`upgrade_to_room_type_id`) REFERENCES `booking_rooms_types` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `booking_rooms_types_ibfk_connecting` FOREIGN KEY (`connecting_room_type_id`) REFERENCES `booking_rooms_types` (`id`) ON DELETE SET NULL
+  CONSTRAINT `booking_rooms_types_ibfk_upgrade` FOREIGN KEY (`upgrade_to_room_type_id`) REFERENCES `booking_rooms_types` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `hotel_booking_housekeeping_statuses` (
@@ -5213,6 +5210,8 @@ CREATE TABLE `hotel_booking_rooms` (
   `num_beds` int NOT NULL DEFAULT '1',
   `size_sqm` decimal(8,2) DEFAULT NULL,
   `view_label` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `connecting_room_id` int DEFAULT NULL,
+  `connected_to` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `smoking_allowed` tinyint(1) NOT NULL DEFAULT '0',
   `is_out_of_order` tinyint(1) NOT NULL DEFAULT '0',
   `is_out_of_service` tinyint(1) NOT NULL DEFAULT '0',
@@ -5229,10 +5228,12 @@ CREATE TABLE `hotel_booking_rooms` (
   KEY `hotel_id` (`hotel_id`),
   KEY `room_type_id` (`room_type_id`),
   KEY `housekeeping_status_id` (`housekeeping_status_id`),
+  KEY `connecting_room_id` (`connecting_room_id`),
   CONSTRAINT `hotel_booking_rooms_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `hotel_booking_rooms_ibfk_hotel` FOREIGN KEY (`hotel_id`) REFERENCES `hotel_booking_hotels` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `hotel_booking_rooms_ibfk_type` FOREIGN KEY (`room_type_id`) REFERENCES `booking_rooms_types` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `hotel_booking_rooms_ibfk_hk` FOREIGN KEY (`housekeeping_status_id`) REFERENCES `hotel_booking_housekeeping_statuses` (`id`) ON DELETE SET NULL
+  CONSTRAINT `hotel_booking_rooms_ibfk_hk` FOREIGN KEY (`housekeeping_status_id`) REFERENCES `hotel_booking_housekeeping_statuses` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `hotel_booking_rooms_ibfk_connecting` FOREIGN KEY (`connecting_room_id`) REFERENCES `hotel_booking_rooms` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `hotel_booking_housekeeping_maintenance` (

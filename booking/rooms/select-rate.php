@@ -224,31 +224,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $existingDraft = itm_hotel_booking_portal_draft_get() ?: [];
             $ratedLines = itm_hotel_booking_portal_draft_rated_room_lines($existingDraft, $roomLinesContext);
-            $checkoutTypeRow = $roomTypeRowCheck ?: [];
+            $checkoutPrimaryRoom = $room;
             if ($roomsNeeded === 1 && $ratedLines !== []) {
-                $primaryTypeId = (int) ($ratedLines[0]['room_type_id'] ?? 0);
-                if ($primaryTypeId > 0) {
-                    $primaryTypeRowDraft = itm_hotel_booking_fetch_room_type_row($conn, $company_id, $primaryTypeId);
-                    if ($primaryTypeRowDraft) {
-                        $checkoutTypeRow = $primaryTypeRowDraft;
+                $primaryRoomIdDraft = (int) ($ratedLines[0]['room_id'] ?? 0);
+                if ($primaryRoomIdDraft > 0) {
+                    $primaryRoomDraft = itm_hotel_booking_fetch_room_row($conn, $company_id, $primaryRoomIdDraft);
+                    if ($primaryRoomDraft) {
+                        $checkoutPrimaryRoom = $primaryRoomDraft;
                     }
                 }
             }
-            $requiredLineCount = itm_hotel_booking_portal_checkout_required_room_line_count($checkoutTypeRow, $occupancy);
+            $requiredLineCount = itm_hotel_booking_portal_checkout_required_room_line_count($checkoutPrimaryRoom, $occupancy);
             $baseLine = itm_hotel_booking_portal_room_line_from_room_row($conn, $company_id, $hotelId, $room, $checkInIso);
             $ratedLine = itm_hotel_booking_portal_room_line_apply_rate_plan($baseLine, $planRow, $slug, $discountPercent);
-            if (itm_hotel_booking_portal_connecting_room_type_id($roomTypeRowCheck ?: []) > 0) {
+            $partnerRoomId = itm_hotel_booking_portal_connecting_room_id($checkoutPrimaryRoom);
+            if ($partnerRoomId > 0 && $roomId === (int) ($checkoutPrimaryRoom['id'] ?? 0)) {
                 $ratedLine['connecting_unit_role'] = 'primary';
-            } elseif ($requiredLineCount > 1 && (int) ($room['room_type_id'] ?? 0) === itm_hotel_booking_portal_connecting_room_type_id($checkoutTypeRow)) {
+            } elseif ($requiredLineCount > 1 && $roomId === $partnerRoomId) {
                 $ratedLine['connecting_unit_role'] = 'connecting';
             }
             $allLines = array_merge($ratedLines, [$ratedLine]);
-            if ($roomsNeeded === 1 && $requiredLineCount > 1 && itm_hotel_booking_portal_connecting_room_type_id($roomTypeRowCheck ?: []) > 0) {
+            if ($roomsNeeded === 1 && $requiredLineCount > 1 && $partnerRoomId > 0 && $roomId === (int) ($checkoutPrimaryRoom['id'] ?? 0)) {
                 $connectingPick = itm_hotel_booking_portal_connecting_unit_append_unrated_pick(
                     $conn,
                     $company_id,
                     $hotelId,
-                    $roomTypeRowCheck,
+                    $checkoutPrimaryRoom,
                     $checkInIso,
                     $checkOutIso,
                     $allLines
