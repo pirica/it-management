@@ -266,7 +266,7 @@ $nextAnchorHref = sanitize(http_build_query($nextAnchorQuery));
 <tbody>
 <?php foreach ($grid['rooms'] as $room): ?>
 <tr data-room-id="<?php echo (int) $room['id']; ?>">
-<td class="hb-plan-sticky hb-plan-room-col"><?php echo sanitize($room['room_number']); ?></td>
+<td class="hb-plan-sticky hb-plan-room-col" title="Double-click to view room"><?php echo sanitize($room['room_number']); ?></td>
 <td class="hb-plan-sticky hb-plan-hk-col hb-plan-hk-cell" title="Double-click to rotate HSK status"><?php
 $hkColor = $room['hk_color'] ?? '#6c757d';
 $hkLabel = trim((string) ($room['hk_code'] ?? ''));
@@ -345,6 +345,7 @@ foreach ($dayMaintenance as $maint):
 window.HB_PLANNING_DND = <?php echo json_encode([
     'csrf' => itm_get_csrf_token(),
     'hkMaintEditBase' => '../hotel_booking_housekeeping_maintenance/edit.php',
+    'roomViewBase' => '../hotel_booking_rooms/view.php',
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
 <?php endif; ?>

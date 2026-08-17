@@ -59,6 +59,13 @@
         return '../hotel_booking_housekeeping_maintenance/edit.php';
     }
 
+    function getRoomViewBase() {
+        if (window.HB_PLANNING_DND && window.HB_PLANNING_DND.roomViewBase) {
+            return window.HB_PLANNING_DND.roomViewBase;
+        }
+        return '../hotel_booking_rooms/view.php';
+    }
+
     function openHkMaintModal(maintenanceId) {
         var modal = document.getElementById('hb-hk-maint-modal');
         var frame = document.getElementById('hb-hk-maint-modal-frame');
@@ -301,6 +308,18 @@
             var maintId = maintBar.getAttribute('data-maintenance-id');
             if (maintId) {
                 openHkMaintModal(maintId);
+            }
+            return;
+        }
+        var roomCell = ev.target.closest('td.hb-plan-room-col');
+        if (roomCell) {
+            var roomRow = roomCell.closest('tr[data-room-id]');
+            if (!roomRow) {
+                return;
+            }
+            var roomViewId = roomRow.getAttribute('data-room-id');
+            if (roomViewId) {
+                window.location.href = getRoomViewBase() + '?id=' + encodeURIComponent(roomViewId);
             }
             return;
         }
