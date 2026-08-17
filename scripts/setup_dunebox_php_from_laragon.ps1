@@ -41,6 +41,7 @@ $copyDlls = @(
     'php_fileinfo.dll',
     'php_gd2.dll',
     'php_intl.dll',
+    'php_ldap.dll',
     'php_openssl.dll'
 )
 foreach ($dll in $copyDlls) {
