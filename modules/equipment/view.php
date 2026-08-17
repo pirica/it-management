@@ -343,6 +343,5 @@ $lifecycleTimeline = itm_asset_lifecycle_fetch_timeline($conn, (int)$company_id,
     </div>
 </div>
 <?php endif; ?>
-<?php endif; ?>
 </div></div></div><script src="../../js/theme.js"></script><?php itm_crud_record_share_include_modal(); ?>
 </body></html>
