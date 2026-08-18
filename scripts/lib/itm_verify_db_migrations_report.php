@@ -286,7 +286,9 @@ if (!function_exists('itm_verify_db_migrations_parse_sql')) {
         }
 
         $hasDdl = ($triggers !== [] || $tables !== []);
-        $hasDml = (bool)preg_match('/\b(UPDATE|INSERT\s+INTO|DELETE\s+FROM)\b/i', $sql);
+        // Why: `ON UPDATE CURRENT_TIMESTAMP` on column definitions must not count as DML UPDATE statements.
+        $sqlForDmlScan = preg_replace('/\bON\s+UPDATE\b/i', '', $sql) ?? $sql;
+        $hasDml = (bool)preg_match('/\b(UPDATE|INSERT\s+INTO|DELETE\s+FROM)\b/i', $sqlForDmlScan);
         $isDmlOnly = $hasDml && !$hasDdl;
 
         return [
@@ -400,6 +402,19 @@ if (!function_exists('itm_verify_db_migrations_probe_custom')) {
      */
     function itm_verify_db_migrations_probe_custom($conn, $filename, $sql, array $parsed)
     {
+        if ($filename === 'company_sso_jit.sql') {
+            $ok = itm_verify_db_migrations_column_exists($conn, 'companies', 'sso_jit_enabled');
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'fail',
+                $ok ? 'Applied' : 'Not applied',
+                $ok
+                    ? 'companies.sso_jit_enabled column present.'
+                    : 'Missing companies.sso_jit_enabled — apply migration or fresh db/ import.'
+            );
+        }
+
         if ($filename === 'explorer_share.sql') {
             $legacyPresent = [];
             foreach (itm_verify_db_migrations_legacy_share_tables() as $legacyTable) {
