@@ -324,6 +324,32 @@ if (!function_exists('itm_company_id_ui_column_collect_report')) {
     }
 }
 
+if (!function_exists('itm_company_id_ui_column_format_module_line')) {
+    /**
+     * One report bullet for a module slug (plain text CLI; localhost link in browser).
+     */
+    function itm_company_id_ui_column_format_module_line(
+        string $slug,
+        string $table,
+        int $fileCount,
+        bool $linkModules = false
+    ): string {
+        $suffix = $table !== '' ? ' [' . $table . ']' : '';
+        $tail = ' (' . $fileCount . ' php file(s))';
+        if (!$linkModules) {
+            return '  - ' . $slug . $suffix . $tail;
+        }
+
+        require_once __DIR__ . '/script_browser_nav.php';
+        $moduleLink = itm_script_format_modules_file_local_dev_link(
+            'modules/' . $slug . '/index.php',
+            $slug
+        );
+
+        return '  - ' . $moduleLink . $suffix . $tail;
+    }
+}
+
 if (!function_exists('itm_company_id_ui_column_format_report')) {
     /**
      * @param array{
@@ -335,13 +361,17 @@ if (!function_exists('itm_company_id_ui_column_format_report')) {
      *   not_crud: array<string, string>,
      *   file_counts: array<string, int>
      * } $report
+     * @param bool $linkModules Browser HTML: link each slug to modules/{slug}/index.php (target _blank)
      */
-    function itm_company_id_ui_column_format_report(array $report, string $nl = "\n"): string
+    function itm_company_id_ui_column_format_report(array $report, string $nl = "\n", bool $linkModules = false): string
     {
         $lines = [];
         $lines[] = 'Company column UI audit (company_id on flattened CRUD list tables)';
         $lines[] = str_repeat('-', 72);
         $lines[] = 'Scans every PHP file under modules/{slug}/** (recursive).';
+        if ($linkModules) {
+            $lines[] = 'Module slugs link to http://localhost/it-management/modules/{slug}/index.php (new tab).';
+        }
         $lines[] = 'Legend: scaffold = $hideCompanyIdTables present; exposed = Company column may render.';
         $lines[] = '';
 
@@ -362,8 +392,12 @@ if (!function_exists('itm_company_id_ui_column_format_report')) {
             } else {
                 foreach ($rows as $slug => $table) {
                     $fileCount = (int) ($report['file_counts'][$slug] ?? 0);
-                    $suffix = $table !== '' ? ' [' . $table . ']' : '';
-                    $lines[] = '  - ' . $slug . $suffix . ' (' . $fileCount . ' php file(s))';
+                    $lines[] = itm_company_id_ui_column_format_module_line(
+                        (string) $slug,
+                        (string) $table,
+                        $fileCount,
+                        $linkModules
+                    );
                 }
             }
             $lines[] = '';
