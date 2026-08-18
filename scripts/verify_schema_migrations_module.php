@@ -75,6 +75,11 @@ if (!is_file($indexPath)) {
         } else {
             sm_verify_pass('index.php lists all migration files from build_status().');
         }
+        if (strpos($indexSource, 'action="record.php"') === false) {
+            sm_verify_fail('index.php missing record.php POST action for probe-satisfied audit rows.');
+        } else {
+            sm_verify_pass('index.php posts record action to record.php.');
+        }
     }
 }
 
@@ -100,6 +105,7 @@ foreach (['create.php', 'edit.php'] as $missingEntry) {
 }
 
 $deletePath = ROOT_PATH . 'modules/schema_migrations/delete.php';
+$recordPath = ROOT_PATH . 'modules/schema_migrations/record.php';
 if (!is_file($deletePath)) {
     sm_verify_fail('Missing delete.php');
 } else {
@@ -113,6 +119,22 @@ if (!is_file($deletePath)) {
             }
         }
         sm_verify_pass('delete.php includes POST guard, CSRF, and audit-row delete helper.');
+    }
+}
+
+if (!is_file($recordPath)) {
+    sm_verify_fail('Missing record.php');
+} else {
+    $recordSource = file_get_contents($recordPath);
+    if ($recordSource === false) {
+        sm_verify_fail('Could not read record.php');
+    } else {
+        foreach (['REQUEST_METHOD', 'itm_require_post_csrf', 'itm_database_migrations_record_satisfied_file'] as $token) {
+            if (strpos($recordSource, $token) === false) {
+                sm_verify_fail('record.php missing expected token: ' . $token);
+            }
+        }
+        sm_verify_pass('record.php includes POST guard, CSRF, and record-satisfied helper.');
     }
 }
 

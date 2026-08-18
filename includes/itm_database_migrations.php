@@ -616,6 +616,100 @@ if (!function_exists('itm_database_migrations_record_applied')) {
     }
 }
 
+if (!function_exists('itm_database_migrations_find_status_row')) {
+    /**
+     * @return array<string, mixed>|null
+     */
+    function itm_database_migrations_find_status_row($conn, $filename)
+    {
+        $filename = basename((string)$filename);
+        if ($filename === '' || !($conn instanceof mysqli)) {
+            return null;
+        }
+
+        $status = itm_database_migrations_build_status($conn);
+        foreach ($status['migrations'] as $row) {
+            if ((string)($row['filename'] ?? '') === $filename) {
+                return $row;
+            }
+        }
+
+        if (in_array($filename, itm_database_migrations_bootstrap_filenames(), true)) {
+            $fileRow = itm_database_migrations_resolve_bootstrap_file($filename);
+            if ($fileRow === null) {
+                return null;
+            }
+            $appliedMap = itm_database_migrations_fetch_applied_map($conn);
+            $audit = $appliedMap[$filename] ?? null;
+
+            return [
+                'filename' => $filename,
+                'checksum' => (string)($fileRow['checksum'] ?? ''),
+                'state' => 'applied',
+                'label' => 'Applied',
+                'detail' => 'Bootstrap table definition — not in runner apply loop.',
+                'recorded' => $audit !== null,
+                'schema_satisfied' => true,
+                'applied_at' => $audit['applied_at'] ?? null,
+            ];
+        }
+
+        return null;
+    }
+}
+
+if (!function_exists('itm_database_migrations_record_satisfied_file')) {
+    /**
+     * Insert an audit row when the live schema probe already passes (no SQL re-run).
+     *
+     * @return array{0: bool, 1: string}
+     */
+    function itm_database_migrations_record_satisfied_file($conn, $filename)
+    {
+        if (!($conn instanceof mysqli)) {
+            return [false, 'No database connection.'];
+        }
+
+        $filename = basename((string)$filename);
+        if ($filename === '' || !preg_match('/^[A-Za-z0-9_.-]+\.sql$/', $filename)) {
+            return [false, 'Invalid migration filename.'];
+        }
+
+        if (!itm_database_migrations_ensure_table($conn)) {
+            return [false, 'Could not ensure schema_migrations table.'];
+        }
+
+        $appliedMap = itm_database_migrations_fetch_applied_map($conn);
+        if (isset($appliedMap[$filename])) {
+            return [true, 'Audit row already recorded for ' . $filename . '.'];
+        }
+
+        $statusRow = itm_database_migrations_find_status_row($conn, $filename);
+        if ($statusRow === null) {
+            return [false, 'Migration file not found on disk.'];
+        }
+
+        if ((string)($statusRow['state'] ?? '') === 'drift') {
+            return [false, 'Checksum drift — resolve before recording.'];
+        }
+
+        if ((string)($statusRow['state'] ?? '') !== 'applied') {
+            return [false, 'Live schema probe has not passed — apply the migration first.'];
+        }
+
+        $checksum = (string)($statusRow['checksum'] ?? '');
+        if ($checksum === '') {
+            return [false, 'Could not resolve file checksum.'];
+        }
+
+        if (!itm_database_migrations_record_applied($conn, $filename, $checksum)) {
+            return [false, 'Could not insert audit row: ' . mysqli_error($conn)];
+        }
+
+        return [true, 'Recorded audit history for ' . $filename . '.'];
+    }
+}
+
 if (!function_exists('itm_database_migrations_apply_pending')) {
     /**
      * @return array{

@@ -28,8 +28,9 @@ Admin-only UI for the **`schema_migrations`** history table populated by `script
 
 Bespoke admin module (`docs/list_bespoke_UI.txt`):
 
-- **index.php** — summary KPIs from `itm_database_migrations_build_status()`, searchable/sortable list of **all** `db/migrations/*.sql` files (live probe status + audit metadata when recorded), links to [migrate.php?run=1](http://localhost/it-management/scripts/migrate.php?run=1) and [verify_db_migrations.php?run=1](http://localhost/it-management/scripts/verify_db_migrations.php?run=1), per-row Open SQL when file still on disk, drift / not-recorded / file-removed badges, **🗑️** delete history row only when an audit row exists (POST `delete.php` + CSRF + confirm).
-- **view.php** — read-only detail with checksum comparison when file exists; **🗑️** delete history row.
+- **index.php** — summary KPIs from `itm_database_migrations_build_status()`, searchable/sortable list of **all** `db/migrations/*.sql` files (live probe status + audit metadata when recorded). **🔎** View works for every file (`view.php?filename=` or `?id=`). **💾** Record inserts an audit row when the live probe already passes (no SQL re-run). **🗑️** delete only when an audit row exists. **Applied at** shows the audit timestamp when recorded, or `Probe satisfied` when applied but not yet logged.
+- **view.php** — read-only detail by audit `id` or `filename`; probe status, checksum comparison, **💾** record, **🗑️** delete when recorded.
+- **record.php** — POST handler (CSRF, admin) calling `itm_database_migrations_record_satisfied_file()`.
 - **delete.php** — POST handler only (CSRF, admin gate, hard `DELETE` on `schema_migrations` by `id`).
 - **list_all.php** — redirect to `index.php`.
 - **No** `create.php` / `edit.php`, bulk delete, Clear Table, sample data, or Excel import.

@@ -346,12 +346,29 @@ $csrfToken = itm_get_csrf_token();
                             $hasDrift = $state === 'drift' || ($recorded && $recordedChecksum !== '' && $fileChecksum !== '' && $recordedChecksum !== $fileChecksum);
                             $sqlHref = BASE_URL . 'scripts/migrate.php?run=1&sql=' . rawurlencode($filename);
                             $statusBadgeClass = $state === 'pending' ? 'pending' : ($state === 'drift' ? 'drift' : 'applied');
+                            $viewHref = $rowId > 0
+                                ? 'view.php?id=' . $rowId . ($listReturnQuery !== '' ? '&return_query=' . rawurlencode($listReturnQuery) : '')
+                                : 'view.php?filename=' . rawurlencode($filename) . ($listReturnQuery !== '' ? '&return_query=' . rawurlencode($listReturnQuery) : '');
+                            $canRecord = !$recorded && $state === 'applied' && $onDisk;
+                            $appliedAtCell = $appliedAtDisplay;
+                            if ($appliedAtCell === '' && $state === 'applied' && !$recorded) {
+                                $appliedAtCell = 'Probe satisfied';
+                            }
                             ?>
                             <tr>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
+                                        <a class="btn btn-sm" href="<?php echo sanitize($viewHref); ?>" title="View">🔎</a>
+                                        <?php if ($canRecord): ?>
+                                            <form method="POST" action="record.php" style="display:inline;margin:0;">
+                                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                                <input type="hidden" name="filename" value="<?php echo sanitize($filename); ?>">
+                                                <input type="hidden" name="redirect" value="index.php">
+                                                <input type="hidden" name="return_query" value="<?php echo sanitize($listReturnQuery); ?>">
+                                                <button type="submit" class="btn btn-sm btn-primary" title="Record audit row">💾</button>
+                                            </form>
+                                        <?php endif; ?>
                                         <?php if ($rowId > 0): ?>
-                                            <a class="btn btn-sm" href="view.php?id=<?php echo $rowId; ?>" title="View">🔎</a>
                                             <form method="POST" action="delete.php" style="display:inline;margin:0;" onsubmit="return confirm('Remove this migration history row? The live database schema is unchanged — only the audit record is deleted.');">
                                                 <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                                 <input type="hidden" name="id" value="<?php echo $rowId; ?>">
@@ -359,8 +376,6 @@ $csrfToken = itm_get_csrf_token();
                                                 <input type="hidden" name="return_query" value="<?php echo sanitize($listReturnQuery); ?>">
                                                 <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
                                             </form>
-                                        <?php else: ?>
-                                            <span title="No audit row — run migrate.php apply to record">—</span>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -371,7 +386,7 @@ $csrfToken = itm_get_csrf_token();
                                 <td>
                                     <span class="sm-checksum" title="<?php echo sanitize($fileChecksum); ?>"><?php echo sanitize($fileChecksum); ?></span>
                                 </td>
-                                <td><?php echo sanitize($appliedAtDisplay !== '' ? $appliedAtDisplay : '—'); ?></td>
+                                <td><?php echo sanitize($appliedAtCell !== '' ? $appliedAtCell : '—'); ?></td>
                                 <td>
                                     <?php if ($onDisk): ?>
                                         <a href="<?php echo sanitize($sqlHref); ?>" target="_blank" rel="noopener noreferrer" title="Open SQL in new tab">Open SQL</a>
