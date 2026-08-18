@@ -659,6 +659,22 @@ if (!function_exists('itm_verify_db_migrations_probe_custom')) {
             );
         }
 
+        if ($filename === 'hotel_booking_portal_guest_copy.sql') {
+            $ok = itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_manage_booking_label')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_accessible_room_banner_text')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_disabled_message')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_step_progress_template');
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'fail',
+                $ok ? 'Applied' : 'Not applied',
+                $ok
+                    ? 'Portal guest copy settings columns present.'
+                    : 'Missing portal guest copy columns — apply migration or fresh db/ import.'
+            );
+        }
+
         if ($filename === 'news_module_registry.sql') {
             $newsRows = itm_verify_db_migrations_scalar_count(
                 $conn,

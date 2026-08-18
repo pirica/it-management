@@ -16,6 +16,7 @@ if ($company_id <= 0) {
 }
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 hb_portal_bind_money_settings($settings);
+$manageBookingLabel = itm_hotel_booking_portal_manage_booking_label_from_settings($settings);
 $error = '';
 $success = '';
 $booking = null;
@@ -182,7 +183,7 @@ $manageConfirmationOptions = [
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Manage my booking</title>
+<title><?php echo htmlspecialchars($manageBookingLabel, ENT_QUOTES, 'UTF-8'); ?></title>
 <link rel="stylesheet" href="<?php echo APPURL; ?>/css/hotel-booking-modern.css">
 </head>
 <body class="hb-public<?php echo $booking ? ' hb-checkout-page hb-payment-page' : ''; ?>">
@@ -234,7 +235,7 @@ $manageConfirmationOptions = [
 </main>
 <?php else: ?>
 <main class="hb-main auth-card hb-manage-booking-card">
-<h1>Manage my booking</h1>
+<h1><?php echo htmlspecialchars($manageBookingLabel, ENT_QUOTES, 'UTF-8'); ?></h1>
 <p class="hb-sub">Enter the last name on the reservation, the 10-character confirmation number from your email, and the 12-character auth code (uppercase, lowercase, numbers, and symbols). We will email you a one-time code to continue.</p>
 <?php if ($error): ?><p class="hb-error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php endif; ?>
 <form method="post" class="hb-manage-booking-form">

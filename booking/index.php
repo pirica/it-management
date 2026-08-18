@@ -132,6 +132,7 @@ if ($stmt) {
     mysqli_stmt_close($stmt);
 }
 $pageTitle = $settings['welcome_title'] ?? 'Find your stay';
+$manageBookingLabel = itm_hotel_booking_portal_manage_booking_label_from_settings($settings);
 $hbSettingsPublic = array_merge([
     'price_footnote' => $settings['price_footnote'] ?? '',
     'accessible_features_default' => $settings['accessible_features_default'] ?? '',
@@ -159,7 +160,7 @@ $hbPublicJsVer = (int) (@filemtime(__DIR__ . '/js/hotel-booking-public.js') ?: t
 <div class="hb-header-inner">
 <strong><?php echo htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?></strong>
 <nav>
-<a href="<?php echo APPURL; ?>/users/bookings.php" title="Manage my booking">Manage my booking</a>
+<a href="<?php echo APPURL; ?>/users/bookings.php" title="<?php echo htmlspecialchars($manageBookingLabel, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($manageBookingLabel, ENT_QUOTES, 'UTF-8'); ?></a>
 </nav>
 </div>
 </header>

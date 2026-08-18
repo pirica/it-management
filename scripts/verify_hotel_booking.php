@@ -2002,5 +2002,83 @@ if (strpos($notFoundHtml, 'Cancellation policy not available') !== false
     hb_fail('cancellation policy not-found HTML helper');
 }
 
+$guestCopyColsOk = itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_manage_booking_label')
+    && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_accessible_room_banner_text')
+    && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_disabled_message')
+    && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_settings', 'portal_step_progress_template');
+if ($guestCopyColsOk) {
+    hb_pass('portal guest copy schema columns');
+} else {
+    hb_fail('portal guest copy schema columns missing — apply hotel_booking_portal_guest_copy.sql');
+}
+
+$manageLabel = itm_hotel_booking_portal_manage_booking_label_from_settings([]);
+if ($manageLabel === 'Manage my booking') {
+    hb_pass('portal manage booking label default');
+} else {
+    hb_fail('portal manage booking label default');
+}
+
+$progressLabel = itm_hotel_booking_portal_step_progress_label_from_settings([], 2, 4);
+if ($progressLabel === 'Step 2 of 4') {
+    hb_pass('portal step progress template default');
+} else {
+    hb_fail('portal step progress template default');
+}
+
+$customProgress = itm_hotel_booking_portal_step_progress_label_from_settings(['portal_step_progress_template' => 'Phase {step}/{total}'], 3, 4);
+if ($customProgress === 'Phase 3/4') {
+    hb_pass('portal step progress template substitution');
+} else {
+    hb_fail('portal step progress template substitution');
+}
+
+$stepHeading = itm_hotel_booking_portal_checkout_step_heading_from_settings([
+    'portal_step_label_rate' => 'Pick a rate',
+    'portal_step_progress_template' => 'Step {step} of {total}',
+], 2);
+if (($stepHeading['progress'] ?? '') === 'Step 2 of 4' && ($stepHeading['title'] ?? '') === 'Pick a rate') {
+    hb_pass('portal checkout step heading helper');
+} else {
+    hb_fail('portal checkout step heading helper');
+}
+
+$roomsPhpSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms.php');
+$selectRateSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms/select-rate.php');
+$customizeSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms/customize.php');
+$roomSingleSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms/room-single.php');
+if (strpos($roomsPhpSrc, 'itm_hotel_booking_portal_checkout_step_heading_from_settings') !== false
+    && strpos($selectRateSrc, 'itm_hotel_booking_portal_checkout_step_heading_from_settings') !== false
+    && strpos($customizeSrc, 'itm_hotel_booking_portal_checkout_step_heading_from_settings') !== false
+    && strpos($roomSingleSrc, 'itm_hotel_booking_portal_checkout_step_heading_from_settings') !== false
+    && strpos($roomsPhpSrc, 'itm_hotel_booking_portal_accessible_room_banner_text_from_settings') !== false) {
+    hb_pass('portal guest copy checkout page wiring');
+} else {
+    hb_fail('portal guest copy checkout page wiring');
+}
+
+if (strpos($settingsIndexSrc, 'portal_manage_booking_label') !== false
+    && strpos($settingsIndexSrc, 'portal_step_progress_template') !== false
+    && strpos($settingsIndexSrc, 'portal_step_label_room') !== false
+    && strpos($portalBookingSrc, 'itm_hotel_booking_portal_manage_booking_label_from_settings') !== false
+    && strpos($portalBookingSrc, 'manage_booking_label_from_settings') !== false) {
+    hb_pass('portal guest copy admin + helper wiring');
+} else {
+    hb_fail('portal guest copy admin + helper wiring');
+}
+
+if (strpos($portalBookingSrc, 'function itm_hotel_booking_portal_manage_booking_hint_html') !== false
+    && strpos($portalBookingSrc, 'itm_hotel_booking_portal_manage_booking_label_from_settings($settings)') !== false) {
+    hb_pass('manage booking hint uses label helper');
+} else {
+    hb_fail('manage booking hint uses label helper');
+}
+
+if (strpos($bootstrapSrc, 'itm_hotel_booking_portal_disabled_message_from_settings') !== false) {
+    hb_pass('portal disabled message helper wired in bootstrap');
+} else {
+    hb_fail('portal disabled message helper wired in bootstrap');
+}
+
 itm_script_output_end();
 exit($fail > 0 ? 1 : 0);

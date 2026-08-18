@@ -502,6 +502,7 @@ if ($roomsNeeded > 1) {
     ];
 }
 $showAccessibleBanner = itm_hotel_booking_portal_accessible_banner_enabled_from_settings($settings);
+$checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_settings($settings, 1);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -519,8 +520,8 @@ $showAccessibleBanner = itm_hotel_booking_portal_accessible_banner_enabled_from_
 
 <div class="hb-select-room-layout<?php echo $roomsNeeded > 1 ? ' hb-checkout-layout' : ''; ?>">
 <main class="hb-select-room-main">
-<p class="hb-step-label">Step 1 of 4</p>
-<h1 class="hb-page-title">Select a Room</h1>
+<p class="hb-step-label"><?php echo htmlspecialchars($checkoutStepHeading['progress'], ENT_QUOTES, 'UTF-8'); ?></p>
+<h1 class="hb-page-title"><?php echo htmlspecialchars($checkoutStepHeading['title'], ENT_QUOTES, 'UTF-8'); ?></h1>
 
 <?php if ($roomsNeeded > 1): ?>
 <div class="hb-room-lines-banner" role="status">
@@ -554,7 +555,7 @@ $showAccessibleBanner = itm_hotel_booking_portal_accessible_banner_enabled_from_
 <?php if ($showAccessibleBanner): ?>
 <div class="hb-rate-info-banner hb-accessible-room-banner" role="note">
 <span aria-hidden="true">♿</span>
-<span>Accessible rooms are available at this property. Use <strong>Room Filters</strong> and select <strong>Accessible room</strong> to narrow results.</span>
+<span><?php echo htmlspecialchars(itm_hotel_booking_portal_accessible_room_banner_text_from_settings($settings), ENT_QUOTES, 'UTF-8'); ?></span>
 </div>
 <?php endif; ?>
 

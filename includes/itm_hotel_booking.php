@@ -6666,6 +6666,76 @@ if (!function_exists('itm_hotel_booking_portal_step_label_from_settings')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_manage_booking_label_from_settings')) {
+  function itm_hotel_booking_portal_manage_booking_label_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $text = trim((string) ($settings['portal_manage_booking_label'] ?? 'Manage my booking'));
+    return $text !== '' ? $text : 'Manage my booking';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_accessible_room_banner_text_from_settings')) {
+  function itm_hotel_booking_portal_accessible_room_banner_text_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $text = trim((string) ($settings['portal_accessible_room_banner_text'] ?? 'Accessible rooms are available at this property. Use Room Filters and select Accessible room to narrow results.'));
+    return $text !== '' ? $text : 'Accessible rooms are available at this property. Use Room Filters and select Accessible room to narrow results.';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_disabled_message_from_settings')) {
+  function itm_hotel_booking_portal_disabled_message_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $text = trim((string) ($settings['portal_disabled_message'] ?? 'Public booking portal is disabled for this hotel.'));
+    return $text !== '' ? $text : 'Public booking portal is disabled for this hotel.';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_step_progress_template_from_settings')) {
+  function itm_hotel_booking_portal_step_progress_template_from_settings($settings) {
+    $settings = is_array($settings) ? $settings : [];
+    $text = trim((string) ($settings['portal_step_progress_template'] ?? 'Step {step} of {total}'));
+    if ($text === '' || strpos($text, '{step}') === false) {
+      return 'Step {step} of {total}';
+    }
+    return $text;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_step_progress_label_from_settings')) {
+  function itm_hotel_booking_portal_step_progress_label_from_settings($settings, $step, $total = 4) {
+    $step = max(1, min(4, (int) $step));
+    $total = max(1, min(9, (int) $total));
+    $template = itm_hotel_booking_portal_step_progress_template_from_settings($settings);
+    return str_replace(
+      ['{step}', '{total}'],
+      [(string) $step, (string) $total],
+      $template
+    );
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_checkout_step_heading_from_settings')) {
+  function itm_hotel_booking_portal_checkout_step_heading_from_settings($settings, $stepNum) {
+    $stepNum = max(1, min(4, (int) $stepNum));
+    $fallbacks = [
+      1 => 'Select a Room',
+      2 => 'Select a Rate',
+      3 => 'Customize Your Stay',
+      4 => 'Payment and Guest Details',
+    ];
+    $keys = [
+      1 => 'room',
+      2 => 'rate',
+      3 => 'customize',
+      4 => 'payment',
+    ];
+    return [
+      'progress' => itm_hotel_booking_portal_step_progress_label_from_settings($settings, $stepNum, 4),
+      'title' => itm_hotel_booking_portal_step_label_from_settings($settings, $keys[$stepNum], $fallbacks[$stepNum]),
+    ];
+  }
+}
+
 if (!function_exists('itm_hotel_booking_portal_default_room_image_path_from_settings')) {
   function itm_hotel_booking_portal_default_room_image_path_from_settings($settings) {
     $settings = is_array($settings) ? $settings : [];
@@ -6948,6 +7018,9 @@ if (!function_exists('itm_hotel_booking_portal_public_settings_for_js')) {
       'step_label_rate' => itm_hotel_booking_portal_step_label_from_settings($settings, 'rate', 'Select a Rate'),
       'step_label_customize' => itm_hotel_booking_portal_step_label_from_settings($settings, 'customize', 'Customize Your Stay'),
       'step_label_payment' => itm_hotel_booking_portal_step_label_from_settings($settings, 'payment', 'Payment and Guest Details'),
+      'step_label_room' => itm_hotel_booking_portal_step_label_from_settings($settings, 'room', 'Select a Room'),
+      'manage_booking_label' => itm_hotel_booking_portal_manage_booking_label_from_settings($settings),
+      'step_progress_template' => itm_hotel_booking_portal_step_progress_template_from_settings($settings),
       'default_included_adults_per_room' => itm_hotel_booking_portal_default_included_adults_per_room_from_settings($settings),
       'default_room_image_url' => itm_hotel_booking_portal_default_room_image_path_from_settings($settings),
       'room_type_code_fallback_json' => trim((string) ($settings['portal_room_type_code_fallback_json'] ?? '')) !== ''
@@ -7269,11 +7342,14 @@ if (!function_exists('itm_hotel_booking_portal_manage_booking_hint_html')) {
     $auth2Display = itm_hotel_booking_normalize_auth2($auth2Display);
     $manageUrl = trim((string) $manageUrl);
     $forEmail = !empty($options['for_email']);
+    $settings = is_array($options['settings'] ?? null) ? $options['settings'] : [];
+    $manageLabel = itm_hotel_booking_portal_manage_booking_label_from_settings($settings);
     $classAttr = $forEmail ? '' : ' class="hb-payment-confirmation-manage-hint"';
     $styleAttr = $forEmail ? ' style="margin-top:16px;"' : '';
     $safeLast = htmlspecialchars($lastName, ENT_QUOTES, 'UTF-8');
     $safeAuth = htmlspecialchars($auth2Display, ENT_QUOTES, 'UTF-8');
     $safeUrl = htmlspecialchars($manageUrl, ENT_QUOTES, 'UTF-8');
+    $safeManageLabel = htmlspecialchars($manageLabel, ENT_QUOTES, 'UTF-8');
     $linkAttrs = $forEmail
       ? 'href="' . $safeUrl . '"'
       : 'href="' . $safeUrl . '" class="hb-stay-edit" data-hb-pdf-manage-link="1" target="_blank" rel="noopener noreferrer"';
@@ -7282,7 +7358,7 @@ if (!function_exists('itm_hotel_booking_portal_manage_booking_hint_html')) {
     $html = '<p' . $classAttr . $styleAttr . '>To view or cancel your reservation later, use your last name: <strong>'
       . $safeLast . '</strong>, confirmation number: <strong>' . $safeCode
       . '</strong>, and auth code: <strong>' . $safeAuth
-      . '</strong> on <a ' . $linkAttrs . '><strong>Manage my booking</strong></a>.</p>';
+      . '</strong> on <a ' . $linkAttrs . '><strong>' . $safeManageLabel . '</strong></a>.</p>';
 
     return $html;
   }
@@ -7705,7 +7781,7 @@ if (!function_exists('itm_hotel_booking_portal_send_booking_confirmation_emails'
         . ($guestName !== '' ? ', ' . htmlspecialchars($guestName, ENT_QUOTES, 'UTF-8') : '')
         . '. Your stay is confirmed.</p>'
         . $detailsHtml
-        . itm_hotel_booking_portal_manage_booking_hint_html($guestLastName, $guestConfirmationDisplay, $auth2Display, $manageUrl, ['for_email' => true]);
+        . itm_hotel_booking_portal_manage_booking_hint_html($guestLastName, $guestConfirmationDisplay, $auth2Display, $manageUrl, ['for_email' => true, 'settings' => $settingsRow]);
       $guestOptions = itm_hotel_booking_portal_confirmation_email_template_options(
         $hotelName,
         $reservationsEmail,

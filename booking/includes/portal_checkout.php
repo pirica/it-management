@@ -37,6 +37,11 @@ if (!function_exists('hb_portal_render_checkout_stepper')) {
         $roomLabel = trim((string) ($context['room_label'] ?? 'Your room'));
         $changeRoomUrl = (string) ($context['change_room_url'] ?? '');
         $portalSettings = is_array($context['settings'] ?? null) ? $context['settings'] : hb_portal_money_settings_bound();
+        $roomLabel = trim((string) ($context['room_label'] ?? ''));
+        $settingsRoomLabel = itm_hotel_booking_portal_step_label_from_settings($portalSettings, 'room', 'Select a Room');
+        if ($roomLabel === '' || $roomLabel === 'Select a Room') {
+            $roomLabel = $settingsRoomLabel !== '' ? $settingsRoomLabel : 'Select a Room';
+        }
         $steps = [
             1 => ['slug' => 'room', 'label' => $roomLabel, 'change_url' => $changeRoomUrl],
             2 => ['slug' => 'rate', 'label' => itm_hotel_booking_portal_step_label_from_settings($portalSettings, 'rate', 'Select a Rate')],
@@ -664,6 +669,7 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
         if (function_exists('hb_portal_bind_money_settings')) {
             hb_portal_bind_money_settings($portalSettings);
         }
+        $manageBookingLabel = itm_hotel_booking_portal_manage_booking_label_from_settings($settings);
         $checkInIso = (string) ($primaryRow['check_in'] ?? $booking['check_in'] ?? '');
         $checkOutIso = (string) ($primaryRow['check_out'] ?? $booking['check_out'] ?? '');
         $checkInDisplay = $checkInIso !== '' ? hb_portal_format_date_display($checkInIso) : '';
@@ -875,11 +881,11 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <?php else: ?>
 <p><strong>Payment at the hotel.</strong> Online payment is not enabled for this hotel. No charge was made online — the total above is due according to hotel policy.</p>
 <?php endif; ?>
-<?php echo itm_hotel_booking_portal_manage_booking_hint_html($lastname, $numberconfirmation, $auth2Display, $urlmybooking); ?>
+<?php echo itm_hotel_booking_portal_manage_booking_hint_html($lastname, $numberconfirmation, $auth2Display, $urlmybooking, ['settings' => $settings]); ?>
 </div>
 <div class="hb-checkout-actions hb-payment-confirmation-actions hb-pdf-exclude">
 <button type="button" class="hb-btn hb-checkout-skip" id="hb-save-confirmation-pdf" title="Save booking confirmation">Save booking confirmation</button>
-<a class="hb-btn hb-btn-primary" href="<?php echo htmlspecialchars($urlmybooking, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" title="Manage my booking">Manage my booking</a>
+<a class="hb-btn hb-btn-primary" href="<?php echo htmlspecialchars($urlmybooking, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" title="<?php echo htmlspecialchars($manageBookingLabel, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($manageBookingLabel, ENT_QUOTES, 'UTF-8'); ?></a>
 <a class="hb-btn hb-checkout-skip" href="<?php echo APPURL; ?>/" title="Return home">Return home</a>
 </div>
 <?php endif; ?>

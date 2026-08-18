@@ -148,12 +148,13 @@ if (!function_exists('hb_portal_render_guest_rating_reviews')) {
 if (!function_exists('hb_portal_render_header')) {
     function hb_portal_render_header($settings, $activeNav = '') {
         $brand = $settings['welcome_title'] ?? 'Hotel booking';
+        $manageLabel = itm_hotel_booking_portal_manage_booking_label_from_settings($settings);
         ?>
 <header class="hb-portal-header">
 <div class="hb-portal-header-inner">
 <a class="hb-portal-brand" href="<?php echo htmlspecialchars(APPURL . '/', ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($brand, ENT_QUOTES, 'UTF-8'); ?></a>
 <nav class="hb-portal-nav">
-<a href="<?php echo htmlspecialchars(APPURL . '/users/bookings.php', ENT_QUOTES, 'UTF-8'); ?>">Manage my booking</a>
+<a href="<?php echo htmlspecialchars(APPURL . '/users/bookings.php', ENT_QUOTES, 'UTF-8'); ?>" title="<?php echo htmlspecialchars($manageLabel, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($manageLabel, ENT_QUOTES, 'UTF-8'); ?></a>
 </nav>
 </div>
 </header>
