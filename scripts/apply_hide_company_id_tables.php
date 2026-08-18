@@ -16,7 +16,7 @@ function itm_script_browser_how_to_use(): string
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
 <code>php scripts/apply_hide_company_id_tables.php</code> — dry-run: lists PHP files that would gain the module table in <code>$hideCompanyIdTables</code>.<br>
 <code>php scripts/apply_hide_company_id_tables.php --apply</code> — writes changes (Admin + <code>?apply=1</code> in browser).<br>
-Optional filters: <code>--module=appointment_type</code> (repeatable) or <code>--prefix=hotel_</code> (all module folders matching).
+Optional filters: <code>--module=appointment_type</code> (repeatable) and/or <code>--prefix=hotel_</code> (repeatable — all module folders whose slug starts with the prefix).
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 
@@ -39,12 +39,17 @@ if (PHP_SAPI !== 'cli') {
         }
     }
     if (isset($_GET['prefix'])) {
-        $argvLocal[] = '--prefix=' . (string) $_GET['prefix'];
+        foreach (preg_split('/\s*,\s*/', (string) $_GET['prefix']) ?: [] as $part) {
+            $part = trim($part);
+            if ($part !== '') {
+                $argvLocal[] = '--prefix=' . $part;
+            }
+        }
     }
 }
 
 $moduleSlugs = [];
-$prefix = '';
+$prefixes = [];
 foreach ($argvLocal as $arg) {
     if (strpos((string) $arg, '--module=') === 0) {
         $slug = trim(substr((string) $arg, 9));
@@ -53,19 +58,25 @@ foreach ($argvLocal as $arg) {
         }
     } elseif (strpos((string) $arg, '--prefix=') === 0) {
         $prefix = trim(substr((string) $arg, 9));
+        if ($prefix !== '') {
+            $prefixes[] = $prefix;
+        }
     }
 }
 
-if ($prefix !== '') {
+if ($prefixes !== []) {
     foreach (itm_company_id_ui_column_discover_module_slugs($root) as $slug) {
-        if (strpos($slug, $prefix) === 0) {
-            $moduleSlugs[$slug] = true;
+        foreach ($prefixes as $prefix) {
+            if (strpos($slug, $prefix) === 0) {
+                $moduleSlugs[$slug] = true;
+                break;
+            }
         }
     }
 }
 
 if ($moduleSlugs === []) {
-    echo colorText('[FAIL] Specify --module=slug and/or --prefix=hotel_.', 'fail') . $nl;
+    echo colorText('[FAIL] Specify --module=slug and/or --prefix=hotel_ (repeatable).', 'fail') . $nl;
     itm_script_output_end();
     exit(1);
 }
