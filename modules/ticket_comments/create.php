@@ -110,6 +110,83 @@ function cr_fk_metadata($conn, $table) {
 }
 
 /**
+ * Resolves display labels for FK list/view cells (employee full name; other tables via label column).
+ */
+function cr_fk_label_for_id($conn, $fk, $value, $company_id) {
+    $id = (int)$value;
+    if ($id <= 0) {
+        return null;
+    }
+
+    $table = (string)($fk['REFERENCED_TABLE_NAME'] ?? '');
+    $col = (string)($fk['REFERENCED_COLUMN_NAME'] ?? 'id');
+    $meta = cr_fk_metadata($conn, $table);
+    $available = $meta['available'];
+
+    if ($table === 'employees') {
+        $where = ' WHERE ' . cr_escape_identifier($col) . '=' . $id;
+        if (in_array('company_id', $available, true) && $company_id > 0) {
+            $where .= ' AND company_id=' . (int)$company_id;
+        }
+        $sql = 'SELECT first_name,last_name,username FROM ' . cr_escape_identifier($table) . $where . ' LIMIT 1';
+        $res = mysqli_query($conn, $sql);
+        if ($res && ($row = mysqli_fetch_assoc($res))) {
+            $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
+            $username = trim((string)($row['username'] ?? ''));
+            if ($fullName !== '') {
+                return $fullName;
+            }
+            if ($username !== '') {
+                return $username;
+            }
+            return 'User #' . $id;
+        }
+
+        $fallbackSql = 'SELECT first_name,last_name,username FROM ' . cr_escape_identifier($table)
+            . ' WHERE ' . cr_escape_identifier($col) . '=' . $id . ' LIMIT 1';
+        $fallbackRes = mysqli_query($conn, $fallbackSql);
+        if ($fallbackRes && ($row = mysqli_fetch_assoc($fallbackRes))) {
+            $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
+            $username = trim((string)($row['username'] ?? ''));
+            if ($fullName !== '') {
+                return $fullName;
+            }
+            if ($username !== '') {
+                return $username;
+            }
+            return 'User #' . $id;
+        }
+        return null;
+    }
+
+    $labelCol = (string)$meta['label_col'];
+    $where = ' WHERE ' . cr_escape_identifier($col) . '=' . $id;
+    if (in_array('company_id', $available, true) && $company_id > 0) {
+        $where .= ' AND company_id=' . (int)$company_id;
+    }
+    $sql = 'SELECT ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table) . $where . ' LIMIT 1';
+    $res = mysqli_query($conn, $sql);
+    if ($res && ($row = mysqli_fetch_assoc($res))) {
+        $label = trim((string)($row['label'] ?? ''));
+        if ($label !== '') {
+            return $label;
+        }
+    }
+
+    $fallbackSql = 'SELECT ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table)
+        . ' WHERE ' . cr_escape_identifier($col) . '=' . $id . ' LIMIT 1';
+    $fallbackRes = mysqli_query($conn, $fallbackSql);
+    if ($fallbackRes && ($row = mysqli_fetch_assoc($fallbackRes))) {
+        $label = trim((string)($row['label'] ?? ''));
+        if ($label !== '') {
+            return $label;
+        }
+    }
+
+    return null;
+}
+
+/**
  * Filters system-managed columns
  */
 function cr_manageable_columns($columns) {
@@ -180,6 +257,20 @@ function cr_render_cell_value($table, $field, $value) {
 
     if (($GLOBALS['crud_table'] ?? '') === 'ticket_comments' && $field === 'is_internal') {
         return ((int)$value === 1) ? '✅' : '❌';
+    }
+
+    $connRef = $GLOBALS['conn'] ?? null;
+    $companyIdRef = (int)($GLOBALS['company_id'] ?? 0);
+    if ($connRef instanceof mysqli && isset($GLOBALS['fkMap'][$field])) {
+        $fkRow = $GLOBALS['fkMap'][$field];
+        $fkDisplayId = (int)$value;
+        if ($fkDisplayId > 0 && $companyIdRef > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+            $fkDisplayId = itm_fk_resolve_company_equivalent_id($connRef, $fkRow, $companyIdRef, $fkDisplayId);
+        }
+        $resolvedLabel = cr_fk_label_for_id($connRef, $fkRow, $fkDisplayId, $companyIdRef);
+        if ($resolvedLabel !== null && $resolvedLabel !== '') {
+            return sanitize((string)$resolvedLabel);
+        }
     }
 
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
@@ -294,6 +385,7 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 // Module initialization
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
+$GLOBALS['fkMap'] = $fkMap;
 $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_employee_field($col['Field']);
