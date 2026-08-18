@@ -53,6 +53,9 @@ if (empty($stayCheck['ok'])) {
     exit;
 }
 
+$specialRateCodeFilter = itm_hotel_booking_portal_filter_occupancy_special_rate_codes($conn, $company_id, $hotelId, $occupancy, $checkInIso);
+$occupancy = $specialRateCodeFilter['occupancy'];
+
 $portalPricing = itm_hotel_booking_portal_hotel_pricing($conn, $company_id, $hotelId);
 $breakfastChildPrice = (float) $portalPricing['breakfast_child_price_per_night'];
 $petDailyFee = (float) $portalPricing['pet_daily_fee'];

@@ -175,6 +175,32 @@ if (itm_hotel_booking_normalize_special_rate_percent_input('15,5') === 15.5) {
     hb_fail('special rate percent normalize');
 }
 
+$resCodesTable = mysqli_query($conn, "SHOW TABLES LIKE 'hotel_booking_special_rate_codes'");
+if ($resCodesTable && mysqli_num_rows($resCodesTable) > 0) {
+    hb_pass('table hotel_booking_special_rate_codes');
+} else {
+    hb_fail('missing table hotel_booking_special_rate_codes — apply db/migrations/hotel_booking_special_rate_codes.sql');
+}
+
+$bogusFilter = itm_hotel_booking_portal_filter_occupancy_special_rate_codes($conn, 1, 1, ['promo_code' => 'BOGUS99'], date('Y-m-d'));
+if (empty($bogusFilter['occupancy']['promo_code']) && !empty($bogusFilter['rejected'])) {
+    hb_pass('portal special rate code rejects unregistered code');
+} else {
+    hb_fail('portal special rate code should reject unregistered code');
+}
+
+if (itm_hotel_booking_portal_special_rate_code_is_valid($conn, 1, 1, 'promo', 'SAVE10', date('Y-m-d'))) {
+    hb_pass('portal special rate code SAVE10 valid when seeded');
+} else {
+    hb_fail('portal special rate code SAVE10 should be valid for company 1 hotel 1 after migration/seeds');
+}
+
+if (!itm_hotel_booking_portal_special_rate_code_is_valid($conn, 1, 1, 'promo', 'NOTACODE', date('Y-m-d'))) {
+    hb_pass('portal special rate code unknown code invalid');
+} else {
+    hb_fail('portal special rate unknown code should be invalid');
+}
+
 if (abs(itm_hotel_booking_portal_breakfast_supplement_per_night(['adults' => 2, 'children' => 1]) - 80.0) < 0.01) {
     hb_pass('portal breakfast supplement per night');
 } else {

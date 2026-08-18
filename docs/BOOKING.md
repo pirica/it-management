@@ -153,6 +153,7 @@ After lookup:
 | `customers` | Guest PII; ensured on book via `itm_hotel_booking_ensure_customer_for_portal()` (repeat book by email refreshes `name` / `phone`) |
 | `hotel_booking_portal_rate_plans` | Per-hotel cancellation policy URLs (slots 1–4) |
 | `hotel_booking_special_rates` | Member, AAA, promo, etc. — discount % per hotel |
+| `hotel_booking_special_rate_codes` | Registered promo/group/corporate/member codes per hotel (portal validates against this table) |
 | `hotel_booking_amenities` | Icons (`icon_slug` → `booking/images/amenities/*.svg`) |
 
 **Segment resolution:** `itm_hotel_booking_resolve_segment(check_in, check_out)` picks which status column applies (`future_status_id`, `present_status_id`, `history_status_id`). Online cancel only when segment is `future` and status is not already `CANCELLED`.
@@ -186,7 +187,7 @@ Regression: `php scripts/run_tests.php --filter HotelBookingRoomTypePortalRules`
 | `modules/booking_rooms_types/` | Room types, upgrade targets |
 | `modules/hotel_booking_settings/` | Portal on/off, welcome text, tourist tax, free-cancellation days, Select Dates calendar advance days-left threshold |
 | `modules/hotel_booking_portal_rate_plans/` | Cancellation policy URLs per rate slot; **portal step pricing** form per hotel |
-| `modules/hotel_booking_special_rates/` | Discount programs per hotel |
+| `modules/hotel_booking_special_rates/` | Discount programs per hotel; register portal codes (promo, group, corporate, member) |
 | `modules/hotel_booking_amenities/` | Amenity catalog + icon slugs |
 | `modules/hotel_booking_room_utilities/` | Room ↔ amenity links |
 | `modules/hotel_booking_housekeeping_statuses/` | HK status lookup |

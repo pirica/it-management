@@ -1234,6 +1234,212 @@ if (!function_exists('itm_hotel_booking_portal_code_rate_options')) {
   }
 }
 
+if (!function_exists('itm_hotel_booking_portal_code_rate_param_slug_map')) {
+  function itm_hotel_booking_portal_code_rate_param_slug_map() {
+    static $map = null;
+    if ($map === null) {
+      $map = [];
+      foreach (itm_hotel_booking_portal_code_rate_options() as $row) {
+        $param = (string) ($row['param'] ?? '');
+        $slug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($row['slug'] ?? '')));
+        if ($param !== '' && $slug !== '') {
+          $map[$param] = $slug;
+        }
+      }
+    }
+    return $map;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_code_rate_slug_for_param')) {
+  function itm_hotel_booking_portal_code_rate_slug_for_param($param) {
+    $param = (string) $param;
+    $map = itm_hotel_booking_portal_code_rate_param_slug_map();
+    return isset($map[$param]) ? (string) $map[$param] : '';
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_is_code_rate_slug')) {
+  function itm_hotel_booking_portal_is_code_rate_slug($rateSlug) {
+    $rateSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) $rateSlug));
+    if ($rateSlug === '') {
+      return false;
+    }
+    foreach (itm_hotel_booking_portal_code_rate_options() as $row) {
+      if ($rateSlug === strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($row['slug'] ?? '')))) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_special_rate_codes_admin_rows')) {
+  function itm_hotel_booking_special_rate_codes_admin_rows($conn, $companyId, $hotelId, $rateSlug = null) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    if ($companyId < 1 || $hotelId < 1) {
+      return [];
+    }
+    $rateSlug = $rateSlug !== null
+      ? strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) $rateSlug))
+      : '';
+    $sql = 'SELECT id, rate_slug, code, label, valid_from, valid_to, active FROM hotel_booking_special_rate_codes WHERE company_id = ? AND hotel_id = ? AND deleted_at IS NULL';
+    if ($rateSlug !== '') {
+      $sql .= ' AND rate_slug = ?';
+    }
+    $sql .= ' ORDER BY rate_slug ASC, code ASC';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+      return [];
+    }
+    if ($rateSlug !== '') {
+      mysqli_stmt_bind_param($stmt, 'iis', $companyId, $hotelId, $rateSlug);
+    } else {
+      mysqli_stmt_bind_param($stmt, 'ii', $companyId, $hotelId);
+    }
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $rows = [];
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+      $rows[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+    return $rows;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_special_rate_code_is_valid')) {
+  /**
+   * Why: Portal code fields must match a tenant-registered row — not any 8-character string.
+   */
+  function itm_hotel_booking_portal_special_rate_code_is_valid($conn, $companyId, $hotelId, $rateSlug, $code, $checkIn = null) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $rateSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) $rateSlug));
+    $code = itm_hotel_booking_portal_sanitize_rate_code($code);
+    if ($companyId < 1 || $hotelId < 1 || $rateSlug === '' || $code === '' || !itm_hotel_booking_portal_is_code_rate_slug($rateSlug)) {
+      return false;
+    }
+    $stmt = mysqli_prepare(
+      $conn,
+      'SELECT valid_from, valid_to FROM hotel_booking_special_rate_codes
+       WHERE company_id = ? AND hotel_id = ? AND rate_slug = ? AND code = ? AND deleted_at IS NULL AND active = 1
+       LIMIT 1'
+    );
+    if (!$stmt) {
+      return false;
+    }
+    mysqli_stmt_bind_param($stmt, 'iiss', $companyId, $hotelId, $rateSlug, $code);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    if (!$row) {
+      return false;
+    }
+    $stayDate = (string) ($checkIn ?? '');
+    if ($stayDate === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $stayDate)) {
+      $stayDate = date('Y-m-d');
+    }
+    $validFrom = (string) ($row['valid_from'] ?? '');
+    if ($validFrom !== '' && $stayDate < $validFrom) {
+      return false;
+    }
+    $validTo = (string) ($row['valid_to'] ?? '');
+    if ($validTo !== '' && $stayDate > $validTo) {
+      return false;
+    }
+    return true;
+  }
+}
+
+if (!function_exists('itm_hotel_booking_portal_filter_occupancy_special_rate_codes')) {
+  /**
+   * @return array{occupancy:array,rejected:array<int,array{param:string,slug:string,code:string}>}
+   */
+  function itm_hotel_booking_portal_filter_occupancy_special_rate_codes($conn, $companyId, $hotelId, array $occupancy, $checkIn = null) {
+    $rejected = [];
+    foreach (itm_hotel_booking_portal_code_rate_param_slug_map() as $param => $slug) {
+      $code = itm_hotel_booking_portal_sanitize_rate_code($occupancy[$param] ?? '');
+      if ($code === '') {
+        $occupancy[$param] = '';
+        continue;
+      }
+      if (!itm_hotel_booking_portal_special_rate_code_is_valid($conn, $companyId, $hotelId, $slug, $code, $checkIn)) {
+        $occupancy[$param] = '';
+        $rejected[] = ['param' => (string) $param, 'slug' => (string) $slug, 'code' => $code];
+      } else {
+        $occupancy[$param] = $code;
+      }
+    }
+    return ['occupancy' => $occupancy, 'rejected' => $rejected];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_special_rate_codes_save_row')) {
+  function itm_hotel_booking_special_rate_codes_save_row($conn, $companyId, $hotelId, $rateSlug, $code, $employeeId, $label = '') {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $employeeId = (int) $employeeId;
+    $rateSlug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) $rateSlug));
+    $code = itm_hotel_booking_portal_sanitize_rate_code($code);
+    $label = trim((string) $label);
+    if ($companyId < 1 || $hotelId < 1 || $employeeId < 1 || $rateSlug === '' || $code === '' || !itm_hotel_booking_portal_is_code_rate_slug($rateSlug)) {
+      return ['ok' => false, 'error' => 'Invalid code or rate type.'];
+    }
+    $stmt = mysqli_prepare(
+      $conn,
+      'SELECT id FROM hotel_booking_special_rate_codes WHERE company_id = ? AND hotel_id = ? AND rate_slug = ? AND code = ? AND deleted_at IS NULL LIMIT 1'
+    );
+    if (!$stmt) {
+      return ['ok' => false, 'error' => 'Could not save code.'];
+    }
+    mysqli_stmt_bind_param($stmt, 'iiss', $companyId, $hotelId, $rateSlug, $code);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $exists = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    if ($exists) {
+      return ['ok' => false, 'error' => 'That code already exists for this rate type.'];
+    }
+    $ins = mysqli_prepare(
+      $conn,
+      'INSERT INTO hotel_booking_special_rate_codes (company_id, hotel_id, rate_slug, code, label, active, created_by, created_at) VALUES (?, ?, ?, ?, ?, 1, ?, NOW())'
+    );
+    if (!$ins) {
+      return ['ok' => false, 'error' => 'Could not save code.'];
+    }
+    mysqli_stmt_bind_param($ins, 'iisssi', $companyId, $hotelId, $rateSlug, $code, $label, $employeeId);
+    $ok = mysqli_stmt_execute($ins);
+    mysqli_stmt_close($ins);
+    return $ok ? ['ok' => true] : ['ok' => false, 'error' => 'Could not save code.'];
+  }
+}
+
+if (!function_exists('itm_hotel_booking_special_rate_codes_soft_delete')) {
+  function itm_hotel_booking_special_rate_codes_soft_delete($conn, $companyId, $hotelId, $codeId, $employeeId) {
+    $companyId = (int) $companyId;
+    $hotelId = (int) $hotelId;
+    $codeId = (int) $codeId;
+    $employeeId = (int) $employeeId;
+    if ($companyId < 1 || $hotelId < 1 || $codeId < 1 || $employeeId < 1) {
+      return false;
+    }
+    $upd = mysqli_prepare(
+      $conn,
+      'UPDATE hotel_booking_special_rate_codes SET active = 0, deleted_by = ?, deleted_at = NOW(), updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ? AND hotel_id = ? AND deleted_at IS NULL'
+    );
+    if (!$upd) {
+      return false;
+    }
+    mysqli_stmt_bind_param($upd, 'iiiii', $employeeId, $employeeId, $codeId, $companyId, $hotelId);
+    $ok = mysqli_stmt_execute($upd);
+    mysqli_stmt_close($upd);
+    return (bool) $ok;
+  }
+}
+
 if (!function_exists('itm_hotel_booking_canonical_special_rate_definitions')) {
   function itm_hotel_booking_canonical_special_rate_definitions() {
     $defs = [];
@@ -3588,7 +3794,15 @@ if (!function_exists('itm_hotel_booking_portal_resolve_step4_charge')) {
     if ($planSlug === '') {
       return ['ok' => false, 'error' => 'Selected rate is no longer available. Please choose a rate again.'];
     }
+    $codeFilter = itm_hotel_booking_portal_filter_occupancy_special_rate_codes($conn, $companyId, $hotelId, $occupancy, $checkIn);
+    $occupancy = $codeFilter['occupancy'];
     $rateSlug = trim((string) ($draft['resolved_rate_slug'] ?? ''));
+    if ($rateSlug !== '' && itm_hotel_booking_portal_is_code_rate_slug($rateSlug)) {
+      $resolvedAfterFilter = itm_hotel_booking_portal_resolved_rate_slug($occupancy);
+      if ($resolvedAfterFilter !== $rateSlug) {
+        $rateSlug = $resolvedAfterFilter;
+      }
+    }
     if ($rateSlug === '') {
       $rateSlug = itm_hotel_booking_portal_resolved_rate_slug($occupancy);
     }
