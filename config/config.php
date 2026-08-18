@@ -1073,6 +1073,64 @@ if (!function_exists('itm_can_delete_record')) {
 /**
  * Validates a CSRF token against the session
  */
+if (!function_exists('itm_csrf_double_submit_cookie_name')) {
+    function itm_csrf_double_submit_cookie_name()
+    {
+        return 'itm_csrf';
+    }
+}
+
+if (!function_exists('itm_csrf_cookie_params')) {
+    /**
+     * @return array{path: string, secure: bool, httponly: bool, samesite: string}
+     */
+    function itm_csrf_cookie_params()
+    {
+        $secure = (
+            (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
+            || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
+            || (
+                !empty($_SERVER['HTTP_X_FORWARDED_PROTO'])
+                && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https'
+            )
+        );
+
+        return [
+            'path' => defined('ITM_SESSION_COOKIE_PATH') ? (string)ITM_SESSION_COOKIE_PATH : '/',
+            'secure' => $secure,
+            'httponly' => false,
+            'samesite' => 'Lax',
+        ];
+    }
+}
+
+if (!function_exists('itm_sync_csrf_double_submit_cookie')) {
+    /**
+     * Why: Public auth POST may arrive without PHPSESSID; mirror token in a readable cookie for double-submit validation.
+     */
+    function itm_sync_csrf_double_submit_cookie($token)
+    {
+        if (PHP_SAPI === 'cli') {
+            return;
+        }
+
+        $token = trim((string)$token);
+        if ($token === '') {
+            return;
+        }
+
+        $params = itm_csrf_cookie_params();
+        setcookie(itm_csrf_double_submit_cookie_name(), $token, [
+            'expires' => 0,
+            'path' => $params['path'],
+            'secure' => $params['secure'],
+            'httponly' => $params['httponly'],
+            'samesite' => $params['samesite'],
+        ]);
+        $_COOKIE[itm_csrf_double_submit_cookie_name()] = $token;
+    }
+}
+
 if (!function_exists('itm_validate_csrf_token')) {
     function itm_validate_csrf_token($token) {
         $token = (string)$token;
@@ -1091,6 +1149,12 @@ if (!function_exists('itm_validate_csrf_token')) {
             if ($backupToken !== '' && hash_equals($backupToken, $token)) {
                 return true;
             }
+        }
+
+        $cookieToken = trim((string)($_COOKIE[itm_csrf_double_submit_cookie_name()] ?? ''));
+        if ($cookieToken !== '' && hash_equals($cookieToken, $token)) {
+            $_SESSION['csrf_token'] = $cookieToken;
+            return true;
         }
 
         return false;
@@ -1128,6 +1192,9 @@ if (!function_exists('itm_get_csrf_token')) {
         }
         if (function_exists('itm_script_sync_csrf_to_browser_session_backup')) {
             itm_script_sync_csrf_to_browser_session_backup((string)$_SESSION['csrf_token']);
+        }
+        if (function_exists('itm_sync_csrf_double_submit_cookie')) {
+            itm_sync_csrf_double_submit_cookie((string)$_SESSION['csrf_token']);
         }
         return (string)$_SESSION['csrf_token'];
     }

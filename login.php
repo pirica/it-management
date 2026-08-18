@@ -10,7 +10,7 @@
 include('config/config.php');
 require_once __DIR__ . '/includes/itm_employee_employment_status.php';
 $error = '';
-$csrfToken = itm_get_csrf_token();
+$csrfToken = '';
 $ssoLinkCompanyId = 0;
 if (function_exists('itm_sso_any_company_enabled') && itm_sso_any_company_enabled($conn)) {
     $ssoCompany = itm_sso_resolve_company_for_login($conn, $_GET['company'] ?? $_GET['company_id'] ?? '');
@@ -108,7 +108,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!itm_try_post_csrf()) {
         // Why: itm_require_post_csrf() exits before HTML; show the error in-container and mint a fresh token for retry.
         $error = 'Invalid CSRF token.';
-        $csrfToken = itm_get_csrf_token();
     } else {
     $loginIdentifier = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
@@ -268,6 +267,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Invalid credentials.';
     }
     }
+}
+
+if ($csrfToken === '') {
+    $csrfToken = itm_get_csrf_token();
 }
 ?>
 <!DOCTYPE html>

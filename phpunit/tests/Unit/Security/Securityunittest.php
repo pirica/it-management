@@ -37,6 +37,18 @@ class SecurityUnittest extends TestCase
         unset($GLOBALS['itm_script_browser_session_backup']);
     }
 
+    public function testCsrfTokenValidationAcceptsDoubleSubmitCookie()
+    {
+        unset($_SESSION['csrf_token']);
+        $_COOKIE[itm_csrf_double_submit_cookie_name()] = 'cookie-token';
+
+        $this->assertTrue(itm_validate_csrf_token('cookie-token'));
+        $this->assertSame('cookie-token', $_SESSION['csrf_token']);
+        $this->assertFalse(itm_validate_csrf_token('wrong-token'));
+
+        unset($_COOKIE[itm_csrf_double_submit_cookie_name()]);
+    }
+
     /**
      * Test itm_get_csrf_token() generates and retrieves tokens correctly.
      */
