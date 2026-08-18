@@ -2014,10 +2014,10 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                 </tr>
                 <tr data-tags="booking_rooms_types hotel_bookings">
                     <td><a href="seed_hotel_booking_sample_photos.php" target="_blank" rel="nofollow noreferrer">seed_hotel_booking_sample_photos.php</a></td>
-                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">booking_rooms_types</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_bookings</span></span></td>
-                    <td>Copy TechCorp Retreat demo hotel photos to <code>booking/images/{hotel_id}/hotel_photos/</code> and room-type samples to <code>booking/images/{hotel_id}/room_types_photos/</code>; upsert photo rows (<code>--apply</code> writes).</td>
-                    <td class="scripts-catalog-how-stub"><code>php scripts/seed_hotel_booking_sample_photos.php --apply</code></td>
+                    <td>Copy demo hotel + room-type photos to <code>booking/images/{hotel_id}/hotel_photos/</code> and <code>room_types_photos/</code> for seed companies 1–5; upsert photo rows (<code>--apply</code> / <code>?apply=1</code> writes).</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="hotel_bookings hotel_booking_distribution_webhook_queue">
                     <td><a href="run_hotel_booking_distribution_webhook_queue.php" target="_blank" rel="nofollow noreferrer">run_hotel_booking_distribution_webhook_queue.php</a></td>
