@@ -216,6 +216,7 @@ php scripts/employees_delete_clear_table_test.php
 | 2 | `check_ui_action_emoji.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_pagination_emoji.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_ui_configuration_coverage.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
+| 3 | `check_company_id_ui_column.php` | PHP | none | static-manual | Company column inventory (report; `--strict` optional) |
 | 3 | `DBdesign.php` | PHP | low | runtime | Read-mostly listing / diagram tool |
 | 3 | `analyze_database_health.php` | MySQL | low | runtime | Runtime verify / repro / diagnostic |
 | 3 | `apitest_tier_basic.php` | MySQL | low | runtime | API rate-limit tier regression |
