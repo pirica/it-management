@@ -263,6 +263,12 @@ if (!function_exists('itm_crud_has_company_audit_collect_report')) {
         usort($report['warnings'], static function ($a, $b) {
             return strcmp((string)($a['path'] ?? ''), (string)($b['path'] ?? ''));
         });
+        usort($report['passes'], static function ($a, $b) {
+            return strcmp((string)($a['path'] ?? ''), (string)($b['path'] ?? ''));
+        });
+        usort($report['skipped'], static function ($a, $b) {
+            return strcmp((string)($a['path'] ?? ''), (string)($b['path'] ?? ''));
+        });
 
         return $report;
     }
@@ -293,8 +299,25 @@ if (!function_exists('itm_crud_has_company_audit_format_report')) {
             $out .= $nl;
         }
 
-        $out .= '[PASS] ' . count($report['passes']) . ' file(s) use $columns for hasCompany.' . $nl;
-        $out .= '[SKIP] ' . count($report['skipped']) . ' file(s) with non-standard hasCompany markup.' . $nl;
+        if ($report['passes'] !== []) {
+            $out .= '[PASS] ' . count($report['passes']) . ' file(s) use $columns for hasCompany:' . $nl;
+            foreach ($report['passes'] as $row) {
+                $out .= itm_crud_has_company_audit_format_row($row, $nl, $linkModules, 'PASS');
+            }
+            $out .= $nl;
+        } else {
+            $out .= '[PASS] 0 file(s) use $columns for hasCompany.' . $nl . $nl;
+        }
+
+        if ($report['skipped'] !== []) {
+            $out .= '[SKIP] ' . count($report['skipped']) . ' file(s) with non-standard hasCompany markup:' . $nl;
+            foreach ($report['skipped'] as $row) {
+                $out .= itm_crud_has_company_audit_format_row($row, $nl, $linkModules, 'SKIP');
+            }
+            $out .= $nl;
+        } else {
+            $out .= '[SKIP] 0 file(s) with non-standard hasCompany markup.' . $nl;
+        }
 
         return $out;
     }
@@ -307,12 +330,14 @@ if (!function_exists('itm_crud_has_company_audit_format_row')) {
         $slug = (string)($row['slug'] ?? '');
         $impacts = (array)($row['impacts'] ?? []);
         $impactText = $impacts !== [] ? (' impacts=' . implode(',', $impacts)) : '';
+        $reason = (string)($row['reason'] ?? '');
+        $reasonText = ($label === 'SKIP' && $reason !== '') ? (' reason=' . $reason) : '';
 
         if ($linkModules && $slug !== '') {
-            $line = ' - [' . $label . '] ' . itm_script_format_module_link($slug, 'index.php', $path) . $impactText . $nl;
+            $line = ' - [' . $label . '] ' . itm_script_format_module_link($slug, 'index.php', $path) . $impactText . $reasonText . $nl;
             return $line;
         }
 
-        return ' - [' . $label . '] ' . $path . $impactText . $nl;
+        return ' - [' . $label . '] ' . $path . $impactText . $reasonText . $nl;
     }
 }
