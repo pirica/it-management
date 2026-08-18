@@ -274,17 +274,50 @@ if (!function_exists('itm_crud_has_company_audit_collect_report')) {
     }
 }
 
+if (!function_exists('itm_crud_has_company_audit_ensure_color_helpers')) {
+    function itm_crud_has_company_audit_ensure_color_helpers(): void
+    {
+        if (!function_exists('colorText')) {
+            require_once __DIR__ . '/script_cli_output.php';
+        }
+    }
+}
+
+if (!function_exists('itm_crud_has_company_audit_color_tag')) {
+    function itm_crud_has_company_audit_color_tag(string $label): string
+    {
+        itm_crud_has_company_audit_ensure_color_helpers();
+
+        $typeMap = [
+            'FAIL' => 'fail',
+            'WARN' => 'warn',
+            'PASS' => 'pass',
+            'SKIP' => 'info',
+        ];
+        $type = $typeMap[$label] ?? 'info';
+
+        return colorText('[' . $label . ']', $type);
+    }
+}
+
+if (!function_exists('itm_crud_has_company_audit_color_heading')) {
+    function itm_crud_has_company_audit_color_heading(string $label, string $suffix): string
+    {
+        return itm_crud_has_company_audit_color_tag($label) . $suffix;
+    }
+}
+
 if (!function_exists('itm_crud_has_company_audit_format_report')) {
     function itm_crud_has_company_audit_format_report(array $report, string $nl, bool $linkModules): string
     {
         require_once __DIR__ . '/script_browser_nav.php';
 
         $out = 'CRUD hasCompany audit (schema $columns vs UI $fieldColumns)' . $nl . $nl;
-        $out .= 'FAIL = company_id hidden from $fieldColumns but $hasCompany still derived there.' . $nl;
-        $out .= 'WARN = $hasCompany still uses $fieldColumns (prefer foreach ($columns as $c) before UI filters).' . $nl . $nl;
+        $out .= itm_crud_has_company_audit_color_tag('FAIL') . ' = company_id hidden from $fieldColumns but $hasCompany still derived there.' . $nl;
+        $out .= itm_crud_has_company_audit_color_tag('WARN') . ' = $hasCompany still uses $fieldColumns (prefer foreach ($columns as $c) before UI filters).' . $nl . $nl;
 
         if ($report['failures'] !== []) {
-            $out .= '[FAIL] ' . count($report['failures']) . ' file(s):' . $nl;
+            $out .= itm_crud_has_company_audit_color_heading('FAIL', ' ' . count($report['failures']) . ' file(s):') . $nl;
             foreach ($report['failures'] as $row) {
                 $out .= itm_crud_has_company_audit_format_row($row, $nl, $linkModules, 'FAIL');
             }
@@ -292,7 +325,7 @@ if (!function_exists('itm_crud_has_company_audit_format_report')) {
         }
 
         if ($report['warnings'] !== []) {
-            $out .= '[WARN] ' . count($report['warnings']) . ' file(s):' . $nl;
+            $out .= itm_crud_has_company_audit_color_heading('WARN', ' ' . count($report['warnings']) . ' file(s):') . $nl;
             foreach ($report['warnings'] as $row) {
                 $out .= itm_crud_has_company_audit_format_row($row, $nl, $linkModules, 'WARN');
             }
@@ -300,23 +333,23 @@ if (!function_exists('itm_crud_has_company_audit_format_report')) {
         }
 
         if ($report['passes'] !== []) {
-            $out .= '[PASS] ' . count($report['passes']) . ' file(s) use $columns for hasCompany:' . $nl;
+            $out .= itm_crud_has_company_audit_color_heading('PASS', ' ' . count($report['passes']) . ' file(s) use $columns for hasCompany:') . $nl;
             foreach ($report['passes'] as $row) {
                 $out .= itm_crud_has_company_audit_format_row($row, $nl, $linkModules, 'PASS');
             }
             $out .= $nl;
         } else {
-            $out .= '[PASS] 0 file(s) use $columns for hasCompany.' . $nl . $nl;
+            $out .= itm_crud_has_company_audit_color_heading('PASS', ' 0 file(s) use $columns for hasCompany.') . $nl . $nl;
         }
 
         if ($report['skipped'] !== []) {
-            $out .= '[SKIP] ' . count($report['skipped']) . ' file(s) with non-standard hasCompany markup:' . $nl;
+            $out .= itm_crud_has_company_audit_color_heading('SKIP', ' ' . count($report['skipped']) . ' file(s) with non-standard hasCompany markup:') . $nl;
             foreach ($report['skipped'] as $row) {
                 $out .= itm_crud_has_company_audit_format_row($row, $nl, $linkModules, 'SKIP');
             }
             $out .= $nl;
         } else {
-            $out .= '[SKIP] 0 file(s) with non-standard hasCompany markup.' . $nl;
+            $out .= itm_crud_has_company_audit_color_heading('SKIP', ' 0 file(s) with non-standard hasCompany markup.') . $nl;
         }
 
         return $out;
@@ -332,12 +365,13 @@ if (!function_exists('itm_crud_has_company_audit_format_row')) {
         $impactText = $impacts !== [] ? (' impacts=' . implode(',', $impacts)) : '';
         $reason = (string)($row['reason'] ?? '');
         $reasonText = ($label === 'SKIP' && $reason !== '') ? (' reason=' . $reason) : '';
+        $coloredTag = itm_crud_has_company_audit_color_tag($label);
 
         if ($linkModules && $slug !== '') {
-            $line = ' - [' . $label . '] ' . itm_script_format_module_link($slug, 'index.php', $path) . $impactText . $reasonText . $nl;
+            $line = ' - ' . $coloredTag . ' ' . itm_script_format_module_link($slug, 'index.php', $path) . $impactText . $reasonText . $nl;
             return $line;
         }
 
-        return ' - [' . $label . '] ' . $path . $impactText . $reasonText . $nl;
+        return ' - ' . $coloredTag . ' ' . $path . $impactText . $reasonText . $nl;
     }
 }

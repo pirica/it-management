@@ -34,17 +34,17 @@ $linkModules = !itm_script_access_is_cli();
 echo itm_crud_has_company_audit_format_report($report, $nl, $linkModules);
 
 if ($report['failures'] !== []) {
-    echo 'FAIL: resolve hasCompany from schema $columns before UI field filters.' . $nl;
+    echo colorText('FAIL: resolve hasCompany from schema $columns before UI field filters.', 'fail') . $nl;
     itm_script_output_end();
     exit(1);
 }
 
 if ($strictWarn && $report['warnings'] !== []) {
-    echo 'FAIL (--strict-warn): migrate hasCompany to foreach ($columns as $c).' . $nl;
+    echo colorText('FAIL (--strict-warn): migrate hasCompany to foreach ($columns as $c).', 'fail') . $nl;
     itm_script_output_end();
     exit(1);
 }
 
-echo 'PASS: no modules hide company_id from $fieldColumns while deriving $hasCompany there.' . $nl;
+echo colorText('PASS: no modules hide company_id from $fieldColumns while deriving $hasCompany there.', 'pass') . $nl;
 itm_script_output_end();
 exit(0);
