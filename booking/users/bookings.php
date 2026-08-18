@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = hb_portal_ui_copy('portal_ui_confirm_cancel_success', [], $settings);
                 $booking = hb_portal_load_booking_confirmation($conn, $company_id, $reservationId);
                 if (!$booking) {
-                    $error = 'Reservation cancelled, but the confirmation could not be reloaded.';
+                    $error = hb_portal_ui_copy('portal_ui_manage_reload_after_cancel_failed', [], $settings);
                     $booking = null;
                 }
                 itm_hotel_booking_portal_manage_otp_clear();
@@ -127,7 +127,7 @@ $hotel = ['id' => 0, 'name' => $settings['welcome_title'] ?? 'Hotel booking'];
 $checkInIso = date('Y-m-d');
 $nights = 1;
 $occupancy = itm_hotel_booking_portal_parse_occupancy(['rooms' => 1, 'adults' => 2]);
-$roomLabel = 'Your room';
+$roomLabel = hb_portal_ui_copy('portal_ui_chrome_your_room_label', [], $settings);
 $changeRoomUrl = APPURL . '/rooms.php';
 
 if ($booking) {

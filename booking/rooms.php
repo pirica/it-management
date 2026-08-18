@@ -509,7 +509,7 @@ $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_setti
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Select a Room — <?php echo htmlspecialchars($hotel['name'], ENT_QUOTES, 'UTF-8'); ?></title>
+<title><?php echo htmlspecialchars($checkoutStepHeading['title'] . ' — ' . $hotel['name'], ENT_QUOTES, 'UTF-8'); ?></title>
 <link rel="stylesheet" href="<?php echo APPURL; ?>/css/hotel-booking-modern.css">
 </head>
 <body class="hb-public hb-select-room-page">
@@ -658,7 +658,7 @@ echo hb_portal_render_image_gallery(
 <?php hb_portal_render_guest_rating_reviews($reviewsUrl); ?>
 <?php if (!empty($hotel['location'])): ?>
 <p class="hb-hotel-address">
-<a href="<?php echo htmlspecialchars($mapsUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" title="Open address in new tab">
+<a href="<?php echo htmlspecialchars($mapsUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" title="<?php echo hb_portal_ui_copy_esc('portal_ui_home_address_new_tab_title', [], $settings); ?>">
 <?php echo htmlspecialchars($hotel['location'], ENT_QUOTES, 'UTF-8'); ?> ↗
 </a>
 </p>
@@ -671,7 +671,7 @@ echo hb_portal_render_image_gallery(
 
 <div id="hb-occupancy-modal" class="hb-modal hb-portal-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-occupancy-title">
 <div class="hb-modal-card hb-portal-modal-card">
-<button type="button" class="hb-modal-close" data-hb-modal-close="hb-occupancy-modal" title="Close">✖</button>
+<button type="button" class="hb-modal-close" data-hb-modal-close="hb-occupancy-modal" title="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_modal_close', [], $settings); ?>">✖</button>
 <h2 id="hb-occupancy-title"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_modal_title', [], $settings); ?></h2>
 <div class="hb-stepper-row"><span><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_rooms_label', [], $settings); ?></span><div class="hb-stepper"><button type="button" id="hb-occ-rooms-minus">−</button><input id="hb-occ-rooms" type="number" min="1" max="<?php echo (int) $occupancyLimits['rooms']; ?>" value="<?php echo (int) $occupancy['rooms']; ?>" readonly><button type="button" id="hb-occ-rooms-plus">+</button></div></div>
 <div class="hb-stepper-row"><span><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_adults_label', [], $settings); ?></span><div class="hb-stepper"><button type="button" id="hb-occ-adults-minus">−</button><input id="hb-occ-adults" type="number" min="1" max="<?php echo (int) $occupancyLimits['adults']; ?>" value="<?php echo (int) $occupancy['adults']; ?>" readonly><button type="button" id="hb-occ-adults-plus">+</button></div></div>
@@ -684,7 +684,7 @@ echo hb_portal_render_image_gallery(
 
 <div id="hb-filters-modal" class="hb-modal hb-portal-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-filters-title">
 <div class="hb-modal-card hb-portal-modal-card">
-<button type="button" class="hb-modal-close" data-hb-modal-close="hb-filters-modal" title="Close">✖</button>
+<button type="button" class="hb-modal-close" data-hb-modal-close="hb-filters-modal" title="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_modal_close', [], $settings); ?>">✖</button>
 <h2 id="hb-filters-title"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_filters_modal_title', [], $settings); ?></h2>
 <div class="hb-filter-list">
 <?php foreach ($filterOptions as $tag => $label): ?>
@@ -698,11 +698,11 @@ echo hb_portal_render_image_gallery(
 
 <div id="hb-rates-modal" class="hb-modal hb-portal-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-rates-title">
 <div class="hb-modal-card hb-portal-modal-card">
-<button type="button" class="hb-modal-close" data-hb-modal-close="hb-rates-modal" title="Close">✖</button>
+<button type="button" class="hb-modal-close" data-hb-modal-close="hb-rates-modal" title="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_modal_close', [], $settings); ?>">✖</button>
 <h2 id="hb-rates-title"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_special_rates_button', [], $settings); ?></h2>
 <form id="hb-rates-form" class="hb-rates-form" autocomplete="off">
 <fieldset class="hb-rates-fieldset">
-<legend class="hb-sr-only">Rate programs</legend>
+<legend class="hb-sr-only"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_rate_programs_legend', [], $settings); ?></legend>
 <?php foreach ($rateProgramOptions as $rateOpt):
     $param = (string) ($rateOpt['param'] ?? '');
     $slug = (string) ($rateOpt['slug'] ?? '');
@@ -744,7 +744,7 @@ echo hb_portal_render_image_gallery(
 <?php endforeach; ?>
 </div>
 <div class="hb-rates-actions">
-<button type="button" class="hb-btn hb-btn-primary" id="hb-rates-apply" title="Apply special rates">Apply</button>
+<button type="button" class="hb-btn hb-btn-primary" id="hb-rates-apply" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step1_apply_special_rates_title', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_apply_special_rates_button', [], $settings); ?></button>
 <button type="button" class="hb-btn" id="hb-rates-clear" title="<?php echo htmlspecialchars($portalDefaultRateLabel, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($portalDefaultRateLabel, ENT_QUOTES, 'UTF-8'); ?></button>
 </div>
 </form>
@@ -753,7 +753,7 @@ echo hb_portal_render_image_gallery(
 
 <div id="hb-room-detail-modal" class="hb-modal hb-room-detail-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-room-detail-title">
 <div class="hb-modal-card hb-room-detail-modal-card">
-<button type="button" class="hb-modal-close hb-room-detail-close" data-hb-modal-close="hb-room-detail-modal" title="Close">✖</button>
+<button type="button" class="hb-modal-close hb-room-detail-close" data-hb-modal-close="hb-room-detail-modal" title="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_modal_close', [], $settings); ?>">✖</button>
 <div id="hb-room-detail-body" class="hb-room-detail-body"></div>
 </div>
 </div>

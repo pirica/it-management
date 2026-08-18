@@ -50,10 +50,15 @@ if (!function_exists('hb_portal_render_image_gallery')) {
             $galleryClasses = 'hb-gallery';
         }
 
+        $settings = function_exists('hb_portal_money_settings_bound') ? hb_portal_money_settings_bound() : [];
+        $galleryPrev = htmlspecialchars(hb_portal_ui_copy('portal_ui_shared_gallery_prev', [], $settings), ENT_QUOTES, 'UTF-8');
+        $galleryNext = htmlspecialchars(hb_portal_ui_copy('portal_ui_shared_gallery_next', [], $settings), ENT_QUOTES, 'UTF-8');
+        $galleryAria = htmlspecialchars(hb_portal_ui_copy('portal_ui_shared_gallery_aria', [], $settings), ENT_QUOTES, 'UTF-8');
+
         $html = '<div class="' . htmlspecialchars($wrapClasses, ENT_QUOTES, 'UTF-8') . '" data-hb-gallery-urls="' . $jsonUrls . '">'
-            . '<button type="button" class="hb-gallery-prev" title="Previous image" aria-label="Previous image"><span aria-hidden="true">‹</span></button>'
-            . '<div class="' . htmlspecialchars($galleryClasses, ENT_QUOTES, 'UTF-8') . '" style="background-image:url(\'' . $first . '\')" tabindex="0" role="img" aria-label="Photo gallery"></div>'
-            . '<button type="button" class="hb-gallery-next" title="Next image" aria-label="Next image"><span aria-hidden="true">›</span></button>'
+            . '<button type="button" class="hb-gallery-prev" title="' . $galleryPrev . '" aria-label="' . $galleryPrev . '"><span aria-hidden="true">‹</span></button>'
+            . '<div class="' . htmlspecialchars($galleryClasses, ENT_QUOTES, 'UTF-8') . '" style="background-image:url(\'' . $first . '\')" tabindex="0" role="img" aria-label="' . $galleryAria . '"></div>'
+            . '<button type="button" class="hb-gallery-next" title="' . $galleryNext . '" aria-label="' . $galleryNext . '"><span aria-hidden="true">›</span></button>'
             . '<span class="hb-gallery-counter">1 / ' . (int) $count . '</span>';
         if ((string) $innerHtml !== '') {
             $html .= $innerHtml;
@@ -67,6 +72,56 @@ if (!function_exists('hb_portal_render_image_gallery')) {
 if (!function_exists('hb_portal_gallery_html')) {
     function hb_portal_gallery_html(array $urls, $wrapClass = '') {
         return hb_portal_render_image_gallery($urls, trim('hb-rd-gallery ' . $wrapClass), 'hb-gallery');
+    }
+}
+
+if (!function_exists('hb_portal_room_detail_occ_label')) {
+    function hb_portal_room_detail_occ_label($maxAdults, $maxChildren, $maxBabies, $childMaxAge, $settings = null) {
+        if (!is_array($settings)) {
+            $settings = hb_portal_money_settings_bound();
+        }
+        $maxAdults = (int) $maxAdults;
+        $maxChildren = (int) $maxChildren;
+        $maxBabies = (int) $maxBabies;
+        $childMaxAge = (int) $childMaxAge;
+        $adultWord = $maxAdults === 1
+            ? hb_portal_ui_copy('portal_ui_step1_room_adult_singular', [], $settings)
+            : hb_portal_ui_copy('portal_ui_step1_room_adult_plural', [], $settings);
+        $occLabel = trim(hb_portal_ui_copy('portal_ui_step1_room_max_occupancy_prefix', [], $settings))
+            . ' ' . $maxAdults . ' ' . $adultWord;
+        if ($maxChildren > 0) {
+            $childWord = $maxChildren === 1
+                ? hb_portal_ui_copy('portal_ui_step1_room_child_singular', [], $settings)
+                : hb_portal_ui_copy('portal_ui_step1_room_child_plural', [], $settings);
+            $occLabel .= ', ' . $maxChildren . ' ' . $childWord
+                . hb_portal_ui_copy('portal_ui_step1_room_children_age_suffix', ['age' => $childMaxAge], $settings);
+        }
+        if ($maxBabies > 0) {
+            $babyWord = $maxBabies === 1
+                ? hb_portal_ui_copy('portal_ui_step1_room_baby_singular', [], $settings)
+                : hb_portal_ui_copy('portal_ui_step1_room_baby_plural', [], $settings);
+            $occLabel .= ', ' . $maxBabies . ' ' . $babyWord;
+        }
+        return $occLabel;
+    }
+}
+
+if (!function_exists('hb_portal_room_detail_comfort_fallback_items')) {
+    /** @return list<string> */
+    function hb_portal_room_detail_comfort_fallback_items($settings = null) {
+        if (!is_array($settings)) {
+            $settings = hb_portal_money_settings_bound();
+        }
+        $raw = hb_portal_ui_copy('portal_ui_step1_comfort_fallback_list', [], $settings);
+        $lines = preg_split('/\r\n|\r|\n/', (string) $raw) ?: [];
+        $items = [];
+        foreach ($lines as $line) {
+            $line = trim((string) $line);
+            if ($line !== '') {
+                $items[] = $line;
+            }
+        }
+        return $items;
     }
 }
 
@@ -291,23 +346,17 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
 
         $specParts = [];
         if ($size !== '' && $size !== null) {
-            $specParts[] = (string) $size . ' m²';
+            $specParts[] = (string) $size . hb_portal_ui_copy('portal_ui_step1_room_size_suffix', [], $uiSettings);
         }
         if ($view !== '') {
-            $specParts[] = strtolower($view) . ' view';
+            $specParts[] = strtolower($view) . hb_portal_ui_copy('portal_ui_step1_room_view_suffix', [], $uiSettings);
         }
         foreach (array_slice($bullets, 0, 4) as $b) {
             $specParts[] = $b;
         }
         $specLine = implode(', ', array_unique($specParts));
 
-        $occLabel = 'Max. occupancy: ' . $maxAdults . ' adult' . ($maxAdults === 1 ? '' : 's');
-        if ($maxChildren > 0) {
-            $occLabel .= ', ' . $maxChildren . ' child' . ($maxChildren === 1 ? '' : 'ren') . ' (up to ' . $childMaxAge . ' years)';
-        }
-        if ($maxBabies > 0) {
-            $occLabel .= ', ' . $maxBabies . ' bab' . ($maxBabies === 1 ? 'y' : 'ies');
-        }
+        $occLabel = hb_portal_room_detail_occ_label($maxAdults, $maxChildren, $maxBabies, $childMaxAge, $uiSettings);
 
         $policyBadges = [];
         if (!empty($card['adults_only'])) {
@@ -342,12 +391,12 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
             return '<div class="hb-rd-highlight-col"><h4>' . htmlspecialchars($titleText, ENT_QUOTES, 'UTF-8') . '</h4><ul>' . $lis . '</ul></div>';
         };
 
-        $guestItems = ['Sleeps ' . $maxAdults];
+        $guestItems = [hb_portal_ui_copy('portal_ui_step1_room_sleeps_template', ['count' => $maxAdults], $uiSettings)];
         if ($maxChildren > 0) {
-            $guestItems[] = 'Children welcome (up to ' . $childMaxAge . ' years)';
+            $guestItems[] = hb_portal_ui_copy('portal_ui_step1_room_children_welcome_template', ['age' => $childMaxAge], $uiSettings);
         }
         if ($maxBabies > 0) {
-            $guestItems[] = 'Babies welcome';
+            $guestItems[] = hb_portal_ui_copy('portal_ui_step1_room_babies_welcome', [], $uiSettings);
         }
 
         $layoutItems = $cats['layout'];
@@ -371,20 +420,7 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
             }
         }
         if ($comfortHtml === '') {
-            $comfortDefaults = [
-                '37-inch HDTV',
-                'Air conditioning',
-                'Bath slippers',
-                'Bathrobe',
-                'Bathroom television',
-                'Bidet',
-                'Black-out curtains',
-                'Duvet covers',
-                'Feather pillows (non-allergenic)',
-                'Non-smoking',
-                'On-demand movies',
-            ];
-            foreach ($comfortDefaults as $c) {
+            foreach (hb_portal_room_detail_comfort_fallback_items($uiSettings) as $c) {
                 $comfortHtml .= '<li>' . htmlspecialchars($c, ENT_QUOTES, 'UTF-8') . '</li>';
             }
         }

@@ -394,7 +394,7 @@ $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_setti
 <?php if ($upgradeRoomDetailHtml !== ''): ?>
 <div id="hb-room-detail-modal" class="hb-modal hb-room-detail-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-room-detail-title">
 <div class="hb-modal-card hb-room-detail-modal-card">
-<button type="button" class="hb-modal-close hb-room-detail-close" data-hb-modal-close="hb-room-detail-modal" title="Close">✖</button>
+<button type="button" class="hb-modal-close hb-room-detail-close" data-hb-modal-close="hb-room-detail-modal" title="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_modal_close', [], $settings); ?>">✖</button>
 <div id="hb-room-detail-body" class="hb-room-detail-body"></div>
 </div>
 </div>

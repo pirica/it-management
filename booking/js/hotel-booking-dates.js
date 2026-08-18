@@ -3,8 +3,15 @@
  * First click = check-in; second click = check-out (1 night if only check-in).
  */
 (function () {
+  function hbPortalUiCopyMap() {
+    return (window.HB_SETTINGS && window.HB_SETTINGS.ui_copy)
+      || (window.HB_SELECT_ROOM && window.HB_SELECT_ROOM.ui_copy)
+      || (window.HB_CUSTOMIZE_UPGRADE && window.HB_CUSTOMIZE_UPGRADE.ui_copy)
+      || {};
+  }
+
   function hbUiCopy(key, fallback) {
-    var copy = (window.HB_SETTINGS && window.HB_SETTINGS.ui_copy) ? window.HB_SETTINGS.ui_copy : {};
+    var copy = hbPortalUiCopyMap();
     var val = copy[key];
     return (val !== undefined && val !== null && String(val).trim() !== '') ? String(val) : String(fallback || '');
   }
@@ -377,20 +384,20 @@
       '<div class="hb-dates-hotel"><strong>' + escapeHtml(h.name) + '</strong></div>' +
       '<p class="hb-dates-copy">' + escapeHtml(hbUiCopy('home_dates_select_copy', 'Select your check-in date, then your check-out date. One night is selected when only check-in is chosen.')) + '</p>' +
       '<p class="hb-dates-copy">' + escapeHtml(hbUiCopy('home_dates_price_copy', 'We\'re showing the best price per room based on the number of guests. Prices include tourist tax and fees.')) + '</p>' +
-      '<p class="hb-dates-explore"><a href="' + escapeHtml(window.HB_APPURL + '/rooms.php?id=' + h.id) + '">Explore all filters and search options &gt;</a></p>' +
+      '<p class="hb-dates-explore"><a href="' + escapeHtml(window.HB_APPURL + '/rooms.php?id=' + h.id) + '">' + escapeHtml(hbUiCopy('home_dates_explore_filters', 'Explore all filters and search options >')) + '</a></p>' +
       '<div class="hb-dates-months-wrap"><div class="hb-dates-months">' + tabsHtml + '</div></div>' +
       '<div class="hb-dates-cal-nav">' +
-      '<button type="button" class="hb-dates-cal-prev" title="Previous month">◀</button>' +
+      '<button type="button" class="hb-dates-cal-prev" title="' + escapeHtml(hbUiCopy('home_dates_prev_month', 'Previous month')) + '">◀</button>' +
       '<div class="hb-dates-cal-head" id="hb-dates-cal-title"></div>' +
-      '<button type="button" class="hb-dates-cal-next" title="Next month">▶</button>' +
+      '<button type="button" class="hb-dates-cal-next" title="' + escapeHtml(hbUiCopy('home_dates_next_month', 'Next month')) + '">▶</button>' +
       '</div>' +
-      '<div class="hb-dates-cal-grid" id="hb-dates-cal-grid"><p class="hb-dates-loading">Loading…</p></div>' +
+      '<div class="hb-dates-cal-grid" id="hb-dates-cal-grid"><p class="hb-dates-loading">' + escapeHtml(hbUiCopy('home_dates_loading', 'Loading…')) + '</p></div>' +
       '<p class="hb-dates-range-hint" id="hb-dates-range-hint"></p>' +
       '<div class="hb-dates-footer">' +
       '<div class="hb-dates-summary" id="hb-dates-summary"></div>' +
       '<div class="hb-dates-actions">' +
-      '<button type="button" class="hb-btn hb-dates-choose" disabled title="Choose room">Choose Room</button>' +
-      '<button type="button" class="hb-btn hb-dates-cancel" title="Cancel">🔙</button>' +
+      '<button type="button" class="hb-btn hb-dates-choose" disabled title="' + escapeHtml(hbUiCopy('home_dates_choose_room', 'Choose Room')) + '">' + escapeHtml(hbUiCopy('home_dates_choose_room', 'Choose Room')) + '</button>' +
+      '<button type="button" class="hb-btn hb-dates-cancel" title="' + escapeHtml(hbUiCopy('home_dates_cancel', 'Cancel')) + '">🔙</button>' +
       '</div></div>';
 
     datesBody.querySelectorAll('.hb-dates-month-tab').forEach(function (btn) {
@@ -431,14 +438,14 @@
     var grid = document.getElementById('hb-dates-cal-grid');
     var title = document.getElementById('hb-dates-cal-title');
     if (!grid || !state.hotel) return;
-    grid.innerHTML = '<p class="hb-dates-loading">Loading…</p>';
+    grid.innerHTML = '<p class="hb-dates-loading">' + escapeHtml(hbUiCopy('home_dates_loading', 'Loading…')) + '</p>';
     if (title) title.textContent = monthLabel(state.year, state.month);
     fetchCalendar(state.hotel.id, state.year, state.month).then(function (data) {
       state.calendar = data;
       renderCalendarGrid();
       syncMonthTabUi();
     }).catch(function () {
-      grid.innerHTML = '<p class="hb-dates-error">Could not load calendar.</p>';
+      grid.innerHTML = '<p class="hb-dates-error">' + escapeHtml(hbUiCopy('home_dates_load_error', 'Could not load calendar.')) + '</p>';
     });
   }
 
@@ -451,7 +458,15 @@
     var code = state.calendar.currency_code || state.hotel.currency_code || 'EUR';
     var firstDow = new Date(y, m - 1, 1).getDay();
     var dim = new Date(y, m, 0).getDate();
-    var headers = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var headers = [
+      hbUiCopy('home_dates_weekday_sun', 'Sun'),
+      hbUiCopy('home_dates_weekday_mon', 'Mon'),
+      hbUiCopy('home_dates_weekday_tue', 'Tue'),
+      hbUiCopy('home_dates_weekday_wed', 'Wed'),
+      hbUiCopy('home_dates_weekday_thu', 'Thu'),
+      hbUiCopy('home_dates_weekday_fri', 'Fri'),
+      hbUiCopy('home_dates_weekday_sat', 'Sat')
+    ];
     var html = '<div class="hb-cal-week hb-cal-head">' + headers.map(function (h) { return '<span>' + h + '</span>'; }).join('') + '</div>';
     html += '<div class="hb-cal-week">';
     for (var pad = 0; pad < firstDow; pad++) {
@@ -506,9 +521,9 @@
 
     if (hint) {
       if (!state.checkInYmd) {
-        hint.textContent = 'Select your check-in date.';
+        hint.textContent = hbUiCopy('home_dates_hint_checkin', 'Select your check-in date.');
       } else if (!state.checkOutYmd) {
-        hint.textContent = 'Select your check-out date (use ▶ or the month tabs for the next month), or choose room for 1 night.';
+        hint.textContent = hbUiCopy('home_dates_hint_checkout', 'Select your check-out date (use ▶ or the month tabs for the next month), or choose room for 1 night.');
       } else {
         hint.textContent = '';
       }
@@ -526,7 +541,7 @@
       if (!isRangeAvailable(state.checkInYmd, checkOut)) {
         summary.innerHTML = '';
         choose.disabled = true;
-        if (hint) hint.textContent = 'Some nights in this range are unavailable. Choose different dates.';
+        if (hint) hint.textContent = hbUiCopy('home_dates_hint_unavailable', 'Some nights in this range are unavailable. Choose different dates.');
         return;
       }
       var code = (state.calendar && state.calendar.currency_code) || state.hotel.currency_code || 'EUR';
@@ -535,9 +550,15 @@
       var rateLabel = (state.calendar && state.calendar.cheapest_rate_label)
         || (state.hotel && state.hotel.cheapest_rate_label)
         || portalDefaultRateLabel();
+      var taxLabel = portalTaxLongLabel();
+      var summaryTpl = hbUiCopy('home_dates_summary_template', 'avg/night for {nights} {night_word} ({tax_label})');
+      var summaryMeta = summaryTpl
+        .replace('{nights}', String(nights))
+        .replace('{night_word}', nightWord)
+        .replace('{tax_label}', taxLabel);
       summary.innerHTML =
         '<p class="hb-dates-sum-price">' + escapeHtml(formatMoney(avg, code)) + '</p>' +
-        '<p class="hb-dates-sum-meta">avg/night for ' + nights + ' ' + nightWord + ' (' + escapeHtml(portalTaxLongLabel()) + ')</p>' +
+        '<p class="hb-dates-sum-meta">' + escapeHtml(summaryMeta) + '</p>' +
         '<p class="hb-dates-sum-label">' + escapeHtml(rateLabel) + '</p>' +
         '<p class="hb-dates-sum-range">' + escapeHtml(displayRange(state.checkInYmd, checkOut)) + '</p>';
       choose.disabled = false;
