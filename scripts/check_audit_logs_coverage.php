@@ -141,6 +141,7 @@ function audit_logs_system_derived_tables(): array
     return [
         'schema_migrations' => true,
         'search_index' => true,
+        'qr_code_scans' => true,
     ];
 }
 

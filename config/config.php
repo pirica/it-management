@@ -466,6 +466,11 @@ if (defined('ITM_QR_SHARE_PUBLIC') && ITM_QR_SHARE_PUBLIC) {
     $itmSkipWebAuth = true;
 }
 
+// Why: modules/qr/r.php and asset.php serve public dynamic QR landings validated by access_token.
+if (defined('ITM_QR_GENERATOR_PUBLIC') && ITM_QR_GENERATOR_PUBLIC) {
+    $itmSkipWebAuth = true;
+}
+
 // Why: booking/* guest portal must not require ITM employee login (see booking/bootstrap.php).
 if (defined('ITM_HOTEL_BOOKING_PUBLIC_PORTAL') && ITM_HOTEL_BOOKING_PUBLIC_PORTAL) {
     $itmSkipWebAuth = true;
