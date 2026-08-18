@@ -876,13 +876,6 @@ INSERT INTO `request_password` (`company_id`, `employee_id`, `requested_by_emplo
 INSERT INTO `rj45_speed` (`id`, `company_id`, `cable_type`, `max_speed`, `bandwidth`, `max_distance_full_speed`, `notes`, `active`, `created_at`) VALUES
 ('3', '1', 'Cat6', '10 Gbps (up to 55 m), 1 Gbps (100 m)', '250 MHz', '55 m @ 10G', 'Good for most offices/homes.', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `search_index` (`company_id`, `module_slug`, `record_id`, `title`, `subtitle`, `keywords`) VALUES
-(1, 'employees', 1, 'Admin', 'Employees', 'admin employee user staff directory'),
-(1, 'equipment', 1, 'Core network switch', 'Equipment', 'switch network hardware device'),
-(1, 'tickets', 1, 'Sample support ticket', 'Tickets', 'support helpdesk ticket issue'),
-(1, 'catalogs', 1, 'Sample catalog item', 'Catalogs', 'catalog part sku inventory'),
-(1, 'ip_addresses', 1, 'Sample IP address', 'IP Addresses', 'ip address subnet network host');
-
 INSERT INTO `supplier_statuses` (`company_id`, `id`, `name`, `created_at`) VALUES
 ('1', '4', 'Backup', '2026-01-01 00:00:01'),
 ('1', '2', 'Inactive', '2026-01-01 00:00:01'),

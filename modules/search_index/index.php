@@ -641,42 +641,6 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
 
 // HANDLE FORM SUBMISSION (CREATE/EDIT)
 
-// Handle sample data seeding for empty companies in list view
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && isset($_POST['add_sample_data'])) {
-    cr_require_valid_csrf_token();
-
-    if (!$hasCompany || $company_id <= 0) {
-        $_SESSION['crud_error'] = 'Sample data requires an active company.';
-        header('Location: ' . $listUrl);
-        exit;
-    }
-
-    $where = ' WHERE company_id=' . (int)$company_id;
-    $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where;
-    $countResult = mysqli_query($conn, $countSql);
-    $existingRows = 0;
-    if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
-        $existingRows = (int)($countRow['total_rows'] ?? 0);
-    }
-
-    if ($existingRows > 0) {
-        $_SESSION['crud_error'] = 'Sample data can only be added when no records exist.';
-        header('Location: ' . $listUrl);
-        exit;
-    }
-
-    $seedError = '';
-    $insertedRows = itm_seed_table_from_database_sql($conn, $crud_table, (int)$company_id, $seedError);
-    if ($insertedRows <= 0) {
-        $_SESSION['crud_error'] = $seedError !== ''
-            ? $seedError
-            : 'No sample rows were inserted for the active company.';
-    }
-
-    header('Location: ' . $listUrl);
-    exit;
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', 'edit'], true)) {
     // Why: Server-side RBAC before CSRF persistence (UI-only hiding is not enough).
     itm_require_crud_role_module_permission($conn, $crud_action, $crud_table);
@@ -1087,16 +1051,11 @@ if (!isset($crud_title)) {
                 </div>
 
                 <?php if ($hasCompany && $company_id > 0 && $totalRows === 0): ?>
-                    <div class="card" style="margin-top:12px;">
-                        <form method="POST" style="display:flex;justify-content:center;">
-                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                                <?php
-                    if (function_exists('itm_crud_render_form_hidden_audit_inputs')) {
-                        itm_crud_render_form_hidden_audit_inputs($data, (string)$crud_action);
-                    }
-                    ?>
-<button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
-                        </form>
+                    <div class="card" style="margin-top:12px;padding:16px;text-align:center;">
+                        <p style="margin-bottom:10px;">Palette index rows are synced from source modules — not stored as audit-log business data and not seeded with fake sample rows.</p>
+                        <p style="margin-bottom:8px;">Save records in employees, equipment, tickets, catalogs, or IP addresses, or run the backfill script for this tenant.</p>
+                        <a class="btn btn-primary" href="<?php echo sanitize(BASE_URL . 'scripts/apply_search_index_backfill.php?run=1&apply=1'); ?>" title="Backfill search index">Run search index backfill</a>
+                        <p style="font-size:13px;color:#666;margin-top:10px;">Admin session required — open the backfill link in a new browser tab.</p>
                     </div>
                 <?php endif; ?>
 

@@ -1319,7 +1319,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_chatbot.php` — `js/chatbot.js`, `chat_api.php`, `knowledge_base` tenant scope
 - `php scripts/verify_command_palette_search.php` — `includes/itm_command_palette_search.php`, `includes/itm_search_index.php`, `modules/search/api.php`, `js/command-palette.js`, header Ctrl+K wiring, RBAC gates, FULLTEXT backfill/remove probes
 - `php scripts/verify_command_palette_sidebar_slugs.php` — every Admin sidebar module slug findable via palette module navigation; lib `scripts/lib/itm_command_palette_sidebar_verify.php`
-- `php scripts/apply_search_index_backfill.php` — dry-run default; `--apply` / `?apply=1` syncs `search_index` for palette modules per company (`--company=`, `--module=`)
+- `php scripts/apply_search_index_backfill.php` — dry-run default; `--apply` / `?apply=1` syncs `search_index` for palette modules per company (`--company=`, `--module=`). Canonical population path — **not** Add sample data / `db/02_data_sample.sql`.
 - `php scripts/verify_appointment.php` — `modules/appointments/`, `includes/itm_appointment.php`, appointment `db/` bundle
 - `php scripts/verify_live_chat.php` — Live Chat schema, SLA, ACL, notifications, ticket activity/comments helpers
 - `php scripts/verify_ticket_productivity.php` — Ticket canned responses, merge, CSAT token/public URL, merge smoke

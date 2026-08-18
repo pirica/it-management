@@ -22,6 +22,8 @@ if (!function_exists('itm_sample_sql_exempt_tables')) {
             'role_hierarchy',
             'role_assignment_rights',
             'ui_configuration',
+            // Derived palette cache — populated by CRUD sync / apply_search_index_backfill.php only.
+            'search_index',
             // Matrix / junction / child rows — seeded via parent module or 02_data.sql only (no Add sample data UI).
             'company_module_share',
             'employee_departments',

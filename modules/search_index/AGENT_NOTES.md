@@ -28,8 +28,9 @@ Flattened scaffold CRUD:
 - **`company_id` hidden** — `search_index` is in `$hideCompanyIdTables` on list/view/create/edit/delete flows.
 - `module_slug` is string slug, not registry id — search should match slug and title/keywords.
 - Bulk clear can break palette performance until backfill runs again.
-- **Add sample data:** when the active tenant list is empty, **Add sample data** inserts five palette demo rows (`employees`, `equipment`, `tickets`, `catalogs`, `ip_addresses` at `record_id` 1) for **each empty company among ids 1–5** plus the active company when it is outside that range via `itm_seed_insert_search_index_sample_rows()` in `includes/itm_sample_data_seed.php`. Templates also live in `db/02_data_sample.sql` (company `1` markers).
-- **No soft-delete:** table has no `deleted_at` — list/delete use hard `DELETE` and must not call `itm_crud_append_not_deleted_predicate()` (scaffold copy-paste broke list SQL after sample seed).
+- **Empty list:** no **Add sample data** button — copy explains derived-cache contract and links to [apply_search_index_backfill.php?run=1&apply=1](http://localhost/it-management/scripts/apply_search_index_backfill.php?run=1&apply=1) (Admin session).
+- **No Add sample data:** derived cache rows must come from source module saves or the backfill script — not `db/02_data_sample.sql` or `itm_seed_table_from_database_sql()`.
+- **No soft-delete:** table has no `deleted_at` — list/delete use hard `DELETE` and must not call `itm_crud_append_not_deleted_predicate()` (`$crudUsesSoftDelete = false` on all entry files).
 
 ## 9. Audit Logging Requirements
 
