@@ -130,7 +130,10 @@ if (!function_exists('hb_portal_reservation_room_title')) {
         $type = trim((string) ($room['type_name'] ?? ''));
         $bed = trim((string) ($room['bed_summary'] ?? ''));
         if ($bed !== '' && $type !== '') {
-            $title = $bed . ' ' . $type . ' Room';
+            $title = hb_portal_ui_copy('portal_ui_chrome_reservation_room_title_template', [
+                'bed' => $bed,
+                'type' => $type,
+            ], $settings);
         } elseif ($type !== '') {
             $title = $type;
         } else {

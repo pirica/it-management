@@ -1,4 +1,16 @@
 (function () {
+  function hbPortalUiCopyMap() {
+    return (window.HB_SETTINGS && window.HB_SETTINGS.ui_copy)
+      || (window.HB_CUSTOMIZE_UPGRADE && window.HB_CUSTOMIZE_UPGRADE.ui_copy)
+      || {};
+  }
+
+  function hbUiCopy(key, fallback) {
+    var copy = hbPortalUiCopyMap();
+    var val = copy[key];
+    return (val !== undefined && val !== null && String(val).trim() !== '') ? String(val) : String(fallback || '');
+  }
+
   var cfg = window.HB_CUSTOMIZE_UPGRADE;
   if (!cfg) {
     return;
@@ -93,6 +105,18 @@
 })();
 
 (function () {
+  function hbPortalUiCopyMap() {
+    return (window.HB_SETTINGS && window.HB_SETTINGS.ui_copy)
+      || (window.HB_CUSTOMIZE_UPGRADE && window.HB_CUSTOMIZE_UPGRADE.ui_copy)
+      || {};
+  }
+
+  function hbUiCopy(key, fallback) {
+    var copy = hbPortalUiCopyMap();
+    var val = copy[key];
+    return (val !== undefined && val !== null && String(val).trim() !== '') ? String(val) : String(fallback || '');
+  }
+
   var detailCfg = window.HB_CUSTOMIZE_ROOM_DETAIL;
   if (!detailCfg || !detailCfg.html) {
     return;
@@ -143,8 +167,8 @@
     if (more) {
       more.hidden = !expanded;
     }
-    readMore.textContent = expanded ? 'Read less' : 'Read more';
-    readMore.setAttribute('title', expanded ? 'Read less' : 'Read more');
+    readMore.textContent = expanded ? hbUiCopy('home_read_less', 'Read less') : hbUiCopy('home_read_more', 'Read more');
+    readMore.setAttribute('title', expanded ? hbUiCopy('home_read_less', 'Read less') : hbUiCopy('home_read_more', 'Read more'));
   });
 })();
 

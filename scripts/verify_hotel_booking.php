@@ -2132,11 +2132,42 @@ $uiCopyColsOk = function_exists('itm_verify_db_migrations_column_exists')
     && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_step1', 'portal_ui_step1_filter_king_bed')
     && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_checkout', 'portal_ui_step4_book_reservation_button')
     && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_confirm', 'portal_ui_confirm_rate_label')
-    && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_confirm', 'portal_ui_manage_lookup_failure');
+    && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_confirm', 'portal_ui_manage_lookup_failure')
+    && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_home', 'portal_ui_shared_modal_close')
+    && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_home', 'portal_ui_home_dates_loading')
+    && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_confirm', 'portal_ui_auth_sign_in_title');
 if ($uiCopyColsOk) {
     hb_pass('portal ui copy satellite schema tables');
 } else {
-    hb_fail('portal ui copy satellite schema tables missing — apply hotel_booking_portal_ui_copy.sql or fresh db/ import');
+    hb_fail('portal ui copy satellite schema tables missing — apply hotel_booking_portal_ui_copy_gap.sql or fresh db/ import');
+}
+
+$portalCheckoutSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/includes/portal_checkout.php');
+if (strpos($portalCheckoutSrc, "portal_ui_confirm_reservation_notes_heading") !== false) {
+    hb_pass('portal checkout reservation notes heading uses portal_ui copy');
+} else {
+    hb_fail('portal checkout reservation notes heading not wired to portal_ui');
+}
+
+$authLoginSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/auth/login.php');
+if (strpos($authLoginSrc, "portal_ui_auth_sign_in_title") !== false) {
+    hb_pass('legacy auth login uses portal_ui copy');
+} else {
+    hb_fail('legacy auth login missing portal_ui copy');
+}
+
+$selectRoomJs = (string) @file_get_contents(dirname(__DIR__) . '/booking/js/hotel-booking-select-room.js');
+if (strpos($selectRoomJs, 'HB_SELECT_ROOM.ui_copy') !== false) {
+    hb_pass('select-room JS hbUiCopy reads HB_SELECT_ROOM.ui_copy');
+} else {
+    hb_fail('select-room JS hbUiCopy missing HB_SELECT_ROOM.ui_copy source');
+}
+
+$datesJs = (string) @file_get_contents(dirname(__DIR__) . '/booking/js/hotel-booking-dates.js');
+if (strpos($datesJs, "hbUiCopy('home_dates_loading'") !== false) {
+    hb_pass('dates modal JS uses portal_ui home_dates copy keys');
+} else {
+    hb_fail('dates modal JS missing portal_ui home_dates copy keys');
 }
 
 itm_script_output_end();

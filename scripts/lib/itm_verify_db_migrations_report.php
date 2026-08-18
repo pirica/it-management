@@ -692,6 +692,23 @@ if (!function_exists('itm_verify_db_migrations_probe_custom')) {
             );
         }
 
+        if ($filename === 'hotel_booking_portal_ui_copy_gap.sql') {
+            $ok = itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_home', 'portal_ui_shared_modal_close')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_home', 'portal_ui_home_dates_loading')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_step1', 'portal_ui_step1_comfort_fallback_list')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_checkout', 'portal_ui_step2_multi_room_rated_intro')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_confirm', 'portal_ui_auth_sign_in_title');
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'fail',
+                $ok ? 'Applied' : 'Not applied',
+                $ok
+                    ? 'Portal UI copy gap columns present on satellite tables.'
+                    : 'Missing portal_ui_* gap columns — apply hotel_booking_portal_ui_copy_gap.sql or fresh db/ import.'
+            );
+        }
+
         if ($filename === 'news_module_registry.sql') {
             $newsRows = itm_verify_db_migrations_scalar_count(
                 $conn,

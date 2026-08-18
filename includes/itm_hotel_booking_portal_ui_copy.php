@@ -411,6 +411,7 @@ if (!function_exists('itm_hotel_booking_portal_ui_copy_section_labels')) {
       'step4' => 'Step 4 — Guest details',
       'confirm' => 'Confirmation and checkout summary',
       'manage' => 'Manage booking',
+      'auth' => 'Legacy portal auth',
     ];
   }
 }

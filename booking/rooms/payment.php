@@ -55,7 +55,7 @@ $hotel = ['id' => 0, 'name' => $settings['welcome_title'] ?? 'Hotel booking'];
 $checkInIso = date('Y-m-d');
 $nights = 1;
 $occupancy = itm_hotel_booking_portal_parse_occupancy(['rooms' => 1, 'adults' => 2]);
-$roomLabel = 'Your room';
+$roomLabel = hb_portal_ui_copy('portal_ui_chrome_your_room_label', [], $settings);
 $changeRoomUrl = APPURL . '/rooms.php';
 
 if ($booking) {
@@ -132,10 +132,10 @@ $paymentConfirmationOptions = [
 <?php hb_portal_render_payment_confirmation($booking, $paymentConfirmationOptions); ?>
 <?php else: ?>
 <div class="hb-payment-confirmation card hb-payment-confirmation--empty">
-<h1 class="hb-payment-confirmation-title">No reservation found</h1>
-<p class="hb-payment-confirmation-lead">We could not find a recent booking in this browser session. Start a new search or manage an existing reservation with your confirmation number and last name.</p>
+<h1 class="hb-payment-confirmation-title"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_payment_empty_title', [], $settings); ?></h1>
+<p class="hb-payment-confirmation-lead"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_payment_empty_lead', [], $settings); ?></p>
 <div class="hb-checkout-actions hb-payment-confirmation-actions">
-<a class="hb-btn hb-btn-primary" href="<?php echo APPURL; ?>/" title="Find a hotel">Find a hotel</a>
+<a class="hb-btn hb-btn-primary" href="<?php echo APPURL; ?>/" title="<?php echo hb_portal_ui_copy_esc('portal_ui_confirm_payment_empty_cta', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_payment_empty_cta', [], $settings); ?></a>
 <a class="hb-btn hb-checkout-skip" href="<?php echo APPURL; ?>/users/bookings.php" title="<?php echo htmlspecialchars($manageBookingLabel, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($manageBookingLabel, ENT_QUOTES, 'UTF-8'); ?></a>
 </div>
 </div>

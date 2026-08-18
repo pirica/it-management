@@ -1,4 +1,24 @@
 (function () {
+  function hbPortalUiCopyMap() {
+    return (window.HB_SETTINGS && window.HB_SETTINGS.ui_copy)
+      || (window.HB_SELECT_ROOM && window.HB_SELECT_ROOM.ui_copy)
+      || {};
+  }
+
+  function hbUiCopy(key, fallback) {
+    var copy = hbPortalUiCopyMap();
+    var val = copy[key];
+    return (val !== undefined && val !== null && String(val).trim() !== '') ? String(val) : String(fallback || '');
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   function escapeUrlForCss(url) {
     return String(url == null ? '' : url).replace(/'/g, '%27');
   }
@@ -21,11 +41,14 @@
     }
     var singleClass = urls.length <= 1 ? ' hb-gallery-wrap--single' : '';
     var first = escapeUrlForCss(urls[0]);
+    var galleryPrev = escapeHtml(hbUiCopy('shared_gallery_prev', 'Previous image'));
+    var galleryNext = escapeHtml(hbUiCopy('shared_gallery_next', 'Next image'));
+    var galleryAria = escapeHtml(hbUiCopy('shared_gallery_aria', 'Photo gallery'));
     return (
       '<div class="hb-gallery-wrap' + singleClass + '">' +
-      '<button type="button" class="hb-gallery-prev" title="Previous image" aria-label="Previous image"><span aria-hidden="true">‹</span></button>' +
-      '<div class="hb-gallery" tabindex="0" role="img" aria-label="Photo gallery"></div>' +
-      '<button type="button" class="hb-gallery-next" title="Next image" aria-label="Next image"><span aria-hidden="true">›</span></button>' +
+      '<button type="button" class="hb-gallery-prev" title="' + galleryPrev + '" aria-label="' + galleryPrev + '"><span aria-hidden="true">‹</span></button>' +
+      '<div class="hb-gallery" tabindex="0" role="img" aria-label="' + galleryAria + '"></div>' +
+      '<button type="button" class="hb-gallery-next" title="' + galleryNext + '" aria-label="' + galleryNext + '"><span aria-hidden="true">›</span></button>' +
       '<span class="hb-gallery-counter">' + formatCounter(0, urls.length) + '</span>' +
       '</div>'
     );

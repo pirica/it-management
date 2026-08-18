@@ -20,7 +20,7 @@ $booking = $bid > 0 ? hb_portal_load_booking_confirmation($conn, $company_id, $b
 if (!$booking) {
     http_response_code(404);
     header('Content-Type: text/html; charset=utf-8');
-    echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Confirmation not found</title></head><body><p>Confirmation is not available. Complete a booking or open this link from your confirmation page in the same browser session.</p></body></html>';
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>' . htmlspecialchars(hb_portal_ui_copy('portal_ui_confirm_pdf_not_found_title', [], $settings), ENT_QUOTES, 'UTF-8') . '</title></head><body><p>' . htmlspecialchars(hb_portal_ui_copy('portal_ui_confirm_pdf_not_found_body', [], $settings), ENT_QUOTES, 'UTF-8') . '</p></body></html>';
     exit;
 }
 
@@ -35,7 +35,7 @@ $nights = hb_portal_booking_stay_nights((string) ($booking['check_in'] ?? ''), (
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Booking confirmation</title>
+<title><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_pdf_page_title', [], $settings); ?></title>
 <link rel="stylesheet" href="<?php echo APPURL; ?>/css/hotel-booking-modern.css">
 <style>
 body.hb-confirmation-pdf-download { margin: 0; padding: 24px; background: #f4f5f7; }

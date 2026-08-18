@@ -34,10 +34,12 @@ if (!function_exists('hb_portal_render_checkout_stepper')) {
     function hb_portal_render_checkout_stepper($activeStep, array $context) {
         $confirmation = !empty($context['confirmation']);
         $activeStep = max(1, min(4, (int) $activeStep));
-        $roomLabel = trim((string) ($context['room_label'] ?? 'Your room'));
-        $changeRoomUrl = (string) ($context['change_room_url'] ?? '');
         $portalSettings = is_array($context['settings'] ?? null) ? $context['settings'] : hb_portal_money_settings_bound();
+        $changeRoomUrl = (string) ($context['change_room_url'] ?? '');
         $roomLabel = trim((string) ($context['room_label'] ?? ''));
+        if ($roomLabel === '') {
+            $roomLabel = hb_portal_ui_copy('portal_ui_chrome_your_room_label', [], $portalSettings);
+        }
         $settingsRoomLabel = itm_hotel_booking_portal_step_label_from_settings($portalSettings, 'room', 'Select a Room');
         if ($roomLabel === '' || $roomLabel === 'Select a Room') {
             $roomLabel = $settingsRoomLabel !== '' ? $settingsRoomLabel : 'Select a Room';
@@ -101,7 +103,7 @@ if (!function_exists('hb_portal_render_room_lines_summary')) {
 <section class="hb-room-lines-summary card" aria-label="Selected rooms">
 <h2 class="hb-room-lines-summary-title"><?php echo htmlspecialchars($roomsHeading, ENT_QUOTES, 'UTF-8'); ?></h2>
 <?php if ($showLinePrices): ?>
-<p class="hb-room-lines-summary-intro" style="margin:0 0 12px;font-size:.95rem;opacity:.92;">Per-night prices <?php echo htmlspecialchars($priceIncludesTaxLabel, ENT_QUOTES, 'UTF-8'); ?> for rooms you already rated. Select a rate for this room below.</p>
+<p class="hb-room-lines-summary-intro" style="margin:0 0 12px;font-size:.95rem;opacity:.92;"><?php echo hb_portal_ui_copy_esc('portal_ui_step2_multi_room_rated_intro', ['tax_label' => $priceIncludesTaxLabel], $portalSettings); ?></p>
 <?php endif; ?>
 <ol class="hb-room-lines-summary-list">
 <?php foreach ($roomLines as $idx => $line):
@@ -590,7 +592,7 @@ if (!function_exists('hb_portal_render_payment_reservation_notes')) {
         }
         ?>
 <section class="hb-checkout-section hb-payment-reservation-notes">
-<h2 class="hb-checkout-section-title">Reservation notes</h2>
+<h2 class="hb-checkout-section-title"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_reservation_notes_heading', [], hb_portal_money_settings_bound()); ?></h2>
 <?php foreach ($items as $item):
     if (($item['kind'] ?? '') === 'comments'): ?>
 <p class="hb-reservation-note-label"><?php echo htmlspecialchars((string) ($item['label'] ?? hb_portal_ui_copy('portal_ui_confirm_guest_comments_label', [], hb_portal_money_settings_bound())), ENT_QUOTES, 'UTF-8'); ?></p>
@@ -1060,7 +1062,7 @@ if (!function_exists('hb_portal_render_cancellation_policy_button')) {
 
 <div id="hb-cancellation-modal" class="hb-modal hb-portal-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-cancellation-title">
 <div class="hb-modal-card hb-portal-modal-card" style="max-width: 600px; width: 90%; margin: 10% auto; padding: 24px; position: relative; background: #fff; border-radius: 8px;">
-<button type="button" class="hb-modal-close" data-hb-modal-close="hb-cancellation-modal" title="Close" style="position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 1.25rem; cursor: pointer;">✖</button>
+<button type="button" class="hb-modal-close" data-hb-modal-close="hb-cancellation-modal" title="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_modal_close', [], $uiSettings); ?>" style="position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 1.25rem; cursor: pointer;">✖</button>
 <div id="hb-cancellation-modal-body" class="hb-cancellation-modal-body" style="margin-top: 16px;">
   <p><?php echo htmlspecialchars($cancellationLoading, ENT_QUOTES, 'UTF-8'); ?></p>
 </div>
@@ -1212,20 +1214,21 @@ if (!function_exists('hb_portal_render_hotel_action_links')) {
         }
         $classAttr = trim((string) $wrapperClass) !== '' ? ' class="' . htmlspecialchars(trim((string) $wrapperClass), ENT_QUOTES, 'UTF-8') . '"' : '';
         echo '<div' . $classAttr . '>';
+        $opensNewTab = hb_portal_ui_copy('portal_ui_shared_opens_in_new_tab', [], $uiSettings);
         if ($directionsUrl !== '') {
-            echo '<a href="' . htmlspecialchars($directionsUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer" title="' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_directions_link', [], $uiSettings), ENT_QUOTES, 'UTF-8') . ' (opens in new tab)"><span aria-hidden="true">📍</span> ' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_directions_link', [], $uiSettings), ENT_QUOTES, 'UTF-8') . '</a>';
+            echo '<a href="' . htmlspecialchars($directionsUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer" title="' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_directions_link', [], $uiSettings) . $opensNewTab, ENT_QUOTES, 'UTF-8') . '"><span aria-hidden="true">📍</span> ' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_directions_link', [], $uiSettings), ENT_QUOTES, 'UTF-8') . '</a>';
         }
         if ($websiteUrl !== '') {
-            echo '<a href="' . htmlspecialchars($websiteUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer" title="' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_visit_website_link', [], $uiSettings), ENT_QUOTES, 'UTF-8') . ' (opens in new tab)"><span aria-hidden="true">🌐</span> ' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_visit_website_link', [], $uiSettings), ENT_QUOTES, 'UTF-8') . '</a>';
+            echo '<a href="' . htmlspecialchars($websiteUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer" title="' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_visit_website_link', [], $uiSettings) . $opensNewTab, ENT_QUOTES, 'UTF-8') . '"><span aria-hidden="true">🌐</span> ' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_visit_website_link', [], $uiSettings), ENT_QUOTES, 'UTF-8') . '</a>';
         }
         if ($infoHref !== '') {
-            echo '<a href="' . htmlspecialchars($infoHref, ENT_QUOTES, 'UTF-8') . '" title="General information email"><span aria-hidden="true">ℹ️</span> ' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_info_link', [], $uiSettings), ENT_QUOTES, 'UTF-8') . '</a>';
+            echo '<a href="' . htmlspecialchars($infoHref, ENT_QUOTES, 'UTF-8') . '" title="' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_general_info_email_title', [], $uiSettings), ENT_QUOTES, 'UTF-8') . '"><span aria-hidden="true">ℹ️</span> ' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_info_link', [], $uiSettings), ENT_QUOTES, 'UTF-8') . '</a>';
         }
         if ($emailHref !== '') {
-            echo '<a href="' . htmlspecialchars($emailHref, ENT_QUOTES, 'UTF-8') . '" title="Reservations email"><span aria-hidden="true">📧</span> ' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_email_link', [], $uiSettings), ENT_QUOTES, 'UTF-8') . '</a>';
+            echo '<a href="' . htmlspecialchars($emailHref, ENT_QUOTES, 'UTF-8') . '" title="' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_reservations_email_title', [], $uiSettings), ENT_QUOTES, 'UTF-8') . '"><span aria-hidden="true">📧</span> ' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_email_link', [], $uiSettings), ENT_QUOTES, 'UTF-8') . '</a>';
         }
         if ($phoneHref !== '') {
-            echo '<a href="' . htmlspecialchars($phoneHref, ENT_QUOTES, 'UTF-8') . '" title="Call hotel"><span aria-hidden="true">📞</span> ' . htmlspecialchars((string) ($contacts['phone'] ?? ''), ENT_QUOTES, 'UTF-8') . '</a>';
+            echo '<a href="' . htmlspecialchars($phoneHref, ENT_QUOTES, 'UTF-8') . '" title="' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_call_hotel_title', [], $uiSettings), ENT_QUOTES, 'UTF-8') . '"><span aria-hidden="true">📞</span> ' . htmlspecialchars((string) ($contacts['phone'] ?? ''), ENT_QUOTES, 'UTF-8') . '</a>';
         }
         echo '</div>';
     }
@@ -1244,7 +1247,7 @@ if (!function_exists('hb_portal_render_change_booking_button')) {
 </div>
 <div id="hb-change-booking-modal" class="hb-modal hb-portal-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-change-booking-title">
 <div class="hb-modal-card hb-portal-modal-card hb-change-booking-modal-card">
-<button type="button" class="hb-modal-close" data-hb-modal-close="hb-change-booking-modal" title="Close">✖</button>
+<button type="button" class="hb-modal-close" data-hb-modal-close="hb-change-booking-modal" title="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_modal_close', [], $uiSettings); ?>">✖</button>
 <h2 id="hb-change-booking-title" class="hb-change-booking-modal-title"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_change_booking_button', [], $uiSettings); ?></h2>
 <p class="hb-modal-note"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_change_booking_modal_note', [], $uiSettings); ?></p>
 <p class="hb-change-booking-hotel-name"><?php echo htmlspecialchars($contacts['name'], ENT_QUOTES, 'UTF-8'); ?></p>

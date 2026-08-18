@@ -179,9 +179,9 @@ $imgUrl = !empty($hotel['photos'][0]['public_url'])
     : itm_hotel_booking_portal_default_image_url('image_2.jpg');
 ?>
 <div class="hb-gallery-wrap hb-hotel-card-gallery">
-<button type="button" class="hb-gallery-prev" title="Previous image" aria-label="Previous image">&#8249;</button>
-<div class="hb-gallery hb-hotel-card-img" style="background-image:url('<?php echo htmlspecialchars($imgUrl, ENT_QUOTES, 'UTF-8'); ?>')"></div>
-<button type="button" class="hb-gallery-next" title="Next image" aria-label="Next image">&#8250;</button>
+<button type="button" class="hb-gallery-prev" title="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_gallery_prev', [], $settings); ?>" aria-label="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_gallery_prev', [], $settings); ?>">&#8249;</button>
+<div class="hb-gallery hb-hotel-card-img" style="background-image:url('<?php echo htmlspecialchars($imgUrl, ENT_QUOTES, 'UTF-8'); ?>')" role="img" aria-label="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_gallery_aria', [], $settings); ?>"></div>
+<button type="button" class="hb-gallery-next" title="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_gallery_next', [], $settings); ?>" aria-label="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_gallery_next', [], $settings); ?>">&#8250;</button>
 <span class="hb-gallery-counter" aria-live="polite">1 / <?php echo max(1, count($hotel['photos'])); ?></span>
 </div>
 <h2><?php echo htmlspecialchars($hotel['name'], ENT_QUOTES, 'UTF-8'); ?></h2>
@@ -194,13 +194,13 @@ $imgUrl = !empty($hotel['photos'][0]['public_url'])
 </main>
 <div id="hb-detail-modal" class="hb-modal hb-detail-modal" hidden role="dialog" aria-modal="true">
 <div class="hb-modal-card hb-detail-modal-card">
-<button type="button" class="hb-modal-close" title="Close">✖</button>
+<button type="button" class="hb-modal-close" title="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_modal_close', [], $settings); ?>">✖</button>
 <div id="hb-modal-body"><?php echo hb_portal_ui_copy_esc('portal_ui_home_loading', [], $settings); ?></div>
 </div>
 </div>
 <div id="hb-dates-modal" class="hb-modal hb-dates-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-dates-heading">
 <div class="hb-dates-modal-card">
-<button type="button" class="hb-dates-close" title="Close">✖</button>
+<button type="button" class="hb-dates-close" title="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_modal_close', [], $settings); ?>">✖</button>
 <h2 id="hb-dates-heading" class="hb-dates-heading"><?php echo hb_portal_ui_copy_esc('portal_ui_home_dates_heading', [], $settings); ?></h2>
 <div id="hb-dates-body"></div>
 </div>
