@@ -1,0 +1,112 @@
+# Workflow Automation Rules
+
+Tenant-scoped workflow rules that react to ticket and equipment events, evaluate simple JSON conditions, execute actions, and log each run to `automation_rule_runs`.
+
+## Tables
+
+| Table | Purpose |
+|-------|---------|
+| `automation_rules` | Rule definition: name, `trigger_slug`, `conditions_json`, `actions_json`, `enabled`, `last_run_at`, standard audit columns |
+| `automation_rule_runs` | Per-run log: `rule_id`, `status` (`pending` / `success` / `failed` / `skipped`), `message`, `context_json`, `ran_at` |
+
+Canonical DDL: `db/01_schema.sql`. Existing DBs: `db/migrations/automation_rules.sql` (destructive `DROP` + `CREATE`).
+
+## Triggers
+
+| Slug | When fired |
+|------|------------|
+| `ticket.created` | After successful ticket create in `modules/tickets/create.php` |
+| `ticket.status_changed` | After ticket edit when `status_id` changes |
+| `ticket.priority_changed` | After ticket edit when `priority_id` changes |
+| `alert.created` | After alert create in `modules/alerts/index.php` |
+| `expense.created` | After expense create in `modules/expenses/index.php` |
+| `equipment.disposed` | After disposal recorded via `itm_asset_lifecycle_record_disposal()` |
+| `equipment.warranty_expiring` | Daily cron via `scripts/run_automation_rules.php` (warranty within 30 days) |
+| `equipment.certificate_expiring` | Daily cron via `scripts/run_automation_rules.php` (certificate within 30 days) |
+
+## Conditions JSON
+
+Array of objects. Supported operators:
+
+| `op` | Meaning |
+|------|---------|
+| `equals` | Case-insensitive string match |
+| `not_equals` | Case-insensitive inequality |
+| `contains` | Case-insensitive substring |
+| `not_empty` | Field has non-blank scalar value |
+| `empty` | Field is blank |
+
+```json
+[
+  {"field": "status_name", "op": "equals", "value": "Open"},
+  {"field": "title", "op": "contains", "value": "printer"}
+]
+```
+
+Context fields depend on trigger (ticket rows include `ticket_id`, `title`, `status_name`, etc.; expense rows include `expense_id`, `amount`, `date`; equipment rows include `equipment_id`, `hostname`, `warranty_expiry`).
+
+Empty array `[]` matches all events for that trigger.
+
+## Actions JSON
+
+| `type` | Fields |
+|--------|--------|
+| `notify_employee` | `employee_id`, `title`, `body`, optional `action_url` |
+| `send_email` | `to_email`, `subject`, `body` (HTML) |
+| `set_ticket_status` | `status_id` or `status_name` (updates ticket; may chain `ticket.status_changed` with depth guard) |
+| `assign_ticket` | `employee_id` — sets `tickets.assigned_to_employee_id` |
+| `set_ticket_priority` | `priority_id` or `priority_name` |
+| `create_ticket` | `title`, optional `description`, `status_id`/`status_name`, `priority_id`/`priority_name`, `assigned_to_employee_id`, `created_by_employee_id` — inserts ticket, stamps `TCK-####`, fires `ticket.created` + webhooks |
+| `emit_webhook` | `event_type` — queues matching integration webhooks (`includes/itm_webhook_queue.php`) |
+
+Example:
+
+```json
+[
+  {
+    "type": "notify_employee",
+    "employee_id": 1,
+    "title": "New ticket",
+    "body": "A ticket was created."
+  }
+]
+```
+
+## Core helper
+
+`includes/itm_automation_rules.php`:
+
+- `itm_automation_rules_trigger_slugs()`
+- `itm_automation_rules_dispatch($conn, $companyId, $triggerSlug, $context)` — max 20 rules per dispatch; skips when `automation_depth > 2`
+- `itm_automation_rules_run_scheduled($conn)` — date-based triggers
+- `itm_automation_rules_build_ticket_context()` / `itm_automation_rules_resolve_ticket_status_name()` / `itm_automation_rules_resolve_ticket_priority_name()`
+- `itm_automation_rules_build_equipment_context()` — disposal and equipment cron triggers
+- `itm_automation_rules_create_ticket()` — shared insert path for `create_ticket` action
+
+Loaded from `config/config.php`.
+
+## Admin UI
+
+Module: [modules/automation_rules/index.php](http://localhost/it-management/modules/automation_rules/index.php) (Admin session).
+
+Create/edit: name, trigger select, conditions/actions JSON textareas, enabled checkbox. View shows rule fields plus the last 50 run log rows.
+
+## Cron
+
+```bash
+php scripts/run_automation_rules.php
+```
+
+Schedule daily for warranty-expiry rules.
+
+## Regression
+
+```bash
+php scripts/verify_automation_rules.php
+```
+
+Browser: [verify_automation_rules.php?run=1](http://localhost/it-management/scripts/verify_automation_rules.php?run=1)
+
+## Audit
+
+`db/03_triggers.sql` defines `trg_automation_rules_audit_*` and `trg_automation_rule_runs_audit_*` (insert/update/delete → `audit_logs`).

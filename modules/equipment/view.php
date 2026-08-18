@@ -1,0 +1,436 @@
+<?php
+require '../../config/config.php';
+require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
+require_once ROOT_PATH . 'includes/itm_asset_depreciation.php';
+require_once __DIR__ . '/../../includes/ipam_helpers.php';
+
+$equipmentDisposalFlash = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_asset_disposal'])) {
+    itm_require_post_csrf();
+    $disposeEquipmentId = isset($_POST['equipment_id']) ? (int)$_POST['equipment_id'] : 0;
+    $disposalDateInput = trim((string)($_POST['disposal_date'] ?? ''));
+    $disposalReasonInput = trim((string)($_POST['disposal_reason'] ?? ''));
+    $disposalResult = itm_asset_lifecycle_submit_disposal(
+        $conn,
+        (int)$company_id,
+        $disposeEquipmentId,
+        $disposalDateInput,
+        $disposalReasonInput,
+        (int)($_SESSION['employee_id'] ?? 0)
+    );
+    if (!empty($disposalResult['ok'])) {
+        $redirectSuffix = !empty($disposalResult['pending']) ? 'disposal_pending=1' : 'disposal=1';
+        header('Location: view.php?id=' . $disposeEquipmentId . '&' . $redirectSuffix);
+        exit;
+    }
+    $equipmentDisposalFlash = (string)($disposalResult['message'] ?? 'Disposal failed.');
+}
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_asset_disposal'])) {
+    itm_require_post_csrf();
+    if (!itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))) {
+        $equipmentDisposalFlash = 'Only administrators may approve disposal requests.';
+    } else {
+        $disposeEquipmentId = isset($_POST['equipment_id']) ? (int)$_POST['equipment_id'] : 0;
+        $approvalResult = itm_asset_lifecycle_approve_pending_disposal(
+            $conn,
+            (int)$company_id,
+            $disposeEquipmentId,
+            (int)($_SESSION['employee_id'] ?? 0)
+        );
+        if (!empty($approvalResult['ok'])) {
+            header('Location: view.php?id=' . $disposeEquipmentId . '&disposal=1');
+            exit;
+        }
+        $equipmentDisposalFlash = (string)($approvalResult['message'] ?? 'Disposal approval failed.');
+    }
+}
+
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+function equipment_view_table_has_column(mysqli $conn, string $table, string $column): bool
+{
+    $tableEsc = mysqli_real_escape_string($conn, $table);
+    $columnEsc = mysqli_real_escape_string($conn, $column);
+    $res = mysqli_query($conn, "SHOW COLUMNS FROM `{$tableEsc}` LIKE '{$columnEsc}'");
+    return $res && mysqli_num_rows($res) > 0;
+}
+
+$hasWorkstationOfficeIdColumn = equipment_view_table_has_column($conn, 'equipment', 'workstation_office_id');
+$hasEquipmentRj45SpeedColumn = equipment_view_table_has_column($conn, 'equipment', 'rj45_speed_id');
+$hasWorkstationOsVersionIdColumn = equipment_view_table_has_column($conn, 'equipment', 'workstation_os_version_id');
+$hasWorkstationRamIdColumn = equipment_view_table_has_column($conn, 'equipment', 'workstation_ram_id');
+$workstationOfficeSelect = $hasWorkstationOfficeIdColumn ? ', wo.name workstation_office_name' : '';
+$workstationOfficeJoin = $hasWorkstationOfficeIdColumn
+    ? ' LEFT JOIN workstation_office wo ON wo.id = e.workstation_office_id AND wo.company_id = e.company_id'
+    : '';
+$equipmentRj45SpeedSelect = $hasEquipmentRj45SpeedColumn ? ', rs.cable_type rj45_cable_type' : '';
+$equipmentRj45SpeedJoin = $hasEquipmentRj45SpeedColumn
+    ? ' LEFT JOIN rj45_speed rs ON rs.id = e.rj45_speed_id AND rs.company_id = e.company_id'
+    : '';
+$workstationOsVersionSelect = $hasWorkstationOsVersionIdColumn ? ', wov.name workstation_os_version_name' : '';
+$workstationOsVersionJoin = $hasWorkstationOsVersionIdColumn
+    ? ' LEFT JOIN workstation_os_versions wov ON wov.id = e.workstation_os_version_id AND wov.company_id = e.company_id'
+    : '';
+$workstationRamSelect = $hasWorkstationRamIdColumn ? ', wr.name workstation_ram_name' : '';
+$workstationRamJoin = $hasWorkstationRamIdColumn
+    ? ' LEFT JOIN workstation_ram wr ON wr.id = e.workstation_ram_id AND wr.company_id = e.company_id'
+    : '';
+$hasAssignedEmployeeColumn = equipment_view_table_has_column($conn, 'equipment', 'assigned_to_employee_id');
+$assignedEmployeeSelect = $hasAssignedEmployeeColumn
+    ? ", COALESCE(NULLIF(TRIM(CONCAT(COALESCE(emp.first_name, ''), ' ', COALESCE(emp.last_name, ''))), ''), NULLIF(TRIM(COALESCE(emp.display_name, '')), '')) AS assigned_employee_label"
+    : '';
+$assignedEmployeeJoin = $hasAssignedEmployeeColumn
+    ? ' LEFT JOIN employees emp ON emp.id = e.assigned_to_employee_id AND emp.company_id = e.company_id'
+    : '';
+
+$sql = "SELECT e.*, c.company company_name, et.name equipment_type_name, m.name manufacturer_name, l.name location_name,
+               d.name department_name, s.name supplier_name,
+               r.name rack_name, idf.name idf_name, es.name status_name, wt.name warranty_type_name,
+               pdt.name printer_device_type_name, wdt.name workstation_device_type_name, wot.name workstation_os_type_name$workstationOfficeSelect$equipmentRj45SpeedSelect$workstationOsVersionSelect$workstationRamSelect$assignedEmployeeSelect
+        FROM equipment e
+        LEFT JOIN companies c ON c.id = e.company_id
+        LEFT JOIN equipment_types et ON et.id = e.equipment_type_id AND et.company_id = e.company_id
+        LEFT JOIN manufacturers m ON m.id = e.manufacturer_id AND m.company_id = e.company_id
+        LEFT JOIN it_locations l ON l.id = e.location_id AND l.company_id = e.company_id
+        LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id
+        LEFT JOIN suppliers s ON s.id = e.supplier_id AND s.company_id = e.company_id
+        LEFT JOIN racks r ON r.id = e.rack_id AND r.company_id = e.company_id
+        LEFT JOIN idfs idf ON idf.id = e.idf_id AND idf.company_id = e.company_id
+        LEFT JOIN equipment_statuses es ON es.id = e.status_id AND es.company_id = e.company_id
+        LEFT JOIN warranty_types wt ON wt.id = e.warranty_type_id AND wt.company_id = e.company_id
+        LEFT JOIN printer_device_types pdt ON pdt.id = e.printer_device_type_id AND pdt.company_id = e.company_id
+        LEFT JOIN workstation_device_types wdt ON wdt.id = e.workstation_device_type_id AND wdt.company_id = e.company_id
+        LEFT JOIN workstation_os_types wot ON wot.id = e.workstation_os_type_id AND wot.company_id = e.company_id
+        $workstationOfficeJoin
+        $equipmentRj45SpeedJoin
+        $workstationOsVersionJoin
+        $workstationRamJoin
+        $assignedEmployeeJoin
+        WHERE e.id = $id AND e.company_id = $company_id LIMIT 1";
+$res = mysqli_query($conn, $sql);
+$item = ($res && mysqli_num_rows($res) === 1) ? mysqli_fetch_assoc($res) : null;
+$itmEquipmentIpAssignments = [];
+if ($item && $id > 0 && function_exists('itm_ipam_fetch_equipment_ip_assignments')) {
+    $itmEquipmentIpAssignments = itm_ipam_fetch_equipment_ip_assignments($conn, (int)$company_id, $id);
+}
+$equipmentViewBackPath = (string)($equipmentViewBackPath ?? 'index.php');
+$equipmentViewEditPath = (string)($equipmentViewEditPath ?? 'edit.php');
+$equipmentTypeNameFilter = trim((string)($equipmentTypeNameFilter ?? ''));
+
+if ($item && $equipmentTypeNameFilter !== '') {
+    $typeName = strtolower(trim((string)($item['equipment_type_name'] ?? '')));
+    if ($typeName !== strtolower($equipmentTypeNameFilter)) {
+        $item = null;
+    }
+}
+
+function equipment_parse_photo_filenames($rawValue): array
+{
+    if ($rawValue === null) {
+        return [];
+    }
+
+    $value = trim((string)$rawValue);
+    if ($value === '') {
+        return [];
+    }
+
+    $decoded = json_decode($value, true);
+    if (is_array($decoded)) {
+        $items = $decoded;
+    } elseif (str_contains($value, ',')) {
+        $items = explode(',', $value);
+    } else {
+        $items = [$value];
+    }
+
+    $filenames = [];
+    foreach ($items as $item) {
+        $filename = basename((string)$item);
+        if ($filename !== '') {
+            $filenames[$filename] = $filename;
+        }
+    }
+
+    return array_values($filenames);
+}
+
+function equipment_field_label($key) {
+    $labels = [
+        'printer_device_type_name' => 'Printer Type',
+        'printer_color_capable' => 'Printer Color Capable',
+        'printer_scan' => 'Printer Scan',
+        'workstation_office_name' => 'Workstation Office',
+        'rj45_cable_type' => 'RJ45 Cable',
+        'workstation_os_version_name' => 'Workstation OS Version',
+        'workstation_ram_name' => 'RAM',
+        'department_name' => 'Department',
+        'supplier_name' => 'Supplier',
+        'assigned_employee_label' => 'Assign To Employee',
+        'workstation_storage' => 'Storage (GB/TB)',
+        'workstation_os_installed_on' => 'Workstation OS Installed On',
+        'switch_fiber_port_label' => 'Fiber Port Label',
+        'notes' => 'Notes',
+    ];
+
+    return $labels[$key] ?? ucwords(str_replace('_', ' ', (string)$key));
+}
+
+function equipment_field_value($key, $value) {
+    if ($key === 'printer_scan') {
+        return (int)$value === 1 ? 'Yes' : 'No';
+    }
+
+    return (string)$value;
+}
+
+function equipment_field_is_populated($key, $value) {
+    if ($value === null) {
+        return false;
+    }
+
+    if ($key === 'active') {
+        return true;
+    }
+
+    if ($key === 'printer_scan') {
+        return (int)$value === 1;
+    }
+
+    if (is_string($value)) {
+        return trim($value) !== '';
+    }
+
+    return true;
+}
+
+function equipment_field_should_display($key) {
+    if ($key === 'id') {
+        return true;
+    }
+    if ($key === 'photo_filename') {
+        return false;
+    }
+    // Why: Soft-delete mirror only — business status is status_name badges.
+    if ($key === 'active') {
+        return false;
+    }
+    if (in_array($key, ['is_printer', 'is_workstation', 'is_server', 'is_pos', 'is_switch'], true)) {
+        return false;
+    }
+
+    return !preg_match('/_id$/', (string)$key);
+}
+
+function equipment_field_matches_context($key, $item) {
+    if (!in_array($key, ['printer_color_capable', 'printer_scan', 'printer_device_type_name'], true)) {
+        return true;
+    }
+
+    $equipmentTypeName = strtolower(trim((string)($item['equipment_type_name'] ?? '')));
+    return $equipmentTypeName === 'printer';
+}
+?>
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><?php
+if (!isset($currentUiConfig)) {
+    $currentUiConfig = $ui_config ?? [];
+}
+if (!isset($crud_title)) {
+    $crud_title = 'View Equipment';
+}
+    require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
+        $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0), basename(dirname($_SERVER['PHP_SELF'])), (string)($crud_title ?? ''));
+    ?>
+<title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
+<?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
+<link rel="stylesheet" href="../../css/styles.css"></head>
+<body><div class="container"><?php include '../../includes/sidebar.php'; ?><div class="main-content"><?php include '../../includes/header.php'; ?><div class="content">
+<h1>View Equipment</h1>
+<?php if (!$item): ?>
+<div class="alert alert-danger">Equipment not found.</div>
+<?php else: ?>
+<div class="card">
+<table><tbody>
+<?php foreach ($item as $k => $v): ?>
+    <?php if (!equipment_field_should_display($k)) { continue; } ?>
+    <?php if (!equipment_field_matches_context($k, $item)) { continue; } ?>
+    <?php $isAuditField = function_exists('itm_crud_is_view_audit_field') && itm_crud_is_view_audit_field($k); ?>
+    <?php if (!$isAuditField && !equipment_field_is_populated($k, $v)) { continue; } ?>
+    <tr>
+        <th style="width:240px;"><?php echo sanitize(equipment_field_label($k)); ?></th>
+        <td>
+            <?php if ($k === 'status_name'): ?>
+                <?php echo function_exists('itm_crud_render_status_label_badge')
+                    ? itm_crud_render_status_label_badge((string)$v)
+                    : sanitize((string)$v); ?>
+            <?php elseif ($isAuditField): ?>
+                <?php echo itm_crud_render_audit_cell_value($conn, (int)$company_id, $k, $v); ?>
+            <?php else: ?>
+                <?php echo sanitize(equipment_field_value($k, $v)); ?>
+            <?php endif; ?>
+        </td>
+    </tr>
+<?php endforeach; ?>
+<?php $photoFilenames = equipment_parse_photo_filenames($item['photo_filename'] ?? ''); ?>
+<tr>
+    <th style="width:240px;">Photos</th>
+    <td>
+        <?php if (empty($photoFilenames)): ?>
+            <span>—</span>
+        <?php else: ?>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;">
+                <?php foreach ($photoFilenames as $photoFilename): ?>
+                    <?php $photoUrl = UPLOAD_URL . sanitize($photoFilename); ?>
+                    <a href="<?php echo $photoUrl; ?>" target="_blank" rel="noopener noreferrer" title="Open full-size image in a new tab">
+                        <img
+                            src="<?php echo $photoUrl; ?>"
+                            alt="Ticket photo"
+                            style="width:96px;height:96px;object-fit:cover;border:1px solid #d0d7de;border-radius:6px;"
+                        >
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </td>
+</tr>
+</tbody></table>
+<p style="margin-top:16px;">
+<?php echo itm_crud_record_share_render_action_buttons('equipment', (int)($item['id'] ?? $id ?? 0), 'equipment'); ?>
+<a class="btn" href="<?php echo sanitize($equipmentViewBackPath); ?>" title="Back">🔙</a> <a class="btn btn-primary" href="<?php echo sanitize($equipmentViewEditPath); ?>?id=<?php echo (int)$item['id']; ?>" title="Edit">✏️</a></p>
+</div>
+
+<?php endif; ?>
+
+<?php if ($item): ?>
+<?php
+$lifecycleStages = itm_asset_lifecycle_stages();
+$lifecycleStageKey = (string)($item['lifecycle_stage'] ?? 'in_service');
+$lifecycleStageLabel = $lifecycleStages[$lifecycleStageKey] ?? $lifecycleStageKey;
+$depreciation = itm_asset_depreciation_compute_book_value($item);
+$lifecycleTimeline = itm_asset_lifecycle_fetch_timeline($conn, (int)$company_id, (int)$item['id']);
+$canRecordDisposal = ((string)($item['lifecycle_stage'] ?? '') !== 'disposed' && empty($item['disposal_date']));
+$hasPendingDisposal = !empty($item['disposal_pending_at']);
+$disposalApprovalRequired = itm_asset_lifecycle_company_requires_disposal_approval($conn, (int)$company_id);
+if (isset($_GET['disposal']) && (string)$_GET['disposal'] === '1') {
+    $equipmentDisposalFlash = 'Disposal recorded successfully.';
+}
+if (isset($_GET['disposal_pending']) && (string)$_GET['disposal_pending'] === '1') {
+    $equipmentDisposalFlash = 'Disposal request submitted for administrator approval.';
+}
+?>
+<div class="card" style="margin-top:20px;">
+    <h2 style="margin-top:0;">Asset lifecycle</h2>
+    <?php if ($equipmentDisposalFlash !== ''): ?>
+        <p class="badge badge-success" style="display:inline-block;margin-bottom:12px;"><?php echo sanitize($equipmentDisposalFlash); ?></p>
+    <?php endif; ?>
+    <table><tbody>
+        <tr><th style="width:240px;">Stage</th><td><?php echo sanitize($lifecycleStageLabel); ?></td></tr>
+        <tr><th>Depreciation start</th><td><?php echo sanitize(itm_format_cell_scalar_display($item['depreciation_start_date'] ?? '')); ?></td></tr>
+        <tr><th>Useful life (months)</th><td><?php echo sanitize((string)($item['useful_life_months'] ?? '—')); ?></td></tr>
+        <tr><th>Salvage value</th><td><?php echo sanitize((string)($item['salvage_value'] ?? '—')); ?></td></tr>
+        <tr><th>Book value (today)</th><td><?php echo sanitize(number_format((float)$depreciation['book_value'], 2)); ?></td></tr>
+        <tr><th>Monthly depreciation</th><td><?php echo sanitize(number_format((float)$depreciation['monthly_depreciation'], 2)); ?></td></tr>
+        <tr><th>Disposal date</th><td><?php echo sanitize(itm_format_cell_scalar_display($item['disposal_date'] ?? '')); ?></td></tr>
+        <tr><th>Disposal reason</th><td><?php echo sanitize((string)($item['disposal_reason'] ?? '')); ?></td></tr>
+        <?php if ($hasPendingDisposal): ?>
+        <tr><th>Pending disposal</th><td>
+            <?php echo sanitize(itm_format_cell_scalar_display($item['disposal_pending_date'] ?? '')); ?>
+            — <?php echo sanitize((string)($item['disposal_pending_reason'] ?? '')); ?>
+        </td></tr>
+        <?php endif; ?>
+    </tbody></table>
+    <?php if ($hasPendingDisposal && itm_is_admin($conn, (int)($_SESSION['employee_id'] ?? 0))): ?>
+        <form method="POST" style="margin-top:16px;">
+            <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+            <input type="hidden" name="approve_asset_disposal" value="1">
+            <input type="hidden" name="equipment_id" value="<?php echo (int)$item['id']; ?>">
+            <button type="submit" class="btn btn-primary" title="Approve disposal">✅</button>
+        </form>
+    <?php endif; ?>
+    <?php if ($canRecordDisposal && !$hasPendingDisposal): ?>
+        <form method="POST" style="margin-top:16px;max-width:640px;" class="form-grid">
+            <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+            <input type="hidden" name="record_asset_disposal" value="1">
+            <input type="hidden" name="equipment_id" value="<?php echo (int)$item['id']; ?>">
+            <?php if ($disposalApprovalRequired): ?>
+                <p class="form-hint" style="margin-bottom:12px;opacity:.85;">Disposal requires administrator approval for this company.</p>
+            <?php endif; ?>
+            <div class="form-group">
+                <label>Disposal date</label>
+                <input type="date" name="disposal_date" value="<?php echo sanitize(date('Y-m-d')); ?>">
+            </div>
+            <div class="form-group">
+                <label>Disposal reason</label>
+                <input name="disposal_reason" required maxlength="500" placeholder="Reason for disposal">
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-danger" title="Record disposal">🗑️</button>
+            </div>
+        </form>
+    <?php endif; ?>
+</div>
+<div class="card" style="margin-top:20px;">
+    <h2 style="margin-top:0;">Lifecycle timeline</h2>
+    <?php if ($lifecycleTimeline): ?>
+        <table>
+            <thead><tr><th>Date</th><th>Event</th><th>Notes</th><th>By</th></tr></thead>
+            <tbody>
+            <?php foreach ($lifecycleTimeline as $event): ?>
+                <?php
+                $actor = trim(((string)($event['first_name'] ?? '')) . ' ' . ((string)($event['last_name'] ?? '')));
+                if ($actor === '') {
+                    $actor = (string)($event['username'] ?? '');
+                }
+                ?>
+                <tr>
+                    <td><?php echo sanitize(itm_format_cell_scalar_display($event['event_date'] ?? $event['created_at'] ?? '')); ?></td>
+                    <td><?php echo sanitize((string)($event['event_type'] ?? '')); ?></td>
+                    <td><?php echo sanitize((string)($event['notes'] ?? '')); ?></td>
+                    <td><?php echo sanitize($actor !== '' ? $actor : '—'); ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php else: ?>
+        <p>No lifecycle events recorded yet.</p>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
+
+<?php if (function_exists('itm_ipam_table_exists') && itm_ipam_table_exists($conn, 'ip_addresses')): ?>
+<div class="card" style="margin-top:20px;">
+    <h2 style="margin-top:0;">IPAM assignments</h2>
+    <p style="margin:0 0 12px;color:#57606a;">Read-only links to IP address records for this equipment.</p>
+    <div style="overflow:auto;">
+        <table>
+            <thead>
+            <tr>
+                <th>IP</th>
+                <th>Status</th>
+                <th>Subnet</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php if ($itmEquipmentIpAssignments): ?>
+                <?php foreach ($itmEquipmentIpAssignments as $itmEquipmentIpRow): ?>
+                    <tr>
+                        <td><?php echo sanitize((string)($itmEquipmentIpRow['ip_text'] ?? '')); ?></td>
+                        <td><?php echo sanitize(ucfirst((string)($itmEquipmentIpRow['status'] ?? ''))); ?></td>
+                        <td><?php echo sanitize((string)($itmEquipmentIpRow['subnet_cidr'] ?? '')); ?></td>
+                        <td>
+                            <a class="btn btn-sm" href="../ip_addresses/view.php?id=<?php echo (int)($itmEquipmentIpRow['id'] ?? 0); ?>">View IP record</a>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <tr><td colspan="4" style="text-align:center;">No IPAM assignments linked to this equipment.</td></tr>
+            <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+<?php endif; ?>
+</div></div></div><script src="../../js/theme.js"></script><?php itm_crud_record_share_include_modal(); ?>
+</body></html>

@@ -1,0 +1,132 @@
+# AGENT_NOTES.md - Reports Hub
+
+## 1. Module Purpose
+
+Visual dashboard providing key metrics across multiple domains including equipment, tickets, human resources, network devices, budget, floor plans, inventory, and licenses. It aggregates data from existing IT Management tables into visual charts.
+
+---
+
+## 2. Key Tables
+
+This module is read-only and aggregates data from:
+
+- **equipment**
+- **equipment_types**
+- **tickets**
+- **ticket_statuses**
+- **employees**
+- **departments**
+- **annual_budgets**
+- **monthly_budgets**
+- **expenses** (for Actual vs Budget)
+- **ops_report** / **ops_report_fb_outlet** (Hotel Operations charts)
+- **gl_accounts**
+- **budget_categories**
+- **it_locations**
+- **inventory_items**
+- **license_management**
+- **cost_centers** (linked to departments)
+- **scheduled_reports** (admin-managed email schedules; see `docs/SCHEDULED_REPORTS.md`)
+
+**Reports Hub charts (phase 2):**
+
+- **Ticket CSAT trend** — `get_ticket_csat_trend()` (12-month average `tickets.csat_score`)
+- **Asset lifecycle stages** — `get_asset_lifecycle_stage_summary()` (equipment `lifecycle_stage` counts; see `docs/ASSET_LIFECYCLE.md`)
+
+---
+
+## Scheduled executive reports
+
+- **Table:** `scheduled_reports` — tenant-scoped cron schedules (`report_slug`, five-field `schedule_cron`, `recipients_json`, `format` `pdf`|`xlsx`, `last_sent_at`, `enabled`).
+- **UI:** [modules/reports/index.php](http://localhost/it-management/modules/reports/index.php) — admins only (`itm_is_admin($conn, $employee_id)`). Modal POST actions `save_scheduled_report` / `delete_scheduled_report`.
+- **Runner:** `includes/itm_scheduled_reports.php`; cron `php scripts/run_scheduled_reports.php`.
+- **Verify:** `php scripts/verify_scheduled_reports.php` — [browser](http://localhost/it-management/scripts/verify_scheduled_reports.php?run=1).
+
+---
+
+## 3. Required Relationships
+
+- `annual_budgets.cost_center_id` -> `cost_centers.id` -> `departments.id` (Departmental budget tracking)
+- `monthly_budgets.annual_budget_id` -> `annual_budgets.id` (Monthly trends)
+- `expenses.gl_account_id` -> `gl_accounts.id` (Actual spend tracking)
+
+---
+
+## 4. Business Rules (Critical for Agents)
+
+- Module access is controlled via `has_module_access($conn, $company_id, 'reports')`.
+- All statistical queries must be scoped to the active `company_id`.
+- Advanced Budgeting assumes current year (`YEAR(CURDATE())`) for most comparisons unless specified (e.g. YOY).
+- `db/` seeds Reports Hub demo rows for company 1: `ops_report` (2025 monthly anchors, Jun–Jul 2026 daily trend), `ops_report_fb_outlet` covers (Jul 2026 MTD), expanded `monthly_budgets` / `expenses`, and 2025 `annual_budgets` for YoY charts. Regression: `php scripts/verify_reports_hub.php`.
+
+---
+
+## 5. UI Behavior Requirements
+
+- Uses **Chart.js** for data visualization.
+- Responsive dashboard layout with stats cards and chart cards.
+- Dark/Light theme support via `body` class.
+- **UI configuration reviewed:** gate-excluded bespoke dashboard (`index.php` only) — no flattened CRUD table, CRUD entry files, or Settings list toolbar; all 16 `check_ui_configuration_coverage.php` list-contract checks registered in `scripts/data/ui_configuration_reviewed.json` as `[n/a][n/a][reviewed]`.
+
+---
+
+## 6. API Actions (If Applicable)
+
+None
+
+---
+
+## 7. File Structure
+
+- **index.php** — Main dashboard view and chart initialization.
+- **api/helpers.php** — Data retrieval functions for different report categories.
+- **../../css/reports/dashboard.css** — Custom styles for the reports hub.
+
+---
+
+## 8. Multi-Tenant Rules
+
+- All data retrieval functions in `api/helpers.php` use the global `$company_id` to filter results.
+
+---
+
+## 9. Audit Logging Requirements
+
+- This module is read-only; no INSERT/UPDATE/DELETE mutations occur.
+
+---
+
+## 10. Common Pitfalls
+
+- **Argument mismatch:** `has_module_access()` requires 3 arguments (`$conn`, `$company_id`, `$module_slug`). [Cursor-Valid]
+- **Path errors:** `itm_ensure_upload_directory_chain()` requires a string path, not an array. [Cursor-Valid]
+- **SQL Scoping:** Ensure any new report helper correctly uses `$company_id` and prepared statements. [Cursor-Valid]
+
+---
+
+## 11. Examples of Safe Code Patterns
+
+### Safe SELECT (Aggregation)
+
+```php
+$sql = "SELECT et.name, COUNT(*) as count
+        FROM equipment e
+        JOIN equipment_types et ON e.equipment_type_id = et.id
+        WHERE e.company_id = ? AND e.active = 1
+        GROUP BY et.name
+        ORDER BY count DESC";
+
+$stmt = mysqli_prepare($conn, $sql);
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, "i", $company_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    // ...
+}
+```
+
+---
+
+## 12. Module Owner Notes (Optional)
+
+None

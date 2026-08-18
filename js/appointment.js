@@ -1,0 +1,447 @@
+(function () {
+    'use strict';
+
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text == null ? '' : String(text);
+        return div.innerHTML;
+    }
+
+    function parseYmd(dateStr) {
+        var parts = String(dateStr || '').split('-');
+        if (parts.length !== 3) {
+            return null;
+        }
+        return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    }
+
+    function formatWeekRange(weekStart, weekEnd) {
+        var s = parseYmd(weekStart);
+        var e = parseYmd(weekEnd);
+        if (!s || !e) {
+            return weekStart + ' - ' + weekEnd;
+        }
+        var opts = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+        return s.toLocaleDateString(undefined, opts) + ' - ' + e.toLocaleDateString(undefined, opts);
+    }
+
+    var app = document.getElementById('appointment-booking-app');
+    if (!app) {
+        return;
+    }
+
+    var apiUrl = app.getAttribute('data-api') || '';
+    var csrf = app.getAttribute('data-csrf') || '';
+    var defaultAppointmentModality = app.getAttribute('data-default-appointment-modality') || 'remote';
+    var appointmentTypeNames = [];
+    try {
+        appointmentTypeNames = JSON.parse(app.getAttribute('data-appointment-type-names') || '[]');
+    } catch (e2) {
+        appointmentTypeNames = [];
+    }
+    if (!Array.isArray(appointmentTypeNames)) {
+        appointmentTypeNames = [];
+    }
+    if (appointmentTypeNames.indexOf(defaultAppointmentModality) < 0) {
+        defaultAppointmentModality = appointmentTypeNames.length ? appointmentTypeNames[0] : defaultAppointmentModality;
+    }
+    var anchorInput = document.getElementById('appointment-anchor-date');
+    var slotDisplay = document.getElementById('appointment-slot-display');
+    var slotHiddenDate = document.getElementById('appointment_date');
+    var slotHiddenStart = document.getElementById('start_time');
+    var slotHiddenEnd = document.getElementById('end_time');
+    var scheduleBtn = document.getElementById('appointment-schedule-btn');
+    var reasonSelect = document.getElementById('visit_reason_id');
+    var modal = document.getElementById('appointment-slot-modal');
+    var weekGrid = document.getElementById('appointment-week-grid');
+    var weekLabel = document.getElementById('appointment-week-label');
+    var tzLabel = document.getElementById('appointment-timezone-label');
+    var openModalBtn = document.getElementById('appointment-open-modal');
+    var closeModalBtns = document.querySelectorAll('[data-appointment-close-modal]');
+    var prevWeekBtn = document.getElementById('appointment-prev-week');
+    var nextWeekBtn = document.getElementById('appointment-next-week');
+    var confirmSlotBtn = document.getElementById('appointment-confirm-slot');
+
+    var currentAnchor = anchorInput ? anchorInput.value : '';
+    var pendingSelection = null;
+    var confirmedSelection = null;
+    var modalityConfig = null;
+    try {
+        modalityConfig = JSON.parse(app.getAttribute('data-modality-config') || '{}');
+    } catch (e) {
+        modalityConfig = { company: {}, days: {} };
+    }
+    var modalityBanner = document.getElementById('appointment-modality-banner');
+    var typeGroup = app.querySelector('.appointment-type-group');
+    var typeCards = app.querySelectorAll('.appointment-type-card[data-appointment-type]');
+    var lastWeekSlotsPayload = null;
+
+    function dayOfWeekFromYmd(dateStr) {
+        var parts = String(dateStr || '').split('-');
+        if (parts.length !== 3) {
+            return -1;
+        }
+        var y = parseInt(parts[0], 10);
+        var m = parseInt(parts[1], 10) - 1;
+        var d = parseInt(parts[2], 10);
+        return new Date(y, m, d).getDay();
+    }
+
+    function modalityFlagsFromWeekPayload(dateYmd) {
+        if (!lastWeekSlotsPayload || !lastWeekSlotsPayload.days || !dateYmd) {
+            return null;
+        }
+        for (var i = 0; i < lastWeekSlotsPayload.days.length; i++) {
+            var day = lastWeekSlotsPayload.days[i];
+            if (day.date === dateYmd) {
+                if (day.allowed_types && typeof day.allowed_types === 'object') {
+                    return day.allowed_types;
+                }
+                return {
+                    in_person: !!day.allows_in_person,
+                    remote: !!day.allows_remote
+                };
+            }
+        }
+        return null;
+    }
+
+    function modalityFlagsFromEmbed(dateYmd) {
+        if (!dateYmd) {
+            var open = {};
+            appointmentTypeNames.forEach(function (name) {
+                open[name] = true;
+            });
+            return open;
+        }
+        var dow = dayOfWeekFromYmd(dateYmd);
+        var dayRow = (modalityConfig.days || {})[dow] || (modalityConfig.days || {})[String(dow)];
+        if (!dayRow) {
+            var closed = {};
+            appointmentTypeNames.forEach(function (name) {
+                closed[name] = false;
+            });
+            return closed;
+        }
+        if (typeof dayRow === 'object' && (dayRow.in_person !== undefined || dayRow.remote !== undefined) && dayRow.allowed_types === undefined) {
+            return {
+                in_person: !!dayRow.in_person,
+                remote: !!dayRow.remote
+            };
+        }
+        return dayRow;
+    }
+
+    function resolveModalityFlags(dateYmd) {
+        var fromWeek = modalityFlagsFromWeekPayload(dateYmd);
+        if (fromWeek) {
+            return fromWeek;
+        }
+        return modalityFlagsFromEmbed(dateYmd);
+    }
+
+    function countAllowedTypes(flags) {
+        var count = 0;
+        var onlyName = null;
+        Object.keys(flags || {}).forEach(function (key) {
+            if (flags[key]) {
+                count += 1;
+                onlyName = key;
+            }
+        });
+        return { count: count, onlyName: onlyName };
+    }
+
+    function updateAppointmentTypeUi(dateYmd) {
+        var flags = resolveModalityFlags(dateYmd);
+        var allowedInputs = [];
+        typeCards.forEach(function (card) {
+            var typeName = card.getAttribute('data-appointment-type') || '';
+            var allowed = !!(flags && flags[typeName]);
+            card.classList.toggle('hidden', !allowed);
+            var input = card.querySelector('input[name="appointment_type"]');
+            if (!input) {
+                return;
+            }
+            input.disabled = !allowed;
+            if (!allowed) {
+                input.checked = false;
+            } else {
+                allowedInputs.push({ name: typeName, input: input });
+            }
+        });
+        var pick = null;
+        for (var i = 0; i < allowedInputs.length; i++) {
+            if (allowedInputs[i].name === defaultAppointmentModality) {
+                pick = allowedInputs[i].input;
+                break;
+            }
+        }
+        if (!pick && allowedInputs.length) {
+            pick = allowedInputs[0].input;
+        }
+        if (pick) {
+            pick.checked = true;
+        }
+        if (modalityBanner) {
+            var summary = countAllowedTypes(flags);
+            var msg = '';
+            if (summary.count === 1 && summary.onlyName) {
+                var labelEl = app.querySelector('.appointment-type-card[data-appointment-type="' + summary.onlyName + '"] .appointment-type-card-title');
+                var typeLabel = labelEl ? labelEl.textContent : summary.onlyName;
+                msg = dateYmd
+                    ? 'This day accepts only ' + typeLabel + ' appointments.'
+                    : 'This location accepts only ' + typeLabel + ' appointments.';
+            }
+            modalityBanner.textContent = msg;
+            modalityBanner.classList.toggle('hidden', msg === '');
+        }
+    }
+
+    function syncAppointmentTypeSection() {
+        var hasSlot = !!(confirmedSelection && confirmedSelection.date && confirmedSelection.start_time);
+        if (typeGroup) {
+            typeGroup.classList.toggle('hidden', !hasSlot);
+        }
+        if (!hasSlot) {
+            if (modalityBanner) {
+                modalityBanner.textContent = '';
+                modalityBanner.classList.add('hidden');
+            }
+            return;
+        }
+        updateAppointmentTypeUi(confirmedSelection.date);
+    }
+
+    function refreshWeekSlotsForDate(dateYmd, done) {
+        if (!apiUrl || !dateYmd) {
+            done();
+            return;
+        }
+        fetch(apiUrl + '?action=week_slots&date=' + encodeURIComponent(dateYmd), { credentials: 'same-origin' })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (data && data.success) {
+                    lastWeekSlotsPayload = data;
+                }
+                done();
+            })
+            .catch(function () {
+                done();
+            });
+    }
+
+    function hasVisitReasonSelected() {
+        return !!(reasonSelect && String(reasonSelect.value || '').trim() !== '');
+    }
+
+    function hasAppointmentSlotSelected() {
+        if (confirmedSelection && confirmedSelection.date && confirmedSelection.start_time) {
+            return true;
+        }
+        return !!(
+            slotHiddenDate && String(slotHiddenDate.value || '').trim() !== ''
+            && slotHiddenStart && String(slotHiddenStart.value || '').trim() !== ''
+        );
+    }
+
+    function updateScheduleButton() {
+        if (!scheduleBtn) {
+            return;
+        }
+        // Why: Keep clickable so missing reason/slot show alerts; only lock during API submit.
+        if (scheduleBtn.getAttribute('data-itm-submitting') !== '1') {
+            scheduleBtn.disabled = false;
+        }
+    }
+
+    function loadWeek(anchor) {
+        if (!apiUrl || !weekGrid) {
+            return;
+        }
+        currentAnchor = anchor;
+        if (anchorInput) {
+            anchorInput.value = anchor;
+        }
+        weekGrid.innerHTML = '<p class="appointment-day-empty">Loading…</p>';
+        fetch(apiUrl + '?action=week_slots&date=' + encodeURIComponent(anchor), { credentials: 'same-origin' })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (!data || !data.success) {
+                    weekGrid.innerHTML = '<p class="appointment-day-empty">Could not load slots.</p>';
+                    return;
+                }
+                if (weekLabel) {
+                    weekLabel.textContent = formatWeekRange(data.week_start, data.week_end);
+                }
+                if (tzLabel) {
+                    tzLabel.textContent = 'Time zone: ' + (data.timezone || 'UTC');
+                }
+                lastWeekSlotsPayload = data;
+                weekGrid.innerHTML = '';
+                (data.days || []).forEach(function (day) {
+                    var col = document.createElement('div');
+                    col.className = 'appointment-day-col';
+                    col.innerHTML = '<div class="appointment-day-head">' + escapeHtml(day.day_label) + ' ' + escapeHtml(String(day.day_number)) + '</div>';
+                    if (!day.slots || day.slots.length === 0) {
+                        var empty = document.createElement('div');
+                        empty.className = 'appointment-day-empty';
+                        empty.textContent = 'No appointments';
+                        col.appendChild(empty);
+                    } else {
+                        day.slots.forEach(function (slot) {
+                            var btn = document.createElement('button');
+                            btn.type = 'button';
+                            btn.className = 'appointment-slot-btn';
+                            btn.textContent = slot.label;
+                            btn.disabled = !slot.available;
+                            btn.setAttribute('data-date', day.date);
+                            btn.setAttribute('data-start', slot.start_time);
+                            btn.setAttribute('data-end', slot.end_time);
+                            if (pendingSelection && pendingSelection.date === day.date && pendingSelection.start_time === slot.start_time) {
+                                btn.classList.add('selected');
+                            }
+                            btn.addEventListener('click', function () {
+                                if (!slot.available) {
+                                    return;
+                                }
+                                pendingSelection = {
+                                    date: day.date,
+                                    start_time: slot.start_time,
+                                    end_time: slot.end_time,
+                                    label: slot.label
+                                };
+                                weekGrid.querySelectorAll('.appointment-slot-btn.selected').forEach(function (el) {
+                                    el.classList.remove('selected');
+                                });
+                                btn.classList.add('selected');
+                            });
+                            col.appendChild(btn);
+                        });
+                    }
+                    weekGrid.appendChild(col);
+                });
+            })
+            .catch(function () {
+                weekGrid.innerHTML = '<p class="appointment-day-empty">Could not load slots.</p>';
+            });
+    }
+
+    function shiftAnchor(days) {
+        var d = parseYmd(currentAnchor);
+        if (!d) {
+            return;
+        }
+        d.setDate(d.getDate() + days);
+        var y = d.getFullYear();
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        loadWeek(y + '-' + m + '-' + day);
+    }
+
+    if (openModalBtn) {
+        openModalBtn.addEventListener('click', function () {
+            pendingSelection = confirmedSelection ? Object.assign({}, confirmedSelection) : null;
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+            loadWeek(currentAnchor || new Date().toISOString().slice(0, 10));
+        });
+    }
+    closeModalBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        });
+    });
+    if (prevWeekBtn) {
+        prevWeekBtn.addEventListener('click', function () { shiftAnchor(-7); });
+    }
+    if (nextWeekBtn) {
+        nextWeekBtn.addEventListener('click', function () { shiftAnchor(7); });
+    }
+    if (confirmSlotBtn) {
+        confirmSlotBtn.addEventListener('click', function () {
+            if (!pendingSelection) {
+                return;
+            }
+            confirmedSelection = Object.assign({}, pendingSelection);
+            if (slotDisplay) {
+                slotDisplay.value = confirmedSelection.label + ' (' + confirmedSelection.date + ')';
+            }
+            if (slotHiddenDate) {
+                slotHiddenDate.value = confirmedSelection.date;
+            }
+            if (slotHiddenStart) {
+                slotHiddenStart.value = confirmedSelection.start_time;
+            }
+            if (slotHiddenEnd) {
+                slotHiddenEnd.value = confirmedSelection.end_time;
+            }
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+            refreshWeekSlotsForDate(confirmedSelection.date, function () {
+                syncAppointmentTypeSection();
+                updateScheduleButton();
+            });
+        });
+    }
+    if (reasonSelect) {
+        reasonSelect.addEventListener('change', updateScheduleButton);
+    }
+
+    if (scheduleBtn) {
+        scheduleBtn.addEventListener('click', function () {
+            if (!hasVisitReasonSelected()) {
+                alert('--Select a reason for your appointment--');
+                if (reasonSelect) {
+                    reasonSelect.focus();
+                }
+                return;
+            }
+            if (!hasAppointmentSlotSelected()) {
+                alert('Select an appointment time.');
+                if (slotDisplay) {
+                    slotDisplay.focus();
+                } else if (openModalBtn) {
+                    openModalBtn.focus();
+                }
+                return;
+            }
+            var typeInput = document.querySelector('input[name="appointment_type"]:checked');
+            var formData = new FormData();
+            formData.append('action', 'schedule');
+            formData.append('csrf_token', csrf);
+            formData.append('visit_reason_id', reasonSelect.value);
+            formData.append('appointment_date', slotHiddenDate.value);
+            formData.append('start_time', slotHiddenStart.value);
+            formData.append('end_time', slotHiddenEnd.value);
+            formData.append('appointment_type', typeInput ? typeInput.value : defaultAppointmentModality);
+            scheduleBtn.disabled = true;
+            scheduleBtn.setAttribute('data-itm-submitting', '1');
+            fetch(apiUrl, { method: 'POST', body: formData, credentials: 'same-origin' })
+                .then(function (res) { return res.json().then(function (j) { return { ok: res.ok, body: j }; }); })
+                .then(function (result) {
+                    if (result.ok && result.body && result.body.success && result.body.view_url) {
+                        window.location.href = result.body.view_url;
+                        return;
+                    }
+                    alert((result.body && result.body.message) ? result.body.message : 'Could not schedule appointment.');
+                    scheduleBtn.removeAttribute('data-itm-submitting');
+                    scheduleBtn.disabled = false;
+                    updateScheduleButton();
+                })
+                .catch(function () {
+                    alert('Could not schedule appointment.');
+                    scheduleBtn.removeAttribute('data-itm-submitting');
+                    scheduleBtn.disabled = false;
+                    updateScheduleButton();
+                });
+        });
+    }
+
+    updateScheduleButton();
+    syncAppointmentTypeSection();
+})();
