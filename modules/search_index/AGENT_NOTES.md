@@ -25,9 +25,10 @@ Runtime sync: `includes/itm_search_index.php` (`itm_search_index_upsert`, `itm_s
 
 Flattened scaffold CRUD:
 
-- `company_id` hidden in UI but rows are tenant-scoped in normal use.
+- **`company_id` hidden** — `search_index` is in `$hideCompanyIdTables` on list/view/create/edit/delete flows.
 - `module_slug` is string slug, not registry id — search should match slug and title/keywords.
 - Bulk clear can break palette performance until backfill runs again.
+- **Add sample data:** when the active tenant list is empty, **Add sample data** inserts five palette demo rows (`employees`, `equipment`, `tickets`, `catalogs`, `ip_addresses` at `record_id` 1) for **each empty company among ids 1–5** via `itm_seed_insert_search_index_sample_rows()` in `includes/itm_sample_data_seed.php`. Templates also live in `db/02_data_sample.sql` (company `1` markers).
 
 ## 9. Audit Logging Requirements
 
@@ -41,5 +42,5 @@ Flattened scaffold CRUD:
 ## 12. Module Owner Notes
 
 - Helpers: `includes/itm_search_index.php` (loaded from `config/config.php` paths as needed)
-- Migration: `db/migrations/search_index.sql`
+- Canonical DDL: `db/01_schema.sql`
 - Backfill: `php scripts/apply_search_index_backfill.php`
