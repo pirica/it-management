@@ -3538,6 +3538,11 @@ if (!function_exists('itm_seed_insert_search_index_sample_rows')) {
             return 0;
         }
 
+        if ($companyId > 0 && !in_array($companyId, $companyIds, true)) {
+            $companyIds[] = $companyId;
+            sort($companyIds);
+        }
+
         if (function_exists('itm_seed_set_mysql_audit_session_company')) {
             itm_seed_set_mysql_audit_session_company($conn, $companyId);
         }
