@@ -71,6 +71,7 @@ if (!function_exists('hb_portal_format_stay_range_label')) {
         if ($inDisplay === '' || $outDisplay === '') {
             return '';
         }
+        $settings = hb_portal_money_settings_bound();
         $nightWord = $nights === 1
             ? hb_portal_ui_copy('portal_ui_chrome_night_singular', [], $settings)
             : hb_portal_ui_copy('portal_ui_chrome_nights_plural', [], $settings);
