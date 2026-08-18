@@ -2,6 +2,8 @@
 /**
  * Static audit: list modules whose index table may show a Company column (company_id).
  *
+ * Scans every PHP file under modules/{slug}/** (recursive), not index.php alone.
+ *
  * Browser: scripts/check_company_id_ui_column.php (Administrator session).
  * CLI: php scripts/check_company_id_ui_column.php [--list-exposed] [--strict]
  */
@@ -17,7 +19,7 @@ require_once __DIR__ . '/lib/itm_company_id_ui_column_audit.php';
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-Browser: plain-text inventory. CLI: <code>php scripts/check_company_id_ui_column.php</code> — static scan of <code>modules/*/index.php</code> and <code>db/01_schema.sql</code> (no database). Default exit <code>0</code> (report only). <code>--list-exposed</code> prints exposed module slugs only. <code>--strict</code> exits <code>1</code> when any scaffold module table is missing from <code>$hideCompanyIdTables</code>.
+Browser: plain-text inventory. CLI: <code>php scripts/check_company_id_ui_column.php</code> — static scan of every <code>modules/{slug}/**/*.php</code> file plus <code>db/01_schema.sql</code> (no database). Default exit <code>0</code> (report only). <code>--list-exposed</code> prints exposed module slugs only. <code>--strict</code> exits <code>1</code> when any scaffold module table is missing from <code>$hideCompanyIdTables</code> on one or more scaffold entry files.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 

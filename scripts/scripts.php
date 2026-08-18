@@ -1665,7 +1665,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="check_company_id_ui_column.php" target="_blank" rel="nofollow noreferrer">check_company_id_ui_column.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
-                    <td>Static inventory: which flattened CRUD <code>index.php</code> modules may show a <strong>Company</strong> list column (<code>company_id</code>) vs <code>$hideCompanyIdTables</code> / bespoke hide filters. No database.</td>
+                    <td>Static inventory: scans every <code>modules/{slug}/**/*.php</code> file for flattened CRUD list/view surfaces that may show a <strong>Company</strong> column (<code>company_id</code>) vs <code>$hideCompanyIdTables</code> / bespoke hide filters. No database.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">
