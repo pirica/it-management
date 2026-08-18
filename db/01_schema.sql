@@ -4522,6 +4522,54 @@ CREATE TABLE `share_sessions` (
 
 -- Unified temporary QR / 6-digit share snapshots (private-data exempt; payload_json is plaintext until expiry).
 
+-- Table structure for `qr_code_scans` (scan analytics — no audit triggers)
+DROP TABLE IF EXISTS `qr_code_scans`;
+
+-- Table structure for `qr_codes` (employee-scoped QR generator library)
+DROP TABLE IF EXISTS `qr_codes`;
+
+CREATE TABLE `qr_codes` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `company_id` INT NOT NULL,
+  `employee_id` INT NOT NULL,
+  `title` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type_slug` VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `encoding_mode` ENUM('static', 'dynamic') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'dynamic',
+  `payload_json` LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `encoded_payload` TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `access_token` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
+  `design_json` TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `scan_count` INT NOT NULL DEFAULT 0,
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_qr_codes_access_token` (`access_token`),
+  KEY `idx_qr_codes_employee` (`company_id`, `employee_id`, `deleted_at`),
+  KEY `company_id` (`company_id`),
+  KEY `employee_id` (`employee_id`),
+  CONSTRAINT `qr_codes_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `qr_codes_ibfk_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `qr_code_scans` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `qr_code_id` INT NOT NULL,
+  `company_id` INT NOT NULL,
+  `scanned_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `ip_hash` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
+  `user_agent` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_qr_code_scans_code` (`qr_code_id`, `scanned_at`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `qr_code_scans_ibfk_code` FOREIGN KEY (`qr_code_id`) REFERENCES `qr_codes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `qr_code_scans_ibfk_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Table structure for `system_status` (admin diagnostics cache — one row per tab)
 DROP TABLE IF EXISTS `system_status`;
 

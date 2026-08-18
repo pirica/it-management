@@ -46,6 +46,7 @@ ops_report
 org_chart
 passwords
 private_contacts
+qr
 rack_planner
 reports
 request_password

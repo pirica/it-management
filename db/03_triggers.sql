@@ -4425,4 +4425,29 @@ END$$
 
 DELIMITER ;
 
+DROP TRIGGER IF EXISTS `trg_qr_codes_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_qr_codes_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_qr_codes_audit_delete`;
+
+DELIMITER $$
+
+CREATE TRIGGER `trg_qr_codes_audit_insert` AFTER INSERT ON `qr_codes` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'qr_codes', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'title', NEW.`title`, 'type_slug', NEW.`type_slug`, 'encoding_mode', NEW.`encoding_mode`, 'scan_count', NEW.`scan_count`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_qr_codes_audit_update` AFTER UPDATE ON `qr_codes` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'qr_codes', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'title', OLD.`title`, 'type_slug', OLD.`type_slug`, 'encoding_mode', OLD.`encoding_mode`, 'scan_count', OLD.`scan_count`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'title', NEW.`title`, 'type_slug', NEW.`type_slug`, 'encoding_mode', NEW.`encoding_mode`, 'scan_count', NEW.`scan_count`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_qr_codes_audit_delete` AFTER DELETE ON `qr_codes` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'qr_codes', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'title', OLD.`title`, 'type_slug', OLD.`type_slug`, 'encoding_mode', OLD.`encoding_mode`, 'scan_count', OLD.`scan_count`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DELIMITER ;
+
 SET FOREIGN_KEY_CHECKS=1;

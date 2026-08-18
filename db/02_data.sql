@@ -333,6 +333,7 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("it_settings", "IT Settings", 0, 1, "⚙️");
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("request_password", "Request Password", 0, 1, "🔑");
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("qr", "QR Generator", 0, 1, "📱");
 
 -- Data for `company_module_access`
 INSERT INTO `company_module_access` (`company_id`, `module_id`, `enabled`)
