@@ -72,7 +72,9 @@ function hb_require_company_public_portal($conn, $companyId, array $options = []
         if (!headers_sent()) {
             header('Content-Type: application/json; charset=utf-8');
         }
-        echo json_encode(['error' => 'Public booking portal is disabled for this hotel.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $settingsRow = itm_hotel_booking_settings_row($conn, (int) $companyId) ?: [];
+        $message = itm_hotel_booking_portal_disabled_message_from_settings($settingsRow);
+        echo json_encode(['error' => $message], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
     $redirect = isset($options['redirect']) ? (string) $options['redirect'] : (APPURL . '/');

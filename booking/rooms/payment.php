@@ -13,13 +13,14 @@ if ($company_id <= 0) {
 }
 $settings = itm_hotel_booking_settings_row($conn, $company_id) ?: [];
 hb_portal_bind_money_settings($settings);
+$manageBookingLabel = itm_hotel_booking_portal_manage_booking_label_from_settings($settings);
 $error = '';
 $success = '';
 $stripeFlash = trim((string) ($_GET['stripe'] ?? ''));
 if ($stripeFlash === 'success') {
     $success = 'Payment received. Your reservation is confirmed.';
 } elseif ($stripeFlash === 'cancel') {
-    $error = 'Online payment was cancelled. Your reservation is saved — you can pay at the hotel or try again from Manage my booking.';
+    $error = 'Online payment was cancelled. Your reservation is saved — you can pay at the hotel or try again from ' . $manageBookingLabel . '.';
 } elseif ($stripeFlash === 'error') {
     $error = 'Online payment could not be started. Please contact the hotel or try again later.';
 }
@@ -135,7 +136,7 @@ $paymentConfirmationOptions = [
 <p class="hb-payment-confirmation-lead">We could not find a recent booking in this browser session. Start a new search or manage an existing reservation with your confirmation number and last name.</p>
 <div class="hb-checkout-actions hb-payment-confirmation-actions">
 <a class="hb-btn hb-btn-primary" href="<?php echo APPURL; ?>/" title="Find a hotel">Find a hotel</a>
-<a class="hb-btn hb-checkout-skip" href="<?php echo APPURL; ?>/users/bookings.php" title="Manage my booking">Manage my booking</a>
+<a class="hb-btn hb-checkout-skip" href="<?php echo APPURL; ?>/users/bookings.php" title="<?php echo htmlspecialchars($manageBookingLabel, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($manageBookingLabel, ENT_QUOTES, 'UTF-8'); ?></a>
 </div>
 </div>
 <?php endif; ?>

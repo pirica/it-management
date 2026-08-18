@@ -339,13 +339,14 @@ $breakfastInfo = "Rates including breakfast reflect adults only. Children's brea
     . number_format($breakfastChildPrice, 2, '.', '')
     . ' per day per child should they wish to have breakfast.';
 $portalDefaultRateLabel = itm_hotel_booking_portal_default_rate_label_from_settings($settings);
+$checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_settings($settings, 2);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Select a Rate — <?php echo htmlspecialchars($room['hotel_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?></title>
+<title><?php echo htmlspecialchars($checkoutStepHeading['title'], ENT_QUOTES, 'UTF-8'); ?> — <?php echo htmlspecialchars($room['hotel_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?></title>
 <link rel="stylesheet" href="<?php echo APPURL; ?>/css/hotel-booking-modern.css">
 </head>
 <body class="hb-public hb-checkout-page">
@@ -357,8 +358,8 @@ $portalDefaultRateLabel = itm_hotel_booking_portal_default_rate_label_from_setti
 <div class="hb-back-wrapper" style="margin-bottom: 12px;">
     <a class="hb-btn hb-checkout-skip" href="<?php echo htmlspecialchars($changeRoomUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Back">Back</a>
 </div>
-<p class="hb-step-label">Step 2 of 4</p>
-<h1 class="hb-page-title">Select a Rate</h1>
+<p class="hb-step-label"><?php echo htmlspecialchars($checkoutStepHeading['progress'], ENT_QUOTES, 'UTF-8'); ?></p>
+<h1 class="hb-page-title"><?php echo htmlspecialchars($checkoutStepHeading['title'], ENT_QUOTES, 'UTF-8'); ?></h1>
 
 <div class="hb-rate-info-banner" role="note">
 <span class="hb-rate-info-icon" aria-hidden="true">ℹ</span>

@@ -139,6 +139,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($portalCancellationPolicyNotFoundUrl === '') {
         $errors[] = 'Cancellation policy not-found page must be a relative .html, .htm, or .txt path (e.g. cancellation_policy/404.html).';
     }
+    $portalManageBookingLabel = mb_substr(trim((string) ($_POST['portal_manage_booking_label'] ?? 'Manage my booking')), 0, 80);
+    if ($portalManageBookingLabel === '') {
+        $errors[] = 'Manage booking label is required.';
+    }
+    $portalAccessibleRoomBannerText = mb_substr(trim((string) ($_POST['portal_accessible_room_banner_text'] ?? 'Accessible rooms are available at this property. Use Room Filters and select Accessible room to narrow results.')), 0, 500);
+    if ($portalAccessibleRoomBannerText === '') {
+        $portalAccessibleRoomBannerText = 'Accessible rooms are available at this property. Use Room Filters and select Accessible room to narrow results.';
+    }
+    $portalDisabledMessage = mb_substr(trim((string) ($_POST['portal_disabled_message'] ?? 'Public booking portal is disabled for this hotel.')), 0, 255);
+    if ($portalDisabledMessage === '') {
+        $portalDisabledMessage = 'Public booking portal is disabled for this hotel.';
+    }
+    $portalStepProgressTemplate = mb_substr(trim((string) ($_POST['portal_step_progress_template'] ?? 'Step {step} of {total}')), 0, 80);
+    if ($portalStepProgressTemplate === '' || strpos($portalStepProgressTemplate, '{step}') === false) {
+        $errors[] = 'Step progress template must include {step} (and may include {total}).';
+    }
     $freeCancelDays = (int) ($_POST['free_cancellation_days_before_check_in'] ?? 5);
     if ($freeCancelDays < 0) {
         $freeCancelDays = 0;
@@ -262,9 +278,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $sid = (int) ($row['id'] ?? 0);
     if (empty($errors)) {
-    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, stripe_enabled = ?, stripe_mode = ?, stripe_publishable_key = ?, stripe_secret_key_encrypted = ?, stripe_webhook_signing_secret_encrypted = ?, deposit_percent = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, portal_max_discount_percent = ?, portal_tourist_tax_label = ?, portal_price_includes_tax_label = ?, portal_price_includes_tax_long_label = ?, portal_default_rate_label = ?, portal_breakfast_rate_label = ?, portal_default_pet_max_weight_kg = ?, portal_maps_base_url = ?, portal_calendar_month_horizon = ?, portal_phone_example = ?, portal_direct_book_banner_text = ?, portal_rating_title = ?, portal_rating_subtitle = ?, portal_step_label_room = ?, portal_step_label_rate = ?, portal_step_label_customize = ?, portal_step_label_payment = ?, portal_default_room_image_url = ?, portal_room_type_code_fallback_json = ?, portal_occupancy_max_rooms = ?, portal_occupancy_max_adults = ?, portal_occupancy_max_children = ?, portal_occupancy_max_babies = ?, portal_default_included_adults_per_room = ?, portal_cancellation_policy_not_found_url = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, portal_complimentary_min_rooms_paid = ?, portal_complimentary_rooms_free = ?, portal_confirmation_email_guest = ?, portal_confirmation_email_reservations = ?, portal_show_room_number_on_confirmation = ?, portal_hide_upgrade_upsell_when_multi_room = ?, portal_money_symbol = ?, portal_money_symbol_suffix = ?, portal_money_symbol_prefix = ?, portal_show_internal_rates = ?, portal_date_format = ?, portal_time_format = ?, portal_datetime_european1_enabled = ?, portal_datetime_european2_enabled = ?, portal_datetime_iso_enabled = ?, portal_datetime_readable_enabled = ?, portal_datetime_format_default = ?, portal_accessible_banner_enabled = ?, portal_accessibility_options_enabled = ?, urlaccessibilitypep = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
+    $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, stripe_enabled = ?, stripe_mode = ?, stripe_publishable_key = ?, stripe_secret_key_encrypted = ?, stripe_webhook_signing_secret_encrypted = ?, deposit_percent = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, portal_max_discount_percent = ?, portal_tourist_tax_label = ?, portal_price_includes_tax_label = ?, portal_price_includes_tax_long_label = ?, portal_default_rate_label = ?, portal_breakfast_rate_label = ?, portal_default_pet_max_weight_kg = ?, portal_maps_base_url = ?, portal_calendar_month_horizon = ?, portal_phone_example = ?, portal_direct_book_banner_text = ?, portal_rating_title = ?, portal_rating_subtitle = ?, portal_step_label_room = ?, portal_step_label_rate = ?, portal_step_label_customize = ?, portal_step_label_payment = ?, portal_default_room_image_url = ?, portal_room_type_code_fallback_json = ?, portal_occupancy_max_rooms = ?, portal_occupancy_max_adults = ?, portal_occupancy_max_children = ?, portal_occupancy_max_babies = ?, portal_default_included_adults_per_room = ?, portal_cancellation_policy_not_found_url = ?, portal_manage_booking_label = ?, portal_accessible_room_banner_text = ?, portal_disabled_message = ?, portal_step_progress_template = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, portal_complimentary_min_rooms_paid = ?, portal_complimentary_rooms_free = ?, portal_confirmation_email_guest = ?, portal_confirmation_email_reservations = ?, portal_show_room_number_on_confirmation = ?, portal_hide_upgrade_upsell_when_multi_room = ?, portal_money_symbol = ?, portal_money_symbol_suffix = ?, portal_money_symbol_prefix = ?, portal_show_internal_rates = ?, portal_date_format = ?, portal_time_format = ?, portal_datetime_european1_enabled = ?, portal_datetime_european2_enabled = ?, portal_datetime_iso_enabled = ?, portal_datetime_readable_enabled = ?, portal_datetime_format_default = ?, portal_accessible_banner_enabled = ?, portal_accessibility_options_enabled = ?, urlaccessibilitypep = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
     if ($upd) {
-        mysqli_stmt_bind_param($upd, 'iisssdssssssddsssssisissssssssssiiiiiiisiiiiiiiiiiiiiiiiiisiiissiiiisssiisiii', $enabled, $stripeEnabled, $stripeMode, $stripePublishableKey, $stripeSecretEnc, $stripeWebhookEnc, $depositPercent, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $portalMaxDiscount, $portalTouristTaxLabel, $portalPriceIncludesTaxLabel, $portalPriceIncludesTaxLongLabel, $portalDefaultRateLabel, $portalBreakfastRateLabel, $portalDefaultPetMaxWeightKg, $portalMapsBaseUrl, $portalCalendarMonthHorizon, $portalPhoneExample, $portalDirectBookBannerText, $portalRatingTitle, $portalRatingSubtitle, $portalStepLabelRoom, $portalStepLabelRate, $portalStepLabelCustomize, $portalStepLabelPayment, $portalDefaultRoomImageUrl, $portalRoomTypeCodeFallbackJson, $portalOccMaxRooms, $portalOccMaxAdults, $portalOccMaxChildren, $portalOccMaxBabies, $portalDefaultIncludedAdults, $portalCancellationPolicyNotFoundUrl, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $complimentaryMinRooms, $complimentaryRoomsFree, $confirmEmailGuest, $confirmEmailReservations, $showRoomNumberOnConfirmation, $hideUpgradeUpsellMultiRoom, $moneySymbol, $moneySymbolSuffix, $moneySymbolPrefix, $showInternalRates, $portalDateFormat, $portalTimeFormat, $dtEuropean1, $dtEuropean2, $dtIso, $dtReadable, $dtDefault, $portalAccessibleBanner, $portalAccessibilityOptions, $urlaccessibilitypep, $urlmybooking, $employee_id, $sid, $company_id);
+        mysqli_stmt_bind_param($upd, 'iisssdssssssddsssssisissssssssssiiiiiiissssssiiiiiiiiiiiiiiiiiisiiissiiiisssiisiii', $enabled, $stripeEnabled, $stripeMode, $stripePublishableKey, $stripeSecretEnc, $stripeWebhookEnc, $depositPercent, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $portalMaxDiscount, $portalTouristTaxLabel, $portalPriceIncludesTaxLabel, $portalPriceIncludesTaxLongLabel, $portalDefaultRateLabel, $portalBreakfastRateLabel, $portalDefaultPetMaxWeightKg, $portalMapsBaseUrl, $portalCalendarMonthHorizon, $portalPhoneExample, $portalDirectBookBannerText, $portalRatingTitle, $portalRatingSubtitle, $portalStepLabelRoom, $portalStepLabelRate, $portalStepLabelCustomize, $portalStepLabelPayment, $portalDefaultRoomImageUrl, $portalRoomTypeCodeFallbackJson, $portalOccMaxRooms, $portalOccMaxAdults, $portalOccMaxChildren, $portalOccMaxBabies, $portalDefaultIncludedAdults, $portalCancellationPolicyNotFoundUrl, $portalManageBookingLabel, $portalAccessibleRoomBannerText, $portalDisabledMessage, $portalStepProgressTemplate, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $complimentaryMinRooms, $complimentaryRoomsFree, $confirmEmailGuest, $confirmEmailReservations, $showRoomNumberOnConfirmation, $hideUpgradeUpsellMultiRoom, $moneySymbol, $moneySymbolSuffix, $moneySymbolPrefix, $showInternalRates, $portalDateFormat, $portalTimeFormat, $dtEuropean1, $dtEuropean2, $dtIso, $dtReadable, $dtDefault, $portalAccessibleBanner, $portalAccessibilityOptions, $urlaccessibilitypep, $urlmybooking, $employee_id, $sid, $company_id);
         mysqli_stmt_execute($upd);
         mysqli_stmt_close($upd);
         header('Location: index.php?saved=1');
@@ -419,6 +435,28 @@ itm_hospitality_admin_layout_begin($crud_title);
 <div class="form-group">
 <label>Guest rating subtitle</label>
 <input type="text" name="portal_rating_subtitle" class="form-control" maxlength="200" value="<?php echo sanitize((string) ($row['portal_rating_subtitle'] ?? ' — based on recent stays')); ?>">
+</div>
+<div class="form-group">
+<label>Manage booking link label</label>
+<input type="text" name="portal_manage_booking_label" class="form-control" maxlength="80" value="<?php echo sanitize((string) ($row['portal_manage_booking_label'] ?? 'Manage my booking')); ?>">
+</div>
+<div class="form-group">
+<label>Accessible room banner text</label>
+<input type="text" name="portal_accessible_room_banner_text" class="form-control" maxlength="500" value="<?php echo sanitize((string) ($row['portal_accessible_room_banner_text'] ?? 'Accessible rooms are available at this property. Use Room Filters and select Accessible room to narrow results.')); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Shown on Step 1 when <strong>Show accessible room banner</strong> is enabled.</p>
+</div>
+<div class="form-group">
+<label>Portal disabled message</label>
+<input type="text" name="portal_disabled_message" class="form-control" maxlength="255" value="<?php echo sanitize((string) ($row['portal_disabled_message'] ?? 'Public booking portal is disabled for this hotel.')); ?>">
+</div>
+<div class="form-group">
+<label>Step progress template</label>
+<input type="text" name="portal_step_progress_template" class="form-control" maxlength="80" value="<?php echo sanitize((string) ($row['portal_step_progress_template'] ?? 'Step {step} of {total}')); ?>">
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Use <code>{step}</code> and <code>{total}</code> (default total is 4).</p>
+</div>
+<div class="form-group">
+<label>Checkout step label — room</label>
+<input type="text" name="portal_step_label_room" class="form-control" maxlength="80" value="<?php echo sanitize((string) ($row['portal_step_label_room'] ?? 'Select a Room')); ?>">
 </div>
 <div class="form-group">
 <label>Checkout step label — rate</label>

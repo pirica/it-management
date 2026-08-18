@@ -279,13 +279,14 @@ if ($upgradeOffer) {
         );
     }
 }
+$checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_settings($settings, 3);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Customize Your Stay</title>
+<title><?php echo htmlspecialchars($checkoutStepHeading['title'], ENT_QUOTES, 'UTF-8'); ?></title>
 <link rel="stylesheet" href="<?php echo APPURL; ?>/css/hotel-booking-modern.css">
 </head>
 <body class="hb-public hb-checkout-page">
@@ -297,8 +298,8 @@ if ($upgradeOffer) {
 <div class="hb-back-wrapper" style="margin-bottom: 12px;">
     <a class="hb-btn hb-checkout-skip" href="<?php echo htmlspecialchars($changeRateUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Back">Back</a>
 </div>
-<p class="hb-step-label">Step 3 of 4</p>
-<h1 class="hb-page-title">Customize Your Stay</h1>
+<p class="hb-step-label"><?php echo htmlspecialchars($checkoutStepHeading['progress'], ENT_QUOTES, 'UTF-8'); ?></p>
+<h1 class="hb-page-title"><?php echo htmlspecialchars($checkoutStepHeading['title'], ENT_QUOTES, 'UTF-8'); ?></h1>
 <?php foreach ($customizeErrors as $customizeError): ?>
 <p class="hb-error" role="alert"><?php echo htmlspecialchars($customizeError, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php endforeach; ?>
