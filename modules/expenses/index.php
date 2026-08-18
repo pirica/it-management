@@ -326,6 +326,10 @@ if ($field === 'active') {
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
 
+    if (($GLOBALS['crud_table'] ?? '') === 'expenses' && in_array($field, ['purchase_order_accepted', 'quotation_order_accepted', 'is_recursive'], true)) {
+        return ((int)$value === 1) ? '✅' : '❌';
+    }
+
     if (($GLOBALS['crud_table'] ?? '') === 'expenses' && $field === 'paid_status_id' && (int) $value > 0) {
         $fkRow = $GLOBALS['fkMap']['paid_status_id'] ?? null;
         if (is_array($fkRow) && function_exists('itm_crud_render_status_label_badge')) {
