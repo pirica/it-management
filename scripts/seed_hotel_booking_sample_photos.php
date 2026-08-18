@@ -14,7 +14,7 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-Copies demo hotel and room-type JPEGs into <code>booking/images/{hotel_id}/hotel_photos/</code> and <code>room_types_photos/</code>, upserts <code>hotel_booking_hotel_photos</code> / <code>booking_rooms_type_photos</code> rows for <strong>companies 1–5</strong> (each tenant’s primary hotel + room types DLX/SUP/STD). Shared portal assets under <code>booking/images/hotel-sample-*.jpg</code> are written once.
+Copies demo hotel and room-type JPEGs into <code>booking/images/{hotel_id}/hotel_photos/</code> and <code>room_types_photos/</code>, upserts <code>hotel_booking_hotel_photos</code> / <code>booking_rooms_type_photos</code> rows for <strong>companies 1–5</strong> (each tenant’s primary hotel + room types DLX/SUP/STD/POOL). Shared portal assets under <code>booking/images/hotel-sample-*.jpg</code> are written once.
 <br><br>
 CLI dry-run: <code>php scripts/seed_hotel_booking_sample_photos.php</code><br>
 CLI apply: <code>php scripts/seed_hotel_booking_sample_photos.php --apply</code><br>
@@ -53,6 +53,7 @@ $roomTypeSamples = [
     ['type_code' => 'SUP', 'source' => 'booking/images/sample-room.jpg', 'stored' => 'hb_rt_sup_01.jpg', 'original' => 'superior-room-1.jpg', 'sort_order' => 0, 'is_cover' => 1],
     ['type_code' => 'STD', 'source' => 'booking/images/sample-room.jpg', 'stored' => 'hb_rt_std_01.jpg', 'original' => 'standard-room-1.jpg', 'sort_order' => 0, 'is_cover' => 1],
     ['type_code' => 'STD', 'source' => 'booking/images/sample-room.jpg', 'stored' => 'hb_rt_std_02.jpg', 'original' => 'standard-room-2.jpg', 'sort_order' => 1, 'is_cover' => 0],
+    ['type_code' => 'POOL', 'source' => 'booking/images/hotel-sample-pool.jpg', 'stored' => 'hb_rt_pool_01.jpg', 'original' => 'pool-view-room-1.jpg', 'sort_order' => 0, 'is_cover' => 1],
 ];
 
 /**
