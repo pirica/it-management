@@ -19,6 +19,7 @@ Manages revisions to financial forecasts for a specific month and year.
 ## 5. UI Behavior Requirements
 - **Standard CRUD**.
 - **Approval Flow**: Integrates with the Approvals module for multi-stage reviews.
+- **List `locked`:** renders ✅ / ❌ (not raw `0` / `1`).
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import.
