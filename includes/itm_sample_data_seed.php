@@ -3494,6 +3494,127 @@ if (!function_exists('itm_seed_copy_finance_lookup_rows_from_template_company'))
     }
 }
 
+if (!function_exists('itm_seed_search_index_demo_rows_definition')) {
+    /**
+     * @return array<int, array{0: string, 1: int, 2: string, 3: string, 4: string}>
+     */
+    function itm_seed_search_index_demo_rows_definition()
+    {
+        return [
+            ['employees', 1, 'Admin', 'Employees', 'admin employee user staff directory'],
+            ['equipment', 1, 'Core network switch', 'Equipment', 'switch network hardware device'],
+            ['tickets', 1, 'Sample support ticket', 'Tickets', 'support helpdesk ticket issue'],
+            ['catalogs', 1, 'Sample catalog item', 'Catalogs', 'catalog part sku inventory'],
+            ['ip_addresses', 1, 'Sample IP address', 'IP Addresses', 'ip address subnet network host'],
+        ];
+    }
+}
+
+if (!function_exists('itm_seed_insert_search_index_sample_rows')) {
+    /**
+     * Why: Palette demo rows for every empty seed tenant (companies 1–5), not only the active session company.
+     */
+    function itm_seed_insert_search_index_sample_rows(mysqli $conn, $companyId, &$error = '')
+    {
+        $error = '';
+        $companyId = (int)$companyId;
+
+        if ($companyId <= 0) {
+            $error = 'A company must be selected before adding sample data.';
+            return 0;
+        }
+
+        $companyIds = [];
+        $companyRes = mysqli_query($conn, 'SELECT id FROM companies WHERE id BETWEEN 1 AND 5 ORDER BY id ASC');
+        if ($companyRes) {
+            while ($companyRow = mysqli_fetch_assoc($companyRes)) {
+                $companyIds[] = (int)($companyRow['id'] ?? 0);
+            }
+            mysqli_free_result($companyRes);
+        }
+
+        if ($companyIds === []) {
+            $error = 'No seed companies (ids 1–5) found.';
+            return 0;
+        }
+
+        if (function_exists('itm_seed_set_mysql_audit_session_company')) {
+            itm_seed_set_mysql_audit_session_company($conn, $companyId);
+        }
+
+        $demoRows = itm_seed_search_index_demo_rows_definition();
+        $insertCount = 0;
+
+        $countStmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS c FROM search_index WHERE company_id = ?');
+        $insertStmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO search_index (company_id, module_slug, record_id, title, subtitle, keywords, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, NOW())'
+        );
+
+        if (!$countStmt || !$insertStmt) {
+            $error = 'Could not prepare search_index sample insert.';
+            return 0;
+        }
+
+        foreach ($companyIds as $tenantId) {
+            mysqli_stmt_bind_param($countStmt, 'i', $tenantId);
+            mysqli_stmt_execute($countStmt);
+            $countResult = mysqli_stmt_get_result($countStmt);
+            $existingRows = 0;
+            if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
+                $existingRows = (int)($countRow['c'] ?? 0);
+            }
+            if ($existingRows > 0) {
+                continue;
+            }
+
+            foreach ($demoRows as $demoRow) {
+                $moduleSlug = (string)$demoRow[0];
+                $recordId = (int)$demoRow[1];
+                $title = (string)$demoRow[2];
+                $subtitle = (string)$demoRow[3];
+                $keywords = (string)$demoRow[4];
+
+                mysqli_stmt_bind_param(
+                    $insertStmt,
+                    'isisss',
+                    $tenantId,
+                    $moduleSlug,
+                    $recordId,
+                    $title,
+                    $subtitle,
+                    $keywords
+                );
+
+                if (mysqli_stmt_execute($insertStmt)) {
+                    $insertCount++;
+                    continue;
+                }
+
+                $stmtErrno = mysqli_stmt_errno($insertStmt);
+                $stmtError = mysqli_stmt_error($insertStmt);
+                if (function_exists('itm_seed_insert_row_is_unique_violation')
+                    && itm_seed_insert_row_is_unique_violation($stmtErrno, $stmtError)) {
+                    continue;
+                }
+
+                $error = function_exists('itm_format_db_constraint_error')
+                    ? itm_format_db_constraint_error($stmtErrno, $stmtError)
+                    : 'Could not insert search_index sample row.';
+                mysqli_stmt_close($countStmt);
+                mysqli_stmt_close($insertStmt);
+                return $insertCount;
+            }
+        }
+
+        mysqli_stmt_close($countStmt);
+        mysqli_stmt_close($insertStmt);
+
+        return $insertCount;
+    }
+}
+
 if (!function_exists('itm_seed_table_from_database_sql')) {
     /**
      * Inserts sample rows for a module table from db/02_data_sample.sql for any tenant company_id.
@@ -3613,6 +3734,10 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
 
         if ($tableName === 'tickets') {
             return itm_seed_insert_tickets_sample_row($conn, $companyId, $error);
+        }
+
+        if ($tableName === 'search_index') {
+            return itm_seed_insert_search_index_sample_rows($conn, $companyId, $error);
         }
 
         itm_seed_lookup_parents_for_table($conn, $tableName, $companyId);
