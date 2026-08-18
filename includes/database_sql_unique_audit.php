@@ -443,6 +443,7 @@ if (!function_exists('itm_database_sql_unique_audit_run')) {
             'hotel_booking_room_type_blocks' => 'Calendar block rows; identity is PRIMARY KEY (id) only.',
             'hotel_bookings' => 'Reservation facts; many rows per customer.',
             'appointments' => 'Scheduled slots; many rows per employee.',
+            'vault_org_recovery_requests' => 'Recovery workflow history; many rows per employee; identity is PRIMARY KEY (id) only.',
             'live_chat_conversations' => 'Many chat sessions per company; identity is PRIMARY KEY (id) only.',
             'live_chat_participants' => 'Junction table; identity is UNIQUE (conversation_id, employee_id).',
             'live_chat_typing' => 'Ephemeral typing row per participant; identity is UNIQUE (conversation_id, employee_id).',
