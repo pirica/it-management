@@ -1050,15 +1050,6 @@ if (!isset($crud_title)) {
                     </table>
                 </div>
 
-                <?php if ($hasCompany && $company_id > 0 && $totalRows === 0): ?>
-                    <div class="card" style="margin-top:12px;padding:16px;text-align:center;">
-                        <p style="margin-bottom:10px;">Palette index rows are synced from source modules — not stored as audit-log business data and not seeded with fake sample rows.</p>
-                        <p style="margin-bottom:8px;">Save records in employees, equipment, tickets, catalogs, or IP addresses, or run the backfill script for this tenant.</p>
-                        <a class="btn btn-primary" href="<?php echo sanitize(BASE_URL . 'scripts/apply_search_index_backfill.php?run=1&apply=1'); ?>" title="Backfill search index">Run search index backfill</a>
-                        <p style="font-size:13px;color:#666;margin-top:10px;">Admin session required — open the backfill link in a new browser tab.</p>
-                    </div>
-                <?php endif; ?>
-
                 <!-- PAGINATION -->
                 <?php if ($totalRows > $perPage): ?>
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
