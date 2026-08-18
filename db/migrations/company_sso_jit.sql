@@ -31,3 +31,4 @@ CREATE TABLE `companies` (
   UNIQUE KEY `incode` (`incode`),
   KEY `active` (`active`),
   KEY `idx_companies_sso_enabled` (`sso_enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
