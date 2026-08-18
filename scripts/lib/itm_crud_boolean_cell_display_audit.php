@@ -227,6 +227,14 @@ if (!function_exists('itm_crud_boolean_cell_audit_field_has_badge_rendering')) {
             return true;
         }
 
+        // Why: Combined boolean columns (e.g. employee_sidebar_preferences active + is_visible) use in_array + badges.
+        if (preg_match(
+            '/in_array\s*\(\s*\$field\s*,\s*\[[^\]]*[\'"]' . $fieldQuoted . '[\'"][^\]]*\][\s\S]{0,500}?badge-(success|danger)/s',
+            $renderBody
+        )) {
+            return true;
+        }
+
         return false;
     }
 }
@@ -515,7 +523,7 @@ if (!function_exists('itm_crud_boolean_cell_audit_format_report')) {
     {
         $out = 'CRUD boolean cell display audit (tinyint(1) list/view cells)' . $nl . $nl;
         $out .= itm_crud_boolean_cell_audit_color_tag('FAIL') . ' = visible tinyint(1) column falls through to raw 0/1 in cr_render_cell_value().' . $nl;
-        $out .= itm_crud_boolean_cell_audit_color_tag('PASS') . ' = active uses badges; other checkbox columns use itm_crud_render_checkbox_boolean_cell_value(), bespoke ✅/❌, or badge labels.' . $nl . $nl;
+        $out .= itm_crud_boolean_cell_audit_color_tag('PASS') . ' = active uses badges; other checkbox columns use itm_crud_render_checkbox_boolean_cell_value(), bespoke ✅/❌, badge labels, or in_array(...) badge blocks.' . $nl . $nl;
 
         if ($report['failures'] !== []) {
             $out .= itm_crud_boolean_cell_audit_color_heading('FAIL', ' ' . count($report['failures']) . ' file(s):') . $nl;
