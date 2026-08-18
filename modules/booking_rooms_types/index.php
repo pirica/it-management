@@ -213,6 +213,23 @@ if ($field === 'active') {
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
 
+    if (($GLOBALS['crud_table'] ?? '') === 'booking_rooms_types') {
+        if (in_array($field, [
+            'allow_mixed_types_in_group',
+            'portal_included_children_free',
+            'portal_bookable',
+            'requires_approval',
+            'adults_only',
+            'smoking_allowed',
+            'accessible_room',
+            'extra_bed_allowed',
+            'crib_included',
+            'pets_allowed',
+        ], true)) {
+            return ((int)$value === 1) ? '✅' : '❌';
+        }
+    }
+
     if (isset($GLOBALS['fkMap'][$field])) {
         $resolvedLabel = brt_fk_label_by_id($GLOBALS['conn'], $GLOBALS['fkMap'][$field], (int)($GLOBALS['company_id'] ?? 0), (int)$value, $field);
         if ($resolvedLabel !== '') {
