@@ -37,6 +37,9 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkInIso) || $checkInIso < $today) {
     $checkInIso = $today;
 }
 $checkOutIso = date('Y-m-d', strtotime($checkInIso . ' +' . $nights . ' day'));
+$specialRateCodeFilter = itm_hotel_booking_portal_filter_occupancy_special_rate_codes($conn, $company_id, $hotelId, $occupancy, $checkInIso);
+$occupancy = $specialRateCodeFilter['occupancy'];
+$specialRateCodesRejected = $specialRateCodeFilter['rejected'];
 
 $roomsNeeded = max(1, (int) ($occupancy['rooms'] ?? 1));
 $roomLinesContext = itm_hotel_booking_portal_room_lines_context_fingerprint($hotelId, $checkInIso, $nights, $occupancy);
@@ -564,6 +567,12 @@ $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_setti
 <?php hb_portal_render_amenities_scroll($amenityRows, 12); ?>
 </section>
 
+<?php if (!empty($specialRateCodesRejected)): ?>
+<p class="hb-rate-info-banner hb-special-rate-code-error" role="alert">
+<?php echo hb_portal_ui_copy_esc('portal_ui_step1_invalid_special_rate_code', [], $settings); ?>
+</p>
+<?php endif; ?>
+
 <div class="hb-room-toolbar">
 <button type="button" class="hb-toolbar-btn" id="hb-room-filters-btn" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step1_room_filters_button', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_room_filters_button', [], $settings); ?></button>
 <button type="button" class="hb-toolbar-btn" id="hb-special-rates-btn" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step1_special_rates_button', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_special_rates_button', [], $settings); ?><?php if ($discountPercent > 0): ?> <span class="hb-rate-active">−<?php echo htmlspecialchars((string) $discountPercent, ENT_QUOTES, 'UTF-8'); ?>%</span><?php endif; ?></button>
@@ -776,6 +785,11 @@ window.HB_SELECT_ROOM = <?php echo json_encode(array_merge([
     'touristTaxPerPersonPerNight' => $touristTaxRate,
     'showDiscountStrikethrough' => $showDiscountStrikethrough,
     'typeDetails' => $typeDetailsHtml,
+    'hotelId' => $hotelId,
+    'checkInIso' => $checkInIso,
+    'codeRateParamSlugs' => itm_hotel_booking_portal_code_rate_param_slug_map(),
+    'validateSpecialRateCodeUrl' => APPURL . '/validate-special-rate-code.php',
+    'invalidSpecialRateCodeMessage' => hb_portal_ui_copy('portal_ui_step1_invalid_special_rate_code', [], $settings),
 ], itm_hotel_booking_portal_public_settings_for_js($settings)), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
 <script src="<?php echo APPURL; ?>/js/hotel-booking-money.js"></script>

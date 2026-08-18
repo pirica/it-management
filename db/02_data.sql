@@ -2573,6 +2573,13 @@ INSERT INTO `hotel_booking_special_rates` (`company_id`, `hotel_id`, `rate_slug`
 (1, 1, 'group', 'Group code', 15.00, 'Enter a valid group code.', 1, '2026-01-01 00:00:01'),
 (1, 1, 'corporate', 'Corporate account', 15.00, 'Enter a valid corporate account number.', 1, '2026-01-01 00:00:01');
 
+INSERT INTO `hotel_booking_special_rate_codes` (`company_id`, `hotel_id`, `rate_slug`, `code`, `label`, `active`, `created_at`) VALUES
+(1, 1, 'promo', 'SAVE10', 'Summer save 10%', 1, '2026-01-01 00:00:01'),
+(1, 1, 'promo', 'WELCOME1', 'New guest welcome', 1, '2026-01-01 00:00:01'),
+(1, 1, 'group', 'GROUP01', 'Sample group block', 1, '2026-01-01 00:00:01'),
+(1, 1, 'corporate', 'CORP001', 'TechCorp corporate', 1, '2026-01-01 00:00:01'),
+(1, 1, 'member', 'MEMBER01', 'Loyalty member', 1, '2026-01-01 00:00:01');
+
 INSERT INTO `hotel_booking_portal_rate_plans` (`company_id`, `hotel_id`, `plan_slot`, `name`, `rate_plan_slug`, `cancellation_policy_url`, `pay_badge`, `price_label`, `cancel_template`, `plan_discount_percent`, `plan_surcharge_percent`, `free_cancellation_days_before_check_in`, `active`, `created_at`) VALUES
 (1, 1, 1, 'Best Available Rate', 'room_only', 'cancellation_policy/1_cancellation_policy.html', 'Pay when you stay', 'Best available rate', 'Change or cancel by {date}.', 0.00, 0.00, NULL, 1, '2026-01-01 00:00:01'),
 (1, 1, 2, 'Breakfast Included', 'breakfast', 'cancellation_policy/2_cancellation_policy.html', 'Pay when you stay', 'With breakfast', 'Change or cancel by {date}.', 0.00, 0.00, NULL, 1, '2026-01-01 00:00:01'),

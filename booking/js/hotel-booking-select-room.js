@@ -71,6 +71,12 @@
 
   var SPECIAL_RATE_BOOL_KEYS = ['use_points', 'travel_agents', 'aaa_rate', 'senior_rate', 'gov_military'];
   var SPECIAL_RATE_CODE_KEYS = ['promo_code', 'group_code', 'corporate_account', 'member_account'];
+  var CODE_RATE_PARAM_SLUGS = cfg.codeRateParamSlugs || {
+    promo_code: 'promo',
+    group_code: 'group',
+    corporate_account: 'corporate',
+    member_account: 'member'
+  };
 
   function occupancyHasSpecialDiscount(occ) {
     occ = occ || {};
@@ -158,6 +164,61 @@
       return 0;
     }
     return parseFloat(map[slug]) || 0;
+  }
+
+  function invalidSpecialRateCodeMessage() {
+    return String(cfg.invalidSpecialRateCodeMessage || 'The code you entered is not valid. Check the code and try again.');
+  }
+
+  function validateSpecialRateCodeRemote(param, code) {
+    var slug = CODE_RATE_PARAM_SLUGS[param] || '';
+    var hotelId = parseInt(cfg.hotelId, 10) || 0;
+    var checkIn = String(cfg.checkInIso || '');
+    var baseUrl = String(cfg.validateSpecialRateCodeUrl || '');
+    if (!slug || !hotelId || !code || baseUrl === '') {
+      return Promise.resolve({ valid: false, message: invalidSpecialRateCodeMessage() });
+    }
+    var params = new URLSearchParams({
+      hotel_id: String(hotelId),
+      rate_slug: slug,
+      code: code,
+      check_in: checkIn
+    });
+    return fetch(baseUrl + '?' + params.toString(), { credentials: 'same-origin' })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data && data.valid) {
+          return { valid: true, message: '' };
+        }
+        return { valid: false, message: (data && data.message) ? String(data.message) : invalidSpecialRateCodeMessage() };
+      })
+      .catch(function () {
+        return { valid: false, message: invalidSpecialRateCodeMessage() };
+      });
+  }
+
+  function validateSpecialRateCodesInOverrides(overrides) {
+    overrides = overrides || {};
+    var checks = [];
+    SPECIAL_RATE_CODE_KEYS.forEach(function (key) {
+      var code = sanitizeRateCode(overrides[key]);
+      if (!code) {
+        return;
+      }
+      checks.push(validateSpecialRateCodeRemote(key, code).then(function (result) {
+        return { key: key, code: code, valid: !!result.valid, message: result.message || '' };
+      }));
+    });
+    if (!checks.length) {
+      return Promise.resolve({ ok: true });
+    }
+    return Promise.all(checks).then(function (results) {
+      var failed = results.filter(function (row) { return !row.valid; });
+      if (!failed.length) {
+        return { ok: true };
+      }
+      return { ok: false, message: failed[0].message || invalidSpecialRateCodeMessage() };
+    });
   }
 
   function syncOccupancyToUrl() {
@@ -570,7 +631,14 @@
   var ratesApply = document.getElementById('hb-rates-apply');
   if (ratesApply) {
     ratesApply.addEventListener('click', function () {
-      applySpecialRates(readRatesFormOverrides());
+      var overrides = readRatesFormOverrides();
+      validateSpecialRateCodesInOverrides(overrides).then(function (result) {
+        if (!result.ok) {
+          window.alert(result.message || invalidSpecialRateCodeMessage());
+          return;
+        }
+        applySpecialRates(overrides);
+      });
     });
   }
 

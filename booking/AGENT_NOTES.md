@@ -111,7 +111,7 @@ Guest-visible micro-labels, errors, modal headings, filter names, confirmation c
 | JS | `HB_SETTINGS.ui_copy` + `hbUiCopy(key, fallback)` |
 | Admin | [Hotel Booking Settings](http://localhost/it-management/modules/hotel_booking_settings/index.php) — Portal UI copy section cards |
 
-Special-rate program labels, accessibility need options, and manage lookup failure text read the same registry via helpers in `includes/itm_hotel_booking.php` when `$settings` is passed.
+Special-rate program labels, accessibility need options, and manage lookup failure text read the same registry via helpers in `includes/itm_hotel_booking.php` when `$settings` is passed. **Special-rate code fields** validate against `hotel_booking_special_rate_codes` (`itm_hotel_booking_portal_filter_occupancy_special_rate_codes()` on Step 1/2; AJAX `validate-special-rate-code.php`; invalid-code copy `portal_ui_step1_invalid_special_rate_code`). Codes are registered in [Booking Special Rates](http://localhost/it-management/modules/hotel_booking_special_rates/index.php).
 
 **Gap copy (auth, dates modal hints, gallery/modal chrome, room-detail occupancy, payment empty state, PDF gate):** wired in the same release — keys such as `portal_ui_shared_modal_close`, `portal_ui_home_dates_*`, `portal_ui_step1_room_*`, `portal_ui_auth_*`, `portal_ui_confirm_payment_empty_*`. JS `hbUiCopy()` merges `HB_SETTINGS.ui_copy`, `HB_SELECT_ROOM.ui_copy`, and `HB_CUSTOMIZE_UPGRADE.ui_copy`. Migration: `db/migrations/hotel_booking_portal_ui_copy_gap.sql`; schema regen helper: `php scripts/apply_portal_ui_copy_gap_schema.php --apply`.
 

@@ -446,6 +446,13 @@ INSERT INTO `hotel_booking_special_rates` (`company_id`, `hotel_id`, `rate_slug`
 (1, 1, 'group', 'Group code', 15.00, 'Enter a valid group code.', 1, '2026-01-01 00:00:01'),
 (1, 1, 'corporate', 'Corporate account', 15.00, 'Enter a valid corporate account number.', 1, '2026-01-01 00:00:01');
 
+INSERT INTO `hotel_booking_special_rate_codes` (`company_id`, `hotel_id`, `rate_slug`, `code`, `label`, `active`, `created_at`) VALUES
+(1, 1, 'promo', 'SAVE10', 'Summer save 10%', 1, '2026-01-01 00:00:01'),
+(1, 1, 'promo', 'WELCOME1', 'New guest welcome', 1, '2026-01-01 00:00:01'),
+(1, 1, 'group', 'GROUP01', 'Sample group block', 1, '2026-01-01 00:00:01'),
+(1, 1, 'corporate', 'CORP001', 'TechCorp corporate', 1, '2026-01-01 00:00:01'),
+(1, 1, 'member', 'MEMBER01', 'Loyalty member', 1, '2026-01-01 00:00:01');
+
 INSERT INTO `hotel_bookings` (`company_id`, `customer_id`, `room_id`, `check_in`, `check_out`, `payment_amount`, `guest_confirmation_code`, `auth2`, `future_status_id`, `portal_rate_plan_id`, `notes`, `booking_color`, `active`, `created_at`) VALUES
 (1, 1, 1, '2026-09-01', '2026-09-03', 240.00, 'HBSEED001', 'AUTH2SEED01', 1, 1, 'Seed reservation for MBQA and portal smoke.', '#4A90D9', 1, '2026-01-01 00:00:01');
 

@@ -2146,6 +2146,13 @@ return [
         'label' => 'Special rates modal — apply button title',
     ],
     [
+        'column' => 'portal_ui_step1_invalid_special_rate_code',
+        'default' => 'The code you entered is not valid. Check the code and try again.',
+        'maxlen' => 220,
+        'section' => 'step1',
+        'label' => 'Special rates modal — invalid code message',
+    ],
+    [
         'column' => 'portal_ui_step1_room_size_suffix',
         'default' => ' m²',
         'maxlen' => 40,
