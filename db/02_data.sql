@@ -2599,6 +2599,8 @@ INSERT INTO `booking_rooms_type_photos` (`company_id`, `room_type_id`, `stored_f
 SELECT 1, t.`id`, 'hb_rt_std_01.jpg', 'standard-room-1.jpg', 0, 1, 1, '2026-01-01 00:00:01' FROM `booking_rooms_types` t WHERE t.`company_id` = 1 AND t.`code` = 'STD' AND t.`deleted_at` IS NULL LIMIT 1;
 INSERT INTO `booking_rooms_type_photos` (`company_id`, `room_type_id`, `stored_filename`, `original_filename`, `sort_order`, `is_cover`, `active`, `created_at`)
 SELECT 1, t.`id`, 'hb_rt_std_02.jpg', 'standard-room-2.jpg', 1, 0, 1, '2026-01-01 00:00:01' FROM `booking_rooms_types` t WHERE t.`company_id` = 1 AND t.`code` = 'STD' AND t.`deleted_at` IS NULL LIMIT 1;
+INSERT INTO `booking_rooms_type_photos` (`company_id`, `room_type_id`, `stored_filename`, `original_filename`, `sort_order`, `is_cover`, `active`, `created_at`)
+SELECT 1, t.`id`, 'hb_rt_pool_01.jpg', 'pool-view-room-1.jpg', 0, 1, 1, '2026-01-01 00:00:01' FROM `booking_rooms_types` t WHERE t.`company_id` = 1 AND t.`code` = 'POOL' AND t.`deleted_at` IS NULL LIMIT 1;
 
 -- Hospitality hotels for companies 2–5 (company 1 seeded above) — required for distribution channel FK mappings.
 INSERT INTO `hotel_booking_hotels` (`company_id`, `name`, `description`, `location`, `phone`, `contact_email`, `reservations_email`, `website_url`, `reviews_url`, `check_in_time`, `check_out_time`, `currency_code`, `parking_info`, `pets_policy`, `active`, `created_at`)
