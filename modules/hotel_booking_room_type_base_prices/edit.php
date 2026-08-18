@@ -108,6 +108,44 @@ function cr_fk_metadata($conn, $table) {
     ];
 }
 
+function cr_fk_label_for_id($conn, $fk, $value, $company_id) {
+    $id = (int)$value;
+    if ($id <= 0) {
+        return null;
+    }
+
+    $table = (string)($fk['REFERENCED_TABLE_NAME'] ?? '');
+    $col = (string)($fk['REFERENCED_COLUMN_NAME'] ?? 'id');
+    $meta = cr_fk_metadata($conn, $table);
+    $available = $meta['available'];
+    $labelCol = (string)$meta['label_col'];
+
+    $where = ' WHERE ' . cr_escape_identifier($col) . '=' . $id;
+    if (in_array('company_id', $available, true) && $company_id > 0) {
+        $where .= ' AND company_id=' . (int)$company_id;
+    }
+    $sql = 'SELECT ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table) . $where . ' LIMIT 1';
+    $res = mysqli_query($conn, $sql);
+    if ($res && ($row = mysqli_fetch_assoc($res))) {
+        $label = trim((string)($row['label'] ?? ''));
+        if ($label !== '') {
+            return $label;
+        }
+    }
+
+    $fallbackSql = 'SELECT ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table)
+        . ' WHERE ' . cr_escape_identifier($col) . '=' . $id . ' LIMIT 1';
+    $fallbackRes = mysqli_query($conn, $fallbackSql);
+    if ($fallbackRes && ($row = mysqli_fetch_assoc($fallbackRes))) {
+        $label = trim((string)($row['label'] ?? ''));
+        if ($label !== '') {
+            return $label;
+        }
+    }
+
+    return null;
+}
+
 function cr_manageable_columns($columns) {
     // Why: Keep audit meta available for view/hidden forms/POST; list hides via itm_crud_is_list_hidden_audit_field.
     return array_values(array_filter($columns, function ($c) {
@@ -164,6 +202,20 @@ function cr_render_cell_value($table, $field, $value) {
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
+    $connRef = $GLOBALS['conn'] ?? null;
+    $companyIdRef = (int)($GLOBALS['company_id'] ?? 0);
+    if ($connRef instanceof mysqli && isset($GLOBALS['fkMap'][$field])) {
+        $fkRow = $GLOBALS['fkMap'][$field];
+        $fkDisplayId = (int)$value;
+        if ($fkDisplayId > 0 && $companyIdRef > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+            $fkDisplayId = itm_fk_resolve_company_equivalent_id($connRef, $fkRow, $companyIdRef, $fkDisplayId);
+        }
+        $resolvedLabel = cr_fk_label_for_id($connRef, $fkRow, $fkDisplayId, $companyIdRef);
+        if ($resolvedLabel !== null && $resolvedLabel !== '') {
+            return sanitize((string)$resolvedLabel);
+        }
     }
 
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
@@ -274,6 +326,7 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
+$GLOBALS['fkMap'] = $fkMap;
 $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_employee_field($col['Field']);
@@ -284,7 +337,7 @@ foreach ($fieldColumns as $c) {
 }
 
 
-$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments'];
+$hideCompanyIdTables = ['hotel_booking_room_type_base_prices', 'workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'access_levels', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     $fieldName = (string)($col['Field'] ?? '');
     if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
