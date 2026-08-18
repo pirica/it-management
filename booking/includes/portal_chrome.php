@@ -3,6 +3,23 @@
  * Shared chrome for full-width booking flow pages (select room, etc.).
  */
 
+require_once dirname(__DIR__, 2) . '/includes/itm_hotel_booking_portal_ui_copy.php';
+
+if (!function_exists('hb_portal_ui_copy')) {
+    function hb_portal_ui_copy($column, array $vars = [], $settings = null) {
+        if (!is_array($settings)) {
+            $settings = function_exists('hb_portal_money_settings_bound') ? hb_portal_money_settings_bound() : [];
+        }
+        return itm_hotel_booking_portal_ui_copy_from_settings($settings, (string) $column, $vars);
+    }
+}
+
+if (!function_exists('hb_portal_ui_copy_esc')) {
+    function hb_portal_ui_copy_esc($column, array $vars = [], $settings = null) {
+        return htmlspecialchars(hb_portal_ui_copy($column, $vars, $settings), ENT_QUOTES, 'UTF-8');
+    }
+}
+
 if (!function_exists('hb_portal_bind_money_settings')) {
   function hb_portal_bind_money_settings($settings) {
     $GLOBALS['hb_portal_money_settings'] = is_array($settings) ? $settings : [];
@@ -54,7 +71,9 @@ if (!function_exists('hb_portal_format_stay_range_label')) {
         if ($inDisplay === '' || $outDisplay === '') {
             return '';
         }
-        $nightWord = $nights === 1 ? 'night' : 'nights';
+        $nightWord = $nights === 1
+            ? hb_portal_ui_copy('portal_ui_chrome_night_singular', [], $settings)
+            : hb_portal_ui_copy('portal_ui_chrome_nights_plural', [], $settings);
         return $inDisplay . ' – ' . $outDisplay . ' (' . $nights . ' ' . $nightWord . ')';
     }
 }
@@ -105,6 +124,9 @@ if (!function_exists('hb_portal_money_format_decimal')) {
 
 if (!function_exists('hb_portal_reservation_room_title')) {
     function hb_portal_reservation_room_title(array $room, $settings = null) {
+        if (!is_array($settings)) {
+            $settings = hb_portal_money_settings_bound();
+        }
         $type = trim((string) ($room['type_name'] ?? ''));
         $bed = trim((string) ($room['bed_summary'] ?? ''));
         if ($bed !== '' && $type !== '') {
@@ -112,7 +134,7 @@ if (!function_exists('hb_portal_reservation_room_title')) {
         } elseif ($type !== '') {
             $title = $type;
         } else {
-            $title = trim((string) ($room['name'] ?? 'Room'));
+            $title = trim((string) ($room['name'] ?? hb_portal_ui_copy('portal_ui_chrome_room_suffix', [], $settings)));
         }
         if (is_array($settings) && itm_hotel_booking_portal_show_room_number_from_settings($settings)) {
             $roomNumber = trim((string) ($room['room_number'] ?? ''));
@@ -138,7 +160,7 @@ if (!function_exists('hb_portal_render_guest_rating_reviews')) {
 <div class="hb-rating-bubbles" aria-hidden="true"><span></span><span></span><span></span><span></span><span class="partial"></span></div>
 <div class="hb-rating-meta">
 <p class="hb-rating-copy"><strong><?php echo htmlspecialchars($ratingTitle, ENT_QUOTES, 'UTF-8'); ?></strong><span class="hb-rating-sub"><?php echo htmlspecialchars($ratingSubtitle, ENT_QUOTES, 'UTF-8'); ?></span></p>
-<a class="hb-reviews-link" href="<?php echo htmlspecialchars($reviewsUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" title="Read reviews (opens in new tab)">Read reviews <span class="hb-external-icon" aria-hidden="true">↗</span></a>
+<a class="hb-reviews-link" href="<?php echo htmlspecialchars($reviewsUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" title="<?php echo hb_portal_ui_copy_esc('portal_ui_home_read_reviews_title', [], $portalSettings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_home_read_reviews_link', [], $portalSettings); ?> <span class="hb-external-icon" aria-hidden="true">↗</span></a>
 </div>
 </div>
         <?php
@@ -147,7 +169,13 @@ if (!function_exists('hb_portal_render_guest_rating_reviews')) {
 
 if (!function_exists('hb_portal_render_header')) {
     function hb_portal_render_header($settings, $activeNav = '') {
-        $brand = $settings['welcome_title'] ?? 'Hotel booking';
+        $brand = trim((string) ($settings['welcome_title'] ?? ''));
+        if ($brand === '') {
+            $brand = hb_portal_ui_copy('portal_ui_home_welcome_title', [], $settings);
+        }
+        if ($brand === '') {
+            $brand = hb_portal_ui_copy('portal_ui_chrome_brand_fallback', [], $settings);
+        }
         $manageLabel = itm_hotel_booking_portal_manage_booking_label_from_settings($settings);
         ?>
 <header class="hb-portal-header">
@@ -183,7 +211,9 @@ if (!function_exists('hb_portal_render_amenities_scroll')) {
      */
     function hb_portal_render_amenities_scroll(array $items, $limit = 10) {
         if (empty($items)) {
-            $items = [['name' => 'Free WiFi', 'icon_slug' => 'wifi']];
+            $items = [
+                ['name' => hb_portal_ui_copy('portal_ui_home_amenity_wifi_fallback', [], hb_portal_money_settings_bound()), 'icon_slug' => 'wifi'],
+            ];
         }
         $slice = array_slice($items, 0, max(1, (int) $limit));
         echo '<div class="hb-amenities-scroll">';
@@ -219,13 +249,13 @@ if (!function_exists('hb_portal_render_stay_bar')) {
         $hotelId = (int) ($hotel['id'] ?? 0);
         if (!empty($options['action_href'])) {
             $actionHref = (string) $options['action_href'];
-            $actionLabel = trim((string) ($options['action_label'] ?? 'Logout'));
+            $actionLabel = trim((string) ($options['action_label'] ?? hb_portal_ui_copy('portal_ui_chrome_logout_label', [], hb_portal_money_settings_bound())));
         } else {
             $actionHref = APPURL . '/?hotel=' . $hotelId . '&dates=1';
-            $actionLabel = 'Edit stay';
+            $actionLabel = hb_portal_ui_copy('portal_ui_chrome_edit_stay_label', [], hb_portal_money_settings_bound());
         }
         if ($actionLabel === '') {
-            $actionLabel = 'Logout';
+            $actionLabel = hb_portal_ui_copy('portal_ui_chrome_logout_label', [], hb_portal_money_settings_bound());
         }
         $occupancyInteractive = !empty($options['occupancy_interactive']);
         $rangeLabel = hb_portal_format_stay_range_label($checkInIso, $nights);
@@ -233,12 +263,12 @@ if (!function_exists('hb_portal_render_stay_bar')) {
         ?>
 <div class="hb-stay-bar">
 <div class="hb-stay-bar-inner">
-<span class="hb-stay-item" title="Hotel">📍 <?php echo htmlspecialchars($hotel['name'] ?? '', ENT_QUOTES, 'UTF-8'); ?></span>
-<span class="hb-stay-item" title="Dates">📅 <?php echo htmlspecialchars($rangeLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+<span class="hb-stay-item" title="<?php echo hb_portal_ui_copy_esc('portal_ui_chrome_stay_bar_hotel_tooltip', [], hb_portal_money_settings_bound()); ?>">📍 <?php echo htmlspecialchars($hotel['name'] ?? '', ENT_QUOTES, 'UTF-8'); ?></span>
+<span class="hb-stay-item" title="<?php echo hb_portal_ui_copy_esc('portal_ui_chrome_stay_bar_dates_tooltip', [], hb_portal_money_settings_bound()); ?>">📅 <?php echo htmlspecialchars($rangeLabel, ENT_QUOTES, 'UTF-8'); ?></span>
 <?php if ($occupancyInteractive): ?>
-<button type="button" class="hb-stay-item hb-stay-occupancy-trigger" id="hb-stay-occupancy-trigger" title="Change rooms and guests">👤 <?php echo htmlspecialchars($occLabel, ENT_QUOTES, 'UTF-8'); ?></button>
+<button type="button" class="hb-stay-item hb-stay-occupancy-trigger" id="hb-stay-occupancy-trigger" title="<?php echo hb_portal_ui_copy_esc('portal_ui_chrome_stay_bar_occupancy_change_tooltip', [], hb_portal_money_settings_bound()); ?>">👤 <?php echo htmlspecialchars($occLabel, ENT_QUOTES, 'UTF-8'); ?></button>
 <?php else: ?>
-<span class="hb-stay-item hb-stay-occupancy-readonly" title="Rooms and guests">👤 <?php echo htmlspecialchars($occLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+<span class="hb-stay-item hb-stay-occupancy-readonly" title="<?php echo hb_portal_ui_copy_esc('portal_ui_chrome_stay_bar_occupancy_readonly_tooltip', [], hb_portal_money_settings_bound()); ?>">👤 <?php echo htmlspecialchars($occLabel, ENT_QUOTES, 'UTF-8'); ?></span>
 <?php endif; ?>
 <a class="hb-stay-edit" href="<?php echo htmlspecialchars($actionHref, ENT_QUOTES, 'UTF-8'); ?>" title="<?php echo htmlspecialchars($actionLabel, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($actionLabel, ENT_QUOTES, 'UTF-8'); ?></a>
 </div>

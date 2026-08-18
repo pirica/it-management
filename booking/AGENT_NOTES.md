@@ -99,4 +99,18 @@ Per-hotel portal math is **not** hardcoded in `booking/*.php` or `booking/js/*.j
 
 Hospitality stay dates in the portal and admin booking flows use **`itm_format_hotel_date_display()`** / **`itm_parse_date_input()`** (`d/M/Y`, e.g. `31/Aug/2026`, `01/Oct/2026`). Editable fields use **`itm_render_hotel_date_input()`** + **`js/hotel-date-input.js`** (empty placeholder; value shows the formatted date). Loaded on `index.php` (Select Dates modal), `rooms/room-single.php` (step 4), and admin `modules/hotel_bookings/` forms. MySQL storage stays `Y-m-d`.
 
+## 11. Portal UI copy (`portal_ui_*`)
+
+Guest-visible micro-labels, errors, modal headings, filter names, confirmation copy, and manage-booking strings use **`portal_ui_*` columns** on four satellite tables (not `hotel_booking_settings` — InnoDB row-size limit). `itm_hotel_booking_settings_row()` merges satellite rows so templates still receive a flat `$settings` array.
+
+| Layer | Contract |
+|-------|----------|
+| Registry | `includes/itm_hotel_booking_portal_ui_copy_registry_data.php` |
+| Getter | `itm_hotel_booking_portal_ui_copy_from_settings()` |
+| PHP templates | `hb_portal_ui_copy()` / `hb_portal_ui_copy_esc()` (`portal_chrome.php`) |
+| JS | `HB_SETTINGS.ui_copy` + `hbUiCopy(key, fallback)` |
+| Admin | [Hotel Booking Settings](http://localhost/it-management/modules/hotel_booking_settings/index.php) — Portal UI copy section cards |
+
+Special-rate program labels, accessibility need options, and manage lookup failure text read the same registry via helpers in `includes/itm_hotel_booking.php` when `$settings` is passed.
+
 Removed legacy Colorlib template tree: `about.php`, `contact.php`, `services.php`, `404.php`, `config/config.php` (PDO), `includes/header.php` / `footer.php`, vendored `scss/`, `css/style.css`, jQuery/Bootstrap JS stack, `fonts/`, and the entire `admin-panel/` folder.

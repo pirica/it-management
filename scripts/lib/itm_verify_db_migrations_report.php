@@ -675,6 +675,23 @@ if (!function_exists('itm_verify_db_migrations_probe_custom')) {
             );
         }
 
+        if ($filename === 'hotel_booking_portal_ui_copy.sql') {
+            $ok = itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_home', 'portal_ui_home_from_label')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_step1', 'portal_ui_step1_filter_king_bed')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_checkout', 'portal_ui_step4_book_reservation_button')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_confirm', 'portal_ui_confirm_rate_label')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_confirm', 'portal_ui_manage_lookup_failure');
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'fail',
+                $ok ? 'Applied' : 'Not applied',
+                $ok
+                    ? 'Portal UI copy satellite tables present.'
+                    : 'Missing portal_ui_* satellite tables — apply migration or fresh db/ import.'
+            );
+        }
+
         if ($filename === 'news_module_registry.sql') {
             $newsRows = itm_verify_db_migrations_scalar_count(
                 $conn,

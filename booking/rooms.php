@@ -56,7 +56,7 @@ if ($pickRoomId > 0 && $roomsNeeded > 1) {
     }
     $pickResult = itm_hotel_booking_portal_room_line_pick($conn, $company_id, $hotelId, $pickRoomId, $checkInIso, $checkOutIso, $ratedRoomLines);
     if (empty($pickResult['ok'])) {
-        $pickError = (string) ($pickResult['error'] ?? 'Room not available.');
+        $pickError = (string) ($pickResult['error'] ?? hb_portal_ui_copy('portal_ui_step1_room_not_available', [], $settings));
     } else {
         $pickedLines = (array) ($pickResult['lines'] ?? []);
         $newLine = $pickedLines !== [] ? itm_hotel_booking_portal_room_line_normalize($pickedLines[count($pickedLines) - 1]) : [];
@@ -66,7 +66,7 @@ if ($pickRoomId > 0 && $roomsNeeded > 1) {
             header('Location: ' . APPURL . '/rooms/select-rate.php?' . hb_select_room_book_query($newRoomId, $checkInIso, $nights, $occupancy));
             exit;
         }
-        $pickError = 'Room not available.';
+        $pickError = hb_portal_ui_copy('portal_ui_step1_room_not_available', [], $settings);
     }
 }
 
@@ -94,8 +94,8 @@ $taxPerNightCard = itm_hotel_booking_portal_tourist_tax_amount($cardQuoteOccupan
 $showDiscountStrikethrough = itm_hotel_booking_portal_show_discount_strikethrough_from_settings($settings);
 $resolvedRateSlug = itm_hotel_booking_portal_resolved_rate_slug($occupancy);
 $rateDiscountMap = itm_hotel_booking_special_rate_discount_map($conn, $company_id, $hotelId);
-$rateProgramOptions = itm_hotel_booking_portal_rate_program_options();
-$codeRateOptions = itm_hotel_booking_portal_code_rate_options();
+$rateProgramOptions = itm_hotel_booking_portal_rate_program_options($settings);
+$codeRateOptions = itm_hotel_booking_portal_code_rate_options($settings);
 
 $hotelPhotoUrls = itm_hotel_booking_portal_hotel_photo_urls($conn, $company_id, $hotelId);
 
@@ -129,9 +129,9 @@ if (empty($amenityRows)) {
 }
 if (empty($amenityRows)) {
     $amenityRows = [
-        ['name' => 'Free WiFi', 'icon_slug' => 'wifi'],
-        ['name' => 'Outdoor pool', 'icon_slug' => 'pool'],
-        ['name' => 'Fitness center', 'icon_slug' => 'fitness'],
+        ['name' => hb_portal_ui_copy('portal_ui_home_amenity_wifi_fallback', [], $settings), 'icon_slug' => 'wifi'],
+        ['name' => hb_portal_ui_copy('portal_ui_step1_amenity_pool_fallback', [], $settings), 'icon_slug' => 'pool'],
+        ['name' => hb_portal_ui_copy('portal_ui_home_amenity_fitness_fallback', [], $settings), 'icon_slug' => 'fitness'],
     ];
 }
 $amenityNames = array_map(function ($row) {
@@ -409,14 +409,14 @@ function hb_select_room_book_href($hotelId, $roomId, $checkInIso, $nights, array
 }
 
 $filterOptions = [
-    'king' => 'King bed',
-    'twin' => 'Twin beds',
-    'queen' => 'Queen bed',
-    'garden_view' => 'Garden view',
-    'city_view' => 'City view',
-    'balcony' => 'Balcony',
-    'accessible' => 'Accessible room',
-    'smoking' => 'Smoking allowed',
+    'king' => hb_portal_ui_copy('portal_ui_step1_filter_king_bed', [], $settings),
+    'twin' => hb_portal_ui_copy('portal_ui_step1_filter_twin_beds', [], $settings),
+    'queen' => hb_portal_ui_copy('portal_ui_step1_filter_queen_bed', [], $settings),
+    'garden_view' => hb_portal_ui_copy('portal_ui_step1_filter_garden_view', [], $settings),
+    'city_view' => hb_portal_ui_copy('portal_ui_step1_filter_city_view', [], $settings),
+    'balcony' => hb_portal_ui_copy('portal_ui_step1_filter_balcony', [], $settings),
+    'accessible' => hb_portal_ui_copy('portal_ui_step1_filter_accessible', [], $settings),
+    'smoking' => hb_portal_ui_copy('portal_ui_step1_filter_smoking', [], $settings),
 ];
 
 $multiRoomReservationSummary = null;
@@ -427,7 +427,7 @@ if ($roomsNeeded > 1) {
         itm_hotel_booking_portal_occupancy_query_params($occupancy)
     ));
     $changeRoomUrl = APPURL . '/rooms.php?' . $changeRoomQuery;
-    $stepperRoomLabel = 'Select a Room';
+    $stepperRoomLabel = hb_portal_ui_copy('portal_ui_chrome_room_suffix', [], $settings);
     if ($ratedRoomLines !== []) {
         $stepperRoomLabel = itm_hotel_booking_portal_room_line_label($ratedRoomLines[count($ratedRoomLines) - 1]);
     }
@@ -525,18 +525,18 @@ $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_setti
 
 <?php if ($roomsNeeded > 1): ?>
 <div class="hb-room-lines-banner" role="status">
-<p class="hb-room-lines-banner-lead"><strong>Room <?php echo min($roomsNeeded, count($roomLines) + 1); ?> of <?php echo (int) $roomsNeeded; ?></strong> — choose a room, then select a rate. Repeat until all rooms are rated.<?php if (count($roomLines) > 0): ?> Types already chosen with no more units show as unavailable — pick a different room type.<?php endif; ?></p>
+<p class="hb-room-lines-banner-lead"><strong><?php echo hb_portal_ui_copy_esc('portal_ui_step1_multi_room_banner_lead', ['current' => min($roomsNeeded, count($roomLines) + 1), 'total' => (int) $roomsNeeded], $settings); ?></strong><?php if (count($roomLines) > 0): ?><?php echo hb_portal_ui_copy_esc('portal_ui_step1_multi_room_banner_types_hint', [], $settings); ?><?php endif; ?></p>
 <ul class="hb-room-lines-occupancy-split">
 <?php for ($slotIdx = 0; $slotIdx < $roomsNeeded; $slotIdx++):
     $slotOcc = itm_hotel_booking_portal_split_occupancy_for_room_line($occupancy, $slotIdx, $roomsNeeded);
 ?>
-<li><span class="hb-room-lines-slot">Room <?php echo (int) $slotIdx + 1; ?> guests:</span> <?php echo htmlspecialchars(itm_hotel_booking_portal_occupancy_line_label($slotOcc), ENT_QUOTES, 'UTF-8'); ?></li>
+<li><span class="hb-room-lines-slot"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_multi_room_slot_guests', ['room' => (int) $slotIdx + 1], $settings); ?></span> <?php echo htmlspecialchars(itm_hotel_booking_portal_occupancy_line_label($slotOcc), ENT_QUOTES, 'UTF-8'); ?></li>
 <?php endfor; ?>
 </ul>
 <?php if (!empty($roomLines)): ?>
 <ul class="hb-room-lines-banner-list">
 <?php foreach ($roomLines as $idx => $line): ?>
-<li><span class="hb-room-lines-slot">Room <?php echo (int) $idx + 1; ?>:</span> <?php echo htmlspecialchars(itm_hotel_booking_portal_room_line_label($line), ENT_QUOTES, 'UTF-8'); ?><?php
+<li><span class="hb-room-lines-slot"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_multi_room_slot_room', ['room' => (int) $idx + 1], $settings); ?></span> <?php echo htmlspecialchars(itm_hotel_booking_portal_room_line_label($line), ENT_QUOTES, 'UTF-8'); ?><?php
     $bannerRateLabel = hb_portal_room_line_rate_plan_label($line);
     if ($bannerRateLabel !== ''): ?> <span class="hb-room-lines-rate">(<?php echo htmlspecialchars($bannerRateLabel, ENT_QUOTES, 'UTF-8'); ?>)</span><?php endif; ?></li>
 <?php endforeach; ?>
@@ -560,19 +560,19 @@ $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_setti
 <?php endif; ?>
 
 <section class="hb-block hb-select-room-amenities">
-<h3>Amenities</h3>
+<h3><?php echo hb_portal_ui_copy_esc('portal_ui_home_amenities_heading', [], $settings); ?></h3>
 <?php hb_portal_render_amenities_scroll($amenityRows, 12); ?>
 </section>
 
 <div class="hb-room-toolbar">
-<button type="button" class="hb-toolbar-btn" id="hb-room-filters-btn" title="Room filters">Room Filters</button>
-<button type="button" class="hb-toolbar-btn" id="hb-special-rates-btn" title="Special rates">Special rates<?php if ($discountPercent > 0): ?> <span class="hb-rate-active">−<?php echo htmlspecialchars((string) $discountPercent, ENT_QUOTES, 'UTF-8'); ?>%</span><?php endif; ?></button>
+<button type="button" class="hb-toolbar-btn" id="hb-room-filters-btn" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step1_room_filters_button', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_room_filters_button', [], $settings); ?></button>
+<button type="button" class="hb-toolbar-btn" id="hb-special-rates-btn" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step1_special_rates_button', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_special_rates_button', [], $settings); ?><?php if ($discountPercent > 0): ?> <span class="hb-rate-active">−<?php echo htmlspecialchars((string) $discountPercent, ENT_QUOTES, 'UTF-8'); ?>%</span><?php endif; ?></button>
 </div>
 
 <p class="hb-room-count" id="hb-room-count-visible">
-<?php echo (int) $totalFound; ?> room types found.
+<?php echo hb_portal_ui_copy_esc('portal_ui_step1_room_types_found', ['count' => (int) $totalFound], $settings); ?>
 <?php if ($soldOut > 0): ?>
-<?php echo (int) $soldOut; ?> are currently sold out.
+<?php echo hb_portal_ui_copy_esc('portal_ui_step1_room_types_sold_out', ['count' => (int) $soldOut], $settings); ?>
 <?php endif; ?>
 </p>
 
@@ -586,18 +586,18 @@ $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_setti
 <span class="hb-room-type-code"><?php echo htmlspecialchars($card['type_code'], ENT_QUOTES, 'UTF-8'); ?></span>
 <h2><?php echo htmlspecialchars($card['type_name'], ENT_QUOTES, 'UTF-8'); ?></h2>
 </div>
-<button type="button" class="hb-room-details-link hb-room-details-open" data-type-id="<?php echo (int) $card['type_id']; ?>" title="View room details">View room details</button>
+<button type="button" class="hb-room-details-link hb-room-details-open" data-type-id="<?php echo (int) $card['type_id']; ?>" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step1_view_room_details', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_view_room_details', [], $settings); ?></button>
 </div>
 <?php
 $soldOutInner = '';
 if (empty($card['available'])) {
-    $soldOutLabel = 'Sold out';
+    $soldOutLabel = hb_portal_ui_copy('portal_ui_step1_sold_out_badge', [], $settings);
     if (empty($card['fits_occupancy'])) {
-        $soldOutLabel = 'Guests exceed capacity';
+        $soldOutLabel = hb_portal_ui_copy('portal_ui_step1_sold_out_capacity', [], $settings);
     } elseif (($card['unavailable_reason'] ?? '') === 'stay' || ($card['unavailable_reason'] ?? '') === 'min_stay' || ($card['unavailable_reason'] ?? '') === 'closed_arrival') {
-        $soldOutLabel = 'Not available for these dates';
+        $soldOutLabel = hb_portal_ui_copy('portal_ui_step1_sold_out_dates', [], $settings);
     } elseif (($card['unavailable_reason'] ?? '') === 'mixed_types') {
-        $soldOutLabel = 'Same room type required';
+        $soldOutLabel = hb_portal_ui_copy('portal_ui_step1_sold_out_mixed_types', [], $settings);
     }
     $soldOutInner = '<span class="hb-sold-out-badge">' . htmlspecialchars($soldOutLabel, ENT_QUOTES, 'UTF-8') . '</span>';
 }
@@ -618,7 +618,7 @@ echo hb_portal_render_image_gallery(
         $connectingBanner .= ' (' . trim((string) $card['connecting_type_code']) . ')';
     }
 ?>
-<p class="hb-rate-info-banner hb-connecting-room-banner" role="note">Includes connecting room <?php echo htmlspecialchars($connectingBanner, ENT_QUOTES, 'UTF-8'); ?> — booked as one unit</p>
+<p class="hb-rate-info-banner hb-connecting-room-banner" role="note"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_connecting_room_card_banner', ['room' => $connectingBanner], $settings); ?></p>
 <?php endif; ?>
 <p class="hb-room-meta"><?php echo htmlspecialchars($card['bed_summary'], ENT_QUOTES, 'UTF-8'); ?><?php if ($card['type_size_sqm'] !== ''): ?> · <?php echo htmlspecialchars((string) $card['type_size_sqm'], ENT_QUOTES, 'UTF-8'); ?> m²<?php endif; ?><?php if ($card['view_label'] !== ''): ?> · <?php echo htmlspecialchars($card['view_label'], ENT_QUOTES, 'UTF-8'); ?> view<?php endif; ?></p>
 <?php if (!empty($card['type_description'])): ?>
@@ -635,11 +635,11 @@ echo hb_portal_render_image_gallery(
     $listQuotedCard = (float) ($card['list_quoted_price'] ?? $card['quoted_price']);
     $saleQuotedCard = (float) ($card['quoted_price'] ?? 0);
     $showPriceCompare = $showDiscountStrikethrough && $displayDiscountPercent > 0 && $listQuotedCard > $saleQuotedCard;
-?><span class="hb-room-price-compare"<?php echo $showPriceCompare ? '' : ' hidden'; ?>><?php echo $showPriceCompare ? htmlspecialchars(hb_portal_money_format($listQuotedCard, $currency), ENT_QUOTES, 'UTF-8') : ''; ?></span><span class="hb-room-price-value"><?php echo htmlspecialchars(hb_portal_money_format($saleQuotedCard, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <span class="hb-room-price-suffix">/ night <?php echo htmlspecialchars($portalPriceIncludesTaxLabel, ENT_QUOTES, 'UTF-8'); ?></span></p>
+?><span class="hb-room-price-compare"<?php echo $showPriceCompare ? '' : ' hidden'; ?>><?php echo $showPriceCompare ? htmlspecialchars(hb_portal_money_format($listQuotedCard, $currency), ENT_QUOTES, 'UTF-8') : ''; ?></span><span class="hb-room-price-value"><?php echo htmlspecialchars(hb_portal_money_format($saleQuotedCard, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <span class="hb-room-price-suffix"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_per_night_suffix', [], $settings); ?> <?php echo htmlspecialchars($portalPriceIncludesTaxLabel, ENT_QUOTES, 'UTF-8'); ?></span></p>
 <?php if (!empty($card['available'])): ?>
-<a class="hb-btn hb-btn-primary hb-room-select" href="<?php echo htmlspecialchars($bookUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Select room">Select</a>
+<a class="hb-btn hb-btn-primary hb-room-select" href="<?php echo htmlspecialchars($bookUrl, ENT_QUOTES, 'UTF-8'); ?>" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step1_select_button', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_select_button', [], $settings); ?></a>
 <?php else: ?>
-<button type="button" class="hb-btn hb-btn-disabled" disabled title="Not available">Not available</button>
+<button type="button" class="hb-btn hb-btn-disabled" disabled title="<?php echo hb_portal_ui_copy_esc('portal_ui_step1_not_available_button', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_not_available_button', [], $settings); ?></button>
 <?php endif; ?>
 </div>
 </article>
@@ -663,7 +663,7 @@ echo hb_portal_render_image_gallery(
 </a>
 </p>
 <?php endif; ?>
-<a class="hb-hotel-details-link" href="<?php echo htmlspecialchars($hotelDetailsUrl, ENT_QUOTES, 'UTF-8'); ?>">Hotel details</a>
+<a class="hb-hotel-details-link" href="<?php echo htmlspecialchars($hotelDetailsUrl, ENT_QUOTES, 'UTF-8'); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_hotel_details_link', [], $settings); ?></a>
 </div>
 <?php endif; ?>
 </aside>
@@ -672,34 +672,34 @@ echo hb_portal_render_image_gallery(
 <div id="hb-occupancy-modal" class="hb-modal hb-portal-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-occupancy-title">
 <div class="hb-modal-card hb-portal-modal-card">
 <button type="button" class="hb-modal-close" data-hb-modal-close="hb-occupancy-modal" title="Close">✖</button>
-<h2 id="hb-occupancy-title">Rooms and guests</h2>
-<div class="hb-stepper-row"><span>Rooms</span><div class="hb-stepper"><button type="button" id="hb-occ-rooms-minus">−</button><input id="hb-occ-rooms" type="number" min="1" max="<?php echo (int) $occupancyLimits['rooms']; ?>" value="<?php echo (int) $occupancy['rooms']; ?>" readonly><button type="button" id="hb-occ-rooms-plus">+</button></div></div>
-<div class="hb-stepper-row"><span>Adults</span><div class="hb-stepper"><button type="button" id="hb-occ-adults-minus">−</button><input id="hb-occ-adults" type="number" min="1" max="<?php echo (int) $occupancyLimits['adults']; ?>" value="<?php echo (int) $occupancy['adults']; ?>" readonly><button type="button" id="hb-occ-adults-plus">+</button></div></div>
-<div class="hb-stepper-row"><span>Children</span><div class="hb-stepper"><button type="button" id="hb-occ-children-minus">−</button><input id="hb-occ-children" type="number" min="0" max="<?php echo (int) $occupancyLimits['children']; ?>" value="<?php echo (int) $occupancy['children']; ?>" readonly><button type="button" id="hb-occ-children-plus">+</button></div></div>
-<div class="hb-stepper-row"><span>Babies</span><div class="hb-stepper"><button type="button" id="hb-occ-babies-minus">−</button><input id="hb-occ-babies" type="number" min="0" max="<?php echo (int) $occupancyLimits['babies']; ?>" value="<?php echo (int) $occupancy['babies']; ?>" readonly><button type="button" id="hb-occ-babies-plus">+</button></div></div>
-<p class="hb-modal-note">Prices update for extra adults (beyond 2 per room), children, and number of rooms.</p>
-<button type="button" class="hb-btn hb-btn-primary" id="hb-occupancy-apply" title="Apply">Apply</button>
+<h2 id="hb-occupancy-title"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_modal_title', [], $settings); ?></h2>
+<div class="hb-stepper-row"><span><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_rooms_label', [], $settings); ?></span><div class="hb-stepper"><button type="button" id="hb-occ-rooms-minus">−</button><input id="hb-occ-rooms" type="number" min="1" max="<?php echo (int) $occupancyLimits['rooms']; ?>" value="<?php echo (int) $occupancy['rooms']; ?>" readonly><button type="button" id="hb-occ-rooms-plus">+</button></div></div>
+<div class="hb-stepper-row"><span><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_adults_label', [], $settings); ?></span><div class="hb-stepper"><button type="button" id="hb-occ-adults-minus">−</button><input id="hb-occ-adults" type="number" min="1" max="<?php echo (int) $occupancyLimits['adults']; ?>" value="<?php echo (int) $occupancy['adults']; ?>" readonly><button type="button" id="hb-occ-adults-plus">+</button></div></div>
+<div class="hb-stepper-row"><span><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_children_label', [], $settings); ?></span><div class="hb-stepper"><button type="button" id="hb-occ-children-minus">−</button><input id="hb-occ-children" type="number" min="0" max="<?php echo (int) $occupancyLimits['children']; ?>" value="<?php echo (int) $occupancy['children']; ?>" readonly><button type="button" id="hb-occ-children-plus">+</button></div></div>
+<div class="hb-stepper-row"><span><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_babies_label', [], $settings); ?></span><div class="hb-stepper"><button type="button" id="hb-occ-babies-minus">−</button><input id="hb-occ-babies" type="number" min="0" max="<?php echo (int) $occupancyLimits['babies']; ?>" value="<?php echo (int) $occupancy['babies']; ?>" readonly><button type="button" id="hb-occ-babies-plus">+</button></div></div>
+<p class="hb-modal-note"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_occupancy_modal_note', [], $settings); ?></p>
+<button type="button" class="hb-btn hb-btn-primary" id="hb-occupancy-apply" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step1_apply_button', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_apply_button', [], $settings); ?></button>
 </div>
 </div>
 
 <div id="hb-filters-modal" class="hb-modal hb-portal-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-filters-title">
 <div class="hb-modal-card hb-portal-modal-card">
 <button type="button" class="hb-modal-close" data-hb-modal-close="hb-filters-modal" title="Close">✖</button>
-<h2 id="hb-filters-title">Room filters</h2>
+<h2 id="hb-filters-title"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_filters_modal_title', [], $settings); ?></h2>
 <div class="hb-filter-list">
 <?php foreach ($filterOptions as $tag => $label): ?>
 <label class="hb-filter-check"><input type="checkbox" data-filter-tag="<?php echo htmlspecialchars($tag, ENT_QUOTES, 'UTF-8'); ?>"> <?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></label>
 <?php endforeach; ?>
 </div>
-<button type="button" class="hb-btn hb-btn-primary" id="hb-filters-apply" title="Apply filters">Apply filters</button>
-<button type="button" class="hb-btn" id="hb-filters-clear" title="Clear">Clear</button>
+<button type="button" class="hb-btn hb-btn-primary" id="hb-filters-apply" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step1_apply_filters_button', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_apply_filters_button', [], $settings); ?></button>
+<button type="button" class="hb-btn" id="hb-filters-clear" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step1_clear_filters_button', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_clear_filters_button', [], $settings); ?></button>
 </div>
 </div>
 
 <div id="hb-rates-modal" class="hb-modal hb-portal-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-rates-title">
 <div class="hb-modal-card hb-portal-modal-card">
 <button type="button" class="hb-modal-close" data-hb-modal-close="hb-rates-modal" title="Close">✖</button>
-<h2 id="hb-rates-title">Special rates</h2>
+<h2 id="hb-rates-title"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_special_rates_button', [], $settings); ?></h2>
 <form id="hb-rates-form" class="hb-rates-form" autocomplete="off">
 <fieldset class="hb-rates-fieldset">
 <legend class="hb-sr-only">Rate programs</legend>
@@ -721,9 +721,9 @@ echo hb_portal_render_image_gallery(
     $internalId = 'hb-rate-internal-' . $internalCode;
     $checked = (($occupancy['internal_rate_code'] ?? '') === $internalCode) ? ' checked' : '';
 ?>
-<label class="hb-filter-check"><input type="radio" class="hb-rate-internal" name="internal_rate_code" id="<?php echo htmlspecialchars($internalId, ENT_QUOTES, 'UTF-8'); ?>" value="<?php echo htmlspecialchars($internalCode, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $checked; ?>> <?php echo htmlspecialchars((string) ($internalOpt['label'] ?? $internalCode), ENT_QUOTES, 'UTF-8'); ?> — price 0</label>
+<label class="hb-filter-check"><input type="radio" class="hb-rate-internal" name="internal_rate_code" id="<?php echo htmlspecialchars($internalId, ENT_QUOTES, 'UTF-8'); ?>" value="<?php echo htmlspecialchars($internalCode, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $checked; ?>> <?php echo htmlspecialchars((string) ($internalOpt['label'] ?? $internalCode), ENT_QUOTES, 'UTF-8'); ?><?php echo hb_portal_ui_copy_esc('portal_ui_step1_internal_rate_price_zero_suffix', [], $settings); ?></label>
 <?php endforeach; ?>
-<label class="hb-filter-check"><input type="radio" class="hb-rate-internal" name="internal_rate_code" id="hb-rate-internal-none" value=""<?php echo empty($occupancy['internal_rate_code']) ? ' checked' : ''; ?>> Standard rate</label>
+<label class="hb-filter-check"><input type="radio" class="hb-rate-internal" name="internal_rate_code" id="hb-rate-internal-none" value=""<?php echo empty($occupancy['internal_rate_code']) ? ' checked' : ''; ?>> <?php echo hb_portal_ui_copy_esc('portal_ui_step1_standard_rate_label', [], $settings); ?></label>
 <?php endif; ?>
 </fieldset>
 <div class="hb-rates-codes">

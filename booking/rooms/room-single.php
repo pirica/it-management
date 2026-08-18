@@ -38,9 +38,9 @@ if ($draft && is_array($draft['occupancy'] ?? null)) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
     itm_require_post_csrf();
     if (!$draft || empty($draft['room_id']) || (int) ($draft['room_id'] ?? 0) !== $roomId) {
-        $error = 'Checkout session expired. Please start your reservation again.';
+        $error = hb_portal_ui_copy('portal_ui_step4_session_expired', [], $settings);
     } elseif (!is_array($draft['occupancy'] ?? null)) {
-        $error = 'Checkout session expired. Please start your reservation again.';
+        $error = hb_portal_ui_copy('portal_ui_step4_session_expired', [], $settings);
     } else {
     // Why: Lock quoted stay to draft occupancy — never accept crafted POST guest counts.
     $occupancy = $draft['occupancy'];
@@ -53,21 +53,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
     $formEmail = $email;
     $formPhone = $phone;
     if ($fullName === '' || $email === '') {
-        $error = 'Name and email are required.';
+        $error = hb_portal_ui_copy('portal_ui_step4_name_email_required', [], $settings);
     } elseif (!itm_hotel_booking_portal_validate_guest_email($email)) {
-        $error = 'Please enter a valid email address.';
+        $error = hb_portal_ui_copy('portal_ui_step4_invalid_email', [], $settings);
     } elseif (!itm_hotel_booking_portal_validate_guest_phone($phone)) {
-        $error = 'Please enter a valid phone number with country code (e.g. ' . itm_hotel_booking_portal_phone_example_from_settings($settings) . ').';
+        $error = hb_portal_ui_copy('portal_ui_step4_invalid_phone', ['phone_example' => itm_hotel_booking_portal_phone_example_from_settings($settings)], $settings);
     } elseif ($checkIn === '' || $checkOut === '' || $checkOut <= $checkIn) {
-        $error = 'Invalid dates.';
+        $error = hb_portal_ui_copy('portal_ui_step4_invalid_dates', [], $settings);
     } else {
         $charge = itm_hotel_booking_portal_resolve_step4_charge($conn, $company_id, $room, $draft, $occupancy);
         if (empty($charge['ok'])) {
-            $error = (string) ($charge['error'] ?? 'Unable to price this stay. Please start again.');
+            $error = (string) ($charge['error'] ?? hb_portal_ui_copy('portal_ui_step4_pricing_error', [], $settings));
         } else {
         $customerId = itm_hotel_booking_ensure_customer_for_portal($conn, $company_id, $email, $fullName, $phone);
         if (!$customerId) {
-            $error = 'Could not save guest details.';
+            $error = hb_portal_ui_copy('portal_ui_step4_save_guest_error', [], $settings);
         } else {
             $draftForPay = (array) ($charge['draft_for_pay'] ?? []);
             $portalRatePlanId = (int) ($charge['portal_rate_plan_id'] ?? 0);
@@ -151,7 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $room) {
                 header('Location: ' . APPURL . '/rooms/payment.php');
                 exit;
             }
-            $error = (string) ($insertResult['error'] ?? 'Booking failed.');
+            $error = (string) ($insertResult['error'] ?? hb_portal_ui_copy('portal_ui_step4_booking_failed', [], $settings));
         }
         }
     }
@@ -241,7 +241,7 @@ $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_setti
 <div class="hb-select-room-layout hb-checkout-layout">
 <main class="hb-select-room-main">
 <div class="hb-back-wrapper" style="margin-bottom: 12px;">
-    <a class="hb-btn hb-checkout-skip" href="<?php echo htmlspecialchars(APPURL . '/rooms/customize.php', ENT_QUOTES, 'UTF-8'); ?>" title="Back">Back</a>
+    <a class="hb-btn hb-checkout-skip" href="<?php echo htmlspecialchars(APPURL . '/rooms/customize.php', ENT_QUOTES, 'UTF-8'); ?>" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step4_back_button', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step4_back_button', [], $settings); ?></a>
 </div>
 <p class="hb-step-label"><?php echo htmlspecialchars($checkoutStepHeading['progress'], ENT_QUOTES, 'UTF-8'); ?></p>
 <h1 class="hb-page-title"><?php echo htmlspecialchars($checkoutStepHeading['title'], ENT_QUOTES, 'UTF-8'); ?></h1>
@@ -267,7 +267,7 @@ hb_portal_render_draft_special_requests_review($draft, [
 ?>
 <?php endif; ?>
 
-<p class="hb-checkout-total-line hb-step4-total-line">Total due: <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($estimatedTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></p>
+<p class="hb-checkout-total-line hb-step4-total-line"><?php echo hb_portal_ui_copy_esc('portal_ui_step4_total_due_label', [], $settings); ?> <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($estimatedTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></p>
 
 <form method="post" class="hb-guest-form" id="hb-guest-form">
 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
@@ -282,27 +282,27 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 ?>
 <input type="hidden" name="<?php echo htmlspecialchars($hbKey, ENT_QUOTES, 'UTF-8'); ?>" value="<?php echo htmlspecialchars((string) $hbVal, ENT_QUOTES, 'UTF-8'); ?>">
 <?php endforeach; ?>
-<div class="form-group"><label>Full name</label><input type="text" name="full_name" class="hb-input" required autocomplete="name" value="<?php echo htmlspecialchars($formFullName, ENT_QUOTES, 'UTF-8'); ?>"></div>
-<div class="form-group"><label>Email</label><input type="email" name="email" class="hb-input" required autocomplete="email" inputmode="email" value="<?php echo htmlspecialchars($formEmail, ENT_QUOTES, 'UTF-8'); ?>"></div>
-<div class="form-group"><label>Phone</label><input type="tel" name="phone" class="hb-input" required autocomplete="tel" inputmode="tel" placeholder="<?php echo htmlspecialchars($phoneExample, ENT_QUOTES, 'UTF-8'); ?>" pattern="\+\d{8,15}" title="Include country code, e.g. <?php echo htmlspecialchars($phoneExample, ENT_QUOTES, 'UTF-8'); ?>" value="<?php echo htmlspecialchars($formPhone, ENT_QUOTES, 'UTF-8'); ?>"><p class="hb-field-hint">Full number with country code (e.g. <?php echo htmlspecialchars($phoneExample, ENT_QUOTES, 'UTF-8'); ?>).</p></div>
+<div class="form-group"><label><?php echo hb_portal_ui_copy_esc('portal_ui_step4_full_name_label', [], $settings); ?></label><input type="text" name="full_name" class="hb-input" required autocomplete="name" value="<?php echo htmlspecialchars($formFullName, ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="form-group"><label><?php echo hb_portal_ui_copy_esc('portal_ui_step4_email_label', [], $settings); ?></label><input type="email" name="email" class="hb-input" required autocomplete="email" inputmode="email" value="<?php echo htmlspecialchars($formEmail, ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="form-group"><label><?php echo hb_portal_ui_copy_esc('portal_ui_step4_phone_label', [], $settings); ?></label><input type="tel" name="phone" class="hb-input" required autocomplete="tel" inputmode="tel" placeholder="<?php echo htmlspecialchars($phoneExample, ENT_QUOTES, 'UTF-8'); ?>" pattern="\+\d{8,15}" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step4_phone_hint', ['phone_example' => $phoneExample], $settings); ?>" value="<?php echo htmlspecialchars($formPhone, ENT_QUOTES, 'UTF-8'); ?>"><p class="hb-field-hint"><?php echo hb_portal_ui_copy_esc('portal_ui_step4_phone_hint', ['phone_example' => $phoneExample], $settings); ?></p></div>
 <?php if ($stripeCheckoutEnabled): ?>
 <div class="form-group hb-pay-method-group">
-<label>Payment</label>
-<label class="itm-checkbox-control"><input type="radio" name="pay_method" value="stripe" checked><span>Pay now with card (Stripe)</span></label>
-<label class="itm-checkbox-control"><input type="radio" name="pay_method" value="hotel"><span>Pay at the hotel</span></label>
+<label><?php echo hb_portal_ui_copy_esc('portal_ui_step4_payment_label', [], $settings); ?></label>
+<label class="itm-checkbox-control"><input type="radio" name="pay_method" value="stripe" checked><span><?php echo hb_portal_ui_copy_esc('portal_ui_step4_pay_stripe', [], $settings); ?></span></label>
+<label class="itm-checkbox-control"><input type="radio" name="pay_method" value="hotel"><span><?php echo hb_portal_ui_copy_esc('portal_ui_step4_pay_at_hotel', [], $settings); ?></span></label>
 </div>
 <?php endif; ?>
 <?php if ($draft): ?>
 <div class="hb-step4-dates">
-<div class="form-group"><label>Check-in</label><input type="text" class="hb-input hb-input-locked" readonly disabled value="<?php echo htmlspecialchars($prefillInDisplay, ENT_QUOTES, 'UTF-8'); ?>" aria-disabled="true"></div>
-<div class="form-group"><label>Check-out</label><input type="text" class="hb-input hb-input-locked" readonly disabled value="<?php echo htmlspecialchars($prefillOutDisplay, ENT_QUOTES, 'UTF-8'); ?>" aria-disabled="true"></div>
+<div class="form-group"><label><?php echo hb_portal_ui_copy_esc('portal_ui_step4_check_in_label', [], $settings); ?></label><input type="text" class="hb-input hb-input-locked" readonly disabled value="<?php echo htmlspecialchars($prefillInDisplay, ENT_QUOTES, 'UTF-8'); ?>" aria-disabled="true"></div>
+<div class="form-group"><label><?php echo hb_portal_ui_copy_esc('portal_ui_step4_check_out_label', [], $settings); ?></label><input type="text" class="hb-input hb-input-locked" readonly disabled value="<?php echo htmlspecialchars($prefillOutDisplay, ENT_QUOTES, 'UTF-8'); ?>" aria-disabled="true"></div>
 </div>
 <input type="hidden" name="check_in" value="<?php echo htmlspecialchars($checkInIso, ENT_QUOTES, 'UTF-8'); ?>">
 <input type="hidden" name="check_out" value="<?php echo htmlspecialchars($checkOutIso, ENT_QUOTES, 'UTF-8'); ?>">
 <?php else: ?>
 <div class="hb-step4-dates">
-<div class="form-group"><label>Check-in</label><?php itm_render_hotel_date_input('check_in', 'hb-portal-check-in', $checkInIso, ['required' => true, 'class' => 'hb-input']); ?></div>
-<div class="form-group"><label>Check-out</label><?php itm_render_hotel_date_input('check_out', 'hb-portal-check-out', $checkOutIso, ['required' => true, 'class' => 'hb-input']); ?></div>
+<div class="form-group"><label><?php echo hb_portal_ui_copy_esc('portal_ui_step4_check_in_label', [], $settings); ?></label><?php itm_render_hotel_date_input('check_in', 'hb-portal-check-in', $checkInIso, ['required' => true, 'class' => 'hb-input']); ?></div>
+<div class="form-group"><label><?php echo hb_portal_ui_copy_esc('portal_ui_step4_check_out_label', [], $settings); ?></label><?php itm_render_hotel_date_input('check_out', 'hb-portal-check-out', $checkOutIso, ['required' => true, 'class' => 'hb-input']); ?></div>
 </div>
 <?php endif; ?>
 </form>
@@ -321,15 +321,15 @@ foreach ($hbOccHidden as $hbKey => $hbVal):
 <div class="hb-checkout-sticky-cta" role="region" aria-label="Complete booking">
 <div class="hb-checkout-sticky-cta-inner">
 <div class="hb-checkout-sticky-terms">
-<p class="hb-agreement-text">By completing this booking you agree to the booking conditions, general terms, privacy policy, and Wallet terms.</p>
+<p class="hb-agreement-text"><?php echo hb_portal_ui_copy_esc('portal_ui_step4_agreement_text', [], $settings); ?></p>
 <label class="hb-checkout-sticky-check" for="agree_terms">
 <input type="checkbox" id="agree_terms" name="agree_terms" value="1" form="hb-guest-form">
-<span>I agree to these terms</span>
+<span><?php echo hb_portal_ui_copy_esc('portal_ui_step4_agree_checkbox', [], $settings); ?></span>
 </label>
 </div>
 <div class="hb-checkout-sticky-actions">
-<p class="hb-checkout-sticky-total">Total due: <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($estimatedTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></p>
-<button type="submit" class="hb-btn hb-btn-primary" id="btn-book-submit" form="hb-guest-form" title="Book Reservation">Book Reservation</button>
+<p class="hb-checkout-sticky-total"><?php echo hb_portal_ui_copy_esc('portal_ui_step4_total_due_label', [], $settings); ?> <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($estimatedTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></p>
+<button type="submit" class="hb-btn hb-btn-primary" id="btn-book-submit" form="hb-guest-form" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step4_book_reservation_button', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step4_book_reservation_button', [], $settings); ?></button>
 </div>
 </div>
 </div>
@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', function(e) {
             if (!agreeCheckbox.checked) {
                 e.preventDefault();
-                alert('Please agree to the terms and conditions to proceed.');
+                alert(<?php echo json_encode(hb_portal_ui_copy('portal_ui_step4_terms_alert', [], $settings), JSON_UNESCAPED_UNICODE); ?>);
                 return false;
             }
         });

@@ -66,7 +66,7 @@ if (!function_exists('hb_portal_render_checkout_stepper')) {
 <div class="hb-checkout-step-text">
 <span class="hb-checkout-step-title"><?php echo htmlspecialchars($step['label'], ENT_QUOTES, 'UTF-8'); ?></span>
 <?php if (!$confirmation && $num === 1 && $changeRoomUrl !== '' && $activeStep > 1): ?>
-<a class="hb-checkout-change-room" href="<?php echo htmlspecialchars($changeRoomUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Change room">Change Room</a>
+<a class="hb-checkout-change-room" href="<?php echo htmlspecialchars($changeRoomUrl, ENT_QUOTES, 'UTF-8'); ?>" title="<?php echo hb_portal_ui_copy_esc('portal_ui_confirm_change_room_link', [], $portalSettings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_change_room_link', [], $portalSettings); ?></a>
 <?php endif; ?>
 </div>
 </li>
@@ -93,9 +93,13 @@ if (!function_exists('hb_portal_render_room_lines_summary')) {
         $priceIncludesTaxLabel = function_exists('itm_hotel_booking_portal_price_includes_tax_label_from_settings')
             ? itm_hotel_booking_portal_price_includes_tax_label_from_settings($portalSettings)
             : 'incl. tax';
+        $roomsHeading = hb_portal_ui_copy('portal_ui_step2_your_rooms_heading', [
+            'current' => count($roomLines),
+            'total' => (int) $roomsNeeded,
+        ], $portalSettings);
         ?>
 <section class="hb-room-lines-summary card" aria-label="Selected rooms">
-<h2 class="hb-room-lines-summary-title">Your rooms (<?php echo count($roomLines); ?> of <?php echo (int) $roomsNeeded; ?>)</h2>
+<h2 class="hb-room-lines-summary-title"><?php echo htmlspecialchars($roomsHeading, ENT_QUOTES, 'UTF-8'); ?></h2>
 <?php if ($showLinePrices): ?>
 <p class="hb-room-lines-summary-intro" style="margin:0 0 12px;font-size:.95rem;opacity:.92;">Per-night prices <?php echo htmlspecialchars($priceIncludesTaxLabel, ENT_QUOTES, 'UTF-8'); ?> for rooms you already rated. Select a rate for this room below.</p>
 <?php endif; ?>
@@ -110,7 +114,7 @@ if (!function_exists('hb_portal_render_room_lines_summary')) {
         $lineOccLabel = itm_hotel_booking_portal_occupancy_line_label($lineOcc);
     }
 ?>
-<li><span class="hb-room-lines-summary-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars($lineLabel, ENT_QUOTES, 'UTF-8'); ?><?php if ($lineOccLabel !== ''): ?> <span class="hb-room-lines-summary-occ">(<?php echo htmlspecialchars($lineOccLabel, ENT_QUOTES, 'UTF-8'); ?>)</span><?php endif; ?><?php if ($lineRateLabel !== ''): ?> <span class="hb-room-lines-summary-rate">— <?php echo htmlspecialchars($lineRateLabel, ENT_QUOTES, 'UTF-8'); ?></span><?php endif; ?><?php if ($lineNightly !== null && (float) $lineNightly > 0): ?> <span class="hb-room-lines-summary-nightly">— <?php echo htmlspecialchars(hb_portal_money_format((float) $lineNightly, $currency), ENT_QUOTES, 'UTF-8'); ?> / night <?php echo htmlspecialchars($priceIncludesTaxLabel, ENT_QUOTES, 'UTF-8'); ?></span><?php endif; ?></li>
+<li><span class="hb-room-lines-summary-slot"><?php echo htmlspecialchars(hb_portal_ui_copy('portal_ui_confirm_room_slot_label', ['room' => (int) $idx + 1], $portalSettings), ENT_QUOTES, 'UTF-8'); ?></span> <?php echo htmlspecialchars($lineLabel, ENT_QUOTES, 'UTF-8'); ?><?php if ($lineOccLabel !== ''): ?> <span class="hb-room-lines-summary-occ">(<?php echo htmlspecialchars($lineOccLabel, ENT_QUOTES, 'UTF-8'); ?>)</span><?php endif; ?><?php if ($lineRateLabel !== ''): ?> <span class="hb-room-lines-summary-rate">— <?php echo htmlspecialchars($lineRateLabel, ENT_QUOTES, 'UTF-8'); ?></span><?php endif; ?><?php if ($lineNightly !== null && (float) $lineNightly > 0): ?> <span class="hb-room-lines-summary-nightly">— <?php echo htmlspecialchars(hb_portal_money_format((float) $lineNightly, $currency), ENT_QUOTES, 'UTF-8'); ?> <?php echo htmlspecialchars(hb_portal_ui_copy('portal_ui_shared_per_night', [], $portalSettings), ENT_QUOTES, 'UTF-8'); ?> <?php echo htmlspecialchars($priceIncludesTaxLabel, ENT_QUOTES, 'UTF-8'); ?></span><?php endif; ?></li>
 <?php endforeach; ?>
 </ol>
 </section>
@@ -142,8 +146,9 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
         $taxPerPerson = (float) ($breakdown['tourist_tax_per_person_per_night'] ?? 0);
         $total = (float) ($breakdown['total'] ?? ($roomCharges + $touristTax));
         $taxLabel = itm_hotel_booking_portal_tourist_tax_label_from_settings(hb_portal_money_settings_bound());
+        $summarySettings = hb_portal_money_settings_bound();
         if ($taxPerPerson > 0) {
-            $taxLabel .= ' (' . hb_portal_money_format_decimal($taxPerPerson, $currency) . ' per person per night)';
+            $taxLabel .= ' (' . hb_portal_money_format_decimal($taxPerPerson, $currency) . hb_portal_ui_copy('portal_ui_confirm_tax_per_person_suffix', [], $summarySettings) . ')';
         }
 
         // Why: Separate "Traveling with a pet" fee from "Total room charges"
@@ -187,9 +192,9 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
         }
         ?>
 <div class="hb-reservation-summary card">
-<h2 class="hb-reservation-summary-title">Reservation summary</h2>
+<h2 class="hb-reservation-summary-title"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_reservation_summary_title', [], $summarySettings); ?></h2>
 <?php if ($requiresApproval): ?>
-<p class="hb-rate-info-banner hb-approval-banner" role="status">Subject to hotel approval</p>
+<p class="hb-rate-info-banner hb-approval-banner" role="status"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_subject_to_approval', [], $summarySettings); ?></p>
 <?php endif; ?>
 <?php if ($showMultiRoomList): ?>
 <div class="hb-reservation-summary-rooms" aria-label="Selected rooms">
@@ -201,7 +206,7 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
 ?>
 <li class="hb-reservation-summary-room-item">
 <div class="hb-reservation-summary-room-item-main">
-<span class="hb-reservation-summary-room-slot">Room <?php echo (int) $idx + 1; ?></span>
+<span class="hb-reservation-summary-room-slot"><?php echo htmlspecialchars(hb_portal_ui_copy('portal_ui_confirm_room_slot_label', ['room' => (int) $idx + 1], $summarySettings), ENT_QUOTES, 'UTF-8'); ?></span>
 <div class="hb-reservation-room-name-block">
 <span class="hb-reservation-room-name"><?php echo htmlspecialchars(itm_hotel_booking_portal_room_line_label($line), ENT_QUOTES, 'UTF-8'); ?></span>
 <?php if ($lineRateLabel !== ''): ?>
@@ -223,35 +228,35 @@ if (!function_exists('hb_portal_render_reservation_summary')) {
 </div>
 <?php endif; ?>
 <?php if (!$showMultiRoomList && $planLabel !== ''): ?>
-<p class="hb-reservation-rate-line"><span class="hb-reservation-muted">Rate:</span> <?php echo htmlspecialchars($planLabel, ENT_QUOTES, 'UTF-8'); ?></p>
+<p class="hb-reservation-rate-line"><span class="hb-reservation-muted"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_rate_prefix', [], $summarySettings); ?></span> <?php echo htmlspecialchars($planLabel, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php endif; ?>
 <?php if (!$showMultiRoomList && $changeRateUrl !== ''): ?>
-<p class="hb-reservation-change-rate"><a href="<?php echo htmlspecialchars($changeRateUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Change rate">Change rate</a></p>
+<p class="hb-reservation-change-rate"><a href="<?php echo htmlspecialchars($changeRateUrl, ENT_QUOTES, 'UTF-8'); ?>" title="<?php echo hb_portal_ui_copy_esc('portal_ui_confirm_change_rate_link', [], $summarySettings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_change_rate_link', [], $summarySettings); ?></a></p>
 <?php endif; ?>
 <dl class="hb-reservation-totals">
 <?php if ($complimentaryCredit > 0): ?>
 <div class="hb-reservation-total-row hb-reservation-complimentary-row">
-<dt>Complimentary room credit</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_complimentary_credit', [], $summarySettings); ?></dt>
 <dd>−<?php echo htmlspecialchars(hb_portal_money_format_decimal($complimentaryCredit, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <?php endif; ?>
 <div class="hb-reservation-total-row">
-<dt>Total room charges</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_total_room_charges', [], $summarySettings); ?></dt>
 <dd id="hb-reservation-room-charges"><?php echo htmlspecialchars(hb_portal_money_format_decimal($roomCharges, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <div class="hb-reservation-total-row" id="hb-reservation-pet-row" <?php echo $hasPet ? '' : 'style="display:none;"'; ?>>
-<dt>Traveling with a pet</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_traveling_with_pet', [], $summarySettings); ?></dt>
 <dd id="hb-reservation-pet-fee"><?php echo htmlspecialchars(hb_portal_money_format_decimal($petFeeTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <div class="hb-reservation-total-row hb-reservation-tax-row">
-<dt>Total taxes and government charges</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_total_taxes', [], $summarySettings); ?></dt>
 <dd class="hb-reservation-tax-amount"><?php echo htmlspecialchars(hb_portal_money_format_decimal($touristTax, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <?php if ($taxPerPerson > 0 || $touristTax > 0): ?>
 <p class="hb-reservation-tax-detail"><?php echo htmlspecialchars($taxLabel, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php endif; ?>
 <div class="hb-reservation-total-row hb-reservation-grand-total">
-<dt>Total for stay:</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_total_for_stay', [], $summarySettings); ?></dt>
 <dd id="hb-reservation-stay-total"><?php echo htmlspecialchars(hb_portal_money_format_decimal($total, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 </dl>
@@ -267,6 +272,7 @@ if (!function_exists('hb_portal_render_confirmation_special_requests')) {
      * @param array $meta itm_hotel_booking_portal_parse_booking_notes_meta() or draft-shaped array
      */
     function hb_portal_render_confirmation_special_requests(array $meta, array $options = []) {
+        $uiSettings = hb_portal_money_settings_bound();
         $hasPet = !empty($meta['traveling_with_pet']);
         $hasAnimal = !empty($meta['service_animal']);
         $comments = trim((string) ($meta['guest_comments'] ?? $meta['additional_comments'] ?? ''));
@@ -278,31 +284,35 @@ if (!function_exists('hb_portal_render_confirmation_special_requests')) {
         }
         ?>
 <section class="hb-checkout-section hb-special-requests-review hb-confirmation-special-requests">
-<h2 class="hb-checkout-section-title">Special requests</h2>
+<h2 class="hb-checkout-section-title"><?php echo hb_portal_ui_copy_esc('portal_ui_step3_special_requests_heading', [], $uiSettings); ?></h2>
 <?php if ($hasPet): ?>
 <label class="hb-filter-check hb-checkout-check hb-checkout-check--readonly">
-<input type="checkbox" checked disabled aria-label="Traveling with a pet">
-<span>Traveling with a pet</span>
+<input type="checkbox" checked disabled aria-label="<?php echo hb_portal_ui_copy_esc('portal_ui_step3_traveling_with_pet', [], $uiSettings); ?>">
+<span><?php echo hb_portal_ui_copy_esc('portal_ui_step3_traveling_with_pet', [], $uiSettings); ?></span>
 </label>
 <?php if ($petDailyFee > 0): ?>
-<p class="hb-checkout-hint">Pets allowed, <?php echo htmlspecialchars(hb_portal_money_format_decimal($petDailyFee, $petCurrency), ENT_QUOTES, 'UTF-8'); ?> non-refundable fee, <?php echo (int) $petMaxWeightKg; ?> kg maximum, Daily Fee Applies</p>
+<p class="hb-checkout-hint"><?php echo hb_portal_ui_copy_esc('portal_ui_step3_pet_policy_template', [
+    'non_refundable_fee' => hb_portal_money_format_decimal($petDailyFee, $petCurrency),
+    'max_weight' => (int) $petMaxWeightKg,
+    'daily_fee' => hb_portal_money_format_decimal($petDailyFee, $petCurrency),
+], $uiSettings); ?></p>
 <?php endif; ?>
 <?php endif; ?>
 <?php if ($hasAnimal): ?>
 <label class="hb-filter-check hb-checkout-check hb-checkout-check--readonly">
-<input type="checkbox" checked disabled aria-label="Traveling with a service animal">
-<span>Traveling with a service animal</span>
+<input type="checkbox" checked disabled aria-label="<?php echo hb_portal_ui_copy_esc('portal_ui_step3_service_animal', [], $uiSettings); ?>">
+<span><?php echo hb_portal_ui_copy_esc('portal_ui_step3_service_animal', [], $uiSettings); ?></span>
 </label>
 <?php endif; ?>
 <?php if ($comments === ''): ?>
-<p class="hb-checkout-hint">The hotel cannot guarantee additional requests.</p>
+<p class="hb-checkout-hint"><?php echo hb_portal_ui_copy_esc('portal_ui_shared_guarantee_disclaimer', [], $uiSettings); ?></p>
 <?php endif; ?>
 </section>
 <?php if ($comments !== ''): ?>
 <section class="hb-checkout-section hb-confirmation-additional-comments">
-<h2 class="hb-checkout-section-title">Additional comments</h2>
+<h2 class="hb-checkout-section-title"><?php echo hb_portal_ui_copy_esc('portal_ui_step3_additional_comments_heading', [], $uiSettings); ?></h2>
 <p class="hb-special-request-comments"><?php echo htmlspecialchars($comments, ENT_QUOTES, 'UTF-8'); ?></p>
-<p class="hb-checkout-hint">The hotel cannot guarantee additional requests.</p>
+<p class="hb-checkout-hint"><?php echo hb_portal_ui_copy_esc('portal_ui_shared_guarantee_disclaimer', [], $uiSettings); ?></p>
 </section>
 <?php endif; ?>
         <?php
@@ -317,17 +327,18 @@ if (!function_exists('hb_portal_render_confirmation_room_upgrade')) {
         if (empty($upgrade['accepted'])) {
             return;
         }
+        $uiSettings = hb_portal_money_settings_bound();
         $title = trim((string) ($upgrade['title'] ?? ''));
         if ($title === '') {
             return;
         }
         $pitch = trim((string) ($upgrade['pitch'] ?? ''));
         if ($pitch === '') {
-            $pitch = 'You deserve a little extra. Enjoy a room with added perks.';
+            $pitch = hb_portal_ui_copy('portal_ui_step3_upgrade_pitch_default', [], $uiSettings);
         }
         $perNight = (float) ($upgrade['per_night'] ?? 0);
         ?>
-<h2 class="hb-upgrade-heading">We found a better room for you!</h2>
+<h2 class="hb-upgrade-heading"><?php echo hb_portal_ui_copy_esc('portal_ui_step3_upgrade_heading', [], $uiSettings); ?></h2>
 <article class="hb-upgrade-card hb-upgrade-card--confirmed">
 <div class="hb-upgrade-card-body hb-upgrade-card-body--full">
 <label class="hb-upgrade-card-select hb-upgrade-card-select--readonly">
@@ -339,7 +350,7 @@ if (!function_exists('hb_portal_render_confirmation_room_upgrade')) {
 <?php if ($perNight > 0): ?>
 <div class="hb-upgrade-card-price">
 <p class="hb-upgrade-price-amount">+<?php echo htmlspecialchars(hb_portal_money_format($perNight, $currency), ENT_QUOTES, 'UTF-8'); ?></p>
-<p class="hb-upgrade-price-meta">per night</p>
+<p class="hb-upgrade-price-meta"><?php echo hb_portal_ui_copy_esc('portal_ui_shared_per_night_meta', [], $uiSettings); ?></p>
 </div>
 <?php endif; ?>
 </article>
@@ -562,7 +573,7 @@ if (!function_exists('hb_portal_booking_notes_display_items')) {
                         $i = $j;
                     }
                 }
-                $items[] = ['kind' => 'comments', 'label' => 'Guest comments:', 'body' => $body];
+                $items[] = ['kind' => 'comments', 'label' => hb_portal_ui_copy('portal_ui_confirm_guest_comments_label', [], hb_portal_money_settings_bound()), 'body' => $body];
                 continue;
             }
             $items[] = ['kind' => 'line', 'label' => '', 'body' => $line];
@@ -582,7 +593,7 @@ if (!function_exists('hb_portal_render_payment_reservation_notes')) {
 <h2 class="hb-checkout-section-title">Reservation notes</h2>
 <?php foreach ($items as $item):
     if (($item['kind'] ?? '') === 'comments'): ?>
-<p class="hb-reservation-note-label"><?php echo htmlspecialchars((string) ($item['label'] ?? 'Guest comments:'), ENT_QUOTES, 'UTF-8'); ?></p>
+<p class="hb-reservation-note-label"><?php echo htmlspecialchars((string) ($item['label'] ?? hb_portal_ui_copy('portal_ui_confirm_guest_comments_label', [], hb_portal_money_settings_bound())), ENT_QUOTES, 'UTF-8'); ?></p>
 <?php if (trim((string) ($item['body'] ?? '')) !== ''): ?>
 <p class="hb-reservation-note-comments"><?php echo htmlspecialchars((string) $item['body'], ENT_QUOTES, 'UTF-8'); ?></p>
 <?php endif; ?>
@@ -729,14 +740,17 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
         }
         $cardClass = 'hb-payment-confirmation card' . ($isCancelled ? ' hb-payment-confirmation--cancelled' : '');
         $iconChar = $isCancelled ? '✕' : '✓';
-        $title = $isCancelled ? 'Reservation cancelled' : 'Reservation confirmed';
+        $title = $isCancelled
+            ? hb_portal_ui_copy('portal_ui_confirm_reservation_cancelled_title', [], $portalSettings)
+            : hb_portal_ui_copy('portal_ui_confirm_reservation_confirmed_title', [], $portalSettings);
         if ($isCancelled) {
-            $lead = 'Your reservation has been cancelled.';
-            if ($guestName !== '') {
-                $lead = 'Thank you, ' . $guestName . '. Your reservation has been cancelled.';
-            }
+            $lead = $guestName !== ''
+                ? hb_portal_ui_copy('portal_ui_confirm_lead_cancelled_named', ['name' => $guestName], $portalSettings)
+                : hb_portal_ui_copy('portal_ui_confirm_lead_cancelled', [], $portalSettings);
         } else {
-            $lead = 'Thank you' . ($guestName !== '' ? ', ' . $guestName : '') . '. Your stay is on file with the hotel.';
+            $lead = hb_portal_ui_copy('portal_ui_confirm_lead_confirmed', [
+                'name' => ($guestName !== '' ? ', ' . $guestName : ''),
+            ], $portalSettings);
         }
         ?>
 <div class="<?php echo htmlspecialchars($cardClass, ENT_QUOTES, 'UTF-8'); ?>" id="hb-payment-confirmation-pdf-root" data-pdf-filename="<?php echo htmlspecialchars($pdfFilename, ENT_QUOTES, 'UTF-8'); ?>" data-hb-manage-url="<?php echo htmlspecialchars($urlmybooking, ENT_QUOTES, 'UTF-8'); ?>">
@@ -746,36 +760,36 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 <h1 class="hb-payment-confirmation-title"><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></h1>
 <p class="hb-payment-confirmation-lead"><?php echo htmlspecialchars($lead, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php if ($requiresApprovalConfirm && !$isCancelled): ?>
-<p class="hb-rate-info-banner hb-approval-banner" role="status">Subject to hotel approval</p>
+<p class="hb-rate-info-banner hb-approval-banner" role="status"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_subject_to_approval', [], $portalSettings); ?></p>
 <?php endif; ?>
 </div>
 </div>
 <dl class="hb-payment-confirmation-details">
 <div class="hb-payment-detail-row">
-<dt>Confirmation number</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_confirmation_number', [], $portalSettings); ?></dt>
 <dd><strong><?php echo htmlspecialchars($numberconfirmation, ENT_QUOTES, 'UTF-8'); ?></strong></dd>
 </div>
 <?php if ($auth2Display !== ''): ?>
 <div class="hb-payment-detail-row">
-<dt>Auth code</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_auth_code', [], $portalSettings); ?></dt>
 <dd><strong><?php echo htmlspecialchars($auth2Display, ENT_QUOTES, 'UTF-8'); ?></strong></dd>
 </div>
 <?php endif; ?>
 <?php if ($isCancelled): ?>
 <div class="hb-payment-detail-row">
-<dt>Status</dt>
-<dd><span class="hb-payment-status-badge hb-payment-status-badge--cancelled">Cancelled</span></dd>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_status_label', [], $portalSettings); ?></dt>
+<dd><span class="hb-payment-status-badge hb-payment-status-badge--cancelled"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_status_cancelled', [], $portalSettings); ?></span></dd>
 </div>
 <?php endif; ?>
 <?php if ($guestName !== ''): ?>
 <div class="hb-payment-detail-row">
-<dt>Full name</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_step4_full_name_label', [], $portalSettings); ?></dt>
 <dd><?php echo htmlspecialchars($guestName, ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <?php endif; ?>
 <?php if ($showMultiRoomGroup): ?>
 <div class="hb-payment-detail-row hb-payment-detail-rooms">
-<dt>Your rooms</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_your_rooms_heading', [], $portalSettings); ?></dt>
 <dd>
 <ul class="hb-payment-room-group-list">
 <?php foreach ($groupRows as $idx => $lineRow): ?>
@@ -787,7 +801,7 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 ?>
 <li class="hb-payment-room-group-item">
 <div class="hb-payment-room-group-line">
-<span class="hb-payment-room-slot">Room <?php echo (int) $idx + 1; ?></span> <?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow, $portalSettings), ENT_QUOTES, 'UTF-8'); ?> — <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($lineDisplayAmount, $currency), ENT_QUOTES, 'UTF-8'); ?></strong>
+<span class="hb-payment-room-slot"><?php echo htmlspecialchars(hb_portal_ui_copy('portal_ui_confirm_room_slot_label', ['room' => (int) $idx + 1], $portalSettings), ENT_QUOTES, 'UTF-8'); ?></span> <?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow, $portalSettings), ENT_QUOTES, 'UTF-8'); ?> — <strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($lineDisplayAmount, $currency), ENT_QUOTES, 'UTF-8'); ?></strong>
 </div>
 <?php if ($lineRateLabel !== ''): ?>
 <div class="hb-payment-room-rate"><?php echo htmlspecialchars($lineRateLabel, ENT_QUOTES, 'UTF-8'); ?></div>
@@ -799,54 +813,54 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 </div>
 <?php else: ?>
 <div class="hb-payment-detail-row">
-<dt>Room</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_room_label', [], $portalSettings); ?></dt>
 <dd><?php echo htmlspecialchars($roomTitle, ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <?php endif; ?>
 <?php if (!$showMultiRoomGroup && $ratePlanLabel !== ''): ?>
 <div class="hb-payment-detail-row">
-<dt>Rate</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_rate_label', [], $portalSettings); ?></dt>
 <dd><?php echo htmlspecialchars($ratePlanLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <?php endif; ?>
 <?php if ($checkInDisplay !== '' && $checkOutDisplay !== ''): ?>
 <div class="hb-payment-detail-row">
-<dt>Check-in</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_step4_check_in_label', [], $portalSettings); ?></dt>
 <dd><?php echo htmlspecialchars($checkInDisplay, ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <div class="hb-payment-detail-row">
-<dt>Check-out</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_step4_check_out_label', [], $portalSettings); ?></dt>
 <dd><?php echo htmlspecialchars($checkOutDisplay, ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <div class="hb-payment-detail-row">
-<dt>Number of nights</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_number_of_nights', [], $portalSettings); ?></dt>
 <dd><?php echo htmlspecialchars($nightsLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <?php endif; ?>
 <div class="hb-payment-detail-row">
-<dt>Guests</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_guests_label', [], $portalSettings); ?></dt>
 <dd><?php echo htmlspecialchars($occupancyLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <?php if ($email !== ''): ?>
 <div class="hb-payment-detail-row">
-<dt>Email</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_step4_email_label', [], $portalSettings); ?></dt>
 <dd><?php echo htmlspecialchars($email, ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <?php endif; ?>
 <?php if ($phone !== ''): ?>
 <div class="hb-payment-detail-row">
-<dt>Phone</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_step4_phone_label', [], $portalSettings); ?></dt>
 <dd><?php echo htmlspecialchars($phone, ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <?php endif; ?>
 <?php if ($hasPetFee): ?>
 <div class="hb-payment-detail-row">
-<dt>Traveling with a pet</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_traveling_with_pet', [], $portalSettings); ?></dt>
 <dd><?php echo htmlspecialchars(hb_portal_money_format_decimal($petFeeTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <?php endif; ?>
 <div class="hb-payment-detail-row hb-payment-detail-total">
-<dt>Total for stay</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_total_for_stay_detail', [], $portalSettings); ?></dt>
 <dd><strong><?php echo htmlspecialchars(hb_portal_money_format_decimal($amount, $currency), ENT_QUOTES, 'UTF-8'); ?></strong></dd>
 </div>
 </dl>
@@ -860,7 +874,7 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 ]); ?>
 <?php if ($isCancelled): ?>
 <div class="hb-payment-confirmation-notice hb-payment-confirmation-notice--cancelled" role="status">
-<p>No further action is required. If you have questions about charges or refunds, please contact the hotel using <strong>Change booking</strong> in the sidebar.</p>
+<p><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_cancelled_notice', [], $portalSettings); ?></p>
 </div>
 <?php else: ?>
 <?php
@@ -873,25 +887,25 @@ if (!function_exists('hb_portal_render_payment_confirmation')) {
 ?>
 <div class="hb-payment-confirmation-notice" role="status">
 <?php if ($paymentStatus === 'paid'): ?>
-<p><strong>Payment received online.</strong> Stripe Checkout completed for this reservation. Any remaining balance is due according to hotel policy.</p>
+<p><strong><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_payment_received', [], $portalSettings); ?></strong> <?php echo hb_portal_ui_copy_esc('portal_ui_confirm_payment_received_body', [], $portalSettings); ?></p>
 <?php elseif ($paymentStatus === 'pending' && $stripePortalEnabled): ?>
-<p><strong>Payment pending.</strong> Complete card payment via Stripe or pay at the hotel according to policy.</p>
+<p><strong><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_payment_pending_lead', [], $portalSettings); ?></strong> <?php echo hb_portal_ui_copy_esc('portal_ui_confirm_payment_pending_body', [], $portalSettings); ?></p>
 <?php elseif ($stripePortalEnabled): ?>
-<p><strong>Payment options.</strong> Pay online with Stripe when offered at checkout, or pay at the hotel according to policy.</p>
+<p><strong><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_payment_options_lead', [], $portalSettings); ?></strong> <?php echo hb_portal_ui_copy_esc('portal_ui_confirm_payment_options_body', [], $portalSettings); ?></p>
 <?php else: ?>
-<p><strong>Payment at the hotel.</strong> Online payment is not enabled for this hotel. No charge was made online — the total above is due according to hotel policy.</p>
+<p><strong><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_payment_at_hotel_lead', [], $portalSettings); ?></strong> <?php echo hb_portal_ui_copy_esc('portal_ui_confirm_payment_at_hotel_body', [], $portalSettings); ?></p>
 <?php endif; ?>
 <?php echo itm_hotel_booking_portal_manage_booking_hint_html($lastname, $numberconfirmation, $auth2Display, $urlmybooking, ['settings' => $settings]); ?>
 </div>
 <div class="hb-checkout-actions hb-payment-confirmation-actions hb-pdf-exclude">
-<button type="button" class="hb-btn hb-checkout-skip" id="hb-save-confirmation-pdf" title="Save booking confirmation">Save booking confirmation</button>
+<button type="button" class="hb-btn hb-checkout-skip" id="hb-save-confirmation-pdf" title="<?php echo hb_portal_ui_copy_esc('portal_ui_confirm_save_pdf_button', [], $portalSettings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_save_pdf_button', [], $portalSettings); ?></button>
 <a class="hb-btn hb-btn-primary" href="<?php echo htmlspecialchars($urlmybooking, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" title="<?php echo htmlspecialchars($manageBookingLabel, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($manageBookingLabel, ENT_QUOTES, 'UTF-8'); ?></a>
-<a class="hb-btn hb-checkout-skip" href="<?php echo APPURL; ?>/" title="Return home">Return home</a>
+<a class="hb-btn hb-checkout-skip" href="<?php echo APPURL; ?>/" title="<?php echo hb_portal_ui_copy_esc('portal_ui_confirm_return_home', [], $portalSettings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_return_home', [], $portalSettings); ?></a>
 </div>
 <?php endif; ?>
 <?php if ($isCancelled): ?>
 <div class="hb-checkout-actions hb-payment-confirmation-actions">
-<a class="hb-btn hb-btn-primary" href="<?php echo APPURL; ?>/" title="Return home">Return home</a>
+<a class="hb-btn hb-btn-primary" href="<?php echo APPURL; ?>/" title="<?php echo hb_portal_ui_copy_esc('portal_ui_confirm_return_home', [], $portalSettings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_return_home', [], $portalSettings); ?></a>
 </div>
 <?php endif; ?>
 </div>
@@ -939,9 +953,9 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
         $asideClass = 'hb-reservation-summary card hb-confirmation-summary-aside' . ($isCancelled ? ' hb-confirmation-summary-aside--cancelled' : '');
         ?>
 <div class="<?php echo htmlspecialchars($asideClass, ENT_QUOTES, 'UTF-8'); ?>">
-<h2 class="hb-reservation-summary-title">Your reservation</h2>
+<h2 class="hb-reservation-summary-title"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_your_reservation_title', [], $portalSettings); ?></h2>
 <?php if ($isCancelled): ?>
-<p class="hb-confirmation-summary-status"><span class="hb-payment-status-badge hb-payment-status-badge--cancelled">Cancelled</span></p>
+<p class="hb-confirmation-summary-status"><span class="hb-payment-status-badge hb-payment-status-badge--cancelled"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_status_cancelled', [], $portalSettings); ?></span></p>
 <?php endif; ?>
 <?php if ($showMultiRoomGroup): ?>
 <ul class="hb-reservation-summary-room-list hb-confirmation-room-group-list">
@@ -954,7 +968,7 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
 ?>
 <li class="hb-reservation-summary-room-item">
 <div class="hb-reservation-summary-room-item-main">
-<span class="hb-reservation-summary-room-slot">Room <?php echo (int) $idx + 1; ?></span>
+<span class="hb-reservation-summary-room-slot"><?php echo htmlspecialchars(hb_portal_ui_copy('portal_ui_confirm_room_slot_label', ['room' => (int) $idx + 1], $portalSettings), ENT_QUOTES, 'UTF-8'); ?></span>
 <div class="hb-reservation-room-name-block">
 <span class="hb-reservation-room-name"><?php echo htmlspecialchars(itm_hotel_booking_portal_confirmation_room_label_from_row($lineRow, $portalSettings), ENT_QUOTES, 'UTF-8'); ?></span>
 <?php if ($lineRateLabel !== ''): ?>
@@ -972,17 +986,17 @@ if (!function_exists('hb_portal_render_confirmation_summary_aside')) {
 </div>
 <?php endif; ?>
 <?php if (!$showMultiRoomGroup && $ratePlanLabel !== ''): ?>
-<p class="hb-reservation-rate-line"><span class="hb-reservation-muted">Rate:</span> <?php echo htmlspecialchars($ratePlanLabel, ENT_QUOTES, 'UTF-8'); ?></p>
+<p class="hb-reservation-rate-line"><span class="hb-reservation-muted"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_rate_prefix', [], $portalSettings); ?></span> <?php echo htmlspecialchars($ratePlanLabel, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php endif; ?>
 <dl class="hb-reservation-totals">
 <?php if ($hasPetFee): ?>
 <div class="hb-reservation-total-row">
-<dt>Traveling with a pet</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_traveling_with_pet', [], $portalSettings); ?></dt>
 <dd><?php echo htmlspecialchars(hb_portal_money_format_decimal($petFeeTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 <?php endif; ?>
 <div class="hb-reservation-total-row hb-reservation-grand-total">
-<dt>Total for stay:</dt>
+<dt><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_total_for_stay', [], $portalSettings); ?></dt>
 <dd><?php echo htmlspecialchars(hb_portal_money_format_decimal($total, $currency), ENT_QUOTES, 'UTF-8'); ?></dd>
 </div>
 </dl>
@@ -1036,22 +1050,27 @@ if (!function_exists('hb_portal_render_cancellation_policy_button')) {
         if ($href === '') {
             return;
         }
+        $uiSettings = hb_portal_money_settings_bound();
+        $cancellationLoading = hb_portal_ui_copy('portal_ui_confirm_cancellation_loading', [], $uiSettings);
+        $cancellationLoadFail = hb_portal_ui_copy('portal_ui_confirm_cancellation_load_fail', [], $uiSettings);
         ?>
 <div class="hb-cancellation-policy-card card">
-<button type="button" class="hb-btn hb-btn-block hb-cancellation-policy-btn hb-checkout-skip" data-policy-url="<?php echo htmlspecialchars($href, ENT_QUOTES, 'UTF-8'); ?>" title="Cancellation policy">Cancellation policy</button>
+<button type="button" class="hb-btn hb-btn-block hb-cancellation-policy-btn hb-checkout-skip" data-policy-url="<?php echo htmlspecialchars($href, ENT_QUOTES, 'UTF-8'); ?>" title="<?php echo hb_portal_ui_copy_esc('portal_ui_confirm_cancellation_policy_button', [], $uiSettings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_cancellation_policy_button', [], $uiSettings); ?></button>
 </div>
 
 <div id="hb-cancellation-modal" class="hb-modal hb-portal-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-cancellation-title">
 <div class="hb-modal-card hb-portal-modal-card" style="max-width: 600px; width: 90%; margin: 10% auto; padding: 24px; position: relative; background: #fff; border-radius: 8px;">
 <button type="button" class="hb-modal-close" data-hb-modal-close="hb-cancellation-modal" title="Close" style="position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 1.25rem; cursor: pointer;">✖</button>
 <div id="hb-cancellation-modal-body" class="hb-cancellation-modal-body" style="margin-top: 16px;">
-  <p>Loading cancellation policy...</p>
+  <p><?php echo htmlspecialchars($cancellationLoading, ENT_QUOTES, 'UTF-8'); ?></p>
 </div>
 </div>
 </div>
 
 <script>
 (function() {
+    var cancellationLoading = <?php echo json_encode($cancellationLoading, JSON_UNESCAPED_UNICODE); ?>;
+    var cancellationLoadFail = <?php echo json_encode($cancellationLoadFail, JSON_UNESCAPED_UNICODE); ?>;
     var btn = document.querySelector('.hb-cancellation-policy-btn[data-policy-url]');
     var modal = document.getElementById('hb-cancellation-modal');
     if (!btn || !modal) return;
@@ -1063,7 +1082,7 @@ if (!function_exists('hb_portal_render_cancellation_policy_button')) {
         document.body.classList.add('hb-modal-open');
 
         var body = document.getElementById('hb-cancellation-modal-body');
-        body.innerHTML = '<p>Loading cancellation policy...</p>';
+        body.innerHTML = '<p>' + cancellationLoading + '</p>';
 
         fetch(url)
             .then(function(res) { return res.text(); })
@@ -1078,7 +1097,7 @@ if (!function_exists('hb_portal_render_cancellation_policy_button')) {
                 }
             })
             .catch(function(err) {
-                body.innerHTML = '<p class="hb-error">Failed to load cancellation policy.</p>';
+                body.innerHTML = '<p class="hb-error">' + cancellationLoadFail + '</p>';
             });
     });
 
@@ -1181,6 +1200,7 @@ if (!function_exists('hb_portal_render_hotel_action_links')) {
      * Shared portal contact row: Info (contact_email) and Email (reservations_email).
      */
     function hb_portal_render_hotel_action_links(array $contacts, $wrapperClass = 'hb-action-links') {
+        $uiSettings = hb_portal_money_settings_bound();
         $directionsUrl = hb_portal_hotel_directions_url($contacts['location'] ?? '');
         $websiteUrl = trim((string) ($contacts['website_url'] ?? ''));
         $phoneHref = hb_portal_hotel_phone_tel_href($contacts['phone'] ?? '');
@@ -1193,16 +1213,16 @@ if (!function_exists('hb_portal_render_hotel_action_links')) {
         $classAttr = trim((string) $wrapperClass) !== '' ? ' class="' . htmlspecialchars(trim((string) $wrapperClass), ENT_QUOTES, 'UTF-8') . '"' : '';
         echo '<div' . $classAttr . '>';
         if ($directionsUrl !== '') {
-            echo '<a href="' . htmlspecialchars($directionsUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer" title="Directions (opens in new tab)"><span aria-hidden="true">📍</span> Directions</a>';
+            echo '<a href="' . htmlspecialchars($directionsUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer" title="' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_directions_link', [], $uiSettings), ENT_QUOTES, 'UTF-8') . ' (opens in new tab)"><span aria-hidden="true">📍</span> ' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_directions_link', [], $uiSettings), ENT_QUOTES, 'UTF-8') . '</a>';
         }
         if ($websiteUrl !== '') {
-            echo '<a href="' . htmlspecialchars($websiteUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer" title="Visit website (opens in new tab)"><span aria-hidden="true">🌐</span> Visit website</a>';
+            echo '<a href="' . htmlspecialchars($websiteUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer" title="' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_visit_website_link', [], $uiSettings), ENT_QUOTES, 'UTF-8') . ' (opens in new tab)"><span aria-hidden="true">🌐</span> ' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_visit_website_link', [], $uiSettings), ENT_QUOTES, 'UTF-8') . '</a>';
         }
         if ($infoHref !== '') {
-            echo '<a href="' . htmlspecialchars($infoHref, ENT_QUOTES, 'UTF-8') . '" title="General information email"><span aria-hidden="true">ℹ️</span> Info</a>';
+            echo '<a href="' . htmlspecialchars($infoHref, ENT_QUOTES, 'UTF-8') . '" title="General information email"><span aria-hidden="true">ℹ️</span> ' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_info_link', [], $uiSettings), ENT_QUOTES, 'UTF-8') . '</a>';
         }
         if ($emailHref !== '') {
-            echo '<a href="' . htmlspecialchars($emailHref, ENT_QUOTES, 'UTF-8') . '" title="Reservations email"><span aria-hidden="true">📧</span> Email</a>';
+            echo '<a href="' . htmlspecialchars($emailHref, ENT_QUOTES, 'UTF-8') . '" title="Reservations email"><span aria-hidden="true">📧</span> ' . htmlspecialchars(hb_portal_ui_copy('portal_ui_home_email_link', [], $uiSettings), ENT_QUOTES, 'UTF-8') . '</a>';
         }
         if ($phoneHref !== '') {
             echo '<a href="' . htmlspecialchars($phoneHref, ENT_QUOTES, 'UTF-8') . '" title="Call hotel"><span aria-hidden="true">📞</span> ' . htmlspecialchars((string) ($contacts['phone'] ?? ''), ENT_QUOTES, 'UTF-8') . '</a>';
@@ -1213,19 +1233,20 @@ if (!function_exists('hb_portal_render_hotel_action_links')) {
 
 if (!function_exists('hb_portal_render_change_booking_button')) {
     function hb_portal_render_change_booking_button(array $booking) {
+        $uiSettings = hb_portal_money_settings_bound();
         $contacts = hb_portal_hotel_contacts_from_booking($booking);
         if ($contacts['name'] === '') {
             return;
         }
         ?>
 <div class="hb-change-booking-card card">
-<button type="button" class="hb-btn hb-btn-block hb-change-booking-btn" id="hb-change-booking-open" title="Change booking">Change booking</button>
+<button type="button" class="hb-btn hb-btn-block hb-change-booking-btn" id="hb-change-booking-open" title="<?php echo hb_portal_ui_copy_esc('portal_ui_confirm_change_booking_button', [], $uiSettings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_change_booking_button', [], $uiSettings); ?></button>
 </div>
 <div id="hb-change-booking-modal" class="hb-modal hb-portal-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-change-booking-title">
 <div class="hb-modal-card hb-portal-modal-card hb-change-booking-modal-card">
 <button type="button" class="hb-modal-close" data-hb-modal-close="hb-change-booking-modal" title="Close">✖</button>
-<h2 id="hb-change-booking-title" class="hb-change-booking-modal-title">Change booking</h2>
-<p class="hb-modal-note">To change your reservation, please contact the hotel.</p>
+<h2 id="hb-change-booking-title" class="hb-change-booking-modal-title"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_change_booking_button', [], $uiSettings); ?></h2>
+<p class="hb-modal-note"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_change_booking_modal_note', [], $uiSettings); ?></p>
 <p class="hb-change-booking-hotel-name"><?php echo htmlspecialchars($contacts['name'], ENT_QUOTES, 'UTF-8'); ?></p>
 <?php hb_portal_render_hotel_action_links($contacts, 'hb-action-links hb-change-booking-links'); ?>
 </div>
@@ -1250,20 +1271,22 @@ if (!function_exists('hb_portal_render_cancel_booking_button')) {
         $auth2 = itm_hotel_booking_normalize_auth2($auth2 !== '' ? $auth2 : ($booking['auth2'] ?? ''));
         $isCancelled = itm_hotel_booking_booking_is_cancelled($conn, $companyId, $booking);
         $canCancel = itm_hotel_booking_portal_guest_can_cancel_booking($conn, $companyId, $booking);
+        $uiSettings = ($companyId > 0 && $conn) ? (itm_hotel_booking_settings_row($conn, $companyId) ?: []) : hb_portal_money_settings_bound();
+        $cancelConfirmPrompt = hb_portal_ui_copy('portal_ui_confirm_cancel_confirm_prompt', [], $uiSettings);
         ?>
 <div class="hb-cancel-booking-card card">
 <?php if ($isCancelled): ?>
-<p class="hb-cancel-booking-note">This reservation is cancelled.</p>
+<p class="hb-cancel-booking-note"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_cancel_already_cancelled', [], $uiSettings); ?></p>
 <?php elseif (!$canCancel): ?>
-<p class="hb-cancel-booking-note">Online cancellation is not available for this stay. Please contact the hotel.</p>
+<p class="hb-cancel-booking-note"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_cancel_not_available', [], $uiSettings); ?></p>
 <?php else: ?>
-<form method="post" class="hb-cancel-booking-form" onsubmit="return confirm('Cancel this reservation? This cannot be undone.');">
+<form method="post" class="hb-cancel-booking-form" onsubmit="return confirm(<?php echo json_encode($cancelConfirmPrompt, JSON_UNESCAPED_UNICODE); ?>);">
 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
 <input type="hidden" name="cancel_booking" value="1">
 <input type="hidden" name="last_name" value="<?php echo htmlspecialchars($lastName, ENT_QUOTES, 'UTF-8'); ?>">
 <input type="hidden" name="reservation_id" value="<?php echo (int) $reservationId; ?>">
 <input type="hidden" name="auth2" value="<?php echo htmlspecialchars($auth2, ENT_QUOTES, 'UTF-8'); ?>">
-<button type="submit" class="hb-btn hb-btn-block hb-cancel-booking-btn" title="Cancel booking">Cancel Booking</button>
+<button type="submit" class="hb-btn hb-btn-block hb-cancel-booking-btn" title="<?php echo hb_portal_ui_copy_esc('portal_ui_confirm_cancel_booking_button', [], $uiSettings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_cancel_booking_button', [], $uiSettings); ?></button>
 </form>
 <?php endif; ?>
 </div>

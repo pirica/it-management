@@ -277,16 +277,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $depositPercent = 100;
     }
     $sid = (int) ($row['id'] ?? 0);
+    $uiCopyValidated = itm_hotel_booking_portal_ui_copy_validate_post_values($_POST);
+    $errors = array_merge($errors, $uiCopyValidated['errors']);
     if (empty($errors)) {
     $upd = mysqli_prepare($conn, 'UPDATE hotel_booking_settings SET public_portal_enabled = ?, stripe_enabled = ?, stripe_mode = ?, stripe_publishable_key = ?, stripe_secret_key_encrypted = ?, stripe_webhook_signing_secret_encrypted = ?, deposit_percent = ?, welcome_title = ?, welcome_subtitle = ?, accessible_features_default = ?, airport_info = ?, price_footnote = ?, reviews_url = ?, tourist_tax_per_person_per_night = ?, portal_max_discount_percent = ?, portal_tourist_tax_label = ?, portal_price_includes_tax_label = ?, portal_price_includes_tax_long_label = ?, portal_default_rate_label = ?, portal_breakfast_rate_label = ?, portal_default_pet_max_weight_kg = ?, portal_maps_base_url = ?, portal_calendar_month_horizon = ?, portal_phone_example = ?, portal_direct_book_banner_text = ?, portal_rating_title = ?, portal_rating_subtitle = ?, portal_step_label_room = ?, portal_step_label_rate = ?, portal_step_label_customize = ?, portal_step_label_payment = ?, portal_default_room_image_url = ?, portal_room_type_code_fallback_json = ?, portal_occupancy_max_rooms = ?, portal_occupancy_max_adults = ?, portal_occupancy_max_children = ?, portal_occupancy_max_babies = ?, portal_default_included_adults_per_room = ?, portal_cancellation_policy_not_found_url = ?, portal_manage_booking_label = ?, portal_accessible_room_banner_text = ?, portal_disabled_message = ?, portal_step_progress_template = ?, free_cancellation_days_before_check_in = ?, calendar_month_advance_days_left = ?, show_discount_strikethrough = ?, portal_complimentary_min_rooms_paid = ?, portal_complimentary_rooms_free = ?, portal_confirmation_email_guest = ?, portal_confirmation_email_reservations = ?, portal_show_room_number_on_confirmation = ?, portal_hide_upgrade_upsell_when_multi_room = ?, portal_money_symbol = ?, portal_money_symbol_suffix = ?, portal_money_symbol_prefix = ?, portal_show_internal_rates = ?, portal_date_format = ?, portal_time_format = ?, portal_datetime_european1_enabled = ?, portal_datetime_european2_enabled = ?, portal_datetime_iso_enabled = ?, portal_datetime_readable_enabled = ?, portal_datetime_format_default = ?, portal_accessible_banner_enabled = ?, portal_accessibility_options_enabled = ?, urlaccessibilitypep = ?, urlmybooking = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ?');
     if ($upd) {
         mysqli_stmt_bind_param($upd, 'iisssdssssssddsssssisissssssssssiiiiiiissssssiiiiiiiiiiiiiiiiiisiiissiiiisssiisiii', $enabled, $stripeEnabled, $stripeMode, $stripePublishableKey, $stripeSecretEnc, $stripeWebhookEnc, $depositPercent, $welcomeTitle, $welcomeSubtitle, $accessible, $airport, $footnote, $reviewsUrl, $touristTax, $portalMaxDiscount, $portalTouristTaxLabel, $portalPriceIncludesTaxLabel, $portalPriceIncludesTaxLongLabel, $portalDefaultRateLabel, $portalBreakfastRateLabel, $portalDefaultPetMaxWeightKg, $portalMapsBaseUrl, $portalCalendarMonthHorizon, $portalPhoneExample, $portalDirectBookBannerText, $portalRatingTitle, $portalRatingSubtitle, $portalStepLabelRoom, $portalStepLabelRate, $portalStepLabelCustomize, $portalStepLabelPayment, $portalDefaultRoomImageUrl, $portalRoomTypeCodeFallbackJson, $portalOccMaxRooms, $portalOccMaxAdults, $portalOccMaxChildren, $portalOccMaxBabies, $portalDefaultIncludedAdults, $portalCancellationPolicyNotFoundUrl, $portalManageBookingLabel, $portalAccessibleRoomBannerText, $portalDisabledMessage, $portalStepProgressTemplate, $freeCancelDays, $calendarAdvanceDaysLeft, $showDiscountStrikethrough, $complimentaryMinRooms, $complimentaryRoomsFree, $confirmEmailGuest, $confirmEmailReservations, $showRoomNumberOnConfirmation, $hideUpgradeUpsellMultiRoom, $moneySymbol, $moneySymbolSuffix, $moneySymbolPrefix, $showInternalRates, $portalDateFormat, $portalTimeFormat, $dtEuropean1, $dtEuropean2, $dtIso, $dtReadable, $dtDefault, $portalAccessibleBanner, $portalAccessibilityOptions, $urlaccessibilitypep, $urlmybooking, $employee_id, $sid, $company_id);
         mysqli_stmt_execute($upd);
         mysqli_stmt_close($upd);
-        header('Location: index.php?saved=1');
-        exit;
+        if (!itm_hotel_booking_portal_ui_copy_save_values($conn, $company_id, $uiCopyValidated['values'], $employee_id)) {
+            $errors[] = 'Portal UI copy save failed.';
+        } else {
+            header('Location: index.php?saved=1');
+            exit;
+        }
     }
-    $errors[] = 'Save failed.';
+    if (empty($errors)) {
+        $errors[] = 'Save failed.';
+    }
     }
 }
 
@@ -671,6 +679,47 @@ itm_hospitality_admin_layout_begin($crud_title);
 <p class="text-muted" style="font-size:.85rem;margin-top:4px;">Percent of stay total charged online (100 = full prepayment).</p>
 </div>
 </div>
+<?php
+$uiCopySectionLabels = itm_hotel_booking_portal_ui_copy_section_labels();
+$uiCopyBySection = [];
+foreach (itm_hotel_booking_portal_ui_copy_registry() as $uiCopyRow) {
+    $section = (string) ($uiCopyRow['section'] ?? 'home');
+    if (!isset($uiCopyBySection[$section])) {
+        $uiCopyBySection[$section] = [];
+    }
+    $uiCopyBySection[$section][] = $uiCopyRow;
+}
+foreach ($uiCopySectionLabels as $sectionKey => $sectionTitle):
+    if (empty($uiCopyBySection[$sectionKey])) {
+        continue;
+    }
+?>
+<div class="card" style="margin-top:24px;">
+<h2 style="margin-top:0;"><?php echo sanitize($sectionTitle); ?></h2>
+<?php foreach ($uiCopyBySection[$sectionKey] as $uiCopyRow):
+    $col = (string) ($uiCopyRow['column'] ?? '');
+    if ($col === '') {
+        continue;
+    }
+    $label = (string) ($uiCopyRow['label'] ?? $col);
+    $maxlen = $uiCopyRow['maxlen'] ?? 255;
+    $value = (string) ($row[$col] ?? ($uiCopyRow['default'] ?? ''));
+    $placeholders = $uiCopyRow['placeholders'] ?? [];
+?>
+<div class="form-group">
+<label><?php echo sanitize($label); ?></label>
+<?php if ($maxlen === 'text'): ?>
+<textarea name="<?php echo sanitize($col); ?>" class="form-control" rows="3"><?php echo sanitize($value); ?></textarea>
+<?php else: ?>
+<input type="text" name="<?php echo sanitize($col); ?>" class="form-control" maxlength="<?php echo (int) min(500, max(1, (int) $maxlen)); ?>" value="<?php echo sanitize($value); ?>">
+<?php endif; ?>
+<?php if (!empty($placeholders) && is_array($placeholders)): ?>
+<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Placeholders: <?php echo sanitize(implode(', ', $placeholders)); ?></p>
+<?php endif; ?>
+</div>
+<?php endforeach; ?>
+</div>
+<?php endforeach; ?>
 <button type="submit" class="btn btn-primary" title="Save">💾</button>
 </form>
 <script>

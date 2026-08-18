@@ -679,8 +679,8 @@ if ($contactsSample['name'] === 'TechCorp Retreat'
 $publicJsSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/js/hotel-booking-public.js');
 if (strpos($publicJsSrc, 'contact_email') !== false
     && strpos($publicJsSrc, 'reservations_email') !== false
-    && strpos($publicJsSrc, 'Info</a>') !== false
-    && strpos($publicJsSrc, 'Email</a>') !== false) {
+    && strpos($publicJsSrc, "hbUiCopy('home_info_link'") !== false
+    && strpos($publicJsSrc, "hbUiCopy('home_email_link'") !== false) {
     hb_pass('public hotel details Info/Email contact links');
 } else {
     hb_fail('public hotel details missing Info (contact_email) / Email (reservations_email) links');
@@ -846,7 +846,7 @@ if (
 
 if (
     $portalCheckoutBody !== ''
-    && strpos($portalCheckoutBody, '<dt>Full name</dt>') !== false
+    && strpos($portalCheckoutBody, "hb_portal_ui_copy_esc('portal_ui_step4_full_name_label'") !== false
     && strpos($portalCheckoutBody, 'htmlspecialchars($guestName') !== false
 ) {
     hb_pass('payment confirmation shows guest full name');
@@ -1248,7 +1248,8 @@ if (strpos($bookingHelperSrc, 'UPDATE customers SET name = ?, phone = ?') !== fa
 if (strpos($manageBookingsSrc, 'itm_hotel_booking_portal_manage_otp_rate_limit_check') !== false
     && strpos($manageBookingsSrc, 'itm_hotel_booking_portal_manage_lookup_failure_message') !== false
     && strpos($manageBookingsSrc, 'masked_email') === false
-    && strpos($manageBookingsSrc, 'email address on file') !== false) {
+    && function_exists('itm_hotel_booking_portal_ui_copy_from_settings')
+    && itm_hotel_booking_portal_ui_copy_from_settings(null, 'portal_ui_manage_lookup_failure') !== '') {
     hb_pass('portal manage lookup enumeration copy + OTP verify throttle wiring');
 } else {
     hb_fail('portal manage lookup enumeration / OTP throttle wiring missing');
@@ -1414,8 +1415,8 @@ if (strpos($roomSingleSrc, 'itm_hotel_booking_portal_insert_stay_bookings_locked
     && strpos($roomSingleSrc, 'itm_hotel_booking_portal_send_booking_confirmation_emails') !== false
     && strpos($roomSingleSrc, 'Lock quoted stay to draft occupancy') !== false
     && strpos($roomSingleSrc, "parse_occupancy(\$_POST)") === false
-    && strpos($roomSingleSrc, "Checkout session expired. Please start your reservation again.") !== false
-    && strpos($roomSingleSrc, 'Book Reservation') !== false
+    && strpos($roomSingleSrc, "portal_ui_step4_session_expired") !== false
+    && strpos($roomSingleSrc, "portal_ui_step4_book_reservation_button") !== false
     && strpos($bootstrapSrc, 'function hb_require_company_public_portal') !== false
     && strpos($bootstrapSrc, 'function hb_company_public_portal_enabled') !== false) {
     hb_pass('portal step4 draft required + occupancy lock + tenant portal gate wiring');
@@ -1568,7 +1569,7 @@ if (strpos($portalCheckoutSrcMulti, 'hb_portal_render_confirmation_special_reque
 
 $manageSrc = (string) @file_get_contents(dirname(__DIR__) . '/booking/users/bookings.php');
 if (strpos($portalCheckoutSrcMulti, 'function hb_portal_booking_rate_plan_label') !== false
-    && strpos($portalCheckoutSrcMulti, '<dt>Rate</dt>') !== false
+    && strpos($portalCheckoutSrcMulti, "portal_ui_confirm_rate_label") !== false
     && strpos($portalCheckoutSrcMulti, 'hb-reservation-rate-line') !== false
     && strpos($manageSrc, 'hb_portal_render_payment_confirmation') !== false) {
     hb_pass('portal manage booking shows selected rate plan');
@@ -1751,7 +1752,7 @@ if (!itm_hotel_booking_room_type_fits_occupancy($typeRulesRow, ['rooms' => 1, 'a
 
 $customizeSrcRules = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms/customize.php');
 $roomsSrcRules = (string) @file_get_contents(dirname(__DIR__) . '/booking/rooms.php');
-if (strpos($customizeSrcRules, 'No special requests available') !== false
+if (strpos($customizeSrcRules, 'portal_ui_step3_no_special_requests') !== false
     && strpos($roomsSrcRules, 'cardQuoteOccupancy') !== false
     && strpos($roomsSrcRules, 'itm_hotel_booking_room_type_fits_occupancy($typeRow, $cardQuoteOccupancy') !== false
     && strpos($roomsSrcRules, 'itm_hotel_booking_portal_connecting_unit_inventory_available') !== false
@@ -2078,6 +2079,64 @@ if (strpos($bootstrapSrc, 'itm_hotel_booking_portal_disabled_message_from_settin
     hb_pass('portal disabled message helper wired in bootstrap');
 } else {
     hb_fail('portal disabled message helper wired in bootstrap');
+}
+
+$uiCopyRegistry = function_exists('itm_hotel_booking_portal_ui_copy_registry')
+    ? itm_hotel_booking_portal_ui_copy_registry()
+    : [];
+if (count($uiCopyRegistry) >= 150
+    && function_exists('itm_hotel_booking_portal_ui_copy_from_settings')
+    && function_exists('itm_hotel_booking_portal_ui_copy_map_for_js')) {
+    hb_pass('portal ui copy registry + getter helpers present');
+} else {
+    hb_fail('portal ui copy registry or getter helpers missing');
+}
+
+$uiCopyDefaultHome = itm_hotel_booking_portal_ui_copy_from_settings([], 'portal_ui_home_from_label');
+if ($uiCopyDefaultHome === 'From') {
+    hb_pass('portal ui copy getter returns registry default');
+} else {
+    hb_fail('portal ui copy getter default mismatch for portal_ui_home_from_label');
+}
+
+$uiCopyPlaceholder = itm_hotel_booking_portal_ui_copy_from_settings(
+    ['portal_ui_step1_multi_room_banner_lead' => 'Room {current} of {total}'],
+    'portal_ui_step1_multi_room_banner_lead',
+    ['current' => 2, 'total' => 5]
+);
+if ($uiCopyPlaceholder === 'Room 2 of 5') {
+    hb_pass('portal ui copy placeholder substitution');
+} else {
+    hb_fail('portal ui copy placeholder substitution failed');
+}
+
+$settingsModuleSrc = (string) @file_get_contents(dirname(__DIR__) . '/modules/hotel_booking_settings/index.php');
+if (strpos($settingsModuleSrc, 'itm_hotel_booking_portal_ui_copy_registry') !== false
+    && strpos($settingsModuleSrc, 'itm_hotel_booking_portal_ui_copy_validate_post_values') !== false
+    && strpos($settingsModuleSrc, 'itm_hotel_booking_portal_ui_copy_save_values') !== false) {
+    hb_pass('hotel booking settings admin portal ui copy form wiring');
+} else {
+    hb_fail('hotel booking settings admin portal ui copy form wiring missing');
+}
+
+$hbSettingsJs = (string) @file_get_contents(dirname(__DIR__) . '/includes/itm_hotel_booking.php');
+if (strpos($hbSettingsJs, "'ui_copy'") !== false
+    && strpos($hbSettingsJs, 'itm_hotel_booking_portal_ui_copy_map_for_js') !== false) {
+    hb_pass('portal public settings exports ui_copy for JS');
+} else {
+    hb_fail('portal public settings ui_copy JS export missing');
+}
+
+$uiCopyColsOk = function_exists('itm_verify_db_migrations_column_exists')
+    && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_home', 'portal_ui_home_from_label')
+    && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_step1', 'portal_ui_step1_filter_king_bed')
+    && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_checkout', 'portal_ui_step4_book_reservation_button')
+    && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_confirm', 'portal_ui_confirm_rate_label')
+    && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_portal_ui_copy_confirm', 'portal_ui_manage_lookup_failure');
+if ($uiCopyColsOk) {
+    hb_pass('portal ui copy satellite schema tables');
+} else {
+    hb_fail('portal ui copy satellite schema tables missing — apply hotel_booking_portal_ui_copy.sql or fresh db/ import');
 }
 
 itm_script_output_end();

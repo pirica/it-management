@@ -200,7 +200,9 @@ foreach ($ratePlans as $plan) {
         'stay_total' => $stayTotal,
         'list_stay_total' => $listStayTotal,
         'nightly_incl_tax' => $nightlyInclTax,
-        'pay_badge' => (string) ($offer['pay_badge'] ?? 'Pay when you stay'),
+        'pay_badge' => (stripos((string) ($offer['pay_badge'] ?? ''), 'Non-refundable') !== false)
+            ? hb_portal_ui_copy('portal_ui_step2_pay_badge_non_refundable', [], $settings)
+            : hb_portal_ui_copy('portal_ui_step2_pay_badge_pay_at_hotel', [], $settings),
         'price_label' => itm_hotel_booking_portal_plan_label_from_slug($slug, $settings, (string) ($offer['price_label'] ?? '')),
         'cancel_text' => $cancelText,
         'effective_discount' => $effectiveDiscount,
@@ -216,11 +218,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $planId = (int) ($_POST['portal_rate_plan_id'] ?? 0);
     $planRow = $planId > 0 ? itm_hotel_booking_portal_rate_plan_row_by_id($conn, $company_id, $planId) : null;
   if (!$planRow || (int) ($planRow['hotel_id'] ?? 0) !== $hotelId || empty($planRow['active'])) {
-        $error = 'Please select a rate.';
+        $error = hb_portal_ui_copy('portal_ui_step2_select_rate_error', [], $settings);
     } else {
         $slug = strtolower(preg_replace('/[^a-z0-9_-]/', '', (string) ($planRow['rate_plan_slug'] ?? '')));
         if ($slug === '') {
-            $error = 'Please select a rate.';
+            $error = hb_portal_ui_copy('portal_ui_step2_select_rate_error', [], $settings);
         } else {
             $existingDraft = itm_hotel_booking_portal_draft_get() ?: [];
             $ratedLines = itm_hotel_booking_portal_draft_rated_room_lines($existingDraft, $roomLinesContext);
@@ -255,7 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $allLines
                 );
                 if (empty($connectingPick['ok'])) {
-                    $error = (string) ($connectingPick['error'] ?? 'Connecting room is not available for your dates.');
+                    $error = (string) ($connectingPick['error'] ?? hb_portal_ui_copy('portal_ui_step1_room_not_available', [], $settings));
                 } else {
                     if (!empty($connectingPick['line']) && is_array($connectingPick['line'])) {
                         $allLines[] = $connectingPick['line'];
@@ -334,10 +336,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $breakfastChildAgeMin = (int) ($portalPricing['breakfast_child_age_min'] ?? 11);
 $breakfastChildAgeMax = (int) ($portalPricing['breakfast_child_age_max'] ?? 17);
-$breakfastInfo = "Rates including breakfast reflect adults only. Children's breakfast is charged directly at the Hotel. Children aged "
-    . $breakfastChildAgeMin . ' up to and including ' . $breakfastChildAgeMax . ' years old pay a supplement of '
-    . number_format($breakfastChildPrice, 2, '.', '')
-    . ' per day per child should they wish to have breakfast.';
+$breakfastInfo = hb_portal_ui_copy('portal_ui_step2_breakfast_disclaimer_template', [
+    'child_min_age' => $breakfastChildAgeMin,
+    'child_max_age' => $breakfastChildAgeMax,
+    'supplement' => number_format($breakfastChildPrice, 2, '.', ''),
+], $settings);
 $portalDefaultRateLabel = itm_hotel_booking_portal_default_rate_label_from_settings($settings);
 $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_settings($settings, 2);
 ?>
@@ -356,7 +359,7 @@ $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_setti
 <div class="hb-select-room-layout hb-checkout-layout">
 <main class="hb-select-room-main">
 <div class="hb-back-wrapper" style="margin-bottom: 12px;">
-    <a class="hb-btn hb-checkout-skip" href="<?php echo htmlspecialchars($changeRoomUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Back">Back</a>
+    <a class="hb-btn hb-checkout-skip" href="<?php echo htmlspecialchars($changeRoomUrl, ENT_QUOTES, 'UTF-8'); ?>" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step2_back_button', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step2_back_button', [], $settings); ?></a>
 </div>
 <p class="hb-step-label"><?php echo htmlspecialchars($checkoutStepHeading['progress'], ENT_QUOTES, 'UTF-8'); ?></p>
 <h1 class="hb-page-title"><?php echo htmlspecialchars($checkoutStepHeading['title'], ENT_QUOTES, 'UTF-8'); ?></h1>
@@ -365,7 +368,7 @@ $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_setti
 <span class="hb-rate-info-icon" aria-hidden="true">ℹ</span>
 <p><?php echo htmlspecialchars($breakfastInfo, ENT_QUOTES, 'UTF-8'); ?></p>
 </div>
-<p class="hb-rate-tax-note" style="margin:0 0 16px;font-size:.95rem;opacity:.9;">All prices shown include tourist tax for your guest count<?php if ($roomsNeeded > 1): ?> for this room<?php endif; ?>.</p>
+<p class="hb-rate-tax-note" style="margin:0 0 16px;font-size:.95rem;opacity:.9;"><?php echo hb_portal_ui_copy_esc('portal_ui_step2_tourist_tax_note', [], $settings); ?><?php if ($roomsNeeded > 1): ?><?php echo hb_portal_ui_copy_esc('portal_ui_step2_tourist_tax_note_multi_room', [], $settings); ?><?php endif; ?>.</p>
 
 <?php hb_portal_render_room_lines_summary($roomLines, $roomsNeeded, $summaryLineNightlyAmounts, $currency, $occupancy); ?>
 
@@ -374,7 +377,7 @@ $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_setti
 <?php endif; ?>
 
 <?php if (empty($ratePlanRows)): ?>
-<p class="hb-error">No rate plans are configured for this hotel.</p>
+<p class="hb-error"><?php echo hb_portal_ui_copy_esc('portal_ui_step2_no_rate_plans', [], $settings); ?></p>
 <?php else: ?>
 <form method="post" class="hb-rate-checkout-form" id="hb-rate-checkout-form">
 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
@@ -394,7 +397,7 @@ $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_setti
     $nightlyIncl = (float) ($planRow['nightly_incl_tax'] ?? 0);
     $effectiveDiscount = (float) ($planRow['effective_discount'] ?? 0);
     $payBadge = (string) ($planRow['pay_badge'] ?? 'Pay when you stay');
-    $priceLabel = itm_hotel_booking_portal_plan_label_from_slug($slug, $settings, (string) ($planRow['price_label'] ?? ''));
+    $priceLabel = itm_hotel_booking_portal_plan_label_from_slug((string) ($planRow['slug'] ?? ''), $settings, (string) ($planRow['price_label'] ?? ''));
     $cancelText = (string) ($planRow['cancel_text'] ?? '');
 ?>
 <article class="hb-rate-option-row" data-rate-slug="<?php echo htmlspecialchars((string) ($planRow['slug'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
@@ -402,17 +405,21 @@ $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_setti
 <h2 class="hb-rate-option-title"><?php echo htmlspecialchars($planRow['name'], ENT_QUOTES, 'UTF-8'); ?></h2>
 <p class="hb-rate-badge"><?php echo htmlspecialchars($payBadge, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php if ($isBreakfast): ?>
-<p class="hb-rate-policy">Breakfast add-on: <?php echo htmlspecialchars(hb_portal_money_format(itm_hotel_booking_portal_breakfast_adult_price($conn, $company_id, $hotelId), $currency), ENT_QUOTES, 'UTF-8'); ?> per adult, <?php echo htmlspecialchars(hb_portal_money_format(itm_hotel_booking_portal_breakfast_child_price($conn, $company_id, $hotelId), $currency), ENT_QUOTES, 'UTF-8'); ?> per child per night (babies <?php echo htmlspecialchars(hb_portal_money_format(0, $currency), ENT_QUOTES, 'UTF-8'); ?>).</p>
+<p class="hb-rate-policy"><?php echo hb_portal_ui_copy_esc('portal_ui_step2_breakfast_addon_template', [
+    'adult_price' => hb_portal_money_format(itm_hotel_booking_portal_breakfast_adult_price($conn, $company_id, $hotelId), $currency),
+    'child_price' => hb_portal_money_format(itm_hotel_booking_portal_breakfast_child_price($conn, $company_id, $hotelId), $currency),
+    'baby_price' => hb_portal_money_format(0, $currency),
+], $settings); ?></p>
 <?php else: ?>
-<p class="hb-rate-policy">Breakfast not included.</p>
+<p class="hb-rate-policy"><?php echo hb_portal_ui_copy_esc('portal_ui_step2_breakfast_not_included', [], $settings); ?></p>
 <?php endif; ?>
 <p class="hb-rate-policy"><?php echo htmlspecialchars($cancelText, ENT_QUOTES, 'UTF-8'); ?></p>
 </div>
 <div class="hb-rate-option-price-col">
 <p class="hb-rate-price-label"><?php echo htmlspecialchars($priceLabel, ENT_QUOTES, 'UTF-8'); ?></p>
-<p class="hb-rate-price-nightly" title="Per night including tourist tax"><?php echo htmlspecialchars(hb_portal_money_format($nightlyIncl, $currency), ENT_QUOTES, 'UTF-8'); ?> / night</p>
-<p class="hb-rate-price-total"><?php if ($showDiscountStrikethrough && $effectiveDiscount > 0 && $listStayTotal > $stayTotal + 0.009): ?><span class="hb-room-price-compare"><?php echo htmlspecialchars(hb_portal_money_format($listStayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <?php endif; ?><span class="hb-rate-price-amount"><?php echo htmlspecialchars(hb_portal_money_format($stayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <span class="hb-rate-price-stay-label">stay total</span></p>
-<button type="submit" class="hb-btn<?php echo $isPrimary ? ' hb-btn-primary hb-rate-select-primary' : ' hb-rate-select-outline'; ?>" name="portal_rate_plan_id" value="<?php echo $planId; ?>" title="Select <?php echo htmlspecialchars($planRow['name'], ENT_QUOTES, 'UTF-8'); ?>">Select</button>
+<p class="hb-rate-price-nightly" title="<?php echo hb_portal_ui_copy_esc('portal_ui_shared_per_night', [], $settings); ?>"><?php echo htmlspecialchars(hb_portal_money_format($nightlyIncl, $currency), ENT_QUOTES, 'UTF-8'); ?> <?php echo hb_portal_ui_copy_esc('portal_ui_shared_per_night', [], $settings); ?></p>
+<p class="hb-rate-price-total"><?php if ($showDiscountStrikethrough && $effectiveDiscount > 0 && $listStayTotal > $stayTotal + 0.009): ?><span class="hb-room-price-compare"><?php echo htmlspecialchars(hb_portal_money_format($listStayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <?php endif; ?><span class="hb-rate-price-amount"><?php echo htmlspecialchars(hb_portal_money_format($stayTotal, $currency), ENT_QUOTES, 'UTF-8'); ?></span> <span class="hb-rate-price-stay-label"><?php echo hb_portal_ui_copy_esc('portal_ui_step2_stay_total_label', [], $settings); ?></span></p>
+<button type="submit" class="hb-btn<?php echo $isPrimary ? ' hb-btn-primary hb-rate-select-primary' : ' hb-rate-select-outline'; ?>" name="portal_rate_plan_id" value="<?php echo $planId; ?>" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step2_select_button', [], $settings); ?> <?php echo htmlspecialchars($planRow['name'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step2_select_button', [], $settings); ?></button>
 </div>
 </article>
 <?php endforeach; ?>
