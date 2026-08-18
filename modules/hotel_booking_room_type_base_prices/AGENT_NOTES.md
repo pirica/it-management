@@ -38,7 +38,7 @@ This module manages the base pricing of room types per hotel within a company. I
 - Search queries visible fields, including support for FK label searches like searching for hotel name or room type name instead of numeric IDs.
 - Hide **`company_id`** from list/view/forms (`$hideCompanyIdTables` includes `hotel_booking_room_type_base_prices`).
 - **`hotel_id`** and **`room_type_id`** on list/view show hotel and room-type **names** via `cr_fk_label_for_id()` + `$GLOBALS['fkMap']` in every `cr_render_cell_value()` copy (`index.php`, `list_all.php`, `view.php`, `edit.php`).
-- **`active`** on list/view uses Active/Inactive badges (audit scaffold); create/edit use checkbox double-label pattern. No other tinyint checkbox columns on this table.
+- **`active`** on list/view uses Active/Inactive badges (audit scaffold); create/edit use checkbox double-label pattern. Schema column is **`tinyint(1)`** (matches `check_crud_boolean_cell_display.php`). No other tinyint checkbox columns on this table.
 - Table headers and Actions cells must include `class="itm-actions-cell"` and `data-itm-actions-origin="1"`.
 - CSRF validation is enforced on create/edit/delete operations using `cr_require_valid_csrf_token()`.
 - Active checkbox is rendered using the double-label `itm-checkbox-control` pattern.

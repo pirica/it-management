@@ -5182,7 +5182,7 @@ CREATE TABLE `hotel_booking_room_type_base_prices` (
   `hotel_id` int NOT NULL,
   `room_type_id` int NOT NULL,
   `price_per_night` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `active` tinyint DEFAULT '1',
+  `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_by` int DEFAULT NULL,
