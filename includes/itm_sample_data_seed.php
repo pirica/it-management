@@ -48,6 +48,7 @@ if (!function_exists('itm_sample_data_prerequisite_map')) {
             'ops_report_hotel_figure' => ['ops_report'],
             'ops_report_night_shift' => ['ops_report'],
             'ops_report_walk_round' => ['ops_report'],
+            'employee_notifications' => ['tickets', 'alerts', 'todo', 'appointments', 'events'],
         ];
     }
 }
@@ -444,6 +445,237 @@ if (!function_exists('itm_seed_insert_approvals_sample_row')) {
         mysqli_stmt_close($stmt);
 
         return 1;
+    }
+}
+
+if (!function_exists('itm_seed_count_employee_inbox_live_notifications')) {
+    function itm_seed_count_employee_inbox_live_notifications(mysqli $conn, int $companyId, int $employeeId): int
+    {
+        if ($companyId <= 0 || $employeeId <= 0) {
+            return 0;
+        }
+
+        $where = ' WHERE company_id=' . (int)$companyId . ' AND employee_id=' . (int)$employeeId;
+        if (function_exists('itm_crud_append_not_deleted_predicate')) {
+            $where = itm_crud_append_not_deleted_predicate($where);
+        }
+
+        $res = mysqli_query($conn, 'SELECT COUNT(*) AS total_rows FROM `employee_notifications`' . $where);
+        if (!$res || !($row = mysqli_fetch_assoc($res))) {
+            return 0;
+        }
+
+        return (int)($row['total_rows'] ?? 0);
+    }
+}
+
+if (!function_exists('itm_seed_employee_notification_module_table_slug_map')) {
+    /**
+     * @return array<string, string>
+     */
+    function itm_seed_employee_notification_module_table_slug_map(): array
+    {
+        return [
+            'tickets' => 'tickets',
+            'alerts' => 'alerts',
+            'todo' => 'todo',
+            'appointments' => 'appointments',
+            'events' => 'events',
+        ];
+    }
+}
+
+if (!function_exists('itm_seed_resolve_employee_notification_record_id')) {
+    function itm_seed_resolve_employee_notification_record_id(mysqli $conn, int $companyId, string $moduleSlug): int
+    {
+        $moduleSlug = trim($moduleSlug);
+        if ($companyId <= 0 || $moduleSlug === '') {
+            return 0;
+        }
+
+        $tableMap = itm_seed_employee_notification_module_table_slug_map();
+        $tableName = $tableMap[$moduleSlug] ?? '';
+        if ($tableName === '' || !function_exists('itm_first_tenant_row_id')) {
+            return 0;
+        }
+
+        return (int)itm_first_tenant_row_id($conn, $tableName, $companyId);
+    }
+}
+
+if (!function_exists('itm_seed_apply_employee_notifications_sample_row_defaults')) {
+    /**
+     * @param array<int, string> $targetColumns
+     * @param array<int, string> $targetValues
+     */
+    function itm_seed_apply_employee_notifications_sample_row_defaults(
+        mysqli $conn,
+        int $companyId,
+        array &$targetColumns,
+        array &$targetValues
+    ): void {
+        $moduleSlug = '';
+        $moduleIdx = array_search('`module_slug`', $targetColumns, true);
+        if ($moduleIdx !== false) {
+            $moduleSlug = trim((string)$targetValues[$moduleIdx], "'\"");
+        }
+
+        $recordId = itm_seed_resolve_employee_notification_record_id($conn, $companyId, $moduleSlug);
+        $recordIdx = array_search('`record_id`', $targetColumns, true);
+        if ($recordIdx !== false) {
+            $targetValues[$recordIdx] = $recordId > 0 ? (string)$recordId : 'NULL';
+        } elseif ($recordId > 0) {
+            $targetColumns[] = '`record_id`';
+            $targetValues[] = (string)$recordId;
+        }
+
+        if (!function_exists('itm_employee_notification_build_action_url')) {
+            return;
+        }
+
+        $actionUrl = itm_employee_notification_build_action_url($moduleSlug, $recordId > 0 ? $recordId : null);
+        $actionLiteral = $actionUrl !== null && $actionUrl !== ''
+            ? ("'" . mysqli_real_escape_string($conn, (string)$actionUrl) . "'")
+            : 'NULL';
+        $actionIdx = array_search('`action_url`', $targetColumns, true);
+        if ($actionIdx !== false) {
+            $targetValues[$actionIdx] = $actionLiteral;
+        } else {
+            $targetColumns[] = '`action_url`';
+            $targetValues[] = $actionLiteral;
+        }
+    }
+}
+
+if (!function_exists('itm_seed_insert_employee_notifications_sample_rows')) {
+    /**
+     * Why: inbox list is scoped to session employee_id; generic company-wide counts block seed for other users.
+     */
+    function itm_seed_insert_employee_notifications_sample_rows(mysqli $conn, int $companyId, int $employeeId, &$error = ''): int
+    {
+        $error = '';
+        if ($companyId <= 0 || $employeeId <= 0) {
+            $error = 'A company must be selected before adding sample data.';
+            return 0;
+        }
+
+        if (itm_seed_count_employee_inbox_live_notifications($conn, $companyId, $employeeId) > 0) {
+            return 0;
+        }
+
+        itm_seed_lookup_parents_for_table($conn, 'employee_notifications', $companyId);
+
+        $sqlBody = itm_database_sql_read_sample();
+        if ($sqlBody === '') {
+            $error = 'Sample source file db/02_data_sample.sql was not found or is empty.';
+            return 0;
+        }
+
+        $parsedInserts = itm_parse_database_sql_inserts($sqlBody, 'employee_notifications');
+        $tableRows = $parsedInserts['employee_notifications'] ?? [];
+        if ($tableRows === []) {
+            return itm_seed_insert_random_fallback_row($conn, 'employee_notifications', $companyId, $error);
+        }
+
+        $templateCompanyId = defined('ITM_SAMPLE_SQL_TEMPLATE_COMPANY_ID')
+            ? (int)ITM_SAMPLE_SQL_TEMPLATE_COMPANY_ID
+            : 1;
+        $tableRows = itm_seed_filter_template_rows($tableRows, $templateCompanyId);
+        if ($tableRows === []) {
+            return itm_seed_insert_random_fallback_row($conn, 'employee_notifications', $companyId, $error);
+        }
+
+        $tableFkMap = itm_table_outbound_fk_map($conn, 'employee_notifications');
+        $insertCount = 0;
+
+        foreach ($tableRows as $rowEntry) {
+            $rawColumns = $rowEntry['columns'] ?? [];
+            $rawValues = $rowEntry['values'] ?? [];
+            $rowAssoc = itm_seed_row_assoc_from_insert_entry($rowEntry);
+
+            if (itm_seed_table_row_exists_for_tenant($conn, 'employee_notifications', $companyId, $rowAssoc)) {
+                continue;
+            }
+
+            $targetColumns = [];
+            $targetValues = [];
+            foreach ($rawColumns as $index => $columnToken) {
+                $columnName = trim((string)$columnToken, "` \t\n\r\0\x0B");
+                if ($columnName === '' || !itm_is_safe_identifier($columnName)) {
+                    continue;
+                }
+
+                if ($columnName === 'id') {
+                    continue;
+                }
+
+                if ($columnName === 'company_id') {
+                    $targetColumns[] = '`company_id`';
+                    $targetValues[] = (string)$companyId;
+                    continue;
+                }
+
+                if ($columnName === 'employee_id' || $columnName === 'created_by') {
+                    $targetColumns[] = '`' . str_replace('`', '``', $columnName) . '`';
+                    $targetValues[] = (string)(int)$employeeId;
+                    continue;
+                }
+
+                $valueToken = (string)$rawValues[$index];
+                if (isset($tableFkMap[$columnName]) && function_exists('itm_seed_resolve_fk_from_database_sql')) {
+                    $rawFkToken = trim($valueToken);
+                    if ($rawFkToken !== '' && strtoupper($rawFkToken) !== 'NULL') {
+                        $rawFkToken = trim($rawFkToken, "'\"");
+                        $storedFkId = (int)$rawFkToken;
+                        if ($storedFkId > 0) {
+                            $resolvedFkId = itm_seed_resolve_fk_from_database_sql(
+                                $conn,
+                                $tableFkMap[$columnName],
+                                $companyId,
+                                $storedFkId
+                            );
+                            if ($resolvedFkId > 0) {
+                                $valueToken = (string)(int)$resolvedFkId;
+                            } elseif (function_exists('itm_table_column_is_nullable')
+                                && itm_table_column_is_nullable($conn, 'employee_notifications', $columnName)) {
+                                $valueToken = 'NULL';
+                            } else {
+                                continue 2;
+                            }
+                        }
+                    }
+                }
+
+                $targetColumns[] = '`' . str_replace('`', '``', $columnName) . '`';
+                $targetValues[] = $valueToken;
+            }
+
+            if ($targetColumns === []) {
+                continue;
+            }
+
+            itm_seed_apply_employee_notifications_sample_row_defaults($conn, $companyId, $targetColumns, $targetValues);
+
+            $insertSql = 'INSERT INTO `employee_notifications` (' . implode(',', $targetColumns) . ') VALUES (' . implode(',', $targetValues) . ')';
+            $dbErrorCode = 0;
+            $dbErrorMessage = '';
+            if (itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage) === false) {
+                if (itm_seed_insert_row_is_unique_violation($dbErrorCode, $dbErrorMessage)) {
+                    continue;
+                }
+                $error = function_exists('itm_format_db_constraint_error')
+                    ? itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage)
+                    : 'Could not insert employee_notifications sample row.';
+                return $insertCount;
+            }
+            $insertCount++;
+        }
+
+        if ($insertCount === 0 && $error === '') {
+            $error = 'No sample rows could be inserted from db/02_data_sample.sql for this module.';
+        }
+
+        return $insertCount;
     }
 }
 
@@ -3345,6 +3577,14 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
         if ($tableName === 'events') {
             $employeeId = (int)($_SESSION['employee_id'] ?? 0);
             return itm_seed_insert_events_sample_rows($conn, $companyId, $employeeId, $error);
+        }
+
+        if ($tableName === 'employee_notifications') {
+            $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+            if ($employeeId <= 0 && function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
+                $employeeId = itm_seed_resolve_tenant_seed_admin_employee_id($conn, $companyId);
+            }
+            return itm_seed_insert_employee_notifications_sample_rows($conn, $companyId, $employeeId, $error);
         }
 
         if ($tableName === 'floor_plans') {

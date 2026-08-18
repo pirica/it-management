@@ -14,6 +14,7 @@ Per-employee in-app notification inbox (metadata rows created by `itm_notify_emp
 - **List performance:** default sort `created_at DESC`; skip company-wide `COUNT(*)` (scoped to session `employee_id` only). Header SSE must release the PHP session lock (`itm_release_session_lock()` in `modules/notifications/api.php`) or inbox navigation blocks until the stream ends.
 - **List queries must filter** `employee_id = $_SESSION['employee_id']` (inbox is private to the signed-in user).
 - `body` must remain metadata — no vault/plaintext private content.
+- **Add sample data:** empty-state button when the signed-in employee has zero inbox rows (`$totalRows === 0`). POST gate uses `itm_seed_count_employee_inbox_live_notifications()` (not company-wide count). Seeder: `itm_seed_insert_employee_notifications_sample_rows()` in `includes/itm_sample_data_seed.php` — stamps session `employee_id`, resolves `record_id` / `action_url` per `module_slug`, templates in `db/02_data_sample.sql` (works for all five seed companies).
 
 ## 5. UI Behavior Requirements
 
