@@ -632,12 +632,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         exit;
     }
 
-    $where = ' WHERE company_id=' . (int)$company_id;
-    $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where;
-    $countResult = mysqli_query($conn, $countSql);
-    $existingRows = 0;
-    if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
-        $existingRows = (int)($countRow['total_rows'] ?? 0);
+    $sessionEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
+    if ($crud_table === 'employee_notifications') {
+        if ($sessionEmployeeId <= 0) {
+            $_SESSION['crud_error'] = 'Sample data requires a signed-in employee.';
+            header('Location: ' . $listUrl);
+            exit;
+        }
+
+        $existingRows = function_exists('itm_seed_count_employee_inbox_live_notifications')
+            ? itm_seed_count_employee_inbox_live_notifications($conn, (int)$company_id, $sessionEmployeeId)
+            : 0;
+    } else {
+        $where = ' WHERE company_id=' . (int)$company_id;
+        $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where;
+        $countResult = mysqli_query($conn, $countSql);
+        $existingRows = 0;
+        if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
+            $existingRows = (int)($countRow['total_rows'] ?? 0);
+        }
     }
 
     if ($existingRows > 0) {
@@ -1035,7 +1048,7 @@ if (!isset($crud_title)) {
                     </table>
                 </div>
 
-                <?php if ($hasCompany && $company_id > 0 && $companyTotalRows === 0): ?>
+                <?php if ($hasCompany && $company_id > 0 && $totalRows === 0): ?>
                     <div class="card" style="margin-top:12px;">
                         <form method="POST" style="display:flex;justify-content:center;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
