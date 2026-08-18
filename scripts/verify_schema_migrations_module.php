@@ -70,6 +70,11 @@ if (!is_file($indexPath)) {
         } else {
             sm_verify_pass('index.php posts audit-row delete to delete.php.');
         }
+        if (strpos($indexSource, "['migrations']") === false && strpos($indexSource, '[\'migrations\']') === false) {
+            sm_verify_fail('index.php should list migrationStatus migrations (all files on disk).');
+        } else {
+            sm_verify_pass('index.php lists all migration files from build_status().');
+        }
     }
 }
 

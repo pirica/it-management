@@ -46,7 +46,6 @@ if (!isset($sortableColumns[$sort])) {
 if (!in_array($dir, ['ASC', 'DESC'], true)) {
     $dir = 'DESC';
 }
-$sortSql = $sortableColumns[$sort] . ' ' . $dir;
 
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
 $page = max(1, (int)($_GET['page'] ?? 1));
@@ -66,56 +65,104 @@ foreach (itm_database_migrations_bootstrap_filenames() as $bootstrapName) {
 }
 $bootstrapFilenames = array_fill_keys(itm_database_migrations_bootstrap_filenames(), true);
 
-$where = [];
-$params = [];
-$types = '';
+$auditByFilename = [];
+$auditRes = mysqli_query($conn, 'SELECT id, filename, checksum, applied_at FROM schema_migrations');
+if ($auditRes) {
+    while ($auditRow = mysqli_fetch_assoc($auditRes)) {
+        $auditFilename = (string)($auditRow['filename'] ?? '');
+        if ($auditFilename !== '') {
+            $auditByFilename[$auditFilename] = $auditRow;
+        }
+    }
+    mysqli_free_result($auditRes);
+}
+
+$listRows = [];
+foreach ($migrationStatus['migrations'] as $migrationRow) {
+    $filename = (string)($migrationRow['filename'] ?? '');
+    if ($filename === '') {
+        continue;
+    }
+    $audit = $auditByFilename[$filename] ?? null;
+    $listRows[] = [
+        'id' => $audit ? (int)($audit['id'] ?? 0) : 0,
+        'filename' => $filename,
+        'checksum' => (string)($migrationRow['checksum'] ?? ''),
+        'recorded_checksum' => $audit ? (string)($audit['checksum'] ?? '') : '',
+        'applied_at' => $audit['applied_at'] ?? ($migrationRow['applied_at'] ?? null),
+        'state' => (string)($migrationRow['state'] ?? ''),
+        'label' => (string)($migrationRow['label'] ?? ''),
+        'detail' => (string)($migrationRow['detail'] ?? ''),
+        'recorded' => !empty($migrationRow['recorded']),
+    ];
+}
+
+foreach (itm_database_migrations_bootstrap_filenames() as $bootstrapName) {
+    $alreadyListed = false;
+    foreach ($listRows as $listedRow) {
+        if (($listedRow['filename'] ?? '') === $bootstrapName) {
+            $alreadyListed = true;
+            break;
+        }
+    }
+    if ($alreadyListed) {
+        continue;
+    }
+
+    $bootstrapRow = itm_database_migrations_resolve_bootstrap_file($bootstrapName);
+    if ($bootstrapRow === null) {
+        continue;
+    }
+
+    $audit = $auditByFilename[$bootstrapName] ?? null;
+    $listRows[] = [
+        'id' => $audit ? (int)($audit['id'] ?? 0) : 0,
+        'filename' => $bootstrapName,
+        'checksum' => (string)($bootstrapRow['checksum'] ?? ''),
+        'recorded_checksum' => $audit ? (string)($audit['checksum'] ?? '') : '',
+        'applied_at' => $audit['applied_at'] ?? null,
+        'state' => 'applied',
+        'label' => 'Applied',
+        'detail' => 'Bootstrap table definition — not in runner apply loop.',
+        'recorded' => $audit !== null,
+    ];
+}
+
 if ($search !== '') {
-    $where[] = '(filename LIKE ? OR checksum LIKE ?)';
-    $searchEsc = '%' . $search . '%';
-    $params[] = $searchEsc;
-    $params[] = $searchEsc;
-    $types .= 'ss';
-}
-$whereSql = $where !== [] ? ' WHERE ' . implode(' AND ', $where) : '';
-
-$countSql = 'SELECT COUNT(*) AS total FROM schema_migrations' . $whereSql;
-$countStmt = mysqli_prepare($conn, $countSql);
-$totalRows = 0;
-if ($countStmt) {
-    if ($types !== '') {
-        mysqli_stmt_bind_param($countStmt, $types, ...$params);
-    }
-    mysqli_stmt_execute($countStmt);
-    $countResult = mysqli_stmt_get_result($countStmt);
-    if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
-        $totalRows = (int)($countRow['total'] ?? 0);
-    }
-    mysqli_stmt_close($countStmt);
+    $needle = strtolower($search);
+    $listRows = array_values(array_filter($listRows, static function (array $row) use ($needle) {
+        return strpos(strtolower((string)($row['filename'] ?? '')), $needle) !== false
+            || strpos(strtolower((string)($row['checksum'] ?? '')), $needle) !== false
+            || strpos(strtolower((string)($row['recorded_checksum'] ?? '')), $needle) !== false;
+    }));
 }
 
+usort($listRows, static function (array $left, array $right) use ($sort, $dir) {
+    $direction = $dir === 'DESC' ? -1 : 1;
+    if ($sort === 'status') {
+        $leftKey = (string)($left['state'] ?? '') . '|' . (string)($left['filename'] ?? '');
+        $rightKey = (string)($right['state'] ?? '') . '|' . (string)($right['filename'] ?? '');
+
+        return $direction * strcmp($leftKey, $rightKey);
+    }
+    if ($sort === 'checksum') {
+        return $direction * strcmp((string)($left['checksum'] ?? ''), (string)($right['checksum'] ?? ''));
+    }
+    if ($sort === 'applied_at') {
+        return $direction * strcmp((string)($left['applied_at'] ?? ''), (string)($right['applied_at'] ?? ''));
+    }
+
+    return $direction * strcmp((string)($left['filename'] ?? ''), (string)($right['filename'] ?? ''));
+});
+
+$totalRows = count($listRows);
+$recordedHistoryCount = count($auditByFilename);
 $totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
 if ($page > $totalPages) {
     $page = $totalPages;
 }
 $offset = ($page - 1) * $perPage;
-
-$listSql = 'SELECT id, filename, checksum, applied_at FROM schema_migrations'
-    . $whereSql
-    . ' ORDER BY ' . $sortSql
-    . ' LIMIT ' . (int)$perPage . ' OFFSET ' . (int)$offset;
-$listStmt = mysqli_prepare($conn, $listSql);
-$rows = [];
-if ($listStmt) {
-    if ($types !== '') {
-        mysqli_stmt_bind_param($listStmt, $types, ...$params);
-    }
-    mysqli_stmt_execute($listStmt);
-    $listResult = mysqli_stmt_get_result($listStmt);
-    while ($listResult && ($row = mysqli_fetch_assoc($listResult))) {
-        $rows[] = $row;
-    }
-    mysqli_stmt_close($listStmt);
-}
+$rows = array_slice($listRows, $offset, $perPage);
 
 $listQueryBase = [
     'search' => $search,
@@ -165,6 +212,9 @@ $csrfToken = itm_get_csrf_token();
         .sm-badge.removed { background:#f3f4f6; border-color:#d1d5db; color:#4b5563; }
         .sm-badge.drift { background:#fdecec; border-color:#f0b6b6; color:#a52727; }
         .sm-badge.bootstrap { background:#eef4ff; border-color:#9eb8ee; color:#1d4f91; }
+        .sm-badge.applied { background:#e8f5e9; border-color:#9ccc9c; color:#1b5e20; }
+        .sm-badge.pending { background:#fff8e1; border-color:#e6c200; color:#7a5d00; }
+        .sm-badge.unrecorded { background:#f8fafc; border-color:#cbd5e1; color:#475569; }
         .sm-sort-link { text-decoration:none; color:inherit; }
         @media (max-width:900px) { .sm-kpis { grid-template-columns:1fr 1fr; } .sm-filters form { grid-template-columns:1fr; } }
     </style>
@@ -195,9 +245,9 @@ $csrfToken = itm_get_csrf_token();
             </div>
 
             <p style="margin:0 0 16px;color:var(--text-muted, #6b7280);font-size:13px;line-height:1.45;">
-                Live database probes in <a href="<?php echo sanitize($migrateScriptUrl); ?>">migrate.php</a> decide Applied vs Pending.
-                This list is audit history only — satisfied migrations may be recorded without re-running destructive SQL.
-                Admins may delete history rows here; that does not change the live schema or remove files from <code>db/migrations/</code>.
+                Lists every <code>db/migrations/*.sql</code> file with live probe status (same source as <a href="<?php echo sanitize($migrateScriptUrl); ?>">migrate.php</a>).
+                <strong>Applied at</strong> and 🗑️ delete apply only when a row exists in the audit table — run
+                <a href="<?php echo sanitize($migrateApplyUrl); ?>">migrate.php?run=1&amp;apply=1</a> to record satisfied migrations without re-running destructive SQL.
             </p>
 
             <?php if ($flashMessage !== ''): ?>
@@ -231,7 +281,8 @@ $csrfToken = itm_get_csrf_token();
                     </div>
                 </div>
                 <div style="font-size:13px;opacity:.85;">
-                    History rows: <strong><?php echo (int)$totalRows; ?></strong>
+                    Listed files: <strong><?php echo (int)$totalRows; ?></strong>
+                    · Audit rows recorded: <strong><?php echo (int)$recordedHistoryCount; ?></strong>
                     · Database: <code><?php echo sanitize((string)($migrationStatus['database'] ?? '')); ?></code>
                 </div>
             </div>
@@ -253,6 +304,11 @@ $csrfToken = itm_get_csrf_token();
                         <tr>
                             <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                             <th>
+                                <a class="sm-sort-link" href="?<?php echo sanitize(itm_schema_migrations_build_query(array_merge($listQueryBase, ['sort' => 'status', 'dir' => ($sort === 'status' && $dir === 'ASC') ? 'DESC' : 'ASC', 'page' => 1]))); ?>">
+                                    Status <?php echo $sort === 'status' ? ($dir === 'ASC' ? '▲' : '▼') : ''; ?>
+                                </a>
+                            </th>
+                            <th>
                                 <a class="sm-sort-link" href="?<?php echo sanitize(itm_schema_migrations_build_query(array_merge($listQueryBase, ['sort' => 'filename', 'dir' => ($sort === 'filename' && $dir === 'ASC') ? 'DESC' : 'ASC', 'page' => 1]))); ?>">
                                     Filename <?php echo $sort === 'filename' ? ($dir === 'ASC' ? '▲' : '▼') : ''; ?>
                                 </a>
@@ -272,36 +328,48 @@ $csrfToken = itm_get_csrf_token();
                     </thead>
                     <tbody>
                     <?php if ($rows === []): ?>
-                        <tr><td colspan="5">No migration history rows recorded yet.</td></tr>
+                        <tr><td colspan="6">No migration files match your search.</td></tr>
                     <?php else: ?>
                         <?php foreach ($rows as $row): ?>
                             <?php
                             $rowId = (int)($row['id'] ?? 0);
                             $filename = (string)($row['filename'] ?? '');
-                            $recordedChecksum = (string)($row['checksum'] ?? '');
+                            $fileChecksum = (string)($row['checksum'] ?? '');
+                            $recordedChecksum = (string)($row['recorded_checksum'] ?? '');
                             $appliedAtDisplay = itm_format_audit_timestamp_display($row['applied_at'] ?? '');
+                            $state = (string)($row['state'] ?? '');
+                            $stateLabel = (string)($row['label'] ?? '');
+                            $stateDetail = (string)($row['detail'] ?? '');
+                            $recorded = !empty($row['recorded']);
                             $discovered = $discoveredByFilename[$filename] ?? null;
                             $onDisk = $discovered !== null;
-                            $currentChecksum = $onDisk ? (string)($discovered['checksum'] ?? '') : '';
-                            $hasDrift = $onDisk && $recordedChecksum !== '' && $currentChecksum !== '' && $recordedChecksum !== $currentChecksum;
+                            $hasDrift = $state === 'drift' || ($recorded && $recordedChecksum !== '' && $fileChecksum !== '' && $recordedChecksum !== $fileChecksum);
                             $sqlHref = BASE_URL . 'scripts/migrate.php?run=1&sql=' . rawurlencode($filename);
+                            $statusBadgeClass = $state === 'pending' ? 'pending' : ($state === 'drift' ? 'drift' : 'applied');
                             ?>
                             <tr>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
-                                        <a class="btn btn-sm" href="view.php?id=<?php echo $rowId; ?>" title="View">🔎</a>
-                                        <form method="POST" action="delete.php" style="display:inline;margin:0;" onsubmit="return confirm('Remove this migration history row? The live database schema is unchanged — only the audit record is deleted.');">
-                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                            <input type="hidden" name="id" value="<?php echo $rowId; ?>">
-                                            <input type="hidden" name="redirect" value="index.php">
-                                            <input type="hidden" name="return_query" value="<?php echo sanitize($listReturnQuery); ?>">
-                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
-                                        </form>
+                                        <?php if ($rowId > 0): ?>
+                                            <a class="btn btn-sm" href="view.php?id=<?php echo $rowId; ?>" title="View">🔎</a>
+                                            <form method="POST" action="delete.php" style="display:inline;margin:0;" onsubmit="return confirm('Remove this migration history row? The live database schema is unchanged — only the audit record is deleted.');">
+                                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                                <input type="hidden" name="id" value="<?php echo $rowId; ?>">
+                                                <input type="hidden" name="redirect" value="index.php">
+                                                <input type="hidden" name="return_query" value="<?php echo sanitize($listReturnQuery); ?>">
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
+                                            </form>
+                                        <?php else: ?>
+                                            <span title="No audit row — run migrate.php apply to record">—</span>
+                                        <?php endif; ?>
                                     </div>
+                                </td>
+                                <td>
+                                    <span class="sm-badge <?php echo sanitize($statusBadgeClass); ?>" title="<?php echo sanitize($stateDetail); ?>"><?php echo sanitize($stateLabel !== '' ? $stateLabel : ucfirst($state)); ?></span>
                                 </td>
                                 <td><code><?php echo sanitize($filename); ?></code></td>
                                 <td>
-                                    <span class="sm-checksum" title="<?php echo sanitize($recordedChecksum); ?>"><?php echo sanitize($recordedChecksum); ?></span>
+                                    <span class="sm-checksum" title="<?php echo sanitize($fileChecksum); ?>"><?php echo sanitize($fileChecksum); ?></span>
                                 </td>
                                 <td><?php echo sanitize($appliedAtDisplay !== '' ? $appliedAtDisplay : '—'); ?></td>
                                 <td>
@@ -309,6 +377,9 @@ $csrfToken = itm_get_csrf_token();
                                         <a href="<?php echo sanitize($sqlHref); ?>" target="_blank" rel="noopener noreferrer" title="Open SQL in new tab">Open SQL</a>
                                         <?php if (isset($bootstrapFilenames[$filename])): ?>
                                             <span class="sm-badge bootstrap" title="Bootstrap file — not in runner apply loop">Bootstrap</span>
+                                        <?php endif; ?>
+                                        <?php if ($state === 'applied' && !$recorded): ?>
+                                            <span class="sm-badge unrecorded" title="Live schema matches but no audit row yet">Not recorded</span>
                                         <?php endif; ?>
                                         <?php if ($hasDrift): ?>
                                             <span class="sm-badge drift" title="File checksum differs from recorded value">Drift</span>
