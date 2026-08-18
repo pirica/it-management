@@ -29,9 +29,9 @@ Separate from temporary SpeedyShare (`share_sessions` / `includes/itm_qr_share.p
 
 ## 5. UI Behavior Requirements
 
-Bespoke wizard (not flattened CRUD `$uiColumns`):
+Bespoke wizard (not flattened CRUD `$uiColumns`). Gate-excluded in `scripts/data/ui_configuration_excluded_modules.txt` (synced with `docs/list_bespoke_UI.txt`). Intentional contract gaps documented in `scripts/data/ui_configuration_reviewed.json` (column sort, bulk delete).
 
-- **index.php** — library list with search/pagination; emoji-only actions (NO MIXED).
+- **index.php** — thin router; list markup in `includes/partials/render.php` with `data-itm-new-button-managed` header row.
 - **create.php** — step 1 type grid; step 2 combined content + design form with live preview.
 - **edit.php** — same wizard for existing row.
 - **view.php** — preview, download buttons, scan table (last 50).

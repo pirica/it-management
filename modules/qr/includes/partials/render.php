@@ -6,7 +6,7 @@ require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
 $pageTitle = (string) ($crud_title ?? 'QR Generator');
 $pageTitle = itm_crud_apply_module_icon_to_browser_title($conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0), 'qr', $pageTitle);
 $csrfToken = itm_get_csrf_token();
-$newPos = function_exists('itm_resolve_new_button_position') ? itm_resolve_new_button_position($ui_config ?? null) : 'right';
+$newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_resolve_new_button_position($ui_config ?? null) : 'right';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -36,10 +36,18 @@ $newPos = function_exists('itm_resolve_new_button_position') ? itm_resolve_new_b
             <?php if ($qrFlashError): ?><div class="alert alert-danger"><?= sanitize($qrFlashError) ?></div><?php endif; ?>
 
             <?php if ($crud_action === 'index' || $crud_action === 'list_all'): ?>
-                <div class="card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;" data-itm-new-button-managed="server">
-                    <h1 title="QR library">📱</h1>
-                    <?php if ($newPos === 'left'): ?><a href="create.php" class="btn btn-primary" title="Create">➕</a><?php endif; ?>
-                    <?php if ($newPos === 'right'): ?><a href="create.php" class="btn btn-primary" title="Create">➕</a><?php endif; ?>
+                <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;min-height:40px;">
+                    <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
+                        <a href="create.php" class="btn btn-primary" title="Create">➕</a>
+                    <?php else: ?>
+                        <span></span>
+                    <?php endif; ?>
+                    <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;" title="QR library">📱</h1>
+                    <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?>
+                        <a href="create.php" class="btn btn-primary" title="Create">➕</a>
+                    <?php else: ?>
+                        <span></span>
+                    <?php endif; ?>
                 </div>
                 <div class="card" style="margin-bottom:16px;">
                     <form method="get" style="display:flex;gap:8px;">
@@ -65,7 +73,7 @@ $newPos = function_exists('itm_resolve_new_button_position') ? itm_resolve_new_b
                                     <div class="itm-actions-wrap">
                                         <a class="btn btn-sm" href="view.php?id=<?= (int)$lr['id'] ?>" title="View">🔎</a>
                                         <a class="btn btn-sm" href="edit.php?id=<?= (int)$lr['id'] ?>" title="Edit">✏️</a>
-                                        <form method="post" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this QR code?');">
+                                        <form method="post" action="delete.php" style="display:inline;" onsubmit="return confirm('Remove this QR code?');">
                                             <input type="hidden" name="csrf_token" value="<?= sanitize($csrfToken) ?>">
                                             <input type="hidden" name="id" value="<?= (int)$lr['id'] ?>">
                                             <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
@@ -120,11 +128,11 @@ $newPos = function_exists('itm_resolve_new_button_position') ? itm_resolve_new_b
                                 <span class="active" title="Content">1</span>
                                 <span title="Design">2</span>
                             </div>
-                            <div class="form-group"><label>Title</label><input type="text" name="title" class="form-control" required value="<?= sanitize((string)($qrRow['title'] ?? $_POST['title'] ?? '')) ?>"></div>
+                            <div class="form-group"><label>Title</label><input type="text" name="title" class="form-control" required value="<?= sanitize((string)($qrRow['title'] ?? '')) ?>"></div>
                             <?php
                             $catMeta = $qrCatalog[$qrSelectedType];
                             $canPickMode = empty($catMeta['dynamic_only']) && empty($catMeta['static_only']);
-                            $currentMode = (string)($qrRow['encoding_mode'] ?? $_POST['encoding_mode'] ?? ($catMeta['dynamic_default'] ? 'dynamic' : 'static'));
+                            $currentMode = (string)($qrRow['encoding_mode'] ?? ($catMeta['dynamic_default'] ? 'dynamic' : 'static'));
                             if (!empty($catMeta['dynamic_only'])) { $currentMode = 'dynamic'; }
                             if (!empty($catMeta['static_only'])) { $currentMode = 'static'; }
                             ?>

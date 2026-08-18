@@ -145,12 +145,62 @@
         downloadPng();
     }
 
-    document.querySelectorAll('.itm-qr-field, .itm-qr-design').forEach(function (el) {
-        el.addEventListener('input', drawQr);
-        el.addEventListener('change', drawQr);
-    });
-    var modeEl = document.getElementById('qr-encoding-mode');
-    if (modeEl) modeEl.addEventListener('change', drawQr);
+    function handleQrUpload(input) {
+        if (!input.files || !input.files[0]) return;
+        var fd = new FormData();
+        fd.append('csrf_token', csrf);
+        fd.append('qr_action', 'upload_asset');
+        fd.append('file', input.files[0]);
+        fetch('index.php', { method: 'POST', body: fd })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.ok) {
+                    if (input.classList.contains('itm-qr-upload')) {
+                        alert((data && data.error) || 'Upload failed');
+                    }
+                    return;
+                }
+                if (input.id === 'qr-logo-upload') {
+                    var pathInput = document.getElementById('qr-logo-path');
+                    if (pathInput) pathInput.value = data.path;
+                    drawQr();
+                    return;
+                }
+                var target = input.getAttribute('data-target');
+                if (target) {
+                    var hidden = document.querySelector('[name="' + target + '"]');
+                    if (hidden) hidden.value = data.path;
+                }
+                var label = document.getElementById('qr-file-label');
+                if (label) label.textContent = data.path;
+            });
+    }
+
+    if (form) {
+        form.addEventListener('input', function (ev) {
+            var t = ev.target;
+            if (t && t.classList && (t.classList.contains('itm-qr-field') || t.classList.contains('itm-qr-design'))) {
+                drawQr();
+            }
+        });
+        form.addEventListener('change', function (ev) {
+            var t = ev.target;
+            if (!t) return;
+            if (t.id === 'qr-encoding-mode' || (t.classList && (t.classList.contains('itm-qr-field') || t.classList.contains('itm-qr-design')))) {
+                drawQr();
+            }
+            if (t.classList && t.classList.contains('itm-qr-upload')) {
+                handleQrUpload(t);
+            }
+        });
+    }
+
+    var logoUpload = document.getElementById('qr-logo-upload');
+    if (logoUpload) {
+        logoUpload.addEventListener('change', function () {
+            handleQrUpload(logoUpload);
+        });
+    }
 
     var pngBtn = document.getElementById('qr-download-png');
     var jpgBtn = document.getElementById('qr-download-jpg');
@@ -158,50 +208,6 @@
     if (pngBtn) pngBtn.addEventListener('click', downloadPng);
     if (jpgBtn) jpgBtn.addEventListener('click', downloadJpg);
     if (svgBtn) svgBtn.addEventListener('click', downloadSvg);
-
-    document.querySelectorAll('.itm-qr-upload').forEach(function (input) {
-        input.addEventListener('change', function () {
-            if (!input.files || !input.files[0]) return;
-            var fd = new FormData();
-            fd.append('csrf_token', csrf);
-            fd.append('qr_action', 'upload_asset');
-            fd.append('file', input.files[0]);
-            fetch('index.php', { method: 'POST', body: fd })
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    if (!data || !data.ok) {
-                        alert((data && data.error) || 'Upload failed');
-                        return;
-                    }
-                    var target = input.getAttribute('data-target');
-                    if (target) {
-                        var hidden = document.querySelector('[name="' + target + '"]');
-                        if (hidden) hidden.value = data.path;
-                    }
-                    var label = document.getElementById('qr-file-label');
-                    if (label) label.textContent = data.path;
-                });
-        });
-    });
-
-  var logoUpload = document.getElementById('qr-logo-upload');
-    if (logoUpload) {
-        logoUpload.addEventListener('change', function () {
-            if (!logoUpload.files || !logoUpload.files[0]) return;
-            var fd = new FormData();
-            fd.append('csrf_token', csrf);
-            fd.append('qr_action', 'upload_asset');
-            fd.append('file', logoUpload.files[0]);
-            fetch('index.php', { method: 'POST', body: fd })
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    if (!data || !data.ok) return;
-                    var pathInput = document.getElementById('qr-logo-path');
-                    if (pathInput) pathInput.value = data.path;
-                    drawQr();
-                });
-        });
-    }
 
     drawQr();
 })();
