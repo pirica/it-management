@@ -301,6 +301,10 @@ function cr_render_cell_value($table, $field, $value, $fkMap = [], $conn = null,
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
 
+    if (($GLOBALS['crud_table'] ?? '') === 'employee_assignment_history' && $field === 'signed_handover') {
+        return ((int)$value === 1) ? '✅' : '❌';
+    }
+
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
