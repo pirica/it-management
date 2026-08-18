@@ -227,7 +227,6 @@ if (!function_exists('itm_crud_boolean_cell_audit_field_has_badge_rendering')) {
             return true;
         }
 
-        // Why: Combined boolean columns (e.g. employee_sidebar_preferences active + is_visible) use in_array + badges.
         if (preg_match(
             '/in_array\s*\(\s*\$field\s*,\s*\[[^\]]*[\'"]' . $fieldQuoted . '[\'"][^\]]*\][\s\S]{0,500}?badge-(success|danger)/s',
             $renderBody
@@ -295,6 +294,61 @@ if (!function_exists('itm_crud_boolean_cell_audit_surface_from_path')) {
     }
 }
 
+if (!function_exists('itm_crud_boolean_cell_audit_is_duplicate_entry_path')) {
+    /**
+     * Why: Scaffold list_all.php / view.php often copy stale cr_render_cell_value(); index.php is canonical.
+     */
+    function itm_crud_boolean_cell_audit_is_duplicate_entry_path(string $relativePath): bool
+    {
+        return preg_match('#^modules/[^/]+/(list_all|view)\.php$#', str_replace('\\', '/', $relativePath)) === 1;
+    }
+}
+
+if (!function_exists('itm_crud_boolean_cell_audit_load_index_render_body')) {
+    function itm_crud_boolean_cell_audit_load_index_render_body(
+        string $repoRoot,
+        string $moduleSlug,
+        string $expectedTable
+    ): string {
+        if ($moduleSlug === '' || $expectedTable === '') {
+            return '';
+        }
+
+        $indexPath = rtrim(str_replace('\\', '/', $repoRoot), '/') . '/modules/' . $moduleSlug . '/index.php';
+        if (!is_readable($indexPath)) {
+            return '';
+        }
+
+        $indexContent = (string)file_get_contents($indexPath);
+        if (itm_crud_boolean_cell_audit_extract_crud_table($indexContent) !== $expectedTable) {
+            return '';
+        }
+
+        return itm_crud_boolean_cell_audit_extract_function_body($indexContent, 'cr_render_cell_value');
+    }
+}
+
+if (!function_exists('itm_crud_boolean_cell_audit_field_is_rendered')) {
+    function itm_crud_boolean_cell_audit_field_is_rendered(
+        string $renderBody,
+        string $field,
+        string $table
+    ): bool {
+        if ($renderBody === '') {
+            return false;
+        }
+
+        if ($field === 'active') {
+            if (itm_crud_boolean_cell_audit_field_has_active_badge_rendering($renderBody)) {
+                return true;
+            }
+        }
+
+        return itm_crud_boolean_cell_audit_field_has_badge_rendering($renderBody, $field)
+            || itm_crud_boolean_cell_audit_field_has_checkbox_emoji_rendering($renderBody, $field, $table);
+    }
+}
+
 if (!function_exists('itm_crud_boolean_cell_audit_analyze_file')) {
     /**
      * @param array<string, array<string, string>> $schemaTinyintColumns
@@ -336,6 +390,10 @@ if (!function_exists('itm_crud_boolean_cell_audit_analyze_file')) {
 
         $surface = itm_crud_boolean_cell_audit_surface_from_path($relativePath);
         $hiddenByModule = itm_crud_boolean_cell_audit_parse_hidden_field_names($content, $table);
+        $indexRenderBody = '';
+        if (itm_crud_boolean_cell_audit_is_duplicate_entry_path($relativePath)) {
+            $indexRenderBody = itm_crud_boolean_cell_audit_load_index_render_body($repoRoot, $moduleSlug, $table);
+        }
         $missing = [];
 
         foreach ($schemaTinyintColumns[$table] as $field => $columnDef) {
@@ -349,14 +407,10 @@ if (!function_exists('itm_crud_boolean_cell_audit_analyze_file')) {
                 continue;
             }
 
-            $handled = false;
-            if ($field === 'active') {
-                $handled = itm_crud_boolean_cell_audit_field_has_active_badge_rendering($renderBody);
-            }
+            $handled = itm_crud_boolean_cell_audit_field_is_rendered($renderBody, $field, $table);
 
-            if (!$handled) {
-                $handled = itm_crud_boolean_cell_audit_field_has_badge_rendering($renderBody, $field)
-                    || itm_crud_boolean_cell_audit_field_has_checkbox_emoji_rendering($renderBody, $field, $table);
+            if (!$handled && $indexRenderBody !== '') {
+                $handled = itm_crud_boolean_cell_audit_field_is_rendered($indexRenderBody, $field, $table);
             }
 
             if (!$handled) {
@@ -523,7 +577,7 @@ if (!function_exists('itm_crud_boolean_cell_audit_format_report')) {
     {
         $out = 'CRUD boolean cell display audit (tinyint(1) list/view cells)' . $nl . $nl;
         $out .= itm_crud_boolean_cell_audit_color_tag('FAIL') . ' = visible tinyint(1) column falls through to raw 0/1 in cr_render_cell_value().' . $nl;
-        $out .= itm_crud_boolean_cell_audit_color_tag('PASS') . ' = active uses badges; other checkbox columns use itm_crud_render_checkbox_boolean_cell_value(), bespoke ✅/❌, badge labels, or in_array(...) badge blocks.' . $nl . $nl;
+        $out .= itm_crud_boolean_cell_audit_color_tag('PASS') . ' = active uses badges; other checkbox columns use itm_crud_render_checkbox_boolean_cell_value(), bespoke ✅/❌, badge labels, in_array(...) badge blocks, or index.php canonical cr_render on list_all/view duplicates.' . $nl . $nl;
 
         if ($report['failures'] !== []) {
             $out .= itm_crud_boolean_cell_audit_color_heading('FAIL', ' ' . count($report['failures']) . ' file(s):') . $nl;
