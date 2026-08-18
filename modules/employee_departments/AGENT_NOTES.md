@@ -72,6 +72,12 @@ Examples:
 
 ## 5. UI Behavior Requirements
 
+**`employee_departments` specifics:**
+
+- Hide `company_id` from list/view/forms (`$hideCompanyIdTables`).
+- List/view render `employee_id` and `department_id` as FK labels (`cr_fk_label_by_id()` / `itm_fk_append_selected_option()`), not raw numeric ids.
+- Edit/create stage FK selects use `itm_fk_resolve_company_equivalent_id()` so persisted values stay selected when tenant option lists are incomplete.
+
 Document UI constraints agents must preserve. Match **actual** module code — not a generic CRUD checklist.
 
 ### Flattened CRUD (`modules/<slug>/index.php` with `$crud_table`)

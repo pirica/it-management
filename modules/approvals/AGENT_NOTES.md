@@ -19,6 +19,7 @@ Manages the approval workflow for forecast revisions. It tracks the stage, statu
 ## 5. UI Behavior Requirements
 - **Standard CRUD**.
 - **Status Indicators**: Visual cues for approved, rejected, or pending status.
+- **Stage FK:** edit/create dropdown labels use `approvals_stage.stage` (short name), not `description` — shared resolver `itm_fk_label_column_for_table()` in `includes/fk_dropdown_helpers.php`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — (in `index.php`) handles bulk JSON import.
