@@ -1669,6 +1669,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">
+                    <td><a href="apply_hide_company_id_tables.php" target="_blank" rel="nofollow noreferrer">apply_hide_company_id_tables.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Maintenance: prepend each module&apos;s table name to <code>$hideCompanyIdTables</code> on every scaffold PHP file in scope (<code>--module=slug</code>, repeatable, or <code>--prefix=hotel_</code>). Dry-run default; <code>--apply</code> / <code>?apply=1</code> writes.</td>
+                    <td class="scripts-catalog-how-stub">Dry-run: <code>?run=1</code>. Apply: <code>?run=1&amp;apply=1</code> (Admin).</td>
+                </tr>
+                <tr data-tags="Codebase">
                     <td><a href="check_crud_boolean_cell_display.php" target="_blank" rel="nofollow noreferrer">check_crud_boolean_cell_display.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
