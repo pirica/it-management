@@ -326,7 +326,7 @@ if (!function_exists('itm_company_id_ui_column_collect_report')) {
 
 if (!function_exists('itm_company_id_ui_column_format_module_line')) {
     /**
-     * One report bullet for a module slug (plain text CLI; localhost link in browser).
+     * One report bullet for a module slug (plain text CLI; relative module link in browser).
      */
     function itm_company_id_ui_column_format_module_line(
         string $slug,
@@ -341,10 +341,7 @@ if (!function_exists('itm_company_id_ui_column_format_module_line')) {
         }
 
         require_once __DIR__ . '/script_browser_nav.php';
-        $moduleLink = itm_script_format_modules_file_local_dev_link(
-            'modules/' . $slug . '/index.php',
-            $slug
-        );
+        $moduleLink = itm_script_format_module_link($slug, '', $slug);
 
         return '  - ' . $moduleLink . $suffix . $tail;
     }
@@ -370,7 +367,7 @@ if (!function_exists('itm_company_id_ui_column_format_report')) {
         $lines[] = str_repeat('-', 72);
         $lines[] = 'Scans every PHP file under modules/{slug}/** (recursive).';
         if ($linkModules) {
-            $lines[] = 'Module slugs link to http://localhost/it-management/modules/{slug}/index.php (new tab).';
+            $lines[] = 'Module slugs link to ../modules/{slug}/index.php (new tab).';
         }
         $lines[] = 'Legend: scaffold = $hideCompanyIdTables present; exposed = Company column may render.';
         $lines[] = '';
