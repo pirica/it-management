@@ -17,7 +17,7 @@ $qrPayload = [];
 $qrDesign = itm_qr_generator_default_design();
 $qrScans = [];
 $qrId = (int) ($_GET['id'] ?? 0);
-$qrSelectedType = trim((string) ($_GET['type'] ?? ($_POST['type_slug'] ?? '')));
+$qrSelectedType = trim((string) ($_GET['type'] ?? ''));
 $qrStep = max(1, min(3, (int) ($_GET['step'] ?? 1)));
 
 if ($crud_action === 'create' && isset($_GET['type']) && itm_qr_generator_is_valid_type_slug($_GET['type'])) {
@@ -54,9 +54,12 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
 }
 
 $qrListRows = [];
-$qrSearch = trim((string) ($_GET['search'] ?? ''));
-$qrPage = max(1, (int) ($_GET['page'] ?? 1));
-$qrPerPage = function_exists('itm_resolve_records_per_page') ? itm_resolve_records_per_page($ui_config ?? null) : 25;
+$search = trim((string) ($_GET['search'] ?? ''));
+$qrSearch = $search;
+$page = max(1, (int) ($_GET['page'] ?? 1));
+$qrPage = $page;
+$perPage = function_exists('itm_resolve_records_per_page') ? itm_resolve_records_per_page($ui_config ?? null) : 25;
+$qrPerPage = $perPage;
 $qrTotalRows = 0;
 $qrTotalPages = 1;
 
@@ -64,9 +67,9 @@ if ($crud_action === 'index' || $crud_action === 'list_all') {
   $where = 'company_id = ? AND employee_id = ? AND deleted_at IS NULL';
     $params = [$qrCompanyId, $qrEmployeeId];
     $types = 'ii';
-    if ($qrSearch !== '') {
+    if ($search !== '') {
         $where .= ' AND (title LIKE ? OR type_slug LIKE ?)';
-        $like = '%' . $qrSearch . '%';
+        $like = '%' . $search . '%';
         $params[] = $like;
         $params[] = $like;
         $types .= 'ss';
@@ -85,6 +88,8 @@ if ($crud_action === 'index' || $crud_action === 'list_all') {
         $qrPage = 1;
     }
     $qrTotalPages = max(1, (int) ceil($qrTotalRows / $qrPerPage));
+    $totalRows = $qrTotalRows;
+    $totalPages = $qrTotalPages;
     if ($qrPage > $qrTotalPages) {
         $qrPage = $qrTotalPages;
     }
@@ -108,8 +113,8 @@ $qrQrText = '';
 if ($qrRow) {
     $qrQrText = itm_qr_generator_resolve_qr_text($qrRow);
 } elseif ($qrSelectedType !== '' && isset($qrCatalog[$qrSelectedType])) {
-    $previewPayload = itm_qr_generator_normalize_payload($qrSelectedType, $_POST['payload'] ?? []);
-    $previewMode = trim((string) ($_POST['encoding_mode'] ?? 'dynamic'));
+    $previewPayload = itm_qr_generator_normalize_payload($qrSelectedType, []);
+    $previewMode = 'dynamic';
     if (itm_qr_generator_type_requires_dynamic($qrSelectedType)) {
         $previewMode = 'dynamic';
     }

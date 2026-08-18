@@ -1137,6 +1137,22 @@
         }
       ]
     },
+    "qr": {
+      "reviewed_at": "2026-08-19",
+      "reason": "Bespoke QR wizard on thin-router index.php — library list, type picker, and design preview live in includes/partials/render.php; no flattened scaffold bulk-delete toolbar.",
+      "checks": [
+        {
+          "check": "Column sort (ASC/DESC)",
+          "code": "ui_config_sort",
+          "note": "Library list sorts by created_at DESC only — no column header sort UI on employee QR library"
+        },
+        {
+          "check": "Bulk delete actions",
+          "code": "ui_config_bulk_delete",
+          "note": "Per-row delete on library table; no Select to Delete / Clear Table toolbar on bespoke card list"
+        }
+      ]
+    },
     "passwords": {
       "reviewed_at": "2026-07-20",
       "reason": "Vault manager uses index.php modals and AJAX for create/edit — no scaffold create.php, edit.php, or list_all.php. Server-managed ➕ opens the entry modal; Search/Sort/Pagination and bulk delete are implemented on the entry list.",
