@@ -197,6 +197,7 @@ php scripts/employees_delete_clear_table_test.php
 | 2 | `check_manual_sql_string.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_not_operator.php` | PHP | none | static-manual | Warning-only Codacy `!` review (always exit 0; not in smoke) |
 | 2 | `check_crud_audit_soft_delete.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
+| 2 | `check_crud_has_company_from_field_columns.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_crud_rbac_coverage.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_database_sql_company_name_uniques.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_delimiters.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |

@@ -1518,6 +1518,13 @@
         ],
         "override": false
     },
+    "check_crud_has_company_from_field_columns.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
     "check_display_field_columns_search.php": {
         "tags": [
             "Codebase"
