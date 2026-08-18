@@ -2,7 +2,7 @@
 /**
  * Schema Migrations Module - View
  *
- * Read-only detail for one migration audit row; admins may delete the history row.
+ * Read-only detail for a migration file (audit row or probe-only).
  */
 
 require '../../config/config.php';
@@ -14,42 +14,74 @@ if (!itm_is_admin($conn, $employeeId)) {
     exit;
 }
 
+itm_database_migrations_ensure_table($conn);
+
 $rowId = (int)($_GET['id'] ?? 0);
-if ($rowId <= 0) {
+$filename = basename((string)($_GET['filename'] ?? ''));
+$auditRow = null;
+
+if ($rowId > 0) {
+    $stmt = mysqli_prepare($conn, 'SELECT id, filename, checksum, applied_at FROM schema_migrations WHERE id = ? LIMIT 1');
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $rowId);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $auditRow = $result ? mysqli_fetch_assoc($result) : null;
+        mysqli_stmt_close($stmt);
+    }
+    if ($auditRow) {
+        $filename = (string)($auditRow['filename'] ?? '');
+    }
+}
+
+if ($filename === '') {
     header('Location: index.php');
     exit;
 }
 
-$stmt = mysqli_prepare($conn, 'SELECT id, filename, checksum, applied_at FROM schema_migrations WHERE id = ? LIMIT 1');
-$row = null;
-if ($stmt) {
-    mysqli_stmt_bind_param($stmt, 'i', $rowId);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $row = $result ? mysqli_fetch_assoc($result) : null;
-    mysqli_stmt_close($stmt);
-}
-
-if (!$row) {
+$statusRow = itm_database_migrations_find_status_row($conn, $filename);
+if ($statusRow === null && $auditRow === null) {
     header('Location: index.php');
     exit;
 }
 
-$filename = (string)($row['filename'] ?? '');
-$recordedChecksum = (string)($row['checksum'] ?? '');
-$appliedAtDisplay = itm_format_audit_timestamp_display($row['applied_at'] ?? '');
+if ($auditRow === null) {
+    $appliedMap = itm_database_migrations_fetch_applied_map($conn);
+    if (isset($appliedMap[$filename])) {
+        $stmt = mysqli_prepare($conn, 'SELECT id, filename, checksum, applied_at FROM schema_migrations WHERE filename = ? LIMIT 1');
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 's', $filename);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            $auditRow = $result ? mysqli_fetch_assoc($result) : null;
+            mysqli_stmt_close($stmt);
+        }
+    }
+}
+
+$recordedChecksum = $auditRow ? (string)($auditRow['checksum'] ?? '') : '';
+$appliedAtDisplay = $auditRow ? itm_format_audit_timestamp_display($auditRow['applied_at'] ?? '') : '';
+$recorded = $auditRow !== null;
+
+$state = (string)($statusRow['state'] ?? ($recorded ? 'applied' : 'pending'));
+$stateLabel = (string)($statusRow['label'] ?? ucfirst($state));
+$probeDetail = (string)($statusRow['detail'] ?? '');
 
 $discovered = itm_database_migrations_resolve_file_row($filename);
 $onDisk = $discovered !== null;
-$currentChecksum = $onDisk ? (string)($discovered['checksum'] ?? '') : '';
-$hasDrift = $onDisk && $recordedChecksum !== '' && $currentChecksum !== '' && $recordedChecksum !== $currentChecksum;
+$currentChecksum = $onDisk ? (string)($discovered['checksum'] ?? '') : (string)($statusRow['checksum'] ?? '');
+$hasDrift = $recorded && $recordedChecksum !== '' && $currentChecksum !== '' && $recordedChecksum !== $currentChecksum;
+$canRecord = !$recorded && $state === 'applied' && $onDisk;
 
 $moduleSlug = basename(dirname($_SERVER['PHP_SELF']));
 $crud_title = 'Schema Migrations';
 $migrateScriptUrl = BASE_URL . 'scripts/migrate.php?run=1';
+$migrateApplyUrl = BASE_URL . 'scripts/migrate.php?run=1&apply=1';
 $sqlHref = BASE_URL . 'scripts/migrate.php?run=1&sql=' . rawurlencode($filename);
 $csrfToken = itm_get_csrf_token();
 $flashMessage = trim((string)($_GET['msg'] ?? ''));
+$viewBackQuery = trim((string)($_GET['return_query'] ?? ''));
+$indexHref = 'index.php' . ($viewBackQuery !== '' ? '?' . ltrim($viewBackQuery, '?') : '');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -82,15 +114,25 @@ $flashMessage = trim((string)($_GET['msg'] ?? ''));
 
         <div class="content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-                <h1 title="View migration history record">🔎</h1>
+                <h1 title="View migration">🔎</h1>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <?php if ($canRecord): ?>
+                    <form method="POST" action="record.php" style="display:inline;margin:0;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <input type="hidden" name="filename" value="<?php echo sanitize($filename); ?>">
+                        <input type="hidden" name="redirect" value="view.php">
+                        <button type="submit" class="btn btn-sm btn-primary" title="Record audit row">💾</button>
+                    </form>
+                    <?php endif; ?>
+                    <?php if ($recorded && $auditRow): ?>
                     <form method="POST" action="delete.php" style="display:inline;margin:0;" onsubmit="return confirm('Remove this migration history row? The live database schema is unchanged — only the audit record is deleted.');">
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                        <input type="hidden" name="id" value="<?php echo (int)($row['id'] ?? 0); ?>">
+                        <input type="hidden" name="id" value="<?php echo (int)($auditRow['id'] ?? 0); ?>">
                         <input type="hidden" name="redirect" value="view.php">
                         <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
                     </form>
-                    <a href="index.php" class="btn" title="Back">🔙</a>
+                    <?php endif; ?>
+                    <a href="<?php echo sanitize($indexHref); ?>" class="btn" title="Back">🔙</a>
                 </div>
             </div>
 
@@ -102,26 +144,37 @@ $flashMessage = trim((string)($_GET['msg'] ?? ''));
 
             <div class="card" style="margin-bottom:16px;">
                 <p style="margin:0;font-size:13px;line-height:1.45;color:var(--text-muted, #6b7280);">
-                    Applied state is determined by live schema probes in
+                    <strong>Status</strong> comes from live schema probes in
                     <a href="<?php echo sanitize($migrateScriptUrl); ?>">migrate.php</a>.
-                    This row records when a migration file was satisfied and its checksum at record time.
-                    Deleting the row removes audit history only — it does not roll back schema changes or delete the SQL file.
+                    <strong>Applied at</strong> is set only after an audit row is recorded (💾 or
+                    <a href="<?php echo sanitize($migrateApplyUrl); ?>">migrate.php?run=1&amp;apply=1</a>).
+                    Deleting an audit row does not roll back schema or remove the SQL file.
                 </p>
             </div>
 
             <div class="card sm-detail">
                 <dl>
-                    <dt>ID</dt>
-                    <dd><?php echo (int)($row['id'] ?? 0); ?></dd>
+                    <?php if ($recorded && $auditRow): ?>
+                    <dt>Audit ID</dt>
+                    <dd><?php echo (int)($auditRow['id'] ?? 0); ?></dd>
+                    <?php endif; ?>
 
                     <dt>Filename</dt>
                     <dd class="sm-mono"><?php echo sanitize($filename); ?></dd>
 
+                    <dt>Probe status</dt>
+                    <dd><?php echo sanitize($stateLabel); ?><?php echo $probeDetail !== '' ? ' — ' . sanitize($probeDetail) : ''; ?></dd>
+
+                    <dt>Recorded in audit table</dt>
+                    <dd><?php echo $recorded ? 'Yes' : 'No — probe satisfied; use 💾 Record or migrate apply to log history.'; ?></dd>
+
+                    <?php if ($recorded): ?>
                     <dt>Recorded checksum</dt>
                     <dd class="sm-mono"><?php echo sanitize($recordedChecksum); ?></dd>
 
                     <dt>Applied at</dt>
                     <dd><?php echo sanitize($appliedAtDisplay !== '' ? $appliedAtDisplay : '—'); ?></dd>
+                    <?php endif; ?>
 
                     <dt>File on disk</dt>
                     <dd>
