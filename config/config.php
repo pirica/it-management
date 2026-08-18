@@ -1119,15 +1119,26 @@ if (!function_exists('itm_sync_csrf_double_submit_cookie')) {
             return;
         }
 
+        $cookieName = itm_csrf_double_submit_cookie_name();
+        $existingCookie = trim((string)($_COOKIE[$cookieName] ?? ''));
+        if ($existingCookie !== '' && hash_equals($existingCookie, $token)) {
+            return;
+        }
+
+        // Why: sidebar.php may render before header.php; skip setcookie once HTML output started.
+        if (headers_sent()) {
+            return;
+        }
+
         $params = itm_csrf_cookie_params();
-        setcookie(itm_csrf_double_submit_cookie_name(), $token, [
+        setcookie($cookieName, $token, [
             'expires' => 0,
             'path' => $params['path'],
             'secure' => $params['secure'],
             'httponly' => $params['httponly'],
             'samesite' => $params['samesite'],
         ]);
-        $_COOKIE[itm_csrf_double_submit_cookie_name()] = $token;
+        $_COOKIE[$cookieName] = $token;
     }
 }
 
