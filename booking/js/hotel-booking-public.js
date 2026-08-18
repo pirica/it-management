@@ -1,4 +1,9 @@
 (function () {
+  function hbUiCopy(key, fallback) {
+    var copy = (window.HB_SETTINGS && window.HB_SETTINGS.ui_copy) ? window.HB_SETTINGS.ui_copy : {};
+    var val = copy[key];
+    return (val !== undefined && val !== null && String(val).trim() !== '') ? String(val) : String(fallback || '');
+  }
   var modal = document.getElementById('hb-detail-modal');
   if (!modal) return;
   var body = document.getElementById('hb-modal-body');
@@ -42,7 +47,7 @@
 
   function currencyLabel(code) {
     var c = (code || 'EUR').toUpperCase();
-    if (c === 'EUR') return 'Euro';
+    if (c === 'EUR') return hbUiCopy('home_currency_euro_label', 'Euro');
     return c;
   }
 
@@ -59,7 +64,7 @@
     if (!reviewsUrl) {
       return '';
     }
-    return '<a href="' + escapeHtml(reviewsUrl) + '" class="hb-reviews-link" target="_blank" rel="noopener noreferrer" title="Read reviews (opens in new tab)">Read reviews <span class="hb-external-icon" aria-hidden="true">↗</span></a>';
+    return '<a href="' + escapeHtml(reviewsUrl) + '" class="hb-reviews-link" target="_blank" rel="noopener noreferrer" title="' + escapeHtml(hbUiCopy('home_read_reviews_title', 'Read reviews (opens in new tab)')) + '">' + escapeHtml(hbUiCopy('home_read_reviews_link', 'Read reviews')) + ' <span class="hb-external-icon" aria-hidden="true">↗</span></a>';
   }
 
   function photoUrls(h) {
@@ -86,7 +91,7 @@
       return t.split(/\n+/).map(function (s) { return s.trim(); }).filter(Boolean);
     }
     if (/self.*valet|valet.*self/i.test(t)) {
-      return ['Self parking: Complimentary', 'Valet parking: Complimentary'];
+      return [hbUiCopy('home_parking_self_fallback', 'Self parking: Complimentary'), hbUiCopy('home_parking_valet_fallback', 'Valet parking: Complimentary')];
     }
     return [t];
   }
@@ -128,7 +133,7 @@
       e.preventDefault();
       open = !open;
       desc.textContent = open ? full : full.substring(0, shortLen).trim() + '…';
-      btn.textContent = open ? 'Read less' : 'Read more';
+      btn.textContent = open ? hbUiCopy('home_read_less', 'Read less') : hbUiCopy('home_read_more', 'Read more');
     });
   }
 
@@ -181,9 +186,9 @@
     var amenities = h.amenities || [];
     if (!amenities.length) {
       amenities = [
-        { name: 'Free WiFi', icon_class: '' },
-        { name: 'Indoor pool', icon_class: '' },
-        { name: 'Fitness center', icon_class: '' }
+        { name: hbUiCopy('home_amenity_wifi_fallback', 'Free WiFi'), icon_class: '' },
+        { name: hbUiCopy('home_amenity_pool_fallback', 'Indoor pool'), icon_class: '' },
+        { name: hbUiCopy('home_amenity_fitness_fallback', 'Fitness center'), icon_class: '' }
       ];
     }
     var amenityHtml = amenities.map(function (a) {
@@ -192,19 +197,21 @@
     }).join('');
 
     var parkingHtml = '';
+    var parkingLabel = hbUiCopy('home_parking_label', 'Parking');
     if (!parkingRows.length) {
-      parkingHtml = '<tr><th>Parking</th><td>—</td></tr>';
+      parkingHtml = '<tr><th>' + escapeHtml(parkingLabel) + '</th><td>—</td></tr>';
     } else {
       parkingRows.forEach(function (line, i) {
-        parkingHtml += '<tr><th>' + (i === 0 ? 'Parking' : '') + '</th><td>' + escapeHtml(line) + '</td></tr>';
+        parkingHtml += '<tr><th>' + (i === 0 ? escapeHtml(parkingLabel) : '') + '</th><td>' + escapeHtml(line) + '</td></tr>';
       });
     }
 
+    var nearbyEmpty = hbUiCopy('home_nearby_empty', 'No places listed.');
     var nearbyHtml = lists.nearby.length
       ? lists.nearby.map(function (r) {
         return '<li><span>' + escapeHtml(r.place_name) + '</span><span>' + escapeHtml(parseFloat(r.distance_km).toFixed(2)) + ' km</span></li>';
       }).join('')
-      : '<li class="hb-muted">No places listed.</li>';
+      : '<li class="hb-muted">' + escapeHtml(nearbyEmpty) + '</li>';
 
     var airportHtml = '';
     if (lists.airport.length) {
@@ -216,11 +223,11 @@
       airportHtml += '<li class="hb-airport-note">' + escapeHtml(settings.airport_info) + '</li>';
     }
     if (!airportHtml) {
-      airportHtml = '<li class="hb-muted">No airport information.</li>';
+      airportHtml = '<li class="hb-muted">' + escapeHtml(hbUiCopy('home_airport_empty', 'No airport information.')) + '</li>';
     }
 
     var accessible = (settings.accessible_features_default || '').trim();
-    var footnote = (settings.price_footnote || '*Prices are based on current availability and may change.').trim();
+    var footnote = (settings.price_footnote || hbUiCopy('home_price_footnote_fallback', '*Prices are based on current availability and may change.')).trim();
     var descFull = String(h.description || '');
 
     body.innerHTML =
@@ -230,54 +237,54 @@
         '<div class="hb-gallery-wrap"><div class="hb-gallery"></div></div>') +
       '<div class="hb-title-row">' +
       '<h2 class="hb-detail-title">' + escapeHtml(h.name) + '</h2>' +
-      '<button type="button" class="hb-fav" title="Save to favorites" aria-label="Favorite">♡</button>' +
+      '<button type="button" class="hb-fav" title="' + escapeHtml(hbUiCopy('home_favorite_title', 'Save to favorites')) + '" aria-label="' + escapeHtml(hbUiCopy('home_favorite_aria_label', 'Favorite')) + '">♡</button>' +
       '</div>' +
       '<div class="hb-action-links">' +
-      (h.location ? '<a href="' + escapeHtml(mapsUrlForHotel(h)) + '" target="_blank" rel="noopener"><span aria-hidden="true">📍</span> Directions</a>' : '') +
-      (h.website_url ? '<a href="' + escapeHtml(h.website_url) + '" target="_blank" rel="noopener"><span aria-hidden="true">🌐</span> Visit website</a>' : '') +
-      (h.contact_email ? '<a href="mailto:' + escapeHtml(h.contact_email) + '" title="General information email"><span aria-hidden="true">ℹ️</span> Info</a>' : '') +
-      (h.reservations_email ? '<a href="mailto:' + escapeHtml(h.reservations_email) + '" title="Reservations email"><span aria-hidden="true">📧</span> Email</a>' : '') +
+      (h.location ? '<a href="' + escapeHtml(mapsUrlForHotel(h)) + '" target="_blank" rel="noopener"><span aria-hidden="true">📍</span> ' + escapeHtml(hbUiCopy('home_directions_link', 'Directions')) + '</a>' : '') +
+      (h.website_url ? '<a href="' + escapeHtml(h.website_url) + '" target="_blank" rel="noopener"><span aria-hidden="true">🌐</span> ' + escapeHtml(hbUiCopy('home_visit_website_link', 'Visit website')) + '</a>' : '') +
+      (h.contact_email ? '<a href="mailto:' + escapeHtml(h.contact_email) + '" title="General information email"><span aria-hidden="true">ℹ️</span> ' + escapeHtml(hbUiCopy('home_info_link', 'Info')) + '</a>' : '') +
+      (h.reservations_email ? '<a href="mailto:' + escapeHtml(h.reservations_email) + '" title="Reservations email"><span aria-hidden="true">📧</span> ' + escapeHtml(hbUiCopy('home_email_link', 'Email')) + '</a>' : '') +
       (h.phone ? '<a href="tel:' + escapeHtml(h.phone) + '"><span aria-hidden="true">📞</span> ' + escapeHtml(h.phone) + '</a>' : '') +
       '</div>' +
-      '<section class="hb-block"><h3>Description</h3>' +
+      '<section class="hb-block"><h3>' + escapeHtml(hbUiCopy('home_description_heading', 'Description')) + '</h3>' +
       '<p class="hb-desc-text">' + escapeHtml(descFull) + '</p>' +
-      (descFull ? '<a href="#" class="hb-read-more">Read more</a>' : '') +
+      (descFull ? '<a href="#" class="hb-read-more">' + escapeHtml(hbUiCopy('home_read_more', 'Read more')) + '</a>' : '') +
       '</section>' +
       '<div class="hb-price-cta hb-block">' +
-      '<p class="hb-from-price">From<sup>*</sup> <strong>' + escapeHtml(formatPrice(h)) + '</strong> <span class="hb-from-tax-note">' + escapeHtml(settings.price_includes_tax_label || 'incl. tax') + '</span></p>' +
-      '<p class="hb-price-label">' + escapeHtml(h.cheapest_rate_label || settings.default_rate_label || 'Best available rate') + '</p>' +
-      '<button type="button" class="hb-btn hb-btn-primary hb-btn-block hb-select-dates" data-hotel-id="' + h.id + '" title="Select dates">Select Dates</button>' +
+      '<p class="hb-from-price">' + escapeHtml(hbUiCopy('home_from_label', 'From')) + '<sup>*</sup> <strong>' + escapeHtml(formatPrice(h)) + '</strong> <span class="hb-from-tax-note">' + escapeHtml(settings.price_includes_tax_label || hbUiCopy('home_price_includes_tax_label', 'incl. tax')) + '</span></p>' +
+      '<p class="hb-price-label">' + escapeHtml(h.cheapest_rate_label || settings.default_rate_label || hbUiCopy('home_default_rate_label', 'Best available rate')) + '</p>' +
+      '<button type="button" class="hb-btn hb-btn-primary hb-btn-block hb-select-dates" data-hotel-id="' + h.id + '" title="' + escapeHtml(hbUiCopy('home_select_dates_title', 'Select dates')) + '">' + escapeHtml(hbUiCopy('home_select_dates_button', 'Select Dates')) + '</button>' +
       '</div>' +
       '<section class="hb-block hb-rating-block">' +
       '<div class="hb-rating-bubbles" aria-hidden="true"><span></span><span></span><span></span><span></span><span class="partial"></span></div>' +
       '<div class="hb-rating-meta">' +
-      '<p class="hb-rating-copy"><strong>' + escapeHtml(settings.rating_title || 'Guest rating') + '</strong><span class="hb-rating-sub">' + escapeHtml(settings.rating_subtitle || ' — based on recent stays') + '</span></p>' +
+      '<p class="hb-rating-copy"><strong>' + escapeHtml(settings.rating_title || hbUiCopy('home_guest_rating_title', 'Guest rating')) + '</strong><span class="hb-rating-sub">' + escapeHtml(settings.rating_subtitle || hbUiCopy('home_guest_rating_subtitle', ' — based on recent stays')) + '</span></p>' +
       reviewsLinkHtml(h) +
       '</div>' +
       '</section>' +
       '</div>' +
       '<div class="hb-detail-right">' +
-      '<section class="hb-block"><h3>Amenities</h3>' +
+      '<section class="hb-block"><h3>' + escapeHtml(hbUiCopy('home_amenities_heading', 'Amenities')) + '</h3>' +
       '<div class="hb-amenities-scroll">' + amenityHtml + '</div></section>' +
-      '<section class="hb-block"><h3>Overview</h3>' +
+      '<section class="hb-block"><h3>' + escapeHtml(hbUiCopy('home_overview_heading', 'Overview')) + '</h3>' +
       '<table class="hb-overview-table">' +
-      '<tr><th>Check-in</th><td>' + escapeHtml(h.check_in_display || '—') + '</td></tr>' +
-      '<tr><th>Check-out</th><td>' + escapeHtml(h.check_out_display || '—') + '</td></tr>' +
-      '<tr><th>Currency</th><td>' + escapeHtml(currencyLabel(h.currency_code)) + '</td></tr>' +
+      '<tr><th>' + escapeHtml(hbUiCopy('home_check_in_label', 'Check-in')) + '</th><td>' + escapeHtml(h.check_in_display || '—') + '</td></tr>' +
+      '<tr><th>' + escapeHtml(hbUiCopy('home_check_out_label', 'Check-out')) + '</th><td>' + escapeHtml(h.check_out_display || '—') + '</td></tr>' +
+      '<tr><th>' + escapeHtml(hbUiCopy('home_currency_label', 'Currency')) + '</th><td>' + escapeHtml(currencyLabel(h.currency_code)) + '</td></tr>' +
       parkingHtml +
-      '<tr><th>Pets</th><td>' + escapeHtml(h.pets_policy || '—') + '</td></tr>' +
+      '<tr><th>' + escapeHtml(hbUiCopy('home_pets_label', 'Pets')) + '</th><td>' + escapeHtml(h.pets_policy || '—') + '</td></tr>' +
       '</table></section>' +
       '<section class="hb-block hb-location-block">' +
-      '<h3>Location and transportation</h3>' +
+      '<h3>' + escapeHtml(hbUiCopy('home_location_heading', 'Location and transportation')) + '</h3>' +
       '<div class="hb-loc-tabs">' +
-      '<button type="button" class="hb-loc-tab is-active" data-tab="nearby">What\'s nearby</button>' +
-      '<button type="button" class="hb-loc-tab" data-tab="airport">Airport info</button>' +
+      '<button type="button" class="hb-loc-tab is-active" data-tab="nearby">' + escapeHtml(hbUiCopy('home_nearby_tab', 'What\'s nearby')) + '</button>' +
+      '<button type="button" class="hb-loc-tab" data-tab="airport">' + escapeHtml(hbUiCopy('home_airport_tab', 'Airport info')) + '</button>' +
       '</div>' +
       '<ul class="hb-loc-list hb-loc-panel" data-panel="nearby">' + nearbyHtml + '</ul>' +
       '<ul class="hb-loc-list hb-loc-panel" data-panel="airport" hidden>' + airportHtml + '</ul>' +
       '</section>' +
       (accessible ? '<section class="hb-block hb-accordion">' +
-        '<button type="button" class="hb-accordion-head" aria-expanded="false">Accessible features <span class="hb-chevron">▼</span></button>' +
+        '<button type="button" class="hb-accordion-head" aria-expanded="false">' + escapeHtml(hbUiCopy('home_accessible_features_heading', 'Accessible features')) + ' <span class="hb-chevron">▼</span></button>' +
         '<div class="hb-accordion-panel" hidden><p>' + escapeHtml(accessible) + '</p></div></section>' : '') +
       '<p class="hb-modal-footnote">' + escapeHtml(footnote) + '</p>' +
       '</div></div>';

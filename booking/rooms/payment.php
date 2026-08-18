@@ -18,11 +18,11 @@ $error = '';
 $success = '';
 $stripeFlash = trim((string) ($_GET['stripe'] ?? ''));
 if ($stripeFlash === 'success') {
-    $success = 'Payment received. Your reservation is confirmed.';
+    $success = hb_portal_ui_copy('portal_ui_confirm_stripe_success', [], $settings);
 } elseif ($stripeFlash === 'cancel') {
-    $error = 'Online payment was cancelled. Your reservation is saved — you can pay at the hotel or try again from ' . $manageBookingLabel . '.';
+    $error = hb_portal_ui_copy('portal_ui_confirm_stripe_cancel', ['manage_label' => $manageBookingLabel], $settings);
 } elseif ($stripeFlash === 'error') {
-    $error = 'Online payment could not be started. Please contact the hotel or try again later.';
+    $error = hb_portal_ui_copy('portal_ui_confirm_stripe_error', [], $settings);
 }
 $booking = $bid > 0 ? hb_portal_load_booking_confirmation($conn, $company_id, $bid) : null;
 $cancelLastName = '';
@@ -36,14 +36,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['cancel_booking']) &&
     $cancelAuth2 = itm_hotel_booking_normalize_auth2($_POST['auth2'] ?? '');
     $cancelResult = itm_hotel_booking_portal_cancel_booking_for_guest($conn, $company_id, $cancelReservationId, $cancelLastName, $cancelAuth2);
     if (!empty($cancelResult['ok'])) {
-        $success = 'Your reservation has been cancelled.';
+        $success = hb_portal_ui_copy('portal_ui_confirm_cancel_success', [], $settings);
         $booking = hb_portal_load_booking_confirmation($conn, $company_id, $cancelReservationId);
         if ($booking) {
             $bid = (int) ($booking['id'] ?? 0);
             $_SESSION['hotel_booking_last_id'] = $bid;
         }
     } else {
-        $error = (string) ($cancelResult['error'] ?? 'Unable to cancel this reservation.');
+        $error = (string) ($cancelResult['error'] ?? hb_portal_ui_copy('portal_ui_manage_cancel_failed', [], $settings));
         $booking = hb_portal_load_booking_confirmation($conn, $company_id, $cancelReservationId);
         if ($booking) {
             $bid = (int) ($booking['id'] ?? 0);
@@ -113,7 +113,7 @@ $paymentConfirmationOptions = [
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Reservation confirmed</title>
+<title><?php echo hb_portal_ui_copy_esc('portal_ui_confirm_reservation_confirmed_title', [], $settings); ?></title>
 <link rel="stylesheet" href="<?php echo APPURL; ?>/css/hotel-booking-modern.css">
 </head>
 <body class="hb-public hb-checkout-page hb-payment-page">

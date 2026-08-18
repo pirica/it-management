@@ -3,6 +3,12 @@
  * First click = check-in; second click = check-out (1 night if only check-in).
  */
 (function () {
+  function hbUiCopy(key, fallback) {
+    var copy = (window.HB_SETTINGS && window.HB_SETTINGS.ui_copy) ? window.HB_SETTINGS.ui_copy : {};
+    var val = copy[key];
+    return (val !== undefined && val !== null && String(val).trim() !== '') ? String(val) : String(fallback || '');
+  }
+
   var datesModal = document.getElementById('hb-dates-modal');
   if (!datesModal) return;
 
@@ -369,8 +375,8 @@
 
     datesBody.innerHTML =
       '<div class="hb-dates-hotel"><strong>' + escapeHtml(h.name) + '</strong></div>' +
-      '<p class="hb-dates-copy">Select your check-in date, then your check-out date. One night is selected when only check-in is chosen.</p>' +
-      '<p class="hb-dates-copy">We\'re showing the best price per room based on the number of guests. Prices include tourist tax and fees.</p>' +
+      '<p class="hb-dates-copy">' + escapeHtml(hbUiCopy('home_dates_select_copy', 'Select your check-in date, then your check-out date. One night is selected when only check-in is chosen.')) + '</p>' +
+      '<p class="hb-dates-copy">' + escapeHtml(hbUiCopy('home_dates_price_copy', 'We\'re showing the best price per room based on the number of guests. Prices include tourist tax and fees.')) + '</p>' +
       '<p class="hb-dates-explore"><a href="' + escapeHtml(window.HB_APPURL + '/rooms.php?id=' + h.id) + '">Explore all filters and search options &gt;</a></p>' +
       '<div class="hb-dates-months-wrap"><div class="hb-dates-months">' + tabsHtml + '</div></div>' +
       '<div class="hb-dates-cal-nav">' +
@@ -525,7 +531,7 @@
       }
       var code = (state.calendar && state.calendar.currency_code) || state.hotel.currency_code || 'EUR';
       var avg = averageNightlyPrice(state.checkInYmd, checkOut);
-      var nightWord = nights === 1 ? 'night' : 'nights';
+      var nightWord = nights === 1 ? hbUiCopy('chrome_night_singular', 'night') : hbUiCopy('chrome_nights_plural', 'nights');
       var rateLabel = (state.calendar && state.calendar.cheapest_rate_label)
         || (state.hotel && state.hotel.cheapest_rate_label)
         || portalDefaultRateLabel();

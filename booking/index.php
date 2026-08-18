@@ -131,7 +131,10 @@ if ($stmt) {
     }
     mysqli_stmt_close($stmt);
 }
-$pageTitle = $settings['welcome_title'] ?? 'Find your stay';
+$pageTitle = trim((string) ($settings['welcome_title'] ?? ''));
+if ($pageTitle === '') {
+    $pageTitle = hb_portal_ui_copy('portal_ui_home_welcome_title', [], $settings);
+}
 $manageBookingLabel = itm_hotel_booking_portal_manage_booking_label_from_settings($settings);
 $hbSettingsPublic = array_merge([
     'price_footnote' => $settings['price_footnote'] ?? '',
@@ -183,8 +186,8 @@ $imgUrl = !empty($hotel['photos'][0]['public_url'])
 </div>
 <h2><?php echo htmlspecialchars($hotel['name'], ENT_QUOTES, 'UTF-8'); ?></h2>
 <p class="hb-loc"><?php echo htmlspecialchars($hotel['location'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
-<p class="hb-from">From <?php echo htmlspecialchars(hb_portal_money_format((float) ($hotel['min_price'] ?? 0), $hotel['currency_code'] ?? 'EUR'), ENT_QUOTES, 'UTF-8'); ?> <span class="hb-from-tax-note"><?php echo htmlspecialchars((string) ($hotel['price_includes_tax_label'] ?? itm_hotel_booking_portal_price_includes_tax_label_from_settings($settings)), ENT_QUOTES, 'UTF-8'); ?></span></p>
-<button type="button" class="hb-btn hb-btn-primary hb-open-hotel" data-hotel-id="<?php echo (int) $hotel['id']; ?>" title="View details">Details</button>
+<p class="hb-from"><?php echo hb_portal_ui_copy_esc('portal_ui_home_from_label', [], $settings); ?> <?php echo htmlspecialchars(hb_portal_money_format((float) ($hotel['min_price'] ?? 0), $hotel['currency_code'] ?? 'EUR'), ENT_QUOTES, 'UTF-8'); ?> <span class="hb-from-tax-note"><?php echo htmlspecialchars((string) ($hotel['price_includes_tax_label'] ?? itm_hotel_booking_portal_price_includes_tax_label_from_settings($settings)), ENT_QUOTES, 'UTF-8'); ?></span></p>
+<button type="button" class="hb-btn hb-btn-primary hb-open-hotel" data-hotel-id="<?php echo (int) $hotel['id']; ?>" title="<?php echo hb_portal_ui_copy_esc('portal_ui_home_view_details_title', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_home_details_button', [], $settings); ?></button>
 </article>
 <?php endforeach; ?>
 </div>
@@ -192,13 +195,13 @@ $imgUrl = !empty($hotel['photos'][0]['public_url'])
 <div id="hb-detail-modal" class="hb-modal hb-detail-modal" hidden role="dialog" aria-modal="true">
 <div class="hb-modal-card hb-detail-modal-card">
 <button type="button" class="hb-modal-close" title="Close">✖</button>
-<div id="hb-modal-body">Loading…</div>
+<div id="hb-modal-body"><?php echo hb_portal_ui_copy_esc('portal_ui_home_loading', [], $settings); ?></div>
 </div>
 </div>
 <div id="hb-dates-modal" class="hb-modal hb-dates-modal" hidden role="dialog" aria-modal="true" aria-labelledby="hb-dates-heading">
 <div class="hb-dates-modal-card">
 <button type="button" class="hb-dates-close" title="Close">✖</button>
-<h2 id="hb-dates-heading" class="hb-dates-heading">Find the best prices for your next trip</h2>
+<h2 id="hb-dates-heading" class="hb-dates-heading"><?php echo hb_portal_ui_copy_esc('portal_ui_home_dates_heading', [], $settings); ?></h2>
 <div id="hb-dates-body"></div>
 </div>
 </div>

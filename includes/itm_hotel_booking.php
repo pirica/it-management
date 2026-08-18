@@ -1192,25 +1192,45 @@ if (!function_exists('itm_hotel_booking_portal_enforce_exclusive_rate_checkboxes
 }
 
 if (!function_exists('itm_hotel_booking_portal_rate_program_options')) {
-  function itm_hotel_booking_portal_rate_program_options() {
-    return [
-      ['param' => 'use_points', 'label' => 'Use Points', 'slug' => 'points'],
-      ['param' => 'travel_agents', 'label' => 'Travel agents', 'slug' => 'travel_agent'],
-      ['param' => 'aaa_rate', 'label' => 'AAA rate', 'slug' => 'aaa'],
-      ['param' => 'senior_rate', 'label' => 'Senior rate', 'slug' => 'senior'],
-      ['param' => 'gov_military', 'label' => 'Government and military rates', 'slug' => 'government'],
+  function itm_hotel_booking_portal_rate_program_options($settings = null) {
+    $settings = is_array($settings) ? $settings : [];
+    $defs = [
+      ['param' => 'use_points', 'column' => 'portal_ui_step1_rate_program_use_points', 'slug' => 'points'],
+      ['param' => 'travel_agents', 'column' => 'portal_ui_step1_rate_program_travel_agents', 'slug' => 'travel_agent'],
+      ['param' => 'aaa_rate', 'column' => 'portal_ui_step1_rate_program_aaa', 'slug' => 'aaa'],
+      ['param' => 'senior_rate', 'column' => 'portal_ui_step1_rate_program_senior', 'slug' => 'senior'],
+      ['param' => 'gov_military', 'column' => 'portal_ui_step1_rate_program_government', 'slug' => 'government'],
     ];
+    $out = [];
+    foreach ($defs as $row) {
+      $out[] = [
+        'param' => (string) $row['param'],
+        'label' => itm_hotel_booking_portal_ui_copy_from_settings($settings, (string) $row['column']),
+        'slug' => (string) $row['slug'],
+      ];
+    }
+    return $out;
   }
 }
 
 if (!function_exists('itm_hotel_booking_portal_code_rate_options')) {
-  function itm_hotel_booking_portal_code_rate_options() {
-    return [
-      ['param' => 'promo_code', 'label' => 'Promotion code', 'slug' => 'promo'],
-      ['param' => 'group_code', 'label' => 'Group code', 'slug' => 'group'],
-      ['param' => 'corporate_account', 'label' => 'Corporate account', 'slug' => 'corporate'],
-      ['param' => 'member_account', 'label' => 'Member account', 'slug' => 'member'],
+  function itm_hotel_booking_portal_code_rate_options($settings = null) {
+    $settings = is_array($settings) ? $settings : [];
+    $defs = [
+      ['param' => 'promo_code', 'column' => 'portal_ui_step1_code_rate_promo', 'slug' => 'promo'],
+      ['param' => 'group_code', 'column' => 'portal_ui_step1_code_rate_group', 'slug' => 'group'],
+      ['param' => 'corporate_account', 'column' => 'portal_ui_step1_code_rate_corporate', 'slug' => 'corporate'],
+      ['param' => 'member_account', 'column' => 'portal_ui_step1_code_rate_member', 'slug' => 'member'],
     ];
+    $out = [];
+    foreach ($defs as $row) {
+      $out[] = [
+        'param' => (string) $row['param'],
+        'label' => itm_hotel_booking_portal_ui_copy_from_settings($settings, (string) $row['column']),
+        'slug' => (string) $row['slug'],
+      ];
+    }
+    return $out;
   }
 }
 
@@ -4210,15 +4230,21 @@ if (!function_exists('itm_hotel_booking_portal_accessibility_need_options')) {
   /**
    * @return array<string, string> slug => label
    */
-  function itm_hotel_booking_portal_accessibility_need_options() {
-    return [
-      'none' => 'None',
-      'mobility' => 'Mobility impairments (wheelchair users, walkers)',
-      'hearing' => 'Hearing impairments (visual alarms, flashing alerts)',
-      'visual' => 'Visual impairments (tactile signage, high-contrast design)',
-      'cognitive' => 'Cognitive impairments (clear layouts, simple controls)',
-      'other' => 'Other',
+  function itm_hotel_booking_portal_accessibility_need_options($settings = null) {
+    $settings = is_array($settings) ? $settings : [];
+    $map = [
+      'none' => 'portal_ui_step3_accessibility_none',
+      'mobility' => 'portal_ui_step3_accessibility_mobility',
+      'hearing' => 'portal_ui_step3_accessibility_hearing',
+      'visual' => 'portal_ui_step3_accessibility_visual',
+      'cognitive' => 'portal_ui_step3_accessibility_cognitive',
+      'other' => 'portal_ui_step3_accessibility_other',
     ];
+    $out = [];
+    foreach ($map as $slug => $column) {
+      $out[$slug] = itm_hotel_booking_portal_ui_copy_from_settings($settings, $column);
+    }
+    return $out;
   }
 }
 
@@ -4231,9 +4257,9 @@ if (!function_exists('itm_hotel_booking_portal_normalize_accessibility_need')) {
 }
 
 if (!function_exists('itm_hotel_booking_portal_accessibility_need_label')) {
-  function itm_hotel_booking_portal_accessibility_need_label($slug) {
+  function itm_hotel_booking_portal_accessibility_need_label($slug, $settings = null) {
     $slug = itm_hotel_booking_portal_normalize_accessibility_need($slug);
-    $options = itm_hotel_booking_portal_accessibility_need_options();
+    $options = itm_hotel_booking_portal_accessibility_need_options($settings);
     return (string) ($options[$slug] ?? $options['none']);
   }
 }
@@ -5155,6 +5181,9 @@ if (!function_exists('itm_hotel_booking_settings_row')) {
     $res = mysqli_stmt_get_result($stmt);
     $row = $res ? mysqli_fetch_assoc($res) : null;
     mysqli_stmt_close($stmt);
+    if (is_array($row) && function_exists('itm_hotel_booking_portal_ui_copy_merge_into_settings')) {
+      $row = itm_hotel_booking_portal_ui_copy_merge_into_settings($conn, $companyId, $row);
+    }
     return $row;
   }
 }
@@ -6162,14 +6191,16 @@ if (!function_exists('itm_hotel_booking_room_type_options_for_hotel')) {
 }
 
 if (!function_exists('itm_hotel_booking_portal_manage_lookup_failure_message')) {
-  function itm_hotel_booking_portal_manage_lookup_failure_message() {
-    return 'No reservation found. Check your last name, reservation ID, and auth code.';
+  function itm_hotel_booking_portal_manage_lookup_failure_message($settings = null) {
+    $settings = is_array($settings) ? $settings : [];
+    return itm_hotel_booking_portal_ui_copy_from_settings($settings, 'portal_ui_manage_lookup_failure');
   }
 }
 
 if (!function_exists('itm_hotel_booking_portal_manage_verification_failure_message')) {
-  function itm_hotel_booking_portal_manage_verification_failure_message() {
-    return 'Could not complete verification. Please try again later.';
+  function itm_hotel_booking_portal_manage_verification_failure_message($settings = null) {
+    $settings = is_array($settings) ? $settings : [];
+    return itm_hotel_booking_portal_ui_copy_from_settings($settings, 'portal_ui_manage_verification_failure');
   }
 }
 
@@ -6418,7 +6449,7 @@ if (!function_exists('itm_hotel_booking_portal_manage_otp_issue')) {
     $reservationId = (int) ($verifiedBookingRow['id'] ?? 0);
     $email = trim((string) ($verifiedBookingRow['customer_email'] ?? ''));
     if ($companyId < 1 || $reservationId < 1 || $email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-      return ['ok' => false, 'error' => itm_hotel_booking_portal_manage_lookup_failure_message()];
+      return ['ok' => false, 'error' => itm_hotel_booking_portal_manage_lookup_failure_message($settingsRow)];
     }
     $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     $subject = 'Your booking verification code';
@@ -6453,7 +6484,7 @@ if (!function_exists('itm_hotel_booking_portal_manage_otp_issue')) {
     );
     $sent = function_exists('itm_send_email') ? itm_send_email($email, $subject, $body, $companyId, $emailOptions) : false;
     if (!$sent) {
-      return ['ok' => false, 'error' => itm_hotel_booking_portal_manage_verification_failure_message()];
+      return ['ok' => false, 'error' => itm_hotel_booking_portal_manage_verification_failure_message($settingsRow)];
     }
     $_SESSION[itm_hotel_booking_portal_manage_otp_session_key()] = [
       'company_id' => $companyId,
@@ -7026,6 +7057,9 @@ if (!function_exists('itm_hotel_booking_portal_public_settings_for_js')) {
       'room_type_code_fallback_json' => trim((string) ($settings['portal_room_type_code_fallback_json'] ?? '')) !== ''
         ? trim((string) $settings['portal_room_type_code_fallback_json'])
         : itm_hotel_booking_portal_default_room_type_code_fallback_json(),
+      'ui_copy' => function_exists('itm_hotel_booking_portal_ui_copy_map_for_js')
+        ? itm_hotel_booking_portal_ui_copy_map_for_js($settings)
+        : [],
     ];
   }
 }
@@ -8132,3 +8166,5 @@ if (!function_exists('itm_hotel_booking_portal_insert_stay_bookings_locked')) {
     return ['ok' => true, 'booking_id' => (int) $bookingIds[0], 'booking_ids' => $bookingIds];
   }
 }
+
+require_once __DIR__ . '/itm_hotel_booking_portal_ui_copy.php';

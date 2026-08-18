@@ -1,4 +1,9 @@
 (function () {
+  function hbUiCopy(key, fallback) {
+    var copy = (window.HB_SETTINGS && window.HB_SETTINGS.ui_copy) ? window.HB_SETTINGS.ui_copy : {};
+    var val = copy[key];
+    return (val !== undefined && val !== null && String(val).trim() !== '') ? String(val) : String(fallback || '');
+  }
   var cfg = window.HB_SELECT_ROOM || {};
   var cards = document.querySelectorAll('.hb-room-card');
   if (!cards.length && !document.getElementById('hb-occupancy-modal')) {
@@ -541,7 +546,7 @@
             visible++;
           }
         });
-        countEl.textContent = visible + ' room types shown.';
+        countEl.textContent = hbUiCopy('step1_room_types_shown', '{count} room types shown.').replace('{count}', String(visible));
       }
     });
   }

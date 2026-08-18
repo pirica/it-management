@@ -126,9 +126,9 @@ if (!function_exists('hb_portal_load_hotel_amenity_rows')) {
         }
         if (empty($amenityRows)) {
             $amenityRows = [
-                ['name' => 'Free WiFi', 'icon_slug' => 'wifi'],
-                ['name' => 'Outdoor pool', 'icon_slug' => 'pool'],
-                ['name' => 'Fitness center', 'icon_slug' => 'fitness'],
+                ['name' => hb_portal_ui_copy('portal_ui_home_amenity_wifi_fallback', [], hb_portal_money_settings_bound()), 'icon_slug' => 'wifi'],
+                ['name' => hb_portal_ui_copy('portal_ui_step1_amenity_pool_fallback', [], hb_portal_money_settings_bound()), 'icon_slug' => 'pool'],
+                ['name' => hb_portal_ui_copy('portal_ui_home_amenity_fitness_fallback', [], hb_portal_money_settings_bound()), 'icon_slug' => 'fitness'],
             ];
         }
         return $amenityRows;
@@ -260,6 +260,7 @@ if (!function_exists('hb_portal_room_detail_card_for_type')) {
 
 if (!function_exists('hb_portal_room_detail_modal_html')) {
     function hb_portal_room_detail_modal_html(array $card, array $hotelAmenities, $currencyCode, $bookUrl, $available, array $options = []) {
+        $uiSettings = hb_portal_money_settings_bound();
         $showBookCta = !array_key_exists('show_book_cta', $options) || $options['show_book_cta'];
         $name = (string) ($card['type_name'] ?? '');
         $bed = (string) ($card['bed_summary'] ?? '');
@@ -310,19 +311,19 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
 
         $policyBadges = [];
         if (!empty($card['adults_only'])) {
-            $policyBadges[] = 'Adults only';
+            $policyBadges[] = hb_portal_ui_copy('portal_ui_step1_policy_adults_only', [], $uiSettings);
         }
         if (!empty($card['smoking_allowed'])) {
-            $policyBadges[] = 'Smoking allowed';
+            $policyBadges[] = hb_portal_ui_copy('portal_ui_step1_policy_smoking', [], $uiSettings);
         }
         if (!empty($card['accessible_room'])) {
-            $policyBadges[] = 'Accessible';
+            $policyBadges[] = hb_portal_ui_copy('portal_ui_step1_policy_accessible', [], $uiSettings);
         }
         if (!empty($card['crib_included'])) {
-            $policyBadges[] = 'Crib included';
+            $policyBadges[] = hb_portal_ui_copy('portal_ui_step1_policy_crib', [], $uiSettings);
         }
         if (!empty($card['extra_bed_allowed'])) {
-            $policyBadges[] = 'Extra bed available';
+            $policyBadges[] = hb_portal_ui_copy('portal_ui_step1_policy_extra_bed', [], $uiSettings);
         }
 
         $amenityHtml = '';
@@ -355,10 +356,10 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
         }
 
         $highlightsHtml =
-            $highlight('Guests', $guestItems) .
-            $highlight('Room layout', $layoutItems) .
-            $highlight('Bathroom', $cats['bathroom']) .
-            $highlight('Kitchen and dining', $cats['kitchen']);
+            $highlight(hb_portal_ui_copy('portal_ui_step1_highlight_guests', [], $uiSettings), $guestItems) .
+            $highlight(hb_portal_ui_copy('portal_ui_step1_highlight_room_layout', [], $uiSettings), $layoutItems) .
+            $highlight(hb_portal_ui_copy('portal_ui_step1_highlight_bathroom', [], $uiSettings), $cats['bathroom']) .
+            $highlight(hb_portal_ui_copy('portal_ui_step1_highlight_kitchen', [], $uiSettings), $cats['kitchen']);
 
         $comfortHtml = '';
         foreach ($cats['comfort'] as $c) {
@@ -390,11 +391,11 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
 
         $descLead = trim($desc);
         if ($descLead === '') {
-            $descLead = 'Experience modern luxury in this room with thoughtful design and convenient features. Boasting smart amenities for business and leisure stays.';
+            $descLead = hb_portal_ui_copy('portal_ui_step1_room_desc_lead_default', [], $uiSettings);
         }
-        $descExtra = 'Enjoy quality coffee from the Nespresso coffee machine or a drink from the minibar. The marble bathroom contains a separate bathtub with luxury bath products, cotton bathrobes and slippers.';
+        $descExtra = hb_portal_ui_copy('portal_ui_step1_room_desc_extra_default', [], $uiSettings);
         if ($specLine === '') {
-            $specParts = ['38 sq. m.', 'balcony', '55-inch HDTV', 'minibar', 'rain shower', 'WiFi'];
+            $specParts = explode(', ', hb_portal_ui_copy('portal_ui_step1_room_spec_default', [], $uiSettings));
             $specLine = implode(', ', $specParts);
         }
 
@@ -410,7 +411,7 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
 <h2 class="hb-rd-title"><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></h2>
 <?php echo hb_portal_gallery_html($photoUrls); ?>
 <?php if (!empty($card['connecting_type_code']) || !empty($card['connecting_type_name'])): ?>
-<p class="hb-rate-info-banner hb-connecting-room-banner" role="note">Connecting rooms available with <?php echo htmlspecialchars(trim((string) ($card['connecting_type_code'] ?: $card['connecting_type_name'])), ENT_QUOTES, 'UTF-8'); ?></p>
+<p class="hb-rate-info-banner hb-connecting-room-banner" role="note"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_connecting_room_detail_banner', ['type' => trim((string) ($card['connecting_type_code'] ?: $card['connecting_type_name']))], $uiSettings); ?></p>
 <?php endif; ?>
 <p class="hb-rd-occ"><?php echo htmlspecialchars($occLabel, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php if ($policyBadges !== []): ?>
@@ -422,29 +423,29 @@ if (!function_exists('hb_portal_room_detail_modal_html')) {
 <div class="hb-rd-desc-wrap">
 <p class="hb-rd-desc hb-rd-desc-lead"><?php echo htmlspecialchars($descLead, ENT_QUOTES, 'UTF-8'); ?></p>
 <p class="hb-rd-desc hb-rd-desc-more" hidden><?php echo htmlspecialchars($descExtra, ENT_QUOTES, 'UTF-8'); ?></p>
-<button type="button" class="hb-rd-read-more" data-hb-read-more title="Read more">Read more</button>
+<button type="button" class="hb-rd-read-more" data-hb-read-more title="<?php echo hb_portal_ui_copy_esc('portal_ui_home_read_more', [], $uiSettings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_home_read_more', [], $uiSettings); ?></button>
 </div>
 <?php if ($showBookCta): ?>
 <?php if ($available): ?>
-<a class="<?php echo htmlspecialchars($bookClass, ENT_QUOTES, 'UTF-8'); ?>" href="<?php echo htmlspecialchars($bookUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Book this room">Book From <?php if ($showBookCompare): ?><span class="hb-rd-price-compare"><?php echo htmlspecialchars($listPriceLabel, ENT_QUOTES, 'UTF-8'); ?></span> <?php endif; ?><span class="hb-rd-price-value"><?php echo htmlspecialchars($priceLabel, ENT_QUOTES, 'UTF-8'); ?></span></a>
+<a class="<?php echo htmlspecialchars($bookClass, ENT_QUOTES, 'UTF-8'); ?>" href="<?php echo htmlspecialchars($bookUrl, ENT_QUOTES, 'UTF-8'); ?>" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step1_book_room_title', [], $uiSettings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_book_from_prefix', [], $uiSettings); ?> <?php if ($showBookCompare): ?><span class="hb-rd-price-compare"><?php echo htmlspecialchars($listPriceLabel, ENT_QUOTES, 'UTF-8'); ?></span> <?php endif; ?><span class="hb-rd-price-value"><?php echo htmlspecialchars($priceLabel, ENT_QUOTES, 'UTF-8'); ?></span></a>
 <?php else: ?>
-<button type="button" class="hb-btn hb-btn-disabled hb-room-detail-book" disabled title="Not available">Not available</button>
+<button type="button" class="hb-btn hb-btn-disabled hb-room-detail-book" disabled title="<?php echo hb_portal_ui_copy_esc('portal_ui_step1_not_available_button', [], $uiSettings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_not_available_button', [], $uiSettings); ?></button>
 <?php endif; ?>
 <?php endif; ?>
 </div>
 <div class="hb-room-detail-right">
 <section class="hb-rd-section">
-<h3>Hotel amenities</h3>
+<h3><?php echo hb_portal_ui_copy_esc('portal_ui_step1_hotel_amenities_heading', [], $uiSettings); ?></h3>
 <?php echo $amenityHtml; ?>
 </section>
 <section class="hb-rd-section">
-<h3>Room highlights</h3>
+<h3><?php echo hb_portal_ui_copy_esc('portal_ui_step1_room_highlights_heading', [], $uiSettings); ?></h3>
 <div class="hb-rd-highlights"><?php echo $highlightsHtml; ?></div>
 </section>
 <details class="hb-rd-more" open>
-<summary class="hb-rd-more-summary"><span class="hb-rd-more-title">More room details</span><span class="hb-rd-more-chevron" aria-hidden="true"></span></summary>
+<summary class="hb-rd-more-summary"><span class="hb-rd-more-title"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_more_room_details', [], $uiSettings); ?></span><span class="hb-rd-more-chevron" aria-hidden="true"></span></summary>
 <div class="hb-rd-more-body">
-<h4>For your comfort</h4>
+<h4><?php echo hb_portal_ui_copy_esc('portal_ui_step1_for_your_comfort', [], $uiSettings); ?></h4>
 <ul><?php echo $comfortHtml; ?></ul>
 </div>
 </details>

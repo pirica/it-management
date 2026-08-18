@@ -49,7 +49,7 @@ $travelingWithPet = !empty($draft['traveling_with_pet']) ? 1 : 0;
 $serviceAnimal = !empty($draft['service_animal']) ? 1 : 0;
 $additionalComments = (string) ($draft['additional_comments'] ?? '');
 $accessibilityOptionsEnabled = itm_hotel_booking_portal_accessibility_options_enabled_from_settings($settings);
-$accessibilityNeedOptions = itm_hotel_booking_portal_accessibility_need_options();
+$accessibilityNeedOptions = itm_hotel_booking_portal_accessibility_need_options($settings);
 $accessibilityNeed = itm_hotel_booking_portal_normalize_accessibility_need($draft['accessibility_need'] ?? 'none');
 $accessibilityPepAcknowledged = !empty($draft['accessibility_pep_acknowledged']) ? 1 : 0;
 $accessibilityPepUrl = itm_hotel_booking_portal_accessibility_pep_url_from_settings($settings);
@@ -147,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $draft['accessibility_need'] = $postedNeed;
         $draft['accessibility_pep_acknowledged'] = !empty($_POST['accessibility_pep_acknowledged']) ? 1 : 0;
         if (itm_hotel_booking_portal_accessibility_pep_required($postedNeed) && empty($draft['accessibility_pep_acknowledged'])) {
-            $customizeErrors[] = 'Please confirm you have read the Personal Emergency Plan (PEP) before continuing.';
+            $customizeErrors[] = hb_portal_ui_copy('portal_ui_step3_pep_error', [], $settings);
             $accessibilityNeed = $postedNeed;
             $accessibilityPepAcknowledged = 0;
             $accessibilityPepRequired = true;
@@ -171,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $upgradePrice = $upgradeOffer ? (float) ($upgradeOffer['upgrade_price_per_night'] ?? 0) : 0;
 $upgradePitch = $upgradeOffer ? trim((string) ($upgradeOffer['upgrade_pitch'] ?? '')) : '';
 if ($upgradePitch === '') {
-    $upgradePitch = 'You deserve a little extra. Enjoy a room with added perks.';
+    $upgradePitch = hb_portal_ui_copy('portal_ui_step3_upgrade_pitch_default', [], $settings);
 }
 $upgradeTitle = $upgradeOffer ? trim((string) ($upgradeOffer['target_name'] ?? '')) : '';
 if ($upgradeOffer && !empty($upgradeOffer['target_bed_summary'])) {
@@ -296,7 +296,7 @@ $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_setti
 <div class="hb-select-room-layout hb-checkout-layout">
 <main class="hb-select-room-main">
 <div class="hb-back-wrapper" style="margin-bottom: 12px;">
-    <a class="hb-btn hb-checkout-skip" href="<?php echo htmlspecialchars($changeRateUrl, ENT_QUOTES, 'UTF-8'); ?>" title="Back">Back</a>
+    <a class="hb-btn hb-checkout-skip" href="<?php echo htmlspecialchars($changeRateUrl, ENT_QUOTES, 'UTF-8'); ?>" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step4_back_button', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step4_back_button', [], $settings); ?></a>
 </div>
 <p class="hb-step-label"><?php echo htmlspecialchars($checkoutStepHeading['progress'], ENT_QUOTES, 'UTF-8'); ?></p>
 <h1 class="hb-page-title"><?php echo htmlspecialchars($checkoutStepHeading['title'], ENT_QUOTES, 'UTF-8'); ?></h1>
@@ -308,7 +308,7 @@ $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_setti
 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(itm_get_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>">
 
 <?php if ($upgradeOffer): ?>
-<h2 class="hb-upgrade-heading">We found a better room for you!</h2>
+<h2 class="hb-upgrade-heading"><?php echo hb_portal_ui_copy_esc('portal_ui_step3_upgrade_heading', [], $settings); ?></h2>
 <article class="hb-upgrade-card">
 <div class="hb-upgrade-card-img" style="background-image:url('<?php echo htmlspecialchars($upgradeImageUrl, ENT_QUOTES, 'UTF-8'); ?>')"></div>
 <div class="hb-upgrade-card-body">
@@ -319,61 +319,65 @@ $checkoutStepHeading = itm_hotel_booking_portal_checkout_step_heading_from_setti
 <p class="hb-upgrade-card-pitch"><?php echo htmlspecialchars($upgradePitch, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php if ($upgradeRoomDetailHtml !== ''): ?>
 <p class="hb-upgrade-card-links">
-<button type="button" class="hb-room-details-link hb-room-details-open" id="hb-customize-room-details" title="View room details">View room details</button>
+<button type="button" class="hb-room-details-link hb-room-details-open" id="hb-customize-room-details" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step1_view_room_details', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step1_view_room_details', [], $settings); ?></button>
 </p>
 <?php endif; ?>
 </div>
 <div class="hb-upgrade-card-price">
 <p class="hb-upgrade-price-amount">+<?php echo htmlspecialchars(hb_portal_money_format($upgradePrice, $currency), ENT_QUOTES, 'UTF-8'); ?></p>
-<p class="hb-upgrade-price-meta">per night</p>
+<p class="hb-upgrade-price-meta"><?php echo hb_portal_ui_copy_esc('portal_ui_shared_per_night_meta', [], $settings); ?></p>
 </div>
 </article>
 <?php endif; ?>
 
 <section class="hb-checkout-section">
-<h2 class="hb-checkout-section-title">Special requests</h2>
+<h2 class="hb-checkout-section-title"><?php echo hb_portal_ui_copy_esc('portal_ui_step3_special_requests_heading', [], $settings); ?></h2>
 <?php if (!$petsAllowed): ?>
-<p class="hb-checkout-hint">No special requests available.</p>
+<p class="hb-checkout-hint"><?php echo hb_portal_ui_copy_esc('portal_ui_step3_no_special_requests', [], $settings); ?></p>
 <?php else: ?>
 <label class="hb-filter-check hb-checkout-check">
 <input type="checkbox" name="traveling_with_pet" id="hb-traveling-with-pet" value="1"<?php echo $travelingWithPet ? ' checked' : ''; ?>>
-<span>Traveling with a pet</span>
+<span><?php echo hb_portal_ui_copy_esc('portal_ui_step3_traveling_with_pet', [], $settings); ?></span>
 </label>
-<p class="hb-checkout-hint">Pets allowed, <?php echo htmlspecialchars(hb_portal_money_format_decimal($petNonRefundable, $currency), ENT_QUOTES, 'UTF-8'); ?> non-refundable fee, <?php echo (int) $petMaxWeight; ?> kg maximum, daily fee <?php echo htmlspecialchars(hb_portal_money_format_decimal($petDailyFee, $currency), ENT_QUOTES, 'UTF-8'); ?> per night</p>
+<p class="hb-checkout-hint"><?php echo hb_portal_ui_copy_esc('portal_ui_step3_pet_policy_template', [
+    'non_refundable_fee' => hb_portal_money_format_decimal($petNonRefundable, $currency),
+    'max_weight' => (int) $petMaxWeight,
+    'daily_fee' => hb_portal_money_format_decimal($petDailyFee, $currency),
+], $settings); ?></p>
 <label class="hb-filter-check hb-checkout-check">
 <input type="checkbox" name="service_animal" value="1"<?php echo $serviceAnimal ? ' checked' : ''; ?>>
-<span>Traveling with a service animal</span>
+<span><?php echo hb_portal_ui_copy_esc('portal_ui_step3_service_animal', [], $settings); ?></span>
 </label>
 <?php endif; ?>
 </section>
 
 <?php if ($accessibilityOptionsEnabled): ?>
 <section class="hb-checkout-section" id="hb-accessibility-section">
-<h2 class="hb-checkout-section-title">Accessibility</h2>
-<label class="hb-checkout-field-label" for="hb-accessibility-need">Do you have any accessibility needs?</label>
+<h2 class="hb-checkout-section-title"><?php echo hb_portal_ui_copy_esc('portal_ui_step3_accessibility_heading', [], $settings); ?></h2>
+<label class="hb-checkout-field-label" for="hb-accessibility-need"><?php echo hb_portal_ui_copy_esc('portal_ui_step3_accessibility_need_prompt', [], $settings); ?></label>
 <select name="accessibility_need" id="hb-accessibility-need" class="hb-checkout-select">
 <?php foreach ($accessibilityNeedOptions as $needSlug => $needLabel): ?>
 <option value="<?php echo htmlspecialchars($needSlug, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $accessibilityNeed === $needSlug ? ' selected' : ''; ?>><?php echo htmlspecialchars($needLabel, ENT_QUOTES, 'UTF-8'); ?></option>
 <?php endforeach; ?>
 </select>
 <div class="hb-accessibility-pep-wrap" id="hb-accessibility-pep-wrap"<?php echo $accessibilityPepRequired ? '' : ' hidden'; ?>>
-<p class="hb-checkout-hint">A Personal Emergency Plan (PEP) applies when accessibility needs are selected. <a href="<?php echo htmlspecialchars($accessibilityPepUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" title="Open PEP document">Read the PEP document ↗</a></p>
+<p class="hb-checkout-hint"><?php echo hb_portal_ui_copy_esc('portal_ui_step3_pep_intro', [], $settings); ?> <a href="<?php echo htmlspecialchars($accessibilityPepUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step3_pep_document_link', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step3_pep_document_link', [], $settings); ?></a></p>
 <label class="hb-filter-check hb-checkout-check">
 <input type="checkbox" name="accessibility_pep_acknowledged" id="hb-accessibility-pep-ack" value="1"<?php echo $accessibilityPepAcknowledged ? ' checked' : ''; ?>>
-<span>I have read the Personal Emergency Plan (PEP)</span>
+<span><?php echo hb_portal_ui_copy_esc('portal_ui_step3_pep_ack_checkbox', [], $settings); ?></span>
 </label>
 </div>
 </section>
 <?php endif; ?>
 
 <section class="hb-checkout-section">
-<h2 class="hb-checkout-section-title">Additional comments</h2>
-<textarea name="additional_comments" class="hb-checkout-comments" maxlength="130" rows="3" placeholder="Optional requests (130 characters max)"><?php echo htmlspecialchars($additionalComments, ENT_QUOTES, 'UTF-8'); ?></textarea>
-<p class="hb-checkout-hint">The hotel cannot guarantee additional requests.</p>
+<h2 class="hb-checkout-section-title"><?php echo hb_portal_ui_copy_esc('portal_ui_step3_additional_comments_heading', [], $settings); ?></h2>
+<textarea name="additional_comments" class="hb-checkout-comments" maxlength="130" rows="3" placeholder="<?php echo hb_portal_ui_copy_esc('portal_ui_step3_comments_placeholder', [], $settings); ?>"><?php echo htmlspecialchars($additionalComments, ENT_QUOTES, 'UTF-8'); ?></textarea>
+<p class="hb-checkout-hint"><?php echo hb_portal_ui_copy_esc('portal_ui_shared_guarantee_disclaimer', [], $settings); ?></p>
 </section>
 
 <div class="hb-checkout-actions">
-<button type="submit" class="hb-btn hb-btn-primary" id="hb-customize-continue" title="Continue to guest details">Continue</button>
+<button type="submit" class="hb-btn hb-btn-primary" id="hb-customize-continue" title="<?php echo hb_portal_ui_copy_esc('portal_ui_step3_continue_title', [], $settings); ?>"><?php echo hb_portal_ui_copy_esc('portal_ui_step3_continue_button', [], $settings); ?></button>
 </div>
 </form>
 </main>
