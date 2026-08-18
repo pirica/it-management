@@ -1144,7 +1144,7 @@ Run `verify_appointment.php` when changing `modules/appointments/`, `includes/it
 | `php scripts/run_hotel_booking_distribution_ari_sync.php` | Push ARI snapshots to all active channels with `webhook_url` (optional `--company=`, `--days=`) |
 | `php scripts/run_hotel_booking_distribution_webhook_queue.php` | Process pending/failed outbound webhook queue rows with exponential backoff; dead-letter at `max_attempts` |
 | `php scripts/verify_hotel_booking_distribution_webhook_ssrf.php` | Regression: outbound `webhook_url` SSRF guard (`itm_hotel_booking_distribution_validate_webhook_url`, channel edit save, deliver without HTTP to blocked hosts) |
-| `php scripts/seed_hotel_booking_sample_photos.php` | Copy sample hotel + room-type images to `booking/images/{hotel_id}/hotel_photos/` and `room_types_photos/`; upsert photo rows (`--apply` writes; default dry-run) |
+| `php scripts/seed_hotel_booking_sample_photos.php` | Copy sample hotel + room-type images to `booking/images/{hotel_id}/hotel_photos/` and `room_types_photos/` from `booking/images/sample-room.jpg` (and legacy portal assets when present); upsert photo rows (`--apply` writes; default dry-run) |
 | `php scripts/check_hotel_bookings_rate_plan_form.php` | Static gate: `__add_new__` portal rate plan select, `hb_booking_end_form_page()` body-level modal, rate-plan select JS quick-add handler |
 | `php scripts/check_hospitality_date_format.php` | Hospitality-only subset of `check_date_format.php` (stay-date static + helper contracts) |
 | `php scripts/check_date_format.php` | Project-wide date format gate: UK `dd/mm/yyyy`, hospitality `d/M/Y`, audit stamps, hospitality static scan, scaffold cell-hook info |
