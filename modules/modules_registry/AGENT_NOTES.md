@@ -16,6 +16,8 @@ CRUD UI for the global **modules_registry** catalog (module slugs, display names
 
 ## 5. UI Behavior Requirements
 - Standard flattened CRUD for registry rows.
+- **`active`** on list/view uses Active/Inactive badges (audit scaffold).
+- **`is_system_module`** on list/view renders ✅/❌ via `cr_render_cell_value()` in `index.php`, `list_all.php`, `view.php`, and `edit.php`; create/edit use checkbox double-label when exposed.
 - Sidebar listing for registry-only modules may appear before a folder exists; opening CRUD URLs still needs `modules/{slug}/` when linked from admin tools.
 - `module_slug` is the canonical key merged by `itm_sidebar_structure()` and **company_module_access**.
 
