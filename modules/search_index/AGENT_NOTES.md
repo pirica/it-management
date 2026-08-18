@@ -8,7 +8,7 @@ Runtime sync: `includes/itm_search_index.php` (`itm_search_index_upsert`, `itm_s
 
 ## 2. Key Tables
 
-- **search_index** — denormalized palette index (no soft-delete audit columns — `updated_at` only)
+- **search_index** — denormalized palette index (`active` `tinyint(1)` DEFAULT `1`; `updated_at` only — no soft-delete audit columns)
 
 ## 3. Required Relationships
 
@@ -31,6 +31,7 @@ Flattened scaffold CRUD:
 - **Empty list:** no **Add sample data** button — copy explains derived-cache contract and links to [apply_search_index_backfill.php?run=1&apply=1](http://localhost/it-management/scripts/apply_search_index_backfill.php?run=1&apply=1) (Admin session).
 - **No Add sample data:** derived cache rows must come from source module saves or the backfill script — not `db/02_data_sample.sql` or `itm_seed_table_from_database_sql()`.
 - **No soft-delete:** table has no `deleted_at` — list/delete use hard `DELETE` and must not call `itm_crud_append_not_deleted_predicate()` (`$crudUsesSoftDelete = false` on all entry files).
+- **`active`:** `tinyint(1) DEFAULT '1'` — list/view Active/Inactive badges; CRUD sync/backfill rely on DB default (no `deleted_*` columns). Live migration: `db/migrations/search_index_active_tinyint1.sql` (destructive DROP — re-run backfill after apply).
 
 ## 9. Audit Logging Requirements
 
