@@ -22,6 +22,8 @@ Manage IT department contact information, hours, and escalation rules for the or
 
 ## 6. UI / Layout
 - Standard flattened CRUD module (independent). Action wrappers (`create.php`, `edit.php`, `view.php`, `delete.php`, `list_all.php`) set `$crud_action` and invoke `index.php` for consolidated logic.
+- Hide **`company_id`** from list/view/forms (`$hideCompanyIdTables` includes `it_settings`).
+- **`chat_same_tenant`** on list/view renders ✅/❌ via `cr_render_cell_value()`; create/edit use checkbox double-label when exposed on forms.
 
 ## 7. API & AJAX
 - None (standard CRUD).
