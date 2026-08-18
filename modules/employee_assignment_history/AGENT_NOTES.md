@@ -32,6 +32,7 @@ Tracks asset custody per employee: which **equipment** or **inventory item** (op
 - **Employee labels:** FK dropdowns and list cells use `TRIM(CONCAT(first_name, ' ', last_name))` with fallback to `display_name` (same pattern as `index.php` `cr_fk_options` / `cr_fk_label` for `employees`).
 - **Chronological use:** sort/list by `assigned_date`, `returned_date`, or `id` as needed; unique key is per employee, not per assignment event.
 - **Hide** `company_id` from list/view (flattened CRUD `$hideCompanyIdTables` includes this table).
+- **`signed_handover`** on list/view renders ✅/❌ via `cr_render_cell_value()` (not raw `0`/`1`); create/edit keep the checkbox double-label pattern.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — handles bulk JSON import when enabled on index.
