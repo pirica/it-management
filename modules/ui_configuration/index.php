@@ -211,6 +211,17 @@ function cr_render_cell_value($table, $field, $value) {
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
 
+    if ($table === 'ui_configuration' && in_array($field, [
+        'enable_all_error_reporting',
+        'enable_audit_logs',
+        'enable_chatbot',
+        'enable_auto_scaffolding',
+        'api_key_is_active',
+        'rate_limit_enabled',
+    ], true)) {
+        return ((int)$value === 1) ? '✅' : '❌';
+    }
+
     // Special boolean mapping for Employee Access module.
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
