@@ -17,9 +17,24 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
     <?php itm_render_head_favicon_link(); ?>
     <link rel="stylesheet" href="../../css/styles.css">
     <style>
-        .qr-type-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; margin:16px 0; }
-        .qr-type-card { border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center; cursor:pointer; background:var(--bg-primary); }
-        .qr-type-card:hover, .qr-type-card.selected { border-color:var(--accent); }
+        .qr-type-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); gap:12px; margin:16px 0; }
+        .qr-type-card {
+            display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+            min-height:108px; padding:16px 12px; border:1px solid var(--border); border-radius:10px;
+            text-align:center; text-decoration:none; color:var(--text-primary); background:var(--bg-primary);
+            cursor:pointer; transition:border-color 0.2s, background-color 0.2s, box-shadow 0.2s, transform 0.15s;
+        }
+        .qr-type-card:hover, .qr-type-card:focus-visible {
+            border-color:var(--accent); background:var(--bg-secondary);
+            box-shadow:0 2px 8px rgba(0,0,0,0.06); transform:translateY(-1px);
+        }
+        .qr-type-card:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+        .qr-type-card:visited { color:var(--text-primary); }
+        .qr-type-card.selected { border-color:var(--accent); background:var(--bg-secondary); }
+        .qr-type-emoji { font-size:28px; line-height:1; }
+        .qr-type-label { font-size:13px; font-weight:500; line-height:1.25; color:var(--text-primary); }
+        .qr-type-picker-intro { color:var(--text-secondary); margin:0 0 4px; font-size:14px; }
+        .qr-section-heading { margin:0 0 8px; font-size:20px; }
         .qr-preview-panel { border:1px solid var(--border); border-radius:8px; padding:16px; text-align:center; min-height:280px; }
         .qr-wizard-steps { display:flex; gap:8px; margin-bottom:16px; }
         .qr-wizard-steps span { padding:6px 12px; border-radius:6px; background:var(--bg-secondary); }
@@ -106,12 +121,13 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
                 </div>
                 <?php if ($qrStep === 1 && $crud_action === 'create'): ?>
                 <div class="card">
-                    <h2 title="Select type">1</h2>
+                    <h2 class="qr-section-heading" title="Select QR type">Select type</h2>
+                    <p class="qr-type-picker-intro">Choose a type — each tile opens the content and design wizard.</p>
                     <div class="qr-type-grid">
                         <?php foreach ($qrCatalog as $slug => $meta): ?>
-                        <a class="qr-type-card" href="create.php?type=<?= rawurlencode($slug) ?>&step=2">
-                            <div><?= sanitize((string)$meta['emoji']) ?></div>
-                            <div><?= sanitize((string)$meta['label']) ?></div>
+                        <a class="qr-type-card" href="create.php?type=<?= rawurlencode($slug) ?>&step=2" title="<?= sanitize((string)$meta['label']) ?>">
+                            <span class="qr-type-emoji" aria-hidden="true"><?= sanitize((string)$meta['emoji']) ?></span>
+                            <span class="qr-type-label"><?= sanitize((string)$meta['label']) ?></span>
                         </a>
                         <?php endforeach; ?>
                     </div>
