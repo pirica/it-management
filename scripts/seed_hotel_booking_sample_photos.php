@@ -20,15 +20,33 @@ $hotelSamples = [
 ];
 
 $roomTypeSamples = [
-    ['type_code' => 'DLX', 'source' => 'booking/images/room-5.jpg', 'stored' => 'hb_rt_dlx_01.jpg', 'original' => 'deluxe-room-1.jpg', 'sort_order' => 0, 'is_cover' => 1],
-    ['type_code' => 'DLX', 'source' => 'booking/images/image_3.jpg', 'stored' => 'hb_rt_dlx_02.jpg', 'original' => 'deluxe-room-2.jpg', 'sort_order' => 1, 'is_cover' => 0],
-    ['type_code' => 'SUP', 'source' => 'booking/images/services-2.jpg', 'stored' => 'hb_rt_sup_01.jpg', 'original' => 'superior-room-1.jpg', 'sort_order' => 0, 'is_cover' => 1],
-    ['type_code' => 'STD', 'source' => 'booking/images/room-5.jpg', 'stored' => 'hb_rt_std_01.jpg', 'original' => 'standard-room-1.jpg', 'sort_order' => 0, 'is_cover' => 1],
-    ['type_code' => 'STD', 'source' => 'booking/images/image_2.jpg', 'stored' => 'hb_rt_std_02.jpg', 'original' => 'standard-room-2.jpg', 'sort_order' => 1, 'is_cover' => 0],
+    ['type_code' => 'DLX', 'source' => 'booking/images/sample-room.jpg', 'stored' => 'hb_rt_dlx_01.jpg', 'original' => 'deluxe-room-1.jpg', 'sort_order' => 0, 'is_cover' => 1],
+    ['type_code' => 'DLX', 'source' => 'booking/images/sample-room.jpg', 'stored' => 'hb_rt_dlx_02.jpg', 'original' => 'deluxe-room-2.jpg', 'sort_order' => 1, 'is_cover' => 0],
+    ['type_code' => 'SUP', 'source' => 'booking/images/sample-room.jpg', 'stored' => 'hb_rt_sup_01.jpg', 'original' => 'superior-room-1.jpg', 'sort_order' => 0, 'is_cover' => 1],
+    ['type_code' => 'STD', 'source' => 'booking/images/sample-room.jpg', 'stored' => 'hb_rt_std_01.jpg', 'original' => 'standard-room-1.jpg', 'sort_order' => 0, 'is_cover' => 1],
+    ['type_code' => 'STD', 'source' => 'booking/images/sample-room.jpg', 'stored' => 'hb_rt_std_02.jpg', 'original' => 'standard-room-2.jpg', 'sort_order' => 1, 'is_cover' => 0],
 ];
 
 if (!function_exists('itm_ensure_upload_directory')) {
     require_once ROOT_PATH . 'includes/bootstrap_helpers.php';
+}
+
+/**
+ * Resolve a readable sample image on disk (legacy booking/assets first, then canonical sample-room.jpg).
+ */
+function itm_seed_hotel_booking_sample_source_abs(array $sample) {
+    $candidates = [];
+    if (!empty($sample['source'])) {
+        $candidates[] = (string) $sample['source'];
+    }
+    $candidates[] = 'booking/images/sample-room.jpg';
+    foreach ($candidates as $rel) {
+        $abs = ROOT_PATH . str_replace('/', DIRECTORY_SEPARATOR, $rel);
+        if (is_file($abs) && @getimagesize($abs) !== false) {
+            return $abs;
+        }
+    }
+    return '';
 }
 
 /**
@@ -96,20 +114,16 @@ $relDir = itm_hotel_booking_photo_storage_dir($hotelId, 'hotel_photos');
 $absDir = ROOT_PATH . str_replace('/', DIRECTORY_SEPARATOR, $relDir);
 
 foreach ($hotelSamples as $sample) {
-    $sourceAbs = ROOT_PATH . str_replace('/', DIRECTORY_SEPARATOR, $sample['source']);
+    $sourceAbs = itm_seed_hotel_booking_sample_source_abs($sample);
     $portalAbs = ROOT_PATH . str_replace('/', DIRECTORY_SEPARATOR, $sample['portal']);
     $targetAbs = $absDir . DIRECTORY_SEPARATOR . $sample['stored'];
 
-    if (!is_file($sourceAbs)) {
-        echo "[FAIL] missing source {$sample['source']}\n";
-        continue;
-    }
-    if (@getimagesize($sourceAbs) === false) {
-        echo "[FAIL] invalid image {$sample['source']}\n";
+    if ($sourceAbs === '') {
+        echo "[FAIL] missing source for {$sample['stored']} (expected booking/images/sample-room.jpg)\n";
         continue;
     }
 
-    echo "[OK] hotel {$sample['stored']} <= {$sample['source']}\n";
+    echo "[OK] hotel {$sample['stored']} <= " . str_replace('\\', '/', str_replace(ROOT_PATH, '', $sourceAbs)) . "\n";
     if ($apply) {
         if (!is_dir(dirname($portalAbs))) {
             mkdir(dirname($portalAbs), 0775, true);
@@ -144,17 +158,13 @@ foreach ($roomTypeSamples as $sample) {
         $hotelIds = [$hotelId];
     }
 
-    $sourceAbs = ROOT_PATH . str_replace('/', DIRECTORY_SEPARATOR, $sample['source']);
-    if (!is_file($sourceAbs)) {
-        echo "[FAIL] missing source {$sample['source']}\n";
-        continue;
-    }
-    if (@getimagesize($sourceAbs) === false) {
-        echo "[FAIL] invalid image {$sample['source']}\n";
+    $sourceAbs = itm_seed_hotel_booking_sample_source_abs($sample);
+    if ($sourceAbs === '') {
+        echo "[FAIL] missing source for {$sample['stored']} (expected booking/images/sample-room.jpg)\n";
         continue;
     }
 
-    echo "[OK] room_type {$typeCode} ({$typeId}) {$sample['stored']} <= {$sample['source']}\n";
+    echo "[OK] room_type {$typeCode} ({$typeId}) {$sample['stored']} <= " . str_replace('\\', '/', str_replace(ROOT_PATH, '', $sourceAbs)) . "\n";
     if ($apply) {
         foreach ($hotelIds as $seedHotelId) {
             $relTypeDir = itm_hotel_booking_photo_storage_dir((int) $seedHotelId, 'room_types_photos');
