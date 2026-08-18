@@ -21,6 +21,7 @@ Global **command palette** search across enabled tenant modules so users can fin
 - **Module navigation:** query matching slug or sidebar label (e.g. `equipment`, `hotel`) returns a **Modules** group across **all accessible sidebar/registry modules** with `modules/{slug}/index.php` (not limited to the five record-search modules). `itm_command_palette_sidebar_visible_module_slugs()` mirrors live sidebar visibility; navigable set unions sidebar + registry.
 - **Per-module cap:** default 5 results per group (`limit` query param / JSON field, max 10).
 - **Soft-delete:** respect `deleted_at IS NULL` on scaffold tables; employees also hide `is_hidden = 1`.
+- **No fake index rows:** `search_index` is a derived cache — do not seed demo palette rows via **Add sample data** or `db/02_data_sample.sql`. Admin CRUD at [modules/search_index/index.php](http://localhost/it-management/modules/search_index/index.php) shows a backfill link when empty; bulk sync: [apply_search_index_backfill.php?run=1&apply=1](http://localhost/it-management/scripts/apply_search_index_backfill.php?run=1&apply=1).
 - **Search helpers:** employees → `itm_employees_build_search_conditions()`; equipment → `itm_equipment_build_search_where_sql()` + joins; IP → `itm_ipam_fetch_address_list()`; tickets/catalogs → prepared `LIKE` on scalar + label columns.
 
 ## 5. UI Behavior Requirements

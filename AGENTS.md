@@ -315,7 +315,7 @@ These tables must **not** define `trg_{table}_audit_*` triggers in `db/03_trigge
 | Table | Module / notes |
 |-------|----------------|
 | `schema_migrations` | Migration runner history (`scripts/migrate.php`, `includes/itm_database_migrations.php`); global, no `company_id`; admin UI is read-only (`modules/schema_migrations/`). |
-| `search_index` | Denormalized command-palette cache (`includes/itm_search_index.php`); source modules remain auditable; index upserts must not flood `audit_logs`. |
+| `search_index` | Denormalized command-palette cache (`includes/itm_search_index.php`); source modules remain auditable; index upserts must not flood `audit_logs`. **No Add sample data** — rows come from CRUD sync or `scripts/apply_search_index_backfill.php`, not `db/02_data_sample.sql`. |
 
 `scripts/check_audit_logs_coverage.php` merges these into `audit_logs_trigger_exempt_tables()` via `audit_logs_system_derived_tables()`.
 
@@ -792,6 +792,7 @@ Not part of smoke — see **`scripts/SCRIPTS.md`** (Smoke tests). Bulk alias rep
 * **Source:** Runtime templates live in **`db/02_data_sample.sql`** (company `1` rows are parse markers only — not a live-DB tenant requirement). Loaded via `itm_database_sql_read_sample()` / `includes/itm_sample_data_seed.php`. **Not** imported by `scripts/import_database_split.sh`. Regenerate from `db/02_data.sql` with `php scripts/extract_02_data_sample.php --apply`.
 * **Any tenant:** `itm_seed_table_from_database_sql()` stamps the active session `company_id` for **any** valid `companies.id` (including companies created after import). FK parents are auto-seeded first (`itm_seed_lookup_parents_for_table()`). Duplicate business keys are skipped; when no template applies on an empty table, exactly **one** random fallback row is inserted.
 * **Tenant Safety:** Always write seeded rows with active `company_id`; never expose/edit `company_id` in UI.
+* **Exempt (no Add sample data):** system/derived cache tables (`search_index`, `schema_migrations`) — do not add **Add sample data** buttons, `db/02_data_sample.sql` templates, or `itm_seed_table_from_database_sql()` branches. Populate `search_index` via source-module saves or [apply_search_index_backfill.php?run=1&apply=1](http://localhost/it-management/scripts/apply_search_index_backfill.php?run=1&apply=1) (Admin session).
 
 ### 6. Module Consistency Guardrail (Mandatory)
 When a module uses duplicated procedural entry files (`index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`):
