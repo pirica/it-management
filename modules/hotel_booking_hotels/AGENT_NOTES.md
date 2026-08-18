@@ -22,7 +22,7 @@ Tenant CRUD for hospitality properties (`hotel_booking_hotels`). Supports photo 
 
 ## 4. Business Rules (Critical for Agents)
 
-- **Photo storage:** files under `booking/images/{hotel_id}/hotel_photos/` via `itm_hotel_booking_photo_storage_dir($hotelId, 'hotel_photos')`.
+- **Photo storage:** files under `booking/images/{hotel_id}/hotel_photos/` via `itm_hotel_booking_photo_storage_dir($hotelId, 'hotel_photos')`. **Seed backfill:** `php scripts/seed_hotel_booking_sample_photos.php --apply` copies `hb_seed_*.jpg` into each seed company’s primary hotel folder (companies 1–5) and upserts `hotel_booking_hotel_photos` rows.
 - **Upload field:** create/edit forms use `hb_photos[]` (multiple) handled by `itm_hotel_booking_photos_handle_upload()` after save. Disk names are randomized via `itm_hotel_booking_photo_random_stored_filename()`; `original_filename` keeps the client name for display only. Edit forms POST `record_id` and use `enctype="multipart/form-data"`.
 - **List thumbnails:** index shows **all** photos per hotel (not only cover); each opens full size in a new tab.
 - **Edit thumbnails:** existing photos render above the file input via `itm_hotel_booking_photos_for_parent_table()` + `itm_hotel_booking_render_photo_thumbnail_link()`.
