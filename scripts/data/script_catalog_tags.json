@@ -1532,6 +1532,13 @@
         "tables": [],
         "override": false
     },
+    "check_crud_view_edit_field_parity.php": {
+        "tags": [
+            "Codebase"
+        ],
+        "tables": [],
+        "override": false
+    },
     "check_display_field_columns_search.php": {
         "tags": [
             "Codebase"

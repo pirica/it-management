@@ -1697,6 +1697,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">
+                    <td><a href="check_crud_view_edit_field_parity.php" target="_blank" rel="nofollow noreferrer">check_crud_view_edit_field_parity.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Static audit: dynamic scaffold modules with <code>$viewColumns</code> detail loops must expose the same business fields on create/edit (minus <code>company_id</code> and audit meta). Detects <code>$*ListHidden</code> / <code>$*ListHiddenFields</code> filters on <code>$uiColumns</code> when view still shows those columns — edit must use extra cards/helpers (<code>*_edit_form_sections()</code>, <code>$formUiColumns</code>, etc.). Shared lib: <code>itm_crud_view_edit_field_parity_audit.php</code>.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Codebase">
                     <td><a href="check_display_field_columns_search.php" target="_blank" rel="nofollow noreferrer">check_display_field_columns_search.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>

@@ -525,6 +525,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 | **Module folder** (`floor_plans`, `catalogs`, …) | Always | `itm_script_format_module_link('floor_plans')` or `itm_script_format_module_path_link('modules/catalogs/')` | `../modules/floor_plans/index.php` |
 | **Database table name** (`catalogs`, `floor_plan_folders`, …) | **Only if** `modules/<table>/index.php` exists | `itm_script_format_table_link($tableName)` | `catalogs` → module link; `floor_plan_folders` → plain text only |
 | **Missing module table** (`fields_missing.php` footer) | Always (expected path) | `itm_script_format_table_link($tableName, '', true)` | `floor_plan_folders` → link to `../modules/floor_plan_folders/index.php` even when the folder is absent |
+| **View/edit field parity** (`check_crud_view_edit_field_parity.php`) | Per-module `[FAIL]` line | `itm_script_format_module_link($moduleSlug)` | `booking_rooms_types` → link to `../modules/booking_rooms_types/index.php` |
 | **phpMyAdmin** | **Only on `scripts/scripts.php`** | Hardcode in catalog: `http://localhost/phpmyadmin/` | Never in other `scripts/*.php` output |
 | **Edit row / actions** | When useful | `itm_script_module_relative_href_from_path('modules/name/', 'edit.php?id=5')` + `itm_script_external_link_html()` | `../modules/catalogs/edit.php?id=5` |
 
@@ -645,7 +646,7 @@ Local full import (requires MySQL, password `itmanagement`): `bash scripts/verif
 
 Catalog: `scripts/scripts.php`.
 
-Other scripts (`check_index_table_compliance.php`, `check_company_id_ui_column.php`, `check_crud_has_company_from_field_columns.php`, `check_crud_boolean_cell_display.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, `check_ui_action_emoji.php`, `check_pagination_emoji.php`, `check_crud_audit_soft_delete.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/scripts.php`).
+Other scripts (`check_index_table_compliance.php`, `check_company_id_ui_column.php`, `check_crud_has_company_from_field_columns.php`, `check_crud_boolean_cell_display.php`, `check_ui_configuration_coverage.php`, `check_display_field_columns_search.php`, `check_crud_view_edit_field_parity.php`, `check_ui_action_emoji.php`, `check_pagination_emoji.php`, `check_crud_audit_soft_delete.php`, employees/equipment clear-table guards, DB regression tests) are **not** part of smoke — run them manually when the change scope requires it (see `scripts/scripts.php`).
 
 **Tier 2 batch (pre-merge static cluster):** run every Tier 2 `check_*` script from `SCRIPTS_TEST_MATRIX.md` in one pass:
 
@@ -1269,6 +1270,19 @@ Use this registry when a bespoke module **intentionally** fails a gated UI check
 **Workflow:** reproduce with `php scripts/fields_missing.php --module=<slug>` → add rows to JSON → validate `php scripts/fields_missing_reviewed.php` → update module `AGENT_NOTES.md` → re-run `fields_missing.php` and confirm `[SKIP][fail][reviewed]` lines.
 
 **Strict gate:** `php scripts/fields_missing.php --strict-gate` (browser: `?strict_gate=1`) exits `1` when any bespoke `[SKIP][fail]` line is **not** in the registry. Reviewed `[SKIP][fail][reviewed]` lines do not fail strict gate. Use in CI when bespoke gate hygiene must be enforced.
+
+#### CRUD view/edit field parity (`check_crud_view_edit_field_parity.php`)
+
+**Catalog (What / How / Access):** `scripts/scripts.php` — Codebase row for `check_crud_view_edit_field_parity.php`.
+
+Static audit for flattened CRUD modules that render detail rows from `$viewColumns` but build create/edit from `$uiColumns`, `$formUiColumns`, `$formColumns`, or `*_edit_form_sections()` cards. Catches the Room Types class of bug: list grid hides columns via `$*ListHidden` / `$*ListHiddenFields` on `$uiColumns` while view still shows them — create/edit must re-expose those fields (minus `company_id` and audit meta).
+
+- **CLI:** `php scripts/check_crud_view_edit_field_parity.php` · optional `--module=<slug>` · `--json`
+- **Browser:** [check_crud_view_edit_field_parity.php?run=1](http://localhost/it-management/scripts/check_crud_view_edit_field_parity.php?run=1) (Admin session)
+- **When to run:** after changing `$uiColumns` / `$viewColumns` filters, list-hidden field arrays, or bespoke edit-section helpers under `modules/*/includes/`
+- **Shared lib:** `scripts/lib/itm_crud_view_edit_field_parity_audit.php`
+- **Exit `1`:** any `[FAIL] <module>.<field>: on view/detail but missing on create/edit forms`
+- **`[INFO]`:** schema columns not referenced as quoted strings in `index` / `create` / `edit` / `view` / `list_all` / `includes` PHP (informational only)
 
 **Seeded modules:** `backup_tape_log` — Search, Sort, Pagination (monthly grid bespoke UI). `company_module_access` — Sort, Pagination (admin matrix UI; Search and Import Excel implemented on `index.php`). `share_modules` — Sort, Pagination (admin share matrix UI; Search and Import Excel implemented on `index.php`).
 
