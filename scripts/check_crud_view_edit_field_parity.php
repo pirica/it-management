@@ -62,6 +62,10 @@ echo 'CRUD view/edit field parity audit' . $nl;
 echo 'Scope: dynamic scaffold modules with $viewColumns detail loops (index/create/edit/view/list_all).' . $nl;
 if ($moduleFilter !== '') {
     echo 'Filter: module=' . $moduleFilter . $nl;
+    $moduleFolderUrl = itm_crud_view_edit_field_parity_module_folder_local_url($moduleFilter);
+    if ($moduleFolderUrl !== '') {
+        echo 'Module folder: ' . $moduleFolderUrl . $nl;
+    }
 }
 echo $nl;
 
