@@ -25,7 +25,7 @@ if (!function_exists('itm_crud_view_edit_field_parity_parse_list_hidden_filters'
     {
         $filters = [];
         if (!preg_match_all(
-            '/\$([a-zA-Z0-9_]*(?:ListHiddenFields|ListHidden))\s*=\s*\[([^\]]+)\]/s',
+            '/\$([a-zA-Z0-9_]*(?:ListHiddenFields|ListHidden|ListOnlyHidden))\s*=\s*\[([^\]]+)\]/s',
             $content,
             $matches,
             PREG_SET_ORDER
@@ -57,6 +57,12 @@ if (!function_exists('itm_crud_view_edit_field_parity_parse_list_hidden_filters'
                 $content
             ) === 1) {
                 $targets[] = 'viewColumns';
+            }
+            if (preg_match(
+                '/if\s*\(\s*!in_array\s*\(\s*\$fieldName\s*,\s*\$' . $escaped . '\s*,\s*true\s*\)\s*\)\s*\{\s*continue\s*;\s*\}/',
+                $content
+            ) === 1) {
+                $targets[] = 'formUiColumns';
             }
             if ($targets === []) {
                 continue;
@@ -539,6 +545,17 @@ if (!function_exists('itm_crud_view_edit_field_parity_scope_has_dynamic_loop')) 
     }
 }
 
+if (!function_exists('itm_crud_view_edit_field_parity_index_uses_form_ui_columns')) {
+    function itm_crud_view_edit_field_parity_index_uses_form_ui_columns(string $indexContent): bool
+    {
+        $block = function_exists('itm_fields_missing_extract_create_edit_form_block')
+            ? (itm_fields_missing_extract_create_edit_form_block($indexContent) ?? $indexContent)
+            : $indexContent;
+
+        return preg_match('/foreach\s*\(\s*\$formUiColumns\s+as/', $block) === 1;
+    }
+}
+
 if (!function_exists('itm_crud_view_edit_field_parity_scope_excluded_columns')) {
     /**
      * Columns intentionally omitted from a scope's dynamic loop variables.
@@ -553,7 +570,16 @@ if (!function_exists('itm_crud_view_edit_field_parity_scope_excluded_columns')) 
     ): array {
         $excluded = [];
 
-        if (in_array($scope, ['index', 'list_all', 'create', 'edit'], true)) {
+        if (in_array($scope, ['index', 'list_all'], true)) {
+            $excluded = array_merge(
+                $excluded,
+                itm_crud_view_edit_field_parity_fields_hidden_from_variable($listHiddenFilters, 'uiColumns')
+            );
+        }
+
+        if (in_array($scope, ['create', 'edit'], true)
+            && !itm_crud_view_edit_field_parity_index_uses_form_ui_columns($indexContent)
+        ) {
             $excluded = array_merge(
                 $excluded,
                 itm_crud_view_edit_field_parity_fields_hidden_from_variable($listHiddenFilters, 'uiColumns')
@@ -994,7 +1020,9 @@ if (!function_exists('itm_crud_view_edit_field_parity_collect_report')) {
      *   failure_count:int,
      *   pass_count:int,
      *   reference_gap_count:int,
-     *   skipped_count:int
+     *   skipped_count:int,
+     *   audited_module_count:int,
+     *   registry_module_count:int
      * }
      */
     function itm_crud_view_edit_field_parity_collect_report(?string $moduleFilter = null, ?string $rootPath = null): array
@@ -1043,6 +1071,8 @@ if (!function_exists('itm_crud_view_edit_field_parity_collect_report')) {
             'pass_count' => $passCount,
             'reference_gap_count' => $referenceGapCount,
             'skipped_count' => $skippedCount,
+            'audited_module_count' => count($targets) - $skippedCount,
+            'registry_module_count' => count($targets),
         ];
     }
 }

@@ -60,6 +60,10 @@ if ($jsonOutput) {
 
 echo 'CRUD view/edit field parity audit' . $nl;
 echo 'Scope: dynamic scaffold modules with $viewColumns detail loops (index/create/edit/view/list_all).' . $nl;
+echo 'Note: this audit covers CRUD module folders from the registry — not every MySQL table.' . $nl;
+echo 'Registry modules: ' . (int) ($report['registry_module_count'] ?? 0)
+    . ' · Audited: ' . (int) ($report['audited_module_count'] ?? 0)
+    . ' · Skipped: ' . (int) ($report['skipped_count'] ?? 0) . $nl;
 if ($moduleFilter !== '') {
     echo 'Filter: module=' . $moduleFilter . $nl;
     $moduleFolderUrl = itm_crud_view_edit_field_parity_module_folder_local_url($moduleFilter);
@@ -93,6 +97,7 @@ foreach ($report['modules'] as $moduleReport) {
 echo $nl;
 echo 'Summary: ' . (int) ($report['failure_count'] ?? 0) . ' parity failure(s), '
     . (int) ($report['reference_gap_count'] ?? 0) . ' reference gap line(s), '
+    . (int) ($report['audited_module_count'] ?? 0) . ' audited module(s), '
     . (int) ($report['skipped_count'] ?? 0) . ' skipped module(s).' . $nl;
 
 itm_script_output_end();
