@@ -626,9 +626,44 @@ if (!function_exists('itm_crud_view_edit_field_parity_dynamic_scope_covers_colum
     }
 }
 
+if (!function_exists('itm_crud_view_edit_field_parity_column_referenced_in_scopes')) {
+    /**
+     * @param list<string> $scopes
+     */
+    function itm_crud_view_edit_field_parity_column_referenced_in_scopes(
+        string $column,
+        array $scopes,
+        array $files,
+        string $indexContent,
+        array $listHiddenFilters,
+        array &$scopeContentCache
+    ): bool {
+        foreach ($scopes as $scope) {
+            if (!isset($scopeContentCache[$scope])) {
+                $scopeContentCache[$scope] = itm_crud_view_edit_field_parity_scope_content($files, $scope);
+            }
+            $content = (string) ($scopeContentCache[$scope] ?? '');
+            if (itm_crud_view_edit_field_parity_column_quoted_in_content($column, $content)) {
+                return true;
+            }
+            if (itm_crud_view_edit_field_parity_dynamic_scope_covers_column(
+                $scope,
+                $content,
+                $indexContent,
+                $column,
+                $listHiddenFilters
+            )) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
 if (!function_exists('itm_crud_view_edit_field_parity_build_reference_gaps')) {
     /**
-     * Per-scope quoted-string gaps for every schema column (no global UI exclusions).
+     * Per-scope quoted-string gaps for schema columns not intentionally omitted from that scope.
      *
      * @param list<string> $schemaColumns
      * @param list<array{name:string,fields:list<string>,targets:list<string>}> $listHiddenFilters
@@ -644,6 +679,7 @@ if (!function_exists('itm_crud_view_edit_field_parity_build_reference_gaps')) {
         $hasIncludesDir = ($includesDir !== '' && is_dir($includesDir));
         $scopeContentCache = [];
         $gaps = [];
+        $uiScopes = ['index', 'create', 'edit', 'view', 'list_all'];
 
         foreach ($schemaColumns as $column) {
             $column = (string) $column;
@@ -660,16 +696,41 @@ if (!function_exists('itm_crud_view_edit_field_parity_build_reference_gaps')) {
                     $scopeContentCache[$scope] = itm_crud_view_edit_field_parity_scope_content($files, $scope);
                 }
 
-                $quoted = itm_crud_view_edit_field_parity_column_quoted_in_content($column, $scopeContentCache[$scope]);
+                $quoted = itm_crud_view_edit_field_parity_column_quoted_in_content(
+                    $column,
+                    (string) ($scopeContentCache[$scope] ?? '')
+                );
                 $dynamic = itm_crud_view_edit_field_parity_dynamic_scope_covers_column(
                     $scope,
-                    $scopeContentCache[$scope],
+                    (string) ($scopeContentCache[$scope] ?? ''),
                     $indexContent,
                     $column,
                     $listHiddenFilters
                 );
 
                 if ($quoted || $dynamic) {
+                    continue;
+                }
+
+                $scopeExcluded = itm_crud_view_edit_field_parity_scope_excluded_columns(
+                    $scope,
+                    $indexContent,
+                    $listHiddenFilters
+                );
+                if (in_array($column, $scopeExcluded, true)) {
+                    continue;
+                }
+
+                if ($scope === 'includes'
+                    && itm_crud_view_edit_field_parity_column_referenced_in_scopes(
+                        $column,
+                        $uiScopes,
+                        $files,
+                        $indexContent,
+                        $listHiddenFilters,
+                        $scopeContentCache
+                    )
+                ) {
                     continue;
                 }
 
@@ -711,12 +772,8 @@ if (!function_exists('itm_crud_view_edit_field_parity_format_module_ref')) {
         }
 
         if (function_exists('itm_script_is_cli_sapi') && itm_script_is_cli_sapi()) {
-            $url = itm_crud_view_edit_field_parity_module_folder_local_url($moduleSlug);
-            if ($url !== '' && substr($url, -1) !== '/') {
-                $url .= '/';
-            }
-
-            return $url;
+            // Why: CLI gap lines use slug.column; localhost module URL belongs in script header/summary only.
+            return $moduleSlug;
         }
 
         $href = '../modules/' . rawurlencode($moduleSlug) . '/';
