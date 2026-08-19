@@ -18,7 +18,7 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-Browser: optional <code>?module=&lt;slug&gt;</code> · <code>?json=1</code>. CLI: <code>php scripts/check_crud_view_edit_field_parity.php</code> · <code>--module=&lt;slug&gt;</code> · <code>--json</code>. Exit <code>1</code> on <code>[FAIL]</code> view/edit parity gaps. <code>[INFO]</code> lists schema columns not referenced in module entry PHP.
+Browser: optional <code>?module=&lt;slug&gt;</code> · <code>?json=1</code>. CLI: <code>php scripts/check_crud_view_edit_field_parity.php</code> · <code>--module=&lt;slug&gt;</code> · <code>--json</code>. Exit <code>1</code> when view/edit parity gaps exist. Plain lines list per-scope quoted-string reference gaps (module slug links to <code>../modules/&lt;slug&gt;/</code> in browser HTML).
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 
@@ -68,25 +68,27 @@ echo $nl;
 foreach ($report['modules'] as $moduleReport) {
     $slug = (string) ($moduleReport['module'] ?? '');
     if (!empty($moduleReport['skipped'])) {
-        echo '[SKIP] ' . $slug . ': ' . (string) ($moduleReport['skip_reason'] ?? 'skipped') . $nl;
+        echo $slug . ': skipped (' . (string) ($moduleReport['skip_reason'] ?? 'skipped') . ')' . $nl;
         continue;
     }
 
-    foreach ((array) ($moduleReport['infos'] ?? []) as $infoLine) {
-        echo '[INFO] ' . $infoLine . $nl;
+    foreach ((array) ($moduleReport['notes'] ?? []) as $noteLine) {
+        echo (string) $noteLine . $nl;
     }
-    foreach ((array) ($moduleReport['passes'] ?? []) as $passLine) {
-        echo '[PASS] ' . $passLine . $nl;
-    }
-    foreach ((array) ($moduleReport['failures'] ?? []) as $failure) {
-        echo '[FAIL] ' . (string) ($failure['message'] ?? '') . $nl;
+
+    foreach ((array) ($moduleReport['reference_gaps'] ?? []) as $gap) {
+        $column = (string) ($gap['column'] ?? '');
+        $scope = (string) ($gap['scope'] ?? '');
+        if ($column === '' || $scope === '') {
+            continue;
+        }
+        echo itm_crud_view_edit_field_parity_format_reference_gap_line($slug, $column, $scope) . $nl;
     }
 }
 
 echo $nl;
-echo 'Summary: ' . (int) ($report['failure_count'] ?? 0) . ' failure(s), '
-    . (int) ($report['pass_count'] ?? 0) . ' pass line(s), '
-    . (int) ($report['info_count'] ?? 0) . ' info line(s), '
+echo 'Summary: ' . (int) ($report['failure_count'] ?? 0) . ' parity failure(s), '
+    . (int) ($report['reference_gap_count'] ?? 0) . ' reference gap line(s), '
     . (int) ($report['skipped_count'] ?? 0) . ' skipped module(s).' . $nl;
 
 itm_script_output_end();

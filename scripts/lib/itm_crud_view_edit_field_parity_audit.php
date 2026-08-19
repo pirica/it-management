@@ -412,29 +412,204 @@ if (!function_exists('itm_crud_view_edit_field_parity_module_entry_bundle_conten
     }
 }
 
-if (!function_exists('itm_crud_view_edit_field_parity_schema_columns_unreferenced')) {
+if (!function_exists('itm_crud_view_edit_field_parity_reference_scopes')) {
     /**
-     * Live/db columns never mentioned in module entry PHP sources.
-     *
-     * @param list<string> $schemaColumns
      * @return list<string>
      */
-    function itm_crud_view_edit_field_parity_schema_columns_unreferenced(
-        array $schemaColumns,
-        string $bundleContent
-    ): array {
-        $missing = [];
-        foreach ($schemaColumns as $column) {
-            if ($column === '') {
-                continue;
+    function itm_crud_view_edit_field_parity_reference_scopes(): array
+    {
+        return ['index', 'create', 'edit', 'view', 'list_all', 'includes'];
+    }
+}
+
+if (!function_exists('itm_crud_view_edit_field_parity_scope_label')) {
+    function itm_crud_view_edit_field_parity_scope_label(string $scope): string
+    {
+        if ($scope === 'includes') {
+            return 'includes PHP';
+        }
+
+        return $scope;
+    }
+}
+
+if (!function_exists('itm_crud_view_edit_field_parity_read_file_content')) {
+    function itm_crud_view_edit_field_parity_read_file_content(string $path): string
+    {
+        if ($path === '' || !is_readable($path)) {
+            return '';
+        }
+        $content = file_get_contents($path);
+
+        return $content !== false ? (string) $content : '';
+    }
+}
+
+if (!function_exists('itm_crud_view_edit_field_parity_scope_content')) {
+    /**
+     * PHP source scanned for quoted column names in one module entry scope.
+     *
+     * @param array{create:string,edit:string,view:string,index:string,includes:string,list_all:string} $files
+     */
+    function itm_crud_view_edit_field_parity_scope_content(array $files, string $scope): string
+    {
+        if ($scope === 'includes') {
+            $includesDir = (string) ($files['includes'] ?? '');
+            if ($includesDir === '' || !is_dir($includesDir)) {
+                return '';
             }
-            $quoted = preg_quote($column, '/');
-            if (preg_match("/['\"]{$quoted}['\"]/", $bundleContent) !== 1) {
-                $missing[] = $column;
+            $chunks = [];
+            foreach (glob($includesDir . '/*.php') ?: [] as $includePath) {
+                $chunk = itm_crud_view_edit_field_parity_read_file_content((string) $includePath);
+                if ($chunk !== '') {
+                    $chunks[] = $chunk;
+                }
+            }
+
+            return implode("\n", $chunks);
+        }
+
+        if ($scope === 'index') {
+            return itm_crud_view_edit_field_parity_read_file_content((string) ($files['index'] ?? ''));
+        }
+
+        if (!in_array($scope, ['create', 'edit', 'view', 'list_all'], true)) {
+            return '';
+        }
+
+        $entryPath = (string) ($files[$scope] ?? '');
+        $chunks = [];
+        $entryContent = itm_crud_view_edit_field_parity_read_file_content($entryPath);
+        if ($entryContent !== '') {
+            $chunks[] = $entryContent;
+        }
+
+        $indexPath = (string) ($files['index'] ?? '');
+        if ($entryPath !== ''
+            && $indexPath !== ''
+            && is_readable($entryPath)
+            && itm_fields_missing_file_requires_index($entryPath)
+        ) {
+            $indexContent = itm_crud_view_edit_field_parity_read_file_content($indexPath);
+            if ($indexContent !== '') {
+                $chunks[] = $indexContent;
             }
         }
 
-        return $missing;
+        return implode("\n", $chunks);
+    }
+}
+
+if (!function_exists('itm_crud_view_edit_field_parity_column_quoted_in_content')) {
+    function itm_crud_view_edit_field_parity_column_quoted_in_content(string $column, string $content): bool
+    {
+        if ($column === '' || $content === '') {
+            return false;
+        }
+        $quoted = preg_quote($column, '/');
+
+        return preg_match("/['\"]{$quoted}['\"]/", $content) === 1;
+    }
+}
+
+if (!function_exists('itm_crud_view_edit_field_parity_build_reference_gaps')) {
+    /**
+     * Per-scope quoted-string gaps for every schema column (no global UI exclusions).
+     *
+     * @param list<string> $schemaColumns
+     * @return list<array{column:string,scope:string}>
+     */
+    function itm_crud_view_edit_field_parity_build_reference_gaps(array $schemaColumns, array $files): array
+    {
+        $includesDir = (string) ($files['includes'] ?? '');
+        $hasIncludesDir = ($includesDir !== '' && is_dir($includesDir));
+        $scopeContentCache = [];
+        $gaps = [];
+
+        foreach ($schemaColumns as $column) {
+            $column = (string) $column;
+            if ($column === '') {
+                continue;
+            }
+
+            foreach (itm_crud_view_edit_field_parity_reference_scopes() as $scope) {
+                if ($scope === 'includes' && !$hasIncludesDir) {
+                    continue;
+                }
+
+                if (!isset($scopeContentCache[$scope])) {
+                    $scopeContentCache[$scope] = itm_crud_view_edit_field_parity_scope_content($files, $scope);
+                }
+
+                if (itm_crud_view_edit_field_parity_column_quoted_in_content($column, $scopeContentCache[$scope])) {
+                    continue;
+                }
+
+                $gaps[] = [
+                    'column' => $column,
+                    'scope' => $scope,
+                ];
+            }
+        }
+
+        return $gaps;
+    }
+}
+
+if (!function_exists('itm_crud_view_edit_field_parity_module_folder_local_url')) {
+    function itm_crud_view_edit_field_parity_module_folder_local_url(string $moduleSlug): string
+    {
+        $moduleSlug = trim($moduleSlug);
+        if ($moduleSlug === '') {
+            return '';
+        }
+        if (!function_exists('itm_script_modules_repo_path_to_local_url')) {
+            require_once __DIR__ . '/script_browser_nav.php';
+        }
+
+        return itm_script_modules_repo_path_to_local_url('modules/' . $moduleSlug . '/');
+    }
+}
+
+if (!function_exists('itm_crud_view_edit_field_parity_format_module_ref')) {
+    function itm_crud_view_edit_field_parity_format_module_ref(string $moduleSlug): string
+    {
+        $moduleSlug = trim($moduleSlug);
+        if ($moduleSlug === '') {
+            return '';
+        }
+        if (!function_exists('itm_script_external_link_html')) {
+            require_once __DIR__ . '/script_browser_nav.php';
+        }
+
+        if (function_exists('itm_script_is_cli_sapi') && itm_script_is_cli_sapi()) {
+            $url = itm_crud_view_edit_field_parity_module_folder_local_url($moduleSlug);
+            if ($url !== '' && substr($url, -1) !== '/') {
+                $url .= '/';
+            }
+
+            return $url;
+        }
+
+        $href = '../modules/' . rawurlencode($moduleSlug) . '/';
+
+        return itm_script_external_link_html($href, $moduleSlug);
+    }
+}
+
+if (!function_exists('itm_crud_view_edit_field_parity_format_reference_gap_line')) {
+    /**
+     * Tag-free human line: {moduleRef}.{column}: schema column not referenced in {scopeLabel}
+     */
+    function itm_crud_view_edit_field_parity_format_reference_gap_line(
+        string $moduleSlug,
+        string $column,
+        string $scope
+    ): string {
+        $moduleRef = itm_crud_view_edit_field_parity_format_module_ref($moduleSlug);
+        $scopeLabel = itm_crud_view_edit_field_parity_scope_label($scope);
+
+        return $moduleRef . '.' . $column . ': schema column not referenced in ' . $scopeLabel;
     }
 }
 
@@ -448,7 +623,8 @@ if (!function_exists('itm_crud_view_edit_field_parity_audit_module')) {
      *   skip_reason:string,
      *   failures:list<array{code:string,field:string,message:string}>,
      *   passes:list<string>,
-     *   infos:list<string>
+     *   notes:list<string>,
+     *   reference_gaps:list<array{column:string,scope:string}>
      * }
      */
     function itm_crud_view_edit_field_parity_audit_module(
@@ -471,7 +647,8 @@ if (!function_exists('itm_crud_view_edit_field_parity_audit_module')) {
             'skip_reason' => '',
             'failures' => [],
             'passes' => [],
-            'infos' => [],
+            'notes' => [],
+            'reference_gaps' => [],
         ];
 
         if (isset($bespokeModules[$moduleSlug])) {
@@ -518,10 +695,9 @@ if (!function_exists('itm_crud_view_edit_field_parity_audit_module')) {
         $editSectionFields = itm_crud_view_edit_field_parity_collect_edit_form_section_fields($files);
         $formLoopVariable = itm_fields_missing_create_edit_form_loop_variable($indexContent);
         $formColumnExcluded = itm_crud_view_edit_field_parity_form_columns_excluded_fields($indexContent);
-        $bundleContent = itm_crud_view_edit_field_parity_module_entry_bundle_content($files);
 
         if ($uiListOnlyHidden !== []) {
-            $result['infos'][] = $moduleSlug . ': list-hidden from $uiColumns only: ' . implode(', ', $uiListOnlyHidden);
+            $result['notes'][] = $moduleSlug . ': list-hidden from $uiColumns only: ' . implode(', ', $uiListOnlyHidden);
             if ($editSectionFields === [] && itm_crud_view_edit_field_parity_index_references_edit_form_sections($indexContent)) {
                 $result['failures'][] = [
                     'code' => 'edit_sections_empty',
@@ -572,14 +748,7 @@ if (!function_exists('itm_crud_view_edit_field_parity_audit_module')) {
             $result['passes'][] = "{$moduleSlug}.{$field}: view/edit parity OK";
         }
 
-        $unreferenced = itm_crud_view_edit_field_parity_schema_columns_unreferenced($schemaColumns, $bundleContent);
-        $excludedFromInfo = array_fill_keys(itm_fields_missing_global_ui_excluded_columns(), true);
-        foreach ($unreferenced as $column) {
-            if (isset($excludedFromInfo[$column])) {
-                continue;
-            }
-            $result['infos'][] = "{$moduleSlug}.{$column}: schema column not referenced in index/create/edit/view/list_all/includes PHP";
-        }
+        $result['reference_gaps'] = itm_crud_view_edit_field_parity_build_reference_gaps($schemaColumns, $files);
 
         return $result;
     }
@@ -591,7 +760,7 @@ if (!function_exists('itm_crud_view_edit_field_parity_collect_report')) {
      *   modules:list<array<string,mixed>>,
      *   failure_count:int,
      *   pass_count:int,
-     *   info_count:int,
+     *   reference_gap_count:int,
      *   skipped_count:int
      * }
      */
@@ -612,7 +781,7 @@ if (!function_exists('itm_crud_view_edit_field_parity_collect_report')) {
         $modules = [];
         $failureCount = 0;
         $passCount = 0;
-        $infoCount = 0;
+        $referenceGapCount = 0;
         $skippedCount = 0;
 
         foreach ($targets as $target) {
@@ -632,14 +801,14 @@ if (!function_exists('itm_crud_view_edit_field_parity_collect_report')) {
             }
             $failureCount += count((array) ($moduleReport['failures'] ?? []));
             $passCount += count((array) ($moduleReport['passes'] ?? []));
-            $infoCount += count((array) ($moduleReport['infos'] ?? []));
+            $referenceGapCount += count((array) ($moduleReport['reference_gaps'] ?? []));
         }
 
         return [
             'modules' => $modules,
             'failure_count' => $failureCount,
             'pass_count' => $passCount,
-            'info_count' => $infoCount,
+            'reference_gap_count' => $referenceGapCount,
             'skipped_count' => $skippedCount,
         ];
     }
