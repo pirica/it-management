@@ -59,7 +59,7 @@ if (isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'planning_grid') {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $anchor)) {
         $anchor = itm_parse_date_input($anchor) ?: date('Y-m-d');
     }
-    $hotelId = (int) ($_GET['hotel_id'] ?? 0);
+    $hotelId = itm_hotel_booking_photo_default_hotel_id($conn, $company_id);
     $typeId = (int) ($_GET['room_type_id'] ?? 0);
     $floor = trim((string) ($_GET['floor'] ?? ''));
     $days = (int) ($_GET['days'] ?? 14);
@@ -106,7 +106,7 @@ if ($anchorInput !== '') {
         }
     }
 }
-$filterHotel = (int) ($_GET['hotel_id'] ?? 0);
+$filterHotel = itm_hotel_booking_photo_default_hotel_id($conn, $company_id);
 $filterType = (int) ($_GET['room_type_id'] ?? 0);
 $filterFloor = trim((string) ($_GET['floor'] ?? ''));
 $planDays = max(7, min(21, (int) ($_GET['days'] ?? 14)));
@@ -120,18 +120,6 @@ if (!in_array(strtolower($planDir), ['asc', 'desc'], true)) {
 }
 $hbView = itm_hotel_booking_planning_sanitize_view($_GET['hb_view'] ?? '');
 $hbHide = itm_hotel_booking_planning_sanitize_hide_names($_GET['hb_hide'] ?? []);
-
-$hotels = [];
-$hstmt = mysqli_prepare($conn, 'SELECT id, name FROM hotel_booking_hotels WHERE company_id = ? AND deleted_at IS NULL ORDER BY name');
-if ($hstmt) {
-    mysqli_stmt_bind_param($hstmt, 'i', $company_id);
-    mysqli_stmt_execute($hstmt);
-    $hr = mysqli_stmt_get_result($hstmt);
-    while ($hr && ($h = mysqli_fetch_assoc($hr))) {
-        $hotels[] = $h;
-    }
-    mysqli_stmt_close($hstmt);
-}
 
 $grid = itm_hotel_booking_planning_grid_rows($conn, $company_id, $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir, $hbView, $hbHide);
 $bookingsByRoom = [];
@@ -262,15 +250,8 @@ $hbViewButtons = [
 <?php foreach ($hbHide as $hideKeep): ?>
 <input type="hidden" name="hb_hide[]" value="<?php echo sanitize($hideKeep); ?>">
 <?php endforeach; ?>
+<input type="hidden" name="hotel_id" value="<?php echo (int) $filterHotel; ?>">
 <label>Anchor <?php itm_render_hotel_date_input('anchor', 'hb-plan-anchor', $anchorDate); ?></label>
-<label>Hotel
-<select name="hotel_id">
-<option value="0">All</option>
-<?php foreach ($hotels as $h): ?>
-<option value="<?php echo (int) $h['id']; ?>" <?php echo $filterHotel === (int) $h['id'] ? 'selected' : ''; ?>><?php echo sanitize($h['name']); ?></option>
-<?php endforeach; ?>
-</select>
-</label>
 <label>Days <input type="number" name="days" min="7" max="21" value="<?php echo (int) $planDays; ?>" class="hb-plan-days-input"></label>
 <label class="hb-plan-search-label"><span aria-hidden="true">&nbsp;</span><button type="submit" class="btn btn-sm" title="Search">🔎</button></label>
 </form>
