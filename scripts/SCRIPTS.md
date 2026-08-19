@@ -525,7 +525,7 @@ All outbound links in HTML script output must use helpers from **`scripts/lib/sc
 | **Module folder** (`floor_plans`, `catalogs`, …) | Always | `itm_script_format_module_link('floor_plans')` or `itm_script_format_module_path_link('modules/catalogs/')` | `../modules/floor_plans/index.php` |
 | **Database table name** (`catalogs`, `floor_plan_folders`, …) | **Only if** `modules/<table>/index.php` exists | `itm_script_format_table_link($tableName)` | `catalogs` → module link; `floor_plan_folders` → plain text only |
 | **Missing module table** (`fields_missing.php` footer) | Always (expected path) | `itm_script_format_table_link($tableName, '', true)` | `floor_plan_folders` → link to `../modules/floor_plan_folders/index.php` even when the folder is absent |
-| **View/edit field parity** (`check_crud_view_edit_field_parity.php`) | Per-module `[FAIL]` line | `itm_script_format_module_link($moduleSlug)` | `booking_rooms_types` → link to `../modules/booking_rooms_types/index.php` |
+| **View/edit field parity** (`check_crud_view_edit_field_parity.php`) | Per-scope reference gap line | `itm_crud_view_edit_field_parity_format_module_ref($moduleSlug)` | `expenses` → link to `../modules/expenses/` (folder, new tab); plain line `{slug}.{column}: schema column not referenced in {scope}` |
 | **phpMyAdmin** | **Only on `scripts/scripts.php`** | Hardcode in catalog: `http://localhost/phpmyadmin/` | Never in other `scripts/*.php` output |
 | **Edit row / actions** | When useful | `itm_script_module_relative_href_from_path('modules/name/', 'edit.php?id=5')` + `itm_script_external_link_html()` | `../modules/catalogs/edit.php?id=5` |
 
@@ -1281,8 +1281,8 @@ Static audit for flattened CRUD modules that render detail rows from `$viewColum
 - **Browser:** [check_crud_view_edit_field_parity.php?run=1](http://localhost/it-management/scripts/check_crud_view_edit_field_parity.php?run=1) (Admin session)
 - **When to run:** after changing `$uiColumns` / `$viewColumns` filters, list-hidden field arrays, or bespoke edit-section helpers under `modules/*/includes/`
 - **Shared lib:** `scripts/lib/itm_crud_view_edit_field_parity_audit.php`
-- **Exit `1`:** any `[FAIL] <module>.<field>: on view/detail but missing on create/edit forms`
-- **`[INFO]`:** schema columns not referenced as quoted strings in `index` / `create` / `edit` / `view` / `list_all` / `includes` PHP (informational only)
+- **Exit `1`:** when internal view/edit parity gaps exist (not printed as tagged lines; see JSON `failure_count`)
+- **Plain output:** tag-free per-scope reference gap lines — `{module}.{column}: schema column not referenced in index|create|edit|view|list_all|includes PHP` — only for scopes where the column name is not a quoted string in that scope’s PHP (thin wrappers that `require index.php` inherit `index.php` for create/edit/view/list_all). All schema columns are scanned (including `id`, `company_id`, audit meta). Omits `includes` scope when `modules/{slug}/includes/` is absent. Browser links module slug to `../modules/{slug}/`; CLI prints `http://localhost/it-management/modules/{slug}/` before `.{column}`.
 
 **Seeded modules:** `backup_tape_log` — Search, Sort, Pagination (monthly grid bespoke UI). `company_module_access` — Sort, Pagination (admin matrix UI; Search and Import Excel implemented on `index.php`). `share_modules` — Sort, Pagination (admin share matrix UI; Search and Import Excel implemented on `index.php`).
 
