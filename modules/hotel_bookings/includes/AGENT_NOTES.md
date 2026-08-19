@@ -8,7 +8,7 @@ Shared PHP partials for the bespoke **hotel_bookings** module — not a standalo
 
 | File | Role |
 |------|------|
-| `hb_booking_form.php` | Shared create/edit form for `hotel_bookings` — customer, room, check-in/out, payment, **auth2** PIN, portal rate plan (➕ / modal view/edit), planning `booking_color`, segment status FKs, notes, `active` checkbox, audit hidden inputs |
+| `hb_booking_form.php` | Shared create/edit form for `hotel_bookings` — customer, room, Last room snapshot, check-in/out, payment, **auth2** PIN, portal rate plan (➕ / modal view/edit), planning `booking_color`, segment status FKs, notes, `active` checkbox, audit hidden inputs |
 
 ## 4. Business Rules (Critical for Agents)
 

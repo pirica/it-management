@@ -39,7 +39,7 @@ function hb_pass($msg) {
 $tables = [
     'hotel_bookings_future', 'hotel_bookings_present', 'hotel_bookings_history',
     'booking_rooms_types', 'hotel_booking_housekeeping_statuses', 'hotel_booking_amenities', 'hotel_booking_hotels',
-    'hotel_booking_rooms', 'hotel_bookings', 'hotel_booking_settings',
+    'hotel_booking_rooms', 'hotel_bookings', 'hotel_booking_last_rooms', 'hotel_booking_settings',
 ];
 foreach ($tables as $t) {
     $res = mysqli_query($conn, "SHOW TABLES LIKE '" . mysqli_real_escape_string($conn, $t) . "'");
@@ -62,6 +62,45 @@ if ($pending) {
     hb_pass('PENDING status company 1');
 } else {
     hb_fail('PENDING status missing');
+}
+
+$allow = itm_hotel_booking_planning_view_allowlists();
+if (isset($allow['arrivals']['present'], $allow['future']['future'])
+    && in_array('DUE-IN', $allow['arrivals']['present'], true)
+    && in_array('PENDING', $allow['future']['future'], true)
+) {
+    hb_pass('planning view allowlists');
+} else {
+    hb_fail('planning view allowlists missing arrivals/future maps');
+}
+
+$visFuture = [
+    'check_in' => '2099-01-10',
+    'check_out' => '2099-01-12',
+    'future_status_id' => $pending,
+    'present_status_id' => 0,
+    'history_status_id' => 0,
+];
+if (itm_hotel_booking_planning_booking_visible($conn, 1, $visFuture, '2099-01-01', 'future', [])
+    && !itm_hotel_booking_planning_booking_visible($conn, 1, $visFuture, '2099-01-01', 'arrivals', [])
+) {
+    hb_pass('planning Future/Arrivals date filters');
+} else {
+    hb_fail('planning Future/Arrivals date filters');
+}
+
+$hideTok = itm_hotel_booking_planning_sanitize_hide_names(['cancelled', 'bogus', 'NO-SHOW']);
+if ($hideTok === ['CANCELLED', 'NO-SHOW']) {
+    hb_pass('planning hide token sanitize');
+} else {
+    hb_fail('planning hide token sanitize');
+}
+
+$emptyRoom = itm_hotel_booking_planning_unassigned_room_row();
+if ((int) ($emptyRoom['id'] ?? -1) === 0) {
+    hb_pass('planning unassigned empty row');
+} else {
+    hb_fail('planning unassigned empty row');
 }
 
 if (itm_hotel_booking_customer_last_name_matches('John Smith', 'smith') && !itm_hotel_booking_customer_last_name_matches('John Smith', 'Jones')) {

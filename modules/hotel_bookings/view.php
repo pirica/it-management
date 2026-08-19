@@ -41,6 +41,17 @@ itm_hospitality_admin_layout_begin($crud_title, ['css/hotel-bookings.css']);
 <p><strong>Auth code (auth2):</strong> <?php echo sanitize(itm_hotel_booking_normalize_auth2($row['auth2'] ?? '') ?: '—'); ?></p>
 <p><strong>Customer:</strong> <?php echo sanitize($row['customer_name']); ?></p>
 <p><strong>Room:</strong> <?php echo sanitize($row['room_number'] . ' — ' . $row['room_name']); ?></p>
+<?php
+$lastRoomView = itm_hotel_booking_last_room_fetch($conn, $company_id, (int) $row['id']);
+if (is_array($lastRoomView)):
+?>
+<p><strong>Last room reservation ID:</strong> <?php echo (int) ($lastRoomView['booking_id'] ?? $row['id']); ?></p>
+<p><strong>Last room number:</strong> <?php echo sanitize((string) ($lastRoomView['room_number'] ?? '')); ?></p>
+<p><strong>Last room name:</strong> <?php echo sanitize((string) ($lastRoomView['room_name'] ?? '')); ?></p>
+<p><strong>Last hotel:</strong> <?php echo sanitize((string) ($lastRoomView['hotel_name'] ?? '')); ?></p>
+<p><strong>Last room type:</strong> <?php echo sanitize((string) ($lastRoomView['room_type_name'] ?? '')); ?></p>
+<p><strong>Last floor:</strong> <?php echo sanitize((string) ($lastRoomView['floor'] ?? '')); ?></p>
+<?php endif; ?>
 <p><strong>Hotel:</strong> <?php echo sanitize($row['hotel_name'] ?? '—'); ?></p>
 <?php
 $hotelInfoEmail = trim((string) ($row['hotel_contact_email'] ?? ''));

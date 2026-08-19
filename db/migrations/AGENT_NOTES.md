@@ -19,7 +19,7 @@ Historical migration SQL files were **pruned** once live databases matched canon
 
 | File | Role |
 |------|------|
-| `schema_migrations.sql` | Bootstrap `schema_migrations` history table (`CREATE TABLE IF NOT EXISTS`); **not** executed by the runner loop |
+| `hotel_booking_last_rooms.sql` | Last-room snapshot table (`booking_id` + room/hotel/type/floor fields) |
 
 ## 12. Module Owner Notes
 

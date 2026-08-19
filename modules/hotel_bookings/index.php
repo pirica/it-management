@@ -71,7 +71,9 @@ if (isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'planning_grid') {
     if (!in_array(strtolower($planDir), ['asc', 'desc'], true)) {
         $planDir = 'asc';
     }
-    $grid = itm_hotel_booking_planning_grid_rows($conn, $company_id, $anchor, $hotelId, $typeId, $floor, $days, $planSort, $planDir);
+    $hbView = itm_hotel_booking_planning_sanitize_view($_GET['hb_view'] ?? '');
+    $hbHide = itm_hotel_booking_planning_sanitize_hide_names($_GET['hb_hide'] ?? []);
+    $grid = itm_hotel_booking_planning_grid_rows($conn, $company_id, $anchor, $hotelId, $typeId, $floor, $days, $planSort, $planDir, $hbView, $hbHide);
     echo json_encode($grid, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
@@ -116,6 +118,8 @@ if (!in_array($planSort, ['room', 'hk', 'type'], true)) {
 if (!in_array(strtolower($planDir), ['asc', 'desc'], true)) {
     $planDir = 'asc';
 }
+$hbView = itm_hotel_booking_planning_sanitize_view($_GET['hb_view'] ?? '');
+$hbHide = itm_hotel_booking_planning_sanitize_hide_names($_GET['hb_hide'] ?? []);
 
 $hotels = [];
 $hstmt = mysqli_prepare($conn, 'SELECT id, name FROM hotel_booking_hotels WHERE company_id = ? AND deleted_at IS NULL ORDER BY name');
@@ -129,10 +133,10 @@ if ($hstmt) {
     mysqli_stmt_close($hstmt);
 }
 
-$grid = itm_hotel_booking_planning_grid_rows($conn, $company_id, $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir);
+$grid = itm_hotel_booking_planning_grid_rows($conn, $company_id, $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir, $hbView, $hbHide);
 $bookingsByRoom = [];
 foreach ($grid['bookings'] as $b) {
-    $rid = (int) $b['room_id'];
+    $rid = (int) ($b['planning_room_id'] ?? $b['room_id'] ?? 0);
     if (!isset($bookingsByRoom[$rid])) {
         $bookingsByRoom[$rid] = [];
     }
@@ -182,7 +186,7 @@ if ($mode !== 'planning') {
     $boardRows = hb_board_list($conn, $company_id, $mode);
 }
 
-function hb_planning_filter_query($anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir) {
+function hb_planning_filter_query($anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir, $hbView = '', $hbHide = []) {
     $q = [
         'mode' => 'planning',
         'anchor' => itm_format_hotel_date_display($anchorDate),
@@ -197,12 +201,20 @@ function hb_planning_filter_query($anchorDate, $filterHotel, $filterType, $filte
     if ((string) $filterFloor !== '') {
         $q['floor'] = (string) $filterFloor;
     }
+    $hbView = itm_hotel_booking_planning_sanitize_view($hbView);
+    if ($hbView !== '') {
+        $q['hb_view'] = $hbView;
+    }
+    $hbHide = itm_hotel_booking_planning_sanitize_hide_names($hbHide);
+    if ($hbHide !== []) {
+        $q['hb_hide'] = $hbHide;
+    }
     return $q;
 }
 
-function hb_planning_sort_href($col, $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir) {
+function hb_planning_sort_href($col, $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir, $hbView = '', $hbHide = []) {
     $nextDir = ($planSort === $col && strtolower($planDir) === 'asc') ? 'desc' : 'asc';
-    $q = hb_planning_filter_query($anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $col, $nextDir);
+    $q = hb_planning_filter_query($anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $col, $nextDir, $hbView, $hbHide);
     return '?' . http_build_query($q);
 }
 
@@ -216,8 +228,8 @@ for ($i = 0; $i < $planDays; $i++) {
 }
 $prevAnchorDate = date('Y-m-d', strtotime($anchorDate . ' -' . $planDays . ' days'));
 $nextAnchorDate = date('Y-m-d', strtotime($anchorDate . ' +' . $planDays . ' days'));
-$prevAnchorQuery = hb_planning_filter_query($prevAnchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir);
-$nextAnchorQuery = hb_planning_filter_query($nextAnchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir);
+$prevAnchorQuery = hb_planning_filter_query($prevAnchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir, $hbView, $hbHide);
+$nextAnchorQuery = hb_planning_filter_query($nextAnchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir, $hbView, $hbHide);
 // Why: Codacy flags inline echo sanitize(http_build_query()) in href; pre-assign for strict audit.
 $prevAnchorHref = sanitize(http_build_query($prevAnchorQuery));
 $nextAnchorHref = sanitize(http_build_query($nextAnchorQuery));
@@ -233,10 +245,23 @@ $nextAnchorHref = sanitize(http_build_query($nextAnchorQuery));
 </div>
 
 <?php if ($mode === 'planning'): ?>
+<?php
+$hbViewButtons = [
+    '' => 'All',
+    'arrivals' => 'Arrivals',
+    'departures' => 'Departures',
+    'in_house' => 'In-house',
+    'future' => 'Future',
+];
+?>
 <form method="get" class="hb-plan-filters">
 <input type="hidden" name="mode" value="planning">
 <input type="hidden" name="plan_sort" value="<?php echo sanitize($planSort); ?>">
 <input type="hidden" name="plan_dir" value="<?php echo sanitize($planDir); ?>">
+<input type="hidden" name="hb_view" value="<?php echo sanitize($hbView); ?>">
+<?php foreach ($hbHide as $hideKeep): ?>
+<input type="hidden" name="hb_hide[]" value="<?php echo sanitize($hideKeep); ?>">
+<?php endforeach; ?>
 <label>Anchor <?php itm_render_hotel_date_input('anchor', 'hb-plan-anchor', $anchorDate); ?></label>
 <label>Hotel
 <select name="hotel_id">
@@ -249,13 +274,45 @@ $nextAnchorHref = sanitize(http_build_query($nextAnchorQuery));
 <label>Days <input type="number" name="days" min="7" max="21" value="<?php echo (int) $planDays; ?>" class="hb-plan-days-input"></label>
 <label class="hb-plan-search-label"><span aria-hidden="true">&nbsp;</span><button type="submit" class="btn btn-sm" title="Search">🔎</button></label>
 </form>
+<div class="hb-plan-view-filters" role="group" aria-label="Booking view filters">
+<?php foreach ($hbViewButtons as $viewSlug => $viewLabel):
+    $viewQuery = hb_planning_filter_query($anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir, $viewSlug, $hbHide);
+    $viewHref = sanitize(http_build_query($viewQuery));
+    $isActive = $hbView === $viewSlug;
+?>
+<a class="btn btn-sm <?php echo $isActive ? 'btn-primary' : ''; ?>" href="?<?php echo $viewHref; ?>" title="<?php echo sanitize($viewLabel); ?>"><?php echo sanitize($viewLabel); ?></a>
+<?php endforeach; ?>
+</div>
+<form method="get" class="hb-plan-hide-filters">
+<input type="hidden" name="mode" value="planning">
+<input type="hidden" name="plan_sort" value="<?php echo sanitize($planSort); ?>">
+<input type="hidden" name="plan_dir" value="<?php echo sanitize($planDir); ?>">
+<input type="hidden" name="hb_view" value="<?php echo sanitize($hbView); ?>">
+<input type="hidden" name="anchor" value="<?php echo sanitize(itm_format_hotel_date_display($anchorDate)); ?>">
+<input type="hidden" name="hotel_id" value="<?php echo (int) $filterHotel; ?>">
+<input type="hidden" name="days" value="<?php echo (int) $planDays; ?>">
+<?php if ((int) $filterType > 0): ?>
+<input type="hidden" name="room_type_id" value="<?php echo (int) $filterType; ?>">
+<?php endif; ?>
+<?php if ((string) $filterFloor !== ''): ?>
+<input type="hidden" name="floor" value="<?php echo sanitize($filterFloor); ?>">
+<?php endif; ?>
+<span class="hb-plan-hide-legend">Hide</span>
+<?php foreach (itm_hotel_booking_planning_hide_tokens() as $hideToken): ?>
+<label class="itm-checkbox-control hb-plan-hide-check">
+<input type="checkbox" name="hb_hide[]" value="<?php echo sanitize($hideToken); ?>" <?php echo in_array($hideToken, $hbHide, true) ? 'checked' : ''; ?>>
+<span><?php echo sanitize($hideToken); ?></span>
+</label>
+<?php endforeach; ?>
+<button type="submit" class="btn btn-sm" title="Apply hide filters">🔎</button>
+</form>
 <div class="hb-plan-grid-wrap">
 <table class="hb-plan-grid">
 <thead>
 <tr>
-<th class="hb-plan-sticky hb-plan-room-col"><a href="<?php echo sanitize(hb_planning_sort_href('room', $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir)); ?>" class="hb-plan-sort-link" title="Sort by room">Room<?php if ($planSort === 'room'): ?> <?php echo strtolower($planDir) === 'asc' ? '▲' : '▼'; ?><?php endif; ?></a></th>
-<th class="hb-plan-sticky hb-plan-hk-col"><a href="<?php echo sanitize(hb_planning_sort_href('hk', $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir)); ?>" class="hb-plan-sort-link" title="Sort by HSK status">HSK<?php if ($planSort === 'hk'): ?> <?php echo strtolower($planDir) === 'asc' ? '▲' : '▼'; ?><?php endif; ?></a></th>
-<th class="hb-plan-sticky hb-plan-type-col"><a href="<?php echo sanitize(hb_planning_sort_href('type', $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir)); ?>" class="hb-plan-sort-link" title="Sort by room type">Type<?php if ($planSort === 'type'): ?> <?php echo strtolower($planDir) === 'asc' ? '▲' : '▼'; ?><?php endif; ?></a></th>
+<th class="hb-plan-sticky hb-plan-room-col"><a href="<?php echo sanitize(hb_planning_sort_href('room', $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir, $hbView, $hbHide)); ?>" class="hb-plan-sort-link" title="Sort by room">Room<?php if ($planSort === 'room'): ?> <?php echo strtolower($planDir) === 'asc' ? '▲' : '▼'; ?><?php endif; ?></a></th>
+<th class="hb-plan-sticky hb-plan-hk-col"><a href="<?php echo sanitize(hb_planning_sort_href('hk', $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir, $hbView, $hbHide)); ?>" class="hb-plan-sort-link" title="Sort by HSK status">HSK<?php if ($planSort === 'hk'): ?> <?php echo strtolower($planDir) === 'asc' ? '▲' : '▼'; ?><?php endif; ?></a></th>
+<th class="hb-plan-sticky hb-plan-type-col"><a href="<?php echo sanitize(hb_planning_sort_href('type', $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir, $hbView, $hbHide)); ?>" class="hb-plan-sort-link" title="Sort by room type">Type<?php if ($planSort === 'type'): ?> <?php echo strtolower($planDir) === 'asc' ? '▲' : '▼'; ?><?php endif; ?></a></th>
 <th class="hb-plan-date-nav" title="Previous dates"><a class="btn btn-sm hb-plan-date-arrow" href="?<?php echo $prevAnchorHref; ?>" title="Previous dates">⬅️</a></th>
 <?php foreach ($dayHeaders as $d): ?>
 <th class="hb-plan-day"><?php echo sanitize($d->format('D ') . itm_format_hotel_date_display($d->format('Y-m-d'))); ?></th>
@@ -264,17 +321,22 @@ $nextAnchorHref = sanitize(http_build_query($nextAnchorQuery));
 </tr>
 </thead>
 <tbody>
-<?php foreach ($grid['rooms'] as $room): ?>
-<tr data-room-id="<?php echo (int) $room['id']; ?>">
-<td class="hb-plan-sticky hb-plan-room-col" title="Double-click to view room"><?php echo sanitize($room['room_number']); ?></td>
-<td class="hb-plan-sticky hb-plan-hk-col hb-plan-hk-cell" title="Double-click to rotate HSK status"><?php
+<?php foreach ($grid['rooms'] as $room):
+$isUnassignedRow = (int) $room['id'] === 0;
+?>
+<tr data-room-id="<?php echo (int) $room['id']; ?>"<?php echo $isUnassignedRow ? ' class="hb-plan-unassigned-row"' : ''; ?>>
+<td class="hb-plan-sticky hb-plan-room-col"<?php echo $isUnassignedRow ? '' : ' title="Double-click to view room"'; ?>><?php echo $isUnassignedRow ? '' : sanitize($room['room_number']); ?></td>
+<td class="hb-plan-sticky hb-plan-hk-col<?php echo $isUnassignedRow ? '' : ' hb-plan-hk-cell'; ?>"<?php echo $isUnassignedRow ? '' : ' title="Double-click to rotate HSK status"'; ?>><?php
+if ($isUnassignedRow) {
+    echo '';
+} else {
 $hkColor = $room['hk_color'] ?? '#6c757d';
 $hkLabel = trim((string) ($room['hk_code'] ?? ''));
 if ($hkLabel === '') {
     $hkLabel = (string) ($room['hk_name'] ?? '—');
 }
-?><span class="hb-hk-badge" style="background:<?php echo sanitize($hkColor); ?>"><?php echo sanitize($hkLabel); ?></span></td>
-<td class="hb-plan-sticky hb-plan-type-col"><?php echo sanitize($room['type_code'] ?? $room['type_name']); ?></td>
+?><span class="hb-hk-badge" style="background:<?php echo sanitize($hkColor); ?>"><?php echo sanitize($hkLabel); ?></span><?php } ?></td>
+<td class="hb-plan-sticky hb-plan-type-col"><?php echo $isUnassignedRow ? '' : sanitize($room['type_code'] ?? $room['type_name']); ?></td>
 <td class="hb-plan-date-nav hb-plan-date-spacer"></td>
 <?php
 $roomBookings = $bookingsByRoom[(int) $room['id']] ?? [];

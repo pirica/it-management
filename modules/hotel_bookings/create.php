@@ -77,6 +77,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $createdAt
             );
             if (mysqli_stmt_execute($ins)) {
+                $newId = (int) mysqli_insert_id($conn);
+                $savedRow = [
+                    'check_in' => $checkIn,
+                    'check_out' => $checkOut,
+                    'future_status_id' => $fs,
+                    'present_status_id' => $ps,
+                    'history_status_id' => $hs,
+                ];
+                itm_hotel_booking_sync_last_room_if_detached($conn, $company_id, $newId, $employee_id, $savedRow, $roomId);
                 header('Location: index.php?mode=planning');
                 exit;
             }

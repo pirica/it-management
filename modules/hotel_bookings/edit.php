@@ -78,6 +78,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $company_id
             );
             if (mysqli_stmt_execute($upd)) {
+                $savedRow = [
+                    'check_in' => $checkIn,
+                    'check_out' => $checkOut,
+                    'future_status_id' => $fs,
+                    'present_status_id' => $ps,
+                    'history_status_id' => $hs,
+                ];
+                itm_hotel_booking_sync_last_room_if_detached($conn, $company_id, $id, $employee_id, $savedRow, $roomId);
                 header('Location: view.php?id=' . $id);
                 exit;
             }

@@ -524,6 +524,21 @@ if (!function_exists('itm_verify_db_migrations_probe_custom')) {
             );
         }
 
+        if ($filename === 'hotel_booking_last_rooms.sql') {
+            $ok = itm_verify_db_migrations_table_exists($conn, 'hotel_booking_last_rooms')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_last_rooms', 'booking_id')
+                && itm_verify_db_migrations_column_exists($conn, 'hotel_booking_last_rooms', 'room_number');
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'fail',
+                $ok ? 'Applied' : 'Not applied',
+                $ok
+                    ? 'hotel_booking_last_rooms present with booking_id snapshot fields.'
+                    : 'hotel_booking_last_rooms missing — apply migration or fresh db/ import.'
+            );
+        }
+
         if ($filename === 'hotel_booking_special_rate_codes.sql') {
             $ok = itm_verify_db_migrations_table_exists($conn, 'hotel_booking_special_rate_codes');
 

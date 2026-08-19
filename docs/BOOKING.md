@@ -149,6 +149,7 @@ After lookup:
 | `hotel_booking_rooms` | Inventory, link to room type |
 | `booking_rooms_types` | Type name, bed summary, upgrade pricing, **portal rule columns** (occupancy caps, stay/CTA/CTD, pricing overrides with `NULL` = inherit hotel, `portal_bookable`, `requires_approval`, pets, connecting room type, mixed-type groups) |
 | `hotel_bookings` | Reservations; segment status FKs; **`guest_confirmation_code`** (opaque 10-char guest-facing confirmation); **`auth2`** (12-char complex guest manage code); `notes` (rate plan, occupancy meta, comments) |
+| `hotel_booking_last_rooms` | Last assigned room snapshot per reservation (`booking_id`); planning empty row for CANCELLED / NO-SHOW |
 | `hotel_bookings_future` / `present` / `history` | Status lookups (`PENDING`, `CANCELLED`, etc.) — no ENUM |
 | `customers` | Guest PII; ensured on book via `itm_hotel_booking_ensure_customer_for_portal()` (repeat book by email refreshes `name` / `phone`) |
 | `hotel_booking_portal_rate_plans` | Per-hotel cancellation policy URLs (slots 1–4) |

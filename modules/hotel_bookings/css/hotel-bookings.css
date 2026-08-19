@@ -1,6 +1,11 @@
 .hb-mode-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
 .hb-mode-tabs a.btn-primary{opacity:1}
-.hb-plan-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:12px}
+.hb-last-room-fields{border:1px solid var(--border-color,#ddd);border-radius:8px;padding:12px;margin:0 0 16px}
+.hb-last-room-fields legend{padding:0 6px;font-size:13px;font-weight:600}
+.hb-plan-unassigned-row td.hb-plan-room-col,.hb-plan-unassigned-row td.hb-plan-hk-col,.hb-plan-unassigned-row td.hb-plan-type-col{opacity:.7}
+.hb-plan-hide-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 12px;font-size:12px}
+.hb-plan-hide-legend{font-weight:600}
+.hb-plan-hide-check{margin:0}
 .hb-plan-filters label{display:flex;flex-direction:column;gap:4px;font-size:12px}
 .hb-plan-days-input{width:64px}
 .hb-plan-search-label button{align-self:stretch;min-height:41px}
