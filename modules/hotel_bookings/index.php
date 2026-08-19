@@ -251,9 +251,11 @@ $hbViewButtons = [
 <input type="hidden" name="hb_hide[]" value="<?php echo sanitize($hideKeep); ?>">
 <?php endforeach; ?>
 <input type="hidden" name="hotel_id" value="<?php echo (int) $filterHotel; ?>">
-<label>Anchor <?php itm_render_hotel_date_input('anchor', 'hb-plan-anchor', $anchorDate); ?></label>
+<div class="hb-plan-filters-row">
+<label>Date <?php itm_render_hotel_date_input('anchor', 'hb-plan-anchor', $anchorDate); ?></label>
 <label>Days <input type="number" name="days" min="7" max="21" value="<?php echo (int) $planDays; ?>" class="hb-plan-days-input"></label>
 <label class="hb-plan-search-label"><span aria-hidden="true">&nbsp;</span><button type="submit" class="btn btn-sm" title="Search">🔎</button></label>
+</div>
 </form>
 <div class="hb-plan-view-filters" role="group" aria-label="Booking view filters">
 <?php foreach ($hbViewButtons as $viewSlug => $viewLabel):

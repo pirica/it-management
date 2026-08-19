@@ -2,7 +2,7 @@
 
 ## 1. Module Purpose
 
-Bespoke hospitality hub: room **Planning** grid (anchor date, company hotel), **Future / Present / History** boards, and CRUD for `hotel_bookings`. Every booking requires `customer_id` (ITM `customers`). One hotel per company (`itm_hotel_booking_photo_default_hotel_id()`).
+Bespoke hospitality hub: room **Planning** grid (Date + Days filters, company hotel), **Future / Present / History** boards, and CRUD for `hotel_bookings`. Every booking requires `customer_id` (ITM `customers`). One hotel per company (`itm_hotel_booking_photo_default_hotel_id()`).
 
 ## 2. Key Tables
 
@@ -24,8 +24,8 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, company hotel), **
 ## 5. Planning grid
 
 - Sticky columns **Room | HSK | Type** stay fixed while horizontal scroll moves date columns only; **⬅️** / **➡️** shift the anchor by the current **Days** window (filters and sort preserved).
-- Planning filters are **Anchor** and **Days** (plus Search). There is no Hotel dropdown: the grid and `ajax_action=planning_grid` always use that company’s hotel. Hide checkboxes stay on a separate `.hb-plan-hide-filters` row (`hb_hide[]`).
-- Planning view buttons **All / Arrivals / Departures / In-house / Future** (`hb_view`) use the **Anchor** as business `$today`. Hide checkboxes (`hb_hide[]`) omit bars by resolved status name (NO-SHOW, CANCELLED, IN-HOUSE, CHECKED-OUT, DUE-OUT, DUE-IN).
+- Planning filters **Date** (`anchor` query) and **Days** sit on one `.hb-plan-filters-row` with Search. There is no Hotel dropdown: the grid and `ajax_action=planning_grid` always use that company’s hotel. Hide checkboxes stay on a separate `.hb-plan-hide-filters` row (`hb_hide[]`).
+- Planning view buttons **All / Arrivals / Departures / In-house / Future** (`hb_view`) use the **Date** field as business `$today`. Hide checkboxes (`hb_hide[]`) omit bars by resolved status name (NO-SHOW, CANCELLED, IN-HOUSE, CHECKED-OUT, DUE-OUT, DUE-IN).
 - **CANCELLED** and **NO-SHOW** bars render on an **empty** bottom row (no room number / HSK / type). Last-room snapshot is stored in `hotel_booking_last_rooms` keyed by `booking_id`.
 - Sortable headers: `plan_sort` = `room` | `hk` | `type`, `plan_dir` = `asc` | `desc` (`itm_hotel_booking_planning_sort_rooms()`).
 - **HSK** badge shows `hotel_booking_housekeeping_statuses.code` (fallback `name`); double-click rotates via `ajax_action=hk_rotate`.
@@ -41,7 +41,7 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, company hotel), **
 
 - Shared markup: `includes/hb_booking_form.php` — all `hotel_bookings` business columns (customer, room, **Last room** readonly snapshot from `hotel_booking_last_rooms`, check-in/out, payment, **internal rate** select (`internal_rate_code`), **auth2** read-only on edit / auto-generated on create, **portal rate plan** select with ➕ modal create, Planning color via `type="color"` → `booking_color`, three segment status FKs, notes, `active` checkbox). `hb_booking_compute_suggested_payment()` applies internal waivers on save; `js/hotel-bookings-date-picker.js` suggests payment on room/date/internal-rate change.
 - Portal rate plan options filter by selected room’s `hotel_id`; defaults seeded per hotel when the form loads. **➕** is the standard `__add_new__` option inside the plan `<select>` (opens create modal without requiring a room — embed form includes hotel select; room choice only pre-fills `hotel_id`). **🔎** / **✏️** beside the select open view/edit in a modal iframe (`embed=1`). `hb_booking_end_form_page()` renders the modal outside `.content`. Regression: `php scripts/check_hotel_bookings_rate_plan_form.php` and `php scripts/lib/itm_hospitality_booking_form_probe.php create|edit`.
-- Check-in / check-out use hospitality date fields (`d/M/Y` + 📅 via `js/hotel-date-input.js`); planning **Anchor** uses the same widget; `js/hotel-bookings-date-picker.js` enforces check-out after check-in.
+- Check-in / check-out use hospitality date fields (`d/M/Y` + 📅 via `js/hotel-date-input.js`); planning **Date** uses the same widget (`name="anchor"`); `js/hotel-bookings-date-picker.js` enforces check-out after check-in.
 - Audit meta (`created_by`, `created_at`, `updated_by`, `updated_at`) via hidden inputs from `itm_crud_render_form_hidden_audit_inputs()`; `company_id` stays session-scoped (not on form).
 - `view.php` shows every stored column including segment status labels and audit fields; also joins the room’s hotel for **Info** (`contact_email`) and **Email** (`reservations_email`) mailto links plus phone.
 
