@@ -36,7 +36,7 @@ Tenant CRUD for hospitality room types (`booking_rooms_types`). **Photos are att
 - Flattened CRUD in `index.php`; `create.php`, `edit.php`, `view.php`, `list_all.php` are thin wrappers (same pattern as `hotel_booking_hotels/`).
 - Hide **`company_id`** from list/view/forms (`booking_rooms_types` is in `$hideCompanyIdTables`).
 - List **`portal_bookable`** (and other portal tinyint flags on view) render ✅/❌ via `cr_render_cell_value()`; **`active`** uses Active/Inactive badges.
-- List hides detailed portal-rule columns; **create/edit** show a **Portal rules** card (`brt_portal_rule_form_columns()` / `brt_render_form_group()` in `index.php`) for occupancy caps, `child_max_age`, `extra_bed_allowed` / `max_extra_beds`, `crib_included`, mixed-type, and `max_rooms_per_booking`. `max_total_guests` and `portal_bookable` remain on the main form.
+- List hides detailed portal-rule columns; **create/edit** render the same business fields as **view** (minus `company_id` and audit meta) in grouped cards via `brt_edit_form_section_columns()` — **Room details**, **Portal rules**, **Stay rules**, **Guest policies**, **Pets** (`pets_allowed` enables Step 3 special requests on the booking portal), **Portal pricing overrides**, **Room upgrade offer**. Main form keeps `name`, `code`, `max_total_guests`, `portal_bookable`, and `active`.
 - List **Photos** column shows all thumbnails per type; edit shows **Current photos** grid + **Add photos** file input.
 
 ---
