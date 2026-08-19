@@ -860,6 +860,51 @@ if (!function_exists('itm_crud_view_edit_field_parity_format_reference_gap_line'
     }
 }
 
+if (!function_exists('itm_crud_view_edit_field_parity_format_failure_message')) {
+    /**
+     * Tag-free parity failure line; browser links the module slug like reference gaps.
+     *
+     * @param array{message?:string,field?:string,code?:string} $failure
+     */
+    function itm_crud_view_edit_field_parity_format_failure_message(string $moduleSlug, array $failure): string
+    {
+        $message = trim((string) ($failure['message'] ?? ''));
+        if ($message === '') {
+            return '';
+        }
+
+        $moduleSlug = trim($moduleSlug);
+        $prefix = $moduleSlug . '.';
+        if ($moduleSlug === '' || strpos($message, $prefix) !== 0) {
+            return $message;
+        }
+
+        $moduleRef = itm_crud_view_edit_field_parity_format_module_ref($moduleSlug);
+
+        return $moduleRef . substr($message, strlen($prefix));
+    }
+}
+
+if (!function_exists('itm_crud_view_edit_field_parity_echo_colored_line')) {
+    /** Why: Browser <pre> colouring via colorText(); escape plain lines, keep module link HTML. */
+    function itm_crud_view_edit_field_parity_echo_colored_line(string $line, string $type): void
+    {
+        if ($line === '') {
+            return;
+        }
+        if (!function_exists('colorText')) {
+            require_once __DIR__ . '/script_cli_output.php';
+        }
+        if (strpos($line, '<a ') !== false) {
+            echo colorText($line, $type);
+
+            return;
+        }
+
+        echo colorText(itm_script_escape_browser_pre_text($line), $type);
+    }
+}
+
 if (!function_exists('itm_crud_view_edit_field_parity_audit_module')) {
     /**
      * @param list<string> $schemaColumns

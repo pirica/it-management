@@ -18,12 +18,13 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-Browser: optional <code>?module=&lt;slug&gt;</code> · <code>?json=1</code>. CLI: <code>php scripts/check_crud_view_edit_field_parity.php</code> · <code>--module=&lt;slug&gt;</code> · <code>--json</code>. Exit <code>1</code> when view/edit parity gaps exist. Plain lines list per-scope quoted-string reference gaps (module slug links to <code>../modules/&lt;slug&gt;/</code> in browser HTML).
+Browser: optional <code>?module=&lt;slug&gt;</code> · <code>?json=1</code>. CLI: <code>php scripts/check_crud_view_edit_field_parity.php</code> · <code>--module=&lt;slug&gt;</code> · <code>--json</code>. Exit <code>1</code> when view/edit parity gaps exist. Plain output lists parity failure lines and list-hidden notes in red (<code>colorText</code>), per-scope reference gaps unchanged, module slug links to <code>../modules/&lt;slug&gt;/</code> in browser HTML.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 
 require_once __DIR__ . '/lib/itm_script_access_helpers.php';
 require_once __DIR__ . '/lib/itm_crud_view_edit_field_parity_audit.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
 
 $nl = itm_check_script_begin_browser_admin('CRUD view/edit field parity');
 
@@ -80,8 +81,28 @@ foreach ($report['modules'] as $moduleReport) {
         continue;
     }
 
+    $moduleFailures = (array) ($moduleReport['failures'] ?? []);
+
     foreach ((array) ($moduleReport['notes'] ?? []) as $noteLine) {
-        echo (string) $noteLine . $nl;
+        $noteLine = (string) $noteLine;
+        if ($moduleFailures !== [] && strpos($noteLine, 'list-hidden from $uiColumns only:') !== false) {
+            itm_crud_view_edit_field_parity_echo_colored_line($noteLine, 'fail');
+            echo $nl;
+            continue;
+        }
+        echo $noteLine . $nl;
+    }
+
+    foreach ($moduleFailures as $failure) {
+        if (!is_array($failure)) {
+            continue;
+        }
+        $failureLine = itm_crud_view_edit_field_parity_format_failure_message($slug, $failure);
+        if ($failureLine === '') {
+            continue;
+        }
+        itm_crud_view_edit_field_parity_echo_colored_line($failureLine, 'fail');
+        echo $nl;
     }
 
     foreach ((array) ($moduleReport['reference_gaps'] ?? []) as $gap) {
@@ -95,7 +116,12 @@ foreach ($report['modules'] as $moduleReport) {
 }
 
 echo $nl;
-echo 'Summary: ' . (int) ($report['failure_count'] ?? 0) . ' parity failure(s), '
+$failureCount = (int) ($report['failure_count'] ?? 0);
+$failureSummary = $failureCount . ' parity failure(s)';
+if ($failureCount > 0) {
+    $failureSummary = colorText(itm_script_escape_browser_pre_text($failureSummary), 'fail');
+}
+echo 'Summary: ' . $failureSummary . ', '
     . (int) ($report['reference_gap_count'] ?? 0) . ' reference gap line(s), '
     . (int) ($report['audited_module_count'] ?? 0) . ' audited module(s), '
     . (int) ($report['skipped_count'] ?? 0) . ' skipped module(s).' . $nl;
