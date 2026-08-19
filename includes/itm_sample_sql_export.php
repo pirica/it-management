@@ -42,6 +42,7 @@ if (!function_exists('itm_sample_sql_exempt_tables')) {
             // Webmail per-user state (not tenant empty-table sample targets).
             'webmail_email_reads',
             'webmail_signatures',
+            'hotel_booking_last_rooms',
         ];
 
         foreach ([

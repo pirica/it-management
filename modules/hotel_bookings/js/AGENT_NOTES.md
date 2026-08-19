@@ -8,7 +8,7 @@ Client-side behaviour for the **hotel_bookings** planning grid and booking date 
 
 | File | Role |
 |------|------|
-| `hotel-bookings-planning.js` | Planning grid: anchor navigation (⬅️/➡️), drag-and-drop moves (`ajax_action=planning_move`), HSK double-click rotate, **Room** column double-click → `hotel_booking_rooms/view.php`, OOO/OOS modal iframe, bar double-click to view |
+| `hotel-bookings-planning.js` | Planning grid: anchor navigation (⬅️/➡️), drag-and-drop moves (`ajax_action=planning_move`), HSK double-click rotate, **Room** column double-click → `hotel_booking_rooms/view.php` (skipped for empty unassigned row), OOO/OOS modal iframe, bar double-click to view |
 | `hotel-bookings-date-picker.js` | Create/edit check-in vs check-out validation; coordinates with `js/hotel-date-input.js` |
 
 ## 5. UI Behavior Requirements

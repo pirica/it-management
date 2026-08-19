@@ -8,7 +8,7 @@ Module-scoped styles for the **hotel_bookings** planning grid and related admin 
 
 | File | Role |
 |------|------|
-| `hotel-bookings.css` | Planning grid sticky columns (Room | HSK | Type), horizontal scroll, booking bar colours, maintenance OOO/OOS bar colours, toolbar spacing |
+| `hotel-bookings.css` | Planning grid sticky columns (Room | HSK | Type), view/hide filters, unassigned empty row, Last room fieldset, horizontal scroll, booking bar colours, maintenance OOO/OOS bar colours, toolbar spacing |
 
 ## 5. UI Behavior Requirements
 

@@ -317,9 +317,9 @@
             if (!roomRow) {
                 return;
             }
-            var roomViewId = roomRow.getAttribute('data-room-id');
-            if (roomViewId) {
-                window.location.href = getRoomViewBase() + '?id=' + encodeURIComponent(roomViewId);
+            var roomViewId = parseInt(roomRow.getAttribute('data-room-id') || '0', 10);
+            if (roomViewId > 0) {
+                window.location.href = getRoomViewBase() + '?id=' + encodeURIComponent(String(roomViewId));
             }
             return;
         }

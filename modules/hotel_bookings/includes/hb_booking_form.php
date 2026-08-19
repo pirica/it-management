@@ -284,6 +284,30 @@ if (!function_exists('hb_booking_render_form_fields')) {
         }
         echo '</select></div>';
 
+        $lastRoom = [];
+        $bookingPk = (int) ($row['id'] ?? 0);
+        global $conn, $company_id;
+        if ($bookingPk > 0 && $conn instanceof mysqli && (int) $company_id > 0) {
+            $lr = itm_hotel_booking_last_room_fetch($conn, (int) $company_id, $bookingPk);
+            if (is_array($lr)) {
+                $lastRoom = $lr;
+            }
+        }
+        echo '<fieldset class="hb-last-room-fields"><legend>Last room</legend>';
+        echo '<div class="form-group"><label>Reservation ID</label>';
+        echo '<input type="text" class="form-control" value="' . ($bookingPk > 0 ? (int) $bookingPk : '') . '" readonly></div>';
+        echo '<div class="form-group"><label>Room number</label>';
+        echo '<input type="text" class="form-control" value="' . sanitize((string) ($lastRoom['room_number'] ?? '')) . '" readonly></div>';
+        echo '<div class="form-group"><label>Room name</label>';
+        echo '<input type="text" class="form-control" value="' . sanitize((string) ($lastRoom['room_name'] ?? '')) . '" readonly></div>';
+        echo '<div class="form-group"><label>Hotel</label>';
+        echo '<input type="text" class="form-control" value="' . sanitize((string) ($lastRoom['hotel_name'] ?? '')) . '" readonly></div>';
+        echo '<div class="form-group"><label>Room type</label>';
+        echo '<input type="text" class="form-control" value="' . sanitize((string) ($lastRoom['room_type_name'] ?? '')) . '" readonly></div>';
+        echo '<div class="form-group"><label>Floor</label>';
+        echo '<input type="text" class="form-control" value="' . sanitize((string) ($lastRoom['floor'] ?? '')) . '" readonly></div>';
+        echo '</fieldset>';
+
         echo '<div class="form-group hb-booking-rate-plan-field"><label for="hb-booking-portal-rate-plan-id">Portal rate plan</label>';
         echo '<p class="text-muted" id="hb-booking-rate-plan-hint" style="margin:0 0 8px;font-size:0.9em;" hidden>Select a room to filter rate plans for that hotel. ➕ still opens create (pick hotel in the modal when no room is selected).</p>';
         echo '<div class="hb-booking-rate-plan-controls" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">';
