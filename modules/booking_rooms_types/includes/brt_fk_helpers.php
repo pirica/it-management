@@ -93,9 +93,34 @@ if (!function_exists('brt_fk_options')) {
     }
 }
 
+if (!function_exists('brt_form_columns_for_field_order')) {
+    /**
+     * @param array<int,array<string,mixed>> $fieldColumns
+     * @param array<int,string> $fieldOrder
+     * @return array<int,array<string,mixed>>
+     */
+    function brt_form_columns_for_field_order(array $fieldColumns, array $fieldOrder): array
+    {
+        $byField = [];
+        foreach ($fieldColumns as $col) {
+            $field = (string) ($col['Field'] ?? '');
+            if ($field !== '') {
+                $byField[$field] = $col;
+            }
+        }
+        $ordered = [];
+        foreach ($fieldOrder as $fieldName) {
+            if (isset($byField[$fieldName])) {
+                $ordered[] = $byField[$fieldName];
+            }
+        }
+        return $ordered;
+    }
+}
+
 if (!function_exists('brt_portal_rule_form_field_order')) {
     /**
-     * Portal rule fields editable on create/edit (hidden from list only).
+     * Occupancy portal rules (subset of edit sections; kept for regression probes).
      *
      * @return array<int,string>
      */
@@ -125,19 +150,97 @@ if (!function_exists('brt_portal_rule_form_columns')) {
      */
     function brt_portal_rule_form_columns(array $fieldColumns): array
     {
-        $byField = [];
-        foreach ($fieldColumns as $col) {
-            $field = (string) ($col['Field'] ?? '');
-            if ($field !== '') {
-                $byField[$field] = $col;
+        return brt_form_columns_for_field_order($fieldColumns, brt_portal_rule_form_field_order());
+    }
+}
+
+if (!function_exists('brt_edit_form_sections')) {
+    /**
+     * Create/edit cards for fields hidden from the list grid (view parity minus company_id).
+     *
+     * @return array<string,array{intro?:string,fields:array<int,string>}>
+     */
+    function brt_edit_form_sections(): array
+    {
+        return [
+            'Room details' => [
+                'fields' => [
+                    'description',
+                    'bed_summary',
+                    'room_size_sqm',
+                    'filter_tags',
+                    'details_bullets',
+                ],
+            ],
+            'Portal rules' => [
+                'intro' => 'Occupancy and booking limits enforced on the guest portal (<code>max_total_guests</code> and <code>portal_bookable</code> stay on the main form above).',
+                'fields' => brt_portal_rule_form_field_order(),
+            ],
+            'Stay rules' => [
+                'fields' => [
+                    'min_stay_nights',
+                    'max_stay_nights',
+                    'min_advance_booking_days',
+                    'max_advance_booking_days',
+                    'closed_to_arrival_days',
+                    'closed_to_departure_days',
+                ],
+            ],
+            'Guest policies' => [
+                'fields' => [
+                    'requires_approval',
+                    'smoking_allowed',
+                    'accessible_room',
+                ],
+            ],
+            'Pets' => [
+                'intro' => 'When <code>pets_allowed</code> is on, Step 3 special requests show pet controls on the booking portal.',
+                'fields' => [
+                    'pets_allowed',
+                    'pet_max_weight_kg',
+                    'pet_non_refundable_fee',
+                    'portal_pet_daily_fee',
+                ],
+            ],
+            'Portal pricing overrides' => [
+                'intro' => 'Leave blank to inherit hotel defaults from Portal Rate Plans.',
+                'fields' => [
+                    'portal_extra_adult_supplement_percent',
+                    'portal_child_nightly_supplement',
+                    'portal_baby_nightly_supplement',
+                    'portal_included_children_free',
+                    'portal_single_occupancy_discount_percent',
+                ],
+            ],
+            'Room upgrade offer' => [
+                'fields' => [
+                    'upgrade_to_room_type_id',
+                    'upgrade_price_per_night',
+                    'upgrade_pitch',
+                ],
+            ],
+        ];
+    }
+}
+
+if (!function_exists('brt_edit_form_section_columns')) {
+    /**
+     * @param array<int,array<string,mixed>> $fieldColumns
+     * @return array<string,array{intro?:string,columns:array<int,array<string,mixed>>}>
+     */
+    function brt_edit_form_section_columns(array $fieldColumns): array
+    {
+        $sections = [];
+        foreach (brt_edit_form_sections() as $title => $meta) {
+            $columns = brt_form_columns_for_field_order($fieldColumns, (array) ($meta['fields'] ?? []));
+            if ($columns === []) {
+                continue;
             }
+            $sections[$title] = [
+                'intro' => isset($meta['intro']) ? (string) $meta['intro'] : '',
+                'columns' => $columns,
+            ];
         }
-        $ordered = [];
-        foreach (brt_portal_rule_form_field_order() as $fieldName) {
-            if (isset($byField[$fieldName])) {
-                $ordered[] = $byField[$fieldName];
-            }
-        }
-        return $ordered;
+        return $sections;
     }
 }

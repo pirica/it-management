@@ -1068,6 +1068,8 @@ if (!is_file($roomTypesIndex)) {
         hb_fail('booking_rooms_types edit form must preview current photos');
     } elseif (strpos($roomTypesIndexSource, 'brtFormPortalRuleColumns') === false || strpos($roomTypesIndexSource, 'Portal rules') === false) {
         hb_fail('booking_rooms_types create/edit must expose Portal rules form card');
+    } elseif (strpos($roomTypesIndexSource, 'brtFormEditSections') === false || strpos($roomTypesIndexSource, 'name="pets_allowed"') === false) {
+        hb_fail('booking_rooms_types create/edit must expose full view fields (including pets_allowed)');
     } elseif (strpos((string) file_get_contents($repoRoot . '/db/02_data.sql'), 'hb_rt_std_01.jpg') === false) {
         hb_fail('db/02_data.sql must seed booking_rooms_type_photos sample rows');
     } elseif (!is_file($repoRoot . '/booking/images/1/room_types_photos/hb_rt_std_01.jpg')) {

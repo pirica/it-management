@@ -388,6 +388,7 @@ if (($crud_table ?? '') === 'booking_rooms_types') {
     }));
     $displayFieldColumns = $uiColumns;
     $brtFormPortalRuleColumns = brt_portal_rule_form_columns($fieldColumns);
+    $brtFormEditSections = brt_edit_form_section_columns($fieldColumns);
 }
 
 // Why: View shows create/update/delete audit stamps while list hides them.
@@ -1104,19 +1105,28 @@ if (!isset($crud_title)) {
                     <?php foreach ($uiColumns as $col):
                         brt_render_form_group($col, $data, $conn, $company_id, $fkMap);
                     endforeach; ?>
-                    <?php if (($crud_table ?? '') === 'booking_rooms_types' && !empty($brtFormPortalRuleColumns)): ?>
-                    <div class="card" style="grid-column:1 / -1;margin-top:8px;padding:16px 20px;">
-                        <h2 style="margin:0 0 12px;font-size:1.15rem;">Portal rules</h2>
-                        <p style="margin:0 0 16px;font-size:.95rem;opacity:.9;">Occupancy and connecting-room settings enforced on the guest booking portal (<code>max_total_guests</code> and <code>portal_bookable</code> stay on the main form above).</p>
-                        <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px 16px;">
+                    <?php if (($crud_table ?? '') === 'booking_rooms_types' && !empty($brtFormEditSections)): ?>
                         <?php
                         $brtExcludeConnectingSelfId = ($crud_action === 'edit' && $editId > 0) ? (int) $editId : 0;
-                        foreach ($brtFormPortalRuleColumns as $col):
-                            brt_render_form_group($col, $data, $conn, $company_id, $fkMap, $brtExcludeConnectingSelfId);
-                        endforeach;
+                        foreach ($brtFormEditSections as $brtSectionTitle => $brtSectionMeta):
+                            $brtSectionColumns = (array) ($brtSectionMeta['columns'] ?? []);
+                            if ($brtSectionColumns === []) {
+                                continue;
+                            }
+                            $brtSectionIntro = trim((string) ($brtSectionMeta['intro'] ?? ''));
                         ?>
+                    <div class="card" style="grid-column:1 / -1;margin-top:8px;padding:16px 20px;">
+                        <h2 style="margin:0 0 12px;font-size:1.15rem;"><?php echo sanitize($brtSectionTitle); ?></h2>
+                        <?php if ($brtSectionIntro !== ''): ?>
+                        <p style="margin:0 0 16px;font-size:.95rem;opacity:.9;"><?php echo $brtSectionIntro; ?></p>
+                        <?php endif; ?>
+                        <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px 16px;">
+                        <?php foreach ($brtSectionColumns as $col):
+                            brt_render_form_group($col, $data, $conn, $company_id, $fkMap, $brtExcludeConnectingSelfId);
+                        endforeach; ?>
                         </div>
                     </div>
+                        <?php endforeach; ?>
                     <?php endif; ?>
                     <?php if ($hbPhotoCfg): ?>
                     <?php if ($crud_action === 'edit' && !empty($editParentPhotos)): ?>
