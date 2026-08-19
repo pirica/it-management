@@ -626,6 +626,34 @@ if (!function_exists('itm_crud_view_edit_field_parity_dynamic_scope_covers_colum
     }
 }
 
+if (!function_exists('itm_crud_view_edit_field_parity_module_lacks_create_edit_entries')) {
+    /**
+     * @param array{create:string,edit:string,view:string,index:string,includes:string,list_all:string} $files
+     */
+    function itm_crud_view_edit_field_parity_module_lacks_create_edit_entries(array $files): bool
+    {
+        return !is_readable((string) ($files['create'] ?? ''))
+            && !is_readable((string) ($files['edit'] ?? ''));
+    }
+}
+
+if (!function_exists('itm_crud_view_edit_field_parity_reference_scope_applicable')) {
+    /**
+     * @param array{create:string,edit:string,view:string,index:string,includes:string,list_all:string} $files
+     */
+    function itm_crud_view_edit_field_parity_reference_scope_applicable(string $scope, array $files): bool
+    {
+        if ($scope === 'create') {
+            return is_readable((string) ($files['create'] ?? ''));
+        }
+        if ($scope === 'edit') {
+            return is_readable((string) ($files['edit'] ?? ''));
+        }
+
+        return true;
+    }
+}
+
 if (!function_exists('itm_crud_view_edit_field_parity_column_referenced_in_scopes')) {
     /**
      * @param list<string> $scopes
@@ -679,7 +707,12 @@ if (!function_exists('itm_crud_view_edit_field_parity_build_reference_gaps')) {
         $hasIncludesDir = ($includesDir !== '' && is_dir($includesDir));
         $scopeContentCache = [];
         $gaps = [];
-        $uiScopes = ['index', 'create', 'edit', 'view', 'list_all'];
+        $uiScopes = array_values(array_filter(
+            ['index', 'create', 'edit', 'view', 'list_all'],
+            static function (string $scope) use ($files): bool {
+                return itm_crud_view_edit_field_parity_reference_scope_applicable($scope, $files);
+            }
+        ));
 
         foreach ($schemaColumns as $column) {
             $column = (string) $column;
@@ -689,6 +722,9 @@ if (!function_exists('itm_crud_view_edit_field_parity_build_reference_gaps')) {
 
             foreach (itm_crud_view_edit_field_parity_reference_scopes() as $scope) {
                 if ($scope === 'includes' && !$hasIncludesDir) {
+                    continue;
+                }
+                if (!itm_crud_view_edit_field_parity_reference_scope_applicable($scope, $files)) {
                     continue;
                 }
 
@@ -880,6 +916,11 @@ if (!function_exists('itm_crud_view_edit_field_parity_audit_module')) {
         $editSectionFields = itm_crud_view_edit_field_parity_collect_edit_form_section_fields($files);
         $formLoopVariable = itm_fields_missing_create_edit_form_loop_variable($indexContent);
         $formColumnExcluded = itm_crud_view_edit_field_parity_form_columns_excluded_fields($indexContent);
+        $readOnlyCrud = itm_crud_view_edit_field_parity_module_lacks_create_edit_entries($files);
+
+        if ($readOnlyCrud) {
+            $result['notes'][] = $moduleSlug . ': read-only (no create.php / edit.php) — create/edit scopes and view/edit parity N/A';
+        }
 
         if ($uiListOnlyHidden !== []) {
             $result['notes'][] = $moduleSlug . ': list-hidden from $uiColumns only: ' . implode(', ', $uiListOnlyHidden);
@@ -898,6 +939,7 @@ if (!function_exists('itm_crud_view_edit_field_parity_audit_module')) {
             $indexContent
         );
 
+        if (!$readOnlyCrud) {
         foreach ($expectedViewFields as $field) {
             if (function_exists('itm_crud_is_form_hidden_audit_field')
                 && itm_crud_is_form_hidden_audit_field($field)
@@ -931,6 +973,7 @@ if (!function_exists('itm_crud_view_edit_field_parity_audit_module')) {
             }
 
             $result['passes'][] = "{$moduleSlug}.{$field}: view/edit parity OK";
+        }
         }
 
         $result['reference_gaps'] = itm_crud_view_edit_field_parity_build_reference_gaps(
