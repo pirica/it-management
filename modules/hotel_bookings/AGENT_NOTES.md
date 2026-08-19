@@ -2,7 +2,7 @@
 
 ## 1. Module Purpose
 
-Bespoke hospitality hub: room **Planning** grid (anchor date, hotel filter), **Future / Present / History** boards, and CRUD for `hotel_bookings`. Every booking requires `customer_id` (ITM `customers`).
+Bespoke hospitality hub: room **Planning** grid (anchor date, company hotel), **Future / Present / History** boards, and CRUD for `hotel_bookings`. Every booking requires `customer_id` (ITM `customers`). One hotel per company (`itm_hotel_booking_photo_default_hotel_id()`).
 
 ## 2. Key Tables
 
@@ -24,6 +24,7 @@ Bespoke hospitality hub: room **Planning** grid (anchor date, hotel filter), **F
 ## 5. Planning grid
 
 - Sticky columns **Room | HSK | Type** stay fixed while horizontal scroll moves date columns only; **⬅️** / **➡️** shift the anchor by the current **Days** window (filters and sort preserved).
+- Planning filters are **Anchor** and **Days** (plus Search). There is no Hotel dropdown: the grid and `ajax_action=planning_grid` always use that company’s hotel. Hide checkboxes stay on a separate `.hb-plan-hide-filters` row (`hb_hide[]`).
 - Planning view buttons **All / Arrivals / Departures / In-house / Future** (`hb_view`) use the **Anchor** as business `$today`. Hide checkboxes (`hb_hide[]`) omit bars by resolved status name (NO-SHOW, CANCELLED, IN-HOUSE, CHECKED-OUT, DUE-OUT, DUE-IN).
 - **CANCELLED** and **NO-SHOW** bars render on an **empty** bottom row (no room number / HSK / type). Last-room snapshot is stored in `hotel_booking_last_rooms` keyed by `booking_id`.
 - Sortable headers: `plan_sort` = `room` | `hk` | `type`, `plan_dir` = `asc` | `desc` (`itm_hotel_booking_planning_sort_rooms()`).
