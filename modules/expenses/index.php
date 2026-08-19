@@ -521,7 +521,12 @@ $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hide
 $displayFieldColumns = $uiColumns;
 
 if ($crud_table === 'expenses') {
-    $expensesListHidden = ['tax_rate_snapshot', 'exchange_rate', 'bill_id', 'invoice_id', 'deleted_by', 'deleted_at', 'created_by', 'created_at', 'updated_by', 'updated_at'];
+    // Why: List grid hides AP link/snapshot columns; view detail and create/edit still expose them.
+    $expensesListOnlyHidden = ['tax_rate_snapshot', 'exchange_rate', 'bill_id', 'invoice_id'];
+    $expensesListHidden = array_merge(
+        $expensesListOnlyHidden,
+        ['deleted_by', 'deleted_at', 'created_by', 'created_at', 'updated_by', 'updated_at']
+    );
     $uiColumns = array_values(array_filter($uiColumns, function ($col) use ($expensesListHidden) {
         return !in_array((string) ($col['Field'] ?? ''), $expensesListHidden, true);
     }));
@@ -530,7 +535,18 @@ if ($crud_table === 'expenses') {
 
 $formUiColumns = $uiColumns;
 if ($crud_table === 'expenses') {
-    $formUiColumns = itm_expenses_reorder_form_field_columns($uiColumns);
+    // Why: Parity audit requires view-visible list-hidden fields on create/edit forms.
+    foreach ($fieldColumns as $col) {
+        $fieldName = (string) ($col['Field'] ?? '');
+        if (!in_array($fieldName, $expensesListOnlyHidden, true)) {
+            continue;
+        }
+        $formFieldNames = array_column($formUiColumns, 'Field');
+        if (!in_array($fieldName, $formFieldNames, true)) {
+            $formUiColumns[] = $col;
+        }
+    }
+    $formUiColumns = itm_expenses_reorder_form_field_columns($formUiColumns);
 }
 
 // Why: View shows create/update/delete audit stamps while list hides them.
