@@ -13,7 +13,7 @@ Shared PHP partials for the bespoke **hotel_bookings** module — not a standalo
 ## 4. Business Rules (Critical for Agents)
 
 - Portal rate plan `<select>` filters by room’s `hotel_id`; **➕** uses `__add_new__` with modal iframe (`embed=1`) to `hotel_booking_portal_rate_plans`.
-- Check-in/out use hospitality date widgets (`d/M/Y` + `js/hotel-date-input.js`); `js/hotel-bookings-date-picker.js` enforces check-out after check-in.
+- Check-in/out use hospitality date widgets (`d/M/Y` + `js/hotel-date-input.js`); `js/hotel-bookings-date-picker.js` enforces check-out after check-in. Create passes `min=today`; edit does not (historical bookings).
 - `company_id` is session-scoped — not exposed on the form.
 
 ## 10. Common Pitfalls
