@@ -360,6 +360,8 @@ function itmDocCollectDocumentedJsonHandlerPaths(string $rootPath): array
     }
 
     $paths[] = 'modules/explorer/api.php';
+    $paths[] = 'modules/hotel_booking_api/api.php';
+    $paths[] = 'modules/passwords/ajax_handler.php';
 
     foreach (itmDocCollectIdfApiEndpoints($rootPath) as $row) {
         $path = (string) ($row['path'] ?? '');
@@ -635,11 +637,67 @@ function itmDocProjectJsonEndpoints(): array
             'purpose' => 'Full-module browser QA automation runner.',
         ],
         [
+            'group' => 'Appointments',
+            'method' => 'GET|POST',
+            'path' => 'modules/appointments/api.php',
+            'params' => 'action=week_slots (GET date) | schedule (POST visit_reason_id, appointment_date, start_time, end_time, appointment_type, csrf_token)',
+            'purpose' => 'Employee self-service slot grid and booking; rate limit enforced; booking_lock prevents double-book.',
+        ],
+        [
+            'group' => 'Bookmarks',
+            'method' => 'POST',
+            'path' => 'modules/bookmarks/list_all.php',
+            'params' => 'import_excel_rows + csrf_token (JSON, vault unlock required) | action=move_bookmarks, target_folder_id, ids[], csrf_token',
+            'purpose' => 'Flattened bookmark table import and bulk move between folders.',
+        ],
+        [
+            'group' => 'Live Chat',
+            'method' => 'GET|POST',
+            'path' => 'modules/live_chat/api.php',
+            'params' => 'action (see Live Chat API section), csrf_token on POST',
+            'purpose' => 'Live Agent + Chat with messaging, typing, attachments, and ticket helpers.',
+        ],
+        [
+            'group' => 'Notifications',
+            'method' => 'GET|POST',
+            'path' => 'modules/notifications/api.php',
+            'params' => 'GET count_only=1 | unread | limit | stream=1 (SSE); POST action=mark_read|mark_all_read, csrf_token',
+            'purpose' => 'Header bell dropdown JSON; internal session UI (no rate-limit quota on poll).',
+        ],
+        [
+            'group' => 'Passwords vault',
+            'method' => 'POST',
+            'path' => 'modules/passwords/ajax_handler.php',
+            'params' => 'action (see Passwords vault section), csrf_token',
+            'purpose' => 'Encrypted vault CRUD AJAX; requires unlocked vault key in session.',
+        ],
+        [
+            'group' => 'Command palette',
+            'method' => 'GET|POST',
+            'path' => 'modules/search/api.php',
+            'params' => 'GET q|query, limit | POST JSON query/q, limit, csrf_token or X-CSRF-Token',
+            'purpose' => 'Global command-palette search; rate limit enforced; max query length 200.',
+        ],
+        [
+            'group' => 'SLA Command Center',
+            'method' => 'GET',
+            'path' => 'modules/ticket_sla_dashboard/api.php',
+            'params' => 'action=summary | list&filter=at_risk|breached|met|all&page&per_page',
+            'purpose' => 'SLA breach/at-risk ticket counts and filtered lists for dashboard widgets.',
+        ],
+        [
+            'group' => 'Hotel booking distribution',
+            'method' => 'GET|POST',
+            'path' => 'modules/hotel_booking_api/api.php',
+            'params' => 'action=probe|availability|…; X-API-Key (no employee session)',
+            'purpose' => 'Partner-facing channel distribution API — see Hotel Booking Distribution API section.',
+        ],
+        [
             'group' => 'Chatbot',
             'method' => 'POST',
             'path' => 'modules/knowledge_base/chat_api.php',
-            'params' => 'query, csrf_token',
-            'purpose' => 'Multi-tenant IT Support Chatbot API; searches Knowledge Base and IT Settings.',
+            'params' => 'JSON body: query, csrf_token or X-CSRF-Token',
+            'purpose' => 'Multi-tenant IT Support Chatbot; searches knowledge_base + it_settings; rate limit enforced.',
         ],
     ];
 }
@@ -701,6 +759,84 @@ function itmDocTodoAjaxActions(): array
         ['action' => 'quick_add', 'params' => 'title, due_date, reminder_at, repeat_pattern, category_id[], department_id[], assigned_to_employee_id[], importance, csrf_token', 'purpose' => 'Create task from inline row.'],
         ['action' => 'toggle_completed', 'params' => 'id, completed, csrf_token', 'purpose' => 'Toggle task completion.'],
         ['action' => 'toggle_importance', 'params' => 'id, importance, csrf_token', 'purpose' => 'Toggle task importance.'],
+    ];
+}
+
+function itmDocHotelBookingDistributionWireFormats(): array
+{
+    return [
+        ['standard' => 'itm_native', 'request' => 'JSON (default)', 'response' => 'JSON'],
+        ['standard' => 'opentravel', 'request' => 'XML (OTA_HotelAvailRQ, OTA_HotelResNotifRQ) or format=xml', 'response' => 'OTA_HotelAvailRS, OTA_HotelResNotifRS, OTA_HotelAvailNotifRS'],
+        ['standard' => 'booking_com', 'request' => 'Booking.com Connectivity JSON subset', 'response' => 'Wrapped JSON (room_rates, ACK/NACK)'],
+        ['standard' => 'ohip', 'request' => 'Oracle OHIP JSON subset', 'response' => 'Wrapped JSON (status, confirmationId, ACK/NACK)'],
+    ];
+}
+
+function itmDocHotelBookingDistributionApiActions(): array
+{
+    return [
+        ['action' => 'probe', 'method' => 'GET', 'purpose' => 'Validate channel API key; returns channel metadata and action catalog.'],
+        ['action' => 'availability', 'method' => 'GET|POST', 'purpose' => 'Shop room types (JSON query or OpenTravel XML body).'],
+        ['action' => 'ari_snapshot', 'method' => 'GET', 'purpose' => 'Pull ARI inventory/rates (rate-plan mappings + restrictions).'],
+        ['action' => 'ari_push_outbound', 'method' => 'POST', 'purpose' => 'POST ARI snapshot to channel webhook_url and/or Booking.com API; force=1 bypasses delta checksum skip.'],
+        ['action' => 'book', 'method' => 'POST', 'purpose' => 'Create reservation in hotel_bookings.'],
+        ['action' => 'modify', 'method' => 'POST', 'purpose' => 'Amend by external_reservation_id.'],
+        ['action' => 'cancel', 'method' => 'POST', 'purpose' => 'Cancel by external_reservation_id.'],
+        ['action' => 'notify', 'method' => 'POST', 'purpose' => 'Inbound OTA reservation notification (routes book/modify/cancel).'],
+        ['action' => 'ari_push', 'method' => 'POST', 'purpose' => 'Inbound rates / stop-sell into ITM.'],
+    ];
+}
+
+function itmDocLiveChatApiActions(): array
+{
+    return [
+        ['action' => 'launch_options_live_agent', 'method' => 'GET|POST', 'purpose' => 'Launch menu options for Live Agent flow.'],
+        ['action' => 'launch_options_chat_with', 'method' => 'GET|POST', 'purpose' => 'Launch menu options for Chat with peer.'],
+        ['action' => 'list_conversations', 'method' => 'GET|POST', 'purpose' => 'List conversations for signed-in employee.'],
+        ['action' => 'get_conversation', 'method' => 'GET|POST', 'purpose' => 'Fetch single conversation metadata.'],
+        ['action' => 'get_messages', 'method' => 'GET|POST', 'purpose' => 'Paginated message history.'],
+        ['action' => 'send_message', 'method' => 'POST', 'purpose' => 'Send chat message body.'],
+        ['action' => 'set_typing', 'method' => 'POST', 'purpose' => 'Ephemeral typing indicator.'],
+        ['action' => 'poll', 'method' => 'GET|POST', 'purpose' => 'Long-poll new messages and typing state.'],
+        ['action' => 'start_live_agent', 'method' => 'POST', 'purpose' => 'Open Live Agent support conversation.'],
+        ['action' => 'start_chat_with', 'method' => 'POST', 'purpose' => 'Open peer Chat with thread.'],
+        ['action' => 'claim_conversation', 'method' => 'POST', 'purpose' => 'Agent claims waiting conversation.'],
+        ['action' => 'rate_conversation', 'method' => 'POST', 'purpose' => 'Post-close satisfaction rating.'],
+        ['action' => 'close_conversation', 'method' => 'POST', 'purpose' => 'Close conversation thread.'],
+        ['action' => 'upload_attachment', 'method' => 'POST', 'purpose' => 'Multipart attachment upload.'],
+        ['action' => 'delete_attachment', 'method' => 'POST', 'purpose' => 'Remove attachment from message.'],
+        ['action' => 'list_notifications', 'method' => 'GET|POST', 'purpose' => 'Live chat notification helpers.'],
+        ['action' => 'mark_notification_read', 'method' => 'POST', 'purpose' => 'Mark live chat notification read.'],
+        ['action' => 'list_open_tickets', 'method' => 'GET|POST', 'purpose' => 'Support agent: open tickets for link-in-chat.'],
+        ['action' => 'list_closed_tickets', 'method' => 'GET|POST', 'purpose' => 'Support agent: recently closed tickets.'],
+        ['action' => 'list_employees', 'method' => 'GET|POST', 'purpose' => 'Chat with: searchable employee picker.'],
+    ];
+}
+
+function itmDocNotificationsApiEndpoints(): array
+{
+    return [
+        ['method' => 'GET', 'params' => 'count_only=1', 'purpose' => 'Lightweight unread badge count for header bell poll.'],
+        ['method' => 'GET', 'params' => 'unread=0|1, limit (default 20)', 'purpose' => 'Dropdown notification list when bell opens.'],
+        ['method' => 'GET', 'params' => 'stream=1', 'purpose' => 'SSE stream (~55s); releases session lock; not auto-started on every page.'],
+        ['method' => 'POST', 'params' => 'action=mark_read, notification_id, csrf_token', 'purpose' => 'Mark one notification read.'],
+        ['method' => 'POST', 'params' => 'action=mark_all_read, csrf_token', 'purpose' => 'Mark all inbox rows read for session employee.'],
+    ];
+}
+
+function itmDocIntegrationWebhookEvents(): array
+{
+    return [
+        ['event' => 'ticket.created', 'purpose' => 'After successful ticket create.'],
+        ['event' => 'ticket.status_changed', 'purpose' => 'Ticket edit when status_id changes.'],
+        ['event' => 'ticket.priority_changed', 'purpose' => 'Ticket edit when priority_id changes.'],
+        ['event' => 'ticket.comment_created', 'purpose' => 'After ticket comment create.'],
+        ['event' => 'alert.created', 'purpose' => 'After alert create.'],
+        ['event' => 'expense.created', 'purpose' => 'After expense create.'],
+        ['event' => 'expense.approved', 'purpose' => 'Expense transitions into Posted/Paid.'],
+        ['event' => 'employee_onboarding.approved', 'purpose' => 'Onboarding approval link decision approve.'],
+        ['event' => 'equipment.disposed', 'purpose' => 'Asset lifecycle disposal recorded.'],
+        ['event' => 'hotel_booking.confirmed', 'purpose' => 'Hotel booking distribution reservation flows.'],
     ];
 }
 
@@ -827,6 +963,11 @@ $switchPortApiEndpoints = itmDocSwitchPortApiEndpoints();
 $passwordsApiActions = itmDocPasswordsApiActions();
 $notesAjaxActions = itmDocNotesAjaxActions();
 $todoAjaxActions = itmDocTodoAjaxActions();
+$hotelBookingDistributionApiActions = itmDocHotelBookingDistributionApiActions();
+$hotelBookingDistributionWireFormats = itmDocHotelBookingDistributionWireFormats();
+$liveChatApiActions = itmDocLiveChatApiActions();
+$notificationsApiEndpoints = itmDocNotificationsApiEndpoints();
+$integrationWebhookEvents = itmDocIntegrationWebhookEvents();
 $systemStatusApiActions = itmDocSystemStatusApiActions();
 $apiExamples = itmDocCollectApiExamples($itmRootPath);
 $apiRateLimitTiers = itmDocApiRateLimitTiers();
@@ -872,6 +1013,8 @@ $selectOptionsAllowedTables = itmDocSelectOptionsAllowedTables();
             <li>Module Excel imports use <code>import_excel_rows</code> at <code>modules/&lt;module&gt;/index.php</code> (auto-detected below).</li>
             <li><strong>License Management</strong> — <code>modules/license_management/</code> (licenses) and <code>modules/license_types/</code> (Type lookup); Type ➕ quick-add posts <code>table=license_types</code> to <code>modules/select_options_api.php</code>.</li>
             <li>Optional API key auth uses per-user rows in <code>ui_configuration</code> with tier-based hourly rate limits (see below).</li>
+            <li><strong>Hotel booking distribution</strong> — partner API at <code>modules/hotel_booking_api/api.php</code> uses per-channel <code>X-API-Key</code> (no employee session). See dedicated section below and <code>docs/HOTEL_BOOKING_DISTRIBUTION.md</code>.</li>
+            <li><strong>Outbound integration webhooks</strong> — tenant subscribers receive signed JSON events (<code>includes/itm_webhook_queue.php</code>). Admin UI: <code>modules/integration_webhooks/</code>.</li>
         </ul>
     </div>
 
@@ -924,6 +1067,66 @@ curl "http://localhost/it-management/scripts/api.php?rate_limit=1&amp;api_key=&l
             </tbody>
         </table>
         <p class="muted">Helpers: <code>scripts/lib/itm_api_tier_test_helpers.php</code>. Catalog: <code>scripts/scripts.php</code>.</p>
+    </div>
+
+    <div class="card">
+        <h2>Hotel Booking Distribution API (<code>modules/hotel_booking_api/api.php</code>)</h2>
+        <p>Partner-facing channel distribution for hospitality inventory, ARI, and reservations. Auth: <code>X-API-Key</code> header or <code>api_key</code> query/body (row in <code>hotel_booking_distribution_channels</code>). No employee session (<code>ITM_HOTEL_BOOKING_DISTRIBUTION_API</code>). Canonical doc: <code>docs/HOTEL_BOOKING_DISTRIBUTION.md</code>. Admin: <code>modules/hotel_booking_distribution_channels/</code>.</p>
+        <h3>Wire formats (channel <code>standard</code>)</h3>
+        <table>
+            <thead><tr><th>standard</th><th>Request</th><th>Response</th></tr></thead>
+            <tbody>
+            <?php foreach ($hotelBookingDistributionWireFormats as $row): ?>
+                <tr>
+                    <td><code><?= itmDocEscape((string)$row['standard']); ?></code></td>
+                    <td><?= itmDocEscape((string)$row['request']); ?></td>
+                    <td><?= itmDocEscape((string)$row['response']); ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <p>Override with <code>?format=json</code> or <code>?format=xml</code>, or <code>Accept: application/xml</code>.</p>
+        <h3>Actions</h3>
+        <table>
+            <thead><tr><th>action</th><th>Method</th><th>Purpose</th></tr></thead>
+            <tbody>
+            <?php foreach ($hotelBookingDistributionApiActions as $row): ?>
+                <tr>
+                    <td><code><?= itmDocEscape((string)$row['action']); ?></code></td>
+                    <td><?= itmDocEscape((string)$row['method']); ?></td>
+                    <td><?= itmDocEscape((string)$row['purpose']); ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <h3>Inbound webhook signing (distribution channels)</h3>
+        <p>When <strong>Webhook signing secret</strong> is set on a channel, inbound <code>POST</code> must include <code>X-ITM-Signature: sha256=&lt;hmac&gt;</code> (also accepts <code>X-Hub-Signature-256</code>, <code>X-Booking-Signature</code>, <code>X-Signature</code>). HMAC-SHA256 over the raw request body. Outbound ARI uses <code>hotel_booking_distribution_webhook_queue</code> with retries — cron: <code>php scripts/run_hotel_booking_distribution_webhook_queue.php</code>.</p>
+<pre><code># Probe (demo key company 1: itm_hbd_seed_demo_c0101 after fresh import)
+curl -sS -H "X-API-Key: itm_hbd_seed_demo_c0101" \
+  "http://localhost/it-management/modules/hotel_booking_api/api.php?action=probe"
+
+# Availability shop
+curl -sS -H "X-API-Key: itm_hbd_seed_demo_c0101" \
+  "http://localhost/it-management/modules/hotel_booking_api/api.php?action=availability&amp;external_hotel_code=HTL1&amp;check_in=2026-12-01&amp;check_out=2026-12-03&amp;adults=2"</code></pre>
+        <p class="muted">Examples: <code>api-examples/hotel_distribution_*.php</code>. Regression: <code>php scripts/verify_hotel_booking_distribution.php</code>, <code>php scripts/verify_hotel_booking_distribution_http.php</code>.</p>
+    </div>
+
+    <div class="card">
+        <h2>Outbound integration webhooks</h2>
+        <p>Tenant HTTPS subscribers receive signed JSON payloads from <code>includes/itm_webhook_queue.php</code>. Configure in <code>modules/integration_webhooks/index.php</code> (Admin). Delivery worker: <code>php scripts/run_integration_webhooks.php</code> (schedule every 1–5 minutes). Canonical doc: <code>docs/INTEGRATION_WEBHOOKS.md</code>.</p>
+        <p>Signature: HMAC-SHA256 over JSON body (subscriber signing secret). URL validation blocks private/loopback ranges (SSRF guard).</p>
+        <table>
+            <thead><tr><th>event</th><th>When enqueued</th></tr></thead>
+            <tbody>
+            <?php foreach ($integrationWebhookEvents as $row): ?>
+                <tr>
+                    <td><code><?= itmDocEscape((string)$row['event']); ?></code></td>
+                    <td><?= itmDocEscape((string)$row['purpose']); ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <p class="muted">Automation rules may emit via action <code>emit_webhook</code>. Regression: <code>php scripts/verify_integration_webhooks.php</code>.</p>
     </div>
 
     <div class="card">
@@ -1073,6 +1276,81 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/select_optio
             <?php endforeach; ?>
             </tbody>
         </table>
+    </div>
+
+    <div class="card">
+        <h2>Chatbot API (<code>modules/knowledge_base/chat_api.php</code>)</h2>
+        <p>POST JSON only. Requires signed-in session, CSRF (<code>csrf_token</code> or <code>X-CSRF-Token</code>), and <code>itm_api_enforce_rate_limit_or_exit()</code>. Searches <code>knowledge_base</code> scoped by <code>company_id</code>; escalates with IT contact info from <code>it_settings</code> when keywords match. Max query length 1000 characters. UI: <code>js/chatbot.js</code> when <code>ui_configuration.enable_chatbot</code> is enabled.</p>
+<pre><code>curl -b cookies.txt -X POST "http://localhost/it-management/modules/knowledge_base/chat_api.php" \
+  -H "Content-Type: application/json" \
+  -H "X-CSRF-Token: &lt;csrf_token&gt;" \
+  -d '{"query":"How do I reset my password?","csrf_token":"&lt;csrf_token&gt;"}'</code></pre>
+        <p class="muted">Regression: <code>php scripts/verify_chatbot.php</code>.</p>
+    </div>
+
+    <div class="card">
+        <h2>Appointments API (<code>modules/appointments/api.php</code>)</h2>
+        <p>Employee self-service booking. Session + <code>itm_api_enforce_rate_limit_or_exit()</code>. POST <code>schedule</code> requires CSRF.</p>
+        <table>
+            <thead><tr><th>action</th><th>Method</th><th>Purpose</th></tr></thead>
+            <tbody>
+                <tr><td><code>week_slots</code></td><td>GET</td><td>Weekly slot grid for anchor <code>date</code> (Y-m-d).</td></tr>
+                <tr><td><code>schedule</code></td><td>POST</td><td>Book slot; sets <code>booking_lock</code>; returns <code>appointment_id</code> and <code>view_url</code>.</td></tr>
+            </tbody>
+        </table>
+        <p class="muted">Regression: <code>php scripts/verify_appointment.php</code>.</p>
+    </div>
+
+    <div class="card">
+        <h2>SLA Command Center API (<code>modules/ticket_sla_dashboard/api.php</code>)</h2>
+        <p>Session-scoped JSON for dashboard widgets. Rate limit enforced.</p>
+        <table>
+            <thead><tr><th>action</th><th>Method</th><th>Purpose</th></tr></thead>
+            <tbody>
+                <tr><td><code>summary</code></td><td>GET</td><td>At-risk / breached / met counts via <code>itm_ticket_sla_count_summary()</code>.</td></tr>
+                <tr><td><code>list</code></td><td>GET</td><td>Filtered ticket rows: <code>filter=at_risk|breached|met|all</code>, pagination <code>page</code>, <code>per_page</code>.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>Notifications API (<code>modules/notifications/api.php</code>)</h2>
+        <p>Header bell dropdown. Internal session UI — does <strong>not</strong> call <code>itm_api_enforce_rate_limit_or_exit()</code>. Calls <code>itm_release_session_lock()</code> after auth (required for SSE).</p>
+        <table>
+            <thead><tr><th>Method</th><th>Parameters</th><th>Purpose</th></tr></thead>
+            <tbody>
+            <?php foreach ($notificationsApiEndpoints as $row): ?>
+                <tr>
+                    <td><?= itmDocEscape((string)$row['method']); ?></td>
+                    <td><code><?= itmDocEscape((string)$row['params']); ?></code></td>
+                    <td><?= itmDocEscape((string)$row['purpose']); ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>Command palette search (<code>modules/search/api.php</code>)</h2>
+        <p>Global search for command palette. Session required; <code>itm_api_enforce_rate_limit_or_exit()</code>. GET <code>?q=</code> or POST JSON with CSRF. Response from <code>itm_command_palette_search()</code>.</p>
+    </div>
+
+    <div class="card">
+        <h2>Live Chat API (<code>modules/live_chat/api.php</code>)</h2>
+        <p>POST actions require CSRF. Tenant-scoped via session <code>company_id</code> + <code>employee_id</code>.</p>
+        <table>
+            <thead><tr><th>action</th><th>Method</th><th>Purpose</th></tr></thead>
+            <tbody>
+            <?php foreach ($liveChatApiActions as $row): ?>
+                <tr>
+                    <td><code><?= itmDocEscape((string)$row['action']); ?></code></td>
+                    <td><?= itmDocEscape((string)$row['method']); ?></td>
+                    <td><?= itmDocEscape((string)$row['purpose']); ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <p class="muted">Canonical doc: <code>docs/LIVE_CHAT.md</code>.</p>
     </div>
 
     <div class="card">
