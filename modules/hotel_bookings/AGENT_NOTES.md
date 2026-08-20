@@ -23,7 +23,7 @@ Bespoke hospitality hub: room **Planning** grid (Date + Days filters, company ho
 
 ## 5. Planning grid
 
-- Sticky columns **Room | HSK | Type** stay fixed while horizontal scroll moves date columns only; **⬅️** / **➡️** shift the anchor by the current **Days** window (filters and sort preserved).
+- Sticky columns **Room | HSK | Type** stay fixed while horizontal scroll moves date columns only; **⬅️** / **➡️** sit centered in `.hb-plan-date-nav` and shift the Date by the current **Days** window (filters and sort preserved).
 - Planning filters **Date** (`anchor` query) and **Days** sit on one `.hb-plan-filters-row` with Search. There is no Hotel dropdown: the grid and `ajax_action=planning_grid` always use that company’s hotel. Hide checkboxes stay on a separate `.hb-plan-hide-filters` row (`hb_hide[]`).
 - Planning view buttons **All / Arrivals / Departures / In-house / Future** (`hb_view`) use the **Date** field as business `$today`. Hide checkboxes (`hb_hide[]`) omit bars by resolved status name (NO-SHOW, CANCELLED, IN-HOUSE, CHECKED-OUT, DUE-OUT, DUE-IN).
 - **CANCELLED** and **NO-SHOW** bars render on an **empty** bottom row (no room number / HSK / type). Last-room snapshot is stored in `hotel_booking_last_rooms` keyed by `booking_id`.
