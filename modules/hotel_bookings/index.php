@@ -252,7 +252,10 @@ $hbViewButtons = [
 <?php endforeach; ?>
 <input type="hidden" name="hotel_id" value="<?php echo (int) $filterHotel; ?>">
 <div class="hb-plan-filters-row">
-<label>Date <?php itm_render_hotel_date_input('anchor', 'hb-plan-anchor', $anchorDate); ?></label>
+<div class="hb-plan-date-filter">
+<label for="hb-plan-anchor">Date</label>
+<?php itm_render_hotel_date_input('anchor', 'hb-plan-anchor', $anchorDate); ?>
+</div>
 <label>Days <input type="number" name="days" min="7" max="21" value="<?php echo (int) $planDays; ?>" class="hb-plan-days-input"></label>
 <label class="hb-plan-search-label"><span aria-hidden="true">&nbsp;</span><button type="submit" class="btn btn-sm" title="Search">🔎</button></label>
 </div>
@@ -395,5 +398,5 @@ window.HB_PLANNING_DND = <?php echo json_encode([
 </script>
 <?php endif; ?>
 <?php
-$layoutEndScripts = $mode === 'planning' ? ['js/hotel-date-input.js', 'js/hotel-bookings-planning.js'] : [];
+$layoutEndScripts = $mode === 'planning' ? [BASE_URL . 'js/hotel-date-input.js', 'js/hotel-bookings-planning.js'] : [];
 itm_hospitality_admin_layout_end($layoutEndScripts);
