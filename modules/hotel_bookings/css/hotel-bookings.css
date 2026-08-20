@@ -6,6 +6,8 @@
 .hb-plan-hide-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 12px;font-size:12px}
 .hb-plan-hide-legend{font-weight:600}
 .hb-plan-hide-check{margin:0}
+.hb-plan-filters{margin:0 0 12px}
+.hb-plan-view-filters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
 .hb-plan-filters-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
 .hb-plan-date-filter,.hb-plan-days-filter,.hb-plan-search-filter{display:flex;flex-direction:column;gap:4px;font-size:12px;flex:0 0 auto;width:auto}
 .hb-plan-date-filter>label,.hb-plan-days-filter>label,.hb-plan-search-filter>.hb-plan-filter-label-spacer{line-height:1.25;min-height:1.25em;margin:0}
