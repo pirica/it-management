@@ -300,8 +300,6 @@ if (!function_exists('hb_booking_render_form_fields')) {
         echo '<input type="text" class="form-control" value="' . sanitize((string) ($lastRoom['room_number'] ?? '')) . '" readonly></div>';
         echo '<div class="form-group"><label>Room name</label>';
         echo '<input type="text" class="form-control" value="' . sanitize((string) ($lastRoom['room_name'] ?? '')) . '" readonly></div>';
-        echo '<div class="form-group"><label>Hotel</label>';
-        echo '<input type="text" class="form-control" value="' . sanitize((string) ($lastRoom['hotel_name'] ?? '')) . '" readonly></div>';
         echo '<div class="form-group"><label>Room type</label>';
         echo '<input type="text" class="form-control" value="' . sanitize((string) ($lastRoom['room_type_name'] ?? '')) . '" readonly></div>';
         echo '<div class="form-group"><label>Floor</label>';
