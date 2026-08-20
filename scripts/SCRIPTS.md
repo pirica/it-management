@@ -400,6 +400,7 @@ Browser-only HTML catalogue of **implemented** JSON/AJAX endpoints. Update **`sc
 - IDF `modules/idfs/api/*` handlers
 - Module `import_excel_rows` JSON import endpoints
 - API key auth and tier rate limits (`includes/itm_api_rate_limit.php`, `GET scripts/api.php?rate_limit=1`)
+- Partner hotel distribution API (`modules/hotel_booking_api/api.php`), outbound integration webhooks (`docs/INTEGRATION_WEBHOOKS.md`), and module JSON handlers (`modules/appointments/api.php`, `modules/live_chat/api.php`, `modules/notifications/api.php`, `modules/search/api.php`, `modules/ticket_sla_dashboard/api.php`, `modules/bookmarks/list_all.php`, `modules/knowledge_base/chat_api.php`)
 
 **Collector helpers** (unit-tested in `phpunit/tests/Unit/Scripts/ApiFunctionsTest.php`):
 
@@ -411,6 +412,9 @@ Browser-only HTML catalogue of **implemented** JSON/AJAX endpoints. Update **`sc
 | `itmDocProjectJsonEndpoints()` | Curated non-import AJAX endpoints |
 | `itmDocSwitchPortApiEndpoints()` | Switch Port Manager (`includes/get_ports.php`, `includes/update_port.php`) response contracts |
 | `itmDocPasswordsApiActions()` / `itmDocNotesAjaxActions()` / `itmDocTodoAjaxActions()` | Module-specific action matrices |
+| `itmDocHotelBookingDistributionApiActions()` / `itmDocHotelBookingDistributionWireFormats()` | Partner distribution router actions and wire formats |
+| `itmDocLiveChatApiActions()` / `itmDocNotificationsApiEndpoints()` | Live Chat and header bell JSON APIs |
+| `itmDocIntegrationWebhookEvents()` | Outbound webhook event catalog |
 | `itmDocCollectApiExamples()` | Scan every `api-examples/*.php` file (title/category/purpose table in `api.php`) |
 | `itmDocSelectOptionsAllowedTables()` | Load allowed quick-add tables from `includes/itm_select_options_policy.php` (includes `license_types`) |
 | `itmDocApiRateLimitTiers()` | Tier → hourly limit table for API key documentation |

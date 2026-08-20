@@ -221,4 +221,55 @@ class ApiFunctionsTest extends TestCase
             $this->assertNotSame("", trim((string)$row["title"]));
         }
     }
+
+    public function testProjectJsonEndpointsIncludesModuleApiHandlers()
+    {
+        $paths = array_column(itmDocProjectJsonEndpoints(), "path");
+        $required = [
+            "modules/appointments/api.php",
+            "modules/bookmarks/list_all.php",
+            "modules/live_chat/api.php",
+            "modules/notifications/api.php",
+            "modules/passwords/ajax_handler.php",
+            "modules/search/api.php",
+            "modules/ticket_sla_dashboard/api.php",
+            "modules/hotel_booking_api/api.php",
+            "modules/knowledge_base/chat_api.php",
+        ];
+        foreach ($required as $path) {
+            $this->assertContains($path, $paths, "Missing curated JSON endpoint: " . $path);
+        }
+    }
+
+    public function testHotelBookingDistributionApiActionsCatalog()
+    {
+        $actions = itmDocHotelBookingDistributionApiActions();
+        $this->assertNotEmpty($actions);
+        $names = array_column($actions, "action");
+        $this->assertContains("probe", $names);
+        $this->assertContains("availability", $names);
+        $this->assertContains("book", $names);
+    }
+
+    public function testLiveChatApiActionsCatalog()
+    {
+        $actions = itmDocLiveChatApiActions();
+        $this->assertNotEmpty($actions);
+        $this->assertContains("send_message", array_column($actions, "action"));
+    }
+
+    public function testIntegrationWebhookEventsCatalog()
+    {
+        $events = itmDocIntegrationWebhookEvents();
+        $this->assertNotEmpty($events);
+        $this->assertContains("ticket.created", array_column($events, "event"));
+    }
+
+    public function testCollectDocumentedJsonHandlerPathsIncludesPartnerApi()
+    {
+        $rootPath = realpath(__DIR__ . "/../../../../");
+        $paths = itmDocCollectDocumentedJsonHandlerPaths($rootPath);
+        $this->assertContains("modules/hotel_booking_api/api.php", $paths);
+        $this->assertContains("modules/passwords/ajax_handler.php", $paths);
+    }
 }
