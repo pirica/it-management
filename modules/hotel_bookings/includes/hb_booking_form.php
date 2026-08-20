@@ -262,6 +262,10 @@ if (!function_exists('hb_booking_render_form_fields')) {
         $colorVal = itm_hotel_booking_resolve_booking_color($row['booking_color'] ?? '', $colorSeed);
         $isActive = (int) ($row['active'] ?? 1) === 1;
         $todayMin = date('Y-m-d');
+        $dateInputOptions = ['required' => true];
+        if ($isCreate) {
+            $dateInputOptions['min'] = $todayMin;
+        }
 
         echo '<div class="form-group"><label>Customer</label>';
         echo '<select name="customer_id" required class="form-control">';
@@ -330,10 +334,10 @@ if (!function_exists('hb_booking_render_form_fields')) {
 
         echo '<div class="hb-booking-dates-row">';
         echo '<div class="form-group"><label>Check-in</label>';
-        itm_render_hotel_date_input('check_in', 'hb-booking-check-in', $row['check_in'] ?? '', ['required' => true, 'min' => $todayMin]);
+        itm_render_hotel_date_input('check_in', 'hb-booking-check-in', $row['check_in'] ?? '', $dateInputOptions);
         echo '</div>';
         echo '<div class="form-group"><label>Check-out</label>';
-        itm_render_hotel_date_input('check_out', 'hb-booking-check-out', $row['check_out'] ?? '', ['required' => true, 'min' => $todayMin]);
+        itm_render_hotel_date_input('check_out', 'hb-booking-check-out', $row['check_out'] ?? '', $dateInputOptions);
         echo '</div>';
         echo '</div>';
 
