@@ -2040,6 +2040,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Copy demo hotel + room-type photos to <code>booking/images/{hotel_id}/hotel_photos/</code> and <code>room_types_photos/</code> for seed companies 1–5; upsert photo rows (<code>--apply</code> / <code>?apply=1</code> writes).</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="customers hotel_bookings">
+                    <td><a href="sample_bookings.php" target="_blank" rel="nofollow noreferrer">sample_bookings.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">customers</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">hotel_bookings</span></span></td>
+                    <td>Seed <strong>10</strong> planning-demo <code>hotel_bookings</code> rows per company (1–5) with realistic guest names and all lifecycle statuses anchored on today (<code>--apply</code> / <code>?apply=1</code> writes; replaces prior <code>[sample_bookings]</code> rows).</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="hotel_bookings hotel_booking_distribution_webhook_queue">
                     <td><a href="run_hotel_booking_distribution_webhook_queue.php" target="_blank" rel="nofollow noreferrer">run_hotel_booking_distribution_webhook_queue.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

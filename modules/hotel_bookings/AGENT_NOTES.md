@@ -55,6 +55,8 @@ Bespoke hospitality hub: room **Planning** grid (Date + Days filters, company ho
 
 `php scripts/verify_hotel_booking.php` after DDL/seeds or helper changes (includes subprocess probes for all 13 Hospitality sidebar `index.php` files).
 
+Planning demo data: `php scripts/sample_bookings.php` (`--apply`) — 10 bookings per company 1–5 with all lifecycle statuses vs today; [sample_bookings.php?run=1&apply=1](http://localhost/it-management/scripts/sample_bookings.php?run=1&apply=1) (Admin).
+
 ## 7. Admin page shell
 
 Bespoke admin entry files (`index.php`, `create.php`, `edit.php`, `view.php`) and `hotel_booking_settings` / `hotel_booking_special_rates` / `hotel_booking_portal_rate_plans` use `includes/itm_hospitality_admin_layout.php` (`itm_hospitality_admin_layout_begin` / `end`) — **not** `includes/footer.php` (does not exist).
