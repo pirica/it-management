@@ -15,7 +15,7 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 
 ## 4. Business Rules (Critical for Agents)
 - **UI Persistence**: Changes to button positions or pagination must call `collectAndSetHiddenFields()` in the UI. Fresh-import / column defaults for `table_actions_position`, `new_button_position`, `export_buttons_position`, and `back_save_position` are **`left`** (`db/`, `itm_ui_config_defaults()`); Settings dropdown labels mark **Left (default)**.
-- **API Access card**: **Free** tier — no API key UI; copy states **signed-in session** is required for programmatic access and for `scripts/api.php?rate_limit=1` without `api_key`. **Paid** tiers — only `api_key` is editable (save or generate). `tier` is a **blocked** `<select>`; rate-limit counters are read-only. POST `save_api_key` / `generate_api_key` rejected on Free tier.
+- **API Access card**: **Free** tier — no API key UI; copy states **signed-in session** is required for programmatic access and for `scripts/api.php?rate_limit=1` without `api_key`. **Paid** tiers — `api_key` editable (save or generate); **API v2 scope** checkboxes (`api_key_scopes`: `tickets.read`, `tickets.write`, `equipment.read`, `equipment.write`); separate **Save API v2 scopes** submit; OpenAPI link to [scripts/openapi.php?format=json](http://localhost/it-management/scripts/openapi.php?format=json). New keys seed read-only scopes. `tier` is a **blocked** `<select>`; rate-limit counters are read-only. POST `save_api_key` / `generate_api_key` / `save_api_v2_scopes` rejected on Free tier.
 - **Database Maintenance**: Allows triggering schema verification and table repairs.
 - **Backup/Restore**: Handles SQL dump generation and manual SQL imports. **All Backups** table (`#all-backups`) uses `table-tools.js` export/import plus client-side row filter; server-side column sort via `?sort=name|size|modified&dir=ASC|DESC` (default `modified` `DESC`) with ▲/▼ on **File Name**, **Size (KB)**, and **Last Modified (UTC)**. **Options** column is first and not sortable.
 
@@ -27,7 +27,7 @@ Central hub for system-wide configuration, UI customization, sidebar management,
 - **System flags layout**: **All roles** — `enable_chatbot` (`ui_configuration` / schema default **1**; demo seeds and `db/migrations/ui_configuration_enable_chatbot_active.sql` backfill legacy `0` rows) and **Live Chat same-tenant peers** (`it_settings.chat_same_tenant`, default **1**, saved from Settings with UI config). **System (Admin Role only)** — `enable_all_error_reporting`, `enable_audit_logs`, `enable_auto_scaffolding` (admin UI + POST save via `itm_is_admin()`; non-admins keep existing values on save).
 - **Favicon/SQL Uploads**: Supports drag-and-drop file uploads for favicon and SQL backup files.
 - **Favicon preview**: On load, `itm_ui_config_sync_favicon_path_from_disk()` backfills empty `favicon_path` when `images/favicons/company_{company_id}.ico` already exists (uploaded file without DB path). Preview and tab icon use `itm_ui_config_resolve_favicon_relative_path()` + `itm_ui_config_favicon_url($config, $company_id)`.
-- **API key POST actions**: `save_api_key`, `generate_api_key` (CSRF required).
+- **API key POST actions**: `save_api_key`, `generate_api_key`, `save_api_v2_scopes` (CSRF required).
 - **Admin toolbar:** when `itm_is_admin()`, index intro shows **ADMIN** (`admin.php`) and **SCRIPTS** (`scripts/scripts.php`) buttons above the UI Configuration card.
 
 ## 6. API Actions (If Applicable)

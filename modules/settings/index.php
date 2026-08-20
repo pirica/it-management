@@ -12,6 +12,7 @@
 $crud_title = 'Settings';
 
 require '../../config/config.php';
+require_once dirname(__DIR__, 2) . '/includes/itm_api_v2_scopes.php';
 // Handle Excel/CSV database import requests from table-tools.js.
 if ((string)($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $itmImportRawBody = file_get_contents('php://input');
@@ -568,12 +569,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } elseif (!itm_api_save_user_api_key($conn, (int)$company_id, $settingsUserId, $submittedApiKey)) {
                 $error = 'Unable to save API key.';
             } else {
+                if (function_exists('itm_api_v2_replace_scopes_from_post')) {
+                    itm_api_v2_replace_scopes_from_post($conn, (int)$company_id, $settingsUserId);
+                }
                 $_SESSION['settings_flash_message'] = $submittedApiKey === ''
                     ? 'API key cleared successfully.'
                     : 'API key saved successfully.';
                 header('Location: index.php?api_saved=1');
                 exit;
             }
+        }
+    }
+
+    if ($action === 'save_api_v2_scopes') {
+        $settingsApiTier = function_exists('itm_api_normalize_tier')
+            ? itm_api_normalize_tier($currentUiConfig['tier'] ?? 'Free')
+            : 'Free';
+        if (function_exists('itm_api_tier_requires_api_key') && !itm_api_tier_requires_api_key($settingsApiTier)) {
+            $error = 'API v2 scopes apply to paid integration tiers only.';
+        } elseif ((int)$company_id <= 0 || $settingsUserId <= 0) {
+            $error = 'Unable to save API v2 scopes: missing company or session user.';
+        } elseif (function_exists('itm_api_v2_replace_scopes_from_post')
+            && itm_api_v2_replace_scopes_from_post($conn, (int)$company_id, $settingsUserId)) {
+            $_SESSION['settings_flash_message'] = 'API v2 scopes saved successfully.';
+            header('Location: index.php?api_scopes_saved=1');
+            exit;
+        } else {
+            $error = 'Unable to save API v2 scopes.';
         }
     }
 
@@ -592,6 +614,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!itm_api_save_user_api_key($conn, (int)$company_id, $settingsUserId, $generatedApiKey)) {
                 $error = 'Unable to generate API key.';
             } else {
+                if (function_exists('itm_api_v2_seed_default_scopes_for_settings_user')) {
+                    itm_api_v2_seed_default_scopes_for_settings_user($conn, (int)$company_id, $settingsUserId);
+                }
                 $_SESSION['settings_flash_message'] = 'New API key generated successfully.';
                 header('Location: index.php?api_saved=1');
                 exit;
@@ -759,6 +784,16 @@ $currentApiKeyLastUsedLabel = $currentApiKeyLastUsedAt !== ''
 $currentApiResetLabel = !empty($currentApiRateStatus['reset_at'])
     ? gmdate('Y-m-d H:i:s', (int)$currentApiRateStatus['reset_at']) . ' UTC'
     : '—';
+$currentApiV2ScopeCatalog = function_exists('itm_api_v2_scope_catalog') ? itm_api_v2_scope_catalog() : [];
+$currentApiV2Scopes = [];
+if (function_exists('itm_api_v2_list_scopes_for_configuration') && (int)($currentUiConfig['id'] ?? 0) > 0) {
+    $currentApiV2Scopes = itm_api_v2_list_scopes_for_configuration(
+        $conn,
+        (int)$company_id,
+        (int)$currentUiConfig['id']
+    );
+}
+$currentApiV2OpenApiUrl = rtrim((string)(defined('BASE_URL') ? BASE_URL : '/it-management/'), '/') . '/scripts/openapi.php?format=json';
 // If the database has a custom pagination value not in our default array, add it to the dropdown.
 if (!array_key_exists($currentRecordsPerPage, $recordsPerPageOptions) && ctype_digit($currentRecordsPerPage) && (int)$currentRecordsPerPage > 0) {
     $recordsPerPageOptions[$currentRecordsPerPage] = $currentRecordsPerPage;
@@ -1136,16 +1171,36 @@ if (!isset($crud_title)) {
                         <p class="form-hint" style="margin-top:0;">Manage your integration API key here. Tier and rate-limit counters are managed by the platform and shown read-only below.</p>
                         <form method="post" style="margin-bottom:16px;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                            <input type="hidden" name="action" value="save_api_key">
                             <div class="form-group" style="max-width:640px;">
                                 <label for="api_key">API Key</label>
                                 <input id="api_key" name="api_key" type="text" maxlength="191" value="<?php echo sanitize($currentApiKey); ?>" placeholder="Paste or generate an API key">
-                                <p class="form-hint" style="margin-top:6px;">Send this value as the <code>X-API-Key</code> header (or <code>api_key</code> query parameter) on programmatic requests.</p>
+                                <p class="form-hint" style="margin-top:6px;">Send this value as the <code>X-API-Key</code> header (or <code>api_key</code> query parameter) on programmatic requests. API v2 (<code>modules/api_v2/router.php</code>) requires a paid tier key and granted scopes below.</p>
                             </div>
+                            <?php if ($currentApiV2ScopeCatalog !== []): ?>
+                            <div class="form-group" style="max-width:640px;">
+                                <label>API v2 scopes</label>
+                                <p class="form-hint" style="margin-top:0;">New keys default to read-only scopes. Enable write scopes only when integrations need create/update.</p>
+                                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-top:8px;">
+                                    <?php foreach ($currentApiV2ScopeCatalog as $scopeSlug => $scopeLabel): ?>
+                                        <?php $scopeChecked = in_array($scopeSlug, $currentApiV2Scopes, true); ?>
+                                        <label class="itm-checkbox-control">
+                                            <input type="checkbox" name="api_v2_scopes[]" value="<?php echo sanitize($scopeSlug); ?>" <?php echo $scopeChecked ? 'checked' : ''; ?>>
+                                            <span><?php echo sanitize($scopeLabel); ?></span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
                             <div class="itm-form-actions itm-align-left" style="display:flex;gap:8px;flex-wrap:wrap;">
-                                <button class="btn btn-primary" type="submit" title="Save">💾</button>
+                                <button class="btn btn-primary" type="submit" name="action" value="save_api_key" title="Save API key">💾</button>
+                                <?php if ($currentApiV2ScopeCatalog !== []): ?>
+                                <button class="btn btn-sm" type="submit" name="action" value="save_api_v2_scopes" title="Save API v2 scopes">Save API v2 scopes</button>
+                                <?php endif; ?>
                             </div>
                         </form>
+                        <?php if ($currentApiV2ScopeCatalog !== []): ?>
+                        <p class="form-hint" style="margin-top:0;margin-bottom:16px;">OpenAPI 3.0 spec (public, no secrets): <a href="<?php echo sanitize($currentApiV2OpenApiUrl); ?>" target="_blank" rel="noopener noreferrer"><?php echo sanitize($currentApiV2OpenApiUrl); ?></a> — open in a new tab.</p>
+                        <?php endif; ?>
                         <form method="post" style="margin-bottom:20px;display:inline;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                             <input type="hidden" name="action" value="generate_api_key">

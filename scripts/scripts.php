@@ -2659,6 +2659,20 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression: disposable <code>ui_configuration</code> row on <strong>Basic</strong> tier allows the final hourly request then blocks the next. Auto-generates API key and prints browser URL <code>scripts/api.php?rate_limit=1&amp;api_key=…</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="Mixed ui_configuration">
+                    <td><a href="verify_api_v2.php" target="_blank" rel="nofollow noreferrer">verify_api_v2.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">ui_configuration</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Regression for API v2 gateway: <code>api_key_scopes</code>, route registry, scoped auth, ticket handlers, OpenAPI builder. Router: <code>modules/api_v2/router.php</code>. Doc: <code>docs/API_V2.md</code>.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_api_v2.php</code></td>
+                </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="openapi.php?format=json" target="_blank" rel="nofollow noreferrer">openapi.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Public OpenAPI 3.0 JSON for API v2 (<code>includes/itm_api_v2_openapi.php</code>). No login. Browser: <code>?format=json</code>.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/openapi.php</code></td>
+                </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_select_options_escalation.php" target="_blank" rel="nofollow noreferrer">verify_select_options_escalation.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
