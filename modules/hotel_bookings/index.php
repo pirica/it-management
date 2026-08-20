@@ -256,7 +256,10 @@ $hbViewButtons = [
 <label for="hb-plan-anchor">Date</label>
 <?php itm_render_hotel_date_input('anchor', 'hb-plan-anchor', $anchorDate); ?>
 </div>
-<label>Days <input type="number" name="days" min="7" max="21" value="<?php echo (int) $planDays; ?>" class="hb-plan-days-input"></label>
+<div class="hb-plan-days-filter">
+<label for="hb-plan-days">Days</label>
+<input type="number" id="hb-plan-days" name="days" min="7" max="21" value="<?php echo (int) $planDays; ?>" class="hb-plan-days-input">
+</div>
 <label class="hb-plan-search-label"><span aria-hidden="true">&nbsp;</span><button type="submit" class="btn btn-sm" title="Search">🔎</button></label>
 </div>
 </form>

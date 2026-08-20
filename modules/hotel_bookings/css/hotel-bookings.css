@@ -6,10 +6,11 @@
 .hb-plan-hide-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 12px;font-size:12px}
 .hb-plan-hide-legend{font-weight:600}
 .hb-plan-hide-check{margin:0}
-.hb-plan-filters-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
-.hb-plan-filters-row>label,.hb-plan-date-filter{display:flex;flex-direction:column;gap:4px;font-size:12px;flex:0 0 auto;width:auto}
-.hb-plan-days-input{width:64px}
-.hb-plan-search-label button{align-self:stretch;min-height:41px}
+.hb-plan-filters-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}
+.hb-plan-filters-row>label,.hb-plan-date-filter,.hb-plan-days-filter{display:flex;flex-direction:column;gap:4px;font-size:12px;flex:0 0 auto;width:auto}
+.hb-plan-date-filter .hb-hotel-date-field{max-width:220px;min-height:41px}
+.hb-plan-days-input{width:72px;max-width:72px;min-height:41px;padding:6px 10px;font-size:14px;box-sizing:border-box}
+.hb-plan-search-label button{align-self:stretch;min-height:41px;min-width:41px}
 .hb-plan-grid-wrap{overflow:auto;border:1px solid var(--border-color,#ddd);border-radius:8px}
 .hb-plan-grid{min-width:900px;border-collapse:collapse;width:100%}
 .hb-plan-grid th,.hb-plan-grid td{border:1px solid var(--border-color,#e0e0e0);padding:6px 8px;font-size:12px;vertical-align:middle}
