@@ -260,7 +260,10 @@ $hbViewButtons = [
 <label for="hb-plan-days">Days</label>
 <input type="number" id="hb-plan-days" name="days" min="7" max="21" value="<?php echo (int) $planDays; ?>" class="hb-plan-days-input">
 </div>
-<label class="hb-plan-search-label"><span aria-hidden="true">&nbsp;</span><button type="submit" class="btn btn-sm" title="Search">🔎</button></label>
+<div class="hb-plan-search-filter">
+<span class="hb-plan-filter-label-spacer" aria-hidden="true">&nbsp;</span>
+<button type="submit" class="btn btn-sm hb-plan-search-btn" title="Search">🔎</button>
+</div>
 </div>
 </form>
 <div class="hb-plan-view-filters" role="group" aria-label="Booking view filters">
