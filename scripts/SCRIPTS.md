@@ -508,6 +508,25 @@ php scripts/apitest_tier_free.php
 php scripts/apitest_tier_basic.php
 ```
 
+#### API v2 partner gateway (`verify_api_v2.php`, `openapi.php`)
+
+| Script | Purpose |
+|--------|---------|
+| `php scripts/verify_api_v2.php` | Regression: `api_key_scopes` table, PATH_INFO route registry, scope grants, ticket list/create handlers, OpenAPI builder. Disposable Basic-tier row via `itm_apitest_disposable_user_id(46)`. **Browser + CLI** (browser: Admin). |
+| `php scripts/openapi.php` | Emit OpenAPI 3.0 JSON from `itm_api_v2_route_registry()`. **No login** (`ITM_SCRIPT_NO_AUTH`). Browser: `scripts/openapi.php?format=json`. |
+
+Canonical doc: `docs/API_V2.md`. Router: `modules/api_v2/router.php`. Examples: `api-examples/api_v2_*.php`. PHPUnit: `php scripts/run_tests.php --filter ApiV2`.
+
+**Verify after API v2 router, scope, or handler changes:**
+
+```bash
+php -l includes/itm_api_v2.php
+php -l includes/itm_api_v2_scopes.php
+php -l modules/api_v2/router.php
+php scripts/verify_api_v2.php
+php scripts/run_tests.php --filter ApiV2
+```
+
 #### 2. Browser scripts (`scripts/*.php` opened in the browser)
 
 * **Special Case: `scripts/health.php` (MANDATORY):** This file is a **shell bootstrap** (not a PHP entry script) used to provision an automated health-check endpoint on deployment hosts. Do not add navigation links, headers, or PHP logic that changes its output format. **`perform_audit.php`** excludes it — bare `php scripts/health.php` only echoes shell commands and is not a regression signal.

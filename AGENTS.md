@@ -349,6 +349,19 @@ Per-user integration keys and hourly quotas live on **`ui_configuration`**. Logi
 
 6. **PHPUnit:** `phpunit/tests/Unit/Includes/ApiRateLimitTest.php` (`itm_api_tier_requires_api_key`, probe payload).
 
+#### API v2 partner gateway (mandatory)
+
+JSON REST router for paid-tier integration keys with **scoped** access — separate from hotel distribution channel keys and from Free-tier session APIs.
+
+1. **Entry:** `modules/api_v2/router.php` — PATH_INFO routes (e.g. `.../router.php/tickets`); **no** `.htaccess` rewrite.
+2. **Auth:** `X-API-Key` on `ui_configuration`; **paid tier only** (`itm_api_tier_requires_api_key`); rate limit via `itm_api_consume_rate_limit()`.
+3. **Scopes:** `api_key_scopes` table; catalog in `includes/itm_api_v2_scopes.php`; Settings paid-tier checkboxes; default read-only on key generate.
+4. **MVP resources:** tickets + equipment (GET list/get, POST create, PATCH update) + `GET /probe`.
+5. **OpenAPI:** public `scripts/openapi.php?format=json` from `itm_api_v2_route_registry()`.
+6. **Canonical doc:** `docs/API_V2.md`.
+
+**Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_api_v2.php`; PHPUnit: `php scripts/run_tests.php --filter ApiV2`.
+
 #### Rack Planner price source sync (mandatory)
 
 When Rack Planner stores a priced device with code `catalog:<id>`, `equipment:<id>`, or `idf_unlinked:<token>`, price changes must persist to source tables as part of save/autosave:

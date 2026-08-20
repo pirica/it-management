@@ -486,6 +486,11 @@ if (defined('ITM_HOTEL_BOOKING_DISTRIBUTION_API') && ITM_HOTEL_BOOKING_DISTRIBUT
     $itmSkipWebAuth = true;
 }
 
+// Why: modules/api_v2/router.php authenticates paid-tier integration keys (X-API-Key) without employee login.
+if (defined('ITM_API_V2') && ITM_API_V2) {
+    $itmSkipWebAuth = true;
+}
+
 // Why: Read-only aggregate diagnostics may run without a session when explicitly allowlisted.
 if (
     !$itmSkipWebAuth
@@ -496,6 +501,7 @@ if (
     $itmNoAuthScripts = [
         'count_db_tables.php',
         'test_chatbot.php',
+        'openapi.php',
     ];
     $itmNoAuthScript = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
 

@@ -45,7 +45,7 @@ All proposals below follow existing conventions: procedural PHP, MySQLi prepared
 - **Bespoke module inconsistency** — 58 modules defer soft-delete scaffold (`docs/list_bespoke_UI.txt`); uneven UX.
 - **CI vs. catalog mismatch** — 109 `verify_*` scripts, 2 CI jobs; regressions slip through.
 - **PHP 8 blocker** — modernization in progress (`handoff.md`).
-- **API discoverability** — distributed AJAX endpoints; paid API tiers exist but no OpenAPI catalog.
+- **API discoverability** — session/AJAX endpoints remain in `scripts/api.php`; **API v2** partner REST + OpenAPI catalog shipped (`docs/API_V2.md`, `scripts/openapi.php`).
 
 ### High-value improvements (leverage existing code)
 

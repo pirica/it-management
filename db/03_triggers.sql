@@ -4390,6 +4390,25 @@ CREATE TRIGGER `trg_integration_webhooks_audit_delete` AFTER DELETE ON `integrat
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'integration_webhooks', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
 
+DROP TRIGGER IF EXISTS `trg_api_key_scopes_audit_insert`$$
+DROP TRIGGER IF EXISTS `trg_api_key_scopes_audit_update`$$
+DROP TRIGGER IF EXISTS `trg_api_key_scopes_audit_delete`$$
+
+CREATE TRIGGER `trg_api_key_scopes_audit_insert` AFTER INSERT ON `api_key_scopes` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'api_key_scopes', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'scope_slug', NEW.`scope_slug`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_api_key_scopes_audit_update` AFTER UPDATE ON `api_key_scopes` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'api_key_scopes', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'scope_slug', OLD.`scope_slug`), JSON_OBJECT('id', NEW.`id`, 'scope_slug', NEW.`scope_slug`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_api_key_scopes_audit_delete` AFTER DELETE ON `api_key_scopes` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'api_key_scopes', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'scope_slug', OLD.`scope_slug`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
 CREATE TRIGGER `trg_integration_webhook_deliveries_audit_insert` AFTER INSERT ON `integration_webhook_deliveries` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'integration_webhook_deliveries', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'event_type', NEW.`event_type`, 'status', NEW.`status`), @app_ip_address, @app_user_agent);

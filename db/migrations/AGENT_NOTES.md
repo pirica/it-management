@@ -19,6 +19,7 @@ Historical migration SQL files were **pruned** once live databases matched canon
 
 | File | Role |
 |------|------|
+| `api_v2_scopes.sql` | Scoped integration keys (`api_key_scopes` per `ui_configuration_id` + `scope_slug`); pairs with `includes/itm_api_v2_scopes.php` and Settings API v2 scope checkboxes. |
 | `hotel_booking_last_rooms.sql` | Last-room snapshot table (`booking_id` + room/hotel/type/floor fields) |
 
 ## 12. Module Owner Notes

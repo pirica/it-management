@@ -360,6 +360,7 @@ function itmDocCollectDocumentedJsonHandlerPaths(string $rootPath): array
     }
 
     $paths[] = 'modules/explorer/api.php';
+    $paths[] = 'modules/api_v2/router.php';
     $paths[] = 'modules/hotel_booking_api/api.php';
     $paths[] = 'modules/passwords/ajax_handler.php';
 
@@ -686,6 +687,13 @@ function itmDocProjectJsonEndpoints(): array
             'purpose' => 'SLA breach/at-risk ticket counts and filtered lists for dashboard widgets.',
         ],
         [
+            'group' => 'API v2 partner gateway',
+            'method' => 'GET|POST|PATCH',
+            'path' => 'modules/api_v2/router.php',
+            'params' => 'PATH_INFO /probe|/tickets|/tickets/{id}|/equipment|/equipment/{id}; X-API-Key (paid tier + scopes)',
+            'purpose' => 'Scoped JSON REST for tickets and equipment — see API v2 section and docs/API_V2.md.',
+        ],
+        [
             'group' => 'Hotel booking distribution',
             'method' => 'GET|POST',
             'path' => 'modules/hotel_booking_api/api.php',
@@ -895,6 +903,9 @@ function itmDocCollectApiExamples(string $rootPath): array
         'hotel_distribution_notify_book.php' => 'Hotel distribution API',
         'hotel_distribution_modify.php' => 'Hotel distribution API',
         'hotel_distribution_cancel.php' => 'Hotel distribution API',
+        'api_v2_probe.php' => 'API v2 partner gateway',
+        'api_v2_tickets_list.php' => 'API v2 partner gateway',
+        'api_v2_ticket_create.php' => 'API v2 partner gateway',
     ];
 
     $examples = [];
@@ -1014,6 +1025,7 @@ $selectOptionsAllowedTables = itmDocSelectOptionsAllowedTables();
             <li><strong>License Management</strong> — <code>modules/license_management/</code> (licenses) and <code>modules/license_types/</code> (Type lookup); Type ➕ quick-add posts <code>table=license_types</code> to <code>modules/select_options_api.php</code>.</li>
             <li>Optional API key auth uses per-user rows in <code>ui_configuration</code> with tier-based hourly rate limits (see below).</li>
             <li><strong>Hotel booking distribution</strong> — partner API at <code>modules/hotel_booking_api/api.php</code> uses per-channel <code>X-API-Key</code> (no employee session). See dedicated section below and <code>docs/HOTEL_BOOKING_DISTRIBUTION.md</code>.</li>
+            <li><strong>API v2 partner gateway</strong> — scoped JSON REST at <code>modules/api_v2/router.php</code> (paid-tier <code>ui_configuration</code> keys). OpenAPI: <code>scripts/openapi.php?format=json</code>. See <code>docs/API_V2.md</code>.</li>
             <li><strong>Outbound integration webhooks</strong> — tenant subscribers receive signed JSON events (<code>includes/itm_webhook_queue.php</code>). Admin UI: <code>modules/integration_webhooks/</code>.</li>
         </ul>
     </div>
@@ -1067,6 +1079,37 @@ curl "http://localhost/it-management/scripts/api.php?rate_limit=1&amp;api_key=&l
             </tbody>
         </table>
         <p class="muted">Helpers: <code>scripts/lib/itm_api_tier_test_helpers.php</code>. Catalog: <code>scripts/scripts.php</code>.</p>
+    </div>
+
+    <div class="card">
+        <h2>API v2 partner gateway (<code>modules/api_v2/router.php</code>)</h2>
+        <p>Paid-tier integration JSON REST with per-key scopes on <code>api_key_scopes</code>. Auth: <code>X-API-Key</code> (or <code>api_key</code>) on <code>ui_configuration</code> — <strong>no</strong> employee session (<code>ITM_API_V2</code>). Free tier rejected. Canonical doc: <code>docs/API_V2.md</code>. Scopes: Settings → API Access (paid tiers).</p>
+        <h3>Scopes</h3>
+        <table>
+            <thead><tr><th>scope</th><th>Routes</th></tr></thead>
+            <tbody>
+                <tr><td><code>tickets.read</code></td><td><code>GET /tickets</code>, <code>GET /tickets/{id}</code></td></tr>
+                <tr><td><code>tickets.write</code></td><td><code>POST /tickets</code>, <code>PATCH /tickets/{id}</code></td></tr>
+                <tr><td><code>equipment.read</code></td><td><code>GET /equipment</code>, <code>GET /equipment/{id}</code></td></tr>
+                <tr><td><code>equipment.write</code></td><td><code>POST /equipment</code>, <code>PATCH /equipment/{id}</code></td></tr>
+            </tbody>
+        </table>
+        <p><code>GET /probe</code> — any valid paid key; returns granted scopes and route metadata.</p>
+        <h3>OpenAPI 3.0</h3>
+        <p>Public machine-readable spec (no secrets): <code>GET scripts/openapi.php?format=json</code>. Server URL is <code>…/modules/api_v2/router.php</code>; paths are PATH_INFO suffixes (e.g. <code>/tickets</code>).</p>
+<pre><code># Probe
+curl -sS -H "X-API-Key: &lt;paid_tier_key&gt;" \
+  "http://localhost/it-management/modules/api_v2/router.php/probe"
+
+# List tickets (tickets.read)
+curl -sS -H "X-API-Key: &lt;paid_tier_key&gt;" \
+  "http://localhost/it-management/modules/api_v2/router.php/tickets?limit=10"
+
+# Create ticket (tickets.write) — JSON body
+curl -sS -X POST -H "X-API-Key: &lt;paid_tier_key&gt;" -H "Content-Type: application/json" \
+  -d '{"title":"Partner ticket"}' \
+  "http://localhost/it-management/modules/api_v2/router.php/tickets"</code></pre>
+        <p class="muted">Examples: <code>api-examples/api_v2_*.php</code>. Regression: <code>php scripts/verify_api_v2.php</code>. OpenAPI: <a href="openapi.php?format=json">scripts/openapi.php?format=json</a> (no login).</p>
     </div>
 
     <div class="card">
