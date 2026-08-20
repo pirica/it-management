@@ -10,7 +10,7 @@ Tests for maintenance/audit scripts under `scripts/`.
 - **`BypassLoginTest`:** skips when `$conn` is unavailable; requires MySQL for full run.
 
 ## 7. File Structure
-- **ApiFunctionsTest.php** — collector helpers in `scripts/api.php` (module imports, Explorer actions, IDF endpoints, switch-port API catalog, api-examples list).
+- **ApiFunctionsTest.php** — collector helpers in `scripts/api.php` (module imports, Explorer actions, IDF endpoints, switch-port API catalog, api-examples list). `testCollectApiExamplesListsEveryPhpFile` compares `itmDocCollectApiExamples()` row count to `glob(api-examples/*.php)` and asserts each known example path is documented; add paths to `$expected` when introducing new `api-examples/*.php` files (and a `$categoryByFile` entry in `scripts/api.php` if the collector should categorize them).
 - **BypassLoginTest.php** — includes `scripts/bypass_login.php` in-process; verifies session keys and Admin role (`itm_is_admin()` gate on seed Admin user).
 - **CompanyModuleAccessVerifyTest.php** — subprocess CLI run of `scripts/verify_company_module_access.php` (sidebar discovery probes).
 - **ItmScriptTestUserTest.php** — unit tests for `scripts/lib/itm_script_test_employee.php` (create, snapshot, restore, delete, `create_session_actor`; create/delete clear stale `@app_employee_id`).

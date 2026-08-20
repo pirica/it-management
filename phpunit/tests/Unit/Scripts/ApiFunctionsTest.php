@@ -184,7 +184,10 @@ class ApiFunctionsTest extends TestCase
         $rootPath = realpath(__DIR__ . "/../../../../");
         $examples = itmDocCollectApiExamples($rootPath);
         $this->assertIsArray($examples);
-        $this->assertCount(21, $examples, "Expected every api-examples/*.php file to be documented");
+
+        $pattern = $rootPath . '/api-examples/*.php';
+        $onDisk = count(glob($pattern) ?: []);
+        $this->assertCount($onDisk, $examples, 'Expected every api-examples/*.php file to be documented');
 
         $files = array_column($examples, "file");
         $expected = [
@@ -209,10 +212,24 @@ class ApiFunctionsTest extends TestCase
             "api-examples/hotel_distribution_notify_book.php",
             "api-examples/hotel_distribution_modify.php",
             "api-examples/hotel_distribution_cancel.php",
+            "api-examples/api_v2_probe.php",
+            "api-examples/api_v2_tickets_list.php",
+            "api-examples/api_v2_ticket_create.php",
         ];
+        $this->assertSame($onDisk, count($expected), 'Expected list must match api-examples/*.php count');
         foreach ($expected as $path) {
             $this->assertContains($path, $files, "Missing api-examples doc row: " . $path);
         }
+
+        $v2Row = null;
+        foreach ($examples as $row) {
+            if (($row['file'] ?? '') === 'api-examples/api_v2_probe.php') {
+                $v2Row = $row;
+                break;
+            }
+        }
+        $this->assertIsArray($v2Row, 'api_v2_probe.php should appear in itmDocCollectApiExamples()');
+        $this->assertSame('API v2 partner gateway', $v2Row['category'] ?? '');
 
         foreach ($examples as $row) {
             $this->assertArrayHasKey("title", $row);
