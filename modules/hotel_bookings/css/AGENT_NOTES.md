@@ -13,7 +13,7 @@ Module-scoped styles for the **hotel_bookings** planning grid and related admin 
 ## 5. UI Behavior Requirements
 
 - Planning table horizontal scroll moves date columns only; sticky headers/columns must remain synchronized with `js/hotel-bookings-planning.js` DOM structure.
-- `.hb-plan-filters-row` keeps **Date**, **Days**, and Search on one horizontal row (`flex`, labels `width:auto`) so Days does not stretch full card width.
+- `.hb-plan-filters-row` keeps **Date**, **Days**, and Search on one horizontal row. **Date** uses `.hb-plan-date-filter` (caption `label for=` + widget) so the 📅 button is not nested in a wrapping label.
 - Global table scroll patterns live in `css/styles.css` — avoid duplicating `.audit-table-wrap` rules here.
 
 ## 10. Common Pitfalls

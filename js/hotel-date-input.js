@@ -79,10 +79,17 @@
         }
         syncNativeFromText(field);
         if (typeof native.showPicker === 'function') {
-            native.showPicker();
-            return;
+            try {
+                native.showPicker();
+                return;
+            } catch (err) {
+                native.focus();
+                native.click();
+                return;
+            }
         }
         native.focus();
+        native.click();
     }
 
     function bindField(field) {
@@ -112,7 +119,9 @@
 
     document.querySelectorAll('.hb-hotel-date-open').forEach(function (btn) {
         // bulkDeleteForm - guard to satisfy event listener loop test
-        btn.addEventListener('click', function () {
+        btn.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
             var targetId = btn.getAttribute('data-hb-hotel-date-for');
             if (!targetId) {
                 return;
