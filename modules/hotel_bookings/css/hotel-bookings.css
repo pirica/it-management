@@ -7,7 +7,7 @@
 .hb-plan-hide-legend{font-weight:600}
 .hb-plan-hide-check{margin:0}
 .hb-plan-filters-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
-.hb-plan-filters-row>label{display:flex;flex-direction:column;gap:4px;font-size:12px;flex:0 0 auto;width:auto}
+.hb-plan-filters-row>label,.hb-plan-date-filter{display:flex;flex-direction:column;gap:4px;font-size:12px;flex:0 0 auto;width:auto}
 .hb-plan-days-input{width:64px}
 .hb-plan-search-label button{align-self:stretch;min-height:41px}
 .hb-plan-grid-wrap{overflow:auto;border:1px solid var(--border-color,#ddd);border-radius:8px}
