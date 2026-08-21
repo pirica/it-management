@@ -628,6 +628,8 @@ Materialized examples: `modules/note_labels/`, `modules/modules_registry/`.
 
 #### Smoke tests (CI — `scripts/smoke_test.sh`)
 
+> **Pre-PR mandatory (agents — hard fail):** before **`git push`** and **`gh pr create`**, run **all four** jobs below locally in order — same commands as `.github/workflows/smoke.yml`. See **`AGENTS.md`** step **8a**. Do not open a PR until **smoke**, **database-import**, **tier2**, and **phpunit** all exit `0`.
+
 GitHub Actions (`.github/workflows/smoke.yml`) runs four jobs on push/PR: **smoke**, **database-import**, **tier2**, and **phpunit**.
 
 | Job | Command | Purpose |

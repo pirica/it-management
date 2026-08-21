@@ -57,6 +57,33 @@ Before making any change, replying, running commands, editing files, or proposin
 7. **Before every reply**, re-check `AGENTS.md` and, when the task touches `scripts/`, **`scripts/SCRIPTS.md`**, and confirm the response follows them (pre-implementation discovery, architecture, encoding, scripts catalog, testing guardrails, PR workflow, and any section relevant to the task).
 7a. **Local browser links in every agent reply (mandatory):** whenever you mention a path under `modules/` or `scripts/` to the user — including summaries, audit results, PR test plans, and verification tables, not only defects or manual checks — provide a **markdown link** with base `http://localhost/it-management/` (see **Setup & Debugging**) and tell the user to **open it in a new browser tab**. Patterns: `http://localhost/it-management/modules/<slug>/<file>.php`; `http://localhost/it-management/scripts/<file>.php` (add `?run=1` for browser script landing pages; `?run=1&apply=1` when documenting apply flows; omit `run=1` for no-auth plain-text probes such as `count_db_tables.php` only). Note **Admin session** when required, or **no login** for no-auth scripts. Multi-row lists must include a link per script/module (table **Link** column or inline link) — do not cite bare repo paths without a localhost URL. Example: `[Open modules/news/index.php](http://localhost/it-management/modules/news/index.php)` · `[verify_db_migrations.php?run=1](http://localhost/it-management/scripts/verify_db_migrations.php?run=1)` · `[verify_bigint_table_review.php?run=1](http://localhost/it-management/scripts/verify_bigint_table_review.php?run=1)`. Browser script HTML output should use `itm_script_format_modules_file_local_dev_link()` (`scripts/lib/script_browser_nav.php`; `verify_module_page_chrome.php` prints **Open in new tab →** under each `[FAIL]`). Cursor rule: `.cursor/rules/local-dev-browser-links.mdc`.
 8. **Auto-open fresh PRs (mandatory):** when implementation is complete and required checks pass, ship via **FRESH PR only**: **`git checkout -b <new-branch>`** from synced **`origin/master`** → commit → **one** **`git push -u origin <new-branch>`** (first publish only) → **`gh pr create`** → reply with the **new PR URL**. **Do not ask** the user to confirm (“say so and I will…”, “would you like me to open a PR?”, etc.). There is **no** push to update PR #N. Exceptions: user explicitly asked to hold commits/push, read-only/exploratory session, or no file changes to commit.
+8a. **Pre-PR CI quartet (mandatory — hard fail):** before the **only** allowed **`git push -u origin <new-branch>`** and **`gh pr create`**, run **all four** jobs from `.github/workflows/smoke.yml` locally in order — same commands as CI, exit `0` on each. **Do not open a PR** until the quartet passes. List every command and outcome in the PR **Test plan** (do not claim “no tests run”). Canonical detail: **`scripts/SCRIPTS.md`** → Smoke tests.
+
+   | Job (CI name) | Local command | Notes |
+   |---------------|---------------|--------|
+   | **smoke** | `bash scripts/smoke_test.sh` | PHP lint + CSRF + SQLi + FK label search static audit (no MySQL) |
+   | **database-import** | `bash scripts/verify_database_sql_import.sh` then `php scripts/verify_crud_fk_label_search.php` | Requires MySQL; **`MYSQL_PORT=3307`** on Dunebox (default in `import_database_split.sh`), **`MYSQL_PORT=3306`** on Linux/macOS/CI — match **`.env` `DB_PORT`** |
+   | **tier2** | `php scripts/run_tier2_checks.php` | Tier 2 static `check_*` batch (no MySQL) |
+   | **phpunit** | `ITM_SKIP_DB_TESTS=1 php scripts/run_tests.php` | Same as CI **phpunit** job (DB integration tests skipped) |
+
+   **Windows Dunebox (PowerShell):** use full **`PHP_EXE`** path (see **Setup & Debugging → PHP CLI tests**); run `bash scripts/smoke_test.sh` and `bash scripts/verify_database_sql_import.sh` via Git Bash or WSL when `bash` is available. Example:
+
+   ```powershell
+   & "D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/run_tier2_checks.php
+   $env:ITM_SKIP_DB_TESTS=1; & "D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe" scripts/run_tests.php
+   ```
+
+   **Linux / macOS / Cloud Agent:**
+
+   ```bash
+   bash scripts/smoke_test.sh
+   MYSQL_PORT=3306 bash scripts/verify_database_sql_import.sh
+   php scripts/verify_crud_fk_label_search.php
+   php scripts/run_tier2_checks.php
+   ITM_SKIP_DB_TESTS=1 php scripts/run_tests.php
+   ```
+
+   Fix failures on a **fresh branch** before push/PR — do not rely on GitHub Actions alone to discover tier2/UI/schema regressions.
 9. **Never push to an existing PR branch (hard fail):** agents **do not** `git push` (including `git push`, `git push origin <branch>`, or force-push) to any branch that already has **open or merged PR #N** for this work. Follow-ups, review fixes, and corrections use a **new branch name** + **new push** + **`gh pr create`** → **new PR number**. Forbidden user-facing lines: “Pushed to an existing PR URL”, “updated the open PR”, “added commits to the open PR”, “you can push after the diff check”.
 10. **Never local-only commits (hard fail):** `git commit` without the **first-publish** **`git push -u origin <new-branch>`** and **`gh pr create`** (when there are file changes to ship) is **not done**. Do **not** tell the user work is “committed” if `git status` shows **ahead of origin** or the PR URL is missing. Do **not** suggest “push when you want” — **you** complete the fresh-PR sequence in the same turn.
 11. **Pre-push full diff review (hard fail):** before the **only** allowed **`git push -u origin <new-branch>`** on that deliverable, run and **read** the full patch against `origin/master` (see **Change Hygiene → Pre-push diff review**). Do **not** publish a branch whose diff removes unrelated functions, reverts a just-merged fix, or shows large deletions you did not intend.
@@ -1166,6 +1193,7 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
     * **Two PRs for the same deliverable** — if the correct fix is already on a branch or merged, **abandon** the stale branch (do not merge a second PR). Cherry-pick or recreate from current `master` instead.
   * **After a mistaken first-publish push:** create a **new branch from current `origin/master`**, re-apply only the intended patch, verify diff again, then **one new first-publish push** and **one new PR** — never add commits to the bad branch and push again.
   * **Completion gate:** “ready for first-publish push” means you can summarize every deleted/changed hunk in plain language **and** the branch has **no existing PR**; if you cannot, read the diff again. Deliverable done = **new PR URL**, not “pushed to …/pull/N”.
+* **Pre-PR CI quartet (mandatory — before push/PR):** run all four smoke-workflow jobs locally per **Agent compliance workflow** step **8a** (`smoke`, **database-import**, **tier2**, **phpunit**). **Hard stop** on first failure — fix, re-run the quartet, then push and **`gh pr create`**. PR **Test plan** must list each command and pass/fail outcome.
 * **Pre-merge review pass (required before merge):** on every PR, run a targeted review of the changed files (last N files in the diff when large) against this `AGENTS.md`, including at minimum:
   * `php -l` on every touched `.php` file.
   * `php scripts/check_sql_injection_coverage.php` when PHP/SQL changed.
@@ -1174,8 +1202,8 @@ To keep PRs reviewable and avoid noisy churn, follow these rules for every chang
   * FK label guardrails: no raw `*_id` / `*_by` numeric IDs on list/detail when a label exists; persisted FKs stay selected on edit forms.
   * Module consistency rechecks for any touched module (`index.php`, `view.php`, `edit.php`, `create.php`, `list_all.php`, and `delete.php` when applicable).
   * IDF-related changes: `php scripts/idfs_sync_human_test.php` (or `D:\dunebox-v1.0.6\system\apps\php\php-7.4.33-nts-Win32-vc15-x64\php.exe scripts\idfs_sync_human_test.php` from the repo root) — hard-fail if any `[FAIL]`.
-  * Smoke/CI: see **`scripts/SCRIPTS.md`** (Smoke tests) when `.github/workflows/smoke.yml` applies; list exact commands and outcomes in the PR description (do not claim “no tests run” when checks ran).
-* **CI and repo scripts stay authoritative:** the smoke workflow must pass on PRs; see **`scripts/SCRIPTS.md`** and **`scripts/scripts.php`** for other maintenance scripts to run when the change scope requires them.
+  * **Pre-PR CI quartet** (step **8a**): already required before **`gh pr create`** — do not substitute ad-hoc checks for **smoke**, **database-import**, **tier2**, or **phpunit**.
+  * Additional scope checks: see **`scripts/SCRIPTS.md`** and **`scripts/scripts.php`** when the change touches modules, `db/`, UI, or scripts beyond the quartet.
 
 ### GitHub PR review comments (mandatory)
 * **Read all GitHub PR feedback** before considering a PR merge-ready: use `gh pr view`, `gh api repos/{owner}/{repo}/pulls/{number}/comments`, GraphQL review-thread endpoints, or the PR URL. Include human reviewers, **Bugbot**, **Codex**, and actionable CI/check annotations when present.
