@@ -8,6 +8,7 @@ CI pipelines executed on push/PR.
 
 ## 4. Business Rules (Critical for Agents)
 - Keep workflow aligned with `scripts/smoke_test.sh`; do not expand smoke scope in YAML without updating `SCRIPTS.md` and `AGENTS.md` pointers.
+- **Pre-PR gate:** agents must run all four jobs locally (same commands as this workflow) before **`git push`** and **`gh pr create`** — see **`AGENTS.md`** step **8a**.
 
 ## 10. Common Pitfalls
 
