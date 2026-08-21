@@ -916,6 +916,31 @@ function get_asset_lifecycle_stage_summary() {
 }
 
 /**
+ * Problem Management summary counts for Reports Hub.
+ */
+function get_problem_management_summary() {
+    global $conn, $company_id;
+
+    if (!function_exists('itm_problem_management_summary')) {
+        require_once dirname(__DIR__, 3) . '/includes/itm_problem_management.php';
+    }
+    $summary = itm_problem_management_summary($conn, (int)$company_id);
+    $labels = ['Investigating', 'Known Error', 'Resolved', 'Closed'];
+    $data = [
+        (int)($summary['investigating'] ?? 0),
+        (int)($summary['known_error'] ?? 0),
+        (int)($summary['resolved'] ?? 0),
+        (int)($summary['closed'] ?? 0),
+    ];
+    return [
+        'labels' => $labels,
+        'data' => $data,
+        'linked_incidents' => (int)($summary['linked_incidents'] ?? 0),
+        'closed_this_month' => (int)($summary['closed_this_month'] ?? 0),
+    ];
+}
+
+/**
  * F&B Outlet Covers Analysis (MTD)
  */
 function get_ops_fb_outlet_covers() {

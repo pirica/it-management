@@ -1194,6 +1194,7 @@ Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking
 | `php scripts/verify_ticket_sla_dashboard.php` | Regression for SLA Command Center (`includes/itm_ticket_sla.php`, `modules/ticket_sla_dashboard/`, breach columns) |
 | `php scripts/verify_employee_notifications.php` | Regression for `itm_notify_employee()`, unread count, mark read, header API/JS assets |
 | `php scripts/verify_approval_inbox.php` | Regression for `includes/itm_approval_inbox.php`, `approval_inbox_items` upsert/fetch, adapter registry |
+| `php scripts/verify_problem_management.php` | Regression for Problem Management + Known Error DB (`includes/itm_problem_management.php`, ticket linking, KB publish, suggest). See `docs/PROBLEM_MANAGEMENT.md`. |
 | `php scripts/test_email_forgot.php` | Manual forgot-password email test via `itm_send_email()` / tenant SMTP; creates a real 24-hour reset token for the matching employee before sending; CLI supports `--company=1` (defaults to session company or `1`) |
 | `php scripts/test_register_mail.php` | Manual registration welcome email test via `itm_send_email()`; CLI supports `--company=1` |
 

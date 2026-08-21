@@ -2173,6 +2173,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for <code>includes/itm_approval_inbox.php</code> and <code>modules/approval_inbox/</code>: helper load, adapter slugs, upsert/fetch/count, and probe row cleanup.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="problems,known_errors,problem_ticket_links">
+                    <td><a href="verify_problem_management.php" target="_blank" rel="nofollow noreferrer">verify_problem_management.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">problems</span></span></td>
+                    <td>Regression for Problem Management + Known Error DB: schema, audit triggers, ticket link/unlink, known-error suggest, KB publish, automation/webhook slugs. See <code>docs/PROBLEM_MANAGEMENT.md</code>.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_problem_management.php</code></td>
+                </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_request_password.php" target="_blank" rel="nofollow noreferrer">verify_request_password.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

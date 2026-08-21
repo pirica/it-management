@@ -3498,6 +3498,60 @@ CREATE TRIGGER `trg_ticket_activity_audit_delete` AFTER DELETE ON `ticket_activi
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_activity', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'ticket_id', OLD.`ticket_id`, 'actor_employee_id', OLD.`actor_employee_id`, 'event_type', OLD.`event_type`, 'payload_json', OLD.`payload_json`, 'active', OLD.`active`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
 
+DROP TRIGGER IF EXISTS `trg_problems_audit_insert`$$
+CREATE TRIGGER `trg_problems_audit_insert` AFTER INSERT ON `problems` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'problems', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'status', NEW.`status`, 'owner_employee_id', NEW.`owner_employee_id`, 'knowledge_base_id', NEW.`knowledge_base_id`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_problems_audit_update`$$
+CREATE TRIGGER `trg_problems_audit_update` AFTER UPDATE ON `problems` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'problems', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'status', OLD.`status`, 'owner_employee_id', OLD.`owner_employee_id`, 'knowledge_base_id', OLD.`knowledge_base_id`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'title', NEW.`title`, 'status', NEW.`status`, 'owner_employee_id', NEW.`owner_employee_id`, 'knowledge_base_id', NEW.`knowledge_base_id`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_problems_audit_delete`$$
+CREATE TRIGGER `trg_problems_audit_delete` AFTER DELETE ON `problems` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'problems', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'title', OLD.`title`, 'status', OLD.`status`, 'owner_employee_id', OLD.`owner_employee_id`, 'knowledge_base_id', OLD.`knowledge_base_id`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_problem_ticket_links_audit_insert`$$
+CREATE TRIGGER `trg_problem_ticket_links_audit_insert` AFTER INSERT ON `problem_ticket_links` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'problem_ticket_links', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'problem_id', NEW.`problem_id`, 'ticket_id', NEW.`ticket_id`, 'linked_by', NEW.`linked_by`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_problem_ticket_links_audit_update`$$
+CREATE TRIGGER `trg_problem_ticket_links_audit_update` AFTER UPDATE ON `problem_ticket_links` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'problem_ticket_links', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'problem_id', OLD.`problem_id`, 'ticket_id', OLD.`ticket_id`, 'linked_by', OLD.`linked_by`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'problem_id', NEW.`problem_id`, 'ticket_id', NEW.`ticket_id`, 'linked_by', NEW.`linked_by`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_problem_ticket_links_audit_delete`$$
+CREATE TRIGGER `trg_problem_ticket_links_audit_delete` AFTER DELETE ON `problem_ticket_links` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'problem_ticket_links', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'problem_id', OLD.`problem_id`, 'ticket_id', OLD.`ticket_id`, 'linked_by', OLD.`linked_by`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_known_errors_audit_insert`$$
+CREATE TRIGGER `trg_known_errors_audit_insert` AFTER INSERT ON `known_errors` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'known_errors', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'problem_id', NEW.`problem_id`, 'title', NEW.`title`, 'knowledge_base_id', NEW.`knowledge_base_id`, 'active', NEW.`active`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_known_errors_audit_update`$$
+CREATE TRIGGER `trg_known_errors_audit_update` AFTER UPDATE ON `known_errors` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'known_errors', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'problem_id', OLD.`problem_id`, 'title', OLD.`title`, 'knowledge_base_id', OLD.`knowledge_base_id`, 'active', OLD.`active`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'problem_id', NEW.`problem_id`, 'title', NEW.`title`, 'knowledge_base_id', NEW.`knowledge_base_id`, 'active', NEW.`active`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_known_errors_audit_delete`$$
+CREATE TRIGGER `trg_known_errors_audit_delete` AFTER DELETE ON `known_errors` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'known_errors', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'problem_id', OLD.`problem_id`, 'title', OLD.`title`, 'knowledge_base_id', OLD.`knowledge_base_id`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
 DROP TRIGGER IF EXISTS `trg_ticket_comments_audit_insert`$$
 CREATE TRIGGER `trg_ticket_comments_audit_insert` AFTER INSERT ON `ticket_comments` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)

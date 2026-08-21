@@ -32,6 +32,7 @@ This module is read-only and aggregates data from:
 
 - **Ticket CSAT trend** — `get_ticket_csat_trend()` (12-month average `tickets.csat_score`)
 - **Asset lifecycle stages** — `get_asset_lifecycle_stage_summary()` (equipment `lifecycle_stage` counts; see `docs/ASSET_LIFECYCLE.md`)
+- **Problem Management** — `get_problem_management_summary()` (`problems` status doughnut + linked incident / closed-this-month counts; see `docs/PROBLEM_MANAGEMENT.md`)
 
 ---
 

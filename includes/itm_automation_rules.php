@@ -15,6 +15,9 @@ if (!function_exists('itm_automation_rules_trigger_slugs')) {
             'equipment.warranty_expiring',
             'equipment.certificate_expiring',
             'equipment.disposed',
+            'problem.created',
+            'problem.status_changed',
+            'known_error.published',
         ];
     }
 }

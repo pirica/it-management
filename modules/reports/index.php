@@ -140,6 +140,7 @@ $employee_growth = get_employee_growth_trend();
 $monthly_comparison = get_monthly_actual_comparison();
 $csat_trend = get_ticket_csat_trend();
 $asset_lifecycle_summary = get_asset_lifecycle_stage_summary();
+$problem_management_summary = get_problem_management_summary();
 
 // Summary Metrics
 $total_budget = array_sum($budget_vs_actual['budget']);
@@ -613,6 +614,14 @@ if (!isset($crud_title)) {
                         </article>
 
                         <article class="report-card">
+                            <h2>🔍 Problem Management</h2>
+                            <div class="chart-container">
+                                <canvas id="problemManagementChart"></canvas>
+                            </div>
+                            <p class="report-desc">Open problems by status. Linked incidents: <?php echo (int)($problem_management_summary['linked_incidents'] ?? 0); ?> · Closed this month: <?php echo (int)($problem_management_summary['closed_this_month'] ?? 0); ?>.</p>
+                        </article>
+
+                        <article class="report-card">
                             <h2>💾 Software Licensing</h2>
                             <div class="chart-container">
                                 <canvas id="licenseChart"></canvas>
@@ -1049,6 +1058,21 @@ if (!isset($crud_title)) {
                     }
                 }
             })
+        });
+
+        new Chart(document.getElementById('problemManagementChart'), {
+            type: 'doughnut',
+            data: {
+                labels: <?php echo json_encode($problem_management_summary['labels']); ?>,
+                datasets: [{
+                    data: <?php echo json_encode($problem_management_summary['data']); ?>,
+                    backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#64748b']
+                }]
+            },
+            options: {
+                plugins: { legend: { display: true, position: 'right' } },
+                maintainAspectRatio: false
+            }
         });
 
         new Chart(document.getElementById('licenseChart'), {

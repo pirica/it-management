@@ -533,6 +533,18 @@ The Private Contacts module (`modules/private_contacts/`) is a per-user address 
 6. **Settings list contract:** Managed list header (`data-itm-new-button-managed="server"`), server-side search/sort/pagination wiring, `data-itm-db-import-endpoint="index.php"`, and `import_excel_rows` (requires unlocked vault; encrypts via `pc_encrypt_contact_import_row_values()` in `config/config.php`).
 7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_private_contacts_vault.php`; share table covered by `php scripts/verify_qr_share_modules.php`.
 
+#### Problem Management and Known Error Database (mandatory)
+
+The Problem Management module (`modules/problems/`) tracks root-cause investigations and published known errors linked to incident tickets.
+
+1. **Tables:** **`problems`**, **`problem_ticket_links`** (many incident tickets per problem — distinct from ticket merge), **`known_errors`** (workaround + optional symptom keywords).
+2. **Core helper:** `includes/itm_problem_management.php` — CRUD, link/unlink incidents, known-error upsert, KB publish, ticket/chatbot suggestions, Reports Hub summary.
+3. **Ticket integration:** `modules/tickets/view.php` links problems and suggests known errors; `modules/tickets/create.php` debounces suggestions via `modules/problems/api.php?action=suggest`. Activity events: `problem_linked`, `problem_unlinked`, `known_error_applied`.
+4. **Knowledge base:** Publishing sets `knowledge_base.category = Known Errors` and links `problems.knowledge_base_id`. Chatbot appends known-error workarounds after KB search in `modules/knowledge_base/chat_api.php`.
+5. **Automation / webhooks:** Triggers `problem.created`, `problem.status_changed`, `known_error.published` (`includes/itm_automation_rules.php`, `includes/itm_webhook_queue.php`).
+6. **Sidebar:** Management → Problem Management (`includes/ui_config.php`).
+7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_problem_management.php`; extend `php scripts/verify_chatbot.php` when changing chat known-error search.
+
 #### Email Management (mandatory)
 
 The email management module (`modules/emails/` and `modules/email_smtp_configurations/`) provides tenant SMTP configuration, send logging, and automated alert rules.

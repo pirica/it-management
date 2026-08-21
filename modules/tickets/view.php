@@ -9,6 +9,7 @@
 
 require '../../config/config.php';
 require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
+require_once ROOT_PATH . 'includes/itm_problem_management.php';
 
 /**
  * Parses JSON photo filename list
@@ -76,7 +77,30 @@ if ($id > 0) {
 }
 
 $ticketCommentFlash = '';
+$ticketProblemFlash = '';
 $isSupportAgent = itm_live_chat_is_support_agent($conn, (int)($_SESSION['employee_id'] ?? 0));
+if ($item && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ticket_link_problem'])) {
+    itm_require_post_csrf();
+    $problemId = (int)($_POST['problem_id'] ?? 0);
+    $linkResult = itm_problem_link_ticket($conn, (int)$company_id, $problemId, (int)$item['id'], (int)$_SESSION['employee_id']);
+    $ticketProblemFlash = !empty($linkResult['ok']) ? 'Problem linked to this ticket.' : (string)($linkResult['error'] ?? 'Could not link problem.');
+}
+if ($item && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ticket_apply_known_error'])) {
+    itm_require_post_csrf();
+    $workaround = trim((string)($_POST['known_error_workaround'] ?? ''));
+    if ($workaround !== '' && function_exists('itm_ticket_comment_create')) {
+        require_once ROOT_PATH . 'includes/itm_ticket_comments.php';
+        $cid = itm_ticket_comment_create($conn, (int)$company_id, (int)$item['id'], (int)$_SESSION['employee_id'], $workaround, 1);
+        if ($cid && function_exists('itm_ticket_activity_log')) {
+            require_once ROOT_PATH . 'includes/itm_ticket_activity.php';
+            itm_ticket_activity_log($conn, (int)$company_id, (int)$item['id'], (int)$_SESSION['employee_id'], 'known_error_applied', [
+                'known_error_id' => (int)($_POST['known_error_id'] ?? 0),
+                'problem_id' => (int)($_POST['problem_id'] ?? 0),
+            ]);
+        }
+        $ticketProblemFlash = $cid ? 'Known error workaround added as internal comment.' : 'Failed to add workaround comment.';
+    }
+}
 if ($item && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ticket_comment'])) {
     itm_require_post_csrf();
     $commentBody = trim((string)($_POST['comment_body'] ?? ''));
@@ -90,6 +114,31 @@ if ($item && !empty($item['id'])) {
     itm_ticket_sla_check_breaches($conn, (int)$company_id, (int)$item['id'], (int)$_SESSION['employee_id']);
 }
 $ticketComments = $item ? itm_ticket_comments_for_ticket($conn, (int)$company_id, (int)$item['id'], (int)$_SESSION['employee_id'], $isSupportAgent) : [];
+$ticketLinkedProblems = $item ? itm_problem_list_for_ticket($conn, (int)$company_id, (int)$item['id']) : [];
+$ticketKnownErrorSuggestions = [];
+if ($item && empty($ticketLinkedProblems)) {
+    $ticketKnownErrorSuggestions = itm_known_error_suggest_for_ticket(
+        $conn,
+        (int)$company_id,
+        (string)($item['title'] ?? ''),
+        (string)($item['description'] ?? ''),
+        5
+    );
+}
+$ticketProblemPicker = [];
+if ($item) {
+    $probPickerStmt = mysqli_prepare($conn, 'SELECT id, title, status FROM problems WHERE company_id = ? AND deleted_at IS NULL ORDER BY id DESC LIMIT 100');
+    if ($probPickerStmt) {
+        $cid = (int)$company_id;
+        mysqli_stmt_bind_param($probPickerStmt, 'i', $cid);
+        mysqli_stmt_execute($probPickerStmt);
+        $probPickerRes = mysqli_stmt_get_result($probPickerStmt);
+        while ($probPickerRes && ($probRow = mysqli_fetch_assoc($probPickerRes))) {
+            $ticketProblemPicker[] = $probRow;
+        }
+        mysqli_stmt_close($probPickerStmt);
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -225,6 +274,63 @@ if (!isset($crud_title)) {
                 <?php endif; ?>
 
                 <?php if ($item): ?>
+                    <?php if ($ticketProblemFlash !== ''): ?>
+                        <div class="alert alert-info"><?php echo sanitize($ticketProblemFlash); ?></div>
+                    <?php endif; ?>
+                    <div class="card" style="margin-top:16px;">
+                        <h3 title="Related problems">🔍</h3>
+                        <?php if (!empty($ticketLinkedProblems)): ?>
+                            <table>
+                                <thead><tr><th>Title</th><th>Status</th><th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th></tr></thead>
+                                <tbody>
+                                <?php foreach ($ticketLinkedProblems as $linkedProblem): ?>
+                                    <tr>
+                                        <td><?php echo sanitize((string)($linkedProblem['title'] ?? '')); ?></td>
+                                        <td><?php echo itm_problem_status_badge($linkedProblem['status'] ?? ''); ?></td>
+                                        <td class="itm-actions-cell" data-itm-actions-origin="1">
+                                            <a class="btn btn-sm" href="../problems/view.php?id=<?php echo (int)$linkedProblem['id']; ?>" title="View">🔎</a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        <?php else: ?>
+                            <p>No linked problems.</p>
+                            <?php if (!empty($ticketKnownErrorSuggestions)): ?>
+                                <p><strong>Suggested known errors</strong></p>
+                                <ul>
+                                <?php foreach ($ticketKnownErrorSuggestions as $suggestion): ?>
+                                    <li style="margin-bottom:12px;">
+                                        <strong><?php echo sanitize((string)($suggestion['ke_title'] ?? '')); ?></strong>
+                                        — <?php echo sanitize(substr((string)($suggestion['workaround'] ?? ''), 0, 200)); ?>
+                                        <form method="POST" style="display:inline;margin-left:8px;">
+                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                                            <input type="hidden" name="known_error_id" value="<?php echo (int)($suggestion['known_error_id'] ?? 0); ?>">
+                                            <input type="hidden" name="problem_id" value="<?php echo (int)($suggestion['problem_id'] ?? 0); ?>">
+                                            <input type="hidden" name="known_error_workaround" value="<?php echo sanitize((string)($suggestion['workaround'] ?? '')); ?>">
+                                            <button type="submit" name="ticket_apply_known_error" value="1" class="btn btn-sm" title="Apply workaround as internal comment">💾</button>
+                                        </form>
+                                        <a class="btn btn-sm" href="../problems/view.php?id=<?php echo (int)($suggestion['problem_id'] ?? 0); ?>" title="View problem">🔎</a>
+                                    </li>
+                                <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                        <form method="POST" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                            <div class="form-group" style="margin:0;min-width:220px;">
+                                <label>Link to problem</label>
+                                <select name="problem_id" class="form-control">
+                                    <option value="">-- Select --</option>
+                                    <?php foreach ($ticketProblemPicker as $probPick): ?>
+                                        <option value="<?php echo (int)$probPick['id']; ?>"><?php echo sanitize('#' . (int)$probPick['id'] . ' — ' . (string)$probPick['title']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <button type="submit" name="ticket_link_problem" value="1" class="btn btn-primary" title="Link">🔗</button>
+                            <a href="../problems/create.php?ticket_id=<?php echo (int)$item['id']; ?>" class="btn" title="Create problem from ticket">➕</a>
+                        </form>
+                    </div>
                     <?php if ($ticketCommentFlash !== ''): ?>
                         <div class="alert alert-info"><?php echo sanitize($ticketCommentFlash); ?></div>
                     <?php endif; ?>
