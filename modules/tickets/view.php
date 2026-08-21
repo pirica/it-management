@@ -115,6 +115,7 @@ if ($item && !empty($item['id'])) {
 }
 $ticketComments = $item ? itm_ticket_comments_for_ticket($conn, (int)$company_id, (int)$item['id'], (int)$_SESSION['employee_id'], $isSupportAgent) : [];
 $ticketLinkedProblems = $item ? itm_problem_list_for_ticket($conn, (int)$company_id, (int)$item['id']) : [];
+$ticketMasterTicketId = $item ? itm_ticket_resolve_master_ticket_id($conn, (int)$company_id, (int)$item['id']) : 0;
 $ticketKnownErrorSuggestions = [];
 if ($item && empty($ticketLinkedProblems)) {
     $ticketKnownErrorSuggestions = itm_known_error_suggest_for_ticket(
@@ -233,6 +234,16 @@ if (!isset($crud_title)) {
                                             <span class="badge badge-danger">Archived</span>
                                         <?php else: ?>
                                             <span class="badge badge-success">Active</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th style="width:220px;">Master Ticket</th>
+                                    <td>
+                                        <?php if ($ticketMasterTicketId > 0): ?>
+                                            <a href="../master_tickets/view.php?id=<?php echo (int)$ticketMasterTicketId; ?>" title="View master ticket">#<?php echo (int)$ticketMasterTicketId; ?></a>
+                                        <?php else: ?>
+                                            —
                                         <?php endif; ?>
                                     </td>
                                 </tr>

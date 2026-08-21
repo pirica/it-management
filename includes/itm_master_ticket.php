@@ -1070,3 +1070,195 @@ if (!function_exists('itm_master_ticket_seed_five_company_sample')) {
         return $created;
     }
 }
+
+if (!function_exists('itm_ticket_resolve_master_ticket_id')) {
+    /**
+     * Resolve master ticket id for an incident via linked problems (read-only derived field).
+     */
+    function itm_ticket_resolve_master_ticket_id($conn, $companyId, $ticketId)
+    {
+        if (!$conn instanceof mysqli) {
+            return 0;
+        }
+        $companyId = (int)$companyId;
+        $ticketId = (int)$ticketId;
+        if ($companyId <= 0 || $ticketId <= 0) {
+            return 0;
+        }
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT p.master_ticket_id
+             FROM problem_ticket_links l
+             INNER JOIN problems p ON p.id = l.problem_id AND p.company_id = l.company_id
+             WHERE l.ticket_id = ? AND l.company_id = ?
+               AND l.deleted_at IS NULL AND p.deleted_at IS NULL
+               AND p.master_ticket_id IS NOT NULL AND p.master_ticket_id > 0
+             ORDER BY p.master_ticket_id ASC
+             LIMIT 1'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $ticketId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+
+        return (int)($row['master_ticket_id'] ?? 0);
+    }
+}
+
+if (!function_exists('itm_master_ticket_list_linkable_tickets')) {
+    /**
+     * Tickets in a company not yet linked to the given problem (for master incident attach UI).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    function itm_master_ticket_list_linkable_tickets($conn, $companyId, $problemId, $limit = 200)
+    {
+        if (!$conn instanceof mysqli) {
+            return [];
+        }
+        $companyId = (int)$companyId;
+        $problemId = (int)$problemId;
+        $limit = max(1, min(500, (int)$limit));
+        if ($companyId <= 0) {
+            return [];
+        }
+
+        $sql = 'SELECT t.id, t.ticket_external_code, t.title
+                FROM tickets t
+                WHERE t.company_id = ? AND t.deleted_at IS NULL AND t.merged_into_ticket_id IS NULL';
+        if ($problemId > 0) {
+            $sql .= ' AND NOT EXISTS (
+                SELECT 1 FROM problem_ticket_links l
+                WHERE l.ticket_id = t.id AND l.company_id = t.company_id
+                  AND l.problem_id = ? AND l.deleted_at IS NULL
+            )';
+        }
+        $sql .= ' ORDER BY t.id DESC LIMIT ' . $limit;
+
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return [];
+        }
+        if ($problemId > 0) {
+            mysqli_stmt_bind_param($stmt, 'ii', $companyId, $problemId);
+        } else {
+            mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        }
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $rows = [];
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $rows[] = $row;
+        }
+        mysqli_stmt_close($stmt);
+
+        return $rows;
+    }
+}
+
+if (!function_exists('itm_master_ticket_attach_problems_bulk')) {
+    /**
+     * @param array<int, array{company_id: int, problem_id: int}> $targets
+     */
+    function itm_master_ticket_attach_problems_bulk($conn, $masterTicketId, array $targets, $actorEmployeeId, $sessionCompanyId)
+    {
+        $attached = 0;
+        $errors = [];
+        foreach ($targets as $target) {
+            $companyId = (int)($target['company_id'] ?? 0);
+            $problemId = (int)($target['problem_id'] ?? 0);
+            if ($companyId <= 0 || $problemId <= 0) {
+                continue;
+            }
+            $result = itm_master_ticket_attach_problem(
+                $conn,
+                $masterTicketId,
+                $companyId,
+                $problemId,
+                $actorEmployeeId,
+                $sessionCompanyId
+            );
+            if (!empty($result['ok'])) {
+                $attached++;
+            } else {
+                $errors[] = 'Problem #' . $problemId . ' (company ' . $companyId . '): ' . (string)($result['error'] ?? 'failed');
+            }
+        }
+        if ($attached === 0 && $errors === []) {
+            return ['ok' => false, 'error' => 'No problems selected.', 'attached' => 0];
+        }
+
+        return [
+            'ok' => $attached > 0,
+            'attached' => $attached,
+            'errors' => $errors,
+            'error' => $errors !== [] ? implode(' ', $errors) : '',
+        ];
+    }
+}
+
+if (!function_exists('itm_master_ticket_link_incidents_bulk')) {
+    /**
+     * Link incident tickets to a problem that is already on this master ticket.
+     *
+     * @param array<int, int> $ticketIds
+     */
+    function itm_master_ticket_link_incidents_bulk(
+        $conn,
+        $masterTicketId,
+        $companyId,
+        $problemId,
+        array $ticketIds,
+        $actorEmployeeId,
+        $sessionCompanyId
+    ) {
+        if (!$conn instanceof mysqli) {
+            return ['ok' => false, 'error' => 'Database unavailable.'];
+        }
+        $masterTicketId = (int)$masterTicketId;
+        $companyId = (int)$companyId;
+        $problemId = (int)$problemId;
+        if ($masterTicketId <= 0 || $companyId <= 0 || $problemId <= 0) {
+            return ['ok' => false, 'error' => 'Invalid link request.'];
+        }
+        $problem = itm_problem_fetch_row($conn, $companyId, $problemId);
+        if (!$problem || (int)($problem['master_ticket_id'] ?? 0) !== $masterTicketId) {
+            return ['ok' => false, 'error' => 'Problem is not linked to this master ticket.'];
+        }
+        if (!function_exists('itm_problem_link_ticket')) {
+            require_once ROOT_PATH . 'includes/itm_problem_management.php';
+        }
+
+        $linked = 0;
+        $errors = [];
+        foreach ($ticketIds as $ticketId) {
+            $ticketId = (int)$ticketId;
+            if ($ticketId <= 0) {
+                continue;
+            }
+            $result = itm_problem_link_ticket($conn, $companyId, $problemId, $ticketId, $actorEmployeeId);
+            if (!empty($result['ok'])) {
+                $linked++;
+            } else {
+                $errors[] = 'Ticket #' . $ticketId . ': ' . (string)($result['error'] ?? 'failed');
+            }
+        }
+        if ($linked === 0 && $errors === []) {
+            return ['ok' => false, 'error' => 'No tickets selected.', 'linked' => 0];
+        }
+        if ($linked > 0) {
+            itm_master_ticket_sync_to_incidents($conn, $masterTicketId, $actorEmployeeId, $sessionCompanyId, false);
+        }
+
+        return [
+            'ok' => $linked > 0,
+            'linked' => $linked,
+            'errors' => $errors,
+            'error' => $errors !== [] ? implode(' ', $errors) : '',
+        ];
+    }
+}

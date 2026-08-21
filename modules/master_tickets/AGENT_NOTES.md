@@ -27,6 +27,9 @@ Create flow picks an **existing problem** that already has ≥1 linked incident 
 - Create: eligible problems = `master_ticket_id` IS NULL, ≥1 live `problem_ticket_links`, company in allowed set.
 - Mutations reuse **`includes/itm_master_ticket.php`** and **`itm_problem_create_master_ticket()`** — do not duplicate sync logic.
 - Edit/attach requires `itm_master_ticket_can_manage()` (problem in session company or admin / `employee_companies`).
+- **Edit** lives on `view.php#master-edit` (not a separate `edit.php`). Saving title/description/root cause calls `itm_master_ticket_update()` → syncs every linked incident.
+- **Attach problems:** multi-select eligible problems (`itm_master_ticket_list_eligible_problems` + `itm_master_ticket_attach_problems_bulk`).
+- **Link incidents:** pick a problem already on the master, multi-select tickets (`itm_master_ticket_link_incidents_bulk` → `itm_problem_link_ticket`).
 
 ## 5. UI Behavior Requirements
 
@@ -44,9 +47,9 @@ None — use Problem Management `api.php` for known-error suggest only.
 
 ## 7. File Structure
 
-- **index.php** — global list (search, sort, pagination)
+- **index.php** — global list (search, sort, pagination); **✏️** action links to `view.php#master-edit` when user has edit permission
 - **create.php** — pick existing major problem → create master
-- **view.php** — detail, edit, attach problem, incidents, history
+- **view.php** — detail, inline edit (syncs all incidents on save), multi-select attach problems, multi-select link incidents to a linked problem, incidents table, history
 - **index.html** — directory guard
 
 ## 8. Multi-Tenant Rules

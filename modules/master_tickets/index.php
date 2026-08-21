@@ -142,6 +142,9 @@ $moduleSlugPath = basename(dirname($_SERVER['PHP_SELF']));
                                 <td><?php echo sanitize(itm_format_audit_timestamp_display($row['created_at'] ?? '')); ?></td>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>" title="View">🔎</a>
+                                    <?php if (itm_user_has_role_module_permission($conn, $employeeId, $sessionCompanyId, itm_resolve_rbac_module_name_for_slug($conn, $moduleSlug), 'edit')): ?>
+                                        <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>#master-edit" title="Edit">✏️</a>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

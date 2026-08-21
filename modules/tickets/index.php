@@ -287,7 +287,7 @@ if ($searchRaw !== '') {
 }
 
 // Sorting logic
-$uiColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'sla_status', 'due_date'];
+$uiColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'sla_status', 'master_ticket_id', 'due_date'];
 // Why: Search and list share visible columns; alias matches role/ui_configuration modules.
 $displayFieldColumns = $uiColumns;
 
@@ -300,6 +300,7 @@ $orderByMap = [
     'id' => 't.id', 'ticket_external_code' => 't.ticket_external_code',
     'title' => 't.title', 'status_name' => 'ts.name',
     'priority_name' => 'tp.name', 'due_date' => 't.due_date',
+    'master_ticket_id' => 'master_ticket_id',
 ];
 // Why: Static UI audit matches ORDER BY lines that reference $sortSql (mapped column + direction).
 $sortSql = $orderByMap[$sort] . ' ' . $dir;
@@ -350,7 +351,17 @@ if ($page > $totalPages) {
 
 // Data fetch with joins
 $dataStmt = mysqli_prepare($conn, "
-    SELECT t.*, ts.name AS status_name, ts.color AS status_color, ts.is_closed AS status_is_closed, tp.name AS priority_name, tp.color AS priority_color
+    SELECT t.*, ts.name AS status_name, ts.color AS status_color, ts.is_closed AS status_is_closed, tp.name AS priority_name, tp.color AS priority_color,
+        (
+            SELECT p.master_ticket_id
+            FROM problem_ticket_links l
+            INNER JOIN problems p ON p.id = l.problem_id AND p.company_id = l.company_id
+            WHERE l.ticket_id = t.id AND l.company_id = t.company_id
+              AND l.deleted_at IS NULL AND p.deleted_at IS NULL
+              AND p.master_ticket_id IS NOT NULL AND p.master_ticket_id > 0
+            ORDER BY p.master_ticket_id ASC
+            LIMIT 1
+        ) AS master_ticket_id
     $sqlBase
     ORDER BY $sortSql
     LIMIT ? OFFSET ?
@@ -439,7 +450,7 @@ if (!isset($crud_title)) {
                     <thead>
                     <tr>
                         <?php if ($showBulkActions): ?><th>Select</th><?php endif; ?>
-                        <?php foreach (['id' => 'ID', 'ticket_external_code' => 'External Code', 'title' => 'Title', 'status_name' => 'Status', 'priority_name' => 'Priority', 'sla_status' => 'SLA', 'due_date' => 'Due Date'] as $field => $label): ?>
+                        <?php foreach (['id' => 'ID', 'ticket_external_code' => 'External Code', 'title' => 'Title', 'status_name' => 'Status', 'priority_name' => 'Priority', 'sla_status' => 'SLA', 'master_ticket_id' => 'Master Ticket', 'due_date' => 'Due Date'] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?search=<?php echo urlencode($searchRaw); ?>&show_archived=<?php echo $showArchived ? '1' : '0'; ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
@@ -456,6 +467,14 @@ if (!isset($crud_title)) {
                             <td><?php echo ticket_render_lookup_badge((string)($t['status_name'] ?? ''), (string)($t['status_color'] ?? ''), 'Open'); ?></td>
                             <td><?php echo ticket_render_lookup_badge((string)($t['priority_name'] ?? ''), (string)($t['priority_color'] ?? '')); ?></td>
                             <td><?php echo itm_ticket_sla_render_badge($t); ?></td>
+                            <td>
+                                <?php $masterTicketId = (int)($t['master_ticket_id'] ?? 0); ?>
+                                <?php if ($masterTicketId > 0): ?>
+                                    <a href="../master_tickets/view.php?id=<?php echo $masterTicketId; ?>" title="View master ticket">#<?php echo $masterTicketId; ?></a>
+                                <?php else: ?>
+                                    —
+                                <?php endif; ?>
+                            </td>
                             <td><?php echo sanitize($t['due_date'] ?? '—'); ?></td>
                             <td class="itm-actions-cell" data-itm-actions-origin="1">
                                 <div class="itm-actions-wrap">
@@ -492,7 +511,7 @@ if (!isset($crud_title)) {
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
-                        <tr><td colspan="<?php echo $showBulkActions ? 9 : 8; ?>" style="text-align:center;">No records found.</td></tr>
+                        <tr><td colspan="<?php echo $showBulkActions ? 10 : 9; ?>" style="text-align:center;">No records found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
