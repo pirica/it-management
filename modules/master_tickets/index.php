@@ -177,9 +177,6 @@ $moduleSlugPath = basename(dirname($_SERVER['PHP_SELF']));
                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                         <button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
                     </form>
-                    <p class="itm-muted" style="text-align:center;margin-top:8px;margin-bottom:0;">
-                        Seeds one major-incident master ticket per seed company (1–5) that you can access.
-                    </p>
                 </div>
             <?php endif; ?>
         </div>
