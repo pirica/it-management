@@ -191,6 +191,19 @@ if (!function_exists('itm_ui_myactivity_list_search_detected')) {
     }
 }
 
+if (!function_exists('itm_ui_master_ticket_list_search_detected')) {
+    /**
+     * Master Tickets list loads rows via itm_master_ticket_list_page() (search LIKE in helper).
+     */
+    function itm_ui_master_ticket_list_search_detected(string $content): bool
+    {
+        return stripos($content, 'itm_master_ticket_list_page(') !== false
+            && (preg_match('#\$_GET\s*\[\s*[\'"]search[\'"]\s*\]#', $content) === 1
+                || preg_match('#\$search\s*=.*\$_GET#s', $content) === 1)
+            && stripos($content, '$search') !== false;
+    }
+}
+
 if (!function_exists('itm_ui_bookmarks_in_memory_list_sort_detected')) {
     /**
      * Bookmarks sort in PHP via bkm_query_bookmarks_for_list() — no SQL ORDER BY in index.php.
@@ -227,6 +240,19 @@ if (!function_exists('itm_ui_todo_list_sort_detected')) {
             && preg_match('#[\'"]sort[\'"]\s*=>#', $content) === 1
             && stripos($content, '$sort') !== false
             && (preg_match('#[\'"]dir[\'"]\s*=>#', $content) === 1 || stripos($content, '$dir') !== false);
+    }
+}
+
+if (!function_exists('itm_ui_master_ticket_list_sort_detected')) {
+    /**
+     * Master Tickets passes sort/dir into itm_master_ticket_list_page() (ORDER BY in helper).
+     */
+    function itm_ui_master_ticket_list_sort_detected(string $content): bool
+    {
+        return stripos($content, 'itm_master_ticket_list_page(') !== false
+            && preg_match('#\$_GET\s*\[\s*[\'"]sort[\'"]\s*\]#', $content) === 1
+            && stripos($content, '$sort') !== false
+            && (preg_match('#\$_GET\s*\[\s*[\'"]dir[\'"]\s*\]#', $content) === 1 || stripos($content, '$dir') !== false);
     }
 }
 
@@ -287,6 +313,25 @@ if (!function_exists('itm_ui_todo_list_pagination_detected')) {
     }
 }
 
+if (!function_exists('itm_ui_master_ticket_list_pagination_detected')) {
+    /**
+     * Master Tickets pagination uses Settings records_per_page via itm_master_ticket_list_page().
+     */
+    function itm_ui_master_ticket_list_pagination_detected(string $content): bool
+    {
+        $hasPageNav = preg_match('/>\s*[◀️▶️⏮️⏭️]\s*<\/a>/u', $content) === 1
+            || (stripos($content, 'title="Previous page"') !== false && stripos($content, 'title="Next page"') !== false);
+
+        return stripos($content, 'itm_master_ticket_list_page(') !== false
+            && stripos($content, 'itm_resolve_records_per_page') !== false
+            && preg_match('#\$perPage\s*=#', $content) === 1
+            && (preg_match('#\$_GET\s*\[\s*[\'"]page[\'"]\s*\]#', $content) === 1 || preg_match('#\$page\s*=#', $content) === 1)
+            && stripos($content, '$totalRows') !== false
+            && stripos($content, '$totalPages') !== false
+            && $hasPageNav;
+    }
+}
+
 if (!function_exists('itm_ui_events_in_memory_list_pagination_detected')) {
     /**
      * Events list pagination uses Settings records_per_page via events_query_events_for_list().
@@ -322,6 +367,7 @@ if (!function_exists('itm_check_search')) {
             || itm_ui_bookmarks_in_memory_list_search_detected($listContent)
             || itm_ui_notes_in_memory_list_search_detected($listContent)
             || itm_ui_todo_list_search_detected($listContent)
+            || itm_ui_master_ticket_list_search_detected($listContent)
             || itm_ui_events_in_memory_list_search_detected($listContent)
             || itm_ui_myactivity_list_search_detected($listContent)
             || itm_ui_ipam_address_list_search_detected($listContent)
@@ -338,6 +384,9 @@ if (!function_exists('itm_check_search')) {
             }
             if (itm_ui_todo_list_search_detected($listContent)) {
                 $details = 'Search via todo_query_tasks_for_list() (SQL FK label filter) and emoji-only 🔙 reset in ' . $sourceLabel;
+            }
+            if (itm_ui_master_ticket_list_search_detected($listContent)) {
+                $details = 'Search via itm_master_ticket_list_page() (SQL LIKE in helper) and emoji-only 🔙 reset in ' . $sourceLabel;
             }
             if (itm_ui_events_in_memory_list_search_detected($listContent)) {
                 $details = 'Search via events_query_events_for_list() (in-memory decrypt filter) and emoji-only 🔙 reset in ' . $sourceLabel;
@@ -392,6 +441,7 @@ if (!function_exists('itm_check_sort')) {
             || itm_ui_bookmarks_in_memory_list_sort_detected($listContent)
             || itm_ui_notes_in_memory_list_sort_detected($listContent)
             || itm_ui_todo_list_sort_detected($listContent)
+            || itm_ui_master_ticket_list_sort_detected($listContent)
             || itm_ui_webmail_list_sort_detected($listContent)
             || itm_ui_news_feed_list_sort_detected($listContent)
             || itm_ui_events_in_memory_list_sort_detected($listContent)
@@ -410,6 +460,9 @@ if (!function_exists('itm_check_sort')) {
             }
             if (itm_ui_todo_list_sort_detected($listContent)) {
                 $details = 'Column sort via todo_query_tasks_for_list() in ' . $sourceLabel;
+            }
+            if (itm_ui_master_ticket_list_sort_detected($listContent)) {
+                $details = 'Column sort via itm_master_ticket_list_page() in ' . $sourceLabel;
             }
             if (itm_ui_webmail_list_sort_detected($listContent)) {
                 $details = 'Column sort via webmail_fetch_list() in ' . $sourceLabel;
@@ -465,7 +518,8 @@ if (!function_exists('itm_check_pagination')) {
         $hasPerPageVar = preg_match('#\$perPage\s*=#', $listContent) === 1;
         $hasLimitPaging = preg_match('#LIMIT\s+[^\n;]*\$perPage#i', $listContent) === 1
             || (stripos($listContent, 'LIMIT') !== false && stripos($listContent, '$offset') !== false)
-            || itm_ui_ipam_address_list_pagination_detected($listContent);
+            || itm_ui_ipam_address_list_pagination_detected($listContent)
+            || itm_ui_master_ticket_list_pagination_detected($listContent);
         $hasPageState = preg_match('#\$_GET\s*\[\s*[\'"]page[\'"]\s*\]#', $listContent) === 1
             || preg_match('#\$page\s*=#', $listContent) === 1;
         $hasPageNav = (preg_match('/>\s*[◀️▶️⏮️⏭️]\s*<\/a>/u', $listContent) === 1)
@@ -486,6 +540,13 @@ if (!function_exists('itm_check_pagination')) {
             return [
                 'status' => 'pass',
                 'details' => 'Pagination uses itm_resolve_records_per_page() via todo_query_tasks_for_list() in ' . $sourceLabel,
+            ];
+        }
+
+        if (itm_ui_master_ticket_list_pagination_detected($listContent)) {
+            return [
+                'status' => 'pass',
+                'details' => 'Pagination uses itm_resolve_records_per_page() via itm_master_ticket_list_page() in ' . $sourceLabel,
             ];
         }
 

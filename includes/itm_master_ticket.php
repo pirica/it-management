@@ -36,7 +36,7 @@ if (!function_exists('itm_master_ticket_allowed_company_ids')) {
             return [];
         }
         if ($isAdmin === null && function_exists('itm_is_admin')) {
-            $isAdmin = itm_is_admin();
+            $isAdmin = itm_is_admin($conn, $employeeId);
         }
         if (!empty($isAdmin)) {
             $ids = [];
@@ -447,7 +447,7 @@ if (!function_exists('itm_master_ticket_can_manage')) {
             return false;
         }
         if ($isAdmin === null && function_exists('itm_is_admin')) {
-            $isAdmin = itm_is_admin();
+            $isAdmin = itm_is_admin($conn, $employeeId);
         }
         if (!empty($isAdmin)) {
             return true;
@@ -631,7 +631,7 @@ if (!function_exists('itm_master_ticket_attach_problem')) {
         $sessionCompanyId = (int)$sessionCompanyId;
 
         if ($isAdmin === null && function_exists('itm_is_admin')) {
-            $isAdmin = itm_is_admin();
+            $isAdmin = itm_is_admin($conn, $actorEmployeeId);
         }
         if (!function_exists('itm_employee_has_company_access')) {
             require_once ROOT_PATH . 'includes/itm_company_session.php';

@@ -30,7 +30,7 @@ Create flow picks an **existing problem** that already has ≥1 linked incident 
 
 ## 5. UI Behavior Requirements
 
-- Bespoke module (not scaffold CRUD): `index.php`, `create.php`, `view.php` only.
+- List/search/sort/pagination delegate to **`itm_master_ticket_list_page()`** in `includes/itm_master_ticket.php` (UI contract audit recognizes this helper in `scripts/lib/itm_ui_list_contract_checks.php`).
 - **No `company_id` column** in list/view — show company count from linked problems instead.
 - Tables opt out of table-tools import/export (`data-itm-no-import-excel`, `data-itm-no-export-*`).
 - Actions: emoji-only + `title` / `aria-label` (NO MIXED).
