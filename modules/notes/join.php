@@ -93,7 +93,7 @@ if (!isset($currentUiConfig)) {
                     <?php foreach ($payload['images'] as $img): ?>
                         <?php $assetUrl = 'share_asset.php?t=' . rawurlencode($accessToken) . '&file=' . rawurlencode($img); ?>
                         <div>
-                            <a href="<?php echo sanitize($assetUrl); ?>" target="_blank" rel="noopener">
+                            <a class="itm-plain-link" href="<?php echo sanitize($assetUrl); ?>" target="_blank" rel="noopener">
                                 <img src="<?php echo sanitize($assetUrl); ?>" alt="">
                             </a>
                         </div>

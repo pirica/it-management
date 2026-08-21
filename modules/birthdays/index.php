@@ -238,9 +238,9 @@ if (!isset($crud_title)) {
                 <table class="table bdays-table" data-itm-no-import-excel="1">
                     <thead>
                         <tr>
-                            <th><a href="<?= sanitize(bdays_sort_url('name', $sort, $dir, $selectedMonth, $search, $selectedStatusIds)) ?>">Name<?= bdays_sort_indicator('name', $sort, $dir) ?></a></th>
-                            <th><a href="<?= sanitize(bdays_sort_url('birth_day', $sort, $dir, $selectedMonth, $search, $selectedStatusIds)) ?>">Day<?= bdays_sort_indicator('birth_day', $sort, $dir) ?></a></th>
-                            <th><a href="<?= sanitize(bdays_sort_url('department_code', $sort, $dir, $selectedMonth, $search, $selectedStatusIds)) ?>">Department<?= bdays_sort_indicator('department_code', $sort, $dir) ?></a></th>
+                            <th><a style="text-decoration:none;color:inherit;" href="<?= sanitize(bdays_sort_url('name', $sort, $dir, $selectedMonth, $search, $selectedStatusIds)) ?>">Name<?= bdays_sort_indicator('name', $sort, $dir) ?></a></th>
+                            <th><a style="text-decoration:none;color:inherit;" href="<?= sanitize(bdays_sort_url('birth_day', $sort, $dir, $selectedMonth, $search, $selectedStatusIds)) ?>">Day<?= bdays_sort_indicator('birth_day', $sort, $dir) ?></a></th>
+                            <th><a style="text-decoration:none;color:inherit;" href="<?= sanitize(bdays_sort_url('department_code', $sort, $dir, $selectedMonth, $search, $selectedStatusIds)) ?>">Department<?= bdays_sort_indicator('department_code', $sort, $dir) ?></a></th>
                         </tr>
                     </thead>
                     <tbody>

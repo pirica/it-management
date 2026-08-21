@@ -169,8 +169,8 @@ if (!isset($crud_title)) {
                     
                     <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" onclick="this.nextElementSibling.classList.toggle('show'); event.stopPropagation();">Tools ⚙️</button>
                     <div class="dropdown-menu" style="right: 0; min-width: 180px;">
-                        <a class="dropdown-item" href="index.php">📂 Tree View</a>
-                        <a class="dropdown-item" href="import.php">📤 Import</a>
+                        <a class="dropdown-item itm-plain-link" href="index.php">📂 Tree View</a>
+                        <a class="dropdown-item itm-plain-link" href="import.php">📤 Import</a>
                     </div>
                 </div>
                 <a href="create.php" class="btn btn-primary">➕</a>
@@ -263,12 +263,13 @@ if (!isset($crud_title)) {
                                     <?php if (!empty($row['url_locked'])): ?>
                                         <span style="color:var(--text-tertiary);"><?php echo sanitize($row['url_locked_label'] ?: '🔒 URL hidden'); ?></span>
                                     <?php else: ?>
-                                        <a href="<?php echo sanitize($row['url_display']); ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); text-decoration:none;"><?php echo sanitize($row['url_display']); ?></a>
+                                        <a class="itm-plain-link" href="<?php echo sanitize($row['url_display']); ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); text-decoration:none;"><?php echo sanitize($row['url_display']); ?></a>
                                     <?php endif; ?>
                                 </td>
                                 <td><?php echo sanitize($row['notes_display'] ?? $row['notes'] ?? ''); ?></td>
                                 <td><?php echo sanitize($row['folder_display_name'] ?? 'Root'); ?></td>
-                                <td><?php echo $row['shared'] ? '✅' : '❌'; ?></td>
+                                <td><?php echo $row['shared'] ? '�
+' : '❌'; ?></td>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">
                                         <?php if (bkm_can_edit_bookmark($row, $user_id, $is_admin)): ?>

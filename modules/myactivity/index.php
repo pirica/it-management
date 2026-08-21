@@ -275,7 +275,7 @@ $myactivitySortTh = static function (string $field, string $label) use ($sort, $
                                 <?php endif; ?>
                                 <div class="myactivity-timeline-meta">
                                     <?php echo sanitize(myactivity_format_display_datetime($row['created_at'] ?? '')); ?>
-                                    · <a href="view.php?id=<?php echo (int)($row['id'] ?? 0); ?>" title="View details">🔎</a>
+                                    · <a class="itm-plain-link" href="view.php?id=<?php echo (int)($row['id'] ?? 0); ?>" title="View details">🔎</a>
                                 </div>
                                 <div class="myactivity-timeline-meta" title="<?php echo sanitize($previewText); ?>"><?php echo sanitize(myactivity_preview_text($previewText, 140)); ?></div>
                             </li>

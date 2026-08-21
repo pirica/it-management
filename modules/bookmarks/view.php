@@ -110,7 +110,7 @@ if (!isset($crud_title)) {
                             <?php if (!empty($data['url_locked'])): ?>
                                 <span style="color:var(--text-tertiary);"><?php echo sanitize((string)($data['url_locked_label'] ?? '🔒 URL hidden')); ?></span>
                             <?php else: ?>
-                                <a href="<?php echo sanitize((string)($data['url_display'] ?? '')); ?>" target="_blank" rel="nofollow noreferrer noopener"><?php echo sanitize((string)($data['url_display'] ?? '')); ?></a>
+                                <a class="itm-plain-link" href="<?php echo sanitize((string)($data['url_display'] ?? '')); ?>" target="_blank" rel="nofollow noreferrer noopener"><?php echo sanitize((string)($data['url_display'] ?? '')); ?></a>
                             <?php endif; ?>
                         </td></tr>
                         <tr><th>Folder</th><td><?php echo sanitize($folderLabel); ?></td></tr>

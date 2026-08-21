@@ -216,7 +216,8 @@ if ($stmt) {
                     'type' => 'event',
                     'title' => $displayTitle,
                     'color' => $ev_color,
-                    'icon' => 'ðŸ“…',
+                    'icon' => 'ðŸ“
+',
                     'start' => $row['start_datetime'],
                     'end' => $row['end_datetime'],
                     'id' => $row['id'],
@@ -583,10 +584,10 @@ if (!isset($crud_title)) {
                         </div>
 
                         <div class="calendar-view-selector">
-                            <a href="?view=day&date=<?php echo $current_date_param; ?>" class="<?php echo $view === 'day' ? 'active' : ''; ?>">Day</a>
-                            <a href="?view=week&date=<?php echo $current_date_param; ?>" class="<?php echo $view === 'week' ? 'active' : ''; ?>">Week</a>
-                            <a href="?view=month&date=<?php echo $current_date_param; ?>" class="<?php echo $view === 'month' ? 'active' : ''; ?>">Month</a>
-                            <a href="?view=year&date=<?php echo $current_date_param; ?>" class="<?php echo $view === 'year' ? 'active' : ''; ?>">Year</a>
+                            <a class="itm-plain-link" href="?view=day&date=<?php echo $current_date_param; ?>" class="<?php echo $view === 'day' ? 'active' : ''; ?>">Day</a>
+                            <a class="itm-plain-link" href="?view=week&date=<?php echo $current_date_param; ?>" class="<?php echo $view === 'week' ? 'active' : ''; ?>">Week</a>
+                            <a class="itm-plain-link" href="?view=month&date=<?php echo $current_date_param; ?>" class="<?php echo $view === 'month' ? 'active' : ''; ?>">Month</a>
+                            <a class="itm-plain-link" href="?view=year&date=<?php echo $current_date_param; ?>" class="<?php echo $view === 'year' ? 'active' : ''; ?>">Year</a>
                         </div>
 
                         <div style="text-align: right;">

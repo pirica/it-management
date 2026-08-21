@@ -351,14 +351,14 @@ if (!isset($crud_title)) {
                                     <div class="btn-group">
                                         <button type="button" class="btn dropdown-toggle" onclick="$(this).next('.dropdown-menu').toggleClass('show'); event.stopPropagation();">Tools ⚙️</button>
                                         <div class="dropdown-menu dropdown-menu-right">
-                                            <a class="dropdown-item" href="#" onclick="openImportModal(); $('.dropdown-menu').removeClass('show'); return false;">📥 Import CSV</a><br />
-                                            <a class="dropdown-item" href="#" onclick="openImportExcelModal(); $('.dropdown-menu').removeClass('show'); return false;">📥 Import Excel</a><br />
+                                            <a class="dropdown-item itm-plain-link" href="#" onclick="openImportModal(); $('.dropdown-menu').removeClass('show'); return false;">📥 Import CSV</a><br />
+                                            <a class="dropdown-item itm-plain-link" href="#" onclick="openImportExcelModal(); $('.dropdown-menu').removeClass('show'); return false;">📥 Import Excel</a><br />
                                         <!--    <div class="dropdown-divider"></div> -->
-                                            <a class="dropdown-item" href="#" onclick="exportVault('xlsx'); $('.dropdown-menu').removeClass('show'); return false;">📊 Export XLSX</a><br />
-                                            <a class="dropdown-item" href="#" onclick="exportVault('xlsx'); $('.dropdown-menu').removeClass('show'); return false;">📗 Export Excel</a><br />
-                                            <a class="dropdown-item" href="#" onclick="exportVault('csv'); $('.dropdown-menu').removeClass('show'); return false;">📄 Export CSV</a><br />
-                                            <a class="dropdown-item" href="#" onclick="exportVault('pdf'); $('.dropdown-menu').removeClass('show'); return false;">📕 Export PDF</a><br />
-                                            <a class="dropdown-item" href="#" onclick="exportVault('txt'); $('.dropdown-menu').removeClass('show'); return false;">📝 Export TXT</a><br />
+                                            <a class="dropdown-item itm-plain-link" href="#" onclick="exportVault('xlsx'); $('.dropdown-menu').removeClass('show'); return false;">📊 Export XLSX</a><br />
+                                            <a class="dropdown-item itm-plain-link" href="#" onclick="exportVault('xlsx'); $('.dropdown-menu').removeClass('show'); return false;">📗 Export Excel</a><br />
+                                            <a class="dropdown-item itm-plain-link" href="#" onclick="exportVault('csv'); $('.dropdown-menu').removeClass('show'); return false;">📄 Export CSV</a><br />
+                                            <a class="dropdown-item itm-plain-link" href="#" onclick="exportVault('pdf'); $('.dropdown-menu').removeClass('show'); return false;">📕 Export PDF</a><br />
+                                            <a class="dropdown-item itm-plain-link" href="#" onclick="exportVault('txt'); $('.dropdown-menu').removeClass('show'); return false;">📝 Export TXT</a><br />
                                         </div>
                                     </div>
                                 </div>
@@ -437,7 +437,7 @@ if (!isset($crud_title)) {
                                                         <button class="btn btn-sm" type="button" onclick="copyText(<?php echo json_encode($entryPassword, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>)" title="Copy">🗐</button>
                                                     </div>
                                                 </td>
-                                                <td><?php if ($entryWebsite !== ''): ?><a href="<?php echo sanitize($entryWebsite); ?>" target="_blank" rel="nofollow noreferrer noopener" style="text-decoration:none !important;"><?php echo sanitize($websiteLabel); ?></a><?php else: ?>—<?php endif; ?></td>
+                                                <td><?php if ($entryWebsite !== ''): ?><a class="itm-plain-link" href="<?php echo sanitize($entryWebsite); ?>" target="_blank" rel="nofollow noreferrer noopener" style="text-decoration:none !important;"><?php echo sanitize($websiteLabel); ?></a><?php else: ?>—<?php endif; ?></td>
                                             </tr>
                                             <?php endforeach; ?>
                                         <?php endif; ?>
@@ -699,7 +699,7 @@ function loadFolderTree() {
                 const nameAttr = escapeHtmlAttr(f.name || '');
                 html += `<li class="pwd-folder-tree-item" data-folder-id="${f.id}" data-folder-name="${nameAttr}" draggable="true" ondragstart="pwdFolderDrag(event)" ondrop="pwdFolderDrop(event)" ondragover="pwdFolderAllowDrop(event)">
                     <div class="folder-item ${isActive ? 'active' : ''}">
-                        <a href="#" onclick="selectFolder(${f.id}); return false;">📁 ${sanitizeHtml(f.name)}</a>
+                        <a class="itm-plain-link" href="#" onclick="selectFolder(${f.id}); return false;">📁 ${sanitizeHtml(f.name)}</a>
                         <div>
                             <button class="btn btn-link btn-sm p-0" type="button" onclick="openFolderModal(${f.id}, '${addslashes(f.name)}', ${f.parent_id || 0})" title="Edit">✏️</button>
                             <button class="btn btn-link btn-sm p-0 text-danger" type="button" onclick="deleteFolder(${f.id})" title="Delete">🗑️</button>
@@ -717,7 +717,7 @@ function loadFolderTree() {
         let treeHtml = `<ul class="pwd-folder-tree">
             <li class="pwd-folder-tree-item pwd-folder-tree-root" data-folder-id="0" data-folder-name="" ondrop="pwdFolderDrop(event)" ondragover="pwdFolderAllowDrop(event)">
                 <div class="folder-item ${rootActive ? 'active' : ''}">
-                    <a href="#" onclick="selectFolder(0); return false;">📁 All entries</a>
+                    <a class="itm-plain-link" href="#" onclick="selectFolder(0); return false;">📁 All entries</a>
                 </div>
                 ${renderBranch(0)}
             </li>

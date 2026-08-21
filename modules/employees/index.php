@@ -580,7 +580,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                         $values[$col] = 'NULL';
                     } elseif (in_array($col, ['duplicate', 'on_contacts', 'on_orgchart'], true) || (isset($columnTypes[$col]) && strpos($columnTypes[$col], 'tinyint') !== false)) {
                         $normalizedBool = strtolower($value);
-                        if (in_array($normalizedBool, ['1', 'active', 'yes', 'true', 'on', '✅'], true)) {
+                        if (in_array($normalizedBool, ['1', 'active', 'yes', 'true', 'on', '�
+'], true)) {
                             $values[$col] = '1';
                         } else {
                             $values[$col] = '0';
@@ -943,7 +944,7 @@ if (!isset($crud_title)) {
                             <?php foreach ($columns as $col): ?>
                                 <td>
                                     <?php if (($col === 'work_email' || $col === 'personal_email') && !empty($row[$col])): ?>
-                                        <a href="mailto:<?php echo sanitize((string)$row[$col]); ?>" data-outlook-link="1" data-outlook-href="ms-outlook://compose?to=<?php echo sanitize((string)$row[$col]); ?>"><?php echo sanitize((string)$row[$col]); ?></a>
+                                        <a class="itm-plain-link" href="mailto:<?php echo sanitize((string)$row[$col]); ?>" data-outlook-link="1" data-outlook-href="ms-outlook://compose?to=<?php echo sanitize((string)$row[$col]); ?>"><?php echo sanitize((string)$row[$col]); ?></a>
                                     <?php elseif ($col === 'department_id'): ?><?php echo sanitize((string)($row['department_name'] ?? '')); ?>
                                     <?php elseif ($col === 'office_key_card_department_id'): ?><?php echo sanitize((string)($row['office_key_card_department_name'] ?? '')); ?>
                                     <?php elseif ($col === 'location_id'): ?><?php echo sanitize((string)($row['location_name'] ?? '')); ?>
@@ -965,7 +966,8 @@ if (!isset($crud_title)) {
                                         <?php if ($col === 'duplicate'): ?>
                                             <?php echo ((int)($row[$col] ?? 0) === 1) ? '⚠️ Duplicate (' . sanitize(implode(', ', $duplicateReasons)) . ')' : '—'; ?>
                                         <?php else: ?>
-                                            <?php echo ((int)($row[$col] ?? 0) === 1) ? '✅' : '❌'; ?>
+                                            <?php echo ((int)($row[$col] ?? 0) === 1) ? '�
+' : '❌'; ?>
                                         <?php endif; ?>
                                     <?php elseif (itm_is_date_field_name($col)): ?><?php echo sanitize(itm_format_date_display($row[$col] ?? '')); ?>
                                     <?php elseif ($col === 'comments' && trim((string)($row[$col] ?? '')) !== ''): ?><span data-itm-export-value="<?php echo sanitize((string)($row[$col] ?? '')); ?>"><a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a></span>

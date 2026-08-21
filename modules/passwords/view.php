@@ -133,7 +133,7 @@ if (!isset($currentUiConfig)) {
                         </td></tr>
                         <tr><th>Website</th><td>
                             <?php if (!empty($data['website'])): ?>
-                                <a href="<?php echo sanitize((string)$data['website']); ?>" target="_blank" rel="nofollow noreferrer noopener"><?php echo sanitize((string)$data['website']); ?></a>
+                                <a class="itm-plain-link" href="<?php echo sanitize((string)$data['website']); ?>" target="_blank" rel="nofollow noreferrer noopener"><?php echo sanitize((string)$data['website']); ?></a>
                             <?php else: ?>—<?php endif; ?>
                         </td></tr>
                         <tr><th>Folder</th><td><?php echo sanitize($folderLabel); ?></td></tr>

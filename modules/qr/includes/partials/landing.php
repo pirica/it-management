@@ -31,7 +31,7 @@ $type = (string) ($row['type_slug'] ?? '');
     <?php if (($p['android_url'] ?? '') !== ''): ?><p><a class="btn" href="<?= sanitize((string)$p['android_url']) ?>">Google Play</a></p><?php endif; ?>
 <?php elseif ($type === 'list_of_links' || $type === 'social'): ?>
     <h1><?= sanitize((string)($p['title'] ?? 'Links')) ?></h1>
-    <ul><?php foreach ((array)($p['links'] ?? []) as $link): if (trim((string)($link['url'] ?? '')) === '') continue; ?><li><a href="<?= sanitize((string)$link['url']) ?>"><?= sanitize((string)($link['label'] ?? $link['url'])) ?></a></li><?php endforeach; ?></ul>
+    <ul><?php foreach ((array)($p['links'] ?? []) as $link): if (trim((string)($link['url'] ?? '')) === '') continue; ?><li><a class="itm-plain-link" href="<?= sanitize((string)$link['url']) ?>"><?= sanitize((string)($link['label'] ?? $link['url'])) ?></a></li><?php endforeach; ?></ul>
 <?php elseif ($type === 'menu'): ?>
     <h1><?= sanitize((string)($p['title'] ?? 'Menu')) ?></h1>
     <?php foreach ((array)($p['sections'] ?? []) as $section): ?>
@@ -41,9 +41,9 @@ $type = (string) ($row['type_slug'] ?? '');
 <?php elseif ($type === 'business' || $type === 'vcard'): ?>
     <h1><?= sanitize((string)($p['name'] ?? trim((string)($p['first_name'] ?? '') . ' ' . (string)($p['last_name'] ?? '')))) ?></h1>
     <?php if (($p['description'] ?? '') !== ''): ?><p><?= sanitize((string)$p['description']) ?></p><?php endif; ?>
-    <?php if (($p['phone'] ?? '') !== ''): ?><p><a href="tel:<?= sanitize(preg_replace('/[^\d+]/', '', (string)$p['phone'])) ?>"><?= sanitize((string)$p['phone']) ?></a></p><?php endif; ?>
-    <?php if (($p['email'] ?? '') !== ''): ?><p><a href="mailto:<?= sanitize((string)$p['email']) ?>"><?= sanitize((string)$p['email']) ?></a></p><?php endif; ?>
-    <?php if (($p['website'] ?? '') !== ''): ?><p><a href="<?= sanitize((string)$p['website']) ?>"><?= sanitize((string)$p['website']) ?></a></p><?php endif; ?>
+    <?php if (($p['phone'] ?? '') !== ''): ?><p><a class="itm-plain-link" href="tel:<?= sanitize(preg_replace('/[^\d+]/', '', (string)$p['phone'])) ?>"><?= sanitize((string)$p['phone']) ?></a></p><?php endif; ?>
+    <?php if (($p['email'] ?? '') !== ''): ?><p><a class="itm-plain-link" href="mailto:<?= sanitize((string)$p['email']) ?>"><?= sanitize((string)$p['email']) ?></a></p><?php endif; ?>
+    <?php if (($p['website'] ?? '') !== ''): ?><p><a class="itm-plain-link" href="<?= sanitize((string)$p['website']) ?>"><?= sanitize((string)$p['website']) ?></a></p><?php endif; ?>
     <?php if (($p['address'] ?? '') !== ''): ?><p><?= sanitize((string)$p['address']) ?></p><?php endif; ?>
 <?php elseif ($type === 'coupon'): ?>
     <h1><?= sanitize((string)($p['title'] ?? 'Coupon')) ?></h1>

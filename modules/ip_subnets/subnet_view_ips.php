@@ -27,7 +27,7 @@ if ($itmSubnetViewId > 0 && function_exists('itm_ipam_count_subnet_addresses')) 
             <h2 style="margin:0 0 6px;">IP addresses</h2>
             <p style="margin:0;color:#57606a;">
                 <?php echo number_format((int)$itmSubnetAddressTotal); ?> IP record(s) in this subnet — manage them in
-                <a href="../ip_addresses/index.php?subnet_id=<?php echo (int)$itmSubnetViewId; ?>">IP Addresses</a>.
+                <a class="itm-plain-link" href="../ip_addresses/index.php?subnet_id=<?php echo (int)$itmSubnetViewId; ?>">IP Addresses</a>.
             </p>
             <?php if ($itmSubnetBulkIsCapped && $itmSubnetBulkHostTotal > 0): ?>
                 <p style="margin:6px 0 0;color:#57606a;font-size:13px;">

@@ -280,7 +280,7 @@ body {
 
 <div id="sidebar">
     <h3>📌 Quick Access</h3>
-    <div onclick="closeSidebar()"><a href="../../dashboard.php">📊 Dashboard</a></div>
+    <div onclick="closeSidebar()"><a class="itm-plain-link" href="../../dashboard.php">📊 Dashboard</a></div>
     <div onclick="loadFolder(''); closeSidebar();">🏠 Home (Company Root)</div>
     <div onclick="loadFolder('Common'); closeSidebar();">🌐 Common Area</div>
     <div onclick="loadFolder('Departments'); closeSidebar();">🏢 Department Area</div>
@@ -773,7 +773,8 @@ function showEmptyContextMenu(e) {
     appendContextAction("Create Year/Month/Day Structure 🗓️", () => createYearMonthDay());
     appendContextAction("Create Year 🗓️", () => createYear());
     appendContextAction("Create Months 🗓️", () => createMonths());
-    appendContextAction("Create Days 📅", () => createDays());
+    appendContextAction("Create Days �
+", () => createDays());
 
     positionContextMenu(e);
 }

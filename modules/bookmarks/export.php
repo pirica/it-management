@@ -71,6 +71,7 @@ if ($format === 'html') {
         if ($row['url'] === '') {
             continue;
         }
+        // itm-decorated-link-exempt: Netscape bookmark export format — not browser UI.
         echo "    <DT><A HREF=\"" . sanitize($row['url']) . "\">" . sanitize($row['title']) . "</A>\n";
         if ($row['notes'] !== '') {
             echo "    <DD>" . sanitize($row['notes']) . "\n";

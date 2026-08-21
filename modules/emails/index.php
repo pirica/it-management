@@ -466,28 +466,28 @@ if (!isset($crud_title)) {
             <?php endforeach; ?>
 
             <div class="email-stats">
-                <a class="stat-card stat-card-link" href="<?php echo $sendLogsStatHrefAll; ?>">
+                <a class="stat-card stat-card-link itm-plain-link" href="<?php echo $sendLogsStatHrefAll; ?>">
                     <div class="stat-label">Total Emails Logged</div>
                     <div class="stat-number"><?php echo (int)$totalEmails; ?></div>
                 </a>
-                <a class="stat-card stat-card-link" href="<?php echo $sendLogsStatHrefSent; ?>">
+                <a class="stat-card stat-card-link itm-plain-link" href="<?php echo $sendLogsStatHrefSent; ?>">
                     <div class="stat-label">Successfully Sent</div>
                     <div class="stat-number"><?php echo (int)$sentEmails; ?></div>
                 </a>
-                <a class="stat-card stat-card-link" href="<?php echo $sendLogsStatHrefFailed; ?>">
+                <a class="stat-card stat-card-link itm-plain-link" href="<?php echo $sendLogsStatHrefFailed; ?>">
                     <div class="stat-label">Failed</div>
                     <div class="stat-number"><?php echo (int)$failedEmails; ?></div>
                 </a>
-                <a class="stat-card stat-card-link" href="<?php echo $sendLogsStatHrefReceived; ?>">
+                <a class="stat-card stat-card-link itm-plain-link" href="<?php echo $sendLogsStatHrefReceived; ?>">
                     <div class="stat-label">Received</div>
                     <div class="stat-number"><?php echo (int)$receivedEmails; ?></div>
                 </a>
             </div>
 
             <div class="email-tabs">
-                <a href="?tab=send_logs" class="email-tab <?php echo $active_tab === 'send_logs' ? 'active' : ''; ?>">Send Logs</a>
-                <a href="?tab=smtp" class="email-tab <?php echo $active_tab === 'smtp' ? 'active' : ''; ?>">SMTP Configurations</a>
-                <a href="?tab=alert_rules" class="email-tab <?php echo $active_tab === 'alert_rules' ? 'active' : ''; ?>">Alert Rules</a>
+                <a class="itm-plain-link" href="?tab=send_logs" class="email-tab <?php echo $active_tab === 'send_logs' ? 'active' : ''; ?>">Send Logs</a>
+                <a class="itm-plain-link" href="?tab=smtp" class="email-tab <?php echo $active_tab === 'smtp' ? 'active' : ''; ?>">SMTP Configurations</a>
+                <a class="itm-plain-link" href="?tab=alert_rules" class="email-tab <?php echo $active_tab === 'alert_rules' ? 'active' : ''; ?>">Alert Rules</a>
             </div>
 
             <?php

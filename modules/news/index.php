@@ -175,7 +175,7 @@ $newsSortTh = static function (string $field, string $label) use ($sort, $dir, $
                     <div class="card" style="margin-bottom:12px;">
                         <p style="margin:0;" class="muted">
                             Showing up to <?php echo (int)NEWS_RESULTS_PER_PAGE; ?> items from
-                            <a href="<?php echo sanitize((string)$activeSource['site_link']); ?>" target="_blank" rel="noopener noreferrer"><?php echo sanitize((string)$activeSource['label']); ?></a>.
+                            <a class="itm-plain-link" href="<?php echo sanitize((string)$activeSource['site_link']); ?>" target="_blank" rel="noopener noreferrer"><?php echo sanitize((string)$activeSource['label']); ?></a>.
                             Cache status: <strong><?php echo sanitize($cacheStatus); ?></strong>.
                             Last updated: <strong><?php echo sanitize($cacheAgeLabel); ?></strong>.
                         </p>

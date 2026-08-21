@@ -117,7 +117,7 @@ function vor_index_query_string(array $overrides = []): string
                 <?php if (!$policyEnabled): ?>
                     <div class="alert alert-warning">
                         Org recovery is disabled for this company. Enable it under
-                        <a href="<?php echo sanitize(BASE_URL . 'modules/companies/create.php?id=' . $company_id); ?>" target="_blank" rel="noopener noreferrer">Companies → edit</a>
+                        <a class="itm-plain-link" href="<?php echo sanitize(BASE_URL . 'modules/companies/create.php?id=' . $company_id); ?>" target="_blank" rel="noopener noreferrer">Companies → edit</a>
                         (Vault Org Recovery policy card).
                     </div>
                 <?php else: ?>

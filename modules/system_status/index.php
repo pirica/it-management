@@ -226,9 +226,9 @@ if (!isset($crud_title)) {
             <?php endif; ?>
 
             <div class="status-tabs">
-                <a href="?tab=monitoring" class="status-tab <?php echo $active_tab === 'monitoring' ? 'active' : ''; ?>">📊 Monitoring</a>
-                <a href="?tab=php_settings" class="status-tab <?php echo $active_tab === 'php_settings' ? 'active' : ''; ?>">🧩 PHP Settings</a>
-                <a href="?tab=database" class="status-tab <?php echo $active_tab === 'database' ? 'active' : ''; ?>">🗄️ Database</a>
+                <a class="itm-plain-link" href="?tab=monitoring" class="status-tab <?php echo $active_tab === 'monitoring' ? 'active' : ''; ?>">📊 Monitoring</a>
+                <a class="itm-plain-link" href="?tab=php_settings" class="status-tab <?php echo $active_tab === 'php_settings' ? 'active' : ''; ?>">🧩 PHP Settings</a>
+                <a class="itm-plain-link" href="?tab=database" class="status-tab <?php echo $active_tab === 'database' ? 'active' : ''; ?>">🗄️ Database</a>
             </div>
 
             <?php

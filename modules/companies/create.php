@@ -343,7 +343,8 @@ if (!isset($crud_title)) {
                     <div class="form-group">
                         <label class="itm-checkbox-control">
                             <input type="checkbox" name="active" value="1" <?php echo (int)($data['active'] ?? 0) === 1 ? 'checked' : ''; ?>>
-                            <span>Active <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)($data['active'] ?? 0) === 1) ? '✅' : '❌'; ?></span></span>
+                            <span>Active <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)($data['active'] ?? 0) === 1) ? '�
+' : '❌'; ?></span></span>
                         </label>
                     </div>
                     <?php if ($is_edit): ?>
@@ -358,7 +359,8 @@ if (!isset($crud_title)) {
                         <div class="form-group">
                             <label class="itm-checkbox-control">
                                 <input type="checkbox" name="sso_enabled" value="1" <?php echo (int)($data['sso_enabled'] ?? 0) === 1 ? 'checked' : ''; ?>>
-                                <span>Enable SSO <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)($data['sso_enabled'] ?? 0) === 1) ? '✅' : '❌'; ?></span></span>
+                                <span>Enable SSO <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)($data['sso_enabled'] ?? 0) === 1) ? '�
+' : '❌'; ?></span></span>
                             </label>
                         </div>
                         <div class="form-group">
@@ -371,7 +373,8 @@ if (!isset($crud_title)) {
                         <div class="form-group">
                             <label class="itm-checkbox-control">
                                 <input type="checkbox" name="asset_disposal_approval_required" value="1" <?php echo (int)($data['asset_disposal_approval_required'] ?? 0) === 1 ? 'checked' : ''; ?>>
-                                <span>Require admin approval for equipment disposal <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)($data['asset_disposal_approval_required'] ?? 0) === 1) ? '✅' : '❌'; ?></span></span>
+                                <span>Require admin approval for equipment disposal <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)($data['asset_disposal_approval_required'] ?? 0) === 1) ? '�
+' : '❌'; ?></span></span>
                             </label>
                             <p class="form-hint" style="margin-top:6px;opacity:.85;">When enabled, disposal requests on equipment view stay pending until an administrator approves.</p>
                         </div>
@@ -380,7 +383,8 @@ if (!isset($crud_title)) {
                             <div class="form-group">
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="vault_org_recovery_enabled" value="1" <?php echo (int)($data['vault_org_recovery_enabled'] ?? 0) === 1 ? 'checked' : ''; ?>>
-                                    <span>Enable tenant-controlled vault org recovery <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)($data['vault_org_recovery_enabled'] ?? 0) === 1) ? '✅' : '❌'; ?></span></span>
+                                    <span>Enable tenant-controlled vault org recovery <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)($data['vault_org_recovery_enabled'] ?? 0) === 1) ? '�
+' : '❌'; ?></span></span>
                                 </label>
                                 <p class="form-hint" style="margin-top:6px;opacity:.85;">Optional Legal/HR policy: employees may consent to an escrow snapshot; admins complete recovery with authorization passphrase + audit trail. Disables zero-knowledge lockout for consenting employees only.</p>
                             </div>
@@ -393,7 +397,8 @@ if (!isset($crud_title)) {
                             <div class="form-group">
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="sso_jit_enabled" value="1" <?php echo (int)($data['sso_jit_enabled'] ?? 0) === 1 ? 'checked' : ''; ?>>
-                                    <span>JIT provision new LDAP users <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)($data['sso_jit_enabled'] ?? 0) === 1) ? '✅' : '❌'; ?></span></span>
+                                    <span>JIT provision new LDAP users <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)($data['sso_jit_enabled'] ?? 0) === 1) ? '�
+' : '❌'; ?></span></span>
                                 </label>
                                 <p class="form-hint" style="margin-top:6px;opacity:.85;">When enabled, first successful LDAP login creates an employee row and home-company grant when no match exists.</p>
                             </div>
@@ -409,7 +414,7 @@ if (!isset($crud_title)) {
                                 <div class="form-group"><label>Username attribute</label><input type="text" name="ldap_username_attr" value="<?php echo htmlspecialchars((string)($ldapConfig['username_attr'] ?? 'sAMAccountName'), ENT_QUOTES, 'UTF-8'); ?>"></div>
                                 <div class="form-group"><label>Email attribute</label><input type="text" name="ldap_email_attr" value="<?php echo htmlspecialchars((string)($ldapConfig['email_attr'] ?? 'mail'), ENT_QUOTES, 'UTF-8'); ?>"></div>
                             </div>
-                            <p><a href="<?php echo sanitize(BASE_URL . 'sso-ldap.php?company_id=' . (int)$id); ?>" target="_blank" rel="noopener noreferrer" title="Open LDAP SSO login page">Open LDAP SSO login page</a> (new tab)</p>
+                            <p><a class="itm-plain-link" href="<?php echo sanitize(BASE_URL . 'sso-ldap.php?company_id=' . (int)$id); ?>" target="_blank" rel="noopener noreferrer" title="Open LDAP SSO login page">Open LDAP SSO login page</a> (new tab)</p>
                         </div>
                         <div id="company-sso-saml-panel" style="display:none;">
                             <div class="form-group"><label>IdP entity ID</label><input type="text" name="saml_idp_entity_id" value="<?php echo htmlspecialchars((string)($samlConfig['idp_entity_id'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"></div>
@@ -421,7 +426,7 @@ if (!isset($crud_title)) {
                                 <div class="form-group"><label>Email attribute</label><input type="text" name="saml_attribute_email" value="<?php echo htmlspecialchars((string)($samlConfig['attribute_email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"></div>
                             </div>
                             <p class="form-hint" style="opacity:.85;">ACS URL: <code><?php echo sanitize(itm_saml_acs_url()); ?></code></p>
-                            <p><a href="<?php echo sanitize(BASE_URL . 'sso-saml.php?company_id=' . (int)$id); ?>" target="_blank" rel="noopener noreferrer" title="Open SAML SSO login page">Open SAML SSO login page</a> (new tab)</p>
+                            <p><a class="itm-plain-link" href="<?php echo sanitize(BASE_URL . 'sso-saml.php?company_id=' . (int)$id); ?>" target="_blank" rel="noopener noreferrer" title="Open SAML SSO login page">Open SAML SSO login page</a> (new tab)</p>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -437,7 +442,8 @@ document.addEventListener('change', function (event) {
     if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
     if (indicator) {
-        indicator.textContent = event.target.checked ? '✅' : '❌';
+        indicator.textContent = event.target.checked ? '�
+' : '❌';
     }
 });
 (function () {

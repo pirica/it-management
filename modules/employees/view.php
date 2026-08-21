@@ -64,7 +64,8 @@ function emp_view_value($value) {
 }
 
 function emp_view_bool_icon($value) {
-    return ((int)$value === 1) ? '✅' : '❌';
+    return ((int)$value === 1) ? '�
+' : '❌';
 }
 
 $profileFields = [
@@ -79,8 +80,10 @@ $profileFields = [
     'External Number' => (string)($employee['external_number'] ?? ''),
     'Extension' => (string)($employee['extension'] ?? ''),
     'Dect' => (string)($employee['dect'] ?? ''),
-    'On Contacts' => ((int)($employee['on_contacts'] ?? 0) === 1 ? '✅' : '❌'),
-    'On Orgchart' => ((int)($employee['on_orgchart'] ?? 0) === 1 ? '✅' : '❌'),
+    'On Contacts' => ((int)($employee['on_contacts'] ?? 0) === 1 ? '�
+' : '❌'),
+    'On Orgchart' => ((int)($employee['on_orgchart'] ?? 0) === 1 ? '�
+' : '❌'),
     'External ID' => (string)($employee['external_id'] ?? ''),
     'Insurance N' => (string)($employee['insurance_n'] ?? ''),
     'Employee Code' => (string)($employee['employee_code'] ?? ''),
@@ -102,7 +105,8 @@ $profileFields = [
     'Employee Type' => (string)($employee['employee_type_name'] ?? ''),
     'Termination Date' => itm_format_date_display($employee['termination_date'] ?? ''),
     'Birthday' => emp_format_birthday_display($employee['birthday'] ?? null, $employee['hide_year'] ?? 0),
-    'Hide Year' => ((int)($employee['hide_year'] ?? 0) === 1 ? '✅' : '❌'),
+    'Hide Year' => ((int)($employee['hide_year'] ?? 0) === 1 ? '�
+' : '❌'),
     'Workstation Mode' => (string)($employee['workstation_mode_name'] ?? ''),
     'Assignment Type' => (string)($employee['assignment_type_name'] ?? ''),
     'Comments' => (string)($employee['comments'] ?? ''),
@@ -168,7 +172,7 @@ if (!isset($crud_title)) {
                                 <th style="width:280px;"><?php echo sanitize($label); ?></th>
                                 <td>
                                     <?php if (($label === 'Work Email' || $label === 'Personal Email') && $value !== ''): ?>
-                                        <a href="mailto:<?php echo sanitize($value); ?>"><?php echo sanitize($value); ?></a>
+                                        <a class="itm-plain-link" href="mailto:<?php echo sanitize($value); ?>"><?php echo sanitize($value); ?></a>
                                     <?php elseif ($label === 'Employment Status'): ?>
                                         <?php echo function_exists('itm_crud_render_status_label_badge') ? itm_crud_render_status_label_badge((string)$value) : emp_view_value($value); ?>
                                     <?php elseif (in_array($label, $auditProfileLabels, true)): ?>
@@ -191,7 +195,8 @@ if (!isset($crud_title)) {
                         <?php $isGranted = !empty($selectedSystemAccessMap[(int)$access['id']]); ?>
                         <div class="role-flag-option" style="display:flex;justify-content:space-between;align-items:center;">
                             <span><?php echo sanitize((string)$access['name']); ?></span>
-                            <span><?php echo $isGranted ? '✅' : '❌'; ?></span>
+                            <span><?php echo $isGranted ? '�
+' : '❌'; ?></span>
                         </div>
                     <?php endforeach; ?>
                 </div>

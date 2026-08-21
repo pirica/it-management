@@ -208,7 +208,7 @@ if (!isset($crud_title)) {
                                         <?php if (empty($ticketPhotos)): ?><span>—</span><?php else: ?>
                                             <div style="display:flex;flex-wrap:wrap;gap:10px;">
                                                 <?php foreach ($ticketPhotos as $tp): ?>
-                                                    <a href="<?php echo sanitize(ticket_photo_public_path($tp)); ?>" target="_blank">
+                                                    <a class="itm-plain-link" href="<?php echo sanitize(ticket_photo_public_path($tp)); ?>" target="_blank">
                                                         <img src="<?php echo sanitize(ticket_photo_public_path($tp)); ?>" style="width:96px;height:96px;object-fit:cover;border-radius:6px;">
                                                     </a>
                                                 <?php endforeach; ?>

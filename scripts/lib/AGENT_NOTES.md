@@ -23,7 +23,8 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 | `itm_ui_configuration_reviewed.php` | Reviewed gate-excluded UI configuration registry loader/validator for `check_ui_configuration_coverage.php` (`scripts/data/ui_configuration_reviewed.json`; manifest `ui_configuration_reviewed.php`; registry keys may be exact module slugs or prefix wildcards such as `is_*`) |
 | `itm_active_checkbox_fix.php` | Repair helpers for `fix_scaffold_active_checkbox.php` (`scaffold_active_checkbox_not_compliant` only) |
 | `itm_list_modules_not_on_sidebar_report.php` | Report builder for `list_modules_not_on_sidebar.php` (sidebar match_dir, module folders, registry gaps) |
-| `itm_module_decorated_links_report.php` | Report builder for `list_module_decorated_links.php` — render probe (`cr_render_cell_value` + schema columns) + template scan outside render helpers |
+| `itm_module_decorated_links_report.php` | Report builder for `list_module_decorated_links.php` / `check_module_decorated_links.php` — render probe + template scan |
+| `itm_module_decorated_links_apply.php` | Bulk apply `itm-plain-link` / sort-header inherit for `apply_module_decorated_plain_links.php` |
 | `itm_database_tables_modules_report.php` | Shared schema/live DB vs `modules/` mapping for `compare_database_sql_modules.php` and `list_db_tables_without_modules.php` |
 | `itm_script_report_table_sort.php` | Sortable script report tables (browser header click + CLI `--sort` / `--dir`) for `list_db_tables_sample_data.php` and `list_db_tables_sample_data_company.php` |
 | `itm_list_empty_tables.php` | Tenant row-count helpers shared by `list_empty_tables.php`, `list_db_tables_sample_data_company.php`, and `verify_company_empty_sample_data.php` |

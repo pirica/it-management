@@ -232,7 +232,7 @@ if (!isset($crud_title)) {
                                                     <i class="fas fa-user text-muted" style="font-size: 14px;"></i>
                                                 </div>
                                             <?php endif; ?>
-                                            <a href="view.php?id=<?php echo (int)$contact['id']; ?>" class="font-weight-bold">
+                                            <a class="itm-plain-link" href="view.php?id=<?php echo (int)$contact['id']; ?>" class="font-weight-bold">
                                                 <?php echo htmlspecialchars(pc_contact_display_name($contact)); ?>
                                             </a>
                                         </div>

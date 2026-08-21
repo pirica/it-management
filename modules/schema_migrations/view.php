@@ -145,9 +145,9 @@ $indexHref = 'index.php' . ($viewBackQuery !== '' ? '?' . ltrim($viewBackQuery, 
             <div class="card" style="margin-bottom:16px;">
                 <p style="margin:0;font-size:13px;line-height:1.45;color:var(--text-muted, #6b7280);">
                     <strong>Status</strong> comes from live schema probes in
-                    <a href="<?php echo sanitize($migrateScriptUrl); ?>">migrate.php</a>.
+                    <a class="itm-plain-link" href="<?php echo sanitize($migrateScriptUrl); ?>">migrate.php</a>.
                     <strong>Applied at</strong> is set only after an audit row is recorded (💾 or
-                    <a href="<?php echo sanitize($migrateApplyUrl); ?>">migrate.php?run=1&amp;apply=1</a>).
+                    <a class="itm-plain-link" href="<?php echo sanitize($migrateApplyUrl); ?>">migrate.php?run=1&amp;apply=1</a>).
                     Deleting an audit row does not roll back schema or remove the SQL file.
                 </p>
             </div>
@@ -196,7 +196,7 @@ $indexHref = 'index.php' . ($viewBackQuery !== '' ? '?' . ltrim($viewBackQuery, 
                     <dd class="sm-mono"><?php echo sanitize($currentChecksum); ?></dd>
 
                     <dt>Open SQL</dt>
-                    <dd><a href="<?php echo sanitize($sqlHref); ?>" target="_blank" rel="noopener noreferrer">migrate.php?run=1&amp;sql=<?php echo sanitize(rawurlencode($filename)); ?></a></dd>
+                    <dd><a class="itm-plain-link" href="<?php echo sanitize($sqlHref); ?>" target="_blank" rel="noopener noreferrer">migrate.php?run=1&amp;sql=<?php echo sanitize(rawurlencode($filename)); ?></a></dd>
                     <?php endif; ?>
                 </dl>
             </div>

@@ -133,7 +133,7 @@ if (!isset($crud_title)) {
                 </table>
             </div>
             <?php if (count($idfs) >= 200): ?>
-                <p style="margin-top:12px;opacity:.85;">Showing the first 200 IDFs. Use <a href="index.php">index</a> for search and pagination.</p>
+                <p style="margin-top:12px;opacity:.85;">Showing the first 200 IDFs. Use <a class="itm-plain-link" href="index.php">index</a> for search and pagination.</p>
             <?php endif; ?>
         </div>
     </div>

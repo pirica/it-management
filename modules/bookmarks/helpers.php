@@ -80,7 +80,7 @@ function bkm_render_folder_tree_html($conn, array $tree, $selectedFolderId, $com
         $folderNameAttr = htmlspecialchars((string)($node['name'] ?? ''), ENT_QUOTES, 'UTF-8');
         $html .= '<li class="itm-folder-tree-item' . $isActive . '" data-folder-id="' . $id . '" data-folder-name="' . $folderNameAttr . '" draggable="true" ondragstart="drag(event)" ondrop="drop(event)" ondragover="allowDrop(event)">';
         $html .= '<div class="itm-folder-tree-row" style="padding-left:' . $padding . 'px; display: flex; align-items: center; justify-content: space-between;">';
-        $html .= '<a href="index.php?folder_id=' . $id . '" style="flex: 1;">📁 ' . $icon . ' ' . sanitize($node['name']) . '</a>';
+        $html .= '<a class="itm-plain-link" href="index.php?folder_id=' . $id . '" style="flex: 1;">📁 ' . $icon . ' ' . sanitize($node['name']) . '</a>';
 
         $isPrivateFolder = (int)($node['shared'] ?? 0) === 0;
         $canEditFolder = bkm_can_edit_folder($node, (int)$user_id, (bool)$is_admin)
@@ -1818,7 +1818,8 @@ function bkm_apply_import_row_url_storage(array &$rowValues, $conn)
     $shared = 0;
     if (isset($rowValues['shared']) && $rowValues['shared'] !== 'NULL') {
         $sharedRaw = bkm_import_row_literal_to_string($rowValues['shared']);
-        $shared = in_array(strtolower((string)$sharedRaw), ['1', 'true', 'yes', '✅'], true) ? 1 : 0;
+        $shared = in_array(strtolower((string)$sharedRaw), ['1', 'true', 'yes', '�
+'], true) ? 1 : 0;
     }
 
     $storage = bkm_prepare_url_storage($plainUrl, $shared);

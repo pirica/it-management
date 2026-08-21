@@ -107,7 +107,7 @@ itm_hospitality_admin_layout_begin($crud_title);
 <?php endif; ?>
 
 <h2>Webhook queue (ops)</h2>
-<p>Outbound delivery status for this channel. Retry with <a href="../../scripts/run_hotel_booking_distribution_webhook_queue.php?run=1" target="_blank" rel="noopener">run_hotel_booking_distribution_webhook_queue.php?run=1</a> (open in a new browser tab; Admin session).</p>
+<p>Outbound delivery status for this channel. Retry with <a class="itm-plain-link" href="../../scripts/run_hotel_booking_distribution_webhook_queue.php?run=1" target="_blank" rel="noopener">run_hotel_booking_distribution_webhook_queue.php?run=1</a> (open in a new browser tab; Admin session).</p>
 <table class="table" style="margin-bottom:16px;">
 <thead><tr><th>Status</th><th>Count</th></tr></thead>
 <tbody>

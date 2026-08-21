@@ -791,7 +791,7 @@ if (!isset($crud_title)) {
         <div class="photo-preview-gallery" id="existingPhotoPreviewGallery">
             <?php foreach ($existingTicketPhotoUrls as $photoIndex => $photoUrl): ?>
                 <div class="photo-preview-item">
-                    <a href="<?php echo sanitize($photoUrl); ?>" target="_blank" rel="noopener noreferrer">
+                    <a class="itm-plain-link" href="<?php echo sanitize($photoUrl); ?>" target="_blank" rel="noopener noreferrer">
                         <img src="<?php echo sanitize($photoUrl); ?>" alt="Current ticket photo <?php echo (int)$photoIndex + 1; ?>">
                     </a>
                     <?php if ($is_edit): ?>

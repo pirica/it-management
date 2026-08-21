@@ -113,7 +113,7 @@ $mysqlDisplayName = (string)($ssPayload['mysql_display_name'] ?? 'MySQL Server (
                         $thClass = $field === 'name' ? '' : 'ss-table-num';
                         ?>
                         <th class="<?php echo sanitize($thClass); ?>">
-                            <a href="<?php echo sanitize($ssDbSortUrl(['sort' => $field, 'dir' => $nextDir])); ?>" class="ss-db-sort-link" title="Sort by <?php echo sanitize($label); ?>">
+                            <a style="text-decoration:none;color:inherit;" href="<?php echo sanitize($ssDbSortUrl(['sort' => $field, 'dir' => $nextDir])); ?>" class="ss-db-sort-link" title="Sort by <?php echo sanitize($label); ?>">
                                 <?php echo sanitize($label . $sortIndicator); ?>
                             </a>
                         </th>
