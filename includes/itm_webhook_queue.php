@@ -47,7 +47,7 @@ if (!function_exists('itm_webhook_queue_generate_secret')) {
 if (!function_exists('itm_webhook_queue_event_types')) {
     function itm_webhook_queue_event_types()
     {
-        return ['ticket.created', 'ticket.status_changed', 'ticket.priority_changed', 'ticket.comment_created', 'alert.created', 'hotel_booking.confirmed', 'expense.created', 'expense.approved', 'employee_onboarding.approved', 'equipment.disposed'];
+        return ['ticket.created', 'ticket.status_changed', 'ticket.priority_changed', 'ticket.comment_created', 'alert.created', 'hotel_booking.confirmed', 'expense.created', 'expense.approved', 'employee_onboarding.approved', 'equipment.disposed', 'problem.created', 'problem.status_changed', 'known_error.published'];
     }
 }
 

@@ -669,7 +669,14 @@ if (!isset($crud_title)) {
                         <div class="form-group"><label>External Code</label><input name="ticket_external_code" value="<?php echo sanitize($data['ticket_external_code']); ?>"></div>
                     </div>
 
-                    <div class="form-group"><label>Description</label><textarea name="description"><?php echo sanitize($data['description']); ?></textarea></div>
+                    <div class="form-group"><label>Description</label><textarea name="description" id="ticket-description-field"><?php echo sanitize($data['description']); ?></textarea></div>
+
+                    <?php if (!$is_edit): ?>
+                    <div class="card" id="ticket-known-error-suggest" style="margin-bottom:16px;display:none;">
+                        <h3 title="Possible known errors">🔍</h3>
+                        <ul id="ticket-known-error-suggest-list"></ul>
+                    </div>
+                    <?php endif; ?>
 
                     <div class="form-row">
                         <div class="form-group">
@@ -994,6 +1001,67 @@ function updateCurrentPhotoHint() {
         });
     }
 })();
+<?php if (!$is_edit): ?>
+(function () {
+    var titleInput = document.querySelector('input[name="title"]');
+    var descField = document.getElementById('ticket-description-field');
+    var panel = document.getElementById('ticket-known-error-suggest');
+    var list = document.getElementById('ticket-known-error-suggest-list');
+    if (!titleInput || !descField || !panel || !list) {
+        return;
+    }
+    var timer = null;
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    function fetchSuggestions() {
+        var title = (titleInput.value || '').trim();
+        var description = (descField.value || '').trim();
+        if (title.length < 4 && description.length < 4) {
+            panel.style.display = 'none';
+            list.innerHTML = '';
+            return;
+        }
+        var url = '../problems/api.php?action=suggest&limit=5&title=' + encodeURIComponent(title) + '&description=' + encodeURIComponent(description);
+        fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                list.innerHTML = '';
+                if (!data || !data.ok || !data.suggestions || !data.suggestions.length) {
+                    panel.style.display = 'none';
+                    return;
+                }
+                panel.style.display = 'block';
+                data.suggestions.forEach(function (row) {
+                    var li = document.createElement('li');
+                    li.style.marginBottom = '10px';
+                    var workaround = row.workaround || '';
+                    li.innerHTML = '<strong>' + escapeHtml(row.ke_title || row.problem_title || 'Known error') + '</strong>'
+                        + ' — ' + escapeHtml(workaround.substring(0, 180))
+                        + ' <button type="button" class="btn btn-sm" title="Insert workaround">💾</button>';
+                    li.querySelector('button').addEventListener('click', function () {
+                        var current = descField.value || '';
+                        descField.value = current + (current ? '\n\n' : '') + workaround;
+                    });
+                    list.appendChild(li);
+                });
+            })
+            .catch(function () {
+                panel.style.display = 'none';
+            });
+    }
+    function scheduleFetch() {
+        if (timer) {
+            clearTimeout(timer);
+        }
+        timer = setTimeout(fetchSuggestions, 400);
+    }
+    titleInput.addEventListener('input', scheduleFetch);
+    descField.addEventListener('input', scheduleFetch);
+})();
+<?php endif; ?>
 </script>
 </body>
 </html>

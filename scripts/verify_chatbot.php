@@ -235,6 +235,20 @@ if ($articleId <= 0) {
     mysqli_query($conn, 'DELETE FROM knowledge_base WHERE id = ' . (int)$articleId);
 }
 
+require_once ROOT_PATH . 'includes/itm_problem_management.php';
+if (!function_exists('itm_known_error_search_for_query')) {
+    chat_verify_fail('Missing itm_known_error_search_for_query()');
+} else {
+    chat_verify_pass('Problem management helper loaded for chatbot');
+}
+$chatApiPath = ROOT_PATH . 'modules/knowledge_base/chat_api.php';
+$chatApiSrc = is_file($chatApiPath) ? (string)file_get_contents($chatApiPath) : '';
+if ($chatApiSrc === '' || strpos($chatApiSrc, 'itm_known_error_search_for_query') === false) {
+    chat_verify_fail('chat_api.php must call itm_known_error_search_for_query()');
+} else {
+    chat_verify_pass('chat_api.php includes known-error search');
+}
+
 if ($failures > 0) {
     echo colorText($failures . ' failure(s).', 'fail') . $nl;
     itm_script_output_end();

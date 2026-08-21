@@ -21,6 +21,7 @@ Historical migration SQL files were **pruned** once live databases matched canon
 |------|------|
 | `api_v2_scopes.sql` | Scoped integration keys (`api_key_scopes` per `ui_configuration_id` + `scope_slug`); pairs with `includes/itm_api_v2_scopes.php` and Settings API v2 scope checkboxes. |
 | `hotel_booking_last_rooms.sql` | Last-room snapshot table (`booking_id` + room/hotel/type/floor fields) |
+| `problem_management.sql` | `problems`, `problem_ticket_links`, `known_errors` — Problem Management + Known Error DB (destructive DROP+CREATE; audit triggers in `db/03_triggers.sql`) |
 
 ## 12. Module Owner Notes
 

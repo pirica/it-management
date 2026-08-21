@@ -103,6 +103,20 @@ if (!empty($kbMatches)) {
     $responseParts[] = "I found some articles that might help:\n\n" . implode("\n\n---\n\n", $kbMatches);
 }
 
+require_once ROOT_PATH . 'includes/itm_problem_management.php';
+$keMatches = itm_known_error_search_for_query($conn, $company_id, $query, 3);
+if (!empty($keMatches)) {
+    $keParts = [];
+    foreach ($keMatches as $keRow) {
+        $keTitle = (string)($keRow['ke_title'] ?? $keRow['problem_title'] ?? 'Known error');
+        $keWorkaround = substr(strip_tags((string)($keRow['workaround'] ?? '')), 0, 400);
+        $keParts[] = '**' . $keTitle . "**\nKnown error workaround:\n" . $keWorkaround;
+    }
+    if (!empty($keParts)) {
+        $responseParts[] = "Known error workarounds that may help:\n\n" . implode("\n\n---\n\n", $keParts);
+    }
+}
+
 // 3. Fallback
 if (empty($responseParts)) {
     // Try word-by-word search if no direct match found
