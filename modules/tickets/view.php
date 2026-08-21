@@ -48,7 +48,7 @@ function ticket_render_lookup_badge(string $label, string $color, string $fallba
     return '<span class="badge" style="background-color:' . sanitize($hex) . '33;color:' . sanitize($hex) . ';">' . sanitize($name) . '</span>';
 }
 
-// Fetch ticket context
+// Fetch ticket context (tenant session company only)
 $id = (int)($_GET['id'] ?? 0);
 $item = null;
 if ($id > 0) {
@@ -65,7 +65,7 @@ if ($id > 0) {
         LEFT JOIN employees assigned_user ON assigned_user.id = t.assigned_to_employee_id
         LEFT JOIN employees created_user ON created_user.id = t.created_by_employee_id
         LEFT JOIN equipment e ON e.id = t.equipment_id
-        WHERE t.id = ? AND t.company_id = ? LIMIT 1'
+        WHERE t.id = ? AND t.company_id = ? AND t.deleted_at IS NULL LIMIT 1'
     );
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
@@ -219,7 +219,7 @@ if (!isset($crud_title)) {
                                 <?php continue; ?>
                             <?php endif; ?>
                             <?php if ($field === 'merged_into_ticket_id'): ?>
-                                <tr><th style="width:220px;"><?php echo sanitize($label); ?></th><td><?php echo !empty($value) ? '<a href="view.php?id=' . (int)$value . '">#' . (int)$value . '</a>' : '—'; ?></td></tr>
+                                <tr><th style="width:220px;"><?php echo sanitize($label); ?></th><td><?php echo !empty($value) ? '<a class="itm-plain-link" href="view.php?id=' . (int)$value . '">#' . (int)$value . '</a>' : '—'; ?></td></tr>
                                 <?php continue; ?>
                             <?php endif; ?>
                             <?php if ($field === 'csat_submitted_at'): ?>
@@ -241,7 +241,7 @@ if (!isset($crud_title)) {
                                     <th style="width:220px;">Master Ticket</th>
                                     <td>
                                         <?php if ($ticketMasterTicketId > 0): ?>
-                                            <a href="../master_tickets/view.php?id=<?php echo (int)$ticketMasterTicketId; ?>" title="View master ticket">#<?php echo (int)$ticketMasterTicketId; ?></a>
+                                            <a class="itm-plain-link" href="../master_tickets/view.php?id=<?php echo (int)$ticketMasterTicketId; ?>" title="View master ticket">#<?php echo (int)$ticketMasterTicketId; ?></a>
                                         <?php else: ?>
                                             —
                                         <?php endif; ?>

@@ -8,6 +8,7 @@ $pageTitle = 'Master Tickets';
 
 require_once dirname(__DIR__, 2) . '/config/config.php';
 require_once ROOT_PATH . 'includes/itm_problem_management.php';
+require_once ROOT_PATH . 'includes/itm_tickets_view.php';
 
 itm_require_crud_role_module_permission($conn, 'view', $moduleSlug);
 
@@ -300,8 +301,8 @@ $canEditMaster = itm_user_has_role_module_permission(
                         <h3 style="margin-top:0;" title="Link incident tickets">Link Incident Tickets</h3>
                         <p class="itm-muted">
                             Multi-select tickets from every company you can access (not already on this master).
-                            Hold Ctrl/Cmd to select multiple. Each ticket links via the problem on this master for its company
-                            (attach a problem per company first). Optional problem filter below only when a company has multiple linked problems.
+                            Hold Ctrl/Cmd to select multiple. When a company has no problem on this master yet, one is created automatically from the master fields, then the ticket is linked.
+                            Use the optional problem filter only when a company has multiple linked problems.
                         </p>
                         <form method="POST" style="max-width:980px;" id="master-link-incidents-form">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -395,7 +396,7 @@ $canEditMaster = itm_user_has_role_module_permission(
                                     <td><?php echo sanitize($masterIncident['title'] ?? ''); ?></td>
                                     <td><?php echo sanitize($masterIncident['status_name'] ?? '—'); ?></td>
                                     <td class="itm-actions-cell" data-itm-actions-origin="1">
-                                        <a class="btn btn-sm" href="../tickets/view.php?id=<?php echo (int)$masterIncident['id']; ?>" title="View">🔎</a>
+                                        <a class="btn btn-sm" href="../tickets/<?php echo sanitize(itm_ticket_master_view_page_href((int)$masterIncident['id'], (int)($masterIncident['company_id'] ?? 0), $masterTicketId)); ?>" title="View">🔎</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

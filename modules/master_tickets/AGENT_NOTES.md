@@ -29,7 +29,7 @@ Create flow picks an **existing problem** that already has ≥1 linked incident 
 - Edit/attach requires `itm_master_ticket_can_manage()` (problem in session company or admin / `employee_companies`).
 - **Edit** lives on `view.php#master-edit` (not a separate `edit.php`). Saving title/description/root cause calls `itm_master_ticket_update()` → syncs every linked incident.
 - **Attach problems:** multi-select eligible problems (`itm_master_ticket_list_eligible_problems` + `itm_master_ticket_attach_problems_bulk`).
-- **Link incidents:** multi-select tickets from all allowed companies (`itm_master_ticket_list_linkable_tickets_for_master` + `itm_master_ticket_link_incidents_multi_company_bulk`); auto-resolves problem per company on the master.
+- **Link incidents:** multi-select tickets from all allowed companies (`itm_master_ticket_list_linkable_tickets_for_master` + `itm_master_ticket_link_incidents_multi_company_bulk`); auto-creates a tenant problem on the master when missing (`itm_master_ticket_ensure_problem_for_company`), then links via `itm_problem_link_ticket`.
 
 ## 5. UI Behavior Requirements
 
@@ -40,6 +40,7 @@ Create flow picks an **existing problem** that already has ≥1 linked incident 
 - Tables opt out of table-tools import/export (`data-itm-no-import-excel`, `data-itm-no-export-*`).
 - Actions: emoji-only + `title` / `aria-label` (NO MIXED).
 - Problem Management still exposes the same master card on `view.php#master-ticket`; this module is the global entry point.
+- Incident **View** links use [`modules/tickets/master_view.php`](http://localhost/it-management/modules/tickets/master_view.php) with `id` + `company_id` (not session-scoped `view.php`).
 
 ## 6. API Actions (If Applicable)
 
