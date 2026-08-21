@@ -27,7 +27,8 @@ Create flow picks an **existing problem** that already has ≥1 linked incident 
 - Create: eligible problems = `master_ticket_id` IS NULL, ≥1 live `problem_ticket_links`, company in allowed set.
 - Mutations reuse **`includes/itm_master_ticket.php`** and **`itm_problem_create_master_ticket()`** — do not duplicate sync logic.
 - Edit/attach requires `itm_master_ticket_can_manage()` (problem in session company or admin / `employee_companies`).
-- **Edit** lives on `view.php#master-edit` (not a separate `edit.php`). Saving title/description/root cause calls `itm_master_ticket_update()` → syncs every linked incident.
+- **Edit** lives on `view.php#master-edit` (not a separate `edit.php`). Saving title/description/root cause calls `itm_master_ticket_update()` → syncs every linked incident ticket **description** (canonical master block + local notes).
+- **Broadcast message** on `view.php#master-edit`: **📨** form posts the same text as a **`ticket_comments`** row on every linked incident via `itm_master_ticket_broadcast_to_incidents()` (optional internal comment); history event `broadcast_to_tickets`.
 - **Attach problems:** multi-select eligible problems (`itm_master_ticket_list_eligible_problems` + `itm_master_ticket_attach_problems_bulk`).
 - **Link incidents:** multi-select tickets from all allowed companies (`itm_master_ticket_list_linkable_tickets_for_master` + `itm_master_ticket_link_incidents_multi_company_bulk`); auto-creates a tenant problem on the master when missing (`itm_master_ticket_ensure_problem_for_company`), then links via `itm_problem_link_ticket`.
 

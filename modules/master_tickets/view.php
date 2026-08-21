@@ -42,6 +42,30 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && $masterTicketId > 0) {
                     $errors[] = (string)($updateMaster['error'] ?? 'Master ticket update failed.');
                 }
             }
+        } elseif ($postAction === 'broadcast_master_message') {
+            itm_require_crud_role_module_permission($conn, 'edit', $moduleSlug);
+            if (!itm_master_ticket_can_manage($conn, $masterTicketId, $sessionCompanyId, $employeeId)) {
+                $errors[] = 'You cannot send updates for this master ticket.';
+            } else {
+                $broadcastBody = trim((string)($_POST['master_broadcast_message'] ?? ''));
+                $broadcastInternal = !empty($_POST['master_broadcast_internal']);
+                $broadcastResult = itm_master_ticket_broadcast_to_incidents(
+                    $conn,
+                    $masterTicketId,
+                    $broadcastBody,
+                    $employeeId,
+                    $sessionCompanyId,
+                    $broadcastInternal ? 1 : 0
+                );
+                if (!empty($broadcastResult['ok'])) {
+                    $flash = 'Message sent to ' . (int)($broadcastResult['ticket_count'] ?? 0) . ' incident ticket(s).';
+                    if (!empty($broadcastResult['errors'])) {
+                        $flash .= ' Some failed: ' . implode(', ', (array)$broadcastResult['errors']);
+                    }
+                } else {
+                    $errors[] = (string)($broadcastResult['error'] ?? 'Could not send message.');
+                }
+            }
         } elseif ($postAction === 'attach_master_problems_bulk') {
             itm_require_crud_role_module_permission($conn, 'edit', $moduleSlug);
             if (!itm_master_ticket_can_manage($conn, $masterTicketId, $sessionCompanyId, $employeeId)) {
@@ -125,6 +149,7 @@ $masterTicket = null;
 $linkedProblems = [];
 $masterIncidents = [];
 $masterHistory = [];
+$masterBroadcastHistory = [];
 $canManageMaster = false;
 $masterCompanyCount = 0;
 $eligibleProblems = [];
@@ -138,6 +163,7 @@ if (!$masterTicket) {
 } else {
     $masterIncidents = itm_master_ticket_list_all_incidents($conn, $masterTicketId, $allowedCompanyIds);
     $masterHistory = itm_master_ticket_list_history($conn, $masterTicketId, 30);
+    $masterBroadcastHistory = itm_master_ticket_list_broadcast_history($conn, $masterTicketId, 20);
     $canManageMaster = itm_master_ticket_can_manage($conn, $masterTicketId, $sessionCompanyId, $employeeId);
 
     $in = itm_master_ticket_bind_in_clause($allowedCompanyIds);
@@ -273,6 +299,69 @@ $canEditMaster = itm_user_has_role_module_permission(
                                 <button type="submit" class="btn btn-primary" title="Save">💾</button>
                             </div>
                         </form>
+
+                        <h3 style="margin-top:0;" title="Send update to all incidents">📨</h3>
+                        <p class="itm-muted" style="margin-top:0;">
+                            Post the same text as a comment on every linked incident ticket (visible on each ticket’s comments).
+                        </p>
+                        <form method="POST" class="form-grid" style="max-width:980px;margin-bottom:24px;">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <input type="hidden" name="master_action" value="broadcast_master_message">
+                            <div class="form-group">
+                                <label for="master-broadcast-message">Message</label>
+                                <textarea id="master-broadcast-message" name="master_broadcast_message" rows="4" required placeholder="Status update for all linked incidents…"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="itm-checkbox-control">
+                                    <input type="checkbox" name="master_broadcast_internal" value="1">
+                                    <span>Internal comment <span class="itm-check-indicator" aria-hidden="true">❌</span></span>
+                                </label>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary" title="Send to all incidents">📨</button>
+                            </div>
+                        </form>
+
+                        <h4 style="margin:0 0 8px;" title="Sent messages on this master">Sent messages</h4>
+                        <?php if (!empty($masterBroadcastHistory)): ?>
+                            <table data-itm-no-import-excel="1" style="margin-bottom:24px;">
+                                <thead>
+                                <tr>
+                                    <th>When</th>
+                                    <th>Actor</th>
+                                    <th>Message</th>
+                                    <th>Tickets</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($masterBroadcastHistory as $broadcastRow): ?>
+                                    <?php
+                                    $broadcastActor = trim((string)($broadcastRow['actor_name'] ?? ''));
+                                    if ($broadcastActor === '') {
+                                        $broadcastActor = (string)($broadcastRow['actor_username'] ?? '—');
+                                    }
+                                    $broadcastMeta = json_decode((string)($broadcastRow['meta_json'] ?? ''), true);
+                                    $broadcastMessage = '';
+                                    if (is_array($broadcastMeta)) {
+                                        $broadcastMessage = trim((string)($broadcastMeta['message'] ?? $broadcastMeta['message_preview'] ?? ''));
+                                    }
+                                    if ($broadcastMessage === '') {
+                                        $broadcastMessage = itm_master_ticket_format_history_summary($broadcastRow);
+                                    }
+                                    $broadcastTicketCount = is_array($broadcastMeta) ? (int)($broadcastMeta['ticket_count'] ?? 0) : 0;
+                                    ?>
+                                    <tr>
+                                        <td><?php echo sanitize(itm_format_audit_timestamp_display($broadcastRow['created_at'] ?? '')); ?></td>
+                                        <td><?php echo sanitize($broadcastActor); ?></td>
+                                        <td><?php echo nl2br(sanitize($broadcastMessage)); ?></td>
+                                        <td><?php echo $broadcastTicketCount > 0 ? (int)$broadcastTicketCount : '—'; ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        <?php else: ?>
+                            <p class="itm-muted" style="margin-top:0;margin-bottom:24px;">No messages sent yet.</p>
+                        <?php endif; ?>
 
                         <h3 style="margin-top:0;" title="Attach problems">Attach Problems</h3>
                         <p class="itm-muted">Multi-select major problems (each must already have ≥1 linked incident). Hold Ctrl/Cmd to select multiple.</p>
@@ -431,7 +520,7 @@ $canEditMaster = itm_user_has_role_module_permission(
                                     <td><?php echo sanitize(itm_format_audit_timestamp_display($historyRow['created_at'] ?? '')); ?></td>
                                     <td><?php echo sanitize($actorLabel); ?></td>
                                     <td><?php echo sanitize($historyRow['event_type'] ?? ''); ?></td>
-                                    <td><?php echo sanitize($historyRow['summary'] ?? ''); ?></td>
+                                    <td><?php echo nl2br(sanitize(itm_master_ticket_format_history_summary($historyRow))); ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
