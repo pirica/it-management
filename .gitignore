@@ -5,6 +5,8 @@ up.ps1
 .cursor/*
 !.cursor/rules/
 !.cursor/rules/**
+!.cursor/skills/
+!.cursor/skills/**
 .phpunit.result.cache
 phpunit/.phpunit.result.cache
 phpunit/coverage/html/
