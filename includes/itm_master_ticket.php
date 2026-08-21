@@ -229,6 +229,228 @@ if (!function_exists('itm_master_ticket_list_broadcast_history')) {
     }
 }
 
+if (!function_exists('itm_master_ticket_fetch_history_row')) {
+    function itm_master_ticket_fetch_history_row($conn, $masterTicketId, $historyId)
+    {
+        if (!$conn instanceof mysqli) {
+            return null;
+        }
+        $masterTicketId = (int)$masterTicketId;
+        $historyId = (int)$historyId;
+        if ($masterTicketId <= 0 || $historyId <= 0) {
+            return null;
+        }
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT u.*, CONCAT(COALESCE(e.first_name, ""), " ", COALESCE(e.last_name, "")) AS actor_name, e.username AS actor_username
+             FROM master_ticket_updates u
+             LEFT JOIN employees e ON e.id = u.actor_employee_id
+             WHERE u.id = ? AND u.master_ticket_id = ?
+             LIMIT 1'
+        );
+        if (!$stmt) {
+            return null;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $historyId, $masterTicketId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        return $row ?: null;
+    }
+}
+
+if (!function_exists('itm_master_ticket_history_message_text')) {
+    function itm_master_ticket_history_message_text(array $historyRow)
+    {
+        $metaRaw = (string)($historyRow['meta_json'] ?? '');
+        if ($metaRaw !== '') {
+            $meta = json_decode($metaRaw, true);
+            if (is_array($meta)) {
+                if (!empty($meta['message'])) {
+                    return trim((string)$meta['message']);
+                }
+                if (!empty($meta['message_preview'])) {
+                    return trim((string)$meta['message_preview']);
+                }
+            }
+        }
+        return itm_master_ticket_format_history_summary($historyRow);
+    }
+}
+
+if (!function_exists('itm_master_ticket_hard_unlink_incident')) {
+    function itm_master_ticket_hard_unlink_incident($conn, $masterTicketId, $companyId, $problemId, $ticketId, $actorEmployeeId, $sessionCompanyId)
+    {
+        if (!$conn instanceof mysqli) {
+            return ['ok' => false, 'error' => 'Database unavailable.'];
+        }
+        $masterTicketId = (int)$masterTicketId;
+        $companyId = (int)$companyId;
+        $problemId = (int)$problemId;
+        $ticketId = (int)$ticketId;
+        $actorEmployeeId = (int)$actorEmployeeId;
+        $sessionCompanyId = (int)$sessionCompanyId;
+        if ($masterTicketId <= 0 || $companyId <= 0 || $problemId <= 0 || $ticketId <= 0) {
+            return ['ok' => false, 'error' => 'Invalid incident reference.'];
+        }
+        if (!itm_master_ticket_fetch_row($conn, $masterTicketId)) {
+            return ['ok' => false, 'error' => 'Master ticket not found.'];
+        }
+        if (!itm_master_ticket_can_manage($conn, $masterTicketId, $sessionCompanyId, $actorEmployeeId)) {
+            return ['ok' => false, 'error' => 'You cannot remove incidents from this master ticket.'];
+        }
+        $problem = itm_problem_fetch_row($conn, $companyId, $problemId);
+        if (!$problem || (int)($problem['master_ticket_id'] ?? 0) !== $masterTicketId) {
+            return ['ok' => false, 'error' => 'Incident problem is not linked to this master ticket.'];
+        }
+        $stmt = mysqli_prepare(
+            $conn,
+            'DELETE FROM problem_ticket_links WHERE company_id = ? AND problem_id = ? AND ticket_id = ? LIMIT 1'
+        );
+        if (!$stmt) {
+            return ['ok' => false, 'error' => 'Could not remove incident link.'];
+        }
+        mysqli_stmt_bind_param($stmt, 'iii', $companyId, $problemId, $ticketId);
+        $ok = mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) === 1;
+        mysqli_stmt_close($stmt);
+        if (!$ok) {
+            return ['ok' => false, 'error' => 'Incident link not found.'];
+        }
+        if (function_exists('itm_ticket_activity_log')) {
+            require_once ROOT_PATH . 'includes/itm_ticket_activity.php';
+            itm_ticket_activity_log($conn, $companyId, $ticketId, $actorEmployeeId, 'problem_unlinked', [
+                'problem_id' => $problemId,
+                'master_ticket_id' => $masterTicketId,
+                'hard_delete' => true,
+            ]);
+        }
+        itm_master_ticket_log_history(
+            $conn,
+            $masterTicketId,
+            'incident_unlinked',
+            $actorEmployeeId,
+            $sessionCompanyId,
+            'Hard-deleted incident link for ticket #' . $ticketId . ' (company ' . $companyId . ', problem #' . $problemId . ').',
+            null,
+            itm_master_ticket_encode_json([
+                'company_id' => $companyId,
+                'problem_id' => $problemId,
+                'ticket_id' => $ticketId,
+            ])
+        );
+        itm_master_ticket_refresh_summary($conn, $masterTicketId);
+        return ['ok' => true];
+    }
+}
+
+if (!function_exists('itm_master_ticket_hard_detach_problem')) {
+    function itm_master_ticket_hard_detach_problem($conn, $masterTicketId, $companyId, $problemId, $actorEmployeeId, $sessionCompanyId)
+    {
+        if (!$conn instanceof mysqli) {
+            return ['ok' => false, 'error' => 'Database unavailable.'];
+        }
+        $masterTicketId = (int)$masterTicketId;
+        $companyId = (int)$companyId;
+        $problemId = (int)$problemId;
+        $actorEmployeeId = (int)$actorEmployeeId;
+        $sessionCompanyId = (int)$sessionCompanyId;
+        if ($masterTicketId <= 0 || $companyId <= 0 || $problemId <= 0) {
+            return ['ok' => false, 'error' => 'Invalid problem reference.'];
+        }
+        if (!itm_master_ticket_fetch_row($conn, $masterTicketId)) {
+            return ['ok' => false, 'error' => 'Master ticket not found.'];
+        }
+        if (!itm_master_ticket_can_manage($conn, $masterTicketId, $sessionCompanyId, $actorEmployeeId)) {
+            return ['ok' => false, 'error' => 'You cannot remove problems from this master ticket.'];
+        }
+        $stmt = mysqli_prepare(
+            $conn,
+            'UPDATE problems SET master_ticket_id = NULL, updated_by = ? WHERE id = ? AND company_id = ? AND master_ticket_id = ? AND deleted_at IS NULL LIMIT 1'
+        );
+        if (!$stmt) {
+            return ['ok' => false, 'error' => 'Could not detach problem.'];
+        }
+        mysqli_stmt_bind_param($stmt, 'iiii', $actorEmployeeId, $problemId, $companyId, $masterTicketId);
+        $ok = mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) === 1;
+        mysqli_stmt_close($stmt);
+        if (!$ok) {
+            return ['ok' => false, 'error' => 'Problem is not linked to this master ticket.'];
+        }
+        itm_master_ticket_log_history(
+            $conn,
+            $masterTicketId,
+            'problem_detached',
+            $actorEmployeeId,
+            $sessionCompanyId,
+            'Detached problem #' . $problemId . ' (company ' . $companyId . ') from master ticket.',
+            null,
+            itm_master_ticket_encode_json([
+                'company_id' => $companyId,
+                'problem_id' => $problemId,
+            ])
+        );
+        itm_master_ticket_refresh_summary($conn, $masterTicketId);
+        return ['ok' => true];
+    }
+}
+
+if (!function_exists('itm_master_ticket_hard_delete_history_row')) {
+    function itm_master_ticket_hard_delete_history_row($conn, $masterTicketId, $historyId, $actorEmployeeId, $sessionCompanyId)
+    {
+        if (!$conn instanceof mysqli) {
+            return ['ok' => false, 'error' => 'Database unavailable.'];
+        }
+        $masterTicketId = (int)$masterTicketId;
+        $historyId = (int)$historyId;
+        $actorEmployeeId = (int)$actorEmployeeId;
+        $sessionCompanyId = (int)$sessionCompanyId;
+        if ($masterTicketId <= 0 || $historyId <= 0) {
+            return ['ok' => false, 'error' => 'Invalid history reference.'];
+        }
+        if (!itm_master_ticket_can_manage($conn, $masterTicketId, $sessionCompanyId, $actorEmployeeId)) {
+            return ['ok' => false, 'error' => 'You cannot delete history for this master ticket.'];
+        }
+        $row = itm_master_ticket_fetch_history_row($conn, $masterTicketId, $historyId);
+        if (!$row) {
+            return ['ok' => false, 'error' => 'History row not found.'];
+        }
+        $deletedComments = 0;
+        if ((string)($row['event_type'] ?? '') === 'broadcast_to_tickets') {
+            $meta = json_decode((string)($row['meta_json'] ?? ''), true);
+            if (is_array($meta) && !empty($meta['comments']) && is_array($meta['comments'])) {
+                $delComment = mysqli_prepare($conn, 'DELETE FROM ticket_comments WHERE id = ? AND company_id = ? AND ticket_id = ? LIMIT 1');
+                if ($delComment) {
+                    foreach ($meta['comments'] as $commentRef) {
+                        $commentId = (int)($commentRef['comment_id'] ?? 0);
+                        $commentCompanyId = (int)($commentRef['company_id'] ?? 0);
+                        $commentTicketId = (int)($commentRef['ticket_id'] ?? 0);
+                        if ($commentId <= 0 || $commentCompanyId <= 0 || $commentTicketId <= 0) {
+                            continue;
+                        }
+                        mysqli_stmt_bind_param($delComment, 'iii', $commentId, $commentCompanyId, $commentTicketId);
+                        if (mysqli_stmt_execute($delComment) && mysqli_stmt_affected_rows($delComment) === 1) {
+                            $deletedComments++;
+                        }
+                    }
+                    mysqli_stmt_close($delComment);
+                }
+            }
+        }
+        $stmt = mysqli_prepare($conn, 'DELETE FROM master_ticket_updates WHERE id = ? AND master_ticket_id = ? LIMIT 1');
+        if (!$stmt) {
+            return ['ok' => false, 'error' => 'Could not delete history row.'];
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $historyId, $masterTicketId);
+        $ok = mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) === 1;
+        mysqli_stmt_close($stmt);
+        if (!$ok) {
+            return ['ok' => false, 'error' => 'History row not found.'];
+        }
+        return ['ok' => true, 'deleted_comments' => $deletedComments];
+    }
+}
+
 if (!function_exists('itm_master_ticket_build_canonical_body')) {
     function itm_master_ticket_build_canonical_body(array $masterRow)
     {
@@ -533,6 +755,7 @@ if (!function_exists('itm_master_ticket_broadcast_to_incidents')) {
             itm_master_ticket_encode_json([
                 'ticket_count' => count($postedIds),
                 'ticket_ids' => array_column($postedIds, 'ticket_id'),
+                'comments' => $postedIds,
                 'message' => $message,
                 'message_preview' => function_exists('itm_ticket_comment_body_preview')
                     ? itm_ticket_comment_body_preview($message, 200)

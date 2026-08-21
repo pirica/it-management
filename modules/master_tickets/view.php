@@ -141,6 +141,60 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && $masterTicketId > 0) {
                     $errors[] = (string)($linkResult['error'] ?? 'Could not link incidents.');
                 }
             }
+        } elseif ($postAction === 'unlink_master_incident') {
+            itm_require_crud_role_module_permission($conn, 'edit', $moduleSlug);
+            $unlinkCompanyId = max(0, (int)($_POST['company_id'] ?? 0));
+            $unlinkProblemId = max(0, (int)($_POST['problem_id'] ?? 0));
+            $unlinkTicketId = max(0, (int)($_POST['ticket_id'] ?? 0));
+            $unlinkResult = itm_master_ticket_hard_unlink_incident(
+                $conn,
+                $masterTicketId,
+                $unlinkCompanyId,
+                $unlinkProblemId,
+                $unlinkTicketId,
+                $employeeId,
+                $sessionCompanyId
+            );
+            if (!empty($unlinkResult['ok'])) {
+                $flash = 'Incident ticket #' . $unlinkTicketId . ' removed from master (link hard-deleted).';
+            } else {
+                $errors[] = (string)($unlinkResult['error'] ?? 'Could not remove incident.');
+            }
+        } elseif ($postAction === 'detach_master_problem') {
+            itm_require_crud_role_module_permission($conn, 'edit', $moduleSlug);
+            $detachCompanyId = max(0, (int)($_POST['company_id'] ?? 0));
+            $detachProblemId = max(0, (int)($_POST['problem_id'] ?? 0));
+            $detachResult = itm_master_ticket_hard_detach_problem(
+                $conn,
+                $masterTicketId,
+                $detachCompanyId,
+                $detachProblemId,
+                $employeeId,
+                $sessionCompanyId
+            );
+            if (!empty($detachResult['ok'])) {
+                $flash = 'Problem #' . $detachProblemId . ' detached from master ticket.';
+            } else {
+                $errors[] = (string)($detachResult['error'] ?? 'Could not detach problem.');
+            }
+        } elseif ($postAction === 'delete_master_history') {
+            itm_require_crud_role_module_permission($conn, 'edit', $moduleSlug);
+            $historyId = max(0, (int)($_POST['history_id'] ?? 0));
+            $deleteHistory = itm_master_ticket_hard_delete_history_row(
+                $conn,
+                $masterTicketId,
+                $historyId,
+                $employeeId,
+                $sessionCompanyId
+            );
+            if (!empty($deleteHistory['ok'])) {
+                $flash = 'History entry deleted.';
+                if (!empty($deleteHistory['deleted_comments'])) {
+                    $flash .= ' ' . (int)$deleteHistory['deleted_comments'] . ' broadcast comment(s) hard-deleted from tickets.';
+                }
+            } else {
+                $errors[] = (string)($deleteHistory['error'] ?? 'Could not delete history entry.');
+            }
         }
     }
 }
@@ -154,6 +208,8 @@ $canManageMaster = false;
 $masterCompanyCount = 0;
 $eligibleProblems = [];
 $linkableTicketsAll = [];
+$historyViewRow = null;
+$historyViewId = max(0, (int)($_GET['history_id'] ?? 0));
 
 if ($masterTicketId > 0 && itm_master_ticket_user_can_view($conn, $masterTicketId, $allowedCompanyIds)) {
     $masterTicket = itm_master_ticket_fetch_row($conn, $masterTicketId);
@@ -165,6 +221,9 @@ if (!$masterTicket) {
     $masterHistory = itm_master_ticket_list_history($conn, $masterTicketId, 30);
     $masterBroadcastHistory = itm_master_ticket_list_broadcast_history($conn, $masterTicketId, 20);
     $canManageMaster = itm_master_ticket_can_manage($conn, $masterTicketId, $sessionCompanyId, $employeeId);
+    if ($historyViewId > 0) {
+        $historyViewRow = itm_master_ticket_fetch_history_row($conn, $masterTicketId, $historyViewId);
+    }
 
     $in = itm_master_ticket_bind_in_clause($allowedCompanyIds);
     if ($in['placeholders'] !== '0') {
@@ -331,6 +390,9 @@ $canEditMaster = itm_user_has_role_module_permission(
                                     <th>Actor</th>
                                     <th>Message</th>
                                     <th>Tickets</th>
+                                    <?php if ($canManageMaster && $canEditMaster): ?>
+                                        <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
+                                    <?php endif; ?>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -355,6 +417,17 @@ $canEditMaster = itm_user_has_role_module_permission(
                                         <td><?php echo sanitize($broadcastActor); ?></td>
                                         <td><?php echo nl2br(sanitize($broadcastMessage)); ?></td>
                                         <td><?php echo $broadcastTicketCount > 0 ? (int)$broadcastTicketCount : '—'; ?></td>
+                                        <?php if ($canManageMaster && $canEditMaster): ?>
+                                            <td class="itm-actions-cell" data-itm-actions-origin="1">
+                                                <a class="btn btn-sm" href="view.php?id=<?php echo (int)$masterTicketId; ?>&amp;history_id=<?php echo (int)($broadcastRow['id'] ?? 0); ?>#master-history-view" title="View">🔎</a>
+                                                <form method="POST" style="display:inline;" onsubmit="return confirm('Hard-delete this sent message and remove its ticket comments?');">
+                                                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                                    <input type="hidden" name="master_action" value="delete_master_history">
+                                                    <input type="hidden" name="history_id" value="<?php echo (int)($broadcastRow['id'] ?? 0); ?>">
+                                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
+                                                </form>
+                                            </td>
+                                        <?php endif; ?>
                                     </tr>
                                 <?php endforeach; ?>
                                 </tbody>
@@ -452,6 +525,15 @@ $canEditMaster = itm_user_has_role_module_permission(
                                     <td><?php echo itm_problem_status_badge($lp['status'] ?? ''); ?></td>
                                     <td class="itm-actions-cell" data-itm-actions-origin="1">
                                         <a class="btn btn-sm" href="../problems/view.php?id=<?php echo (int)$lp['id']; ?>#master-ticket" title="View">🔎</a>
+                                        <?php if ($canManageMaster && $canEditMaster): ?>
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Detach this problem from the master ticket?');">
+                                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                                <input type="hidden" name="master_action" value="detach_master_problem">
+                                                <input type="hidden" name="company_id" value="<?php echo (int)($lp['company_id'] ?? 0); ?>">
+                                                <input type="hidden" name="problem_id" value="<?php echo (int)($lp['id'] ?? 0); ?>">
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Detach">🗑️</button>
+                                            </form>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -486,6 +568,16 @@ $canEditMaster = itm_user_has_role_module_permission(
                                     <td><?php echo sanitize($masterIncident['status_name'] ?? '—'); ?></td>
                                     <td class="itm-actions-cell" data-itm-actions-origin="1">
                                         <a class="btn btn-sm" href="../tickets/<?php echo sanitize(itm_ticket_master_view_page_href((int)$masterIncident['id'], (int)($masterIncident['company_id'] ?? 0), $masterTicketId)); ?>" title="View">🔎</a>
+                                        <?php if ($canManageMaster && $canEditMaster): ?>
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Hard-delete this incident link from the master ticket? The ticket record is kept.');">
+                                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                                <input type="hidden" name="master_action" value="unlink_master_incident">
+                                                <input type="hidden" name="company_id" value="<?php echo (int)($masterIncident['company_id'] ?? 0); ?>">
+                                                <input type="hidden" name="problem_id" value="<?php echo (int)($masterIncident['problem_id'] ?? 0); ?>">
+                                                <input type="hidden" name="ticket_id" value="<?php echo (int)($masterIncident['id'] ?? 0); ?>">
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
+                                            </form>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -496,8 +588,38 @@ $canEditMaster = itm_user_has_role_module_permission(
                     </table>
                 </div>
 
-                <div class="card">
+                <div class="card" id="master-history-view" style="margin-bottom:20px;">
                     <h2 style="margin-top:0;" title="Master ticket update history">Update History</h2>
+                    <?php if ($historyViewRow): ?>
+                        <div class="card" style="margin-bottom:16px;background:var(--bg-secondary, #f6f8fa);">
+                            <h3 style="margin-top:0;" title="History entry detail">🔎</h3>
+                            <?php
+                            $detailActor = trim((string)($historyViewRow['actor_name'] ?? ''));
+                            if ($detailActor === '') {
+                                $detailActor = (string)($historyViewRow['actor_username'] ?? '—');
+                            }
+                            $detailMessage = itm_master_ticket_history_message_text($historyViewRow);
+                            ?>
+                            <table>
+                                <tbody>
+                                <tr><th style="width:160px;">When</th><td><?php echo sanitize(itm_format_audit_timestamp_display($historyViewRow['created_at'] ?? '')); ?></td></tr>
+                                <tr><th>Actor</th><td><?php echo sanitize($detailActor); ?></td></tr>
+                                <tr><th>Event</th><td><?php echo sanitize($historyViewRow['event_type'] ?? ''); ?></td></tr>
+                                <tr><th>Summary</th><td><?php echo nl2br(sanitize(itm_master_ticket_format_history_summary($historyViewRow))); ?></td></tr>
+                                <?php if ($detailMessage !== ''): ?>
+                                    <tr><th>Message</th><td><?php echo nl2br(sanitize($detailMessage)); ?></td></tr>
+                                <?php endif; ?>
+                                <?php if (!empty($historyViewRow['changes_json'])): ?>
+                                    <tr><th>Changes</th><td><pre style="white-space:pre-wrap;margin:0;"><?php echo sanitize((string)$historyViewRow['changes_json']); ?></pre></td></tr>
+                                <?php endif; ?>
+                                <?php if (!empty($historyViewRow['meta_json'])): ?>
+                                    <tr><th>Meta</th><td><pre style="white-space:pre-wrap;margin:0;"><?php echo sanitize((string)$historyViewRow['meta_json']); ?></pre></td></tr>
+                                <?php endif; ?>
+                                </tbody>
+                            </table>
+                            <p style="margin-bottom:0;"><a href="view.php?id=<?php echo (int)$masterTicketId; ?>#master-history-view" class="btn btn-sm" title="Back">🔙</a></p>
+                        </div>
+                    <?php endif; ?>
                     <table data-itm-no-import-excel="1">
                         <thead>
                         <tr>
@@ -505,6 +627,9 @@ $canEditMaster = itm_user_has_role_module_permission(
                             <th>Actor</th>
                             <th>Event</th>
                             <th>Summary</th>
+                            <?php if ($canManageMaster && $canEditMaster): ?>
+                                <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
+                            <?php endif; ?>
                         </tr>
                         </thead>
                         <tbody>
@@ -521,10 +646,21 @@ $canEditMaster = itm_user_has_role_module_permission(
                                     <td><?php echo sanitize($actorLabel); ?></td>
                                     <td><?php echo sanitize($historyRow['event_type'] ?? ''); ?></td>
                                     <td><?php echo nl2br(sanitize(itm_master_ticket_format_history_summary($historyRow))); ?></td>
+                                    <?php if ($canManageMaster && $canEditMaster): ?>
+                                        <td class="itm-actions-cell" data-itm-actions-origin="1">
+                                            <a class="btn btn-sm" href="view.php?id=<?php echo (int)$masterTicketId; ?>&amp;history_id=<?php echo (int)($historyRow['id'] ?? 0); ?>#master-history-view" title="View">🔎</a>
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Hard-delete this history entry<?php echo ((string)($historyRow['event_type'] ?? '') === 'broadcast_to_tickets') ? ' and its ticket comments' : ''; ?>?');">
+                                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                                <input type="hidden" name="master_action" value="delete_master_history">
+                                                <input type="hidden" name="history_id" value="<?php echo (int)($historyRow['id'] ?? 0); ?>">
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
+                                            </form>
+                                        </td>
+                                    <?php endif; ?>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <tr><td colspan="4">No history yet.</td></tr>
+                            <tr><td colspan="<?php echo ($canManageMaster && $canEditMaster) ? 5 : 4; ?>">No history yet.</td></tr>
                         <?php endif; ?>
                         </tbody>
                     </table>
