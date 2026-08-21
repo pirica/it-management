@@ -395,6 +395,60 @@ if (!function_exists('itm_master_ticket_hard_detach_problem')) {
     }
 }
 
+if (!function_exists('itm_master_ticket_hard_delete_broadcast_comments')) {
+    function itm_master_ticket_hard_delete_broadcast_comments($conn, $masterTicketId, array $meta)
+    {
+        if (!$conn instanceof mysqli) {
+            return 0;
+        }
+        $masterTicketId = (int)$masterTicketId;
+        $deletedComments = 0;
+        if (!empty($meta['comments']) && is_array($meta['comments'])) {
+            $delComment = mysqli_prepare($conn, 'DELETE FROM ticket_comments WHERE id = ? AND company_id = ? AND ticket_id = ? LIMIT 1');
+            if ($delComment) {
+                foreach ($meta['comments'] as $commentRef) {
+                    $commentId = (int)($commentRef['comment_id'] ?? 0);
+                    $commentCompanyId = (int)($commentRef['company_id'] ?? 0);
+                    $commentTicketId = (int)($commentRef['ticket_id'] ?? 0);
+                    if ($commentId <= 0 || $commentCompanyId <= 0 || $commentTicketId <= 0) {
+                        continue;
+                    }
+                    mysqli_stmt_bind_param($delComment, 'iii', $commentId, $commentCompanyId, $commentTicketId);
+                    if (mysqli_stmt_execute($delComment) && mysqli_stmt_affected_rows($delComment) === 1) {
+                        $deletedComments++;
+                    }
+                }
+                mysqli_stmt_close($delComment);
+            }
+            return $deletedComments;
+        }
+        $message = trim((string)($meta['message'] ?? $meta['message_preview'] ?? ''));
+        $ticketIds = array_values(array_filter(array_map('intval', (array)($meta['ticket_ids'] ?? []))));
+        if ($message === '' || $ticketIds === []) {
+            return 0;
+        }
+        $body = itm_master_ticket_block_marker($masterTicketId) . "\n" . $message;
+        $delByBody = mysqli_prepare($conn, 'DELETE FROM ticket_comments WHERE company_id = ? AND ticket_id = ? AND body = ? LIMIT 1');
+        if (!$delByBody) {
+            return 0;
+        }
+        $incidents = itm_master_ticket_list_all_incidents($conn, $masterTicketId, null);
+        foreach ($incidents as $incident) {
+            $ticketId = (int)($incident['id'] ?? 0);
+            $companyId = (int)($incident['company_id'] ?? 0);
+            if ($ticketId <= 0 || $companyId <= 0 || !in_array($ticketId, $ticketIds, true)) {
+                continue;
+            }
+            mysqli_stmt_bind_param($delByBody, 'iis', $companyId, $ticketId, $body);
+            if (mysqli_stmt_execute($delByBody) && mysqli_stmt_affected_rows($delByBody) === 1) {
+                $deletedComments++;
+            }
+        }
+        mysqli_stmt_close($delByBody);
+        return $deletedComments;
+    }
+}
+
 if (!function_exists('itm_master_ticket_hard_delete_history_row')) {
     function itm_master_ticket_hard_delete_history_row($conn, $masterTicketId, $historyId, $actorEmployeeId, $sessionCompanyId)
     {
@@ -418,23 +472,8 @@ if (!function_exists('itm_master_ticket_hard_delete_history_row')) {
         $deletedComments = 0;
         if ((string)($row['event_type'] ?? '') === 'broadcast_to_tickets') {
             $meta = json_decode((string)($row['meta_json'] ?? ''), true);
-            if (is_array($meta) && !empty($meta['comments']) && is_array($meta['comments'])) {
-                $delComment = mysqli_prepare($conn, 'DELETE FROM ticket_comments WHERE id = ? AND company_id = ? AND ticket_id = ? LIMIT 1');
-                if ($delComment) {
-                    foreach ($meta['comments'] as $commentRef) {
-                        $commentId = (int)($commentRef['comment_id'] ?? 0);
-                        $commentCompanyId = (int)($commentRef['company_id'] ?? 0);
-                        $commentTicketId = (int)($commentRef['ticket_id'] ?? 0);
-                        if ($commentId <= 0 || $commentCompanyId <= 0 || $commentTicketId <= 0) {
-                            continue;
-                        }
-                        mysqli_stmt_bind_param($delComment, 'iii', $commentId, $commentCompanyId, $commentTicketId);
-                        if (mysqli_stmt_execute($delComment) && mysqli_stmt_affected_rows($delComment) === 1) {
-                            $deletedComments++;
-                        }
-                    }
-                    mysqli_stmt_close($delComment);
-                }
+            if (is_array($meta)) {
+                $deletedComments = itm_master_ticket_hard_delete_broadcast_comments($conn, $masterTicketId, $meta);
             }
         }
         $stmt = mysqli_prepare($conn, 'DELETE FROM master_ticket_updates WHERE id = ? AND master_ticket_id = ? LIMIT 1');
