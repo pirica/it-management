@@ -80,7 +80,7 @@ $moduleSlugPath = basename(dirname($_SERVER['PHP_SELF']));
                 </p>
                 <p style="margin-bottom:0;">
                     Problems still live in
-                    <a href="../problems/index.php">Problem Management</a> — link incidents there first if none appear below.
+                    <a class="itm-plain-link" href="../problems/index.php">Problem Management</a> — link incidents there first if none appear below.
                 </p>
             </div>
 

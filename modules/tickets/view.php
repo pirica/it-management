@@ -219,7 +219,7 @@ if (!isset($crud_title)) {
                                 <?php continue; ?>
                             <?php endif; ?>
                             <?php if ($field === 'merged_into_ticket_id'): ?>
-                                <tr><th style="width:220px;"><?php echo sanitize($label); ?></th><td><?php echo !empty($value) ? '<a href="view.php?id=' . (int)$value . '">#' . (int)$value . '</a>' : '—'; ?></td></tr>
+                                <tr><th style="width:220px;"><?php echo sanitize($label); ?></th><td><?php echo !empty($value) ? '<a class="itm-plain-link" href="view.php?id=' . (int)$value . '">#' . (int)$value . '</a>' : '—'; ?></td></tr>
                                 <?php continue; ?>
                             <?php endif; ?>
                             <?php if ($field === 'csat_submitted_at'): ?>
@@ -241,7 +241,7 @@ if (!isset($crud_title)) {
                                     <th style="width:220px;">Master Ticket</th>
                                     <td>
                                         <?php if ($ticketMasterTicketId > 0): ?>
-                                            <a href="../master_tickets/view.php?id=<?php echo (int)$ticketMasterTicketId; ?>" title="View master ticket">#<?php echo (int)$ticketMasterTicketId; ?></a>
+                                            <a class="itm-plain-link" href="../master_tickets/view.php?id=<?php echo (int)$ticketMasterTicketId; ?>" title="View master ticket">#<?php echo (int)$ticketMasterTicketId; ?></a>
                                         <?php else: ?>
                                             —
                                         <?php endif; ?>

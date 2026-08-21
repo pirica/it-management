@@ -1518,12 +1518,14 @@ a.itm-list-new-button.btn.btn-primary {
 }
 
 /* Why: user-config Personalized Sidebar + Recent Activity module links open in a new tab but must look like plain text (no blue underline). */
-.itm-user-config-sidebar-link {
+.itm-user-config-sidebar-link,
+.itm-plain-link {
     color: inherit;
     text-decoration: none;
 }
 
-.itm-user-config-sidebar-link:hover {
+.itm-user-config-sidebar-link:hover,
+.itm-plain-link:hover {
     text-decoration: underline;
 }
 

@@ -90,7 +90,7 @@ $backMasterHref = $masterTicketId > 0 ? '../master_tickets/view.php?id=' . $mast
                     Cross-company read-only view — company: <strong><?php echo sanitize($companyName); ?></strong>
                     (id <?php echo (int)$ticketCompanyId; ?>).
                     <?php if ($masterTicketId > 0): ?>
-                        Master <a href="../master_tickets/view.php?id=<?php echo (int)$masterTicketId; ?>">#<?php echo (int)$masterTicketId; ?></a>.
+                        Master <a class="itm-plain-link" href="../master_tickets/view.php?id=<?php echo (int)$masterTicketId; ?>">#<?php echo (int)$masterTicketId; ?></a>.
                     <?php endif; ?>
                 </p>
                 <div class="card">
@@ -113,7 +113,7 @@ $backMasterHref = $masterTicketId > 0 ? '../master_tickets/view.php?id=' . $mast
                             <th>Master Ticket</th>
                             <td>
                                 <?php if ($masterTicketId > 0): ?>
-                                    <a href="../master_tickets/view.php?id=<?php echo (int)$masterTicketId; ?>" title="View master ticket">#<?php echo (int)$masterTicketId; ?></a>
+                                    <a class="itm-plain-link" href="../master_tickets/view.php?id=<?php echo (int)$masterTicketId; ?>" title="View master ticket">#<?php echo (int)$masterTicketId; ?></a>
                                 <?php else: ?>
                                     —
                                 <?php endif; ?>

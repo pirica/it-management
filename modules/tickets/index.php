@@ -470,7 +470,7 @@ if (!isset($crud_title)) {
                             <td>
                                 <?php $masterTicketId = (int)($t['master_ticket_id'] ?? 0); ?>
                                 <?php if ($masterTicketId > 0): ?>
-                                    <a href="../master_tickets/view.php?id=<?php echo $masterTicketId; ?>" title="View master ticket">#<?php echo $masterTicketId; ?></a>
+                                    <a class="itm-plain-link" href="../master_tickets/view.php?id=<?php echo $masterTicketId; ?>" title="View master ticket">#<?php echo $masterTicketId; ?></a>
                                 <?php else: ?>
                                     —
                                 <?php endif; ?>
