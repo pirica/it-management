@@ -343,6 +343,7 @@ These tables must **not** define `trg_{table}_audit_*` triggers in `db/03_trigge
 |-------|----------------|
 | `schema_migrations` | Migration runner history (`scripts/migrate.php`, `includes/itm_database_migrations.php`); global, no `company_id`; admin UI is read-only (`modules/schema_migrations/`). |
 | `search_index` | Denormalized command-palette cache (`includes/itm_search_index.php`); source modules remain auditable; index upserts must not flood `audit_logs`. **No Add sample data** — rows come from CRUD sync or `scripts/apply_search_index_backfill.php`, not `db/02_data_sample.sql`. |
+| `master_ticket_updates` | Append-only cross-company master ticket history (`includes/itm_master_ticket.php`); actor stored on each row; no `company_id` column. |
 
 `scripts/check_audit_logs_coverage.php` merges these into `audit_logs_trigger_exempt_tables()` via `audit_logs_system_derived_tables()`.
 
@@ -564,13 +565,14 @@ The Private Contacts module (`modules/private_contacts/`) is a per-user address 
 
 The Problem Management module (`modules/problems/`) tracks root-cause investigations and published known errors linked to incident tickets.
 
-1. **Tables:** **`problems`**, **`problem_ticket_links`** (many incident tickets per problem — distinct from ticket merge), **`known_errors`** (workaround + optional symptom keywords).
-2. **Core helper:** `includes/itm_problem_management.php` — CRUD, link/unlink incidents, known-error upsert, KB publish, ticket/chatbot suggestions, Reports Hub summary.
-3. **Ticket integration:** `modules/tickets/view.php` links problems and suggests known errors; `modules/tickets/create.php` debounces suggestions via `modules/problems/api.php?action=suggest`. Activity events: `problem_linked`, `problem_unlinked`, `known_error_applied`.
-4. **Knowledge base:** Publishing sets `knowledge_base.category = Known Errors` and links `problems.knowledge_base_id`. Chatbot appends known-error workarounds after KB search in `modules/knowledge_base/chat_api.php`.
-5. **Automation / webhooks:** Triggers `problem.created`, `problem.status_changed`, `known_error.published` (`includes/itm_automation_rules.php`, `includes/itm_webhook_queue.php`).
-6. **Sidebar:** Management → Problem Management (`includes/ui_config.php`).
-7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_problem_management.php`; extend `php scripts/verify_chatbot.php` when changing chat known-error search.
+1. **Tables:** **`problems`**, **`problem_ticket_links`** (many incident tickets per problem — distinct from ticket merge), **`known_errors`** (workaround + optional symptom keywords), **`master_tickets`** (global rollup — **no `company_id`**), **`master_ticket_updates`** (append-only history — system-derived, no audit triggers).
+2. **Core helper:** `includes/itm_problem_management.php` + **`includes/itm_master_ticket.php`** — CRUD, link/unlink incidents, known-error upsert, KB publish, ticket/chatbot suggestions, Reports Hub summary, master ticket create/update/attach/sync/history.
+3. **Master ticket:** One **`master_tickets`** row can roll up incidents across companies via **`problems.master_ticket_id`**. Create from [modules/problems/view.php](http://localhost/it-management/modules/problems/view.php) when ≥1 incident is linked; attach another tenant’s problem when the actor has **`employee_companies`** (or admin) access. **`itm_master_ticket_update()`** syncs title/description/root cause to every linked incident ticket and participating **`problems`** rows; **`master_ticket_updates`** stores append-only history (`created`, `fields_updated`, `synced_to_tickets`, `problem_attached`, `incident_linked`). New incident links on a problem with **`master_ticket_id`** trigger resync.
+4. **Ticket integration:** `modules/tickets/view.php` links problems and suggests known errors; master link anchor `#master-ticket` when **`master_ticket_id`** is set; `modules/tickets/create.php` debounces suggestions via `modules/problems/api.php?action=suggest`. Activity events: `problem_linked`, `problem_unlinked`, `known_error_applied`, `master_ticket_synced`.
+5. **Knowledge base:** Publishing sets `knowledge_base.category = Known Errors` and links `problems.knowledge_base_id`. Chatbot appends known-error workarounds after KB search in `modules/knowledge_base/chat_api.php`.
+6. **Automation / webhooks:** Triggers `problem.created`, `problem.status_changed`, `known_error.published` (`includes/itm_automation_rules.php`, `includes/itm_webhook_queue.php`).
+7. **Sidebar:** Management → Problem Management (`includes/ui_config.php`).
+8. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_problem_management.php` (includes cross-company master attach + sync + history); extend `php scripts/verify_chatbot.php` when changing chat known-error search.
 
 #### Email Management (mandatory)
 

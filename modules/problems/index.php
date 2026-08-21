@@ -134,11 +134,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     }
 }
 
-$uiColumns = ['title', 'status', 'owner_employee_id', 'incident_count', 'known_error'];
+$uiColumns = ['title', 'status', 'owner_employee_id', 'incident_count', 'master_ticket', 'known_error'];
 // Why: Search and list share visible columns; alias matches role/ui_configuration modules.
 $displayFieldColumns = $uiColumns;
 
-$sortableColumns = ['title', 'status', 'owner_employee_id', 'incident_count', 'known_error'];
+$sortableColumns = ['title', 'status', 'owner_employee_id', 'incident_count', 'master_ticket', 'known_error'];
 $sort = (string)($_GET['sort'] ?? 'title');
 $dir = strtoupper((string)($_GET['dir'] ?? 'ASC'));
 if (!in_array($sort, $sortableColumns, true)) {
@@ -161,10 +161,12 @@ if ($searchRaw !== '') {
         'p.root_cause LIKE ?',
         'p.status LIKE ?',
         'CAST((SELECT COUNT(*) FROM problem_ticket_links l WHERE l.problem_id = p.id AND l.company_id = p.company_id AND l.deleted_at IS NULL) AS CHAR) LIKE ?',
+        'CAST(COALESCE(p.master_ticket_id, 0) AS CHAR) LIKE ?',
         'EXISTS (SELECT 1 FROM employees se WHERE se.id = p.owner_employee_id AND se.company_id = p.company_id AND (se.username LIKE ? OR CONCAT(COALESCE(se.first_name,""), " ", COALESCE(se.last_name,"")) LIKE ?))',
     ];
     $whereParts[] = '(' . implode(' OR ', $searchParts) . ')';
-    $whereTypes .= 'sssssss';
+    $whereTypes .= 'ssssssss';
+    $whereParams[] = $searchLike;
     $whereParams[] = $searchLike;
     $whereParams[] = $searchLike;
     $whereParams[] = $searchLike;
@@ -188,6 +190,8 @@ if ($sort === 'title') {
     $sortSql = 'owner_name ' . $dir . ', p.title ASC';
 } elseif ($sort === 'incident_count') {
     $sortSql = 'incident_count ' . $dir . ', p.title ASC';
+} elseif ($sort === 'master_ticket') {
+    $sortSql = 'p.master_ticket_id ' . $dir . ', p.title ASC';
 } elseif ($sort === 'known_error') {
     $sortSql = 'known_error_flag ' . $dir . ', p.title ASC';
 }
@@ -218,7 +222,7 @@ if ($page > $totalPages) {
 }
 $offset = ($page - 1) * $perPage;
 
-$listSql = 'SELECT p.id, p.title, p.status, p.owner_employee_id,
+$listSql = 'SELECT p.id, p.title, p.status, p.owner_employee_id, p.master_ticket_id,
     TRIM(CONCAT(COALESCE(e.first_name, ""), " ", COALESCE(e.last_name, ""))) AS owner_name,
     e.username AS owner_username,
     ' . $incidentSub . ' AS incident_count,
@@ -256,6 +260,7 @@ function problems_humanize_column($field)
     $map = [
         'owner_employee_id' => 'Owner',
         'incident_count' => 'Incidents',
+        'master_ticket' => 'Master',
         'known_error' => 'Known Error',
     ];
     if (isset($map[$field])) {
@@ -386,6 +391,13 @@ function problems_render_owner_label(array $row)
                                 <td><?php echo itm_problem_status_badge($row['status'] ?? ''); ?></td>
                                 <td><?php echo problems_render_owner_label($row); ?></td>
                                 <td><?php echo (int)($row['incident_count'] ?? 0); ?></td>
+                                <td>
+                                    <?php if ((int)($row['master_ticket_id'] ?? 0) > 0): ?>
+                                        <a href="view.php?id=<?php echo (int)$row['id']; ?>#master-ticket">#<?php echo (int)$row['master_ticket_id']; ?></a>
+                                    <?php else: ?>
+                                        —
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo ((int)($row['known_error_flag'] ?? 0) > 0) ? 'Yes' : 'No'; ?></td>
                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
                                     <div class="itm-actions-wrap">

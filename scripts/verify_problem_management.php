@@ -199,6 +199,106 @@ if (count($ticketIds) < 2) {
     }
 }
 
+foreach (['master_tickets', 'master_ticket_updates'] as $table) {
+    $res = mysqli_query($conn, "SHOW TABLES LIKE '" . mysqli_real_escape_string($conn, $table) . "'");
+    if (!$res || mysqli_num_rows($res) === 0) {
+        pm_verify_fail("Missing table {$table} — apply db/migrations/problem_master_ticket.sql");
+    } else {
+        pm_verify_pass("Table {$table} exists");
+    }
+}
+
+$masterCreate = itm_problem_create_master_ticket($conn, 1, $problemId, $actorId, 1);
+if (empty($masterCreate['ok']) || (int)($masterCreate['master_ticket_id'] ?? 0) <= 0) {
+    pm_verify_fail('Master ticket create failed: ' . (string)($masterCreate['error'] ?? ''));
+} else {
+    $masterTicketId = (int)$masterCreate['master_ticket_id'];
+    pm_verify_pass('Created master ticket #' . $masterTicketId);
+    $newMasterTitle = 'PM Master Updated ' . bin2hex(random_bytes(3));
+    $masterUpdate = itm_master_ticket_update($conn, $masterTicketId, ['title' => $newMasterTitle], $actorId, 1);
+    if (empty($masterUpdate['ok'])) {
+        pm_verify_fail('Master ticket update/sync failed: ' . (string)($masterUpdate['error'] ?? ''));
+    } else {
+        pm_verify_pass('Master ticket update synced to ' . (int)($masterUpdate['ticket_count'] ?? 0) . ' ticket(s)');
+        foreach ($ticketIds as $tid) {
+            $chk = mysqli_prepare($conn, 'SELECT title FROM tickets WHERE id = ? AND company_id = 1 LIMIT 1');
+            if ($chk) {
+                mysqli_stmt_bind_param($chk, 'i', $tid);
+                mysqli_stmt_execute($chk);
+                $chkRes = mysqli_stmt_get_result($chk);
+                $chkRow = $chkRes ? mysqli_fetch_assoc($chkRes) : null;
+                mysqli_stmt_close($chk);
+                if (!$chkRow || (string)($chkRow['title'] ?? '') !== $newMasterTitle) {
+                    pm_verify_fail('Ticket #' . $tid . ' title not synced from master');
+                }
+            }
+        }
+        pm_verify_pass('Linked incident ticket titles match master title');
+    }
+    $history = itm_master_ticket_list_history($conn, $masterTicketId, 20);
+    $eventTypes = array_column($history, 'event_type');
+    foreach (['created', 'fields_updated', 'synced_to_tickets'] as $expectedEvent) {
+        if (!in_array($expectedEvent, $eventTypes, true)) {
+            pm_verify_fail('Master history missing event: ' . $expectedEvent);
+        }
+    }
+    pm_verify_pass('Master ticket append-only history includes create/update/sync events');
+
+    $problem2Result = itm_problem_create($conn, 2, [
+        'title' => 'PM Verify Company2 ' . bin2hex(random_bytes(3)),
+        'description' => 'Second company problem for master attach.',
+        'status' => 'investigating',
+        'owner_employee_id' => $actorId,
+    ], $actorId);
+    if (empty($problem2Result['ok'])) {
+        pm_verify_fail('Could not create company 2 problem for attach test.');
+    } else {
+        $problem2Id = (int)$problem2Result['id'];
+        $grantStmt = mysqli_prepare(
+            $conn,
+            'INSERT IGNORE INTO employee_companies (employee_id, company_id, active, created_by, updated_by) VALUES (?, 2, 1, ?, ?)'
+        );
+        if ($grantStmt) {
+            mysqli_stmt_bind_param($grantStmt, 'iii', $actorId, $actorId, $actorId);
+            mysqli_stmt_execute($grantStmt);
+            mysqli_stmt_close($grantStmt);
+        }
+        $t2Stmt = mysqli_prepare($conn, 'INSERT INTO tickets (company_id, title, description, created_by_employee_id, active) VALUES (2, ?, ?, ?, 1)');
+        $ticket2Id = 0;
+        if ($t2Stmt) {
+            $t2Title = 'PM Verify Ticket Co2 ' . bin2hex(random_bytes(2));
+            $t2Desc = 'Company 2 incident for master attach.';
+            mysqli_stmt_bind_param($t2Stmt, 'ssi', $t2Title, $t2Desc, $actorId);
+            mysqli_stmt_execute($t2Stmt);
+            $ticket2Id = (int)mysqli_insert_id($conn);
+            mysqli_stmt_close($t2Stmt);
+        }
+        if ($ticket2Id <= 0) {
+            pm_verify_fail('Could not seed company 2 ticket for master attach.');
+        } else {
+            $link2 = itm_problem_link_ticket($conn, 2, $problem2Id, $ticket2Id, $actorId);
+            if (empty($link2['ok'])) {
+                pm_verify_fail('Could not link company 2 ticket.');
+            } else {
+                $attach = itm_master_ticket_attach_problem($conn, $masterTicketId, 2, $problem2Id, $actorId, 1, false);
+                if (empty($attach['ok'])) {
+                    pm_verify_fail('Cross-company attach failed: ' . (string)($attach['error'] ?? ''));
+                } else {
+                    pm_verify_pass('Attached company 2 problem to master ticket');
+                    $allIncidents = itm_master_ticket_list_all_incidents($conn, $masterTicketId, [1, 2]);
+                    if (count($allIncidents) < 3) {
+                        pm_verify_fail('Expected >= 3 incidents on master after cross-company attach');
+                    } else {
+                        pm_verify_pass('Master incident rollup spans multiple companies');
+                    }
+                }
+            }
+            mysqli_query($conn, 'DELETE FROM tickets WHERE id = ' . (int)$ticket2Id . ' AND company_id = 2');
+        }
+        itm_problem_soft_delete($conn, 2, $problem2Id, $actorId);
+    }
+}
+
 $keResult = itm_known_error_upsert($conn, 1, $problemId, [
     'title' => 'Network outage workaround',
     'workaround' => 'Restart core switch and flush DNS on affected workstations.',

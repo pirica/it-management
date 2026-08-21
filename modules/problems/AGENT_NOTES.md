@@ -9,6 +9,8 @@ Tenant-scoped **Problem Management** records track recurring incidents, root-cau
 - **problems** — main problem records (`title`, `description`, `root_cause`, `status`, `owner_employee_id`, `knowledge_base_id`, audit columns)
 - **problem_ticket_links** — many-to-many problem ↔ ticket incident links (soft-delete via `deleted_at`)
 - **known_errors** — one active known-error row per problem (`title`, `workaround`, `symptom_keywords`, optional `knowledge_base_id`)
+- **master_tickets** — global rollup (no `company_id`); synced fields mirror problem title/description/root_cause
+- **master_ticket_updates** — append-only history (no audit triggers; system-derived)
 - **tickets** — linked incidents (read-only in this module; link/unlink via helpers)
 - **knowledge_base** — optional publish target when `create_kb` is checked on known-error save
 
@@ -17,6 +19,8 @@ Tenant-scoped **Problem Management** records track recurring incidents, root-cau
 - **problems** → **companies** (`company_id`, `ON DELETE CASCADE`)
 - **problems** → **employees** (`owner_employee_id`, `ON DELETE SET NULL`)
 - **problems** → **knowledge_base** (`knowledge_base_id`, `ON DELETE SET NULL`)
+- **problems** → **master_tickets** (`master_ticket_id`, `ON DELETE SET NULL`)
+- **master_ticket_updates** → **master_tickets** (`ON DELETE CASCADE`)
 - **problem_ticket_links** → **problems** / **tickets** (`ON DELETE CASCADE`)
 - **known_errors** → **problems** (`ON DELETE CASCADE`)
 
@@ -27,17 +31,18 @@ Tenant-scoped **Problem Management** records track recurring incidents, root-cau
 - Status transitions enforced server-side via `itm_problem_allowed_transitions()`; edit form only lists allowed next statuses.
 - Ticket link requires non-merged, non-deleted ticket in the same company (`itm_problem_ticket_is_linkable()`).
 - Known-error publish sets problem `status` to `known_error` and optionally upserts **Knowledge Base** (`itm_known_error_upsert()` / `itm_known_error_publish_to_kb()`).
-- `create.php?ticket_id=` auto-links the ticket after successful create via `itm_problem_link_ticket()`.
+- `create.php?ticket_id=` auto-links the ticket after successful create via `itm_problem_link_ticket()` (resyncs master when `master_ticket_id` is set).
+- Master ticket: `itm_problem_create_master_ticket()`, `itm_master_ticket_update()`, `itm_master_ticket_attach_problem()` — require ≥1 linked incident; updates sync all rollup tickets and log **`master_ticket_updates`**.
 - Automation/webhooks: `itm_problem_dispatch_events()` on create, status change, and known-error publish.
 
 ## 5. UI Behavior Requirements
 
-- Flattened list in `index.php` (not auto-scaffold): columns **Title**, **Status** badge (`itm_problem_status_badge`), **Owner** name, **Incidents** count subquery, **Known Error** Yes/No.
+- Flattened list in `index.php` (not auto-scaffold): columns **Title**, **Status** badge (`itm_problem_status_badge`), **Owner** name, **Incidents** count subquery, **Master** (`master_ticket_id` link to view `#master-ticket`), **Known Error** Yes/No.
 - Search/sort/pagination: `$perPage = itm_resolve_records_per_page()`; bulk toolbar when `$totalRows >= $perPage`; `$displayFieldColumns = $uiColumns` before search SQL.
 - List table: `data-itm-db-import-endpoint="index.php"`; Actions cells use `itm-actions-cell` + `data-itm-actions-origin="1"`.
 - Bulk delete: shared `bulk-delete-form` → `delete.php`; Cancel button `data-itm-bulk-cancel="1"`.
 - Emoji-only action buttons (NO MIXED) on View/Edit/Delete/Save/Back/pagination.
-- Bespoke **view.php**: detail + audit meta, linked incidents table, link-ticket form, known-error publish form (title, workaround, symptom_keywords, `create_kb` checkbox), per-row unlink.
+- Bespoke **view.php**: detail + audit meta, **Master Ticket** card (`#master-ticket`: create/edit/attach/history/cross-company incident table), linked incidents table, link-ticket form, known-error publish form (title, workaround, symptom_keywords, `create_kb` checkbox), per-row unlink.
 - Layout matches sidebar/header/content pattern from `modules/ticket_sla_dashboard/index.php`.
 - **CSRF:** `itm_get_csrf_token()`, `itm_require_post_csrf()` on POST handlers.
 
@@ -66,7 +71,7 @@ Tenant-scoped **Problem Management** records track recurring incidents, root-cau
 
 ## 9. Audit Logging Requirements
 
-- **problems**, **problem_ticket_links**, **known_errors** — `trg_*_audit_*` triggers in `db/03_triggers.sql` write to `audit_logs` on INSERT/UPDATE/DELETE (not gated by UI `enable_audit_logs`).
+- **problems**, **problem_ticket_links**, **known_errors**, **master_tickets** — `trg_*_audit_*` triggers in `db/03_triggers.sql` write to `audit_logs` on INSERT/UPDATE/DELETE (not gated by UI `enable_audit_logs`). **`master_ticket_updates`** is intentionally exempt (append-only history).
 - View screen shows `active`, `created_by` / `updated_by` (employee names), and `*_at` timestamps via `itm_format_audit_timestamp_display()`.
 
 ## 10. Common Pitfalls

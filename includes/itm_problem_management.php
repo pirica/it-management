@@ -337,6 +337,10 @@ if (!function_exists('itm_problem_link_ticket')) {
                     require_once ROOT_PATH . 'includes/itm_ticket_activity.php';
                     itm_ticket_activity_log($conn, $companyId, $ticketId, $actorEmployeeId, 'problem_linked', ['problem_id' => $problemId]);
                 }
+                if (!function_exists('itm_master_ticket_after_incident_linked')) {
+                    require_once ROOT_PATH . 'includes/itm_master_ticket.php';
+                }
+                itm_master_ticket_after_incident_linked($conn, $companyId, $problemId, $ticketId, $actorEmployeeId, $companyId);
                 return ['ok' => true, 'reactivated' => true];
             }
         }
@@ -359,6 +363,10 @@ if (!function_exists('itm_problem_link_ticket')) {
             require_once ROOT_PATH . 'includes/itm_ticket_activity.php';
             itm_ticket_activity_log($conn, $companyId, $ticketId, $actorEmployeeId, 'problem_linked', ['problem_id' => $problemId]);
         }
+        if (!function_exists('itm_master_ticket_after_incident_linked')) {
+            require_once ROOT_PATH . 'includes/itm_master_ticket.php';
+        }
+        itm_master_ticket_after_incident_linked($conn, $companyId, $problemId, $ticketId, $actorEmployeeId, $companyId);
         return ['ok' => true];
     }
 }
@@ -396,7 +404,7 @@ if (!function_exists('itm_problem_list_for_ticket')) {
         }
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT p.id, p.title, p.status, p.knowledge_base_id
+            'SELECT p.id, p.title, p.status, p.knowledge_base_id, p.master_ticket_id
              FROM problem_ticket_links l
              INNER JOIN problems p ON p.id = l.problem_id AND p.company_id = l.company_id
              WHERE l.company_id = ? AND l.ticket_id = ? AND l.deleted_at IS NULL AND p.deleted_at IS NULL
@@ -838,3 +846,5 @@ if (!function_exists('itm_problem_management_summary')) {
         return $summary;
     }
 }
+
+require_once __DIR__ . '/itm_master_ticket.php';

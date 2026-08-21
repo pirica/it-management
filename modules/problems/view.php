@@ -55,6 +55,54 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && $problemId > 0) {
         } else {
             $errors[] = (string)($keResult['error'] ?? 'Could not save known error.');
         }
+    } elseif ($postAction === 'create_master_ticket') {
+        itm_require_crud_role_module_permission($conn, 'edit', $moduleSlug);
+        $createMaster = itm_problem_create_master_ticket($conn, $companyId, $problemId, $employeeId, $companyId);
+        if (!empty($createMaster['ok'])) {
+            $flash = 'Master ticket #' . (int)($createMaster['master_ticket_id'] ?? 0) . ' created — '
+                . (int)($createMaster['ticket_count'] ?? 0) . ' incident ticket(s) synced.';
+        } else {
+            $errors[] = (string)($createMaster['error'] ?? 'Could not create master ticket.');
+        }
+    } elseif ($postAction === 'update_master_ticket') {
+        itm_require_crud_role_module_permission($conn, 'edit', $moduleSlug);
+        $masterTicketId = (int)($_POST['master_ticket_id'] ?? 0);
+        if ($masterTicketId <= 0 || !itm_master_ticket_can_manage($conn, $masterTicketId, $companyId, $employeeId)) {
+            $errors[] = 'You cannot edit this master ticket.';
+        } else {
+            $updateMaster = itm_master_ticket_update($conn, $masterTicketId, [
+                'title' => trim((string)($_POST['master_title'] ?? '')),
+                'description' => (string)($_POST['master_description'] ?? ''),
+                'root_cause' => trim((string)($_POST['master_root_cause'] ?? '')),
+            ], $employeeId, $companyId);
+            if (!empty($updateMaster['ok'])) {
+                $flash = 'Master ticket updated — ' . (int)($updateMaster['ticket_count'] ?? 0) . ' incident ticket(s) synced.';
+            } else {
+                $errors[] = (string)($updateMaster['error'] ?? 'Master ticket update failed.');
+            }
+        }
+    } elseif ($postAction === 'attach_master_problem') {
+        itm_require_crud_role_module_permission($conn, 'edit', $moduleSlug);
+        $masterTicketId = (int)($_POST['master_ticket_id'] ?? 0);
+        $targetCompanyId = max(0, (int)($_POST['attach_company_id'] ?? 0));
+        $targetProblemId = max(0, (int)($_POST['attach_problem_id'] ?? 0));
+        if ($masterTicketId <= 0 || !itm_master_ticket_can_manage($conn, $masterTicketId, $companyId, $employeeId)) {
+            $errors[] = 'You cannot attach problems to this master ticket.';
+        } else {
+            $attachResult = itm_master_ticket_attach_problem(
+                $conn,
+                $masterTicketId,
+                $targetCompanyId,
+                $targetProblemId,
+                $employeeId,
+                $companyId
+            );
+            if (!empty($attachResult['ok'])) {
+                $flash = 'Problem attached — ' . (int)($attachResult['ticket_count'] ?? 0) . ' total incident ticket(s) on master.';
+            } else {
+                $errors[] = (string)($attachResult['error'] ?? 'Could not attach problem.');
+            }
+        }
     }
 }
 
@@ -71,6 +119,27 @@ $keForm = [
     'workaround' => (string)($knownError['workaround'] ?? ''),
     'symptom_keywords' => (string)($knownError['symptom_keywords'] ?? ''),
 ];
+
+$masterTicketId = $problem ? (int)($problem['master_ticket_id'] ?? 0) : 0;
+$masterTicket = $masterTicketId > 0 ? itm_master_ticket_fetch_row($conn, $masterTicketId) : null;
+$allowedCompanyIds = itm_master_ticket_allowed_company_ids($conn, $employeeId);
+$masterIncidents = ($masterTicketId > 0) ? itm_master_ticket_list_all_incidents($conn, $masterTicketId, $allowedCompanyIds) : [];
+$masterHistory = ($masterTicketId > 0) ? itm_master_ticket_list_history($conn, $masterTicketId, 30) : [];
+$canManageMaster = false;
+if ($masterTicketId > 0) {
+    $canManageMaster = itm_master_ticket_can_manage($conn, $masterTicketId, $companyId, $employeeId);
+} else {
+    $rbacModuleName = itm_resolve_rbac_module_name_for_slug($conn, $moduleSlug);
+    $canManageMaster = itm_user_has_role_module_permission($conn, $employeeId, $companyId, $rbacModuleName, 'edit');
+}
+$masterCompanyCount = 0;
+if ($masterTicketId > 0) {
+    $companySet = [];
+    foreach ($masterIncidents as $mi) {
+        $companySet[(int)($mi['company_id'] ?? 0)] = true;
+    }
+    $masterCompanyCount = count($companySet);
+}
 
 function problems_view_employee_name($conn, $companyId, $empId)
 {
@@ -155,6 +224,123 @@ $moduleSlugPath = basename(dirname($_SERVER['PHP_SELF']));
                         <tr><th>Updated At</th><td><?php echo sanitize(itm_format_audit_timestamp_display($problem['updated_at'] ?? '')); ?></td></tr>
                         </tbody>
                     </table>
+                </div>
+
+                <div class="card" style="margin-bottom:20px;" id="master-ticket">
+                    <h2 style="margin-top:0;" title="Cross-company master ticket">Master Ticket</h2>
+                    <?php if ($masterTicket): ?>
+                        <p style="margin-top:0;">
+                            Master #<?php echo (int)$masterTicketId; ?> —
+                            <?php echo (int)$masterCompanyCount; ?> companies ·
+                            <?php echo count($masterIncidents); ?> incident ticket(s) visible to you.
+                        </p>
+                        <?php if ($canManageMaster): ?>
+                            <form method="POST" class="form-grid" style="max-width:980px;margin-bottom:20px;">
+                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                <input type="hidden" name="problem_action" value="update_master_ticket">
+                                <input type="hidden" name="master_ticket_id" value="<?php echo (int)$masterTicketId; ?>">
+                                <div class="form-group">
+                                    <label for="master-title">Title</label>
+                                    <input type="text" id="master-title" name="master_title" value="<?php echo sanitize($masterTicket['title'] ?? ''); ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="master-description">Description</label>
+                                    <textarea id="master-description" name="master_description" rows="4"><?php echo sanitize($masterTicket['description'] ?? ''); ?></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="master-root-cause">Root Cause</label>
+                                    <textarea id="master-root-cause" name="master_root_cause" rows="3"><?php echo sanitize($masterTicket['root_cause'] ?? ''); ?></textarea>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary" title="Save">💾</button>
+                                </div>
+                            </form>
+                            <form method="POST" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;max-width:980px;margin-bottom:20px;">
+                                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                <input type="hidden" name="problem_action" value="attach_master_problem">
+                                <input type="hidden" name="master_ticket_id" value="<?php echo (int)$masterTicketId; ?>">
+                                <div class="form-group" style="margin:0;">
+                                    <label for="attach-company-id">Attach company ID</label>
+                                    <input type="number" id="attach-company-id" name="attach_company_id" min="1" required>
+                                </div>
+                                <div class="form-group" style="margin:0;">
+                                    <label for="attach-problem-id">Problem ID</label>
+                                    <input type="number" id="attach-problem-id" name="attach_problem_id" min="1" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary" title="Attach problem">🔗</button>
+                            </form>
+                        <?php endif; ?>
+                        <table data-itm-no-import-excel="1" style="margin-bottom:20px;">
+                            <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th>Ticket</th>
+                                <th>Code</th>
+                                <th>Title</th>
+                                <th>Status</th>
+                                <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php if (!empty($masterIncidents)): ?>
+                                <?php foreach ($masterIncidents as $masterIncident): ?>
+                                    <tr>
+                                        <td><?php echo sanitize($masterIncident['company_name'] ?? ''); ?></td>
+                                        <td><?php echo (int)($masterIncident['id'] ?? 0); ?></td>
+                                        <td><?php echo sanitize($masterIncident['ticket_external_code'] ?? '—'); ?></td>
+                                        <td><?php echo sanitize($masterIncident['title'] ?? ''); ?></td>
+                                        <td><?php echo sanitize($masterIncident['status_name'] ?? '—'); ?></td>
+                                        <td class="itm-actions-cell" data-itm-actions-origin="1">
+                                            <a class="btn btn-sm" href="../tickets/view.php?id=<?php echo (int)$masterIncident['id']; ?>" title="View">🔎</a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr><td colspan="6">No incidents visible for your company access.</td></tr>
+                            <?php endif; ?>
+                            </tbody>
+                        </table>
+                        <h3 title="Master ticket update history">Update History</h3>
+                        <table data-itm-no-import-excel="1">
+                            <thead>
+                            <tr>
+                                <th>When</th>
+                                <th>Actor</th>
+                                <th>Event</th>
+                                <th>Summary</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php if (!empty($masterHistory)): ?>
+                                <?php foreach ($masterHistory as $historyRow): ?>
+                                    <?php
+                                    $actorLabel = trim((string)($historyRow['actor_name'] ?? ''));
+                                    if ($actorLabel === '') {
+                                        $actorLabel = (string)($historyRow['actor_username'] ?? '—');
+                                    }
+                                    ?>
+                                    <tr>
+                                        <td><?php echo sanitize(itm_format_audit_timestamp_display($historyRow['created_at'] ?? '')); ?></td>
+                                        <td><?php echo sanitize($actorLabel); ?></td>
+                                        <td><?php echo sanitize($historyRow['event_type'] ?? ''); ?></td>
+                                        <td><?php echo sanitize($historyRow['summary'] ?? ''); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr><td colspan="4">No history yet.</td></tr>
+                            <?php endif; ?>
+                            </tbody>
+                        </table>
+                    <?php elseif (count($incidents) >= 1 && $canManageMaster): ?>
+                        <p>Create a cross-company master ticket to roll up all linked incidents. Updates sync to every linked ticket.</p>
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <input type="hidden" name="problem_action" value="create_master_ticket">
+                            <button type="submit" class="btn btn-primary" title="Create master ticket">➕</button>
+                        </form>
+                    <?php else: ?>
+                        <p>Link at least one incident to create a master ticket.</p>
+                    <?php endif; ?>
                 </div>
 
                 <div class="card" style="margin-bottom:20px;">
