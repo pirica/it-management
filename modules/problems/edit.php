@@ -171,7 +171,8 @@ $moduleSlugPath = basename(dirname($_SERVER['PHP_SELF']));
                     </div>
                     <div class="form-actions">
                         <button class="btn btn-primary" type="submit" title="Save">💾</button>
-                        <a href="view.php?id=<?php echo $editId; ?>" class="btn" title="Back">🔙</a>
+                        <a href="index.php" class="btn" title="Back">🔙</a>
+                        <a href="view.php?id=<?php echo $editId; ?>" class="btn btn-sm" title="View">🔎</a>
                     </div>
                 </form>
             <?php endif; ?>
