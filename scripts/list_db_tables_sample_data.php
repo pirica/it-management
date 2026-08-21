@@ -16,7 +16,7 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<strong>Admin login required</strong> in browser. Open <a href="list_db_tables_sample_data.php?run=1" target="_blank" rel="nofollow noreferrer">list_db_tables_sample_data.php?run=1</a> or <a href="list_db_tables_sample_data.php?run=1&amp;format=json">?run=1&amp;format=json</a>.<br> CLI: <code>php scripts/list_db_tables_sample_data.php</code> · JSON: <code>--json</code> · Filter: <code>--sample=no</code>
+<strong>Admin login required</strong> in browser. Open <a href="list_db_tables_sample_data.php?run=1" target="_blank" rel="nofollow noreferrer">list_db_tables_sample_data.php?run=1</a> or <a href="list_db_tables_sample_data.php?run=1&amp;format=json">?run=1&amp;format=json</a>. Click column headers to sort.<br> CLI: <code>php scripts/list_db_tables_sample_data.php</code> · JSON: <code>--json</code> · Filter: <code>--sample=no</code> · Sort: <code>--sort=table</code> · <code>--dir=desc</code>
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 
@@ -31,6 +31,7 @@ require_once dirname(__DIR__) . '/includes/itm_database_sql_source.php';
 require_once __DIR__ . '/lib/itm_database_tables_sample_data_report.php';
 require_once __DIR__ . '/lib/script_browser_nav.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_script_report_table_sort.php';
 
 /**
  * @return array<int, string>
@@ -102,6 +103,9 @@ function ldtsd_print_cli_report(array $report): void
         echo '[INFO] Filter: sample_data=' . (string) $report['filtered_sample']
             . ' (' . count($report['tables']) . ' row(s))' . $nl;
     }
+    if (!empty($report['sort'])) {
+        echo '[INFO] Sort: ' . (string) $report['sort'] . ' ' . (string) ($report['dir'] ?? 'asc') . $nl;
+    }
 
     echo $nl . 'table | slug | sample_data | module' . $nl;
     echo str_repeat('-', 100) . $nl;
@@ -145,6 +149,17 @@ $report = itm_database_tables_sample_data_report($schemaPath, $samplePath);
 
 $sampleFilter = ldtsd_resolve_sample_filter($itmIsCli);
 $report = ldtsd_filter_report($report, $sampleFilter);
+
+$sortColumns = itm_script_report_table_sort_base_columns();
+$sortState = itm_script_report_table_sort_resolve($itmIsCli, $sortColumns);
+$report['tables'] = itm_script_report_table_sort_apply(
+    $report['tables'] ?? [],
+    $sortState['sort'],
+    $sortState['dir'],
+    $sortColumns
+);
+$report['sort'] = $sortState['sort'];
+$report['dir'] = $sortState['dir'];
 
 $cliArgv = $GLOBALS['argv'] ?? [];
 $asJson = $itmIsCli
@@ -204,6 +219,7 @@ $baseUrl = defined('BASE_URL') ? (string) BASE_URL : '../';
         .filter-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 12px; }
         .filter-row label { display: block; font-weight: 600; margin-bottom: 6px; }
         .filter-row select { min-width: 180px; padding: 8px 10px; border: 1px solid var(--border-color, #d0d7de); border-radius: 6px; }
+        <?php echo itm_script_report_table_sort_styles(); ?>
     </style>
 </head>
 <body>
@@ -216,7 +232,7 @@ $baseUrl = defined('BASE_URL') ? (string) BASE_URL : '../';
             <strong>sample_data</strong>: <code>yes</code> = template row in <code>02_data_sample.sql</code>;
             <code>exempt</code> = skipped by <code>itm_sample_sql_exempt_tables()</code>;
             <code>n/a</code> = no <code>company_id</code> column;
-            <code>no</code> = tenant table missing a template.
+            <code>no</code> = tenant table missing a template. Click a column header to sort.
         </p>
         <div class="report-summary">
             <span>Tables: <strong><?php echo (int) ($report['table_count'] ?? 0); ?></strong></span>
@@ -227,6 +243,10 @@ $baseUrl = defined('BASE_URL') ? (string) BASE_URL : '../';
         </div>
         <form class="filter-row" method="get" action="">
             <input type="hidden" name="run" value="1">
+            <?php if ($sortState['sort'] !== ''): ?>
+                <input type="hidden" name="sort" value="<?php echo $esc($sortState['sort']); ?>">
+                <input type="hidden" name="dir" value="<?php echo $esc($sortState['dir']); ?>">
+            <?php endif; ?>
             <div>
                 <label for="sample">Sample data filter</label>
                 <select name="sample" id="sample">
@@ -248,14 +268,16 @@ $baseUrl = defined('BASE_URL') ? (string) BASE_URL : '../';
 
     <div class="report-card">
         <div class="report-table-scroll">
-        <table class="report-table">
+        <table class="report-table itm-script-sortable-table">
             <thead>
                 <tr>
-                    <th>#</th>
-                    <th>Table</th>
-                    <th>Slug</th>
-                    <th>Sample data</th>
-                    <th>Module</th>
+                    <th scope="col">#</th>
+                    <?php
+                    echo itm_script_report_table_sort_th('Table', 1, 'text');
+                    echo itm_script_report_table_sort_th('Slug', 2, 'text');
+                    echo itm_script_report_table_sort_th('Sample data', 3, 'text');
+                    ?>
+                    <th scope="col">Module</th>
                 </tr>
             </thead>
             <tbody>
@@ -292,5 +314,6 @@ $baseUrl = defined('BASE_URL') ? (string) BASE_URL : '../';
         </div>
     </div>
 </div>
+<?php itm_script_report_table_sort_footer_js(); ?>
 </body>
 </html>

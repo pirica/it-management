@@ -24,6 +24,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 | `itm_active_checkbox_fix.php` | Repair helpers for `fix_scaffold_active_checkbox.php` (`scaffold_active_checkbox_not_compliant` only) |
 | `itm_list_modules_not_on_sidebar_report.php` | Report builder for `list_modules_not_on_sidebar.php` (sidebar match_dir, module folders, registry gaps) |
 | `itm_database_tables_modules_report.php` | Shared schema/live DB vs `modules/` mapping for `compare_database_sql_modules.php` and `list_db_tables_without_modules.php` |
+| `itm_script_report_table_sort.php` | Sortable script report tables (browser header click + CLI `--sort` / `--dir`) for `list_db_tables_sample_data.php` and `list_db_tables_sample_data_company.php` |
 | `itm_list_empty_tables.php` | Tenant row-count helpers shared by `list_empty_tables.php`, `list_db_tables_sample_data_company.php`, and `verify_company_empty_sample_data.php` |
 | `itm_database_tables_sample_data_report.php` | Parses `db/01_schema.sql` + `db/02_data_sample.sql` for `list_db_tables_sample_data.php` (slug link + sample_data yes/no/exempt/n/a) |
 | `itm_database_tables_sample_data_company_report.php` | Enriches sample-data report with per-company live row counts for `list_db_tables_sample_data_company.php` |
