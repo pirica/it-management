@@ -185,6 +185,50 @@ if (!function_exists('itm_master_ticket_list_history')) {
     }
 }
 
+if (!function_exists('itm_master_ticket_format_history_summary')) {
+    function itm_master_ticket_format_history_summary(array $historyRow)
+    {
+        $summary = trim((string)($historyRow['summary'] ?? ''));
+        $eventType = (string)($historyRow['event_type'] ?? '');
+        if ($eventType !== 'broadcast_to_tickets') {
+            return $summary;
+        }
+        $messageText = '';
+        $metaRaw = (string)($historyRow['meta_json'] ?? '');
+        if ($metaRaw !== '') {
+            $meta = json_decode($metaRaw, true);
+            if (is_array($meta)) {
+                if (!empty($meta['message'])) {
+                    $messageText = trim((string)$meta['message']);
+                } elseif (!empty($meta['message_preview'])) {
+                    $messageText = trim((string)$meta['message_preview']);
+                }
+            }
+        }
+        if ($messageText === '') {
+            return $summary;
+        }
+        if ($summary !== '' && strpos($summary, $messageText) !== false) {
+            return $summary;
+        }
+        return ($summary !== '' ? $summary . ' — ' : '') . '"' . $messageText . '"';
+    }
+}
+
+if (!function_exists('itm_master_ticket_list_broadcast_history')) {
+    function itm_master_ticket_list_broadcast_history($conn, $masterTicketId, $limit = 20)
+    {
+        $rows = itm_master_ticket_list_history($conn, $masterTicketId, max(1, min(100, (int)$limit)));
+        $broadcasts = [];
+        foreach ($rows as $row) {
+            if ((string)($row['event_type'] ?? '') === 'broadcast_to_tickets') {
+                $broadcasts[] = $row;
+            }
+        }
+        return $broadcasts;
+    }
+}
+
 if (!function_exists('itm_master_ticket_build_canonical_body')) {
     function itm_master_ticket_build_canonical_body(array $masterRow)
     {
@@ -422,6 +466,88 @@ if (!function_exists('itm_master_ticket_sync_to_incidents')) {
         }
 
         return ['ok' => true, 'ticket_count' => count($syncedIds), 'ticket_ids' => $syncedIds];
+    }
+}
+
+if (!function_exists('itm_master_ticket_broadcast_to_incidents')) {
+    function itm_master_ticket_broadcast_to_incidents($conn, $masterTicketId, $message, $actorEmployeeId, $actorCompanyId, $isInternal = 0)
+    {
+        if (!$conn instanceof mysqli) {
+            return ['ok' => false, 'error' => 'Database unavailable.'];
+        }
+        $masterTicketId = (int)$masterTicketId;
+        $message = trim((string)$message);
+        if ($message === '') {
+            return ['ok' => false, 'error' => 'Message is required.'];
+        }
+        if (!itm_master_ticket_fetch_row($conn, $masterTicketId)) {
+            return ['ok' => false, 'error' => 'Master ticket not found.'];
+        }
+        $incidents = itm_master_ticket_list_all_incidents($conn, $masterTicketId, null);
+        if (empty($incidents)) {
+            return ['ok' => false, 'error' => 'No linked incidents to update.'];
+        }
+        if (!function_exists('itm_ticket_comment_create')) {
+            require_once ROOT_PATH . 'includes/itm_ticket_comments.php';
+        }
+
+        $body = itm_master_ticket_block_marker($masterTicketId) . "\n" . $message;
+        $actorEmployeeId = (int)$actorEmployeeId;
+        $actorCompanyId = (int)$actorCompanyId;
+        $isInternal = (int)((bool)$isInternal);
+        $postedIds = [];
+        $errors = [];
+
+        mysqli_begin_transaction($conn);
+        foreach ($incidents as $incident) {
+            $ticketId = (int)($incident['id'] ?? 0);
+            $ticketCompanyId = (int)($incident['company_id'] ?? 0);
+            if ($ticketId <= 0 || $ticketCompanyId <= 0) {
+                continue;
+            }
+            $commentId = itm_ticket_comment_create($conn, $ticketCompanyId, $ticketId, $actorEmployeeId, $body, $isInternal);
+            if ($commentId) {
+                $postedIds[] = ['ticket_id' => $ticketId, 'company_id' => $ticketCompanyId, 'comment_id' => (int)$commentId];
+            } else {
+                $errors[] = '#' . $ticketId . ' (co ' . $ticketCompanyId . ')';
+            }
+        }
+
+        if (empty($postedIds)) {
+            mysqli_rollback($conn);
+            return ['ok' => false, 'error' => 'Could not post message to any incident ticket.'];
+        }
+
+        $historySummary = 'Broadcast to ' . count($postedIds) . ' incident ticket(s): '
+            . (function_exists('itm_ticket_comment_body_preview')
+                ? itm_ticket_comment_body_preview($message, 420)
+                : substr($message, 0, 420));
+        itm_master_ticket_log_history(
+            $conn,
+            $masterTicketId,
+            'broadcast_to_tickets',
+            $actorEmployeeId,
+            $actorCompanyId,
+            $historySummary,
+            null,
+            itm_master_ticket_encode_json([
+                'ticket_count' => count($postedIds),
+                'ticket_ids' => array_column($postedIds, 'ticket_id'),
+                'message' => $message,
+                'message_preview' => function_exists('itm_ticket_comment_body_preview')
+                    ? itm_ticket_comment_body_preview($message, 200)
+                    : substr($message, 0, 200),
+                'is_internal' => $isInternal,
+            ])
+        );
+        mysqli_commit($conn);
+
+        return [
+            'ok' => true,
+            'ticket_count' => count($postedIds),
+            'ticket_ids' => array_column($postedIds, 'ticket_id'),
+            'errors' => $errors,
+        ];
     }
 }
 
