@@ -41,25 +41,79 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && $masterTicketId > 0) {
                     $errors[] = (string)($updateMaster['error'] ?? 'Master ticket update failed.');
                 }
             }
-        } elseif ($postAction === 'attach_master_problem') {
+        } elseif ($postAction === 'attach_master_problems_bulk') {
             itm_require_crud_role_module_permission($conn, 'edit', $moduleSlug);
-            $targetCompanyId = max(0, (int)($_POST['attach_company_id'] ?? 0));
-            $targetProblemId = max(0, (int)($_POST['attach_problem_id'] ?? 0));
             if (!itm_master_ticket_can_manage($conn, $masterTicketId, $sessionCompanyId, $employeeId)) {
                 $errors[] = 'You cannot attach problems to this master ticket.';
             } else {
-                $attachResult = itm_master_ticket_attach_problem(
+                $targets = [];
+                $rawSelections = $_POST['attach_problem_keys'] ?? [];
+                if (!is_array($rawSelections)) {
+                    $rawSelections = [];
+                }
+                foreach ($rawSelections as $rawKey) {
+                    $parts = explode(':', (string)$rawKey, 2);
+                    if (count($parts) !== 2) {
+                        continue;
+                    }
+                    $targets[] = [
+                        'company_id' => (int)$parts[0],
+                        'problem_id' => (int)$parts[1],
+                    ];
+                }
+                $attachResult = itm_master_ticket_attach_problems_bulk(
                     $conn,
                     $masterTicketId,
-                    $targetCompanyId,
-                    $targetProblemId,
+                    $targets,
                     $employeeId,
                     $sessionCompanyId
                 );
                 if (!empty($attachResult['ok'])) {
-                    $flash = 'Problem attached — ' . (int)($attachResult['ticket_count'] ?? 0) . ' total incident ticket(s) on master.';
+                    $flash = (int)($attachResult['attached'] ?? 0) . ' problem(s) attached.';
+                    if (!empty($attachResult['errors'])) {
+                        $flash .= ' Some failed: ' . implode(' ', (array)$attachResult['errors']);
+                    }
                 } else {
-                    $errors[] = (string)($attachResult['error'] ?? 'Could not attach problem.');
+                    $errors[] = (string)($attachResult['error'] ?? 'Could not attach problems.');
+                }
+            }
+        } elseif ($postAction === 'link_master_incidents_bulk') {
+            itm_require_crud_role_module_permission($conn, 'edit', $moduleSlug);
+            $linkProblemId = max(0, (int)($_POST['link_problem_id'] ?? 0));
+            $rawTicketKeys = $_POST['link_ticket_keys'] ?? [];
+            if (!is_array($rawTicketKeys)) {
+                $rawTicketKeys = [];
+            }
+            $ticketTargets = [];
+            foreach ($rawTicketKeys as $rawKey) {
+                $parts = explode(':', (string)$rawKey, 2);
+                if (count($parts) !== 2) {
+                    continue;
+                }
+                $ticketTargets[] = [
+                    'company_id' => (int)$parts[0],
+                    'ticket_id' => (int)$parts[1],
+                ];
+            }
+            if (!itm_master_ticket_can_manage($conn, $masterTicketId, $sessionCompanyId, $employeeId)) {
+                $errors[] = 'You cannot link incidents to this master ticket.';
+            } else {
+                $linkResult = itm_master_ticket_link_incidents_multi_company_bulk(
+                    $conn,
+                    $masterTicketId,
+                    $ticketTargets,
+                    $linkProblemId,
+                    $allowedCompanyIds,
+                    $employeeId,
+                    $sessionCompanyId
+                );
+                if (!empty($linkResult['ok'])) {
+                    $flash = (int)($linkResult['linked'] ?? 0) . ' incident ticket(s) linked and synced.';
+                    if (!empty($linkResult['errors'])) {
+                        $flash .= ' Some failed: ' . implode(' ', (array)$linkResult['errors']);
+                    }
+                } else {
+                    $errors[] = (string)($linkResult['error'] ?? 'Could not link incidents.');
                 }
             }
         }
@@ -72,6 +126,8 @@ $masterIncidents = [];
 $masterHistory = [];
 $canManageMaster = false;
 $masterCompanyCount = 0;
+$eligibleProblems = [];
+$linkableTicketsAll = [];
 
 if ($masterTicketId > 0 && itm_master_ticket_user_can_view($conn, $masterTicketId, $allowedCompanyIds)) {
     $masterTicket = itm_master_ticket_fetch_row($conn, $masterTicketId);
@@ -116,7 +172,23 @@ if (!$masterTicket) {
     $masterCompanyCount = count($companySet);
 }
 
+if ($canManageMaster && $masterTicket) {
+    $eligibleProblems = itm_master_ticket_list_eligible_problems($conn, $allowedCompanyIds);
+    $linkableTicketsAll = itm_master_ticket_list_linkable_tickets_for_master(
+        $conn,
+        $masterTicketId,
+        $allowedCompanyIds
+    );
+}
+
 $moduleSlugPath = basename(dirname($_SERVER['PHP_SELF']));
+$canEditMaster = itm_user_has_role_module_permission(
+    $conn,
+    $employeeId,
+    $sessionCompanyId,
+    itm_resolve_rbac_module_name_for_slug($conn, $moduleSlug),
+    'edit'
+);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -148,6 +220,9 @@ $moduleSlugPath = basename(dirname($_SERVER['PHP_SELF']));
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
                 <h1 title="View master ticket">🔎</h1>
                 <div style="display:flex;gap:8px;">
+                    <?php if ($canEditMaster && $masterTicket): ?>
+                        <a href="#master-edit" class="btn" title="Edit">✏️</a>
+                    <?php endif; ?>
                     <a href="index.php" class="btn" title="Back">🔙</a>
                 </div>
             </div>
@@ -173,9 +248,12 @@ $moduleSlugPath = basename(dirname($_SERVER['PHP_SELF']));
                 </div>
 
                 <?php if ($canManageMaster): ?>
-                    <div class="card" style="margin-bottom:20px;">
+                    <div class="card" style="margin-bottom:20px;" id="master-edit">
                         <h2 style="margin-top:0;" title="Edit master fields">✏️</h2>
-                        <form method="POST" class="form-grid" style="max-width:980px;margin-bottom:20px;">
+                        <p class="itm-muted" style="margin-top:0;">
+                            Saving title, description, or root cause pushes updates to every linked incident ticket.
+                        </p>
+                        <form method="POST" class="form-grid" style="max-width:980px;margin-bottom:24px;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                             <input type="hidden" name="master_action" value="update_master_ticket">
                             <div class="form-group">
@@ -194,18 +272,72 @@ $moduleSlugPath = basename(dirname($_SERVER['PHP_SELF']));
                                 <button type="submit" class="btn btn-primary" title="Save">💾</button>
                             </div>
                         </form>
-                        <form method="POST" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;max-width:980px;">
+
+                        <h3 style="margin-top:0;" title="Attach problems">Attach Problems</h3>
+                        <p class="itm-muted">Multi-select major problems (each must already have ≥1 linked incident). Hold Ctrl/Cmd to select multiple.</p>
+                        <form method="POST" style="max-width:980px;margin-bottom:24px;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                            <input type="hidden" name="master_action" value="attach_master_problem">
-                            <div class="form-group" style="margin:0;">
-                                <label for="attach-company-id">Attach company ID</label>
-                                <input type="number" id="attach-company-id" name="attach_company_id" min="1" required>
+                            <input type="hidden" name="master_action" value="attach_master_problems_bulk">
+                            <div class="form-group">
+                                <label for="attach-problem-keys">Eligible problems</label>
+                                <select id="attach-problem-keys" name="attach_problem_keys[]" multiple size="8" class="form-control" style="min-height:160px;">
+                                    <?php foreach ($eligibleProblems as $eligibleProblem): ?>
+                                        <?php
+                                        $optKey = (int)($eligibleProblem['company_id'] ?? 0) . ':' . (int)($eligibleProblem['id'] ?? 0);
+                                        $optLabel = sanitize(
+                                            ($eligibleProblem['company_name'] ?? '') . ' — '
+                                            . ($eligibleProblem['title'] ?? '') . ' (#' . (int)($eligibleProblem['id'] ?? 0) . ', '
+                                            . (int)($eligibleProblem['incident_count'] ?? 0) . ' incident(s))'
+                                        );
+                                        ?>
+                                        <option value="<?php echo sanitize($optKey); ?>"><?php echo $optLabel; ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
-                            <div class="form-group" style="margin:0;">
-                                <label for="attach-problem-id">Problem ID</label>
-                                <input type="number" id="attach-problem-id" name="attach_problem_id" min="1" required>
+                            <button type="submit" class="btn btn-primary" title="Attach selected problems">🔗</button>
+                        </form>
+
+                        <h3 style="margin-top:0;" title="Link incident tickets">Link Incident Tickets</h3>
+                        <p class="itm-muted">
+                            Multi-select tickets from every company you can access (not already on this master).
+                            Hold Ctrl/Cmd to select multiple. Each ticket links via the problem on this master for its company
+                            (attach a problem per company first). Optional problem filter below only when a company has multiple linked problems.
+                        </p>
+                        <form method="POST" style="max-width:980px;" id="master-link-incidents-form">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <input type="hidden" name="master_action" value="link_master_incidents_bulk">
+                            <div class="form-group">
+                                <label for="link-problem-id">Problem filter (optional)</label>
+                                <select id="link-problem-id" name="link_problem_id" class="form-control">
+                                    <option value="">— Auto per company —</option>
+                                    <?php foreach ($linkedProblems as $lp): ?>
+                                        <option value="<?php echo (int)($lp['id'] ?? 0); ?>">
+                                            <?php echo sanitize(($lp['company_name'] ?? '') . ' — ' . ($lp['title'] ?? '') . ' (#' . (int)($lp['id'] ?? 0) . ')'); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
-                            <button type="submit" class="btn btn-primary" title="Attach problem">🔗</button>
+                            <div class="form-group">
+                                <label for="link-ticket-keys">Tickets to link (all companies)</label>
+                                <select id="link-ticket-keys" name="link_ticket_keys[]" multiple size="12" class="form-control" style="min-height:220px;" required>
+                                    <?php foreach ($linkableTicketsAll as $ticketRow): ?>
+                                        <?php
+                                        $optKey = (int)($ticketRow['company_id'] ?? 0) . ':' . (int)($ticketRow['id'] ?? 0);
+                                        $code = trim((string)($ticketRow['ticket_external_code'] ?? ''));
+                                        $codeLabel = $code !== '' ? $code . ' ' : '';
+                                        ?>
+                                        <option value="<?php echo sanitize($optKey); ?>">
+                                            <?php echo sanitize(
+                                                ($ticketRow['company_name'] ?? '') . ' — #'
+                                                . (int)($ticketRow['id'] ?? 0) . ' '
+                                                . $codeLabel
+                                                . ($ticketRow['title'] ?? '')
+                                            ); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary" title="Link selected tickets">🔗</button>
                         </form>
                     </div>
                 <?php endif; ?>
