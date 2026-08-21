@@ -1342,6 +1342,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Lists every <code>company_id</code> table with zero live rows for the signed-in session company or a selected company (<code>?company=N</code> dropdown / <code>--company=N</code> on CLI). Links to <code>modules/{table}/index.php</code> in a new tab when the module folder exists.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="Codebase">
+                    <td><a href="list_db_tables_sample_data.php" target="_blank" rel="nofollow noreferrer">list_db_tables_sample_data.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Reads <code>db/01_schema.sql</code> and <code>db/02_data_sample.sql</code> (no MySQL). Lists all schema tables with module slug links (<code>target="_blank"</code>), <code>sample_data</code> yes/no/exempt/n/a, and <code>[INFO]</code> summary on CLI. Filter: <code>?sample=no</code> / <code>--sample=no</code>.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_company_empty_sample_data.php" target="_blank" rel="nofollow noreferrer">verify_company_empty_sample_data.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
