@@ -300,8 +300,8 @@ $canEditMaster = itm_user_has_role_module_permission(
                         <h3 style="margin-top:0;" title="Link incident tickets">Link Incident Tickets</h3>
                         <p class="itm-muted">
                             Multi-select tickets from every company you can access (not already on this master).
-                            Hold Ctrl/Cmd to select multiple. Each ticket links via the problem on this master for its company
-                            (attach a problem per company first). Optional problem filter below only when a company has multiple linked problems.
+                            Hold Ctrl/Cmd to select multiple. When a company has no problem on this master yet, one is created automatically from the master fields, then the ticket is linked.
+                            Use the optional problem filter only when a company has multiple linked problems.
                         </p>
                         <form method="POST" style="max-width:980px;" id="master-link-incidents-form">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">

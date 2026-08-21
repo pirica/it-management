@@ -1313,6 +1313,107 @@ if (!function_exists('itm_master_ticket_resolve_link_problem_for_company')) {
     }
 }
 
+if (!function_exists('itm_master_ticket_ensure_problem_for_company')) {
+    /**
+     * Resolve or auto-create a problem on this master for the given company (incident link flow).
+     *
+     * @param array<int, array<int, array<string, mixed>>> $problemsByCompany updated in place when a problem is created
+     */
+    function itm_master_ticket_ensure_problem_for_company(
+        $conn,
+        $masterTicketId,
+        $companyId,
+        array &$problemsByCompany,
+        $overrideProblemId,
+        $actorEmployeeId,
+        $sessionCompanyId
+    ) {
+        $resolved = itm_master_ticket_resolve_link_problem_for_company(
+            $conn,
+            $masterTicketId,
+            $companyId,
+            $problemsByCompany,
+            $overrideProblemId
+        );
+        if (!empty($resolved['ok'])) {
+            return $resolved;
+        }
+
+        $candidates = $problemsByCompany[$companyId] ?? [];
+        if (count($candidates) > 1) {
+            return $resolved;
+        }
+
+        $masterTicketId = (int)$masterTicketId;
+        $companyId = (int)$companyId;
+        $actorEmployeeId = (int)$actorEmployeeId;
+        $sessionCompanyId = (int)$sessionCompanyId;
+        $master = itm_master_ticket_fetch_row($conn, $masterTicketId);
+        if (!$master) {
+            return ['ok' => false, 'error' => 'Master ticket not found.'];
+        }
+        if (!function_exists('itm_problem_create')) {
+            require_once ROOT_PATH . 'includes/itm_problem_management.php';
+        }
+
+        $create = itm_problem_create($conn, $companyId, [
+            'title' => (string)($master['title'] ?? ''),
+            'description' => (string)($master['description'] ?? ''),
+            'root_cause' => (string)($master['root_cause'] ?? ''),
+            'status' => 'investigating',
+        ], $actorEmployeeId);
+        if (empty($create['ok']) || (int)($create['id'] ?? 0) <= 0) {
+            return ['ok' => false, 'error' => (string)($create['error'] ?? 'Could not create problem for company #' . $companyId . '.')];
+        }
+        $problemId = (int)$create['id'];
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'UPDATE problems SET master_ticket_id = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1'
+        );
+        if (!$stmt) {
+            return ['ok' => false, 'error' => 'Could not link new problem to master ticket.'];
+        }
+        mysqli_stmt_bind_param($stmt, 'iiii', $masterTicketId, $actorEmployeeId, $problemId, $companyId);
+        if (!mysqli_stmt_execute($stmt) || mysqli_stmt_affected_rows($stmt) !== 1) {
+            mysqli_stmt_close($stmt);
+            return ['ok' => false, 'error' => 'Could not link new problem to master ticket.'];
+        }
+        mysqli_stmt_close($stmt);
+
+        itm_master_ticket_log_history(
+            $conn,
+            $masterTicketId,
+            'problem_attached',
+            $actorEmployeeId,
+            $sessionCompanyId,
+            'Auto-created problem #' . $problemId . ' for company ' . $companyId . ' while linking incidents.',
+            null,
+            itm_master_ticket_encode_json(['problem_id' => $problemId, 'company_id' => $companyId, 'auto_created' => true])
+        );
+
+        $companyName = '';
+        $nameStmt = mysqli_prepare($conn, 'SELECT company FROM companies WHERE id = ? LIMIT 1');
+        if ($nameStmt) {
+            mysqli_stmt_bind_param($nameStmt, 'i', $companyId);
+            mysqli_stmt_execute($nameStmt);
+            $nameRes = mysqli_stmt_get_result($nameStmt);
+            $nameRow = $nameRes ? mysqli_fetch_assoc($nameRes) : null;
+            mysqli_stmt_close($nameStmt);
+            $companyName = (string)($nameRow['company'] ?? '');
+        }
+
+        $problemsByCompany[$companyId] = [[
+            'id' => $problemId,
+            'company_id' => $companyId,
+            'title' => (string)($master['title'] ?? ''),
+            'company_name' => $companyName,
+        ]];
+
+        return ['ok' => true, 'problem_id' => $problemId, 'auto_created' => true];
+    }
+}
+
 if (!function_exists('itm_master_ticket_attach_problems_bulk')) {
     /**
      * @param array<int, array{company_id: int, problem_id: int}> $targets
@@ -1465,12 +1566,14 @@ if (!function_exists('itm_master_ticket_link_incidents_multi_company_bulk')) {
                 continue;
             }
             $problemOverride = ($overrideCompanyId > 0 && $companyId === $overrideCompanyId) ? $overrideProblemId : 0;
-            $resolved = itm_master_ticket_resolve_link_problem_for_company(
+            $resolved = itm_master_ticket_ensure_problem_for_company(
                 $conn,
                 $masterTicketId,
                 $companyId,
                 $problemsByCompany,
-                $problemOverride
+                $problemOverride,
+                $actorEmployeeId,
+                $sessionCompanyId
             );
             if (empty($resolved['ok'])) {
                 $errors[] = 'Ticket #' . $ticketId . ': ' . (string)($resolved['error'] ?? 'could not resolve problem');
