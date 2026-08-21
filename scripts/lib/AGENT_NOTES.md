@@ -29,6 +29,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 | `itm_database_tables_sample_data_report.php` | Parses `db/01_schema.sql` + `db/02_data_sample.sql` for `list_db_tables_sample_data.php` (slug link + sample_data yes/no/exempt/n/a) |
 | `itm_database_tables_sample_data_company_report.php` | Enriches sample-data report with per-company live row counts for `list_db_tables_sample_data_company.php` |
 | `itm_scaffold_departments_child_table.php` | Allowlist + scaffold/verify helpers for `scaffold_departments_child_table_modules.php` and `verify_scaffold_departments_child_table_modules.php` |
+| `itm_scaffold_schema_gap_table_modules.php` | Allowlist + scaffold helper for `scaffold_schema_gap_table_modules.php` (215-table audit gap — real `modules/{table}/` CRUD folders) |
 | `itm_titles_list_audit.php` | Shared scan/summary helpers for `titles_list.php`, `titles_list_show.php`, `verify_module_page_chrome.php`, and `verify_favicon_root_cause.php` (module file collection, canonical full `<title>` match, `itm_verify_module_page_chrome_entry_basenames()` / `itm_verify_module_page_chrome_skip_reason()` for index/create/edit/view/list_all/view_all verify scope, summary output) |
 | `utf8_file.php` | UTF-8 writes for `qa-reports/*.md` / `.json` |
 | `mbqa_report_paths.php` | Timestamped QA report paths |
