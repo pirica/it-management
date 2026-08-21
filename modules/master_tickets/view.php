@@ -79,21 +79,31 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && $masterTicketId > 0) {
             }
         } elseif ($postAction === 'link_master_incidents_bulk') {
             itm_require_crud_role_module_permission($conn, 'edit', $moduleSlug);
-            $linkCompanyId = max(0, (int)($_POST['link_company_id'] ?? 0));
             $linkProblemId = max(0, (int)($_POST['link_problem_id'] ?? 0));
-            $ticketIds = $_POST['link_ticket_ids'] ?? [];
-            if (!is_array($ticketIds)) {
-                $ticketIds = [];
+            $rawTicketKeys = $_POST['link_ticket_keys'] ?? [];
+            if (!is_array($rawTicketKeys)) {
+                $rawTicketKeys = [];
+            }
+            $ticketTargets = [];
+            foreach ($rawTicketKeys as $rawKey) {
+                $parts = explode(':', (string)$rawKey, 2);
+                if (count($parts) !== 2) {
+                    continue;
+                }
+                $ticketTargets[] = [
+                    'company_id' => (int)$parts[0],
+                    'ticket_id' => (int)$parts[1],
+                ];
             }
             if (!itm_master_ticket_can_manage($conn, $masterTicketId, $sessionCompanyId, $employeeId)) {
                 $errors[] = 'You cannot link incidents to this master ticket.';
             } else {
-                $linkResult = itm_master_ticket_link_incidents_bulk(
+                $linkResult = itm_master_ticket_link_incidents_multi_company_bulk(
                     $conn,
                     $masterTicketId,
-                    $linkCompanyId,
+                    $ticketTargets,
                     $linkProblemId,
-                    $ticketIds,
+                    $allowedCompanyIds,
                     $employeeId,
                     $sessionCompanyId
                 );
@@ -117,7 +127,7 @@ $masterHistory = [];
 $canManageMaster = false;
 $masterCompanyCount = 0;
 $eligibleProblems = [];
-$linkableTicketsByProblem = [];
+$linkableTicketsAll = [];
 
 if ($masterTicketId > 0 && itm_master_ticket_user_can_view($conn, $masterTicketId, $allowedCompanyIds)) {
     $masterTicket = itm_master_ticket_fetch_row($conn, $masterTicketId);
@@ -162,15 +172,13 @@ if (!$masterTicket) {
     $masterCompanyCount = count($companySet);
 }
 
-if ($canManageMaster) {
+if ($canManageMaster && $masterTicket) {
     $eligibleProblems = itm_master_ticket_list_eligible_problems($conn, $allowedCompanyIds);
-}
-foreach ($linkedProblems as $lpRow) {
-    $lpCompanyId = (int)($lpRow['company_id'] ?? 0);
-    $lpProblemId = (int)($lpRow['id'] ?? 0);
-    if ($lpCompanyId > 0 && $lpProblemId > 0) {
-        $linkableTicketsByProblem[$lpProblemId] = itm_master_ticket_list_linkable_tickets($conn, $lpCompanyId, $lpProblemId);
-    }
+    $linkableTicketsAll = itm_master_ticket_list_linkable_tickets_for_master(
+        $conn,
+        $masterTicketId,
+        $allowedCompanyIds
+    );
 }
 
 $moduleSlugPath = basename(dirname($_SERVER['PHP_SELF']));
@@ -290,69 +298,48 @@ $canEditMaster = itm_user_has_role_module_permission(
                         </form>
 
                         <h3 style="margin-top:0;" title="Link incident tickets">Link Incident Tickets</h3>
-                        <p class="itm-muted">Pick a linked problem, multi-select tickets from that company, then link. New incidents inherit the master rollup on save.</p>
+                        <p class="itm-muted">
+                            Multi-select tickets from every company you can access (not already on this master).
+                            Hold Ctrl/Cmd to select multiple. Each ticket links via the problem on this master for its company
+                            (attach a problem per company first). Optional problem filter below only when a company has multiple linked problems.
+                        </p>
                         <form method="POST" style="max-width:980px;" id="master-link-incidents-form">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                             <input type="hidden" name="master_action" value="link_master_incidents_bulk">
-                            <input type="hidden" name="link_company_id" id="link-company-id" value="">
                             <div class="form-group">
-                                <label for="link-problem-id">Linked problem</label>
-                                <select id="link-problem-id" name="link_problem_id" class="form-control" required>
-                                    <option value="">-- Select problem on this master --</option>
+                                <label for="link-problem-id">Problem filter (optional)</label>
+                                <select id="link-problem-id" name="link_problem_id" class="form-control">
+                                    <option value="">— Auto per company —</option>
                                     <?php foreach ($linkedProblems as $lp): ?>
-                                        <option value="<?php echo (int)($lp['id'] ?? 0); ?>"
-                                                data-company-id="<?php echo (int)($lp['company_id'] ?? 0); ?>">
+                                        <option value="<?php echo (int)($lp['id'] ?? 0); ?>">
                                             <?php echo sanitize(($lp['company_name'] ?? '') . ' — ' . ($lp['title'] ?? '') . ' (#' . (int)($lp['id'] ?? 0) . ')'); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="link-ticket-ids">Tickets to link</label>
-                                <select id="link-ticket-ids" name="link_ticket_ids[]" multiple size="8" class="form-control" style="min-height:160px;" required>
-                                    <?php foreach ($linkableTicketsByProblem as $problemId => $ticketRows): ?>
-                                        <?php foreach ($ticketRows as $ticketRow): ?>
-                                            <option value="<?php echo (int)($ticketRow['id'] ?? 0); ?>"
-                                                    data-problem-id="<?php echo (int)$problemId; ?>">
-                                                #<?php echo (int)($ticketRow['id'] ?? 0); ?>
-                                                <?php echo sanitize($ticketRow['ticket_external_code'] ?? ''); ?>
-                                                — <?php echo sanitize($ticketRow['title'] ?? ''); ?>
-                                            </option>
-                                        <?php endforeach; ?>
+                                <label for="link-ticket-keys">Tickets to link (all companies)</label>
+                                <select id="link-ticket-keys" name="link_ticket_keys[]" multiple size="12" class="form-control" style="min-height:220px;" required>
+                                    <?php foreach ($linkableTicketsAll as $ticketRow): ?>
+                                        <?php
+                                        $optKey = (int)($ticketRow['company_id'] ?? 0) . ':' . (int)($ticketRow['id'] ?? 0);
+                                        $code = trim((string)($ticketRow['ticket_external_code'] ?? ''));
+                                        $codeLabel = $code !== '' ? $code . ' ' : '';
+                                        ?>
+                                        <option value="<?php echo sanitize($optKey); ?>">
+                                            <?php echo sanitize(
+                                                ($ticketRow['company_name'] ?? '') . ' — #'
+                                                . (int)($ticketRow['id'] ?? 0) . ' '
+                                                . $codeLabel
+                                                . ($ticketRow['title'] ?? '')
+                                            ); ?>
+                                        </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
                             <button type="submit" class="btn btn-primary" title="Link selected tickets">🔗</button>
                         </form>
                     </div>
-                    <script>
-                    (function () {
-                        var problemSelect = document.getElementById('link-problem-id');
-                        var companyInput = document.getElementById('link-company-id');
-                        var ticketSelect = document.getElementById('link-ticket-ids');
-                        if (!problemSelect || !companyInput || !ticketSelect) {
-                            return;
-                        }
-                        function filterTickets() {
-                            var problemId = problemSelect.value;
-                            var companyId = '';
-                            if (problemSelect.selectedIndex > 0) {
-                                companyId = problemSelect.options[problemSelect.selectedIndex].getAttribute('data-company-id') || '';
-                            }
-                            companyInput.value = companyId;
-                            Array.prototype.forEach.call(ticketSelect.options, function (opt) {
-                                var match = !problemId || opt.getAttribute('data-problem-id') === problemId;
-                                opt.hidden = !match;
-                                opt.disabled = !match;
-                                if (!match) {
-                                    opt.selected = false;
-                                }
-                            });
-                        }
-                        problemSelect.addEventListener('change', filterTickets);
-                        filterTickets();
-                    })();
-                    </script>
                 <?php endif; ?>
 
                 <div class="card" style="margin-bottom:20px;">

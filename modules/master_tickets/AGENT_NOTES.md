@@ -29,7 +29,7 @@ Create flow picks an **existing problem** that already has ≥1 linked incident 
 - Edit/attach requires `itm_master_ticket_can_manage()` (problem in session company or admin / `employee_companies`).
 - **Edit** lives on `view.php#master-edit` (not a separate `edit.php`). Saving title/description/root cause calls `itm_master_ticket_update()` → syncs every linked incident.
 - **Attach problems:** multi-select eligible problems (`itm_master_ticket_list_eligible_problems` + `itm_master_ticket_attach_problems_bulk`).
-- **Link incidents:** pick a problem already on the master, multi-select tickets (`itm_master_ticket_link_incidents_bulk` → `itm_problem_link_ticket`).
+- **Link incidents:** multi-select tickets from all allowed companies (`itm_master_ticket_list_linkable_tickets_for_master` + `itm_master_ticket_link_incidents_multi_company_bulk`); auto-resolves problem per company on the master.
 
 ## 5. UI Behavior Requirements
 
