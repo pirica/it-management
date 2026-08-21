@@ -55,6 +55,7 @@ $rows = itm_module_decorated_links_collect_report($root, [
     'module_slug' => $moduleSlug,
 ]);
 $slugCounts = itm_module_decorated_links_summarize_by_slug($rows);
+$groupedBySlug = itm_module_decorated_links_group_by_slug($rows);
 
 if ($asJson) {
     $modulesJson = [];
@@ -90,8 +91,11 @@ if ($itmIsCli) {
     echo '[INFO] Open list_module_decorated_links.php?run=1 in the browser for clickable module links.' . $nl;
     echo $nl;
 
-    foreach ($slugCounts as $slug => $count) {
+    foreach ($groupedBySlug as $slug => $findings) {
         echo '[INFO] link=' . $slug . $nl;
+        foreach ($findings as $finding) {
+            echo '[INFO]   ' . itm_module_decorated_links_format_finding_line($finding) . $nl;
+        }
         echo $nl;
     }
 
@@ -142,9 +146,14 @@ $baseUrl = defined('BASE_URL') ? (string)BASE_URL : '../';
 
     <?php if ($slugCounts !== []): ?>
     <div class="report-card">
-        <?php foreach ($slugCounts as $slug => $count): ?>
+        <?php foreach ($groupedBySlug as $slug => $findings): ?>
             <?php $moduleUrl = itm_script_modules_repo_path_to_local_url('modules/' . $slug . '/index.php'); ?>
             <p class="info-line">[INFO] link=<?php echo itm_script_external_link_html($moduleUrl, $slug); ?></p>
+            <ul style="margin:0 0 16px 1.2rem;padding:0;list-style:disc;">
+                <?php foreach ($findings as $finding): ?>
+                    <li class="info-line" style="margin-bottom:6px;">[INFO] <?php echo $esc(itm_module_decorated_links_format_finding_line($finding)); ?></li>
+                <?php endforeach; ?>
+            </ul>
         <?php endforeach; ?>
     </div>
     <?php else: ?>

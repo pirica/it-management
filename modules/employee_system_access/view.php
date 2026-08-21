@@ -116,7 +116,7 @@ if (!isset($crud_title)) {
                             <td>
                                 <?php $effectiveEmail = trim((string)($employee['work_email'] ?? '')) ?: (string)($employee['personal_email'] ?? ''); ?>
                                 <?php if ($effectiveEmail !== ''): ?>
-                                    <a href="mailto:<?php echo sanitize($effectiveEmail); ?>"><?php echo sanitize($effectiveEmail); ?></a>
+                                    <a class="itm-plain-link" href="mailto:<?php echo sanitize($effectiveEmail); ?>"><?php echo sanitize($effectiveEmail); ?></a>
                                 <?php else: ?>
                                     <span>—</span>
                                 <?php endif; ?>
@@ -136,7 +136,7 @@ if (!isset($crud_title)) {
 
                     <h2 style="margin-top: 20px;">System Access Grants</h2>
                     <?php if (empty($systemAccessCatalog)): ?>
-                        <p>No active System Access records were found. Add some in <a href="../system_access/">System Access</a>.</p>
+                        <p>No active System Access records were found. Add some in <a class="itm-plain-link" href="../system_access/">System Access</a>.</p>
                     <?php else: ?>
                         <table>
                             <thead>
@@ -150,7 +150,8 @@ if (!isset($crud_title)) {
                                 <?php $itmAccessId = (int)($itmAccess['id'] ?? 0); ?>
                                 <tr>
                                     <td><?php echo sanitize((string)($itmAccess['name'] ?? '')); ?></td>
-                                    <td><?php echo isset($grantedAccessMap[$itmAccessId]) ? '✅' : '❌'; ?></td>
+                                    <td><?php echo isset($grantedAccessMap[$itmAccessId]) ? '�
+' : '❌'; ?></td>
                                 </tr>
                             <?php endforeach; ?>
                             </tbody>

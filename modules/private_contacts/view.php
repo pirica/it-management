@@ -123,7 +123,7 @@ if (!isset($crud_title)) {
                                 <div class="card-body">
                                     <div class="info-row mb-3">
                                         <label class="small text-muted d-block"><?php echo htmlspecialchars($contact['email1_label'] ?? 'Email'); ?></label>
-                                        <a href="mailto:<?php echo htmlspecialchars($contact['email1_value']); ?>"><?php echo htmlspecialchars($contact['email1_value']); ?></a>
+                                        <a class="itm-plain-link" href="mailto:<?php echo htmlspecialchars($contact['email1_value']); ?>"><?php echo htmlspecialchars($contact['email1_value']); ?></a>
                                     </div>
                                     <div class="info-row mb-3">
                                         <label class="small text-muted d-block"><?php echo htmlspecialchars($contact['phone1_label'] ?? 'Phone'); ?></label>
@@ -132,7 +132,7 @@ if (!isset($crud_title)) {
                                     <?php if ($contact['website1_value']): ?>
                                         <div class="info-row mb-3">
                                             <label class="small text-muted d-block"><?php echo htmlspecialchars($contact['website1_label'] ?: 'Website'); ?></label>
-                                            <a href="<?php echo htmlspecialchars($contact['website1_value']); ?>" target="_blank"><?php echo htmlspecialchars($contact['website1_value']); ?></a>
+                                            <a class="itm-plain-link" href="<?php echo htmlspecialchars($contact['website1_value']); ?>" target="_blank"><?php echo htmlspecialchars($contact['website1_value']); ?></a>
                                         </div>
                                     <?php endif; ?>
                                 </div>

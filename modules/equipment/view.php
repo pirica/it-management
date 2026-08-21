@@ -282,7 +282,7 @@ if (!isset($crud_title)) {
             <div style="display:flex;flex-wrap:wrap;gap:10px;">
                 <?php foreach ($photoFilenames as $photoFilename): ?>
                     <?php $photoUrl = UPLOAD_URL . sanitize($photoFilename); ?>
-                    <a href="<?php echo $photoUrl; ?>" target="_blank" rel="noopener noreferrer" title="Open full-size image in a new tab">
+                    <a class="itm-plain-link" href="<?php echo $photoUrl; ?>" target="_blank" rel="noopener noreferrer" title="Open full-size image in a new tab">
                         <img
                             src="<?php echo $photoUrl; ?>"
                             alt="Ticket photo"
@@ -345,7 +345,8 @@ if (isset($_GET['disposal_pending']) && (string)$_GET['disposal_pending'] === '1
             <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
             <input type="hidden" name="approve_asset_disposal" value="1">
             <input type="hidden" name="equipment_id" value="<?php echo (int)$item['id']; ?>">
-            <button type="submit" class="btn btn-primary" title="Approve disposal">âœ…</button>
+            <button type="submit" class="btn btn-primary" title="Approve disposal">âœ
+</button>
         </form>
     <?php endif; ?>
     <?php if ($canRecordDisposal && !$hasPendingDisposal): ?>

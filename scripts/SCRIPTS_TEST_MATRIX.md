@@ -11,7 +11,7 @@ Generated from catalog on 2026-07-16. Catalog rows classified: **236**.
 |------|------:|---------|
 | 0 | 4 | Docs / reference only |
 | 1 | 7 | Always-safe baseline (CI parity) |
-| 2 | 20 | Manual static `check_*` cluster |
+| 2 | 21 | Manual static `check_*` cluster |
 | 3 | 150 | Runtime `verify_*` / `repro_*` / diagnostics |
 | 4 | 16 | Browser / human-flow / MBQA |
 | 5 | 39 | Excluded from blanket runs (destructive / maintenance) |
@@ -207,6 +207,7 @@ php scripts/employees_delete_clear_table_test.php
 | 2 | `check_employees_clear_table_transaction.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_equipment_clear_table_delete.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_index_table_compliance.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
+| 2 | `check_module_decorated_links.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_multi_tenant_leaks.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_phones.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_points.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |

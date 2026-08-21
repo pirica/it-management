@@ -59,10 +59,10 @@ $hotelResEmail = trim((string) ($row['hotel_reservations_email'] ?? ''));
 $hotelPhone = trim((string) ($row['hotel_phone'] ?? ''));
 ?>
 <?php if ($hotelInfoEmail !== ''): ?>
-<p><strong>Info:</strong> <a href="mailto:<?php echo sanitize($hotelInfoEmail); ?>" title="General information email"><?php echo sanitize($hotelInfoEmail); ?></a></p>
+<p><strong>Info:</strong> <a class="itm-plain-link" href="mailto:<?php echo sanitize($hotelInfoEmail); ?>" title="General information email"><?php echo sanitize($hotelInfoEmail); ?></a></p>
 <?php endif; ?>
 <?php if ($hotelResEmail !== ''): ?>
-<p><strong>Email:</strong> <a href="mailto:<?php echo sanitize($hotelResEmail); ?>" title="Reservations email"><?php echo sanitize($hotelResEmail); ?></a></p>
+<p><strong>Email:</strong> <a class="itm-plain-link" href="mailto:<?php echo sanitize($hotelResEmail); ?>" title="Reservations email"><?php echo sanitize($hotelResEmail); ?></a></p>
 <?php endif; ?>
 <?php if ($hotelPhone !== ''): ?>
 <p><strong>Phone:</strong> <?php echo sanitize($hotelPhone); ?></p>

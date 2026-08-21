@@ -188,7 +188,8 @@ if ($field === 'active') {
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
-            return ((int)$value === 1) ? '✅' : '❌';
+            return ((int)$value === 1) ? '�
+' : '❌';
         }
     }
 
@@ -197,7 +198,7 @@ if ($field === 'active') {
         $safeEmail = sanitize($text);
         $mailto = 'mailto:' . $text;
         $outlook = 'ms-outlook://compose?to=' . $text;
-        return '<a href="' . sanitize($mailto) . '" data-outlook-link="1" data-outlook-href="' . sanitize($outlook) . '">' . $safeEmail . '</a>';
+        return '<a class="itm-plain-link" href="' . sanitize($mailto) . '" data-outlook-link="1" data-outlook-href="' . sanitize($outlook) . '">' . $safeEmail . '</a>';
     }
 
     if (function_exists('itm_format_cell_scalar_display')) {
@@ -442,7 +443,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                 $isTinyInt = (bool)preg_match('/^tinyint\(1\)/i', (string)$columnMeta['Type']);
                 if ($isTinyInt) {
                     $normalizedBool = strtolower($rawValue);
-                    if (in_array($normalizedBool, ['1', 'active', 'yes', 'true', 'on', '✅'], true)) {
+                    if (in_array($normalizedBool, ['1', 'active', 'yes', 'true', 'on', '�
+'], true)) {
                         $rowData[$fieldName] = '1';
                     } elseif (in_array($normalizedBool, ['0', 'inactive', 'no', 'false', 'off', '❌'], true)) {
                         $rowData[$fieldName] = '0';
@@ -1079,7 +1081,8 @@ if (!isset($crud_title)) {
                             <?php elseif ($isBooleanToggle): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
-                                    <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
+                                    <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '�
+' : '❌'; ?></span></span>
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
@@ -1164,7 +1167,8 @@ document.addEventListener('change', function (event) {
     if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
     if (indicator) {
-        indicator.textContent = event.target.checked ? '✅' : '❌';
+        indicator.textContent = event.target.checked ? '�
+' : '❌';
     }
 });
 </script>

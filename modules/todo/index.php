@@ -460,7 +460,8 @@ if ($filter === 'my_day') {
 } elseif ($filter === 'important') {
     $todoFilterHeading = '⭐ Important';
 } elseif ($filter === 'planned') {
-    $todoFilterHeading = '📅 Planned';
+    $todoFilterHeading = '�
+ Planned';
 } elseif ($filter === 'assigned') {
     $todoFilterHeading = '👤 Attributed to me';
 }
@@ -566,22 +567,23 @@ if (!isset($crud_title)) {
             <?php else: ?>
             <div class="todo-container">
                 <div class="todo-sidebar">
-                    <a href="index.php" class="todo-sidebar-item">
+                    <a href="index.php" class="todo-sidebar-item itm-plain-link">
                         📝 To Do
                     </a>
-                    <a href="?filter=my_day" class="todo-sidebar-item <?php echo $filter === "my_day" ? "active" : ""; ?>">
+                    <a href="?filter=my_day" class="todo-sidebar-item <?php echo $filter ===  itm-plain-link"my_day" ? "active" : ""; ?>">
                         ☀️ My Day
                     </a>
-                    <a href="?filter=important" class="todo-sidebar-item <?php echo $filter === "important" ? "active" : ""; ?>">
+                    <a href="?filter=important" class="todo-sidebar-item <?php echo $filter ===  itm-plain-link"important" ? "active" : ""; ?>">
                         ⭐ Important
                     </a>
-                    <a href="?filter=planned" class="todo-sidebar-item <?php echo $filter === "planned" ? "active" : ""; ?>">
-                        📅 Planned
+                    <a href="?filter=planned" class="todo-sidebar-item <?php echo $filter ===  itm-plain-link"planned" ? "active" : ""; ?>">
+                        �
+ Planned
                     </a>
-                    <a href="?filter=assigned" class="todo-sidebar-item <?php echo $filter === "assigned" ? "active" : ""; ?>">
+                    <a href="?filter=assigned" class="todo-sidebar-item <?php echo $filter ===  itm-plain-link"assigned" ? "active" : ""; ?>">
                         👤 Attributed to me
                     </a>
-                    <a href="?filter=tasks" class="todo-sidebar-item <?php echo ($filter === "tasks" || $filter === "") ? "active" : ""; ?>">
+                    <a href="?filter=tasks" class="todo-sidebar-item <?php echo ($filter ===  itm-plain-link"tasks" || $filter === "") ? "active" : ""; ?>">
                         🏠 Tasks
                     </a>
 
@@ -710,32 +712,37 @@ if (!isset($crud_title)) {
 
     <!-- DEADLINE -->
     <div class="quick-add-btn" id="deadlineBtn" onclick="toggleQuickDropdown(event, 'deadlineDropdown')">
-        <span id="deadlineIcon">📅</span>
+        <span id="deadlineIcon">�
+</span>
         <span id="deadlineLabel">Deadline</span>
 
         <div class="quick-add-dropdown" id="deadlineDropdown">
             <div class="quick-add-dropdown-header">Deadline</div>
 
             <div class="quick-add-dropdown-item" onclick="setQuickValue('deadline', 'today', event)">
-                📅
+                �
+
                 <span class="item-label">Today</span>
                 <span class="item-suffix"><?php echo date("D"); ?></span>
             </div>
 
             <div class="quick-add-dropdown-item" onclick="setQuickValue('deadline', 'tomorrow', event)">
-                📅
+                �
+
                 <span class="item-label">Tomorrow</span>
                 <span class="item-suffix"><?php echo date("D", strtotime('+1 day')); ?></span>
             </div>
 
             <div class="quick-add-dropdown-item" onclick="setQuickValue('deadline', 'next_week', event)">
-                📅
+                �
+
                 <span class="item-label">Next week</span>
                 <span class="item-suffix">Mon</span>
             </div>
 
             <div class="quick-add-dropdown-item" onclick="setQuickValue('deadline', 'choose', event)">
-                📅
+                �
+
                 <span class="item-label">Choose a date</span>
             </div>
 
@@ -793,27 +800,32 @@ if (!isset($crud_title)) {
             <div class="quick-add-dropdown-header">Repeat</div>
 
             <div class="quick-add-dropdown-item" onclick="setQuickValue('repeat', 'daily', event)">
-                📅
+                �
+
                 <span class="item-label">Daily</span>
             </div>
 
             <div class="quick-add-dropdown-item" onclick="setQuickValue('repeat', 'weekdays', event)">
-                📅
+                �
+
                 <span class="item-label">Weekdays</span>
             </div>
 
             <div class="quick-add-dropdown-item" onclick="setQuickValue('repeat', 'weekly', event)">
-                📅
+                �
+
                 <span class="item-label">Weekly</span>
             </div>
 
             <div class="quick-add-dropdown-item" onclick="setQuickValue('repeat', 'monthly', event)">
-                📅
+                �
+
                 <span class="item-label">Monthly</span>
             </div>
 
             <div class="quick-add-dropdown-item" onclick="setQuickValue('repeat', 'annually', event)">
-                📅
+                �
+
                 <span class="item-label">Annually</span>
             </div>
 
@@ -955,7 +967,8 @@ if (!isset($crud_title)) {
                                                         $dateLabel = $isToday ? "Today" : date("M j", strtotime($task["due_date"]));
                                                         $dateStyle = $isToday ? 'style="color: var(--danger); font-weight: 600;"' : '';
                                                     ?>
-                                                    <span <?php echo $dateStyle; ?>>• 📅 <?php echo $dateLabel; ?></span>
+                                                    <span <?php echo $dateStyle; ?>>• �
+ <?php echo $dateLabel; ?></span>
                                                 <?php endif; ?>
                                                 <?php if ($task["reminder_at"]): ?>
                                                     <?php
@@ -992,9 +1005,10 @@ if (!isset($crud_title)) {
                                             </div>
                                         </div>
                                         <div class="task-star <?php echo $task["importance"] ? "active" : ""; ?>" onclick="toggleImportance(<?php echo $task["id"]; ?>, this)">
-                                            <?php echo $task["importance"] ? "★" : "☆"; ?>
+                                            <?php echo $task["importance"] ? "�
+" : "☆"; ?>
                                         </div>
-                                        <a href="edit.php?id=<?php echo $task["id"]; ?>" style="margin-left:15px; text-decoration:none;" title="Edit">✏️</a>
+                                        <a class="itm-plain-link" href="edit.php?id=<?php echo $task["id"]; ?>" style="margin-left:15px; text-decoration:none;" title="Edit">✏️</a>
                                         <?php if ((int)($task['created_by'] ?? 0) === (int)$logged_user_id): ?>
                                         <button type="button" class="btn btn-sm" style="background:none;border:none;padding:0;margin-left:5px;" onclick="itmOpenQrShareModal('index.php?ajax_action=create_share_session', <?php echo (int)$task['id']; ?>)" title="Share to device">📱</button>
                                         <button type="button" class="btn btn-sm" style="background:none;border:none;padding:0;margin-left:5px;" onclick="itmOpenWhatsAppShare('index.php?ajax_action=create_share_session', <?php echo (int)$task['id']; ?>, null, 'task')" title="Share on WhatsApp"><img src="../../images/whatsapp.svg" alt="" width="16" height="16" style="display:block;"></button>
@@ -1109,7 +1123,8 @@ if (!isset($crud_title)) {
                                 </label>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="completed" value="1" <?php echo !empty($data["completed"]) ? "checked" : ""; ?>>
-                                    <span>Completed ✅</span>
+                                    <span>Completed �
+</span>
                                 </label>
                             </div>
                             <div class="form-actions" style="margin-top: 30px;">
@@ -1139,7 +1154,8 @@ if (!isset($crud_title)) {
                                 <?php if ($data["due_date"]): ?>
                                 <tr>
                                     <th style="text-align: left; padding-right: 20px;">Due Date</th>
-                                    <td>📅 <?php echo date("M j, Y H:i", strtotime($data["due_date"])); ?></td>
+                                    <td>�
+ <?php echo date("M j, Y H:i", strtotime($data["due_date"])); ?></td>
                                 </tr>
                                 <?php endif; ?>
                                 <?php if ($data["reminder_at"]): ?>
@@ -1482,7 +1498,8 @@ if (!isset($crud_title)) {
         } else {
             input.value = '1';
             btn.style.color = 'var(--accent)';
-            icon.textContent = '★';
+            icon.textContent = '�
+';
         }
     }
 
@@ -1503,7 +1520,8 @@ if (!isset($crud_title)) {
         .then(data => {
             if (data.ok) {
                 el.classList.toggle("active");
-                el.textContent = newVal ? "★" : "☆";
+                el.textContent = newVal ? "�
+" : "☆";
             }
         });
     }

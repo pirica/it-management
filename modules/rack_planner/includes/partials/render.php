@@ -413,18 +413,18 @@ if (!isset($crud_title)) {
                                 $rackPlannerSortLinkStyle = 'text-decoration:none;color:inherit;';
                                 ?>
                                 <th>
-                                    <a href="?<?php echo $rackPlannerSortQueryBase; ?>&sort=name&dir=<?php echo ($sort === 'name' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>" style="<?php echo $rackPlannerSortLinkStyle; ?>">
+                                    <a style="text-decoration:none;color:inherit;" href="?<?php echo $rackPlannerSortQueryBase; ?>&sort=name&dir=<?php echo ($sort === 'name' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>" style="<?php echo $rackPlannerSortLinkStyle; ?>">
                                         Name<?php if ($sort === 'name'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
                                     </a>
                                 </th>
                                 <th>
-                                    <a href="?<?php echo $rackPlannerSortQueryBase; ?>&sort=rack_units&dir=<?php echo ($sort === 'rack_units' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>" style="<?php echo $rackPlannerSortLinkStyle; ?>">
+                                    <a style="text-decoration:none;color:inherit;" href="?<?php echo $rackPlannerSortQueryBase; ?>&sort=rack_units&dir=<?php echo ($sort === 'rack_units' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>" style="<?php echo $rackPlannerSortLinkStyle; ?>">
                                         Units<?php if ($sort === 'rack_units'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
                                     </a>
                                 </th>
                                 <th>Notes</th>
                                 <th>
-                                    <a href="?<?php echo $rackPlannerSortQueryBase; ?>&sort=status_id&dir=<?php echo ($sort === 'status_id' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>" style="<?php echo $rackPlannerSortLinkStyle; ?>">
+                                    <a style="text-decoration:none;color:inherit;" href="?<?php echo $rackPlannerSortQueryBase; ?>&sort=status_id&dir=<?php echo ($sort === 'status_id' && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>" style="<?php echo $rackPlannerSortLinkStyle; ?>">
                                         Status<?php if ($sort === 'status_id'): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
                                     </a>
                                 </th>

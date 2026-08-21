@@ -106,10 +106,10 @@ if (is_array($hotelContactRow)) {
     $infoEmail = trim((string) ($hotelContactRow['contact_email'] ?? ''));
     $resEmail = trim((string) ($hotelContactRow['reservations_email'] ?? ''));
     if ($infoEmail !== ''): ?>
-<p><strong>Info:</strong> <a href="mailto:<?php echo sanitize($infoEmail); ?>" title="General information email"><?php echo sanitize($infoEmail); ?></a></p>
+<p><strong>Info:</strong> <a class="itm-plain-link" href="mailto:<?php echo sanitize($infoEmail); ?>" title="General information email"><?php echo sanitize($infoEmail); ?></a></p>
 <?php endif;
     if ($resEmail !== ''): ?>
-<p><strong>Email:</strong> <a href="mailto:<?php echo sanitize($resEmail); ?>" title="Reservations email"><?php echo sanitize($resEmail); ?></a></p>
+<p><strong>Email:</strong> <a class="itm-plain-link" href="mailto:<?php echo sanitize($resEmail); ?>" title="Reservations email"><?php echo sanitize($resEmail); ?></a></p>
 <?php endif;
 }
 ?>

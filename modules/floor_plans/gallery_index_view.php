@@ -34,10 +34,10 @@ if ($galleryFolderId > 0) {
         <h2 class="itm-floor-plan-sidebar-title">Folders</h2>
         <ul class="itm-folder-tree">
             <li class="itm-folder-tree-item itm-folder-reparent-root itm-folder-drop-target<?php echo ($galleryFolderId === 0 && !$galleryUnfiled) ? ' is-active' : ''; ?>" data-folder-reparent-root="1">
-                <a href="index.php">📂 All files <span class="itm-drop-hint">(root)</span></a>
+                <a class="itm-plain-link" href="index.php">📂 All files <span class="itm-drop-hint">(root)</span></a>
             </li>
             <li class="itm-folder-tree-item itm-folder-drop-target<?php echo $galleryUnfiled ? ' is-active' : ''; ?>" data-folder-drop-id="0" data-folder-drop-unfiled="1">
-                <a href="index.php?unfiled=1">📄 Unfiled <span class="itm-drop-hint">(drop here)</span></a>
+                <a class="itm-plain-link" href="index.php?unfiled=1">📄 Unfiled <span class="itm-drop-hint">(drop here)</span></a>
             </li>
             <?php echo fp_render_folder_tree_html($galleryTree, $galleryFolderId, $galleryUnfiled); ?>
         </ul>
@@ -190,7 +190,7 @@ if ($galleryFolderId > 0) {
                     ?>
                     <article class="itm-floor-plan-card" data-plan-id="<?php echo $fpId; ?>">
                         <span class="itm-plan-drag-handle" draggable="true" data-plan-id="<?php echo $fpId; ?>" title="Drag to move file" aria-label="Drag to move file">⠿</span>
-                        <a href="view.php?id=<?php echo $fpId; ?>" class="itm-floor-plan-thumb-link" draggable="false" data-preview-url="<?php echo sanitize($fpUrl); ?>" data-preview-type="<?php echo sanitize($fpPreviewKind); ?>" data-preview-name="<?php echo sanitize((string)$fpItem['display_name']); ?>" data-preview-download-name="<?php echo sanitize($fpDownloadName); ?>">
+                        <a class="itm-plain-link" href="view.php?id=<?php echo $fpId; ?>" class="itm-floor-plan-thumb-link" draggable="false" data-preview-url="<?php echo sanitize($fpUrl); ?>" data-preview-type="<?php echo sanitize($fpPreviewKind); ?>" data-preview-name="<?php echo sanitize((string)$fpItem['display_name']); ?>" data-preview-download-name="<?php echo sanitize($fpDownloadName); ?>">
                             <?php if ($fpPreviewKind === 'pdf'): ?>
                                 <div class="itm-floor-plan-pdf-thumb">PDF</div>
                             <?php elseif ($fpPreviewKind === 'cad'): ?>

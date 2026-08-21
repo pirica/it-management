@@ -24,6 +24,7 @@ if (!function_exists('itm_tier2_check_scripts_canonical_fallback')) {
             'check_audit_logs_coverage.php',
             'check_codacy_xss_echo.php',
             'check_manual_sql_string.php',
+            'check_module_decorated_links.php',
             'check_crud_audit_soft_delete.php',
             'check_crud_boolean_cell_display.php',
             'check_crud_has_company_from_field_columns.php',

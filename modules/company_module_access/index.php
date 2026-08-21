@@ -407,7 +407,8 @@ if (!isset($crud_title)) {
                                                     <?= $effectiveEnabled ? 'checked' : '' ?>
                                                     <?= $toggleDisabled ? 'disabled' : '' ?>
                                                 >
-                                                <span class="itm-check-indicator" aria-hidden="true"><?= $effectiveEnabled ? '✅' : '❌' ?></span>
+                                                <span class="itm-check-indicator" aria-hidden="true"><?= $effectiveEnabled ? '�
+' : '❌' ?></span>
                                             </label>
                                             <input
                                                 type="text"
@@ -456,7 +457,7 @@ if (!isset($crud_title)) {
                             <?php foreach ($registryRows as $registryRow): ?>
                                 <tr>
                                     <td><?= sanitize((string)($registryRow['module_name'] ?? '')) ?></td>
-                                    <td><a href="../<?= sanitize((string)($registryRow['module_slug'] ?? '')) ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); text-decoration:none;">
+                                    <td><a class="itm-plain-link" href="../<?= sanitize((string)($registryRow['module_slug'] ?? '')) ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); text-decoration:none;">
                                         <?= sanitize((string)($registryRow['module_slug'] ?? '')) ?></a>
                                     </td>
                                     <td><?= ((int)($registryRow['is_system_module'] ?? 0) === 1) ? '<span class="badge">System</span>' : '<span class="badge badge-danger">No</span>' ?></td>
@@ -505,7 +506,8 @@ if (!isset($crud_title)) {
                                 <label><?= sanitize('System Module') ?></label>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="is_system_module" value="1" <?= ((int)$formValues['is_system_module'] === 1) ? 'checked' : '' ?>>
-                                    <span>System Module <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$formValues['is_system_module'] === 1) ? '✅' : '❌' ?></span></span>
+                                    <span>System Module <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$formValues['is_system_module'] === 1) ? '�
+' : '❌' ?></span></span>
                                 </label>
                             </div>
                             <input type="hidden" name="active" value="<?= (int)$formValues['active'] ?>">
@@ -521,10 +523,11 @@ if (!isset($crud_title)) {
                             <p>Registry row not found.</p>
                         <?php else: ?>
                             <p><strong>Module Name:</strong> <?= sanitize((string)$viewRow['module_name']) ?></p>
-                            <p><strong>Slug:</strong> <a href="../<?= sanitize((string)($viewRow['module_slug'] ?? '')) ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); text-decoration:none;">
+                            <p><strong>Slug:</strong> <a class="itm-plain-link" href="../<?= sanitize((string)($viewRow['module_slug'] ?? '')) ?>" rel="nofollow noreferrer noopener" target="_blank" style="color:var(--accent); text-decoration:none;">
                                                       <?= sanitize((string)($viewRow['module_slug'] ?? '')) ?></a></p>
                             <p><strong>Global Icon:</strong> <?= sanitize((string)($viewRow['icon'] ?? '')) !== '' ? sanitize((string)$viewRow['icon']) : '—' ?></p>
-                            <p><strong>System Module:</strong> <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$viewRow['is_system_module'] === 1) ? '✅' : '❌' ?></span></p>
+                            <p><strong>System Module:</strong> <span class="itm-check-indicator" aria-hidden="true"><?= ((int)$viewRow['is_system_module'] === 1) ? '�
+' : '❌' ?></span></p>
                             <table style="margin-top:16px;">
                                 <tbody>
                                 <?php itm_crud_render_view_audit_meta_rows($conn, (int)$company_id, $viewRow); ?>

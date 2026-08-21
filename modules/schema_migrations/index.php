@@ -245,9 +245,9 @@ $csrfToken = itm_get_csrf_token();
             </div>
 
             <p style="margin:0 0 16px;color:var(--text-muted, #6b7280);font-size:13px;line-height:1.45;">
-                Lists every <code>db/migrations/*.sql</code> file with live probe status (same source as <a href="<?php echo sanitize($migrateScriptUrl); ?>">migrate.php</a>).
+                Lists every <code>db/migrations/*.sql</code> file with live probe status (same source as <a class="itm-plain-link" href="<?php echo sanitize($migrateScriptUrl); ?>">migrate.php</a>).
                 <strong>Applied at</strong> and 🗑️ delete apply only when a row exists in the audit table — run
-                <a href="<?php echo sanitize($migrateApplyUrl); ?>">migrate.php?run=1&amp;apply=1</a> to record satisfied migrations without re-running destructive SQL.
+                <a class="itm-plain-link" href="<?php echo sanitize($migrateApplyUrl); ?>">migrate.php?run=1&amp;apply=1</a> to record satisfied migrations without re-running destructive SQL.
             </p>
 
             <?php if ($flashMessage !== ''): ?>
@@ -304,22 +304,22 @@ $csrfToken = itm_get_csrf_token();
                         <tr>
                             <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                             <th>
-                                <a class="sm-sort-link" href="?<?php echo sanitize(itm_schema_migrations_build_query(array_merge($listQueryBase, ['sort' => 'status', 'dir' => ($sort === 'status' && $dir === 'ASC') ? 'DESC' : 'ASC', 'page' => 1]))); ?>">
+                                <a style="text-decoration:none;color:inherit;" class="sm-sort-link" href="?<?php echo sanitize(itm_schema_migrations_build_query(array_merge($listQueryBase, ['sort' => 'status', 'dir' => ($sort === 'status' && $dir === 'ASC') ? 'DESC' : 'ASC', 'page' => 1]))); ?>">
                                     Status <?php echo $sort === 'status' ? ($dir === 'ASC' ? '▲' : '▼') : ''; ?>
                                 </a>
                             </th>
                             <th>
-                                <a class="sm-sort-link" href="?<?php echo sanitize(itm_schema_migrations_build_query(array_merge($listQueryBase, ['sort' => 'filename', 'dir' => ($sort === 'filename' && $dir === 'ASC') ? 'DESC' : 'ASC', 'page' => 1]))); ?>">
+                                <a style="text-decoration:none;color:inherit;" class="sm-sort-link" href="?<?php echo sanitize(itm_schema_migrations_build_query(array_merge($listQueryBase, ['sort' => 'filename', 'dir' => ($sort === 'filename' && $dir === 'ASC') ? 'DESC' : 'ASC', 'page' => 1]))); ?>">
                                     Filename <?php echo $sort === 'filename' ? ($dir === 'ASC' ? '▲' : '▼') : ''; ?>
                                 </a>
                             </th>
                             <th>
-                                <a class="sm-sort-link" href="?<?php echo sanitize(itm_schema_migrations_build_query(array_merge($listQueryBase, ['sort' => 'checksum', 'dir' => ($sort === 'checksum' && $dir === 'ASC') ? 'DESC' : 'ASC', 'page' => 1]))); ?>">
+                                <a style="text-decoration:none;color:inherit;" class="sm-sort-link" href="?<?php echo sanitize(itm_schema_migrations_build_query(array_merge($listQueryBase, ['sort' => 'checksum', 'dir' => ($sort === 'checksum' && $dir === 'ASC') ? 'DESC' : 'ASC', 'page' => 1]))); ?>">
                                     Checksum <?php echo $sort === 'checksum' ? ($dir === 'ASC' ? '▲' : '▼') : ''; ?>
                                 </a>
                             </th>
                             <th>
-                                <a class="sm-sort-link" href="?<?php echo sanitize(itm_schema_migrations_build_query(array_merge($listQueryBase, ['sort' => 'applied_at', 'dir' => ($sort === 'applied_at' && $dir === 'ASC') ? 'DESC' : 'ASC', 'page' => 1]))); ?>">
+                                <a style="text-decoration:none;color:inherit;" class="sm-sort-link" href="?<?php echo sanitize(itm_schema_migrations_build_query(array_merge($listQueryBase, ['sort' => 'applied_at', 'dir' => ($sort === 'applied_at' && $dir === 'ASC') ? 'DESC' : 'ASC', 'page' => 1]))); ?>">
                                     Applied at <?php echo $sort === 'applied_at' ? ($dir === 'ASC' ? '▲' : '▼') : ''; ?>
                                 </a>
                             </th>
@@ -389,7 +389,7 @@ $csrfToken = itm_get_csrf_token();
                                 <td><?php echo sanitize($appliedAtCell !== '' ? $appliedAtCell : '—'); ?></td>
                                 <td>
                                     <?php if ($onDisk): ?>
-                                        <a href="<?php echo sanitize($sqlHref); ?>" target="_blank" rel="noopener noreferrer" title="Open SQL in new tab">Open SQL</a>
+                                        <a class="itm-plain-link" href="<?php echo sanitize($sqlHref); ?>" target="_blank" rel="noopener noreferrer" title="Open SQL in new tab">Open SQL</a>
                                         <?php if (isset($bootstrapFilenames[$filename])): ?>
                                             <span class="sm-badge bootstrap" title="Bootstrap file — not in runner apply loop">Bootstrap</span>
                                         <?php endif; ?>

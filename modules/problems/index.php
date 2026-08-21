@@ -393,7 +393,7 @@ function problems_render_owner_label(array $row)
                                 <td><?php echo (int)($row['incident_count'] ?? 0); ?></td>
                                 <td>
                                     <?php if ((int)($row['master_ticket_id'] ?? 0) > 0): ?>
-                                        <a href="view.php?id=<?php echo (int)$row['id']; ?>#master-ticket">#<?php echo (int)$row['master_ticket_id']; ?></a>
+                                        <a class="itm-plain-link" href="view.php?id=<?php echo (int)$row['id']; ?>#master-ticket">#<?php echo (int)$row['master_ticket_id']; ?></a>
                                     <?php else: ?>
                                         —
                                     <?php endif; ?>

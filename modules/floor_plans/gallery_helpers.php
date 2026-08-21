@@ -883,7 +883,7 @@ function fp_render_folder_tree_html(array $tree, int $selectedFolderId, bool $un
         $html .= '<li class="itm-folder-tree-item itm-folder-tree-folder itm-folder-drop-target' . $isActive . '" data-folder-id="' . $id . '" data-folder-drop-id="' . $id . '">';
         $html .= '<div class="itm-folder-tree-row" style="padding-left:' . (int)$pad . 'px;">';
         $html .= '<span class="itm-folder-drag-handle" draggable="true" data-folder-id="' . $id . '" title="Drag to move folder" aria-label="Drag to move folder">⠿</span>';
-        $html .= '<a href="index.php?folder_id=' . $id . '" draggable="false">📁 ' . sanitize((string)$node['name']) . '</a>';
+        $html .= '<a class="itm-plain-link" href="index.php?folder_id=' . $id . '" draggable="false">📁 ' . sanitize((string)$node['name']) . '</a>';
         $html .= '<span class="itm-drop-hint">(drop)</span>';
         $html .= '</div>';
         if (!empty($node['children'])) {

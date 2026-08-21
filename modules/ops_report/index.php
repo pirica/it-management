@@ -1173,12 +1173,12 @@ if (!isset($crud_title)) {
                         <thead>
                             <tr>
                                 <th>
-                                    <a href="<?php echo $oprSearchHitsListUrl('report_date', $nextReportDateDir, 1); ?>">
+                                    <a class="itm-plain-link" href="<?php echo $oprSearchHitsListUrl('report_date', $nextReportDateDir, 1); ?>">
                                         Report date<?php if ($searchSort === 'report_date'): ?> <?php echo $searchDir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
                                     </a>
                                 </th>
                                 <th>
-                                    <a href="<?php echo $oprSearchHitsListUrl('sections', $nextSectionsDir, 1); ?>">
+                                    <a class="itm-plain-link" href="<?php echo $oprSearchHitsListUrl('sections', $nextSectionsDir, 1); ?>">
                                         Sections<?php if ($searchSort === 'sections'): ?> <?php echo $searchDir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
                                     </a>
                                 </th>
@@ -1206,7 +1206,7 @@ if (!isset($crud_title)) {
                             <tr>
                                 <td>
                                     <?php echo sanitize($search); ?> |
-                                    <a href="<?php echo $hitHref; ?>"><?php echo sanitize(opr_format_date($hitDate)); ?></a>
+                                    <a class="itm-plain-link" href="<?php echo $hitHref; ?>"><?php echo sanitize(opr_format_date($hitDate)); ?></a>
                                 </td>
                                 <td><?php echo sanitize(implode(', ', $sections)); ?></td>
                             </tr>

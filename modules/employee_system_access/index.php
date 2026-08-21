@@ -307,11 +307,12 @@ if (!isset($crud_title)) {
                                 <?php
                                 $effectiveEmail = trim((string)($row['work_email'] ?? '')) ?: (string)($row['personal_email'] ?? '');
                                 if ($effectiveEmail !== ''): ?>
-                                    <a href="mailto:<?php echo sanitize($effectiveEmail); ?>"><?php echo sanitize($effectiveEmail); ?></a>
+                                    <a class="itm-plain-link" href="mailto:<?php echo sanitize($effectiveEmail); ?>"><?php echo sanitize($effectiveEmail); ?></a>
                                 <?php endif; ?>
                             </td>
                             <?php foreach (array_keys($accessLabelsById) as $accessId): ?>
-                                <td><?php echo isset($row['grants'][$accessId]) ? '✅' : '❌'; ?></td>
+                                <td><?php echo isset($row['grants'][$accessId]) ? '�
+' : '❌'; ?></td>
                             <?php endforeach; ?>
                             <td class="itm-actions-cell" data-itm-actions-origin="1">
                                 <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['employee_id']; ?>">🔎</a>

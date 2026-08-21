@@ -53,6 +53,12 @@ if (!function_exists('itm_module_decorated_links_line_is_decorated_anchor')) {
     function itm_module_decorated_links_line_is_decorated_anchor($line)
     {
         $line = (string)$line;
+        if (strpos($line, 'itm-decorated-link-exempt') !== false) {
+            return false;
+        }
+        if (preg_match('/<DT>\s*<A\s+HREF/i', $line)) {
+            return false;
+        }
         if (!preg_match('/<a\s[^>]*href\s*=/i', $line)) {
             return false;
         }
@@ -449,5 +455,49 @@ if (!function_exists('itm_module_decorated_links_summarize_by_slug')) {
         }
         ksort($counts);
         return $counts;
+    }
+}
+
+if (!function_exists('itm_module_decorated_links_group_by_slug')) {
+    /**
+     * @param array<int, array{module_slug:string,rel_file:string,line:int,href:string,source:string}> $rows
+     * @return array<string, array<int, array{module_slug:string,rel_file:string,line:int,href:string,source:string}>>
+     */
+    function itm_module_decorated_links_group_by_slug(array $rows)
+    {
+        $grouped = [];
+        foreach ($rows as $row) {
+            $slug = (string)($row['module_slug'] ?? '');
+            if ($slug === '') {
+                continue;
+            }
+            if (!isset($grouped[$slug])) {
+                $grouped[$slug] = [];
+            }
+            $grouped[$slug][] = $row;
+        }
+        ksort($grouped);
+        foreach ($grouped as $slug => $items) {
+            usort($grouped[$slug], static function (array $a, array $b): int {
+                $fileCmp = strcmp((string)($a['rel_file'] ?? ''), (string)($b['rel_file'] ?? ''));
+                if ($fileCmp !== 0) {
+                    return $fileCmp;
+                }
+                return (int)($a['line'] ?? 0) <=> (int)($b['line'] ?? 0);
+            });
+        }
+        return $grouped;
+    }
+}
+
+if (!function_exists('itm_module_decorated_links_format_finding_line')) {
+    function itm_module_decorated_links_format_finding_line(array $finding)
+    {
+        $relFile = (string)($finding['rel_file'] ?? '');
+        $line = (int)($finding['line'] ?? 0);
+        $href = (string)($finding['href'] ?? '');
+        $source = (string)($finding['source'] ?? '');
+        $location = $line > 0 ? $relFile . ':' . $line : $relFile;
+        return $location . ' href=' . $href . ' source=' . $source;
     }
 }

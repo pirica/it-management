@@ -108,7 +108,7 @@ $pageTitle = 'Amenity icons';
 </div>
 </div>
 
-<p style="margin-top:16px;font-size:.85rem;color:#666;">Icons from <a href="https://lucide.dev/" target="_blank" rel="noopener noreferrer">Lucide</a> (ISC). See <code>booking/images/amenities/ATTRIBUTION.md</code>.</p>
+<p style="margin-top:16px;font-size:.85rem;color:#666;">Icons from <a class="itm-plain-link" href="https://lucide.dev/" target="_blank" rel="noopener noreferrer">Lucide</a> (ISC). See <code>booking/images/amenities/ATTRIBUTION.md</code>.</p>
 </div>
 </div>
 </div>

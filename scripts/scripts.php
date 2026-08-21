@@ -1336,6 +1336,20 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">
+                    <td><a href="check_module_decorated_links.php" target="_blank" rel="nofollow noreferrer">check_module_decorated_links.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Tier 2 static gate: exit <code>1</code> when any module renders decorated inline <code>&lt;a&gt;</code> (not <code>btn</code>, not <code>itm-plain-link</code>, not sort-header <code>color:inherit</code>). Repair with <code>apply_module_decorated_plain_links.php --apply</code>. Included in <code>run_tier2_checks.php</code>.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Codebase">
+                    <td><a href="apply_module_decorated_plain_links.php" target="_blank" rel="nofollow noreferrer">apply_module_decorated_plain_links.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-apply">Apply</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Bulk-apply <code>itm-plain-link</code> (or sort-header <code>color:inherit</code>) to findings from <code>list_module_decorated_links.php</code>. Default dry-run; writes with <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lib: <code>scripts/lib/itm_module_decorated_links_apply.php</code>.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Codebase">
                     <td><a href="list_module_decorated_links.php" target="_blank" rel="nofollow noreferrer">list_module_decorated_links.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>

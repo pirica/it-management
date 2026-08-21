@@ -100,7 +100,7 @@ if (!isset($crud_title)) {
                 <?php $effectiveEmail = trim((string)($employee['work_email'] ?? '')) ?: (string)($employee['personal_email'] ?? ''); ?>
                 <p style="margin-top:0;"><strong>Email:</strong> <?php echo sanitize($effectiveEmail); ?></p>
                 <?php if (empty($systemAccessCatalog)): ?>
-                    <p>No active System Access records were found. Add some in <a href="../system_access/">System Access</a>.</p>
+                    <p>No active System Access records were found. Add some in <a class="itm-plain-link" href="../system_access/">System Access</a>.</p>
                 <?php endif; ?>
 
                 <form method="POST">

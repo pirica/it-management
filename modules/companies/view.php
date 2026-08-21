@@ -114,7 +114,7 @@ if (!isset($crud_title)) {
                         <tr><th>City</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['city'])); ?></td></tr>
                         <tr><th>Country</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['country'])); ?></td></tr>
                         <tr><th>Phone</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['phone'])); ?></td></tr>
-                        <tr><th>Email</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['email'])); ?><?php $companyEmail = trim(itm_company_view_value($itemNormalized, ['email'])); if ($companyEmail !== ''): ?><div style="margin-top:8px;color:var(--text-secondary);font-size:0.95em;">Inbound ticket address — configure IMAP polling under <a href="<?php echo sanitize(BASE_URL . 'modules/emails/index.php?tab=smtp'); ?>">Email Management → SMTP</a>.</div><?php endif; ?></td></tr>
+                        <tr><th>Email</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['email'])); ?><?php $companyEmail = trim(itm_company_view_value($itemNormalized, ['email'])); if ($companyEmail !== ''): ?><div style="margin-top:8px;color:var(--text-secondary);font-size:0.95em;">Inbound ticket address — configure IMAP polling under <a class="itm-plain-link" href="<?php echo sanitize(BASE_URL . 'modules/emails/index.php?tab=smtp'); ?>">Email Management → SMTP</a>.</div><?php endif; ?></td></tr>
                         <tr><th>Website</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['website'])); ?></td></tr>
                         <tr><th>VAT</th><td><?php echo sanitize(itm_company_view_value($itemNormalized, ['vat'])); ?></td></tr>
                         <?php $unitNo = itm_company_view_value($itemNormalized, ['unit_no']); ?>
@@ -123,7 +123,8 @@ if (!isset($crud_title)) {
                         <?php endif; ?>
                         <tr><th>Comments</th><td><?php echo nl2br(sanitize(itm_company_view_value($itemNormalized, ['comments']))); ?></td></tr>
                         <?php $activeValue = (int)itm_company_view_value($itemNormalized, ['active', 'status'], '0'); ?>
-                        <tr><th>Status</th><td><?php echo $activeValue === 1 ? '✅' : '❌'; ?></td></tr>
+                        <tr><th>Status</th><td><?php echo $activeValue === 1 ? '�
+' : '❌'; ?></td></tr>
                         <?php $companyAuditScopeId = (int)itm_company_view_value($itemNormalized, ['id']); ?>
                         <tr><th>Deleted By</th><td><?php echo itm_crud_render_audit_cell_value($conn, $companyAuditScopeId, 'deleted_by', $itemNormalized['deleted_by'] ?? null); ?></td></tr>
                         <tr><th>Deleted At</th><td><?php echo itm_crud_render_audit_cell_value($conn, $companyAuditScopeId, 'deleted_at', $itemNormalized['deleted_at'] ?? null); ?></td></tr>

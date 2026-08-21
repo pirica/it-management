@@ -125,7 +125,7 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
                     <p class="qr-type-picker-intro">Choose a type — each tile opens the content and design wizard.</p>
                     <div class="qr-type-grid">
                         <?php foreach ($qrCatalog as $slug => $meta): ?>
-                        <a class="qr-type-card" href="create.php?type=<?= rawurlencode($slug) ?>&step=2" title="<?= sanitize((string)$meta['label']) ?>">
+                        <a class="qr-type-card itm-plain-link" href="create.php?type=<?= rawurlencode($slug) ?>&step=2" title="<?= sanitize((string)$meta['label']) ?>">
                             <span class="qr-type-emoji" aria-hidden="true"><?= sanitize((string)$meta['emoji']) ?></span>
                             <span class="qr-type-label"><?= sanitize((string)$meta['label']) ?></span>
                         </a>
