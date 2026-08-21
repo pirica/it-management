@@ -121,6 +121,12 @@ foreach (['problems', 'problem_ticket_links', 'known_errors'] as $table) {
 }
 pm_verify_pass('Audit triggers present for problem tables (9 total)');
 
+if (!is_file(ROOT_PATH . 'modules/master_tickets/index.php')) {
+    pm_verify_fail('Missing modules/master_tickets/index.php — global master ticket UI (no company_id on master_tickets).');
+} else {
+    pm_verify_pass('Master Tickets module entry exists');
+}
+
 $automationSlugs = itm_automation_rules_trigger_slugs();
 foreach (['problem.created', 'problem.status_changed', 'known_error.published'] as $slug) {
     if (!in_array($slug, $automationSlugs, true)) {
