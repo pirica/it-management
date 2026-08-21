@@ -40,6 +40,7 @@ Create flow picks an **existing problem** that already has ≥1 linked incident 
 - Tables opt out of table-tools import/export (`data-itm-no-import-excel`, `data-itm-no-export-*`).
 - Actions: emoji-only + `title` / `aria-label` (NO MIXED).
 - Problem Management still exposes the same master card on `view.php#master-ticket`; this module is the global entry point.
+- Incident **View** links use [`modules/tickets/master_view.php`](http://localhost/it-management/modules/tickets/master_view.php) with `id` + `company_id` (not session-scoped `view.php`).
 
 ## 6. API Actions (If Applicable)
 

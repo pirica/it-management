@@ -8,6 +8,7 @@ $pageTitle = 'Master Tickets';
 
 require_once dirname(__DIR__, 2) . '/config/config.php';
 require_once ROOT_PATH . 'includes/itm_problem_management.php';
+require_once ROOT_PATH . 'includes/itm_tickets_view.php';
 
 itm_require_crud_role_module_permission($conn, 'view', $moduleSlug);
 
@@ -395,7 +396,7 @@ $canEditMaster = itm_user_has_role_module_permission(
                                     <td><?php echo sanitize($masterIncident['title'] ?? ''); ?></td>
                                     <td><?php echo sanitize($masterIncident['status_name'] ?? '—'); ?></td>
                                     <td class="itm-actions-cell" data-itm-actions-origin="1">
-                                        <a class="btn btn-sm" href="../tickets/view.php?id=<?php echo (int)$masterIncident['id']; ?>" title="View">🔎</a>
+                                        <a class="btn btn-sm" href="../tickets/<?php echo sanitize(itm_ticket_master_view_page_href((int)$masterIncident['id'], (int)($masterIncident['company_id'] ?? 0), $masterTicketId)); ?>" title="View">🔎</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
