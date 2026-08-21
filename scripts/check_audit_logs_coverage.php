@@ -142,6 +142,7 @@ function audit_logs_system_derived_tables(): array
         'schema_migrations' => true,
         'search_index' => true,
         'qr_code_scans' => true,
+        'master_ticket_updates' => true,
     ];
 }
 

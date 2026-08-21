@@ -284,11 +284,15 @@ if (!isset($crud_title)) {
                                 <thead><tr><th>Title</th><th>Status</th><th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th></tr></thead>
                                 <tbody>
                                 <?php foreach ($ticketLinkedProblems as $linkedProblem): ?>
+                                    <?php $linkedMasterId = (int)($linkedProblem['master_ticket_id'] ?? 0); ?>
                                     <tr>
                                         <td><?php echo sanitize((string)($linkedProblem['title'] ?? '')); ?></td>
                                         <td><?php echo itm_problem_status_badge($linkedProblem['status'] ?? ''); ?></td>
                                         <td class="itm-actions-cell" data-itm-actions-origin="1">
                                             <a class="btn btn-sm" href="../problems/view.php?id=<?php echo (int)$linkedProblem['id']; ?>" title="View">🔎</a>
+                                            <?php if ($linkedMasterId > 0): ?>
+                                                <a class="btn btn-sm" href="../problems/view.php?id=<?php echo (int)$linkedProblem['id']; ?>#master-ticket" title="Master ticket">🎫</a>
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
