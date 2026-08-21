@@ -718,3 +718,204 @@ if (!function_exists('itm_master_ticket_after_incident_linked')) {
         return itm_master_ticket_sync_to_incidents($conn, $masterTicketId, $actorEmployeeId, $actorCompanyId, false);
     }
 }
+
+if (!function_exists('itm_master_ticket_bind_in_clause')) {
+    /**
+     * @param array<int, int> $ids
+     * @return array{placeholders: string, types: string, params: array<int, int>}
+     */
+    function itm_master_ticket_bind_in_clause(array $ids)
+    {
+        $ids = array_values(array_filter(array_map('intval', $ids)));
+        if ($ids === []) {
+            return ['placeholders' => '0', 'types' => '', 'params' => []];
+        }
+
+        return [
+            'placeholders' => implode(',', array_fill(0, count($ids), '?')),
+            'types' => str_repeat('i', count($ids)),
+            'params' => $ids,
+        ];
+    }
+}
+
+if (!function_exists('itm_master_ticket_user_can_view')) {
+    function itm_master_ticket_user_can_view($conn, $masterTicketId, array $allowedCompanyIds)
+    {
+        if (!$conn instanceof mysqli) {
+            return false;
+        }
+        $masterTicketId = (int)$masterTicketId;
+        if ($masterTicketId <= 0) {
+            return false;
+        }
+        $in = itm_master_ticket_bind_in_clause($allowedCompanyIds);
+        if ($in['placeholders'] === '0') {
+            return false;
+        }
+        $sql = 'SELECT 1 FROM problems p
+                WHERE p.master_ticket_id = ? AND p.deleted_at IS NULL
+                  AND p.company_id IN (' . $in['placeholders'] . ')
+                LIMIT 1';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return false;
+        }
+        $types = 'i' . $in['types'];
+        $params = array_merge([$masterTicketId], $in['params']);
+        $bind = [$types];
+        foreach ($params as $i => $v) {
+            $bind[] = &$params[$i];
+        }
+        call_user_func_array('mysqli_stmt_bind_param', array_merge([$stmt], $bind));
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $ok = $res && mysqli_fetch_assoc($res);
+        mysqli_stmt_close($stmt);
+
+        return (bool)$ok;
+    }
+}
+
+if (!function_exists('itm_master_ticket_list_eligible_problems')) {
+    /**
+     * Existing major problems: ≥1 linked incident, no master yet, tenant in allowed companies.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    function itm_master_ticket_list_eligible_problems($conn, array $allowedCompanyIds)
+    {
+        if (!$conn instanceof mysqli) {
+            return [];
+        }
+        $in = itm_master_ticket_bind_in_clause($allowedCompanyIds);
+        if ($in['placeholders'] === '0') {
+            return [];
+        }
+        $sql = 'SELECT p.id, p.company_id, p.title, p.status, p.root_cause,
+                       c.company AS company_name,
+                       COUNT(DISTINCT l.ticket_id) AS incident_count
+                FROM problems p
+                INNER JOIN companies c ON c.id = p.company_id
+                INNER JOIN problem_ticket_links l
+                    ON l.problem_id = p.id AND l.company_id = p.company_id AND l.deleted_at IS NULL
+                WHERE p.deleted_at IS NULL
+                  AND (p.master_ticket_id IS NULL OR p.master_ticket_id = 0)
+                  AND p.company_id IN (' . $in['placeholders'] . ')
+                GROUP BY p.id, p.company_id, p.title, p.status, p.root_cause, c.company
+                HAVING incident_count >= 1
+                ORDER BY c.company ASC, p.title ASC';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return [];
+        }
+        $bind = [$in['types']];
+        $params = $in['params'];
+        foreach ($params as $i => $v) {
+            $bind[] = &$params[$i];
+        }
+        call_user_func_array('mysqli_stmt_bind_param', array_merge([$stmt], $bind));
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $rows = [];
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $rows[] = $row;
+        }
+        mysqli_stmt_close($stmt);
+
+        return $rows;
+    }
+}
+
+if (!function_exists('itm_master_ticket_list_page')) {
+    /**
+     * Global master list visible when linked problems fall in allowed companies.
+     *
+     * @return array{rows: array<int, array<string, mixed>>, total: int}
+     */
+    function itm_master_ticket_list_page($conn, array $allowedCompanyIds, $search, $sort, $dir, $page, $perPage)
+    {
+        $result = ['rows' => [], 'total' => 0];
+        if (!$conn instanceof mysqli) {
+            return $result;
+        }
+        $in = itm_master_ticket_bind_in_clause($allowedCompanyIds);
+        if ($in['placeholders'] === '0') {
+            return $result;
+        }
+
+        $search = trim((string)$search);
+        $sortMap = [
+            'id' => 'm.id',
+            'title' => 'm.title',
+            'created_at' => 'm.created_at',
+            'company_count' => 'company_count',
+            'incident_count' => 'incident_count',
+        ];
+        $sortCol = $sortMap[$sort] ?? 'm.id';
+        $dir = strtoupper((string)$dir) === 'ASC' ? 'ASC' : 'DESC';
+        $page = max(1, (int)$page);
+        $perPage = max(1, (int)$perPage);
+        $offset = ($page - 1) * $perPage;
+
+        $baseFrom = 'FROM master_tickets m
+            INNER JOIN problems p ON p.master_ticket_id = m.id AND p.deleted_at IS NULL
+            LEFT JOIN problem_ticket_links l
+                ON l.problem_id = p.id AND l.company_id = p.company_id AND l.deleted_at IS NULL
+            WHERE m.deleted_at IS NULL
+              AND p.company_id IN (' . $in['placeholders'] . ')';
+        $searchSql = '';
+        $searchTypes = '';
+        $searchParams = [];
+        if ($search !== '') {
+            $searchSql = ' AND (m.title LIKE ? OR m.description LIKE ? OR m.root_cause LIKE ?)';
+            $like = '%' . $search . '%';
+            $searchTypes = 'sss';
+            $searchParams = [$like, $like, $like];
+        }
+
+        $countSql = 'SELECT COUNT(DISTINCT m.id) AS c ' . $baseFrom . $searchSql;
+        $countStmt = mysqli_prepare($conn, $countSql);
+        if (!$countStmt) {
+            return $result;
+        }
+        $countTypes = $in['types'] . $searchTypes;
+        $countParams = array_merge($in['params'], $searchParams);
+        $countBind = [$countTypes];
+        foreach ($countParams as $i => $v) {
+            $countBind[] = &$countParams[$i];
+        }
+        call_user_func_array('mysqli_stmt_bind_param', array_merge([$countStmt], $countBind));
+        mysqli_stmt_execute($countStmt);
+        $countRes = mysqli_stmt_get_result($countStmt);
+        $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
+        mysqli_stmt_close($countStmt);
+        $result['total'] = (int)($countRow['c'] ?? 0);
+
+        $listSql = 'SELECT m.id, m.title, m.description, m.root_cause, m.active, m.created_at, m.updated_at,
+                           COUNT(DISTINCT p.company_id) AS company_count,
+                           COUNT(DISTINCT l.ticket_id) AS incident_count
+                    ' . $baseFrom . $searchSql . '
+                    GROUP BY m.id, m.title, m.description, m.root_cause, m.active, m.created_at, m.updated_at
+                    ORDER BY ' . $sortCol . ' ' . $dir . '
+                    LIMIT ' . (int)$perPage . ' OFFSET ' . (int)$offset;
+        $listStmt = mysqli_prepare($conn, $listSql);
+        if (!$listStmt) {
+            return $result;
+        }
+        $listBind = [$countTypes];
+        $listParams = $countParams;
+        foreach ($listParams as $i => $v) {
+            $listBind[] = &$listParams[$i];
+        }
+        call_user_func_array('mysqli_stmt_bind_param', array_merge([$listStmt], $listBind));
+        mysqli_stmt_execute($listStmt);
+        $listRes = mysqli_stmt_get_result($listStmt);
+        while ($listRes && ($row = mysqli_fetch_assoc($listRes))) {
+            $result['rows'][] = $row;
+        }
+        mysqli_stmt_close($listStmt);
+
+        return $result;
+    }
+}

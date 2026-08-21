@@ -32,7 +32,7 @@ Tenant-scoped **Problem Management** records track recurring incidents, root-cau
 - Ticket link requires non-merged, non-deleted ticket in the same company (`itm_problem_ticket_is_linkable()`).
 - Known-error publish sets problem `status` to `known_error` and optionally upserts **Knowledge Base** (`itm_known_error_upsert()` / `itm_known_error_publish_to_kb()`).
 - `create.php?ticket_id=` auto-links the ticket after successful create via `itm_problem_link_ticket()` (resyncs master when `master_ticket_id` is set).
-- Master ticket: `itm_problem_create_master_ticket()`, `itm_master_ticket_update()`, `itm_master_ticket_attach_problem()` — require ≥1 linked incident; updates sync all rollup tickets and log **`master_ticket_updates`**.
+- Master ticket: `itm_problem_create_master_ticket()`, `itm_master_ticket_update()`, `itm_master_ticket_attach_problem()` — require ≥1 linked incident; updates sync all rollup tickets and log **`master_ticket_updates`**. Dedicated global UI: [modules/master_tickets/](http://localhost/it-management/modules/master_tickets/index.php) (`master_tickets` has no `company_id`).
 - Automation/webhooks: `itm_problem_dispatch_events()` on create, status change, and known-error publish.
 
 ## 5. UI Behavior Requirements

@@ -33,7 +33,7 @@ Helpers: `itm_problem_status_badge()`, `itm_problem_transition_status()` in `inc
 ## Master ticket (cross-company rollup)
 
 - **`master_tickets`** is global (no `company_id`). Tenant problems link via **`problems.master_ticket_id`**.
-- Create from [modules/problems/view.php](http://localhost/it-management/modules/problems/view.php) (`#master-ticket`) when ≥1 incident is linked.
+- Create from [modules/problems/view.php](http://localhost/it-management/modules/problems/view.php) (`#master-ticket`) when ≥1 incident is linked, or from [modules/master_tickets/create.php](http://localhost/it-management/modules/master_tickets/create.php) (pick existing major problem — global module, no `company_id` on `master_tickets`).
 - **`itm_master_ticket_update()`** writes **`master_ticket_updates`** history and syncs title/description/root cause to every linked incident ticket and participating **`problems`** rows.
 - Attach another company’s problem when the actor has **`employee_companies`** access (or admin). Helpers: **`includes/itm_master_ticket.php`**.
 - Ticket view links to `#master-ticket` when the linked problem has **`master_ticket_id`**.

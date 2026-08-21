@@ -43,6 +43,8 @@ if (!function_exists('itm_sample_sql_exempt_tables')) {
             'webmail_email_reads',
             'webmail_signatures',
             'hotel_booking_last_rooms',
+            'master_tickets',
+            'master_ticket_updates',
         ];
 
         foreach ([
