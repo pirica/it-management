@@ -86,6 +86,7 @@ Typical contract (verify per module):
 - Import: `data-itm-db-import-endpoint="index.php"` on the table that handles `import_excel_rows` (may be `list_all.php` on bespoke modules)
 - **CSRF:** POST handlers use **`cr_require_valid_csrf_token()`** (local helper in manufacturers-style CRUD); forms include `csrf_token` from `itm_get_csrf_token()`. Do **not** document `itm_require_post_csrf()` unless that helper is actually called in this module's PHP.
 - **`active` checkbox:** double-label `itm-checkbox-control` pattern (`AGENTS.md`)
+- **`enabled` list/view:** render Enabled/Disabled badges in `cr_render_cell_value()` (same branch as `active`; tier2 `check_crud_boolean_cell_display.php`)
 
 ### `is_*` equipment façades
 

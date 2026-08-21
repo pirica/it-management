@@ -180,9 +180,10 @@ function cr_render_cell_value($table, $field, $value) {
             return $auditHtml;
         }
     }
-if ($field === 'active') {
+if ($field === 'active' || $field === 'enabled') {
         $isActive = ((int)$value === 1);
-        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+        $label = ($field === 'enabled') ? ($isActive ? 'Enabled' : 'Disabled') : ($isActive ? 'Active' : 'Inactive');
+        return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . $label . '</span>';
     }
 
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
