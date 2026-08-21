@@ -1349,6 +1349,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Reads <code>db/01_schema.sql</code> and <code>db/02_data_sample.sql</code> (no MySQL). Lists all schema tables with module slug links (<code>target="_blank"</code>), <code>sample_data</code> yes/no/exempt/n/a, and <code>[INFO]</code> summary on CLI. Filter: <code>?sample=no</code> / <code>--sample=no</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="companies">
+                    <td><a href="list_db_tables_sample_data_company.php" target="_blank" rel="nofollow noreferrer">list_db_tables_sample_data_company.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">companies</span></span></td>
+                    <td>Schema + <code>02_data_sample.sql</code> map plus live tenant row counts per company. Multi-company filter: <code>?company=N</code> dropdown / <code>--company=N</code>. Also filter <code>--tenant=empty</code> or <code>--sample=no</code>. Requires MySQL.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_company_empty_sample_data.php" target="_blank" rel="nofollow noreferrer">verify_company_empty_sample_data.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
