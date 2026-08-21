@@ -48,7 +48,7 @@ function ticket_render_lookup_badge(string $label, string $color, string $fallba
     return '<span class="badge" style="background-color:' . sanitize($hex) . '33;color:' . sanitize($hex) . ';">' . sanitize($name) . '</span>';
 }
 
-// Fetch ticket context
+// Fetch ticket context (tenant session company only)
 $id = (int)($_GET['id'] ?? 0);
 $item = null;
 if ($id > 0) {
@@ -65,7 +65,7 @@ if ($id > 0) {
         LEFT JOIN employees assigned_user ON assigned_user.id = t.assigned_to_employee_id
         LEFT JOIN employees created_user ON created_user.id = t.created_by_employee_id
         LEFT JOIN equipment e ON e.id = t.equipment_id
-        WHERE t.id = ? AND t.company_id = ? LIMIT 1'
+        WHERE t.id = ? AND t.company_id = ? AND t.deleted_at IS NULL LIMIT 1'
     );
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'ii', $id, $company_id);
