@@ -12,10 +12,7 @@ if (!function_exists('itm_database_tables_sample_data_company_enrich')) {
      */
     function itm_database_tables_sample_data_company_enrich(mysqli $conn, array $baseReport, int $companyId): array
     {
-        if (!defined('ITM_LIST_EMPTY_TABLES_LIB_ONLY')) {
-            define('ITM_LIST_EMPTY_TABLES_LIB_ONLY', true);
-        }
-        require_once dirname(__DIR__) . '/list_empty_tables.php';
+        require_once __DIR__ . '/itm_list_empty_tables.php';
 
         $tenantSummary = [
             'empty' => 0,
