@@ -15,6 +15,21 @@ $employeeId = (int)($_SESSION['employee_id'] ?? 0);
 $sessionCompanyId = (int)$company_id;
 $allowedCompanyIds = itm_master_ticket_allowed_company_ids($conn, $employeeId);
 $csrfToken = itm_get_csrf_token();
+$listUrl = 'index.php';
+
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['add_sample_data'])) {
+    itm_require_post_csrf();
+    itm_require_crud_role_module_permission($conn, 'create', $moduleSlug);
+
+    $seedError = '';
+    $inserted = itm_master_ticket_seed_five_company_sample($conn, $employeeId, $sessionCompanyId, $seedError);
+    if ($inserted <= 0 && $seedError !== '') {
+        $_SESSION['crud_error'] = $seedError;
+    }
+
+    header('Location: ' . $listUrl);
+    exit;
+}
 
 $search = trim((string)($_GET['search'] ?? ''));
 $sort = (string)($_GET['sort'] ?? 'id');
@@ -26,6 +41,7 @@ $listData = itm_master_ticket_list_page($conn, $allowedCompanyIds, $search, $sor
 $rows = $listData['rows'];
 $totalRows = (int)$listData['total'];
 $totalPages = max(1, (int)ceil($totalRows / $perPage));
+$showSampleDataButton = $totalRows === 0 && itm_master_ticket_count_live_rows($conn) === 0;
 
 $sortToggle = static function ($column) use ($sort, $dir, $search, $page) {
     $nextDir = ($sort === $column && $dir === 'ASC') ? 'DESC' : 'ASC';
@@ -75,6 +91,10 @@ $moduleSlugPath = basename(dirname($_SERVER['PHP_SELF']));
                 Visibility follows linked problems in companies you can access.
             </p>
 
+            <?php if (!empty($_SESSION['crud_error'])): ?>
+                <?php echo itm_render_alert_errors([(string)$_SESSION['crud_error']]); unset($_SESSION['crud_error']); ?>
+            <?php endif; ?>
+
             <div class="card" style="margin-bottom:16px;">
                 <form method="GET" style="display:flex;gap:8px;flex-wrap:wrap;">
                     <input type="text" name="search" value="<?php echo sanitize($search); ?>" placeholder="Search title, description, root cause" class="form-control" style="min-width:220px;">
@@ -96,12 +116,12 @@ $moduleSlugPath = basename(dirname($_SERVER['PHP_SELF']));
                         list($qsIncidents, $arrowIncidents) = $sortToggle('incident_count');
                         list($qsCreated, $arrowCreated) = $sortToggle('created_at');
                         ?>
-                        <th><a href="?<?php echo sanitize($qsId); ?>">ID <?php echo $arrowId; ?></a></th>
-                        <th><a href="?<?php echo sanitize($qsTitle); ?>">Title <?php echo $arrowTitle; ?></a></th>
-                        <th><a href="?<?php echo sanitize($qsCompanies); ?>">Companies <?php echo $arrowCompanies; ?></a></th>
-                        <th><a href="?<?php echo sanitize($qsIncidents); ?>">Incidents <?php echo $arrowIncidents; ?></a></th>
+                        <th><a href="?<?php echo sanitize($qsId); ?>" style="text-decoration:none;color:inherit;">ID <?php echo $arrowId; ?></a></th>
+                        <th><a href="?<?php echo sanitize($qsTitle); ?>" style="text-decoration:none;color:inherit;">Title <?php echo $arrowTitle; ?></a></th>
+                        <th><a href="?<?php echo sanitize($qsCompanies); ?>" style="text-decoration:none;color:inherit;">Companies <?php echo $arrowCompanies; ?></a></th>
+                        <th><a href="?<?php echo sanitize($qsIncidents); ?>" style="text-decoration:none;color:inherit;">Incidents <?php echo $arrowIncidents; ?></a></th>
                         <th>Active</th>
-                        <th><a href="?<?php echo sanitize($qsCreated); ?>">Created <?php echo $arrowCreated; ?></a></th>
+                        <th><a href="?<?php echo sanitize($qsCreated); ?>" style="text-decoration:none;color:inherit;">Created <?php echo $arrowCreated; ?></a></th>
                         <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                     </tr>
                     </thead>
@@ -150,6 +170,18 @@ $moduleSlugPath = basename(dirname($_SERVER['PHP_SELF']));
                     </div>
                 <?php endif; ?>
             </div>
+
+            <?php if ($showSampleDataButton && itm_user_has_role_module_permission($conn, $employeeId, $sessionCompanyId, itm_resolve_rbac_module_name_for_slug($conn, $moduleSlug), 'create')): ?>
+                <div class="card" style="margin-top:12px;">
+                    <form method="POST" style="display:flex;justify-content:center;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
+                    </form>
+                    <p class="itm-muted" style="text-align:center;margin-top:8px;margin-bottom:0;">
+                        Seeds one major-incident master ticket per seed company (1–5) that you can access.
+                    </p>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

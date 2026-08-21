@@ -127,6 +127,12 @@ if (!is_file(ROOT_PATH . 'modules/master_tickets/index.php')) {
     pm_verify_pass('Master Tickets module entry exists');
 }
 
+if (!function_exists('itm_master_ticket_seed_five_company_sample')) {
+    pm_verify_fail('Missing itm_master_ticket_seed_five_company_sample() — five-company Add sample data on master_tickets index.');
+} else {
+    pm_verify_pass('Master Tickets five-company sample seed helper registered');
+}
+
 $automationSlugs = itm_automation_rules_trigger_slugs();
 foreach (['problem.created', 'problem.status_changed', 'known_error.published'] as $slug) {
     if (!in_array($slug, $automationSlugs, true)) {
