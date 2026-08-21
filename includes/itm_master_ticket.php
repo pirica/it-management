@@ -919,3 +919,154 @@ if (!function_exists('itm_master_ticket_list_page')) {
         return $result;
     }
 }
+
+if (!function_exists('itm_master_ticket_count_live_rows')) {
+    function itm_master_ticket_count_live_rows($conn): int
+    {
+        if (!$conn instanceof mysqli) {
+            return 0;
+        }
+        $res = mysqli_query($conn, 'SELECT COUNT(*) AS c FROM master_tickets WHERE deleted_at IS NULL');
+        $row = ($res && ($fetched = mysqli_fetch_assoc($res))) ? $fetched : null;
+        return (int)($row['c'] ?? 0);
+    }
+}
+
+if (!function_exists('itm_master_ticket_seed_resolve_sample_ticket_id')) {
+    /**
+     * Why: Master ticket sample flow needs one linkable incident per tenant; reuse tickets sample seed when empty.
+     */
+    function itm_master_ticket_seed_resolve_sample_ticket_id($conn, int $companyId): int
+    {
+        if (!$conn instanceof mysqli || $companyId <= 0) {
+            return 0;
+        }
+        if (!function_exists('itm_seed_insert_tickets_sample_row')) {
+            require_once ROOT_PATH . 'includes/itm_sample_data_seed.php';
+        }
+        $seedError = '';
+        itm_seed_insert_tickets_sample_row($conn, $companyId, $seedError);
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM tickets WHERE company_id = ? AND deleted_at IS NULL AND merged_into_ticket_id IS NULL AND is_archived = 0 ORDER BY id ASC LIMIT 1'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = ($res && ($fetched = mysqli_fetch_assoc($res))) ? $fetched : null;
+        mysqli_stmt_close($stmt);
+
+        return (int)($row['id'] ?? 0);
+    }
+}
+
+if (!function_exists('itm_master_ticket_seed_five_company_sample')) {
+    /**
+     * Create one master ticket per seed company (1–5) with a linked problem + incident.
+     *
+     * @return int Number of master tickets created
+     */
+    function itm_master_ticket_seed_five_company_sample($conn, int $actorEmployeeId, int $actorCompanyId, &$error = ''): int
+    {
+        $error = '';
+        if (!$conn instanceof mysqli) {
+            $error = 'Database unavailable.';
+            return 0;
+        }
+        $actorEmployeeId = (int)$actorEmployeeId;
+        $actorCompanyId = (int)$actorCompanyId;
+        if ($actorEmployeeId <= 0) {
+            $error = 'Sample data requires a signed-in employee.';
+            return 0;
+        }
+        if (itm_master_ticket_count_live_rows($conn) > 0) {
+            $error = 'Sample data can only be added when no master tickets exist.';
+            return 0;
+        }
+
+        if (!function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
+            require_once ROOT_PATH . 'includes/itm_sample_data_seed.php';
+        }
+        if (!function_exists('itm_problem_create')) {
+            require_once ROOT_PATH . 'includes/itm_problem_management.php';
+        }
+        if (!function_exists('itm_employee_has_company_access')) {
+            require_once ROOT_PATH . 'includes/itm_company_session.php';
+        }
+
+        $isAdmin = function_exists('itm_is_admin') ? itm_is_admin($conn, $actorEmployeeId) : false;
+        $created = 0;
+
+        for ($companyId = 1; $companyId <= 5; $companyId++) {
+            if (!$isAdmin && !itm_employee_has_company_access($conn, $actorEmployeeId, $companyId, $isAdmin)) {
+                continue;
+            }
+
+            $companyStmt = mysqli_prepare($conn, 'SELECT company FROM companies WHERE id = ? AND active = 1 LIMIT 1');
+            $companyName = 'Company ' . $companyId;
+            if ($companyStmt) {
+                mysqli_stmt_bind_param($companyStmt, 'i', $companyId);
+                mysqli_stmt_execute($companyStmt);
+                $companyRes = mysqli_stmt_get_result($companyStmt);
+                $companyRow = ($companyRes && ($fetched = mysqli_fetch_assoc($companyRes))) ? $fetched : null;
+                mysqli_stmt_close($companyStmt);
+                if (!is_array($companyRow)) {
+                    continue;
+                }
+                $companyName = trim((string)($companyRow['company'] ?? $companyName));
+            }
+
+            $ticketId = itm_master_ticket_seed_resolve_sample_ticket_id($conn, $companyId);
+            if ($ticketId <= 0) {
+                $error = 'Could not resolve a sample incident ticket for company ' . $companyId . '.';
+                return $created;
+            }
+
+            $tenantActorId = itm_seed_resolve_tenant_seed_admin_employee_id($conn, $companyId);
+            if ($tenantActorId <= 0) {
+                $tenantActorId = $actorEmployeeId;
+            }
+
+            if (function_exists('itm_seed_sync_mysql_audit_session_for_company')) {
+                itm_seed_sync_mysql_audit_session_for_company($conn, $companyId, $tenantActorId);
+            }
+
+            $problemTitle = 'Major incident — ' . $companyName;
+            $problemResult = itm_problem_create($conn, $companyId, [
+                'title' => $problemTitle,
+                'description' => 'Cross-company major incident rollup demo for ' . $companyName . '.',
+                'root_cause' => 'Pending root-cause analysis.',
+                'status' => 'investigating',
+                'owner_employee_id' => $tenantActorId,
+            ], $tenantActorId);
+            if (empty($problemResult['ok']) || (int)($problemResult['id'] ?? 0) <= 0) {
+                $error = 'Could not create sample problem for company ' . $companyId . '.';
+                return $created;
+            }
+            $problemId = (int)$problemResult['id'];
+
+            $linkResult = itm_problem_link_ticket($conn, $companyId, $problemId, $ticketId, $tenantActorId);
+            if (empty($linkResult['ok'])) {
+                $error = (string)($linkResult['error'] ?? 'Could not link sample incident.');
+                return $created;
+            }
+
+            $masterResult = itm_problem_create_master_ticket($conn, $companyId, $problemId, $actorEmployeeId, $actorCompanyId);
+            if (empty($masterResult['ok']) || (int)($masterResult['master_ticket_id'] ?? 0) <= 0) {
+                $error = (string)($masterResult['error'] ?? 'Could not create sample master ticket.');
+                return $created;
+            }
+            $created++;
+        }
+
+        if ($created === 0) {
+            $error = 'No master tickets were created — check company access for companies 1–5.';
+        }
+
+        return $created;
+    }
+}

@@ -31,6 +31,8 @@ Create flow picks an **existing problem** that already has ≥1 linked incident 
 ## 5. UI Behavior Requirements
 
 - List/search/sort/pagination delegate to **`itm_master_ticket_list_page()`** in `includes/itm_master_ticket.php` (UI contract audit recognizes this helper in `scripts/lib/itm_ui_list_contract_checks.php`).
+- **Add sample data:** when the list is empty and no live `master_tickets` rows exist, **Add sample data** creates one master ticket per seed company (1–5) the actor can access via `itm_master_ticket_seed_five_company_sample()` (problem + linked incident + master rollup per tenant).
+- Sortable column headers use `text-decoration:none;color:inherit` (no blue link styling).
 - **No `company_id` column** in list/view — show company count from linked problems instead.
 - Tables opt out of table-tools import/export (`data-itm-no-import-excel`, `data-itm-no-export-*`).
 - Actions: emoji-only + `title` / `aria-label` (NO MIXED).
