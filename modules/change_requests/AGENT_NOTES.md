@@ -31,7 +31,7 @@ IT change requests scoped per tenant with blast-radius CI selection from the CMD
 
 ## 7. File Structure
 
-- **index.php** — list + search
+- **index.php** — list + search; empty-state **Add sample data** when tenant has zero rows (`itm_seed_insert_change_requests_sample_rows()` via `itm_seed_table_from_database_sql()`).
 - **create.php** — create/edit form (edit.php wrapper)
 - **view.php**, **delete.php**
 
@@ -47,6 +47,7 @@ IT change requests scoped per tenant with blast-radius CI selection from the CMD
 
 - Affected CI list must include source CI when blast-radius should cover the target node.
 - Dates use dd/mm/yyyy in forms via `itm_parse_date_input()` / `itm_format_date_display()`.
+- Sample data requires configuration items (seeder calls `itm_seed_insert_configuration_items_sample_rows()` when the tenant CI table is empty). Fresh `db/02_data.sql` import seeds demo CIs, relationships, and two change requests per company (1–5).
 
 ## 11. Examples of Safe Code Patterns
 

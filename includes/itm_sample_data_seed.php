@@ -2964,6 +2964,127 @@ if (!function_exists('itm_seed_insert_configuration_items_sample_rows')) {
     }
 }
 
+if (!function_exists('itm_seed_insert_change_requests_sample_rows')) {
+    /**
+     * Why: Change requests need CMDB CIs plus blast-radius junction rows (not generic SQL fallback).
+     */
+    function itm_seed_insert_change_requests_sample_rows(mysqli $conn, int $companyId, &$error = ''): int
+    {
+        $error = '';
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            $error = 'A company must be selected before adding sample data.';
+            return 0;
+        }
+
+        if (function_exists('itm_seed_tenant_row_count')
+            && itm_seed_tenant_row_count($conn, 'change_requests', $companyId) > 0) {
+            return 0;
+        }
+
+        require_once ROOT_PATH . 'includes/itm_change_requests.php';
+
+        if (function_exists('itm_seed_tenant_row_count')
+            && itm_seed_tenant_row_count($conn, 'configuration_items', $companyId) === 0) {
+            $ciSeedError = '';
+            $ciInserted = itm_seed_insert_configuration_items_sample_rows($conn, $companyId, $ciSeedError);
+            if ($ciInserted <= 0
+                && itm_seed_tenant_row_count($conn, 'configuration_items', $companyId) === 0) {
+                $error = $ciSeedError !== '' ? $ciSeedError : 'Could not seed configuration items for change requests.';
+                return 0;
+            }
+        }
+
+        $employeeId = (int)($_SESSION['employee_id'] ?? 0);
+        if ($employeeId <= 0 && function_exists('itm_seed_resolve_tenant_seed_admin_employee_id')) {
+            $employeeId = itm_seed_resolve_tenant_seed_admin_employee_id($conn, $companyId);
+        }
+        if ($employeeId <= 0) {
+            $employeeId = 1;
+        }
+
+        $sourceStmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM configuration_items
+             WHERE company_id = ? AND deleted_at IS NULL AND name = ?
+             LIMIT 1'
+        );
+        if (!$sourceStmt) {
+            $error = 'Could not resolve source configuration item.';
+            return 0;
+        }
+        $sourceName = 'Sample App Server';
+        mysqli_stmt_bind_param($sourceStmt, 'is', $companyId, $sourceName);
+        mysqli_stmt_execute($sourceStmt);
+        $sourceRes = mysqli_stmt_get_result($sourceStmt);
+        $sourceRow = $sourceRes ? mysqli_fetch_assoc($sourceRes) : null;
+        mysqli_stmt_close($sourceStmt);
+        $sourceCiId = (int)($sourceRow['id'] ?? 0);
+        if ($sourceCiId <= 0) {
+            $error = 'Sample App Server CI is required before change request sample data.';
+            return 0;
+        }
+
+        $samples = [
+            [
+                'title' => 'Sample payroll patch window',
+                'description' => 'Demo change targeting the payroll application server stack.',
+                'status' => 'draft',
+            ],
+            [
+                'title' => 'Sample SQL service restart',
+                'description' => 'Planned restart of the sample SQL service with blast-radius review.',
+                'status' => 'submitted',
+            ],
+        ];
+
+        $inserted = 0;
+        foreach ($samples as $sample) {
+            $title = (string)$sample['title'];
+            $description = (string)$sample['description'];
+            $status = (string)$sample['status'];
+            $stmt = mysqli_prepare(
+                $conn,
+                'INSERT INTO change_requests
+                 (company_id, source_configuration_item_id, title, description, status, active, created_by)
+                 VALUES (?, ?, ?, ?, ?, 1, ?)'
+            );
+            if (!$stmt) {
+                $error = 'Could not prepare change_requests sample insert.';
+                return $inserted;
+            }
+            mysqli_stmt_bind_param($stmt, 'iisssi', $companyId, $sourceCiId, $title, $description, $status, $employeeId);
+            if (!mysqli_stmt_execute($stmt)) {
+                $dbErrorCode = (int)mysqli_errno($conn);
+                $dbErrorMessage = (string)mysqli_error($conn);
+                mysqli_stmt_close($stmt);
+                if (function_exists('itm_seed_insert_row_is_unique_violation')
+                    && itm_seed_insert_row_is_unique_violation($dbErrorCode, $dbErrorMessage)) {
+                    continue;
+                }
+                $error = function_exists('itm_format_db_constraint_error')
+                    ? itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage)
+                    : $dbErrorMessage;
+                return $inserted;
+            }
+            $changeRequestId = (int)mysqli_insert_id($conn);
+            mysqli_stmt_close($stmt);
+            if ($changeRequestId <= 0) {
+                continue;
+            }
+
+            $affectedIds = itm_cmdb_list_affected_ci_ids($conn, $companyId, $sourceCiId);
+            if ($affectedIds === []) {
+                $affectedIds = [$sourceCiId];
+            }
+            itm_change_request_replace_affected_cis($conn, $companyId, $changeRequestId, $affectedIds, $employeeId);
+            $inserted++;
+        }
+
+        return $inserted;
+    }
+}
+
 if (!function_exists('itm_seed_insert_random_fallback_row')) {
     /**
      * Insert exactly one synthetic row when no template rows apply for an empty tenant table.
@@ -3823,6 +3944,10 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
 
         if ($tableName === 'configuration_items') {
             return itm_seed_insert_configuration_items_sample_rows($conn, $companyId, $error);
+        }
+
+        if ($tableName === 'change_requests') {
+            return itm_seed_insert_change_requests_sample_rows($conn, $companyId, $error);
         }
 
         itm_seed_lookup_parents_for_table($conn, $tableName, $companyId);

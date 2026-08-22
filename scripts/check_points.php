@@ -35,6 +35,12 @@ itm_script_output_begin('Check Points');
 $id = 5; // Default floor designer ID to check
 echo "Auditing Floor Designer ID: $id" . $nl;
 
+if (!($conn instanceof mysqli)) {
+    echo itm_script_format_status_line('[SKIP] Database connection unavailable — floor designer point audit requires MySQL.') . $nl;
+    itm_script_output_end();
+    exit(0);
+}
+
 $res = mysqli_query($conn, "SELECT p.id, p.company_id, p.point_type_id, st.type as type_name, st.company_id as type_company_id
                             FROM floor_designer_points p
                             LEFT JOIN switch_port_types st ON st.id = p.point_type_id
