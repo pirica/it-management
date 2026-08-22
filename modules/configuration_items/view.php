@@ -149,6 +149,13 @@ function ci_view_render_cell_value($table, $field, $value) {
                     </tr>
                     <?php endforeach; ?>
                 </table>
+                <?php if (count($graph['nodes'] ?? []) > 1): ?>
+                <h4 title="Mini impact preview">📈</h4>
+                <div id="cmdb-mini-impact-viewport" class="org-chart-container" style="height:240px;margin-top:12px;border:1px solid var(--border-color,#ddd);overflow:auto;position:relative;background:var(--bg-secondary,#f8f9fa);">
+                    <svg id="cmdb-mini-impact-svg" style="position:absolute;top:0;left:0;width:3000px;height:1800px;pointer-events:none;"></svg>
+                    <div id="cmdb-mini-impact-nodes" style="position:absolute;top:0;left:0;"></div>
+                </div>
+                <?php endif; ?>
                 <?php elseif ($tab === 'relationships'): ?>
                 <form method="POST" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:flex-end;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
@@ -227,96 +234,24 @@ function ci_view_render_cell_value($table, $field, $value) {
                 </div>
                 <?php else: ?>
                 <p class="text-muted">Read-only blast-radius graph (upstream + downstream). Pan with mouse drag.</p>
-                <div id="cmdb-impact-viewport" style="position:relative;overflow:auto;border:1px solid var(--border-color,#ddd);height:480px;background:var(--bg-secondary,#f8f9fa);">
+                <div id="cmdb-impact-viewport" class="org-chart-container" style="position:relative;overflow:auto;border:1px solid var(--border-color,#ddd);height:480px;background:var(--bg-secondary,#f8f9fa);cursor:grab;">
                     <svg id="cmdb-impact-svg" width="4000" height="2400" style="position:absolute;top:0;left:0;pointer-events:none;"></svg>
                     <div id="cmdb-impact-nodes" style="position:absolute;top:0;left:0;transform-origin:0 0;"></div>
                 </div>
+                <script src="../../js/itm-cmdb-impact-graph.js"></script>
                 <script>
                 (function () {
                     var graph = <?php echo json_encode($graph, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
-                    var nodes = graph.nodes || [];
-                    var edges = graph.edges || [];
-                    var rootId = graph.root_id || 0;
-                    if (!nodes.length) return;
-
-                    var nodeW = 200, nodeH = 56, gapX = 48, gapY = 90;
-                    var childrenMap = {};
-                    var parentCount = {};
-                    nodes.forEach(function (n) { parentCount[n.id] = 0; });
-                    edges.forEach(function (e) {
-                        if (!childrenMap[e.parent_ci_id]) childrenMap[e.parent_ci_id] = [];
-                        childrenMap[e.parent_ci_id].push(e.child_ci_id);
-                        parentCount[e.child_ci_id] = (parentCount[e.child_ci_id] || 0) + 1;
-                    });
-
-                    var levels = {};
-                    function assignLevel(id, depth) {
-                        if (levels[id] !== undefined && levels[id] <= depth) return;
-                        levels[id] = depth;
-                        (childrenMap[id] || []).forEach(function (cid) { assignLevel(cid, depth + 1); });
-                    }
-                    assignLevel(rootId, 0);
-                    nodes.forEach(function (n) {
-                        if (levels[n.id] === undefined) levels[n.id] = n.depth || 0;
-                    });
-
-                    var byLevel = {};
-                    nodes.forEach(function (n) {
-                        var lv = levels[n.id] || 0;
-                        if (!byLevel[lv]) byLevel[lv] = [];
-                        byLevel[lv].push(n);
-                    });
-
-                    var positions = {};
-                    Object.keys(byLevel).sort(function (a,b){return a-b;}).forEach(function (lv) {
-                        var row = byLevel[lv];
-                        row.forEach(function (n, idx) {
-                            positions[n.id] = { x: idx * (nodeW + gapX) + 40, y: parseInt(lv, 10) * (nodeH + gapY) + 40 };
+                    if (window.itmRenderCmdbImpactGraph) {
+                        window.itmRenderCmdbImpactGraph({
+                            graph: graph,
+                            viewportEl: document.getElementById('cmdb-impact-viewport'),
+                            nodesEl: document.getElementById('cmdb-impact-nodes'),
+                            svgEl: document.getElementById('cmdb-impact-svg'),
+                            viewUrl: 'view.php?id=',
+                            enablePan: true
                         });
-                    });
-
-                    var host = document.getElementById('cmdb-impact-nodes');
-                    var svg = document.getElementById('cmdb-impact-svg');
-                    nodes.forEach(function (n) {
-                        var pos = positions[n.id];
-                        if (!pos) return;
-                        var el = document.createElement('a');
-                        el.href = 'view.php?id=' + n.id;
-                        el.className = 'org-node card';
-                        el.style.cssText = 'position:absolute;width:' + nodeW + 'px;padding:8px;text-align:center;left:' + pos.x + 'px;top:' + pos.y + 'px;';
-                        if (parseInt(n.id, 10) === parseInt(rootId, 10)) {
-                            el.style.border = '2px solid #0d6efd';
-                        }
-                        el.innerHTML = '<div>' + (n.ci_type_icon || '') + '</div><strong>' + (n.name || '') + '</strong><div style="font-size:12px;opacity:.8;">' + (n.ci_type_name || '') + '</div>';
-                        host.appendChild(el);
-                    });
-
-                    edges.forEach(function (e) {
-                        var p = positions[e.parent_ci_id];
-                        var c = positions[e.child_ci_id];
-                        if (!p || !c) return;
-                        var x1 = p.x + nodeW / 2, y1 = p.y + nodeH;
-                        var x2 = c.x + nodeW / 2, y2 = c.y;
-                        var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        var mid = (y1 + y2) / 2;
-                        path.setAttribute('d', 'M' + x1 + ',' + y1 + ' C' + x1 + ',' + mid + ' ' + x2 + ',' + mid + ' ' + x2 + ',' + y2);
-                        path.setAttribute('stroke', '#6c757d');
-                        path.setAttribute('fill', 'none');
-                        path.setAttribute('stroke-width', '2');
-                        svg.appendChild(path);
-                    });
-
-                    var viewport = document.getElementById('cmdb-impact-viewport');
-                    var dragging = false, sx = 0, sy = 0, sl = 0, st = 0;
-                    viewport.addEventListener('mousedown', function (ev) {
-                        dragging = true; sx = ev.clientX; sy = ev.clientY; sl = viewport.scrollLeft; st = viewport.scrollTop;
-                    });
-                    window.addEventListener('mouseup', function () { dragging = false; });
-                    viewport.addEventListener('mousemove', function (ev) {
-                        if (!dragging) return;
-                        viewport.scrollLeft = sl - (ev.clientX - sx);
-                        viewport.scrollTop = st - (ev.clientY - sy);
-                    });
+                    }
                 })();
                 </script>
                 <?php endif; ?>
@@ -324,4 +259,23 @@ function ci_view_render_cell_value($table, $field, $value) {
         </div>
     </div>
 </div>
+<?php if ($tab === 'details' && count($graph['nodes'] ?? []) > 1): ?>
+<script src="../../js/itm-cmdb-impact-graph.js"></script>
+<script>
+(function () {
+    var graph = <?php echo json_encode($graph, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+    if (window.itmRenderCmdbImpactGraph) {
+        window.itmRenderCmdbImpactGraph({
+            graph: graph,
+            viewportEl: document.getElementById('cmdb-mini-impact-viewport'),
+            nodesEl: document.getElementById('cmdb-mini-impact-nodes'),
+            svgEl: document.getElementById('cmdb-mini-impact-svg'),
+            viewUrl: 'view.php?id=',
+            mini: true,
+            enablePan: false
+        });
+    }
+})();
+</script>
+<?php endif; ?>
 <?php include '../../includes/footer.php'; ?>

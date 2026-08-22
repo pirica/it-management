@@ -43,7 +43,7 @@ if (!($conn instanceof mysqli)) {
 
 require_once ROOT_PATH . 'includes/itm_cmdb.php';
 
-foreach (['configuration_item_types', 'configuration_items', 'configuration_item_relationships'] as $table) {
+foreach (['configuration_item_types', 'configuration_items', 'configuration_item_relationships', 'change_requests', 'change_request_configuration_items'] as $table) {
     $res = mysqli_query($conn, "SHOW TABLES LIKE '" . mysqli_real_escape_string($conn, $table) . "'");
     if (!$res || mysqli_num_rows($res) === 0) {
         cmdb_verify_fail("Missing table {$table}");
@@ -125,6 +125,24 @@ if (!is_file(ROOT_PATH . 'modules/configuration_items/api.php')) {
     cmdb_verify_fail('Missing modules/configuration_items/api.php');
 } else {
     cmdb_verify_pass('Impact API entry exists');
+}
+
+if (!function_exists('itm_cmdb_sync_ip_subnet')) {
+    cmdb_verify_fail('Missing itm_cmdb_sync_ip_subnet()');
+} else {
+    cmdb_verify_pass('Subnet sync helper registered');
+}
+
+if (!function_exists('itm_cmdb_sync_system_access')) {
+    cmdb_verify_fail('Missing itm_cmdb_sync_system_access()');
+} else {
+    cmdb_verify_pass('System access / application sync helper registered');
+}
+
+if (!is_file(ROOT_PATH . 'modules/change_requests/index.php')) {
+    cmdb_verify_fail('Missing modules/change_requests/');
+} else {
+    cmdb_verify_pass('Change requests module present');
 }
 
 itm_script_output_end();

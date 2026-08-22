@@ -63,6 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (mysqli_stmt_execute($stmt)) {
                 mysqli_stmt_close($stmt);
+                $savedId = $is_edit ? $id : (int)mysqli_insert_id($conn);
+                require_once ROOT_PATH . 'includes/itm_cmdb.php';
+                itm_cmdb_sync_system_access($conn, (int)$company_id, $savedId, (int)($_SESSION['employee_id'] ?? 0));
                 header('Location: index.php');
                 exit;
             }

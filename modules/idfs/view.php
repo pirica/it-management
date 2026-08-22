@@ -1100,6 +1100,8 @@ if (!isset($crud_title)) {
             </div>
 
             <?php
+            require_once ROOT_PATH . 'includes/itm_cmdb.php';
+            itm_cmdb_sync_idf($conn, (int)$company_id, (int)$idf_id, (int)($_SESSION['employee_id'] ?? 0));
             require_once ROOT_PATH . 'includes/itm_cmdb_card.php';
             itm_cmdb_render_relationship_card(
                 $conn,

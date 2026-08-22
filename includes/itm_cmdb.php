@@ -49,6 +49,7 @@ if (!function_exists('itm_cmdb_builtin_type_seeds')) {
             ['name' => 'Application', 'source_slug' => 'builtin:application', 'icon' => '📱'],
             ['name' => 'Service', 'source_slug' => 'builtin:service', 'icon' => '⚙️'],
             ['name' => 'IDF', 'source_slug' => 'builtin:idf', 'icon' => '🗄️'],
+            ['name' => 'Subnet', 'source_slug' => 'builtin:subnet', 'icon' => '🌐'],
         ];
     }
 }
@@ -293,7 +294,132 @@ if (!function_exists('itm_cmdb_sync_equipment')) {
             $name = 'Equipment #' . $equipmentId;
         }
 
-        return itm_cmdb_upsert_ci($conn, $companyId, $ciTypeId, $name, 'equipment', $equipmentId, $employeeId);
+        $ciId = itm_cmdb_upsert_ci($conn, $companyId, $ciTypeId, $name, 'equipment', $equipmentId, $employeeId);
+        if ($ciId > 0) {
+            itm_cmdb_link_equipment_subnet_relationships($conn, $companyId, $equipmentId, $ciId, $employeeId);
+        }
+        return $ciId;
+    }
+}
+
+if (!function_exists('itm_cmdb_sync_ip_subnet')) {
+    function itm_cmdb_sync_ip_subnet(mysqli $conn, int $companyId, int $subnetId, int $employeeId = 0): int
+    {
+        if ($companyId <= 0 || $subnetId <= 0) {
+            return 0;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id, cidr, description FROM ip_subnets WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $subnetId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        if (!$row) {
+            return 0;
+        }
+
+        itm_cmdb_seed_types_for_company($conn, $companyId, $employeeId);
+        $ciTypeId = itm_cmdb_get_type_id_by_source($conn, $companyId, 'builtin:subnet');
+        if ($ciTypeId <= 0) {
+            return 0;
+        }
+
+        $cidr = trim((string)($row['cidr'] ?? ''));
+        $desc = trim((string)($row['description'] ?? ''));
+        $name = $cidr !== '' ? $cidr : 'Subnet #' . $subnetId;
+        if ($desc !== '') {
+            $name .= ' — ' . $desc;
+        }
+
+        return itm_cmdb_upsert_ci($conn, $companyId, $ciTypeId, $name, 'ip_subnets', $subnetId, $employeeId);
+    }
+}
+
+if (!function_exists('itm_cmdb_sync_system_access')) {
+    /**
+     * Why: Tenant application catalog (system_access) maps to Application CI type for manual dependency edges.
+     */
+    function itm_cmdb_sync_system_access(mysqli $conn, int $companyId, int $systemAccessId, int $employeeId = 0): int
+    {
+        if ($companyId <= 0 || $systemAccessId <= 0) {
+            return 0;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id, code, name FROM system_access WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $systemAccessId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        if (!$row) {
+            return 0;
+        }
+
+        itm_cmdb_seed_types_for_company($conn, $companyId, $employeeId);
+        $ciTypeId = itm_cmdb_get_type_id_by_source($conn, $companyId, 'builtin:application');
+        if ($ciTypeId <= 0) {
+            return 0;
+        }
+
+        $code = trim((string)($row['code'] ?? ''));
+        $name = trim((string)($row['name'] ?? ''));
+        if ($name === '') {
+            $name = $code !== '' ? $code : 'Application #' . $systemAccessId;
+        } elseif ($code !== '' && stripos($name, $code) === false) {
+            $name = $name . ' (' . $code . ')';
+        }
+
+        return itm_cmdb_upsert_ci($conn, $companyId, $ciTypeId, $name, 'system_access', $systemAccessId, $employeeId);
+    }
+}
+
+if (!function_exists('itm_cmdb_link_equipment_subnet_relationships')) {
+    function itm_cmdb_link_equipment_subnet_relationships(
+        mysqli $conn,
+        int $companyId,
+        int $equipmentId,
+        int $equipmentCiId,
+        int $employeeId = 0
+    ): void {
+        if ($companyId <= 0 || $equipmentId <= 0 || $equipmentCiId <= 0) {
+            return;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT DISTINCT subnet_id FROM ip_addresses
+             WHERE company_id = ? AND equipment_id = ? AND deleted_at IS NULL AND subnet_id IS NOT NULL'
+        );
+        if (!$stmt) {
+            return;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $companyId, $equipmentId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $subnetId = (int)($row['subnet_id'] ?? 0);
+            if ($subnetId <= 0) {
+                continue;
+            }
+            $subnetCiId = itm_cmdb_sync_ip_subnet($conn, $companyId, $subnetId, $employeeId);
+            if ($subnetCiId > 0) {
+                itm_cmdb_add_relationship($conn, $companyId, $subnetCiId, $equipmentCiId, 'connects_to', $employeeId);
+            }
+        }
+        mysqli_stmt_close($stmt);
     }
 }
 
@@ -682,5 +808,42 @@ if (!function_exists('itm_cmdb_list_ci_options')) {
         }
         mysqli_stmt_close($stmt);
         return $rows;
+    }
+}
+
+if (!function_exists('itm_cmdb_extract_ci_ids_from_graph')) {
+    /**
+     * @return array<int,int> CI ids from impact graph payload (includes root).
+     */
+    function itm_cmdb_extract_ci_ids_from_graph(array $graph): array
+    {
+        $ids = [];
+        foreach ($graph['nodes'] ?? [] as $node) {
+            $id = (int)($node['id'] ?? 0);
+            if ($id > 0) {
+                $ids[$id] = $id;
+            }
+        }
+        $rootId = (int)($graph['root_id'] ?? 0);
+        if ($rootId > 0) {
+            $ids[$rootId] = $rootId;
+        }
+        return array_values($ids);
+    }
+}
+
+if (!function_exists('itm_cmdb_list_affected_ci_ids')) {
+    /**
+     * Blast-radius CI id list for change requests (BFS subgraph).
+     *
+     * @return array<int,int>
+     */
+    function itm_cmdb_list_affected_ci_ids(mysqli $conn, int $companyId, int $sourceCiId, int $maxDepth = 8): array
+    {
+        if ($companyId <= 0 || $sourceCiId <= 0) {
+            return [];
+        }
+        $graph = itm_cmdb_build_impact_graph($conn, $companyId, $sourceCiId, $maxDepth);
+        return itm_cmdb_extract_ci_ids_from_graph($graph);
     }
 }
