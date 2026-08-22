@@ -84,10 +84,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, 'siiiii', $name, $sortOrder, $isActive, $employee_id, $postId, $company_id);
-                mysqli_stmt_execute($stmt);
+                if (@mysqli_stmt_execute($stmt)) {
+                    mysqli_stmt_close($stmt);
+                    aps_redirect_after_visit_reason('Visit reason saved.');
+                }
                 mysqli_stmt_close($stmt);
-                header('Location: index.php?msg=' . rawurlencode('Visit reason saved.'));
-                exit;
+                aps_redirect_after_visit_reason('Could not save visit reason (name may already exist for this company).');
             }
         }
     }
@@ -180,7 +182,7 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
 ?>
 <div class="card">
     <h1 title="Edit record">✏️</h1>
-    <p><a href="index.php" class="btn btn-sm" title="Back">🔙</a>
+    <p><a href="<?php echo $kind === 'visit_reason' ? 'list_all.php' : 'index.php'; ?>" class="btn btn-sm" title="Back">🔙</a>
         <a href="view.php?kind=<?php echo sanitize($kind); ?>&amp;id=<?php echo (int)$id; ?>" class="btn btn-sm" title="View">🔎</a></p>
     <form method="post" action="edit.php?kind=<?php echo sanitize($kind); ?>&amp;id=<?php echo (int)$id; ?>">
         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">

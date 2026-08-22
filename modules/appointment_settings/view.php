@@ -48,7 +48,7 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
 ?>
 <div class="card">
     <h1 title="View details">🔎</h1>
-    <p><a href="index.php" class="btn btn-sm" title="Back">🔙</a>
+    <p><a href="<?php echo $kind === 'visit_reason' ? 'list_all.php' : 'index.php'; ?>" class="btn btn-sm" title="Back">🔙</a>
         <a href="edit.php?kind=<?php echo sanitize($kind); ?>&amp;id=<?php echo (int)$id; ?>" class="btn btn-sm" title="Edit">✏️</a></p>
     <table class="detail-table">
         <?php if ($kind === 'settings'): ?>

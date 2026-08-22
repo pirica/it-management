@@ -1157,6 +1157,7 @@ Run the matching `verify_*.php` after changing `includes/itm_scheduled_reports.p
 | Script | Purpose |
 |--------|---------|
 | `php scripts/verify_appointment.php` | Regression: appointment tables/triggers, `booking_lock` index, seeds, slot builder, inactive-settings gate, past-slot availability, ICS builder smoke, company 1 modality sample, `modules_registry` slugs |
+| `php scripts/apply_appointment_visit_reasons_replicate.php` | Copy `appointment_visit_reasons` from company 1 to all other companies (`INSERT IGNORE` on `company_id` + `name`). Dry-run default; `--apply` or browser `?run=1&apply=1` (Admin). Live DBs that imported before visit-reason seeds moved ahead of `@replicate_source_company_id`. |
 
 Run `verify_appointment.php` when changing `modules/appointments/`, `includes/itm_appointment.php`, or appointment DDL/seeds/triggers in `db/`.
 

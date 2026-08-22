@@ -178,8 +178,10 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
 <div class="card appointment-settings-section">
     <div class="appointment-settings-section-header">
         <h2 title="Visit reasons">📋</h2>
+        <a href="list_all.php" class="btn btn-sm" title="View all visit reasons">🔎</a>
         <a href="create.php?kind=visit_reason" class="btn btn-sm btn-primary" title="Add">➕</a>
     </div>
+    <p>Manage booking dropdown options for <em>What is the reason for your appointment?</em></p>
     <table class="appointment-list-table" data-itm-no-import-excel="1">
         <thead>
         <tr>
@@ -202,6 +204,7 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                     <input type="hidden" name="kind" value="visit_reason">
                     <input type="hidden" name="id" value="<?php echo (int)$reason['id']; ?>">
+                    <input type="hidden" name="return" value="list_all">
                     <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
                 </form>
                 <?php aps_actions_cell_close(); ?>
