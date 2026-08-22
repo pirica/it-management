@@ -38,7 +38,7 @@ Tenant-scoped configuration items (CIs) and dependency relationships for blast-r
 ## 7. File Structure
 
 - **index.php** — list CRUD
-- **view.php** — detail + impact graph + relationship editor
+- **view.php** — bespoke detail shell (sidebar + header + `styles.css`); Details / Relationships / Impact tabs; toolbar edit + delete
 - **create.php**, **edit.php**, **delete.php**, **list_all.php** — scaffold wrappers
 - **api.php** — JSON impact / relationship mutations
 

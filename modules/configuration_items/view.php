@@ -75,8 +75,9 @@ $ciOptions = itm_cmdb_list_ci_options($conn, (int)$company_id, $id);
 $graph = itm_cmdb_build_impact_graph($conn, (int)$company_id, $id);
 $csrfToken = itm_get_csrf_token();
 $crud_title = 'Configuration Item';
-itm_crud_apply_module_icon_to_browser_title($conn, (int)$company_id, $employeeId, 'configuration_items', $crud_title);
+$crud_title = itm_crud_apply_module_icon_to_browser_title($conn, (int)$company_id, $employeeId, 'configuration_items', $crud_title);
 $relationshipTypes = itm_cmdb_relationship_types();
+$companyId = (int)$company_id;
 
 function ci_view_render_cell_value($table, $field, $value) {
     if ($field === 'active') {
@@ -92,14 +93,37 @@ function ci_view_render_cell_value($table, $field, $value) {
     return sanitize((string)($value ?? ''));
 }
 ?>
-<?php include '../../includes/header.php'; ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo sanitize($crud_title); ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($ui_config ?? [])); ?></title>
+    <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <style>
+        .org-chart-container { width:100%; overflow:auto; position:relative; background:var(--bg-secondary,#f8f9fa); }
+        .org-node { width:160px; background:#fff; border:1px solid #00d1b2; border-radius:4px; text-align:center; position:absolute; padding:6px; box-shadow:0 2px 4px rgba(0,0,0,.05); z-index:10; font-size:12px; }
+    </style>
+</head>
+<body>
 <div class="container">
+    <?php include '../../includes/sidebar.php'; ?>
     <div class="main-content">
+        <?php include '../../includes/header.php'; ?>
         <div class="content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                 <h1 title="View configuration item">🔎</h1>
                 <div style="display:flex;gap:8px;">
                     <a href="edit.php?id=<?php echo (int)$id; ?>" class="btn btn-sm" title="Edit">✏️</a>
+                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
+                        <input type="hidden" name="id" value="<?php echo (int)$id; ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) {
+                            itm_crud_render_delete_hidden_audit_inputs();
+                        } ?>
+                        <button class="btn btn-sm btn-danger" type="submit" title="Delete">🗑️</button>
+                    </form>
                     <a href="index.php" class="btn btn-sm" title="Back">🔙</a>
                 </div>
             </div>
@@ -278,4 +302,6 @@ function ci_view_render_cell_value($table, $field, $value) {
 })();
 </script>
 <?php endif; ?>
-<?php include '../../includes/footer.php'; ?>
+<script src="../../js/theme.js"></script>
+</body>
+</html>
