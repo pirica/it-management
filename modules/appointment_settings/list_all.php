@@ -86,7 +86,7 @@ function aps_visit_reason_sort_link(string $column, string $label, string $curre
         'dir' => $nextDir,
         'page' => 1,
     ]);
-    return '<a href="' . sanitize($href) . '">' . sanitize($label . $arrow) . '</a>';
+    return '<a class="itm-plain-link" href="' . sanitize($href) . '">' . sanitize($label . $arrow) . '</a>';
 }
 
 $pageTitle = 'Visit reasons';
