@@ -192,22 +192,349 @@ if (!function_exists('itm_appointment_week_start_sunday')) {
     }
 }
 
+if (!function_exists('itm_appointment_settings_booking_enabled')) {
+    function itm_appointment_settings_booking_enabled(?array $settings): bool
+    {
+        if (!$settings) {
+            return false;
+        }
+        return (int)($settings['active'] ?? 0) === 1;
+    }
+}
+
+if (!function_exists('itm_appointment_booking_disabled_message')) {
+    function itm_appointment_booking_disabled_message(): string
+    {
+        return 'Appointment booking is currently disabled. Contact IT for help.';
+    }
+}
+
+if (!function_exists('itm_appointment_employee_can_modify')) {
+    /**
+     * Owner or admin may cancel/reschedule a live scheduled appointment.
+     */
+    function itm_appointment_employee_can_modify(mysqli $conn, int $companyId, int $sessionEmployeeId, array $appointmentRow): bool
+    {
+        if ($companyId <= 0 || $sessionEmployeeId <= 0 || empty($appointmentRow)) {
+            return false;
+        }
+        if (!empty($appointmentRow['deleted_at'])) {
+            return false;
+        }
+        $status = strtolower(trim((string)($appointmentRow['status'] ?? '')));
+        if ($status !== 'scheduled') {
+            return false;
+        }
+        $ownerId = (int)($appointmentRow['employee_id'] ?? 0);
+        if ($ownerId === $sessionEmployeeId) {
+            return true;
+        }
+        return function_exists('itm_is_admin') && itm_is_admin($conn, $sessionEmployeeId);
+    }
+}
+
+if (!function_exists('appt_employee_can_modify')) {
+    /** Alias for self-service checks (plan naming). */
+    function appt_employee_can_modify(mysqli $conn, int $companyId, int $sessionEmployeeId, array $appointmentRow): bool
+    {
+        return itm_appointment_employee_can_modify($conn, $companyId, $sessionEmployeeId, $appointmentRow);
+    }
+}
+
+if (!function_exists('itm_appointment_slot_is_past')) {
+    function itm_appointment_slot_is_past(string $dateYmd, string $startTime, string $timezone): bool
+    {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateYmd)) {
+            return true;
+        }
+        $tzName = trim($timezone) !== '' ? trim($timezone) : 'UTC';
+        try {
+            $tz = new DateTimeZone($tzName);
+        } catch (Exception $e) {
+            $tz = new DateTimeZone('UTC');
+        }
+        $startNorm = substr(trim($startTime), 0, 8);
+        if (strlen($startNorm) === 5) {
+            $startNorm .= ':00';
+        }
+        $slotStart = DateTime::createFromFormat('Y-m-d H:i:s', $dateYmd . ' ' . $startNorm, $tz);
+        if (!$slotStart) {
+            return true;
+        }
+        $now = new DateTime('now', $tz);
+        return $slotStart < $now;
+    }
+}
+
+if (!function_exists('itm_appointment_ics_escape')) {
+    function itm_appointment_ics_escape(string $text): string
+    {
+        $text = str_replace('\\', '\\\\', $text);
+        $text = str_replace(',', '\\,', $text);
+        $text = str_replace(';', '\\;', $text);
+        $text = str_replace(["\r\n", "\n", "\r"], '\\n', $text);
+        return $text;
+    }
+}
+
+if (!function_exists('itm_appointment_build_ics_vevent')) {
+    /**
+     * @param array<string,mixed> $appointmentRow
+     * @param array<string,mixed> $context reason_name, type_label, employee_name, timezone
+     */
+    function itm_appointment_build_ics_vevent(array $appointmentRow, array $context = []): string
+    {
+        $appointmentId = (int)($appointmentRow['id'] ?? 0);
+        $dateYmd = (string)($appointmentRow['appointment_date'] ?? '');
+        $startTime = substr((string)($appointmentRow['start_time'] ?? ''), 0, 8);
+        $endTime = substr((string)($appointmentRow['end_time'] ?? ''), 0, 8);
+        if (strlen($startTime) === 5) {
+            $startTime .= ':00';
+        }
+        if (strlen($endTime) === 5) {
+            $endTime .= ':00';
+        }
+        $tzid = trim((string)($context['timezone'] ?? $appointmentRow['timezone'] ?? 'UTC'));
+        if ($tzid === '') {
+            $tzid = 'UTC';
+        }
+        $reason = trim((string)($context['reason_name'] ?? ''));
+        $typeLabel = trim((string)($context['type_label'] ?? ''));
+        $employeeName = trim((string)($context['employee_name'] ?? ''));
+        $typeName = strtolower(trim((string)($context['appointment_type_name'] ?? $appointmentRow['appointment_type_name'] ?? '')));
+
+        $summaryParts = ['IT appointment'];
+        if ($employeeName !== '') {
+            $summaryParts[] = $employeeName;
+        }
+        if ($reason !== '') {
+            $summaryParts[] = $reason;
+        }
+        $summary = implode(' — ', $summaryParts);
+
+        $description = implode("\n", array_filter([
+            $typeLabel !== '' ? 'Type: ' . $typeLabel : '',
+            $reason !== '' ? 'Reason: ' . $reason : '',
+            $employeeName !== '' ? 'Employee: ' . $employeeName : '',
+        ]));
+
+        $lines = [];
+        $lines[] = 'BEGIN:VEVENT';
+        $lines[] = 'UID:appointment-' . $appointmentId . '@it-management';
+        $lines[] = 'DTSTAMP:' . gmdate('Ymd\THis\Z');
+        $lines[] = 'DTSTART;TZID=' . itm_appointment_ics_escape($tzid) . ':' . str_replace('-', '', $dateYmd) . 'T' . str_replace(':', '', $startTime);
+        $lines[] = 'DTEND;TZID=' . itm_appointment_ics_escape($tzid) . ':' . str_replace('-', '', $dateYmd) . 'T' . str_replace(':', '', $endTime);
+        $lines[] = 'SUMMARY:' . itm_appointment_ics_escape($summary);
+        if ($description !== '') {
+            $lines[] = 'DESCRIPTION:' . itm_appointment_ics_escape($description);
+        }
+        if ($typeName === 'in_person') {
+            $lines[] = 'LOCATION:' . itm_appointment_ics_escape('IT desk (in person)');
+        }
+        $lines[] = 'END:VEVENT';
+        return implode("\r\n", $lines) . "\r\n";
+    }
+}
+
+if (!function_exists('itm_appointment_build_ics_calendar')) {
+    function itm_appointment_build_ics_calendar(array $appointmentRow, array $context = []): string
+    {
+        return 'BEGIN:VCALENDAR' . "\r\n"
+            . 'VERSION:2.0' . "\r\n"
+            . 'PRODID:-//IT Management System//Appointments//EN' . "\r\n"
+            . itm_appointment_build_ics_vevent($appointmentRow, $context)
+            . 'END:VCALENDAR' . "\r\n";
+    }
+}
+
+if (!function_exists('itm_appointment_fetch_by_id')) {
+    function itm_appointment_fetch_by_id(mysqli $conn, int $companyId, int $appointmentId): ?array
+    {
+        if ($companyId <= 0 || $appointmentId <= 0) {
+            return null;
+        }
+        $sql = "SELECT a.*, r.name AS reason_name, t.name AS appointment_type_name, t.label AS appointment_type_label,
+            CONCAT(COALESCE(e.first_name,''), ' ', COALESCE(e.last_name,'')) AS employee_name,
+            e.work_email, e.personal_email,
+            CONCAT(COALESCE(ae.first_name,''), ' ', COALESCE(ae.last_name,'')) AS assigned_to_name,
+            ae.work_email AS assigned_work_email, ae.personal_email AS assigned_personal_email
+            FROM appointments a
+            LEFT JOIN appointment_visit_reasons r ON r.id = a.visit_reason_id AND r.company_id = a.company_id
+            LEFT JOIN appointment_type t ON t.id = a.appointment_type_id AND t.company_id = a.company_id
+            LEFT JOIN employees e ON e.id = a.employee_id
+            LEFT JOIN employees ae ON ae.id = a.assigned_to_employee_id AND ae.company_id = a.company_id
+            WHERE a.id = ? AND a.company_id = ? AND a.deleted_at IS NULL LIMIT 1";
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return null;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $appointmentId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        return $row ?: null;
+    }
+}
+
+if (!function_exists('itm_appointment_resolve_employee_email')) {
+    function itm_appointment_resolve_employee_email(array $employeeRow): string
+    {
+        if (!function_exists('itm_employee_contact_email_trim')) {
+            require_once __DIR__ . '/itm_employee_contact_email.php';
+        }
+        $work = itm_employee_contact_email_trim($employeeRow['work_email'] ?? '');
+        if ($work !== '') {
+            return $work;
+        }
+        return itm_employee_contact_email_trim($employeeRow['personal_email'] ?? '');
+    }
+}
+
+if (!function_exists('itm_appointment_build_summary_line')) {
+    function itm_appointment_build_summary_line(array $appointmentRow): string
+    {
+        $parts = [];
+        $employeeName = trim((string)($appointmentRow['employee_name'] ?? ''));
+        if ($employeeName !== '') {
+            $parts[] = $employeeName;
+        }
+        $dateYmd = (string)($appointmentRow['appointment_date'] ?? '');
+        if ($dateYmd !== '') {
+            $parts[] = function_exists('itm_format_date_display') ? itm_format_date_display($dateYmd) : $dateYmd;
+        }
+        $start = substr((string)($appointmentRow['start_time'] ?? ''), 0, 8);
+        $end = substr((string)($appointmentRow['end_time'] ?? ''), 0, 8);
+        if ($start !== '' && $end !== '') {
+            $parts[] = itm_appointment_slot_label($start, $end);
+        }
+        return implode(' — ', $parts);
+    }
+}
+
+if (!function_exists('itm_appointment_send_confirmation_email')) {
+    function itm_appointment_send_confirmation_email(mysqli $conn, int $companyId, array $appointmentRow): bool
+    {
+        if (!function_exists('itm_send_email')) {
+            require_once __DIR__ . '/itm_email.php';
+        }
+        $to = itm_appointment_resolve_employee_email($appointmentRow);
+        if ($to === '') {
+            error_log('itm_appointment_send_confirmation_email: no email for appointment id ' . (int)($appointmentRow['id'] ?? 0));
+            return false;
+        }
+
+        $typeLabel = trim((string)($appointmentRow['appointment_type_label'] ?? ''));
+        if ($typeLabel === '') {
+            $typeName = (string)($appointmentRow['appointment_type_name'] ?? '');
+            $typeLabel = itm_appointment_type_default_label_for_name($typeName);
+        }
+        $reason = trim((string)($appointmentRow['reason_name'] ?? ''));
+        $dateDisplay = function_exists('itm_format_date_display')
+            ? itm_format_date_display((string)($appointmentRow['appointment_date'] ?? ''))
+            : (string)($appointmentRow['appointment_date'] ?? '');
+        $timeLabel = itm_appointment_slot_label(
+            substr((string)($appointmentRow['start_time'] ?? ''), 0, 8),
+            substr((string)($appointmentRow['end_time'] ?? ''), 0, 8)
+        );
+        $timezone = (string)($appointmentRow['timezone'] ?? 'UTC');
+
+        $subject = 'IT appointment confirmed — ' . $dateDisplay;
+        $html = '<p>Your IT appointment has been scheduled.</p>'
+            . '<p><strong>Date:</strong> ' . htmlspecialchars($dateDisplay, ENT_QUOTES, 'UTF-8') . '<br>'
+            . '<strong>Time:</strong> ' . htmlspecialchars($timeLabel, ENT_QUOTES, 'UTF-8') . '<br>'
+            . '<strong>Type:</strong> ' . htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8') . '<br>'
+            . '<strong>Reason:</strong> ' . htmlspecialchars($reason, ENT_QUOTES, 'UTF-8') . '<br>'
+            . '<strong>Time zone:</strong> ' . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . '</p>'
+            . '<p>A calendar invite is attached.</p>';
+
+        $icsContext = [
+            'reason_name' => $reason,
+            'type_label' => $typeLabel,
+            'employee_name' => trim((string)($appointmentRow['employee_name'] ?? '')),
+            'appointment_type_name' => (string)($appointmentRow['appointment_type_name'] ?? ''),
+            'timezone' => $timezone,
+        ];
+        $icsBody = itm_appointment_build_ics_calendar($appointmentRow, $icsContext);
+        $attachments = [
+            [
+                'filename' => 'appointment-' . (int)($appointmentRow['id'] ?? 0) . '.ics',
+                'content_type' => 'text/calendar; charset=utf-8',
+                'body' => $icsBody,
+            ],
+        ];
+
+        $assigneeId = (int)($appointmentRow['assigned_to_employee_id'] ?? 0);
+        $cc = '';
+        if ($assigneeId > 0) {
+            $assigneeEmail = itm_appointment_resolve_employee_email([
+                'work_email' => $appointmentRow['assigned_work_email'] ?? '',
+                'personal_email' => $appointmentRow['assigned_personal_email'] ?? '',
+            ]);
+            if ($assigneeEmail !== '' && strcasecmp($assigneeEmail, $to) !== 0) {
+                $cc = $assigneeEmail;
+            }
+        }
+
+        $options = [
+            'attachments' => $attachments,
+            'email_template' => ['subtitle' => 'Appointment confirmation'],
+        ];
+        if ($cc !== '') {
+            $options['cc_email'] = $cc;
+        }
+
+        return itm_send_email($to, $subject, $html, $companyId, $options);
+    }
+}
+
+if (!function_exists('itm_appointment_notify_assignee_cancelled')) {
+    function itm_appointment_notify_assignee_cancelled(mysqli $conn, int $companyId, int $assigneeEmployeeId, int $appointmentId, string $summary = '', int $actorEmployeeId = 0): bool
+    {
+        if (!function_exists('itm_notify_employee')) {
+            require_once __DIR__ . '/itm_employee_notifications.php';
+        }
+        $assigneeEmployeeId = (int)$assigneeEmployeeId;
+        $appointmentId = (int)$appointmentId;
+        if ($assigneeEmployeeId <= 0 || $appointmentId <= 0) {
+            return false;
+        }
+        $summary = trim($summary);
+        return itm_notify_employee($conn, $assigneeEmployeeId, [
+            'company_id' => (int)$companyId,
+            'module_slug' => 'appointment',
+            'record_id' => $appointmentId,
+            'title' => 'Appointment cancelled',
+            'body' => $summary !== '' ? $summary : 'An assigned appointment was cancelled.',
+            'action_url' => itm_employee_notification_build_action_url('appointment', $appointmentId),
+        ]);
+    }
+}
+
 if (!function_exists('itm_appointment_booked_slots_for_range')) {
     /**
      * @return array<string, array<string, true>> date => start_time => true
      */
-    function itm_appointment_booked_slots_for_range(mysqli $conn, int $companyId, string $startDate, string $endDate): array
+    function itm_appointment_booked_slots_for_range(mysqli $conn, int $companyId, string $startDate, string $endDate, int $excludeAppointmentId = 0): array
     {
         $companyId = (int)$companyId;
+        $excludeAppointmentId = (int)$excludeAppointmentId;
         $booked = [];
         $sql = "SELECT appointment_date, start_time FROM appointments
                 WHERE company_id = ? AND deleted_at IS NULL AND status = 'scheduled'
                   AND appointment_date >= ? AND appointment_date <= ?";
+        if ($excludeAppointmentId > 0) {
+            $sql .= ' AND id <> ?';
+        }
         $stmt = mysqli_prepare($conn, $sql);
         if (!$stmt) {
             return $booked;
         }
-        mysqli_stmt_bind_param($stmt, 'iss', $companyId, $startDate, $endDate);
+        if ($excludeAppointmentId > 0) {
+            mysqli_stmt_bind_param($stmt, 'issi', $companyId, $startDate, $endDate, $excludeAppointmentId);
+        } else {
+            mysqli_stmt_bind_param($stmt, 'iss', $companyId, $startDate, $endDate);
+        }
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         while ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -227,16 +554,28 @@ if (!function_exists('itm_appointment_build_week_slots')) {
     /**
      * Build slot grid for a week starting Sunday (matches booking modal).
      *
-     * @return array{week_start:string,week_end:string,timezone:string,days:array<int,array>}
+     * @return array{week_start:string,week_end:string,timezone:string,days:array<int,array>,booking_disabled?:bool,booking_disabled_message?:string}
      */
-    function itm_appointment_build_week_slots(mysqli $conn, int $companyId, string $anchorDateYmd): array
+    function itm_appointment_build_week_slots(mysqli $conn, int $companyId, string $anchorDateYmd, int $excludeAppointmentId = 0): array
     {
         $settings = itm_appointment_load_settings($conn, $companyId);
+        $timezone = (string)($settings['timezone'] ?? 'UTC');
+        if (!$settings || !itm_appointment_settings_booking_enabled($settings)) {
+            return [
+                'week_start' => itm_appointment_week_start_sunday($anchorDateYmd),
+                'week_end' => date('Y-m-d', strtotime(itm_appointment_week_start_sunday($anchorDateYmd) . ' +6 days')),
+                'timezone' => $timezone,
+                'days' => [],
+                'booking_disabled' => true,
+                'booking_disabled_message' => itm_appointment_booking_disabled_message(),
+            ];
+        }
+
         $hoursByDay = itm_appointment_load_business_hours($conn, $companyId);
         $allTypes = itm_appointment_load_appointment_types($conn, $companyId);
         $weekStart = itm_appointment_week_start_sunday($anchorDateYmd);
         $weekEnd = date('Y-m-d', strtotime($weekStart . ' +6 days'));
-        $booked = itm_appointment_booked_slots_for_range($conn, $companyId, $weekStart, $weekEnd);
+        $booked = itm_appointment_booked_slots_for_range($conn, $companyId, $weekStart, $weekEnd, $excludeAppointmentId);
 
         $slotMinutes = (int)($settings['slot_duration_minutes'] ?? 60);
         if ($slotMinutes < 15) {
@@ -244,7 +583,6 @@ if (!function_exists('itm_appointment_build_week_slots')) {
         }
         $bookableStart = (string)($settings['bookable_start_time'] ?? '09:00:00');
         $bookableEnd = (string)($settings['bookable_end_time'] ?? '14:00:00');
-        $timezone = (string)($settings['timezone'] ?? 'UTC');
 
         $days = [];
         for ($i = 0; $i < 7; $i++) {
@@ -264,12 +602,18 @@ if (!function_exists('itm_appointment_build_week_slots')) {
                     }
                     $endTime = date('H:i:s', $endSlotTs);
                     $isBooked = !empty($booked[$dateYmd][$startTime]);
-                    $slots[] = [
+                    $isPast = itm_appointment_slot_is_past($dateYmd, $startTime, $timezone);
+                    $available = !$isBooked && !$isPast;
+                    $slotEntry = [
                         'start_time' => $startTime,
                         'end_time' => $endTime,
                         'label' => itm_appointment_slot_label($startTime, $endTime),
-                        'available' => !$isBooked,
+                        'available' => $available,
                     ];
+                    if ($isPast) {
+                        $slotEntry['past'] = true;
+                    }
+                    $slots[] = $slotEntry;
                     $cursor = $endSlotTs;
                 }
             }
@@ -291,6 +635,7 @@ if (!function_exists('itm_appointment_build_week_slots')) {
             'week_end' => $weekEnd,
             'timezone' => $timezone,
             'days' => $days,
+            'booking_disabled' => false,
         ];
     }
 }

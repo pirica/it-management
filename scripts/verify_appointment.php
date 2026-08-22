@@ -136,6 +136,72 @@ if ($bookableDays < 1) {
     appt_verify_pass('Slot builder returns bookable days');
 }
 
+if (!itm_appointment_settings_booking_enabled($settings)) {
+    appt_verify_fail('appointment_settings.active should be 1 for company 1 seeds');
+} else {
+    appt_verify_pass('appointment_settings booking enabled for company 1');
+}
+
+$pastSlotViolations = 0;
+foreach ($week['days'] as $day) {
+    foreach ($day['slots'] ?? [] as $slot) {
+        if (!empty($slot['past']) && !empty($slot['available'])) {
+            $pastSlotViolations++;
+        }
+    }
+}
+if ($pastSlotViolations > 0) {
+    appt_verify_fail('Past slots must not be marked available in week_slots');
+} else {
+    appt_verify_pass('Past slots are not available in week_slots');
+}
+
+$settingsRowId = (int)($settings['id'] ?? 0);
+if ($settingsRowId > 0) {
+    $disableStmt = mysqli_prepare($conn, 'UPDATE appointment_settings SET active = 0 WHERE id = ? AND company_id = ?');
+    if ($disableStmt) {
+        mysqli_stmt_bind_param($disableStmt, 'ii', $settingsRowId, $companyId);
+        mysqli_stmt_execute($disableStmt);
+        mysqli_stmt_close($disableStmt);
+    }
+    $disabledWeek = itm_appointment_build_week_slots($conn, $companyId, date('Y-m-d'));
+    if (empty($disabledWeek['booking_disabled'])) {
+        appt_verify_fail('Inactive appointment_settings must return booking_disabled week_slots payload');
+    } else {
+        appt_verify_pass('Inactive appointment_settings blocks week_slots');
+    }
+    $enableStmt = mysqli_prepare($conn, 'UPDATE appointment_settings SET active = 1 WHERE id = ? AND company_id = ?');
+    if ($enableStmt) {
+        mysqli_stmt_bind_param($enableStmt, 'ii', $settingsRowId, $companyId);
+        mysqli_stmt_execute($enableStmt);
+        mysqli_stmt_close($enableStmt);
+    }
+} else {
+    appt_verify_fail('Could not toggle appointment_settings.active for inactive gate probe');
+}
+
+$icsSample = itm_appointment_build_ics_vevent(
+    [
+        'id' => 99,
+        'appointment_date' => '2026-06-15',
+        'start_time' => '10:00:00',
+        'end_time' => '11:00:00',
+        'timezone' => 'UTC',
+    ],
+    [
+        'reason_name' => 'Hardware',
+        'type_label' => 'In Person',
+        'employee_name' => 'Test User',
+        'appointment_type_name' => 'in_person',
+        'timezone' => 'UTC',
+    ]
+);
+if (strpos($icsSample, 'BEGIN:VEVENT') === false || strpos($icsSample, 'UID:appointment-99@it-management') === false) {
+    appt_verify_fail('ICS builder missing VEVENT or UID');
+} else {
+    appt_verify_pass('ICS builder produces minimal VEVENT');
+}
+
 $slugStmt = mysqli_prepare($conn, 'SELECT id FROM modules_registry WHERE module_slug = ? AND active = 1 LIMIT 1');
 $slug = 'appointments';
 mysqli_stmt_bind_param($slugStmt, 's', $slug);

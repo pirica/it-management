@@ -1156,7 +1156,7 @@ Run the matching `verify_*.php` after changing `includes/itm_scheduled_reports.p
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/verify_appointment.php` | Regression: five `appointment_*` tables, audit triggers, `booking_lock` unique index, company 1 seeds (`appointment_type` in_person/remote), slot builder, company 1 **modality sample** (Mon/Tue/Thu/Fri In Person+Remote, Wed remote-only — `itm_appointment_regression_sample_business_hours_by_dow()`), `modules_registry` slug `appointment` |
+| `php scripts/verify_appointment.php` | Regression: appointment tables/triggers, `booking_lock` index, seeds, slot builder, inactive-settings gate, past-slot availability, ICS builder smoke, company 1 modality sample, `modules_registry` slugs |
 
 Run `verify_appointment.php` when changing `modules/appointments/`, `includes/itm_appointment.php`, or appointment DDL/seeds/triggers in `db/`.
 
