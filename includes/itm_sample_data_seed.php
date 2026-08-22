@@ -2891,6 +2891,79 @@ if (!function_exists('itm_seed_insert_alerts_sample_row')) {
     }
 }
 
+if (!function_exists('itm_seed_insert_configuration_items_sample_rows')) {
+    /**
+     * Why: CMDB sample rows need tenant CI types plus demo dependency edges (not generic SQL fallback).
+     */
+    function itm_seed_insert_configuration_items_sample_rows(mysqli $conn, int $companyId, &$error = ''): int
+    {
+        $error = '';
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            $error = 'A company must be selected before adding sample data.';
+            return 0;
+        }
+
+        if (function_exists('itm_seed_tenant_row_count')
+            && itm_seed_tenant_row_count($conn, 'configuration_items', $companyId) > 0) {
+            return 0;
+        }
+
+        require_once ROOT_PATH . 'includes/itm_cmdb.php';
+        $employeeId = (int)($_SESSION['employee_id'] ?? 1);
+        itm_cmdb_seed_types_for_company($conn, $companyId, $employeeId);
+
+        $appTypeId = itm_cmdb_get_type_id_by_source($conn, $companyId, 'builtin:application');
+        $srvTypeId = itm_cmdb_get_type_id_by_source($conn, $companyId, 'builtin:server');
+        $svcTypeId = itm_cmdb_get_type_id_by_source($conn, $companyId, 'builtin:service');
+        if ($appTypeId <= 0 || $srvTypeId <= 0 || $svcTypeId <= 0) {
+            $error = 'Could not resolve CI types for sample data.';
+            return 0;
+        }
+
+        $samples = [
+            ['type_id' => $appTypeId, 'name' => 'Sample Payroll App'],
+            ['type_id' => $srvTypeId, 'name' => 'Sample App Server'],
+            ['type_id' => $svcTypeId, 'name' => 'Sample SQL Service'],
+        ];
+
+        $ciIds = [];
+        $stmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO configuration_items (company_id, ci_type_id, name, active, created_by)
+             VALUES (?, ?, ?, 1, ?)'
+        );
+        if (!$stmt) {
+            $error = 'Could not prepare configuration_items sample insert.';
+            return 0;
+        }
+
+        foreach ($samples as $sample) {
+            $typeId = (int)$sample['type_id'];
+            $name = (string)$sample['name'];
+            mysqli_stmt_bind_param($stmt, 'iisi', $companyId, $typeId, $name, $employeeId);
+            if (!mysqli_stmt_execute($stmt)) {
+                $dbErrorCode = (int)mysqli_errno($conn);
+                $dbErrorMessage = (string)mysqli_error($conn);
+                mysqli_stmt_close($stmt);
+                $error = function_exists('itm_format_db_constraint_error')
+                    ? itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage)
+                    : $dbErrorMessage;
+                return 0;
+            }
+            $ciIds[] = (int)mysqli_insert_id($conn);
+        }
+        mysqli_stmt_close($stmt);
+
+        if (count($ciIds) >= 3) {
+            itm_cmdb_add_relationship($conn, $companyId, $ciIds[1], $ciIds[0], 'depends_on', $employeeId);
+            itm_cmdb_add_relationship($conn, $companyId, $ciIds[2], $ciIds[0], 'runs_on', $employeeId);
+        }
+
+        return count($ciIds);
+    }
+}
+
 if (!function_exists('itm_seed_insert_random_fallback_row')) {
     /**
      * Insert exactly one synthetic row when no template rows apply for an empty tenant table.
@@ -3746,6 +3819,10 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
 
         if ($tableName === 'alerts') {
             return itm_seed_insert_alerts_sample_row($conn, $companyId, $error);
+        }
+
+        if ($tableName === 'configuration_items') {
+            return itm_seed_insert_configuration_items_sample_rows($conn, $companyId, $error);
         }
 
         itm_seed_lookup_parents_for_table($conn, $tableName, $companyId);

@@ -65,5 +65,6 @@ $graph = itm_cmdb_build_impact_graph($conn, $companyId, (int)$ci['id']);
 ## 12. Module Owner Notes (Optional)
 
 - Regression: `php scripts/verify_cmdb.php`
+- **Add sample data:** `itm_seed_insert_configuration_items_sample_rows()` — three demo CIs plus `depends_on` / `runs_on` edges; empty gate uses `itm_seed_tenant_row_count()` (live rows only).
 - Core helper: `includes/itm_cmdb.php`
 - Types admin: `modules/configuration_item_types/`
