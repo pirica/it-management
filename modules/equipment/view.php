@@ -432,5 +432,10 @@ if (isset($_GET['disposal_pending']) && (string)$_GET['disposal_pending'] === '1
     </div>
 </div>
 <?php endif; ?>
+
+<?php
+require_once ROOT_PATH . 'includes/itm_cmdb_card.php';
+itm_cmdb_render_relationship_card($conn, (int)$company_id, (int)($_SESSION['employee_id'] ?? 0), 'equipment', $id, (string)($item['name'] ?? ''));
+?>
 </div></div></div><script src="../../js/theme.js"></script><?php itm_crud_record_share_include_modal(); ?>
 </body></html>

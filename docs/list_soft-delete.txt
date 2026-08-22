@@ -16,6 +16,8 @@ attempts
 automation_rules
 budget_categories
 catalogs
+configuration_item_types
+configuration_items
 cost_centers
 customer_statuses
 customers

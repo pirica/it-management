@@ -1761,4 +1761,7 @@ if ($pid > 0) {
     }
 }
 
+require_once dirname(__DIR__, 3) . '/includes/itm_cmdb.php';
+itm_cmdb_sync_idf($conn, (int)$company_id, (int)$idf_id, (int)($_SESSION['employee_id'] ?? 0));
+
 idf_ok();

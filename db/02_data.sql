@@ -80,6 +80,10 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("company_module_access", "Company Module Access", 1, 1);
 
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("configuration_items", "Configuration Items", 0, 1, "🧩");
+
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("configuration_item_types", "Configuration Item Types", 0, 1, "🏷️");
+
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("share_modules", "Share Modules", 1, 1);
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("contacts", "Contacts", 0, 1);
@@ -1267,6 +1271,29 @@ INSERT INTO `invoices` (`id`, `company_id`, `document_number`, `contact_name`, `
 
 INSERT INTO `invoice_line_items` (`id`, `company_id`, `invoice_id`, `line_number`, `tax_rate_id`, `tax_rate_snapshot`, `integration_account_id`, `description`, `quantity`, `unit_amount`, `sub_total`, `tax_amount`, `total_amount`, `active`, `created_at`) VALUES
 (1, 1, 1, 1, 3, 23.00, 1, 'Managed Wi-Fi monthly', 1.0000, 500.00, 500.00, 115.00, 615.00, 1, '2026-01-01 00:00:01');
+
+-- Data for `configuration_item_types` (builtin CMDB types per tenant)
+INSERT INTO `configuration_item_types` (`id`, `company_id`, `name`, `source_slug`, `icon`, `active`, `created_at`) VALUES
+(1, 1, 'Server', 'builtin:server', '🖥️', 1, '2026-01-01 00:00:01'),
+(2, 1, 'Switch', 'builtin:switch', '🔀', 1, '2026-01-01 00:00:01'),
+(3, 1, 'Application', 'builtin:application', '📱', 1, '2026-01-01 00:00:01'),
+(4, 1, 'Service', 'builtin:service', '⚙️', 1, '2026-01-01 00:00:01'),
+(5, 2, 'Server', 'builtin:server', '🖥️', 1, '2026-01-01 00:00:01'),
+(6, 2, 'Switch', 'builtin:switch', '🔀', 1, '2026-01-01 00:00:01'),
+(7, 2, 'Application', 'builtin:application', '📱', 1, '2026-01-01 00:00:01'),
+(8, 2, 'Service', 'builtin:service', '⚙️', 1, '2026-01-01 00:00:01'),
+(9, 3, 'Server', 'builtin:server', '🖥️', 1, '2026-01-01 00:00:01'),
+(10, 3, 'Switch', 'builtin:switch', '🔀', 1, '2026-01-01 00:00:01'),
+(11, 3, 'Application', 'builtin:application', '📱', 1, '2026-01-01 00:00:01'),
+(12, 3, 'Service', 'builtin:service', '⚙️', 1, '2026-01-01 00:00:01'),
+(13, 4, 'Server', 'builtin:server', '🖥️', 1, '2026-01-01 00:00:01'),
+(14, 4, 'Switch', 'builtin:switch', '🔀', 1, '2026-01-01 00:00:01'),
+(15, 4, 'Application', 'builtin:application', '📱', 1, '2026-01-01 00:00:01'),
+(16, 4, 'Service', 'builtin:service', '⚙️', 1, '2026-01-01 00:00:01'),
+(17, 5, 'Server', 'builtin:server', '🖥️', 1, '2026-01-01 00:00:01'),
+(18, 5, 'Switch', 'builtin:switch', '🔀', 1, '2026-01-01 00:00:01'),
+(19, 5, 'Application', 'builtin:application', '📱', 1, '2026-01-01 00:00:01'),
+(20, 5, 'Service', 'builtin:service', '⚙️', 1, '2026-01-01 00:00:01');
 
 -- Why: Relative expiry dates keep license alert seeds inside the default 30-day runner window after import.
 INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('1', '1', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '1', '1', '1', '2025-01-15', DATE_ADD(CURDATE(), INTERVAL 20 DAY), '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
