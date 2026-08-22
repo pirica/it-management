@@ -942,8 +942,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
     $seedError = '';
     $insertedRows = itm_seed_table_from_database_sql($conn, $crud_table, (int)$company_id, $seedError);
-    if ($insertedRows <= 0 && $seedError !== '') {
+    if ($insertedRows > 0) {
+        $_SESSION['crud_success'] = 'Sample data added.';
+    } elseif ($seedError !== '') {
         $_SESSION['crud_error'] = $seedError;
+    } else {
+        $_SESSION['crud_error'] = 'Sample data could not be added.';
     }
 
     header('Location: ' . $listUrl);

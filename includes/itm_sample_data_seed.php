@@ -2762,6 +2762,102 @@ if (!function_exists('itm_seed_apply_alerts_sample_row_defaults')) {
     }
 }
 
+if (!function_exists('itm_seed_insert_alerts_sample_row')) {
+    /**
+     * Why: Alerts list is visibility-scoped; hidden private rows must not block a visible global sample alert.
+     */
+    function itm_seed_insert_alerts_sample_row(mysqli $conn, int $companyId, &$error = ''): int
+    {
+        $error = '';
+        $companyId = (int)$companyId;
+        if ($companyId <= 0) {
+            $error = 'A company must be selected before adding sample data.';
+            return 0;
+        }
+
+        itm_seed_lookup_parents_for_table($conn, 'alerts', $companyId);
+
+        $createdBy = itm_seed_resolve_alerts_sample_created_by($conn, $companyId);
+        if ($createdBy <= 0) {
+            $error = 'Could not resolve an employee to stamp sample alert created_by.';
+            return 0;
+        }
+
+        $categoryId = 0;
+        if (function_exists('itm_first_tenant_row_id')) {
+            $categoryId = (int)itm_first_tenant_row_id($conn, 'event_categories', $companyId);
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $title = 'Sample alert ' . substr(bin2hex(random_bytes(4)), 0, 8);
+        $description = 'Sample notification for ' . date('d/m/Y');
+        $location = 'Main office';
+
+        if ($categoryId > 0) {
+            $stmt = mysqli_prepare(
+                $conn,
+                'INSERT INTO alerts (
+                    company_id, title, description, start_datetime, end_datetime, location,
+                    category_id, assigned_to_employee_id, created_by, active
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, 1)'
+            );
+            if (!$stmt) {
+                $error = 'Could not prepare alerts sample insert.';
+                return 0;
+            }
+            mysqli_stmt_bind_param(
+                $stmt,
+                'isssssii',
+                $companyId,
+                $title,
+                $description,
+                $now,
+                $now,
+                $location,
+                $categoryId,
+                $createdBy
+            );
+        } else {
+            $stmt = mysqli_prepare(
+                $conn,
+                'INSERT INTO alerts (
+                    company_id, title, description, start_datetime, end_datetime, location,
+                    assigned_to_employee_id, created_by, active
+                ) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, 1)'
+            );
+            if (!$stmt) {
+                $error = 'Could not prepare alerts sample insert.';
+                return 0;
+            }
+            mysqli_stmt_bind_param(
+                $stmt,
+                'isssssi',
+                $companyId,
+                $title,
+                $description,
+                $now,
+                $now,
+                $location,
+                $createdBy
+            );
+        }
+
+        if (!mysqli_stmt_execute($stmt)) {
+            $dbErrorCode = (int)mysqli_errno($conn);
+            $dbErrorMessage = (string)mysqli_error($conn);
+            mysqli_stmt_close($stmt);
+            $error = function_exists('itm_format_db_constraint_error')
+                ? itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage)
+                : $dbErrorMessage;
+            return 0;
+        }
+
+        mysqli_stmt_close($stmt);
+
+        return 1;
+    }
+}
+
 if (!function_exists('itm_seed_insert_random_fallback_row')) {
     /**
      * Insert exactly one synthetic row when no template rows apply for an empty tenant table.
@@ -3613,6 +3709,10 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
 
         if ($tableName === 'tickets') {
             return itm_seed_insert_tickets_sample_row($conn, $companyId, $error);
+        }
+
+        if ($tableName === 'alerts') {
+            return itm_seed_insert_alerts_sample_row($conn, $companyId, $error);
         }
 
         itm_seed_lookup_parents_for_table($conn, $tableName, $companyId);
