@@ -31,7 +31,11 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 - New bookings insert `status = 'scheduled'`.
 - **Status workflow (list/view):** staff with RBAC **edit** may set `scheduled`, `completed`, `no_show`, or `cancelled` via inline list `<select>` (POST `appointment_status_update` on `list_all.php`) or view form (POST `appointment_status_update` on `view.php`). `completed`, `no_show`, and `cancelled` clear `booking_lock` so the slot can be rebooked. Helpers: `appt_status_options()`, `appt_status_badge()`, `appt_update_appointment_status()` in `index.php`. Schema enum includes `no_show` (`db/01_schema.sql`; migration `db/migrations/appointments_status_no_show.sql` for live DBs).
 - Soft-delete on **appointments** clears `booking_lock`, sets `status = cancelled`, and stamps `deleted_*` in the delete handler (`index.php` delete POST) so the slot is bookable again.
-- **`appointment_settings.active` is not checked** before booking — inactive settings still load and allow scheduling until code gates on `active = 1` (known gap).
+- **`appointment_settings.active`:** when `active = 0`, `itm_appointment_build_week_slots()` returns `booking_disabled` and schedule/reschedule API actions return HTTP 403 with a clear message. Booking UI shows a banner and disables scheduling.
+- **Past slots:** `itm_appointment_slot_is_past()` marks past slots unavailable in the grid; schedule/reschedule reject past times server-side.
+- **Self-service cancel/reschedule:** owner (`employee_id`) or admin (`itm_appointment_employee_can_modify()` / `appt_employee_can_modify()`) on `status = scheduled` rows. View page: emoji-only **📅** Reschedule and **🗑️** Cancel. Cancel sets `cancelled`, clears `booking_lock`, notifies assignee. Reschedule: `reschedule_prepare` clears lock; modal picks new slot; `reschedule` updates row in a transaction with new `booking_lock`.
+- **Confirmation email:** `itm_appointment_send_confirmation_email()` after schedule and reschedule — HTML body + `.ics` attachment via `itm_send_email()`; assignee CC when set and different from booker.
+- **List filters:** `list_all.php` supports `filter=mine`, `date_from` / `date_to` (dd/mm/yyyy or `Y-m-d`), search, sort, pagination via `records_per_page`.
 
 ## 5. UI Behavior Requirements
 
@@ -40,15 +44,16 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 - Copy: “What is the reason for your appointment?” / “--Select a reason for your appointment--”.
 - Slot picker: modal week grid (`js/appointment.js`, `css/appointment.css`); confirm sets readonly display + hidden `appointment_date` / `start_time` / `end_time`.
 - Appointment type: card-style radios for each active type; **hidden until a slot is confirmed**; visibility uses `week_slots` per-day `allowed_types` (and embedded `data-modality-config`). Type card titles use `appointment_type.label`.
-- Schedule: AJAX POST to `api.php` `action=schedule` with CSRF; success redirects to `view.php?id=`.
+- Schedule: AJAX POST to `api.php` `action=schedule` with CSRF; success redirects to `view.php?id=`; sends confirmation email + `.ics`.
+- **👤 My appointments** link → `list_all.php?filter=mine`. Inactive `appointment_settings` shows banner and disables booking controls.
 - Sidebar card: simplified Mon–Fri / Sat–Sun summary (see pitfalls — not a full per-day grid).
 - **⚙️ Appointment Settings** link: only when `itm_is_admin($conn, $employee_id)` — not RBAC `appointment_settings` edit permission.
 
 ### List / view (`list_all.php`, `view.php`)
 
-- List: tenant appointments with server-side **search (all visible columns)**, **column sort** (▲/▼), and **pagination** via `itm_resolve_records_per_page()` on `list_all.php` (implemented in `index.php` when `$crud_action === 'list_all'`). Search matches employee/reason/type/assignee labels via JOIN `LIKE`, not raw FK IDs alone. Inline **status** `<select>` (separate POST), assignee `<select>`, and **Confirmed** checkbox per row when RBAC **edit** is granted; actions **🔎 View** and **🗑️ Delete** (RBAC **delete**) — delete soft-removes the row, clears `booking_lock`, sets `status` to `cancelled`, and releases the slot for rebooking.
+- List: tenant appointments with **filter=mine**, **date_from** / **date_to**, server-side **search**, **sort**, **pagination** (`itm_resolve_records_per_page()`).
 - **Assignee notifications:** when `assigned_to_employee_id` changes on `list_all` inline POST, `itm_notify_appointment_assigned()` notifies the assignee (including self-assign). Row form already posts hidden `id`.
-- View: detail includes status badge plus optional status change form (💾), assignee and confirmed flags plus audit meta via `itm_crud_render_audit_cell_value()` when available.
+- View: detail includes status badge; owner/admin on **scheduled** rows get emoji-only **📅** Reschedule and **🗑️** Cancel (`api.php`); optional staff status form (💾), assignee, confirmed, audit meta.
 
 ### Not flattened scaffold CRUD
 
@@ -62,8 +67,11 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 
 | Action | Method | Purpose |
 |--------|--------|---------|
-| **week_slots** | GET `date=YYYY-MM-DD` | Week grid payload (`itm_appointment_build_week_slots`) |
-| **schedule** | POST + CSRF | Create appointment; returns `view_url` on success |
+| **week_slots** | GET `date`, optional `exclude_appointment_id` | Week grid; `booking_disabled` when settings inactive |
+| **schedule** | POST + CSRF | Create appointment; confirmation email + ICS; returns `view_url` |
+| **cancel** | POST + CSRF | Owner/admin cancel; clears lock; notifies assignee |
+| **reschedule_prepare** | POST + CSRF | Clears `booking_lock` before slot modal |
+| **reschedule** | POST + CSRF | Atomic slot swap + confirmation email + ICS |
 
 ## 7. File Structure
 
@@ -78,7 +86,7 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 ## 8. Multi-Tenant Rules
 
 - `company_id` from session on all reads/writes.
-- List/view show **any** employee’s appointment in the tenant — not restricted to `employee_id = session` (IT desk model; document when adding “my appointments” filter).
+- Default list shows all tenant appointments; `filter=mine` scopes to session `employee_id`.
 
 ## 9. Audit Logging Requirements
 
@@ -87,14 +95,13 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 
 ## 10. Common Pitfalls
 
-- Do not assume delete is employee-scoped: delete POST only checks `company_id`, not booking owner.
-- Past dates/times still appear in the slot grid — no “future only” filter in `itm_appointment_build_week_slots()`.
+- Do not assume delete is employee-scoped: delete POST only checks `company_id`, not booking owner (use self-service **cancel** API for owner/admin on scheduled rows).
 - Sidebar hours text hardcodes **“(BST)”**; timezone label elsewhere uses `appointment_settings.timezone` (can disagree).
 - Mon–Fri line uses **first open weekday row** only — misleading if Tuesday hours differ from Monday.
 - Empty visit-reason dropdown if all reasons inactive/deleted — no empty-state message on booking form.
 - Slot display after confirm uses **ISO date** in the text field (`YYYY-MM-DD`), not `dd/mm/yyyy` display helper.
 - Errors use browser `alert()` — no inline flash on booking screen.
-- `itm_appointment_load_settings()` does not filter `active = 1`.
+- `itm_appointment_load_settings()` returns the row regardless of `active`; use `itm_appointment_settings_booking_enabled()` before booking.
 
 ## 11. Examples of Safe Code Patterns
 
@@ -109,6 +116,7 @@ mysqli_stmt_bind_param($stmt, 'ii', $company_id, $appointmentId);
 
 - Booking: [modules/appointments/index.php](http://localhost/it-management/modules/appointments/index.php)
 - List: [modules/appointments/list_all.php](http://localhost/it-management/modules/appointments/list_all.php)
+- My appointments: [list_all.php?filter=mine](http://localhost/it-management/modules/appointments/list_all.php?filter=mine)
 - Settings (admin): [modules/appointment_settings/index.php](http://localhost/it-management/modules/appointment_settings/index.php)
 
 ### Regression
@@ -119,20 +127,13 @@ php -l modules/appointments/index.php
 php -l modules/appointments/api.php
 ```
 
-### Daily-use improvement backlog (not implemented)
+### Remaining backlog
 
 | Area | Gap | Suggested direction |
 |------|-----|---------------------|
-| Self-service | No **cancel** / reschedule | View action 🗑️ or “Cancel” for owner (or admin); optional status `cancelled` |
-| List | All-company list for every viewer | Filter **My appointments** vs **All** (admin/IT); search by employee/date |
-| List | Hard cap 200 rows | Pagination or date-range filter |
-| Booking | Past slots bookable in UI | Hide slots before “now” in slot builder or API validation |
-| Booking | No confirmation email / calendar | `itm_send_email()` + optional ICS after schedule |
-| Booking | `settings.active = 0` | Block booking with clear message |
 | UX | ISO date in slot summary | Use `itm_format_date_display()` in JS or server-side label |
 | UX | Sidebar timezone label | Derive from settings, remove hardcoded BST |
 | Admin link | Only `itm_is_admin` | Also show ⚙️ when role has `appointment_settings` **edit** |
-| Status | Raw `scheduled` string | Badges + workflow (completed, no-show, cancelled) |
 | QA | No dedicated MBQA slug step | Add `module_browser_qa_runner.php --module=appointment` when flow stabilizes |
 
 ### Migration (existing DBs)

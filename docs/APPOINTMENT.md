@@ -74,42 +74,38 @@ When a user attempts to schedule an appointment, the backend API enforces strict
 - **Active Lookup Enforcement:** The visit reason ID must correspond to an active, non-deleted row in `appointment_visit_reasons`.
 - **Concurrency Check:** If two sessions submit the same slot simultaneously, the transaction with the first insert commits the `booking_lock`, causing the second transaction to fail gracefully with a unique constraint violation instead of double-booking.
 
-### C. Status & Deletion (Soft-Delete)
-- New bookings are inserted with `status = 'scheduled'`.
-- Deletion is modeled as a **soft-delete**. The delete POST handler clears the `booking_lock` column, sets `status = 'cancelled'`, and stamps the `deleted_at` and `deleted_by` metadata, releasing the slot back to the bookable pool.
+### C. Status, self-service, and email
+- New bookings use `status = 'scheduled'`.
+- **Cancel (owner/admin):** `api.php` `action=cancel` sets `cancelled`, clears `booking_lock`, notifies assignee when set.
+- **Reschedule (owner/admin):** `reschedule_prepare` clears lock; `reschedule` updates slot in a transaction; sends confirmation email + `.ics`.
+- **Confirmation email:** `itm_appointment_send_confirmation_email()` after schedule/reschedule (employee To, assignee CC when applicable).
+- Soft-delete on delete POST still clears lock and sets `cancelled`.
 
 ---
 
 ## 5. UI Layout & User Experience
 
-The module opts out of standard flattened CRUD tables to deliver a custom self-service interface:
-
-1. **Booking Screen (`index.php`):**
-   - **Reason selector:** A clear dropdown prefilled with active visit reasons.
-   - **Weekly Slot Modal:** Interactive weekly calendar grid. Users navigate weeks to view open slot times. Selecting a slot renders a read-only slot summary with the selected ISO date and time.
-   - **Type Selection Cards:** Custom radio cards corresponding to allowed modalities. Hidden until a slot is confirmed; labels dynamically fetch from `appointment_type.label`.
-   - **Settings Shortcut:** A **⚙️ Appointment Settings** icon is visible in the toolbar *only* to administrators (`itm_is_admin()`).
-2. **Review Lists (`list_all.php`):**
-   - Non-admins and IT staff can view all scheduled company appointments (up to a default limit of 200 rows).
-   - If granted edit permissions, inline dropdowns allow operators to change the **Assigned to** employee and toggle the **Confirmed** checkbox in real-time.
+1. **Booking (`index.php`):** reason dropdown, weekly slot modal, type cards, **👤** My appointments link, inactive-settings banner.
+2. **View (`view.php`):** owner/admin **📅** Reschedule and **🗑️** Cancel on scheduled rows.
+3. **List (`list_all.php`):** `filter=mine`, date range, search, sort, pagination; inline assignee/confirmed for editors.
 
 ---
 
 ## 6. API Actions
 
-The booking UI coordinates with the backend via `modules/appointments/api.php`. Rate limiting and an active user session are required.
+`modules/appointments/api.php` — session + rate limit required.
 
-### `action=week_slots` (GET)
-- **Parameters:** `date` (YYYY-MM-DD), `reason_id` (int)
-- **Response:** JSON payload of weekday slots, open times, and daily allowed modalities.
-
-### `action=schedule` (POST)
-- **Payload:** `csrf_token`, `appointment_date`, `start_time`, `end_time`, `appointment_type_id`, `reason_id`, `notes`
-- **Response:** JSON with a success flag and the redirection `view_url` (routing to `view.php?id=ID`).
+| Action | Method | Notes |
+|--------|--------|-------|
+| `week_slots` | GET | `date`, optional `exclude_appointment_id`; `booking_disabled` when settings inactive |
+| `schedule` | POST + CSRF | Past-slot rejected; confirmation email + ICS |
+| `cancel` | POST + CSRF | Owner/admin; notifies assignee |
+| `reschedule_prepare` | POST + CSRF | Clears `booking_lock` |
+| `reschedule` | POST + CSRF | Transactional slot swap; email + ICS |
 
 ---
 
-## 7. Related Files & Components
+## 7. Related Files
 
 | Path | Primary Role |
 |---|---|

@@ -54,6 +54,8 @@ $appointmentModalityConfig = [
     'days' => $modalityByDay,
 ];
 $defaultAppointmentModality = itm_appointment_settings_default_modality_name($settings);
+$bookingEnabled = itm_appointment_settings_booking_enabled($settings);
+$bookingDisabledMessage = itm_appointment_booking_disabled_message();
 
 require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $company_id, $employee_id, $moduleSlug, $moduleListHeading);
@@ -175,6 +177,11 @@ if ($crud_action === 'delete') {
 $listRows = [];
 $listAssigneeEmployees = [];
 $listSearchRaw = '';
+$listFilter = 'all';
+$listDateFrom = '';
+$listDateTo = '';
+$listDateFromDisplay = '';
+$listDateToDisplay = '';
 $listSort = 'appointment_date';
 $listDir = 'DESC';
 $listPage = 1;
@@ -209,6 +216,11 @@ if ($crud_action === 'list_all') {
 
     $listState = appt_list_all_request_state();
     $listSearchRaw = $listState['search'];
+    $listFilter = $listState['filter'];
+    $listDateFrom = $listState['date_from'];
+    $listDateTo = $listState['date_to'];
+    $listDateFromDisplay = $listDateFrom !== '' ? appt_format_date_display($listDateFrom) : '';
+    $listDateToDisplay = $listDateTo !== '' ? appt_format_date_display($listDateTo) : '';
     $listSort = $listState['sort'];
     $listDir = $listState['dir'];
     $listPage = $listState['page'];
@@ -221,6 +233,22 @@ if ($crud_action === 'list_all') {
     $listWhereSql = ' WHERE a.company_id = ? AND a.deleted_at IS NULL';
     $listBindTypes = 'i';
     $listBindValues = [$company_id];
+
+    if ($listFilter === 'mine') {
+        $listWhereSql .= ' AND a.employee_id = ?';
+        $listBindTypes .= 'i';
+        $listBindValues[] = $employee_id;
+    }
+    if ($listDateFrom !== '') {
+        $listWhereSql .= ' AND a.appointment_date >= ?';
+        $listBindTypes .= 's';
+        $listBindValues[] = $listDateFrom;
+    }
+    if ($listDateTo !== '') {
+        $listWhereSql .= ' AND a.appointment_date <= ?';
+        $listBindTypes .= 's';
+        $listBindValues[] = $listDateTo;
+    }
 
     if ($listSearchRaw !== '') {
         $searchPattern = (strpos($listSearchRaw, '%') !== false || strpos($listSearchRaw, '_') !== false)
@@ -285,6 +313,7 @@ if ($crud_action === 'list_all') {
 }
 
 $viewRow = null;
+$viewCanModify = false;
 if ($crud_action === 'view') {
     $viewId = (int)($_GET['id'] ?? 0);
     $sql = "SELECT a.*, r.name AS reason_name, t.name AS appointment_type_name,
@@ -303,6 +332,9 @@ if ($crud_action === 'view') {
         $res = mysqli_stmt_get_result($stmt);
         $viewRow = $res ? mysqli_fetch_assoc($res) : null;
         mysqli_stmt_close($stmt);
+    }
+    if ($viewRow) {
+        $viewCanModify = itm_appointment_employee_can_modify($conn, $company_id, $employee_id, $viewRow);
     }
 }
 
@@ -390,6 +422,24 @@ function appt_list_all_sort_sql_expression(string $sortKey): string
     return $map[$sortKey] ?? 'a.appointment_date';
 }
 
+function appt_parse_list_date_param(string $raw): string
+{
+    $raw = trim($raw);
+    if ($raw === '') {
+        return '';
+    }
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw)) {
+        return $raw;
+    }
+    if (function_exists('itm_parse_date_input')) {
+        $parsed = itm_parse_date_input($raw);
+        if ($parsed) {
+            return $parsed;
+        }
+    }
+    return '';
+}
+
 function appt_list_all_request_state(): array
 {
     $sortable = array_keys(appt_list_all_sortable_columns());
@@ -398,9 +448,16 @@ function appt_list_all_request_state(): array
         $sort = 'appointment_date';
     }
     $dir = strtoupper((string)($_REQUEST['dir'] ?? 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
+    $filter = strtolower(trim((string)($_REQUEST['filter'] ?? 'all')));
+    if ($filter !== 'mine') {
+        $filter = 'all';
+    }
 
     return [
         'search' => trim((string)($_REQUEST['search'] ?? '')),
+        'filter' => $filter,
+        'date_from' => appt_parse_list_date_param((string)($_REQUEST['date_from'] ?? '')),
+        'date_to' => appt_parse_list_date_param((string)($_REQUEST['date_to'] ?? '')),
         'sort' => $sort,
         'dir' => $dir,
         'page' => max(1, (int)($_REQUEST['page'] ?? 1)),
@@ -416,6 +473,18 @@ function appt_list_all_query_string(array $overrides = []): string
         'dir' => $state['dir'],
         'page' => $state['page'],
     ];
+    if ($state['filter'] === 'mine') {
+        $params['filter'] = 'mine';
+    }
+    if ($state['date_from'] !== '') {
+        $params['date_from'] = $state['date_from'];
+    }
+    if ($state['date_to'] !== '') {
+        $params['date_to'] = $state['date_to'];
+    }
+    if ($params['search'] === '') {
+        unset($params['search']);
+    }
     $built = http_build_query($params);
 
     return $built === '' ? '' : ('?' . $built);
@@ -468,6 +537,7 @@ function appt_employee_select_label(array $empRow)
                 <div class="card">
                     <h1 title="Appointment list">📋</h1>
                     <p><a href="index.php" class="btn btn-sm" title="Schedule">➕</a>
+                    <a href="list_all.php?filter=mine" class="btn btn-sm" title="My appointments">👤</a>
                     <?php if (itm_is_admin($conn, $employee_id)): ?>
                         <a href="../appointment_settings/" class="btn btn-sm" title="Appointment settings">⚙️</a>
                     <?php endif; ?>
@@ -477,6 +547,21 @@ function appt_employee_select_label(array $empRow)
                             <input type="hidden" name="sort" value="<?php echo sanitize($listSort); ?>">
                             <input type="hidden" name="dir" value="<?php echo sanitize($listDir); ?>">
                             <input type="hidden" name="page" value="1">
+                            <div class="form-group" style="margin:0;min-width:140px;">
+                                <label for="appt-list-filter">Show</label>
+                                <select id="appt-list-filter" name="filter" class="form-control">
+                                    <option value="all"<?php echo $listFilter === 'all' ? ' selected' : ''; ?>>All appointments</option>
+                                    <option value="mine"<?php echo $listFilter === 'mine' ? ' selected' : ''; ?>>My appointments</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin:0;min-width:120px;">
+                                <label for="appt-list-date-from">From</label>
+                                <input type="text" id="appt-list-date-from" name="date_from" value="<?php echo sanitize($listDateFromDisplay); ?>" placeholder="dd/mm/yyyy">
+                            </div>
+                            <div class="form-group" style="margin:0;min-width:120px;">
+                                <label for="appt-list-date-to">To</label>
+                                <input type="text" id="appt-list-date-to" name="date_to" value="<?php echo sanitize($listDateToDisplay); ?>" placeholder="dd/mm/yyyy">
+                            </div>
                             <div class="form-group" style="margin:0;min-width:260px;flex:1;">
                                 <label for="appt-list-search">Search (all fields)</label>
                                 <input type="text" id="appt-list-search" name="search" value="<?php echo sanitize($listSearchRaw); ?>" placeholder="Type to search records...">
@@ -493,7 +578,7 @@ function appt_employee_select_label(array $empRow)
                             <?php foreach ($listSortableColumns as $sortCol => $sortLabel): ?>
                                 <?php $nextDir = ($listSort === $sortCol && $listDir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
-                                    <a href="list_all.php?search=<?php echo urlencode($listSearchRaw); ?>&sort=<?php echo urlencode($sortCol); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$listPage; ?>" style="text-decoration:none;color:inherit;">
+                                    <a href="list_all.php<?php echo appt_list_all_query_string(['sort' => $sortCol, 'dir' => $nextDir, 'page' => $listPage]); ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize($sortLabel); ?>
                                         <?php if ($listSort === $sortCol): ?>
                                             <?php echo $listDir === 'ASC' ? '▲' : '▼'; ?>
@@ -511,6 +596,9 @@ function appt_employee_select_label(array $empRow)
                                 <form method="post" action="list_all.php" class="appointment-list-row-form" style="display:contents;">
                                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                     <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                    <input type="hidden" name="filter" value="<?php echo sanitize($listFilter); ?>">
+                                    <input type="hidden" name="date_from" value="<?php echo sanitize($listDateFromDisplay); ?>">
+                                    <input type="hidden" name="date_to" value="<?php echo sanitize($listDateToDisplay); ?>">
                                     <input type="hidden" name="search" value="<?php echo sanitize($listSearchRaw); ?>">
                                     <input type="hidden" name="sort" value="<?php echo sanitize($listSort); ?>">
                                     <input type="hidden" name="dir" value="<?php echo sanitize($listDir); ?>">
@@ -532,7 +620,10 @@ function appt_employee_select_label(array $empRow)
                                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
                                             <input type="hidden" name="appointment_status_update" value="1">
                                             <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
-                                            <input type="hidden" name="search" value="<?php echo sanitize($listSearchRaw); ?>">
+                                            <input type="hidden" name="filter" value="<?php echo sanitize($listFilter); ?>">
+                                    <input type="hidden" name="date_from" value="<?php echo sanitize($listDateFromDisplay); ?>">
+                                    <input type="hidden" name="date_to" value="<?php echo sanitize($listDateToDisplay); ?>">
+                                    <input type="hidden" name="search" value="<?php echo sanitize($listSearchRaw); ?>">
                                             <input type="hidden" name="sort" value="<?php echo sanitize($listSort); ?>">
                                             <input type="hidden" name="dir" value="<?php echo sanitize($listDir); ?>">
                                             <input type="hidden" name="page" value="<?php echo (int)$listPage; ?>">
@@ -588,13 +679,13 @@ function appt_employee_select_label(array $empRow)
                             <div>Showing <?php echo $listOffset + 1; ?>-<?php echo min($listOffset + $listPerPage, $listTotalRows); ?> of <?php echo $listTotalRows; ?></div>
                             <div style="display:flex;gap:8px;align-items:center;">
                                 <?php if ($listPage > 1): ?>
-                                    <a class="btn btn-sm" href="list_all.php?search=<?php echo urlencode($listSearchRaw); ?>&sort=<?php echo urlencode($listSort); ?>&dir=<?php echo urlencode($listDir); ?>&page=1" title="First page">⏮️</a>
-                                    <a class="btn btn-sm" href="list_all.php?search=<?php echo urlencode($listSearchRaw); ?>&sort=<?php echo urlencode($listSort); ?>&dir=<?php echo urlencode($listDir); ?>&page=<?php echo $listPage - 1; ?>" title="Previous page">◀️</a>
+                                    <a class="btn btn-sm" href="list_all.php<?php echo appt_list_all_query_string(['page' => 1]); ?>" title="First page">⏮️</a>
+                                    <a class="btn btn-sm" href="list_all.php<?php echo appt_list_all_query_string(['page' => $listPage - 1]); ?>" title="Previous page">◀️</a>
                                 <?php endif; ?>
                                 <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $listPage; ?> of <?php echo $listTotalPages; ?></span>
                                 <?php if ($listPage < $listTotalPages): ?>
-                                    <a class="btn btn-sm" href="list_all.php?search=<?php echo urlencode($listSearchRaw); ?>&sort=<?php echo urlencode($listSort); ?>&dir=<?php echo urlencode($listDir); ?>&page=<?php echo $listPage + 1; ?>" title="Next page">▶️</a>
-                                    <a class="btn btn-sm" href="list_all.php?search=<?php echo urlencode($listSearchRaw); ?>&sort=<?php echo urlencode($listSort); ?>&dir=<?php echo urlencode($listDir); ?>&page=<?php echo $listTotalPages; ?>" title="Last page">⏭️</a>
+                                    <a class="btn btn-sm" href="list_all.php<?php echo appt_list_all_query_string(['page' => $listPage + 1]); ?>" title="Next page">▶️</a>
+                                    <a class="btn btn-sm" href="list_all.php<?php echo appt_list_all_query_string(['page' => $listTotalPages]); ?>" title="Last page">⏭️</a>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -609,7 +700,21 @@ function appt_employee_select_label(array $empRow)
                     <?php else: ?>
                         <h1 title="View appointment">🔎</h1>
                         <p><a href="index.php" class="btn btn-sm" title="Back">🔙</a>
-                           <a href="list_all.php" class="btn btn-sm" title="List">📋</a></p>
+                           <a href="list_all.php" class="btn btn-sm" title="List">📋</a>
+                           <?php if ($viewCanModify): ?>
+                           <span id="appointment-view-actions"
+                                 data-api="<?php echo sanitize(BASE_URL . 'modules/appointments/api.php'); ?>"
+                                 data-csrf="<?php echo sanitize($csrfToken); ?>"
+                                 data-appointment-id="<?php echo (int)$viewRow['id']; ?>"
+                                 data-mode="reschedule"
+                                 data-default-appointment-modality="<?php echo sanitize($defaultAppointmentModality); ?>"
+                                 data-appointment-type="<?php echo sanitize((string)($viewRow['appointment_type_name'] ?? '')); ?>"
+                                 style="display:inline-flex;gap:8px;">
+                               <button type="button" class="btn btn-sm" id="appointment-view-reschedule" title="Reschedule">📅</button>
+                               <button type="button" class="btn btn-sm btn-danger" id="appointment-view-cancel" title="Cancel">🗑️</button>
+                           </span>
+                           <?php endif; ?>
+                        </p>
                         <table class="detail-table">
                             <tr><th>Employee</th><td><?php echo sanitize(trim($viewRow['employee_name']) ?: '—'); ?></td></tr>
                             <tr><th>Reason</th><td><?php echo sanitize($viewRow['reason_name'] ?? '—'); ?></td></tr>
@@ -649,19 +754,48 @@ function appt_employee_select_label(array $empRow)
                             }
                             ?>
                         </table>
+                        <?php if ($viewCanModify): ?>
+                        <div id="appointment-slot-modal" class="appointment-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="appointment-view-modal-title">
+                            <div class="appointment-modal">
+                                <div class="appointment-modal-header">
+                                    <h2 id="appointment-view-modal-title">Select appointment</h2>
+                                    <button type="button" class="btn btn-sm" data-appointment-close-modal title="Close">✖</button>
+                                </div>
+                                <div class="appointment-week-nav">
+                                    <button type="button" class="btn btn-sm" id="appointment-prev-week" title="Previous week">⬅️</button>
+                                    <span class="appointment-week-label" id="appointment-week-label"></span>
+                                    <button type="button" class="btn btn-sm" id="appointment-next-week" title="Next week">➡️</button>
+                                </div>
+                                <div class="appointment-week-grid" id="appointment-week-grid"></div>
+                                <div class="appointment-modal-footer">
+                                    <span id="appointment-timezone-label">Time zone: <?php echo sanitize($viewRow['timezone'] ?? ($settings['timezone'] ?? 'UTC')); ?></span>
+                                    <div class="appointment-modal-actions">
+                                        <button type="button" class="btn" data-appointment-close-modal title="Cancel">🔙</button>
+                                        <button type="button" class="btn btn-primary" id="appointment-confirm-slot" title="Select">✅</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
             <?php else: ?>
                 <div class="appointment-layout">
                     <div class="card appointment-form-card">
                         <h1 title="Select appointment"><?php echo sanitize($moduleListHeading); ?></h1>
-                        <p><a href="list_all.php" class="btn btn-sm" title="View scheduled appointments">📋</a>
+                        <p><a href="list_all.php?filter=mine" class="btn btn-sm" title="My appointments">👤</a>
+                        <a href="list_all.php" class="btn btn-sm" title="View scheduled appointments">📋</a>
                         <?php if (itm_is_admin($conn, $employee_id)): ?>
                             <a href="../appointment_settings/" class="btn btn-sm" title="Appointment settings">⚙️</a>
                         <?php endif; ?></p>
+                        <?php if (!$bookingEnabled): ?>
+                            <div class="appointment-info-banner" role="alert"><?php echo sanitize($bookingDisabledMessage); ?></div>
+                        <?php endif; ?>
                         <div id="appointment-booking-app"
                              data-api="<?php echo sanitize(BASE_URL . 'modules/appointments/api.php'); ?>"
                              data-csrf="<?php echo sanitize($csrfToken); ?>"
+                             data-booking-enabled="<?php echo $bookingEnabled ? '1' : '0'; ?>"
+                             data-booking-disabled-message="<?php echo sanitize($bookingDisabledMessage); ?>"
                              data-default-appointment-modality="<?php echo sanitize($defaultAppointmentModality); ?>"
                              data-appointment-type-names="<?php echo htmlspecialchars(json_encode($appointmentTypeNames, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8'); ?>"
                              data-modality-config="<?php echo htmlspecialchars(json_encode($appointmentModalityConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8'); ?>">
@@ -772,7 +906,7 @@ function appt_employee_select_label(array $empRow)
         </div>
     </div>
 </div>
-<?php if ($crud_action === 'index'): ?>
+<?php if ($crud_action === 'index' || $crud_action === 'view'): ?>
 <script src="<?php echo BASE_URL; ?>js/appointment.js?v=<?php echo (int)@filemtime(ROOT_PATH . 'js/appointment.js'); ?>"></script>
 <?php endif; ?>
 </body>
