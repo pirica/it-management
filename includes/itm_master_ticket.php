@@ -527,6 +527,129 @@ if (!function_exists('itm_master_ticket_build_ticket_description')) {
     }
 }
 
+if (!function_exists('itm_master_ticket_extract_local_ticket_description')) {
+    function itm_master_ticket_extract_local_ticket_description($masterTicketId, $existingDescription)
+    {
+        $masterTicketId = (int)$masterTicketId;
+        $existing = (string)$existingDescription;
+        $localMarker = itm_master_ticket_local_notes_marker();
+        $pos = strpos($existing, $localMarker);
+        if ($pos !== false) {
+            return trim(substr($existing, $pos + strlen($localMarker)));
+        }
+        if (strpos($existing, itm_master_ticket_block_marker($masterTicketId)) !== false) {
+            return '';
+        }
+        return trim($existing);
+    }
+}
+
+if (!function_exists('itm_master_ticket_soft_delete')) {
+    function itm_master_ticket_soft_delete($conn, $masterTicketId, $actorEmployeeId, $sessionCompanyId)
+    {
+        if (!$conn instanceof mysqli) {
+            return ['ok' => false, 'error' => 'Database unavailable.'];
+        }
+        $masterTicketId = (int)$masterTicketId;
+        $actorEmployeeId = (int)$actorEmployeeId;
+        $sessionCompanyId = (int)$sessionCompanyId;
+        if ($masterTicketId <= 0) {
+            return ['ok' => false, 'error' => 'Invalid master ticket.'];
+        }
+        $masterRow = itm_master_ticket_fetch_row($conn, $masterTicketId);
+        if (!$masterRow) {
+            return ['ok' => false, 'error' => 'Master ticket not found.'];
+        }
+        if (!itm_master_ticket_can_manage($conn, $masterTicketId, $sessionCompanyId, $actorEmployeeId)) {
+            return ['ok' => false, 'error' => 'You cannot delete this master ticket.'];
+        }
+
+        $incidents = itm_master_ticket_list_all_incidents($conn, $masterTicketId, null);
+        mysqli_begin_transaction($conn);
+        $failed = false;
+
+        if (!empty($incidents)) {
+            $upd = mysqli_prepare(
+                $conn,
+                'UPDATE tickets SET description = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1'
+            );
+            if (!$upd) {
+                $failed = true;
+            } else {
+                foreach ($incidents as $incident) {
+                    $ticketId = (int)($incident['id'] ?? 0);
+                    $ticketCompanyId = (int)($incident['company_id'] ?? 0);
+                    if ($ticketId <= 0 || $ticketCompanyId <= 0) {
+                        continue;
+                    }
+                    $localDescription = itm_master_ticket_extract_local_ticket_description(
+                        $masterTicketId,
+                        $incident['description'] ?? ''
+                    );
+                    mysqli_stmt_bind_param($upd, 'siii', $localDescription, $actorEmployeeId, $ticketId, $ticketCompanyId);
+                    if (!mysqli_stmt_execute($upd)) {
+                        $failed = true;
+                        break;
+                    }
+                }
+                mysqli_stmt_close($upd);
+            }
+        }
+
+        if (!$failed) {
+            $detach = mysqli_prepare(
+                $conn,
+                'UPDATE problems SET master_ticket_id = NULL, updated_by = ? WHERE master_ticket_id = ? AND deleted_at IS NULL'
+            );
+            if (!$detach) {
+                $failed = true;
+            } else {
+                mysqli_stmt_bind_param($detach, 'ii', $actorEmployeeId, $masterTicketId);
+                if (!mysqli_stmt_execute($detach)) {
+                    $failed = true;
+                }
+                mysqli_stmt_close($detach);
+            }
+        }
+
+        if (!$failed) {
+            itm_master_ticket_log_history(
+                $conn,
+                $masterTicketId,
+                'deleted',
+                $actorEmployeeId,
+                $sessionCompanyId,
+                'Soft-deleted master ticket; detached linked problems and restored local incident notes.',
+                null,
+                itm_master_ticket_encode_json([
+                    'incident_count' => count($incidents),
+                ])
+            );
+            $del = mysqli_prepare(
+                $conn,
+                'UPDATE master_tickets SET active = 0, deleted_by = ?, deleted_at = NOW(), updated_by = ? WHERE id = ? AND deleted_at IS NULL LIMIT 1'
+            );
+            if (!$del) {
+                $failed = true;
+            } else {
+                mysqli_stmt_bind_param($del, 'iii', $actorEmployeeId, $actorEmployeeId, $masterTicketId);
+                if (!mysqli_stmt_execute($del) || mysqli_stmt_affected_rows($del) !== 1) {
+                    $failed = true;
+                }
+                mysqli_stmt_close($del);
+            }
+        }
+
+        if ($failed) {
+            mysqli_rollback($conn);
+            return ['ok' => false, 'error' => 'Could not delete master ticket.'];
+        }
+
+        mysqli_commit($conn);
+        return ['ok' => true, 'incident_count' => count($incidents)];
+    }
+}
+
 if (!function_exists('itm_master_ticket_list_all_incidents')) {
     function itm_master_ticket_list_all_incidents($conn, $masterTicketId, array $allowedCompanyIds = null)
     {

@@ -17,6 +17,26 @@ $allowedCompanyIds = itm_master_ticket_allowed_company_ids($conn, $employeeId);
 $csrfToken = itm_get_csrf_token();
 $listUrl = 'index.php';
 
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['delete_master_ticket_id'])) {
+    itm_require_post_csrf();
+    itm_require_crud_role_module_permission($conn, 'delete', $moduleSlug);
+
+    $deleteId = max(0, (int)$_POST['delete_master_ticket_id']);
+    if ($deleteId <= 0 || !itm_master_ticket_user_can_view($conn, $deleteId, $allowedCompanyIds)) {
+        $_SESSION['crud_error'] = 'Master ticket not found or not visible.';
+    } else {
+        $deleteResult = itm_master_ticket_soft_delete($conn, $deleteId, $employeeId, $sessionCompanyId);
+        if (!empty($deleteResult['ok'])) {
+            $_SESSION['crud_flash'] = 'Master ticket deleted.';
+        } else {
+            $_SESSION['crud_error'] = (string)($deleteResult['error'] ?? 'Could not delete master ticket.');
+        }
+    }
+
+    header('Location: ' . $listUrl);
+    exit;
+}
+
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['add_sample_data'])) {
     itm_require_post_csrf();
     itm_require_crud_role_module_permission($conn, 'create', $moduleSlug);
@@ -42,6 +62,14 @@ $rows = $listData['rows'];
 $totalRows = (int)$listData['total'];
 $totalPages = max(1, (int)ceil($totalRows / $perPage));
 $showSampleDataButton = $totalRows === 0 && itm_master_ticket_count_live_rows($conn) === 0;
+
+$canDeleteMaster = itm_user_has_role_module_permission(
+    $conn,
+    $employeeId,
+    $sessionCompanyId,
+    itm_resolve_rbac_module_name_for_slug($conn, $moduleSlug),
+    'delete'
+);
 
 $sortToggle = static function ($column) use ($sort, $dir, $search, $page) {
     $nextDir = ($sort === $column && $dir === 'ASC') ? 'DESC' : 'ASC';
@@ -94,6 +122,9 @@ $moduleSlugPath = basename(dirname($_SERVER['PHP_SELF']));
             <?php if (!empty($_SESSION['crud_error'])): ?>
                 <?php echo itm_render_alert_errors([(string)$_SESSION['crud_error']]); unset($_SESSION['crud_error']); ?>
             <?php endif; ?>
+            <?php if (!empty($_SESSION['crud_flash'])): ?>
+                <p style="margin-bottom:16px;color:var(--text-secondary);"><?php echo sanitize((string)$_SESSION['crud_flash']); unset($_SESSION['crud_flash']); ?></p>
+            <?php endif; ?>
 
             <div class="card" style="margin-bottom:16px;">
                 <form method="GET" style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -144,6 +175,13 @@ $moduleSlugPath = basename(dirname($_SERVER['PHP_SELF']));
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>" title="View">🔎</a>
                                     <?php if (itm_user_has_role_module_permission($conn, $employeeId, $sessionCompanyId, itm_resolve_rbac_module_name_for_slug($conn, $moduleSlug), 'edit')): ?>
                                         <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>#master-edit" title="Edit">✏️</a>
+                                    <?php endif; ?>
+                                    <?php if ($canDeleteMaster && itm_master_ticket_can_manage($conn, (int)$row['id'], $sessionCompanyId, $employeeId)): ?>
+                                        <form method="POST" action="index.php" style="display:inline;" onsubmit="return confirm('Delete this master ticket? Linked problems will be detached and incident tickets will keep local notes only.');">
+                                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                            <input type="hidden" name="delete_master_ticket_id" value="<?php echo (int)$row['id']; ?>">
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
+                                        </form>
                                     <?php endif; ?>
                                 </td>
                             </tr>
