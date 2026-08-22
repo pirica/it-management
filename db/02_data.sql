@@ -84,6 +84,8 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("configuration_item_types", "Configuration Item Types", 0, 1, "🏷️");
 
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("change_requests", "Change Requests", 0, 1, "🔄");
+
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("share_modules", "Share Modules", 1, 1);
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("contacts", "Contacts", 0, 1);
@@ -1294,6 +1296,121 @@ INSERT INTO `configuration_item_types` (`id`, `company_id`, `name`, `source_slug
 (18, 5, 'Switch', 'builtin:switch', '🔀', 1, '2026-01-01 00:00:01'),
 (19, 5, 'Application', 'builtin:application', '📱', 1, '2026-01-01 00:00:01'),
 (20, 5, 'Service', 'builtin:service', '⚙️', 1, '2026-01-01 00:00:01');
+
+-- CMDB: IDF and Subnet builtin types for every tenant (not in original four-type seed).
+INSERT INTO `configuration_item_types` (`company_id`, `name`, `source_slug`, `icon`, `active`, `created_at`)
+SELECT c.`id`, 'IDF', 'builtin:idf', '🗄️', 1, '2026-01-01 00:00:01'
+FROM `companies` c
+WHERE NOT EXISTS (
+    SELECT 1 FROM `configuration_item_types` t
+    WHERE t.`company_id` = c.`id` AND t.`source_slug` = 'builtin:idf'
+);
+
+INSERT INTO `configuration_item_types` (`company_id`, `name`, `source_slug`, `icon`, `active`, `created_at`)
+SELECT c.`id`, 'Subnet', 'builtin:subnet', '🌐', 1, '2026-01-01 00:00:01'
+FROM `companies` c
+WHERE NOT EXISTS (
+    SELECT 1 FROM `configuration_item_types` t
+    WHERE t.`company_id` = c.`id` AND t.`source_slug` = 'builtin:subnet'
+);
+
+-- Sample configuration items per tenant (companies 1–5) for CMDB + change request demos.
+INSERT INTO `configuration_items` (`company_id`, `ci_type_id`, `name`, `active`, `created_by`, `created_at`)
+SELECT cit.`company_id`, cit.`id`, 'Sample Payroll App', 1, e.`id`, '2026-01-01 00:00:01'
+FROM `configuration_item_types` cit
+INNER JOIN `employees` e ON e.`company_id` = cit.`company_id`
+    AND e.`id` = (SELECT MIN(e2.`id`) FROM `employees` e2 WHERE e2.`company_id` = cit.`company_id`)
+WHERE cit.`source_slug` = 'builtin:application' AND cit.`company_id` BETWEEN 1 AND 5
+AND NOT EXISTS (
+    SELECT 1 FROM `configuration_items` ci
+    WHERE ci.`company_id` = cit.`company_id` AND ci.`name` = 'Sample Payroll App' AND ci.`deleted_at` IS NULL
+);
+
+INSERT INTO `configuration_items` (`company_id`, `ci_type_id`, `name`, `active`, `created_by`, `created_at`)
+SELECT cit.`company_id`, cit.`id`, 'Sample App Server', 1, e.`id`, '2026-01-01 00:00:01'
+FROM `configuration_item_types` cit
+INNER JOIN `employees` e ON e.`company_id` = cit.`company_id`
+    AND e.`id` = (SELECT MIN(e2.`id`) FROM `employees` e2 WHERE e2.`company_id` = cit.`company_id`)
+WHERE cit.`source_slug` = 'builtin:server' AND cit.`company_id` BETWEEN 1 AND 5
+AND NOT EXISTS (
+    SELECT 1 FROM `configuration_items` ci
+    WHERE ci.`company_id` = cit.`company_id` AND ci.`name` = 'Sample App Server' AND ci.`deleted_at` IS NULL
+);
+
+INSERT INTO `configuration_items` (`company_id`, `ci_type_id`, `name`, `active`, `created_by`, `created_at`)
+SELECT cit.`company_id`, cit.`id`, 'Sample SQL Service', 1, e.`id`, '2026-01-01 00:00:01'
+FROM `configuration_item_types` cit
+INNER JOIN `employees` e ON e.`company_id` = cit.`company_id`
+    AND e.`id` = (SELECT MIN(e2.`id`) FROM `employees` e2 WHERE e2.`company_id` = cit.`company_id`)
+WHERE cit.`source_slug` = 'builtin:service' AND cit.`company_id` BETWEEN 1 AND 5
+AND NOT EXISTS (
+    SELECT 1 FROM `configuration_items` ci
+    WHERE ci.`company_id` = cit.`company_id` AND ci.`name` = 'Sample SQL Service' AND ci.`deleted_at` IS NULL
+);
+
+INSERT INTO `configuration_item_relationships` (`company_id`, `parent_ci_id`, `child_ci_id`, `relationship_type`, `active`, `created_by`, `created_at`)
+SELECT app.`company_id`, srv.`id`, app.`id`, 'depends_on', 1, srv.`created_by`, '2026-01-01 00:00:01'
+FROM `configuration_items` app
+INNER JOIN `configuration_items` srv ON srv.`company_id` = app.`company_id` AND srv.`name` = 'Sample App Server'
+WHERE app.`name` = 'Sample Payroll App' AND app.`company_id` BETWEEN 1 AND 5
+AND NOT EXISTS (
+    SELECT 1 FROM `configuration_item_relationships` rel
+    WHERE rel.`company_id` = app.`company_id`
+    AND rel.`parent_ci_id` = srv.`id` AND rel.`child_ci_id` = app.`id` AND rel.`deleted_at` IS NULL
+);
+
+INSERT INTO `configuration_item_relationships` (`company_id`, `parent_ci_id`, `child_ci_id`, `relationship_type`, `active`, `created_by`, `created_at`)
+SELECT srv.`company_id`, srv.`id`, svc.`id`, 'runs_on', 1, srv.`created_by`, '2026-01-01 00:00:01'
+FROM `configuration_items` srv
+INNER JOIN `configuration_items` svc ON svc.`company_id` = srv.`company_id` AND svc.`name` = 'Sample SQL Service'
+WHERE srv.`name` = 'Sample App Server' AND srv.`company_id` BETWEEN 1 AND 5
+AND NOT EXISTS (
+    SELECT 1 FROM `configuration_item_relationships` rel
+    WHERE rel.`company_id` = srv.`company_id`
+    AND rel.`parent_ci_id` = srv.`id` AND rel.`child_ci_id` = svc.`id` AND rel.`deleted_at` IS NULL
+);
+
+INSERT INTO `change_requests` (`company_id`, `source_configuration_item_id`, `title`, `description`, `status`, `scheduled_start`, `scheduled_end`, `active`, `created_by`, `created_at`)
+SELECT srv.`company_id`, srv.`id`, 'Sample payroll patch window', 'Demo change request seeded for blast-radius review.', 'draft', DATE_ADD(CURDATE(), INTERVAL 7 DAY), DATE_ADD(CURDATE(), INTERVAL 8 DAY), 1, srv.`created_by`, '2026-01-01 00:00:01'
+FROM `configuration_items` srv
+WHERE srv.`name` = 'Sample App Server' AND srv.`company_id` BETWEEN 1 AND 5
+AND NOT EXISTS (
+    SELECT 1 FROM `change_requests` cr
+    WHERE cr.`company_id` = srv.`company_id` AND cr.`title` = 'Sample payroll patch window' AND cr.`deleted_at` IS NULL
+);
+
+INSERT INTO `change_requests` (`company_id`, `source_configuration_item_id`, `title`, `description`, `status`, `active`, `created_by`, `created_at`)
+SELECT srv.`company_id`, srv.`id`, 'Sample SQL service restart', 'Planned SQL service restart with CMDB blast-radius links.', 'submitted', 1, srv.`created_by`, '2026-01-01 00:00:01'
+FROM `configuration_items` srv
+WHERE srv.`name` = 'Sample App Server' AND srv.`company_id` BETWEEN 1 AND 5
+AND NOT EXISTS (
+    SELECT 1 FROM `change_requests` cr
+    WHERE cr.`company_id` = srv.`company_id` AND cr.`title` = 'Sample SQL service restart' AND cr.`deleted_at` IS NULL
+);
+
+INSERT INTO `change_request_configuration_items` (`company_id`, `change_request_id`, `configuration_item_id`, `active`, `created_by`, `created_at`)
+SELECT cr.`company_id`, cr.`id`, ci.`id`, 1, cr.`created_by`, '2026-01-01 00:00:01'
+FROM `change_requests` cr
+INNER JOIN `configuration_items` ci ON ci.`company_id` = cr.`company_id`
+    AND ci.`name` IN ('Sample Payroll App', 'Sample App Server', 'Sample SQL Service')
+    AND ci.`deleted_at` IS NULL
+WHERE cr.`title` = 'Sample payroll patch window' AND cr.`company_id` BETWEEN 1 AND 5
+AND NOT EXISTS (
+    SELECT 1 FROM `change_request_configuration_items` j
+    WHERE j.`change_request_id` = cr.`id` AND j.`configuration_item_id` = ci.`id` AND j.`deleted_at` IS NULL
+);
+
+INSERT INTO `change_request_configuration_items` (`company_id`, `change_request_id`, `configuration_item_id`, `active`, `created_by`, `created_at`)
+SELECT cr.`company_id`, cr.`id`, ci.`id`, 1, cr.`created_by`, '2026-01-01 00:00:01'
+FROM `change_requests` cr
+INNER JOIN `configuration_items` ci ON ci.`company_id` = cr.`company_id`
+    AND ci.`name` IN ('Sample App Server', 'Sample SQL Service')
+    AND ci.`deleted_at` IS NULL
+WHERE cr.`title` = 'Sample SQL service restart' AND cr.`company_id` BETWEEN 1 AND 5
+AND NOT EXISTS (
+    SELECT 1 FROM `change_request_configuration_items` j
+    WHERE j.`change_request_id` = cr.`id` AND j.`configuration_item_id` = ci.`id` AND j.`deleted_at` IS NULL
+);
 
 -- Why: Relative expiry dates keep license alert seeds inside the default 30-day runner window after import.
 INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('1', '1', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '1', '1', '1', '2025-01-15', DATE_ADD(CURDATE(), INTERVAL 20 DAY), '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
