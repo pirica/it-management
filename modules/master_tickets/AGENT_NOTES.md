@@ -30,6 +30,7 @@ Create flow picks an **existing problem** that already has ≥1 linked incident 
 - **Edit** lives on `view.php#master-edit` (not a separate `edit.php`). Saving title/description/root cause calls `itm_master_ticket_update()` → syncs every linked incident ticket **description** (canonical master block + local notes).
 - **Broadcast message** on `view.php#master-edit`: **📨** form posts the same text as a **`ticket_comments`** row on every linked incident via `itm_master_ticket_broadcast_to_incidents()` (optional internal comment); history event `broadcast_to_tickets`; **Sent messages** table lists prior broadcasts.
 - **Hard-delete actions** (edit permission + `itm_master_ticket_can_manage()`): **Incidents** — `unlink_master_incident` → `DELETE` `problem_ticket_links` row (ticket kept); **Linked problems** — `detach_master_problem` → `master_ticket_id = NULL` (problem kept); **Sent messages / Update History** — 🔎 view (`history_id` + `#master-history-view`), 🗑️ `delete_master_history` → `DELETE` `master_ticket_updates` (broadcast rows also hard-delete ticket comments via `meta_json.comments` or legacy `ticket_ids` + message body match).
+- **Soft-delete master ticket** (delete RBAC + `itm_master_ticket_can_manage()`): list **🗑️** on [index.php](http://localhost/it-management/modules/master_tickets/index.php) and view toolbar post `master_action=delete_master_ticket` → `itm_master_ticket_soft_delete()` detaches all linked problems, restores local incident notes on tickets, sets `master_tickets.deleted_at` / `active=0`.
 - **Attach problems:** multi-select eligible problems (`itm_master_ticket_list_eligible_problems` + `itm_master_ticket_attach_problems_bulk`).
 - **Link incidents:** multi-select tickets from all allowed companies (`itm_master_ticket_list_linkable_tickets_for_master` + `itm_master_ticket_link_incidents_multi_company_bulk`); auto-creates a tenant problem on the master when missing (`itm_master_ticket_ensure_problem_for_company`), then links via `itm_problem_link_ticket`.
 
@@ -50,7 +51,7 @@ None — use Problem Management `api.php` for known-error suggest only.
 
 ## 7. File Structure
 
-- **index.php** — global list (search, sort, pagination); **✏️** action links to `view.php#master-edit` when user has edit permission
+- **index.php** — global list (search, sort, pagination); **✏️** action links to `view.php#master-edit` when user has edit permission; **🗑️** soft-delete when delete permission + `itm_master_ticket_can_manage()`
 - **create.php** — pick existing major problem → create master
 - **view.php** — detail, inline edit (syncs all incidents on save), multi-select attach problems, multi-select link incidents to a linked problem, incidents table, history
 - **index.html** — directory guard

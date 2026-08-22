@@ -195,6 +195,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && $masterTicketId > 0) {
             } else {
                 $errors[] = (string)($deleteHistory['error'] ?? 'Could not delete history entry.');
             }
+        } elseif ($postAction === 'delete_master_ticket') {
+            itm_require_crud_role_module_permission($conn, 'delete', $moduleSlug);
+            $deleteResult = itm_master_ticket_soft_delete($conn, $masterTicketId, $employeeId, $sessionCompanyId);
+            if (!empty($deleteResult['ok'])) {
+                $_SESSION['crud_flash'] = 'Master ticket deleted.';
+                header('Location: index.php');
+                exit;
+            }
+            $errors[] = (string)($deleteResult['error'] ?? 'Could not delete master ticket.');
         }
     }
 }
@@ -275,6 +284,13 @@ $canEditMaster = itm_user_has_role_module_permission(
     itm_resolve_rbac_module_name_for_slug($conn, $moduleSlug),
     'edit'
 );
+$canDeleteMaster = itm_user_has_role_module_permission(
+    $conn,
+    $employeeId,
+    $sessionCompanyId,
+    itm_resolve_rbac_module_name_for_slug($conn, $moduleSlug),
+    'delete'
+);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -308,6 +324,13 @@ $canEditMaster = itm_user_has_role_module_permission(
                 <div style="display:flex;gap:8px;">
                     <?php if ($canEditMaster && $masterTicket): ?>
                         <a href="#master-edit" class="btn" title="Edit">✏️</a>
+                    <?php endif; ?>
+                    <?php if ($canDeleteMaster && $canManageMaster && $masterTicket): ?>
+                        <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this master ticket? Linked problems will be detached and incident tickets will keep local notes only.');">
+                            <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                            <input type="hidden" name="master_action" value="delete_master_ticket">
+                            <button type="submit" class="btn btn-danger" title="Delete">🗑️</button>
+                        </form>
                     <?php endif; ?>
                     <a href="index.php" class="btn" title="Back">🔙</a>
                 </div>

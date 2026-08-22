@@ -311,6 +311,30 @@ if (empty($masterCreate['ok']) || (int)($masterCreate['master_ticket_id'] ?? 0) 
     }
 }
 
+if (!empty($masterTicketId)) {
+    $delMaster = itm_master_ticket_soft_delete($conn, $masterTicketId, $actorId, 1);
+    if (empty($delMaster['ok'])) {
+        pm_verify_fail('Master ticket soft delete failed: ' . (string)($delMaster['error'] ?? ''));
+    } else {
+        pm_verify_pass('Soft-deleted master ticket #' . $masterTicketId);
+        if (itm_master_ticket_fetch_row($conn, $masterTicketId) !== null) {
+            pm_verify_fail('Soft-deleted master ticket still visible via fetch_row');
+        }
+        $probMasterStmt = mysqli_prepare($conn, 'SELECT master_ticket_id FROM problems WHERE id = ? AND company_id = 1 LIMIT 1');
+        if ($probMasterStmt) {
+            mysqli_stmt_bind_param($probMasterStmt, 'i', $problemId);
+            mysqli_stmt_execute($probMasterStmt);
+            $probMasterRes = mysqli_stmt_get_result($probMasterStmt);
+            $probMasterRow = $probMasterRes ? mysqli_fetch_assoc($probMasterRes) : null;
+            mysqli_stmt_close($probMasterStmt);
+            if ($probMasterRow && $probMasterRow['master_ticket_id'] !== null) {
+                pm_verify_fail('Problem still linked to soft-deleted master ticket');
+            }
+        }
+        pm_verify_pass('Master soft-delete detached linked problem');
+    }
+}
+
 $keResult = itm_known_error_upsert($conn, 1, $problemId, [
     'title' => 'Network outage workaround',
     'workaround' => 'Restart core switch and flush DNS on affected workstations.',
