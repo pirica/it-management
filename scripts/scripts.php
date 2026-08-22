@@ -2173,6 +2173,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for <code>modules/appointments/</code>: audit triggers on five <code>appointment_*</code> tables (including <code>appointment_type</code>), <code>booking_lock</code> unique index, company 1 settings/reasons/types seeds, weekly slot builder, and <code>modules_registry</code> slug <code>appointment</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="appointments appointment_visit_reasons">
+                    <td><a href="apply_appointment_visit_reasons_replicate.php" target="_blank" rel="nofollow noreferrer">apply_appointment_visit_reasons_replicate.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">appointment_visit_reasons</span></span></td>
+                    <td>Copy company 1 <code>appointment_visit_reasons</code> to all other tenants (<code>INSERT IGNORE</code>). Dry-run default; <code>--apply</code> or <code>?run=1&amp;apply=1</code> (Admin).</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="employees employee_roles">
                     <td><a href="verify_command_palette_search.php" target="_blank" rel="nofollow noreferrer">verify_command_palette_search.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
