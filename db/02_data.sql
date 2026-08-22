@@ -1881,7 +1881,7 @@ INSERT IGNORE INTO `warranty_types` (`company_id`, `name`, `created_at`) SELECT 
 
 INSERT IGNORE INTO `license_types` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `license_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
-INSERT IGNORE INTO `appointment_settings` (`company_id`, `timezone`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `active`, `created_at`) SELECT c.`id`, t.`timezone`, t.`slot_duration_minutes`, t.`bookable_start_time`, t.`bookable_end_time`, t.`check_in_end_buffer_minutes`, t.`active`, '2026-01-01 00:00:01' FROM `appointment_settings` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `appointment_settings` (`company_id`, `timezone`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `booking_enabled`, `active`, `created_at`) SELECT c.`id`, t.`timezone`, t.`slot_duration_minutes`, t.`bookable_start_time`, t.`bookable_end_time`, t.`check_in_end_buffer_minutes`, t.`booking_enabled`, t.`active`, '2026-01-01 00:00:01' FROM `appointment_settings` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `appointment_visit_reasons` (`company_id`, `name`, `sort_order`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`sort_order`, t.`active`, '2026-01-01 00:00:01' FROM `appointment_visit_reasons` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
@@ -2409,8 +2409,8 @@ WHERE
     );
 
 -- Appointment module seeds (company 1)
-INSERT INTO `appointment_settings` (`company_id`, `timezone`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `active`, `created_at`) VALUES
-(1, 'US/Central', 60, '09:00:00', '14:00:00', 30, 1, '2026-01-01 00:00:01');
+INSERT INTO `appointment_settings` (`company_id`, `timezone`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `booking_enabled`, `active`, `created_at`) VALUES
+(1, 'US/Central', 60, '09:00:00', '14:00:00', 30, 1, 1, '2026-01-01 00:00:01');
 
 INSERT INTO `appointment_visit_reasons` (`company_id`, `name`, `sort_order`, `active`, `created_at`) VALUES
 (1, 'General IT support', 10, 1, '2026-01-01 00:00:01'),

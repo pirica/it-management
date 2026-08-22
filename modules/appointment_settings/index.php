@@ -6,11 +6,39 @@ require_once __DIR__ . '/aps_init.php';
 
 aps_require_permission($conn, 'view');
 
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['booking_toggle'])) {
+    itm_require_post_csrf();
+    aps_require_permission($conn, 'edit');
+    $settingsId = (int)($_POST['settings_id'] ?? 0);
+    $toggleValue = (int)($_POST['booking_toggle'] ?? 0) === 1 ? 1 : 0;
+    if ($settingsId > 0) {
+        $toggleStmt = mysqli_prepare(
+            $conn,
+            'UPDATE appointment_settings SET booking_enabled = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL'
+        );
+        if ($toggleStmt) {
+            mysqli_stmt_bind_param($toggleStmt, 'iiii', $toggleValue, $employee_id, $settingsId, $company_id);
+            mysqli_stmt_execute($toggleStmt);
+            mysqli_stmt_close($toggleStmt);
+            $toggleMsg = $toggleValue === 1 ? 'Appointment booking enabled.' : 'Appointment booking disabled.';
+            header('Location: index.php?msg=' . rawurlencode($toggleMsg));
+            exit;
+        }
+    }
+}
+
 $flashMessage = trim((string)($_GET['msg'] ?? ''));
 $settings = itm_appointment_load_settings($conn, $company_id);
 $businessHours = itm_appointment_load_business_hours($conn, $company_id);
 $visitReasons = itm_appointment_settings_load_visit_reasons_admin($conn, $company_id);
 $appointmentTypes = aps_appointment_types_for_columns(itm_appointment_settings_load_appointment_types_admin($conn, $company_id));
+$apsCanEditSettings = itm_user_has_role_module_permission(
+    $conn,
+    $employee_id,
+    $company_id,
+    itm_resolve_rbac_module_name_for_slug($conn, $moduleSlug),
+    'edit'
+);
 
 $settingsRows = [];
 if ($settings) {
@@ -31,6 +59,28 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
     <?php if ($flashMessage !== ''): ?>
         <p><?php echo sanitize($flashMessage); ?></p>
     <?php endif; ?>
+    <?php if ($settings && $apsCanEditSettings): ?>
+        <?php $settingsBookingOn = itm_appointment_settings_booking_enabled($settings); ?>
+        <p>
+            Booking:
+            <?php if ($settingsBookingOn): ?>
+                <span class="badge badge-success">Enabled</span>
+            <?php else: ?>
+                <span class="badge badge-danger">Disabled</span>
+            <?php endif; ?>
+            <form method="post" action="index.php" style="display:inline;margin-left:8px;">
+                <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                <input type="hidden" name="settings_id" value="<?php echo (int)($settings['id'] ?? 0); ?>">
+                <?php if ($settingsBookingOn): ?>
+                    <input type="hidden" name="booking_toggle" value="0">
+                    <button type="submit" class="btn btn-sm btn-danger" title="Disable appointment booking">❌</button>
+                <?php else: ?>
+                    <input type="hidden" name="booking_toggle" value="1">
+                    <button type="submit" class="btn btn-sm btn-primary" title="Enable appointment booking">✅</button>
+                <?php endif; ?>
+            </form>
+        </p>
+    <?php endif; ?>
 </div>
 
 <div class="card appointment-settings-section">
@@ -42,6 +92,7 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
         <tr>
             <th>Timezone</th>
             <th>Slot (min)</th>
+            <th>Booking</th>
             <th>Active</th>
             <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
         </tr>
@@ -51,6 +102,7 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
             <tr>
                 <td><?php echo sanitize($row['timezone'] ?? ''); ?></td>
                 <td><?php echo (int)($row['slot_duration_minutes'] ?? 0); ?></td>
+                <td><?php echo itm_appointment_settings_booking_enabled($row) ? '<span class="badge badge-success">Enabled</span>' : '<span class="badge badge-danger">Disabled</span>'; ?></td>
                 <td><?php echo (int)($row['active'] ?? 0) === 1 ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>'; ?></td>
                 <?php aps_actions_cell_open(); ?>
                 <a class="btn btn-sm" href="view.php?kind=settings&amp;id=<?php echo (int)$row['id']; ?>" title="View">🔎</a>
@@ -65,7 +117,7 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
             </tr>
         <?php endforeach; ?>
         <?php if (empty($settingsRows)): ?>
-            <tr><td colspan="4">No settings row — refresh to create defaults.</td></tr>
+            <tr><td colspan="5">No settings row — refresh to create defaults.</td></tr>
         <?php endif; ?>
         </tbody>
     </table>

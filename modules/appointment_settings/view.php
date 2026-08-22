@@ -57,6 +57,7 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
             <tr><th>Bookable window</th><td><?php echo sanitize(aps_format_time_input($row['bookable_start_time'] ?? '') . ' – ' . aps_format_time_input($row['bookable_end_time'] ?? '')); ?></td></tr>
             <tr><th>Check-in buffer (minutes)</th><td><?php echo (int)($row['check_in_end_buffer_minutes'] ?? 0); ?></td></tr>
             <tr><th>Default type (both allowed)</th><td><?php echo sanitize(aps_type_label((string)($row['default_appointment_modality'] ?? 'remote'))); ?></td></tr>
+            <tr><th>Enable appointment booking</th><td><?php echo itm_appointment_settings_booking_enabled($row) ? '<span class="badge badge-success">Enabled</span>' : '<span class="badge badge-danger">Disabled</span>'; ?></td></tr>
             <tr><th>Active</th><td><?php echo (int)($row['active'] ?? 0) === 1 ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>'; ?></td></tr>
         <?php elseif ($kind === 'business_hour'): ?>
             <?php

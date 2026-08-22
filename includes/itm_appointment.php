@@ -198,6 +198,9 @@ if (!function_exists('itm_appointment_settings_booking_enabled')) {
         if (!$settings) {
             return false;
         }
+        if (array_key_exists('booking_enabled', $settings)) {
+            return (int)$settings['booking_enabled'] === 1;
+        }
         return (int)($settings['active'] ?? 0) === 1;
     }
 }

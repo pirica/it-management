@@ -57,6 +57,7 @@ The subsystem coordinates several tables to manage business hours, timezone conf
 
 - **`appointments.booking_lock`:** A unique index across `(company_id, booking_lock)` that guarantees no two concurrent bookings can occupy the exact same slot on the same day for a company. On cancel/soft-delete, this string is cleared to release the slot.
 - **`appointment_settings.default_appointment_modality`:** Specifies which `appointment_type` to pre-select when rendering multiple booking options.
+- **`appointment_settings.booking_enabled`:** When `0`, employees cannot book or reschedule; the booking UI shows a banner and `week_slots` returns `booking_disabled`. Managed in [Appointment Settings](http://localhost/it-management/modules/appointment_settings/index.php) (checkbox on edit + hub quick toggle). Row `active` remains the scaffold soft-delete flag.
 - **`appointment_business_hours.allowed_types_json`:** JSON field defining specific active types permitted for each day of the week.
 
 ---

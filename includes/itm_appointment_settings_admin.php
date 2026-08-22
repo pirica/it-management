@@ -40,8 +40,8 @@ if (!function_exists('itm_appointment_settings_ensure_company_config')) {
         mysqli_stmt_close($stmt);
 
         if (!$settingsRow) {
-            $sql = 'INSERT INTO appointment_settings (company_id, timezone, slot_duration_minutes, bookable_start_time, bookable_end_time, check_in_end_buffer_minutes, default_appointment_modality, active, created_by, updated_by)
-                    VALUES (?, \'US/Central\', 60, \'09:00:00\', \'14:00:00\', 30, \'remote\', 1, ?, ?)';
+            $sql = 'INSERT INTO appointment_settings (company_id, timezone, slot_duration_minutes, bookable_start_time, bookable_end_time, check_in_end_buffer_minutes, default_appointment_modality, booking_enabled, active, created_by, updated_by)
+                    VALUES (?, \'US/Central\', 60, \'09:00:00\', \'14:00:00\', 30, \'remote\', 1, 1, ?, ?)';
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, 'iii', $companyId, $employeeId, $employeeId);
