@@ -348,9 +348,9 @@ if (!isset($crud_title)) {
                 </div>
 
                 <div class="view-filters">
-                    <a class="itm-plain-link" href="index.php?view=all" class="<?php echo $view_mode === 'all' ? 'active' : ''; ?>">All</a>
-                    <a class="itm-plain-link" href="index.php?view=private" class="<?php echo $view_mode === 'private' ? 'active' : ''; ?>">🔒 Private</a>
-                    <a class="itm-plain-link" href="index.php?view=shared" class="<?php echo $view_mode === 'shared' ? 'active' : ''; ?>">🔓 Shared</a>
+                    <a href="index.php?view=all" class="itm-plain-link <?php echo $view_mode === 'all' ? 'active' : ''; ?>">All</a>
+                    <a href="index.php?view=private" class="itm-plain-link <?php echo $view_mode === 'private' ? 'active' : ''; ?>">🔒 Private</a>
+                    <a href="index.php?view=shared" class="itm-plain-link <?php echo $view_mode === 'shared' ? 'active' : ''; ?>">🔓 Shared</a>
                 </div>
 
                 <div style="margin-bottom: 15px; display: flex; gap: 10px;">
@@ -387,8 +387,8 @@ if (!isset($crud_title)) {
                             <div class="dropdown" style="position: relative;">
                                 <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" onclick="this.parentNode.querySelector('.dropdown-menu').classList.toggle('show'); event.stopPropagation();">Tools ⚙️</button>
                                 <div class="dropdown-menu" style="right: 0; min-width: 180px;">
-                                    <a class="dropdown-item itm-plain-link" href="list_all.php">📋 Table View</a>
-                                    <a class="dropdown-item itm-plain-link" href="import.php">📤 Import</a>
+                                    <a class="itm-plain-link dropdown-item" href="list_all.php">📋 Table View</a>
+                                    <a class="itm-plain-link dropdown-item" href="import.php">📤 Import</a>
                                     <hr style="margin: 4px 0; border-top: 1px solid var(--border);">
                                     <button class="dropdown-item" onclick="exportBookmarks('xlsx', '<?php echo $selected_folder_id; ?>')">📥 Export Excel</button>
                                     <button class="dropdown-item" onclick="exportBookmarks('csv', '<?php echo $selected_folder_id; ?>')">📥 Export CSV</button>

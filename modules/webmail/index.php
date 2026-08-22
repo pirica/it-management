@@ -111,7 +111,7 @@ $webmailListViewLink = static function (string $viewUrl, string $text): void {
     if ($label === '') {
         return;
     }
-    echo '<a class="webmail-list-view-link itm-plain-link" href="' . sanitize($viewUrl) . '" title="View message">' . sanitize($label) . '</a>';
+    echo '<a class="itm-plain-link webmail-list-view-link" href="' . sanitize($viewUrl) . '" title="View message">' . sanitize($label) . '</a>';
 };
 
 $folderLabels = [

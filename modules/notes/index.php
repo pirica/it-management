@@ -121,12 +121,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
             $title = ($titleIdx !== false) ? ($row[$titleIdx] ?? '') : '';
             $content = ($contentIdx !== false) ? ($row[$contentIdx] ?? '') : '';
             $remAt = ($remIdx !== false && !empty($row[$remIdx])) ? $row[$remIdx] : null;
-            $isPin = ($pinIdx !== false && in_array(strtolower($row[$pinIdx] ?? ''), ['yes', '1', 'true', '�
-'])) ? 1 : 0;
-            $isImp = ($impIdx !== false && in_array(strtolower($row[$impIdx] ?? ''), ['yes', '1', 'true', '�
-'])) ? 1 : 0;
-            $isArc = ($arcIdx !== false && in_array(strtolower($row[$arcIdx] ?? ''), ['yes', '1', 'true', '�
-'])) ? 1 : 0;
+            $isPin = ($pinIdx !== false && in_array(strtolower($row[$pinIdx] ?? ''), ['yes', '1', 'true', '✅'])) ? 1 : 0;
+            $isImp = ($impIdx !== false && in_array(strtolower($row[$impIdx] ?? ''), ['yes', '1', 'true', '✅'])) ? 1 : 0;
+            $isArc = ($arcIdx !== false && in_array(strtolower($row[$arcIdx] ?? ''), ['yes', '1', 'true', '✅'])) ? 1 : 0;
 
             if ($title === '' && $content === '') continue;
 
@@ -642,8 +639,7 @@ if ($filter === 'reminders') {
 } elseif ($filter === 'images') {
     $moduleListHeading = '🖼️ Images';
 } elseif ($filter === 'important') {
-    $moduleListHeading = '�
- Important';
+    $moduleListHeading = '★ Important';
 } elseif ($filter === 'shared_with') {
     $moduleListHeading = '👤 Shared With';
 }
@@ -824,24 +820,23 @@ if (!isset($crud_title)) {
             <?php else: ?>
             <div class="notes-container">
                 <div class="notes-sidebar">
-                    <a href="index.php" class="notes-sidebar-item <?php echo ($filter ===  itm-plain-link"all" || $filter === "") ? "active" : ""; ?>">💡 Notes</a>
-                    <a href="?filter=reminders" class="notes-sidebar-item <?php echo $filter ===  itm-plain-link"reminders" ? "active" : ""; ?>">🔔 Reminders</a>
-                    <?php if ($hasImportant): ?><a href="?filter=important" class="notes-sidebar-item <?php echo $filter ===  itm-plain-link"important" ? "active" : ""; ?>">�
- Important</a><?php endif; ?>
-                    <?php if ($hasShared): ?><a href="?filter=shared_with" class="notes-sidebar-item <?php echo $filter ===  itm-plain-link"shared_with" ? "active" : ""; ?>">👤 Shared With</a><?php endif; ?>
+                    <a href="index.php" class="itm-plain-link notes-sidebar-item <?php echo ($filter === "all" || $filter === "") ? "active" : ""; ?>">💡 Notes</a>
+                    <a href="?filter=reminders" class="itm-plain-link notes-sidebar-item <?php echo $filter === "reminders" ? "active" : ""; ?>">🔔 Reminders</a>
+                    <?php if ($hasImportant): ?><a href="?filter=important" class="itm-plain-link notes-sidebar-item <?php echo $filter === "important" ? "active" : ""; ?>">★ Important</a><?php endif; ?>
+                    <?php if ($hasShared): ?><a href="?filter=shared_with" class="itm-plain-link notes-sidebar-item <?php echo $filter === "shared_with" ? "active" : ""; ?>">👤 Shared With</a><?php endif; ?>
 
                     <?php foreach ($user_tags as $ul): ?>
-                        <a class="itm-plain-link" href="?filter=tag&label=<?php echo urlencode($ul); ?>" class="notes-sidebar-item <?php echo ($filter === "tag" && ($_GET["label"] ?? "") === $ul) ? "active" : ""; ?>">🏷️ <?php echo sanitize($ul); ?></a>
+                        <a href="?filter=tag&label=<?php echo urlencode($ul); ?>" class="itm-plain-link notes-sidebar-item <?php echo ($filter === "tag" && ($_GET["label"] ?? "") === $ul) ? "active" : ""; ?>">🏷️ <?php echo sanitize($ul); ?></a>
                     <?php endforeach; ?>
 
-                    <a href="?filter=archive" class="notes-sidebar-item <?php echo $filter ===  itm-plain-link"archive" ? "active" : ""; ?>">📥 Archive</a>
-                    <a href="?filter=garbage" class="notes-sidebar-item <?php echo $filter ===  itm-plain-link"garbage" ? "active" : ""; ?>">🗑️ Garbage</a>
-                    <a href="?filter=checklist" class="notes-sidebar-item <?php echo $filter ===  itm-plain-link"checklist" ? "active" : ""; ?>">☑️ Checklist</a>
-                    <?php if ($hasPinned): ?><a href="?filter=pinned" class="notes-sidebar-item <?php echo $filter ===  itm-plain-link"pinned" ? "active" : ""; ?>">📌 Pinned</a><?php endif; ?>
-                    <?php if ($hasImages): ?><a href="?filter=images" class="notes-sidebar-item <?php echo $filter ===  itm-plain-link"images" ? "active" : ""; ?>">🖼️ Images</a><?php endif; ?>
+                    <a href="?filter=archive" class="itm-plain-link notes-sidebar-item <?php echo $filter === "archive" ? "active" : ""; ?>">📥 Archive</a>
+                    <a href="?filter=garbage" class="itm-plain-link notes-sidebar-item <?php echo $filter === "garbage" ? "active" : ""; ?>">🗑️ Garbage</a>
+                    <a href="?filter=checklist" class="itm-plain-link notes-sidebar-item <?php echo $filter === "checklist" ? "active" : ""; ?>">☑️ Checklist</a>
+                    <?php if ($hasPinned): ?><a href="?filter=pinned" class="itm-plain-link notes-sidebar-item <?php echo $filter === "pinned" ? "active" : ""; ?>">📌 Pinned</a><?php endif; ?>
+                    <?php if ($hasImages): ?><a href="?filter=images" class="itm-plain-link notes-sidebar-item <?php echo $filter === "images" ? "active" : ""; ?>">🖼️ Images</a><?php endif; ?>
 					<hr style="width: 80%; border-top: 1px solid var(--border); opacity: 0.5;">
-                    <a href="#" class="notes-sidebar-item itm-plain-link" onclick="openEditTagsModal(); return false;" title="Edit tags">✏️ Tags</a>
-                    <a class="itm-plain-link" href="list_all.php" class="notes-sidebar-item <?php echo $crud_action === 'list_all' ? 'active' : ''; ?>">📊 Table View</a>
+                    <a href="#" class="itm-plain-link notes-sidebar-item" onclick="openEditTagsModal(); return false;" title="Edit tags">✏️ Tags</a>
+                    <a href="list_all.php" class="itm-plain-link notes-sidebar-item <?php echo $crud_action === 'list_all' ? 'active' : ''; ?>">📊 Table View</a>
                     <hr style="width: 80%; border-top: 1px solid var(--border); opacity: 0.5;">
                 </div>
                 <div class="notes-content">
@@ -972,8 +967,7 @@ if (!isset($crud_title)) {
                                                 <?php echo $note["is_pinned"] ? "📌" : "📌"; ?>
                                             </div>
                                             <div class="note-star <?php echo $note["is_important"] ? "active" : ""; ?>" onclick="toggleImportant(<?php echo $note["id"]; ?>, this)" data-important="<?php echo $note['is_important']; ?>" title="Important" style="margin-left: 10px;">
-                                                <?php echo $note["is_important"] ? "�
-" : "☆"; ?>
+                                                <?php echo $note["is_important"] ? "★" : "☆"; ?>
                                             </div>
                                             <div class="note-star <?php echo $note["is_archived"] ? "active" : ""; ?>" onclick="toggleArchived(<?php echo $note["id"]; ?>, this)" data-archived="<?php echo $note['is_archived']; ?>" title="Archive" style="margin-left: 10px;">
                                                 📥
@@ -1059,12 +1053,9 @@ if (!isset($crud_title)) {
                                                 <?php endif; ?>
                                                 <td><?php echo sanitize($note['title'] ?: '(Untitled)'); ?></td>
                                                 <td><?php echo $note['reminder_at'] ? date("M j, H:i", strtotime($note['reminder_at'])) : '—'; ?></td>
-                                                <td><?php echo $note['is_pinned'] ? '�
-' : '❌'; ?></td>
-                                                <td><?php echo $note['is_important'] ? '�
-' : '❌'; ?></td>
-                                                <td><?php echo $note['is_archived'] ? '�
-' : '❌'; ?></td>
+                                                <td><?php echo $note['is_pinned'] ? '✅' : '❌'; ?></td>
+                                                <td><?php echo $note['is_important'] ? '✅' : '❌'; ?></td>
+                                                <td><?php echo $note['is_archived'] ? '✅' : '❌'; ?></td>
                                                 <td><?php $lbls = $note_tags_map[$note['id']] ?? []; echo sanitize(implode(", ",$lbls)); ?></td>
                                                 <td><?php $uIds=json_decode($note['shared_with_json']??'[]',true); $names=[]; foreach($uIds as $uid) if(isset($users[$uid]))$names[]=$users[$uid]['username']; echo sanitize(implode(", ",$names)); ?></td>
                                                 <td class="itm-actions-cell" data-itm-actions-origin="1">
@@ -1189,8 +1180,7 @@ if (!isset($crud_title)) {
                             <div style="display: flex; gap: 30px; margin-top: 10px;">
                                 <label class="itm-checkbox-control"><input type="checkbox" name="is_checklist" value="1" <?php echo (!empty($data["is_checklist"]) || !empty($data['checklist_json'])) ? "checked" : ""; ?> onchange="toggleChecklistSection(this.checked)"><span>Checklist ☑️</span></label>
                                 <label class="itm-checkbox-control"><input type="checkbox" name="is_pinned" value="1" <?php echo !empty($data["is_pinned"]) ? "checked" : ""; ?>><span>Pinned 📌</span></label>
-                                <label class="itm-checkbox-control"><input type="checkbox" name="is_important" value="1" <?php echo !empty($data["is_important"]) ? "checked" : ""; ?>><span>Important �
-</span></label>
+                                <label class="itm-checkbox-control"><input type="checkbox" name="is_important" value="1" <?php echo !empty($data["is_important"]) ? "checked" : ""; ?>><span>Important ★</span></label>
                                 <label class="itm-checkbox-control"><input type="checkbox" name="is_archived" value="1" <?php echo !empty($data["is_archived"]) ? "checked" : ""; ?>><span>Archived 📥</span></label>
                                 <label class="itm-checkbox-control"><input type="checkbox" id="reminder_checkbox" onchange="toggleReminderSection(this.checked)" <?php echo !empty($data['reminder_at']) ? 'checked' : ''; ?>><span>Reminder 🔔</span></label>
                             </div>
@@ -1220,7 +1210,7 @@ if (!isset($crud_title)) {
                                 <div class="itm-floor-plan-view-preview" style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;"><?php foreach ($vimgs as $img): $imgPath = itm_files_serve_url('Private/' . $_SESSION['username'] . '_' . $logged_user_id . '/notes/' . $img); ?>
                                     <div style="text-align: center;">
                                         <img src="<?php echo $imgPath; ?>" class="itm-floor-plan-view-image" onclick="openImageModal('<?php echo $imgPath; ?>')" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; margin-bottom: 5px; cursor: pointer;">
-                                        <div style="font-size: 12px; display: flex; justify-content: center; gap: 10px;"><a class="itm-plain-link" href="#" onclick="openImageModal('<?php echo $imgPath; ?>'); return false;" style="text-decoration: none;">👁️ Preview</a><a class="itm-plain-link" href="<?php echo $imgPath; ?>" download style="text-decoration: none;">📥 Download</a></div>
+                                        <div style="font-size: 12px; display: flex; justify-content: center; gap: 10px;"><a class="itm-plain-link" href="#" onclick="openImageModal('<?php echo $imgPath; ?>'); return false;" style="text-decoration: none;">👁️ Preview</a><a href="<?php echo $imgPath; ?>" download style="text-decoration: none;">📥 Download</a></div>
                                     </div><?php endforeach; ?></div>
                             <?php endif; ?>
                             <?php $vcl = json_decode($data['checklist_json'] ?? '[]', true); if (!empty($vcl)): ?>

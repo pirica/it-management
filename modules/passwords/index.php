@@ -351,14 +351,14 @@ if (!isset($crud_title)) {
                                     <div class="btn-group">
                                         <button type="button" class="btn dropdown-toggle" onclick="$(this).next('.dropdown-menu').toggleClass('show'); event.stopPropagation();">Tools ⚙️</button>
                                         <div class="dropdown-menu dropdown-menu-right">
-                                            <a class="dropdown-item itm-plain-link" href="#" onclick="openImportModal(); $('.dropdown-menu').removeClass('show'); return false;">📥 Import CSV</a><br />
-                                            <a class="dropdown-item itm-plain-link" href="#" onclick="openImportExcelModal(); $('.dropdown-menu').removeClass('show'); return false;">📥 Import Excel</a><br />
+                                            <a class="itm-plain-link dropdown-item" href="#" onclick="openImportModal(); $('.dropdown-menu').removeClass('show'); return false;">📥 Import CSV</a><br />
+                                            <a class="itm-plain-link dropdown-item" href="#" onclick="openImportExcelModal(); $('.dropdown-menu').removeClass('show'); return false;">📥 Import Excel</a><br />
                                         <!--    <div class="dropdown-divider"></div> -->
-                                            <a class="dropdown-item itm-plain-link" href="#" onclick="exportVault('xlsx'); $('.dropdown-menu').removeClass('show'); return false;">📊 Export XLSX</a><br />
-                                            <a class="dropdown-item itm-plain-link" href="#" onclick="exportVault('xlsx'); $('.dropdown-menu').removeClass('show'); return false;">📗 Export Excel</a><br />
-                                            <a class="dropdown-item itm-plain-link" href="#" onclick="exportVault('csv'); $('.dropdown-menu').removeClass('show'); return false;">📄 Export CSV</a><br />
-                                            <a class="dropdown-item itm-plain-link" href="#" onclick="exportVault('pdf'); $('.dropdown-menu').removeClass('show'); return false;">📕 Export PDF</a><br />
-                                            <a class="dropdown-item itm-plain-link" href="#" onclick="exportVault('txt'); $('.dropdown-menu').removeClass('show'); return false;">📝 Export TXT</a><br />
+                                            <a class="itm-plain-link dropdown-item" href="#" onclick="exportVault('xlsx'); $('.dropdown-menu').removeClass('show'); return false;">📊 Export XLSX</a><br />
+                                            <a class="itm-plain-link dropdown-item" href="#" onclick="exportVault('xlsx'); $('.dropdown-menu').removeClass('show'); return false;">📗 Export Excel</a><br />
+                                            <a class="itm-plain-link dropdown-item" href="#" onclick="exportVault('csv'); $('.dropdown-menu').removeClass('show'); return false;">📄 Export CSV</a><br />
+                                            <a class="itm-plain-link dropdown-item" href="#" onclick="exportVault('pdf'); $('.dropdown-menu').removeClass('show'); return false;">📕 Export PDF</a><br />
+                                            <a class="itm-plain-link dropdown-item" href="#" onclick="exportVault('txt'); $('.dropdown-menu').removeClass('show'); return false;">📝 Export TXT</a><br />
                                         </div>
                                     </div>
                                 </div>

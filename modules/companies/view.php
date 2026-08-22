@@ -123,8 +123,7 @@ if (!isset($crud_title)) {
                         <?php endif; ?>
                         <tr><th>Comments</th><td><?php echo nl2br(sanitize(itm_company_view_value($itemNormalized, ['comments']))); ?></td></tr>
                         <?php $activeValue = (int)itm_company_view_value($itemNormalized, ['active', 'status'], '0'); ?>
-                        <tr><th>Status</th><td><?php echo $activeValue === 1 ? '�
-' : '❌'; ?></td></tr>
+                        <tr><th>Status</th><td><?php echo $activeValue === 1 ? '✅' : '❌'; ?></td></tr>
                         <?php $companyAuditScopeId = (int)itm_company_view_value($itemNormalized, ['id']); ?>
                         <tr><th>Deleted By</th><td><?php echo itm_crud_render_audit_cell_value($conn, $companyAuditScopeId, 'deleted_by', $itemNormalized['deleted_by'] ?? null); ?></td></tr>
                         <tr><th>Deleted At</th><td><?php echo itm_crud_render_audit_cell_value($conn, $companyAuditScopeId, 'deleted_at', $itemNormalized['deleted_at'] ?? null); ?></td></tr>

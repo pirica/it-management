@@ -1818,8 +1818,7 @@ function bkm_apply_import_row_url_storage(array &$rowValues, $conn)
     $shared = 0;
     if (isset($rowValues['shared']) && $rowValues['shared'] !== 'NULL') {
         $sharedRaw = bkm_import_row_literal_to_string($rowValues['shared']);
-        $shared = in_array(strtolower((string)$sharedRaw), ['1', 'true', 'yes', 'âœ
-'], true) ? 1 : 0;
+        $shared = in_array(strtolower((string)$sharedRaw), ['1', 'true', 'yes', 'âœ…'], true) ? 1 : 0;
     }
 
     $storage = bkm_prepare_url_storage($plainUrl, $shared);

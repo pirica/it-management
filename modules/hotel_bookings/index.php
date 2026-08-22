@@ -305,8 +305,7 @@ $hbViewButtons = [
 <th class="hb-plan-sticky hb-plan-room-col"><a style="text-decoration:none;color:inherit;" href="<?php echo sanitize(hb_planning_sort_href('room', $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir, $hbView, $hbHide)); ?>" class="hb-plan-sort-link" title="Sort by room">Room<?php if ($planSort === 'room'): ?> <?php echo strtolower($planDir) === 'asc' ? '▲' : '▼'; ?><?php endif; ?></a></th>
 <th class="hb-plan-sticky hb-plan-hk-col"><a style="text-decoration:none;color:inherit;" href="<?php echo sanitize(hb_planning_sort_href('hk', $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir, $hbView, $hbHide)); ?>" class="hb-plan-sort-link" title="Sort by HSK status">HSK<?php if ($planSort === 'hk'): ?> <?php echo strtolower($planDir) === 'asc' ? '▲' : '▼'; ?><?php endif; ?></a></th>
 <th class="hb-plan-sticky hb-plan-type-col"><a style="text-decoration:none;color:inherit;" href="<?php echo sanitize(hb_planning_sort_href('type', $anchorDate, $filterHotel, $filterType, $filterFloor, $planDays, $planSort, $planDir, $hbView, $hbHide)); ?>" class="hb-plan-sort-link" title="Sort by room type">Type<?php if ($planSort === 'type'): ?> <?php echo strtolower($planDir) === 'asc' ? '▲' : '▼'; ?><?php endif; ?></a></th>
-<th class="hb-plan-date-nav" title="Previous dates"><a class="btn btn-sm hb-plan-date-arrow" href="?<?php echo $prevAnchorHref; ?>" title="Previous dates">�
-️</a></th>
+<th class="hb-plan-date-nav" title="Previous dates"><a class="btn btn-sm hb-plan-date-arrow" href="?<?php echo $prevAnchorHref; ?>" title="Previous dates">⬅️</a></th>
 <?php foreach ($dayHeaders as $d): ?>
 <th class="hb-plan-day"><?php echo sanitize($d->format('D ') . itm_format_hotel_date_display($d->format('Y-m-d'))); ?></th>
 <?php endforeach; ?>

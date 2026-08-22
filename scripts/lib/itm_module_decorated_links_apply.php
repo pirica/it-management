@@ -22,6 +22,9 @@ if (!function_exists('itm_module_decorated_links_apply_line_is_exempt')) {
         if (preg_match('/\bclass\s*=\s*["\'][^"\']*\bbtn\b/i', $line)) {
             return true;
         }
+        if (preg_match('/(\$\w+\s*\.=\s*"|echo\s+")[^;]*<a\s/i', $line)) {
+            return true;
+        }
         return false;
     }
 }
@@ -67,18 +70,34 @@ if (!function_exists('itm_module_decorated_links_apply_patch_anchor_opening')) {
             return ' style="text-decoration:none;color:inherit;"' . $attrs;
         }
 
+        // PHP echo inside class="..." — never use [^"]*; prepend token after opening quote only.
+        if (preg_match('/\bclass\s*=\s*"<\?php/i', $attrs)) {
+            return preg_replace('/\bclass\s*=\s*"/i', 'class="itm-plain-link ', $attrs, 1);
+        }
+        if (preg_match("/\bclass\s*=\s*'<\?php/i", $attrs)) {
+            return preg_replace("/\bclass\s*=\s*'/i", "class='itm-plain-link ", $attrs, 1);
+        }
+
         if (preg_match('/class\s*=\s*"\s*\.\s*\$/', $attrs) || preg_match("/class\s*=\s*'\s*\.\s*\$/", $attrs)) {
-            return preg_replace("/(\bclass\s*=\s*['\"])\s*\.\s*(\$[a-zA-Z_][\w]*)\s*\.\s*(['\"])/", '$1 . $2 . \' itm-plain-link\' . $3', $attrs, 1)
-                ?: preg_replace('/(\bclass\s*=\s*["\'])([^"\']*)(["\'])/', '$1$2 itm-plain-link$3', $attrs, 1);
+            $patched = preg_replace("/(\bclass\s*=\s*['\"])\s*\.\s*(\$[a-zA-Z_][\w]*)\s*\.\s*(['\"])/", '$1 . $2 . \' itm-plain-link\' . $3', $attrs, 1);
+            if (is_string($patched) && $patched !== $attrs) {
+                return $patched;
+            }
         }
-        if (preg_match('/\bclass\s*=\s*"([^"]*)"/i', $attrs, $m)) {
+
+        if (preg_match('/\bclass\s*=\s*"([a-zA-Z0-9_\- ]*)"/i', $attrs, $m)) {
             $merged = trim($m[1] . ' itm-plain-link');
-            return preg_replace('/\bclass\s*=\s*"[^"]*"/i', 'class="' . $merged . '"', $attrs, 1);
+            return preg_replace('/\bclass\s*=\s*"[a-zA-Z0-9_\- ]*"/i', 'class="' . $merged . '"', $attrs, 1);
         }
-        if (preg_match("/\bclass\s*=\s*'([^']*)'/i", $attrs, $m)) {
+        if (preg_match("/\bclass\s*=\s*'([a-zA-Z0-9_\- ]*)'/i", $attrs, $m)) {
             $merged = trim($m[1] . ' itm-plain-link');
-            return preg_replace("/\bclass\s*=\s*'[^']*'/i", "class='" . $merged . "'", $attrs, 1);
+            return preg_replace("/\bclass\s*=\s*'[a-zA-Z0-9_\- ]*'/i", "class='" . $merged . "'", $attrs, 1);
         }
+
+        if (preg_match('/\bhref\s*=/i', $attrs)) {
+            return preg_replace('/\bhref\s*=/i', 'class="itm-plain-link" href=', $attrs, 1);
+        }
+
         return ' class="itm-plain-link"' . $attrs;
     }
 }
@@ -95,14 +114,38 @@ if (!function_exists('itm_module_decorated_links_apply_fix_line')) {
         }
 
         $useSortStyle = itm_module_decorated_links_apply_line_wants_sort_style($line);
-        $patched = preg_replace_callback(
-            '/<a(\s[^>]*?)>/i',
-            static function (array $m) use ($useSortStyle): string {
-                return '<a' . itm_module_decorated_links_apply_patch_anchor_opening($m[1], $useSortStyle) . '>';
-            },
+
+        // Why: naive [^>]* anchor parsing breaks on PHP closing tags and ternary > inside attributes.
+        if ($useSortStyle) {
+            if (preg_match('/\bstyle\s*=\s*"[^"]*text-decoration\s*:\s*none/i', $line)) {
+                return $line;
+            }
+            if (preg_match('/<a\s([^>]*)\bstyle\s*=\s*"/i', $line)) {
+                return preg_replace('/\bstyle\s*=\s*"/i', 'style="text-decoration:none;color:inherit;', $line, 1);
+            }
+            return preg_replace('/<a\s+/i', '<a style="text-decoration:none;color:inherit;" ', $line, 1);
+        }
+
+        if (strpos($line, 'itm-plain-link') === false) {
+            if (preg_match('/\bclass\s*=\s*"<\?php/i', $line)) {
+                $line = preg_replace('/\bclass\s*=\s*"/i', 'class="itm-plain-link ', $line, 1);
+            } elseif (preg_match('/\bclass\s*=\s*"\s*\.\s*\$/', $line)) {
+                $line = preg_replace("/(\bclass\s*=\s*['\"])\s*\.\s*(\$[a-zA-Z_][\w]*)\s*\.\s*(['\"])/", '$1 . $2 . \' itm-plain-link\' . $3', $line, 1);
+            } elseif (preg_match('/\bclass\s*=\s*"[a-zA-Z0-9_\- ]*"/i', $line)) {
+                $line = preg_replace('/\bclass\s*=\s*"/i', 'class="itm-plain-link ', $line, 1);
+            } else {
+                $line = preg_replace('/<a\s+/i', '<a class="itm-plain-link" ', $line, 1);
+            }
+        }
+
+        // Repair duplicate class attributes from older apply runs.
+        $line = preg_replace(
+            '/<a class="itm-plain-link" href="([^"]*)" class="/i',
+            '<a href="$1" class="itm-plain-link ',
             $line
         );
-        return is_string($patched) ? $patched : $line;
+
+        return $line;
     }
 }
 
@@ -121,6 +164,37 @@ if (!function_exists('itm_module_decorated_links_apply_fix_return_strings')) {
     }
 }
 
+if (!function_exists('itm_module_decorated_links_apply_sweep_content')) {
+  function itm_module_decorated_links_apply_sweep_content($content)
+    {
+        require_once __DIR__ . '/itm_module_decorated_links_report.php';
+        $result = '';
+        $offset = 0;
+        $length = strlen($content);
+        while ($offset < $length) {
+            $nextLf = strpos($content, "\n", $offset);
+            if ($nextLf === false) {
+                $line = substr($content, $offset);
+                $break = '';
+            } elseif ($nextLf > $offset && $content[$nextLf - 1] === "\r") {
+                $line = substr($content, $offset, $nextLf - 1 - $offset);
+                $break = "\r\n";
+            } else {
+                $line = substr($content, $offset, $nextLf - $offset);
+                $break = "\n";
+            }
+
+            if (itm_module_decorated_links_line_is_decorated_anchor($line)) {
+                $line = itm_module_decorated_links_apply_fix_line($line);
+            }
+
+            $result .= $line . $break;
+            $offset = $nextLf === false ? $length : $nextLf + 1;
+        }
+        return $result;
+    }
+}
+
 if (!function_exists('itm_module_decorated_links_apply_file')) {
     /**
      * @param array<int, int> $lineNumbers 1-based lines to patch (0 = whole-file string pass only)
@@ -134,36 +208,55 @@ if (!function_exists('itm_module_decorated_links_apply_file')) {
         }
         $original = $content;
         $content = itm_module_decorated_links_apply_fix_return_strings($content);
+        $content = itm_module_decorated_links_apply_sweep_content($content);
 
-        $lines = preg_split('/\R/', $content);
-        if (!is_array($lines)) {
-            return ['changed' => false, 'lines' => []];
-        }
-
-        $touched = [];
         $uniqueLines = array_values(array_unique(array_filter(array_map('intval', $lineNumbers), static function ($n) {
             return $n > 0;
         })));
-        foreach ($uniqueLines as $lineNo) {
-            $idx = $lineNo - 1;
-            if (!isset($lines[$idx])) {
-                continue;
+        if ($uniqueLines === []) {
+            $changed = $content !== $original;
+            if ($changed && $write) {
+                file_put_contents($filePath, $content);
             }
-            $fixed = itm_module_decorated_links_apply_fix_line($lines[$idx]);
-            if ($fixed !== $lines[$idx]) {
-                $lines[$idx] = $fixed;
-                $touched[] = $lineNo;
-            }
+            return ['changed' => $changed, 'lines' => []];
         }
 
-        $newContent = implode("\n", $lines);
-        if (strpos($original, "\r\n") !== false) {
-            $newContent = str_replace("\n", "\r\n", $newContent);
+        $want = array_fill_keys($uniqueLines, true);
+        $touched = [];
+        $result = '';
+        $offset = 0;
+        $length = strlen($content);
+        $lineNo = 1;
+
+        while ($offset < $length) {
+            $nextLf = strpos($content, "\n", $offset);
+            if ($nextLf === false) {
+                $line = substr($content, $offset);
+                $break = '';
+            } elseif ($nextLf > $offset && $content[$nextLf - 1] === "\r") {
+                $line = substr($content, $offset, $nextLf - 1 - $offset);
+                $break = "\r\n";
+            } else {
+                $line = substr($content, $offset, $nextLf - $offset);
+                $break = "\n";
+            }
+
+            if (isset($want[$lineNo])) {
+                $fixed = itm_module_decorated_links_apply_fix_line($line);
+                if ($fixed !== $line) {
+                    $line = $fixed;
+                    $touched[] = $lineNo;
+                }
+            }
+
+            $result .= $line . $break;
+            $offset = $nextLf === false ? $length : $nextLf + 1;
+            $lineNo++;
         }
 
-        $changed = $newContent !== $original;
+        $changed = $result !== $original;
         if ($changed && $write) {
-            file_put_contents($filePath, $newContent);
+            file_put_contents($filePath, $result);
         }
         return ['changed' => $changed, 'lines' => $touched];
     }

@@ -65,6 +65,10 @@ if (!function_exists('itm_module_decorated_links_line_is_decorated_anchor')) {
         if (preg_match('/\bclass\s*=\s*["\'][^"\']*\bbtn\b/i', $line)) {
             return false;
         }
+        // Why: email HTML built inside double-quoted PHP strings is not list UI markup.
+        if (preg_match('/(\$\w+\s*\.=\s*"|echo\s+")[^;]*<a\s/i', $line)) {
+            return false;
+        }
         if (strpos($line, 'itm-plain-link') !== false) {
             return false;
         }

@@ -337,7 +337,7 @@ function cr_render_cell_value($table, $field, $value) {
         $html = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
         foreach ($photos as $photo) {
             $photoUrl = cr_photo_public_path($photo);
-            $html .= '<a href="' . sanitize($photoUrl) . '" target="_blank">'
+            $html .= '<a class="itm-plain-link" href="' . sanitize($photoUrl) . '" target="_blank">'
                 . '<img src="' . sanitize($photoUrl) . '" alt="Photo" style="width:48px;height:48px;object-fit:cover;border-radius:4px;border:1px solid #d0d7de;">'
                 . '</a>';
         }
@@ -354,8 +354,7 @@ function cr_render_cell_value($table, $field, $value) {
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
         $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
-            return ((int)$value === 1) ? '�
-' : '❌';
+            return ((int)$value === 1) ? '✅' : '❌';
         }
     }
 
@@ -1359,8 +1358,7 @@ if (!isset($crud_title)) {
                     ?>
                         <div class="form-group">
                             <?php if ($isTinyInt): ?>
-                                <!-- Skip top label for checkboxes to avoid duplication with Active �
- -->
+                                <!-- Skip top label for checkboxes to avoid duplication with Active ✅ -->
                             <?php else: ?>
                                 <label><?php echo sanitize(cr_humanize_field($name)); ?></label>
                             <?php endif; ?>
@@ -1369,9 +1367,7 @@ if (!isset($crud_title)) {
                             <?php elseif ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
-                                    <span>Active �
- <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '�
-' : '❌'; ?></span></span>
+                                    <span>Active ✅ <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
@@ -1481,8 +1477,7 @@ document.addEventListener('change', function (event) {
     if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
     if (indicator) {
-        indicator.textContent = event.target.checked ? '�
-' : '❌';
+        indicator.textContent = event.target.checked ? '✅' : '❌';
     }
 });
 </script>

@@ -773,8 +773,7 @@ function showEmptyContextMenu(e) {
     appendContextAction("Create Year/Month/Day Structure 🗓️", () => createYearMonthDay());
     appendContextAction("Create Year 🗓️", () => createYear());
     appendContextAction("Create Months 🗓️", () => createMonths());
-    appendContextAction("Create Days �
-", () => createDays());
+    appendContextAction("Create Days 📅", () => createDays());
 
     positionContextMenu(e);
 }

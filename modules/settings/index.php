@@ -1199,7 +1199,7 @@ if (!isset($crud_title)) {
                             </div>
                         </form>
                         <?php if ($currentApiV2ScopeCatalog !== []): ?>
-                        <p class="form-hint" style="margin-top:0;margin-bottom:16px;">OpenAPI 3.0 spec (public, no secrets): <a class="itm-plain-link" href="<?php echo sanitize($currentApiV2OpenApiUrl); ?>" target="_blank" rel="noopener noreferrer"><?php echo sanitize($currentApiV2OpenApiUrl); ?></a> — open in a new tab.</p>
+                        <p class="itm-plain-link form-hint" style="margin-top:0;margin-bottom:16px;">OpenAPI 3.0 spec (public, no secrets): <a href="<?php echo sanitize($currentApiV2OpenApiUrl); ?>" target="_blank" rel="noopener noreferrer"><?php echo sanitize($currentApiV2OpenApiUrl); ?></a> — open in a new tab.</p>
                         <?php endif; ?>
                         <form method="post" style="margin-bottom:20px;display:inline;">
                             <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">

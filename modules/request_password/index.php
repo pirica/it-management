@@ -124,8 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_email_action']))
         $message .= "<p>A password change request has been submitted by <strong>$applicantName</strong> for the application: <strong>" . htmlspecialchars($record['application']) . "</strong>.</p>";
         $message .= "<p>Reason: " . htmlspecialchars($record['reason']) . "</p>";
         $message .= "<p>Please authorize or decline this request using the links below:</p>";
-        $message .= "<p><a class="itm-plain-link" href='$approveUrl' style='background-color: #2da44e; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Authorize Request</a></p>";
-        $message .= "<p><a class="itm-plain-link" href='$declineUrl' style='background-color: #cf222e; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Decline Request</a></p>";
+        $message .= "<p><a href='$approveUrl' style='background-color: #2da44e; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Authorize Request</a></p>";
+        $message .= "<p><a href='$declineUrl' style='background-color: #cf222e; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Decline Request</a></p>";
 
         // Find approver email from approvers table
         $approverTypeDesc = ($action == 'hr') ? 'HRD Approval' : 'HOD Approval';

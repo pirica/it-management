@@ -1104,14 +1104,14 @@ if (!function_exists('webmail_render_tabs')) {
         ];
         foreach (webmail_folders() as $tabFolder) {
             $class = 'webmail-tab' . ($activeTab === $tabFolder ? ' active' : '');
-            echo '<a href="index.php?folder=' . sanitize($tabFolder) . '" class="' . $class . ' itm-plain-link">';
+            echo '<a href="index.php?folder=' . sanitize($tabFolder) . '" class="itm-plain-link ' . $class . '">';
             echo sanitize($folderLabels[$tabFolder] ?? $tabFolder);
             echo '</a>';
         }
         $sigClass = 'webmail-tab' . ($activeTab === 'signatures' ? ' active' : '');
-        echo '<a href="signatures.php" class="' . $sigClass . ' itm-plain-link">Signatures</a>';
+        echo '<a href="signatures.php" class="itm-plain-link ' . $sigClass . '">Signatures</a>';
         $composeClass = 'webmail-tab' . ($activeTab === 'compose' ? ' active' : '');
-        echo '<a href="compose.php" class="' . $composeClass . ' itm-plain-link">Compose</a>';
+        echo '<a href="compose.php" class="itm-plain-link ' . $composeClass . '">Compose</a>';
     }
 }
 
