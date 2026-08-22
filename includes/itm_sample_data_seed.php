@@ -2730,6 +2730,39 @@ if (!function_exists('itm_seed_resolve_alerts_sample_created_by')) {
     }
 }
 
+if (!function_exists('itm_seed_apply_live_row_sample_defaults')) {
+    /**
+     * Why: db/02_data_sample.sql may capture soft-deleted template rows; Add sample data must insert live rows.
+     *
+     * @param array<int, string> $targetColumns
+     * @param array<int, string> $targetValues SQL literal tokens (e.g. NULL, '1', quoted strings)
+     */
+    function itm_seed_apply_live_row_sample_defaults(array &$targetColumns, array &$targetValues): void
+    {
+        $deletedIdx = array_search('`deleted_at`', $targetColumns, true);
+        if ($deletedIdx === false) {
+            return;
+        }
+
+        $deletedVal = strtoupper(trim((string)($targetValues[$deletedIdx] ?? '')));
+        if ($deletedVal === 'NULL' || $deletedVal === '') {
+            return;
+        }
+
+        $targetValues[$deletedIdx] = 'NULL';
+
+        $deletedByIdx = array_search('`deleted_by`', $targetColumns, true);
+        if ($deletedByIdx !== false) {
+            $targetValues[$deletedByIdx] = 'NULL';
+        }
+
+        $activeIdx = array_search('`active`', $targetColumns, true);
+        if ($activeIdx !== false) {
+            $targetValues[$activeIdx] = '1';
+        }
+    }
+}
+
 if (!function_exists('itm_seed_apply_alerts_sample_row_defaults')) {
     /**
      * Why: Seeded alerts must be company-global (assigned_to NULL) so every tenant user sees them in the list.
@@ -3838,6 +3871,10 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
                 && !in_array('`company_id`', $targetColumns, true)) {
                 $targetColumns[] = '`company_id`';
                 $targetValues[] = (string)(int)$companyId;
+            }
+
+            if (function_exists('itm_seed_apply_live_row_sample_defaults')) {
+                itm_seed_apply_live_row_sample_defaults($targetColumns, $targetValues);
             }
 
             if ($tableName === 'alerts' && function_exists('itm_seed_apply_alerts_sample_row_defaults')) {
