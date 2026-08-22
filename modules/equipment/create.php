@@ -2381,6 +2381,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mysqli_commit($conn);
                 require_once '../../includes/itm_search_index.php';
                 itm_search_index_after_module_save($conn, 'equipment', (int)$company_id, (int)$id);
+                require_once ROOT_PATH . 'includes/itm_cmdb.php';
+                itm_cmdb_sync_equipment($conn, (int)$company_id, (int)$id, (int)($_SESSION['employee_id'] ?? 0));
             } else {
                 mysqli_rollback($conn);
             }

@@ -1098,6 +1098,18 @@ if (!isset($crud_title)) {
                     </tbody>
                 </table>
             </div>
+
+            <?php
+            require_once ROOT_PATH . 'includes/itm_cmdb_card.php';
+            itm_cmdb_render_relationship_card(
+                $conn,
+                (int)$company_id,
+                (int)($_SESSION['employee_id'] ?? 0),
+                'idfs',
+                (int)$idf_id,
+                (string)($idf['name'] ?? '')
+            );
+            ?>
         </div>
     </div>
 </div>

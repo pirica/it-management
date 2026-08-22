@@ -2222,6 +2222,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for Problem Management + Known Error DB: schema, audit triggers, ticket link/unlink, known-error suggest, KB publish, automation/webhook slugs. See <code>docs/PROBLEM_MANAGEMENT.md</code>.</td>
                     <td class="scripts-catalog-how-stub"><code>php scripts/verify_problem_management.php</code></td>
                 </tr>
+                <tr data-tags="configuration_items,configuration_item_types,configuration_item_relationships">
+                    <td><a href="verify_cmdb.php" target="_blank" rel="nofollow noreferrer">verify_cmdb.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">configuration_items</span></span></td>
+                    <td>Regression for CMDB Lite: schema, relationship cycle detection, impact BFS graph, API entry.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_cmdb.php</code></td>
+                </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_request_password.php" target="_blank" rel="nofollow noreferrer">verify_request_password.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

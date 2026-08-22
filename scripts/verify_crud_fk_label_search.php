@@ -481,10 +481,10 @@ $bookmarkId = 0;
 $bookmarkFolderName = 'FkSearchBkmFolder' . substr(md5((string)microtime(true)), 0, 8);
 $stmtBkmFolder = mysqli_prepare(
     $conn,
-    'INSERT INTO bookmark_folders (company_id, employee_id, name, active) VALUES (?, 1, ?, 1)'
+    'INSERT INTO bookmark_folders (company_id, employee_id, name, name_hash, active) VALUES (?, 1, ?, SHA2(?, 256), 1)'
 );
 if ($stmtBkmFolder) {
-    mysqli_stmt_bind_param($stmtBkmFolder, 'is', $companyId, $bookmarkFolderName);
+    mysqli_stmt_bind_param($stmtBkmFolder, 'iss', $companyId, $bookmarkFolderName, $bookmarkFolderName);
     if (mysqli_stmt_execute($stmtBkmFolder)) {
         $bookmarkFolderId = (int)mysqli_insert_id($conn);
     }
@@ -495,11 +495,11 @@ if ($bookmarkFolderId > 0) {
     $bookmarkUrl = 'https://example.com/fk-search-probe';
     $stmtBkm = mysqli_prepare(
         $conn,
-        'INSERT INTO bookmarks (company_id, employee_id, folder_id, title, url, shared, active)
-         VALUES (?, 1, ?, ?, ?, 0, 1)'
+        'INSERT INTO bookmarks (company_id, employee_id, folder_id, title, url, url_hash, shared, active)
+         VALUES (?, 1, ?, ?, ?, SHA2(?, 256), 0, 1)'
     );
     if ($stmtBkm) {
-        mysqli_stmt_bind_param($stmtBkm, 'iiss', $companyId, $bookmarkFolderId, $bookmarkTitle, $bookmarkUrl);
+        mysqli_stmt_bind_param($stmtBkm, 'iisss', $companyId, $bookmarkFolderId, $bookmarkTitle, $bookmarkUrl, $bookmarkUrl);
         if (mysqli_stmt_execute($stmtBkm)) {
             $bookmarkId = (int)mysqli_insert_id($conn);
         }
