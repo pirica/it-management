@@ -194,8 +194,18 @@ $statuses = itm_change_request_statuses();
                         ?></td>
                         <td><?php echo sanitize((string)($row['source_ci_icon'] ?? '') . ' ' . (string)($row['source_ci_name'] ?? '')); ?></td>
                         <td class="itm-actions-cell" data-itm-actions-origin="1">
-                            <a class="btn btn-sm" href="view.php?id=<?php echo (int)($row['id'] ?? 0); ?>" title="View">🔎</a>
-                            <a class="btn btn-sm" href="edit.php?id=<?php echo (int)($row['id'] ?? 0); ?>" title="Edit">✏️</a>
+                            <div class="itm-actions-wrap">
+                                <a class="btn btn-sm" href="view.php?id=<?php echo (int)($row['id'] ?? 0); ?>" title="View">🔎</a>
+                                <a class="btn btn-sm" href="edit.php?id=<?php echo (int)($row['id'] ?? 0); ?>" title="Edit">✏️</a>
+                                <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
+                                    <input type="hidden" name="id" value="<?php echo (int)($row['id'] ?? 0); ?>">
+                                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                                    <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) {
+                                        itm_crud_render_delete_hidden_audit_inputs();
+                                    } ?>
+                                    <button class="btn btn-sm btn-danger" type="submit" title="Delete">🗑️</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; endif; ?>

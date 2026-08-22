@@ -31,9 +31,10 @@ IT change requests scoped per tenant with blast-radius CI selection from the CMD
 
 ## 7. File Structure
 
-- **index.php** — list + search; empty-state **Add sample data** when tenant has zero rows (`itm_seed_insert_change_requests_sample_rows()` via `itm_seed_table_from_database_sql()`).
-- **create.php** — create/edit form (edit.php wrapper)
-- **view.php**, **delete.php**
+- **index.php** — list + search; empty-state **Add sample data**; row actions: view, edit, delete (POST soft-delete)
+- **create.php** — create/edit form (`edit.php` wrapper)
+- **view.php** — affected CI list + mini impact graph; toolbar delete POST to `delete.php`
+- **delete.php** — soft-delete handler (CSRF + `company_id` scope)
 
 ## 8. Multi-Tenant Rules
 

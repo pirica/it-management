@@ -38,6 +38,7 @@ $affectedRows = itm_change_request_list_affected_rows($conn, $companyId, $id);
 $graph = itm_cmdb_build_impact_graph($conn, $companyId, $sourceCiId);
 $crud_title = 'Change Request';
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $companyId, $employeeId, 'change_requests', $crud_title);
+$csrfToken = itm_get_csrf_token();
 $ciViewBase = BASE_URL . 'modules/configuration_items/view.php?id=';
 ?>
 <!DOCTYPE html>
@@ -65,6 +66,14 @@ $ciViewBase = BASE_URL . 'modules/configuration_items/view.php?id=';
                 <h1 title="View change request">🔎</h1>
                 <div style="display:flex;gap:8px;">
                     <a href="edit.php?id=<?php echo (int)$id; ?>" class="btn btn-sm" title="Edit">✏️</a>
+                    <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this record?');">
+                        <input type="hidden" name="id" value="<?php echo (int)$id; ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <?php if (function_exists('itm_crud_render_delete_hidden_audit_inputs')) {
+                            itm_crud_render_delete_hidden_audit_inputs();
+                        } ?>
+                        <button class="btn btn-sm btn-danger" type="submit" title="Delete">🗑️</button>
+                    </form>
                     <a href="index.php" class="btn btn-sm" title="Back">🔙</a>
                 </div>
             </div>
