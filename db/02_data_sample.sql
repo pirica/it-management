@@ -780,7 +780,7 @@ INSERT INTO `monthly_budgets` (`company_id`, `annual_budget_id`, `month`, `amoun
 (1, '1', '1', '4000.00', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
 
 INSERT INTO `note_labels` (`company_id`, `employee_id`, `note_id`, `label`, `label_hash`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
-(1, '1', '1', 'Sample e1a85a2c', 'Sample 55cb1f02', '0', '1', '2026-08-21 02:10:41', NULL, '2026-08-21 02:10:38', NULL, '2026-08-21 02:10:41');
+(1, '1', '1', 'Sample e1a85a2c', 'Sample 55cb1f02', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
 
 INSERT INTO `notes` (`company_id`, `employee_id`, `title`, `title_hash`, `content`, `is_checklist`, `checklist_json`, `images_json`, `color`, `is_pinned`, `is_important`, `is_archived`, `reminder_at`, `shared_with_json`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
 (1, '1', 'Sample 594db80d', '4a9f2aa5b5022b17f5e9c9702df70345a8120a0a82ba3f87e801865588758aa4', 'Sample bb54f03d', '1', NULL, NULL, 'Sample 5ca6e44c', '1', '1', '0', '2026-08-16 10:37:51', NULL, '1', NULL, NULL, NULL, '2026-08-21 02:10:38', NULL, NULL);
