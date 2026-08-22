@@ -150,8 +150,7 @@ if (!isset($crud_title)) {
                                 <?php $itmAccessId = (int)($itmAccess['id'] ?? 0); ?>
                                 <tr>
                                     <td><?php echo sanitize((string)($itmAccess['name'] ?? '')); ?></td>
-                                    <td><?php echo isset($grantedAccessMap[$itmAccessId]) ? '�
-' : '❌'; ?></td>
+                                    <td><?php echo isset($grantedAccessMap[$itmAccessId]) ? '✅' : '❌'; ?></td>
                                 </tr>
                             <?php endforeach; ?>
                             </tbody>

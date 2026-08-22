@@ -580,8 +580,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
                         $values[$col] = 'NULL';
                     } elseif (in_array($col, ['duplicate', 'on_contacts', 'on_orgchart'], true) || (isset($columnTypes[$col]) && strpos($columnTypes[$col], 'tinyint') !== false)) {
                         $normalizedBool = strtolower($value);
-                        if (in_array($normalizedBool, ['1', 'active', 'yes', 'true', 'on', '�
-'], true)) {
+                        if (in_array($normalizedBool, ['1', 'active', 'yes', 'true', 'on', '✅'], true)) {
                             $values[$col] = '1';
                         } else {
                             $values[$col] = '0';
@@ -966,8 +965,7 @@ if (!isset($crud_title)) {
                                         <?php if ($col === 'duplicate'): ?>
                                             <?php echo ((int)($row[$col] ?? 0) === 1) ? '⚠️ Duplicate (' . sanitize(implode(', ', $duplicateReasons)) . ')' : '—'; ?>
                                         <?php else: ?>
-                                            <?php echo ((int)($row[$col] ?? 0) === 1) ? '�
-' : '❌'; ?>
+                                            <?php echo ((int)($row[$col] ?? 0) === 1) ? '✅' : '❌'; ?>
                                         <?php endif; ?>
                                     <?php elseif (itm_is_date_field_name($col)): ?><?php echo sanitize(itm_format_date_display($row[$col] ?? '')); ?>
                                     <?php elseif ($col === 'comments' && trim((string)($row[$col] ?? '')) !== ''): ?><span data-itm-export-value="<?php echo sanitize((string)($row[$col] ?? '')); ?>"><a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a></span>

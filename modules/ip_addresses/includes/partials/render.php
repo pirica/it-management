@@ -290,8 +290,7 @@ if (!isset($crud_title)) {
                             <?php elseif ($isTinyInt): ?>
                                 <label class="itm-checkbox-control">
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
-                                    <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '�
-' : '❌'; ?></span></span>
+                                    <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
                             <?php elseif (preg_match('/(_by|_by_user_id)$/', (string)$name)): ?>
                                 <?php
@@ -395,8 +394,7 @@ document.addEventListener('click', function (event) {
 document.addEventListener('change', function (event) {
     if (!event.target.matches('.itm-checkbox-control input[type="checkbox"]')) return;
     const indicator = event.target.closest('.itm-checkbox-control')?.querySelector('.itm-check-indicator');
-    if (indicator) { indicator.textContent = event.target.checked ? '�
-' : '❌'; }
+    if (indicator) { indicator.textContent = event.target.checked ? '✅' : '❌'; }
 });
 </script>
 <script>

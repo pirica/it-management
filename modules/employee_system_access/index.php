@@ -311,8 +311,7 @@ if (!isset($crud_title)) {
                                 <?php endif; ?>
                             </td>
                             <?php foreach (array_keys($accessLabelsById) as $accessId): ?>
-                                <td><?php echo isset($row['grants'][$accessId]) ? '�
-' : '❌'; ?></td>
+                                <td><?php echo isset($row['grants'][$accessId]) ? '✅' : '❌'; ?></td>
                             <?php endforeach; ?>
                             <td class="itm-actions-cell" data-itm-actions-origin="1">
                                 <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['employee_id']; ?>">🔎</a>

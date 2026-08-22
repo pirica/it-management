@@ -82,7 +82,7 @@ if ($fpExt !== '' && !preg_match('/\.' . preg_quote($fpExt, '/') . '$/i', $fpDow
             <?php endif; ?>
         </tbody>
     </table>
-    <p class="itm-dropzone-hint" style="margin-top:12px;">To move this file between folders, open the <a class="itm-plain-link" href="index.php">Gallery</a> and drag the file card (⠿ handle) onto a folder row.</p>
+    <p class="itm-plain-link itm-dropzone-hint" style="margin-top:12px;">To move this file between folders, open the <a href="index.php">Gallery</a> and drag the file card (⠿ handle) onto a folder row.</p>
     <p style="margin-top:16px;">
         <a href="index.php" class="btn" title="Back">🔙</a>
         <a href="edit.php?id=<?php echo $fpPlanId; ?>" class="btn btn-primary" title="Edit">✏️</a>
