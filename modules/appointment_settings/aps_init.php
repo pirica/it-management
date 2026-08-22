@@ -108,3 +108,14 @@ function aps_actions_cell_close()
 {
     echo '</div></td>';
 }
+
+function aps_visit_reason_return_path(): string
+{
+    return 'list_all.php';
+}
+
+function aps_redirect_after_visit_reason(string $message): void
+{
+    header('Location: ' . aps_visit_reason_return_path() . '?msg=' . rawurlencode($message));
+    exit;
+}

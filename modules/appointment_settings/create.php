@@ -17,10 +17,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, 'isiiii', $company_id, $name, $sortOrder, $isActive, $employee_id, $employee_id);
-                mysqli_stmt_execute($stmt);
+                if (@mysqli_stmt_execute($stmt)) {
+                    mysqli_stmt_close($stmt);
+                    aps_redirect_after_visit_reason('Visit reason added.');
+                }
                 mysqli_stmt_close($stmt);
-                header('Location: index.php?msg=' . rawurlencode('Visit reason added.'));
-                exit;
+                aps_redirect_after_visit_reason('Could not add visit reason (name may already exist for this company).');
             }
         }
     }
@@ -112,7 +114,7 @@ foreach ($hours as $dow => $hourRow) {
 ?>
 <div class="card">
     <h1 title="Create record">➕</h1>
-    <p><a href="index.php" class="btn btn-sm" title="Back">🔙</a></p>
+    <p><a href="<?php echo $kind === 'visit_reason' ? 'list_all.php' : 'index.php'; ?>" class="btn btn-sm" title="Back">🔙</a></p>
     <?php if ($kind === 'visit_reason'): ?>
     <form method="post" action="create.php?kind=visit_reason">
         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">

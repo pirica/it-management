@@ -67,7 +67,8 @@ N/A — HTML forms only. Booking API reads configuration tables indirectly via `
 ## 7. File Structure
 
 - **index.php** — configuration hub (tables only)
-- **create.php**, **edit.php**, **view.php**, **delete.php** — per-entity CRUD
+- **list_all.php** — visit reasons list (search, sort, pagination) for the booking dropdown *What is the reason for your appointment?*
+- **create.php**, **edit.php**, **view.php**, **delete.php** — per-entity CRUD (`kind=`); visit-reason saves redirect to **list_all.php**
 - **aps_init.php** — bootstrap + layout helpers
 - **includes/itm_appointment_settings_admin.php** — ensure defaults, admin list helpers (`*_admin` loaders include inactive rows where noted)
 
@@ -121,6 +122,7 @@ php -l includes/itm_appointment_settings_admin.php
 |------|-----|---------------------|
 | Efficiency | No bulk “save all hours” grid | Optional second tab or restore grid edit for weekly tune-ups |
 | Visit reasons | No drag sort | Reorder `sort_order` in UI |
+| Visit reasons | Companies 2–5 empty on old DBs | `php scripts/apply_appointment_visit_reasons_replicate.php --apply` or re-import `db/02_data.sql` (seeds now run before `@replicate_source_company_id`) |
 | Validation | Duplicate reason names | Optional UNIQUE per company or warn on create |
 | Settings | Delete settings row | Hide 🗑️ or confirm + auto re-ensure; gate booking on `active` |
 | Types | Edit name disabled | By design — only `active`; document labels in UI copy |

@@ -11,7 +11,9 @@ aps_require_permission($conn, 'delete');
 
 $kind = trim((string)($_POST['kind'] ?? ''));
 $id = (int)($_POST['id'] ?? 0);
-$redirect = 'index.php';
+$redirect = trim((string)($_POST['return'] ?? '')) === 'list_all' && $kind === 'visit_reason'
+    ? 'list_all.php'
+    : 'index.php';
 
 if ($id <= 0 || $kind === '') {
     header('Location: ' . $redirect);
