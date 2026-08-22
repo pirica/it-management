@@ -83,6 +83,19 @@ if (!isset($crud_title)) {
                     <?php endif; ?>
                 </div>
             </div>
+            <?php if ($item): ?>
+            <?php
+            require_once ROOT_PATH . 'includes/itm_cmdb_card.php';
+            itm_cmdb_render_relationship_card(
+                $conn,
+                (int)$company_id,
+                (int)($_SESSION['employee_id'] ?? 0),
+                'system_access',
+                (int)$item['id'],
+                (string)($item['name'] ?? '')
+            );
+            ?>
+            <?php endif; ?>
         </div>
     </div>
 </div>

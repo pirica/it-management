@@ -357,6 +357,14 @@ function itm_ipam_after_crud_save(
         }
         require_once __DIR__ . '/itm_search_index.php';
         itm_search_index_after_module_save($conn, 'ip_addresses', $company_id, $recordId);
+        if ($equipmentId > 0) {
+            require_once __DIR__ . '/itm_cmdb.php';
+            $empId = (int)($_SESSION['employee_id'] ?? 0);
+            $eqCiId = itm_cmdb_sync_equipment($conn, $company_id, $equipmentId, $empId);
+            if ($eqCiId > 0) {
+                itm_cmdb_link_equipment_subnet_relationships($conn, $company_id, $equipmentId, $eqCiId, $empId);
+            }
+        }
         return;
     }
 
@@ -389,5 +397,8 @@ function itm_ipam_after_crud_save(
                 }
             }
         }
+        require_once __DIR__ . '/itm_cmdb.php';
+        $empId = (int)($_SESSION['employee_id'] ?? 0);
+        itm_cmdb_sync_ip_subnet($conn, $company_id, $subnetId, $empId);
     }
 }

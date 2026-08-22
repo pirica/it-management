@@ -353,6 +353,19 @@ if (!isset($crud_title)) {
                 </div>
                 <?php require $ipSubnetsModuleDir . '/subnet_view_stats.php'; ?>
                 <?php require $ipSubnetsModuleDir . '/subnet_view_ips.php'; ?>
+                <?php
+                if (!empty($data['id'])) {
+                    require_once ROOT_PATH . 'includes/itm_cmdb_card.php';
+                    itm_cmdb_render_relationship_card(
+                        $conn,
+                        (int)$company_id,
+                        (int)($_SESSION['employee_id'] ?? 0),
+                        'ip_subnets',
+                        (int)$data['id'],
+                        (string)($data['cidr'] ?? '')
+                    );
+                }
+                ?>
             <?php endif; ?>
         </div>
     </div>

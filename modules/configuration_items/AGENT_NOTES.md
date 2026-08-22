@@ -19,7 +19,8 @@ Tenant-scoped configuration items (CIs) and dependency relationships for blast-r
 
 - Edge semantics: `parent_ci_id` is upstream/provider; `child_ci_id` is downstream/dependent (`depends_on` = child depends on parent).
 - Cycle detection on add via `itm_cmdb_would_create_cycle()` in `includes/itm_cmdb.php`.
-- Auto-sync: `itm_cmdb_sync_equipment()` on equipment save; `itm_cmdb_sync_idf()` on IDF position save (also links hosted equipment with `hosts`).
+- Auto-sync: equipment, IDF (`hosts` for rack equipment), **ip_subnets** (`connects_to` from equipment IPs), **system_access** (Application CI type).
+- Change requests: `modules/change_requests/` picks affected CIs from impact graph (`includes/itm_change_requests.php`).
 - `external_ref` format: `{module_slug}:{record_id}` (e.g. `equipment:123`).
 
 ## 5. UI Behavior Requirements
