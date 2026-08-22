@@ -22,17 +22,18 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         if (!in_array($defaultModality, ['remote', 'in_person'], true)) {
             $defaultModality = 'remote';
         }
-        $isActive = !empty($_POST['active']) ? 1 : 0;
+        $bookingEnabled = !empty($_POST['booking_enabled']) ? 1 : 0;
+        $isActive = 1;
         if (strlen($bookableStart) === 5) {
             $bookableStart .= ':00';
         }
         if (strlen($bookableEnd) === 5) {
             $bookableEnd .= ':00';
         }
-        $sql = 'UPDATE appointment_settings SET timezone = ?, slot_duration_minutes = ?, bookable_start_time = ?, bookable_end_time = ?, check_in_end_buffer_minutes = ?, default_appointment_modality = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
+        $sql = 'UPDATE appointment_settings SET timezone = ?, slot_duration_minutes = ?, bookable_start_time = ?, bookable_end_time = ?, check_in_end_buffer_minutes = ?, default_appointment_modality = ?, booking_enabled = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
         $stmt = mysqli_prepare($conn, $sql);
         if ($stmt) {
-            mysqli_stmt_bind_param($stmt, 'sisssisiiii', $timezone, $slotMinutes, $bookableStart, $bookableEnd, $buffer, $defaultModality, $isActive, $employee_id, $postId, $company_id);
+            mysqli_stmt_bind_param($stmt, 'sisssisiiii', $timezone, $slotMinutes, $bookableStart, $bookableEnd, $buffer, $defaultModality, $bookingEnabled, $isActive, $employee_id, $postId, $company_id);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
             header('Location: index.php?msg=' . rawurlencode('Settings saved.'));
@@ -219,12 +220,14 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
                 </select>
             </div>
             <div class="form-group">
-                <label>Active</label>
+                <label>Enable appointment booking</label>
                 <label class="itm-checkbox-control">
-                    <input type="checkbox" name="active" value="1"<?php echo (int)($row['active'] ?? 0) === 1 ? ' checked' : ''; ?>>
-                    <span>Active <span class="itm-check-indicator" aria-hidden="true"><?php echo (int)($row['active'] ?? 0) === 1 ? '✅' : '❌'; ?></span></span>
+                    <input type="checkbox" name="booking_enabled" value="1"<?php echo itm_appointment_settings_booking_enabled($row) ? ' checked' : ''; ?>>
+                    <span>Enable appointment booking <span class="itm-check-indicator" aria-hidden="true"><?php echo itm_appointment_settings_booking_enabled($row) ? '✅' : '❌'; ?></span></span>
                 </label>
+                <p class="form-hint">When disabled, employees see a message on the booking page and cannot schedule or reschedule.</p>
             </div>
+            <input type="hidden" name="active" value="1">
         <?php elseif ($kind === 'business_hour'): ?>
             <div class="form-group">
                 <label for="display_label">Label</label>

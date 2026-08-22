@@ -45,6 +45,8 @@ class AppointmentModalitySampleTest extends TestCase
     public function testSettingsBookingEnabledRequiresActiveRow(): void
     {
         $this->assertFalse(itm_appointment_settings_booking_enabled(null));
+        $this->assertFalse(itm_appointment_settings_booking_enabled(['booking_enabled' => 0]));
+        $this->assertTrue(itm_appointment_settings_booking_enabled(['booking_enabled' => 1]));
         $this->assertFalse(itm_appointment_settings_booking_enabled(['active' => 0]));
         $this->assertTrue(itm_appointment_settings_booking_enabled(['active' => 1]));
     }

@@ -27,8 +27,8 @@ INSERT INTO `appointment_business_hours` (`company_id`, `day_of_week`, `display_
 (1, 5, 'Fri', '10:00:00', '18:00:00', 0, 1, 1, '{"in_person":1,"remote":1}', 1, '2026-01-01 00:00:01'),
 (1, 6, 'Sat', NULL, NULL, 1, 0, 0, '{"in_person":0,"remote":0}', 1, '2026-01-01 00:00:01');
 
-INSERT INTO `appointment_settings` (`company_id`, `timezone`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `default_appointment_modality`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
-(1, 'US/Central', '60', '09:00:00', '14:00:00', '30', 'remote', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
+INSERT INTO `appointment_settings` (`company_id`, `timezone`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `default_appointment_modality`, `booking_enabled`, `active`, `deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) VALUES
+(1, 'US/Central', '60', '09:00:00', '14:00:00', '30', 'remote', '1', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
 
 INSERT INTO `appointment_type` (`company_id`, `name`, `label`, `active`, `created_at`) VALUES
 (1, 'in_person', 'In-person', 1, '2026-01-01 00:00:01'),

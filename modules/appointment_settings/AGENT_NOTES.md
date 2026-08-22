@@ -6,7 +6,7 @@ Tenant **administration** for `modules/appointments/`: maintain `appointment_set
 
 ## 2. Key Tables
 
-- **appointment_settings** — one row per company: timezone, slot length, bookable window, check-in buffer, `default_appointment_modality` (`remote` default when both types allowed), `active`); **no** company-level In Person / Remote columns (modality on `appointment_business_hours` only)
+- **appointment_settings** — one row per company: timezone, slot length, bookable window, check-in buffer, `default_appointment_modality` (`remote` default when both types allowed), **`booking_enabled`** (employee booking on/off), `active` (scaffold row lifecycle); modality on `appointment_business_hours` only
 - **appointment_business_hours** — one row per `day_of_week` (0–6): `allows_in_person`, `allows_remote`, `allowed_types_json` (per-type flags keyed by `appointment_type.name`), open/close, `is_closed`
 - **appointment_visit_reasons** — booking dropdown labels (`sort_order`, `active`)
 - **appointment_type** — `name` (slug), `label` (UI), `active`; core `in_person` / `remote` used by booking defaults; custom types get columns on business-hours hub and booking when enabled per day
@@ -42,7 +42,9 @@ Four read-only tables with standard actions:
 | Appointment types | ➕ `create.php?kind=appointment_type` | `view.php?kind=appointment_type&id=` | `edit.php?kind=appointment_type&id=` (active only) | 🗑️ all rows; core disabled in UI + blocked in `delete.php`; custom types hard-deleted when unreferenced |
 
 - Flash messages via `?msg=` query string after redirect.
-- Company settings hub table columns: **Timezone**, **Slot (min)**, **Active**, **Actions** — modality is configured on **business hours** rows only.
+- Company settings hub table columns: **Timezone**, **Slot (min)**, **Booking** (Enabled/Disabled from `booking_enabled`), **Active**, **Actions** — modality is configured on **business hours** rows only.
+- Hub header (edit permission): **Booking** badge plus ✅/❌ quick toggle POST (`booking_toggle` on `index.php`).
+- Settings **edit.php**: **Enable appointment booking** checkbox maps to `booking_enabled`; `active` stays `1` via hidden input unless soft-deleted.
 - Actions column: `itm-actions-cell` + `data-itm-actions-origin="1"`.
 
 ### Other entry files

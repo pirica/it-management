@@ -137,7 +137,7 @@ if ($bookableDays < 1) {
 }
 
 if (!itm_appointment_settings_booking_enabled($settings)) {
-    appt_verify_fail('appointment_settings.active should be 1 for company 1 seeds');
+    appt_verify_fail('appointment_settings.booking_enabled should be 1 for company 1 seeds');
 } else {
     appt_verify_pass('appointment_settings booking enabled for company 1');
 }
@@ -158,7 +158,7 @@ if ($pastSlotViolations > 0) {
 
 $settingsRowId = (int)($settings['id'] ?? 0);
 if ($settingsRowId > 0) {
-    $disableStmt = mysqli_prepare($conn, 'UPDATE appointment_settings SET active = 0 WHERE id = ? AND company_id = ?');
+    $disableStmt = mysqli_prepare($conn, 'UPDATE appointment_settings SET booking_enabled = 0 WHERE id = ? AND company_id = ?');
     if ($disableStmt) {
         mysqli_stmt_bind_param($disableStmt, 'ii', $settingsRowId, $companyId);
         mysqli_stmt_execute($disableStmt);
@@ -166,18 +166,18 @@ if ($settingsRowId > 0) {
     }
     $disabledWeek = itm_appointment_build_week_slots($conn, $companyId, date('Y-m-d'));
     if (empty($disabledWeek['booking_disabled'])) {
-        appt_verify_fail('Inactive appointment_settings must return booking_disabled week_slots payload');
+        appt_verify_fail('Disabled appointment_settings.booking_enabled must return booking_disabled week_slots payload');
     } else {
-        appt_verify_pass('Inactive appointment_settings blocks week_slots');
+        appt_verify_pass('Disabled appointment_settings.booking_enabled blocks week_slots');
     }
-    $enableStmt = mysqli_prepare($conn, 'UPDATE appointment_settings SET active = 1 WHERE id = ? AND company_id = ?');
+    $enableStmt = mysqli_prepare($conn, 'UPDATE appointment_settings SET booking_enabled = 1 WHERE id = ? AND company_id = ?');
     if ($enableStmt) {
         mysqli_stmt_bind_param($enableStmt, 'ii', $settingsRowId, $companyId);
         mysqli_stmt_execute($enableStmt);
         mysqli_stmt_close($enableStmt);
     }
 } else {
-    appt_verify_fail('Could not toggle appointment_settings.active for inactive gate probe');
+    appt_verify_fail('Could not toggle appointment_settings.booking_enabled for inactive gate probe');
 }
 
 $icsSample = itm_appointment_build_ics_vevent(
