@@ -33,6 +33,8 @@ if (!function_exists('itm_module_access_always_allowed_slugs')) {
             'notifications',
             // Why: Personal notification inbox linked from the bell; not company-gated.
             'employee_notifications',
+            // Why: Save-view JSON API is invoked from tickets/equipment/expenses list pages.
+            'saved_report_views',
         ];
     }
 }

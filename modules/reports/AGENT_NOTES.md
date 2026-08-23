@@ -27,6 +27,7 @@ This module is read-only and aggregates data from:
 - **license_management**
 - **cost_centers** (linked to departments)
 - **scheduled_reports** (admin-managed email schedules; see `docs/SCHEDULED_REPORTS.md`)
+- **saved_report_views** (user-saved list filters/columns; **My reports** section on index)
 
 **Reports Hub charts (phase 2):**
 
@@ -42,6 +43,15 @@ This module is read-only and aggregates data from:
 - **UI:** [modules/reports/index.php](http://localhost/it-management/modules/reports/index.php) — admins only (`itm_is_admin($conn, $employee_id)`). Modal POST actions `save_scheduled_report` / `delete_scheduled_report`.
 - **Runner:** `includes/itm_scheduled_reports.php`; cron `php scripts/run_scheduled_reports.php`.
 - **Verify:** `php scripts/verify_scheduled_reports.php` — [browser](http://localhost/it-management/scripts/verify_scheduled_reports.php?run=1).
+- **Saved views:** schedule dropdown and email runner also accept `report_slug` `saved_view:{id}` (links `scheduled_reports.saved_view_id`).
+
+## My reports (saved list views)
+
+- **Table:** `saved_report_views` — per-user filter/column JSON for `tickets`, `equipment`, `expenses`; `shared_scope` private | department | company.
+- **Save UI:** 💾 control on those modules’ list search rows (`includes/itm_saved_reports_ui.php`).
+- **Hub section:** `#my-saved-reports` on [modules/reports/index.php](http://localhost/it-management/modules/reports/index.php) — open list, JSON run link, schedule (admin), delete (owner).
+- **API:** [saved_report_views/api.php?action=run&id=](http://localhost/it-management/modules/saved_report_views/api.php?action=run&id=1) (session + rate limit).
+- **Verify:** `php scripts/verify_saved_report_views.php` — [browser](http://localhost/it-management/scripts/verify_saved_report_views.php?run=1).
 
 ---
 

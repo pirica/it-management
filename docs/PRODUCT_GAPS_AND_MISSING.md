@@ -79,7 +79,7 @@ Living inventory of **partial** and **not started** items from the Product & Arc
 | 8 | Vendor contracts | **Missing** | Module, renewal alerts, contract links |
 | 9 | Offboarding orchestration | **Missing** | Checklist tables, module, termination hooks |
 | 10 | Bespoke UX parity | **Missing** | 58 modules in `docs/list_bespoke_UI.txt` |
-| 11 | Custom report builder | **Missing** | `saved_report_views`, save-view on lists |
+| 11 | Custom report builder | **Implemented** | `saved_report_views`, save-view on tickets/equipment/expenses, Reports Hub **My reports**, `saved_report_views/api.php?action=run` |
 | 12 | Hotel promo validation | **Done** | — |
 
 ---
