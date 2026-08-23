@@ -326,16 +326,16 @@ if (isset($_GET['disposal_pending']) && (string)$_GET['disposal_pending'] === '1
     <?php endif; ?>
     <table><tbody>
         <tr><th style="width:240px;">Stage</th><td><?php echo sanitize($lifecycleStageLabel); ?></td></tr>
-        <tr><th>Depreciation start</th><td><?php echo sanitize(itm_format_cell_scalar_display($item['depreciation_start_date'] ?? '')); ?></td></tr>
+        <tr><th>Depreciation start</th><td><?php echo sanitize(itm_format_cell_scalar_display('depreciation_start_date', $item['depreciation_start_date'] ?? '', 'equipment')); ?></td></tr>
         <tr><th>Useful life (months)</th><td><?php echo sanitize((string)($item['useful_life_months'] ?? '—')); ?></td></tr>
         <tr><th>Salvage value</th><td><?php echo sanitize((string)($item['salvage_value'] ?? '—')); ?></td></tr>
         <tr><th>Book value (today)</th><td><?php echo sanitize(number_format((float)$depreciation['book_value'], 2)); ?></td></tr>
         <tr><th>Monthly depreciation</th><td><?php echo sanitize(number_format((float)$depreciation['monthly_depreciation'], 2)); ?></td></tr>
-        <tr><th>Disposal date</th><td><?php echo sanitize(itm_format_cell_scalar_display($item['disposal_date'] ?? '')); ?></td></tr>
+        <tr><th>Disposal date</th><td><?php echo sanitize(itm_format_cell_scalar_display('disposal_date', $item['disposal_date'] ?? '', 'equipment')); ?></td></tr>
         <tr><th>Disposal reason</th><td><?php echo sanitize((string)($item['disposal_reason'] ?? '')); ?></td></tr>
         <?php if ($hasPendingDisposal): ?>
         <tr><th>Pending disposal</th><td>
-            <?php echo sanitize(itm_format_cell_scalar_display($item['disposal_pending_date'] ?? '')); ?>
+            <?php echo sanitize(itm_format_cell_scalar_display('disposal_pending_date', $item['disposal_pending_date'] ?? '', 'equipment')); ?>
             — <?php echo sanitize((string)($item['disposal_pending_reason'] ?? '')); ?>
         </td></tr>
         <?php endif; ?>
@@ -384,7 +384,11 @@ if (isset($_GET['disposal_pending']) && (string)$_GET['disposal_pending'] === '1
                 }
                 ?>
                 <tr>
-                    <td><?php echo sanitize(itm_format_cell_scalar_display($event['event_date'] ?? $event['created_at'] ?? '')); ?></td>
+                    <td><?php
+                        $timelineDateValue = $event['event_date'] ?? $event['created_at'] ?? '';
+                        $timelineDateField = trim((string)($event['event_date'] ?? '')) !== '' ? 'event_date' : 'created_at';
+                        echo sanitize(itm_format_cell_scalar_display($timelineDateField, $timelineDateValue));
+                    ?></td>
                     <td><?php echo sanitize((string)($event['event_type'] ?? '')); ?></td>
                     <td><?php echo sanitize((string)($event['notes'] ?? '')); ?></td>
                     <td><?php echo sanitize($actor !== '' ? $actor : '—'); ?></td>

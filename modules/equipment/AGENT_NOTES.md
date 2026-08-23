@@ -61,6 +61,7 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 - **Supplier quick-add:** `suppliers.status_id` is NOT NULL — the equipment form passes `status_id` via `data-add-extra-fields`. [Cursor-Valid]
 - **Assignment replace policy:** One employee history row per company; assigning equipment B to an employee clears assignee on any other equipment that employee held (see **`modules/employee_assignment_history/AGENT_NOTES.md`**). [Cursor-Valid]
 - **Assign To Employee dropdown empty:** do not filter `employees` on row `active` for login eligibility — scope by `company_id` only in `equipment_fetch_employee_options()`; employment status is separate from soft-delete `active`. [Cursor-Fixed]
+- **Lifecycle date display:** `view.php` Asset lifecycle card and timeline must call `itm_format_cell_scalar_display($fieldName, $value, 'equipment')` — passing only the value triggers `ArgumentCountError` on PHP 8+. [Cursor-Fixed]
 
 ## 11. Examples of Safe Code Patterns
 
