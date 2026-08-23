@@ -280,6 +280,14 @@ if (!function_exists('itm_employee_dashboard_load_context')) {
             mysqli_stmt_close($myActivityStmt);
         }
 
+        $savedReportsSnapshot = ['count' => 0, 'previews' => []];
+        if (function_exists('has_module_access') && has_module_access($conn, $companyId, 'reports')) {
+            if (!function_exists('itm_saved_reports_dashboard_snapshot')) {
+                require_once ROOT_PATH . 'includes/itm_saved_reports.php';
+            }
+            $savedReportsSnapshot = itm_saved_reports_dashboard_snapshot($conn, $companyId, $userId, 3);
+        }
+
         return [
             'reload_required' => false,
             'file_count' => (int)$fileCount,
@@ -297,6 +305,7 @@ if (!function_exists('itm_employee_dashboard_load_context')) {
             'activity_list' => $activityList,
             'my_activity_count' => $myActivityCount,
             'private_module_counts' => itm_employee_dashboard_fetch_private_module_counts($conn, $userId, $companyId),
+            'saved_reports_snapshot' => $savedReportsSnapshot,
         ];
     }
 }

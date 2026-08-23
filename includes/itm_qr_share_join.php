@@ -189,6 +189,10 @@ function itm_qr_share_render_join_page($moduleLabel, $joinScriptPath, $accessTok
                         </tbody>
                     </table>
                 <?php endif; ?>
+            <?php elseif ($payloadType === 'saved_report_view'): ?>
+                <div class="join-saved-report-table" style="overflow-x:auto;">
+                    <?php echo (string)($payload['live_table_html'] ?? ''); ?>
+                </div>
             <?php elseif ($payloadType === 'crud_record'): ?>
                 <table class="join-table">
                     <?php $crudFields = is_array($payload['fields'] ?? null) ? $payload['fields'] : []; ?>

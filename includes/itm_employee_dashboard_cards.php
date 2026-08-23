@@ -192,6 +192,36 @@ $renderDashSection('Private', 'Personal modules with no audit trail', static fun
     }
 }, 'itm-emp-dash-section--private');
 
+$dashSavedReportsSnapshot = is_array($dash['saved_reports_snapshot'] ?? null) ? $dash['saved_reports_snapshot'] : ['count' => 0, 'previews' => []];
+$renderDashSection('Saved reports', 'Pinned list views from Reports Hub', static function ($renderDashCard) use (
+    $conn,
+    $company_id,
+    $dashSavedReportsSnapshot
+) {
+    if (!function_exists('has_module_access') || !has_module_access($conn, (int) $company_id, 'reports')) {
+        return;
+    }
+    $count = (int) ($dashSavedReportsSnapshot['count'] ?? 0);
+    $renderDashCard('modules/reports/index.php#my-saved-reports', $count, 'My saved reports', '📊');
+    $previews = is_array($dashSavedReportsSnapshot['previews'] ?? null) ? $dashSavedReportsSnapshot['previews'] : [];
+    foreach ($previews as $preview) {
+        if (!is_array($preview)) {
+            continue;
+        }
+        $label = trim((string) ($preview['name'] ?? ''));
+        if ($label === '') {
+            continue;
+        }
+        $total = (int) ($preview['total'] ?? 0);
+        $renderDashCard(
+            'modules/reports/index.php#my-saved-reports',
+            $total,
+            $label,
+            '📋'
+        );
+    }
+}, 'itm-emp-dash-section--saved-reports');
+
 $renderDashSection('Activity', 'Login history and recent actions', static function ($renderDashCard) use (
     $conn,
     $company_id,

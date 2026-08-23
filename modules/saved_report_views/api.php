@@ -65,6 +65,40 @@ if ($action === 'delete') {
     exit;
 }
 
+if ($action === 'share') {
+    $viewId = (int) ($_POST['id'] ?? 0);
+    $result = itm_saved_reports_share_create($conn, $viewId, $companyId, $employeeId);
+    if (!$result['ok']) {
+        http_response_code(403);
+    }
+    echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+if ($action === 'get') {
+    $viewId = (int) ($_GET['id'] ?? 0);
+    $row = itm_saved_reports_fetch_by_id($conn, $viewId, $companyId);
+    if (!$row || !itm_saved_reports_can_view($conn, $row, $employeeId, $companyId)) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'error' => 'Saved view not found or access denied.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+    $row = itm_saved_reports_decode_row($row);
+    echo json_encode([
+        'ok' => true,
+        'view' => [
+            'id' => (int) $row['id'],
+            'name' => (string) $row['name'],
+            'module_slug' => (string) $row['module_slug'],
+            'shared_scope' => (string) $row['shared_scope'],
+            'owner' => (int) $row['employee_id'] === $employeeId,
+            'filters' => $row['filters'] ?? [],
+            'columns' => $row['columns'] ?? [],
+        ],
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 if ($action === 'list') {
     $moduleSlug = trim((string) ($_GET['module_slug'] ?? ''));
     $rows = itm_saved_reports_list_visible($conn, $companyId, $employeeId, $moduleSlug !== '' ? $moduleSlug : null);
