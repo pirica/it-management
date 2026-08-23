@@ -25,6 +25,8 @@ if (!function_exists('itm_cmdb_render_relationship_card')) {
             itm_cmdb_sync_ip_subnet($conn, $companyId, $recordId, $employeeId);
         } elseif ($moduleSlug === 'system_access') {
             itm_cmdb_sync_system_access($conn, $companyId, $recordId, $employeeId);
+        } elseif ($moduleSlug === 'racks') {
+            itm_cmdb_sync_rack($conn, $companyId, $recordId, $employeeId);
         }
 
         $ci = itm_cmdb_find_ci_by_record($conn, $companyId, $moduleSlug, $recordId);

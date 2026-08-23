@@ -49,6 +49,8 @@ All proposals below follow existing conventions: procedural PHP, MySQLi prepared
 
 ### High-value improvements (leverage existing code)
 
+- **CMDB Lite (delivered):** `configuration_items` / `configuration_item_types` / `configuration_item_relationships`, impact SVG graph (`js/itm-cmdb-impact-graph.js`), change-request blast-radius picker, auto-sync from equipment, IDF, racks, IP subnets, and system_access (`includes/itm_cmdb.php`). Regression: `php scripts/verify_cmdb.php`. Not D3 — vanilla SVG layout only.
+
 - Extend `employee_notifications` + `email_alert_rules` patterns for SLA/automation.
 - Reuse `reports/api/helpers.php` for scheduled report payloads.
 - Reuse `itm_hotel_booking_distribution_webhooks.php` retry queue pattern for generic webhooks.

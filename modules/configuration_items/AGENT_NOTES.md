@@ -19,7 +19,8 @@ Tenant-scoped configuration items (CIs) and dependency relationships for blast-r
 
 - Edge semantics: `parent_ci_id` is upstream/provider; `child_ci_id` is downstream/dependent (`depends_on` = child depends on parent).
 - Cycle detection on add via `itm_cmdb_would_create_cycle()` in `includes/itm_cmdb.php`.
-- Auto-sync: equipment, IDF (`hosts` for rack equipment), **ip_subnets** (`connects_to` from equipment IPs), **system_access** (Application CI type).
+- Auto-sync: equipment, IDF (`hosts` for rack equipment), **racks** (`hosts` for equipment with `rack_id`), **ip_subnets** (`connects_to` from equipment IPs), **system_access** (Application CI type).
+- Equipment save sync runs on create and edit via `modules/equipment/create.php` (`edit.php` delegates to the same handler).
 - Change requests: `modules/change_requests/` picks affected CIs from impact graph (`includes/itm_change_requests.php`).
 - `external_ref` format: `{module_slug}:{record_id}` (e.g. `equipment:123`).
 
@@ -28,6 +29,7 @@ Tenant-scoped configuration items (CIs) and dependency relationships for blast-r
 - Flattened CRUD list on `index.php`; bespoke `view.php` with Details / Relationships / Impact tabs.
 - Impact tab: read-only SVG tree (org-chart style layout).
 - Equipment and IDF `view.php` embed CMDB card via `includes/itm_cmdb_card.php`.
+- **Racks** `view.php` embeds the same CMDB card; create/edit call `itm_cmdb_sync_rack()` after save.
 
 ## 6. API Actions (If Applicable)
 

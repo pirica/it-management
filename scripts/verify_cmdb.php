@@ -139,6 +139,19 @@ if (!function_exists('itm_cmdb_sync_system_access')) {
     cmdb_verify_pass('System access / application sync helper registered');
 }
 
+if (!function_exists('itm_cmdb_sync_rack')) {
+    cmdb_verify_fail('Missing itm_cmdb_sync_rack()');
+} else {
+    cmdb_verify_pass('Rack sync helper registered');
+}
+
+$rackTypeId = itm_cmdb_get_type_id_by_source($conn, $companyId, 'builtin:rack');
+if ($rackTypeId <= 0) {
+    cmdb_verify_fail('builtin:rack type missing for company 1');
+} else {
+    cmdb_verify_pass('Builtin Rack CI type seeded');
+}
+
 if (!is_file(ROOT_PATH . 'modules/change_requests/index.php')) {
     cmdb_verify_fail('Missing modules/change_requests/');
 } else {

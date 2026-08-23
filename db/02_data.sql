@@ -1314,6 +1314,14 @@ WHERE NOT EXISTS (
     WHERE t.`company_id` = c.`id` AND t.`source_slug` = 'builtin:subnet'
 );
 
+INSERT INTO `configuration_item_types` (`company_id`, `name`, `source_slug`, `icon`, `active`, `created_at`)
+SELECT c.`id`, 'Rack', 'builtin:rack', '🗂️', 1, '2026-01-01 00:00:01'
+FROM `companies` c
+WHERE NOT EXISTS (
+    SELECT 1 FROM `configuration_item_types` t
+    WHERE t.`company_id` = c.`id` AND t.`source_slug` = 'builtin:rack'
+);
+
 -- Sample configuration items per tenant (companies 1–5) for CMDB + change request demos.
 INSERT INTO `configuration_items` (`company_id`, `ci_type_id`, `name`, `active`, `created_by`, `created_at`)
 SELECT cit.`company_id`, cit.`id`, 'Sample Payroll App', 1, e.`id`, '2026-01-01 00:00:01'
