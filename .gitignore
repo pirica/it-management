@@ -3,10 +3,7 @@
 up.bat
 up.ps1
 .cursor/*
-!.cursor/rules/
-!.cursor/rules/**
-!.cursor/skills/
-!.cursor/skills/**
+!.cursor/AGENT_NOTES.md
 .phpunit.result.cache
 phpunit/.phpunit.result.cache
 phpunit/coverage/html/
