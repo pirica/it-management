@@ -905,7 +905,13 @@ function itmDocCollectApiExamples(string $rootPath): array
         'hotel_distribution_cancel.php' => 'Hotel distribution API',
         'api_v2_probe.php' => 'API v2 partner gateway',
         'api_v2_tickets_list.php' => 'API v2 partner gateway',
+        'api_v2_ticket_get.php' => 'API v2 partner gateway',
         'api_v2_ticket_create.php' => 'API v2 partner gateway',
+        'api_v2_ticket_update.php' => 'API v2 partner gateway',
+        'api_v2_equipment_list.php' => 'API v2 partner gateway',
+        'api_v2_equipment_get.php' => 'API v2 partner gateway',
+        'api_v2_equipment_create.php' => 'API v2 partner gateway',
+        'api_v2_equipment_update.php' => 'API v2 partner gateway',
     ];
 
     $examples = [];
