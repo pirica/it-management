@@ -214,7 +214,13 @@ class ApiFunctionsTest extends TestCase
             "api-examples/hotel_distribution_cancel.php",
             "api-examples/api_v2_probe.php",
             "api-examples/api_v2_tickets_list.php",
+            "api-examples/api_v2_ticket_get.php",
             "api-examples/api_v2_ticket_create.php",
+            "api-examples/api_v2_ticket_update.php",
+            "api-examples/api_v2_equipment_list.php",
+            "api-examples/api_v2_equipment_get.php",
+            "api-examples/api_v2_equipment_create.php",
+            "api-examples/api_v2_equipment_update.php",
         ];
         $this->assertSame($onDisk, count($expected), 'Expected list must match api-examples/*.php count');
         foreach ($expected as $path) {
