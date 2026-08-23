@@ -1157,9 +1157,10 @@ Run the matching `verify_*.php` after changing `includes/itm_scheduled_reports.p
 | Script | Purpose |
 |--------|---------|
 | `php scripts/verify_appointment.php` | Regression: appointment tables/triggers, `booking_lock` index, seeds, slot builder, inactive-settings gate, past-slot availability, ICS builder smoke, company 1 modality sample, `modules_registry` slugs |
+| `php scripts/verify_appointment_settings.php` | Regression: `modules/appointment_settings/` admin UX — bulk hours grid, visit-reason reorder, session flash, settings delete guard, visit-reason unique index, `appt_user_can_access_settings()` |
 | `php scripts/apply_appointment_visit_reasons_replicate.php` | Copy `appointment_visit_reasons` from company 1 to all other companies (`INSERT IGNORE` on `company_id` + `name`). Dry-run default; `--apply` or browser `?run=1&apply=1` (Admin). Live DBs that imported before visit-reason seeds moved ahead of `@replicate_source_company_id`. |
 
-Run `verify_appointment.php` when changing `modules/appointments/`, `includes/itm_appointment.php`, or appointment DDL/seeds/triggers in `db/`.
+Run `verify_appointment.php` when changing `modules/appointments/`, `includes/itm_appointment.php`, or appointment DDL/seeds/triggers in `db/`. Run `verify_appointment_settings.php` when changing `modules/appointment_settings/` or `includes/itm_appointment_settings_admin.php`.
 
 ### Hotel booking scripts
 
@@ -1369,6 +1370,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_command_palette_sidebar_slugs.php` — every Admin sidebar module slug findable via palette module navigation; lib `scripts/lib/itm_command_palette_sidebar_verify.php`
 - `php scripts/apply_search_index_backfill.php` — dry-run default; `--apply` / `?apply=1` syncs `search_index` for palette modules per company (`--company=`, `--module=`). Canonical population path — **not** Add sample data / `db/02_data_sample.sql`.
 - `php scripts/verify_appointment.php` — `modules/appointments/`, `includes/itm_appointment.php`, appointment `db/` bundle
+- `php scripts/verify_appointment_settings.php` — `modules/appointment_settings/`, `includes/itm_appointment_settings_admin.php`
 - `php scripts/verify_live_chat.php` — Live Chat schema, SLA, ACL, notifications, ticket activity/comments helpers
 - `php scripts/verify_ticket_productivity.php` — Ticket canned responses, merge, CSAT token/public URL, merge smoke
 - `php scripts/verify_automation_rules.php` — Workflow automation: tables, audit triggers, seed rule, `itm_automation_rules_run_rule()` by id, `automation_rule_runs` success row

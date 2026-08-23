@@ -6,7 +6,30 @@ require_once __DIR__ . '/aps_init.php';
 
 aps_require_permission($conn, 'view');
 
-$flashMessage = trim((string)($_GET['msg'] ?? ''));
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['visit_reason_reorder'])) {
+    itm_require_post_csrf();
+    aps_require_permission($conn, 'edit');
+    $orderJson = (string)($_POST['order_json'] ?? '[]');
+    $decoded = json_decode($orderJson, true);
+    $orderedIds = [];
+    if (is_array($decoded)) {
+        foreach ($decoded as $id) {
+            $id = (int)$id;
+            if ($id > 0) {
+                $orderedIds[] = $id;
+            }
+        }
+    }
+    if ($orderedIds !== [] && itm_appointment_settings_reorder_visit_reasons($conn, $company_id, $employee_id, $orderedIds)) {
+        aps_redirect_after_visit_reason('Visit reasons reordered.');
+    }
+    aps_redirect_after_visit_reason('Could not reorder visit reasons.', 'error');
+}
+
+$legacyFlashMessage = trim((string)($_GET['msg'] ?? ''));
+if ($legacyFlashMessage !== '') {
+    aps_flash_set($legacyFlashMessage);
+}
 $search = trim((string)($_GET['search'] ?? ''));
 $sort = trim((string)($_GET['sort'] ?? 'sort_order'));
 $dir = strtoupper(trim((string)($_GET['dir'] ?? 'ASC'))) === 'DESC' ? 'DESC' : 'ASC';
@@ -47,6 +70,13 @@ if ($page > $totalPages) {
 $offset = ($page - 1) * $perPage;
 $listRows = array_slice($visitReasons, $offset, $perPage);
 
+$apsCanEditSettings = itm_user_has_role_module_permission(
+    $conn,
+    $employee_id,
+    $company_id,
+    itm_resolve_rbac_module_name_for_slug($conn, $moduleSlug),
+    'edit'
+);
 $apsCanCreate = itm_user_has_role_module_permission(
     $conn,
     $employee_id,
@@ -102,12 +132,20 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
         <?php endif; ?>
         <a href="<?php echo sanitize(BASE_URL . 'modules/appointments/'); ?>" class="btn btn-sm" title="Open employee booking">📅</a>
     </p>
-    <?php if ($flashMessage !== ''): ?>
-        <p><?php echo sanitize($flashMessage); ?></p>
+    <?php aps_flash_render(); ?>
+    <?php if ($apsCanEditSettings && $search === ''): ?>
+    <p class="form-hint">Drag rows to reorder the booking dropdown. Sort order saves when you drop a row.</p>
     <?php endif; ?>
 </div>
 
 <div class="card">
+    <?php if ($apsCanEditSettings && $search === ''): ?>
+    <form id="aps-visit-reason-reorder-form" method="post" action="list_all.php" style="display:none;">
+        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+        <input type="hidden" name="visit_reason_reorder" value="1">
+        <input type="hidden" name="order_json" id="aps-visit-reason-order-json" value="[]">
+    </form>
+    <?php endif; ?>
     <form method="get" action="list_all.php" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
         <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
         <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
@@ -117,9 +155,10 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
         <a href="list_all.php" class="btn btn-sm" title="Clear">🔙</a>
         <?php endif; ?>
     </form>
-    <table class="appointment-list-table" data-itm-no-import-excel="1">
+    <table class="appointment-list-table" data-itm-no-import-excel="1"<?php echo ($apsCanEditSettings && $search === '') ? ' id="aps-visit-reason-sortable"' : ''; ?>>
         <thead>
         <tr>
+            <?php if ($apsCanEditSettings && $search === ''): ?><th title="Drag to reorder">↕️</th><?php endif; ?>
             <th><?php echo aps_visit_reason_sort_link('name', 'Name', $sort, $dir); ?></th>
             <th><?php echo aps_visit_reason_sort_link('sort_order', 'Sort', $sort, $dir); ?></th>
             <th><?php echo aps_visit_reason_sort_link('active', 'Active', $sort, $dir); ?></th>
@@ -128,7 +167,8 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
         </thead>
         <tbody>
         <?php foreach ($listRows as $reason): ?>
-            <tr>
+            <tr data-reason-id="<?php echo (int)$reason['id']; ?>"<?php echo ($apsCanEditSettings && $search === '') ? ' draggable="true"' : ''; ?>>
+                <?php if ($apsCanEditSettings && $search === ''): ?><td class="aps-drag-handle" title="Drag to reorder">⠿</td><?php endif; ?>
                 <td><?php echo sanitize($reason['name'] ?? ''); ?></td>
                 <td><?php echo (int)($reason['sort_order'] ?? 0); ?></td>
                 <td><?php echo (int)($reason['active'] ?? 0) === 1 ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>'; ?></td>
@@ -146,7 +186,7 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
             </tr>
         <?php endforeach; ?>
         <?php if (empty($listRows)): ?>
-            <tr><td colspan="4"><?php echo $search !== '' ? 'No visit reasons match your search.' : 'No visit reasons yet — add options for the booking dropdown.'; ?></td></tr>
+            <tr><td colspan="<?php echo ($apsCanEditSettings && $search === '') ? '5' : '4'; ?>"><?php echo $search !== '' ? 'No visit reasons match your search.' : 'No visit reasons yet — add options for the booking dropdown.'; ?></td></tr>
         <?php endif; ?>
         </tbody>
     </table>
@@ -164,5 +204,8 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $pageTitle);
     </p>
     <?php endif; ?>
 </div>
+<?php if ($apsCanEditSettings && $search === ''): ?>
+<script src="<?php echo BASE_URL; ?>js/appointment-settings.js" defer></script>
+<?php endif; ?>
 <?php
 aps_render_page_shell_close();

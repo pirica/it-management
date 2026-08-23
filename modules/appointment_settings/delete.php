@@ -20,6 +20,14 @@ if ($id <= 0 || $kind === '') {
     exit;
 }
 
+if ($kind === 'settings') {
+    aps_redirect_with_flash(
+        'index.php',
+        'Company appointment settings cannot be deleted. Edit the row instead — defaults are restored automatically when missing.',
+        'error'
+    );
+}
+
 $tableMap = [
     'settings' => 'appointment_settings',
     'business_hour' => 'appointment_business_hours',
@@ -41,13 +49,11 @@ if ($kind === 'appointment_type') {
         $row = $res ? mysqli_fetch_assoc($res) : null;
         mysqli_stmt_close($check);
         if (!$row) {
-            header('Location: index.php?msg=' . rawurlencode('Appointment type not found.'));
-            exit;
+            aps_redirect_with_flash('index.php', 'Appointment type not found.', 'error');
         }
         $core = in_array((string)($row['name'] ?? ''), ['in_person', 'remote'], true);
         if ($core) {
-            header('Location: index.php?msg=' . rawurlencode('Cannot delete core appointment types.'));
-            exit;
+            aps_redirect_with_flash('index.php', 'Cannot delete core appointment types.', 'error');
         }
         $refCount = 0;
         $refStmt = mysqli_prepare(
@@ -63,8 +69,7 @@ if ($kind === 'appointment_type') {
             mysqli_stmt_close($refStmt);
         }
         if ($refCount > 0) {
-            header('Location: index.php?msg=' . rawurlencode('Cannot delete appointment type: bookings still reference it.'));
-            exit;
+            aps_redirect_with_flash('index.php', 'Cannot delete appointment type: bookings still reference it.', 'error');
         }
         $del = mysqli_prepare($conn, 'DELETE FROM appointment_type WHERE id = ? AND company_id = ?');
         if ($del) {
@@ -72,7 +77,7 @@ if ($kind === 'appointment_type') {
             mysqli_stmt_execute($del);
             mysqli_stmt_close($del);
         }
-        header('Location: index.php?msg=' . rawurlencode(aps_kind_label($kind) . ' deleted.'));
+        aps_redirect_with_flash('index.php', aps_kind_label($kind) . ' deleted.');
         exit;
     }
 }
@@ -82,5 +87,5 @@ $where = 'id = ' . $id . ' AND company_id = ' . $company_id;
 $sql = itm_crud_build_soft_delete_sql($table, $where, $employee_id);
 itm_run_query($conn, $sql);
 
-header('Location: index.php?msg=' . rawurlencode(aps_kind_label($kind) . ' deleted.'));
+aps_redirect_with_flash($redirect, aps_kind_label($kind) . ' deleted.');
 exit;

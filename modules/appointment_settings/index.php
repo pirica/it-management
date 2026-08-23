@@ -21,17 +21,32 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['booking_toggl
             mysqli_stmt_execute($toggleStmt);
             mysqli_stmt_close($toggleStmt);
             $toggleMsg = $toggleValue === 1 ? 'Appointment booking enabled.' : 'Appointment booking disabled.';
-            header('Location: index.php?msg=' . rawurlencode($toggleMsg));
-            exit;
+            aps_redirect_with_flash('index.php', $toggleMsg);
         }
     }
 }
 
-$flashMessage = trim((string)($_GET['msg'] ?? ''));
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['bulk_business_hours'])) {
+    itm_require_post_csrf();
+    aps_require_permission($conn, 'edit');
+    $gridRows = is_array($_POST['hours'] ?? null) ? $_POST['hours'] : [];
+    $typeRows = itm_appointment_settings_load_appointment_types_admin($conn, $company_id);
+    if (itm_appointment_settings_save_business_hours_bulk($conn, $company_id, $employee_id, $gridRows, $typeRows)) {
+        aps_redirect_with_flash('index.php#hours-grid', 'Business hours saved.');
+    }
+    aps_redirect_with_flash('index.php#hours-grid', 'Could not save business hours.', 'error');
+}
+
+$legacyFlashMessage = trim((string)($_GET['msg'] ?? ''));
+if ($legacyFlashMessage !== '') {
+    aps_flash_set($legacyFlashMessage);
+}
 $settings = itm_appointment_load_settings($conn, $company_id);
 $businessHours = itm_appointment_load_business_hours($conn, $company_id);
 $visitReasons = itm_appointment_settings_load_visit_reasons_admin($conn, $company_id);
 $appointmentTypes = aps_appointment_types_for_columns(itm_appointment_settings_load_appointment_types_admin($conn, $company_id));
+$dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+$defaultHourRows = itm_appointment_settings_default_business_hours_rows();
 $apsCanEditSettings = itm_user_has_role_module_permission(
     $conn,
     $employee_id,
@@ -56,9 +71,7 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
     <p>
         <a href="<?php echo sanitize(BASE_URL . 'modules/appointments/'); ?>" class="btn btn-sm" title="Open employee booking">📅</a>
     </p>
-    <?php if ($flashMessage !== ''): ?>
-        <p><?php echo sanitize($flashMessage); ?></p>
-    <?php endif; ?>
+    <?php aps_flash_render(); ?>
     <?php if ($settings && $apsCanEditSettings): ?>
         <?php $settingsBookingOn = itm_appointment_settings_booking_enabled($settings); ?>
         <p>
@@ -107,12 +120,6 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
                 <?php aps_actions_cell_open(); ?>
                 <a class="btn btn-sm" href="view.php?kind=settings&amp;id=<?php echo (int)$row['id']; ?>" title="View">🔎</a>
                 <a class="btn btn-sm" href="edit.php?kind=settings&amp;id=<?php echo (int)$row['id']; ?>" title="Edit">✏️</a>
-                <form method="post" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete company appointment settings?');">
-                    <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <input type="hidden" name="kind" value="settings">
-                    <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
-                    <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
-                </form>
                 <?php aps_actions_cell_close(); ?>
             </tr>
         <?php endforeach; ?>
@@ -122,6 +129,59 @@ aps_render_page_shell_open($conn, $company_id, $employee_id, $moduleListHeading)
         </tbody>
     </table>
 </div>
+
+<?php if ($apsCanEditSettings): ?>
+<div class="card appointment-settings-section" id="hours-grid">
+    <div class="appointment-settings-section-header">
+        <h2 title="Weekly hours grid">📅</h2>
+    </div>
+    <p>Edit all seven weekdays in one save. Per-day rows below remain available for single-day edits.</p>
+    <form method="post" action="index.php#hours-grid">
+        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+        <input type="hidden" name="bulk_business_hours" value="1">
+        <table class="appointment-list-table" data-itm-no-import-excel="1">
+            <thead>
+            <tr>
+                <th>Day</th>
+                <th>Label</th>
+                <th>Open</th>
+                <th>Close</th>
+                <th>Closed</th>
+                <?php foreach ($appointmentTypes as $typeCol): ?>
+                <th><?php echo sanitize(aps_type_label($typeCol)); ?></th>
+                <?php endforeach; ?>
+                <th>Active</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php for ($dow = 0; $dow <= 6; $dow++):
+                $hour = $businessHours[$dow] ?? $defaultHourRows[$dow] ?? [];
+                $allowedMap = itm_appointment_hour_allowed_types_map($hour);
+                $prefix = 'hours[' . $dow . ']';
+            ?>
+            <tr>
+                <td><?php echo sanitize($dayNames[$dow]); ?></td>
+                <td><input class="form-control" type="text" name="<?php echo sanitize($prefix); ?>[display_label]" value="<?php echo sanitize($hour['display_label'] ?? $dayNames[$dow]); ?>" required></td>
+                <td><input class="form-control" type="time" name="<?php echo sanitize($prefix); ?>[open_time]" value="<?php echo sanitize(aps_format_time_input($hour['open_time'] ?? '')); ?>"></td>
+                <td><input class="form-control" type="time" name="<?php echo sanitize($prefix); ?>[close_time]" value="<?php echo sanitize(aps_format_time_input($hour['close_time'] ?? '')); ?>"></td>
+                <td><label class="itm-checkbox-control"><input type="checkbox" name="<?php echo sanitize($prefix); ?>[is_closed]" value="1"<?php echo (int)($hour['is_closed'] ?? 0) === 1 ? ' checked' : ''; ?>><span>Closed</span></label></td>
+                <?php foreach ($appointmentTypes as $typeCol):
+                    $typeName = (string)($typeCol['name'] ?? '');
+                    if ($typeName === '') {
+                        continue;
+                    }
+                ?>
+                <td><label class="itm-checkbox-control"><input type="checkbox" name="<?php echo sanitize($prefix); ?>[allowed_type][<?php echo sanitize($typeName); ?>]" value="1"<?php echo !empty($allowedMap[$typeName]) ? ' checked' : ''; ?>><span><?php echo sanitize(aps_type_label($typeCol)); ?></span></label></td>
+                <?php endforeach; ?>
+                <td><label class="itm-checkbox-control"><input type="checkbox" name="<?php echo sanitize($prefix); ?>[active]" value="1"<?php echo (int)($hour['active'] ?? 1) === 1 ? ' checked' : ''; ?>><span>Active</span></label></td>
+            </tr>
+            <?php endfor; ?>
+            </tbody>
+        </table>
+        <p style="margin-top:12px;"><button type="submit" class="btn btn-primary" title="Save all hours">💾</button></p>
+    </form>
+</div>
+<?php endif; ?>
 
 <div class="card appointment-settings-section">
     <div class="appointment-settings-section-header">

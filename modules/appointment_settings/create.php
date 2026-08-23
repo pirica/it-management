@@ -13,6 +13,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $sortOrder = (int)($_POST['sort_order'] ?? 0);
         $isActive = !empty($_POST['active']) ? 1 : 0;
         if ($name !== '') {
+            if (itm_appointment_settings_visit_reason_name_exists($conn, $company_id, $name)) {
+                aps_redirect_after_visit_reason('A visit reason with that name already exists for this company.', 'error');
+            }
             $sql = 'INSERT INTO appointment_visit_reasons (company_id, name, sort_order, active, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?)';
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
@@ -22,7 +25,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     aps_redirect_after_visit_reason('Visit reason added.');
                 }
                 mysqli_stmt_close($stmt);
-                aps_redirect_after_visit_reason('Could not add visit reason (name may already exist for this company).');
+                aps_redirect_after_visit_reason('Could not add visit reason (name may already exist for this company).', 'error');
             }
         }
     }
@@ -57,13 +60,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 mysqli_stmt_bind_param($stmt, 'iisssiiisii', $company_id, $dow, $label, $open, $close, $isClosed, $allowsInPerson, $allowsRemote, $allowedJson, $employee_id, $employee_id);
                 if (@mysqli_stmt_execute($stmt)) {
                     mysqli_stmt_close($stmt);
-                    header('Location: index.php?msg=' . rawurlencode('Business hour added.'));
-                    exit;
+                    aps_redirect_with_flash('index.php', 'Business hour added.');
                 }
                 mysqli_stmt_close($stmt);
             }
-            header('Location: index.php?msg=' . rawurlencode('Could not add business hour (day may already exist).'));
-            exit;
+            aps_redirect_with_flash('index.php', 'Could not add business hour (day may already exist).', 'error');
         }
     }
 
@@ -84,16 +85,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 if (@mysqli_stmt_execute($stmt)) {
                     mysqli_stmt_close($stmt);
                     itm_appointment_settings_append_type_to_business_hours($conn, $company_id, $name, 0);
-                    header('Location: index.php?msg=' . rawurlencode('Appointment type added.'));
-                    exit;
+                    aps_redirect_with_flash('index.php', 'Appointment type added.');
                 }
                 mysqli_stmt_close($stmt);
             }
-            header('Location: index.php?msg=' . rawurlencode('Could not add appointment type (name may already exist).'));
-            exit;
+            aps_redirect_with_flash('index.php', 'Could not add appointment type (name may already exist).', 'error');
         }
-        header('Location: index.php?msg=' . rawurlencode('Invalid appointment type name.'));
-        exit;
+        aps_redirect_with_flash('index.php', 'Invalid appointment type name.', 'error');
     }
 }
 
