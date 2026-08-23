@@ -16,6 +16,7 @@ Canonical documentation that is not source code: upload maps, README assets, mod
 - **docs/REQUEST_PASSWORD.md** — multi-stage human approval chain for workstation/system password resets, visual signature card tracking, and creator-only soft-delete restrictions.
 - **docs/BACKUP_TAPE_LOG.md** — monthly server backup verification grid, derived day names, Sunday highlights, historical immutability locks, and role-based field restrictions.
 - **docs/APPOINTMENTS.md** — employee self-service IT appointment scheduling, business hours modalities, week-grid slots, multi-concurrency unique locks, and API booking paths.
+- **docs/PRODUCT_GAPS_AND_MISSING.md** — living Phase 2 backlog: partial vs missing features from the product/architecture proposal; appointment pack gaps (APPT-* / APSET-* IDs); reconciliation with stale `FEATURE_ROADMAP.md` rows.
 - **docs/COMPANY_MODULE_ACCESS.md** — admin-only multi-tenant module enablement, opt-out access rules, global registry catalogs, auto-registration self-discovery, and matrix AJAX settings.
 - **docs/LICENSE_MANAGEMENT.md** — software license tracking, lookup dependencies, localized dates and normalized price formatting, soft-delete audit meta details, and import/export layouts.
 - **docs/LIVE_CHAT.md** — Real-time messaging subsystem with Live Agent and Chat-with support, ticket/SLA integration, secure non-audited messaging, ephemeral typing presence, and local file/photo storage mapping.
