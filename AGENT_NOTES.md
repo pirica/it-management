@@ -142,10 +142,10 @@ $stmt->execute();
 
 ## 12. Module Owner Notes
 
-- Regression and audit scripts: catalog in `scripts/scripts.php`; conventions in `scripts/SCRIPTS.md`; Cursor rule `.cursor/rules/scripts-directory-standards.mdc` (all new scripts under `scripts/`, no uncatalogued probes).
+- Regression and audit scripts: catalog in `scripts/scripts.php`; conventions in `scripts/SCRIPTS.md`; Cursor rule `../.cursor/rules/scripts-directory-standards.mdc` (Laragon `www/.cursor` only; all new scripts under `scripts/`, no uncatalogued probes).
 - Useful gates: `php scripts/check_sql_injection_coverage.php`, `php scripts/check_ui_action_emoji.php`, `php scripts/check_fk_label_search_coverage.php`, `php scripts/list_active_and_checkboxes.php`, `php scripts/run_tests.php`.
 - **Local dev login bypass:** `php scripts/bypass_login.php` → set browser `PHPSESSID` → open [dashboard](http://localhost/it-management/) (Admin, company 1, vault unlocked when script sets it).
-- **Agent replies (localhost links):** whenever an agent cites `modules/…` or `scripts/…` paths in chat — summaries, audits, PR plans, not only defects — use markdown links with base `http://localhost/it-management/` and say **open in a new browser tab** (`AGENTS.md` step **7a**; `.cursor/rules/local-dev-browser-links.mdc`).
+- **Agent replies (localhost links):** whenever an agent cites `modules/…` or `scripts/…` paths in chat — summaries, audits, PR plans, not only defects — use markdown links with base `http://localhost/it-management/` and say **open in a new browser tab** (`AGENTS.md` step **7a**; `../.cursor/rules/local-dev-browser-links.mdc`). Cursor **SKILL.md** for table-count docs: `../.cursor/skills/sync-db-table-count-docs/SKILL.md`.
 
 ---
 
