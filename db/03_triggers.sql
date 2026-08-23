@@ -4537,6 +4537,12 @@ DROP TRIGGER IF EXISTS `trg_scheduled_reports_audit_update`;
 
 DROP TRIGGER IF EXISTS `trg_scheduled_reports_audit_delete`;
 
+DROP TRIGGER IF EXISTS `trg_saved_report_views_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_saved_report_views_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_saved_report_views_audit_delete`;
+
 DROP TRIGGER IF EXISTS `trg_integration_webhooks_audit_insert`;
 
 DROP TRIGGER IF EXISTS `trg_integration_webhooks_audit_update`;
@@ -4570,6 +4576,21 @@ END$$
 CREATE TRIGGER `trg_scheduled_reports_audit_delete` AFTER DELETE ON `scheduled_reports` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'scheduled_reports', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'report_slug', OLD.`report_slug`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_saved_report_views_audit_insert` AFTER INSERT ON `saved_report_views` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'saved_report_views', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'module_slug', NEW.`module_slug`, 'name', NEW.`name`, 'shared_scope', NEW.`shared_scope`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_saved_report_views_audit_update` AFTER UPDATE ON `saved_report_views` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'saved_report_views', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'name', OLD.`name`, 'shared_scope', OLD.`shared_scope`), JSON_OBJECT('id', NEW.`id`, 'name', NEW.`name`, 'shared_scope', NEW.`shared_scope`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_saved_report_views_audit_delete` AFTER DELETE ON `saved_report_views` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'saved_report_views', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'module_slug', OLD.`module_slug`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
 
 CREATE TRIGGER `trg_integration_webhooks_audit_insert` AFTER INSERT ON `integration_webhooks` FOR EACH ROW BEGIN

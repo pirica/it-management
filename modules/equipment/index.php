@@ -258,6 +258,18 @@ while ($locationTypeRes && ($locationTypeRow = mysqli_fetch_assoc($locationTypeR
 }
 $locationTypeExtraOptionsJson = htmlspecialchars(json_encode($locationTypeExtraOptions), ENT_QUOTES, 'UTF-8');
 $equipmentCsrfToken = itm_get_csrf_token();
+
+require_once ROOT_PATH . 'includes/itm_saved_reports.php';
+$itmSavedReportsModuleSlug = 'equipment';
+$itmSavedReportsFilters = [
+    'search' => $searchRaw,
+    'sort' => $sort,
+    'dir' => $dir,
+];
+if ($equipmentTypeNameFilter !== '') {
+    $itmSavedReportsFilters['equipment_type_name'] = $equipmentTypeNameFilter;
+}
+$itmSavedReportsColumns = $sortableColumns;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -339,6 +351,7 @@ if (!empty($_SESSION['crud_success'])) {
                     <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                         <button type="submit" class="btn btn-primary">Search</button>
                         <a href="index.php<?php echo ($selectedSwitchId > 0) ? '?switch_id=' . (int)$selectedSwitchId . ($showSwitchPortManager ? '&spm=1' : '') : ''; ?>" class="btn" title="Clear">🔙</a>
+                        <?php include ROOT_PATH . 'includes/itm_saved_reports_ui.php'; ?>
                     </div>
                 </form>
             </div>

@@ -378,6 +378,16 @@ $items = mysqli_stmt_get_result($dataStmt);
 $showBulkActions = $totalRows >= $perPage;
 $newButtonPosition = itm_resolve_new_button_position($ui_config);
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
+
+require_once ROOT_PATH . 'includes/itm_saved_reports.php';
+$itmSavedReportsModuleSlug = 'tickets';
+$itmSavedReportsFilters = [
+    'search' => $searchRaw,
+    'show_archived' => $showArchived ? 1 : 0,
+    'sort' => $sort,
+    'dir' => $dir,
+];
+$itmSavedReportsColumns = $uiColumns;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -426,6 +436,7 @@ if (!isset($crud_title)) {
                         <?php else: ?>
                             <a href="index.php?show_archived=1" class="btn" title="Switch to Archived Tickets View">🔓 Show Archived</a>
                         <?php endif; ?>
+                        <?php include ROOT_PATH . 'includes/itm_saved_reports_ui.php'; ?>
                     </div>
                 </form>
             </div>

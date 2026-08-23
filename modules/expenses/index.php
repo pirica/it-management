@@ -1147,6 +1147,15 @@ $offset = ($page - 1) * $perPage;
 $rows = mysqli_query($conn, 'SELECT * FROM ' . cr_escape_identifier($crud_table) . $where . ' ORDER BY ' . $sortSql . ' LIMIT ' . $offset . ', ' . $perPage);
 $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
 $newButtonPosition = itm_resolve_new_button_position($ui_config);
+
+require_once ROOT_PATH . 'includes/itm_saved_reports.php';
+$itmSavedReportsModuleSlug = 'expenses';
+$itmSavedReportsFilters = [
+    'search' => $searchRaw,
+    'sort' => $sort,
+    'dir' => $dir,
+];
+$itmSavedReportsColumns = array_keys(itm_saved_reports_module_config('expenses')['columns'] ?? []);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1216,6 +1225,7 @@ if (!isset($crud_title)) {
                         <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                             <button type="submit" class="btn btn-primary">Search</button>
                             <a href="index.php" class="btn">🔙</a>
+                            <?php include ROOT_PATH . 'includes/itm_saved_reports_ui.php'; ?>
                         </div>
                     </form>
                 </div>

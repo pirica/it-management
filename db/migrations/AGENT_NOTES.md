@@ -24,6 +24,7 @@ Historical migration SQL files were **pruned** once live databases matched canon
 | `hotel_booking_last_rooms.sql` | Last-room snapshot table (`booking_id` + room/hotel/type/floor fields) |
 | `problem_management.sql` | `problems`, `problem_ticket_links`, `known_errors` — Problem Management + Known Error DB (destructive DROP+CREATE; audit triggers in `db/03_triggers.sql`) |
 | `problem_master_ticket.sql` | `master_tickets`, `master_ticket_updates`, `problems.master_ticket_id` — cross-company master ticket rollup (destructive DROP+CREATE for problem tables + new master tables) |
+| `saved_report_views.sql` | `saved_report_views` + `scheduled_reports.saved_view_id` — saved list views for custom report builder |
 
 ## 12. Module Owner Notes
 

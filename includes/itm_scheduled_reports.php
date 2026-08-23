@@ -16,6 +16,22 @@ if (!function_exists('itm_scheduled_reports_catalog')) {
     }
 }
 
+if (!function_exists('itm_scheduled_reports_catalog_with_saved_views')) {
+    function itm_scheduled_reports_catalog_with_saved_views($conn, $companyId, $employeeId)
+    {
+        $catalog = itm_scheduled_reports_catalog();
+        if (!function_exists('itm_saved_reports_list_visible')) {
+            require_once ROOT_PATH . 'includes/itm_saved_reports.php';
+        }
+        foreach (itm_saved_reports_list_visible($conn, (int) $companyId, (int) $employeeId) as $view) {
+            $slug = itm_saved_reports_scheduled_slug((int) $view['id']);
+            $moduleLabel = itm_saved_reports_module_config((string) $view['module_slug'])['label'] ?? $view['module_slug'];
+            $catalog[$slug] = 'Saved: ' . (string) $view['name'] . ' (' . $moduleLabel . ')';
+        }
+        return $catalog;
+    }
+}
+
 if (!function_exists('itm_scheduled_reports_cron_field_matches')) {
     function itm_scheduled_reports_cron_field_matches($fieldValue, $cronPart)
     {
@@ -79,6 +95,25 @@ if (!function_exists('itm_scheduled_reports_load_dataset')) {
     {
         $companyId = (int) $companyId;
         $reportSlug = (string) $reportSlug;
+
+        if (!function_exists('itm_saved_reports_parse_scheduled_slug')) {
+            require_once ROOT_PATH . 'includes/itm_saved_reports.php';
+        }
+        $savedViewId = itm_saved_reports_parse_scheduled_slug($reportSlug);
+        if ($savedViewId > 0) {
+            if (!function_exists('itm_saved_reports_fetch_by_id')) {
+                require_once ROOT_PATH . 'includes/itm_saved_reports.php';
+            }
+            $viewRow = itm_saved_reports_fetch_by_id($conn, $savedViewId, $companyId);
+            if ($viewRow) {
+                $query = itm_saved_reports_run_query($conn, $companyId, $viewRow, ['limit' => 100, 'offset' => 0]);
+                $emailData = itm_saved_reports_render_email_dataset($query, (string) ($viewRow['name'] ?? 'Saved view'));
+                $emailData['saved_view_id'] = $savedViewId;
+                return $emailData;
+            }
+            return ['title' => 'Saved view not found', 'labels' => [], 'data' => []];
+        }
+
         $catalog = itm_scheduled_reports_catalog();
         if (!isset($catalog[$reportSlug])) {
             return ['title' => 'Unknown report', 'labels' => [], 'data' => []];
@@ -132,6 +167,17 @@ if (!function_exists('itm_scheduled_reports_render_html')) {
         $rows = '';
         $labels = $dataset['labels'] ?? [];
         $values = $dataset['data'] ?? [];
+        if (!empty($dataset['html_table'])) {
+            $rows = (string) $dataset['html_table'];
+            if (!empty($dataset['total'])) {
+                $rows = '<p><strong>Total rows:</strong> ' . (int) $dataset['total'] . ' (showing up to 100 in email)</p>' . $rows;
+            }
+            return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' . $title . '</title></head><body>'
+                . '<h1>' . $title . '</h1>'
+                . ($companyName !== '' ? '<p><strong>Company:</strong> ' . $companyName . '</p>' : '')
+                . '<p>Generated: ' . htmlspecialchars(date('d/m/Y H:i'), ENT_QUOTES, 'UTF-8') . '</p>'
+                . $rows . '</body></html>';
+        }
         foreach ($labels as $idx => $label) {
             $val = $values[$idx] ?? 0;
             $rows .= '<tr><td>' . htmlspecialchars((string) $label, ENT_QUOTES, 'UTF-8') . '</td><td>' . htmlspecialchars((string) $val, ENT_QUOTES, 'UTF-8') . '</td></tr>';
@@ -199,7 +245,15 @@ if (!function_exists('itm_scheduled_reports_send_row')) {
         $htmlBody = itm_scheduled_reports_render_html($dataset, $companyName);
         $options = ['log_created_by' => (int) ($row['created_by'] ?? 0)];
         if ($format === 'xlsx') {
-            $csv = itm_scheduled_reports_build_csv($dataset);
+            if (!empty($dataset['html_table'])) {
+                $csvLines = ['Saved view row'];
+                foreach ($dataset['labels'] ?? [] as $label) {
+                    $csvLines[0] .= ',"' . str_replace('"', '""', (string) $label) . '"';
+                }
+                $csv = implode("\r\n", $csvLines) . "\r\n";
+            } else {
+                $csv = itm_scheduled_reports_build_csv($dataset);
+            }
             $options['attachments'] = [[
                 'filename' => $slug . '-report.xlsx',
                 'content_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

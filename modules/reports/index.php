@@ -25,9 +25,22 @@ if (!has_module_access($conn, $company_id, 'reports')) {
 }
 
 require_once ROOT_PATH . 'includes/itm_scheduled_reports.php';
+require_once ROOT_PATH . 'includes/itm_saved_reports.php';
 $scheduledReportsFlash = '';
 $scheduledReportsList = [];
+$mySavedReports = itm_saved_reports_list_visible($conn, (int) $company_id, (int) $current_user_id);
 $isReportsAdmin = itm_is_admin($conn, (int)($current_user_id ?? 0));
+$savedReportsFlash = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['saved_view_action'])) {
+    itm_require_post_csrf();
+    if ((string) ($_POST['saved_view_action'] ?? '') === 'delete') {
+        $deleteViewId = (int) ($_POST['saved_view_id'] ?? 0);
+        $deleteResult = itm_saved_reports_soft_delete($conn, $deleteViewId, (int) $current_user_id, (int) $company_id);
+        $savedReportsFlash = $deleteResult['ok'] ? 'Saved view removed.' : (string) ($deleteResult['error'] ?? 'Delete failed.');
+        $mySavedReports = itm_saved_reports_list_visible($conn, (int) $company_id, (int) $current_user_id);
+    }
+}
 
 if ($isReportsAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['scheduled_report_action'])) {
     itm_require_post_csrf();
@@ -39,7 +52,7 @@ if ($isReportsAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sc
         $enabled = isset($_POST['enabled']) ? 1 : 0;
         $recipientsRaw = trim((string) ($_POST['recipients'] ?? ''));
         $recipients = array_values(array_filter(array_map('trim', preg_split('/[\s,;]+/', $recipientsRaw))));
-        $catalog = itm_scheduled_reports_catalog();
+        $catalog = itm_scheduled_reports_catalog_with_saved_views($conn, (int) $company_id, (int) $current_user_id);
         if (!isset($catalog[$reportSlug])) {
             $scheduledReportsFlash = 'Unknown report slug.';
         } elseif ($scheduleCron === '' || count(preg_split('/\s+/', $scheduleCron)) !== 5) {
@@ -50,19 +63,48 @@ if ($isReportsAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sc
             $scheduledReportsFlash = 'Invalid export format.';
         } else {
             $recipientsJson = json_encode($recipients, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $savedViewId = itm_saved_reports_parse_scheduled_slug($reportSlug);
             $editId = (int) ($_POST['scheduled_report_id'] ?? 0);
             if ($editId > 0) {
+                if ($savedViewId > 0) {
+                    $stmt = mysqli_prepare(
+                        $conn,
+                        'UPDATE scheduled_reports SET report_slug = ?, saved_view_id = ?, schedule_cron = ?, recipients_json = ?, format = ?, enabled = ?, updated_by = ?, updated_at = NOW()
+                         WHERE id = ? AND company_id = ? AND deleted_at IS NULL'
+                    );
+                    if ($stmt) {
+                        $employeeId = (int) ($_SESSION['employee_id'] ?? 0);
+                        mysqli_stmt_bind_param($stmt, 'sisssiiii', $reportSlug, $savedViewId, $scheduleCron, $recipientsJson, $format, $enabled, $employeeId, $editId, $company_id);
+                        mysqli_stmt_execute($stmt);
+                        mysqli_stmt_close($stmt);
+                        $scheduledReportsFlash = 'Schedule updated.';
+                    }
+                } else {
+                    $stmt = mysqli_prepare(
+                        $conn,
+                        'UPDATE scheduled_reports SET report_slug = ?, saved_view_id = NULL, schedule_cron = ?, recipients_json = ?, format = ?, enabled = ?, updated_by = ?, updated_at = NOW()
+                         WHERE id = ? AND company_id = ? AND deleted_at IS NULL'
+                    );
+                    if ($stmt) {
+                        $employeeId = (int) ($_SESSION['employee_id'] ?? 0);
+                        mysqli_stmt_bind_param($stmt, 'ssssiiii', $reportSlug, $scheduleCron, $recipientsJson, $format, $enabled, $employeeId, $editId, $company_id);
+                        mysqli_stmt_execute($stmt);
+                        mysqli_stmt_close($stmt);
+                        $scheduledReportsFlash = 'Schedule updated.';
+                    }
+                }
+            } elseif ($savedViewId > 0) {
                 $stmt = mysqli_prepare(
                     $conn,
-                    'UPDATE scheduled_reports SET report_slug = ?, schedule_cron = ?, recipients_json = ?, format = ?, enabled = ?, updated_by = ?, updated_at = NOW()
-                     WHERE id = ? AND company_id = ? AND deleted_at IS NULL'
+                    'INSERT INTO scheduled_reports (company_id, report_slug, saved_view_id, schedule_cron, recipients_json, format, enabled, created_by, active, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
                 );
                 if ($stmt) {
                     $employeeId = (int) ($_SESSION['employee_id'] ?? 0);
-                    mysqli_stmt_bind_param($stmt, 'ssssiiii', $reportSlug, $scheduleCron, $recipientsJson, $format, $enabled, $employeeId, $editId, $company_id);
+                    mysqli_stmt_bind_param($stmt, 'isisssii', $company_id, $reportSlug, $savedViewId, $scheduleCron, $recipientsJson, $format, $enabled, $employeeId);
                     mysqli_stmt_execute($stmt);
                     mysqli_stmt_close($stmt);
-                    $scheduledReportsFlash = 'Schedule updated.';
+                    $scheduledReportsFlash = 'Schedule created.';
                 }
             } else {
                 $stmt = mysqli_prepare(
@@ -265,6 +307,62 @@ if (!isset($crud_title)) {
                     <h1 class="reports-hub-title">📊 Reports Hub</h1>
                 </div>
 
+                <section class="card" id="my-saved-reports" style="margin-bottom:24px;">
+                    <h2 style="margin-top:0;">My reports</h2>
+                    <?php if ($savedReportsFlash !== ''): ?>
+                        <p><?php echo sanitize($savedReportsFlash); ?></p>
+                    <?php endif; ?>
+                    <p>Saved list views from Tickets, Equipment, and Expenses. Shared views are read-only for other users.</p>
+                    <table class="table" style="width:100%;" data-itm-no-import-excel="1">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Module</th>
+                                <th>Share</th>
+                                <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php if ($mySavedReports): ?>
+                            <?php foreach ($mySavedReports as $sv): ?>
+                                <?php
+                                $svModuleLabel = itm_saved_reports_module_config((string) $sv['module_slug'])['label'] ?? $sv['module_slug'];
+                                $svListUrl = itm_saved_reports_build_list_url((string) $sv['module_slug'], $sv['filters'] ?? []);
+                                $svRunUrl = '../saved_report_views/api.php?action=run&id=' . (int) $sv['id'];
+                                $svIsOwner = (int) ($sv['employee_id'] ?? 0) === (int) $current_user_id;
+                                ?>
+                                <tr>
+                                    <td><?php echo sanitize((string) $sv['name']); ?></td>
+                                    <td><?php echo sanitize($svModuleLabel); ?></td>
+                                    <td><?php echo sanitize(ucfirst((string) ($sv['shared_scope'] ?? 'private'))); ?></td>
+                                    <td class="itm-actions-cell" data-itm-actions-origin="1">
+                                        <?php if ($svListUrl !== ''): ?>
+                                            <a class="btn btn-sm" href="<?php echo sanitize($svListUrl); ?>" title="Open list with filters">🔎</a>
+                                        <?php endif; ?>
+                                        <a class="btn btn-sm" href="<?php echo sanitize($svRunUrl); ?>" target="_blank" rel="noopener" title="Run JSON API">➡️</a>
+                                        <?php if ($svIsOwner): ?>
+                                            <?php if ($isReportsAdmin): ?>
+                                            <button type="button" class="btn btn-sm js-schedule-saved-view" title="Schedule email"
+                                                data-slug="<?php echo sanitize(itm_saved_reports_scheduled_slug((int) $sv['id'])); ?>"
+                                                data-label="<?php echo sanitize((string) $sv['name']); ?>">📧</button>
+                                            <?php endif; ?>
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this saved view?');">
+                                                <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                                                <input type="hidden" name="saved_view_action" value="delete">
+                                                <input type="hidden" name="saved_view_id" value="<?php echo (int) $sv['id']; ?>">
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr><td colspan="4">No saved views yet. Use the save control on Tickets, Equipment, or Expenses list pages.</td></tr>
+                        <?php endif; ?>
+                        </tbody>
+                    </table>
+                </section>
+
                 <?php if ($isReportsAdmin): ?>
                 <section class="card" style="margin-bottom:24px;">
                     <h2 style="margin-top:0;">Scheduled executive reports</h2>
@@ -285,7 +383,7 @@ if (!isset($crud_title)) {
                         <tbody>
                         <?php if ($scheduledReportsList): ?>
                             <?php foreach ($scheduledReportsList as $sr): ?>
-                                <?php $catalog = itm_scheduled_reports_catalog(); ?>
+                                <?php $catalog = itm_scheduled_reports_catalog_with_saved_views($conn, (int) $company_id, (int) $current_user_id); ?>
                                 <tr>
                                     <td><?php echo sanitize($catalog[$sr['report_slug']] ?? $sr['report_slug']); ?></td>
                                     <td><code><?php echo sanitize($sr['schedule_cron']); ?></code></td>
@@ -327,7 +425,7 @@ if (!isset($crud_title)) {
                             <div class="form-group">
                                 <label>Report</label>
                                 <select name="report_slug" id="schedule-report-slug" required>
-                                    <?php foreach (itm_scheduled_reports_catalog() as $slug => $label): ?>
+                                    <?php foreach (itm_scheduled_reports_catalog_with_saved_views($conn, (int) $company_id, (int) $current_user_id) as $slug => $label): ?>
                                         <option value="<?php echo sanitize($slug); ?>"><?php echo sanitize($label); ?></option>
                                     <?php endforeach; ?>
                                 </select>
@@ -1176,6 +1274,16 @@ if (!isset($crud_title)) {
                 document.getElementById('schedule-report-format').value = btn.getAttribute('data-format') || 'pdf';
                 document.getElementById('schedule-report-recipients').value = btn.getAttribute('data-recipients') || '';
                 document.getElementById('schedule-report-enabled').checked = (btn.getAttribute('data-enabled') === '1');
+                openModal(false);
+            });
+        });
+        document.querySelectorAll('.js-schedule-saved-view').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.getElementById('schedule-report-id').value = '0';
+                document.getElementById('schedule-report-slug').value = btn.getAttribute('data-slug') || '';
+                document.getElementById('schedule-report-cron').value = '0 8 * * 1';
+                document.getElementById('schedule-report-recipients').value = '';
+                document.getElementById('schedule-report-enabled').checked = true;
                 openModal(false);
             });
         });
