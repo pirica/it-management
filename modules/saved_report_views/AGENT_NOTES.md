@@ -4,6 +4,8 @@
 
 JSON API, export, public share, and redirect entry for **saved list views** (custom report builder). Users save filter/column presets from Tickets, Equipment, or Expenses; views appear in Reports Hub **My reports** and can be scheduled via `scheduled_reports` (`saved_view:{id}` slug).
 
+Canonical doc: **`docs/SAVED_REPORT_VIEWS.md`**.
+
 ## 2. Key Tables
 
 - **saved_report_views** — `filters_json`, `columns_json`, `shared_scope` (`private` | `department` | `company`), tenant + owner `employee_id`
@@ -31,6 +33,23 @@ JSON API, export, public share, and redirect entry for **saved list views** (cus
 - Module slug is in `itm_module_access_always_allowed_slugs()` — API is invoked from other list modules.
 - **Dashboard:** `itm_saved_reports_dashboard_snapshot()` — count + preview row totals on [dashboard.php](http://localhost/it-management/dashboard.php).
 
+## 5. UI Behavior Requirements
+
+- No flattened CRUD list — module folder is API/export/join only; management UI lives on Reports Hub `#my-saved-reports`.
+- `index.php` redirects to [modules/reports/index.php#my-saved-reports](http://localhost/it-management/modules/reports/index.php#my-saved-reports).
+- Hub action buttons follow NO MIXED emoji contract (`title` carries phrases).
+
+## 6. API Actions
+
+| Action | Method | Auth |
+|--------|--------|------|
+| `save` | POST | Session + CSRF; owner for updates |
+| `delete` | POST | Session + CSRF; owner |
+| `list` | GET | Session |
+| `get` | GET | Session + `can_view` |
+| `run` | GET | Session + `can_view` + rate limit |
+| `share` | POST | Session + CSRF; owner |
+
 ## 7. File Structure
 
 | File | Role |
@@ -42,6 +61,22 @@ JSON API, export, public share, and redirect entry for **saved list views** (cus
 | `../../includes/itm_saved_reports.php` | Validation, access, query runners, share/export |
 | `../../includes/itm_saved_reports_hub_ui.php` | Hub edit + owner schedule modals |
 | `../../includes/itm_saved_reports_ui.php` | Save-view modal on list pages |
+| `../../includes/itm_saved_reports_list_banner.php` | Active saved-view banner on list pages |
+
+## 8. Multi-Tenant Rules
+
+- All rows scoped by `company_id`; list/save/run enforce active tenant from session.
+- Department share uses `share_department_id` captured at save time (owner’s `department_id`).
+
+## 9. Audit Logging Requirements
+
+- `trg_saved_report_views_audit_insert|update|delete` in `db/03_triggers.sql`.
+
+## 10. Common Pitfalls
+
+- Adding filter keys without updating `itm_saved_reports_module_config()` and the list-page `data-itm-saved-report-filter` fields — unknown keys are stripped, not passed to SQL. [Cursor-Valid]
+- Extending to new modules without a shared list-query helper — run logic must reuse the same SQL as the module `index.php`. [Cursor-Valid]
+- Allowing non-owners to POST `save`/`delete`/`share` — enforce `itm_saved_reports_owner_owns_view()`. [Cursor-Valid]
 
 ## 12. Module Owner Notes
 

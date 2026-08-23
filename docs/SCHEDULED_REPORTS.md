@@ -37,6 +37,8 @@ Browser: [verify_scheduled_reports.php?run=1](http://localhost/it-management/scr
 
 ## Report slugs
 
+### Executive catalog (admin Hub modal)
+
 | Slug | Dataset |
 |------|---------|
 | `equipment_summary` | Equipment by type |
@@ -44,6 +46,16 @@ Browser: [verify_scheduled_reports.php?run=1](http://localhost/it-management/scr
 | `hr_summary` | Employees by department |
 | `budget_summary` | Budget vs actual trend |
 | `asset_value` | Asset financial value |
+
+### Saved list views (owner or admin)
+
+| Slug pattern | Dataset |
+|--------------|---------|
+| `saved_view:{id}` | Tabular rows from `saved_report_views` — filters/columns from the saved preset; `scheduled_reports.saved_view_id` FK optional |
+
+Owners schedule **owned** views from Reports Hub **My reports** (`includes/itm_saved_reports_hub_ui.php`). Non-admins may only manage schedules for slugs they own (`itm_saved_reports_can_manage_schedule_slug()`). Dataset builder: `itm_saved_reports_run_query()` + `itm_saved_reports_render_email_dataset()` in `includes/itm_saved_reports.php`.
+
+Canonical doc: `docs/SAVED_REPORT_VIEWS.md`.
 
 ## Email formats
 

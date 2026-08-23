@@ -646,6 +646,19 @@ The license management module (`modules/license_management/`) tracks software li
 8. **Audit logging:** `db/` defines `trg_license_management_audit_insert|update|delete` and `trg_license_types_audit_*` (when Type rows are quick-added).
 9. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/module_browser_qa_runner.php --module=license_management --company=1`.
 
+#### Saved report views (mandatory)
+
+Custom report builder — saved filter/column presets from list modules. Canonical doc: **`docs/SAVED_REPORT_VIEWS.md`**.
+
+1. **Tables:** **`saved_report_views`** (`filters_json`, `columns_json`, `shared_scope` `private`|`department`|`company`, `share_department_id`); **`scheduled_reports.saved_view_id`** when `report_slug` is `saved_view:{id}`; **`share_sessions`** for temporary public read-only links (`module_slug = saved_report_views`).
+2. **Supported modules:** `tickets`, `equipment`, `expenses` only — whitelisted filter/column keys in `includes/itm_saved_reports.php` (`itm_saved_reports_module_config()`); list queries via `itm_tickets_list_query.php`, `itm_equipment_list_query.php`, `itm_expenses_list_query.php`.
+3. **Save UI:** 💾 on list search rows (`includes/itm_saved_reports_ui.php`); live filters from `data-itm-saved-reports-list-form` + `data-itm-saved-report-filter`; column picker required (≥1 column).
+4. **Reports Hub:** `#my-saved-reports` on `modules/reports/index.php` — open list, JSON run, export Excel/PDF, edit/share/schedule (owner), delete (owner); `includes/itm_saved_reports_hub_ui.php`.
+5. **API:** `modules/saved_report_views/api.php` — `save`, `delete`, `list`, `get`, `run`, `share`; session auth + `itm_api_enforce_rate_limit_or_exit()`; CSRF on POST.
+6. **Access:** `itm_saved_reports_can_view()` — owner, company scope, or department scope; shared views read-only for non-owners; slug in `itm_module_access_always_allowed_slugs()`.
+7. **Scheduling:** `itm_saved_reports_scheduled_slug($viewId)` / `itm_saved_reports_parse_scheduled_slug()`; owner schedule permission via `itm_saved_reports_can_manage_schedule_slug()`; runner `includes/itm_scheduled_reports.php`.
+8. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_saved_report_views.php`.
+
 #### Hotel booking distribution API (mandatory)
 
 Partner-facing channel distribution for hotel inventory, ARI, and reservations — separate from the public guest portal (`booking/`) and employee `ui_configuration` API keys.

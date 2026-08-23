@@ -1,6 +1,6 @@
 # IT Management System — Product Feature Roadmap
 
-> **Status:** Phase 1 items below are largely **shipped**. For current partial/missing work and appointment pack gaps, see **`docs/PRODUCT_GAPS_AND_MISSING.md`**.
+> **Status:** Phase 1 items below are largely **shipped**. For current partial/missing work and appointment pack gaps, see **`docs/PRODUCT_GAPS_AND_MISSING.md`**. **Custom report builder (Feature 11)** is **done** — see **`docs/SAVED_REPORT_VIEWS.md`**.
 
 ## Executive summary
 
@@ -11,7 +11,7 @@ The biggest **product gaps** are not missing CRUD tables but **incomplete workfl
 1. **SLA Command Center** — policies exist (`ticket_sla_policies`, `includes/itm_ticket_sla.php`) but no proactive breach management UI or scheduled enforcement.
 2. **Unified Approval Inbox** — approvals scattered across `request_password`, `approvals`, `employee_onboarding_requests`, `forecast_revisions`.
 3. **Workflow Automation Rules** — inbound email routing exists; no general if/then engine for tickets, alerts, equipment expiry.
-4. **Scheduled Executive Reports** — Reports Hub (`modules/reports/index.php`) is view-only; no email scheduling.
+4. **Scheduled Executive Reports** — **Shipped** — `scheduled_reports`, Hub modal, cron runner; saved views use `saved_view:{id}` (`docs/SCHEDULED_REPORTS.md`, `docs/SAVED_REPORT_VIEWS.md`).
 5. **Hotel Online Payments** — explicitly deferred in `docs/BOOKING.md` and `handoff.md`.
 6. **Ticket Productivity Pack** — canned responses, merge/split, satisfaction survey (SLA timestamps exist; UX incomplete).
 7. **Asset Lifecycle & Depreciation** — equipment has warranty/certificate dates; no formal lifecycle states or financial depreciation.
@@ -32,7 +32,7 @@ All proposals below follow existing conventions: procedural PHP, MySQLi prepared
 | **Proactive SLA management** | Policies + due timestamps on create; breach logged to `ticket_activity` only on manual check | IT command center with breach queue, escalations, email/in-app alerts |
 | **Unified approvals** | 4+ bespoke approval flows | Single inbox with filters, delegation, SLA |
 | **Automation beyond email** | Inbound email → tickets; email alert rules for expiry | Configurable tenant rules (priority bump, assign, notify, create ticket) |
-| **Scheduled reporting** | Reports Hub + notification digest (unread only) | Cron PDF/XLSX to executives on schedule |
+| **Scheduled reporting** | **Shipped** — executive catalog + owner saved-view schedules (`docs/SCHEDULED_REPORTS.md`) | Additional report types / cross-module builder |
 | **Online payments** | Payment-at-hotel only | Stripe checkout on guest portal; ledger sync |
 | **Enterprise SSO** | Local auth + TOTP on vault | LDAP/SAML for login; keep vault separate |
 | **Asset financial lifecycle** | `purchase_cost`, warranty fields | Depreciation schedule, disposal workflow, TCO |
