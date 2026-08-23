@@ -180,6 +180,156 @@ if (!function_exists('itm_appointment_settings_load_visit_reasons_admin')) {
     }
 }
 
+if (!function_exists('itm_appointment_settings_visit_reason_name_exists')) {
+    /**
+     * Case-sensitive duplicate check for live visit-reason names (schema UNIQUE per company).
+     */
+    function itm_appointment_settings_visit_reason_name_exists(
+        mysqli $conn,
+        int $companyId,
+        string $name,
+        int $excludeId = 0
+    ): bool {
+        $name = trim($name);
+        if ($companyId <= 0 || $name === '') {
+            return false;
+        }
+        if ($excludeId > 0) {
+            $sql = 'SELECT id FROM appointment_visit_reasons WHERE company_id = ? AND name = ? AND id <> ? AND deleted_at IS NULL LIMIT 1';
+            $stmt = mysqli_prepare($conn, $sql);
+            if (!$stmt) {
+                return false;
+            }
+            mysqli_stmt_bind_param($stmt, 'isi', $companyId, $name, $excludeId);
+        } else {
+            $sql = 'SELECT id FROM appointment_visit_reasons WHERE company_id = ? AND name = ? AND deleted_at IS NULL LIMIT 1';
+            $stmt = mysqli_prepare($conn, $sql);
+            if (!$stmt) {
+                return false;
+            }
+            mysqli_stmt_bind_param($stmt, 'is', $companyId, $name);
+        }
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        return $row !== null;
+    }
+}
+
+if (!function_exists('itm_appointment_settings_save_business_hours_bulk')) {
+    /**
+     * Save all seven weekday rows from the weekly grid POST (creates missing rows).
+     *
+     * @param array<int|string, array<string, mixed>> $rowsByDow
+     */
+    function itm_appointment_settings_save_business_hours_bulk(
+        mysqli $conn,
+        int $companyId,
+        int $employeeId,
+        array $rowsByDow,
+        array $appointmentTypes
+    ): bool {
+        if ($companyId <= 0) {
+            return false;
+        }
+        $existing = itm_appointment_load_business_hours($conn, $companyId);
+        $saved = 0;
+        for ($dow = 0; $dow <= 6; $dow++) {
+            $row = $rowsByDow[$dow] ?? $rowsByDow[(string)$dow] ?? null;
+            if (!is_array($row)) {
+                continue;
+            }
+            $label = trim((string)($row['display_label'] ?? ''));
+            if ($label === '') {
+                continue;
+            }
+            $open = trim((string)($row['open_time'] ?? ''));
+            $close = trim((string)($row['close_time'] ?? ''));
+            $isClosed = !empty($row['is_closed']) ? 1 : 0;
+            $isActive = !empty($row['active']) ? 1 : 0;
+            $allowedPost = is_array($row['allowed_type'] ?? null) ? $row['allowed_type'] : [];
+            $allowedMap = itm_appointment_hour_allowed_types_map_from_post($appointmentTypes, ['allowed_type' => $allowedPost]);
+            $legacy = itm_appointment_hour_legacy_modality_from_map($allowedMap);
+            $allowsInPerson = (int)$legacy['allows_in_person'];
+            $allowsRemote = (int)$legacy['allows_remote'];
+            $allowedJson = itm_appointment_encode_allowed_types_json($allowedMap);
+            if ($isClosed) {
+                $open = null;
+                $close = null;
+            } else {
+                if ($open !== '' && strlen($open) === 5) {
+                    $open .= ':00';
+                }
+                if ($close !== '' && strlen($close) === 5) {
+                    $close .= ':00';
+                }
+            }
+            $hourId = (int)($existing[$dow]['id'] ?? 0);
+            if ($hourId > 0) {
+                $sql = 'UPDATE appointment_business_hours SET display_label = ?, open_time = ?, close_time = ?, is_closed = ?, allows_in_person = ?, allows_remote = ?, allowed_types_json = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
+                $stmt = mysqli_prepare($conn, $sql);
+                if (!$stmt) {
+                    return false;
+                }
+                mysqli_stmt_bind_param($stmt, 'sssiiisiiii', $label, $open, $close, $isClosed, $allowsInPerson, $allowsRemote, $allowedJson, $isActive, $employeeId, $hourId, $companyId);
+            } else {
+                $sql = 'INSERT INTO appointment_business_hours (company_id, day_of_week, display_label, open_time, close_time, is_closed, allows_in_person, allows_remote, allowed_types_json, active, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+                $stmt = mysqli_prepare($conn, $sql);
+                if (!$stmt) {
+                    return false;
+                }
+                mysqli_stmt_bind_param($stmt, 'iisssiiisiii', $companyId, $dow, $label, $open, $close, $isClosed, $allowsInPerson, $allowsRemote, $allowedJson, $isActive, $employeeId, $employeeId);
+            }
+            if (!mysqli_stmt_execute($stmt)) {
+                mysqli_stmt_close($stmt);
+                return false;
+            }
+            mysqli_stmt_close($stmt);
+            $saved++;
+        }
+        return $saved > 0;
+    }
+}
+
+if (!function_exists('itm_appointment_settings_reorder_visit_reasons')) {
+    /**
+     * @param array<int, int> $orderedIds
+     */
+    function itm_appointment_settings_reorder_visit_reasons(
+        mysqli $conn,
+        int $companyId,
+        int $employeeId,
+        array $orderedIds
+    ): bool {
+        if ($companyId <= 0 || $orderedIds === []) {
+            return false;
+        }
+        $sort = 10;
+        foreach ($orderedIds as $reasonId) {
+            $reasonId = (int)$reasonId;
+            if ($reasonId <= 0) {
+                continue;
+            }
+            $stmt = mysqli_prepare(
+                $conn,
+                'UPDATE appointment_visit_reasons SET sort_order = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL'
+            );
+            if (!$stmt) {
+                return false;
+            }
+            mysqli_stmt_bind_param($stmt, 'iiii', $sort, $employeeId, $reasonId, $companyId);
+            if (!mysqli_stmt_execute($stmt)) {
+                mysqli_stmt_close($stmt);
+                return false;
+            }
+            mysqli_stmt_close($stmt);
+            $sort += 10;
+        }
+        return true;
+    }
+}
+
 if (!function_exists('itm_appointment_settings_load_appointment_types_admin')) {
     /**
      * @return array<int, array<string, mixed>>

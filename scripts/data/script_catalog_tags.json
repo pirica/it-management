@@ -2111,6 +2111,18 @@
         ],
         "override": false
     },
+    "verify_appointment_settings.php": {
+        "tags": [
+            "appointment_settings",
+            "appointment_visit_reasons"
+        ],
+        "tables": [
+            "appointment_settings",
+            "appointment_visit_reasons",
+            "appointment_business_hours"
+        ],
+        "override": false
+    },
     "verify_command_palette_search.php": {
         "tags": [
             "employees",

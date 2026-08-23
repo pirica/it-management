@@ -114,8 +114,53 @@ function aps_visit_reason_return_path(): string
     return 'list_all.php';
 }
 
-function aps_redirect_after_visit_reason(string $message): void
+function aps_flash_set(string $message, string $type = 'success'): void
 {
-    header('Location: ' . aps_visit_reason_return_path() . '?msg=' . rawurlencode($message));
+    $_SESSION['aps_flash'] = [
+        'message' => $message,
+        'type' => $type === 'error' ? 'error' : 'success',
+    ];
+}
+
+/**
+ * @return array{message:string,type:string}|null
+ */
+function aps_flash_consume(): ?array
+{
+    if (empty($_SESSION['aps_flash']) || !is_array($_SESSION['aps_flash'])) {
+        return null;
+    }
+    $flash = $_SESSION['aps_flash'];
+    unset($_SESSION['aps_flash']);
+    $message = trim((string)($flash['message'] ?? ''));
+    if ($message === '') {
+        return null;
+    }
+    $type = (string)($flash['type'] ?? 'success');
+    return [
+        'message' => $message,
+        'type' => $type === 'error' ? 'error' : 'success',
+    ];
+}
+
+function aps_flash_render(): void
+{
+    $flash = aps_flash_consume();
+    if ($flash === null) {
+        return;
+    }
+    $class = ($flash['type'] ?? 'success') === 'error' ? 'alert alert-danger' : 'alert alert-success';
+    echo '<div class="' . sanitize($class) . '">' . sanitize($flash['message']) . '</div>';
+}
+
+function aps_redirect_with_flash(string $path, string $message, string $type = 'success'): void
+{
+    aps_flash_set($message, $type);
+    header('Location: ' . $path);
     exit;
+}
+
+function aps_redirect_after_visit_reason(string $message, string $type = 'success'): void
+{
+    aps_redirect_with_flash(aps_visit_reason_return_path(), $message, $type);
 }

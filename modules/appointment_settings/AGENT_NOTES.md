@@ -41,7 +41,9 @@ Four read-only tables with standard actions:
 | Visit reasons | `create.php?kind=visit_reason` | `view.php?kind=visit_reason&id=` | `edit.php?kind=visit_reason&id=` | POST `delete.php` |
 | Appointment types | ➕ `create.php?kind=appointment_type` | `view.php?kind=appointment_type&id=` | `edit.php?kind=appointment_type&id=` (active only) | 🗑️ all rows; core disabled in UI + blocked in `delete.php`; custom types hard-deleted when unreferenced |
 
-- Flash messages via `?msg=` query string after redirect.
+- Flash messages via session banner (`aps_flash_set()` / `aps_flash_render()`); legacy `?msg=` is consumed once into session flash.
+- **Weekly hours grid** (`#hours-grid` on hub, edit permission): bulk-save all seven weekdays via `bulk_business_hours` POST and `itm_appointment_settings_save_business_hours_bulk()`.
+- Company settings hub table: **no delete** on the sole settings row (blocked in `delete.php`; `itm_appointment_settings_ensure_company_config()` restores defaults).
 - Company settings hub table columns: **Timezone**, **Slot (min)**, **Booking** (Enabled/Disabled from `booking_enabled`), **Active**, **Actions** — modality is configured on **business hours** rows only.
 - Hub header (edit permission): **Booking** badge plus ✅/❌ quick toggle POST (`booking_toggle` on `index.php`).
 - Settings **edit.php**: **Enable appointment booking** checkbox maps to `booking_enabled`; `active` stays `1` via hidden input unless soft-deleted.
@@ -53,7 +55,7 @@ Four read-only tables with standard actions:
 - **edit.php** — POST saves per `kind`; settings, business hour, visit reason, and appointment type forms include compliant `active` checkbox markup.
 - **view.php** — read-only detail per `kind`.
 - **delete.php** — POST only (`kind`, `id`, CSRF).
-- **list_all.php** — redirects to `index.php` (scaffold compatibility).
+- **list_all.php** — visit reasons list with search/sort/pagination; drag reorder when not searching (`js/appointment-settings.js`, POST `visit_reason_reorder`).
 - **aps_init.php** — shared bootstrap, shell, action cell helpers.
 
 ### Not flattened scaffold CRUD
@@ -69,7 +71,8 @@ N/A — HTML forms only. Booking API reads configuration tables indirectly via `
 - **index.php** — configuration hub (tables only)
 - **list_all.php** — visit reasons list (search, sort, pagination) for the booking dropdown *What is the reason for your appointment?*
 - **create.php**, **edit.php**, **view.php**, **delete.php** — per-entity CRUD (`kind=`); visit-reason saves redirect to **list_all.php**
-- **aps_init.php** — bootstrap + layout helpers
+- **aps_init.php** — bootstrap + layout helpers + session flash (`aps_flash_*`)
+- **js/appointment-settings.js** — visit-reason drag reorder on `list_all.php`
 - **includes/itm_appointment_settings_admin.php** — ensure defaults, admin list helpers (`*_admin` loaders include inactive rows where noted)
 
 ## 8. Multi-Tenant Rules
@@ -84,12 +87,11 @@ N/A — HTML forms only. Booking API reads configuration tables indirectly via `
 
 ## 10. Common Pitfalls
 
-- Do not document “inline bulk hours grid on index” — per-row **edit.php** replaced the old save-all-hours form.
+- Do not document “inline bulk hours grid on index” as missing — weekly grid at `#hours-grid` complements per-row **edit.php**.
 - `create.php?kind=business_hour` uses numeric **day_of_week** (0=Sun) — easy to misconfigure vs `display_label`.
-- No duplicate-name guard on visit reasons — duplicates allowed in schema.
-- Appointment Settings link on booking UI is **`itm_is_admin` only** — users with settings RBAC but not admin never see ⚙️ (see Appointment module notes).
+- Visit reason names are **unique per company** (`uq_appointment_visit_reasons_company_name`); create/edit call `itm_appointment_settings_visit_reason_name_exists()` before save.
+- Appointment Settings link on booking UI uses `appt_user_can_access_settings()` (admin or `appointment_settings` edit RBAC).
 - After fresh deploy without `02_data` registry row, run `php scripts/sync_modules_registry.php` so slug `appointment_settings` exists.
-- Editing timezone does not automatically fix booking sidebar “(BST)” hardcoding in Appointment `index.php`.
 
 ## 11. Examples of Safe Code Patterns
 
@@ -111,25 +113,25 @@ Covered by shared appointment verifier (registry + ensure helper):
 
 ```bash
 php scripts/verify_appointment.php
+php scripts/verify_appointment_settings.php
 php -l modules/appointment_settings/index.php
 php -l modules/appointment_settings/edit.php
 php -l includes/itm_appointment_settings_admin.php
 ```
 
-### Daily-use improvement backlog (not implemented)
+Browser: [verify_appointment_settings.php?run=1](http://localhost/it-management/scripts/verify_appointment_settings.php?run=1) (Admin session)
 
-| Area | Gap | Suggested direction |
-|------|-----|---------------------|
-| Efficiency | No bulk “save all hours” grid | Optional second tab or restore grid edit for weekly tune-ups |
-| Visit reasons | No drag sort | Reorder `sort_order` in UI |
-| Visit reasons | Companies 2–5 empty on old DBs | `php scripts/apply_appointment_visit_reasons_replicate.php --apply` or re-import `db/02_data.sql` (seeds now run before `@replicate_source_company_id`) |
-| Validation | Duplicate reason names | Optional UNIQUE per company or warn on create |
-| Settings | Delete settings row | Hide 🗑️ or confirm + auto re-ensure; gate booking on `active` |
-| Types | Edit name disabled | By design — only `active`; document labels in UI copy |
-| RBAC | Admin-only ⚙️ on booking | **Done** — `appt_user_can_access_settings()` (admin or `appointment_settings` edit) |
-| Onboarding | New tenant | Ensure runs on first visit; document default Wed–Fri online window |
-| Testing | No dedicated script | Optional `verify_appointment_settings.php` for CRUD smoke only |
-| UX | `?msg=` flash only | Session flash or banner component matching other modules |
+### Settings admin pack (APSET-1–7) — done
+
+| ID | Deliverable |
+|----|-------------|
+| APSET-1 | Weekly bulk hours grid on hub |
+| APSET-2 | Visit-reason drag reorder on `list_all.php` |
+| APSET-3 | Duplicate visit-reason name guard (schema UNIQUE + PHP check) |
+| APSET-4 | Settings row delete hidden/blocked |
+| APSET-5 | Session flash banners |
+| APSET-6 | `verify_appointment_settings.php` |
+| APSET-7 | Booking ⚙️ via `appt_user_can_access_settings()` (see `modules/appointments/AGENT_NOTES.md`) |
 
 ### Related module
 

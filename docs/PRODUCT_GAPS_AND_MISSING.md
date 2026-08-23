@@ -19,7 +19,7 @@ Living inventory of **partial** and **not started** items from the Product & Arc
 
 ---
 
-## Appointment pack (~90% done)
+## Appointment pack (complete)
 
 **Core proposal items — shipped**
 
@@ -48,12 +48,12 @@ Living inventory of **partial** and **not started** items from the Product & Arc
 
 | ID | Gap | Suggested fix | Complexity |
 |----|-----|---------------|------------|
-| APSET-1 | No bulk “save all hours” grid | Optional weekly grid tab for `appointment_business_hours` | Medium |
-| APSET-2 | Visit reasons: no drag sort | UI to reorder `sort_order` | Low |
-| APSET-3 | Duplicate visit reason names allowed | UNIQUE per company or create-time warning | Low |
-| APSET-4 | Settings row delete vs re-ensure | Hide 🗑️ or confirm + `itm_appointment_settings_ensure_company_config()` | Low |
-| APSET-5 | Flash UX (`?msg=` only) | Session flash / banner like other modules | Low |
-| APSET-6 | No `verify_appointment_settings.php` | Optional CRUD smoke script + catalog row | Low |
+| APSET-1 | No bulk “save all hours” grid | **Done** — weekly grid `#hours-grid` on hub; `itm_appointment_settings_save_business_hours_bulk()` |
+| APSET-2 | Visit reasons: no drag sort | **Done** — drag reorder on [list_all.php](http://localhost/it-management/modules/appointment_settings/list_all.php); `js/appointment-settings.js` |
+| APSET-3 | Duplicate visit reason names allowed | **Done** — `uq_appointment_visit_reasons_company_name` + `itm_appointment_settings_visit_reason_name_exists()` on create/edit |
+| APSET-4 | Settings row delete vs re-ensure | **Done** — settings 🗑️ hidden; `delete.php` blocks with flash; ensure restores defaults |
+| APSET-5 | Flash UX (`?msg=` only) | **Done** — `aps_flash_set()` / `aps_flash_render()` session banners |
+| APSET-6 | No `verify_appointment_settings.php` | **Done** — [verify_appointment_settings.php?run=1](http://localhost/it-management/scripts/verify_appointment_settings.php?run=1) |
 | APSET-7 | RBAC for ⚙️ on booking page | **Done** — `appt_user_can_access_settings()` |
 
 ### By design (not counted in the 90% pack)
@@ -61,7 +61,7 @@ Living inventory of **partial** and **not started** items from the Product & Arc
 - Booking `index.php` stays bespoke (slot modal) — no flattened scaffold bulk delete / Excel import on booking screen.
 - Module remains on `docs/list_bespoke_UI.txt` (deferred soft-delete scaffold parity).
 
-**Regression:** `php scripts/verify_appointment.php` · Browser: [verify_appointment.php?run=1](http://localhost/it-management/scripts/verify_appointment.php?run=1) (Admin session)
+**Regression:** `php scripts/verify_appointment.php` · `php scripts/verify_appointment_settings.php` · Browser: [verify_appointment.php?run=1](http://localhost/it-management/scripts/verify_appointment.php?run=1) · [verify_appointment_settings.php?run=1](http://localhost/it-management/scripts/verify_appointment_settings.php?run=1) (Admin session)
 
 ---
 
@@ -119,10 +119,7 @@ Living inventory of **partial** and **not started** items from the Product & Arc
 
 ## Suggested implementation order (appointment gaps only)
 
-1. APPT-1 + APPT-2 + APPT-3 (single PR, low risk)
-2. APSET-7 (same PR as APPT-3)
-3. APPT-4 (MBQA + extend `verify_appointment.php`)
-4. APSET-1–6 as separate settings-admin PR(s)
+All APSET-1–7 items are **done**. Optional follow-ups: deeper MBQA booking steps on `modules/appointments/index.php`.
 
 ---
 

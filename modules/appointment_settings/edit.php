@@ -36,8 +36,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             mysqli_stmt_bind_param($stmt, 'sisssisiiii', $timezone, $slotMinutes, $bookableStart, $bookableEnd, $buffer, $defaultModality, $bookingEnabled, $isActive, $employee_id, $postId, $company_id);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
-            header('Location: index.php?msg=' . rawurlencode('Settings saved.'));
-            exit;
+            aps_redirect_with_flash('index.php', 'Settings saved.');
         }
     }
 
@@ -70,8 +69,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             mysqli_stmt_bind_param($stmt, 'sssiiisiiii', $label, $open, $close, $isClosed, $allowsInPerson, $allowsRemote, $allowedJson, $isActive, $employee_id, $postId, $company_id);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
-            header('Location: index.php?msg=' . rawurlencode('Business hour saved.'));
-            exit;
+            aps_redirect_with_flash('index.php', 'Business hour saved.');
         }
     }
 
@@ -80,6 +78,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $sortOrder = (int)($_POST['sort_order'] ?? 0);
         $isActive = !empty($_POST['active']) ? 1 : 0;
         if ($name !== '') {
+            if (itm_appointment_settings_visit_reason_name_exists($conn, $company_id, $name, $postId)) {
+                aps_redirect_after_visit_reason('A visit reason with that name already exists for this company.', 'error');
+            }
             $sql = 'UPDATE appointment_visit_reasons SET name = ?, sort_order = ?, active = ?, updated_by = ? WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
@@ -89,7 +90,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     aps_redirect_after_visit_reason('Visit reason saved.');
                 }
                 mysqli_stmt_close($stmt);
-                aps_redirect_after_visit_reason('Could not save visit reason (name may already exist for this company).');
+                aps_redirect_after_visit_reason('Could not save visit reason (name may already exist for this company).', 'error');
             }
         }
     }
@@ -114,8 +115,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $newName = preg_replace('/[^a-z0-9_]+/', '_', $newName);
             $newName = trim($newName, '_');
             if ($newName === '' || in_array($newName, ['in_person', 'remote'], true)) {
-                header('Location: index.php?msg=' . rawurlencode('Invalid appointment type name.'));
-                exit;
+                aps_redirect_with_flash('index.php', 'Invalid appointment type name.', 'error');
             }
         }
         if ($label === '') {
@@ -130,8 +130,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             if (!$core && $newName !== $existingName && $existingName !== '') {
                 itm_appointment_settings_rename_type_on_business_hours($conn, $company_id, $existingName, $newName);
             }
-            header('Location: index.php?msg=' . rawurlencode('Appointment type saved.'));
-            exit;
+            aps_redirect_with_flash('index.php', 'Appointment type saved.');
         }
     }
 }

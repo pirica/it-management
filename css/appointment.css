@@ -265,3 +265,15 @@
 .appointment-list-table {
     width: 100%;
 }
+#aps-visit-reason-sortable tr.aps-dragging {
+    opacity: 0.55;
+}
+#aps-visit-reason-sortable tr.aps-drag-over td {
+    border-top: 2px dashed var(--accent, #0969da);
+}
+.aps-drag-handle {
+    cursor: grab;
+    user-select: none;
+    width: 2rem;
+    text-align: center;
+}

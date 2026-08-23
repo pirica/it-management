@@ -47,7 +47,7 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 - Schedule: AJAX POST to `api.php` `action=schedule` with CSRF; success redirects to `view.php?id=`; sends confirmation email + `.ics`.
 - **👤 My appointments** link → `list_all.php?filter=mine`. Inactive `appointment_settings` shows banner and disables booking controls.
 - Sidebar card: simplified Mon–Fri / Sat–Sun summary (see pitfalls — not a full per-day grid).
-- **⚙️ Appointment Settings** link: only when `itm_is_admin($conn, $employee_id)` — not RBAC `appointment_settings` edit permission.
+- **⚙️ Appointment Settings** link: when `appt_user_can_access_settings()` (admin or RBAC **edit** on `appointment_settings`).
 
 ### List / view (`list_all.php`, `view.php`)
 
@@ -96,10 +96,8 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 ## 10. Common Pitfalls
 
 - Do not assume delete is employee-scoped: delete POST only checks `company_id`, not booking owner (use self-service **cancel** API for owner/admin on scheduled rows).
-- Sidebar hours text hardcodes **“(BST)”**; timezone label elsewhere uses `appointment_settings.timezone` (can disagree).
 - Mon–Fri line uses **first open weekday row** only — misleading if Tuesday hours differ from Monday.
 - Empty visit-reason dropdown if all reasons inactive/deleted — no empty-state message on booking form.
-- Slot display after confirm uses **ISO date** in the text field (`YYYY-MM-DD`), not `dd/mm/yyyy` display helper.
 - Errors use browser `alert()` — no inline flash on booking screen.
 - `itm_appointment_load_settings()` returns the row regardless of `active`; use `itm_appointment_settings_booking_enabled()` before booking.
 
@@ -133,7 +131,7 @@ php -l modules/appointments/api.php
 |------|-----|---------------------|
 | QA | MBQA bespoke smoke only | Tier D index `list`/`search`/`sort`; extend steps when booking flow is stable |
 
-**Done (appointment pack gaps):** slot summary uses `display_summary` / `date_display` (dd/mm/yyyy); sidebar hours use configured timezone (not hardcoded BST); ⚙️ Settings link when admin or RBAC **edit** on `appointment_settings` (`appt_user_can_access_settings()`).
+**Done (appointment pack):** slot summary uses `display_summary` / `date_display` (dd/mm/yyyy); sidebar hours use configured timezone; ⚙️ Settings link when `appt_user_can_access_settings()`; settings admin APSET-1–7 on `modules/appointment_settings/`.
 
 ### Migration (existing DBs)
 
