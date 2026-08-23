@@ -49,6 +49,7 @@ if (!function_exists('itm_cmdb_builtin_type_seeds')) {
             ['name' => 'Application', 'source_slug' => 'builtin:application', 'icon' => '📱'],
             ['name' => 'Service', 'source_slug' => 'builtin:service', 'icon' => '⚙️'],
             ['name' => 'IDF', 'source_slug' => 'builtin:idf', 'icon' => '🗄️'],
+            ['name' => 'Rack', 'source_slug' => 'builtin:rack', 'icon' => '🗂️'],
             ['name' => 'Subnet', 'source_slug' => 'builtin:subnet', 'icon' => '🌐'],
         ];
     }
@@ -251,7 +252,7 @@ if (!function_exists('itm_cmdb_upsert_ci')) {
 }
 
 if (!function_exists('itm_cmdb_sync_equipment')) {
-    function itm_cmdb_sync_equipment(mysqli $conn, int $companyId, int $equipmentId, int $employeeId = 0): int
+    function itm_cmdb_sync_equipment(mysqli $conn, int $companyId, int $equipmentId, int $employeeId = 0, bool $linkRackHosts = true): int
     {
         if ($companyId <= 0 || $equipmentId <= 0) {
             return 0;
@@ -259,7 +260,7 @@ if (!function_exists('itm_cmdb_sync_equipment')) {
 
         $stmt = mysqli_prepare(
             $conn,
-            'SELECT e.id, e.name, e.equipment_type_id, et.name AS equipment_type_name
+            'SELECT e.id, e.name, e.equipment_type_id, e.rack_id, et.name AS equipment_type_name
              FROM equipment e
              LEFT JOIN equipment_types et ON et.id = e.equipment_type_id AND et.company_id = e.company_id
              WHERE e.id = ? AND e.company_id = ? AND e.deleted_at IS NULL
@@ -297,8 +298,94 @@ if (!function_exists('itm_cmdb_sync_equipment')) {
         $ciId = itm_cmdb_upsert_ci($conn, $companyId, $ciTypeId, $name, 'equipment', $equipmentId, $employeeId);
         if ($ciId > 0) {
             itm_cmdb_link_equipment_subnet_relationships($conn, $companyId, $equipmentId, $ciId, $employeeId);
+            if ($linkRackHosts) {
+                $rackId = (int)($row['rack_id'] ?? 0);
+                if ($rackId > 0) {
+                    $rackCiId = itm_cmdb_sync_rack($conn, $companyId, $rackId, $employeeId);
+                    if ($rackCiId > 0) {
+                        itm_cmdb_add_relationship($conn, $companyId, $rackCiId, $ciId, 'hosts', $employeeId);
+                    }
+                }
+            }
         }
         return $ciId;
+    }
+}
+
+if (!function_exists('itm_cmdb_sync_rack')) {
+    function itm_cmdb_sync_rack(mysqli $conn, int $companyId, int $rackId, int $employeeId = 0): int
+    {
+        if ($companyId <= 0 || $rackId <= 0) {
+            return 0;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT id, name, rack_code FROM racks WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $rackId, $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        if (!$row) {
+            return 0;
+        }
+
+        itm_cmdb_seed_types_for_company($conn, $companyId, $employeeId);
+        $ciTypeId = itm_cmdb_get_type_id_by_source($conn, $companyId, 'builtin:rack');
+        if ($ciTypeId <= 0) {
+            return 0;
+        }
+
+        $name = trim((string)($row['name'] ?? ''));
+        $rackCode = trim((string)($row['rack_code'] ?? ''));
+        if ($name === '') {
+            $name = 'Rack #' . $rackId;
+        }
+        if ($rackCode !== '') {
+            $name .= ' (' . $rackCode . ')';
+        }
+
+        $ciId = itm_cmdb_upsert_ci($conn, $companyId, $ciTypeId, $name, 'racks', $rackId, $employeeId);
+        if ($ciId > 0) {
+            itm_cmdb_link_rack_hosted_equipment($conn, $companyId, $rackId, $ciId, $employeeId);
+        }
+        return $ciId;
+    }
+}
+
+if (!function_exists('itm_cmdb_link_rack_hosted_equipment')) {
+    function itm_cmdb_link_rack_hosted_equipment(mysqli $conn, int $companyId, int $rackId, int $rackCiId, int $employeeId = 0): void
+    {
+        if ($companyId <= 0 || $rackId <= 0 || $rackCiId <= 0) {
+            return;
+        }
+
+        $eqStmt = mysqli_prepare(
+            $conn,
+            'SELECT id FROM equipment WHERE company_id = ? AND rack_id = ? AND deleted_at IS NULL'
+        );
+        if (!$eqStmt) {
+            return;
+        }
+        mysqli_stmt_bind_param($eqStmt, 'ii', $companyId, $rackId);
+        mysqli_stmt_execute($eqStmt);
+        $eqRes = mysqli_stmt_get_result($eqStmt);
+        while ($eqRes && ($eqRow = mysqli_fetch_assoc($eqRes))) {
+            $eqId = (int)($eqRow['id'] ?? 0);
+            if ($eqId <= 0) {
+                continue;
+            }
+            $eqCiId = itm_cmdb_sync_equipment($conn, $companyId, $eqId, $employeeId, false);
+            if ($eqCiId > 0) {
+                itm_cmdb_add_relationship($conn, $companyId, $rackCiId, $eqCiId, 'hosts', $employeeId);
+            }
+        }
+        mysqli_stmt_close($eqStmt);
     }
 }
 

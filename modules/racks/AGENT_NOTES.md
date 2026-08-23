@@ -14,6 +14,7 @@ Manages physical server racks, including their size (total units), location, and
 
 ## 4. Business Rules (Critical for Agents)
 - **Total Units**: Tracks the capacity of the rack in 'U' (e.g., 42U).
+- **CMDB Lite:** `create.php` / `edit.php` call `itm_cmdb_sync_rack()` after successful save; `view.php` embeds `includes/itm_cmdb_card.php`. Equipment with `equipment.rack_id` auto-links via `hosts` edges when equipment or rack sync runs (`includes/itm_cmdb.php`).
 
 ## 5. UI Behavior Requirements
 - **Standard flattened CRUD**: search across visible columns (`$displayFieldColumns` alias), sort (ASC/DESC ▲/▼), server-side pagination (`records_per_page`), bulk delete/clear when `$totalRows >= $perPage`, Export Excel/PDF, Import Excel via `table-tools.js`.

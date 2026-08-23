@@ -729,6 +729,17 @@ if (!isset($crud_title)) {
                     </table>
                     <p style="margin-top:16px;"><a href="index.php" class="btn">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>">✏️</a></p>
                 </div>
+                <?php
+                require_once ROOT_PATH . 'includes/itm_cmdb_card.php';
+                itm_cmdb_render_relationship_card(
+                    $conn,
+                    (int)$company_id,
+                    (int)($_SESSION['employee_id'] ?? 0),
+                    'racks',
+                    (int)($data['id'] ?? 0),
+                    (string)($data['name'] ?? '')
+                );
+                ?>
             <?php endif; ?>
         </div>
     </div>

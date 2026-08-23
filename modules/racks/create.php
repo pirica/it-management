@@ -551,6 +551,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 $auditNewValues = itm_fetch_audit_record($conn, $crud_table, $auditRecordId, $company_id);
                 itm_log_audit($conn, $crud_table, $auditRecordId, $auditAction, $auditOldValues, $auditNewValues);
             }
+            if ($auditRecordId > 0) {
+                require_once ROOT_PATH . 'includes/itm_cmdb.php';
+                itm_cmdb_sync_rack($conn, (int)$company_id, $auditRecordId, (int)($_SESSION['employee_id'] ?? 0));
+            }
             header('Location: ' . $listUrl);
             exit;
         }
