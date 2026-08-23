@@ -642,3 +642,246 @@ if (!function_exists('itm_saved_reports_render_email_dataset')) {
         ];
     }
 }
+
+if (!function_exists('itm_saved_reports_export_row_limit')) {
+    function itm_saved_reports_export_row_limit()
+    {
+        return 5000;
+    }
+}
+
+if (!function_exists('itm_saved_reports_get_export_pack')) {
+    /**
+     * @return array{ok:bool,error:string,view?:array<string,mixed>,dataset?:array<string,mixed>,query?:array<string,mixed>}
+     */
+    function itm_saved_reports_get_export_pack($conn, $viewId, $companyId, $employeeId)
+    {
+        $viewId = (int) $viewId;
+        $companyId = (int) $companyId;
+        $employeeId = (int) $employeeId;
+        $row = itm_saved_reports_fetch_by_id($conn, $viewId, $companyId);
+        if (!$row || !itm_saved_reports_can_view($conn, $row, $employeeId, $companyId)) {
+            return ['ok' => false, 'error' => 'Saved view not found or access denied.'];
+        }
+        $limit = itm_saved_reports_export_row_limit();
+        $query = itm_saved_reports_run_query($conn, $companyId, $row, ['limit' => $limit, 'offset' => 0]);
+        if (empty($query['ok'])) {
+            return ['ok' => false, 'error' => (string) ($query['error'] ?? 'Query failed.')];
+        }
+        $dataset = itm_saved_reports_render_email_dataset($query, (string) ($row['name'] ?? 'Saved view'));
+        return ['ok' => true, 'error' => '', 'view' => $row, 'dataset' => $dataset, 'query' => $query];
+    }
+}
+
+if (!function_exists('itm_saved_reports_safe_export_filename')) {
+    function itm_saved_reports_safe_export_filename($name, $extension)
+    {
+        $base = preg_replace('/[^A-Za-z0-9._-]+/', '-', trim((string) $name));
+        $base = trim((string) $base, '-');
+        if ($base === '') {
+            $base = 'saved-view';
+        }
+        $extension = ltrim((string) $extension, '.');
+        return $base . '.' . $extension;
+    }
+}
+
+if (!function_exists('itm_saved_reports_owner_owns_view')) {
+    function itm_saved_reports_owner_owns_view(array $viewRow, $employeeId)
+    {
+        return (int) ($viewRow['employee_id'] ?? 0) === (int) $employeeId;
+    }
+}
+
+if (!function_exists('itm_saved_reports_list_owner_schedules')) {
+    function itm_saved_reports_list_owner_schedules($conn, $companyId, $employeeId)
+    {
+        $companyId = (int) $companyId;
+        $employeeId = (int) $employeeId;
+        if ($companyId <= 0 || $employeeId <= 0) {
+            return [];
+        }
+        $stmt = mysqli_prepare(
+            $conn,
+            "SELECT * FROM scheduled_reports WHERE company_id = ? AND created_by = ? AND report_slug LIKE 'saved_view:%' AND deleted_at IS NULL ORDER BY id DESC"
+        );
+        if (!$stmt) {
+            return [];
+        }
+        mysqli_stmt_bind_param($stmt, 'ii', $companyId, $employeeId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $rows = [];
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $rows[] = $row;
+        }
+        mysqli_stmt_close($stmt);
+        return $rows;
+    }
+}
+
+if (!function_exists('itm_saved_reports_can_manage_schedule_slug')) {
+    function itm_saved_reports_can_manage_schedule_slug($conn, $companyId, $employeeId, $reportSlug, $isAdmin = false)
+    {
+        $savedViewId = itm_saved_reports_parse_scheduled_slug((string) $reportSlug);
+        if ($savedViewId <= 0) {
+            return (bool) $isAdmin;
+        }
+        if ($isAdmin) {
+            return true;
+        }
+        $viewRow = itm_saved_reports_fetch_by_id($conn, $savedViewId, (int) $companyId);
+        return $viewRow && itm_saved_reports_owner_owns_view($viewRow, $employeeId);
+    }
+}
+
+if (!function_exists('itm_saved_reports_share_module_slug')) {
+    function itm_saved_reports_share_module_slug()
+    {
+        return 'saved_report_views';
+    }
+}
+
+if (!function_exists('itm_saved_reports_share_create')) {
+    /**
+     * @return array{ok:bool,error:string,url?:string,code?:string,expires_at?:string}
+     */
+    function itm_saved_reports_share_create($conn, $viewId, $companyId, $employeeId)
+    {
+        $viewId = (int) $viewId;
+        $companyId = (int) $companyId;
+        $employeeId = (int) $employeeId;
+        $row = itm_saved_reports_fetch_by_id($conn, $viewId, $companyId);
+        if (!$row || !itm_saved_reports_owner_owns_view($row, $employeeId)) {
+            return ['ok' => false, 'error' => 'Only the owner can create a public share link.'];
+        }
+        if (!function_exists('itm_qr_share_generate_access_token')) {
+            require_once ROOT_PATH . 'includes/itm_qr_share.php';
+        }
+        itm_qr_share_purge_expired_sessions($conn, itm_saved_reports_share_module_slug());
+        $accessToken = itm_qr_share_generate_access_token();
+        $shareCode = itm_qr_share_generate_code($conn, itm_saved_reports_share_module_slug());
+        if ($accessToken === '' || $shareCode === '') {
+            return ['ok' => false, 'error' => 'Could not generate share token.'];
+        }
+        $ownerName = '';
+        $uStmt = mysqli_prepare($conn, 'SELECT username FROM employees WHERE id = ? AND company_id = ? LIMIT 1');
+        if ($uStmt) {
+            mysqli_stmt_bind_param($uStmt, 'ii', $employeeId, $companyId);
+            mysqli_stmt_execute($uStmt);
+            $uRes = mysqli_stmt_get_result($uStmt);
+            if ($uRes && ($uRow = mysqli_fetch_assoc($uRes))) {
+                $ownerName = (string) ($uRow['username'] ?? '');
+            }
+            mysqli_stmt_close($uStmt);
+        }
+        $payload = json_encode([
+            'type' => 'saved_report_view',
+            'view_id' => $viewId,
+            'heading' => (string) ($row['name'] ?? 'Saved report'),
+            'owner_username' => $ownerName,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $tableName = itm_qr_share_table_name();
+        $deactivateSql = 'UPDATE `' . $tableName . '` SET active = 0, deleted_at = NOW(), deleted_by = ?, updated_by = ?
+            WHERE company_id = ? AND employee_id = ? AND module_slug = ? AND record_id = ? AND active = 1 AND deleted_at IS NULL';
+        $deactivate = mysqli_prepare($conn, $deactivateSql);
+        if ($deactivate) {
+            $moduleSlug = itm_saved_reports_share_module_slug();
+            mysqli_stmt_bind_param($deactivate, 'iiiisi', $employeeId, $employeeId, $companyId, $employeeId, $moduleSlug, $viewId);
+            mysqli_stmt_execute($deactivate);
+            mysqli_stmt_close($deactivate);
+        }
+        $ttl = itm_qr_share_session_ttl_seconds();
+        $insertSql = 'INSERT INTO `' . $tableName . '` (company_id, employee_id, module_slug, record_id, share_code, access_token, payload_json, expires_at, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND), ?)';
+        $insert = mysqli_prepare($conn, $insertSql);
+        if (!$insert) {
+            return ['ok' => false, 'error' => 'Could not save share session.'];
+        }
+        $moduleSlug = itm_saved_reports_share_module_slug();
+        mysqli_stmt_bind_param($insert, 'iisisssii', $companyId, $employeeId, $moduleSlug, $viewId, $shareCode, $accessToken, $payload, $ttl, $employeeId);
+        if (!mysqli_stmt_execute($insert)) {
+            mysqli_stmt_close($insert);
+            return ['ok' => false, 'error' => 'Could not save share session.'];
+        }
+        mysqli_stmt_close($insert);
+        $joinPath = 'modules/saved_report_views/join.php';
+        $url = itm_qr_share_build_join_url($joinPath, $accessToken);
+        $expiresStmt = mysqli_prepare($conn, 'SELECT expires_at FROM `' . $tableName . '` WHERE access_token = ? LIMIT 1');
+        $expiresAt = '';
+        if ($expiresStmt) {
+            mysqli_stmt_bind_param($expiresStmt, 's', $accessToken);
+            mysqli_stmt_execute($expiresStmt);
+            $eRes = mysqli_stmt_get_result($expiresStmt);
+            if ($eRes && ($eRow = mysqli_fetch_assoc($eRes))) {
+                $expiresAt = (string) ($eRow['expires_at'] ?? '');
+            }
+            mysqli_stmt_close($expiresStmt);
+        }
+        return ['ok' => true, 'error' => '', 'url' => $url, 'code' => $shareCode, 'expires_at' => $expiresAt];
+    }
+}
+
+if (!function_exists('itm_saved_reports_share_render_live_table')) {
+    /**
+     * @return array{ok:bool,error:string,html?:string,title?:string,total?:int}
+     */
+    function itm_saved_reports_share_render_live_table($conn, array $session)
+    {
+        $companyId = (int) ($session['company_id'] ?? 0);
+        $viewId = (int) ($session['record_id'] ?? 0);
+        if ($companyId <= 0 || $viewId <= 0) {
+            return ['ok' => false, 'error' => 'Invalid share session.'];
+        }
+        $row = itm_saved_reports_fetch_by_id($conn, $viewId, $companyId);
+        if (!$row) {
+            return ['ok' => false, 'error' => 'Saved view no longer exists.'];
+        }
+        $query = itm_saved_reports_run_query($conn, $companyId, $row, ['limit' => 500, 'offset' => 0]);
+        if (empty($query['ok'])) {
+            return ['ok' => false, 'error' => (string) ($query['error'] ?? 'Could not load data.')];
+        }
+        $dataset = itm_saved_reports_render_email_dataset($query, (string) ($row['name'] ?? 'Saved report'));
+        $total = (int) ($query['total'] ?? 0);
+        $note = $total > 500
+            ? '<p><strong>Showing first 500 of ' . $total . ' rows.</strong></p>'
+            : '<p><strong>Total rows:</strong> ' . $total . '</p>';
+        return [
+            'ok' => true,
+            'error' => '',
+            'title' => (string) ($dataset['title'] ?? 'Saved report'),
+            'total' => $total,
+            'html' => $note . (string) ($dataset['html_table'] ?? ''),
+        ];
+    }
+}
+
+if (!function_exists('itm_saved_reports_dashboard_snapshot')) {
+    /**
+     * @return array{count:int,previews:array<int,array{id:int,name:string,module_slug:string,total:int,hub_url:string}>}
+     */
+    function itm_saved_reports_dashboard_snapshot($conn, $companyId, $employeeId, $previewLimit = 3)
+    {
+        $views = itm_saved_reports_list_visible($conn, (int) $companyId, (int) $employeeId);
+        $previews = [];
+        $previewLimit = max(1, min(5, (int) $previewLimit));
+        foreach ($views as $view) {
+            if (count($previews) >= $previewLimit) {
+                break;
+            }
+            $viewId = (int) ($view['id'] ?? 0);
+            if ($viewId <= 0) {
+                continue;
+            }
+            $run = itm_saved_reports_run_query($conn, (int) $companyId, $view, ['limit' => 1, 'offset' => 0]);
+            $previews[] = [
+                'id' => $viewId,
+                'name' => (string) ($view['name'] ?? ''),
+                'module_slug' => (string) ($view['module_slug'] ?? ''),
+                'total' => (int) ($run['total'] ?? 0),
+                'hub_url' => 'modules/reports/index.php#my-saved-reports',
+            ];
+        }
+        return ['count' => count($views), 'previews' => $previews];
+    }
+}

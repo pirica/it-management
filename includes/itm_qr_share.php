@@ -159,6 +159,7 @@ function itm_qr_share_capable_module_slugs()
         'gl_accounts',
         'monthly_budgets',
         'webmail',
+        'saved_report_views',
     ];
 }
 

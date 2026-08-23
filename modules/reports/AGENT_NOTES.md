@@ -49,7 +49,10 @@ This module is read-only and aggregates data from:
 
 - **Table:** `saved_report_views` — per-user filter/column JSON for `tickets`, `equipment`, `expenses`; `shared_scope` private | department | company.
 - **Save UI:** 💾 control on those modules’ list search rows (`includes/itm_saved_reports_ui.php`).
-- **Hub section:** `#my-saved-reports` on [modules/reports/index.php](http://localhost/it-management/modules/reports/index.php) — open list, JSON run link, schedule (admin), delete (owner).
+- **Hub section:** `#my-saved-reports` on [modules/reports/index.php](http://localhost/it-management/modules/reports/index.php) — open list, JSON run, export Excel/PDF, edit (owner), share link, schedule email (owner), delete (owner); owner schedules table below list.
+- **Export:** [saved_report_views/export.php?id=&format=xlsx|pdf](http://localhost/it-management/modules/saved_report_views/export.php?id=1&format=xlsx) (session).
+- **Public share:** [saved_report_views/join.php?t=](http://localhost/it-management/modules/saved_report_views/join.php) (token from `api.php?action=share`).
+- **Dashboard widget:** [dashboard.php](http://localhost/it-management/dashboard.php) — Saved reports section (`itm_saved_reports_dashboard_snapshot()`).
 - **API:** [saved_report_views/api.php?action=run&id=](http://localhost/it-management/modules/saved_report_views/api.php?action=run&id=1) (session + rate limit).
 - **Verify:** `php scripts/verify_saved_report_views.php` — [browser](http://localhost/it-management/scripts/verify_saved_report_views.php?run=1).
 

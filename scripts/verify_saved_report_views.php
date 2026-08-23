@@ -149,6 +149,33 @@ if (empty($save['ok']) || (int)($save['id'] ?? 0) <= 0) {
     } else {
         srv_pass('Scheduled slug helpers');
     }
+    $share = itm_saved_reports_share_create($conn, $viewId, $companyId, $employeeId);
+    if (!empty($share['ok'])) {
+        srv_pass('Share link helper');
+    } else {
+        srv_fail('Share link helper: ' . (string) ($share['error'] ?? ''));
+    }
+
+    $exportPack = itm_saved_reports_get_export_pack($conn, $viewId, $companyId, $employeeId);
+    if (empty($exportPack['ok']) || empty($exportPack['dataset']['tabular_csv'])) {
+        srv_fail('Export pack helper failed');
+    } else {
+        srv_pass('Export pack helper');
+    }
+
+    if (!itm_saved_reports_can_manage_schedule_slug($conn, $companyId, $employeeId, itm_saved_reports_scheduled_slug($viewId), false)) {
+        srv_fail('Owner should manage own saved-view schedule slug');
+    } else {
+        srv_pass('Owner schedule permission');
+    }
+
+    $snapshot = itm_saved_reports_dashboard_snapshot($conn, $companyId, $employeeId, 2);
+    if ((int) ($snapshot['count'] ?? 0) < 1) {
+        srv_fail('Dashboard snapshot should include saved views');
+    } else {
+        srv_pass('Dashboard snapshot count=' . (int) $snapshot['count']);
+    }
+
     itm_saved_reports_soft_delete($conn, $viewId, $employeeId, $companyId);
 }
 
