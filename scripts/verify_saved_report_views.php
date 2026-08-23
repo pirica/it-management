@@ -92,6 +92,29 @@ if (strpos($csv, '"Test, ""quoted"""') === false) {
     srv_pass('Tabular CSV builder');
 }
 
+$listUrl = itm_saved_reports_build_list_url('tickets', ['search' => 'wifi', 'status_id' => 2], 42);
+if (strpos($listUrl, 'saved_view_id=42') === false || strpos($listUrl, 'status_id=2') === false) {
+    srv_fail('List URL builder should include filters and saved_view_id');
+} else {
+    srv_pass('List URL builder with saved_view_id');
+}
+
+require_once ROOT_PATH . 'includes/itm_equipment_list_query.php';
+$equipFilters = itm_equipment_list_parse_filters(['search' => 'core', 'equipment_type_name' => 'Switch'], ['locked_type_name' => 'Server']);
+if (($equipFilters['equipment_type_name'] ?? '') !== 'Server') {
+    srv_fail('Equipment locked type filter should win over GET');
+} else {
+    srv_pass('Equipment shared list filter parser');
+}
+
+require_once ROOT_PATH . 'includes/itm_expenses_list_query.php';
+$expenseFilters = itm_expenses_list_parse_filters(['date_from' => '2026-01-15', 'paid_status_id' => '3']);
+if (($expenseFilters['date_from'] ?? '') !== '2026-01-15' || (int)($expenseFilters['paid_status_id'] ?? 0) !== 3) {
+    srv_fail('Expenses shared list filter parser');
+} else {
+    srv_pass('Expenses shared list filter parser');
+}
+
 $companyId = 1;
 $employeeId = 1;
 $save = itm_saved_reports_save($conn, [

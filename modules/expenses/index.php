@@ -1089,46 +1089,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 }
 
 // FETCH LIST DATA
+require_once ROOT_PATH . 'includes/itm_expenses_list_query.php';
+
+$expenseListFilters = itm_expenses_list_parse_filters($_GET);
+$expenseDateFrom = (string) ($expenseListFilters['date_from'] ?? '');
+$expenseDateTo = (string) ($expenseListFilters['date_to'] ?? '');
+$expensePaidStatusId = (int) ($expenseListFilters['paid_status_id'] ?? 0);
+$expenseSupplierId = (int) ($expenseListFilters['supplier_id'] ?? 0);
+$expenseFilterOptions = itm_expenses_list_load_filter_options($conn, (int) $company_id);
+$expensePaidStatusOptions = $expenseFilterOptions['paid_statuses'] ?? [];
+$expenseSupplierOptions = $expenseFilterOptions['suppliers'] ?? [];
+
 $where = '';
 if ($hasCompany && $company_id > 0) { $where = ' WHERE company_id=' . (int)$company_id; }
 
-$expenseDateFrom = '';
-$expenseDateTo = '';
-$expenseDateFromRaw = trim((string)($_GET['date_from'] ?? ''));
-$expenseDateToRaw = trim((string)($_GET['date_to'] ?? ''));
-if ($expenseDateFromRaw !== '') {
-    $parsedFrom = function_exists('itm_parse_date_input') ? itm_parse_date_input($expenseDateFromRaw) : '';
-    if ($parsedFrom === '' && strtotime($expenseDateFromRaw)) {
-        $parsedFrom = date('Y-m-d', strtotime($expenseDateFromRaw));
-    }
-    $expenseDateFrom = $parsedFrom;
-}
-if ($expenseDateToRaw !== '') {
-    $parsedTo = function_exists('itm_parse_date_input') ? itm_parse_date_input($expenseDateToRaw) : '';
-    if ($parsedTo === '' && strtotime($expenseDateToRaw)) {
-        $parsedTo = date('Y-m-d', strtotime($expenseDateToRaw));
-    }
-    $expenseDateTo = $parsedTo;
-}
-$expensePaidStatusId = (int)($_GET['paid_status_id'] ?? 0);
-$expenseSupplierId = (int)($_GET['supplier_id'] ?? 0);
-
-$expensePaidStatusOptions = [];
-$expensePaidOptRes = mysqli_query($conn, 'SELECT id, name FROM paid_statuses WHERE company_id = ' . (int)$company_id . ' ORDER BY name ASC');
-while ($expensePaidOptRes && ($expensePaidOptRow = mysqli_fetch_assoc($expensePaidOptRes))) {
-    $expensePaidStatusOptions[] = $expensePaidOptRow;
-}
-$expenseSupplierOptions = [];
-$expenseSupOptRes = mysqli_query(
-    $conn,
-    'SELECT id, name FROM suppliers WHERE company_id = ' . (int)$company_id . ' AND deleted_at IS NULL ORDER BY name ASC'
-);
-while ($expenseSupOptRes && ($expenseSupOptRow = mysqli_fetch_assoc($expenseSupOptRes))) {
-    $expenseSupplierOptions[] = $expenseSupOptRow;
-}
-
 // SEARCH LOGIC
-$searchRaw = trim((string)($_GET['search'] ?? ''));
+$searchRaw = trim((string)($expenseListFilters['search'] ?? ''));
 if ($searchRaw !== '') {
     $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
     $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
@@ -1159,23 +1135,16 @@ if (!empty($searchConditions)) {
     }
 }
 
-if ($expenseDateFrom !== '') {
-    $where .= ($where === '' ? ' WHERE ' : ' AND ') . "`date` >= '" . mysqli_real_escape_string($conn, $expenseDateFrom) . "'";
-}
-if ($expenseDateTo !== '') {
-    $where .= ($where === '' ? ' WHERE ' : ' AND ') . "`date` <= '" . mysqli_real_escape_string($conn, $expenseDateTo) . "'";
-}
-if ($expensePaidStatusId > 0) {
-    $where .= ($where === '' ? ' WHERE ' : ' AND ') . 'paid_status_id = ' . (int)$expensePaidStatusId;
-}
-if ($expenseSupplierId > 0) {
-    $where .= ($where === '' ? ' WHERE ' : ' AND ') . 'supplier_id = ' . (int)$expenseSupplierId;
+if ($expenseDateFrom !== '' || $expenseDateTo !== '' || $expensePaidStatusId > 0 || $expenseSupplierId > 0) {
+    $where = itm_expenses_list_append_filter_sql($where, $conn, $expenseListFilters);
 }
 
 // SORTING LOGIC
 $sortableColumns = array_map(static function ($col) { return $col['Field']; }, $fieldColumns);
 $sort = (string)($_GET['sort'] ?? 'id');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
+$sort = (string) ($expenseListFilters['sort'] ?? $sort);
+$dir = strtoupper((string) ($expenseListFilters['dir'] ?? $dir));
 if (!in_array($sort, $sortableColumns, true)) { $sort = 'id'; }
 if (!in_array($dir, ['ASC', 'DESC'], true)) { $dir = 'DESC'; }
 $sortSql = cr_escape_identifier($sort) . ' ' . $dir;
@@ -1198,23 +1167,7 @@ $newButtonPosition = itm_resolve_new_button_position($ui_config);
 
 require_once ROOT_PATH . 'includes/itm_saved_reports.php';
 $itmSavedReportsModuleSlug = 'expenses';
-$itmSavedReportsFilters = [
-    'search' => $searchRaw,
-    'sort' => $sort,
-    'dir' => $dir,
-];
-if ($expenseDateFrom !== '') {
-    $itmSavedReportsFilters['date_from'] = $expenseDateFrom;
-}
-if ($expenseDateTo !== '') {
-    $itmSavedReportsFilters['date_to'] = $expenseDateTo;
-}
-if ($expensePaidStatusId > 0) {
-    $itmSavedReportsFilters['paid_status_id'] = $expensePaidStatusId;
-}
-if ($expenseSupplierId > 0) {
-    $itmSavedReportsFilters['supplier_id'] = $expenseSupplierId;
-}
+$itmSavedReportsFilters = $expenseListFilters;
 $itmSavedReportsColumns = array_keys(itm_saved_reports_module_config('expenses')['columns'] ?? []);
 $expenseListQueryString = itm_saved_reports_filters_query_string($itmSavedReportsFilters);
 ?>
@@ -1244,6 +1197,7 @@ if (!isset($crud_title)) {
         <?php include '../../includes/header.php'; ?>
         <div class="content">
             <?php echo itm_render_alert_errors($errors); ?>
+            <?php include ROOT_PATH . 'includes/itm_saved_reports_list_banner.php'; ?>
 
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">

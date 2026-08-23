@@ -21,6 +21,8 @@ JSON API and redirect entry for **saved list views** (custom report builder). Us
 - List pages expose filter controls (status/assignee/dates on tickets; type on general equipment; date/paid status/supplier on expenses). Save modal reads live values from `data-itm-saved-reports-list-form` + `data-itm-saved-report-filter` fields.
 - Save modal includes a **column picker** (checkboxes per whitelisted column); at least one column required.
 - Tickets list query is shared: `includes/itm_tickets_list_query.php` (index + saved-view run).
+- Equipment list query: `includes/itm_equipment_list_query.php`; expenses filters/query: `includes/itm_expenses_list_query.php`.
+- Reports Hub **Open list** link uses `itm_saved_reports_build_list_url()` with stored filters + `saved_view_id` for the list banner.
 - Scheduled email attachments use `tabular_csv` from `itm_saved_reports_build_tabular_csv()` when dataset is a saved view.
 - Shared views are **read-only** for non-owners; only owner may update/delete.
 - `GET api.php?action=run&id=` returns JSON rows; rate-limited via `itm_api_enforce_rate_limit_or_exit()`.

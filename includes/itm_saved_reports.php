@@ -363,21 +363,18 @@ if (!function_exists('itm_saved_reports_list_visible')) {
 }
 
 if (!function_exists('itm_saved_reports_build_list_url')) {
-    function itm_saved_reports_build_list_url($moduleSlug, array $filters)
+    function itm_saved_reports_build_list_url($moduleSlug, array $filters, $savedViewId = 0)
     {
         $moduleSlug = (string) $moduleSlug;
         if (!in_array($moduleSlug, itm_saved_reports_supported_modules(), true)) {
             return '';
         }
         $base = '../' . $moduleSlug . '/index.php';
-        $query = [];
-        foreach ($filters as $key => $value) {
-            if ($value === null || $value === '') {
-                continue;
-            }
-            $query[$key] = $value;
+        $extra = [];
+        if ((int) $savedViewId > 0) {
+            $extra['saved_view_id'] = (int) $savedViewId;
         }
-        $qs = http_build_query($query);
+        $qs = itm_saved_reports_filters_query_string($filters, $extra);
         return $base . ($qs !== '' ? '?' . $qs : '');
     }
 }
@@ -584,56 +581,11 @@ if (!function_exists('itm_saved_reports_run_tickets')) {
 if (!function_exists('itm_saved_reports_run_equipment')) {
     function itm_saved_reports_run_equipment($conn, $companyId, array $filters, array $columns, $limit, $offset, array $config)
     {
-        if (!function_exists('itm_equipment_search_join_sql')) {
-            require_once ROOT_PATH . 'includes/itm_equipment_search.php';
+        if (!function_exists('itm_equipment_list_count')) {
+            require_once ROOT_PATH . 'includes/itm_equipment_list_query.php';
         }
-        $searchRaw = trim((string) ($filters['search'] ?? ''));
-        $isSearchActive = $searchRaw !== '';
-        $joinSql = itm_equipment_search_join_sql($isSearchActive);
-        $searchWhere = itm_equipment_build_search_where_sql($conn, $searchRaw);
-
-        $typeFilter = trim((string) ($filters['equipment_type_name'] ?? ''));
-        $typeSql = '';
-        if ($typeFilter !== '') {
-            $typeEsc = mysqli_real_escape_string($conn, strtolower($typeFilter));
-            $typeSql = " AND LOWER(TRIM(et.name)) = '{$typeEsc}'";
-        }
-
-        $sort = (string) ($filters['sort'] ?? 'id');
-        $dir = (string) ($filters['dir'] ?? 'DESC');
-        $orderByMap = [
-            'id' => 'e.id',
-            'name' => 'e.name',
-            'equipment_type_name' => 'et.name',
-            'hostname' => 'e.hostname',
-            'ip_address' => 'e.ip_address',
-            'idf_name' => 'idf.name',
-            'rack_name' => 'r.name',
-            'location_name' => 'l.name',
-            'manufacturer_name' => 'm.name',
-            'mac_address' => 'e.mac_address',
-            'department_label' => "COALESCE(NULLIF(TRIM(d.code), ''), d.name)",
-            'status_name' => 'es.name',
-        ];
-        if (!isset($orderByMap[$sort])) {
-            $sort = 'id';
-        }
-        $sortSql = $orderByMap[$sort] . ' ' . ($dir === 'ASC' ? 'ASC' : 'DESC');
-
-        $where = "e.company_id = " . (int) $companyId . " AND e.deleted_at IS NULL" . $typeSql . $searchWhere;
-        $countRes = mysqli_query($conn, 'SELECT COUNT(*) AS total FROM equipment e ' . $joinSql . ' WHERE ' . $where);
-        $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
-        $total = (int) ($countRow['total'] ?? 0);
-
-        $selectSql = "SELECT e.id, e.name, et.name AS equipment_type_name, e.hostname, e.ip_address,
-            idf.name AS idf_name, r.name AS rack_name, l.name AS location_name, m.name AS manufacturer_name,
-            e.mac_address, COALESCE(NULLIF(TRIM(d.code), ''), d.name) AS department_label, es.name AS status_name
-            FROM equipment e {$joinSql} WHERE {$where} ORDER BY {$sortSql} LIMIT " . (int) $limit . ' OFFSET ' . (int) $offset;
-        $dataRes = mysqli_query($conn, $selectSql);
-        $rawRows = [];
-        while ($dataRes && ($row = mysqli_fetch_assoc($dataRes))) {
-            $rawRows[] = $row;
-        }
+        $total = itm_equipment_list_count($conn, (int) $companyId, $filters);
+        $rawRows = itm_equipment_list_fetch($conn, (int) $companyId, $filters, (int) $limit, (int) $offset, false);
         $projected = itm_saved_reports_project_rows($rawRows, $columns, $config['columns']);
         return ['ok' => true, 'error' => '', 'total' => $total, 'rows' => $projected['rows'], 'columns' => $columns, 'labels' => $projected['labels']];
     }
@@ -642,81 +594,11 @@ if (!function_exists('itm_saved_reports_run_equipment')) {
 if (!function_exists('itm_saved_reports_run_expenses')) {
     function itm_saved_reports_run_expenses($conn, $companyId, array $filters, array $columns, $limit, $offset, array $config)
     {
-        $searchRaw = trim((string) ($filters['search'] ?? ''));
-        $sort = (string) ($filters['sort'] ?? 'id');
-        $dir = (string) ($filters['dir'] ?? 'DESC');
-        $allowedSort = $config['sortable'] ?? ['id'];
-        if (!in_array($sort, $allowedSort, true)) {
-            $sort = 'id';
+        if (!function_exists('itm_expenses_list_count')) {
+            require_once ROOT_PATH . 'includes/itm_expenses_list_query.php';
         }
-        $sortSql = 'e.' . preg_replace('/[^a-z0-9_]/i', '', $sort) . ' ' . ($dir === 'ASC' ? 'ASC' : 'DESC');
-
-        $whereParts = ['e.company_id = ?', 'e.deleted_at IS NULL'];
-        $bindTypes = 'i';
-        $bindValues = [$companyId];
-
-        if ($searchRaw !== '') {
-            $searchPattern = (strpos($searchRaw, '%') !== false || strpos($searchRaw, '_') !== false) ? $searchRaw : '%' . $searchRaw . '%';
-            $searchEsc = mysqli_real_escape_string($conn, $searchPattern);
-            $whereParts[] = "(CAST(e.id AS CHAR) LIKE '{$searchEsc}' OR e.description LIKE '{$searchEsc}' OR e.invoice_number LIKE '{$searchEsc}' OR CAST(e.amount AS CHAR) LIKE '{$searchEsc}')";
-        }
-        if (!empty($filters['date_from'])) {
-            $whereParts[] = 'e.date >= ?';
-            $bindTypes .= 's';
-            $bindValues[] = (string) $filters['date_from'];
-        }
-        if (!empty($filters['date_to'])) {
-            $whereParts[] = 'e.date <= ?';
-            $bindTypes .= 's';
-            $bindValues[] = (string) $filters['date_to'];
-        }
-        if (!empty($filters['paid_status_id'])) {
-            $whereParts[] = 'e.paid_status_id = ?';
-            $bindTypes .= 'i';
-            $bindValues[] = (int) $filters['paid_status_id'];
-        }
-        if (!empty($filters['supplier_id'])) {
-            $whereParts[] = 'e.supplier_id = ?';
-            $bindTypes .= 'i';
-            $bindValues[] = (int) $filters['supplier_id'];
-        }
-
-        $whereSql = implode(' AND ', $whereParts);
-        $joinSql = '
-            LEFT JOIN suppliers sup ON sup.id = e.supplier_id AND sup.company_id = e.company_id
-            LEFT JOIN paid_statuses ps ON ps.id = e.paid_status_id AND ps.company_id = e.company_id
-            LEFT JOIN gl_accounts gl ON gl.id = e.gl_account_id AND gl.company_id = e.company_id
-            LEFT JOIN cost_centers cc ON cc.id = e.cost_center_id AND cc.company_id = e.company_id';
-
-        $countStmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS total FROM expenses e WHERE ' . $whereSql);
-        if (!$countStmt) {
-            return ['ok' => false, 'error' => 'Query failed.', 'total' => 0, 'rows' => [], 'columns' => $columns, 'labels' => []];
-        }
-        mysqli_stmt_bind_param($countStmt, $bindTypes, ...$bindValues);
-        mysqli_stmt_execute($countStmt);
-        $countRes = mysqli_stmt_get_result($countStmt);
-        $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
-        $total = (int) ($countRow['total'] ?? 0);
-        mysqli_stmt_close($countStmt);
-
-        $dataSql = 'SELECT e.id, e.date, e.description, e.amount, e.currency_code, e.invoice_number,
-            sup.name AS supplier_name, ps.name AS paid_status_name, gl.name AS gl_account_name, cc.name AS cost_center_name
-            FROM expenses e ' . $joinSql . ' WHERE ' . $whereSql . ' ORDER BY ' . $sortSql . ' LIMIT ? OFFSET ?';
-        $bindTypesData = $bindTypes . 'ii';
-        $bindValuesData = array_merge($bindValues, [(int) $limit, (int) $offset]);
-        $dataStmt = mysqli_prepare($conn, $dataSql);
-        if (!$dataStmt) {
-            return ['ok' => false, 'error' => 'Query failed.', 'total' => $total, 'rows' => [], 'columns' => $columns, 'labels' => []];
-        }
-        mysqli_stmt_bind_param($dataStmt, $bindTypesData, ...$bindValuesData);
-        mysqli_stmt_execute($dataStmt);
-        $res = mysqli_stmt_get_result($dataStmt);
-        $rawRows = [];
-        while ($res && ($row = mysqli_fetch_assoc($res))) {
-            $rawRows[] = $row;
-        }
-        mysqli_stmt_close($dataStmt);
-
+        $total = itm_expenses_list_count($conn, (int) $companyId, $filters);
+        $rawRows = itm_expenses_list_fetch($conn, (int) $companyId, $filters, (int) $limit, (int) $offset);
         $projected = itm_saved_reports_project_rows($rawRows, $columns, $config['columns']);
         return ['ok' => true, 'error' => '', 'total' => $total, 'rows' => $projected['rows'], 'columns' => $columns, 'labels' => $projected['labels']];
     }

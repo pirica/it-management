@@ -327,7 +327,7 @@ if (!isset($crud_title)) {
                             <?php foreach ($mySavedReports as $sv): ?>
                                 <?php
                                 $svModuleLabel = itm_saved_reports_module_config((string) $sv['module_slug'])['label'] ?? $sv['module_slug'];
-                                $svListUrl = itm_saved_reports_build_list_url((string) $sv['module_slug'], $sv['filters'] ?? []);
+                                $svListUrl = itm_saved_reports_build_list_url((string) $sv['module_slug'], $sv['filters'] ?? [], (int) $sv['id']);
                                 $svRunUrl = '../saved_report_views/api.php?action=run&id=' . (int) $sv['id'];
                                 $svIsOwner = (int) ($sv['employee_id'] ?? 0) === (int) $current_user_id;
                                 ?>

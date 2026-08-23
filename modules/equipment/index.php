@@ -75,84 +75,28 @@ $switchFiberPortLabelSelect = $hasSwitchFiberPortLabelColumn
     ? "COALESCE(e.switch_fiber_port_label, '')"
     : "''";
 
-$searchRaw = trim((string)($_GET['search'] ?? ''));
-$isSearchActive = ($searchRaw !== '');
-
-// Optimized by Bolt ⚡: use minimal joins when search is not active
-$equipmentSearchJoinSql = itm_equipment_search_join_sql($isSearchActive);
-$searchSql = itm_equipment_build_search_where_sql($conn, $searchRaw);
+require_once ROOT_PATH . 'includes/itm_equipment_list_query.php';
+// Why: list SQL applies deleted_at IS NULL in itm_equipment_list_fetch().
 
 $equipmentTypeFilterLocked = isset($equipmentTypeNameFilter);
-if ($equipmentTypeFilterLocked) {
-    $equipmentTypeNameFilter = trim((string) $equipmentTypeNameFilter);
-} else {
-    $equipmentTypeNameFilter = trim((string) ($_GET['equipment_type_name'] ?? ''));
-}
-$moduleFilterSql = '';
-if ($equipmentTypeNameFilter !== '') {
-    $equipmentTypeNameFilterEsc = mysqli_real_escape_string($conn, strtolower($equipmentTypeNameFilter));
-    $moduleFilterSql = " AND (LOWER(TRIM(et.name)) = '{$equipmentTypeNameFilterEsc}')";
-}
+$equipmentListFilters = itm_equipment_list_parse_filters($_GET, [
+    'locked_type_name' => $equipmentTypeFilterLocked ? trim((string) $equipmentTypeNameFilter) : '',
+]);
+$searchRaw = (string) ($equipmentListFilters['search'] ?? '');
+$isSearchActive = ($searchRaw !== '');
+$equipmentTypeNameFilter = trim((string) ($equipmentListFilters['equipment_type_name'] ?? ''));
+$sort = (string)($_GET['sort'] ?? 'id');
+$dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
+$sort = (string) ($equipmentListFilters['sort'] ?? $sort);
+$dir = (string) ($equipmentListFilters['dir'] ?? $dir);
+// Why: itm_equipment_list_fetch() applies ORDER BY $sort / $dir via shared query helper.
+$sortableColumns = itm_equipment_list_sortable_columns();
+
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
 $page = max(1, (int)($_GET['page'] ?? 1));
 $offset = ($page - 1) * $perPage;
 
-$sql = "SELECT e.id, e.name, e.serial_number, e.model, e.hostname, e.ip_address, e.mac_address,
-               COALESCE(NULLIF(TRIM(d.code), ''), d.name) AS department_label,
-               c.company AS company_name,
-               et.name AS equipment_type_name,
-               m.name AS manufacturer_name,
-               l.name AS location_name,
-               r.name AS rack_name,
-               idf.name AS idf_name,
-               COALESCE(e.idf_id, 0) AS idf_id,
-               es.name AS status_name
-        FROM equipment e
-        {$equipmentSearchJoinSql}
-        WHERE e.company_id = $company_id
-          AND e.deleted_at IS NULL
-        {$moduleFilterSql}
-        {$searchSql}";
-
-$sortableColumns = ['id', 'name', 'equipment_type_name', 'hostname', 'ip_address', 'idf_name', 'rack_name', 'location_name', 'manufacturer_name', 'mac_address', 'department_label', 'status_name'];
-$sort = (string)($_GET['sort'] ?? 'id');
-$dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
-if (!in_array($sort, $sortableColumns, true)) {
-    $sort = 'id';
-}
-if (!in_array($dir, ['ASC', 'DESC'], true)) {
-    $dir = 'DESC';
-}
-$orderByMap = [
-    'id' => 'e.id',
-    'name' => 'e.name',
-    'equipment_type_name' => 'et.name',
-    'hostname' => 'e.hostname',
-    'ip_address' => 'e.ip_address',
-    'idf_name' => 'idf.name',
-    'rack_name' => 'r.name',
-    'location_name' => 'l.name',
-    'manufacturer_name' => 'm.name',
-    'mac_address' => 'e.mac_address',
-    'department_label' => 'COALESCE(NULLIF(TRIM(d.code), \'\'), d.name)',
-    'status_name' => 'es.name',
-];
-
-// Optimized by Bolt ⚡: Remove joins from count query if no filters/search are active
-$countJoins = ($isSearchActive || $equipmentTypeNameFilter !== '' || $sort === 'equipment_type_name' || $sort === 'status_name' || $sort === 'department_label')
-    ? $equipmentSearchJoinSql
-    : '';
-$countSql = "SELECT COUNT(*) AS total
-             FROM equipment e
-             {$countJoins}
-             WHERE e.company_id = $company_id
-               AND e.deleted_at IS NULL
-             {$moduleFilterSql}
-             {$searchSql}";
-
-$countResult = mysqli_query($conn, $countSql);
-$countRow = $countResult ? mysqli_fetch_assoc($countResult) : null;
-$totalRows = (int)($countRow['total'] ?? 0);
+$totalRows = itm_equipment_list_count($conn, (int) $company_id, $equipmentListFilters);
 $totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
 $showBulkActions = ($totalRows >= $perPage);
 if ($page > $totalPages) {
@@ -160,14 +104,7 @@ if ($page > $totalPages) {
     $offset = ($page - 1) * $perPage;
 }
 
-$sql .= ' ORDER BY ' . $orderByMap[$sort] . ' ' . $dir . ' LIMIT ' . (int)$perPage . ' OFFSET ' . (int)$offset;
-$result = mysqli_query($conn, $sql);
-$equipmentRows = [];
-if ($result) {
-    while ($row = mysqli_fetch_assoc($result)) {
-        $equipmentRows[] = $row;
-    }
-}
+$equipmentRows = itm_equipment_list_fetch($conn, (int) $company_id, $equipmentListFilters, $perPage, $offset, true);
 
 $isGeneralEquipmentModule = $equipmentTypeNameFilter === '';
 $isSwitchTypeFilter = strtolower($equipmentTypeNameFilter) === 'switch';
@@ -266,28 +203,12 @@ $equipmentCsrfToken = itm_get_csrf_token();
 
 $equipmentTypeOptions = [];
 if (!$equipmentTypeFilterLocked) {
-    $typeOptRes = mysqli_query(
-        $conn,
-        'SELECT DISTINCT et.name FROM equipment_types et WHERE et.company_id = ' . (int) $company_id . ' ORDER BY et.name ASC'
-    );
-    while ($typeOptRes && ($typeOptRow = mysqli_fetch_assoc($typeOptRes))) {
-        $name = trim((string) ($typeOptRow['name'] ?? ''));
-        if ($name !== '') {
-            $equipmentTypeOptions[] = $name;
-        }
-    }
+    $equipmentTypeOptions = itm_equipment_list_load_filter_options($conn, (int) $company_id);
 }
 
 require_once ROOT_PATH . 'includes/itm_saved_reports.php';
 $itmSavedReportsModuleSlug = 'equipment';
-$itmSavedReportsFilters = [
-    'search' => $searchRaw,
-    'sort' => $sort,
-    'dir' => $dir,
-];
-if ($equipmentTypeNameFilter !== '') {
-    $itmSavedReportsFilters['equipment_type_name'] = $equipmentTypeNameFilter;
-}
+$itmSavedReportsFilters = $equipmentListFilters;
 $itmSavedReportsColumns = array_keys(itm_saved_reports_module_config('equipment')['columns'] ?? []);
 $equipmentListQueryString = itm_saved_reports_filters_query_string($itmSavedReportsFilters);
 ?>
@@ -316,6 +237,7 @@ if (!isset($crud_title)) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
+            <?php include ROOT_PATH . 'includes/itm_saved_reports_list_banner.php'; ?>
 <?php
 if (!empty($_SESSION['crud_error'])) {
     echo '<div class="crud_error">' . htmlspecialchars($_SESSION['crud_error']) . '</div>';

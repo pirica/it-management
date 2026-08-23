@@ -337,6 +337,7 @@ if (!isset($crud_title)) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
+            <?php include ROOT_PATH . 'includes/itm_saved_reports_list_banner.php'; ?>
             <!-- HEADER SECTION -->
             <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                 <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a><?php else: ?><span></span><?php endif; ?>
