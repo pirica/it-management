@@ -76,7 +76,7 @@ if ($action === 'list') {
             'module_slug' => (string) $row['module_slug'],
             'shared_scope' => (string) $row['shared_scope'],
             'owner' => (int) $row['employee_id'] === $employeeId,
-            'list_url' => itm_saved_reports_build_list_url((string) $row['module_slug'], $row['filters'] ?? []),
+            'list_url' => itm_saved_reports_build_list_url((string) $row['module_slug'], $row['filters'] ?? [], (int) ($row['id'] ?? 0)),
             'filters' => $row['filters'] ?? [],
             'columns' => $row['columns'] ?? [],
         ];
