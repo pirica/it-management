@@ -30,7 +30,8 @@ The central helpdesk/ticketing module for managing support requests.
 - **View audit meta:** Detail view lists all six scaffold audit columns (`deleted_by`, `deleted_at`, `created_by`, `created_at`, `updated_by`, `updated_at`) with employee names and `d-m-Y - H:i:s` timestamps; list hides meta fields. Employment/equipment/ticket **status** badges are separate from row `active` (soft-delete mirror).
 - **Standard CRUD** with FK label columns (`status_name`, `priority_name`, etc.).
 - **Photo Upload**: Supports uploading photos/screenshots for troubleshooting.
-- **Search & Filter**: Extensive filtering by status, priority, assigned user; `show_archived=1` view. List sort uses `$sort` / `$dir` GET params with `$sortSql` in `ORDER BY` (static UI audit contract).
+- **Search & Filter**: Extensive filtering by status, priority, assigned user; `show_archived=1` view. List sort uses `$sort` / `$dir` GET params with `$sortSql` in `ORDER BY` (static UI audit contract). Shared list filters: `includes/itm_tickets_list_query.php` (`itm_tickets_list_parse_filters()`).
+- **Saved report views:** 💾 save control on search row (`includes/itm_saved_reports_ui.php`); filters use `data-itm-saved-report-filter`. Saved views restore via `saved_view_id` query param (`itm_saved_reports_build_list_url()`). Doc: `docs/SAVED_REPORT_VIEWS.md`.
 - **Archive toggle**: `archive.php` POST sets `is_archived` 0/1 with company scope.
 - **Bulk toolbar:** when `$totalRows >= $perPage`, include `bulk-delete-selection.js` and `data-itm-bulk-cancel="1"` Cancel in `index.php` HTML.
 - **Create/edit audit scrape:** business **Created By** (`created_by_employee_id`) and **ticket logged-at** (`created_at`) are editable on `create.php` — not scaffold audit columns; reviewed in `scripts/data/fields_missing_reviewed.json`.

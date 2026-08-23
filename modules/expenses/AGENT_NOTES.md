@@ -37,6 +37,7 @@ Tracks actual financial expenditures against budgets.
 
 - **Formatted Currency**: Display amounts with currency symbols/formatting.
 - **Attachments:** multi-file dropzone on create/edit; folder key = `invoice_number` or `expense-{id}` under `finance/{company_id}/expenses/…` (`includes/itm_finance_attachments.php`).
+- **Saved report views:** 💾 save control on search row (`includes/itm_saved_reports_ui.php`); date range + paid status + supplier filters whitelisted. Shared list filters: `includes/itm_expenses_list_query.php`. Doc: `docs/SAVED_REPORT_VIEWS.md`.
 
 ## 6. API Actions (If Applicable)
 - **import_excel_rows** — JSON POST to `index.php`; bulk import from 📥 Import Excel (`table-tools.js` save-to-database flow). Headers include aliases such as `posted date`, `document number` → `invoice_number`, `contact`/`supplier` → `supplier_id` by name; rows normalized via `itm_expenses_ap_normalize_import_row()` (EUR, Draft `paid_status_id`, posting/date sync, tax snapshot).

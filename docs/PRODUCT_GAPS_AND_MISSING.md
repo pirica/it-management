@@ -14,7 +14,7 @@ Living inventory of **partial** and **not started** items from the Product & Arc
 | Integrations | Webhooks, SSO, Stripe, API v2 MVP | API v2 breadth | Network discovery |
 | Hospitality | Promo code validation | — | — |
 | Employee workflows | Appointment self-service core | Appointment UX polish, settings admin | Offboarding orchestration |
-| Platform | CI quartet (smoke.yml) | PHP 8 migration, verify catalog vs CI | PWA, job queue, custom reports, vendor contracts |
+| Platform | CI quartet (smoke.yml), custom report builder (`saved_report_views`) | PHP 8 migration, verify catalog vs CI | PWA, job queue, vendor contracts |
 | UX program | — | — | 58 bespoke modules (`docs/list_bespoke_UI.txt`) |
 
 ---
@@ -79,7 +79,7 @@ Living inventory of **partial** and **not started** items from the Product & Arc
 | 8 | Vendor contracts | **Missing** | Module, renewal alerts, contract links |
 | 9 | Offboarding orchestration | **Missing** | Checklist tables, module, termination hooks |
 | 10 | Bespoke UX parity | **Missing** | 58 modules in `docs/list_bespoke_UI.txt` |
-| 11 | Custom report builder | **Implemented** | `saved_report_views`, save-view on tickets/equipment/expenses, Reports Hub **My reports**, `saved_report_views/api.php?action=run` |
+| 11 | Custom report builder | **Done** | — Save-view on tickets/equipment/expenses; Reports Hub **My reports** (export, edit, share, owner schedule); JSON `api.php?action=run`; `saved_view:{id}` email via `scheduled_reports`. Doc: `docs/SAVED_REPORT_VIEWS.md`; verify: [verify_saved_report_views.php?run=1](http://localhost/it-management/scripts/verify_saved_report_views.php?run=1) |
 | 12 | Hotel promo validation | **Done** | — |
 
 ---
@@ -92,6 +92,7 @@ Living inventory of **partial** and **not started** items from the Product & Arc
 | Unified Approval Inbox | **Done** — `modules/approval_inbox/`, `docs/APPROVAL_INBOX.md` |
 | Workflow automation rules | **Done** — `docs/AUTOMATION_RULES.md` |
 | Scheduled executive reports | **Done** — `docs/SCHEDULED_REPORTS.md` |
+| Custom report builder (saved views) | **Done** — `docs/SAVED_REPORT_VIEWS.md` |
 | Hotel online payments (Stripe) | **Done** — `docs/STRIPE_CHECKOUT.md` |
 | Ticket productivity pack | **Done** — `docs/TICKET_PRODUCTIVITY.md` |
 | Asset lifecycle & depreciation | **Done** — `docs/ASSET_LIFECYCLE.md` |
@@ -125,6 +126,8 @@ All APSET-1–7 items are **done**. Optional follow-ups: deeper MBQA booking ste
 
 ## Related docs
 
+- `docs/SAVED_REPORT_VIEWS.md` — saved list views (Feature 11): filters, Hub, API, export, share, scheduling
+- `docs/SCHEDULED_REPORTS.md` — executive + saved-view email schedules
 - `docs/APPOINTMENT.md` — booking API and slot contract
 - `modules/appointments/AGENT_NOTES.md` — module rules and remaining backlog
 - `modules/appointment_settings/AGENT_NOTES.md` — settings admin backlog

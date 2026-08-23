@@ -2261,7 +2261,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_saved_report_views.php" target="_blank" rel="nofollow noreferrer">verify_saved_report_views.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">saved_report_views</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">scheduled_reports</span></span></td>
-                    <td>Regression for saved list views (custom report builder): <code>saved_report_views</code> schema, filter whitelist, save/run helpers (<code>includes/itm_saved_reports.php</code>), scheduled slug <code>saved_view:{id}</code>.</td>
+                    <td>Regression for saved list views (custom report builder): <code>saved_report_views</code> schema, filter whitelist, export/share, owner schedule permission, dashboard snapshot, save/run helpers (<code>includes/itm_saved_reports.php</code>), scheduled slug <code>saved_view:{id}</code>. Doc: <code>docs/SAVED_REPORT_VIEWS.md</code>.</td>
                     <td class="scripts-catalog-how-stub"><code>php scripts/verify_saved_report_views.php</code></td>
                 </tr>
                 <tr data-tags="integration_webhooks integration_webhook_deliveries">

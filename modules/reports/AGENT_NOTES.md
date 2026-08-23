@@ -143,4 +143,5 @@ if ($stmt) {
 
 ## 12. Module Owner Notes (Optional)
 
-None
+- Canonical saved-views doc: `docs/SAVED_REPORT_VIEWS.md`
+- Regression: `php scripts/verify_reports_hub.php` when changing chart helpers; `php scripts/verify_saved_report_views.php` when changing **My reports** integration.
