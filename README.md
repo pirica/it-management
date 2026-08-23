@@ -24,6 +24,7 @@
 - ✅ IT Support Chatbot — Automated technical assistance powered by a multi-tenant Knowledge Base
 - ✅ In-app Notification Center — header 🔔 with unread count, dropdown inbox, and digest email for assignments and workflow events
 - ✅ Appointments — Self-service IT visit scheduling (weekly slots, visit reasons, Live Chat launch card)
+- ✅ Saved report views — Save Tickets/Equipment/Expenses list filters and columns; **My reports** on Reports Hub with export, share, and optional email schedule (`docs/SAVED_REPORT_VIEWS.md`)
 - ✅ Hotel Booking — Public guest portal at `booking/` and Admin **🏨 Hospitality** modules (`docs/BOOKING.md`)
 - ✅ Hotel Booking Distribution — Partner channel API (JSON/OpenTravel XML, availability, book/modify/cancel, ARI push/pull) with per-channel keys (`docs/HOTEL_BOOKING_DISTRIBUTION.md`)
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
@@ -87,7 +88,7 @@
 
 <p align="center"><img src="docs/readme/system_status.png" alt="System Status monitoring tab" /></p>
 
-<p align="center"><strong>Reports Hub</strong> — visual dashboard with key metrics for assets, tickets, HR, and network devices.</p>
+<p align="center"><strong>Reports Hub</strong> — visual dashboard with key metrics for assets, tickets, HR, and network devices; <strong>My reports</strong> lists saved list views (filters/columns from Tickets, Equipment, Expenses) with export and optional scheduled email (<code>docs/SAVED_REPORT_VIEWS.md</code>).</p>
 
 <p align="center"><img src="docs/readme/reports_hub.png" alt="Reports Hub dashboard" /></p>
 
@@ -524,6 +525,8 @@ flowchart TB
 | Events | `modules/events/`, `event_categories/` | Company events and categories |
 | System Status | `modules/system_status/` | Admin-only server monitoring (CPU, RAM, disk, PHP, MySQL) |
 | Appointments | `modules/appointments/` | Employee self-service IT visit booking (business hours, slot modal) |
+| Reports Hub | `modules/reports/` | Chart.js dashboards; **My reports** saved list views; admin scheduled executive reports (`docs/SCHEDULED_REPORTS.md`) |
+| Saved report views | `modules/saved_report_views/` | JSON API, export, and share for saved filters/columns (`docs/SAVED_REPORT_VIEWS.md`) |
 
 <h3 align="center">Hospitality and hotel booking</h3>
 
