@@ -28,6 +28,11 @@ $moduleListHeading = trim($resolvedModuleIcon . ' ' . $cleanModuleTitle);
 $ui_config = itm_get_ui_configuration($conn, $company_id, $employee_id);
 $currentUiConfig = $ui_config ?? [];
 $settings = itm_appointment_load_settings($conn, $company_id);
+$appointmentTimezoneLabel = trim((string)($settings['timezone'] ?? 'UTC'));
+if ($appointmentTimezoneLabel === '') {
+    $appointmentTimezoneLabel = 'UTC';
+}
+$canAccessAppointmentSettings = appt_user_can_access_settings($conn, $company_id, $employee_id);
 $businessHours = itm_appointment_load_business_hours($conn, $company_id);
 $visitReasons = itm_appointment_load_visit_reasons($conn, $company_id);
 $appointmentTypes = itm_appointment_types_sort_for_ui(itm_appointment_load_appointment_types($conn, $company_id));
@@ -538,7 +543,7 @@ function appt_employee_select_label(array $empRow)
                     <h1 title="Appointment list">📋</h1>
                     <p><a href="index.php" class="btn btn-sm" title="Schedule">➕</a>
                     <a href="list_all.php?filter=mine" class="btn btn-sm" title="My appointments">👤</a>
-                    <?php if (itm_is_admin($conn, $employee_id)): ?>
+                    <?php if ($canAccessAppointmentSettings): ?>
                         <a href="../appointment_settings/" class="btn btn-sm" title="Appointment settings">⚙️</a>
                     <?php endif; ?>
                        <a href="index.php" class="btn btn-sm" title="Back">🔙</a></p>
@@ -785,7 +790,7 @@ function appt_employee_select_label(array $empRow)
                         <h1 title="Select appointment"><?php echo sanitize($moduleListHeading); ?></h1>
                         <p><a href="list_all.php?filter=mine" class="btn btn-sm" title="My appointments">👤</a>
                         <a href="list_all.php" class="btn btn-sm" title="View scheduled appointments">📋</a>
-                        <?php if (itm_is_admin($conn, $employee_id)): ?>
+                        <?php if ($canAccessAppointmentSettings): ?>
                             <a href="../appointment_settings/" class="btn btn-sm" title="Appointment settings">⚙️</a>
                         <?php endif; ?></p>
                         <?php if (!$bookingEnabled): ?>
@@ -866,7 +871,7 @@ function appt_employee_select_label(array $empRow)
                                 $first = $monFri[0];
                                 $open = itm_appointment_format_time_display(substr((string)$first['open_time'], 0, 8));
                                 $close = itm_appointment_format_time_display(substr((string)$first['close_time'], 0, 8));
-                                echo '<li><strong>Mon - Fri:</strong> ' . sanitize($open) . ' To ' . sanitize($close) . ' (BST)</li>';
+                                echo '<li><strong>Mon - Fri:</strong> ' . sanitize($open) . ' To ' . sanitize($close) . ' (' . sanitize($appointmentTimezoneLabel) . ')</li>';
                             }
                             $satClosed = !empty($businessHours[6]) && (int)($businessHours[6]['is_closed'] ?? 0) === 1;
                             $sunClosed = !empty($businessHours[0]) && (int)($businessHours[0]['is_closed'] ?? 0) === 1;

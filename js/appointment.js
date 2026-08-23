@@ -15,6 +15,20 @@
         return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
     }
 
+    function formatSlotDisplayValue(selection) {
+        if (!selection) {
+            return '';
+        }
+        var datePart = selection.date_display || selection.date || '';
+        if (selection.display_summary) {
+            return selection.display_summary;
+        }
+        if (selection.label && datePart) {
+            return selection.label + ' (' + datePart + ')';
+        }
+        return selection.label || datePart;
+    }
+
     function formatWeekRange(weekStart, weekEnd) {
         var s = parseYmd(weekStart);
         var e = parseYmd(weekEnd);
@@ -114,9 +128,15 @@
                                     }
                                     pendingSelection = {
                                         date: day.date,
+                                        date_display: day.date_display || day.date,
                                         start_time: slot.start_time,
                                         end_time: slot.end_time,
-                                        label: slot.label
+                                        label: slot.label,
+                                        display_summary: slot.display_summary || formatSlotDisplayValue({
+                                            label: slot.label,
+                                            date: day.date,
+                                            date_display: day.date_display || day.date
+                                        })
                                     };
                                     weekGrid.querySelectorAll('.appointment-slot-btn.selected').forEach(function (el) {
                                         el.classList.remove('selected');
@@ -535,9 +555,15 @@
                                     }
                                     pendingSelection = {
                                         date: day.date,
+                                        date_display: day.date_display || day.date,
                                         start_time: slot.start_time,
                                         end_time: slot.end_time,
-                                        label: slot.label
+                                        label: slot.label,
+                                        display_summary: slot.display_summary || formatSlotDisplayValue({
+                                            label: slot.label,
+                                            date: day.date,
+                                            date_display: day.date_display || day.date
+                                        })
                                     };
                                     weekGrid.querySelectorAll('.appointment-slot-btn.selected').forEach(function (el) {
                                         el.classList.remove('selected');
@@ -609,7 +635,7 @@
                 }
                 confirmedSelection = Object.assign({}, pendingSelection);
                 if (slotDisplay) {
-                    slotDisplay.value = confirmedSelection.label + ' (' + confirmedSelection.date + ')';
+                    slotDisplay.value = formatSlotDisplayValue(confirmedSelection);
                 }
                 if (slotHiddenDate) {
                     slotHiddenDate.value = confirmedSelection.date;

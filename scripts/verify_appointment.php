@@ -136,6 +136,35 @@ if ($bookableDays < 1) {
     appt_verify_pass('Slot builder returns bookable days');
 }
 
+$dateDisplayMissing = 0;
+$displaySummaryMissing = 0;
+foreach ($week['days'] as $day) {
+    if (empty($day['date_display'])) {
+        $dateDisplayMissing++;
+    }
+    foreach ($day['slots'] ?? [] as $slot) {
+        if (empty($slot['display_summary'])) {
+            $displaySummaryMissing++;
+        }
+    }
+}
+if ($dateDisplayMissing > 0) {
+    appt_verify_fail('week_slots days missing date_display');
+} else {
+    appt_verify_pass('week_slots days include date_display');
+}
+if ($displaySummaryMissing > 0) {
+    appt_verify_fail('week_slots slots missing display_summary');
+} else {
+    appt_verify_pass('week_slots slots include display_summary');
+}
+
+if (!function_exists('appt_user_can_access_settings')) {
+    appt_verify_fail('Missing appt_user_can_access_settings() helper');
+} else {
+    appt_verify_pass('appt_user_can_access_settings() helper loaded');
+}
+
 if (!itm_appointment_settings_booking_enabled($settings)) {
     appt_verify_fail('appointment_settings.booking_enabled should be 1 for company 1 seeds');
 } else {

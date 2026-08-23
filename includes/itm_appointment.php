@@ -180,6 +180,52 @@ if (!function_exists('itm_appointment_slot_label')) {
     }
 }
 
+if (!function_exists('itm_appointment_format_slot_display_summary')) {
+    /**
+     * Human-readable slot summary for booking UI (dd/mm/yyyy + time range).
+     */
+    function itm_appointment_format_slot_display_summary(string $slotLabel, string $dateYmd): string
+    {
+        $dateDisplay = $dateYmd;
+        if ($dateYmd !== '' && function_exists('itm_format_date_display')) {
+            $dateDisplay = itm_format_date_display($dateYmd);
+        }
+        if ($slotLabel === '') {
+            return $dateDisplay;
+        }
+        if ($dateDisplay === '') {
+            return $slotLabel;
+        }
+        return $slotLabel . ' (' . $dateDisplay . ')';
+    }
+}
+
+if (!function_exists('appt_user_can_access_settings')) {
+    /**
+     * Booking UI may link to appointment_settings when admin or RBAC edit on that module.
+     */
+    function appt_user_can_access_settings(mysqli $conn, int $companyId, int $employeeId): bool
+    {
+        if ($employeeId <= 0 || $companyId <= 0) {
+            return false;
+        }
+        if (function_exists('itm_is_admin') && itm_is_admin($conn, $employeeId)) {
+            return true;
+        }
+        if (!function_exists('itm_user_has_role_module_permission')) {
+            require_once __DIR__ . '/itm_role_module_permissions.php';
+        }
+        if (!function_exists('itm_resolve_rbac_module_name_for_slug')) {
+            return false;
+        }
+        $moduleName = itm_resolve_rbac_module_name_for_slug($conn, 'appointment_settings');
+        if ($moduleName === '') {
+            return false;
+        }
+        return itm_user_has_role_module_permission($conn, $employeeId, $companyId, $moduleName, 'edit');
+    }
+}
+
 if (!function_exists('itm_appointment_week_start_sunday')) {
     function itm_appointment_week_start_sunday(string $dateYmd): string
     {
@@ -611,6 +657,10 @@ if (!function_exists('itm_appointment_build_week_slots')) {
                         'start_time' => $startTime,
                         'end_time' => $endTime,
                         'label' => itm_appointment_slot_label($startTime, $endTime),
+                        'display_summary' => itm_appointment_format_slot_display_summary(
+                            itm_appointment_slot_label($startTime, $endTime),
+                            $dateYmd
+                        ),
                         'available' => $available,
                     ];
                     if ($isPast) {
@@ -622,6 +672,9 @@ if (!function_exists('itm_appointment_build_week_slots')) {
             }
             $days[] = [
                 'date' => $dateYmd,
+                'date_display' => function_exists('itm_format_date_display')
+                    ? itm_format_date_display($dateYmd)
+                    : $dateYmd,
                 'day_of_week' => $dow,
                 'day_label' => itm_appointment_day_label_short($dow),
                 'day_number' => (int)date('j', strtotime($dateYmd)),

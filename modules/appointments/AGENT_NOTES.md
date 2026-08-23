@@ -131,10 +131,9 @@ php -l modules/appointments/api.php
 
 | Area | Gap | Suggested direction |
 |------|-----|---------------------|
-| UX | ISO date in slot summary | Use `itm_format_date_display()` in JS or server-side label |
-| UX | Sidebar timezone label | Derive from settings, remove hardcoded BST |
-| Admin link | Only `itm_is_admin` | Also show ⚙️ when role has `appointment_settings` **edit** |
-| QA | No dedicated MBQA slug step | Add `module_browser_qa_runner.php --module=appointment` when flow stabilizes |
+| QA | MBQA bespoke smoke only | Tier D index `list`/`search`/`sort`; extend steps when booking flow is stable |
+
+**Done (appointment pack gaps):** slot summary uses `display_summary` / `date_display` (dd/mm/yyyy); sidebar hours use configured timezone (not hardcoded BST); ⚙️ Settings link when admin or RBAC **edit** on `appointment_settings` (`appt_user_can_access_settings()`).
 
 ### Migration (existing DBs)
 

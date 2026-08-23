@@ -1,5 +1,7 @@
 # IT Management System — Product Feature Roadmap
 
+> **Status:** Phase 1 items below are largely **shipped**. For current partial/missing work and appointment pack gaps, see **`docs/PRODUCT_GAPS_AND_MISSING.md`**.
+
 ## Executive summary
 
 ITM is already a **broad multi-tenant operations platform** (ITAM, IPAM/DCIM, HR, helpdesk, finance, hospitality, vault productivity) with **221 module folders**, **220 tables**, mature RBAC, audit triggers, and an extensive `scripts/` verification catalog. Strengths: deep vertical coverage, tenant isolation, zero external dependencies, and strong security hardening.

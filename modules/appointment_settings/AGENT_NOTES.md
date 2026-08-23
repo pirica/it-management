@@ -126,7 +126,7 @@ php -l includes/itm_appointment_settings_admin.php
 | Validation | Duplicate reason names | Optional UNIQUE per company or warn on create |
 | Settings | Delete settings row | Hide 🗑️ or confirm + auto re-ensure; gate booking on `active` |
 | Types | Edit name disabled | By design — only `active`; document labels in UI copy |
-| RBAC | Admin-only ⚙️ on booking | `has_module_access` + `can_edit` on `appointment_settings` |
+| RBAC | Admin-only ⚙️ on booking | **Done** — `appt_user_can_access_settings()` (admin or `appointment_settings` edit) |
 | Onboarding | New tenant | Ensure runs on first visit; document default Wed–Fri online window |
 | Testing | No dedicated script | Optional `verify_appointment_settings.php` for CRUD smoke only |
 | UX | `?msg=` flash only | Session flash or banner component matching other modules |
