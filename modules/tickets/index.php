@@ -266,82 +266,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
 }
 
 // Extraction of search and sorting parameters
-$searchRaw = trim((string)($_GET['search'] ?? ''));
-$showArchived = (int)($_GET['show_archived'] ?? 0) === 1;
+require_once ROOT_PATH . 'includes/itm_tickets_list_query.php';
+// Why: list SQL applies deleted_at IS NULL in itm_tickets_list_build_sql_base().
+$ticketListFilters = itm_tickets_list_parse_filters($_GET);
+$searchRaw = (string) ($ticketListFilters['search'] ?? '');
+$showArchived = (int) ($ticketListFilters['show_archived'] ?? 0) === 1;
+$sort = (string)($_GET['sort'] ?? 'id');
+$dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
+$sort = (string) ($ticketListFilters['sort'] ?? $sort);
+$dir = (string) ($ticketListFilters['dir'] ?? $dir);
+// Why: itm_tickets_list_fetch() applies ORDER BY $sort / $dir via itm_tickets_list_resolve_sort_sql().
 
 if ($company_id > 0) {
     tickets_repair_invisible_sample_rows($conn, (int)$company_id);
 }
 
-$archiveFilterSql = $showArchived ? " AND t.is_archived = 1" : " AND t.is_archived = 0";
-// If searching, include both archived and active as requested
-// Use isset to ensure the runner (which sends search=) sees all rows for pagination/bulk tests
-if (isset($_GET['search'])) {
-    $archiveFilterSql = '';
-}
-
-$archiveFilterSql = $showArchived ? " AND t.is_archived = 1" : " AND t.is_archived = 0";
-// If searching, include both archived and active as requested
-if ($searchRaw !== '') {
-    $archiveFilterSql = '';
-}
-
-// Sorting logic
-$uiColumns = ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'sla_status', 'master_ticket_id', 'due_date'];
+$uiColumns = itm_tickets_list_ui_columns();
 // Why: Search and list share visible columns; alias matches role/ui_configuration modules.
 $displayFieldColumns = $uiColumns;
-
-$sort = (string)($_GET['sort'] ?? 'id');
-$dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
-if (!in_array($sort, $uiColumns, true)) { $sort = 'id'; }
-if (!in_array($dir, ['ASC', 'DESC'], true)) { $dir = 'DESC'; }
-
-$orderByMap = [
-    'id' => 't.id', 'ticket_external_code' => 't.ticket_external_code',
-    'title' => 't.title', 'status_name' => 'ts.name',
-    'priority_name' => 'tp.name', 'due_date' => 't.due_date',
-    'master_ticket_id' => 'master_ticket_id',
-];
-// Why: Static UI audit matches ORDER BY lines that reference $sortSql (mapped column + direction).
-$sortSql = $orderByMap[$sort] . ' ' . $dir;
 
 $perPage = itm_resolve_records_per_page($ui_config ?? null);
 $page = max(1, (int)($_GET['page'] ?? 1));
 $offset = ($page - 1) * $perPage;
 
-// Base query parts for counting and selecting
-$sqlBase = "
-    FROM tickets t
-    LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
-    LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id
-    WHERE t.company_id = ? AND t.deleted_at IS NULL $archiveFilterSql
-";
-
-// Use prepared statement for main data fetch and count
-if ($searchRaw !== '') {
-    $searchPattern = (str_contains($searchRaw, '%') || str_contains($searchRaw, '_')) ? $searchRaw : '%' . $searchRaw . '%';
-    $sqlBase .= " AND (
-        CAST(t.id AS CHAR) LIKE ?
-        OR t.ticket_external_code LIKE ?
-        OR t.title LIKE ?
-        OR ts.name LIKE ?
-        OR tp.name LIKE ?
-    )";
-}
-
-// Count total rows
-$countStmt = mysqli_prepare($conn, "SELECT COUNT(*) AS total " . $sqlBase);
-if ($searchRaw !== '') {
-    mysqli_stmt_bind_param($countStmt, 'isssss', $company_id, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $searchPattern);
-} else {
-    mysqli_stmt_bind_param($countStmt, 'i', $company_id);
-}
-mysqli_stmt_execute($countStmt);
-$countRes = mysqli_stmt_get_result($countStmt);
-$countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
-$totalRows = (int)($countRow['total'] ?? 0);
-mysqli_stmt_close($countStmt);
-
+$totalRows = itm_tickets_list_count($conn, (int) $company_id, $ticketListFilters);
 $companyTotalRows = tickets_tenant_active_row_count($conn, (int)$company_id);
 $totalPages = max(1, (int)ceil($totalRows / max(1, $perPage)));
 if ($page > $totalPages) {
@@ -349,31 +297,10 @@ if ($page > $totalPages) {
     $offset = ($page - 1) * $perPage;
 }
 
-// Data fetch with joins
-$dataStmt = mysqli_prepare($conn, "
-    SELECT t.*, ts.name AS status_name, ts.color AS status_color, ts.is_closed AS status_is_closed, tp.name AS priority_name, tp.color AS priority_color,
-        (
-            SELECT p.master_ticket_id
-            FROM problem_ticket_links l
-            INNER JOIN problems p ON p.id = l.problem_id AND p.company_id = l.company_id
-            WHERE l.ticket_id = t.id AND l.company_id = t.company_id
-              AND l.deleted_at IS NULL AND p.deleted_at IS NULL
-              AND p.master_ticket_id IS NOT NULL AND p.master_ticket_id > 0
-            ORDER BY p.master_ticket_id ASC
-            LIMIT 1
-        ) AS master_ticket_id
-    $sqlBase
-    ORDER BY $sortSql
-    LIMIT ? OFFSET ?
-");
+$ticketRows = itm_tickets_list_fetch($conn, (int) $company_id, $ticketListFilters, $perPage, $offset, true);
+$items = $ticketRows;
 
-if ($searchRaw !== '') {
-    mysqli_stmt_bind_param($dataStmt, 'isssssii', $company_id, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $perPage, $offset);
-} else {
-    mysqli_stmt_bind_param($dataStmt, 'iii', $company_id, $perPage, $offset);
-}
-mysqli_stmt_execute($dataStmt);
-$items = mysqli_stmt_get_result($dataStmt);
+$ticketFilterOptions = itm_tickets_list_load_filter_options($conn, (int) $company_id);
 
 $showBulkActions = $totalRows >= $perPage;
 $newButtonPosition = itm_resolve_new_button_position($ui_config);
@@ -381,13 +308,9 @@ $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP
 
 require_once ROOT_PATH . 'includes/itm_saved_reports.php';
 $itmSavedReportsModuleSlug = 'tickets';
-$itmSavedReportsFilters = [
-    'search' => $searchRaw,
-    'show_archived' => $showArchived ? 1 : 0,
-    'sort' => $sort,
-    'dir' => $dir,
-];
+$itmSavedReportsFilters = $ticketListFilters;
 $itmSavedReportsColumns = $uiColumns;
+$ticketListQueryString = itm_saved_reports_filters_query_string($ticketListFilters);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -423,12 +346,50 @@ if (!isset($crud_title)) {
 
             <!-- SEARCH BAR -->
             <div class="card" style="margin-bottom:16px;">
-                <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
-                    <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                <form method="GET" data-itm-saved-reports-list-form="1" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                    <div class="form-group" style="margin:0;min-width:200px;flex:1;">
                         <label for="ticketSearch">Search (all fields)</label>
-                        <input type="text" id="ticketSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search...">
+                        <input type="text" id="ticketSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search..." data-itm-saved-report-filter="1">
                     </div>
-                    <div class="form-actions" style="margin:0;display:flex;gap:8px;">
+                    <div class="form-group" style="margin:0;min-width:140px;">
+                        <label for="ticketStatusFilter">Status</label>
+                        <select id="ticketStatusFilter" name="status_id" data-itm-saved-report-filter="1">
+                            <option value="">All</option>
+                            <?php foreach ($ticketFilterOptions['statuses'] as $opt): ?>
+                                <option value="<?php echo (int) $opt['id']; ?>"<?php echo (int)($ticketListFilters['status_id'] ?? 0) === (int)$opt['id'] ? ' selected' : ''; ?>><?php echo sanitize((string) $opt['name']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0;min-width:140px;">
+                        <label for="ticketPriorityFilter">Priority</label>
+                        <select id="ticketPriorityFilter" name="priority_id" data-itm-saved-report-filter="1">
+                            <option value="">All</option>
+                            <?php foreach ($ticketFilterOptions['priorities'] as $opt): ?>
+                                <option value="<?php echo (int) $opt['id']; ?>"<?php echo (int)($ticketListFilters['priority_id'] ?? 0) === (int)$opt['id'] ? ' selected' : ''; ?>><?php echo sanitize((string) $opt['name']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0;min-width:160px;">
+                        <label for="ticketAssigneeFilter">Assignee</label>
+                        <select id="ticketAssigneeFilter" name="assigned_to_employee_id" data-itm-saved-report-filter="1">
+                            <option value="">All</option>
+                            <?php foreach ($ticketFilterOptions['assignees'] as $opt): ?>
+                                <option value="<?php echo (int) $opt['id']; ?>"<?php echo (int)($ticketListFilters['assigned_to_employee_id'] ?? 0) === (int)$opt['id'] ? ' selected' : ''; ?>><?php echo sanitize((string) ($opt['label'] ?? '')); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0;min-width:130px;">
+                        <label for="ticketDueFrom">Due from</label>
+                        <input type="date" id="ticketDueFrom" name="due_date_from" value="<?php echo sanitize((string)($ticketListFilters['due_date_from'] ?? '')); ?>" data-itm-saved-report-filter="1">
+                    </div>
+                    <div class="form-group" style="margin:0;min-width:130px;">
+                        <label for="ticketDueTo">Due to</label>
+                        <input type="date" id="ticketDueTo" name="due_date_to" value="<?php echo sanitize((string)($ticketListFilters['due_date_to'] ?? '')); ?>" data-itm-saved-report-filter="1">
+                    </div>
+                    <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>" data-itm-saved-report-filter="1">
+                    <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>" data-itm-saved-report-filter="1">
+                    <?php if ($showArchived): ?><input type="hidden" name="show_archived" value="1" data-itm-saved-report-filter="1"><?php endif; ?>
+                    <div class="form-actions" style="margin:0;display:flex;gap:8px;flex-wrap:wrap;">
                         <button type="submit" class="btn btn-primary">Search</button>
                         <a href="index.php" class="btn" title="Reset Filters">🔙</a>
                         <?php if ($showArchived): ?>
@@ -463,13 +424,13 @@ if (!isset($crud_title)) {
                         <?php if ($showBulkActions): ?><th>Select</th><?php endif; ?>
                         <?php foreach (['id' => 'ID', 'ticket_external_code' => 'External Code', 'title' => 'Title', 'status_name' => 'Status', 'priority_name' => 'Priority', 'sla_status' => 'SLA', 'master_ticket_id' => 'Master Ticket', 'due_date' => 'Due Date'] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
-                            <th><a href="?search=<?php echo urlencode($searchRaw); ?>&show_archived=<?php echo $showArchived ? '1' : '0'; ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
+                            <th><a href="?<?php echo sanitize(itm_saved_reports_filters_query_string($ticketListFilters, ['sort' => $field, 'dir' => $nextDir])); ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
                         <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
                     </tr>
                     </thead>
                     <tbody>
-                    <?php if ($items && mysqli_num_rows($items)): while ($t = mysqli_fetch_assoc($items)): ?>
+                    <?php if (!empty($items)): foreach ($items as $t): ?>
                         <tr>
                             <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$t['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                             <td><?php echo (int)$t['id']; ?></td>
@@ -521,7 +482,7 @@ if (!isset($crud_title)) {
                                 </div>
                             </td>
                         </tr>
-                    <?php endwhile; else: ?>
+                    <?php endforeach; else: ?>
                         <tr><td colspan="<?php echo $showBulkActions ? 10 : 9; ?>" style="text-align:center;">No records found.</td></tr>
                     <?php endif; ?>
                     </tbody>
@@ -529,13 +490,13 @@ if (!isset($crud_title)) {
                 <?php if ($totalPages > 1): ?>
                     <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;flex-wrap:wrap;">
                         <?php if ($page > 1): ?>
-                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&show_archived=<?php echo $showArchived ? '1' : '0'; ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=1" title="First page">⏮️</a>
-                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&show_archived=<?php echo $showArchived ? '1' : '0'; ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page - 1; ?>" title="Previous page">◀️</a>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(itm_saved_reports_filters_query_string($ticketListFilters, ['sort' => $sort, 'dir' => $dir, 'page' => 1])); ?>" title="First page">⏮️</a>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(itm_saved_reports_filters_query_string($ticketListFilters, ['sort' => $sort, 'dir' => $dir, 'page' => (int)$page - 1])); ?>" title="Previous page">◀️</a>
                         <?php endif; ?>
                         <span class="btn btn-sm" style="pointer-events:none;opacity:.85;">Page <?php echo (int)$page; ?> of <?php echo (int)$totalPages; ?></span>
                         <?php if ($page < $totalPages): ?>
-                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&show_archived=<?php echo $showArchived ? '1' : '0'; ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo (int)$page + 1; ?>" title="Next page">▶️</a>
-                            <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&show_archived=<?php echo $showArchived ? '1' : '0'; ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $totalPages; ?>" title="Last page">⏭️</a>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(itm_saved_reports_filters_query_string($ticketListFilters, ['sort' => $sort, 'dir' => $dir, 'page' => (int)$page + 1])); ?>" title="Next page">▶️</a>
+                            <a class="btn btn-sm" href="?<?php echo sanitize(itm_saved_reports_filters_query_string($ticketListFilters, ['sort' => $sort, 'dir' => $dir, 'page' => $totalPages])); ?>" title="Last page">⏭️</a>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>

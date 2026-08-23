@@ -10,6 +10,46 @@ if (!function_exists('itm_saved_reports_supported_modules')) {
     }
 }
 
+if (!function_exists('itm_saved_reports_filters_query_string')) {
+    function itm_saved_reports_filters_query_string(array $filters, array $extra = [])
+    {
+        $merged = array_merge($filters, $extra);
+        $parts = [];
+        foreach ($merged as $key => $value) {
+            if ($value === null || $value === '') {
+                continue;
+            }
+            if ($key === 'show_archived' && (int) $value !== 1) {
+                continue;
+            }
+            $parts[$key] = $value;
+        }
+        return http_build_query($parts);
+    }
+}
+
+if (!function_exists('itm_saved_reports_build_tabular_csv')) {
+    function itm_saved_reports_build_tabular_csv(array $columns, array $labels, array $rows)
+    {
+        $header = [];
+        foreach ($columns as $col) {
+            $header[] = '"' . str_replace('"', '""', (string) ($labels[$col] ?? $col)) . '"';
+        }
+        $lines = [implode(',', $header)];
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $cells = [];
+            foreach ($columns as $col) {
+                $cells[] = '"' . str_replace('"', '""', (string) ($row[$col] ?? '')) . '"';
+            }
+            $lines[] = implode(',', $cells);
+        }
+        return implode("\r\n", $lines) . "\r\n";
+    }
+}
+
 if (!function_exists('itm_saved_reports_module_config')) {
     /**
      * @return array{label:string,filters:array<string,string>,columns:array<string,string>,sortable:array<int,string>}
@@ -531,121 +571,11 @@ if (!function_exists('itm_saved_reports_project_rows')) {
 if (!function_exists('itm_saved_reports_run_tickets')) {
     function itm_saved_reports_run_tickets($conn, $companyId, array $filters, array $columns, $limit, $offset, array $config)
     {
-        $searchRaw = trim((string) ($filters['search'] ?? ''));
-        $showArchived = (int) ($filters['show_archived'] ?? 0) === 1;
-        $archiveFilterSql = $showArchived ? ' AND t.is_archived = 1' : ' AND t.is_archived = 0';
-        if ($searchRaw !== '') {
-            $archiveFilterSql = '';
+        if (!function_exists('itm_tickets_list_count')) {
+            require_once ROOT_PATH . 'includes/itm_tickets_list_query.php';
         }
-
-        $sort = (string) ($filters['sort'] ?? 'id');
-        $dir = (string) ($filters['dir'] ?? 'DESC');
-        $orderByMap = [
-            'id' => 't.id',
-            'ticket_external_code' => 't.ticket_external_code',
-            'title' => 't.title',
-            'status_name' => 'ts.name',
-            'priority_name' => 'tp.name',
-            'due_date' => 't.due_date',
-            'master_ticket_id' => 'master_ticket_id',
-        ];
-        if (!isset($orderByMap[$sort])) {
-            $sort = 'id';
-        }
-        $sortSql = $orderByMap[$sort] . ' ' . ($dir === 'ASC' ? 'ASC' : 'DESC');
-
-        $sqlBase = '
-            FROM tickets t
-            LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
-            LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id
-            WHERE t.company_id = ? AND t.deleted_at IS NULL' . $archiveFilterSql;
-
-        $bindTypes = 'i';
-        $bindValues = [$companyId];
-
-        if ($searchRaw !== '') {
-            $searchPattern = (strpos($searchRaw, '%') !== false || strpos($searchRaw, '_') !== false) ? $searchRaw : '%' . $searchRaw . '%';
-            $sqlBase .= ' AND (
-                CAST(t.id AS CHAR) LIKE ?
-                OR t.ticket_external_code LIKE ?
-                OR t.title LIKE ?
-                OR ts.name LIKE ?
-                OR tp.name LIKE ?
-            )';
-            $bindTypes .= 'sssss';
-            array_push($bindValues, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $searchPattern);
-        }
-        if (!empty($filters['status_id'])) {
-            $sqlBase .= ' AND t.status_id = ?';
-            $bindTypes .= 'i';
-            $bindValues[] = (int) $filters['status_id'];
-        }
-        if (!empty($filters['priority_id'])) {
-            $sqlBase .= ' AND t.priority_id = ?';
-            $bindTypes .= 'i';
-            $bindValues[] = (int) $filters['priority_id'];
-        }
-        if (!empty($filters['assigned_to_employee_id'])) {
-            $sqlBase .= ' AND t.assigned_to_employee_id = ?';
-            $bindTypes .= 'i';
-            $bindValues[] = (int) $filters['assigned_to_employee_id'];
-        }
-        if (!empty($filters['due_date_from'])) {
-            $sqlBase .= ' AND t.due_date >= ?';
-            $bindTypes .= 's';
-            $bindValues[] = (string) $filters['due_date_from'];
-        }
-        if (!empty($filters['due_date_to'])) {
-            $sqlBase .= ' AND t.due_date <= ?';
-            $bindTypes .= 's';
-            $bindValues[] = (string) $filters['due_date_to'];
-        }
-
-        $countStmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS total ' . $sqlBase);
-        if (!$countStmt) {
-            return ['ok' => false, 'error' => 'Query failed.', 'total' => 0, 'rows' => [], 'columns' => $columns, 'labels' => []];
-        }
-        mysqli_stmt_bind_param($countStmt, $bindTypes, ...$bindValues);
-        mysqli_stmt_execute($countStmt);
-        $countRes = mysqli_stmt_get_result($countStmt);
-        $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
-        $total = (int) ($countRow['total'] ?? 0);
-        mysqli_stmt_close($countStmt);
-
-        $dataSql = 'SELECT t.*, ts.name AS status_name, tp.name AS priority_name,
-            (
-                SELECT p.master_ticket_id
-                FROM problem_ticket_links l
-                INNER JOIN problems p ON p.id = l.problem_id AND p.company_id = l.company_id
-                WHERE l.ticket_id = t.id AND l.company_id = t.company_id
-                  AND l.deleted_at IS NULL AND p.deleted_at IS NULL
-                  AND p.master_ticket_id IS NOT NULL AND p.master_ticket_id > 0
-                ORDER BY p.master_ticket_id ASC
-                LIMIT 1
-            ) AS master_ticket_id,
-            CASE
-                WHEN t.due_date IS NULL THEN \'—\'
-                WHEN t.due_date < CURDATE() THEN \'Overdue\'
-                WHEN t.due_date = CURDATE() THEN \'Due today\'
-                ELSE \'On track\'
-            END AS sla_status
-            ' . $sqlBase . ' ORDER BY ' . $sortSql . ' LIMIT ? OFFSET ?';
-
-        $bindTypesData = $bindTypes . 'ii';
-        $bindValuesData = array_merge($bindValues, [(int) $limit, (int) $offset]);
-        $dataStmt = mysqli_prepare($conn, $dataSql);
-        if (!$dataStmt) {
-            return ['ok' => false, 'error' => 'Query failed.', 'total' => $total, 'rows' => [], 'columns' => $columns, 'labels' => []];
-        }
-        mysqli_stmt_bind_param($dataStmt, $bindTypesData, ...$bindValuesData);
-        mysqli_stmt_execute($dataStmt);
-        $res = mysqli_stmt_get_result($dataStmt);
-        $rawRows = [];
-        while ($res && ($row = mysqli_fetch_assoc($res))) {
-            $rawRows[] = $row;
-        }
-        mysqli_stmt_close($dataStmt);
-
+        $total = itm_tickets_list_count($conn, (int) $companyId, $filters);
+        $rawRows = itm_tickets_list_fetch($conn, (int) $companyId, $filters, (int) $limit, (int) $offset, true);
         $projected = itm_saved_reports_project_rows($rawRows, $columns, $config['columns']);
         return ['ok' => true, 'error' => '', 'total' => $total, 'rows' => $projected['rows'], 'columns' => $columns, 'labels' => $projected['labels']];
     }
@@ -824,6 +754,9 @@ if (!function_exists('itm_saved_reports_render_email_dataset')) {
             }, $rows),
             'html_table' => '<table border="1" cellpadding="6" cellspacing="0"><thead><tr>' . $headerCells . '</tr></thead><tbody>' . $bodyRows . '</tbody></table>',
             'total' => (int) ($queryResult['total'] ?? 0),
+            'tabular_columns' => $columns,
+            'tabular_rows' => $rows,
+            'tabular_csv' => itm_saved_reports_build_tabular_csv($columns, $labels, $rows),
         ];
     }
 }

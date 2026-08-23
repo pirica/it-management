@@ -1092,6 +1092,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 $where = '';
 if ($hasCompany && $company_id > 0) { $where = ' WHERE company_id=' . (int)$company_id; }
 
+$expenseDateFrom = '';
+$expenseDateTo = '';
+$expenseDateFromRaw = trim((string)($_GET['date_from'] ?? ''));
+$expenseDateToRaw = trim((string)($_GET['date_to'] ?? ''));
+if ($expenseDateFromRaw !== '') {
+    $parsedFrom = function_exists('itm_parse_date_input') ? itm_parse_date_input($expenseDateFromRaw) : '';
+    if ($parsedFrom === '' && strtotime($expenseDateFromRaw)) {
+        $parsedFrom = date('Y-m-d', strtotime($expenseDateFromRaw));
+    }
+    $expenseDateFrom = $parsedFrom;
+}
+if ($expenseDateToRaw !== '') {
+    $parsedTo = function_exists('itm_parse_date_input') ? itm_parse_date_input($expenseDateToRaw) : '';
+    if ($parsedTo === '' && strtotime($expenseDateToRaw)) {
+        $parsedTo = date('Y-m-d', strtotime($expenseDateToRaw));
+    }
+    $expenseDateTo = $parsedTo;
+}
+$expensePaidStatusId = (int)($_GET['paid_status_id'] ?? 0);
+$expenseSupplierId = (int)($_GET['supplier_id'] ?? 0);
+
+$expensePaidStatusOptions = [];
+$expensePaidOptRes = mysqli_query($conn, 'SELECT id, name FROM paid_statuses WHERE company_id = ' . (int)$company_id . ' ORDER BY name ASC');
+while ($expensePaidOptRes && ($expensePaidOptRow = mysqli_fetch_assoc($expensePaidOptRes))) {
+    $expensePaidStatusOptions[] = $expensePaidOptRow;
+}
+$expenseSupplierOptions = [];
+$expenseSupOptRes = mysqli_query(
+    $conn,
+    'SELECT id, name FROM suppliers WHERE company_id = ' . (int)$company_id . ' AND deleted_at IS NULL ORDER BY name ASC'
+);
+while ($expenseSupOptRes && ($expenseSupOptRow = mysqli_fetch_assoc($expenseSupOptRes))) {
+    $expenseSupplierOptions[] = $expenseSupOptRow;
+}
+
 // SEARCH LOGIC
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 if ($searchRaw !== '') {
@@ -1122,6 +1157,19 @@ if ($searchRaw !== '') {
 if (!empty($searchConditions)) {
         $where .= ($where === '' ? ' WHERE ' : ' AND ') . '(' . implode(' OR ', $searchConditions) . ')';
     }
+}
+
+if ($expenseDateFrom !== '') {
+    $where .= ($where === '' ? ' WHERE ' : ' AND ') . "`date` >= '" . mysqli_real_escape_string($conn, $expenseDateFrom) . "'";
+}
+if ($expenseDateTo !== '') {
+    $where .= ($where === '' ? ' WHERE ' : ' AND ') . "`date` <= '" . mysqli_real_escape_string($conn, $expenseDateTo) . "'";
+}
+if ($expensePaidStatusId > 0) {
+    $where .= ($where === '' ? ' WHERE ' : ' AND ') . 'paid_status_id = ' . (int)$expensePaidStatusId;
+}
+if ($expenseSupplierId > 0) {
+    $where .= ($where === '' ? ' WHERE ' : ' AND ') . 'supplier_id = ' . (int)$expenseSupplierId;
 }
 
 // SORTING LOGIC
@@ -1155,7 +1203,20 @@ $itmSavedReportsFilters = [
     'sort' => $sort,
     'dir' => $dir,
 ];
+if ($expenseDateFrom !== '') {
+    $itmSavedReportsFilters['date_from'] = $expenseDateFrom;
+}
+if ($expenseDateTo !== '') {
+    $itmSavedReportsFilters['date_to'] = $expenseDateTo;
+}
+if ($expensePaidStatusId > 0) {
+    $itmSavedReportsFilters['paid_status_id'] = $expensePaidStatusId;
+}
+if ($expenseSupplierId > 0) {
+    $itmSavedReportsFilters['supplier_id'] = $expenseSupplierId;
+}
 $itmSavedReportsColumns = array_keys(itm_saved_reports_module_config('expenses')['columns'] ?? []);
+$expenseListQueryString = itm_saved_reports_filters_query_string($itmSavedReportsFilters);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1214,13 +1275,38 @@ if (!isset($crud_title)) {
 
                 <!-- SEARCH BAR -->
                 <div class="card" style="margin-bottom:16px;">
-                    <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
-                        <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>">
-                        <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>">
-                        <input type="hidden" name="page" value="1">
-                        <div class="form-group" style="margin:0;min-width:260px;flex:1;">
+                    <form method="GET" data-itm-saved-reports-list-form="1" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                        <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>" data-itm-saved-report-filter="1">
+                        <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>" data-itm-saved-report-filter="1">
+                        <div class="form-group" style="margin:0;min-width:220px;flex:1;">
                             <label for="moduleSearch">Search (all fields)</label>
-                            <input type="text" id="moduleSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search records...">
+                            <input type="text" id="moduleSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="Type to search records..." data-itm-saved-report-filter="1">
+                        </div>
+                        <div class="form-group" style="margin:0;min-width:130px;">
+                            <label for="expenseDateFrom">Date from</label>
+                            <input type="date" id="expenseDateFrom" name="date_from" value="<?php echo sanitize($expenseDateFrom); ?>" data-itm-saved-report-filter="1">
+                        </div>
+                        <div class="form-group" style="margin:0;min-width:130px;">
+                            <label for="expenseDateTo">Date to</label>
+                            <input type="date" id="expenseDateTo" name="date_to" value="<?php echo sanitize($expenseDateTo); ?>" data-itm-saved-report-filter="1">
+                        </div>
+                        <div class="form-group" style="margin:0;min-width:140px;">
+                            <label for="expensePaidStatusFilter">Paid status</label>
+                            <select id="expensePaidStatusFilter" name="paid_status_id" data-itm-saved-report-filter="1">
+                                <option value="">All</option>
+                                <?php foreach ($expensePaidStatusOptions as $expensePaidOpt): ?>
+                                    <option value="<?php echo (int)($expensePaidOpt['id'] ?? 0); ?>"<?php echo $expensePaidStatusId === (int)($expensePaidOpt['id'] ?? 0) ? ' selected' : ''; ?>><?php echo sanitize((string)($expensePaidOpt['name'] ?? '')); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin:0;min-width:160px;">
+                            <label for="expenseSupplierFilter">Supplier</label>
+                            <select id="expenseSupplierFilter" name="supplier_id" data-itm-saved-report-filter="1">
+                                <option value="">All</option>
+                                <?php foreach ($expenseSupplierOptions as $expenseSupOpt): ?>
+                                    <option value="<?php echo (int)($expenseSupOpt['id'] ?? 0); ?>"<?php echo $expenseSupplierId === (int)($expenseSupOpt['id'] ?? 0) ? ' selected' : ''; ?>><?php echo sanitize((string)($expenseSupOpt['name'] ?? '')); ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                         <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                             <button type="submit" class="btn btn-primary">Search</button>
@@ -1240,7 +1326,7 @@ if (!isset($crud_title)) {
                                 <?php $field = (string)$col['Field']; ?>
                                 <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                                 <th>
-                                    <a href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($field); ?>&dir=<?php echo $nextDir; ?>&page=<?php echo (int)$page; ?>" style="text-decoration:none;color:inherit;">
+                                    <a href="?<?php echo sanitize(itm_saved_reports_filters_query_string($itmSavedReportsFilters, ['sort' => $field, 'dir' => $nextDir, 'page' => (int)$page])); ?>" style="text-decoration:none;color:inherit;">
                                         <?php echo sanitize(cr_humanize_field($field)); ?>
                                         <?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?>
                                     </a>
@@ -1329,13 +1415,13 @@ if (!isset($crud_title)) {
                         <div>Showing <?php echo $offset + 1; ?>-<?php echo min($offset + $perPage, $totalRows); ?> of <?php echo $totalRows; ?></div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
                             <?php if ($page > 1): ?>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=1" title="First page">⏮️</a>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page - 1; ?>" title="Previous page">◀️</a>
+                                <a class="btn btn-sm" href="?<?php echo sanitize(itm_saved_reports_filters_query_string($itmSavedReportsFilters, ['sort' => $sort, 'dir' => $dir, 'page' => 1])); ?>" title="First page">⏮️</a>
+                                <a class="btn btn-sm" href="?<?php echo sanitize(itm_saved_reports_filters_query_string($itmSavedReportsFilters, ['sort' => $sort, 'dir' => $dir, 'page' => $page - 1])); ?>" title="Previous page">◀️</a>
                             <?php endif; ?>
                             <span class="btn btn-sm" style="pointer-events:none;opacity:.8;">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
                             <?php if ($page < $totalPages): ?>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $page + 1; ?>" title="Next page">▶️</a>
-                                <a class="btn btn-sm" href="?search=<?php echo urlencode($searchRaw); ?>&sort=<?php echo urlencode($sort); ?>&dir=<?php echo urlencode($dir); ?>&page=<?php echo $totalPages; ?>" title="Last page">⏭️</a>
+                                <a class="btn btn-sm" href="?<?php echo sanitize(itm_saved_reports_filters_query_string($itmSavedReportsFilters, ['sort' => $sort, 'dir' => $dir, 'page' => $page + 1])); ?>" title="Next page">▶️</a>
+                                <a class="btn btn-sm" href="?<?php echo sanitize(itm_saved_reports_filters_query_string($itmSavedReportsFilters, ['sort' => $sort, 'dir' => $dir, 'page' => $totalPages])); ?>" title="Last page">⏭️</a>
                             <?php endif; ?>
                         </div>
                     </div>

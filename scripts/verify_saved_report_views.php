@@ -16,6 +16,7 @@ ITM;
 define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once ROOT_PATH . 'includes/itm_saved_reports.php';
+require_once ROOT_PATH . 'includes/itm_tickets_list_query.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 
 itm_script_output_begin('Verify Saved Report Views');
@@ -62,6 +63,33 @@ if ($badModule['ok']) {
     srv_fail('Unsupported module should fail filter validation');
 } else {
     srv_pass('Unsupported module rejected');
+}
+
+$ticketFilters = itm_tickets_list_parse_filters([
+    'search' => 'wifi',
+    'status_id' => '2',
+    'due_date_from' => '2026-01-01',
+    'sort' => 'title',
+    'dir' => 'ASC',
+]);
+if ((int)($ticketFilters['status_id'] ?? 0) !== 2 || ($ticketFilters['due_date_from'] ?? '') !== '2026-01-01') {
+    srv_fail('itm_tickets_list_parse_filters should normalize status and dates');
+} else {
+    srv_pass('Tickets shared list filter parser');
+}
+
+$qs = itm_saved_reports_filters_query_string(['search' => 'a', 'status_id' => 3, 'show_archived' => 0]);
+if (strpos($qs, 'status_id=3') === false || strpos($qs, 'show_archived') !== false) {
+    srv_fail('Filter query string builder should include set filters and omit empty show_archived');
+} else {
+    srv_pass('Filter query string builder');
+}
+
+$csv = itm_saved_reports_build_tabular_csv(['id', 'title'], ['id' => 'ID', 'title' => 'Title'], [['id' => 1, 'title' => 'Test, "quoted"']]);
+if (strpos($csv, '"Test, ""quoted"""') === false) {
+    srv_fail('Tabular CSV builder should escape quotes');
+} else {
+    srv_pass('Tabular CSV builder');
 }
 
 $companyId = 1;
