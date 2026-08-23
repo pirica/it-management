@@ -106,7 +106,7 @@ if (!function_exists('itm_scheduled_reports_load_dataset')) {
             }
             $viewRow = itm_saved_reports_fetch_by_id($conn, $savedViewId, $companyId);
             if ($viewRow) {
-                $query = itm_saved_reports_run_query($conn, $companyId, $viewRow, ['limit' => 100, 'offset' => 0]);
+                $query = itm_saved_reports_run_query($conn, $companyId, $viewRow, ['limit' => 500, 'offset' => 0]);
                 $emailData = itm_saved_reports_render_email_dataset($query, (string) ($viewRow['name'] ?? 'Saved view'));
                 $emailData['saved_view_id'] = $savedViewId;
                 return $emailData;
@@ -170,7 +170,7 @@ if (!function_exists('itm_scheduled_reports_render_html')) {
         if (!empty($dataset['html_table'])) {
             $rows = (string) $dataset['html_table'];
             if (!empty($dataset['total'])) {
-                $rows = '<p><strong>Total rows:</strong> ' . (int) $dataset['total'] . ' (showing up to 100 in email)</p>' . $rows;
+                $rows = '<p><strong>Total rows:</strong> ' . (int) $dataset['total'] . ' (showing up to 500 in email)</p>' . $rows;
             }
             return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' . $title . '</title></head><body>'
                 . '<h1>' . $title . '</h1>'
@@ -245,12 +245,10 @@ if (!function_exists('itm_scheduled_reports_send_row')) {
         $htmlBody = itm_scheduled_reports_render_html($dataset, $companyName);
         $options = ['log_created_by' => (int) ($row['created_by'] ?? 0)];
         if ($format === 'xlsx') {
-            if (!empty($dataset['html_table'])) {
-                $csvLines = ['Saved view row'];
-                foreach ($dataset['labels'] ?? [] as $label) {
-                    $csvLines[0] .= ',"' . str_replace('"', '""', (string) $label) . '"';
-                }
-                $csv = implode("\r\n", $csvLines) . "\r\n";
+            if (!empty($dataset['tabular_csv'])) {
+                $csv = (string) $dataset['tabular_csv'];
+            } elseif (!empty($dataset['html_table'])) {
+                $csv = itm_scheduled_reports_build_csv($dataset);
             } else {
                 $csv = itm_scheduled_reports_build_csv($dataset);
             }

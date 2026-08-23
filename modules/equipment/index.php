@@ -82,7 +82,12 @@ $isSearchActive = ($searchRaw !== '');
 $equipmentSearchJoinSql = itm_equipment_search_join_sql($isSearchActive);
 $searchSql = itm_equipment_build_search_where_sql($conn, $searchRaw);
 
-$equipmentTypeNameFilter = isset($equipmentTypeNameFilter) ? trim((string)$equipmentTypeNameFilter) : '';
+$equipmentTypeFilterLocked = isset($equipmentTypeNameFilter);
+if ($equipmentTypeFilterLocked) {
+    $equipmentTypeNameFilter = trim((string) $equipmentTypeNameFilter);
+} else {
+    $equipmentTypeNameFilter = trim((string) ($_GET['equipment_type_name'] ?? ''));
+}
 $moduleFilterSql = '';
 if ($equipmentTypeNameFilter !== '') {
     $equipmentTypeNameFilterEsc = mysqli_real_escape_string($conn, strtolower($equipmentTypeNameFilter));
@@ -259,6 +264,20 @@ while ($locationTypeRes && ($locationTypeRow = mysqli_fetch_assoc($locationTypeR
 $locationTypeExtraOptionsJson = htmlspecialchars(json_encode($locationTypeExtraOptions), ENT_QUOTES, 'UTF-8');
 $equipmentCsrfToken = itm_get_csrf_token();
 
+$equipmentTypeOptions = [];
+if (!$equipmentTypeFilterLocked) {
+    $typeOptRes = mysqli_query(
+        $conn,
+        'SELECT DISTINCT et.name FROM equipment_types et WHERE et.company_id = ' . (int) $company_id . ' ORDER BY et.name ASC'
+    );
+    while ($typeOptRes && ($typeOptRow = mysqli_fetch_assoc($typeOptRes))) {
+        $name = trim((string) ($typeOptRow['name'] ?? ''));
+        if ($name !== '') {
+            $equipmentTypeOptions[] = $name;
+        }
+    }
+}
+
 require_once ROOT_PATH . 'includes/itm_saved_reports.php';
 $itmSavedReportsModuleSlug = 'equipment';
 $itmSavedReportsFilters = [
@@ -269,7 +288,8 @@ $itmSavedReportsFilters = [
 if ($equipmentTypeNameFilter !== '') {
     $itmSavedReportsFilters['equipment_type_name'] = $equipmentTypeNameFilter;
 }
-$itmSavedReportsColumns = $sortableColumns;
+$itmSavedReportsColumns = array_keys(itm_saved_reports_module_config('equipment')['columns'] ?? []);
+$equipmentListQueryString = itm_saved_reports_filters_query_string($itmSavedReportsFilters);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -337,7 +357,7 @@ if (!empty($_SESSION['crud_success'])) {
             <?php endif; ?>
 
             <div class="card" style="margin-bottom:16px;">
-                <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                <form method="GET" data-itm-saved-reports-list-form="1" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
                     <?php if ($selectedSwitchId > 0): ?>
                         <input type="hidden" name="switch_id" value="<?php echo (int)$selectedSwitchId; ?>">
                     <?php endif; ?>
@@ -346,8 +366,23 @@ if (!empty($_SESSION['crud_success'])) {
                     <?php endif; ?>
                     <div class="form-group" style="margin:0;min-width:260px;flex:1;">
                         <label for="equipmentSearch">Search (all fields)</label>
-                        <input type="text" id="equipmentSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="<?php echo sanitize($moduleSearchPlaceholder); ?>">
+                        <input type="text" id="equipmentSearch" name="search" value="<?php echo sanitize($searchRaw); ?>" placeholder="<?php echo sanitize($moduleSearchPlaceholder); ?>" data-itm-saved-report-filter="1">
                     </div>
+                    <?php if (!$equipmentTypeFilterLocked): ?>
+                    <div class="form-group" style="margin:0;min-width:160px;">
+                        <label for="equipmentTypeFilter">Type</label>
+                        <select id="equipmentTypeFilter" name="equipment_type_name" data-itm-saved-report-filter="1">
+                            <option value="">All</option>
+                            <?php foreach ($equipmentTypeOptions as $typeName): ?>
+                                <option value="<?php echo sanitize($typeName); ?>"<?php echo strcasecmp($equipmentTypeNameFilter, $typeName) === 0 ? ' selected' : ''; ?>><?php echo sanitize($typeName); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <?php elseif ($equipmentTypeNameFilter !== ''): ?>
+                        <input type="hidden" name="equipment_type_name" value="<?php echo sanitize($equipmentTypeNameFilter); ?>" data-itm-saved-report-filter="1">
+                    <?php endif; ?>
+                    <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>" data-itm-saved-report-filter="1">
+                    <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>" data-itm-saved-report-filter="1">
                     <div class="form-actions" style="margin:0;display:flex;gap:8px;">
                         <button type="submit" class="btn btn-primary">Search</button>
                         <a href="index.php<?php echo ($selectedSwitchId > 0) ? '?switch_id=' . (int)$selectedSwitchId . ($showSwitchPortManager ? '&spm=1' : '') : ''; ?>" class="btn" title="Clear">🔙</a>

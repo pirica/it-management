@@ -1145,7 +1145,7 @@ Run `verify_reports_hub.php` when changing `modules/reports/`, `modules/reports/
 |--------|---------|
 | `php scripts/run_scheduled_reports.php` | Cron: email due `scheduled_reports` rows (`includes/itm_scheduled_reports.php`). Optional `--company=ID`. See `docs/SCHEDULED_REPORTS.md`. |
 | `php scripts/verify_scheduled_reports.php` | Regression: `scheduled_reports` schema, cron matcher, dataset loader |
-| `php scripts/verify_saved_report_views.php` | Regression: `saved_report_views` schema, filter whitelist, save/run helpers, `saved_view:{id}` schedule slug |
+| `php scripts/verify_saved_report_views.php` | Regression: `saved_report_views` schema, filter whitelist, tickets shared query parser, tabular CSV, save/run helpers, `saved_view:{id}` schedule slug |
 | `php scripts/run_webhook_queue.php` | Cron: deliver `integration_webhook_deliveries` with retry/backoff. Optional `--limit=N`. |
 | `php scripts/verify_integration_webhooks.php` | Regression: webhook tables, secret round-trip, URL SSRF guard, enqueue |
 | `php scripts/run_asset_depreciation.php` | Monthly cron: depreciation snapshots on `equipment_lifecycle_events`. Optional `--company=ID`. |
