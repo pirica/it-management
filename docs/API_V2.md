@@ -110,11 +110,17 @@ Built from `itm_api_v2_route_registry()` in `includes/itm_api_v2_openapi.php`.
 
 | Script | Purpose |
 |--------|---------|
-| `api-examples/api_v2_probe.php` | Probe with `X-API-Key` |
-| `api-examples/api_v2_tickets_list.php` | List tickets |
-| `api-examples/api_v2_ticket_create.php` | Create ticket (needs `tickets.write`) |
+| `api-examples/api_v2_probe.php` | `GET /probe` with `X-API-Key` |
+| `api-examples/api_v2_tickets_list.php` | `GET /tickets` list |
+| `api-examples/api_v2_ticket_get.php` | `GET /tickets/{id}` |
+| `api-examples/api_v2_ticket_create.php` | `POST /tickets` (`tickets.write`) |
+| `api-examples/api_v2_ticket_update.php` | `PATCH /tickets/{id}` (`tickets.write`) |
+| `api-examples/api_v2_equipment_list.php` | `GET /equipment` list |
+| `api-examples/api_v2_equipment_get.php` | `GET /equipment/{id}` |
+| `api-examples/api_v2_equipment_create.php` | `POST /equipment` (`equipment.write`) |
+| `api-examples/api_v2_equipment_update.php` | `PATCH /equipment/{id}` (`equipment.write`) |
 
-Set `ITM_API_V2_KEY` in the environment or edit the placeholder in each file.
+Set `ITM_API_V2_KEY` in the environment or edit the placeholder in each file. Optional record ids: `ITM_API_V2_TICKET_ID`, `ITM_API_V2_EQUIPMENT_ID`; equipment create: `ITM_API_V2_EQUIPMENT_TYPE_ID`, `ITM_API_V2_EQUIPMENT_STATUS_ID`.
 
 ---
 

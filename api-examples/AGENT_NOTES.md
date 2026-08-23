@@ -5,7 +5,7 @@ Standalone reference scripts demonstrating how to interact with the system's JSO
 
 ## 4. Business Rules (Critical for Agents)
 - **Reference Only**: These scripts are examples and should not be used as part of the core application logic.
-- **Authentication**: Demonstrates the session + CSRF flow required for all protected endpoints.
+- **Authentication**: Session + CSRF for legacy module JSON/import paths; API v2 examples use paid-tier `X-API-Key` only (no session).
 
 ## 7. File Structure
 - **authenticate.php** — full login, session cookie, and CSRF acquisition flow.
@@ -29,6 +29,15 @@ Standalone reference scripts demonstrating how to interact with the system's JSO
 - **hotel_distribution_notify_book.php** — distribution `notify` book payload (`X-API-Key`).
 - **hotel_distribution_modify.php** — `action=modify` amend by `external_reservation_id`.
 - **hotel_distribution_cancel.php** — `action=cancel` by `external_reservation_id`.
+- **api_v2_probe.php** — API v2 `GET /probe` with `X-API-Key`.
+- **api_v2_tickets_list.php** — API v2 `GET /tickets` list.
+- **api_v2_ticket_get.php** — API v2 `GET /tickets/{id}`.
+- **api_v2_ticket_create.php** — API v2 `POST /tickets` (needs `tickets.write`).
+- **api_v2_ticket_update.php** — API v2 `PATCH /tickets/{id}` (needs `tickets.write`).
+- **api_v2_equipment_list.php** — API v2 `GET /equipment` list.
+- **api_v2_equipment_get.php** — API v2 `GET /equipment/{id}`.
+- **api_v2_equipment_create.php** — API v2 `POST /equipment` (needs `equipment.write`).
+- **api_v2_equipment_update.php** — API v2 `PATCH /equipment/{id}` (needs `equipment.write`).
 - **index.html** — directory listing placeholder (not an executable example).
 
 All `api-examples/*.php` scripts are auto-listed in **`scripts/api.php`** via `itmDocCollectApiExamples()`.
