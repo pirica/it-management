@@ -1,0 +1,595 @@
+<?php
+/**
+ * Static audit: list/view FK columns must resolve to human-readable labels in cr_render_cell_value().
+ *
+ * Why: Scaffold modules often build $fkMap for forms/search but omit the shared
+ * $GLOBALS['fkMap'][$field] branch in cr_render_cell_value(), so list cells show raw IDs
+ * (e.g. problem_ticket_links problem_id instead of problems.title).
+ */
+
+require_once __DIR__ . '/itm_crud_boolean_cell_display_audit.php';
+
+if (!function_exists('itm_raw_fk_column_audit_label_column_candidates')) {
+    /**
+     * @return list<string>
+     */
+    function itm_raw_fk_column_audit_label_column_candidates(): array
+    {
+        return [
+            'name_type',
+            'name',
+            'title',
+            'username',
+            'account_name',
+            'account_code',
+            'code',
+            'stage',
+            'status',
+            'approver_type_description',
+            'description',
+            'email',
+            'mode_name',
+            'display_name',
+        ];
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_schema_path')) {
+    function itm_raw_fk_column_audit_schema_path(string $repoRoot): string
+    {
+        if (function_exists('itm_crud_boolean_cell_audit_schema_path')) {
+            return itm_crud_boolean_cell_audit_schema_path($repoRoot);
+        }
+
+        return rtrim($repoRoot, '/\\') . '/db/01_schema.sql';
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_parse_schema_table_columns')) {
+    /**
+     * @return array<string, list<string>>
+     */
+    function itm_raw_fk_column_audit_parse_schema_table_columns(string $schemaPath): array
+    {
+        static $cache = [];
+
+        if (isset($cache[$schemaPath])) {
+            return $cache[$schemaPath];
+        }
+
+        $cache[$schemaPath] = [];
+
+        if (!is_readable($schemaPath)) {
+            return $cache[$schemaPath];
+        }
+
+        $sql = (string) file_get_contents($schemaPath);
+        if (!preg_match_all('/CREATE\s+TABLE\s+`([a-zA-Z0-9_]+)`\s*\((.*?)\)\s*ENGINE/is', $sql, $matches, PREG_SET_ORDER)) {
+            return $cache[$schemaPath];
+        }
+
+        foreach ($matches as $match) {
+            $tableName = (string) $match[1];
+            $body = (string) $match[2];
+            $columns = [];
+
+            foreach (preg_split('/\R/', $body) ?: [] as $line) {
+                $trimmed = trim((string) $line);
+                if (preg_match('/^`([a-zA-Z0-9_]+)`\s+/i', $trimmed, $colMatch)) {
+                    $columns[] = (string) $colMatch[1];
+                }
+            }
+
+            $cache[$schemaPath][$tableName] = array_values(array_unique($columns));
+        }
+
+        return $cache[$schemaPath];
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_resolve_label_column')) {
+    /**
+     * @param list<string> $columns
+     */
+    function itm_raw_fk_column_audit_resolve_label_column(array $columns): string
+    {
+        foreach (itm_raw_fk_column_audit_label_column_candidates() as $candidate) {
+            if (in_array($candidate, $columns, true)) {
+                return $candidate;
+            }
+        }
+
+        return '';
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_parse_schema_outbound_fks')) {
+    /**
+     * @return array<string, array<string, array{ref_table:string,ref_column:string,label_col:string}>>
+     */
+    function itm_raw_fk_column_audit_parse_schema_outbound_fks(string $schemaPath): array
+    {
+        static $cache = [];
+
+        if (isset($cache[$schemaPath])) {
+            return $cache[$schemaPath];
+        }
+
+        $cache[$schemaPath] = [];
+        $tableColumns = itm_raw_fk_column_audit_parse_schema_table_columns($schemaPath);
+
+        if (!is_readable($schemaPath)) {
+            return $cache[$schemaPath];
+        }
+
+        $sql = (string) file_get_contents($schemaPath);
+        if (!preg_match_all('/CREATE\s+TABLE\s+`([a-zA-Z0-9_]+)`\s*\((.*?)\)\s*ENGINE/is', $sql, $matches, PREG_SET_ORDER)) {
+            return $cache[$schemaPath];
+        }
+
+        foreach ($matches as $match) {
+            $tableName = (string) $match[1];
+            $body = (string) $match[2];
+
+            if (!preg_match_all(
+                '/FOREIGN\s+KEY\s*\(\s*`([a-zA-Z0-9_]+)`\s*\)\s*REFERENCES\s+`([a-zA-Z0-9_]+)`\s*\(\s*`([a-zA-Z0-9_]+)`\s*\)/i',
+                $body,
+                $fkMatches,
+                PREG_SET_ORDER
+            )) {
+                continue;
+            }
+
+            foreach ($fkMatches as $fkMatch) {
+                $column = (string) $fkMatch[1];
+                $refTable = (string) $fkMatch[2];
+                $refColumn = (string) $fkMatch[3];
+                $refColumns = $tableColumns[$refTable] ?? [];
+                $labelCol = itm_raw_fk_column_audit_resolve_label_column($refColumns);
+
+                if ($labelCol === '') {
+                    continue;
+                }
+
+                $cache[$schemaPath][$tableName][$column] = [
+                    'ref_table' => $refTable,
+                    'ref_column' => $refColumn,
+                    'label_col' => $labelCol,
+                ];
+            }
+        }
+
+        return $cache[$schemaPath];
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_status_driven_slugs')) {
+    /**
+     * @return list<string>
+     */
+    function itm_raw_fk_column_audit_status_driven_slugs(): array
+    {
+        if (function_exists('itm_crud_boolean_cell_audit_status_driven_slugs')) {
+            return itm_crud_boolean_cell_audit_status_driven_slugs();
+        }
+
+        return ['employees', 'equipment', 'patches_updates', 'tickets'];
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_is_field_hidden_from_list')) {
+    function itm_raw_fk_column_audit_is_field_hidden_from_list(
+        string $field,
+        string $moduleSlug,
+        array $hiddenByModule
+    ): bool {
+        if (in_array($field, $hiddenByModule, true)) {
+            return true;
+        }
+
+        if ($field === 'company_id') {
+            return true;
+        }
+
+        if ($field === 'active' && in_array($moduleSlug, itm_raw_fk_column_audit_status_driven_slugs(), true)) {
+            return true;
+        }
+
+        if (function_exists('itm_crud_is_list_hidden_audit_field')
+            && itm_crud_is_list_hidden_audit_field($field)) {
+            return true;
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_render_has_global_fkmap_handler')) {
+    function itm_raw_fk_column_audit_render_has_global_fkmap_handler(string $renderBody): bool
+    {
+        if ($renderBody === '') {
+            return false;
+        }
+
+        if (preg_match('/\$GLOBALS\s*\[\s*[\'"]fkMap[\'"]\s*\]\s*\[\s*\$field\s*\]/', $renderBody) === 1) {
+            return true;
+        }
+
+        if (preg_match('/isset\s*\(\s*\$GLOBALS\s*\[\s*[\'"]fkMap[\'"]\s*\]\s*\[\s*\$field\s*\]\s*\)/', $renderBody) === 1) {
+            return true;
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_field_has_audit_actor_rendering')) {
+    function itm_raw_fk_column_audit_field_has_audit_actor_rendering(string $renderBody, string $field): bool
+    {
+        if (!in_array($field, ['created_by', 'updated_by', 'deleted_by'], true)) {
+            return false;
+        }
+
+        return strpos($renderBody, 'itm_crud_render_audit_cell_value') !== false;
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_field_has_bespoke_label_rendering')) {
+    function itm_raw_fk_column_audit_field_has_bespoke_label_rendering(
+        string $renderBody,
+        string $field,
+        string $table
+    ): bool {
+        if ($renderBody === '' || $field === '') {
+            return false;
+        }
+
+        $fieldQuoted = preg_quote($field, '/');
+        $tableQuoted = preg_quote($table, '/');
+
+        $patterns = [
+            '/\$field\s*===\s*[\'"]' . $fieldQuoted . '[\'"][\s\S]{0,900}?(cr_fk_label_by_id|itm_fk_label_by_id|itm_user_label_by_id_for_company|itm_fk_label_column_for_table)/s',
+            '/\$table\s*===\s*[\'"]' . $tableQuoted . '[\'"][\s\S]{0,220}?\$field\s*===\s*[\'"]' . $fieldQuoted . '[\'"][\s\S]{0,900}?(cr_fk_label_by_id|itm_fk_label_by_id|itm_user_label_by_id_for_company)/s',
+            '/in_array\s*\(\s*\$field\s*,\s*\[[^\]]*[\'"]' . $fieldQuoted . '[\'"][^\]]*\][\s\S]{0,900}?(cr_fk_label_by_id|itm_fk_label_by_id|itm_user_label_by_id_for_company)/s',
+            '/[\'"]' . $fieldQuoted . '[\'"][\s\S]{0,120}?\][\s\S]{0,900}?(cr_fk_label_by_id|itm_fk_label_by_id|itm_user_label_by_id_for_company)/s',
+            '/\$row\s*\[\s*[\'"]' . $fieldQuoted . '[\'"]\s*\][\s\S]{0,900}?(cr_fk_label_by_id|itm_fk_label_by_id|itm_user_label_by_id_for_company)/s',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $renderBody) === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_field_has_label_rendering')) {
+    function itm_raw_fk_column_audit_field_has_label_rendering(
+        string $renderBody,
+        string $field,
+        string $table
+    ): bool {
+        if (itm_raw_fk_column_audit_render_has_global_fkmap_handler($renderBody)) {
+            return true;
+        }
+
+        if (itm_raw_fk_column_audit_field_has_audit_actor_rendering($renderBody, $field)) {
+            return true;
+        }
+
+        return itm_raw_fk_column_audit_field_has_bespoke_label_rendering($renderBody, $field, $table);
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_probe_bootstrap')) {
+    function itm_raw_fk_column_audit_probe_bootstrap(): void
+    {
+        static $ready = false;
+        if ($ready) {
+            return;
+        }
+        $ready = true;
+
+        if (!function_exists('sanitize')) {
+            function sanitize($data)
+            {
+                return htmlspecialchars((string) $data, ENT_QUOTES, 'UTF-8');
+            }
+        }
+        if (!function_exists('itm_format_cell_scalar_display')) {
+            function itm_format_cell_scalar_display($field, $value)
+            {
+                return (string) $value;
+            }
+        }
+        if (!function_exists('itm_crud_render_audit_cell_value')) {
+            function itm_crud_render_audit_cell_value($conn, $companyId, $field, $value)
+            {
+                return null;
+            }
+        }
+        if (!function_exists('cr_fk_label_by_id')) {
+            function cr_fk_label_by_id($conn, $fk, $company_id, $rawId)
+            {
+                if (function_exists('itm_fk_label_by_id')) {
+                    return itm_fk_label_by_id($conn, $fk, (int) $company_id, (int) $rawId);
+                }
+
+                return '';
+            }
+        }
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_probe_render_html')) {
+    function itm_raw_fk_column_audit_probe_render_html(
+        string $functionBody,
+        string $crudTable,
+        string $field,
+        $value
+    ): string {
+        $functionBody = (string) $functionBody;
+        $crudTable = trim($crudTable);
+        $field = trim($field);
+        if ($functionBody === '' || $crudTable === '' || $field === '') {
+            return '';
+        }
+
+        itm_raw_fk_column_audit_probe_bootstrap();
+
+        $GLOBALS['crud_table'] = $crudTable;
+        $GLOBALS['conn'] = $GLOBALS['conn'] ?? null;
+        $GLOBALS['company_id'] = (int) ($GLOBALS['company_id'] ?? 0);
+        $GLOBALS['fkMap'] = is_array($GLOBALS['fkMap'] ?? null) ? $GLOBALS['fkMap'] : [];
+
+        $probeName = 'itm_raw_fk_column_probe_' . substr(md5($functionBody), 0, 12);
+        if (!function_exists($probeName)) {
+            eval('function ' . $probeName . '($table, $field, $value) {
+                $conn = $GLOBALS["conn"] ?? null;
+                $company_id = $GLOBALS["company_id"] ?? 0;
+                $companyId = (int)$company_id;
+            ' . $functionBody . "\n}");
+        }
+
+        $prevLevel = error_reporting(E_ERROR | E_PARSE);
+        try {
+            return (string) $probeName($crudTable, $field, $value);
+        } catch (Throwable $e) {
+            return '';
+        } finally {
+            error_reporting($prevLevel);
+        }
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_live_repro_is_raw_numeric')) {
+    function itm_raw_fk_column_audit_live_repro_is_raw_numeric(string $html, $rawValue): bool
+    {
+        $raw = trim((string) $rawValue);
+        if ($raw === '' || !ctype_digit($raw)) {
+            return false;
+        }
+
+        $text = trim(html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        if ($text === '') {
+            return false;
+        }
+
+        return $text === $raw;
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_module_slugs')) {
+    /**
+     * @return list<string>
+     */
+    function itm_raw_fk_column_audit_module_slugs(string $root): array
+    {
+        $root = rtrim($root, '/\\');
+        $modulesRoot = $root . '/modules';
+        if (!is_dir($modulesRoot)) {
+            return [];
+        }
+
+        $slugs = [];
+        foreach (scandir($modulesRoot) ?: [] as $entry) {
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
+            if (is_file($modulesRoot . '/' . $entry . '/index.php')) {
+                $slugs[] = $entry;
+            }
+        }
+        sort($slugs);
+
+        return $slugs;
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_analyze_index')) {
+    /**
+     * @param array<string, array<string, array{ref_table:string,ref_column:string,label_col:string}>> $schemaFks
+     * @return list<array<string, mixed>>
+     */
+    function itm_raw_fk_column_audit_analyze_index(
+        string $repoRoot,
+        string $slug,
+        array $schemaFks,
+        ?mysqli $conn = null,
+        int $companyId = 0
+    ): array {
+        require_once dirname(__DIR__, 2) . '/includes/itm_crud_audit_fields.php';
+
+        $indexPath = rtrim(str_replace('\\', '/', $repoRoot), '/') . '/modules/' . $slug . '/index.php';
+        if (!is_readable($indexPath)) {
+            return [];
+        }
+
+        $content = (string) file_get_contents($indexPath);
+        $table = itm_crud_boolean_cell_audit_extract_crud_table($content);
+        if ($table === '' || !isset($schemaFks[$table]) || $schemaFks[$table] === []) {
+            return [];
+        }
+
+        if (strpos($content, 'function cr_render_cell_value') === false) {
+            return [[
+                'status' => 'skip',
+                'slug' => $slug,
+                'table' => $table,
+                'column' => '',
+                'ref_table' => '',
+                'label_col' => '',
+                'handler' => 'none',
+                'repro' => false,
+                'notes' => 'No cr_render_cell_value() — bespoke list renderer',
+            ]];
+        }
+
+        $renderBody = itm_crud_boolean_cell_audit_extract_function_body($content, 'cr_render_cell_value');
+        if ($renderBody === '') {
+            return [[
+                'status' => 'skip',
+                'slug' => $slug,
+                'table' => $table,
+                'column' => '',
+                'ref_table' => '',
+                'label_col' => '',
+                'handler' => 'none',
+                'repro' => false,
+                'notes' => 'Could not parse cr_render_cell_value() body',
+            ]];
+        }
+
+        $hiddenByModule = itm_crud_boolean_cell_audit_parse_hidden_field_names($content, $table);
+        $hasGlobalFkMap = itm_raw_fk_column_audit_render_has_global_fkmap_handler($renderBody);
+        $handler = $hasGlobalFkMap ? 'fkMap' : 'none';
+
+        $fkMap = [];
+        if ($conn instanceof mysqli && function_exists('itm_table_outbound_fk_map')) {
+            $fkMap = itm_table_outbound_fk_map($conn, $table);
+        }
+
+        $rows = [];
+        foreach ($schemaFks[$table] as $column => $meta) {
+            if (itm_raw_fk_column_audit_is_field_hidden_from_list($column, $slug, $hiddenByModule)) {
+                continue;
+            }
+
+            $resolved = itm_raw_fk_column_audit_field_has_label_rendering($renderBody, $column, $table);
+            $status = $resolved ? 'ok' : 'raw';
+            $repro = false;
+            $notes = $resolved
+                ? ($hasGlobalFkMap ? 'Shared $GLOBALS[\'fkMap\'] branch' : 'Bespoke FK label branch')
+                : 'List/view falls through to raw FK id';
+
+            if ($status === 'raw' && $conn instanceof mysqli && $companyId > 0 && itm_is_safe_identifier($table) && itm_is_safe_identifier($column)) {
+                $sql = 'SELECT `' . $column . '` AS fk_val FROM `' . $table . '` WHERE `company_id` = ? AND `'
+                    . $column . '` IS NOT NULL AND `' . $column . '` > 0';
+                if (function_exists('itm_crud_append_not_deleted_predicate')) {
+                    $sql .= itm_crud_append_not_deleted_predicate($table);
+                }
+                $sql .= ' ORDER BY `id` DESC LIMIT 1';
+
+                $stmt = mysqli_prepare($conn, $sql);
+                if ($stmt) {
+                    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+                    mysqli_stmt_execute($stmt);
+                    $result = mysqli_stmt_get_result($stmt);
+                    $sampleRow = $result ? mysqli_fetch_assoc($result) : null;
+                    mysqli_stmt_close($stmt);
+
+                    if ($sampleRow && isset($sampleRow['fk_val'])) {
+                        $GLOBALS['conn'] = $conn;
+                        $GLOBALS['company_id'] = $companyId;
+                        $GLOBALS['fkMap'] = $fkMap;
+                        $html = itm_raw_fk_column_audit_probe_render_html(
+                            $renderBody,
+                            $table,
+                            $column,
+                            $sampleRow['fk_val']
+                        );
+                        if (itm_raw_fk_column_audit_live_repro_is_raw_numeric($html, $sampleRow['fk_val'])) {
+                            $repro = true;
+                            $status = 'repro';
+                            $notes = 'Live render shows raw id ' . (string) $sampleRow['fk_val'];
+                        }
+                    }
+                }
+            }
+
+            $rows[] = [
+                'status' => $status,
+                'slug' => $slug,
+                'table' => $table,
+                'column' => $column,
+                'ref_table' => (string) ($meta['ref_table'] ?? ''),
+                'label_col' => (string) ($meta['label_col'] ?? ''),
+                'handler' => $handler,
+                'repro' => $repro,
+                'notes' => $notes,
+            ];
+        }
+
+        return $rows;
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_run')) {
+    /**
+     * @param array{
+     *   root:string,
+     *   module?:string,
+     *   only_raw?:bool,
+     *   only_repro?:bool,
+     *   all?:bool,
+     *   conn?:mysqli|null,
+     *   company_id?:int
+     * } $options
+     * @return list<array<string, mixed>>
+     */
+    function itm_raw_fk_column_audit_run(array $options): array
+    {
+        $root = rtrim((string) ($options['root'] ?? ''), '/\\');
+        $moduleFilter = trim((string) ($options['module'] ?? ''));
+        $onlyRaw = !empty($options['only_raw']);
+        $onlyRepro = !empty($options['only_repro']);
+        $showAll = !empty($options['all']);
+        $conn = $options['conn'] ?? null;
+        $companyId = (int) ($options['company_id'] ?? 0);
+
+        $schemaPath = itm_raw_fk_column_audit_schema_path($root);
+        $schemaFks = itm_raw_fk_column_audit_parse_schema_outbound_fks($schemaPath);
+
+        $slugs = itm_raw_fk_column_audit_module_slugs($root);
+        if ($moduleFilter !== '') {
+            $slugs = in_array($moduleFilter, $slugs, true) ? [$moduleFilter] : [];
+        }
+
+        $rows = [];
+        foreach ($slugs as $slug) {
+            $moduleRows = itm_raw_fk_column_audit_analyze_index(
+                $root,
+                $slug,
+                $schemaFks,
+                $conn instanceof mysqli ? $conn : null,
+                $companyId
+            );
+            foreach ($moduleRows as $row) {
+                $status = (string) ($row['status'] ?? 'ok');
+                if ($onlyRepro && $status !== 'repro') {
+                    continue;
+                }
+                if ($onlyRaw && !in_array($status, ['raw', 'repro'], true)) {
+                    continue;
+                }
+                if ($showAll || in_array($status, ['raw', 'repro', 'skip'], true)) {
+                    $rows[] = $row;
+                }
+            }
+        }
+
+        return $rows;
+    }
+}
