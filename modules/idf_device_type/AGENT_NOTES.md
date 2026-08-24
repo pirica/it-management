@@ -57,7 +57,7 @@ MySQL triggers on `idf_device_type` insert audit rows on INSERT/UPDATE/DELETE (u
 - **IDF sync:** adding or renaming types does not automatically fix port rows; position save/regenerate paths in `modules/idfs/api/` own port counts. After any cross-module IDF change, run `php scripts/idfs_sync_human_test.php`. [Cursor-Valid]
 - **Do not update only one entry file:** fixes in `index.php` must be mirrored in wrapper files when shared blocks change (`create.php`, `edit.php`, `view.php`, `list_all.php`, `delete.php`). [Cursor-Valid]
 - **Search column alias:** ensure `$displayFieldColumns = $uiColumns` exists before the search `foreach` when using `$displayFieldColumns`. [Cursor-Fixed]
-- **Add sample data:** gate uses `itm_seed_tenant_row_count()` (live rows only); seeds via `itm_seed_table_from_database_sql()` from `db/02_data_sample.sql` — not bespoke inline INSERT. [Cursor-Fixed]
+- **Add sample data:** gate uses `itm_seed_tenant_row_count()` (live rows only); seeds via `itm_seed_table_from_database_sql()` from `db/02_data_sample.sql` — not bespoke inline INSERT. Soft-deleted rows with the same business key are **restored** on re-seed (shared seeder), not replaced by random `Sample …` fallback rows. [Cursor-Fixed]
 
 ## 11. Examples of Safe Code Patterns
 

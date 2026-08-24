@@ -1815,6 +1815,173 @@ if (!function_exists('itm_seed_insert_row_is_unique_violation')) {
     }
 }
 
+if (!function_exists('itm_seed_column_list_token_to_name')) {
+    function itm_seed_column_list_token_to_name(string $columnToken): string
+    {
+        return trim($columnToken, "` \t\n\r\0\x0B");
+    }
+}
+
+if (!function_exists('itm_seed_parse_insert_value_token')) {
+    function itm_seed_parse_insert_value_token(string $token): ?string
+    {
+        $token = trim($token);
+        if ($token === '' || strtoupper($token) === 'NULL') {
+            return null;
+        }
+
+        if ($token[0] === "'" && substr($token, -1) === "'") {
+            $inner = substr($token, 1, -1);
+
+            return str_replace("''", "'", $inner);
+        }
+
+        return $token;
+    }
+}
+
+if (!function_exists('itm_seed_restore_soft_deleted_row_from_template')) {
+    /**
+     * Why: Soft-deleted rows keep unique keys; re-seed must restore template rows instead of random fallback.
+     */
+    function itm_seed_restore_soft_deleted_row_from_template(
+        mysqli $conn,
+        string $tableName,
+        int $companyId,
+        array $targetColumns,
+        array $targetValues
+    ): bool {
+        if ($companyId <= 0 || !itm_is_safe_identifier($tableName)
+            || !itm_table_has_column($conn, $tableName, 'deleted_at')) {
+            return false;
+        }
+
+        $detectFkLib = ROOT_PATH . 'includes/detect_fk_dropdown_ui_risk_lib.php';
+        if (is_file($detectFkLib)) {
+            require_once $detectFkLib;
+        }
+
+        if (!function_exists('itm_fk_table_column_names') || !function_exists('itm_detect_fk_business_key_columns')) {
+            return false;
+        }
+
+        $tableColumns = itm_fk_table_column_names($conn, $tableName);
+        $businessKeys = itm_detect_fk_business_key_columns($tableName, $tableColumns);
+        if ($businessKeys === []) {
+            return false;
+        }
+
+        $rowAssoc = [];
+        foreach ($targetColumns as $index => $columnToken) {
+            $columnName = itm_seed_column_list_token_to_name((string)$columnToken);
+            if ($columnName === '' || !itm_is_safe_identifier($columnName)) {
+                continue;
+            }
+            $rowAssoc[$columnName] = itm_seed_parse_insert_value_token((string)($targetValues[$index] ?? ''));
+        }
+
+        $whereParts = ['company_id = ?', 'deleted_at IS NOT NULL'];
+        $whereTypes = 'i';
+        $whereParams = [$companyId];
+        foreach ($businessKeys as $keyColumn) {
+            if (!itm_is_safe_identifier($keyColumn) || !array_key_exists($keyColumn, $rowAssoc)) {
+                return false;
+            }
+            $keyValue = $rowAssoc[$keyColumn];
+            if ($keyValue === null) {
+                $whereParts[] = '`' . $keyColumn . '` IS NULL';
+            } else {
+                $whereParts[] = '`' . $keyColumn . '` = ?';
+                $whereTypes .= 's';
+                $whereParams[] = $keyValue;
+            }
+        }
+
+        $selectSql = 'SELECT id FROM `' . str_replace('`', '``', $tableName) . '` WHERE ' . implode(' AND ', $whereParts) . ' LIMIT 1';
+        $selectStmt = mysqli_prepare($conn, $selectSql);
+        if (!$selectStmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($selectStmt, $whereTypes, ...$whereParams);
+        mysqli_stmt_execute($selectStmt);
+        $selectRes = mysqli_stmt_get_result($selectStmt);
+        $existing = $selectRes ? mysqli_fetch_assoc($selectRes) : null;
+        mysqli_stmt_close($selectStmt);
+        if (!is_array($existing) || (int)($existing['id'] ?? 0) <= 0) {
+            return false;
+        }
+
+        $rowId = (int)$existing['id'];
+        $setParts = [];
+        $setTypes = '';
+        $setParams = [];
+        $skipColumns = ['id', 'company_id', 'deleted_by', 'deleted_at', 'created_by', 'created_at'];
+        foreach ($rowAssoc as $columnName => $columnValue) {
+            if (in_array($columnName, $skipColumns, true) || !in_array($columnName, $tableColumns, true)) {
+                continue;
+            }
+            if ($columnValue === null) {
+                $setParts[] = '`' . $columnName . '` = NULL';
+            } else {
+                $setParts[] = '`' . $columnName . '` = ?';
+                $setTypes .= 's';
+                $setParams[] = $columnValue;
+            }
+        }
+        if (itm_table_has_column($conn, $tableName, 'active')) {
+            $setParts[] = 'active = 1';
+        }
+        $setParts[] = 'deleted_at = NULL';
+        if (itm_table_has_column($conn, $tableName, 'deleted_by')) {
+            $setParts[] = 'deleted_by = NULL';
+        }
+        if (itm_table_has_column($conn, $tableName, 'updated_at')) {
+            $setParts[] = 'updated_at = CURRENT_TIMESTAMP';
+        }
+
+        $updateSql = 'UPDATE `' . str_replace('`', '``', $tableName) . '` SET ' . implode(', ', $setParts)
+            . ' WHERE id = ? AND company_id = ?';
+        $setTypes .= 'ii';
+        $setParams[] = $rowId;
+        $setParams[] = $companyId;
+
+        $updateStmt = mysqli_prepare($conn, $updateSql);
+        if (!$updateStmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($updateStmt, $setTypes, ...$setParams);
+        $ok = mysqli_stmt_execute($updateStmt);
+        mysqli_stmt_close($updateStmt);
+
+        return (bool)$ok;
+    }
+}
+
+if (!function_exists('itm_seed_tenant_soft_deleted_row_count')) {
+    function itm_seed_tenant_soft_deleted_row_count(mysqli $conn, string $tableName, int $companyId): int
+    {
+        if ($companyId <= 0 || !itm_is_safe_identifier($tableName)
+            || !itm_table_has_column($conn, $tableName, 'deleted_at')) {
+            return 0;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT COUNT(*) AS total_count FROM `' . str_replace('`', '``', $tableName) . '` WHERE company_id = ? AND deleted_at IS NOT NULL'
+        );
+        if (!$stmt) {
+            return 0;
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+
+        return isset($row['total_count']) ? (int)$row['total_count'] : 0;
+    }
+}
+
 if (!function_exists('itm_seed_table_column_metas')) {
     /**
      * @return array<int, array{name:string,type:string,null:string,default:?string,extra:string,key:string}>
@@ -4101,6 +4268,9 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
             $dbErrorMessage = '';
             if (itm_run_query($conn, $insertSql, $dbErrorCode, $dbErrorMessage) === false) {
                 if (itm_seed_insert_row_is_unique_violation($dbErrorCode, $dbErrorMessage)) {
+                    if (itm_seed_restore_soft_deleted_row_from_template($conn, $tableName, $companyId, $targetColumns, $targetValues)) {
+                        $insertCount++;
+                    }
                     continue;
                 }
                 $error = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
@@ -4111,6 +4281,9 @@ if (!function_exists('itm_seed_table_from_database_sql')) {
 
         if ($insertCount === 0) {
             if ($tenantRowsBefore > 0 || itm_seed_tenant_row_count($conn, $tableName, $companyId) > 0) {
+                return 0;
+            }
+            if (itm_seed_tenant_soft_deleted_row_count($conn, $tableName, $companyId) > 0) {
                 return 0;
             }
             $fallback = itm_seed_insert_random_fallback_row($conn, $tableName, $companyId, $error);
