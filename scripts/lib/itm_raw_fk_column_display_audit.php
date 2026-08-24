@@ -234,14 +234,111 @@ if (!function_exists('itm_raw_fk_column_audit_field_has_audit_actor_rendering'))
     }
 }
 
+if (!function_exists('itm_raw_fk_column_audit_render_accepts_row_param')) {
+    function itm_raw_fk_column_audit_render_accepts_row_param(string $renderBody): bool
+    {
+        return $renderBody !== ''
+            && preg_match('/function\s+cr_render_cell_value\s*\([^)]*\$row\b/', $renderBody) === 1;
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_index_passes_row_to_render')) {
+    function itm_raw_fk_column_audit_index_passes_row_to_render(string $indexContent): bool
+    {
+        return $indexContent !== ''
+            && preg_match('/cr_render_cell_value\s*\([^;]+\$row\s*\)/', $indexContent) === 1;
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_field_has_join_row_label_rendering')) {
+    /**
+     * Bespoke modules (e.g. alerts) JOIN label tables in the list query and pass $row into
+     * cr_render_cell_value() — category_name, first_name, etc. instead of fkMap resolution.
+     *
+     * @param array{ref_table:string,ref_column:string,label_col:string} $meta
+     */
+    function itm_raw_fk_column_audit_field_has_join_row_label_rendering(
+        string $renderBody,
+        string $indexContent,
+        string $field,
+        string $table,
+        array $meta
+    ): bool {
+        $refTable = (string) ($meta['ref_table'] ?? '');
+        $labelCol = (string) ($meta['label_col'] ?? '');
+        if ($renderBody === '' || $indexContent === '' || $field === '' || $refTable === '') {
+            return false;
+        }
+
+        if (!itm_raw_fk_column_audit_render_accepts_row_param($renderBody)) {
+            return false;
+        }
+
+        if (!itm_raw_fk_column_audit_index_passes_row_to_render($indexContent)) {
+            return false;
+        }
+
+        $refTableQuoted = preg_quote($refTable, '/');
+        if (!preg_match('/\bJOIN\s+`?' . $refTableQuoted . '`?\b/i', $indexContent)) {
+            return false;
+        }
+
+        $fieldQuoted = preg_quote($field, '/');
+        $tableQuoted = preg_quote($table, '/');
+        $fieldBranchPattern = '/(?:'
+            . '\$field\s*===\s*[\'"]' . $fieldQuoted . '[\'"]'
+            . '|in_array\s*\(\s*\$field\s*,\s*\[[^\]]*[\'"]' . $fieldQuoted . '[\'"][^\]]*\]'
+            . '|\$table\s*===\s*[\'"]' . $tableQuoted . '[\'"][\s\S]{0,400}?\$field\s*===\s*[\'"]' . $fieldQuoted . '[\'"]'
+            . ')/';
+
+        if (preg_match($fieldBranchPattern, $renderBody, $fieldMatch, PREG_OFFSET_CAPTURE) !== 1) {
+            return false;
+        }
+
+        $window = substr($renderBody, (int) $fieldMatch[0][1], 2000);
+        $rowLabelPatterns = [
+            '/\$row\s*\[\s*[\'"][^\'"]*' . preg_quote('_' . $labelCol, '/') . '[\'"]\s*\]/',
+            '/isset\s*\(\s*\$row\s*\[\s*[\'"][^\'"]+[\'"]\s*\]\s*\)/',
+            '/\$row\s*\[\s*\$prefix\s*\.\s*[\'"]first_name[\'"]\s*\]/',
+            '/\$row\s*\[\s*[\'"]first_name[\'"]\s*\]/',
+            '/\$row\s*\[\s*[\'"]last_name[\'"]\s*\]/',
+            '/\$row\s*\[\s*[\'"]username[\'"]\s*\]/',
+            '/\$row\s*\[\s*[\'"]display_name[\'"]\s*\]/',
+            '/\$row\s*\[\s*[\'"]full_name[\'"]\s*\]/',
+        ];
+
+        foreach ($rowLabelPatterns as $pattern) {
+            if (preg_match($pattern, $window) === 1) {
+                return true;
+            }
+        }
+
+        $base = preg_replace('/_id$/', '', $field);
+        if ($base !== '' && $base !== $field) {
+            if (preg_match('/\$row\s*\[\s*[\'"]' . preg_quote($base, '/') . '_/', $window) === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
 if (!function_exists('itm_raw_fk_column_audit_field_has_bespoke_label_rendering')) {
     function itm_raw_fk_column_audit_field_has_bespoke_label_rendering(
         string $renderBody,
         string $field,
-        string $table
+        string $table,
+        string $indexContent = '',
+        array $meta = []
     ): bool {
         if ($renderBody === '' || $field === '') {
             return false;
+        }
+
+        if ($indexContent !== '' && $meta !== []
+            && itm_raw_fk_column_audit_field_has_join_row_label_rendering($renderBody, $indexContent, $field, $table, $meta)) {
+            return true;
         }
 
         $fieldQuoted = preg_quote($field, '/');
@@ -265,11 +362,37 @@ if (!function_exists('itm_raw_fk_column_audit_field_has_bespoke_label_rendering'
     }
 }
 
+if (!function_exists('itm_raw_fk_column_audit_resolve_handler_label')) {
+    function itm_raw_fk_column_audit_resolve_handler_label(
+        string $renderBody,
+        string $indexContent,
+        string $field,
+        string $table,
+        array $meta,
+        bool $hasGlobalFkMap
+    ): array {
+        if ($hasGlobalFkMap) {
+            return ['handler' => 'fkMap', 'notes' => 'Shared $GLOBALS[\'fkMap\'] branch'];
+        }
+
+        if (itm_raw_fk_column_audit_field_has_join_row_label_rendering($renderBody, $indexContent, $field, $table, $meta)) {
+            return ['handler' => 'join_row', 'notes' => 'JOIN + $row bespoke label branch'];
+        }
+
+        return ['handler' => 'bespoke', 'notes' => 'Bespoke FK label branch'];
+    }
+}
+
 if (!function_exists('itm_raw_fk_column_audit_field_has_label_rendering')) {
+    /**
+     * @param array{ref_table:string,ref_column:string,label_col:string} $meta
+     */
     function itm_raw_fk_column_audit_field_has_label_rendering(
         string $renderBody,
         string $field,
-        string $table
+        string $table,
+        string $indexContent = '',
+        array $meta = []
     ): bool {
         if (itm_raw_fk_column_audit_render_has_global_fkmap_handler($renderBody)) {
             return true;
@@ -279,7 +402,13 @@ if (!function_exists('itm_raw_fk_column_audit_field_has_label_rendering')) {
             return true;
         }
 
-        return itm_raw_fk_column_audit_field_has_bespoke_label_rendering($renderBody, $field, $table);
+        return itm_raw_fk_column_audit_field_has_bespoke_label_rendering(
+            $renderBody,
+            $field,
+            $table,
+            $indexContent,
+            $meta
+        );
     }
 }
 
@@ -464,7 +593,6 @@ if (!function_exists('itm_raw_fk_column_audit_analyze_index')) {
 
         $hiddenByModule = itm_crud_boolean_cell_audit_parse_hidden_field_names($content, $table);
         $hasGlobalFkMap = itm_raw_fk_column_audit_render_has_global_fkmap_handler($renderBody);
-        $handler = $hasGlobalFkMap ? 'fkMap' : 'none';
 
         $fkMap = [];
         if ($conn instanceof mysqli && function_exists('itm_table_outbound_fk_map')) {
@@ -477,12 +605,30 @@ if (!function_exists('itm_raw_fk_column_audit_analyze_index')) {
                 continue;
             }
 
-            $resolved = itm_raw_fk_column_audit_field_has_label_rendering($renderBody, $column, $table);
+            $resolved = itm_raw_fk_column_audit_field_has_label_rendering(
+                $renderBody,
+                $column,
+                $table,
+                $content,
+                $meta
+            );
             $status = $resolved ? 'ok' : 'raw';
             $repro = false;
-            $notes = $resolved
-                ? ($hasGlobalFkMap ? 'Shared $GLOBALS[\'fkMap\'] branch' : 'Bespoke FK label branch')
-                : 'List/view falls through to raw FK id';
+            if ($resolved) {
+                $handlerInfo = itm_raw_fk_column_audit_resolve_handler_label(
+                    $renderBody,
+                    $content,
+                    $column,
+                    $table,
+                    $meta,
+                    $hasGlobalFkMap
+                );
+                $handler = (string) ($handlerInfo['handler'] ?? 'bespoke');
+                $notes = (string) ($handlerInfo['notes'] ?? 'Bespoke FK label branch');
+            } else {
+                $handler = 'none';
+                $notes = 'List/view falls through to raw FK id';
+            }
 
             if ($status === 'raw' && $conn instanceof mysqli && $companyId > 0 && itm_is_safe_identifier($table) && itm_is_safe_identifier($column)) {
                 $sql = 'SELECT `' . $column . '` AS fk_val FROM `' . $table . '` WHERE `company_id` = ? AND `'
