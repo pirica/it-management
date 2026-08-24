@@ -44,7 +44,8 @@ This module manages system-wide access level definitions (e.g., "Full", "Limited
 - **Soft-delete + audit meta:** list hides `created_*`/`updated_*`/`deleted_*` and filters `deleted_at IS NULL`; view shows those six meta fields (`*_by` as employee name, `*_at` as `d-m-Y - H:i:s`); create/edit stamp `created_*`/`updated_*` via hidden inputs; delete soft-sets `deleted_by`/`deleted_at`. Helpers: `includes/itm_crud_audit_fields.php`. Inventory: `docs/list_soft-delete.txt`. [Cursor-Fixed]
 - Soft-deleted rows still occupy unique keys — recreating the same name may collide until purged. [Cursor-Valid]
 - **Case Sensitivity**: Be mindful of case sensitivity in names depending on the database collation. [Cursor-Valid]
-- **Foreign Key Constraints**: Deleting an access level may fail if it is referenced by other tables (check constraints). [Cursor-Valid]
+- **Delete in-use guard:** `delete.php` calls `itm_can_delete_record()` → `itm_find_record_usage()` in `config/config.php`, which counts only **live** child rows (`deleted_at IS NULL` when the child table has soft-delete). Soft-deleted `registration_invitations` must not block access-level delete. Delete SQL uses `itm_run_query(...) === false` (not `!itm_run_query`). [Cursor-Fixed]
+- **Foreign Key Constraints**: Deleting an access level may still fail when **live** employees or invitations reference it — reassign or remove those rows first. [Cursor-Valid]
 
 ## 11. Examples of Safe Code Patterns
 

@@ -956,6 +956,10 @@ WHERE kcu.TABLE_SCHEMA = DATABASE()
             if ((int)$companyId > 0 && itm_table_has_column($conn, $sourceTable, 'company_id')) {
                 $where .= ' AND `company_id`=' . (int)$companyId;
             }
+            // Why: Soft-deleted child rows must not block parent delete (registration_invitations, etc.).
+            if (itm_table_has_column($conn, $sourceTable, 'deleted_at')) {
+                $where .= ' AND `deleted_at` IS NULL';
+            }
 
             $countSql = 'SELECT COUNT(*) AS c FROM `' . str_replace('`', '``', $sourceTable) . '` WHERE ' . $where;
             $countRes = mysqli_query($conn, $countSql);
@@ -994,6 +998,9 @@ WHERE kcu.TABLE_SCHEMA = DATABASE()
             $where = '`' . str_replace('`', '``', $sourceColumn) . '`=' . (int)$pkValue;
             if ((int)$companyId > 0 && itm_table_has_column($conn, $sourceTable, 'company_id')) {
                 $where .= ' AND `company_id`=' . (int)$companyId;
+            }
+            if (itm_table_has_column($conn, $sourceTable, 'deleted_at')) {
+                $where .= ' AND `deleted_at` IS NULL';
             }
 
             $countSql = 'SELECT COUNT(*) AS c FROM `' . str_replace('`', '``', $sourceTable) . '` WHERE ' . $where;

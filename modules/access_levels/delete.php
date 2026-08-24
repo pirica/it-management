@@ -142,7 +142,7 @@ if ($bulkAction === 'clear_table') {
     $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
         ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
         : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
-    if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+    if (itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage) === false) {
         $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
     header('Location: ' . $listUrl);
@@ -167,7 +167,7 @@ if ($bulkAction === 'bulk_delete') {
         $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
         ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
         : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+        if (itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage) === false) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
     } else {
@@ -195,7 +195,7 @@ if ($id > 0) {
     $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
         ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0)) . ''
         : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
-    if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+    if (itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage) === false) {
         $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
     }
 }
