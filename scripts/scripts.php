@@ -1236,6 +1236,15 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     </td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="access_levels">
+                    <td><a href="verify_access_levels_sample_cycle.php?run=1&amp;cycles=4" target="_blank" rel="nofollow noreferrer">verify_access_levels_sample_cycle.php?run=1&amp;cycles=4</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">access_levels</span></span></td>
+                    <td>
+                        MySQL regression for <code>access_levels</code> <strong>Add sample data</strong> after soft-delete: runs <code>--cycles=4</code> seed → soft-delete → re-seed (restores <strong>Full</strong>, <strong>Limited</strong>, <strong>Read Only</strong> by <code>name</code>). Default: <strong>companies 1–5</strong>. <strong>Mutates DB:</strong> soft-deletes live access level rows per company under test.
+                    </td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_equipment_triggers.php" target="_blank" rel="nofollow noreferrer">verify_equipment_triggers.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
