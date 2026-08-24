@@ -14,6 +14,7 @@ This module manages system-wide access level definitions (e.g., "Full", "Limited
 - **Unique Name per Company**: The `name` must be unique within the same `company_id`.
 - **Tenant Isolation**: Users can only see and manage access levels belonging to their active company.
 - **Active Status**: Inactive access levels should be hidden from selection dropdowns in other modules.
+- **Add sample data:** index empty-state button uses the same live-row gate as the list (`deleted_at IS NULL`); template seeds **Full**, **Limited**, and **Read Only** per tenant from `db/02_data_sample.sql`. Re-seed after soft-delete restores by `name` business key. Regression: `php scripts/verify_access_levels_sample_cycle.php` (companies 1–5 by default).
 
 ## 5. UI Behavior Requirements
 - **Standard CRUD**: Supports list, view, create, edit, and delete.

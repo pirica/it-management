@@ -589,6 +589,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
     }
 
     $where = ' WHERE company_id=' . (int)$company_id;
+    if (function_exists('itm_crud_append_not_deleted_predicate')) {
+        $where = itm_crud_append_not_deleted_predicate($where);
+    }
     $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where;
     $countResult = mysqli_query($conn, $countSql);
     $existingRows = 0;
@@ -604,8 +607,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
     $seedError = '';
     $insertedRows = itm_seed_table_from_database_sql($conn, $crud_table, (int)$company_id, $seedError);
-    if ($insertedRows <= 0 && $seedError !== '') {
-        $_SESSION['crud_error'] = $seedError;
+    if ($insertedRows <= 0) {
+        $_SESSION['crud_error'] = $seedError !== ''
+            ? $seedError
+            : 'No sample rows were inserted for this company.';
     }
 
     header('Location: ' . $listUrl);
