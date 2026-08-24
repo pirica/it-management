@@ -41,6 +41,115 @@ if (!function_exists('itm_fk_label_column_for_table')) {
     }
 }
 
+if (!function_exists('itm_fk_ui_configuration_employee_label')) {
+    function itm_fk_ui_configuration_employee_label($firstName, $lastName, $username): string
+    {
+        $full = trim(trim((string)$firstName) . ' ' . trim((string)$lastName));
+        if ($full !== '') {
+            return $full;
+        }
+
+        return trim((string)$username);
+    }
+}
+
+if (!function_exists('itm_fk_ui_configuration_label_by_id')) {
+    function itm_fk_ui_configuration_label_by_id(mysqli $conn, int $companyId, int $uiConfigId): string
+    {
+        $id = (int)$uiConfigId;
+        if ($id <= 0) {
+            return '';
+        }
+
+        $sql = 'SELECT u.tier, e.first_name, e.last_name, e.username
+                FROM ui_configuration u
+                LEFT JOIN employees e ON e.id = u.employee_id
+                WHERE u.id = ?';
+        if ($companyId > 0) {
+            $sql .= ' AND u.company_id = ?';
+        }
+        $sql .= ' LIMIT 1';
+
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return '';
+        }
+
+        if ($companyId > 0) {
+            mysqli_stmt_bind_param($stmt, 'ii', $id, $companyId);
+        } else {
+            mysqli_stmt_bind_param($stmt, 'i', $id);
+        }
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = ($res) ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        if (!is_array($row)) {
+            return '';
+        }
+
+        $name = itm_fk_ui_configuration_employee_label(
+            $row['first_name'] ?? '',
+            $row['last_name'] ?? '',
+            $row['username'] ?? ''
+        );
+        $tier = trim((string)($row['tier'] ?? ''));
+        if ($name === '' && $tier === '') {
+            return '';
+        }
+        if ($tier === '') {
+            return $name;
+        }
+
+        return $name !== '' ? $name . ' (' . $tier . ')' : $tier;
+    }
+}
+
+if (!function_exists('itm_fk_ui_configuration_options')) {
+    /**
+     * @return array<int, array{id:int,label:string}>
+     */
+    function itm_fk_ui_configuration_options(mysqli $conn, int $companyId): array
+    {
+        if ($companyId <= 0) {
+            return [];
+        }
+
+        $sql = 'SELECT u.id, u.tier, e.first_name, e.last_name, e.username
+                FROM ui_configuration u
+                LEFT JOIN employees e ON e.id = u.employee_id
+                WHERE u.company_id = ?
+                ORDER BY e.first_name, e.last_name, e.username, u.id';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return [];
+        }
+
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $rows = [];
+        while ($res && ($row = mysqli_fetch_assoc($res))) {
+            $label = itm_fk_ui_configuration_employee_label(
+                $row['first_name'] ?? '',
+                $row['last_name'] ?? '',
+                $row['username'] ?? ''
+            );
+            $tier = trim((string)($row['tier'] ?? ''));
+            if ($tier !== '') {
+                $label = $label !== '' ? $label . ' (' . $tier . ')' : $tier;
+            }
+            if ($label === '') {
+                continue;
+            }
+            $rows[] = ['id' => (int)($row['id'] ?? 0), 'label' => $label];
+        }
+        mysqli_stmt_close($stmt);
+
+        return $rows;
+    }
+}
+
 if (!function_exists('itm_fk_label_by_id')) {
     function itm_fk_label_by_id(mysqli $conn, array $fk, int $companyId, int $rawId): string
     {
@@ -53,6 +162,10 @@ if (!function_exists('itm_fk_label_by_id')) {
         $refColumn = (string)($fk['REFERENCED_COLUMN_NAME'] ?? 'id');
         if ($refTable === '' || !itm_is_safe_identifier($refTable) || !itm_is_safe_identifier($refColumn)) {
             return '';
+        }
+
+        if ($refTable === 'ui_configuration') {
+            return itm_fk_ui_configuration_label_by_id($conn, $companyId, $id);
         }
 
         $refColumns = itm_fk_table_column_names($conn, $refTable);

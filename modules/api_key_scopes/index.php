@@ -19,6 +19,7 @@ require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
 itm_crud_record_share_handle_ajax_request($conn, 'api_key_scopes');
 
 require_once '../../includes/itm_crud_fk_label_search.php';
+require_once ROOT_PATH . 'includes/itm_api_v2_scopes.php';
 
 // Validate table configuration to prevent unauthorized access to other tables
 if (!isset($crud_table) || !preg_match('/^[a-zA-Z0-9_]+$/', $crud_table)) {
@@ -73,6 +74,10 @@ function cr_fk_map($conn, $table) {
  */
 function cr_fk_options($conn, $fk, $company_id) {
     $table = $fk['REFERENCED_TABLE_NAME'];
+    if ($table === 'ui_configuration' && function_exists('itm_fk_ui_configuration_options')) {
+        return itm_fk_ui_configuration_options($conn, (int)$company_id);
+    }
+
     $col = $fk['REFERENCED_COLUMN_NAME'];
 
     $fkMeta = cr_fk_metadata($conn, $table);
@@ -117,6 +122,43 @@ function cr_fk_metadata($conn, $table) {
 }
 
 /**
+ * Resolves FK display labels with tenant-first and legacy-id fallback.
+ */
+function cr_fk_label_by_id($conn, $fk, $company_id, $rawId) {
+    if (function_exists('itm_fk_label_by_id')) {
+        return itm_fk_label_by_id($conn, $fk, (int)$company_id, (int)$rawId);
+    }
+
+    return '';
+}
+
+function cr_append_selected_fk_option($conn, $fk, $company_id, $options, $selectedValue) {
+    if (function_exists('itm_fk_append_selected_option')) {
+        return itm_fk_append_selected_option($conn, $fk, (int)$company_id, $options, $selectedValue);
+    }
+
+    $selectedId = (int)$selectedValue;
+    if ($selectedId <= 0) {
+        return $options;
+    }
+
+    foreach ($options as $option) {
+        if ((int)($option['id'] ?? 0) === $selectedId) {
+            return $options;
+        }
+    }
+
+    $resolvedLabel = cr_fk_label_by_id($conn, $fk, (int)$company_id, $selectedId);
+    if ($resolvedLabel === '') {
+        return $options;
+    }
+
+    $options[] = ['id' => $selectedId, 'label' => $resolvedLabel];
+
+    return $options;
+}
+
+/**
  * Filters out system-managed columns from the list of manageable fields
  */
 function cr_manageable_columns($columns) {
@@ -143,6 +185,8 @@ function cr_humanize_field($field) {
         'hu_the_lobby' => 'HU & The Lobby',
         'phone' => 'Department Phone',
         'dect' => 'Department Dect',
+        'ui_configuration_id' => 'API Key Owner',
+        'scope_slug' => 'Scope',
     ];
 
     if (isset($map[$label])) {
@@ -189,6 +233,26 @@ if ($field === 'active') {
         $employeeBoolFields = ['network_access', 'micros_emc', 'opera_username', 'micros_card', 'pms_id', 'synergy_mms', 'hu_the_lobby', 'navision', 'onq_ri', 'birchstreet', 'delphi', 'omina', 'vingcard_system', 'digital_rev', 'office_key_card'];
         if (in_array($field, $employeeBoolFields, true)) {
             return ((int)$value === 1) ? '✅' : '❌';
+        }
+    }
+
+    if ($field === 'scope_slug' && function_exists('itm_api_v2_scope_catalog')) {
+        $catalog = itm_api_v2_scope_catalog();
+        $slug = (string)$value;
+        if ($slug !== '' && isset($catalog[$slug])) {
+            return sanitize($catalog[$slug]);
+        }
+    }
+
+    if (isset($GLOBALS['fkMap'][$field])) {
+        $fkRow = $GLOBALS['fkMap'][$field];
+        $fkDisplayId = (int)$value;
+        if ($fkDisplayId > 0 && (int)($GLOBALS['company_id'] ?? 0) > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+            $fkDisplayId = itm_fk_resolve_company_equivalent_id($GLOBALS['conn'], $fkRow, (int)$GLOBALS['company_id'], $fkDisplayId);
+        }
+        $resolvedLabel = cr_fk_label_by_id($GLOBALS['conn'], $fkRow, (int)($GLOBALS['company_id'] ?? 0), $fkDisplayId);
+        if ($resolvedLabel !== '') {
+            return sanitize($resolvedLabel);
         }
     }
 
@@ -326,6 +390,8 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 // Module initialization: load columns and foreign key maps
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
+$GLOBALS['fkMap'] = $fkMap;
+$GLOBALS['company_id'] = (int)($company_id ?? 0);
 $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_employee_field($col['Field']);
@@ -464,6 +530,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
                         $resolvedId = (int)$rawValue;
                     }
                     $rowData[$fieldName] = $resolvedId > 0 ? (string)$resolvedId : 'NULL';
+                    continue;
+                }
+
+                if ($fieldName === 'scope_slug') {
+                    $resolvedSlug = '';
+                    foreach (itm_api_v2_scope_catalog() as $slug => $label) {
+                        if (strcasecmp((string)$label, $rawValue) === 0 || strcasecmp((string)$slug, $rawValue) === 0) {
+                            $resolvedSlug = (string)$slug;
+                            break;
+                        }
+                    }
+                    if ($resolvedSlug !== '') {
+                        $rowData[$fieldName] = "'" . mysqli_real_escape_string($conn, $resolvedSlug) . "'";
+                    }
                     continue;
                 }
 
@@ -845,6 +925,16 @@ if ($searchRaw !== '') {
         }
     }
 
+    $scopeSlugMatches = [];
+    foreach (itm_api_v2_scope_catalog() as $slug => $label) {
+        if (stripos((string)$label, $searchRaw) !== false || stripos((string)$slug, $searchRaw) !== false) {
+            $scopeSlugMatches[] = "'" . mysqli_real_escape_string($conn, (string)$slug) . "'";
+        }
+    }
+    if (!empty($scopeSlugMatches)) {
+        $searchConditions[] = 'scope_slug IN (' . implode(',', $scopeSlugMatches) . ')';
+    }
+
 if (!empty($searchConditions)) {
         $where .= ($where === '' ? ' WHERE ' : ' AND ') . '(' . implode(' OR ', $searchConditions) . ')';
     }
@@ -1081,26 +1171,43 @@ if (!isset($crud_title)) {
                                     <input type="checkbox" name="<?php echo sanitize($name); ?>" value="1" <?php echo ((int)$displayVal === 1) ? 'checked' : ''; ?>>
                                     <span><?php echo sanitize(cr_humanize_field($name)); ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo ((int)$displayVal === 1) ? '✅' : '❌'; ?></span></span>
                                 </label>
+                            <?php elseif ($name === 'scope_slug'): ?>
+                                <select name="<?php echo sanitize($name); ?>">
+                                    <option value="">-- Select --</option>
+                                    <?php foreach (itm_api_v2_scope_catalog() as $slug => $label): ?>
+                                        <option value="<?php echo sanitize($slug); ?>" <?php echo ((string)$displayVal === (string)$slug) ? 'selected' : ''; ?>><?php echo sanitize($label); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             <?php elseif (isset($fkMap[$name])): ?>
                                 <?php
-                                    $opts = cr_fk_options($conn, $fkMap[$name], (int)$company_id);
-                                    $fkMeta = cr_fk_metadata($conn, $fkMap[$name]['REFERENCED_TABLE_NAME']);
+                                    $fkRow = $fkMap[$name];
+                                    $fkSelectedId = (int)$displayVal;
+                                    if ($fkSelectedId > 0 && (int)$company_id > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+                                        $fkSelectedId = itm_fk_resolve_company_equivalent_id($conn, $fkRow, (int)$company_id, $fkSelectedId);
+                                    }
+                                    $opts = cr_fk_options($conn, $fkRow, (int)$company_id);
+                                    $opts = cr_append_selected_fk_option($conn, $fkRow, (int)$company_id, $opts, $fkSelectedId);
+                                    $fkMeta = cr_fk_metadata($conn, $fkRow['REFERENCED_TABLE_NAME']);
                                     $isCompanyScoped = in_array('company_id', $fkMeta['available'], true) ? 1 : 0;
                                 ?>
                                 <select
                                     name="<?php echo sanitize($name); ?>"
+                                    <?php if ($fkRow['REFERENCED_TABLE_NAME'] !== 'ui_configuration'): ?>
                                     data-addable-select="1"
-                                    data-add-table="<?php echo sanitize($fkMap[$name]['REFERENCED_TABLE_NAME']); ?>"
-                                    data-add-id-col="<?php echo sanitize($fkMap[$name]['REFERENCED_COLUMN_NAME']); ?>"
+                                    data-add-table="<?php echo sanitize($fkRow['REFERENCED_TABLE_NAME']); ?>"
+                                    data-add-id-col="<?php echo sanitize($fkRow['REFERENCED_COLUMN_NAME']); ?>"
                                     data-add-label-col="<?php echo sanitize($fkMeta['label_col']); ?>"
                                     data-add-company-scoped="<?php echo $isCompanyScoped; ?>"
                                     data-add-friendly="<?php echo sanitize(strtolower(cr_humanize_field($name))); ?>"
+                                    <?php endif; ?>
                                 >
                                     <option value="">-- Select --</option>
                                     <?php foreach ($opts as $opt): ?>
-                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ((string)$displayVal === (string)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
+                                        <option value="<?php echo (int)$opt['id']; ?>" <?php echo ($fkSelectedId > 0 && $fkSelectedId === (int)$opt['id']) ? 'selected' : ''; ?>><?php echo sanitize($opt['label']); ?></option>
                                     <?php endforeach; ?>
+                                    <?php if ($fkRow['REFERENCED_TABLE_NAME'] !== 'ui_configuration'): ?>
                                     <option value="__add_new__">➕</option>
+                                    <?php endif; ?>
                                 </select>
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
