@@ -3,8 +3,8 @@
  * List FK columns that still render raw numeric IDs in scaffold list/view cells.
  *
  * Static: flags module index.php files whose cr_render_cell_value() lacks the shared
- * $GLOBALS['fkMap'][$field] label branch (or bespoke FK label handling) for schema FK
- * columns with a human-readable label column (name, title, username, …).
+ * $GLOBALS['fkMap'][$field] label branch (or bespoke FK label handling, including JOIN + $row
+ * patterns such as modules/alerts/) for schema FK columns with a human-readable label column
  *
  * CLI:
  *   php scripts/list_raw_columns.php
@@ -19,7 +19,7 @@ function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
 Static audit: finds flattened CRUD modules whose <strong>list/view</strong> cells still echo raw FK ids (e.g. <code>problem_id = 3</code> instead of <code>problems.title</code>).<br>
-Checks <code>cr_render_cell_value()</code> for the shared <code>$GLOBALS['fkMap'][$field]</code> branch or a bespoke FK label resolver.<br>
+Checks <code>cr_render_cell_value()</code> for the shared <code>$GLOBALS['fkMap'][$field]</code> branch, a bespoke FK label resolver, or a <strong>JOIN + $row</strong> pattern (list query JOINs the label table and passes the full row into <code>cr_render_cell_value(..., $row)</code> — e.g. <code>modules/alerts/</code>).<br>
 Optional live repro: pass <code>company=1</code> to probe one tenant row and mark <code>REPRO</code> when rendered HTML is still the raw id.<br>
 CLI examples:<br>
 <code>php scripts/list_raw_columns.php --only-raw</code><br>
