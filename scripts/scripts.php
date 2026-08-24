@@ -1496,7 +1496,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="run_tier2_checks.php" target="_blank" rel="nofollow noreferrer">run_tier2_checks.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Batch runner for all Tier 2 static <code>check_*</code> scripts in <code>SCRIPTS_TEST_MATRIX.md</code> (pre-merge static cluster; no DB mutation). Stops on first failure by default; <code>--continue</code> collects all failures.</td>
+                    <td>Batch runner for all Tier 2 static scripts in <code>SCRIPTS_TEST_MATRIX.md</code> (<code>check_*</code> + <code>list_raw_columns.php</code>; pre-merge static cluster; no DB mutation). Stops on first failure by default; <code>--continue</code> collects all failures.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">
@@ -2006,7 +2006,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="list_raw_columns.php" target="_blank" rel="nofollow noreferrer">list_raw_columns.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-browser">Browser</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
-                    <td>Audit list/view FK columns that still render raw numeric ids in <code>cr_render_cell_value()</code> (missing <code>$GLOBALS['fkMap'][$field]</code> label branch). Optional live <code>REPRO</code> per <code>company_id</code>. Lib: <code>scripts/lib/itm_raw_fk_column_display_audit.php</code>. Fix pattern: <code>modules/license_management/index.php</code>.</td>
+                    <td>Audit list/view FK columns that still render raw numeric ids in <code>cr_render_cell_value()</code> (missing <code>$GLOBALS['fkMap'][$field]</code> label branch). Optional live <code>REPRO</code> per <code>company_id</code>. Lib: <code>scripts/lib/itm_raw_fk_column_display_audit.php</code>. Fix pattern: <code>modules/license_management/index.php</code>. Included in <code>run_tier2_checks.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">

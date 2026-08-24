@@ -1,8 +1,9 @@
 <?php
 /**
- * Tier 2 static check_* script list and subprocess runner for run_tier2_checks.php.
+ * Tier 2 static script list and subprocess runner for run_tier2_checks.php.
  *
  * Why: SCRIPTS_TEST_MATRIX.md is the canonical tier map; parsing keeps the batch runner in sync.
+ * Tier 2 includes check_* gates plus list_raw_columns.php (FK display audit).
  */
 
 require_once __DIR__ . '/itm_perform_audit.php';
@@ -47,6 +48,7 @@ if (!function_exists('itm_tier2_check_scripts_canonical_fallback')) {
             'check_ui_action_emoji.php',
             'check_pagination_emoji.php',
             'check_ui_configuration_coverage.php',
+            'list_raw_columns.php',
         ];
     }
 }
@@ -72,7 +74,7 @@ if (!function_exists('itm_tier2_check_scripts_parse_matrix')) {
                 continue;
             }
             $basename = (string)$m[1];
-            if (strpos($basename, 'check_') !== 0 || substr($basename, -4) !== '.php') {
+            if (substr($basename, -4) !== '.php') {
                 continue;
             }
             $scripts[] = $basename;
