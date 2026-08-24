@@ -686,8 +686,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
     $seedError = '';
     $insertedRows = itm_seed_table_from_database_sql($conn, $crud_table, (int)$company_id, $seedError);
-    if ($insertedRows <= 0 && $seedError !== '') {
-        $_SESSION['crud_error'] = $seedError;
+    if ($insertedRows <= 0) {
+        $_SESSION['crud_error'] = $seedError !== ''
+            ? $seedError
+            : 'No sample rows were inserted for this company.';
     }
 
     header('Location: ' . $listUrl);
