@@ -540,7 +540,6 @@ if (!function_exists('itm_raw_fk_column_audit_run')) {
     /**
      * @param array{
      *   root:string,
-     *   module?:string,
      *   only_raw?:bool,
      *   only_repro?:bool,
      *   all?:bool,
@@ -552,7 +551,6 @@ if (!function_exists('itm_raw_fk_column_audit_run')) {
     function itm_raw_fk_column_audit_run(array $options): array
     {
         $root = rtrim((string) ($options['root'] ?? ''), '/\\');
-        $moduleFilter = trim((string) ($options['module'] ?? ''));
         $onlyRaw = !empty($options['only_raw']);
         $onlyRepro = !empty($options['only_repro']);
         $showAll = !empty($options['all']);
@@ -563,9 +561,6 @@ if (!function_exists('itm_raw_fk_column_audit_run')) {
         $schemaFks = itm_raw_fk_column_audit_parse_schema_outbound_fks($schemaPath);
 
         $slugs = itm_raw_fk_column_audit_module_slugs($root);
-        if ($moduleFilter !== '') {
-            $slugs = in_array($moduleFilter, $slugs, true) ? [$moduleFilter] : [];
-        }
 
         $rows = [];
         foreach ($slugs as $slug) {
