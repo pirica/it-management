@@ -651,7 +651,7 @@ if ($crud_action === 'delete') {
         $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
         ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
         : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+        if (itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage) === false) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
         header('Location: ' . $listUrl);
@@ -673,7 +673,7 @@ if ($crud_action === 'delete') {
             $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
         ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0))
         : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where);
-            if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+            if (itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage) === false) {
                 $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
             }
         } else {
@@ -690,7 +690,7 @@ if ($crud_action === 'delete') {
         $deleteSql = function_exists('itm_crud_build_soft_delete_sql')
         ? itm_crud_build_soft_delete_sql($crud_table, $where, (int)($_SESSION['employee_id'] ?? 0)) . ''
         : ('DELETE FROM ' . cr_escape_identifier($crud_table) . $where . ' LIMIT 1');
-        if (!itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage)) {
+        if (itm_run_query($conn, $deleteSql, $dbErrorCode, $dbErrorMessage) === false) {
             $_SESSION['crud_error'] = itm_format_db_constraint_error($dbErrorCode, $dbErrorMessage);
         }
     }
@@ -898,6 +898,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 // FETCH LIST DATA
 $where = '';
 if ($hasCompany && $company_id > 0) { $where = ' WHERE company_id=' . (int)$company_id; }
+if (function_exists('itm_crud_append_not_deleted_predicate')) {
+    $where = itm_crud_append_not_deleted_predicate($where);
+}
 
 // SEARCH LOGIC
 $searchRaw = trim((string)($_GET['search'] ?? ''));
