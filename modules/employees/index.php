@@ -988,7 +988,7 @@ if (!isset($crud_title)) {
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
-                        <tr><td colspan="<?php echo count($columns) + 1 + ($showBulkActions ? 1 : 0); ?>" style="text-align:center;">No employees found.</td></tr>
+                        <tr><td colspan="<?php echo count($columns) + 1 + ($showBulkActions ? 1 : 0); ?>" style="text-align:center;">No records found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
