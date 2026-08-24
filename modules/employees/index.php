@@ -34,6 +34,7 @@ require_once '../../includes/employee_profile_photo.php';
 require_once '../../includes/itm_employees_auth_sensitive_fields.php';
 require_once '../../includes/itm_employees_hidden_accounts.php';
 require_once '../../includes/itm_employees_search.php';
+require_once ROOT_PATH . 'includes/itm_sample_data_seed.php';
 
 // Lazy-initialize required tables if missing
 esa_ensure_table($conn);
@@ -329,22 +330,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
     emp_ensure_duplicate_column($conn);
     emp_drop_email_unique_if_exists($conn);
     $payload = trim((string)($_POST['import_payload'] ?? ''));
-    $rows = [];
+    $importRows = [];
 
     // Parse JSON payload (from XLSX library) or raw text
     if ($payload !== '') {
         $decoded = json_decode($payload, true);
-        if (is_array($decoded)) { $rows = $decoded; }
+        if (is_array($decoded)) { $importRows = $decoded; }
     }
-    if (!$rows && !empty($_POST['import_text'])) {
-        $rows = emp_parse_delimited_rows((string)$_POST['import_text']);
+    if (!$importRows && !empty($_POST['import_text'])) {
+        $importRows = emp_parse_delimited_rows((string)$_POST['import_text']);
     }
 
-    if (!$rows || count($rows) < 2) {
+    if (!$importRows || count($importRows) < 2) {
         $errors[] = 'No importable rows were found. Upload an Excel/CSV file or paste tabular content.';
     } else {
         // Map headers to DB columns
-        $headers = array_map('emp_canonical_header', $rows[0]);
+        $headers = array_map('emp_canonical_header', $importRows[0]);
         $validIdx = [];
         foreach ($headers as $i => $field) {
             if ($field !== null) { $validIdx[$i] = $field; }
@@ -391,7 +392,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
             }
 
             // Process each row in the import file
-            foreach (array_slice($rows, 1) as $rowOffset => $row) {
+            foreach (array_slice($importRows, 1) as $rowOffset => $row) {
                 $sourceRowNumber = $rowOffset + 2;
                 $mapped = [
                     'company_id' => (int)$company_id, 'first_name' => '', 'last_name' => '', 'full_name' => '', 'insurance_n' => '', 'work_email' => '', 'personal_email' => '', 'employee_code' => '',
@@ -671,11 +672,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'impo
     }
 }
 
+// --- ACTION: ADD SAMPLE DATA (empty visible list only) ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
+    itm_require_post_csrf();
+
+    $activeCompanyId = (int)($company_id ?? 0);
+    if ($activeCompanyId <= 0) {
+        $_SESSION['crud_error'] = 'Sample data requires an active company.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $visibleWhere = ' WHERE e.company_id=' . $activeCompanyId . itm_employees_sql_visible_only_predicate('e');
+    $visibleWhere = itm_crud_append_not_deleted_predicate($visibleWhere, 'e');
+    $visibleCountSql = 'SELECT COUNT(*) AS total FROM employees e' . $visibleWhere;
+    $visibleCountResult = mysqli_query($conn, $visibleCountSql);
+    $visibleLiveRows = 0;
+    if ($visibleCountResult && ($visibleCountRow = mysqli_fetch_assoc($visibleCountResult))) {
+        $visibleLiveRows = (int)($visibleCountRow['total'] ?? 0);
+    }
+
+    if ($visibleLiveRows > 0) {
+        $_SESSION['crud_error'] = 'Sample data can only be added when no records exist.';
+        header('Location: index.php');
+        exit;
+    }
+
+    $seedError = '';
+    $insertedRows = itm_seed_table_from_database_sql($conn, 'employees', $activeCompanyId, $seedError);
+    if ($insertedRows <= 0) {
+        $_SESSION['crud_error'] = $seedError !== ''
+            ? $seedError
+            : 'No sample rows were inserted for this company.';
+    }
+
+    header('Location: index.php');
+    exit;
+}
+
 // --- DATA PREPARATION FOR UI ---
 emp_ensure_duplicate_column($conn);
 emp_ensure_is_hidden_column($conn);
 $where = ' WHERE e.company_id=' . (int)$company_id . itm_employees_sql_visible_only_predicate('e');
 $where = itm_crud_append_not_deleted_predicate($where, 'e');
+$companyListWhere = $where;
+$companyVisibleCountResult = mysqli_query($conn, 'SELECT COUNT(*) AS total FROM employees e' . $companyListWhere);
+$companyVisibleRowCount = 0;
+if ($companyVisibleCountResult && ($companyVisibleCountRow = mysqli_fetch_assoc($companyVisibleCountResult))) {
+    $companyVisibleRowCount = (int)($companyVisibleCountRow['total'] ?? 0);
+}
 $showDuplicatesOnly = (($_GET['show'] ?? '') === 'duplicates');
 if ($showDuplicatesOnly) { $where .= ' AND e.duplicate=1'; }
 
@@ -747,7 +792,7 @@ if ($page > $totalPages) {
 }
 
 // Final Fetch including lookups and system access data
-$rows = mysqli_query(
+$employeeListResult = mysqli_query(
     $conn,
     'SELECT e.*, d.name AS department_name, okd.name AS office_key_card_department_name, es.name AS employment_status_name, et.name_type AS employee_type_name, il.name AS location_name, wm.mode_name AS workstation_mode_name, at.name AS assignment_type_name,
             ep.name AS position_name, m.display_name AS manager_name, er.name AS role_name, al.name AS access_level_name,
@@ -936,50 +981,50 @@ if (!isset($crud_title)) {
                     </tr>
                     </thead>
                     <tbody>
-                    <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
-                        <?php $duplicateReasons = emp_duplicate_reasons_for_row($row, $duplicateValueMaps); ?>
-                        <tr<?php echo ((int)($row['duplicate'] ?? 0) === 1) ? ' style="background:#ffe8e8;border-left:4px solid #d93025;"' : ''; ?>>
-                            <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
+                    <?php if ($totalRows > 0 && $employeeListResult): while ($employeeRow = mysqli_fetch_assoc($employeeListResult)): ?>
+                        <?php $duplicateReasons = emp_duplicate_reasons_for_row($employeeRow, $duplicateValueMaps); ?>
+                        <tr<?php echo ((int)($employeeRow['duplicate'] ?? 0) === 1) ? ' style="background:#ffe8e8;border-left:4px solid #d93025;"' : ''; ?>>
+                            <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$employeeRow['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
                             <?php foreach ($columns as $col): ?>
                                 <td>
-                                    <?php if (($col === 'work_email' || $col === 'personal_email') && !empty($row[$col])): ?>
-                                        <a class="itm-plain-link" href="mailto:<?php echo sanitize((string)$row[$col]); ?>" data-outlook-link="1" data-outlook-href="ms-outlook://compose?to=<?php echo sanitize((string)$row[$col]); ?>"><?php echo sanitize((string)$row[$col]); ?></a>
-                                    <?php elseif ($col === 'department_id'): ?><?php echo sanitize((string)($row['department_name'] ?? '')); ?>
-                                    <?php elseif ($col === 'office_key_card_department_id'): ?><?php echo sanitize((string)($row['office_key_card_department_name'] ?? '')); ?>
-                                    <?php elseif ($col === 'location_id'): ?><?php echo sanitize((string)($row['location_name'] ?? '')); ?>
-                                    <?php elseif ($col === 'employee_position_id'): ?><?php echo sanitize((string)($row['position_name'] ?? '')); ?>
-                                    <?php elseif ($col === 'reports_to'): ?><?php echo sanitize((string)($row['manager_name'] ?? '')); ?>
-                                    <?php elseif ($col === 'employment_status_id'): ?><?php echo function_exists('itm_crud_render_status_label_badge') ? itm_crud_render_status_label_badge((string)($row['employment_status_name'] ?? '')) : sanitize((string)($row['employment_status_name'] ?? '')); ?>
-                                    <?php elseif ($col === 'employee_type_id'): ?><?php echo sanitize((string)($row['employee_type_name'] ?? '')); ?>
-                                    <?php elseif ($col === 'role_id'): ?><?php echo sanitize((string)($row['role_name'] ?? '')); ?>
-                                    <?php elseif ($col === 'access_level_id'): ?><?php echo sanitize((string)($row['access_level_name'] ?? '')); ?>
-                                    <?php elseif ($col === 'birthday'): ?><?php echo sanitize(emp_format_birthday_display($row['birthday'] ?? null, $row['hide_year'] ?? 0)); ?>
+                                    <?php if (($col === 'work_email' || $col === 'personal_email') && !empty($employeeRow[$col])): ?>
+                                        <a class="itm-plain-link" href="mailto:<?php echo sanitize((string)$employeeRow[$col]); ?>" data-outlook-link="1" data-outlook-href="ms-outlook://compose?to=<?php echo sanitize((string)$employeeRow[$col]); ?>"><?php echo sanitize((string)$employeeRow[$col]); ?></a>
+                                    <?php elseif ($col === 'department_id'): ?><?php echo sanitize((string)($employeeRow['department_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'office_key_card_department_id'): ?><?php echo sanitize((string)($employeeRow['office_key_card_department_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'location_id'): ?><?php echo sanitize((string)($employeeRow['location_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'employee_position_id'): ?><?php echo sanitize((string)($employeeRow['position_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'reports_to'): ?><?php echo sanitize((string)($employeeRow['manager_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'employment_status_id'): ?><?php echo function_exists('itm_crud_render_status_label_badge') ? itm_crud_render_status_label_badge((string)($employeeRow['employment_status_name'] ?? '')) : sanitize((string)($employeeRow['employment_status_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'employee_type_id'): ?><?php echo sanitize((string)($employeeRow['employee_type_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'role_id'): ?><?php echo sanitize((string)($employeeRow['role_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'access_level_id'): ?><?php echo sanitize((string)($employeeRow['access_level_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'birthday'): ?><?php echo sanitize(emp_format_birthday_display($employeeRow['birthday'] ?? null, $employeeRow['hide_year'] ?? 0)); ?>
                                     <?php elseif ($col === 'photo'): ?>
-                                        <?php $empListPhotoUrl = emp_profile_photo_url($row); ?>
+                                        <?php $empListPhotoUrl = emp_profile_photo_url($employeeRow); ?>
                                         <?php if ($empListPhotoUrl !== ''): ?>
                                             <img src="<?= sanitize($empListPhotoUrl) ?>" alt="" class="rounded-circle" width="30" height="30" style="object-fit:cover;" onerror="this.onerror=null; this.src='../../images/5x5-pixel.png';">
                                         <?php else: ?>—<?php endif; ?>
-                                    <?php elseif ($col === 'workstation_mode_id'): ?><?php echo sanitize((string)($row['workstation_mode_name'] ?? '')); ?>
-                                    <?php elseif ($col === 'assignment_type_id'): ?><?php echo sanitize((string)($row['assignment_type_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'workstation_mode_id'): ?><?php echo sanitize((string)($employeeRow['workstation_mode_name'] ?? '')); ?>
+                                    <?php elseif ($col === 'assignment_type_id'): ?><?php echo sanitize((string)($employeeRow['assignment_type_name'] ?? '')); ?>
                                     <?php elseif (str_starts_with($columnTypes[$col] ?? '', 'tinyint(1)')): ?>
                                         <?php if ($col === 'duplicate'): ?>
-                                            <?php echo ((int)($row[$col] ?? 0) === 1) ? '⚠️ Duplicate (' . sanitize(implode(', ', $duplicateReasons)) . ')' : '—'; ?>
+                                            <?php echo ((int)($employeeRow[$col] ?? 0) === 1) ? '⚠️ Duplicate (' . sanitize(implode(', ', $duplicateReasons)) . ')' : '—'; ?>
                                         <?php else: ?>
-                                            <?php echo ((int)($row[$col] ?? 0) === 1) ? '✅' : '❌'; ?>
+                                            <?php echo ((int)($employeeRow[$col] ?? 0) === 1) ? '✅' : '❌'; ?>
                                         <?php endif; ?>
-                                    <?php elseif (itm_is_date_field_name($col)): ?><?php echo sanitize(itm_format_date_display($row[$col] ?? '')); ?>
-                                    <?php elseif ($col === 'comments' && trim((string)($row[$col] ?? '')) !== ''): ?><span data-itm-export-value="<?php echo sanitize((string)($row[$col] ?? '')); ?>"><a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a></span>
-                                    <?php else: ?><?php echo sanitize((string)$row[$col]); ?>
+                                    <?php elseif (itm_is_date_field_name($col)): ?><?php echo sanitize(itm_format_date_display($employeeRow[$col] ?? '')); ?>
+                                    <?php elseif ($col === 'comments' && trim((string)($employeeRow[$col] ?? '')) !== ''): ?><span data-itm-export-value="<?php echo sanitize((string)($employeeRow[$col] ?? '')); ?>"><a class="btn btn-sm" href="edit.php?id=<?php echo (int)$employeeRow['id']; ?>">✏️</a></span>
+                                    <?php else: ?><?php echo sanitize((string)$employeeRow[$col]); ?>
                                     <?php endif; ?>
                                 </td>
                             <?php endforeach; ?>
                             <td class="itm-actions-cell" data-itm-actions-origin="1">
                                 <div class="itm-actions-wrap">
-                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$row['id']; ?>">🔎</a>
-                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
+                                    <a class="btn btn-sm" href="view.php?id=<?php echo (int)$employeeRow['id']; ?>">🔎</a>
+                                    <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$employeeRow['id']; ?>">✏️</a>
                                     <form method="POST" action="delete.php" style="display:inline;" onsubmit="return confirm('Delete this employee?');">
                                         <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                                        <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                                        <input type="hidden" name="id" value="<?php echo (int)$employeeRow['id']; ?>">
                                         <input type="hidden" name="bulk_action" value="single_delete">
                                         <?php itm_crud_render_delete_hidden_audit_inputs(); ?>
                                         <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
@@ -988,6 +1033,26 @@ if (!isset($crud_title)) {
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
+                        <?php
+                        // #region agent log
+                        @file_put_contents(
+                            ROOT_PATH . 'debug-55a7b9.log',
+                            json_encode([
+                                'sessionId' => '55a7b9',
+                                'hypothesisId' => 'H1',
+                                'location' => 'modules/employees/index.php:empty-tbody',
+                                'message' => 'render empty employees list row',
+                                'data' => [
+                                    'totalRows' => $totalRows,
+                                    'companyVisibleRowCount' => $companyVisibleRowCount,
+                                    'companyId' => (int)($company_id ?? 0),
+                                ],
+                                'timestamp' => (int)round(microtime(true) * 1000),
+                            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n",
+                            FILE_APPEND
+                        );
+                        // #endregion
+                        ?>
                         <tr><td colspan="<?php echo count($columns) + 1 + ($showBulkActions ? 1 : 0); ?>" style="text-align:center;">No records found.</td></tr>
                     <?php endif; ?>
                     </tbody>
@@ -1004,6 +1069,15 @@ if (!isset($crud_title)) {
                     </div>
                 <?php endif; ?>
             </div>
+
+            <?php if ((int)($company_id ?? 0) > 0 && $companyVisibleRowCount === 0 && !$showDuplicatesOnly): ?>
+                <div class="card" style="margin-top:12px;">
+                    <form method="POST" style="display:flex;justify-content:center;">
+                        <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
+                        <button type="submit" name="add_sample_data" value="1" class="btn btn-primary">Add sample data</button>
+                    </form>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
