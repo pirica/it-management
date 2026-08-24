@@ -2005,30 +2005,7 @@ if (!function_exists('itm_seed_restore_soft_deleted_row_from_template')) {
         }
         mysqli_stmt_bind_param($updateStmt, $setTypes, ...$setParams);
         $ok = mysqli_stmt_execute($updateStmt);
-        $updateError = $ok ? '' : (string)mysqli_stmt_error($updateStmt);
         mysqli_stmt_close($updateStmt);
-
-        // #region agent log
-        @file_put_contents(
-            ROOT_PATH . 'debug-55a7b9.log',
-            json_encode([
-                'sessionId' => '55a7b9',
-                'hypothesisId' => 'H2',
-                'location' => 'includes/itm_sample_data_seed.php:restore_soft_deleted',
-                'message' => 'restore soft-deleted template row',
-                'data' => [
-                    'table' => $tableName,
-                    'companyId' => $companyId,
-                    'rowId' => $rowId,
-                    'businessKeys' => $businessKeys,
-                    'updateOk' => (bool)$ok,
-                    'updateError' => $updateError,
-                ],
-                'timestamp' => (int)round(microtime(true) * 1000),
-            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n",
-            FILE_APPEND
-        );
-        // #endregion
 
         return (bool)$ok;
     }
