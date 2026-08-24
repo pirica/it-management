@@ -49,6 +49,8 @@ if (!function_exists('itm_sample_data_prerequisite_map')) {
             'ops_report_night_shift' => ['ops_report'],
             'ops_report_walk_round' => ['ops_report'],
             'employee_notifications' => ['tickets', 'alerts', 'todo', 'appointments', 'events'],
+            'problems' => ['knowledge_base', 'master_tickets'],
+            'problem_ticket_links' => ['problems', 'tickets'],
         ];
     }
 }
