@@ -23,6 +23,7 @@ Junction table linking **problems** to incident **tickets** (many tickets per pr
 ## 5. UI Behavior Requirements
 
 - Hide `company_id` via `$hideCompanyIdTables` (includes `problem_ticket_links`).
+- List/view FK columns (`problem_id`, `ticket_id`, `linked_by`) resolve human-readable labels via shared `cr_fk_label_by_id()` / `$GLOBALS['fkMap']` in `cr_render_cell_value()` — not raw numeric ids.
 - **Add sample data:** requires parent rows — `itm_sample_data_prerequisite_map()` seeds `problems` and `tickets` first (`problems` parents: `knowledge_base`, `master_tickets`). Template in `db/02_data_sample.sql` lists `problems` before `problem_ticket_links`.
 
 ## 6. API Actions (If Applicable)
