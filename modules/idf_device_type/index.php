@@ -588,17 +588,16 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && isset($_POST['add_sample_data'])) {
     cr_require_valid_csrf_token();
 
-    $where = '';
-    if ($hasCompany && $company_id > 0) {
-        $where = ' WHERE company_id=' . (int)$company_id;
+    if (!$hasCompany || $company_id <= 0) {
+        $_SESSION['crud_error'] = 'Sample data requires an active company.';
+        header('Location: ' . $listUrl);
+        exit;
     }
 
-    $countSql = 'SELECT COUNT(*) AS total_rows FROM ' . cr_escape_identifier($crud_table) . $where;
-    $countResult = mysqli_query($conn, $countSql);
-    $existingRows = 0;
-    if ($countResult && ($countRow = mysqli_fetch_assoc($countResult))) {
-        $existingRows = (int)($countRow['total_rows'] ?? 0);
-    }
+    // Why: List uses deleted_at IS NULL; sample gate must match live tenant rows (itm_seed_tenant_row_count).
+    $existingRows = function_exists('itm_seed_tenant_row_count')
+        ? itm_seed_tenant_row_count($conn, $crud_table, (int)$company_id)
+        : 0;
 
     if ($existingRows > 0) {
         $_SESSION['crud_error'] = 'Sample data can only be added when no records exist.';
@@ -606,45 +605,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
         exit;
     }
 
-    $sampleRows = [
-        ['Switch', 'SWITCH', '🔀', 1],
-        ['Server', 'SRV', '🖥️', 1],
-        ['Router', 'RTR', '🛜', 1],
-        ['Firewall', 'FW', '🔥', 1],
-        ['Port Patch Panel', 'PORT', '➰', 1],
-        ['Access Point', 'AP', '📶', 1],
-        ['Workstation', 'WS', '💻', 1],
-        ['POS', 'POS', '🏧', 1],
-        ['Printer', 'PRN', '🖨️', 1],
-        ['Phone', 'PHONE', '📞', 1],
-        ['CCTV', 'CCCTV', '🎥', 1],
-        ['Other', 'OTHER', null, 1],
-    ];
+    $seedError = '';
+    $insertedRows = itm_seed_table_from_database_sql($conn, $crud_table, (int)$company_id, $seedError);
 
-    $insertSql = 'INSERT INTO ' . cr_escape_identifier($crud_table) . ' (`company_id`, `name`, `code`, `field_edit_emoji`, `active`) VALUES (?, ?, ?, ?, ?)';
-    $stmt = mysqli_prepare($conn, $insertSql);
-    if (!$stmt) {
-        $_SESSION['crud_error'] = 'Unable to prepare sample data insert statement.';
-        header('Location: ' . $listUrl);
-        exit;
+    if ($insertedRows <= 0 && $seedError !== '') {
+        $_SESSION['crud_error'] = $seedError;
     }
 
-    foreach ($sampleRows as $sampleRow) {
-        $sampleCompanyId = (int)$company_id;
-        $sampleName = (string)$sampleRow[0];
-        $sampleCode = (string)$sampleRow[1];
-        $sampleEmoji = $sampleRow[2];
-        $sampleActive = (int)$sampleRow[3];
-        mysqli_stmt_bind_param($stmt, 'isssi', $sampleCompanyId, $sampleName, $sampleCode, $sampleEmoji, $sampleActive);
-        if (!mysqli_stmt_execute($stmt)) {
-            mysqli_stmt_close($stmt);
-            $_SESSION['crud_error'] = 'Failed to insert sample data.';
-            header('Location: ' . $listUrl);
-            exit;
-        }
-    }
-
-    mysqli_stmt_close($stmt);
     header('Location: ' . $listUrl);
     exit;
 }
