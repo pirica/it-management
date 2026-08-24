@@ -579,6 +579,9 @@ INSERT INTO `license_types` (`company_id`, `id`, `name`, `active`, `created_at`)
 ('1', '4', 'Subscription', '1', '2026-01-01 00:00:01'),
 ('1', '5', 'Other', '1', '2026-01-01 00:00:01');
 
+INSERT INTO `live_chat_conversations` (`company_id`, `conversation_type`, `ticket_id`, `requester_employee_id`, `assigned_to_employee_id`, `status`, `active`, `created_by`, `created_at`) VALUES
+(1, 'chat_with', NULL, 1, NULL, 'active', 1, 1, '2026-01-01 00:00:01');
+
 INSERT INTO `location_types` (`company_id`, `id`, `name`, `created_at`) VALUES
 ('1', '2', 'Branch', '2026-01-01 00:00:01'),
 ('1', '4', 'DataCenter', '2026-01-01 00:00:01'),
