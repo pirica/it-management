@@ -1033,26 +1033,6 @@ if (!isset($crud_title)) {
                             </td>
                         </tr>
                     <?php endwhile; else: ?>
-                        <?php
-                        // #region agent log
-                        @file_put_contents(
-                            ROOT_PATH . 'debug-55a7b9.log',
-                            json_encode([
-                                'sessionId' => '55a7b9',
-                                'hypothesisId' => 'H1',
-                                'location' => 'modules/employees/index.php:empty-tbody',
-                                'message' => 'render empty employees list row',
-                                'data' => [
-                                    'totalRows' => $totalRows,
-                                    'companyVisibleRowCount' => $companyVisibleRowCount,
-                                    'companyId' => (int)($company_id ?? 0),
-                                ],
-                                'timestamp' => (int)round(microtime(true) * 1000),
-                            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n",
-                            FILE_APPEND
-                        );
-                        // #endregion
-                        ?>
                         <tr><td colspan="<?php echo count($columns) + 1 + ($showBulkActions ? 1 : 0); ?>" style="text-align:center;">No records found.</td></tr>
                     <?php endif; ?>
                     </tbody>

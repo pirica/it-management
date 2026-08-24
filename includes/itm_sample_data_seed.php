@@ -1840,6 +1840,49 @@ if (!function_exists('itm_seed_parse_insert_value_token')) {
     }
 }
 
+if (!function_exists('itm_seed_resolve_template_value_for_restore')) {
+    /**
+     * Why: INSERT templates may embed scalar subqueries; restore UPDATE must resolve them before bind_param.
+     */
+    function itm_seed_resolve_template_value_for_restore(mysqli $conn, int $companyId, string $rawToken): ?string
+    {
+        $rawToken = trim($rawToken);
+        if ($rawToken === '' || strtoupper($rawToken) === 'NULL') {
+            return null;
+        }
+
+        if (!preg_match('/\bSELECT\b/i', $rawToken)) {
+            return itm_seed_parse_insert_value_token($rawToken);
+        }
+
+        $expression = $rawToken;
+        if ($companyId > 0) {
+            $expression = preg_replace(
+                '/`company_id`\s*=\s*\d+/i',
+                '`company_id` = ' . (int)$companyId,
+                $expression
+            );
+        }
+        if (!preg_match('/^\s*\(/', $expression)) {
+            $expression = '(' . $expression . ')';
+        }
+
+        $sql = 'SELECT ' . $expression . ' AS seed_scalar';
+        $res = mysqli_query($conn, $sql);
+        if (!$res || !($row = mysqli_fetch_assoc($res))) {
+            return null;
+        }
+        mysqli_free_result($res);
+
+        $scalar = $row['seed_scalar'] ?? null;
+        if ($scalar === null) {
+            return null;
+        }
+
+        return (string)$scalar;
+    }
+}
+
 if (!function_exists('itm_seed_restore_soft_deleted_row_from_template')) {
     /**
      * Why: Soft-deleted rows keep unique keys; re-seed must restore template rows instead of random fallback.
@@ -1877,7 +1920,11 @@ if (!function_exists('itm_seed_restore_soft_deleted_row_from_template')) {
             if ($columnName === '' || !itm_is_safe_identifier($columnName)) {
                 continue;
             }
-            $rowAssoc[$columnName] = itm_seed_parse_insert_value_token((string)($targetValues[$index] ?? ''));
+            $rowAssoc[$columnName] = itm_seed_resolve_template_value_for_restore(
+                $conn,
+                $companyId,
+                (string)($targetValues[$index] ?? '')
+            );
         }
 
         $whereParts = ['company_id = ?', 'deleted_at IS NOT NULL'];
@@ -1916,8 +1963,15 @@ if (!function_exists('itm_seed_restore_soft_deleted_row_from_template')) {
         $setTypes = '';
         $setParams = [];
         $skipColumns = ['id', 'company_id', 'deleted_by', 'deleted_at', 'created_by', 'created_at'];
-        foreach ($rowAssoc as $columnName => $columnValue) {
-            if (in_array($columnName, $skipColumns, true) || !in_array($columnName, $tableColumns, true)) {
+        foreach ($targetColumns as $index => $columnToken) {
+            $columnName = itm_seed_column_list_token_to_name((string)$columnToken);
+            if ($columnName === '' || !itm_is_safe_identifier($columnName)
+                || in_array($columnName, $skipColumns, true) || !in_array($columnName, $tableColumns, true)) {
+                continue;
+            }
+            $rawToken = (string)($targetValues[$index] ?? '');
+            $columnValue = itm_seed_resolve_template_value_for_restore($conn, $companyId, $rawToken);
+            if ($columnValue === null && preg_match('/\bSELECT\b/i', $rawToken)) {
                 continue;
             }
             if ($columnValue === null) {
@@ -1951,7 +2005,30 @@ if (!function_exists('itm_seed_restore_soft_deleted_row_from_template')) {
         }
         mysqli_stmt_bind_param($updateStmt, $setTypes, ...$setParams);
         $ok = mysqli_stmt_execute($updateStmt);
+        $updateError = $ok ? '' : (string)mysqli_stmt_error($updateStmt);
         mysqli_stmt_close($updateStmt);
+
+        // #region agent log
+        @file_put_contents(
+            ROOT_PATH . 'debug-55a7b9.log',
+            json_encode([
+                'sessionId' => '55a7b9',
+                'hypothesisId' => 'H2',
+                'location' => 'includes/itm_sample_data_seed.php:restore_soft_deleted',
+                'message' => 'restore soft-deleted template row',
+                'data' => [
+                    'table' => $tableName,
+                    'companyId' => $companyId,
+                    'rowId' => $rowId,
+                    'businessKeys' => $businessKeys,
+                    'updateOk' => (bool)$ok,
+                    'updateError' => $updateError,
+                ],
+                'timestamp' => (int)round(microtime(true) * 1000),
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n",
+            FILE_APPEND
+        );
+        // #endregion
 
         return (bool)$ok;
     }

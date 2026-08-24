@@ -873,6 +873,7 @@ Full-module browser QA runs HTTP session checks across the five seeded companies
 * `scripts/tickets_related_equipment_delete_test.php` (seeds sample ticket rows from `db/01_schema.sql`).
 * `scripts/verify_tickets_sample_data.php` (empty-tenant tickets **Add sample data** — `TCK-0001`, active list visibility, no local employees, stale session `@app_company_id`).
 * `scripts/verify_registration_invitations_sample_cycle.php` (registration_invitations **Add sample data** → soft-delete → re-seed loop for **companies 1–5** by default, or `--company=N` / `?company=N`; duplicate `(company_id, email)` restores soft-deleted row by `email` business key).
+* `scripts/verify_employees_sample_cycle.php` (employees **Add sample data** → soft-delete visible rows → re-seed loop for **companies 1–5** by default, or `--company=N` / `?company=N`; duplicate `(company_id, username)` / `(company_id, work_email)` restores soft-deleted row by `username` + `work_email` business keys; resolves scalar subqueries in the sample template on restore).
 
 **Script that dumps seed SQL (no DB writes):**
 

@@ -1227,6 +1227,15 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     </td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="employees">
+                    <td><a href="verify_employees_sample_cycle.php?run=1&amp;cycles=4" target="_blank" rel="nofollow noreferrer">verify_employees_sample_cycle.php?run=1&amp;cycles=4</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span></span></td>
+                    <td>
+                        MySQL regression for <code>employees</code> <strong>Add sample data</strong> after soft-delete: runs <code>--cycles=4</code> seed → clear visible rows → re-seed (restores by <code>username</code> + <code>work_email</code>). Default: <strong>companies 1–5</strong> (<code>--company=1</code> or <code>?company=1</code> for one tenant). <strong>Mutates DB:</strong> soft-deletes visible non-hidden employee rows per company under test.
+                    </td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_equipment_triggers.php" target="_blank" rel="nofollow noreferrer">verify_equipment_triggers.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
