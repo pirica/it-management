@@ -171,6 +171,18 @@ function cr_is_hidden_employee_field($field) {
 }
 
 /**
+ * Resolves FK label text for list/view cells.
+ */
+function cr_fk_label_by_id(mysqli $conn, array $fk, int $companyId, int $rawId): string
+{
+    if (function_exists('itm_fk_label_by_id')) {
+        return itm_fk_label_by_id($conn, $fk, $companyId, $rawId);
+    }
+
+    return '';
+}
+
+/**
  * Renders a specific table cell value with formatting based on field type/module
  */
 function cr_render_cell_value($table, $field, $value) {
@@ -183,6 +195,18 @@ function cr_render_cell_value($table, $field, $value) {
 if ($field === 'active') {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
+    }
+
+    if (isset($GLOBALS['fkMap'][$field])) {
+        $fkRow = $GLOBALS['fkMap'][$field];
+        $fkDisplayId = (int)$value;
+        if ($fkDisplayId > 0 && (int)($GLOBALS['company_id'] ?? 0) > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+            $fkDisplayId = itm_fk_resolve_company_equivalent_id($GLOBALS['conn'], $fkRow, (int)$GLOBALS['company_id'], $fkDisplayId);
+        }
+        $resolvedLabel = cr_fk_label_by_id($GLOBALS['conn'], $fkRow, (int)($GLOBALS['company_id'] ?? 0), $fkDisplayId);
+        if ($resolvedLabel !== '') {
+            return sanitize($resolvedLabel);
+        }
     }
 
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
@@ -326,6 +350,7 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 // Module initialization: load columns and foreign key maps
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
+$GLOBALS['fkMap'] = $fkMap;
 $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_employee_field($col['Field']);
