@@ -32,6 +32,7 @@ require_once __DIR__ . '/lib/itm_sample_data_soft_delete_gate_audit.php';
 
 itm_script_output_begin('Debug sample data soft-delete gate');
 
+$isCli = itm_script_cli_is_cli();
 $nl = itm_script_output_nl();
 $root = rtrim(ROOT_PATH, '/\\');
 
@@ -40,7 +41,7 @@ $moduleFilter = '';
 $onlyDrift = false;
 $onlyRepro = false;
 
-if (PHP_SAPI === 'cli') {
+if ($isCli) {
   foreach ($argv ?? [] as $arg) {
     if (strpos($arg, '--company=') === 0) {
       $companyId = (int) substr($arg, 10);
@@ -72,6 +73,109 @@ $driftCount = 0;
 $reproCount = 0;
 $okCount = 0;
 
+foreach ($rows as $row) {
+  $status = (string) ($row['status'] ?? 'ok');
+  if ($status === 'drift') {
+    $driftCount++;
+  } elseif ($status === 'repro') {
+    $reproCount++;
+    $driftCount++;
+  } elseif ($status === 'ok') {
+    $okCount++;
+  }
+}
+
+$exitCode = ($driftCount > 0 || $reproCount > 0) ? 1 : 0;
+
+if (!$isCli) {
+  itm_script_output_close_pre();
+
+  echo '<h1>Sample data soft-delete gate audit</h1>';
+  echo '<p><strong>Root:</strong> <code>' . sanitize($root) . '</code></p>';
+  if ($companyId > 0) {
+    echo '<p><strong>Live company_id:</strong> ' . (int) $companyId . '</p>';
+  }
+  if ($moduleFilter !== '') {
+    echo '<p><strong>Module filter:</strong> <code>' . sanitize($moduleFilter) . '</code></p>';
+  }
+  if ($onlyDrift) {
+    echo '<p><strong>Filter:</strong> only drift modules</p>';
+  }
+  if ($onlyRepro) {
+    echo '<p><strong>Filter:</strong> only live REPRO rows</p>';
+  }
+
+  if ($rows === []) {
+    echo '<p>' . colorText('[INFO] No matching modules.', 'info') . '</p>';
+    itm_script_output_end();
+    exit(0);
+  }
+
+  echo '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;margin:16px 0;width:100%;max-width:100%;font-size:13px;">';
+  echo '<thead><tr>';
+  echo '<th>Status</th><th>Module</th><th>Table</th><th>Gate</th><th>Raw</th><th>Live</th><th>Soft</th><th>Notes</th>';
+  echo '</tr></thead><tbody>';
+
+  foreach ($rows as $row) {
+    $status = (string) ($row['status'] ?? 'ok');
+    $statusLabel = strtoupper($status);
+    if (!empty($row['repro'])) {
+      $statusLabel = 'REPRO';
+    }
+
+    $statusColor = '#1a7f37';
+    if ($statusLabel === 'REPRO' || $status === 'repro') {
+      $statusColor = '#cf222e';
+    } elseif ($status === 'drift') {
+      $statusColor = '#bf8700';
+    }
+
+    $raw = $row['raw'];
+    $live = $row['live'];
+    $soft = $row['soft_deleted'];
+    $slug = (string) ($row['slug'] ?? '');
+    $tableName = (string) ($row['table'] ?? '');
+    $gate = (string) ($row['gate'] ?? '');
+    $notes = (string) ($row['notes'] ?? '');
+
+    $moduleCell = sanitize($slug);
+    if ($slug !== '' && function_exists('itm_script_format_modules_file_local_dev_link')) {
+      $moduleCell = itm_script_format_modules_file_local_dev_link('modules/' . $slug . '/index.php', $slug);
+    }
+
+    echo '<tr>';
+    echo '<td style="color:' . $statusColor . ';font-weight:600;">' . sanitize($statusLabel) . '</td>';
+    echo '<td>' . $moduleCell . '</td>';
+    echo '<td><code>' . sanitize($tableName) . '</code></td>';
+    echo '<td><code>' . sanitize($gate) . '</code></td>';
+    echo '<td>' . sanitize($raw === null ? '-' : (string) $raw) . '</td>';
+    echo '<td>' . sanitize($live === null ? '-' : (string) $live) . '</td>';
+    echo '<td>' . sanitize($soft === null ? '-' : (string) $soft) . '</td>';
+    echo '<td>' . sanitize($notes) . '</td>';
+    echo '</tr>';
+  }
+
+  echo '</tbody></table>';
+
+  echo '<p><strong>Summary:</strong> ok=' . (int) $okCount . ' drift=' . (int) $driftCount . ' repro=' . (int) $reproCount . '</p>';
+
+  echo '<div style="margin:16px 0;padding:12px;border:1px dashed #d0d7de;border-radius:6px;font-size:13px;">';
+  echo '<p><strong>Gate legend:</strong> <code>live_rows</code> = <code>itm_seed_tenant_row_count()</code>; <code>raw_count</code> = legacy <code>COUNT(*)</code> includes soft-deleted rows.</p>';
+  echo '<p><strong>REPRO</strong> = list would be empty (<code>live=0</code>) but legacy gate still sees rows (<code>raw&gt;0</code>).</p>';
+  echo '<p><strong>Fix pattern:</strong> <code>modules/bank_accounts/index.php</code> — <code>itm_seed_tenant_row_count()</code> + <code>itm_seed_table_from_database_sql()</code>.</p>';
+  echo '<p><strong>Bulk repair:</strong> <code>php scripts/apply_crud_sample_data_live_row_gate.php --apply</code></p>';
+  echo '</div>';
+
+  if ($exitCode === 1) {
+    echo '<p>' . colorText('[FAIL] Drift or live REPRO rows found.', 'fail') . '</p>';
+  } else {
+    echo '<p>' . colorText('[PASS] No drift modules in scope.', 'pass') . '</p>';
+  }
+
+  itm_script_output_end();
+  exit($exitCode);
+}
+
 echo colorText('Sample data gate audit', 'info') . $nl;
 echo 'Root: ' . $root . $nl;
 if ($companyId > 0) {
@@ -100,15 +204,6 @@ echo str_repeat('-', 120) . $nl;
 
 foreach ($rows as $row) {
   $status = (string) ($row['status'] ?? 'ok');
-  if ($status === 'drift') {
-    $driftCount++;
-  } elseif ($status === 'repro') {
-    $reproCount++;
-    $driftCount++;
-  } elseif ($status === 'ok') {
-    $okCount++;
-  }
-
   $statusLabel = strtoupper($status);
   if (!empty($row['repro'])) {
     $statusLabel = 'REPRO';
@@ -136,7 +231,6 @@ echo 'REPRO = list would be empty (live=0) but legacy gate still sees rows (raw>
 echo 'Fix pattern: modules/bank_accounts/index.php — itm_seed_tenant_row_count() + itm_seed_table_from_database_sql().' . $nl;
 echo 'Bulk repair: php scripts/apply_crud_sample_data_live_row_gate.php --apply' . $nl;
 
-$exitCode = ($driftCount > 0 || $reproCount > 0) ? 1 : 0;
 if ($exitCode === 1) {
   echo colorText('[FAIL] Drift or live REPRO rows found.', 'fail') . $nl;
 } else {
