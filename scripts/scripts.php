@@ -1219,11 +1219,11 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="registration_invitations">
-                    <td><a href="verify_registration_invitations_sample_cycle.php?run=1" target="_blank" rel="nofollow noreferrer">verify_registration_invitations_sample_cycle.php?run=1</a></td>
+                    <td><a href="verify_registration_invitations_sample_cycle.php?run=1&amp;cycles=4" target="_blank" rel="nofollow noreferrer">verify_registration_invitations_sample_cycle.php?run=1&amp;cycles=4</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">registration_invitations</span></span></td>
                     <td>
-                        MySQL regression for <code>registration_invitations</code> <strong>Add sample data</strong> after soft-delete: runs <code>--cycles=4</code> seed → soft-delete → re-seed (restores by <code>email</code> unique key). <strong>Mutates DB:</strong> company <code>4</code> invitation rows (default <code>--company=4</code>).
+                        MySQL regression for <code>registration_invitations</code> <strong>Add sample data</strong> after soft-delete: runs <code>--cycles=4</code> seed → soft-delete → re-seed (restores by <code>email</code> unique key). Default: <strong>companies 1–5</strong> (<code>--company=4</code> or <code>?company=4</code> for one tenant). <strong>Mutates DB:</strong> soft-deletes live invitation rows per company under test.
                     </td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
