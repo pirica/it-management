@@ -324,6 +324,20 @@ if (!function_exists('itm_raw_fk_column_audit_field_has_join_row_label_rendering
     }
 }
 
+if (!function_exists('itm_raw_fk_column_audit_bespoke_label_resolver_alternation')) {
+    function itm_raw_fk_column_audit_bespoke_label_resolver_alternation(): string
+    {
+        return implode('|', [
+            'cr_fk_label_by_id',
+            'itm_fk_label_by_id',
+            'itm_user_label_by_id_for_company',
+            'cr_user_label_by_id',
+            'cr_username_for_employee_id',
+            'itm_fk_label_column_for_table',
+        ]);
+    }
+}
+
 if (!function_exists('itm_raw_fk_column_audit_field_has_bespoke_label_rendering')) {
     function itm_raw_fk_column_audit_field_has_bespoke_label_rendering(
         string $renderBody,
@@ -343,13 +357,15 @@ if (!function_exists('itm_raw_fk_column_audit_field_has_bespoke_label_rendering'
 
         $fieldQuoted = preg_quote($field, '/');
         $tableQuoted = preg_quote($table, '/');
+        $resolverAlt = itm_raw_fk_column_audit_bespoke_label_resolver_alternation();
 
         $patterns = [
-            '/\$field\s*===\s*[\'"]' . $fieldQuoted . '[\'"][\s\S]{0,900}?(cr_fk_label_by_id|itm_fk_label_by_id|itm_user_label_by_id_for_company|itm_fk_label_column_for_table)/s',
-            '/\$table\s*===\s*[\'"]' . $tableQuoted . '[\'"][\s\S]{0,220}?\$field\s*===\s*[\'"]' . $fieldQuoted . '[\'"][\s\S]{0,900}?(cr_fk_label_by_id|itm_fk_label_by_id|itm_user_label_by_id_for_company)/s',
-            '/in_array\s*\(\s*\$field\s*,\s*\[[^\]]*[\'"]' . $fieldQuoted . '[\'"][^\]]*\][\s\S]{0,900}?(cr_fk_label_by_id|itm_fk_label_by_id|itm_user_label_by_id_for_company)/s',
-            '/[\'"]' . $fieldQuoted . '[\'"][\s\S]{0,120}?\][\s\S]{0,900}?(cr_fk_label_by_id|itm_fk_label_by_id|itm_user_label_by_id_for_company)/s',
-            '/\$row\s*\[\s*[\'"]' . $fieldQuoted . '[\'"]\s*\][\s\S]{0,900}?(cr_fk_label_by_id|itm_fk_label_by_id|itm_user_label_by_id_for_company)/s',
+            '/\$field\s*===\s*[\'"]' . $fieldQuoted . '[\'"][\s\S]{0,900}?(' . $resolverAlt . ')/s',
+            '/\$table\s*===\s*[\'"]' . $tableQuoted . '[\'"][\s\S]{0,220}?\$field\s*===\s*[\'"]' . $fieldQuoted . '[\'"][\s\S]{0,900}?(' . $resolverAlt . ')/s',
+            '/in_array\s*\(\s*\$field\s*,\s*\[[^\]]*[\'"]' . $fieldQuoted . '[\'"][^\]]*\][\s\S]{0,900}?(' . $resolverAlt . ')/s',
+            '/in_array\s*\(\s*\$table\s*,\s*\[[^\]]*\]\s*,\s*true\s*\)\s*&&\s*\$field\s*===\s*[\'"]' . $fieldQuoted . '[\'"][\s\S]{0,900}?(' . $resolverAlt . ')/s',
+            '/[\'"]' . $fieldQuoted . '[\'"][\s\S]{0,120}?\][\s\S]{0,900}?(' . $resolverAlt . ')/s',
+            '/\$row\s*\[\s*[\'"]' . $fieldQuoted . '[\'"]\s*\][\s\S]{0,900}?(' . $resolverAlt . ')/s',
         ];
 
         foreach ($patterns as $pattern) {
