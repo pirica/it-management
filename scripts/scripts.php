@@ -1961,6 +1961,13 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Optional PHP gate maintenance only (not <code>db/</code>): legacy <code>COUNT(*)</code> → <code>itm_seed_tenant_row_count()</code> before <code>itm_seed_table_from_database_sql()</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="Codebase">
+                    <td><a href="debug_sample_data_soft_delete_gate.php" target="_blank" rel="nofollow noreferrer">debug_sample_data_soft_delete_gate.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-browser">Browser</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
+                    <td>Audit <strong>Add sample data</strong> gates vs soft-delete list queries: static drift (<code>raw_count</code> vs <code>itm_seed_tenant_row_count()</code>) and optional live <code>REPRO</code> rows per <code>company_id</code>. Lib: <code>scripts/lib/itm_sample_data_soft_delete_gate_audit.php</code>. Bulk repair: <code>apply_crud_sample_data_live_row_gate.php</code>.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_expenses_ap.php" target="_blank" rel="nofollow noreferrer">verify_expenses_ap.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
