@@ -2101,8 +2101,16 @@ if (!function_exists('itm_seed_fill_scalar_fallback_value')) {
         if ($name === 'active') {
             return '1';
         }
+        if ($name === 'conversation_type') {
+            return 'chat_with';
+        }
         if ($name === 'is_archived') {
             return '0';
+        }
+        if (preg_match('/^enum\(/i', $type) && preg_match("/^enum\\((.+)\\)/i", $type, $enumMatch)) {
+            if (preg_match("/'([^']+)'/", (string) $enumMatch[1], $firstEnum)) {
+                return (string) $firstEnum[1];
+            }
         }
         if (preg_match('/^(tinyint|smallint|mediumint|int|bigint|bit)/', $type)) {
             return '1';
