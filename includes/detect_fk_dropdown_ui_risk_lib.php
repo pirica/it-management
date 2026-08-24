@@ -81,6 +81,7 @@ if (!function_exists('itm_detect_fk_business_key_columns')) {
             'employee_type' => ['name_type'],
             'approver_type' => ['approver_type_description'],
             'equipment' => ['name', 'serial_number'],
+            'idf_device_type' => ['idfdevicetype_name'],
         ];
 
         if (isset($map[$table])) {
