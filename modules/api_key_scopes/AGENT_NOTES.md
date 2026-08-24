@@ -1,225 +1,65 @@
-Read AGENTS.md 
-Read README.md 
-Read scripts/scripts.php 
-Read phpunit/* 
-Read scripts/api.php 
-Read scripts/SCRIPTS.md
-Read db/ 
-Read full project
-
-On base on your learnings edit/update or create AGENT_NOTES.md is none exists for each modules/ on base of this (Module Template) don't use scripts to auto the process.
-`templates/AGENT_NOTES.md` (Module Template)
-
-
-# AGENT_NOTES.md — module template
-
-Use this outline for every in-scope folder (`modules/<slug>/`, `config/`, `includes/`, `scripts/lib/`, etc.). **Read the module PHP and `db/` first** — do not bulk-generate or copy generic boilerplate without verifying behaviour.
-
-File title: `# AGENT_NOTES.md - <Human Name>`
-
----
+# AGENT_NOTES.md - API Key Scopes
 
 ## 1. Module Purpose
 
-Briefly describe what this module does and why it exists.
-
-Example: This module manages workstation assets, including OS version, RAM, office location, and assignment history.
-
----
+Stores granted API v2 scope slugs per employee API key (`ui_configuration` row). Managed from Settings → API Access for day-to-day use; this CRUD module is for inspection and admin maintenance.
 
 ## 2. Key Tables
 
-List only tables this module owns or primarily interacts with.
-
-Format:
-
-- **table_name** — purpose
-
-Example:
-
-- **workstations** — main workstation records
-- **workstation_ram** — lookup table for RAM sizes
-
----
+- **api_key_scopes** — `company_id`, `ui_configuration_id`, `scope_slug`, standard audit columns.
+- **ui_configuration** — per-employee Settings / API key profile (FK parent).
+- **employees** — resolved for human-readable API key owner labels.
 
 ## 3. Required Relationships
 
-Document foreign keys and cross-module dependencies.
-
-Format:
-
-- **this_table** → depends on **other_table** (`fk_column`, `ON DELETE` behaviour)
-- **this_table** → referenced by **child_table**
-
-Example:
-
-- Workstations link to employees via `employee_id`.
-- Workstations link to equipment when a workstation is also an asset.
-
----
+- **api_key_scopes** → **ui_configuration** (`ui_configuration_id`, `ON DELETE CASCADE`).
+- **api_key_scopes** → **companies** (`company_id`, `ON DELETE CASCADE`).
+- Scope catalog: `includes/itm_api_v2_scopes.php` (`itm_api_v2_scope_catalog()`).
 
 ## 4. Business Rules (Critical for Agents)
 
-Rules that must never be violated. Document module-specific constraints from `AGENTS.md` when applicable.
-
-Examples:
-
-- A workstation cannot be assigned to an inactive employee.
-- OS version must exist in `workstation_os_versions`.
-- Deleting a workstation must archive assignment history, not remove it.
-
----
+- Unique per tenant: `(company_id, ui_configuration_id, scope_slug)`.
+- `scope_slug` must be a key from `itm_api_v2_scope_catalog()` (e.g. `tickets.read`, `equipment.write`).
+- `company_id` is hidden in list/view/forms but still stamped server-side on save.
 
 ## 5. UI Behavior Requirements
 
-Document UI constraints agents must preserve. Match **actual** module code — not a generic CRUD checklist.
-
-### Flattened CRUD (`modules/<slug>/index.php` with `$crud_table`)
-
-Typical contract (verify per module):
-
-- Search, sort, server-side pagination (`records_per_page`)
-- Bulk delete when `$totalRows >= $perPage` (not inverted)
-- `$displayFieldColumns = $uiColumns` before search block when search uses `$displayFieldColumns`
-- Hide `company_id` from list/view/forms
-- Actions column: `class="itm-actions-cell"` and `data-itm-actions-origin="1"`
-- Import: `data-itm-db-import-endpoint="index.php"` on the table that handles `import_excel_rows` (may be `list_all.php` on bespoke modules)
-- **CSRF:** POST handlers use **`cr_require_valid_csrf_token()`** (local helper in manufacturers-style CRUD); forms include `csrf_token` from `itm_get_csrf_token()`. Do **not** document `itm_require_post_csrf()` unless that helper is actually called in this module's PHP.
-- **`active` checkbox:** double-label `itm-checkbox-control` pattern (`AGENTS.md`)
-
-### `is_*` equipment façades
-
-- **List/view:** type filter via `$equipmentTypeNameFilter` in wrapper `index.php` / `view.php`
-- **Edit:** wrapper `edit.php` often `require`s `equipment/edit.php` **without** the type filter — document as a **known gap** if true; do not claim edit is type-guarded unless code enforces it
-- JSON/import handlers run through façade `index.php` when it `require`s `equipment/index.php`
-
-### Bespoke / read-only modules
-
-Describe real screens (e.g. calendar aggregation, resignations report, explorer ACL). Call out exceptions (e.g. calendar ICS import writes to `events`).
-
----
+- **List/view:** `ui_configuration_id` shows **API Key Owner** as `Employee Name (Tier)` — not raw ids (`includes/fk_dropdown_helpers.php`).
+- **List/view:** `scope_slug` shows catalog labels (e.g. `Tickets — read`), not raw slugs.
+- **Forms:** `scope_slug` is a catalog `<select>`; `ui_configuration_id` dropdown lists tenant `ui_configuration` rows by employee name + tier (no quick-add for `ui_configuration`).
+- Standard flattened CRUD: search, sort, pagination, bulk delete when `$totalRows >= $perPage`, hidden audit columns on list.
 
 ## 6. API Actions (If Applicable)
 
-Document endpoints this module exposes.
-
-Format:
-
-- **action_name** — purpose, required params, response format
-
-Examples:
-
-- **import_excel_rows** — JSON POST on `index.php` (flattened CRUD)
-- **ajax_inline_edit** — POST on bespoke `index.php` with CSRF
-
-Use `None` or `N/A` when the module has no API surface.
-
----
+- **import_excel_rows** — JSON POST on `index.php`; resolves owner labels and scope catalog labels on import.
 
 ## 7. File Structure
 
-List files and their purpose.
-
-Example:
-
-- **index.php** — list view
-- **create.php** — create form
-- **edit.php** — update form
-- **delete.php** — delete handler
-- **view.php** — detail view
-- **list_all.php** — alternate list wrapper
-
----
+- **index.php** — list, view, edit, import (edit/view/list_all wrappers require this file).
+- **create.php** — standalone create entry with duplicated CRUD helpers.
+- **delete.php** — soft-delete handler.
 
 ## 8. Multi-Tenant Rules
 
-Document scoping beyond generic `company_id`.
-
-Examples:
-
-- All queries filter by `company_id` from session.
-- Private data also filters by `employee_id` — **only document if code actually does this**.
-- Child `ops_report_id` rows: FK does not always enforce parent `company_id` match — note if application must validate.
-
----
+- All queries filter by session `company_id`.
+- FK label search joins `ui_configuration` → `employees` for owner name/tier (`includes/itm_crud_fk_label_search.php`).
 
 ## 9. Audit Logging Requirements
 
-Describe what is logged and how.
-
-### Database triggers (most CRUD tables)
-
-- Name triggers: `trg_{table}_audit_insert|update|delete` in `db/03_triggers.sql`
-- Triggers **always** insert into `audit_logs` on DML — they are **not** gated by the `enable_audit_logs` UI setting
-- Actor context: `@app_employee_id`, `@app_company_id` from `config/config.php`
-
-### Application / read-only modules
-
-- State explicitly when no writes occur (e.g. resignations report)
-
-Do **not** write “when `enable_audit_logs` is enabled” for standard DB trigger tables unless PHP explicitly checks that flag before DML.
-
----
+- `trg_api_key_scopes_audit_insert|update|delete` in `db/03_triggers.sql`.
 
 ## 10. Common Pitfalls
 
-Mistakes agents must avoid. Verify FK delete behaviour in `db/03_triggers.sql`:
-
-| Child FK | Pitfall text |
-|----------|----------------|
-| `ON DELETE SET NULL` | Child FKs null out automatically — no manual detach |
-| `ON DELETE CASCADE` | Parent delete removes children |
-| No CASCADE / no SET NULL | Detach or clear child FKs for active `company_id` **before** parent delete |
-
-Other examples:
-
-- Do not delete rows still referenced when schema blocks delete.
-- Do not copy generic “detach first” text without checking `information_schema` / `db/`.
-- Bespoke or sensitive modules: change only when explicitly requested.
-- Document **known gaps** (missing `employee_id` filter, unguarded edit URLs) rather than ideal behaviour.
-
----
+- Do not show raw `ui_configuration_id` — table has no `name` column; always resolve via employee + tier.
+- Do not allow quick-add on `ui_configuration` FK — rows are created via Settings / seed, not inline CRUD add.
 
 ## 11. Examples of Safe Code Patterns
 
-Provide 1–2 examples using **real table and column names** from `db/01_schema.sql`.
-
-### Safe SELECT
-
 ```php
-$stmt = $conn->prepare('SELECT * FROM example_table WHERE company_id = ? AND id = ?');
-$stmt->bind_param('ii', $companyId, $id);
-$stmt->execute();
+$label = itm_fk_ui_configuration_label_by_id($conn, (int)$company_id, (int)$uiConfigurationId);
 ```
-
-### Safe INSERT
-
-```php
-$stmt = $conn->prepare('INSERT INTO example_table (company_id, name) VALUES (?, ?)');
-$stmt->bind_param('is', $companyId, $name);
-$stmt->execute();
-```
-
-Rules:
-
-- Use MySQLi prepared statements only — never concatenate user input into SQL
-- For `IN (...)` lists, use placeholder expansion (`str_repeat('i', count($ids))`), not `implode(',', $ids)` in the query string
-
----
 
 ## 12. Module Owner Notes (Optional)
 
-Regression scripts, related `AGENT_NOTES.md` files, or follow-up hardening (document only — do not cite numbered PRs).
-
-Example: Regression: `php scripts/verify_<module>.php`. Parent module: `modules/ops_report/AGENT_NOTES.md`.
-
----
-
-## Authoring checklist (before marking complete)
-
-1. Read module entry PHP (`index.php` minimum; wrappers for `is_*`).
-2. Grep `db/` for `CREATE TABLE` and `trg_{table}_audit_*`.
-3. Confirm CSRF helper name in PHP matches section 5.
-4. Confirm audit section matches unconditional triggers (unless module is read-only).
-5. Confirm section 11 column names exist in schema.
-6. Update parent folder `AGENT_NOTES.md` when editing a subfolder.
+- Canonical API v2 doc: `docs/API_V2.md`.
+- Settings UI: `modules/settings/AGENT_NOTES.md`.

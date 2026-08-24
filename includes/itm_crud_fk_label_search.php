@@ -79,6 +79,14 @@ if (!function_exists('itm_crud_fk_label_search_conditions')) {
                 if (in_array('first_name', $refColumns, true) && in_array('last_name', $refColumns, true)) {
                     $labelLikes[] = "CONCAT(COALESCE(`first_name`, ''), ' ', COALESCE(`last_name`, '')) LIKE '" . $searchEsc . "'";
                 }
+            } elseif ($refTable === 'ui_configuration') {
+                $conditions[] = 'EXISTS (SELECT 1 FROM ' . $refTableSql . ' r'
+                    . ' LEFT JOIN `employees` e ON e.`id` = r.`employee_id`'
+                    . ' WHERE r.' . $refColumnSql . ' = ' . $fkColSql . $scopeSql
+                    . " AND (CONCAT(COALESCE(e.`first_name`, ''), ' ', COALESCE(e.`last_name`, '')) LIKE '" . $searchEsc . "'"
+                    . " OR e.`username` LIKE '" . $searchEsc . "'"
+                    . " OR r.`tier` LIKE '" . $searchEsc . "'))";
+                continue;
             } elseif ($refTable === 'colors' && in_array('hex_color', $refColumns, true)) {
                 $labelLikes[] = "`hex_color` LIKE '" . $searchEsc . "'";
             }
