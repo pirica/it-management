@@ -50,6 +50,7 @@ INSERT INTO `approvals` (`company_id`, `forecast_revision_id`, `stage`, `status`
 (1, '2', '1', '3', NULL, NULL, 'Awaiting finance validation for submission batch.', '1', NULL, NULL, NULL, '2026-01-01 00:00:01', NULL, NULL);
 
 INSERT INTO `approvals_stage` (`id`, `company_id`, `stage`, `description`, `active`, `created_at`) VALUES
+(NULL, '1', 'Finance Review', 'Finance team review stage before general manager approval.', '1', '2026-01-01 00:00:01'),
 (NULL, '1', 'GM Review', 'General manager review stage before final approval.', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `approver_type` (`id`, `company_id`, `approver_type_description`, `active`, `created_at`) VALUES
