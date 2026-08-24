@@ -9,7 +9,6 @@
  * CLI:
  *   php scripts/list_raw_columns.php
  *   php scripts/list_raw_columns.php --only-raw
- *   php scripts/list_raw_columns.php --module=problem_ticket_links
  *   php scripts/list_raw_columns.php --only-repro --company=1
  *   php scripts/list_raw_columns.php --all
  *
@@ -24,7 +23,7 @@ Checks <code>cr_render_cell_value()</code> for the shared <code>$GLOBALS['fkMap'
 Optional live repro: pass <code>company=1</code> to probe one tenant row and mark <code>REPRO</code> when rendered HTML is still the raw id.<br>
 CLI examples:<br>
 <code>php scripts/list_raw_columns.php --only-raw</code><br>
-<code>php scripts/list_raw_columns.php --module=problem_ticket_links --company=1</code>
+<code>php scripts/list_raw_columns.php --company=1</code>
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 
@@ -40,7 +39,6 @@ $nl = itm_script_output_nl();
 $root = rtrim(ROOT_PATH, '/\\');
 
 $companyId = 0;
-$moduleFilter = '';
 $onlyRaw = false;
 $onlyRepro = false;
 $showAll = false;
@@ -49,8 +47,6 @@ if ($isCli) {
     foreach ($argv ?? [] as $arg) {
         if (strpos($arg, '--company=') === 0) {
             $companyId = (int) substr($arg, 10);
-        } elseif (strpos($arg, '--module=') === 0) {
-            $moduleFilter = trim((string) substr($arg, 9));
         } elseif ($arg === '--only-raw') {
             $onlyRaw = true;
         } elseif ($arg === '--only-repro') {
@@ -62,7 +58,6 @@ if ($isCli) {
 } else {
     itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
     $companyId = isset($_GET['company']) ? (int) $_GET['company'] : 0;
-    $moduleFilter = isset($_GET['module']) ? trim((string) $_GET['module']) : '';
     $onlyRaw = isset($_GET['only_raw']) && (string) $_GET['only_raw'] === '1';
     $onlyRepro = isset($_GET['only_repro']) && (string) $_GET['only_repro'] === '1';
     $showAll = isset($_GET['all']) && (string) $_GET['all'] === '1';
@@ -70,7 +65,6 @@ if ($isCli) {
 
 $rows = itm_raw_fk_column_audit_run([
     'root' => $root,
-    'module' => $moduleFilter,
     'only_raw' => $onlyRaw,
     'only_repro' => $onlyRepro,
     'all' => $showAll,
@@ -106,9 +100,6 @@ if (!$isCli) {
     echo '<p><strong>Root:</strong> <code>' . sanitize($root) . '</code></p>';
     if ($companyId > 0) {
         echo '<p><strong>Live company_id:</strong> ' . (int) $companyId . '</p>';
-    }
-    if ($moduleFilter !== '') {
-        echo '<p><strong>Module filter:</strong> <code>' . sanitize($moduleFilter) . '</code></p>';
     }
     if ($onlyRaw) {
         echo '<p><strong>Filter:</strong> only raw / repro columns</p>';
@@ -187,9 +178,6 @@ echo colorText('Raw FK column display audit', 'info') . $nl;
 echo 'Root: ' . $root . $nl;
 if ($companyId > 0) {
     echo 'Live company_id: ' . $companyId . $nl;
-}
-if ($moduleFilter !== '') {
-    echo 'Module filter: ' . $moduleFilter . $nl;
 }
 echo $nl;
 
