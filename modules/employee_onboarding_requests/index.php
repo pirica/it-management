@@ -196,7 +196,19 @@ if ($field === 'active') {
         }
     }
 
-    $text = (string)($value ?? '');
+    
+    if (isset($GLOBALS['fkMap'][$field])) {
+        $fkRow = $GLOBALS['fkMap'][$field];
+        $fkDisplayId = (int)$value;
+        if ($fkDisplayId > 0 && (int)($GLOBALS['company_id'] ?? 0) > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+            $fkDisplayId = itm_fk_resolve_company_equivalent_id($GLOBALS['conn'], $fkRow, (int)$GLOBALS['company_id'], $fkDisplayId);
+        }
+        $resolvedLabel = cr_fk_label_by_id($GLOBALS['conn'], $fkRow, (int)($GLOBALS['company_id'] ?? 0), $fkDisplayId);
+        if ($resolvedLabel !== '') {
+            return sanitize($resolvedLabel);
+        }
+    }
+$text = (string)($value ?? '');
     if ($table === 'employees' && $field === 'email' && $text !== '') {
         $safeEmail = sanitize($text);
         $mailto = 'mailto:' . $text;
@@ -1063,6 +1075,7 @@ if (cr_is_employee_onboarding_module()) {
 }
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
+$GLOBALS['fkMap'] = $fkMap;
 $fieldColumns = cr_manageable_columns($columns);
 $fieldColumnsByName = [];
 foreach ($fieldColumns as $itmFieldColumnMeta) {

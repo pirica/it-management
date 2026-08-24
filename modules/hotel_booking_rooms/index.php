@@ -339,6 +339,7 @@ if (function_exists('itm_crud_register_column_type_map')) {
     itm_crud_register_column_type_map($columns);
 }
 $fkMap = cr_fk_map($conn, $crud_table);
+$GLOBALS['fkMap'] = $fkMap;
 $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_employee_field($col['Field']);

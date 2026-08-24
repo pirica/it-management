@@ -131,6 +131,16 @@ function cr_is_hidden_employee_field($field) {
     return in_array($field, $hidden, true);
 }
 
+/**
+ * Resolves FK label text for list/view cells.
+ */
+function cr_fk_label_by_id($conn, $fk, $company_id, $rawId) {
+    if (function_exists('itm_fk_label_by_id')) {
+        return itm_fk_label_by_id($conn, $fk, (int)$company_id, (int)$rawId);
+    }
+
+    return '';
+}
 function cr_render_cell_value($table, $field, $value) {
     if ($field === 'active') {
         $isActive = ((int)$value === 1);
@@ -144,7 +154,19 @@ function cr_render_cell_value($table, $field, $value) {
         }
     }
 
-    $text = (string)($value ?? '');
+    
+    if (isset($GLOBALS['fkMap'][$field])) {
+        $fkRow = $GLOBALS['fkMap'][$field];
+        $fkDisplayId = (int)$value;
+        if ($fkDisplayId > 0 && (int)($GLOBALS['company_id'] ?? 0) > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+            $fkDisplayId = itm_fk_resolve_company_equivalent_id($GLOBALS['conn'], $fkRow, (int)$GLOBALS['company_id'], $fkDisplayId);
+        }
+        $resolvedLabel = cr_fk_label_by_id($GLOBALS['conn'], $fkRow, (int)($GLOBALS['company_id'] ?? 0), $fkDisplayId);
+        if ($resolvedLabel !== '') {
+            return sanitize($resolvedLabel);
+        }
+    }
+$text = (string)($value ?? '');
     if ($field === 'vlan_color' && preg_match('/^#[0-9a-fA-F]{6}$/', $text)) {
         $safeColor = strtolower($text);
         return '<span aria-label="' . sanitize($text) . '" title="' . sanitize($text) . '" style="display:inline-block;width:12px;height:12px;border:1px solid #b8b8b8;border-radius:2px;background-color:' . $safeColor . ';"></span>';
@@ -271,6 +293,7 @@ function cr_vlan_name_exists($conn, $table, $vlanName, $companyId, $excludeId = 
 
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
+$GLOBALS['fkMap'] = $fkMap;
 $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_employee_field($col['Field']);

@@ -444,6 +444,7 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 // INITIALIZATION
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
+$GLOBALS['fkMap'] = $fkMap;
 $fieldColumns = cr_manageable_columns($columns);
 // Exclude employee-specific sensitive fields.
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {

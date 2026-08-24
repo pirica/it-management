@@ -491,6 +491,7 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 // INITIALIZATION
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
+$GLOBALS['fkMap'] = $fkMap;
 // Detect company scoping from schema even when company_id is hidden from UI field lists.
 $hasCompany = false;
 foreach ($columns as $c) {
