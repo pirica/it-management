@@ -905,11 +905,11 @@ INSERT INTO `printer_device_types` (`company_id`, `id`, `name`, `created_at`) VA
 INSERT INTO `private_contacts` (`company_id`, `employee_id`, `name_prefix`, `first_name`, `middle_name`, `last_name`, `name_suffix`, `phonetic_first_name`, `phonetic_middle_name`, `phonetic_last_name`, `nickname`, `file_as`, `email1_label`, `email1_value`, `phone1_label`, `phone1_value`, `address1_label`, `address1_country`, `address1_street`, `address1_extended`, `address1_city`, `address1_region`, `address1_postcode`, `address1_po_box`, `organization_name`, `organization_title`, `organization_department`, `event1_label`, `relation1_label`, `relation1_value`, `website1_label`, `website1_value`, `custom_field1_label`, `custom_field1_value`, `notes`, `labels`, `photo`, `is_favorite`, `active`) VALUES
 (1, 1, 'Sample 16b729a5', 'Sample 2262be0e', 'Sample f06ea1a3', 'Sample e203cb34', 'Sample 00f177bd', 'Sample 29955a9e', 'Sample 13d2f034', 'Sample 8866ccc2', 'Sample 3f65f92f', 'Sample 6abdc2bc', 'sample-d0cecc94@example.com', 'sample-0b5d88b1@example.com', 'Sample 3ee9a808', 'Sample 94833056', 'Sample 3e094e43', 'Sample f9404549', 'Sample 17d88978', 'Sample 0ed194c1', 'Sample a73f33da', 'Sample 428b575f', 'Sample d9769a42', 'Sample 9fce24ff', 'Sample 80c198d0', 'Sample 59332b64', 'Sample 5b06764c', 'Sample 1f49abae', 'Sample e356686f', 'Sample 98b6a727', 'Sample 97d090c9', 'Sample f95724c9', 'Sample c6cd809f', 'Sample b21df13e', 'Sample a734037c', 'Sample ca5f1530', 'Sample 0bd47701', 1, 1);
 
+INSERT INTO `problems` (`company_id`, `title`, `description`, `root_cause`, `status`, `owner_employee_id`, `resolved_at`, `knowledge_base_id`, `master_ticket_id`, `active`) VALUES
+(1, 'Sample 3be7db8b', 'Sample f1e2ff23', 'Sample 46ddf5b3', 'investigating', 1, '2026-08-21 01:45:11', 1, NULL, 1);
+
 INSERT INTO `problem_ticket_links` (`company_id`, `problem_id`, `ticket_id`, `linked_at`, `linked_by`, `active`) VALUES
 (1, 1, 1, '2026-08-21 01:45:11', 1, 1);
-
-INSERT INTO `problems` (`company_id`, `title`, `description`, `root_cause`, `status`, `owner_employee_id`, `resolved_at`, `knowledge_base_id`, `master_ticket_id`, `active`) VALUES
-(1, 'Sample 3be7db8b', 'Sample f1e2ff23', 'Sample 46ddf5b3', 'investigating', 1, '2026-08-21 01:45:11', 1, 1, 1);
 
 INSERT INTO `qr_code_scans` (`qr_code_id`, `company_id`, `scanned_at`, `ip_hash`, `user_agent`) VALUES
 (1, 1, '2026-08-21 01:45:11', 'Sample a3ac3476', 'Sample bf99db55');
