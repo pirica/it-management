@@ -83,6 +83,7 @@ if (!function_exists('itm_detect_fk_business_key_columns')) {
             'equipment' => ['name', 'serial_number'],
             'idf_device_type' => ['idfdevicetype_name'],
             'registration_invitations' => ['email'],
+            'employees' => ['username', 'work_email'],
         ];
 
         if (isset($map[$table])) {
