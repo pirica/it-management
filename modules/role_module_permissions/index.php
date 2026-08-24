@@ -246,7 +246,15 @@ function cr_module_name_options($conn, $company_id) {
     return array_values($options);
 }
 
-function cr_render_cell_value($table, $field, $value, $displayValue = null) {
+function cr_fk_label_by_id($conn, $fk, $company_id, $rawId) {
+    if (function_exists('itm_fk_label_by_id')) {
+        return itm_fk_label_by_id($conn, $fk, (int)$company_id, (int)$rawId);
+    }
+
+    return '';
+}
+
+function cr_render_cell_value($table, $field, $value) {
     if (function_exists('itm_crud_render_audit_cell_value')) {
         $auditHtml = itm_crud_render_audit_cell_value($GLOBALS['conn'] ?? null, (int)($GLOBALS['company_id'] ?? 0), $field, $value);
         if ($auditHtml !== null) {
@@ -265,6 +273,18 @@ function cr_render_cell_value($table, $field, $value, $displayValue = null) {
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
 
+    if (isset($GLOBALS['fkMap'][$field])) {
+        $fkRow = $GLOBALS['fkMap'][$field];
+        $fkDisplayId = (int)$value;
+        if ($fkDisplayId > 0 && (int)($GLOBALS['company_id'] ?? 0) > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+            $fkDisplayId = itm_fk_resolve_company_equivalent_id($GLOBALS['conn'], $fkRow, (int)$GLOBALS['company_id'], $fkDisplayId);
+        }
+        $resolvedLabel = cr_fk_label_by_id($GLOBALS['conn'], $fkRow, (int)($GLOBALS['company_id'] ?? 0), $fkDisplayId);
+        if ($resolvedLabel !== '') {
+            return sanitize($resolvedLabel);
+        }
+    }
+
 
     if ($field === 'is_closed') {
         $isClosed = ((int)$value === 1);
@@ -280,10 +300,6 @@ function cr_render_cell_value($table, $field, $value, $displayValue = null) {
         if (in_array($field, $employeeBoolFields, true)) {
             return ((int)$value === 1) ? '✅' : '❌';
         }
-    }
-
-    if ($displayValue !== null && $displayValue !== '') {
-        return sanitize((string)$displayValue);
     }
 
     $text = (string)($value ?? '');
@@ -387,6 +403,7 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
+$GLOBALS['fkMap'] = $fkMap;
 $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_employee_field($col['Field']);
@@ -1006,12 +1023,12 @@ if (!isset($crud_title)) {
                         <?php if ($rows && mysqli_num_rows($rows) > 0): while ($row = mysqli_fetch_assoc($rows)): ?>
                             <tr>
                                 <?php if ($showBulkActions): ?><td><input type="checkbox" name="ids[]" value="<?php echo (int)$row['id']; ?>" form="bulk-delete-form"></td><?php endif; ?>
-                                <?php foreach ($uiColumns as $col): $f = $col['Field']; $fkDisplay = ''; if (isset($fkMap[$f])) { $fkDisplay = cr_fk_label_for_value($conn, $fkMap[$f], (int)$company_id, $row[$f] ?? 0); } ?>
+                                <?php foreach ($uiColumns as $col): $f = $col['Field']; ?>
                                     <td>
                                         <?php if ($f === 'comments' && trim((string)($row[$f] ?? '')) !== ''): ?>
                                             <a class="btn btn-sm" href="edit.php?id=<?php echo (int)$row['id']; ?>">✏️</a>
                                         <?php else: ?>
-                                            <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? '', $fkDisplay); ?>
+                                            <?php echo cr_render_cell_value($crud_table, $f, $row[$f] ?? ''); ?>
                                         <?php endif; ?>
                                     </td>
                                 <?php endforeach; ?>
@@ -1143,7 +1160,7 @@ if (!isset($crud_title)) {
                         <?php foreach ($viewColumns as $col): $f = $col['Field']; ?>
                             <tr>
                                 <th style="width:240px;"><?php echo sanitize(cr_humanize_field($f)); ?></th>
-                                <td><?php $fkDisplay = isset($fkMap[$f]) ? cr_fk_label_for_value($conn, $fkMap[$f], (int)$company_id, $data[$f] ?? 0) : ''; echo cr_render_cell_value($crud_table, $f, $data[$f] ?? '', $fkDisplay); ?></td>
+                                <td><?php echo cr_render_cell_value($crud_table, $f, $data[$f] ?? ''); ?></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>

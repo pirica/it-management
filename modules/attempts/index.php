@@ -236,6 +236,16 @@ function cr_pick_display_ip($value) {
     return $raw;
 }
 
+/**
+ * Resolves FK label text for list/view cells.
+ */
+function cr_fk_label_by_id($conn, $fk, $company_id, $rawId) {
+    if (function_exists('itm_fk_label_by_id')) {
+        return itm_fk_label_by_id($conn, $fk, (int)$company_id, (int)$rawId);
+    }
+
+    return '';
+}
 function cr_render_cell_value($table, $field, $value) {
     if (function_exists('itm_crud_render_audit_cell_value')) {
         $auditHtml = itm_crud_render_audit_cell_value($GLOBALS['conn'] ?? null, (int)($GLOBALS['company_id'] ?? 0), $field, $value);
@@ -262,7 +272,19 @@ if (in_array($table, ['attempts'], true) && $field === 'ip_address') {
         }
     }
 
-    $text = (string)($value ?? '');
+    
+    if (isset($GLOBALS['fkMap'][$field])) {
+        $fkRow = $GLOBALS['fkMap'][$field];
+        $fkDisplayId = (int)$value;
+        if ($fkDisplayId > 0 && (int)($GLOBALS['company_id'] ?? 0) > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+            $fkDisplayId = itm_fk_resolve_company_equivalent_id($GLOBALS['conn'], $fkRow, (int)$GLOBALS['company_id'], $fkDisplayId);
+        }
+        $resolvedLabel = cr_fk_label_by_id($GLOBALS['conn'], $fkRow, (int)($GLOBALS['company_id'] ?? 0), $fkDisplayId);
+        if ($resolvedLabel !== '') {
+            return sanitize($resolvedLabel);
+        }
+    }
+$text = (string)($value ?? '');
 
     if (in_array($table, ['attempts'], true) && $field === 'employee_id') {
         if ((int)$text <= 0) {
@@ -391,6 +413,7 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
+$GLOBALS['fkMap'] = $fkMap;
 $fieldColumns = cr_manageable_columns($columns);
 $fieldColumns = array_values(array_filter($fieldColumns, function ($col) {
     return !cr_is_hidden_employee_field($col['Field']);

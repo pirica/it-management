@@ -231,6 +231,7 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
 // Module initialization
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
+$GLOBALS['fkMap'] = $fkMap;
 $fieldColumns = cr_manageable_columns($columns);
 $hasCompany = false;
 foreach ($fieldColumns as $c) {
