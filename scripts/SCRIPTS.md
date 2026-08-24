@@ -872,6 +872,7 @@ Full-module browser QA runs HTTP session checks across the five seeded companies
 * `scripts/auth_register_reset_human_test.php` (creates disposable invitations and script-test employees for auth flows).
 * `scripts/tickets_related_equipment_delete_test.php` (seeds sample ticket rows from `db/01_schema.sql`).
 * `scripts/verify_tickets_sample_data.php` (empty-tenant tickets **Add sample data** — `TCK-0001`, active list visibility, no local employees, stale session `@app_company_id`).
+* `scripts/verify_registration_invitations_sample_cycle.php` (registration_invitations **Add sample data** → soft-delete → re-seed loop; duplicate `(company_id, email)` restores soft-deleted row by `email` business key).
 
 **Script that dumps seed SQL (no DB writes):**
 
