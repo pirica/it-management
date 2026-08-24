@@ -126,6 +126,41 @@ if (!function_exists('itm_sample_data_gate_audit_classify_index')) {
     }
 }
 
+if (!function_exists('itm_sample_data_gate_audit_sample_sql_row_counts')) {
+    /**
+     * @return array<string,int> table => INSERT row count in db/02_data_sample.sql
+     */
+    function itm_sample_data_gate_audit_sample_sql_row_counts(): array
+    {
+        static $counts = null;
+        if (is_array($counts)) {
+            return $counts;
+        }
+
+        $counts = [];
+        if (!function_exists('itm_database_sql_read_sample') || !function_exists('itm_parse_database_sql_inserts')) {
+            $sampleSource = ROOT_PATH . 'includes/itm_database_sql_source.php';
+            if (is_file($sampleSource)) {
+                require_once $sampleSource;
+            }
+        }
+
+        if (!function_exists('itm_database_sql_read_sample') || !function_exists('itm_parse_database_sql_inserts')) {
+            return $counts;
+        }
+
+        $parsed = itm_parse_database_sql_inserts(itm_database_sql_read_sample());
+        foreach ($parsed as $tableName => $entries) {
+            if (!is_string($tableName) || $tableName === '' || !is_array($entries)) {
+                continue;
+            }
+            $counts[$tableName] = count($entries);
+        }
+
+        return $counts;
+    }
+}
+
 if (!function_exists('itm_sample_data_gate_audit_live_counts')) {
     /**
      * @return array{raw:int,live:int,soft_deleted:int,has_deleted_at:bool}
@@ -177,6 +212,7 @@ if (!function_exists('itm_sample_data_gate_audit_run')) {
         $onlyDrift = !empty($options['only_drift']);
         $onlyRepro = !empty($options['only_repro']);
         $conn = $options['conn'] ?? null;
+        $sampleSqlCounts = itm_sample_data_gate_audit_sample_sql_row_counts();
 
         $rows = [];
         foreach (itm_sample_data_gate_audit_module_slugs($root) as $slug) {
@@ -193,10 +229,15 @@ if (!function_exists('itm_sample_data_gate_audit_run')) {
             $classified = itm_sample_data_gate_audit_classify_index($slug, $content);
             if (!$classified['has_add_sample']) {
                 if (!$onlyDrift && !$onlyRepro) {
+                    $tableName = $classified['table'] ?? null;
+                    $sqlSample = ($tableName !== null && $tableName !== '')
+                        ? ($sampleSqlCounts[$tableName] ?? 0)
+                        : null;
                     $rows[] = $classified + [
                         'status' => 'skip',
                         'raw' => null,
                         'live' => null,
+                        'sql_sample' => $sqlSample,
                         'soft_deleted' => null,
                         'repro' => false,
                     ];
@@ -210,10 +251,14 @@ if (!function_exists('itm_sample_data_gate_audit_run')) {
                 continue;
             }
 
+            $tableName = (string) ($classified['table'] ?? '');
+            $sqlSample = $tableName !== '' ? ($sampleSqlCounts[$tableName] ?? 0) : null;
+
             $row = $classified + [
                 'status' => $drift ? 'drift' : 'ok',
                 'raw' => null,
                 'live' => null,
+                'sql_sample' => $sqlSample,
                 'soft_deleted' => null,
                 'repro' => false,
             ];

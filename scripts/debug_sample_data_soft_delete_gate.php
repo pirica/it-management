@@ -113,7 +113,7 @@ if (!$isCli) {
 
   echo '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;margin:16px 0;width:100%;max-width:100%;font-size:13px;">';
   echo '<thead><tr>';
-  echo '<th>Status</th><th>Module</th><th>Table</th><th>Gate</th><th>Raw</th><th>Live</th><th>Soft</th><th>Notes</th>';
+  echo '<th>Status</th><th>Module</th><th>Table</th><th>Gate</th><th>Raw</th><th>Live</th><th>SQL sample</th><th>Soft</th><th>Notes</th>';
   echo '</tr></thead><tbody>';
 
   foreach ($rows as $row) {
@@ -132,6 +132,7 @@ if (!$isCli) {
 
     $raw = $row['raw'];
     $live = $row['live'];
+    $sqlSample = $row['sql_sample'] ?? null;
     $soft = $row['soft_deleted'];
     $slug = (string) ($row['slug'] ?? '');
     $tableName = (string) ($row['table'] ?? '');
@@ -150,6 +151,7 @@ if (!$isCli) {
     echo '<td><code>' . sanitize($gate) . '</code></td>';
     echo '<td>' . sanitize($raw === null ? '-' : (string) $raw) . '</td>';
     echo '<td>' . sanitize($live === null ? '-' : (string) $live) . '</td>';
+    echo '<td>' . sanitize($sqlSample === null ? '-' : (string) $sqlSample) . '</td>';
     echo '<td>' . sanitize($soft === null ? '-' : (string) $soft) . '</td>';
     echo '<td>' . sanitize($notes) . '</td>';
     echo '</tr>';
@@ -161,6 +163,7 @@ if (!$isCli) {
 
   echo '<div style="margin:16px 0;padding:12px;border:1px dashed #d0d7de;border-radius:6px;font-size:13px;">';
   echo '<p><strong>Gate legend:</strong> <code>live_rows</code> = <code>itm_seed_tenant_row_count()</code>; <code>raw_count</code> = legacy <code>COUNT(*)</code> includes soft-deleted rows.</p>';
+  echo '<p><strong>SQL sample</strong> = row count for that table in <code>db/02_data_sample.sql</code> (templates inserted per Add sample data click).</p>';
   echo '<p><strong>REPRO</strong> = list would be empty (<code>live=0</code>) but legacy gate still sees rows (<code>raw&gt;0</code>).</p>';
   echo '<p><strong>Fix pattern:</strong> <code>modules/bank_accounts/index.php</code> — <code>itm_seed_tenant_row_count()</code> + <code>itm_seed_table_from_database_sql()</code>.</p>';
   echo '<p><strong>Bulk repair:</strong> <code>php scripts/apply_crud_sample_data_live_row_gate.php --apply</code></p>';
@@ -198,6 +201,7 @@ echo str_pad('Status', 8) . ' '
   . str_pad('Gate', 12) . ' '
   . str_pad('Raw', 6) . ' '
   . str_pad('Live', 6) . ' '
+  . str_pad('SQL', 6) . ' '
   . str_pad('Soft', 6) . ' '
   . 'Notes' . $nl;
 echo str_repeat('-', 120) . $nl;
@@ -211,6 +215,7 @@ foreach ($rows as $row) {
 
   $raw = $row['raw'];
   $live = $row['live'];
+  $sqlSample = $row['sql_sample'] ?? null;
   $soft = $row['soft_deleted'];
 
   echo str_pad($statusLabel, 8) . ' '
@@ -219,6 +224,7 @@ foreach ($rows as $row) {
     . str_pad((string) ($row['gate'] ?? ''), 12) . ' '
     . str_pad($raw === null ? '-' : (string) $raw, 6) . ' '
     . str_pad($live === null ? '-' : (string) $live, 6) . ' '
+    . str_pad($sqlSample === null ? '-' : (string) $sqlSample, 6) . ' '
     . str_pad($soft === null ? '-' : (string) $soft, 6) . ' '
     . (string) ($row['notes'] ?? '') . $nl;
 }
@@ -227,6 +233,7 @@ echo $nl;
 echo 'Summary: ok=' . $okCount . ' drift=' . $driftCount . ' repro=' . $reproCount . $nl;
 echo $nl;
 echo 'Gate legend: live_rows = itm_seed_tenant_row_count(); raw_count = legacy COUNT(*) includes soft-deleted rows.' . $nl;
+echo 'SQL sample = row count for that table in db/02_data_sample.sql (templates per Add sample data click).' . $nl;
 echo 'REPRO = list would be empty (live=0) but legacy gate still sees rows (raw>0).' . $nl;
 echo 'Fix pattern: modules/bank_accounts/index.php — itm_seed_tenant_row_count() + itm_seed_table_from_database_sql().' . $nl;
 echo 'Bulk repair: php scripts/apply_crud_sample_data_live_row_gate.php --apply' . $nl;
