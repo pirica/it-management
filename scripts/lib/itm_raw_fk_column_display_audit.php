@@ -177,13 +177,53 @@ if (!function_exists('itm_raw_fk_column_audit_status_driven_slugs')) {
     }
 }
 
+if (!function_exists('itm_raw_fk_column_audit_parse_list_excluded_fields')) {
+    /**
+     * Fields removed from list columns via vaultHiddenFields, listColumns filters, or cr_is_hidden_employee_field.
+     *
+     * @return list<string>
+     */
+    function itm_raw_fk_column_audit_parse_list_excluded_fields(string $indexContent): array
+    {
+        $excluded = [];
+
+        if (preg_match('/\$vaultHiddenFields\s*=\s*\[([^\]]+)\]/', $indexContent, $match)) {
+            if (preg_match_all('/[\'"]([a-zA-Z0-9_]+)[\'"]/', (string) $match[1], $fieldMatches)) {
+                $excluded = array_merge($excluded, $fieldMatches[1]);
+            }
+        }
+
+        if (preg_match_all('/!\s*in_array\s*\(\s*\$field\s*,\s*\[([^\]]+)\]/', $indexContent, $matches)) {
+            foreach ($matches[1] as $arrayLiteral) {
+                if (preg_match_all('/[\'"]([a-zA-Z0-9_]+)[\'"]/', (string) $arrayLiteral, $fieldMatches)) {
+                    $excluded = array_merge($excluded, $fieldMatches[1]);
+                }
+            }
+        }
+
+        if (preg_match('/function\s+cr_is_hidden_employee_field\s*\([^)]*\)\s*\{[\s\S]*?\$hidden\s*=\s*\[([^\]]+)\]/', $indexContent, $match)
+            && preg_match('/!\s*cr_is_hidden_employee_field\s*\(/', $indexContent) === 1) {
+            if (preg_match_all('/[\'"]([a-zA-Z0-9_]+)[\'"]/', (string) $match[1], $fieldMatches)) {
+                $excluded = array_merge($excluded, $fieldMatches[1]);
+            }
+        }
+
+        return array_values(array_unique($excluded));
+    }
+}
+
 if (!function_exists('itm_raw_fk_column_audit_is_field_hidden_from_list')) {
     function itm_raw_fk_column_audit_is_field_hidden_from_list(
         string $field,
         string $moduleSlug,
-        array $hiddenByModule
+        array $hiddenByModule,
+        array $listExcludedFields = []
     ): bool {
         if (in_array($field, $hiddenByModule, true)) {
+            return true;
+        }
+
+        if (in_array($field, $listExcludedFields, true)) {
             return true;
         }
 
@@ -324,6 +364,71 @@ if (!function_exists('itm_raw_fk_column_audit_field_has_join_row_label_rendering
     }
 }
 
+if (!function_exists('itm_raw_fk_column_audit_field_has_inline_sql_label_rendering')) {
+    /**
+     * @param array{ref_table:string,ref_column:string,label_col:string} $meta
+     */
+    function itm_raw_fk_column_audit_field_has_inline_sql_label_rendering(
+        string $renderBody,
+        string $field,
+        string $table,
+        array $meta
+    ): bool {
+        $refTable = (string) ($meta['ref_table'] ?? '');
+        $labelCol = (string) ($meta['label_col'] ?? '');
+        if ($renderBody === '' || $field === '' || $refTable === '' || $labelCol === '') {
+            return false;
+        }
+
+        $fieldQuoted = preg_quote($field, '/');
+        $tableQuoted = preg_quote($table, '/');
+        $refQuoted = preg_quote($refTable, '/');
+        $labelQuoted = preg_quote($labelCol, '/');
+
+        $hasFieldBranch = preg_match(
+            '/\$table\s*===\s*[\'"]' . $tableQuoted . '[\'"][\s\S]{0,260}?in_array\s*\(\s*\$field\s*,\s*\[[^\]]*[\'"]' . $fieldQuoted . '[\'"]/s',
+            $renderBody
+        ) === 1
+            || preg_match('/\$field\s*===\s*[\'"]' . $fieldQuoted . '[\'"]/', $renderBody) === 1;
+
+        if (!$hasFieldBranch) {
+            return false;
+        }
+
+        return preg_match('/mysqli_query\s*\(\s*\$conn/', $renderBody) === 1
+            && preg_match('/FROM\s+`?' . $refQuoted . '`?\b/i', $renderBody) === 1
+            && preg_match('/\b' . $labelQuoted . '\b/', $renderBody) === 1;
+    }
+}
+
+if (!function_exists('itm_raw_fk_column_audit_index_has_inline_fkmap_label')) {
+    function itm_raw_fk_column_audit_index_has_inline_fkmap_label(string $indexContent, string $field): bool
+    {
+        if ($indexContent === '' || $field === '') {
+            return false;
+        }
+
+        $fieldQuoted = preg_quote($field, '/');
+        $resolverAlt = itm_raw_fk_column_audit_bespoke_label_resolver_alternation();
+
+        $patterns = [
+            '/isset\s*\(\s*\$fkMap\s*\[\s*\$f\s*\]\s*\)[\s\S]{0,500}?(' . $resolverAlt . ')\s*\(\s*\$conn\s*,\s*\$fkMap\s*\[\s*\$f\s*\]/s',
+            '/isset\s*\(\s*\$fkMap\s*\[\s*[\'"]' . $fieldQuoted . '[\'"]\s*\][\s\S]{0,500}?(' . $resolverAlt . ')/s',
+            '/\$f\s*===\s*[\'"]' . $fieldQuoted . '[\'"][\s\S]{0,500}?isset\s*\(\s*\$fkMap/s',
+            '/\$name\s*===\s*[\'"]' . $fieldQuoted . '[\'"][\s\S]{0,500}?isset\s*\(\s*\$fkMap\s*\[\s*\$name\s*\]/s',
+            '/\$f\s*===\s*[\'"]' . $fieldQuoted . '[\'"][\s\S]{0,500}?(' . $resolverAlt . ')/s',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $indexContent) === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
 if (!function_exists('itm_raw_fk_column_audit_bespoke_label_resolver_alternation')) {
     function itm_raw_fk_column_audit_bespoke_label_resolver_alternation(): string
     {
@@ -395,6 +500,14 @@ if (!function_exists('itm_raw_fk_column_audit_resolve_handler_label')) {
             return ['handler' => 'join_row', 'notes' => 'JOIN + $row bespoke label branch'];
         }
 
+        if (itm_raw_fk_column_audit_index_has_inline_fkmap_label($indexContent, $field)) {
+            return ['handler' => 'list_fkmap', 'notes' => 'List template isset($fkMap[$f]) + label resolver'];
+        }
+
+        if (itm_raw_fk_column_audit_field_has_inline_sql_label_rendering($renderBody, $field, $table, $meta)) {
+            return ['handler' => 'inline_sql', 'notes' => 'Inline SQL lookup in cr_render_cell_value()'];
+        }
+
         return ['handler' => 'bespoke', 'notes' => 'Bespoke FK label branch'];
     }
 }
@@ -415,6 +528,15 @@ if (!function_exists('itm_raw_fk_column_audit_field_has_label_rendering')) {
         }
 
         if (itm_raw_fk_column_audit_field_has_audit_actor_rendering($renderBody, $field)) {
+            return true;
+        }
+
+        if ($indexContent !== ''
+            && itm_raw_fk_column_audit_index_has_inline_fkmap_label($indexContent, $field)) {
+            return true;
+        }
+
+        if (itm_raw_fk_column_audit_field_has_inline_sql_label_rendering($renderBody, $field, $table, $meta)) {
             return true;
         }
 
@@ -608,6 +730,7 @@ if (!function_exists('itm_raw_fk_column_audit_analyze_index')) {
         }
 
         $hiddenByModule = itm_crud_boolean_cell_audit_parse_hidden_field_names($content, $table);
+        $listExcludedFields = itm_raw_fk_column_audit_parse_list_excluded_fields($content);
         $hasGlobalFkMap = itm_raw_fk_column_audit_render_has_global_fkmap_handler($renderBody);
 
         $fkMap = [];
@@ -617,7 +740,7 @@ if (!function_exists('itm_raw_fk_column_audit_analyze_index')) {
 
         $rows = [];
         foreach ($schemaFks[$table] as $column => $meta) {
-            if (itm_raw_fk_column_audit_is_field_hidden_from_list($column, $slug, $hiddenByModule)) {
+            if (itm_raw_fk_column_audit_is_field_hidden_from_list($column, $slug, $hiddenByModule, $listExcludedFields)) {
                 continue;
             }
 

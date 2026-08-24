@@ -25,7 +25,7 @@ Shared PHP libraries included by maintenance scripts, QA runners, and browser au
 | `itm_list_modules_not_on_sidebar_report.php` | Report builder for `list_modules_not_on_sidebar.php` (sidebar match_dir, module folders, registry gaps) |
 | `itm_module_decorated_links_report.php` | Report builder for `list_module_decorated_links.php` / `check_module_decorated_links.php` — render probe + template scan |
 | `itm_module_decorated_links_apply.php` | Bulk apply `itm-plain-link` / sort-header inherit for `apply_module_decorated_plain_links.php` |
-| `itm_raw_fk_column_display_audit.php` | Report builder for `list_raw_columns.php` — static FK label display in `cr_render_cell_value()` (shared `$GLOBALS['fkMap']`, bespoke resolvers such as `cr_fk_label_by_id` / `cr_username_for_employee_id`, or JOIN + `$row` branches) + optional live REPRO per `company_id` |
+| `itm_raw_fk_column_display_audit.php` | Report builder for `list_raw_columns.php` — static FK label display in `cr_render_cell_value()` / list template (`fkMap`, `join_row`, `list_fkmap`, `inline_sql`, bespoke resolvers); skips list-hidden columns; optional live REPRO per `company_id` |
 | `itm_database_tables_modules_report.php` | Shared schema/live DB vs `modules/` mapping for `compare_database_sql_modules.php` and `list_db_tables_without_modules.php` |
 | `itm_script_report_table_sort.php` | Sortable script report tables (browser header click + CLI `--sort` / `--dir`) for `list_db_tables_sample_data.php` and `list_db_tables_sample_data_company.php` |
 | `itm_list_empty_tables.php` | Tenant row-count helpers shared by `list_empty_tables.php`, `list_db_tables_sample_data_company.php`, and `verify_company_empty_sample_data.php` |

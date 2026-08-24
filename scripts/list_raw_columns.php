@@ -19,7 +19,7 @@ function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
 Static audit: finds flattened CRUD modules whose <strong>list/view</strong> cells still echo raw FK ids (e.g. <code>problem_id = 3</code> instead of <code>problems.title</code>).<br>
-Checks <code>cr_render_cell_value()</code> for the shared <code>$GLOBALS['fkMap'][$field]</code> branch, a bespoke FK label resolver, or a <strong>JOIN + $row</strong> pattern (list query JOINs the label table and passes the full row into <code>cr_render_cell_value(..., $row)</code> — e.g. <code>modules/alerts/</code>).<br>
+Checks <code>cr_render_cell_value()</code> for the shared <code>$GLOBALS['fkMap'][$field]</code> branch, bespoke FK label resolvers (<code>cr_fk_label_by_id</code>, <code>cr_username_for_employee_id</code>, inline SQL), list-template <code>isset($fkMap[$f])</code> branches, or a <strong>JOIN + $row</strong> pattern (e.g. <code>modules/alerts/</code>). Columns excluded from <code>$uiColumns</code> / <code>$listColumns</code> (vault hidden fields, <code>cr_is_hidden_employee_field</code>) are skipped.<br>
 Optional live repro: pass <code>company=1</code> to probe one tenant row and mark <code>REPRO</code> when rendered HTML is still the raw id.<br>
 CLI examples:<br>
 <code>php scripts/list_raw_columns.php --only-raw</code><br>
