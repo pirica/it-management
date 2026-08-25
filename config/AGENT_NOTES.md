@@ -27,7 +27,7 @@ Maintains system-wide configuration, database credentials, path constants, and c
 - **Vault TOTP helpers:** `config.php` loads `includes/itm_totp_helpers.php` and `includes/itm_vault_unlock.php` after `includes/itm_email.php` — global `PHPGangsta_GoogleAuthenticator`, encrypted `employees.totp_secret` helpers, and shared vault lock/unlock POST handling. Vault unlock CSRF failures set the lock-screen `$error` string (no `die()` before HTML). See `docs/VAULT.md`.
 - **LDAP SSO:** `config.php` loads `includes/itm_ldap_auth.php` after `itm_login_attempt_identifier.php`. Public auth page `sso-ldap.php` is listed in the login redirect allowlist alongside `login.php`. Live LDAP bind requires PHP **`ldap`** on the **Apache** SAPI — see `docs/SSO_LDAP.md` → PHP `ldap` extension.
 - **Browser title helper:** `config.php` loads `includes/itm_crud_browser_title.php` after `includes/itm_company_module_access.php` so bespoke modules can call `itm_crud_apply_module_icon_to_browser_title()` without a per-file `require_once`.
-- **Public module entry bypass:** `modules/qr/r.php`, `modules/qr/asset.php`, and `modules/short-url/go.php` define `ITM_QR_GENERATOR_PUBLIC` or `ITM_SHORT_URL_PUBLIC` before `config.php` so unauthenticated visitors can resolve tokens/codes (rate-limited where applicable).
+- **Public module entry bypass:** `go.php` (root alias), `modules/short-url/go.php`, `modules/qr/r.php`, and `modules/qr/asset.php` define `ITM_SHORT_URL_PUBLIC`, `ITM_QR_GENERATOR_PUBLIC`, or related flags before `config.php` so unauthenticated visitors can resolve tokens/codes (rate-limited where applicable).
 
 ## 7. File Structure
 - **config.php** — the core configuration file required by every entry point.

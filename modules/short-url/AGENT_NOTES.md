@@ -22,9 +22,9 @@ Bidirectional integration with `modules/qr/`: short links can spawn dynamic webs
 ## 4. Business Rules (Critical for Agents)
 
 - Authenticated queries: `company_id` + `employee_id` = session owner.
-- Public `go.php` resolves by `?c=` (short_code) or `?t=` (access_token); rate-limited; password gate via session key.
+- Public `go.php` (root alias) resolves by `?c=` (short_code) or `?t=` (access_token); legacy `modules/short-url/go.php` uses the same handler; rate-limited; password gate via session key.
 - Expired links return HTTP 410.
-- Configuration tab: admin edit only (`itm_is_admin($conn, $employeeId)`); all users read. `public_base_url` optional — valid `http`/`https` prefix before short code; empty uses `itm_short_url_default_public_base_prefix()` (`BASE_URL` + `/modules/short-url/go.php?c=`).
+- Configuration tab: admin edit only (`itm_is_admin($conn, $employeeId)`); all users read. `public_base_url` optional — valid `http`/`https` prefix before short code; empty uses `itm_short_url_default_public_base_prefix()` (`BASE_URL` + `/go.php?c=`).
 - No Add sample data.
 
 ## 5. UI Behavior Requirements

@@ -26,7 +26,8 @@ if ($code !== '') {
 
 if (!$row) {
     http_response_code(404);
-    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Not found</title><link rel="stylesheet" href="../../css/styles.css"></head><body><p style="margin:40px;text-align:center;">This short link is invalid or no longer available.</p></body></html>';
+    $css = htmlspecialchars(itm_short_url_public_css_href(), ENT_QUOTES, 'UTF-8');
+    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Not found</title><link rel="stylesheet" href="' . $css . '"></head><body><p style="margin:40px;text-align:center;">This short link is invalid or no longer available.</p></body></html>';
     exit;
 }
 
@@ -34,7 +35,8 @@ $shortCode = (string) ($row['short_code'] ?? '');
 
 if (itm_short_url_is_expired($row)) {
     http_response_code(410);
-    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Link expired</title><link rel="stylesheet" href="../../css/styles.css"></head><body><p style="margin:40px;text-align:center;">This short link has expired.</p></body></html>';
+    $css = htmlspecialchars(itm_short_url_public_css_href(), ENT_QUOTES, 'UTF-8');
+    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Link expired</title><link rel="stylesheet" href="' . $css . '"></head><body><p style="margin:40px;text-align:center;">This short link has expired.</p></body></html>';
     exit;
 }
 

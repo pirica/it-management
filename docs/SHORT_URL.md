@@ -6,12 +6,13 @@ Employee-scoped link shortener with custom codes, optional password and expirati
 
 - `short_urls` — owner `employee_id` + `company_id`; `destination_url`, `short_code`, `access_token`, `password_hash`, `expires_at`, `click_count`, `qr_code_id`
 - `short_url_clicks` — per-click analytics (no audit triggers)
-- `short_url_settings` — per-company defaults (one row per tenant); optional `public_base_url` prefix before the short code (falls back to `BASE_URL` + `/modules/short-url/go.php?c=`)
+- `short_url_settings` — per-company defaults (one row per tenant); optional `public_base_url` prefix before the short code (falls back to `BASE_URL` + `/go.php?c=`)
 
 ## Public endpoint (no login)
 
-- `modules/short-url/go.php?c={short_code}` — redirect after optional password gate and click recording
-- `modules/short-url/go.php?t={access_token}` — token fallback lookup
+- `go.php?c={short_code}` — canonical short redirect (app root alias)
+- `go.php?t={access_token}` — token fallback lookup
+- `modules/short-url/go.php?c=` / `?t=` — legacy path (same handler)
 
 ## UI tabs
 

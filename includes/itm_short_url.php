@@ -22,7 +22,12 @@ function itm_short_url_generate_access_token()
 
 function itm_short_url_default_public_base_prefix()
 {
-    return rtrim((string) BASE_URL, '/') . '/modules/short-url/go.php?c=';
+    return rtrim((string) BASE_URL, '/') . '/go.php?c=';
+}
+
+function itm_short_url_public_css_href()
+{
+    return rtrim((string) BASE_URL, '/') . '/css/styles.css';
 }
 
 function itm_short_url_normalize_public_base_url($url)
@@ -472,7 +477,8 @@ function itm_short_url_render_password_gate(array $row, $error = '')
 {
     $code = htmlspecialchars((string) ($row['short_code'] ?? ''), ENT_QUOTES, 'UTF-8');
     $err = $error !== '' ? '<div class="alert alert-danger">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</div>' : '';
-    echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Password required</title><link rel="stylesheet" href="../../css/styles.css"></head><body>';
+    $css = htmlspecialchars(itm_short_url_public_css_href(), ENT_QUOTES, 'UTF-8');
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Password required</title><link rel="stylesheet" href="' . $css . '"></head><body>';
     echo '<div class="card" style="max-width:420px;margin:48px auto;">';
     echo '<h1 title="Password required">🔒</h1><p>This link is password protected.</p>' . $err;
     echo '<form method="post"><input type="hidden" name="short_url_password_gate" value="1">';
