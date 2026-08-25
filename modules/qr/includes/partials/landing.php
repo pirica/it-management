@@ -49,7 +49,14 @@ $type = (string) ($row['type_slug'] ?? '');
     <h1><?= sanitize((string)($p['title'] ?? 'Coupon')) ?></h1>
     <p style="font-size:1.5em;font-weight:bold;"><?= sanitize((string)($p['code'] ?? '')) ?></p>
     <p><?= sanitize((string)($p['description'] ?? '')) ?></p>
-    <?php if (($p['expires'] ?? '') !== ''): ?><p>Expires: <?= sanitize((string)$p['expires']) ?></p><?php endif; ?>
+    <?php if (($p['expires'] ?? '') !== ''): ?>
+        <?php
+        $qrCouponExpiresDisplay = function_exists('itm_format_date_display')
+            ? itm_format_date_display($p['expires'])
+            : (string) $p['expires'];
+        ?>
+        <p>Expires: <?= sanitize($qrCouponExpiresDisplay) ?></p>
+    <?php endif; ?>
 <?php elseif ($type === 'email'): ?>
     <h1>Email</h1>
     <p><a class="btn btn-primary" href="mailto:<?= sanitize((string)($p['to'] ?? '')) ?>?subject=<?= rawurlencode((string)($p['subject'] ?? '')) ?>&body=<?= rawurlencode((string)($p['body'] ?? '')) ?>">Send email</a></p>

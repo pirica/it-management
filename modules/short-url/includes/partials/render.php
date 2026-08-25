@@ -126,15 +126,13 @@ $csrfToken = itm_get_csrf_token();
                         </div>
                         <?php endif; ?>
                         <div class="form-group">
-                            <label>Expires (dd/mm/yyyy)</label>
+                            <label for="su-edit-expires-at">Expires on</label>
                             <?php
-                            $expVal = '';
-                            $expRaw = trim((string) ($suRow['expires_at'] ?? ''));
-                            if ($expRaw !== '' && function_exists('itm_format_date_display')) {
-                                $expVal = itm_format_date_display(substr($expRaw, 0, 10));
-                            }
+                            $expIso = function_exists('itm_date_input_iso_value')
+                                ? itm_date_input_iso_value($suRow['expires_at'] ?? '')
+                                : substr(trim((string) ($suRow['expires_at'] ?? '')), 0, 10);
                             ?>
-                            <input type="text" name="expires_at" class="form-control" value="<?= sanitize($expVal) ?>" placeholder="dd/mm/yyyy">
+                            <input type="date" name="expires_at" id="su-edit-expires-at" class="form-control" value="<?= sanitize($expIso) ?>" title="Pick expiration date (dd/mm/yyyy)">
                         </div>
                         <?php if (empty($suRow['qr_code_id'])): ?>
                         <div class="form-group">
