@@ -16,7 +16,7 @@ $allowPassword = !empty($suSettings['allow_password_protect']);
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:stretch;margin-bottom:16px;">
             <div style="flex:1;min-width:220px;position:relative;">
                 <input type="url" name="destination_url" id="su-destination-url" class="form-control" placeholder="Paste your URL here..." required style="padding-right:44px;">
-                <button type="button" class="btn btn-sm" id="su-paste-btn" title="Paste from clipboard" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);">📋</button>
+                <button type="button" class="btn btn-sm" id="su-paste-btn" title="Paste from clipboard" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);z-index:2;">📋</button>
             </div>
             <button type="submit" class="btn btn-primary" title="Shorten now">✨</button>
         </div>
