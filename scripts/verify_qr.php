@@ -52,6 +52,13 @@ if (!$res2 || mysqli_num_rows($res2) === 0) {
 }
 qr_verify_pass('qr_code_scans table exists.');
 
+$resTpl = mysqli_query($conn, "SHOW TABLES LIKE 'qr_design_templates'");
+if (!$resTpl || mysqli_num_rows($resTpl) === 0) {
+    qr_verify_fail('qr_design_templates table missing — re-import db/01_schema.sql or run db/migrations/qr_design_templates.sql.');
+} else {
+    qr_verify_pass('qr_design_templates table exists.');
+}
+
 $catalog = itm_qr_generator_type_catalog();
 if (count($catalog) < 16) {
     qr_verify_fail('Type catalog should include at least 16 types.');
@@ -94,6 +101,38 @@ if (strpos($publicUrl, '/modules/qr/r.php?t=') === false) {
 
 $empId = 1;
 $companyId = 1;
+
+if ($resTpl && mysqli_num_rows($resTpl) > 0) {
+    $tplName = 'Verify QR design tpl ' . date('Y-m-d H:i:s');
+    $tplDesign = itm_qr_generator_default_design();
+    $tplDesign['colorDark'] = '#112233';
+    $tplSave = itm_qr_generator_save_design_template($conn, $companyId, $empId, $tplName, $tplDesign, $empId);
+    if (empty($tplSave['ok'])) {
+        qr_verify_fail('save_design_template failed: ' . ($tplSave['error'] ?? ''));
+    } else {
+        qr_verify_pass('save_design_template OK id=' . (int) ($tplSave['id'] ?? 0));
+    }
+    $tplList = itm_qr_generator_list_design_templates($conn, $companyId, $empId);
+    $foundTpl = false;
+    foreach ($tplList as $tplRow) {
+        if ((int) ($tplRow['id'] ?? 0) === (int) ($tplSave['id'] ?? 0) && ($tplRow['design']['colorDark'] ?? '') === '#112233') {
+            $foundTpl = true;
+            break;
+        }
+    }
+    if (!$foundTpl) {
+        qr_verify_fail('list_design_templates did not return saved template design.');
+    } else {
+        qr_verify_pass('list_design_templates OK.');
+    }
+    $tplDel = itm_qr_generator_delete_design_template($conn, $companyId, $empId, (int) ($tplSave['id'] ?? 0), $empId);
+    if (empty($tplDel['ok'])) {
+        qr_verify_fail('delete_design_template failed.');
+    } else {
+        qr_verify_pass('delete_design_template OK.');
+    }
+}
+
 $title = 'Verify QR ' . date('Y-m-d H:i:s');
 $typeSlug = 'text';
 $encodingMode = 'static';

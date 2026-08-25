@@ -41,6 +41,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['qr_action']) && $_POS
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['qr_action']) && $_POST['qr_action'] === 'list_design_templates') {
+    header('Content-Type: application/json; charset=utf-8');
+    itm_require_post_csrf();
+    echo json_encode([
+        'ok' => true,
+        'templates' => itm_qr_generator_design_templates_for_api($conn, $qrCompanyId, $qrEmployeeId),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['qr_action']) && $_POST['qr_action'] === 'save_design_template') {
+    header('Content-Type: application/json; charset=utf-8');
+    itm_require_post_csrf();
+    $name = trim((string) ($_POST['name'] ?? ''));
+    $designRaw = json_decode((string) ($_POST['design_json'] ?? ''), true);
+    if (!is_array($designRaw)) {
+        $designRaw = [];
+    }
+    $result = itm_qr_generator_save_design_template($conn, $qrCompanyId, $qrEmployeeId, $name, $designRaw, $qrEmployeeId);
+    if (empty($result['ok'])) {
+        echo json_encode(['ok' => false, 'error' => (string) ($result['error'] ?? 'Save failed.')], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    echo json_encode([
+        'ok' => true,
+        'id' => (int) ($result['id'] ?? 0),
+        'templates' => itm_qr_generator_design_templates_for_api($conn, $qrCompanyId, $qrEmployeeId),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['qr_action']) && $_POST['qr_action'] === 'delete_design_template') {
+    header('Content-Type: application/json; charset=utf-8');
+    itm_require_post_csrf();
+    $templateId = (int) ($_POST['template_id'] ?? 0);
+    $result = itm_qr_generator_delete_design_template($conn, $qrCompanyId, $qrEmployeeId, $templateId, $qrEmployeeId);
+    if (empty($result['ok'])) {
+        echo json_encode(['ok' => false, 'error' => (string) ($result['error'] ?? 'Delete failed.')], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    echo json_encode([
+        'ok' => true,
+        'templates' => itm_qr_generator_design_templates_for_api($conn, $qrCompanyId, $qrEmployeeId),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['qr_action']) && $_POST['qr_action'] === 'save') {
     itm_require_post_csrf();
     $id = (int) ($_POST['id'] ?? 0);

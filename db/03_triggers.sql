@@ -4686,6 +4686,12 @@ DROP TRIGGER IF EXISTS `trg_qr_codes_audit_update`;
 
 DROP TRIGGER IF EXISTS `trg_qr_codes_audit_delete`;
 
+DROP TRIGGER IF EXISTS `trg_qr_design_templates_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_qr_design_templates_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_qr_design_templates_audit_delete`;
+
 DROP TRIGGER IF EXISTS `trg_short_urls_audit_insert`;
 
 DROP TRIGGER IF EXISTS `trg_short_urls_audit_update`;
@@ -4713,6 +4719,21 @@ END$$
 CREATE TRIGGER `trg_qr_codes_audit_delete` AFTER DELETE ON `qr_codes` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'qr_codes', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'title', OLD.`title`, 'type_slug', OLD.`type_slug`, 'encoding_mode', OLD.`encoding_mode`, 'scan_count', OLD.`scan_count`, 'active', OLD.`active`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_qr_design_templates_audit_insert` AFTER INSERT ON `qr_design_templates` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'qr_design_templates', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'employee_id', NEW.`employee_id`, 'name', NEW.`name`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_qr_design_templates_audit_update` AFTER UPDATE ON `qr_design_templates` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'qr_design_templates', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'name', OLD.`name`, 'deleted_by', OLD.`deleted_by`, 'deleted_at', OLD.`deleted_at`), JSON_OBJECT('id', NEW.`id`, 'name', NEW.`name`, 'deleted_by', NEW.`deleted_by`, 'deleted_at', NEW.`deleted_at`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_qr_design_templates_audit_delete` AFTER DELETE ON `qr_design_templates` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'qr_design_templates', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'employee_id', OLD.`employee_id`, 'name', OLD.`name`), NULL, @app_ip_address, @app_user_agent);
 END$$
 
 DROP TRIGGER IF EXISTS `trg_short_urls_audit_insert`;

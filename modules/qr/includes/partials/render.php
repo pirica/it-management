@@ -46,6 +46,8 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
         .qr-wizard-step-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
         .qr-wizard-pane[hidden] { display:none !important; }
         .qr-wizard-nav { display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+        .qr-design-template-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+        .qr-design-template-actions select { flex:1; min-width:160px; }
     </style>
 </head>
 <body>
@@ -178,14 +180,20 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
                             </div>
                             <div id="qr-wizard-step-design" class="qr-wizard-pane" role="tabpanel" hidden>
                             <h3 title="Design">Design</h3>
-                            <div class="form-group">
-                                <label>Use template</label>
-                                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                                    <select id="qr-template-select" class="form-control" style="flex:1;min-width:160px;">
-                                        <option value="">— Select saved template —</option>
+                            <div class="form-group qr-design-templates">
+                                <label for="qr-design-template-select">Design template</label>
+                                <div class="qr-design-template-actions">
+                                    <select id="qr-design-template-select" class="form-control">
+                                        <option value="">— Select template —</option>
+                                        <?php foreach ($qrDesignTemplates as $tpl): ?>
+                                        <?php
+                                        $tplDesignJson = htmlspecialchars(json_encode($tpl['design'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+                                        ?>
+                                        <option value="<?= (int) $tpl['id'] ?>" data-design="<?= $tplDesignJson ?>"><?= sanitize((string) $tpl['name']) ?></option>
+                                        <?php endforeach; ?>
                                     </select>
-                                    <button type="button" class="btn btn-sm" id="qr-template-refresh" title="Apply template and refresh preview">🔄</button>
-                                    <button type="button" class="btn btn-sm" id="qr-template-save" title="Save current design as template">Save as template</button>
+                                    <button type="button" class="btn btn-sm" id="qr-design-template-save" title="Save current design as template">💾</button>
+                                    <button type="button" class="btn btn-sm" id="qr-design-template-delete" title="Delete selected template">🗑️</button>
                                 </div>
                             </div>
                             <div class="form-group"><label>Size</label><input type="number" name="design[size]" min="128" max="1024" class="form-control itm-qr-design" value="<?= (int)$qrDesign['size'] ?>"></div>

@@ -12,6 +12,7 @@
     var pngBtn = document.getElementById('qr-download-png');
     var jpgBtn = document.getElementById('qr-download-jpg');
     var svgBtn = document.getElementById('qr-download-svg');
+    var templateSelect = document.getElementById('qr-design-template-select');
 
     function getCorrectLevel(level) {
         var map = window.QRCode.CorrectLevel || {};
@@ -39,6 +40,15 @@
         url = String(url || '').trim();
         if (!url) return '';
         return /^https?:\/\//i.test(url) ? url : 'https://' + url;
+    }
+
+    function resolveLogoUrl(path) {
+        path = String(path || '').trim();
+        if (!path) return '';
+        if (/^https?:\/\//i.test(path) || path.indexOf('/') === 0) {
+            return path;
+        }
+        return '../../modules/explorer/file.php?path=' + encodeURIComponent(path);
     }
 
     function buildStaticPreview(type, f) {
@@ -110,112 +120,34 @@
         return '';
     }
 
-    function resolveLogoUrl(path) {
-        path = String(path || '').trim();
-        if (!path) return '';
-        if (/^https?:\/\//i.test(path)) return path;
-        var base = String(window.ITM_BASE_URL || '/').replace(/\/?$/, '/');
-        return base + 'modules/explorer/file.php?path=' + encodeURIComponent(path);
-    }
-
-    function readDesignFieldsFromForm() {
+    function readDesignFields() {
+        var sizeEl = document.querySelector('[name="design[size]"]');
+        var darkEl = document.querySelector('[name="design[colorDark]"]');
+        var lightEl = document.querySelector('[name="design[colorLight]"]');
+        var levelEl = document.querySelector('[name="design[correctLevel]"]');
+        var pathInput = document.getElementById('qr-logo-path');
         return {
-            size: parseInt(formVal(form, 'design[size]') || '256', 10),
-            colorDark: formVal(form, 'design[colorDark]') || '#000000',
-            colorLight: formVal(form, 'design[colorLight]') || '#ffffff',
-            correctLevel: formVal(form, 'design[correctLevel]') || 'H',
-            logo_path: document.getElementById('qr-logo-path') ? document.getElementById('qr-logo-path').value : ''
+            size: parseInt(sizeEl && sizeEl.value ? sizeEl.value : '256', 10),
+            colorDark: darkEl ? darkEl.value : '#000000',
+            colorLight: lightEl ? lightEl.value : '#ffffff',
+            correctLevel: levelEl ? levelEl.value : 'H',
+            logo_path: pathInput ? pathInput.value : ''
         };
     }
 
-    function applyDesignFieldsToForm(design) {
-        if (!form || !design) return;
-        var sizeEl = form.querySelector('[name="design[size]"]');
-        var darkEl = form.querySelector('[name="design[colorDark]"]');
-        var lightEl = form.querySelector('[name="design[colorLight]"]');
-        var levelEl = form.querySelector('[name="design[correctLevel]"]');
-        var logoEl = document.getElementById('qr-logo-path');
+    function applyDesignFields(design) {
+        if (!design) return;
+        var sizeEl = document.querySelector('[name="design[size]"]');
+        var darkEl = document.querySelector('[name="design[colorDark]"]');
+        var lightEl = document.querySelector('[name="design[colorLight]"]');
+        var levelEl = document.querySelector('[name="design[correctLevel]"]');
+        var pathInput = document.getElementById('qr-logo-path');
         if (sizeEl && design.size) sizeEl.value = String(design.size);
         if (darkEl && design.colorDark) darkEl.value = design.colorDark;
         if (lightEl && design.colorLight) lightEl.value = design.colorLight;
         if (levelEl && design.correctLevel) levelEl.value = design.correctLevel;
-        if (logoEl) logoEl.value = design.logo_path || '';
-    }
-
-    function templateStorageKey() {
-        if (!form) return 'itm_qr_design_templates';
-        return 'itm_qr_design_templates_' + (form.getAttribute('data-qr-template-scope') || 'default');
-    }
-
-    function loadDesignTemplates() {
-        try {
-            var raw = window.localStorage.getItem(templateStorageKey());
-            var parsed = raw ? JSON.parse(raw) : [];
-            return Array.isArray(parsed) ? parsed : [];
-        } catch (e) {
-            return [];
-        }
-    }
-
-    function saveDesignTemplates(list) {
-        try {
-            window.localStorage.setItem(templateStorageKey(), JSON.stringify(list));
-        } catch (e) { /* ignore quota */ }
-    }
-
-    function populateTemplateSelect() {
-        var select = document.getElementById('qr-template-select');
-        if (!select) return;
-        var current = select.value;
-        var templates = loadDesignTemplates();
-        select.innerHTML = '<option value="">— Select saved template —</option>';
-        templates.forEach(function (tpl) {
-            var opt = document.createElement('option');
-            opt.value = tpl.id;
-            opt.textContent = tpl.name;
-            select.appendChild(opt);
-        });
-        if (current) {
-            for (var i = 0; i < select.options.length; i++) {
-                if (select.options[i].value === current) {
-                    select.value = current;
-                    break;
-                }
-            }
-        }
-    }
-
-    function applySelectedTemplate() {
-        var select = document.getElementById('qr-template-select');
-        if (!select || !select.value) return false;
-        var templates = loadDesignTemplates();
-        var tpl = templates.filter(function (t) { return t.id === select.value; })[0];
-        if (!tpl || !tpl.design) return false;
-        applyDesignFieldsToForm(tpl.design);
+        if (pathInput) pathInput.value = design.logo_path || '';
         drawQr();
-        return true;
-    }
-
-    function saveCurrentDesignTemplate() {
-        var name = window.prompt('Template name');
-        if (!name) return;
-        name = String(name).trim();
-        if (!name) return;
-        var templates = loadDesignTemplates();
-        if (templates.some(function (t) { return t.name.toLowerCase() === name.toLowerCase(); })) {
-            window.alert('A template with that name already exists.');
-            return;
-        }
-        var tpl = {
-            id: 'tpl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-            name: name,
-            design: readDesignFieldsFromForm()
-        };
-        templates.push(tpl);
-        saveDesignTemplates(templates);
-        populateTemplateSelect();
-        var select = document.getElementById('qr-template-select');
-        if (select) select.value = tpl.id;
     }
 
     function readDesign() {
@@ -229,10 +161,7 @@
                 logo: resolveLogoUrl(mount.dataset.logo || '')
             };
         }
-        var sizeEl = document.querySelector('[name="design[size]"]');
-        var darkEl = document.querySelector('[name="design[colorDark]"]');
-        var lightEl = document.querySelector('[name="design[colorLight]"]');
-        var levelEl = document.querySelector('[name="design[correctLevel]"]');
+        var fields = readDesignFields();
         var typeEl = document.querySelector('[name="type_slug"]');
         var type = typeEl ? typeEl.value : '';
         var mode = getEncodingMode();
@@ -242,11 +171,11 @@
         }
         return {
             text: text,
-            size: parseInt(sizeEl && sizeEl.value ? sizeEl.value : '256', 10),
-            colorDark: darkEl ? darkEl.value : '#000000',
-            colorLight: lightEl ? lightEl.value : '#ffffff',
-            correctLevel: levelEl ? levelEl.value : 'H',
-            logo: resolveLogoUrl(document.getElementById('qr-logo-path') ? document.getElementById('qr-logo-path').value : '')
+            size: fields.size,
+            colorDark: fields.colorDark,
+            colorLight: fields.colorLight,
+            correctLevel: fields.correctLevel,
+            logo: resolveLogoUrl(fields.logo_path)
         };
     }
 
@@ -415,6 +344,79 @@
         return true;
     }
 
+    function rebuildTemplateSelect(templates, selectedId) {
+        if (!templateSelect) return;
+        var keep = String(selectedId || templateSelect.value || '');
+        templateSelect.innerHTML = '';
+        var blank = document.createElement('option');
+        blank.value = '';
+        blank.textContent = '— Select template —';
+        templateSelect.appendChild(blank);
+        (templates || []).forEach(function (tpl) {
+            var opt = document.createElement('option');
+            opt.value = String(tpl.id);
+            opt.textContent = tpl.name;
+            opt.setAttribute('data-design', JSON.stringify(tpl.design || {}));
+            templateSelect.appendChild(opt);
+        });
+        if (keep) {
+            templateSelect.value = keep;
+        }
+    }
+
+    function applySelectedTemplate() {
+        if (!templateSelect) return;
+        var opt = templateSelect.options[templateSelect.selectedIndex];
+        if (!opt || !opt.value) return;
+        var raw = opt.getAttribute('data-design') || '';
+        if (!raw) return;
+        try {
+            applyDesignFields(JSON.parse(raw));
+        } catch (e) {
+            /* ignore malformed template */
+        }
+    }
+
+    function saveDesignTemplate() {
+        var name = window.prompt('Template name');
+        if (!name || !String(name).trim()) return;
+        var fd = new FormData();
+        fd.append('csrf_token', csrf);
+        fd.append('qr_action', 'save_design_template');
+        fd.append('name', String(name).trim());
+        fd.append('design_json', JSON.stringify(readDesignFields()));
+        fetch('index.php', { method: 'POST', body: fd })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.ok) {
+                    alert((data && data.error) || 'Could not save template.');
+                    return;
+                }
+                rebuildTemplateSelect(data.templates, data.id);
+            });
+    }
+
+    function deleteDesignTemplate() {
+        if (!templateSelect || !templateSelect.value) {
+            alert('Select a template to delete.');
+            return;
+        }
+        if (!window.confirm('Delete this design template?')) return;
+        var fd = new FormData();
+        fd.append('csrf_token', csrf);
+        fd.append('qr_action', 'delete_design_template');
+        fd.append('template_id', templateSelect.value);
+        fetch('index.php', { method: 'POST', body: fd })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.ok) {
+                    alert((data && data.error) || 'Could not delete template.');
+                    return;
+                }
+                rebuildTemplateSelect(data.templates, '');
+            });
+    }
+
     if (form) {
         form.addEventListener('input', function (ev) {
             var t = ev.target;
@@ -435,42 +437,38 @@
             if (t.classList && t.classList.contains('itm-qr-upload')) {
                 handleQrUpload(t);
             }
+            if (t.id === 'qr-design-template-select') {
+                applySelectedTemplate();
+            }
         });
 
         form.addEventListener('click', function (ev) {
-            var stepBtn = ev.target && ev.target.closest ? ev.target.closest('.qr-wizard-step-btn') : null;
+            var t = ev.target;
+            if (!t || !t.closest) return;
+            var stepBtn = t.closest('.qr-wizard-step-btn');
             if (stepBtn) {
-                ev.preventDefault();
                 var step = stepBtn.getAttribute('data-qr-step') || 'content';
                 if (step === 'design' && !validateContentStep()) return;
                 showWizardStep(step);
                 return;
             }
-            if (ev.target && ev.target.id === 'qr-wizard-next') {
-                ev.preventDefault();
+            if (t.id === 'qr-wizard-next' || (t.closest && t.closest('#qr-wizard-next'))) {
                 if (!validateContentStep()) return;
                 showWizardStep('design');
                 return;
             }
-            if (ev.target && ev.target.id === 'qr-wizard-back') {
-                ev.preventDefault();
+            if (t.id === 'qr-wizard-back' || (t.closest && t.closest('#qr-wizard-back'))) {
                 showWizardStep('content');
                 return;
             }
-            if (ev.target && ev.target.id === 'qr-template-refresh') {
-                ev.preventDefault();
-                if (!applySelectedTemplate()) {
-                    drawQr();
-                }
+            if (t.id === 'qr-design-template-save' || (t.closest && t.closest('#qr-design-template-save'))) {
+                saveDesignTemplate();
                 return;
             }
-            if (ev.target && ev.target.id === 'qr-template-save') {
-                ev.preventDefault();
-                saveCurrentDesignTemplate();
+            if (t.id === 'qr-design-template-delete' || (t.closest && t.closest('#qr-design-template-delete'))) {
+                deleteDesignTemplate();
             }
         });
-
-        populateTemplateSelect();
     }
 
     var logoUpload = document.getElementById('qr-logo-upload');
