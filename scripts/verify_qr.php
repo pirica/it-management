@@ -85,6 +85,42 @@ if ($url !== 'https://example.com') {
     qr_verify_pass('Website static payload normalization OK.');
 }
 
+if (!itm_qr_generator_is_valid_http_url('example.com')) {
+    qr_verify_fail('Bare domain should validate as HTTP URL.');
+} else {
+    qr_verify_pass('HTTP URL validation accepts bare domain.');
+}
+
+if (itm_qr_generator_is_valid_http_url('not a valid url!!!')) {
+    qr_verify_fail('Invalid URL string should fail validation.');
+} else {
+    qr_verify_pass('HTTP URL validation rejects malformed URL.');
+}
+
+$websiteErrors = itm_qr_generator_validate_save([
+    'type_slug' => 'website',
+    'title' => 'Test',
+    'encoding_mode' => 'dynamic',
+    'payload' => ['url' => ''],
+]);
+if ($websiteErrors === [] || strpos(implode(' ', $websiteErrors), 'URL') === false) {
+    qr_verify_fail('validate_save should require website URL.');
+} else {
+    qr_verify_pass('validate_save rejects empty website URL.');
+}
+
+$badUrlErrors = itm_qr_generator_validate_save([
+    'type_slug' => 'website',
+    'title' => 'Test',
+    'encoding_mode' => 'dynamic',
+    'payload' => ['url' => 'not a url'],
+]);
+if ($badUrlErrors === [] || strpos(implode(' ', $badUrlErrors), 'valid') === false) {
+    qr_verify_fail('validate_save should reject malformed website URL.');
+} else {
+    qr_verify_pass('validate_save rejects malformed website URL.');
+}
+
 $token = itm_qr_generator_generate_access_token();
 if (strlen($token) !== 64) {
     qr_verify_fail('Access token should be 64 hex chars.');

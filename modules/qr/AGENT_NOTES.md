@@ -11,6 +11,7 @@ Separate from temporary SpeedyShare (`share_sessions` / `includes/itm_qr_share.p
 ## 2. Key Tables
 
 - **qr_codes** — per-employee saved codes (`type_slug`, `encoding_mode`, `payload_json`, `encoded_payload`, `access_token`, `design_json`, `scan_count`, `short_url_id`)
+- **qr_design_templates** — per-employee design presets (`name`, `design_json`)
 - **qr_code_scans** — scan analytics (no audit triggers; exempt in `check_audit_logs_coverage.php`)
 
 ## 3. Required Relationships
@@ -23,6 +24,7 @@ Separate from temporary SpeedyShare (`share_sessions` / `includes/itm_qr_share.p
 
 - All authenticated queries: `company_id` + `employee_id` = session owner.
 - File/media types (`pdf`, `images`, `video`, `mp3`, `menu`, etc.) are **dynamic only**.
+- Website / Facebook / Instagram require a valid URL on save (`itm_qr_generator_validate_url_field()`); wizard Content step blocks Next/Save until required fields pass HTML5 validation (`js/itm-qr-generator.js` → `validateContentStep()`).
 - `wifi`, `sms`, `whatsapp`, `text` are **static only**.
 - Static QR embeds `encoded_payload` directly; dynamic QR encodes `modules/qr/r.php?t={access_token}`.
 - Uploads: `files/{company_id}/Common/qr/{employee_id}/` via `itm_qr_generator_ensure_upload_dir()`.
@@ -34,7 +36,7 @@ Separate from temporary SpeedyShare (`share_sessions` / `includes/itm_qr_share.p
 Bespoke wizard (not flattened CRUD `$uiColumns`). Gate-excluded in `scripts/data/ui_configuration_excluded_modules.txt` (synced with `docs/list_bespoke_UI.txt`). Intentional contract gaps documented in `scripts/data/ui_configuration_reviewed.json` (column sort, bulk delete).
 
 - **index.php** — thin router; list markup in `includes/partials/render.php` with `data-itm-new-button-managed` header row.
-- **create.php** — step 1 type grid; step 2 wizard with **Content** (1) and **Design** (2) tabs, live static preview, PNG/JPG/SVG download, **design templates** (browser `localStorage` per company+employee).
+- **create.php** — step 1 type grid; step 2 wizard with **Content** (1) and **Design** (2) tabs, live static preview, PNG/JPG/SVG download, **design templates** (`qr_design_templates` per employee).
 - **edit.php** — same wizard for existing row.
 - **view.php** — preview, download buttons, scan table (last 50).
 - **r.php** / **asset.php** — public, no login (`ITM_QR_GENERATOR_PUBLIC`).
@@ -75,7 +77,7 @@ Shared logic: `includes/itm_qr_generator.php`. Client: `js/itm-qr-generator.js`,
 ## 10. Known Pitfalls
 
 - Dynamic preview before first save shows hint only (no public URL until saved).
-- Re-import `db/01_schema.sql` on existing DBs to add tables (no migration file in this deliverable).
+- Re-import `db/01_schema.sql` on existing DBs to add tables, or run `db/migrations/qr_design_templates.sql` via `php scripts/migrate.php --apply`.
 
 ## 11. Related Documentation
 

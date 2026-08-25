@@ -5,7 +5,7 @@
 $p = $qrPayload ?? [];
 $type = $qrSelectedType ?? '';
 if ($type === 'website'): ?>
-    <div class="form-group"><label>URL</label><input type="url" name="payload[url]" class="form-control itm-qr-field" value="<?= sanitize((string)($p['url'] ?? '')) ?>" placeholder="https://example.com"></div>
+    <div class="form-group"><label for="qr-payload-url">URL</label><input type="url" name="payload[url]" id="qr-payload-url" class="form-control itm-qr-field" required value="<?= sanitize((string)($p['url'] ?? '')) ?>" placeholder="https://example.com"></div>
     <?php
     $qrShowShorten = ($currentMode ?? 'dynamic') === 'dynamic';
     if ($qrShowShorten):
@@ -44,7 +44,7 @@ if ($type === 'website'): ?>
     <div class="form-group"><label>Phone (country code, no +)</label><input type="text" name="payload[number]" class="form-control itm-qr-field" value="<?= sanitize((string)($p['number'] ?? '')) ?>"></div>
     <div class="form-group"><label>Message</label><textarea name="payload[message]" class="form-control itm-qr-field" rows="3"><?= sanitize((string)($p['message'] ?? '')) ?></textarea></div>
 <?php elseif ($type === 'facebook' || $type === 'instagram'): ?>
-    <div class="form-group"><label>Profile URL</label><input type="url" name="payload[url]" class="form-control itm-qr-field" value="<?= sanitize((string)($p['url'] ?? '')) ?>"></div>
+    <div class="form-group"><label>Profile URL</label><input type="url" name="payload[url]" class="form-control itm-qr-field" required value="<?= sanitize((string)($p['url'] ?? '')) ?>" placeholder="https://example.com"></div>
 <?php elseif ($type === 'text'): ?>
     <div class="form-group"><label>Text</label><textarea name="payload[text]" class="form-control itm-qr-field" rows="5"><?= sanitize((string)($p['text'] ?? '')) ?></textarea></div>
 <?php elseif ($type === 'pdf' || $type === 'mp3'): ?>
