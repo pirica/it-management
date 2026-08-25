@@ -164,6 +164,17 @@ if (!function_exists('itm_parse_datetime_input')) {
     }
 }
 
+if (!function_exists('itm_date_input_iso_value')) {
+    /**
+     * Normalize stored or user date text to Y-m-d for HTML5 type="date" value attributes.
+     */
+    function itm_date_input_iso_value($rawValue)
+    {
+        $parsed = itm_parse_date_input($rawValue);
+        return ($parsed !== null && $parsed !== '') ? $parsed : '';
+    }
+}
+
 if (!function_exists('itm_format_date_display')) {
     /**
      * Display a stored or raw date as dd/mm/yyyy.

@@ -36,7 +36,7 @@ Separate from temporary SpeedyShare (`share_sessions` / `includes/itm_qr_share.p
 Bespoke wizard (not flattened CRUD `$uiColumns`). Gate-excluded in `scripts/data/ui_configuration_excluded_modules.txt` (synced with `docs/list_bespoke_UI.txt`). Intentional contract gaps documented in `scripts/data/ui_configuration_reviewed.json` (column sort, bulk delete).
 
 - **index.php** — thin router; list markup in `includes/partials/render.php` with `data-itm-new-button-managed` header row.
-- **create.php** — step 1 type grid; step 2 wizard with **Content** (1) and **Design** (2) tabs, live static preview, PNG/JPG/SVG download, **design templates** (`qr_design_templates` per employee).
+- **create.php** — step 1 type grid; step 2 wizard with **Content** (1) and **Design** (2) tabs, live static preview, PNG/JPG/SVG download, **design templates** (`qr_design_templates` per employee). Coupon **Expires** uses native `type="date"` picker; landing shows dd/mm/yyyy via `itm_format_date_display()`.
 - **edit.php** — same wizard for existing row.
 - **view.php** — preview, download buttons, scan table (last 50).
 - **r.php** / **asset.php** — public, no login (`ITM_QR_GENERATOR_PUBLIC`).
