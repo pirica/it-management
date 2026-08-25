@@ -20,13 +20,74 @@ function itm_short_url_generate_access_token()
     return bin2hex(random_bytes(32));
 }
 
-function itm_short_url_build_public_url($shortCode)
+function itm_short_url_default_public_base_prefix()
+{
+    return rtrim((string) BASE_URL, '/') . '/modules/short-url/go.php?c=';
+}
+
+function itm_short_url_normalize_public_base_url($url)
+{
+    $url = trim((string) $url);
+    if ($url === '') {
+        return null;
+    }
+    if (strlen($url) > 512) {
+        return false;
+    }
+    if (!preg_match('#^https?://#i', $url)) {
+        return false;
+    }
+    if (filter_var($url, FILTER_VALIDATE_URL) === false) {
+        return false;
+    }
+    $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+    if ($scheme !== 'http' && $scheme !== 'https') {
+        return false;
+    }
+    return $url;
+}
+
+function itm_short_url_parse_public_base_url_input(array $input)
+{
+    $raw = trim((string) ($input['public_base_url'] ?? ''));
+    if ($raw === '') {
+        return ['ok' => true, 'value' => null, 'error' => ''];
+    }
+    $normalized = itm_short_url_normalize_public_base_url($raw);
+    if ($normalized === false) {
+        return [
+            'ok' => false,
+            'value' => null,
+            'error' => 'Public base URL must be a valid http:// or https:// URL (max 512 characters), ending before the short code (for example …/go.php?c=).',
+        ];
+    }
+    return ['ok' => true, 'value' => $normalized, 'error' => ''];
+}
+
+function itm_short_url_resolve_public_base_prefix($conn, $companyId)
+{
+    $companyId = (int) $companyId;
+    if (!($conn instanceof mysqli) || $companyId <= 0) {
+        return itm_short_url_default_public_base_prefix();
+    }
+    $settings = itm_short_url_load_settings($conn, $companyId);
+    $custom = trim((string) ($settings['public_base_url'] ?? ''));
+    if ($custom !== '') {
+        return $custom;
+    }
+    return itm_short_url_default_public_base_prefix();
+}
+
+function itm_short_url_build_public_url($shortCode, $conn = null, $companyId = 0)
 {
     $code = trim((string) $shortCode);
     if ($code === '') {
         return '';
     }
-    return rtrim((string) BASE_URL, '/') . '/modules/short-url/go.php?c=' . rawurlencode($code);
+    $prefix = ($conn instanceof mysqli && (int) $companyId > 0)
+        ? itm_short_url_resolve_public_base_prefix($conn, $companyId)
+        : itm_short_url_default_public_base_prefix();
+    return $prefix . rawurlencode($code);
 }
 
 function itm_short_url_normalize_destination($url)
@@ -49,6 +110,7 @@ function itm_short_url_default_settings()
         'require_https_destination' => 0,
         'analytics_enabled' => 1,
         'allow_password_protect' => 1,
+        'public_base_url' => null,
     ];
 }
 
@@ -87,28 +149,33 @@ function itm_short_url_save_settings($conn, $companyId, $employeeId, array $inpu
     $requireHttps = !empty($input['require_https_destination']) ? 1 : 0;
     $analytics = !empty($input['analytics_enabled']) ? 1 : 0;
     $allowPassword = !empty($input['allow_password_protect']) ? 1 : 0;
+    $baseParse = itm_short_url_parse_public_base_url_input($input);
+    if (empty($baseParse['ok'])) {
+        return false;
+    }
+    $publicBaseUrl = $baseParse['value'];
 
     $existing = itm_short_url_load_settings($conn, $companyId);
     $existingId = (int) ($existing['id'] ?? 0);
 
     if ($existingId > 0) {
-        $sql = 'UPDATE short_url_settings SET default_expiry_days = ?, custom_code_min_length = ?, require_https_destination = ?, analytics_enabled = ?, allow_password_protect = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
+        $sql = 'UPDATE short_url_settings SET default_expiry_days = ?, custom_code_min_length = ?, require_https_destination = ?, analytics_enabled = ?, allow_password_protect = ?, public_base_url = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ? AND deleted_at IS NULL';
         $stmt = mysqli_prepare($conn, $sql);
         if (!$stmt) {
             return false;
         }
-        mysqli_stmt_bind_param($stmt, 'iiiiiiii', $defaultExpiryDays, $minLen, $requireHttps, $analytics, $allowPassword, $employeeId, $existingId, $companyId);
+        mysqli_stmt_bind_param($stmt, 'iiiiisiii', $defaultExpiryDays, $minLen, $requireHttps, $analytics, $allowPassword, $publicBaseUrl, $employeeId, $existingId, $companyId);
         $ok = mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
         return $ok;
     }
 
-    $sql = 'INSERT INTO short_url_settings (company_id, default_expiry_days, custom_code_min_length, require_https_destination, analytics_enabled, allow_password_protect, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+    $sql = 'INSERT INTO short_url_settings (company_id, default_expiry_days, custom_code_min_length, require_https_destination, analytics_enabled, allow_password_protect, public_base_url, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return false;
     }
-    mysqli_stmt_bind_param($stmt, 'iiiiiiii', $companyId, $defaultExpiryDays, $minLen, $requireHttps, $analytics, $allowPassword, $employeeId, $employeeId);
+    mysqli_stmt_bind_param($stmt, 'iiiiissii', $companyId, $defaultExpiryDays, $minLen, $requireHttps, $analytics, $allowPassword, $publicBaseUrl, $employeeId, $employeeId);
     $ok = mysqli_stmt_execute($stmt);
     mysqli_stmt_close($stmt);
     return $ok;
@@ -459,7 +526,7 @@ function itm_short_url_create_from_destination($conn, $companyId, $employeeId, $
         return ['ok' => false, 'errors' => ['Could not create short URL.']];
     }
     $row = itm_short_url_fetch_by_id($conn, $companyId, $employeeId, $newId);
-    return ['ok' => true, 'id' => $newId, 'row' => $row, 'public_url' => itm_short_url_build_public_url($validated['short_code'])];
+    return ['ok' => true, 'id' => $newId, 'row' => $row, 'public_url' => itm_short_url_build_public_url($validated['short_code'], $conn, $companyId)];
 }
 
 function itm_short_url_create_linked_qr($conn, array $shortRow)
@@ -476,7 +543,7 @@ function itm_short_url_create_linked_qr($conn, array $shortRow)
     if (!empty($shortRow['qr_code_id'])) {
         return ['ok' => true, 'qr_code_id' => (int) $shortRow['qr_code_id']];
     }
-    $publicUrl = itm_short_url_build_public_url((string) ($shortRow['short_code'] ?? ''));
+    $publicUrl = itm_short_url_build_public_url((string) ($shortRow['short_code'] ?? ''), $conn, $companyId);
     $title = trim((string) ($shortRow['title'] ?? 'Short URL QR'));
     if ($title === '') {
         $title = 'Short URL QR';

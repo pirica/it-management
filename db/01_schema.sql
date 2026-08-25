@@ -4867,6 +4867,7 @@ CREATE TABLE `short_url_settings` (
   `require_https_destination` TINYINT(1) NOT NULL DEFAULT 0,
   `analytics_enabled` TINYINT(1) NOT NULL DEFAULT 1,
   `allow_password_protect` TINYINT(1) NOT NULL DEFAULT 1,
+  `public_base_url` VARCHAR(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `active` tinyint(1) DEFAULT '1',
   `deleted_by` int DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,

@@ -21,7 +21,7 @@ if (!in_array($suActiveTab, $suAllowedTabs, true)) {
 $suRow = null;
 $suClicks = [];
 $suId = (int) ($_GET['id'] ?? 0);
-$suCanEditSettings = function_exists('itm_is_admin') && itm_is_admin();
+$suCanEditSettings = function_exists('itm_is_admin') && itm_is_admin($conn, $suEmployeeId);
 
 if ($crud_action === 'view' || $crud_action === 'edit') {
     if ($suId <= 0) {
@@ -94,4 +94,4 @@ if ($crud_action === 'index' || $crud_action === 'list_all') {
     }
 }
 
-$suPublicBase = rtrim((string) BASE_URL, '/') . '/modules/short-url/go.php?c=';
+$suPublicBase = itm_short_url_resolve_public_base_prefix($conn, $suCompanyId);
