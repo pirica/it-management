@@ -1,4 +1,6 @@
 (function () {
+    'use strict';
+
     var mount = document.getElementById('qr-preview-mount');
     if (!mount || !window.QRCode) {
         return;
@@ -6,12 +8,106 @@
 
     var form = document.getElementById('qr-wizard-form');
     var csrf = (window.ITM_CSRF_TOKEN || window.CSRF_TOKEN || '');
+    var hintEl = document.getElementById('qr-preview-hint');
+    var pngBtn = document.getElementById('qr-download-png');
+    var jpgBtn = document.getElementById('qr-download-jpg');
+    var svgBtn = document.getElementById('qr-download-svg');
 
     function getCorrectLevel(level) {
         var map = window.QRCode.CorrectLevel || {};
         var key = String(level || 'H').toUpperCase();
         if (map[key]) return map[key];
         return map.H || 2;
+    }
+
+    function formVal(f, name) {
+        if (!f) return '';
+        var el = f.querySelector('[name="' + name + '"]');
+        return el ? el.value : '';
+    }
+
+    function getEncodingMode() {
+        var modeEl = document.querySelector('[name="encoding_mode"]');
+        return modeEl ? String(modeEl.value || 'dynamic') : 'static';
+    }
+
+    function escapeVcardValue(value) {
+        return String(value || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+    }
+
+    function normalizeHttpUrl(url) {
+        url = String(url || '').trim();
+        if (!url) return '';
+        return /^https?:\/\//i.test(url) ? url : 'https://' + url;
+    }
+
+    function buildStaticPreview(type, f) {
+        if (!f || !type) return '';
+        if (type === 'website' || type === 'facebook' || type === 'instagram') {
+            return normalizeHttpUrl(formVal(f, 'payload[url]'));
+        }
+        if (type === 'text') return formVal(f, 'payload[text]');
+        if (type === 'phone') {
+            var phoneNum = formVal(f, 'payload[number]').replace(/[^\d+]/g, '');
+            return phoneNum ? 'tel:' + phoneNum : '';
+        }
+        if (type === 'sms') {
+            var smsNum = formVal(f, 'payload[number]').replace(/[^\d+]/g, '');
+            if (!smsNum) return '';
+            var smsMsg = formVal(f, 'payload[message]');
+            return 'sms:' + smsNum + (smsMsg ? '?body=' + encodeURIComponent(smsMsg) : '');
+        }
+        if (type === 'whatsapp') {
+            var waNum = formVal(f, 'payload[number]').replace(/\D/g, '');
+            if (!waNum) return '';
+            var waMsg = formVal(f, 'payload[message]');
+            return 'https://wa.me/' + waNum + (waMsg ? '?text=' + encodeURIComponent(waMsg) : '');
+        }
+        if (type === 'wifi') {
+            var ssid = formVal(f, 'payload[ssid]').trim();
+            if (!ssid) return '';
+            var enc = String(formVal(f, 'payload[encryption]') || 'WPA').toUpperCase();
+            if (enc === 'NOPASS' || enc === 'NONE') enc = 'nopass';
+            var pass = formVal(f, 'payload[password]');
+            var hiddenEl = f.querySelector('[name="payload[hidden]"]');
+            var hidden = hiddenEl && hiddenEl.checked ? 'true' : 'false';
+            return 'WIFI:T:' + enc + ';S:' + ssid + ';P:' + pass + ';H:' + hidden + ';;';
+        }
+        if (type === 'email') {
+            var to = formVal(f, 'payload[to]').trim();
+            if (!to) return '';
+            var q = [];
+            var subject = formVal(f, 'payload[subject]');
+            var body = formVal(f, 'payload[body]');
+            if (subject) q.push('subject=' + encodeURIComponent(subject));
+            if (body) q.push('body=' + encodeURIComponent(body));
+            return 'mailto:' + to + (q.length ? '?' + q.join('&') : '');
+        }
+        if (type === 'vcard') {
+            var lines = ['BEGIN:VCARD', 'VERSION:3.0'];
+            var first = formVal(f, 'payload[first_name]');
+            var last = formVal(f, 'payload[last_name]');
+            var fn = (first + ' ' + last).trim();
+            if (fn) lines.push('FN:' + escapeVcardValue(fn));
+            if (first || last) {
+                lines.push('N:' + escapeVcardValue(last) + ';' + escapeVcardValue(first) + ';;;');
+            }
+            var org = formVal(f, 'payload[organization]');
+            if (org) lines.push('ORG:' + escapeVcardValue(org));
+            var job = formVal(f, 'payload[title]');
+            if (job) lines.push('TITLE:' + escapeVcardValue(job));
+            var tel = formVal(f, 'payload[phone]');
+            if (tel) lines.push('TEL:' + escapeVcardValue(tel));
+            var mail = formVal(f, 'payload[email]');
+            if (mail) lines.push('EMAIL:' + escapeVcardValue(mail));
+            var site = formVal(f, 'payload[website]');
+            if (site) lines.push('URL:' + escapeVcardValue(site));
+            var addr = formVal(f, 'payload[address]');
+            if (addr) lines.push('ADR:;;' + escapeVcardValue(addr) + ';;;;');
+            lines.push('END:VCARD');
+            return lines.length > 2 ? lines.join('\n') : '';
+        }
+        return '';
     }
 
     function readDesign() {
@@ -29,11 +125,12 @@
         var darkEl = document.querySelector('[name="design[colorDark]"]');
         var lightEl = document.querySelector('[name="design[colorLight]"]');
         var levelEl = document.querySelector('[name="design[correctLevel]"]');
-        var modeEl = document.querySelector('[name="encoding_mode"]');
         var typeEl = document.querySelector('[name="type_slug"]');
+        var type = typeEl ? typeEl.value : '';
+        var mode = getEncodingMode();
         var text = '';
-        if (modeEl && modeEl.value === 'static') {
-            text = buildStaticPreview(typeEl ? typeEl.value : '', form);
+        if (mode === 'static') {
+            text = buildStaticPreview(type, form);
         }
         return {
             text: text,
@@ -45,31 +142,34 @@
         };
     }
 
-    function buildStaticPreview(type, f) {
-        if (!f || !type) return '';
-        function val(name) {
-            var el = f.querySelector('[name="' + name + '"]');
-            return el ? el.value : '';
+    function setDownloadButtonsEnabled(enabled) {
+        [pngBtn, jpgBtn, svgBtn].forEach(function (btn) {
+            if (!btn) return;
+            btn.disabled = !enabled;
+            btn.style.opacity = enabled ? '' : '0.5';
+            btn.style.cursor = enabled ? '' : 'not-allowed';
+        });
+    }
+
+    function updatePreviewHint() {
+        if (!hintEl || mount.dataset.qrText) return;
+        if (getEncodingMode() === 'dynamic') {
+            hintEl.textContent = 'Dynamic QR — save to generate the public redirect URL.';
+        } else {
+            hintEl.textContent = 'Preview updates as you type (static types).';
         }
-        if (type === 'website') {
-            var u = val('payload[url]');
-            if (!u) return '';
-            return /^https?:\/\//i.test(u) ? u : 'https://' + u;
-        }
-        if (type === 'text') return val('payload[text]');
-        if (type === 'phone') return 'tel:' + val('payload[number]').replace(/[^\d+]/g, '');
-        if (type === 'whatsapp') {
-            var n = val('payload[number]').replace(/\D/g, '');
-            var m = val('payload[message]');
-            return n ? 'https://wa.me/' + n + (m ? '?text=' + encodeURIComponent(m) : '') : '';
-        }
-        return '';
     }
 
     function drawQr() {
         var cfg = readDesign();
+        updatePreviewHint();
         if (!cfg.text) {
-            mount.innerHTML = '<p style="color:var(--text-secondary);">Enter content to preview (static), or save to get dynamic URL.</p>';
+            var mode = mount.dataset.qrText ? '' : getEncodingMode();
+            var msg = mode === 'dynamic'
+                ? 'Enter content to preview (static), or save to get dynamic URL.'
+                : 'Enter content above to preview the QR code.';
+            mount.innerHTML = '<p style="color:var(--text-secondary);">' + msg + '</p>';
+            setDownloadButtonsEnabled(false);
             return;
         }
         mount.innerHTML = '';
@@ -82,9 +182,13 @@
                 colorLight: cfg.colorLight,
                 correctLevel: getCorrectLevel(cfg.correctLevel)
             });
-            setTimeout(function () { applyLogoOverlay(cfg); }, 50);
+            setTimeout(function () {
+                applyLogoOverlay(cfg);
+                setDownloadButtonsEnabled(!!getCanvas());
+            }, 50);
         } catch (e) {
             mount.textContent = 'Preview unavailable.';
+            setDownloadButtonsEnabled(false);
         }
     }
 
@@ -176,6 +280,33 @@
             });
     }
 
+    function showWizardStep(step) {
+        var contentPane = document.getElementById('qr-wizard-step-content');
+        var designPane = document.getElementById('qr-wizard-step-design');
+        if (!contentPane || !designPane) return;
+        var isDesign = step === 'design';
+        contentPane.hidden = isDesign;
+        designPane.hidden = !isDesign;
+        document.querySelectorAll('.qr-wizard-step-btn').forEach(function (btn) {
+            var active = btn.getAttribute('data-qr-step') === step;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        if (isDesign) {
+            drawQr();
+        }
+    }
+
+    function validateContentStep() {
+        var titleEl = document.getElementById('qr-title');
+        if (titleEl && !titleEl.value.trim()) {
+            titleEl.focus();
+            titleEl.reportValidity();
+            return false;
+        }
+        return true;
+    }
+
     if (form) {
         form.addEventListener('input', function (ev) {
             var t = ev.target;
@@ -193,6 +324,29 @@
                 handleQrUpload(t);
             }
         });
+
+        document.querySelectorAll('.qr-wizard-step-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var step = btn.getAttribute('data-qr-step') || 'content';
+                if (step === 'design' && !validateContentStep()) return;
+                showWizardStep(step);
+            });
+        });
+
+        var nextBtn = document.getElementById('qr-wizard-next');
+        if (nextBtn) {
+            nextBtn.addEventListener('click', function () {
+                if (!validateContentStep()) return;
+                showWizardStep('design');
+            });
+        }
+
+        var backBtn = document.getElementById('qr-wizard-back');
+        if (backBtn) {
+            backBtn.addEventListener('click', function () {
+                showWizardStep('content');
+            });
+        }
     }
 
     var logoUpload = document.getElementById('qr-logo-upload');
@@ -202,9 +356,6 @@
         });
     }
 
-    var pngBtn = document.getElementById('qr-download-png');
-    var jpgBtn = document.getElementById('qr-download-jpg');
-    var svgBtn = document.getElementById('qr-download-svg');
     if (pngBtn) pngBtn.addEventListener('click', downloadPng);
     if (jpgBtn) jpgBtn.addEventListener('click', downloadJpg);
     if (svgBtn) svgBtn.addEventListener('click', downloadSvg);

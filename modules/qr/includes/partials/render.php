@@ -38,8 +38,14 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
         .qr-preview-panel { border:1px solid var(--border); border-radius:8px; padding:16px; text-align:center; min-height:280px; }
         .qr-download-actions { margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
         .qr-wizard-steps { display:flex; gap:8px; margin-bottom:16px; }
-        .qr-wizard-steps span { padding:6px 12px; border-radius:6px; background:var(--bg-secondary); }
-        .qr-wizard-steps span.active { background:var(--accent); color:#fff; }
+        .qr-wizard-step-btn {
+            padding:6px 12px; border-radius:6px; border:1px solid var(--border);
+            background:var(--bg-secondary); color:var(--text-primary); cursor:pointer; font:inherit;
+        }
+        .qr-wizard-step-btn:hover { border-color:var(--accent); }
+        .qr-wizard-step-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+        .qr-wizard-pane[hidden] { display:none !important; }
+        .qr-wizard-nav { display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
     </style>
 </head>
 <body>
@@ -141,11 +147,12 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
                     <?php if ($crud_action === 'edit'): ?><input type="hidden" name="id" value="<?= (int)$qrId ?>"><?php endif; ?>
                     <div class="card" style="display:grid;grid-template-columns:1fr 320px;gap:24px;">
                         <div>
-                            <div class="qr-wizard-steps">
-                                <span class="active" title="Content">1</span>
-                                <span title="Design">2</span>
+                            <div class="qr-wizard-steps" role="tablist" aria-label="QR wizard steps">
+                                <button type="button" class="qr-wizard-step-btn active" data-qr-step="content" role="tab" aria-selected="true" aria-controls="qr-wizard-step-content" title="Content">1</button>
+                                <button type="button" class="qr-wizard-step-btn" data-qr-step="design" role="tab" aria-selected="false" aria-controls="qr-wizard-step-design" title="Design">2</button>
                             </div>
-                            <div class="form-group"><label>Title</label><input type="text" name="title" class="form-control" required value="<?= sanitize((string)($qrRow['title'] ?? '')) ?>"></div>
+                            <div id="qr-wizard-step-content" class="qr-wizard-pane" role="tabpanel">
+                            <div class="form-group"><label>Title</label><input type="text" name="title" id="qr-title" class="form-control" required value="<?= sanitize((string)($qrRow['title'] ?? '')) ?>"></div>
                             <?php
                             $catMeta = $qrCatalog[$qrSelectedType];
                             $canPickMode = empty($catMeta['dynamic_only']) && empty($catMeta['static_only']);
@@ -165,7 +172,11 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
                             <p class="join-expiry"><?= $currentMode === 'dynamic' ? 'Dynamic QR — same printed code can be updated.' : 'Static QR — content is embedded directly.' ?></p>
                             <?php endif; ?>
                             <?php include __DIR__ . '/form_fields.php'; ?>
-                            <hr>
+                            <div class="qr-wizard-nav">
+                                <button type="button" class="btn btn-primary" id="qr-wizard-next" title="Continue to design">Next →</button>
+                            </div>
+                            </div>
+                            <div id="qr-wizard-step-design" class="qr-wizard-pane" role="tabpanel" hidden>
                             <h3 title="Design">Design</h3>
                             <div class="form-group"><label>Size</label><input type="number" name="design[size]" min="128" max="1024" class="form-control itm-qr-design" value="<?= (int)$qrDesign['size'] ?>"></div>
                             <div class="form-group"><label>Dark color</label><input type="color" name="design[colorDark]" class="itm-qr-design" value="<?= sanitize($qrDesign['colorDark']) ?>"></div>
@@ -176,7 +187,11 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
                                 </select>
                             </div>
                             <div class="form-group"><label>Logo overlay (optional)</label><input type="file" id="qr-logo-upload" accept="image/*"><input type="hidden" name="design[logo_path]" id="qr-logo-path" value="<?= sanitize((string)$qrDesign['logo_path']) ?>"></div>
-                            <button type="submit" class="btn btn-primary" title="Save">💾</button>
+                            <div class="qr-wizard-nav">
+                                <button type="button" class="btn" id="qr-wizard-back" title="Back to content">← Back</button>
+                                <button type="submit" class="btn btn-primary" title="Save">💾</button>
+                            </div>
+                            </div>
                         </div>
                         <div class="qr-preview-panel">
                             <div id="qr-preview-mount"></div>
