@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['qr_action']) && $_POS
                     $shortUrlId = (int) $existingForShort['short_url_id'];
                     $suExisting = itm_short_url_fetch_by_id($conn, $qrCompanyId, $qrEmployeeId, $shortUrlId);
                     if ($suExisting) {
-                        $payload['url'] = itm_short_url_build_public_url((string) $suExisting['short_code']);
+                        $payload['url'] = itm_short_url_build_public_url((string) $suExisting['short_code'], $conn, $qrCompanyId);
                     }
                 }
             }

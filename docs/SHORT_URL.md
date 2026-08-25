@@ -6,7 +6,7 @@ Employee-scoped link shortener with custom codes, optional password and expirati
 
 - `short_urls` — owner `employee_id` + `company_id`; `destination_url`, `short_code`, `access_token`, `password_hash`, `expires_at`, `click_count`, `qr_code_id`
 - `short_url_clicks` — per-click analytics (no audit triggers)
-- `short_url_settings` — per-company defaults (one row per tenant)
+- `short_url_settings` — per-company defaults (one row per tenant); optional `public_base_url` prefix before the short code (falls back to `BASE_URL` + `/modules/short-url/go.php?c=`)
 
 ## Public endpoint (no login)
 
@@ -16,7 +16,7 @@ Employee-scoped link shortener with custom codes, optional password and expirati
 ## UI tabs
 
 - **Links** — hero shorten form + personal link library
-- **Configuration** — company defaults (admin edit): default expiry, min code length, HTTPS requirement, analytics toggle, password toggle
+- **Configuration** — company defaults (admin edit): default expiry, min code length, HTTPS requirement, analytics toggle, password toggle, **public base URL** (prefix ending with `?c=`; blank uses application `BASE_URL`)
 
 ## QR integration
 

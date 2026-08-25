@@ -56,14 +56,54 @@ if (!$colRes || mysqli_num_rows($colRes) === 0) {
 }
 su_verify_pass('qr_codes.short_url_id column exists.');
 
-$publicSample = itm_short_url_build_public_url('abc123');
+$companyId = 1;
+
+$publicSample = itm_short_url_build_public_url('abc123', $conn, $companyId);
 if (strpos($publicSample, '/modules/short-url/go.php?c=abc123') === false) {
     su_verify_fail('Public URL builder failed.');
 } else {
     su_verify_pass('Public URL builder OK.');
 }
 
-$companyId = 1;
+$colPublicBase = mysqli_query($conn, "SHOW COLUMNS FROM short_url_settings LIKE 'public_base_url'");
+if (!$colPublicBase || mysqli_num_rows($colPublicBase) === 0) {
+    su_verify_fail('short_url_settings.public_base_url column missing — apply db/migrations/short_url_public_base_url.sql.');
+    exit(1);
+}
+su_verify_pass('short_url_settings.public_base_url column exists.');
+
+$customBase = 'https://short.example.test/it-management/modules/short-url/go.php?c=';
+if (empty(itm_short_url_load_settings($conn, $companyId)['id'])) {
+    itm_short_url_save_settings($conn, $companyId, 1, [
+        'default_expiry_days' => '',
+        'custom_code_min_length' => 4,
+        'require_https_destination' => '',
+        'analytics_enabled' => '1',
+        'allow_password_protect' => '1',
+        'public_base_url' => '',
+    ]);
+}
+$settingsSql = 'UPDATE short_url_settings SET public_base_url = ? WHERE company_id = ? AND deleted_at IS NULL';
+$settingsStmt = mysqli_prepare($conn, $settingsSql);
+if ($settingsStmt) {
+    mysqli_stmt_bind_param($settingsStmt, 'si', $customBase, $companyId);
+    mysqli_stmt_execute($settingsStmt);
+    mysqli_stmt_close($settingsStmt);
+}
+$customPublic = itm_short_url_build_public_url('xyz789', $conn, $companyId);
+if ($customPublic !== $customBase . 'xyz789') {
+    su_verify_fail('Custom public_base_url not applied.');
+} else {
+    su_verify_pass('Custom public_base_url OK.');
+}
+$clearSql = 'UPDATE short_url_settings SET public_base_url = NULL WHERE company_id = ? AND deleted_at IS NULL';
+$clearStmt = mysqli_prepare($conn, $clearSql);
+if ($clearStmt) {
+    mysqli_stmt_bind_param($clearStmt, 'i', $companyId);
+    mysqli_stmt_execute($clearStmt);
+    mysqli_stmt_close($clearStmt);
+}
+
 $testEmp = itm_script_test_employee_create($conn, $companyId, ['script_slug' => 'short_url_verify']);
 if (empty($testEmp['id'])) {
     su_verify_fail('Could not create disposable test employee.');

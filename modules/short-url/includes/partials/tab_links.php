@@ -95,7 +95,7 @@ $allowPassword = !empty($suSettings['allow_password_protect']);
         <?php if (empty($suListRows)): ?>
             <tr><td colspan="6">No short links yet. Paste a URL above to get started.</td></tr>
         <?php else: foreach ($suListRows as $lr):
-            $pub = itm_short_url_build_public_url((string) $lr['short_code']);
+            $pub = itm_short_url_build_public_url((string) $lr['short_code'], $conn, $suCompanyId);
             $dest = (string) $lr['destination_url'];
             $destShort = strlen($dest) > 48 ? substr($dest, 0, 45) . '…' : $dest;
             $exp = trim((string) ($lr['expires_at'] ?? ''));

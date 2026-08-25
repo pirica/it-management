@@ -14,8 +14,14 @@ $suCompanyId = (int) ($company_id ?? 0);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_short_url_settings'])) {
     itm_require_post_csrf();
-    if (!function_exists('itm_is_admin') || !itm_is_admin()) {
+    if (!function_exists('itm_is_admin') || !itm_is_admin($conn, $suEmployeeId)) {
         $_SESSION['su_flash_error'] = 'Only administrators can save short URL settings.';
+        header('Location: index.php?tab=configuration');
+        exit;
+    }
+    $baseParse = itm_short_url_parse_public_base_url_input($_POST);
+    if (empty($baseParse['ok'])) {
+        $_SESSION['su_flash_error'] = $baseParse['error'] !== '' ? $baseParse['error'] : 'Invalid public base URL.';
         header('Location: index.php?tab=configuration');
         exit;
     }

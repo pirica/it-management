@@ -216,7 +216,7 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
                             $qrLinkedShort = itm_short_url_fetch_by_id($conn, (int)$qrCompanyId, (int)$qrEmployeeId, $qrShortUrlId);
                             if ($qrLinkedShort):
                         ?>
-                        <p>Short URL: <code><?= sanitize(itm_short_url_build_public_url((string)$qrLinkedShort['short_code'])) ?></code>
+                        <p>Short URL: <code><?= sanitize(itm_short_url_build_public_url((string)$qrLinkedShort['short_code'], $conn, (int)$qrCompanyId)) ?></code>
                             (<a class="itm-plain-link" href="<?= sanitize(BASE_URL . 'modules/short-url/view.php?id=' . $qrShortUrlId) ?>">view</a>, <?= (int)$qrLinkedShort['click_count'] ?> clicks)</p>
                         <?php endif; endif; ?>
                         <?php if ((string)$qrRow['encoding_mode'] === 'static'): ?>

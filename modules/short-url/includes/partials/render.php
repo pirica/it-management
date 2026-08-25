@@ -52,7 +52,7 @@ $csrfToken = itm_get_csrf_token();
 
             <?php elseif ($crud_action === 'view' && $suRow): ?>
                 <?php
-                $pub = itm_short_url_build_public_url((string) $suRow['short_code']);
+                $pub = itm_short_url_build_public_url((string) $suRow['short_code'], $conn, $suCompanyId);
                 $exp = trim((string) ($suRow['expires_at'] ?? ''));
                 $expDisplay = $exp !== '' && function_exists('itm_format_date_display') ? itm_format_date_display(substr($exp, 0, 10)) : ($exp !== '' ? substr($exp, 0, 10) : '—');
                 ?>

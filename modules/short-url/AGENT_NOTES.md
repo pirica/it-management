@@ -10,7 +10,7 @@ Bidirectional integration with `modules/qr/`: short links can spawn dynamic webs
 
 - **short_urls** — per-employee links (`destination_url`, `short_code`, `access_token`, `password_hash`, `expires_at`, `click_count`, `qr_code_id`)
 - **short_url_clicks** — click analytics (no audit triggers)
-- **short_url_settings** — per-company defaults (expiry days, code min length, HTTPS requirement, analytics, password allow)
+- **short_url_settings** — per-company defaults (expiry days, code min length, HTTPS requirement, analytics, password allow, **public_base_url**)
 
 ## 3. Required Relationships
 
@@ -24,7 +24,7 @@ Bidirectional integration with `modules/qr/`: short links can spawn dynamic webs
 - Authenticated queries: `company_id` + `employee_id` = session owner.
 - Public `go.php` resolves by `?c=` (short_code) or `?t=` (access_token); rate-limited; password gate via session key.
 - Expired links return HTTP 410.
-- Configuration tab: admin edit only (`itm_is_admin()`); all users read.
+- Configuration tab: admin edit only (`itm_is_admin($conn, $employeeId)`); all users read. `public_base_url` optional — valid `http`/`https` prefix before short code; empty uses `itm_short_url_default_public_base_prefix()` (`BASE_URL` + `/modules/short-url/go.php?c=`).
 - No Add sample data.
 
 ## 5. UI Behavior Requirements
