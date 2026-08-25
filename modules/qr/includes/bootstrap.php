@@ -15,6 +15,7 @@ unset($_SESSION['qr_flash_success'], $_SESSION['qr_flash_error']);
 $qrRow = null;
 $qrPayload = [];
 $qrDesign = itm_qr_generator_default_design();
+$qrDesignTemplates = [];
 $qrScans = [];
 $qrId = (int) ($_GET['id'] ?? 0);
 $qrSelectedType = trim((string) ($_GET['type'] ?? ''));
@@ -51,6 +52,10 @@ if ($crud_action === 'view' || $crud_action === 'edit') {
             mysqli_stmt_close($scanStmt);
         }
     }
+}
+
+if ($conn && $qrCompanyId > 0 && $qrEmployeeId > 0) {
+    $qrDesignTemplates = itm_qr_generator_list_design_templates($conn, $qrCompanyId, $qrEmployeeId);
 }
 
 $qrListRows = [];

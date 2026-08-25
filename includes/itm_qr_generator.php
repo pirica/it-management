@@ -554,3 +554,147 @@ function itm_qr_generator_type_label($typeSlug)
     }
     return (string) $catalog[$typeSlug]['label'];
 }
+
+/**
+ * @return array<int, array{id:int, name:string, design:array}>
+ */
+function itm_qr_generator_list_design_templates($conn, $companyId, $employeeId)
+{
+    $companyId = (int) $companyId;
+    $employeeId = (int) $employeeId;
+    if (!($conn instanceof mysqli) || $companyId <= 0 || $employeeId <= 0) {
+        return [];
+    }
+    $sql = 'SELECT id, name, design_json FROM qr_design_templates WHERE company_id = ? AND employee_id = ? AND deleted_at IS NULL ORDER BY name ASC';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return [];
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $employeeId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $rows = [];
+    while ($res && ($r = mysqli_fetch_assoc($res))) {
+        $rows[] = [
+            'id' => (int) ($r['id'] ?? 0),
+            'name' => (string) ($r['name'] ?? ''),
+            'design' => itm_qr_generator_normalize_design(itm_qr_generator_decode_json_field($r['design_json'] ?? '')),
+        ];
+    }
+    mysqli_stmt_close($stmt);
+    return $rows;
+}
+
+/**
+ * @return array<int, array{id:int, name:string, design:array}>
+ */
+function itm_qr_generator_design_templates_for_api($conn, $companyId, $employeeId)
+{
+    $out = [];
+    foreach (itm_qr_generator_list_design_templates($conn, $companyId, $employeeId) as $row) {
+        $out[] = [
+            'id' => $row['id'],
+            'name' => $row['name'],
+            'design' => $row['design'],
+        ];
+    }
+    return $out;
+}
+
+/**
+ * @return array{ok:bool, error:string, id:int}
+ */
+function itm_qr_generator_save_design_template($conn, $companyId, $employeeId, $name, array $designRaw, $actorId)
+{
+    $companyId = (int) $companyId;
+    $employeeId = (int) $employeeId;
+    $actorId = (int) $actorId;
+    $name = trim((string) $name);
+    if (!($conn instanceof mysqli) || $companyId <= 0 || $employeeId <= 0) {
+        return ['ok' => false, 'error' => 'Session required.', 'id' => 0];
+    }
+    if ($name === '' || strlen($name) > 120) {
+        return ['ok' => false, 'error' => 'Template name is required (max 120 characters).', 'id' => 0];
+    }
+    $design = itm_qr_generator_normalize_design($designRaw);
+    $designJson = json_encode($design, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    $findSql = 'SELECT id FROM qr_design_templates WHERE company_id = ? AND employee_id = ? AND name = ? AND deleted_at IS NULL LIMIT 1';
+    $findStmt = mysqli_prepare($conn, $findSql);
+    if (!$findStmt) {
+        return ['ok' => false, 'error' => 'Database error.', 'id' => 0];
+    }
+    mysqli_stmt_bind_param($findStmt, 'iis', $companyId, $employeeId, $name);
+    mysqli_stmt_execute($findStmt);
+    $findRes = mysqli_stmt_get_result($findStmt);
+    $existing = $findRes ? mysqli_fetch_assoc($findRes) : null;
+    mysqli_stmt_close($findStmt);
+
+    if ($existing) {
+        $id = (int) ($existing['id'] ?? 0);
+        $updSql = 'UPDATE qr_design_templates SET design_json = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ? AND employee_id = ? AND deleted_at IS NULL';
+        $updStmt = mysqli_prepare($conn, $updSql);
+        if (!$updStmt) {
+            return ['ok' => false, 'error' => 'Database error.', 'id' => 0];
+        }
+        mysqli_stmt_bind_param($updStmt, 'siiii', $designJson, $actorId, $id, $companyId, $employeeId);
+        $ok = mysqli_stmt_execute($updStmt);
+        mysqli_stmt_close($updStmt);
+        if (!$ok) {
+            return ['ok' => false, 'error' => 'Could not update template.', 'id' => 0];
+        }
+        return ['ok' => true, 'error' => '', 'id' => $id];
+    }
+
+    $insSql = 'INSERT INTO qr_design_templates (company_id, employee_id, name, design_json, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?)';
+    $insStmt = mysqli_prepare($conn, $insSql);
+    if (!$insStmt) {
+        return ['ok' => false, 'error' => 'Database error.', 'id' => 0];
+    }
+    mysqli_stmt_bind_param($insStmt, 'iissii', $companyId, $employeeId, $name, $designJson, $actorId, $actorId);
+    $ok = mysqli_stmt_execute($insStmt);
+    $newId = (int) mysqli_insert_id($conn);
+    mysqli_stmt_close($insStmt);
+    if (!$ok || $newId <= 0) {
+        return ['ok' => false, 'error' => 'Could not save template.', 'id' => 0];
+    }
+    return ['ok' => true, 'error' => '', 'id' => $newId];
+}
+
+/**
+ * @return array{ok:bool, error:string}
+ */
+function itm_qr_generator_delete_design_template($conn, $companyId, $employeeId, $id, $actorId)
+{
+    $companyId = (int) $companyId;
+    $employeeId = (int) $employeeId;
+    $id = (int) $id;
+    $actorId = (int) $actorId;
+    if (!($conn instanceof mysqli) || $companyId <= 0 || $employeeId <= 0 || $id <= 0) {
+        return ['ok' => false, 'error' => 'Invalid request.'];
+    }
+    if (function_exists('itm_crud_build_soft_delete_sql')) {
+        $sql = itm_crud_build_soft_delete_sql('qr_design_templates', 'WHERE id = ? AND company_id = ? AND employee_id = ?', $actorId);
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return ['ok' => false, 'error' => 'Database error.'];
+        }
+        mysqli_stmt_bind_param($stmt, 'iii', $id, $companyId, $employeeId);
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+        return $ok ? ['ok' => true, 'error' => ''] : ['ok' => false, 'error' => 'Template not found.'];
+    }
+    $sql = 'UPDATE qr_design_templates SET active = 0, deleted_by = ?, deleted_at = NOW() WHERE id = ? AND company_id = ? AND employee_id = ? AND deleted_at IS NULL';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return ['ok' => false, 'error' => 'Database error.'];
+    }
+    mysqli_stmt_bind_param($stmt, 'iiii', $actorId, $id, $companyId, $employeeId);
+    $ok = mysqli_stmt_execute($stmt);
+    $affected = mysqli_stmt_affected_rows($stmt);
+    mysqli_stmt_close($stmt);
+    if (!$ok || $affected < 1) {
+        return ['ok' => false, 'error' => 'Template not found.'];
+    }
+    return ['ok' => true, 'error' => ''];
+}

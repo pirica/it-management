@@ -144,7 +144,7 @@ function colorText($text, $type) {
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/count_db_tables.php` | Counts live tables in `information_schema` for `itmanagement`, echoes the total as plain text, and overwrites `scripts/number_db_tables.txt`. Fresh `db/` import: **224** tables (must match `CREATE TABLE` count in `db/01_schema.sql`; [count_db_tables.php](http://localhost/it-management/scripts/count_db_tables.php) / [verify_database_schema.php?run=1](http://localhost/it-management/scripts/verify_database_schema.php?run=1)). Browser and CLI; **no login** (exempt from `run=1` usage landing — see `itm_script_browser_usage_exempt_basenames()`). |
+| `php scripts/count_db_tables.php` | Counts live tables in `information_schema` for `itmanagement`, echoes the total as plain text, and overwrites `scripts/number_db_tables.txt`. Fresh `db/` import: **225** tables (must match `CREATE TABLE` count in `db/01_schema.sql`; [count_db_tables.php](http://localhost/it-management/scripts/count_db_tables.php) / [verify_database_schema.php?run=1](http://localhost/it-management/scripts/verify_database_schema.php?run=1)). Browser and CLI; **no login** (exempt from `run=1` usage landing — see `itm_script_browser_usage_exempt_basenames()`). |
 | `php scripts/verify_count_db_tables_recon.php` | Low-impact recon contract: `count_db_tables.php` stays no-auth digits-only output (no table-name enumeration). |
 
 Catalog: `scripts/scripts.php`.

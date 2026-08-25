@@ -12,6 +12,7 @@
     var pngBtn = document.getElementById('qr-download-png');
     var jpgBtn = document.getElementById('qr-download-jpg');
     var svgBtn = document.getElementById('qr-download-svg');
+    var templateSelect = document.getElementById('qr-design-template-select');
 
     function getCorrectLevel(level) {
         var map = window.QRCode.CorrectLevel || {};
@@ -39,6 +40,15 @@
         url = String(url || '').trim();
         if (!url) return '';
         return /^https?:\/\//i.test(url) ? url : 'https://' + url;
+    }
+
+    function resolveLogoUrl(path) {
+        path = String(path || '').trim();
+        if (!path) return '';
+        if (/^https?:\/\//i.test(path) || path.indexOf('/') === 0) {
+            return path;
+        }
+        return '../../modules/explorer/file.php?path=' + encodeURIComponent(path);
     }
 
     function buildStaticPreview(type, f) {
@@ -110,6 +120,36 @@
         return '';
     }
 
+    function readDesignFields() {
+        var sizeEl = document.querySelector('[name="design[size]"]');
+        var darkEl = document.querySelector('[name="design[colorDark]"]');
+        var lightEl = document.querySelector('[name="design[colorLight]"]');
+        var levelEl = document.querySelector('[name="design[correctLevel]"]');
+        var pathInput = document.getElementById('qr-logo-path');
+        return {
+            size: parseInt(sizeEl && sizeEl.value ? sizeEl.value : '256', 10),
+            colorDark: darkEl ? darkEl.value : '#000000',
+            colorLight: lightEl ? lightEl.value : '#ffffff',
+            correctLevel: levelEl ? levelEl.value : 'H',
+            logo_path: pathInput ? pathInput.value : ''
+        };
+    }
+
+    function applyDesignFields(design) {
+        if (!design) return;
+        var sizeEl = document.querySelector('[name="design[size]"]');
+        var darkEl = document.querySelector('[name="design[colorDark]"]');
+        var lightEl = document.querySelector('[name="design[colorLight]"]');
+        var levelEl = document.querySelector('[name="design[correctLevel]"]');
+        var pathInput = document.getElementById('qr-logo-path');
+        if (sizeEl && design.size) sizeEl.value = String(design.size);
+        if (darkEl && design.colorDark) darkEl.value = design.colorDark;
+        if (lightEl && design.colorLight) lightEl.value = design.colorLight;
+        if (levelEl && design.correctLevel) levelEl.value = design.correctLevel;
+        if (pathInput) pathInput.value = design.logo_path || '';
+        drawQr();
+    }
+
     function readDesign() {
         if (mount.dataset.qrText) {
             return {
@@ -118,13 +158,10 @@
                 colorDark: mount.dataset.dark || '#000000',
                 colorLight: mount.dataset.light || '#ffffff',
                 correctLevel: mount.dataset.level || 'H',
-                logo: mount.dataset.logo || ''
+                logo: resolveLogoUrl(mount.dataset.logo || '')
             };
         }
-        var sizeEl = document.querySelector('[name="design[size]"]');
-        var darkEl = document.querySelector('[name="design[colorDark]"]');
-        var lightEl = document.querySelector('[name="design[colorLight]"]');
-        var levelEl = document.querySelector('[name="design[correctLevel]"]');
+        var fields = readDesignFields();
         var typeEl = document.querySelector('[name="type_slug"]');
         var type = typeEl ? typeEl.value : '';
         var mode = getEncodingMode();
@@ -134,11 +171,11 @@
         }
         return {
             text: text,
-            size: parseInt(sizeEl && sizeEl.value ? sizeEl.value : '256', 10),
-            colorDark: darkEl ? darkEl.value : '#000000',
-            colorLight: lightEl ? lightEl.value : '#ffffff',
-            correctLevel: levelEl ? levelEl.value : 'H',
-            logo: document.getElementById('qr-logo-path') ? document.getElementById('qr-logo-path').value : ''
+            size: fields.size,
+            colorDark: fields.colorDark,
+            colorLight: fields.colorLight,
+            correctLevel: fields.correctLevel,
+            logo: resolveLogoUrl(fields.logo_path)
         };
     }
 
@@ -307,6 +344,79 @@
         return true;
     }
 
+    function rebuildTemplateSelect(templates, selectedId) {
+        if (!templateSelect) return;
+        var keep = String(selectedId || templateSelect.value || '');
+        templateSelect.innerHTML = '';
+        var blank = document.createElement('option');
+        blank.value = '';
+        blank.textContent = '— Select template —';
+        templateSelect.appendChild(blank);
+        (templates || []).forEach(function (tpl) {
+            var opt = document.createElement('option');
+            opt.value = String(tpl.id);
+            opt.textContent = tpl.name;
+            opt.setAttribute('data-design', JSON.stringify(tpl.design || {}));
+            templateSelect.appendChild(opt);
+        });
+        if (keep) {
+            templateSelect.value = keep;
+        }
+    }
+
+    function applySelectedTemplate() {
+        if (!templateSelect) return;
+        var opt = templateSelect.options[templateSelect.selectedIndex];
+        if (!opt || !opt.value) return;
+        var raw = opt.getAttribute('data-design') || '';
+        if (!raw) return;
+        try {
+            applyDesignFields(JSON.parse(raw));
+        } catch (e) {
+            /* ignore malformed template */
+        }
+    }
+
+    function saveDesignTemplate() {
+        var name = window.prompt('Template name');
+        if (!name || !String(name).trim()) return;
+        var fd = new FormData();
+        fd.append('csrf_token', csrf);
+        fd.append('qr_action', 'save_design_template');
+        fd.append('name', String(name).trim());
+        fd.append('design_json', JSON.stringify(readDesignFields()));
+        fetch('index.php', { method: 'POST', body: fd })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.ok) {
+                    alert((data && data.error) || 'Could not save template.');
+                    return;
+                }
+                rebuildTemplateSelect(data.templates, data.id);
+            });
+    }
+
+    function deleteDesignTemplate() {
+        if (!templateSelect || !templateSelect.value) {
+            alert('Select a template to delete.');
+            return;
+        }
+        if (!window.confirm('Delete this design template?')) return;
+        var fd = new FormData();
+        fd.append('csrf_token', csrf);
+        fd.append('qr_action', 'delete_design_template');
+        fd.append('template_id', templateSelect.value);
+        fetch('index.php', { method: 'POST', body: fd })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.ok) {
+                    alert((data && data.error) || 'Could not delete template.');
+                    return;
+                }
+                rebuildTemplateSelect(data.templates, '');
+            });
+    }
+
     if (form) {
         form.addEventListener('input', function (ev) {
             var t = ev.target;
@@ -323,30 +433,38 @@
             if (t.classList && t.classList.contains('itm-qr-upload')) {
                 handleQrUpload(t);
             }
+            if (t.id === 'qr-design-template-select') {
+                applySelectedTemplate();
+            }
         });
 
-        document.querySelectorAll('.qr-wizard-step-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var step = btn.getAttribute('data-qr-step') || 'content';
+        form.addEventListener('click', function (ev) {
+            var t = ev.target;
+            if (!t || !t.closest) return;
+            var stepBtn = t.closest('.qr-wizard-step-btn');
+            if (stepBtn) {
+                var step = stepBtn.getAttribute('data-qr-step') || 'content';
                 if (step === 'design' && !validateContentStep()) return;
                 showWizardStep(step);
-            });
-        });
-
-        var nextBtn = document.getElementById('qr-wizard-next');
-        if (nextBtn) {
-            nextBtn.addEventListener('click', function () {
+                return;
+            }
+            if (t.id === 'qr-wizard-next' || (t.closest && t.closest('#qr-wizard-next'))) {
                 if (!validateContentStep()) return;
                 showWizardStep('design');
-            });
-        }
-
-        var backBtn = document.getElementById('qr-wizard-back');
-        if (backBtn) {
-            backBtn.addEventListener('click', function () {
+                return;
+            }
+            if (t.id === 'qr-wizard-back' || (t.closest && t.closest('#qr-wizard-back'))) {
                 showWizardStep('content');
-            });
-        }
+                return;
+            }
+            if (t.id === 'qr-design-template-save' || (t.closest && t.closest('#qr-design-template-save'))) {
+                saveDesignTemplate();
+                return;
+            }
+            if (t.id === 'qr-design-template-delete' || (t.closest && t.closest('#qr-design-template-delete'))) {
+                deleteDesignTemplate();
+            }
+        });
     }
 
     var logoUpload = document.getElementById('qr-logo-upload');
