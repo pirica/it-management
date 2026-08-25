@@ -27,6 +27,7 @@
 - ✅ Saved report views — Save Tickets/Equipment/Expenses list filters and columns; **My reports** on Reports Hub with export, share, and optional email schedule (`docs/SAVED_REPORT_VIEWS.md`)
 - ✅ Hotel Booking — Public guest portal at `booking/` and Admin **🏨 Hospitality** modules (`docs/BOOKING.md`)
 - ✅ Hotel Booking Distribution — Partner channel API (JSON/OpenTravel XML, availability, book/modify/cancel, ARI push/pull) with per-channel keys (`docs/HOTEL_BOOKING_DISTRIBUTION.md`)
+- ✅ Short URLs — Employee-scoped link shortener with custom codes, optional password/expiry, click analytics, and QR integration; public redirect at `go.php?c=` (`docs/SHORT_URL.md`)
 <!-- [<img src="docs/readme/org_chart.png" width="20" alt="Org Chart" />](docs/readme/org_chart.png) -->
 <h2 align="center" id="login">Login</h2>
 
@@ -235,11 +236,11 @@
 
 #### Notes, bookmarks, and personal productivity
 
-`notes`, `note_labels`, `note_share_sessions`, `bookmarks`, `bookmark_folders`, `bookmark_share_sessions`, `todo`, `todo_categories`, `todo_share_sessions`, `private_contacts`, `private_contact_share_sessions`
+`notes`, `note_labels`, `note_share_sessions`, `bookmarks`, `bookmark_folders`, `bookmark_share_sessions`, `todo`, `todo_categories`, `todo_share_sessions`, `private_contacts`, `private_contact_share_sessions`, `short_urls`, `short_url_clicks`, `short_url_settings`
 
-**Purpose:** Personal and shared productivity — labelled notes, hierarchical bookmarks, to-do lists, and user-scoped contacts (vault-encrypted PII with optional temporary QR/share links).
+**Purpose:** Personal and shared productivity — labelled notes, hierarchical bookmarks, to-do lists, user-scoped contacts (vault-encrypted PII with optional temporary QR/share links), and employee-scoped short URLs with public `go.php?c=` redirects.
 
-**Modules:** `notes`, `note_labels`, `bookmarks`, `bookmark_folders`, `todo`, `todo_categories`, `private_contacts`
+**Modules:** `notes`, `note_labels`, `bookmarks`, `bookmark_folders`, `todo`, `todo_categories`, `private_contacts`, `short-url` (public handler: root `go.php`; see `docs/SHORT_URL.md`)
 
 #### Planning, calendar, and events
 
@@ -519,6 +520,8 @@ flowchart TB
 | Explorer | `modules/explorer/` | Multi-tenant file explorer (Common, Departments, Private, Trash) |
 | Passwords | `modules/passwords/` | Encrypted private vault with folders and import/export |
 | Bookmarks | `modules/bookmarks/`, `bookmark_folders/` | Private/shared links with folder tree and drag-and-drop |
+| Short URLs | `modules/short-url/` | Employee-scoped short links; public redirect `go.php?c=` (no login); optional password, expiry, QR (`docs/SHORT_URL.md`) |
+| QR Generator | `modules/qr/` | Dynamic/static QR codes; bidirectional Short URLs integration (`docs/QR.md`) |
 | Notes | `modules/notes/`, `note_labels/` | Labelled personal notes |
 | To-Do | `modules/todo/`, `todo_categories/` | Global and private tasks |
 | Calendar | `modules/calendar/` | Aggregated view of alerts, events, tickets, and equipment expiries |

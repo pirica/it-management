@@ -14,6 +14,8 @@ Employee-scoped link shortener with custom codes, optional password and expirati
 - `go.php?t={access_token}` — token fallback lookup
 - `modules/short-url/go.php?c=` / `?t=` — legacy path (same handler)
 
+Unknown, expired, or unavailable links render a simple HTML message (for example **Invalid short URL. This link is invalid or no longer available.**) with HTTP 404/410 — not a blank page.
+
 ## UI tabs
 
 - **Links** — hero shorten form + personal link library

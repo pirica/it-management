@@ -1363,7 +1363,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_qr_share_modules.php` — Passwords, Bookmarks, Todo, Events, Private Contacts, Explorer, Floor Plans, Rack Planner, and CRUD record share (`departments` via `includes/itm_crud_record_share.php`) temporary QR/code sessions (`share_sessions`, `join.php`, module `*_share_helpers.php`, shared `includes/itm_qr_share.php`). Inventory: `docs/CRUD_RECORD_SHARE.md`.
 - `php scripts/verify_qr_share_join_hardening.php` — Public join hardening: eight-digit codes, token-only vault/file modules, per-IP join rate limit (`includes/itm_qr_share.php`)
 - `php scripts/verify_qr.php` — `modules/qr/` QR Generator: `qr_codes` / `qr_code_scans`, payload builders, scan recording, type catalog, short-url bidirectional probe when `short_urls` exists
-- `php scripts/verify_short_url.php` — `modules/short-url/`: tables, validation, click analytics, password hash, linked QR, `create_from_destination`, expiry detection
+- `php scripts/verify_short_url.php` — `modules/short-url/`: tables, root `go.php` stub, validation, click analytics, password hash, linked QR, `create_from_destination`, expiry detection
 - `php scripts/verify_attempts_view_rbac.php` — `modules/attempts/view.php` enforces `can_view` RBAC for User roles without Attempts permission
 - `php scripts/verify_emails_view_rbac.php` — `modules/emails/view.php` enforces `can_view` RBAC for User roles without Email Management permission
 - `php scripts/verify_module_share.php` — `company_module_share` opt-out matrix + `has_module_share_access()`; requires `share_sessions` table

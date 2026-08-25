@@ -30,6 +30,20 @@ function itm_short_url_public_css_href()
     return rtrim((string) BASE_URL, '/') . '/css/styles.css';
 }
 
+function itm_short_url_render_public_page($statusCode, $title, $message)
+{
+    $statusCode = (int) $statusCode;
+    if ($statusCode > 0) {
+        http_response_code($statusCode);
+    }
+    $pageTitle = htmlspecialchars((string) $title, ENT_QUOTES, 'UTF-8');
+    $body = htmlspecialchars((string) $message, ENT_QUOTES, 'UTF-8');
+    $css = htmlspecialchars(itm_short_url_public_css_href(), ENT_QUOTES, 'UTF-8');
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">';
+    echo '<title>' . $pageTitle . '</title><link rel="stylesheet" href="' . $css . '"></head><body>';
+    echo '<p style="margin:40px;text-align:center;font-size:1.1rem;">' . $body . '</p></body></html>';
+}
+
 function itm_short_url_normalize_public_base_url($url)
 {
     $url = trim((string) $url);
