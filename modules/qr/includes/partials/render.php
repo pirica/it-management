@@ -36,6 +36,7 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
         .qr-type-picker-intro { color:var(--text-secondary); margin:0 0 4px; font-size:14px; }
         .qr-section-heading { margin:0 0 8px; font-size:20px; }
         .qr-preview-panel { border:1px solid var(--border); border-radius:8px; padding:16px; text-align:center; min-height:280px; }
+        .qr-download-actions { margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
         .qr-wizard-steps { display:flex; gap:8px; margin-bottom:16px; }
         .qr-wizard-steps span { padding:6px 12px; border-radius:6px; background:var(--bg-secondary); }
         .qr-wizard-steps span.active { background:var(--accent); color:#fff; }
@@ -180,7 +181,7 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
                         <div class="qr-preview-panel">
                             <div id="qr-preview-mount"></div>
                             <p id="qr-preview-hint" style="font-size:12px;color:var(--text-secondary);margin-top:8px;">Preview updates as you type (static types).</p>
-                            <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                            <div class="qr-download-actions">
                                 <button type="button" class="btn btn-sm" id="qr-download-png" title="Download PNG">PNG</button>
                                 <button type="button" class="btn btn-sm" id="qr-download-jpg" title="Download JPG">JPG</button>
                                 <button type="button" class="btn btn-sm" id="qr-download-svg" title="Download SVG">SVG</button>
@@ -238,7 +239,7 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
                              data-light="<?= sanitize($qrDesign['colorLight']) ?>"
                              data-level="<?= sanitize($qrDesign['correctLevel']) ?>"
                              data-logo="<?= sanitize((string)$qrDesign['logo_path']) ?>"></div>
-                        <div style="margin-top:12px;display:flex;gap:8px;">
+                        <div class="qr-download-actions">
                             <button type="button" class="btn btn-sm" id="qr-download-png" title="Download PNG">PNG</button>
                             <button type="button" class="btn btn-sm" id="qr-download-jpg" title="Download JPG">JPG</button>
                             <button type="button" class="btn btn-sm" id="qr-download-svg" title="Download SVG">SVG</button>
