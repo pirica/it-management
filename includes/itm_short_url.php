@@ -595,6 +595,35 @@ function itm_short_url_create_linked_qr($conn, array $shortRow)
     return ['ok' => true, 'qr_code_id' => $qrId];
 }
 
+/**
+ * Linked QR scan total for a short URL (forward FK qr_code_id or qr_codes.short_url_id back-link).
+ */
+function itm_short_url_fetch_linked_qr_scan_count($conn, $companyId, $employeeId, $shortUrlId)
+{
+    $companyId = (int) $companyId;
+    $employeeId = (int) $employeeId;
+    $shortUrlId = (int) $shortUrlId;
+    if (!($conn instanceof mysqli) || $companyId <= 0 || $employeeId <= 0 || $shortUrlId <= 0) {
+        return 0;
+    }
+    $sql = 'SELECT COALESCE(qfk.scan_count, qbk.scan_count, 0) AS scan_count
+        FROM short_urls su
+        LEFT JOIN qr_codes qfk ON qfk.id = su.qr_code_id AND qfk.company_id = su.company_id AND qfk.deleted_at IS NULL
+        LEFT JOIN qr_codes qbk ON qbk.short_url_id = su.id AND qbk.company_id = su.company_id AND qbk.employee_id = su.employee_id AND qbk.deleted_at IS NULL
+        WHERE su.id = ? AND su.company_id = ? AND su.employee_id = ? AND su.deleted_at IS NULL
+        LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return 0;
+    }
+    mysqli_stmt_bind_param($stmt, 'iii', $shortUrlId, $companyId, $employeeId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+    return (int) ($row['scan_count'] ?? 0);
+}
+
 function itm_short_url_fetch_clicks($conn, $shortId, $companyId, $limit = 50)
 {
     $shortId = (int) $shortId;
