@@ -27,6 +27,11 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
         .qr-type-card:hover, .qr-type-card:focus-visible {
             border-color:var(--accent); background:var(--bg-secondary);
             box-shadow:0 2px 8px rgba(0,0,0,0.06); transform:translateY(-1px);
+            text-decoration:none;
+        }
+        .qr-type-card.itm-plain-link:hover,
+        .qr-type-card.itm-plain-link:focus-visible {
+            text-decoration:none;
         }
         .qr-type-card:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
         .qr-type-card:visited { color:var(--text-primary); }
