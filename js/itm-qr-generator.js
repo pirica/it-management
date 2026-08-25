@@ -427,6 +427,10 @@
         form.addEventListener('change', function (ev) {
             var t = ev.target;
             if (!t) return;
+            if (t.id === 'qr-template-select') {
+                applySelectedTemplate();
+                return;
+            }
             if (t.id === 'qr-encoding-mode' || (t.classList && (t.classList.contains('itm-qr-field') || t.classList.contains('itm-qr-design')))) {
                 drawQr();
             }

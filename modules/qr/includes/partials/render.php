@@ -142,7 +142,7 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
                     </div>
                 </div>
                 <?php elseif ($qrSelectedType && isset($qrCatalog[$qrSelectedType])): ?>
-                <form method="post" action="<?= $crud_action === 'edit' ? 'edit.php?id=' . (int)$qrId : 'create.php' ?>" id="qr-wizard-form" enctype="multipart/form-data">
+                <form method="post" action="<?= $crud_action === 'edit' ? 'edit.php?id=' . (int)$qrId : 'create.php' ?>" id="qr-wizard-form" enctype="multipart/form-data" data-qr-template-scope="<?= (int)$qrCompanyId ?>-<?= (int)$qrEmployeeId ?>">
                     <input type="hidden" name="csrf_token" value="<?= sanitize($csrfToken) ?>">
                     <input type="hidden" name="qr_action" value="save">
                     <input type="hidden" name="type_slug" value="<?= sanitize($qrSelectedType) ?>">
