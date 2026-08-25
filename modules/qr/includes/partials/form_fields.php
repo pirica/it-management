@@ -80,12 +80,10 @@ if ($type === 'website'): ?>
     <div class="form-group"><label>Coupon title</label><input type="text" name="payload[title]" class="form-control" value="<?= sanitize((string)($p['title'] ?? '')) ?>"></div>
     <div class="form-group"><label>Code</label><input type="text" name="payload[code]" class="form-control itm-qr-field" value="<?= sanitize((string)($p['code'] ?? '')) ?>"></div>
     <div class="form-group"><label>Description</label><textarea name="payload[description]" class="form-control" rows="3"><?= sanitize((string)($p['description'] ?? '')) ?></textarea></div>
-    <?php
-    $qrCouponExpiresIso = function_exists('itm_date_input_iso_value')
-        ? itm_date_input_iso_value($p['expires'] ?? '')
-        : '';
-    ?>
-    <div class="form-group"><label for="qr-payload-expires">Expires</label><input type="date" name="payload[expires]" id="qr-payload-expires" class="form-control itm-qr-field" value="<?= sanitize($qrCouponExpiresIso) ?>" title="Pick expiration date (dd/mm/yyyy)"></div>
+    <div class="form-group">
+        <label for="qr-payload-expires">Expires (dd/mm/yyyy)</label>
+        <?php itm_render_uk_date_input('payload[expires]', 'qr-payload-expires', $p['expires'] ?? '', ['class' => 'form-control itm-qr-field']); ?>
+    </div>
 <?php elseif ($type === 'social'): ?>
     <div id="qr-social-editor"><?php $links = (array)($p['links'] ?? []); if (!$links) { $links = [['label' => '', 'url' => '' ]]; } foreach ($links as $i => $link): ?>
         <div class="form-group"><input type="text" name="payload[links][<?= (int)$i ?>][label]" placeholder="Label" value="<?= sanitize((string)($link['label'] ?? '')) ?>"><input type="url" name="payload[links][<?= (int)$i ?>][url]" class="itm-qr-field" placeholder="URL" value="<?= sanitize((string)($link['url'] ?? '')) ?>"></div>
