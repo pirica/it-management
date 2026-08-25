@@ -31,7 +31,7 @@ Bidirectional integration with `modules/qr/`: short links can spawn dynamic webs
 
 Bespoke UI with `?tab=links|configuration` (emails-style tabs). Hero shorten form on Links tab with feature cards (custom code, password, expiry, QR). Gate-excluded in `scripts/data/ui_configuration_excluded_modules.txt`.
 
-- **index.php** — router; tabs in `includes/partials/render.php`
+- **index.php** — router; tabs in `includes/partials/render.php`; Links library table shows **Clicks** (short URL redirects) and **Scans** (linked `qr_codes.scan_count` via `qr_code_id` or `short_url_id` back-link).
 - **go.php** — public redirect (`ITM_SHORT_URL_PUBLIC`)
 - Table opts out of table-tools import/export.
 

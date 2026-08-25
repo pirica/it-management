@@ -181,6 +181,14 @@ if (strpos((string) ($payload['url'] ?? ''), '/go.php') === false) {
     su_verify_pass('QR payload encodes short URL.');
 }
 
+itm_qr_generator_record_scan($conn, $qrRow);
+$scanCount = itm_short_url_fetch_linked_qr_scan_count($conn, $companyId, $employeeId, $newId);
+if ($scanCount < 1) {
+    su_verify_fail('Linked QR scan count should increment after record_scan.');
+} else {
+    su_verify_pass('Linked QR scan count OK (' . $scanCount . ').');
+}
+
 $qrShort = itm_short_url_create_from_destination($conn, $companyId, $employeeId, 'https://example.com/qr-shorten-chain', ['title' => 'QR chain test']);
 if (empty($qrShort['ok'])) {
     su_verify_fail('create_from_destination failed.');

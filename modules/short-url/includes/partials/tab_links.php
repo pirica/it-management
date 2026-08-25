@@ -86,6 +86,7 @@ $allowPassword = !empty($suSettings['allow_password_protect']);
                 <th>Short URL</th>
                 <th>Destination</th>
                 <th>Clicks</th>
+                <th>Scans</th>
                 <th>Expires</th>
                 <th>QR</th>
                 <th class="itm-actions-cell" data-itm-actions-origin="1">Actions</th>
@@ -93,7 +94,7 @@ $allowPassword = !empty($suSettings['allow_password_protect']);
         </thead>
         <tbody>
         <?php if (empty($suListRows)): ?>
-            <tr><td colspan="6">No short links yet. Paste a URL above to get started.</td></tr>
+            <tr><td colspan="7">No short links yet. Paste a URL above to get started.</td></tr>
         <?php else: foreach ($suListRows as $lr):
             $pub = itm_short_url_build_public_url((string) $lr['short_code'], $conn, $suCompanyId);
             $dest = (string) $lr['destination_url'];
@@ -108,6 +109,7 @@ $allowPassword = !empty($suSettings['allow_password_protect']);
                 </td>
                 <td title="<?= sanitize($dest) ?>"><?= sanitize($destShort) ?></td>
                 <td><?= (int) $lr['click_count'] ?></td>
+                <td><?= (int) ($lr['linked_qr_id'] ?? 0) > 0 ? (int) ($lr['qr_scan_count'] ?? 0) : '—' ?></td>
                 <td><?= sanitize($expDisplay) ?></td>
                 <td><?= !empty($lr['qr_code_id']) ? '✅' : '—' ?></td>
                 <td class="itm-actions-cell" data-itm-actions-origin="1">

@@ -50,18 +50,18 @@ $suTotalRows = 0;
 $suTotalPages = 1;
 
 if ($crud_action === 'index' || $crud_action === 'list_all') {
-    $where = 'company_id = ? AND employee_id = ? AND deleted_at IS NULL';
+    $where = 'su.company_id = ? AND su.employee_id = ? AND su.deleted_at IS NULL';
     $params = [$suCompanyId, $suEmployeeId];
     $types = 'ii';
     if ($search !== '') {
-        $where .= ' AND (title LIKE ? OR destination_url LIKE ? OR short_code LIKE ?)';
+        $where .= ' AND (su.title LIKE ? OR su.destination_url LIKE ? OR su.short_code LIKE ?)';
         $like = '%' . $search . '%';
         $params[] = $like;
         $params[] = $like;
         $params[] = $like;
         $types .= 'sss';
     }
-    $countSql = 'SELECT COUNT(*) AS c FROM short_urls WHERE ' . $where;
+    $countSql = 'SELECT COUNT(*) AS c FROM short_urls su WHERE ' . $where;
     $countStmt = mysqli_prepare($conn, $countSql);
     if ($countStmt) {
         mysqli_stmt_bind_param($countStmt, $types, ...$params);
@@ -79,7 +79,13 @@ if ($crud_action === 'index' || $crud_action === 'list_all') {
         $suPage = $suTotalPages;
     }
     $offset = ($suPage - 1) * $suPerPage;
-    $listSql = 'SELECT id, title, destination_url, short_code, click_count, expires_at, qr_code_id, created_at FROM short_urls WHERE ' . $where . ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    $listSql = 'SELECT su.id, su.title, su.destination_url, su.short_code, su.click_count, su.expires_at, su.qr_code_id, su.created_at,
+        COALESCE(qfk.scan_count, qbk.scan_count, 0) AS qr_scan_count,
+        COALESCE(qfk.id, qbk.id, 0) AS linked_qr_id
+        FROM short_urls su
+        LEFT JOIN qr_codes qfk ON qfk.id = su.qr_code_id AND qfk.company_id = su.company_id AND qfk.deleted_at IS NULL
+        LEFT JOIN qr_codes qbk ON qbk.short_url_id = su.id AND qbk.company_id = su.company_id AND qbk.employee_id = su.employee_id AND qbk.deleted_at IS NULL
+        WHERE ' . $where . ' ORDER BY su.created_at DESC LIMIT ? OFFSET ?';
     $listStmt = mysqli_prepare($conn, $listSql);
     if ($listStmt) {
         $listTypes = $types . 'ii';
