@@ -21,7 +21,7 @@ if ($type === 'website'): ?>
     <div class="form-group"><label>Network name (SSID)</label><input type="text" name="payload[ssid]" class="form-control itm-qr-field" value="<?= sanitize((string)($p['ssid'] ?? '')) ?>"></div>
     <div class="form-group"><label>Password</label><input type="text" name="payload[password]" class="form-control itm-qr-field" value="<?= sanitize((string)($p['password'] ?? '')) ?>"></div>
     <div class="form-group"><label>Encryption</label><select name="payload[encryption]" class="form-control itm-qr-field"><option value="WPA" <?= (($p['encryption'] ?? 'WPA') === 'WPA') ? 'selected' : '' ?>>WPA/WPA2</option><option value="WEP" <?= (($p['encryption'] ?? '') === 'WEP') ? 'selected' : '' ?>>WEP</option><option value="nopass" <?= (($p['encryption'] ?? '') === 'nopass') ? 'selected' : '' ?>>None</option></select></div>
-    <div class="form-group"><label class="itm-checkbox-control"><input type="checkbox" name="payload[hidden]" value="1" <?= !empty($p['hidden']) ? 'checked' : '' ?>><span>Hidden network</span></label></div>
+    <div class="form-group"><label class="itm-checkbox-control"><input type="checkbox" name="payload[hidden]" value="1" class="itm-qr-field" <?= !empty($p['hidden']) ? 'checked' : '' ?>><span>Hidden network</span></label></div>
 <?php elseif ($type === 'vcard'): ?>
     <div class="form-group"><label>First name</label><input type="text" name="payload[first_name]" class="form-control itm-qr-field" value="<?= sanitize((string)($p['first_name'] ?? '')) ?>"></div>
     <div class="form-group"><label>Last name</label><input type="text" name="payload[last_name]" class="form-control itm-qr-field" value="<?= sanitize((string)($p['last_name'] ?? '')) ?>"></div>
