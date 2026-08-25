@@ -178,18 +178,48 @@ function itm_qr_generator_escape_vcard_value($value)
     return $value;
 }
 
+function itm_qr_generator_normalize_http_url($url)
+{
+    $url = trim((string) $url);
+    if ($url === '') {
+        return '';
+    }
+    if (!preg_match('#^https?://#i', $url)) {
+        $url = 'https://' . $url;
+    }
+    return $url;
+}
+
+function itm_qr_generator_is_valid_http_url($url)
+{
+    $normalized = itm_qr_generator_normalize_http_url($url);
+    if ($normalized === '') {
+        return false;
+    }
+    return filter_var($normalized, FILTER_VALIDATE_URL) !== false;
+}
+
+/**
+ * @return string Error message or empty string when valid.
+ */
+function itm_qr_generator_validate_url_field($url, $label, $required = true)
+{
+    $url = trim((string) $url);
+    if ($url === '') {
+        return $required ? $label . ' is required.' : '';
+    }
+    if (!itm_qr_generator_is_valid_http_url($url)) {
+        return 'Enter a valid ' . strtolower($label) . ' (https://…).';
+    }
+    return '';
+}
+
 function itm_qr_generator_build_static_payload($typeSlug, array $payload)
 {
     $typeSlug = trim((string) $typeSlug);
     switch ($typeSlug) {
         case 'website':
-            $url = trim((string) ($payload['url'] ?? ''));
-            if ($url === '') {
-                return '';
-            }
-            if (!preg_match('#^https?://#i', $url)) {
-                $url = 'https://' . $url;
-            }
+            $url = itm_qr_generator_normalize_http_url($payload['url'] ?? '');
             return $url;
         case 'wifi':
             $ssid = trim((string) ($payload['ssid'] ?? ''));
@@ -265,14 +295,7 @@ function itm_qr_generator_build_static_payload($typeSlug, array $payload)
             return 'https://wa.me/' . $n . ($msg !== '' ? '?text=' . rawurlencode($msg) : '');
         case 'facebook':
         case 'instagram':
-            $url = trim((string) ($payload['url'] ?? ''));
-            if ($url === '') {
-                return '';
-            }
-            if (!preg_match('#^https?://#i', $url)) {
-                $url = 'https://' . $url;
-            }
-            return $url;
+            return itm_qr_generator_normalize_http_url($payload['url'] ?? '');
         case 'text':
             return (string) ($payload['text'] ?? '');
         default:
@@ -314,6 +337,35 @@ function itm_qr_generator_validate_save(array $data)
         $mode = 'static';
     }
     $payload = itm_qr_generator_normalize_payload($typeSlug, is_array($data['payload'] ?? null) ? $data['payload'] : []);
+
+    $requiredUrlTypes = ['website', 'facebook', 'instagram'];
+    if (in_array($typeSlug, $requiredUrlTypes, true)) {
+        $urlError = itm_qr_generator_validate_url_field($payload['url'] ?? '', 'URL', true);
+        if ($urlError !== '') {
+            $errors[] = $urlError;
+        }
+    }
+    if ($typeSlug === 'vcard' || $typeSlug === 'business') {
+        $websiteError = itm_qr_generator_validate_url_field($payload['website'] ?? '', 'Website', false);
+        if ($websiteError !== '') {
+            $errors[] = $websiteError;
+        }
+    }
+    if ($typeSlug === 'video') {
+        $videoUrlError = itm_qr_generator_validate_url_field($payload['url'] ?? '', 'Video URL', false);
+        if ($videoUrlError !== '') {
+            $errors[] = $videoUrlError;
+        }
+    }
+    if ($typeSlug === 'apps') {
+        foreach (['ios_url' => 'iOS App Store URL', 'android_url' => 'Android Play Store URL'] as $key => $label) {
+            $appUrlError = itm_qr_generator_validate_url_field($payload[$key] ?? '', $label, false);
+            if ($appUrlError !== '') {
+                $errors[] = $appUrlError;
+            }
+        }
+    }
+
     if ($mode === 'static') {
         $encoded = itm_qr_generator_build_static_payload($typeSlug, $payload);
         if ($encoded === '') {
@@ -321,11 +373,6 @@ function itm_qr_generator_validate_save(array $data)
         }
     } else {
         switch ($typeSlug) {
-            case 'website':
-                if (trim((string) ($payload['url'] ?? '')) === '') {
-                    $errors[] = 'URL is required.';
-                }
-                break;
             case 'pdf':
             case 'mp3':
                 if (trim((string) ($payload['file_path'] ?? '')) === '') {

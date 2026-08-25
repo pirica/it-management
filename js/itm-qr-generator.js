@@ -335,11 +335,24 @@
     }
 
     function validateContentStep() {
-        var titleEl = document.getElementById('qr-title');
-        if (titleEl && !titleEl.value.trim()) {
-            titleEl.focus();
-            titleEl.reportValidity();
-            return false;
+        var contentPane = document.getElementById('qr-wizard-step-content');
+        if (!contentPane) {
+            return true;
+        }
+        var fields = contentPane.querySelectorAll('input, select, textarea');
+        for (var i = 0; i < fields.length; i++) {
+            var el = fields[i];
+            if (!el || el.disabled) {
+                continue;
+            }
+            if (el.type === 'hidden' || el.type === 'file') {
+                continue;
+            }
+            if (!el.checkValidity()) {
+                el.focus();
+                el.reportValidity();
+                return false;
+            }
         }
         return true;
     }
@@ -418,6 +431,12 @@
     }
 
     if (form) {
+        form.addEventListener('submit', function (ev) {
+            if (!validateContentStep()) {
+                ev.preventDefault();
+                showWizardStep('content');
+            }
+        });
         form.addEventListener('input', function (ev) {
             var t = ev.target;
             if (t && t.classList && (t.classList.contains('itm-qr-field') || t.classList.contains('itm-qr-design'))) {
