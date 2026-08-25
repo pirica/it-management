@@ -140,7 +140,7 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
                     </div>
                 </div>
                 <?php elseif ($qrSelectedType && isset($qrCatalog[$qrSelectedType])): ?>
-                <form method="post" action="<?= $crud_action === 'edit' ? 'edit.php?id=' . (int)$qrId : 'create.php' ?>" id="qr-wizard-form" enctype="multipart/form-data">
+                <form method="post" action="<?= $crud_action === 'edit' ? 'edit.php?id=' . (int)$qrId : 'create.php' ?>" id="qr-wizard-form" enctype="multipart/form-data" data-qr-template-scope="<?= (int)$qrCompanyId ?>-<?= (int)$qrEmployeeId ?>">
                     <input type="hidden" name="csrf_token" value="<?= sanitize($csrfToken) ?>">
                     <input type="hidden" name="qr_action" value="save">
                     <input type="hidden" name="type_slug" value="<?= sanitize($qrSelectedType) ?>">
@@ -178,6 +178,16 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
                             </div>
                             <div id="qr-wizard-step-design" class="qr-wizard-pane" role="tabpanel" hidden>
                             <h3 title="Design">Design</h3>
+                            <div class="form-group">
+                                <label>Use template</label>
+                                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                                    <select id="qr-template-select" class="form-control" style="flex:1;min-width:160px;">
+                                        <option value="">— Select saved template —</option>
+                                    </select>
+                                    <button type="button" class="btn btn-sm" id="qr-template-refresh" title="Apply template and refresh preview">🔄</button>
+                                    <button type="button" class="btn btn-sm" id="qr-template-save" title="Save current design as template">Save as template</button>
+                                </div>
+                            </div>
                             <div class="form-group"><label>Size</label><input type="number" name="design[size]" min="128" max="1024" class="form-control itm-qr-design" value="<?= (int)$qrDesign['size'] ?>"></div>
                             <div class="form-group"><label>Dark color</label><input type="color" name="design[colorDark]" class="itm-qr-design" value="<?= sanitize($qrDesign['colorDark']) ?>"></div>
                             <div class="form-group"><label>Light color</label><input type="color" name="design[colorLight]" class="itm-qr-design" value="<?= sanitize($qrDesign['colorLight']) ?>"></div>
