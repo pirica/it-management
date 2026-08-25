@@ -471,6 +471,11 @@ if (defined('ITM_QR_GENERATOR_PUBLIC') && ITM_QR_GENERATOR_PUBLIC) {
     $itmSkipWebAuth = true;
 }
 
+// Why: modules/short-url/go.php serves public short-link redirects validated by short_code or access_token.
+if (defined('ITM_SHORT_URL_PUBLIC') && ITM_SHORT_URL_PUBLIC) {
+    $itmSkipWebAuth = true;
+}
+
 // Why: booking/* guest portal must not require ITM employee login (see booking/bootstrap.php).
 if (defined('ITM_HOTEL_BOOKING_PUBLIC_PORTAL') && ITM_HOTEL_BOOKING_PUBLIC_PORTAL) {
     $itmSkipWebAuth = true;

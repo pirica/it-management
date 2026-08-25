@@ -161,6 +161,7 @@ function itm_sidebar_base_structure() {
                 ['id' => 'webmail_signatures', 'label' => '✍️ Webmail Signatures', 'href' => 'modules/webmail_signatures/', 'match_dir' => 'webmail_signatures'],
                 ['id' => 'todo', 'label' => '📝 To-Do', 'href' => 'modules/todo/', 'match_dir' => 'todo'],
                 ['id' => 'qr', 'label' => '📱 QR Generator', 'href' => 'modules/qr/', 'match_dir' => 'qr'],
+                ['id' => 'short-url', 'label' => '🔗 Short URLs', 'href' => 'modules/short-url/', 'match_dir' => 'short-url'],
                 ['id' => 'calendar', 'label' => '📅 Calendar', 'href' => 'modules/calendar/', 'match_dir' => 'calendar'],
                 ['id' => 'events', 'label' => '📅 Events', 'href' => 'modules/events/', 'match_dir' => 'events'],
                 ['id' => 'alerts', 'label' => '📢 Alerts', 'href' => 'modules/alerts/', 'match_dir' => 'alerts'],

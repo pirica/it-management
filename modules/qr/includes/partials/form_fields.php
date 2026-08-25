@@ -6,6 +6,17 @@ $p = $qrPayload ?? [];
 $type = $qrSelectedType ?? '';
 if ($type === 'website'): ?>
     <div class="form-group"><label>URL</label><input type="url" name="payload[url]" class="form-control itm-qr-field" value="<?= sanitize((string)($p['url'] ?? '')) ?>" placeholder="https://example.com"></div>
+    <?php
+    $qrShowShorten = ($currentMode ?? 'dynamic') === 'dynamic';
+    if ($qrShowShorten):
+    ?>
+    <div class="form-group">
+        <label class="itm-checkbox-control">
+            <input type="checkbox" name="payload[use_short_url]" value="1" class="itm-qr-field" <?= !empty($p['use_short_url']) || !empty($qrRow['short_url_id']) ? 'checked' : '' ?>>
+            <span>Shorten URL with Short URLs</span>
+        </label>
+    </div>
+    <?php endif; ?>
 <?php elseif ($type === 'wifi'): ?>
     <div class="form-group"><label>Network name (SSID)</label><input type="text" name="payload[ssid]" class="form-control itm-qr-field" value="<?= sanitize((string)($p['ssid'] ?? '')) ?>"></div>
     <div class="form-group"><label>Password</label><input type="text" name="payload[password]" class="form-control itm-qr-field" value="<?= sanitize((string)($p['password'] ?? '')) ?>"></div>

@@ -208,7 +208,18 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
                         <p>Scans: <?= (int)$qrRow['scan_count'] ?></p>
                         <?php if ((string)$qrRow['encoding_mode'] === 'dynamic'): ?>
                         <p>Public URL: <code><?= sanitize(itm_qr_generator_build_public_url((string)$qrRow['access_token'])) ?></code></p>
-                        <?php else: ?>
+                        <?php endif; ?>
+                        <?php
+                        $qrShortUrlId = (int) ($qrRow['short_url_id'] ?? 0);
+                        if ($qrShortUrlId > 0 && function_exists('itm_short_url_fetch_by_id')):
+                            require_once ROOT_PATH . 'includes/itm_short_url.php';
+                            $qrLinkedShort = itm_short_url_fetch_by_id($conn, (int)$qrCompanyId, (int)$qrEmployeeId, $qrShortUrlId);
+                            if ($qrLinkedShort):
+                        ?>
+                        <p>Short URL: <code><?= sanitize(itm_short_url_build_public_url((string)$qrLinkedShort['short_code'])) ?></code>
+                            (<a class="itm-plain-link" href="<?= sanitize(BASE_URL . 'modules/short-url/view.php?id=' . $qrShortUrlId) ?>">view</a>, <?= (int)$qrLinkedShort['click_count'] ?> clicks)</p>
+                        <?php endif; endif; ?>
+                        <?php if ((string)$qrRow['encoding_mode'] === 'static'): ?>
                         <p>Encoded: <code style="word-break:break-all;"><?= sanitize((string)$qrRow['encoded_payload']) ?></code></p>
                         <?php endif; ?>
                         <?php if (!empty($qrScans)): ?>

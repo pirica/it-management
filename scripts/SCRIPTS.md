@@ -144,7 +144,7 @@ function colorText($text, $type) {
 
 | Script | Purpose |
 |--------|---------|
-| `php scripts/count_db_tables.php` | Counts live tables in `information_schema` for `itmanagement`, echoes the total as plain text, and overwrites `scripts/number_db_tables.txt`. Fresh `db/` import: **221** tables (must match `CREATE TABLE` count in `db/01_schema.sql`; [count_db_tables.php](http://localhost/it-management/scripts/count_db_tables.php) / [verify_database_schema.php?run=1](http://localhost/it-management/scripts/verify_database_schema.php?run=1)). Browser and CLI; **no login** (exempt from `run=1` usage landing — see `itm_script_browser_usage_exempt_basenames()`). |
+| `php scripts/count_db_tables.php` | Counts live tables in `information_schema` for `itmanagement`, echoes the total as plain text, and overwrites `scripts/number_db_tables.txt`. Fresh `db/` import: **224** tables (must match `CREATE TABLE` count in `db/01_schema.sql`; [count_db_tables.php](http://localhost/it-management/scripts/count_db_tables.php) / [verify_database_schema.php?run=1](http://localhost/it-management/scripts/verify_database_schema.php?run=1)). Browser and CLI; **no login** (exempt from `run=1` usage landing — see `itm_script_browser_usage_exempt_basenames()`). |
 | `php scripts/verify_count_db_tables_recon.php` | Low-impact recon contract: `count_db_tables.php` stays no-auth digits-only output (no table-name enumeration). |
 
 Catalog: `scripts/scripts.php`.
@@ -1362,7 +1362,8 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_private_contacts_vault.php` — private contacts vault encryption (`pc_vault_helpers.php`, list hydrate/search, master-key re-encrypt); browser catalog uses `itm_script_output_nl()` / `itm_script_format_status_line()` (not `fwrite(STDOUT)`).
 - `php scripts/verify_qr_share_modules.php` — Passwords, Bookmarks, Todo, Events, Private Contacts, Explorer, Floor Plans, Rack Planner, and CRUD record share (`departments` via `includes/itm_crud_record_share.php`) temporary QR/code sessions (`share_sessions`, `join.php`, module `*_share_helpers.php`, shared `includes/itm_qr_share.php`). Inventory: `docs/CRUD_RECORD_SHARE.md`.
 - `php scripts/verify_qr_share_join_hardening.php` — Public join hardening: eight-digit codes, token-only vault/file modules, per-IP join rate limit (`includes/itm_qr_share.php`)
-- `php scripts/verify_qr.php` — `modules/qr/` QR Generator: `qr_codes` / `qr_code_scans`, payload builders, scan recording, type catalog
+- `php scripts/verify_qr.php` — `modules/qr/` QR Generator: `qr_codes` / `qr_code_scans`, payload builders, scan recording, type catalog, short-url bidirectional probe when `short_urls` exists
+- `php scripts/verify_short_url.php` — `modules/short-url/`: tables, validation, click analytics, password hash, linked QR, `create_from_destination`, expiry detection
 - `php scripts/verify_attempts_view_rbac.php` — `modules/attempts/view.php` enforces `can_view` RBAC for User roles without Attempts permission
 - `php scripts/verify_emails_view_rbac.php` — `modules/emails/view.php` enforces `can_view` RBAC for User roles without Email Management permission
 - `php scripts/verify_module_share.php` — `company_module_share` opt-out matrix + `has_module_share_access()`; requires `share_sessions` table

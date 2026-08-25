@@ -45,6 +45,7 @@ ops_report
 org_chart
 passwords
 qr
+short-url
 private_contacts
 reports
 request_password

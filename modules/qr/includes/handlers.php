@@ -86,6 +86,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['qr_action']) && $_POS
     if (!empty($catalog[$typeSlug]['static_only'])) {
         $encodingMode = 'static';
     }
+
+    $shortUrlId = null;
+    if ($typeSlug === 'website' && $encodingMode === 'dynamic' && !empty($payloadRaw['use_short_url'])) {
+        require_once ROOT_PATH . 'includes/itm_short_url.php';
+        $destForShort = trim((string) ($payload['url'] ?? ''));
+        if ($destForShort !== '') {
+            if ($id > 0) {
+                $existingForShort = itm_qr_generator_fetch_by_id($conn, $qrCompanyId, $qrEmployeeId, $id);
+                if ($existingForShort && !empty($existingForShort['short_url_id'])) {
+                    $shortUrlId = (int) $existingForShort['short_url_id'];
+                    $suExisting = itm_short_url_fetch_by_id($conn, $qrCompanyId, $qrEmployeeId, $shortUrlId);
+                    if ($suExisting) {
+                        $payload['url'] = itm_short_url_build_public_url((string) $suExisting['short_code']);
+                    }
+                }
+            }
+            if ($shortUrlId === null) {
+                $shortOpts = ['title' => ($title !== '' ? $title : 'QR link') . ' (short)'];
+                $shortCreate = itm_short_url_create_from_destination($conn, $qrCompanyId, $qrEmployeeId, $destForShort, $shortOpts);
+                if (!empty($shortCreate['ok'])) {
+                    $shortUrlId = (int) $shortCreate['id'];
+                    $payload['url'] = (string) $shortCreate['public_url'];
+                }
+            }
+        }
+    }
+
     $design = itm_qr_generator_normalize_design($designRaw);
     $encodedPayload = null;
     $accessToken = itm_qr_generator_generate_access_token();
@@ -102,6 +129,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['qr_action']) && $_POS
             header('Location: index.php');
             exit;
         }
+        if ($shortUrlId === null && !empty($existing['short_url_id'])) {
+            $shortUrlId = (int) $existing['short_url_id'];
+        }
         if ($encodingMode === 'dynamic') {
             $accessToken = trim((string) ($existing['access_token'] ?? ''));
             if ($accessToken === '') {
@@ -115,11 +145,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['qr_action']) && $_POS
             }
             $encodedPayload = itm_qr_generator_build_static_payload($typeSlug, $payload);
         }
-        $sql = 'UPDATE qr_codes SET title = ?, type_slug = ?, encoding_mode = ?, payload_json = ?, encoded_payload = ?, access_token = ?, design_json = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ? AND employee_id = ? AND deleted_at IS NULL';
+        $sql = 'UPDATE qr_codes SET title = ?, type_slug = ?, encoding_mode = ?, payload_json = ?, encoded_payload = ?, access_token = ?, design_json = ?, short_url_id = ?, updated_by = ?, updated_at = NOW() WHERE id = ? AND company_id = ? AND employee_id = ? AND deleted_at IS NULL';
         $stmt = mysqli_prepare($conn, $sql);
         mysqli_stmt_bind_param(
             $stmt,
-            'sssssssiiii',
+            'sssssssiiiii',
             $title,
             $typeSlug,
             $encodingMode,
@@ -127,6 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['qr_action']) && $_POS
             $encodedPayload,
             $accessToken,
             $designJson,
+            $shortUrlId,
             $qrEmployeeId,
             $id,
             $qrCompanyId,
@@ -139,11 +170,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['qr_action']) && $_POS
         exit;
     }
 
-    $sql = 'INSERT INTO qr_codes (company_id, employee_id, title, type_slug, encoding_mode, payload_json, encoded_payload, access_token, design_json, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    $sql = 'INSERT INTO qr_codes (company_id, employee_id, title, type_slug, encoding_mode, payload_json, encoded_payload, access_token, design_json, short_url_id, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
     $stmt = mysqli_prepare($conn, $sql);
     mysqli_stmt_bind_param(
         $stmt,
-        'iisssssssii',
+        'iisssssssiii',
         $qrCompanyId,
         $qrEmployeeId,
         $title,
@@ -153,6 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['qr_action']) && $_POS
         $encodedPayload,
         $accessToken,
         $designJson,
+        $shortUrlId,
         $qrEmployeeId,
         $qrEmployeeId
     );

@@ -12,6 +12,7 @@ Core functional units of the application. Each subdirectory is a module (CRUD, b
 - Standard flattened CRUD: `index.php`, `create.php`, `edit.php`, `delete.php`, `view.php`, `list_all.php`.
 - **UI action labels (NO MIXED):** View `🔎`, Edit `✏️`, Delete `🗑️`, Back/Cancel (forms/modals) `🔙`, Create/New/Add `➕`, Save `💾` — emoji-only visible text on `<a>`, `<button>`, `<input>`, and `<h1>`–`<h3>`; full phrases in `title`/`aria-label` only. Reference: `modules/manufacturers/`. Audit: `php scripts/check_ui_action_emoji.php`. See **`AGENTS.md` → UI action labels (NO MIXED)**.
 - **`is_*` façades** delegate to `modules/equipment/` — do not delete canonical wrappers.
+- **Short URLs** (`modules/short-url/`) — employee-scoped bespoke UI (hero shorten, configuration tab, public `go.php`); bidirectional QR integration. Doc: `docs/SHORT_URL.md`.
 
 ## 7. File Structure
 - `modules/<slug>/` — module entry files + `AGENT_NOTES.md`.

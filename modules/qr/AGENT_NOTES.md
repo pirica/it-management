@@ -6,9 +6,11 @@ Employee-scoped QR code library: create static or dynamic QR codes for URLs, WiF
 
 Separate from temporary SpeedyShare (`share_sessions` / `includes/itm_qr_share.php`).
 
+**Short URLs integration:** website + dynamic QR may create a linked `short_urls` row (`qr_codes.short_url_id`); Short URLs module can create linked QR via `short_urls.qr_code_id`. See `docs/SHORT_URL.md` and `includes/itm_short_url.php`.
+
 ## 2. Key Tables
 
-- **qr_codes** — per-employee saved codes (`type_slug`, `encoding_mode`, `payload_json`, `encoded_payload`, `access_token`, `design_json`, `scan_count`)
+- **qr_codes** — per-employee saved codes (`type_slug`, `encoding_mode`, `payload_json`, `encoded_payload`, `access_token`, `design_json`, `scan_count`, `short_url_id`)
 - **qr_code_scans** — scan analytics (no audit triggers; exempt in `check_audit_logs_coverage.php`)
 
 ## 3. Required Relationships
