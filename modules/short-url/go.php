@@ -3,15 +3,14 @@
  * Public short URL redirect — no login.
  */
 define('ITM_SHORT_URL_PUBLIC', true);
-require_once '../../config/config.php';
+require_once __DIR__ . '/../../config/config.php';
 require_once ROOT_PATH . 'includes/itm_short_url.php';
 
 header('Content-Type: text/html; charset=utf-8');
 
 $rate = itm_short_url_rate_limit_check(true);
 if (empty($rate['ok'])) {
-    http_response_code(429);
-    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Too many requests</title></head><body><p>Too many requests. Please try again later.</p></body></html>';
+    itm_short_url_render_public_page(429, 'Too many requests', 'Too many requests. Please try again later.');
     exit;
 }
 
@@ -25,18 +24,14 @@ if ($code !== '') {
 }
 
 if (!$row) {
-    http_response_code(404);
-    $css = htmlspecialchars(itm_short_url_public_css_href(), ENT_QUOTES, 'UTF-8');
-    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Not found</title><link rel="stylesheet" href="' . $css . '"></head><body><p style="margin:40px;text-align:center;">This short link is invalid or no longer available.</p></body></html>';
+    itm_short_url_render_public_page(404, 'Invalid short URL', 'Invalid short URL. This link is invalid or no longer available.');
     exit;
 }
 
 $shortCode = (string) ($row['short_code'] ?? '');
 
 if (itm_short_url_is_expired($row)) {
-    http_response_code(410);
-    $css = htmlspecialchars(itm_short_url_public_css_href(), ENT_QUOTES, 'UTF-8');
-    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Link expired</title><link rel="stylesheet" href="' . $css . '"></head><body><p style="margin:40px;text-align:center;">This short link has expired.</p></body></html>';
+    itm_short_url_render_public_page(410, 'Link expired', 'This short link has expired.');
     exit;
 }
 
@@ -60,8 +55,7 @@ itm_short_url_record_click($conn, $row);
 
 $destination = itm_short_url_normalize_destination((string) ($row['destination_url'] ?? ''));
 if ($destination === '') {
-    http_response_code(404);
-    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Not found</title></head><body><p>Destination unavailable.</p></body></html>';
+    itm_short_url_render_public_page(404, 'Invalid short URL', 'Invalid short URL. Destination unavailable.');
     exit;
 }
 
