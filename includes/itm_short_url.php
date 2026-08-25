@@ -290,7 +290,7 @@ function itm_short_url_validate_save($conn, $companyId, $employeeId, array $inpu
         if (function_exists('itm_parse_date_input')) {
             $parsed = itm_parse_date_input($expiresInput);
             if ($parsed === null || $parsed === '') {
-                $errors[] = 'Expiration date is invalid.';
+                $errors[] = 'Expiration date is invalid (use dd/mm/yyyy).';
             } else {
                 $expiresAt = $parsed . ' 23:59:59';
             }

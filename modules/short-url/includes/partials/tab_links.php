@@ -57,8 +57,8 @@ $allowPassword = !empty($suSettings['allow_password_protect']);
         <?php endif; ?>
         <div id="su-panel-expiry" class="su-option-panel" style="display:none;margin-top:16px;">
             <div class="form-group">
-                <label for="su-expires-at">Expires on</label>
-                <input type="date" name="expires_at" id="su-expires-at" class="form-control" title="Pick expiration date (dd/mm/yyyy)">
+                <label for="su-expires-at">Expires on (dd/mm/yyyy)</label>
+                <?php itm_render_uk_date_input('expires_at', 'su-expires-at', ''); ?>
             </div>
         </div>
         <div id="su-panel-qr" class="su-option-panel" style="display:none;margin-top:16px;">

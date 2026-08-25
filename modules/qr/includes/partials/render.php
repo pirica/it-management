@@ -289,6 +289,7 @@ $newButtonPosition = function_exists('itm_resolve_new_button_position') ? itm_re
     </div>
 </div>
 <script src="../../js/qrcode.min.js"></script>
+<script src="../../js/itm-uk-date-input.js" defer></script>
 <script src="../../js/itm-qr-generator.js"></script>
 </body>
 </html>
