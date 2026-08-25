@@ -18,14 +18,80 @@
         document.body.removeChild(ta);
     }
 
-    document.addEventListener('DOMContentLoaded', function () {
+    function showPasteHint(input) {
+        var existing = document.getElementById('su-paste-hint');
+        if (existing) {
+            existing.remove();
+        }
+        var hint = document.createElement('small');
+        hint.id = 'su-paste-hint';
+        hint.className = 'text-muted';
+        hint.style.display = 'block';
+        hint.style.marginTop = '6px';
+        hint.textContent = 'Clipboard access is unavailable here. Click the URL field and press Ctrl+V (Cmd+V on Mac).';
+        if (input.parentNode) {
+            input.parentNode.appendChild(hint);
+        }
+        window.setTimeout(function () {
+            if (hint.parentNode) {
+                hint.parentNode.removeChild(hint);
+            }
+        }, 5000);
+    }
+
+    function applyPastedText(input, text) {
+        if (!text) return false;
+        input.value = String(text).trim();
+        if (typeof Event === 'function') {
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        return true;
+    }
+
+    function tryLegacyPaste(input) {
+        input.focus();
+        try {
+            if (document.queryCommandSupported && document.queryCommandSupported('paste')) {
+                return document.execCommand('paste');
+            }
+        } catch (e) { /* ignore */ }
+        return false;
+    }
+
+    function pasteIntoInput(input) {
+        input.focus();
+        if (window.isSecureContext && navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
+            return navigator.clipboard.readText().then(function (text) {
+                if (applyPastedText(input, text)) {
+                    return true;
+                }
+                if (tryLegacyPaste(input) && input.value.trim() !== '') {
+                    return true;
+                }
+                showPasteHint(input);
+                return false;
+            }).catch(function () {
+                if (tryLegacyPaste(input) && input.value.trim() !== '') {
+                    return true;
+                }
+                showPasteHint(input);
+                return false;
+            });
+        }
+        if (tryLegacyPaste(input) && input.value.trim() !== '') {
+            return Promise.resolve(true);
+        }
+        showPasteHint(input);
+        return Promise.resolve(false);
+    }
+
+    function initShortUrlUi() {
         var pasteBtn = document.getElementById('su-paste-btn');
         var destInput = document.getElementById('su-destination-url');
-        if (pasteBtn && destInput && navigator.clipboard && navigator.clipboard.readText) {
-            pasteBtn.addEventListener('click', function () {
-                navigator.clipboard.readText().then(function (t) {
-                    if (t) destInput.value = t.trim();
-                }).catch(function () {});
+        if (pasteBtn && destInput) {
+            pasteBtn.addEventListener('click', function (event) {
+                event.preventDefault();
+                pasteIntoInput(destInput);
             });
         }
 
@@ -62,5 +128,11 @@
             codeInput.addEventListener('input', updatePreview);
             updatePreview();
         }
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initShortUrlUi);
+    } else {
+        initShortUrlUi();
+    }
 })();
