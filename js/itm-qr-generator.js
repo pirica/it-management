@@ -110,6 +110,114 @@
         return '';
     }
 
+    function resolveLogoUrl(path) {
+        path = String(path || '').trim();
+        if (!path) return '';
+        if (/^https?:\/\//i.test(path)) return path;
+        var base = String(window.ITM_BASE_URL || '/').replace(/\/?$/, '/');
+        return base + 'modules/explorer/file.php?path=' + encodeURIComponent(path);
+    }
+
+    function readDesignFieldsFromForm() {
+        return {
+            size: parseInt(formVal(form, 'design[size]') || '256', 10),
+            colorDark: formVal(form, 'design[colorDark]') || '#000000',
+            colorLight: formVal(form, 'design[colorLight]') || '#ffffff',
+            correctLevel: formVal(form, 'design[correctLevel]') || 'H',
+            logo_path: document.getElementById('qr-logo-path') ? document.getElementById('qr-logo-path').value : ''
+        };
+    }
+
+    function applyDesignFieldsToForm(design) {
+        if (!form || !design) return;
+        var sizeEl = form.querySelector('[name="design[size]"]');
+        var darkEl = form.querySelector('[name="design[colorDark]"]');
+        var lightEl = form.querySelector('[name="design[colorLight]"]');
+        var levelEl = form.querySelector('[name="design[correctLevel]"]');
+        var logoEl = document.getElementById('qr-logo-path');
+        if (sizeEl && design.size) sizeEl.value = String(design.size);
+        if (darkEl && design.colorDark) darkEl.value = design.colorDark;
+        if (lightEl && design.colorLight) lightEl.value = design.colorLight;
+        if (levelEl && design.correctLevel) levelEl.value = design.correctLevel;
+        if (logoEl) logoEl.value = design.logo_path || '';
+    }
+
+    function templateStorageKey() {
+        if (!form) return 'itm_qr_design_templates';
+        return 'itm_qr_design_templates_' + (form.getAttribute('data-qr-template-scope') || 'default');
+    }
+
+    function loadDesignTemplates() {
+        try {
+            var raw = window.localStorage.getItem(templateStorageKey());
+            var parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function saveDesignTemplates(list) {
+        try {
+            window.localStorage.setItem(templateStorageKey(), JSON.stringify(list));
+        } catch (e) { /* ignore quota */ }
+    }
+
+    function populateTemplateSelect() {
+        var select = document.getElementById('qr-template-select');
+        if (!select) return;
+        var current = select.value;
+        var templates = loadDesignTemplates();
+        select.innerHTML = '<option value="">— Select saved template —</option>';
+        templates.forEach(function (tpl) {
+            var opt = document.createElement('option');
+            opt.value = tpl.id;
+            opt.textContent = tpl.name;
+            select.appendChild(opt);
+        });
+        if (current) {
+            for (var i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === current) {
+                    select.value = current;
+                    break;
+                }
+            }
+        }
+    }
+
+    function applySelectedTemplate() {
+        var select = document.getElementById('qr-template-select');
+        if (!select || !select.value) return false;
+        var templates = loadDesignTemplates();
+        var tpl = templates.filter(function (t) { return t.id === select.value; })[0];
+        if (!tpl || !tpl.design) return false;
+        applyDesignFieldsToForm(tpl.design);
+        drawQr();
+        return true;
+    }
+
+    function saveCurrentDesignTemplate() {
+        var name = window.prompt('Template name');
+        if (!name) return;
+        name = String(name).trim();
+        if (!name) return;
+        var templates = loadDesignTemplates();
+        if (templates.some(function (t) { return t.name.toLowerCase() === name.toLowerCase(); })) {
+            window.alert('A template with that name already exists.');
+            return;
+        }
+        var tpl = {
+            id: 'tpl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+            name: name,
+            design: readDesignFieldsFromForm()
+        };
+        templates.push(tpl);
+        saveDesignTemplates(templates);
+        populateTemplateSelect();
+        var select = document.getElementById('qr-template-select');
+        if (select) select.value = tpl.id;
+    }
+
     function readDesign() {
         if (mount.dataset.qrText) {
             return {
@@ -118,7 +226,7 @@
                 colorDark: mount.dataset.dark || '#000000',
                 colorLight: mount.dataset.light || '#ffffff',
                 correctLevel: mount.dataset.level || 'H',
-                logo: mount.dataset.logo || ''
+                logo: resolveLogoUrl(mount.dataset.logo || '')
             };
         }
         var sizeEl = document.querySelector('[name="design[size]"]');
@@ -138,7 +246,7 @@
             colorDark: darkEl ? darkEl.value : '#000000',
             colorLight: lightEl ? lightEl.value : '#ffffff',
             correctLevel: levelEl ? levelEl.value : 'H',
-            logo: document.getElementById('qr-logo-path') ? document.getElementById('qr-logo-path').value : ''
+            logo: resolveLogoUrl(document.getElementById('qr-logo-path') ? document.getElementById('qr-logo-path').value : '')
         };
     }
 
@@ -317,6 +425,10 @@
         form.addEventListener('change', function (ev) {
             var t = ev.target;
             if (!t) return;
+            if (t.id === 'qr-template-select') {
+                applySelectedTemplate();
+                return;
+            }
             if (t.id === 'qr-encoding-mode' || (t.classList && (t.classList.contains('itm-qr-field') || t.classList.contains('itm-qr-design')))) {
                 drawQr();
             }
@@ -325,28 +437,40 @@
             }
         });
 
-        document.querySelectorAll('.qr-wizard-step-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var step = btn.getAttribute('data-qr-step') || 'content';
+        form.addEventListener('click', function (ev) {
+            var stepBtn = ev.target && ev.target.closest ? ev.target.closest('.qr-wizard-step-btn') : null;
+            if (stepBtn) {
+                ev.preventDefault();
+                var step = stepBtn.getAttribute('data-qr-step') || 'content';
                 if (step === 'design' && !validateContentStep()) return;
                 showWizardStep(step);
-            });
-        });
-
-        var nextBtn = document.getElementById('qr-wizard-next');
-        if (nextBtn) {
-            nextBtn.addEventListener('click', function () {
+                return;
+            }
+            if (ev.target && ev.target.id === 'qr-wizard-next') {
+                ev.preventDefault();
                 if (!validateContentStep()) return;
                 showWizardStep('design');
-            });
-        }
-
-        var backBtn = document.getElementById('qr-wizard-back');
-        if (backBtn) {
-            backBtn.addEventListener('click', function () {
+                return;
+            }
+            if (ev.target && ev.target.id === 'qr-wizard-back') {
+                ev.preventDefault();
                 showWizardStep('content');
-            });
-        }
+                return;
+            }
+            if (ev.target && ev.target.id === 'qr-template-refresh') {
+                ev.preventDefault();
+                if (!applySelectedTemplate()) {
+                    drawQr();
+                }
+                return;
+            }
+            if (ev.target && ev.target.id === 'qr-template-save') {
+                ev.preventDefault();
+                saveCurrentDesignTemplate();
+            }
+        });
+
+        populateTemplateSelect();
     }
 
     var logoUpload = document.getElementById('qr-logo-upload');
