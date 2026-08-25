@@ -58,8 +58,14 @@ su_verify_pass('qr_codes.short_url_id column exists.');
 
 $companyId = 1;
 
+if (!is_file(dirname(__DIR__) . '/go.php')) {
+    su_verify_fail('Root go.php stub missing.');
+} else {
+    su_verify_pass('Root go.php stub exists.');
+}
+
 $publicSample = itm_short_url_build_public_url('abc123', $conn, $companyId);
-if (strpos($publicSample, '/modules/short-url/go.php?c=abc123') === false) {
+if (strpos($publicSample, '/go.php?c=abc123') === false) {
     su_verify_fail('Public URL builder failed.');
 } else {
     su_verify_pass('Public URL builder OK.');
@@ -72,7 +78,7 @@ if (!$colPublicBase || mysqli_num_rows($colPublicBase) === 0) {
 }
 su_verify_pass('short_url_settings.public_base_url column exists.');
 
-$customBase = 'https://short.example.test/it-management/modules/short-url/go.php?c=';
+$customBase = 'https://short.example.test/it-management/go.php?c=';
 if (empty(itm_short_url_load_settings($conn, $companyId)['id'])) {
     itm_short_url_save_settings($conn, $companyId, 1, [
         'default_expiry_days' => '',
@@ -169,7 +175,7 @@ if (!$qrRow || (int) ($qrRow['short_url_id'] ?? 0) !== $newId) {
 }
 
 $payload = itm_qr_generator_decode_json_field($qrRow['payload_json'] ?? '');
-if (strpos((string) ($payload['url'] ?? ''), '/modules/short-url/go.php') === false) {
+if (strpos((string) ($payload['url'] ?? ''), '/go.php') === false) {
     su_verify_fail('QR payload should encode short public URL.');
 } else {
     su_verify_pass('QR payload encodes short URL.');

@@ -471,7 +471,7 @@ if (defined('ITM_QR_GENERATOR_PUBLIC') && ITM_QR_GENERATOR_PUBLIC) {
     $itmSkipWebAuth = true;
 }
 
-// Why: modules/short-url/go.php serves public short-link redirects validated by short_code or access_token.
+// Why: go.php (root) and modules/short-url/go.php serve public short-link redirects validated by short_code or access_token.
 if (defined('ITM_SHORT_URL_PUBLIC') && ITM_SHORT_URL_PUBLIC) {
     $itmSkipWebAuth = true;
 }
