@@ -1286,7 +1286,14 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_qr.php" target="_blank" rel="nofollow noreferrer">verify_qr.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Regression for <code>modules/qr/</code>: tables, type catalog, static payload builders, scan recording, CRUD smoke insert/fetch.</td>
+                    <td>Regression for <code>modules/qr/</code>: tables, type catalog, static payload builders, scan recording, CRUD smoke insert/fetch, optional short-url bidirectional link.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="verify_short_url.php" target="_blank" rel="nofollow noreferrer">verify_short_url.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Regression for <code>modules/short-url/</code>: tables, validation, click analytics, password hash, linked QR, <code>create_from_destination</code>, expiry detection.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">

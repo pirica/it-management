@@ -134,6 +134,46 @@ if ((int) ($rowAfter['scan_count'] ?? 0) < 1) {
     qr_verify_pass('Scan recording increments scan_count.');
 }
 
+$resShort = mysqli_query($conn, "SHOW TABLES LIKE 'short_urls'");
+if ($resShort && mysqli_num_rows($resShort) > 0) {
+    require_once ROOT_PATH . 'includes/itm_short_url.php';
+    $shortCreate = itm_short_url_create_from_destination($conn, $companyId, $empId, 'https://example.com/qr-verify-short', ['title' => 'QR verify short']);
+    if (empty($shortCreate['ok'])) {
+        qr_verify_fail('Short URL create_from_destination for QR integration failed.');
+    } else {
+        qr_verify_pass('Short URL create_from_destination OK for QR integration.');
+        $shortUrlId = (int) $shortCreate['id'];
+        $dynToken = itm_qr_generator_generate_access_token();
+        $dynPayload = json_encode(['url' => (string) $shortCreate['public_url']], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $dynDesign = json_encode(itm_qr_generator_default_design(), JSON_UNESCAPED_UNICODE);
+        $dynTitle = 'Verify QR website short ' . date('His');
+        $dynSql = 'INSERT INTO qr_codes (company_id, employee_id, title, type_slug, encoding_mode, payload_json, access_token, design_json, short_url_id, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        $dynStmt = mysqli_prepare($conn, $dynSql);
+        if ($dynStmt) {
+            $typeSlugDyn = 'website';
+            $modeDyn = 'dynamic';
+            mysqli_stmt_bind_param($dynStmt, 'iissssssiii', $companyId, $empId, $dynTitle, $typeSlugDyn, $modeDyn, $dynPayload, $dynToken, $dynDesign, $shortUrlId, $empId, $empId);
+            if (mysqli_stmt_execute($dynStmt)) {
+                $dynQrId = (int) mysqli_insert_id($conn);
+                $dynRow = itm_qr_generator_fetch_by_id($conn, $companyId, $empId, $dynQrId);
+                if ($dynRow && (int) ($dynRow['short_url_id'] ?? 0) === $shortUrlId) {
+                    qr_verify_pass('Dynamic website QR with short_url_id link OK.');
+                } else {
+                    qr_verify_fail('Dynamic website QR short_url_id mismatch.');
+                }
+                mysqli_query($conn, 'DELETE FROM qr_codes WHERE id = ' . $dynQrId);
+            } else {
+                qr_verify_fail('Dynamic website QR insert with short_url_id failed.');
+            }
+            mysqli_stmt_close($dynStmt);
+        }
+        mysqli_query($conn, 'DELETE FROM short_url_clicks WHERE short_url_id = ' . $shortUrlId);
+        mysqli_query($conn, 'DELETE FROM short_urls WHERE id = ' . $shortUrlId);
+    }
+} else {
+    qr_verify_pass('short_urls table absent — skip QR/short-url integration probe.');
+}
+
 $del = mysqli_prepare($conn, 'UPDATE qr_codes SET active = 0, deleted_by = ?, deleted_at = NOW() WHERE id = ? AND company_id = ?');
 mysqli_stmt_bind_param($del, 'iii', $empId, $newId, $companyId);
 mysqli_stmt_execute($del);

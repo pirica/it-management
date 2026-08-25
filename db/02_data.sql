@@ -344,6 +344,8 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("request_password", "Request Password", 0, 1, "🔑");
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("qr", "QR Generator", 0, 1, "📱");
 
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("short-url", "Short URLs", 0, 1, "🔗");
+
 -- Data for `company_module_access`
 INSERT INTO `company_module_access` (`company_id`, `module_id`, `enabled`)
 SELECT c.`id`, mr.`id`, 1
@@ -1849,6 +1851,9 @@ INSERT INTO `workstation_ram` (`company_id`, `id`, `name`, `created_at`) VALUES 
 INSERT INTO `appointment_settings` (`company_id`, `timezone`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `booking_enabled`, `active`, `created_at`) VALUES
 (1, 'US/Central', 60, '09:00:00', '14:00:00', 30, 1, 1, '2026-01-01 00:00:01');
 
+INSERT INTO `short_url_settings` (`company_id`, `default_expiry_days`, `custom_code_min_length`, `require_https_destination`, `analytics_enabled`, `allow_password_protect`, `active`, `created_at`) VALUES
+(1, NULL, 4, 0, 1, 1, 1, '2026-01-01 00:00:01');
+
 INSERT INTO `appointment_visit_reasons` (`company_id`, `name`, `sort_order`, `active`, `created_at`) VALUES
 (1, 'General IT support', 10, 1, '2026-01-01 00:00:01'),
 (1, 'Equipment pickup or return', 20, 1, '2026-01-01 00:00:01'),
@@ -2057,6 +2062,8 @@ INSERT IGNORE INTO `warranty_types` (`company_id`, `name`, `created_at`) SELECT 
 INSERT IGNORE INTO `license_types` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `license_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `appointment_settings` (`company_id`, `timezone`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `booking_enabled`, `active`, `created_at`) SELECT c.`id`, t.`timezone`, t.`slot_duration_minutes`, t.`bookable_start_time`, t.`bookable_end_time`, t.`check_in_end_buffer_minutes`, t.`booking_enabled`, t.`active`, '2026-01-01 00:00:01' FROM `appointment_settings` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+
+INSERT IGNORE INTO `short_url_settings` (`company_id`, `default_expiry_days`, `custom_code_min_length`, `require_https_destination`, `analytics_enabled`, `allow_password_protect`, `active`, `created_at`) SELECT c.`id`, t.`default_expiry_days`, t.`custom_code_min_length`, t.`require_https_destination`, t.`analytics_enabled`, t.`allow_password_protect`, t.`active`, '2026-01-01 00:00:01' FROM `short_url_settings` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `appointment_visit_reasons` (`company_id`, `name`, `sort_order`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`sort_order`, t.`active`, '2026-01-01 00:00:01' FROM `appointment_visit_reasons` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 

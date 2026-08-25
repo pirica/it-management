@@ -47,6 +47,7 @@ org_chart
 passwords
 private_contacts
 qr
+short-url
 rack_planner
 reports
 request_password

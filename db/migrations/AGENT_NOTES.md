@@ -25,6 +25,7 @@ Historical migration SQL files were **pruned** once live databases matched canon
 | `problem_management.sql` | `problems`, `problem_ticket_links`, `known_errors` — Problem Management + Known Error DB (destructive DROP+CREATE; audit triggers in `db/03_triggers.sql`) |
 | `problem_master_ticket.sql` | `master_tickets`, `master_ticket_updates`, `problems.master_ticket_id` — cross-company master ticket rollup (destructive DROP+CREATE for problem tables + new master tables) |
 | `saved_report_views.sql` | `saved_report_views` + `scheduled_reports.saved_view_id` — saved list views for custom report builder |
+| `short_url.sql` | `short_urls`, `short_url_clicks`, `short_url_settings`, `qr_codes.short_url_id` — Short URLs module + QR back-link (destructive to `qr_codes` / `qr_code_scans`) |
 
 ## 12. Module Owner Notes
 

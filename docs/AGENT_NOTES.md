@@ -27,7 +27,8 @@ Canonical documentation that is not source code: upload maps, README assets, mod
 - **docs/ORG_CHART.md** — interactive hierarchical org chart from self-referential reporting lines, recursive cycle loops detection, dynamic drag-and-drop AJAX persistence, and responsive layouts.
 - **docs/SYSTEM_STATUS.md** — Admin-only server diagnostics dashboard covering CPU/RAM/disk metrics, native Linux proc reporting vs Windows PowerShell fallbacks, and real-time SQL/on-disk storage caching.
 - **docs/BOOKING.md** — guest-facing `booking/` portal: four-step checkout, manage reservation (lookup, cancel, change contacts), ITM Hospitality admin modules, schema, local URLs, and review of strengths/gaps.
-- **docs/QR.md** — employee-scoped `modules/qr/` QR Generator: types, static/dynamic encoding, public `r.php` / `asset.php`, regression script.
+- **docs/QR.md** — employee-scoped `modules/qr/` QR Generator: types, static/dynamic encoding, public `r.php` / `asset.php`, regression script; bidirectional Short URLs integration.
+- **docs/SHORT_URL.md** — employee-scoped `modules/short-url/`: shorten UI, configuration tab, public `go.php`, click analytics, QR integration.
 - **docs/HOTEL_BOOKING_DISTRIBUTION.md** — partner distribution API (`modules/hotel_booking_api/`) with JSON/OpenTravel XML/Booking.com/OHIP wire adapters, channel admin, ARI push/pull, and reservation book/modify/cancel.
 - **docs/API_V2.md** — partner JSON REST gateway (`modules/api_v2/router.php`): paid-tier scoped `X-API-Key`, PATH_INFO routes, OpenAPI 3.0 spec (`scripts/openapi.php`), tickets/equipment MVP handlers.
 - **docs/STRIPE_CHECKOUT.md** — guest portal Stripe Checkout (`includes/itm_stripe_checkout.php`, `booking/payment-stripe.php`, `booking/stripe-webhook.php`, `hotel_booking_payment_events`).
