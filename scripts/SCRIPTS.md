@@ -394,7 +394,7 @@ Do not add a script under `scripts/` without updating `scripts/scripts.php`.
 - **Static gate:** `php scripts/check_script_stdio_fwrite.php` — no raw `fwrite(STDOUT|STDERR)` under `scripts/`; use `itm_script_write_stdout()` / `itm_script_write_stderr()` from `scripts/lib/itm_script_stdio.php` (loaded via `script_cli_output.php`).
 - **Static gate:** `php scripts/check_script_php_utf8_no_bom.php` — no UTF-8 BOM at the start of `scripts/**/*.php` (BOM before `<?php` breaks `declare(strict_types=1)` and `php -l` on PHP 7.4). **Tier 2:** included in `run_tier2_checks.php`.
 - **Static gate:** `php scripts/verify_source_utf8_mojibake.php` — tracked source UTF-8 / mojibake audit (`modules/`, `includes/`, `scripts/`, `js/`, `css/`, `config/`). **Tier 2:** included in `run_tier2_checks.php`.
-- **DB detect (dry-run):** `php scripts/repair_db_utf8_seed_corruption.php` — `????` emoji seed corruption in `ui_configuration.app_name`, `configuration_item_types.icon`, and `equipment_types.field_edit_emoji`; apply with `--apply`. **Tier 2:** dry-run in `run_tier2_checks.php` (SKIPs when MySQL unavailable; exit `1` when corruption found).
+- **DB detect (dry-run):** `php scripts/repair_db_utf8_seed_corruption.php` — `????` emoji corruption in `ui_configuration.app_name`, `configuration_item_types.icon`, and `equipment_types.field_edit_emoji`; static seed audit when MySQL unavailable; apply with `--apply`. **Tier 2:** `check_equipment_type_sidebar_emoji.php` (static, no MySQL) + `repair_db_utf8_seed_corruption.php` dry-run (live DB when available).
 
 #### API documentation (`scripts/api.php`)
 

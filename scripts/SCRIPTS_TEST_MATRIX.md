@@ -228,7 +228,8 @@ php scripts/employees_delete_clear_table_test.php
 | 2 | `list_date_display_formats.php` | PHP | none | static-manual | UK dd/mmm/yyyy display audit — WARN on non-helper date echo and native date inputs; `run_tier2_checks.php` runs CLI `--include-inputs` (browser: `?include_inputs=1&run=1`) |
 | 2 | `verify_source_utf8_mojibake.php` | PHP | none | static-manual | UTF-8 / mojibake gate on tracked source (`modules/`, `includes/`, `scripts/`, `js/`, `css/`, `config/`); exit `1` on violations; repair via `fix_source_utf8_mojibake.php` |
 | 2 | `check_script_php_utf8_no_bom.php` | PHP | none | static-manual | UTF-8 BOM gate on `scripts/**/*.php` (forbidden before `<?php` / `declare`) |
-| 2 | `repair_db_utf8_seed_corruption.php` | MySQL | read-only | static-manual | Dry-run detect for `????` emoji seed corruption (`ui_configuration.app_name`, `configuration_item_types.icon`); **SKIP** when MySQL unavailable (tier2 CI); exit `1` when corruption found; apply via `--apply` / `?apply=1` (not tier2 batch writes) |
+| 2 | `check_equipment_type_sidebar_emoji.php` | PHP | none | static-manual | Canonical `is_*` sidebar labels + `db/02_data.sql` `equipment_types.field_edit_emoji` seeds — fails on `????` corruption or seed/canonical mismatch (no MySQL) |
+| 2 | `repair_db_utf8_seed_corruption.php` | MySQL | read-only | static-manual | Dry-run detect for `????` emoji corruption (`ui_configuration.app_name`, `configuration_item_types.icon`, `equipment_types.field_edit_emoji`); static seed audit when MySQL unavailable; exit `1` when corruption found; apply via `--apply` / `?apply=1` (not tier2 batch writes) |
 | 3 | `check_company_id_ui_column.php` | PHP | none | static-manual | Company column inventory — scans modules/{slug}/**/*.php (report; `--strict` optional) |
 | 3 | `DBdesign.php` | PHP | low | runtime | Read-mostly listing / diagram tool |
 | 3 | `analyze_database_health.php` | MySQL | low | runtime | Runtime verify / repro / diagnostic |

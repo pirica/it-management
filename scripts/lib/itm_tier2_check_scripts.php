@@ -50,6 +50,7 @@ if (!function_exists('itm_tier2_check_scripts_canonical_fallback')) {
             'check_ui_configuration_coverage.php',
             'check_script_php_utf8_no_bom.php',
             'verify_source_utf8_mojibake.php',
+            'check_equipment_type_sidebar_emoji.php',
             'repair_db_utf8_seed_corruption.php',
             'list_date_display_formats.php',
             'list_raw_columns.php',
