@@ -26,16 +26,39 @@ if (!function_exists('itm_module_date_format_display_audit_collect_module_files'
             return [];
         }
 
-        $patterns = [
-            $moduleDir . '/*.php',
-            $moduleDir . '/includes/*.php',
-            $moduleDir . '/api/*.php',
-        ];
+        foreach (glob($moduleDir . '/*.php') ?: [] as $path) {
+            if (is_file($path)) {
+                $paths[$path] = $path;
+            }
+        }
 
-        foreach ($patterns as $pattern) {
-            foreach (glob($pattern) ?: [] as $path) {
-                if (is_file($path)) {
-                    $paths[$path] = $path;
+        foreach (glob($moduleDir . '/includes/*.php') ?: [] as $path) {
+            if (is_file($path)) {
+                $paths[$path] = $path;
+            }
+        }
+
+        // Why: partials live under includes/partials/ (e.g. modules/short-url/).
+        $includesDir = $moduleDir . '/includes';
+        if (is_dir($includesDir)) {
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($includesDir, FilesystemIterator::SKIP_DOTS)
+            );
+            foreach ($iterator as $fileInfo) {
+                if ($fileInfo->isFile() && strtolower($fileInfo->getExtension()) === 'php') {
+                    $paths[$fileInfo->getPathname()] = $fileInfo->getPathname();
+                }
+            }
+        }
+
+        $apiDir = $moduleDir . '/api';
+        if (is_dir($apiDir)) {
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($apiDir, FilesystemIterator::SKIP_DOTS)
+            );
+            foreach ($iterator as $fileInfo) {
+                if ($fileInfo->isFile() && strtolower($fileInfo->getExtension()) === 'php') {
+                    $paths[$fileInfo->getPathname()] = $fileInfo->getPathname();
                 }
             }
         }
@@ -142,6 +165,13 @@ if (!function_exists('itm_module_date_format_display_audit_line_rules')) {
                 'notes' => 'Explicit UK date() format',
             ],
             [
+                'status' => 'ok',
+                'pattern' => 'itm_render_uk_date_input',
+                'format' => 'dd/mm/yyyy (UK widget)',
+                'regex' => '/itm_render_uk_date_input\s*\(/',
+                'notes' => 'Shared UK text + calendar input helper',
+            ],
+            [
                 'status' => $inputStatus,
                 'pattern' => 'html_date_input',
                 'format' => 'browser ISO (Y-m-d)',
@@ -225,7 +255,7 @@ if (!function_exists('itm_module_date_format_display_audit_line_has_ok_helper'))
     function itm_module_date_format_display_audit_line_has_ok_helper(string $line): bool
     {
         return (bool) preg_match(
-            '/itm_format_(?:date_display|cell_scalar_display|datetime_display|audit_timestamp_display|hotel_date_display)\s*\(|date\s*\(\s*[\'"]d\/m\/Y/i',
+            '/itm_format_(?:date_display|cell_scalar_display|datetime_display|audit_timestamp_display|hotel_date_display)\s*\(|itm_render_uk_date_input\s*\(|date\s*\(\s*[\'"]d\/m\/Y/i',
             $line
         );
     }
@@ -308,9 +338,37 @@ if (!function_exists('itm_module_date_format_display_audit_scan_file')) {
     }
 }
 
+if (!function_exists('itm_module_date_format_display_audit_pass_module_slugs')) {
+    /**
+     * @param list<string> $slugs
+     * @param list<array<string,mixed>> $rows
+     * @return list<string>
+     */
+    function itm_module_date_format_display_audit_pass_module_slugs(array $slugs, array $rows): array
+    {
+        $warnModules = [];
+        foreach ($rows as $row) {
+            if ((string) ($row['status'] ?? '') === 'warn') {
+                $warnModules[(string) ($row['module'] ?? '')] = true;
+            }
+        }
+
+        $pass = [];
+        foreach ($slugs as $slug) {
+            if ($slug !== '' && !isset($warnModules[$slug])) {
+                $pass[] = $slug;
+            }
+        }
+
+        sort($pass);
+
+        return $pass;
+    }
+}
+
 if (!function_exists('itm_module_date_format_display_audit_run')) {
     /**
-     * @param array{root:string,module?:string,only_warn?:bool,all?:bool,include_inputs?:bool,include_skips?:bool} $options
+     * @param array{root:string,module?:string,only_warn?:bool,all?:bool,include_inputs?:bool,include_skips?:bool,show_pass?:bool} $options
      * @return list<array<string,mixed>>
      */
     function itm_module_date_format_display_audit_run(array $options): array
@@ -321,11 +379,13 @@ if (!function_exists('itm_module_date_format_display_audit_run')) {
         $showAll = !empty($options['all']);
         $includeInputs = !empty($options['include_inputs']);
         $includeSkips = !empty($options['include_skips']);
+        $showPass = !empty($options['show_pass']);
 
         $slugs = $moduleFilter !== ''
             ? [$moduleFilter]
             : itm_module_date_format_display_audit_list_module_slugs($repoRoot);
 
+        $scannedSlugs = [];
         $rows = [];
         foreach ($slugs as $slug) {
             $files = itm_module_date_format_display_audit_collect_module_files($repoRoot, $slug);
@@ -345,6 +405,8 @@ if (!function_exists('itm_module_date_format_display_audit_run')) {
                 continue;
             }
 
+            $scannedSlugs[] = $slug;
+
             foreach ($files as $filePath) {
                 foreach (itm_module_date_format_display_audit_scan_file($repoRoot, $slug, $filePath, $includeInputs) as $row) {
                     $status = (string) ($row['status'] ?? 'ok');
@@ -358,6 +420,23 @@ if (!function_exists('itm_module_date_format_display_audit_run')) {
                         continue;
                     }
                     $rows[] = $row;
+                }
+            }
+        }
+
+        if ($showPass) {
+            foreach (itm_module_date_format_display_audit_pass_module_slugs($scannedSlugs, $rows) as $passSlug) {
+                if ($onlyWarn || $showAll) {
+                    $rows[] = [
+                        'status' => 'ok',
+                        'module' => $passSlug,
+                        'file' => 'modules/' . $passSlug,
+                        'line' => 0,
+                        'pattern' => 'module_pass',
+                        'format' => 'dd/mm/yyyy',
+                        'notes' => 'No WARN date display patterns in scanned PHP',
+                        'snippet' => '',
+                    ];
                 }
             }
         }
