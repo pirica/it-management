@@ -70,9 +70,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $startDate = $scheduledStart !== '' ? itm_parse_date_input($scheduledStart) : null;
         $endDate = $scheduledEnd !== '' ? itm_parse_date_input($scheduledEnd) : null;
         if ($scheduledStart !== '' && $startDate === null) {
-            $error = 'Scheduled start must be dd/mm/yyyy.';
+            $error = 'Scheduled start must be dd/mmm/yyyy.';
         } elseif ($scheduledEnd !== '' && $endDate === null) {
-            $error = 'Scheduled end must be dd/mm/yyyy.';
+            $error = 'Scheduled end must be dd/mmm/yyyy.';
         } else {
             $startSql = $startDate !== null ? "'" . mysqli_real_escape_string($conn, $startDate) . "'" : 'NULL';
             $endSql = $endDate !== null ? "'" . mysqli_real_escape_string($conn, $endDate) . "'" : 'NULL';
@@ -185,11 +185,11 @@ $ciViewBase = BASE_URL . 'modules/configuration_items/view.php?id=';
                 </div>
                 <div class="form-group">
                     <label for="scheduled_start">Scheduled start</label>
-                    <input type="text" name="scheduled_start" id="scheduled_start" placeholder="dd/mm/yyyy" value="<?php echo sanitize(itm_format_date_display((string)($data['scheduled_start'] ?? ''))); ?>">
+                    <input type="text" name="scheduled_start" id="scheduled_start" placeholder="dd/mmm/yyyy" value="<?php echo sanitize(itm_format_date_display((string)($data['scheduled_start'] ?? ''))); ?>">
                 </div>
                 <div class="form-group">
                     <label for="scheduled_end">Scheduled end</label>
-                    <input type="text" name="scheduled_end" id="scheduled_end" placeholder="dd/mm/yyyy" value="<?php echo sanitize(itm_format_date_display((string)($data['scheduled_end'] ?? ''))); ?>">
+                    <input type="text" name="scheduled_end" id="scheduled_end" placeholder="dd/mmm/yyyy" value="<?php echo sanitize(itm_format_date_display((string)($data['scheduled_end'] ?? ''))); ?>">
                 </div>
 
                 <h3 title="Affected configuration items from blast-radius graph">🧩</h3>

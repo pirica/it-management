@@ -54,7 +54,7 @@ $html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'
     . htmlspecialchars($viewName, ENT_QUOTES, 'UTF-8')
     . '</title><style>body{font-family:Arial,sans-serif;padding:24px;} table{border-collapse:collapse;width:100%;} th,td{border:1px solid #ccc;padding:6px 8px;font-size:12px;} th{background:#f4f4f4;}</style></head><body>'
     . '<h1>' . htmlspecialchars($viewName, ENT_QUOTES, 'UTF-8') . '</h1>'
-    . '<p>Generated: ' . htmlspecialchars(date('d/m/Y H:i'), ENT_QUOTES, 'UTF-8') . '</p>';
+    . '<p>Generated: ' . htmlspecialchars(itm_format_datetime_display(date('Y-m-d H:i:s')), ENT_QUOTES, 'UTF-8') . '</p>';
 if ($total > itm_saved_reports_export_row_limit()) {
     $html .= '<p><strong>Showing first ' . itm_saved_reports_export_row_limit() . ' of ' . $total . ' rows.</strong></p>';
 } else {

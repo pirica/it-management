@@ -120,7 +120,7 @@ This project stores and displays **Unicode** text (including emoji such as 🧩)
 
 ### Locales and copy
 
-* **Dates (display and import):** use **dd/mm/yyyy** in UI lists, views, and Excel import parsing. MySQL storage stays `Y-m-d` / `Y-m-d H:i:s`. Shared helpers: `includes/itm_date_format.php` (`itm_parse_date_input`, `itm_format_date_display`, `itm_format_cell_scalar_display`). Maintenance: `php scripts/apply_date_display_format.php` when new flattened CRUD modules omit the `cr_render_cell_value()` hook.
+* **Dates (display and import):** use **dd/mmm/yyyy** in UI lists and views (PHP `d/M/Y`, e.g. `18/Jun/2026`). Excel import parsing still accepts **dd/mm/yyyy** and **dd/mmm/yyyy** via `itm_parse_date_input()`. MySQL storage stays `Y-m-d` / `Y-m-d H:i:s`. Shared helpers: `includes/itm_date_format.php` (`itm_parse_date_input`, `itm_format_date_display`, `itm_format_cell_scalar_display`). Maintenance: `php scripts/apply_date_display_format.php` when new flattened CRUD modules omit the `cr_render_cell_value()` hook.
 * **Emoji** in UI, `AGENTS.md`, and seed data are allowed when intentional (e.g. 🧩 section markers, toolbar icons in copy).
 
 ### HTTP and PHP output
@@ -652,7 +652,7 @@ The license management module (`modules/license_management/`) tracks software li
 2. **Required fields:** **`name`** is required on create/edit; **`quantity`** defaults to **1** when omitted; **`active`** defaults to **1**.
 3. **Foreign keys:** **`license_type_id`** → `license_types` (**RESTRICT** on delete); **`supplier_id`** → `suppliers` (**SET NULL** on delete).
 4. **Price:** Accepts `.` as decimal separator; **comma is converted to dot** on POST and Excel import (`cr_normalize_price_input()`).
-5. **Dates:** Stored as MySQL `DATE`; list/view/import display **dd/mm/yyyy** via `itm_format_cell_scalar_display()` / `itm_parse_date_input()`.
+5. **Dates:** Stored as MySQL `DATE`; list/view display **dd/mmm/yyyy** via `itm_format_cell_scalar_display()` / `itm_format_date_display()`; import accepts **dd/mm/yyyy** or **dd/mmm/yyyy** via `itm_parse_date_input()`.
 6. **FK labels:** List/view must show **Type** and **Supplier** names (not raw IDs) via `itm_fk_label_by_id()` / `cr_fk_label_by_id()`. Form field order: Name, License Key, Type, Quantity, Supplier, Purchase Date, Expiry Date, Price, Active, Notes.
 7. **Standard CRUD:** Flattened departments scaffold — bulk delete, search, pagination, Excel import/export (`import_excel_rows` on `index.php`), empty-state sample data from `db/01_schema.sql`.
 8. **Audit logging:** `db/` defines `trg_license_management_audit_insert|update|delete` and `trg_license_types_audit_*` (when Type rows are quick-added).

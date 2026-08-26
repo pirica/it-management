@@ -39,7 +39,7 @@ stateDiagram-v2
 
 Every request card renders four distinct signature boxes. Each block displays:
 - The approver's full name (combining `first_name` and `last_name`, with `username` as a fallback).
-- The exact approval timestamp (`dd/mm/yyyy - H:i:s`).
+- The exact approval timestamp (`dd/mmm/yyyy - H:i:s`).
 - A status badge (e.g. `Signed` or `Pending`).
 
 - **Verification:** Signature dates and names are read-only once saved. Form handlers verify that the active session user matching the required approver role is the one executing the signature action.

@@ -15,6 +15,7 @@ final class ItmDateFormatTest extends TestCase
         $this->assertSame('2026-06-18', itm_parse_date_input('18/06/2026'));
         $this->assertSame('2026-06-18', itm_parse_date_input('18-06-2026'));
         $this->assertSame('2026-06-18', itm_parse_date_input('2026-06-18'));
+        $this->assertSame('2026-06-18', itm_parse_date_input('18/Jun/2026'));
     }
 
     public function testRejectsUsStyleWhenUkInvalid(): void
@@ -24,18 +25,18 @@ final class ItmDateFormatTest extends TestCase
 
     public function testFormatDateDisplayUsesUkLayout(): void
     {
-        $this->assertSame('18/06/2026', itm_format_date_display('2026-06-18'));
-        $this->assertSame('18/06/2026', itm_format_date_display('18/06/2026'));
+        $this->assertSame('18/Jun/2026', itm_format_date_display('2026-06-18'));
+        $this->assertSame('18/Jun/2026', itm_format_date_display('18/06/2026'));
     }
 
     public function testFormatDatetimeDisplayUsesUkLayout(): void
     {
-        $this->assertSame('18/06/2026 14:30', itm_format_datetime_display('2026-06-18 14:30:00'));
+        $this->assertSame('18/Jun/2026 14:30', itm_format_datetime_display('2026-06-18 14:30:00'));
     }
 
     public function testCellScalarDisplayFormatsDateFields(): void
     {
-        $this->assertSame('18/06/2026', itm_format_cell_scalar_display('termination_date', '2026-06-18'));
+        $this->assertSame('18/Jun/2026', itm_format_cell_scalar_display('termination_date', '2026-06-18'));
     }
 
     public function testIsoWeekBoundsMatchPhpWeekForMidYearDate(): void

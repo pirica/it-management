@@ -81,7 +81,7 @@ if ($type === 'website'): ?>
     <div class="form-group"><label>Code</label><input type="text" name="payload[code]" class="form-control itm-qr-field" value="<?= sanitize((string)($p['code'] ?? '')) ?>"></div>
     <div class="form-group"><label>Description</label><textarea name="payload[description]" class="form-control" rows="3"><?= sanitize((string)($p['description'] ?? '')) ?></textarea></div>
     <div class="form-group">
-        <label for="qr-payload-expires">Expires (dd/mm/yyyy)</label>
+        <label for="qr-payload-expires">Expires (dd/mmm/yyyy)</label>
         <?php itm_render_uk_date_input('payload[expires]', 'qr-payload-expires', $p['expires'] ?? '', ['class' => 'form-control itm-qr-field']); ?>
     </div>
 <?php elseif ($type === 'social'): ?>

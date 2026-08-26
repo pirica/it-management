@@ -250,11 +250,11 @@ $hiddenRedirectFields = static function () use ($folder, $statusFilter, $starred
                     <?php endif; ?>
                     <div class="form-group" style="margin:0;">
                         <label for="date_from">From</label>
-                        <input type="text" name="date_from" id="date_from" class="form-control" placeholder="dd/mm/yyyy" value="<?php echo sanitize($dateFrom); ?>">
+                        <input type="text" name="date_from" id="date_from" class="form-control" placeholder="dd/mmm/yyyy" value="<?php echo sanitize($dateFrom); ?>">
                     </div>
                     <div class="form-group" style="margin:0;">
                         <label for="date_to">To</label>
-                        <input type="text" name="date_to" id="date_to" class="form-control" placeholder="dd/mm/yyyy" value="<?php echo sanitize($dateTo); ?>">
+                        <input type="text" name="date_to" id="date_to" class="form-control" placeholder="dd/mmm/yyyy" value="<?php echo sanitize($dateTo); ?>">
                     </div>
                     <div class="form-group" style="margin:0;">
                         <label for="search">Search</label>

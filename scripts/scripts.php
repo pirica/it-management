@@ -1531,7 +1531,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="apply_date_display_format.php" target="_blank" rel="nofollow noreferrer">apply_date_display_format.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
-                    <td>One-time/maintenance: patch duplicated <code>cr_render_cell_value()</code> helpers to call <code>itm_format_cell_scalar_display()</code> (dd/mm/yyyy list/view display). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped module files. Idempotent; re-run when new flattened CRUD modules ship without the date display hook.</td>
+                    <td>One-time/maintenance: patch duplicated <code>cr_render_cell_value()</code> helpers to call <code>itm_format_cell_scalar_display()</code> (dd/mmm/yyyy list/view display). <strong>Default = dry-run</strong>; writes with CLI <code>--apply</code> or browser <code>?apply=1</code> (Admin). Lists scanned / changed / skipped module files. Idempotent; re-run when new flattened CRUD modules ship without the date display hook.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="employees">
@@ -2020,7 +2020,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="list_date_display_formats.php" target="_blank" rel="nofollow noreferrer">list_date_display_formats.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-browser">Browser</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
-                    <td>Per-module <strong>display</strong> date audit: <strong>OK</strong> / <strong>WARN</strong> / <strong>SKIP</strong> (<code>module_skip</code> for <code>backup_tape_log</code>, <code>birthdays</code>, <code>resignations</code>, <code>calendar</code>, <code>explorer</code>, <code>ops_report</code>, <code>reports</code>, <code>settings</code>, <code>hotel*</code>). Native <code>type="date"</code> skipped unless <code>--include-inputs</code>. Lib: <code>scripts/lib/itm_module_date_format_display_audit.php</code>.</td>
+                    <td>Per-module <strong>display</strong> date audit: <strong>OK</strong> when UK <code>dd/mmm/yyyy</code> helpers are used; <strong>WARN</strong> on raw ISO echo, legacy <code>date('d/m/Y')</code>, <code>type="date"</code> / <code>datetime-local</code> (with <code>--include-inputs</code>), or non-UK <code>date()</code> patterns. <strong>SKIP</strong> (<code>module_skip</code>) for exempt modules. Default WARN-only; <code>--module=</code> filter. Detection only. Lib: <code>scripts/lib/itm_module_date_format_display_audit.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
@@ -2225,7 +2225,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="check_date_format.php" target="_blank" rel="nofollow noreferrer">check_date_format.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
-                    <td>Project-wide date format gate: UK <code>dd/mm/yyyy</code>, hospitality <code>d/M/Y</code> (<code>31/Aug/2026</code>), audit stamps, hospitality static scan, scaffold cell-hook info.</td>
+                    <td>Project-wide date format gate: UK <code>dd/mmm/yyyy</code> display (<code>31/Aug/2026</code>), audit stamps, hospitality static scan, scaffold cell-hook info. Import parsing still accepts numeric <code>dd/mm/yyyy</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="appointments modules_registry">

@@ -1,6 +1,6 @@
 <?php
 /**
- * UK dd/mm/yyyy text field + native calendar picker (hidden type="date").
+ * UK dd/mmm/yyyy text field + native calendar picker (hidden type="date").
  */
 
 if (!function_exists('itm_render_uk_date_input')) {
@@ -20,7 +20,7 @@ if (!function_exists('itm_render_uk_date_input')) {
             $class = 'form-control';
         }
         $minIso = trim((string) ($options['min'] ?? ''));
-        $placeholder = trim((string) ($options['placeholder'] ?? 'dd/mm/yyyy'));
+        $placeholder = trim((string) ($options['placeholder'] ?? 'dd/mmm/yyyy'));
         $iso = function_exists('itm_date_input_iso_value') ? itm_date_input_iso_value($rawValue) : '';
         $display = function_exists('itm_format_date_display') ? itm_format_date_display($rawValue) : '';
         $nativeId = $id . '_native';

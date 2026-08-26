@@ -182,7 +182,7 @@ if (!function_exists('itm_appointment_slot_label')) {
 
 if (!function_exists('itm_appointment_format_slot_display_summary')) {
     /**
-     * Human-readable slot summary for booking UI (dd/mm/yyyy + time range).
+     * Human-readable slot summary for booking UI (dd/mmm/yyyy + time range).
      */
     function itm_appointment_format_slot_display_summary(string $slotLabel, string $dateYmd): string
     {

@@ -16,7 +16,7 @@ Read-only dashboard for upcoming and past expirations. Aggregates dates from **e
 - **Badge thresholds:** expired (red), ≤30 days (red), ≤90 days (warning), else success (`expiring_days_left_badge()`).
 - **Alert visibility:** respects private vs global alert rules when counting/listing alert expirations.
 - **Date parsing:** supports `Y-m-d`, `d/m/Y`, `m/d/Y` via `expiring_parse_date()`.
-- **List display:** `expiring_display_date()` routes through `itm_format_date_display()` (dd/mm/yyyy) for purchase/expiry columns.
+- **List display:** `expiring_display_date()` routes through `itm_format_date_display()` (dd/mmm/yyyy) for purchase/expiry columns.
 
 ## 5. UI Behavior Requirements
 - Summary counts per field (expired, unknown, &lt;30d, &gt;60d).

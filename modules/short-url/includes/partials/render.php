@@ -126,7 +126,7 @@ $csrfToken = itm_get_csrf_token();
                         </div>
                         <?php endif; ?>
                         <div class="form-group">
-                            <label for="su-edit-expires-at">Expires on (dd/mm/yyyy)</label>
+                            <label for="su-edit-expires-at">Expires on (dd/mmm/yyyy)</label>
                             <?php itm_render_uk_date_input('expires_at', 'su-edit-expires-at', $suRow['expires_at'] ?? ''); ?>
                         </div>
                         <?php if (empty($suRow['qr_code_id'])): ?>
