@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $crud_table = 'hotel_bookings_history';
 $crud_title = 'Booking History Status';
 $crud_action = 'list_all';

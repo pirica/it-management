@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Bills — view (delegates to index.php for line items and Post to expenses).
  */

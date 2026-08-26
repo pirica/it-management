@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $crud_table = 'customers';
 $crud_title = 'customers';
 $crud_action = 'create';

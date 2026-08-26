@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $crud_table = 'hotel_booking_room_utilities';
 $crud_title = 'Room Utilities';
 $crud_action = 'create';

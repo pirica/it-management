@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * 
  * Configures the action to 'create' and delegates to index.php.

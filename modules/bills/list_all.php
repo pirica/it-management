@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $crud_table = 'bills';
 $crud_title = 'Bills';
 $crud_action = 'list_all';

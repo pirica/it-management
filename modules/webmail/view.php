@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Webmail — message detail (read pane).
  */

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $crud_table = 'integration_webhooks';
 $crud_title = 'Integration Webhooks';
 $crud_action = 'list_all';

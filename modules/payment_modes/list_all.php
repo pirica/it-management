@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $crud_table = 'payment_modes';
 $crud_title = 'Payment Modes';
 $crud_action = 'list_all';

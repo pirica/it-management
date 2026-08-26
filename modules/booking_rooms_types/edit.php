@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Room Types — edit routes through shared index CRUD handler (multi-photo upload).
  */

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Invoices — view (delegates to index.php for line items).
  */

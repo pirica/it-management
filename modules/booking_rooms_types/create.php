@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Room Types — create routes through shared index CRUD handler.
  */

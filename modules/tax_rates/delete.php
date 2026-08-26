@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * 
  * Handles row deletion via POST in index.php.

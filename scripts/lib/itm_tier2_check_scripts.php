@@ -3,7 +3,7 @@
  * Tier 2 static script list and subprocess runner for run_tier2_checks.php.
  *
  * Why: SCRIPTS_TEST_MATRIX.md is the canonical tier map; parsing keeps the batch runner in sync.
- * Tier 2 includes check_* gates plus list_raw_columns.php (FK display audit) and list_date_display_formats.php (UK date display audit).
+ * Tier 2 includes check_* gates plus list_raw_columns.php (FK display audit), list_date_display_formats.php (UK date display audit), and UTF-8 gates (source mojibake, scripts BOM, DB seed corruption dry-run).
  */
 
 require_once __DIR__ . '/itm_perform_audit.php';
@@ -48,6 +48,9 @@ if (!function_exists('itm_tier2_check_scripts_canonical_fallback')) {
             'check_ui_action_emoji.php',
             'check_pagination_emoji.php',
             'check_ui_configuration_coverage.php',
+            'check_script_php_utf8_no_bom.php',
+            'verify_source_utf8_mojibake.php',
+            'repair_db_utf8_seed_corruption.php',
             'list_date_display_formats.php',
             'list_raw_columns.php',
         ];
