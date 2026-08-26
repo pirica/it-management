@@ -102,8 +102,9 @@ if (!function_exists('itm_module_date_format_display_audit_line_rules')) {
     /**
      * @return list<array{status:string,pattern:string,format:string,regex:string,notes:string}>
      */
-    function itm_module_date_format_display_audit_line_rules(bool $isHospitality): array
+    function itm_module_date_format_display_audit_line_rules(bool $isHospitality, bool $includeInputs = false): array
     {
+        $inputStatus = $includeInputs ? 'warn' : 'skip';
         $rules = [
             [
                 'status' => 'ok',
@@ -141,18 +142,18 @@ if (!function_exists('itm_module_date_format_display_audit_line_rules')) {
                 'notes' => 'Explicit UK date() format',
             ],
             [
-                'status' => 'warn',
+                'status' => $inputStatus,
                 'pattern' => 'html_date_input',
                 'format' => 'browser ISO (Y-m-d)',
                 'regex' => '/type\s*=\s*[\'"]date[\'"]/i',
-                'notes' => 'Native date input shows ISO; prefer UK text + itm_parse_date_input or document filter-only use',
+                'notes' => 'Native date input (ISO value) — skipped by default; pass --include-inputs to WARN',
             ],
             [
-                'status' => 'warn',
+                'status' => $inputStatus,
                 'pattern' => 'html_datetime_local_input',
                 'format' => 'browser ISO (Y-m-dTH:i)',
                 'regex' => '/type\s*=\s*[\'"]datetime-local[\'"]/i',
-                'notes' => 'Native datetime-local uses ISO-like value',
+                'notes' => 'Native datetime-local — skipped by default; pass --include-inputs to WARN',
             ],
             [
                 'status' => 'warn',
@@ -230,11 +231,18 @@ if (!function_exists('itm_module_date_format_display_audit_line_has_ok_helper'))
     }
 }
 
+if (!function_exists('itm_module_date_format_display_audit_line_is_form_value_binding')) {
+    function itm_module_date_format_display_audit_line_is_form_value_binding(string $line): bool
+    {
+        return (bool) preg_match('/<input\b|value\s*=\s*[\'"]<\?php|name\s*=\s*[\'"](?:date_|due_date|created_at)/i', $line);
+    }
+}
+
 if (!function_exists('itm_module_date_format_display_audit_scan_file')) {
     /**
      * @return list<array<string,mixed>>
      */
-    function itm_module_date_format_display_audit_scan_file(string $repoRoot, string $slug, string $absPath): array
+    function itm_module_date_format_display_audit_scan_file(string $repoRoot, string $slug, string $absPath, bool $includeInputs = false): array
     {
         $content = file_get_contents($absPath);
         if ($content === false) {
@@ -251,7 +259,7 @@ if (!function_exists('itm_module_date_format_display_audit_scan_file')) {
         }
 
         $isHospitality = itm_module_date_format_display_audit_hospitality_slug($slug);
-        $rules = itm_module_date_format_display_audit_line_rules($isHospitality);
+        $rules = itm_module_date_format_display_audit_line_rules($isHospitality, $includeInputs);
         $rel = itm_module_date_format_display_audit_rel_path($repoRoot, $absPath);
         $rows = [];
 
@@ -270,6 +278,9 @@ if (!function_exists('itm_module_date_format_display_audit_scan_file')) {
 
                 $status = (string) $rule['status'];
                 if ($rule['pattern'] === 'raw_iso_date_echo' && itm_module_date_format_display_audit_line_has_ok_helper($line)) {
+                    continue;
+                }
+                if ($rule['pattern'] === 'raw_iso_date_echo' && itm_module_date_format_display_audit_line_is_form_value_binding($line)) {
                     continue;
                 }
                 if ($status === 'warn' && in_array($rule['pattern'], ['date_iso_storage', 'datetime_iso_storage'], true)) {
@@ -299,7 +310,7 @@ if (!function_exists('itm_module_date_format_display_audit_scan_file')) {
 
 if (!function_exists('itm_module_date_format_display_audit_run')) {
     /**
-     * @param array{root:string,module?:string,only_warn?:bool,all?:bool} $options
+     * @param array{root:string,module?:string,only_warn?:bool,all?:bool,include_inputs?:bool,include_skips?:bool} $options
      * @return list<array<string,mixed>>
      */
     function itm_module_date_format_display_audit_run(array $options): array
@@ -308,6 +319,8 @@ if (!function_exists('itm_module_date_format_display_audit_run')) {
         $moduleFilter = trim((string) ($options['module'] ?? ''));
         $onlyWarn = !empty($options['only_warn']);
         $showAll = !empty($options['all']);
+        $includeInputs = !empty($options['include_inputs']);
+        $includeSkips = !empty($options['include_skips']);
 
         $slugs = $moduleFilter !== ''
             ? [$moduleFilter]
@@ -333,12 +346,15 @@ if (!function_exists('itm_module_date_format_display_audit_run')) {
             }
 
             foreach ($files as $filePath) {
-                foreach (itm_module_date_format_display_audit_scan_file($repoRoot, $slug, $filePath) as $row) {
+                foreach (itm_module_date_format_display_audit_scan_file($repoRoot, $slug, $filePath, $includeInputs) as $row) {
                     $status = (string) ($row['status'] ?? 'ok');
                     if ($onlyWarn && $status !== 'warn') {
                         continue;
                     }
                     if (!$showAll && !$onlyWarn && $status === 'ok') {
+                        continue;
+                    }
+                    if (!$includeSkips && $status === 'skip') {
                         continue;
                     }
                     $rows[] = $row;

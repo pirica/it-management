@@ -9,7 +9,7 @@
  *   php scripts/list_date_display_formats.php
  *   php scripts/list_date_display_formats.php --only-warn
  *   php scripts/list_date_display_formats.php --module=tickets
- *   php scripts/list_date_display_formats.php --module=ticket_survey_dashboard --all
+ *   php scripts/list_date_display_formats.php --include-inputs
  *
  * Browser (Administrator): scripts/list_date_display_formats.php?run=1
  */
@@ -17,12 +17,13 @@
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-Static audit: flags module PHP where dates are shown or collected without the UK <code>dd/mm/yyyy</code> contract.<br>
+Static audit: flags module PHP where <strong>displayed</strong> dates omit the UK <code>dd/mm/yyyy</code> contract.<br>
 <strong>OK</strong> — <code>itm_format_date_display()</code>, <code>itm_format_cell_scalar_display()</code>, <code>itm_format_datetime_display()</code>, explicit <code>date('d/m/Y')</code>, or hospitality <code>itm_format_hotel_date_display()</code> in hotel modules.<br>
-<strong>WARN</strong> — raw ISO echo (<code>$row['due_date']</code>), <code>type="date"</code> / <code>datetime-local</code>, <code>date('Y-m-d')</code> on output lines, US/text <code>date()</code> patterns.<br>
-Default lists <strong>WARN</strong> rows only; pass <code>--all</code> for OK rows too. Filter one module: <code>--module=tickets</code>.<br>
+<strong>WARN</strong> — raw ISO echo in list/view (<code>$row['due_date']</code> without a helper), <code>date('Y-m-d')</code> on output lines, US/text <code>date()</code> patterns.<br>
+Native <code>type="date"</code> / <code>datetime-local</code> form controls are <strong>skipped</strong> by default (ISO value is normal for HTML5 inputs). Pass <code>--include-inputs</code> to WARN on those too.<br>
+Default lists <strong>WARN</strong> rows only; <code>--all</code> includes OK rows; <code>--module=tickets</code> filters one module.<br>
 CLI examples:<br>
-<code>php scripts/list_date_display_formats.php --only-warn</code><br>
+<code>php scripts/list_date_display_formats.php</code><br>
 <code>php scripts/list_date_display_formats.php --module=ticket_survey_dashboard</code>
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
@@ -41,6 +42,7 @@ $root = rtrim(ROOT_PATH, '/\\');
 $moduleFilter = '';
 $onlyWarn = true;
 $showAll = false;
+$includeInputs = false;
 
 if ($isCli) {
     foreach ($argv ?? [] as $arg) {
@@ -52,6 +54,8 @@ if ($isCli) {
         } elseif ($arg === '--all') {
             $showAll = true;
             $onlyWarn = false;
+        } elseif ($arg === '--include-inputs') {
+            $includeInputs = true;
         }
     }
 } else {
@@ -59,6 +63,7 @@ if ($isCli) {
     $moduleFilter = isset($_GET['module']) ? trim((string) $_GET['module']) : '';
     $onlyWarn = !isset($_GET['all']) || (string) $_GET['all'] !== '1';
     $showAll = isset($_GET['all']) && (string) $_GET['all'] === '1';
+    $includeInputs = isset($_GET['include_inputs']) && (string) $_GET['include_inputs'] === '1';
 }
 
 $rows = itm_module_date_format_display_audit_run([
@@ -66,6 +71,7 @@ $rows = itm_module_date_format_display_audit_run([
     'module' => $moduleFilter,
     'only_warn' => $onlyWarn && !$showAll,
     'all' => $showAll,
+    'include_inputs' => $includeInputs,
 ]);
 
 $okCount = 0;
@@ -97,6 +103,11 @@ if (!$isCli) {
         echo '<p><strong>Filter:</strong> all rows (OK + WARN)</p>';
     } else {
         echo '<p><strong>Filter:</strong> WARN rows only (<code>?all=1</code> for OK too)</p>';
+    }
+    if ($includeInputs) {
+        echo '<p><strong>Include inputs:</strong> native <code>type="date"</code> / <code>datetime-local</code> counted as WARN</p>';
+    } else {
+        echo '<p><strong>Display-only:</strong> native date inputs skipped (add <code>?include_inputs=1</code> to WARN them)</p>';
     }
 
     if ($rows === []) {
@@ -149,7 +160,8 @@ if (!$isCli) {
 
     echo '<div style="margin:16px 0;padding:12px;border:1px dashed #d0d7de;border-radius:6px;font-size:13px;">';
     echo '<p><strong>OK</strong> = UK <code>dd/mm/yyyy</code> via shared helpers or explicit <code>date(\'d/m/Y\')</code>.</p>';
-    echo '<p><strong>WARN</strong> = other display format (raw MySQL ISO, native <code>type="date"</code>, US/text <code>date()</code>). Detection only — no auto-fix.</p>';
+    echo '<p><strong>WARN</strong> = list/view shows ISO or non-UK format without shared helpers.</p>';
+    echo '<p>Native form <code>type="date"</code> inputs are skipped unless <code>--include-inputs</code>.</p>';
     echo '<p>Canonical contract: <code>includes/itm_date_format.php</code> and <code>AGENTS.md</code> → Character encoding / dates.</p>';
     echo '</div>';
 
@@ -172,6 +184,11 @@ if ($showAll) {
     echo 'Filter: all rows' . $nl;
 } else {
     echo 'Filter: WARN only (pass --all for OK rows)' . $nl;
+}
+if ($includeInputs) {
+    echo 'Include inputs: yes (native date fields WARN)' . $nl;
+} else {
+    echo 'Display-only: native date inputs skipped (pass --include-inputs to WARN)' . $nl;
 }
 echo $nl;
 
