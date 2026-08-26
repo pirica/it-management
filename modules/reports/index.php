@@ -202,6 +202,8 @@ $maintenance_forecast = get_upcoming_maintenance_forecast();
 $employee_growth = get_employee_growth_trend();
 $monthly_comparison = get_monthly_actual_comparison();
 $csat_trend = get_ticket_csat_trend();
+$survey_response_rate_trend = get_ticket_survey_response_rate_trend();
+$survey_question_averages = get_ticket_survey_question_averages();
 $asset_lifecycle_summary = get_asset_lifecycle_stage_summary();
 $problem_management_summary = get_problem_management_summary();
 
@@ -793,6 +795,41 @@ if (!isset($crud_title)) {
                         </article>
 
                         <article class="report-card">
+                            <h2>📊 Survey Response Rate</h2>
+                            <div class="chart-container">
+                                <canvas id="surveyResponseRateChart"></canvas>
+                            </div>
+                            <p class="report-desc">Issued vs completed post-ticket surveys by month (last 12 months).</p>
+                        </article>
+
+                        <article class="report-card">
+                            <h2>📋 Survey Question Averages</h2>
+                            <?php if (($survey_question_averages['questionnaire_name'] ?? '') !== '' && !empty($survey_question_averages['questions'])): ?>
+                                <p class="report-desc" style="margin-bottom:8px;">Default questionnaire: <?php echo sanitize((string)$survey_question_averages['questionnaire_name']); ?> (last 90 days)</p>
+                                <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                                    <thead>
+                                    <tr>
+                                        <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border-color,#e2e8f0);">Question</th>
+                                        <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border-color,#e2e8f0);">Avg</th>
+                                        <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border-color,#e2e8f0);">Responses</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php foreach ($survey_question_averages['questions'] as $surveyQuestion): ?>
+                                        <tr>
+                                            <td style="padding:6px 8px;border-bottom:1px solid var(--border-color,#e2e8f0);"><?php echo sanitize((string)($surveyQuestion['text'] ?? '')); ?></td>
+                                            <td style="padding:6px 8px;border-bottom:1px solid var(--border-color,#e2e8f0);text-align:right;"><?php echo $surveyQuestion['avg'] !== null ? sanitize((string)$surveyQuestion['avg']) . '/5' : '—'; ?></td>
+                                            <td style="padding:6px 8px;border-bottom:1px solid var(--border-color,#e2e8f0);text-align:right;"><?php echo (int)($surveyQuestion['count'] ?? 0); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            <?php else: ?>
+                                <p class="report-desc">No default questionnaire or no rating responses in the last 90 days.</p>
+                            <?php endif; ?>
+                        </article>
+
+                        <article class="report-card">
                             <h2>🔍 Problem Management</h2>
                             <div class="chart-container">
                                 <canvas id="problemManagementChart"></canvas>
@@ -1230,6 +1267,42 @@ if (!isset($crud_title)) {
                         max: 5,
                         grid: { color: gridColor },
                         ticks: { color: textColor }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: textColor }
+                    }
+                }
+            })
+        });
+
+        new Chart(document.getElementById('surveyResponseRateChart'), {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($survey_response_rate_trend['labels']); ?>,
+                datasets: [
+                    {
+                        label: 'Issued',
+                        data: <?php echo json_encode($survey_response_rate_trend['issued']); ?>,
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: '#3b82f6',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Completed',
+                        data: <?php echo json_encode($survey_response_rate_trend['completed']); ?>,
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderColor: '#10b981',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: Object.assign({}, baseOptions, {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: gridColor },
+                        ticks: { color: textColor, precision: 0 }
                     },
                     x: {
                         grid: { display: false },

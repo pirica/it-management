@@ -70,6 +70,8 @@ if (!function_exists('itm_saved_reports_module_config')) {
                     'assigned_to_employee_id' => 'int',
                     'due_date_from' => 'date',
                     'due_date_to' => 'date',
+                    'survey_status' => 'string',
+                    'csat_min' => 'int',
                 ],
                 'columns' => [
                     'id' => 'ID',
@@ -80,8 +82,9 @@ if (!function_exists('itm_saved_reports_module_config')) {
                     'sla_status' => 'SLA',
                     'master_ticket_id' => 'Master Ticket',
                     'due_date' => 'Due Date',
+                    'survey_summary' => 'Survey',
                 ],
-                'sortable' => ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'due_date', 'master_ticket_id'],
+                'sortable' => ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'due_date', 'master_ticket_id', 'survey_summary'],
             ],
             'equipment' => [
                 'label' => 'Equipment',

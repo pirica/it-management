@@ -839,6 +839,7 @@ function itmDocIntegrationWebhookEvents(): array
         ['event' => 'ticket.status_changed', 'purpose' => 'Ticket edit when status_id changes.'],
         ['event' => 'ticket.priority_changed', 'purpose' => 'Ticket edit when priority_id changes.'],
         ['event' => 'ticket.comment_created', 'purpose' => 'After ticket comment create.'],
+        ['event' => 'ticket.survey_completed', 'purpose' => 'After customer submits a ticket survey (public ticket-survey.php).'],
         ['event' => 'alert.created', 'purpose' => 'After alert create.'],
         ['event' => 'expense.created', 'purpose' => 'After expense create.'],
         ['event' => 'expense.approved', 'purpose' => 'Expense transitions into Posted/Paid.'],
@@ -1360,6 +1361,22 @@ curl -b cookies.txt -X POST "http://localhost/it-management/modules/select_optio
                 <tr><td><code>list</code></td><td>GET</td><td>Filtered ticket rows: <code>filter=at_risk|breached|met|all</code>, pagination <code>page</code>, <code>per_page</code>.</td></tr>
             </tbody>
         </table>
+    </div>
+
+    <div class="card">
+        <h2>Ticket surveys (public + productivity)</h2>
+        <p>Multi-question post-ticket CSAT — canonical <code>docs/TICKET_SURVEYS.md</code>. Helpers: <code>includes/itm_ticket_survey.php</code>. Legacy single-score flow: <code>ticket-csat.php</code> + <code>includes/itm_ticket_csat.php</code> (<code>docs/TICKET_PRODUCTIVITY.md</code>).</p>
+        <table>
+            <thead><tr><th>Entry</th><th>Auth</th><th>Purpose</th></tr></thead>
+            <tbody>
+                <tr><td><code>ticket-survey.php?token=</code></td><td>None</td><td>Public questionnaire submit; syncs <code>tickets.csat_score</code> / <code>csat_comment</code>.</td></tr>
+                <tr><td><code>ticket-csat.php?token=</code></td><td>None</td><td>Legacy HMAC token; redirects to pending <code>ticket-survey.php</code> when a survey exists.</td></tr>
+                <tr><td><code>modules/tickets/view.php</code></td><td>Session</td><td>POST <code>issue_ticket_survey</code> — manual issue + optional email.</td></tr>
+                <tr><td>Automation <code>send_ticket_survey</code></td><td>Rule engine</td><td>Issue survey from workflow action (<code>includes/itm_automation_rules.php</code>).</td></tr>
+                <tr><td>Webhook <code>ticket.survey_completed</code></td><td>Subscriber</td><td>Enqueued after successful submit (<code>includes/itm_webhook_queue.php</code>).</td></tr>
+            </tbody>
+        </table>
+        <p class="muted">Regression: <code>php scripts/verify_ticket_surveys.php</code>, <code>php scripts/verify_ticket_productivity.php</code>.</p>
     </div>
 
     <div class="card">

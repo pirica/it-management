@@ -387,6 +387,24 @@ if (!isset($crud_title)) {
                         <label for="ticketDueTo">Due to</label>
                         <input type="date" id="ticketDueTo" name="due_date_to" value="<?php echo sanitize((string)($ticketListFilters['due_date_to'] ?? '')); ?>" data-itm-saved-report-filter="1">
                     </div>
+                    <div class="form-group" style="margin:0;min-width:140px;">
+                        <label for="ticketSurveyStatusFilter">Survey</label>
+                        <select id="ticketSurveyStatusFilter" name="survey_status" data-itm-saved-report-filter="1">
+                            <option value="">All</option>
+                            <?php foreach (['none' => 'None', 'pending' => 'Pending', 'completed' => 'Completed'] as $surveyVal => $surveyLabel): ?>
+                                <option value="<?php echo sanitize($surveyVal); ?>"<?php echo (string)($ticketListFilters['survey_status'] ?? '') === $surveyVal ? ' selected' : ''; ?>><?php echo sanitize($surveyLabel); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0;min-width:120px;">
+                        <label for="ticketCsatMinFilter">Min CSAT</label>
+                        <select id="ticketCsatMinFilter" name="csat_min" data-itm-saved-report-filter="1">
+                            <option value="">All</option>
+                            <?php for ($csatOpt = 1; $csatOpt <= 5; $csatOpt++): ?>
+                                <option value="<?php echo $csatOpt; ?>"<?php echo (int)($ticketListFilters['csat_min'] ?? 0) === $csatOpt ? ' selected' : ''; ?>><?php echo $csatOpt; ?>+</option>
+                            <?php endfor; ?>
+                        </select>
+                    </div>
                     <input type="hidden" name="sort" value="<?php echo sanitize($sort); ?>" data-itm-saved-report-filter="1">
                     <input type="hidden" name="dir" value="<?php echo sanitize($dir); ?>" data-itm-saved-report-filter="1">
                     <?php if ($showArchived): ?><input type="hidden" name="show_archived" value="1" data-itm-saved-report-filter="1"><?php endif; ?>
@@ -423,7 +441,7 @@ if (!isset($crud_title)) {
                     <thead>
                     <tr>
                         <?php if ($showBulkActions): ?><th>Select</th><?php endif; ?>
-                        <?php foreach (['id' => 'ID', 'ticket_external_code' => 'External Code', 'title' => 'Title', 'status_name' => 'Status', 'priority_name' => 'Priority', 'sla_status' => 'SLA', 'master_ticket_id' => 'Master Ticket', 'due_date' => 'Due Date'] as $field => $label): ?>
+                        <?php foreach (['id' => 'ID', 'ticket_external_code' => 'External Code', 'title' => 'Title', 'status_name' => 'Status', 'priority_name' => 'Priority', 'sla_status' => 'SLA', 'master_ticket_id' => 'Master Ticket', 'due_date' => 'Due Date', 'survey_summary' => 'Survey'] as $field => $label): ?>
                             <?php $nextDir = ($sort === $field && $dir === 'ASC') ? 'DESC' : 'ASC'; ?>
                             <th><a href="?<?php echo sanitize(itm_saved_reports_filters_query_string($ticketListFilters, ['sort' => $field, 'dir' => $nextDir])); ?>" style="text-decoration:none;color:inherit;"><?php echo sanitize($label); ?><?php if ($sort === $field): ?> <?php echo $dir === 'ASC' ? '▲' : '▼'; ?><?php endif; ?></a></th>
                         <?php endforeach; ?>
@@ -449,6 +467,7 @@ if (!isset($crud_title)) {
                                 <?php endif; ?>
                             </td>
                             <td><?php echo sanitize($t['due_date'] ?? '—'); ?></td>
+                            <td><?php echo sanitize($t['survey_summary'] ?? '—'); ?></td>
                             <td class="itm-actions-cell" data-itm-actions-origin="1">
                                 <div class="itm-actions-wrap">
                                     <a class="btn btn-sm" href="view.php?id=<?php echo (int)$t['id']; ?>">🔎</a>
@@ -484,7 +503,7 @@ if (!isset($crud_title)) {
                             </td>
                         </tr>
                     <?php endforeach; else: ?>
-                        <tr><td colspan="<?php echo $showBulkActions ? 10 : 9; ?>" style="text-align:center;">No records found.</td></tr>
+                        <tr><td colspan="<?php echo $showBulkActions ? 11 : 10; ?>" style="text-align:center;">No records found.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>

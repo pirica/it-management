@@ -32,8 +32,10 @@ Validation lives in `includes/itm_saved_reports.php` (`itm_saved_reports_module_
 | `sort`, `dir` | sortable column + ASC/DESC |
 | `status_id`, `priority_id`, `assigned_to_employee_id` | int |
 | `due_date_from`, `due_date_to` | date |
+| `survey_status` | string (`pending` \| `completed` \| `none`) |
+| `csat_min` | int (minimum CSAT / survey average) |
 
-List query: `includes/itm_tickets_list_query.php`.
+List query: `includes/itm_tickets_list_query.php`. Optional column `survey_summary` for exports.
 
 ### Equipment
 

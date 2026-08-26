@@ -733,6 +733,9 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 ("system_access", "System Access", 0, 1),
 ("ticket_categories", "Ticket Categories", 0, 1),
 ("ticket_canned_responses", "Ticket Canned Responses", 0, 1, "💬"),
+("ticket_questionnaires", "Ticket Questionnaires", 0, 1, "📋"),
+("ticket_surveys", "Ticket Surveys", 0, 1, "⭐"),
+("ticket_survey_dashboard", "Ticket Survey Dashboard", 0, 1, "📊"),
 ("ticket_priorities", "Ticket Priorities", 0, 1),
 ("ticket_statuses", "Ticket Statuses", 0, 1),
 ("tickets", "Tickets", 0, 1),
@@ -1008,6 +1011,14 @@ INSERT INTO `ticket_canned_responses` (`company_id`, `title`, `body`, `category_
 ('1', 'Acknowledge receipt', 'Thank you for contacting IT. We have received your request and will respond shortly.', 5, 1, '2026-01-01 00:00:01'),
 ('1', 'Request more information', 'Could you provide additional details (screenshots, error messages, or steps to reproduce) so we can assist you faster?', 5, 1, '2026-01-01 00:00:01'),
 ('1', 'Resolved — please confirm', 'We believe this issue has been resolved. Please reply if you still need assistance.', 5, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `ticket_questionnaires` (`company_id`, `name`, `description`, `category_id`, `is_default`, `active`, `created_at`) VALUES
+(1, 'Sample satisfaction survey', 'Add-sample-data default CSAT template', NULL, 1, 1, '2026-01-01 00:00:02');
+
+INSERT INTO `ticket_questionnaire_questions` (`company_id`, `questionnaire_id`, `sort_order`, `question_text`, `question_type`, `is_required`, `active`, `created_at`) VALUES
+(1, (SELECT `id` FROM `ticket_questionnaires` WHERE `company_id` = 1 AND `name` = 'Sample satisfaction survey' AND `deleted_at` IS NULL LIMIT 1), 1, 'Overall satisfaction with IT support', 'rating_1_5', 1, 1, '2026-01-01 00:00:02'),
+(1, (SELECT `id` FROM `ticket_questionnaires` WHERE `company_id` = 1 AND `name` = 'Sample satisfaction survey' AND `deleted_at` IS NULL LIMIT 1), 2, 'How responsive was our team?', 'rating_1_5', 1, 1, '2026-01-01 00:00:02'),
+(1, (SELECT `id` FROM `ticket_questionnaires` WHERE `company_id` = 1 AND `name` = 'Sample satisfaction survey' AND `deleted_at` IS NULL LIMIT 1), 3, 'Additional comments', 'text', 0, 1, '2026-01-01 00:00:02');
 
 INSERT INTO `ticket_categories` (`company_id`, `id`, `name`, `code`, `active`, `created_at`) VALUES
 ('1', '1', 'Hardware Issue', 'HW', '1', '2026-01-01 00:00:01'),

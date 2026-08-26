@@ -4,7 +4,7 @@
 
 ## Executive summary
 
-ITM is already a **broad multi-tenant operations platform** (ITAM, IPAM/DCIM, HR, helpdesk, finance, hospitality, vault productivity) with **222 module folders**, **225 tables**, mature RBAC, audit triggers, and an extensive `scripts/` verification catalog. Strengths: deep vertical coverage, tenant isolation, zero external dependencies, and strong security hardening.
+ITM is already a **broad multi-tenant operations platform** (ITAM, IPAM/DCIM, HR, helpdesk, finance, hospitality, vault productivity) with **222 module folders**, **229 tables**, mature RBAC, audit triggers, and an extensive `scripts/` verification catalog. Strengths: deep vertical coverage, tenant isolation, zero external dependencies, and strong security hardening.
 
 The biggest **product gaps** are not missing CRUD tables but **incomplete workflows**, **limited automation**, **weak operational visibility**, and **enterprise integration/auth** layers on top of an otherwise feature-rich core. The highest ROI additions:
 
@@ -13,7 +13,7 @@ The biggest **product gaps** are not missing CRUD tables but **incomplete workfl
 3. **Workflow Automation Rules** — inbound email routing exists; no general if/then engine for tickets, alerts, equipment expiry.
 4. **Scheduled Executive Reports** — **Shipped** — `scheduled_reports`, Hub modal, cron runner; saved views use `saved_view:{id}` (`docs/SCHEDULED_REPORTS.md`, `docs/SAVED_REPORT_VIEWS.md`).
 5. **Hotel Online Payments** — explicitly deferred in `docs/BOOKING.md` and `handoff.md`.
-6. **Ticket Productivity Pack** — canned responses, merge/split, satisfaction survey (SLA timestamps exist; UX incomplete).
+6. **Ticket Productivity Pack** — **Shipped** — canned responses, merge, legacy CSAT + **ticket surveys** (questionnaires, public submit, dashboard, automation/webhooks — `docs/TICKET_SURVEYS.md`, `docs/TICKET_PRODUCTIVITY.md`).
 7. **Asset Lifecycle & Depreciation** — equipment has warranty/certificate dates; no formal lifecycle states or financial depreciation.
 8. **SSO / LDAP Authentication** — username/password only; blocks enterprise adoption.
 9. **Outbound Webhooks & Integration Hub** — `integration_accounts` is a finance ledger table, not a connector framework; hotel distribution has webhooks but helpdesk/finance do not.
@@ -221,11 +221,11 @@ scheduled_reports (
 
 ---
 
-### Feature F: Ticket Productivity Pack
+### Feature F: Ticket Productivity Pack — **Shipped**
 
 **User problem:** Agents retype answers; no CSAT; hard to merge duplicate tickets.
 
-**Components:** canned responses, ticket merge, CSAT survey on resolve.
+**Components:** canned responses, ticket merge, legacy CSAT (`ticket-csat.php`), **ticket surveys** (questionnaires, `ticket-survey.php`, dashboard, saved-view filters). Regression: `php scripts/verify_ticket_productivity.php`, `php scripts/verify_ticket_surveys.php`. Docs: `docs/TICKET_PRODUCTIVITY.md`, `docs/TICKET_SURVEYS.md`.
 
 **Complexity:** Medium
 

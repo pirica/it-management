@@ -144,6 +144,8 @@ function audit_logs_system_derived_tables(): array
         'qr_code_scans' => true,
         'short_url_clicks' => true,
         'master_ticket_updates' => true,
+        'ticket_surveys' => true,
+        'ticket_survey_answers' => true,
     ];
 }
 

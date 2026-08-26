@@ -3767,6 +3767,42 @@ CREATE TRIGGER `trg_ticket_sla_escalation_rules_audit_delete` AFTER DELETE ON `t
   VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_sla_escalation_rules', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'priority_id', OLD.`priority_id`, 'breach_type', OLD.`breach_type`, 'escalate_to_employee_id', OLD.`escalate_to_employee_id`, 'active', OLD.`active`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
 
+DROP TRIGGER IF EXISTS `trg_ticket_questionnaires_audit_insert`$$
+CREATE TRIGGER `trg_ticket_questionnaires_audit_insert` AFTER INSERT ON `ticket_questionnaires` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_questionnaires', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'description', NEW.`description`, 'category_id', NEW.`category_id`, 'is_default', NEW.`is_default`, 'active', NEW.`active`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_ticket_questionnaires_audit_update`$$
+CREATE TRIGGER `trg_ticket_questionnaires_audit_update` AFTER UPDATE ON `ticket_questionnaires` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_questionnaires', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'description', OLD.`description`, 'category_id', OLD.`category_id`, 'is_default', OLD.`is_default`, 'active', OLD.`active`, 'created_at', OLD.`created_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'description', NEW.`description`, 'category_id', NEW.`category_id`, 'is_default', NEW.`is_default`, 'active', NEW.`active`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_ticket_questionnaires_audit_delete`$$
+CREATE TRIGGER `trg_ticket_questionnaires_audit_delete` AFTER DELETE ON `ticket_questionnaires` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_questionnaires', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'description', OLD.`description`, 'category_id', OLD.`category_id`, 'is_default', OLD.`is_default`, 'active', OLD.`active`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_ticket_questionnaire_questions_audit_insert`$$
+CREATE TRIGGER `trg_ticket_questionnaire_questions_audit_insert` AFTER INSERT ON `ticket_questionnaire_questions` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_questionnaire_questions', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'questionnaire_id', NEW.`questionnaire_id`, 'sort_order', NEW.`sort_order`, 'question_text', NEW.`question_text`, 'question_type', NEW.`question_type`, 'is_required', NEW.`is_required`, 'active', NEW.`active`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_ticket_questionnaire_questions_audit_update`$$
+CREATE TRIGGER `trg_ticket_questionnaire_questions_audit_update` AFTER UPDATE ON `ticket_questionnaire_questions` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_questionnaire_questions', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'questionnaire_id', OLD.`questionnaire_id`, 'sort_order', OLD.`sort_order`, 'question_text', OLD.`question_text`, 'question_type', OLD.`question_type`, 'is_required', OLD.`is_required`, 'active', OLD.`active`, 'created_at', OLD.`created_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'questionnaire_id', NEW.`questionnaire_id`, 'sort_order', NEW.`sort_order`, 'question_text', NEW.`question_text`, 'question_type', NEW.`question_type`, 'is_required', NEW.`is_required`, 'active', NEW.`active`, 'created_at', NEW.`created_at`), @app_ip_address, @app_user_agent);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_ticket_questionnaire_questions_audit_delete`$$
+CREATE TRIGGER `trg_ticket_questionnaire_questions_audit_delete` AFTER DELETE ON `ticket_questionnaire_questions` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'ticket_questionnaire_questions', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'questionnaire_id', OLD.`questionnaire_id`, 'sort_order', OLD.`sort_order`, 'question_text', OLD.`question_text`, 'question_type', OLD.`question_type`, 'is_required', OLD.`is_required`, 'active', OLD.`active`, 'created_at', OLD.`created_at`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
 DROP TRIGGER IF EXISTS `trg_ticket_canned_responses_audit_insert`$$
 CREATE TRIGGER `trg_ticket_canned_responses_audit_insert` AFTER INSERT ON `ticket_canned_responses` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)

@@ -557,6 +557,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
                 }
+                $newStatusIdForSurvey = ($status_id === 'NULL' || $status_id === null) ? 0 : (int)$status_id;
+                if ($newStatusIdForSurvey > 0 && function_exists('itm_ticket_survey_maybe_issue_on_close')) {
+                    if (!$is_edit || $newStatusIdForSurvey !== $previousStatusId) {
+                        itm_ticket_survey_maybe_issue_on_close($conn, (int)$company_id, $savedTicketId, $newStatusIdForSurvey);
+                    }
+                }
                 if ($newAssigneeId > 0 && $newAssigneeId !== $previousAssigneeId) {
                     itm_notify_ticket_assigned($conn, (int)$company_id, $newAssigneeId, $savedTicketId, $title, $ticket_external_code);
                 }

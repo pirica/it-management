@@ -23,6 +23,7 @@ Canonical DDL: `db/01_schema.sql`. Helpers: `includes/itm_webhook_queue.php`.
 | `ticket.status_changed` | After ticket edit when `status_id` changes (`modules/tickets/create.php`) |
 | `ticket.priority_changed` | After ticket edit when `priority_id` changes (`modules/tickets/create.php`) |
 | `ticket.comment_created` | After ticket comment create (`includes/itm_ticket_comments.php`, `modules/ticket_comments/index.php`) |
+| `ticket.survey_completed` | After ticket survey submit (`includes/itm_ticket_survey.php` → `itm_webhook_queue_enqueue()`) |
 | `alert.created` | After alert create (`modules/alerts/index.php`) |
 | `expense.created` | After expense create (`modules/expenses/index.php`) |
 | `expense.approved` | After expense edit when `paid_status_id` transitions into Posted/Paid (`modules/expenses/index.php`) |

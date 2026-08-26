@@ -114,6 +114,10 @@
     document.querySelectorAll('.itm-uk-date-field').forEach(bindField);
 
     document.querySelectorAll('.itm-uk-date-open').forEach(function (btn) {
+        if (btn.getAttribute('data-itm-uk-date-open-bound') === '1') {
+            return;
+        }
+        btn.setAttribute('data-itm-uk-date-open-bound', '1');
         btn.addEventListener('click', function (event) {
             event.preventDefault();
             event.stopPropagation();

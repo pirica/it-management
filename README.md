@@ -25,6 +25,7 @@
 - ✅ In-app Notification Center — header 🔔 with unread count, dropdown inbox, and digest email for assignments and workflow events
 - ✅ Appointments — Self-service IT visit scheduling (weekly slots, visit reasons, Live Chat launch card)
 - ✅ Saved report views — Save Tickets/Equipment/Expenses list filters and columns; **My reports** on Reports Hub with export, share, and optional email schedule (`docs/SAVED_REPORT_VIEWS.md`)
+- ✅ Ticket surveys — Configurable post-ticket questionnaires, public `ticket-survey.php`, survey dashboard, list filters, automation/webhooks (`docs/TICKET_SURVEYS.md`)
 - ✅ Hotel Booking — Public guest portal at `booking/` and Admin **🏨 Hospitality** modules (`docs/BOOKING.md`)
 - ✅ Hotel Booking Distribution — Partner channel API (JSON/OpenTravel XML, availability, book/modify/cancel, ARI push/pull) with per-channel keys (`docs/HOTEL_BOOKING_DISTRIBUTION.md`)
 - ✅ Short URLs — Employee-scoped link shortener with custom codes, optional password/expiry, click analytics, and QR integration; public redirect at `go.php?c=` (`docs/SHORT_URL.md`)
@@ -148,13 +149,13 @@
 
 <h2 align="center">Database Structure Overview</h2>
 
-<p align="center">Fresh import of <code>db/</code> split bundle provisions <strong>225 tables</strong> and approximately <strong>9,000+ seed rows</strong> (literal <code>INSERT</code>/<code>SELECT</code> data in <code>db/02_data.sql</code> plus derived rows such as <code>company_module_access</code> and <code>employee_sidebar_preferences</code>). Table count matches <code>grep -c '^CREATE TABLE' db/01_schema.sql</code> (or <code>php scripts/verify_database_schema.php</code> after import — output includes <code>Actual tables (MySQL): 225</code> when aligned). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
+<p align="center">Fresh import of <code>db/</code> split bundle provisions <strong>229 tables</strong> and approximately <strong>9,000+ seed rows</strong> (literal <code>INSERT</code>/<code>SELECT</code> data in <code>db/02_data.sql</code> plus derived rows such as <code>company_module_access</code> and <code>employee_sidebar_preferences</code>). Table count matches <code>grep -c '^CREATE TABLE' db/01_schema.sql</code> (or <code>php scripts/verify_database_schema.php</code> after import — output includes <code>Actual tables (MySQL): 229</code> when aligned). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
 
 <h3 align="center">High-level summary</h3>
 
 | Metric | Value |
 | --- | --- |
-| **Tables** | 225 (<code>db/01_schema.sql</code>; live check: [count_db_tables.php](http://localhost/it-management/scripts/count_db_tables.php)) |
+| **Tables** | 229 (<code>db/01_schema.sql</code>; live check: [count_db_tables.php](http://localhost/it-management/scripts/count_db_tables.php)) |
 | **Sample rows** | ~9,000+ after full <code>db/</code> import (literal seeds + derived matrix/sidebar rows) |
 | **Module folders** | 220 with <code>index.php</code> under <code>modules/</code> |
 | **Registry entries** | 167+ explicit <code>modules_registry</code> INSERTs in <code>02_data.sql</code> (hospitality/finance blocks add more; catalog slugs are not 1:1 with table count) |
@@ -176,11 +177,11 @@
 
 #### Tickets and support workflow
 
-`tickets`, `ticket_categories`, `ticket_priorities`, `ticket_statuses`, `ticket_inbound_email_messages`, `attempts`, `alerts`
+`tickets`, `ticket_categories`, `ticket_priorities`, `ticket_statuses`, `ticket_inbound_email_messages`, `ticket_questionnaires`, `ticket_questionnaire_questions`, `ticket_surveys`, `ticket_survey_answers`, `attempts`, `alerts`
 
-**Purpose:** Helpdesk lifecycle with categorisation, priority, status, login-attempt tracking, and global/private alerts (ICS import supported). **Inbound email → tickets:** mail to each tenant <code>companies.email</code> creates tickets or appends threaded replies (<code>TCK-####</code> / <code>[#id]</code>, <code>Re:</code>/<code>Fwd:</code> subject match, <code>In-Reply-To</code>/<code>References</code>). Keyword rules (<code>ticket_inbound_email_routing_rules</code>) set priority/category/assignee on new tickets; all events log to <code>emails</code> with JSON <code>details</code>. Dedupe: <code>ticket_inbound_email_messages</code>. Runner: <code>php scripts/run_inbound_email_tickets.php</code>. Local dev: [Mailpit](http://localhost/mailpit/) (<code>imap_host=mailpit</code>, SMTP <code>127.0.0.1:1025</code>). Details: <code>docs/EMAIL_MANAGEMENT.md</code> §5b.
+**Purpose:** Helpdesk lifecycle with categorisation, priority, status, login-attempt tracking, and global/private alerts (ICS import supported). **Post-ticket surveys:** configurable questionnaires, public `ticket-survey.php` submit, CSAT sync on `tickets.csat_*`, dashboard KPIs (`docs/TICKET_SURVEYS.md`). **Inbound email → tickets:** mail to each tenant <code>companies.email</code> creates tickets or appends threaded replies (<code>TCK-####</code> / <code>[#id]</code>, <code>Re:</code>/<code>Fwd:</code> subject match, <code>In-Reply-To</code>/<code>References</code>). Keyword rules (<code>ticket_inbound_email_routing_rules</code>) set priority/category/assignee on new tickets; all events log to <code>emails</code> with JSON <code>details</code>. Dedupe: <code>ticket_inbound_email_messages</code>. Runner: <code>php scripts/run_inbound_email_tickets.php</code>. Local dev: [Mailpit](http://localhost/mailpit/) (<code>imap_host=mailpit</code>, SMTP <code>127.0.0.1:1025</code>). Details: <code>docs/EMAIL_MANAGEMENT.md</code> §5b.
 
-**Modules:** `tickets`, `ticket_categories`, `ticket_priorities`, `ticket_statuses`, `attempts`, `alerts`, `emails` (SMTP profiles + inbound toggle)
+**Modules:** `tickets`, `ticket_categories`, `ticket_priorities`, `ticket_statuses`, `ticket_questionnaires`, `ticket_surveys`, `ticket_survey_dashboard`, `attempts`, `alerts`, `emails` (SMTP profiles + inbound toggle)
 
 #### HR and employee management
 
@@ -271,7 +272,7 @@
 | Category | Tables | Sample rows (approx.) |
 | --- | ---: | ---: |
 | Core system and access | 17 | ~1,300+ |
-| Tickets and workflows | 7 | ~100 |
+| Tickets and workflows | 11 | ~100 |
 | HR and employees | 8 | ~70 |
 | Finance and approvals | 29 | ~120 |
 | Inventory and assets | 14 | ~300 |
@@ -284,7 +285,7 @@
 | Operations | 10 | ~15 |
 | Workstation reference | 7 | ~280 |
 | Live chat and notifications | 6+ | ~50+ |
-| **Total** | **225** | **~9,000+** |
+| **Total** | **229** | **~9,000+** |
 
 <h3 align="center">What this means</h3>
 
@@ -505,6 +506,9 @@ flowchart TB
 | --- | --- | --- |
 | Tickets | `modules/tickets/` | Support tickets; inbound email creates/updates rows when enabled on the default SMTP profile |
 | Ticket refs | `ticket_categories/`, `ticket_priorities/`, `ticket_statuses/` | Category, priority, and status lookups |
+| Ticket questionnaires | `modules/ticket_questionnaires/` | Post-ticket CSAT templates and ordered questions (`docs/TICKET_SURVEYS.md`) |
+| Ticket surveys | `modules/ticket_surveys/` | Read-only list of issued/completed survey invites |
+| Survey dashboard | `modules/ticket_survey_dashboard/` | Response rate, NPS, and SLA-correlated survey KPIs |
 | Email Management | `modules/emails/`, `email_smtp_configurations/` | SMTP send logs, alert rules, IMAP/Mailpit inbound polling → tickets (`companies.email`) |
 | Attempts | `modules/attempts/` | Login attempt tracking |
 | Alerts | `modules/alerts/` | Global and private alerts with ICS import |

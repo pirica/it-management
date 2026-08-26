@@ -19,6 +19,9 @@ if (!function_exists('itm_ticket_merge_tickets')) {
                 return ['ok' => false, 'error' => ucfirst($label) . ' ticket is not available for merge.'];
             }
         }
+        if (function_exists('itm_ticket_survey_cancel_pending_for_ticket')) {
+            itm_ticket_survey_cancel_pending_for_ticket($conn, $companyId, $sourceTicketId);
+        }
         mysqli_begin_transaction($conn);
         $failed = false;
         $st = mysqli_prepare($conn, 'UPDATE ticket_comments SET ticket_id = ? WHERE company_id = ? AND ticket_id = ?');

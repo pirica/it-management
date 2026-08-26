@@ -6,7 +6,7 @@
 if (!function_exists('itm_tickets_list_ui_columns')) {
     function itm_tickets_list_ui_columns()
     {
-        return ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'sla_status', 'master_ticket_id', 'due_date'];
+        return ['id', 'ticket_external_code', 'title', 'status_name', 'priority_name', 'sla_status', 'master_ticket_id', 'due_date', 'survey_summary'];
     }
 }
 
@@ -21,6 +21,7 @@ if (!function_exists('itm_tickets_list_order_by_map')) {
             'priority_name' => 'tp.name',
             'due_date' => 't.due_date',
             'master_ticket_id' => 'master_ticket_id',
+            'survey_summary' => 'survey_sort_score',
         ];
     }
 }
@@ -74,6 +75,16 @@ if (!function_exists('itm_tickets_list_parse_filters')) {
                     $filters[$key] = date('Y-m-d', $ts);
                 }
             }
+        }
+
+        $surveyStatus = strtolower(trim((string) ($get['survey_status'] ?? '')));
+        if (in_array($surveyStatus, ['none', 'pending', 'completed'], true)) {
+            $filters['survey_status'] = $surveyStatus;
+        }
+
+        $csatMin = (int) ($get['csat_min'] ?? 0);
+        if ($csatMin >= 1 && $csatMin <= 5) {
+            $filters['csat_min'] = $csatMin;
         }
 
         return $filters;
@@ -144,6 +155,38 @@ if (!function_exists('itm_tickets_list_build_sql_base')) {
             $bindValues[] = (string) $filters['due_date_to'];
         }
 
+        $surveyStatus = (string) ($filters['survey_status'] ?? '');
+        if ($surveyStatus === 'pending') {
+            $sqlBase .= ' AND EXISTS (
+                SELECT 1 FROM ticket_surveys ts_p
+                WHERE ts_p.ticket_id = t.id AND ts_p.company_id = t.company_id AND ts_p.completed_at IS NULL
+            )';
+        } elseif ($surveyStatus === 'completed') {
+            $sqlBase .= ' AND EXISTS (
+                SELECT 1 FROM ticket_surveys ts_c
+                WHERE ts_c.ticket_id = t.id AND ts_c.company_id = t.company_id AND ts_c.completed_at IS NOT NULL
+            )';
+        } elseif ($surveyStatus === 'none') {
+            $sqlBase .= ' AND NOT EXISTS (
+                SELECT 1 FROM ticket_surveys ts_n
+                WHERE ts_n.ticket_id = t.id AND ts_n.company_id = t.company_id
+            )';
+        }
+
+        if (!empty($filters['csat_min'])) {
+            $sqlBase .= ' AND (
+                t.csat_score >= ?
+                OR EXISTS (
+                    SELECT 1 FROM ticket_surveys ts_cs
+                    WHERE ts_cs.ticket_id = t.id AND ts_cs.company_id = t.company_id
+                      AND ts_cs.completed_at IS NOT NULL AND ts_cs.average_score >= ?
+                )
+            )';
+            $bindTypes .= 'ii';
+            $minScore = (int) $filters['csat_min'];
+            array_push($bindValues, $minScore, $minScore);
+        }
+
         return [
             'sql_base' => $sqlBase,
             'bind_types' => $bindTypes,
@@ -198,6 +241,41 @@ if (!function_exists('itm_tickets_list_select_fragment')) {
             END AS sla_status"
             : '';
 
+        $surveyExtras = $includeListExtras
+            ? ", (
+                SELECT ts_lat.average_score
+                FROM ticket_surveys ts_lat
+                WHERE ts_lat.ticket_id = t.id AND ts_lat.company_id = t.company_id
+                  AND ts_lat.completed_at IS NOT NULL
+                ORDER BY ts_lat.completed_at DESC, ts_lat.id DESC
+                LIMIT 1
+            ) AS survey_sort_score,
+            CASE
+                WHEN EXISTS (
+                    SELECT 1 FROM ticket_surveys ts_pend
+                    WHERE ts_pend.ticket_id = t.id AND ts_pend.company_id = t.company_id AND ts_pend.completed_at IS NULL
+                ) THEN 'Pending'
+                WHEN (
+                    SELECT ts_done.average_score
+                    FROM ticket_surveys ts_done
+                    WHERE ts_done.ticket_id = t.id AND ts_done.company_id = t.company_id AND ts_done.completed_at IS NOT NULL
+                    ORDER BY ts_done.completed_at DESC, ts_done.id DESC
+                    LIMIT 1
+                ) IS NOT NULL THEN CONCAT(
+                    (
+                        SELECT ts_done.average_score
+                        FROM ticket_surveys ts_done
+                        WHERE ts_done.ticket_id = t.id AND ts_done.company_id = t.company_id AND ts_done.completed_at IS NOT NULL
+                        ORDER BY ts_done.completed_at DESC, ts_done.id DESC
+                        LIMIT 1
+                    ),
+                    '/5 Completed'
+                )
+                WHEN t.csat_score IS NOT NULL AND t.csat_score > 0 THEN CONCAT(t.csat_score, '/5 Completed')
+                ELSE '—'
+            END AS survey_summary"
+            : '';
+
         return 'SELECT t.*, ts.name AS status_name, ts.color AS status_color, ts.is_closed AS status_is_closed,
             tp.name AS priority_name, tp.color AS priority_color,
             (
@@ -209,7 +287,7 @@ if (!function_exists('itm_tickets_list_select_fragment')) {
                   AND p.master_ticket_id IS NOT NULL AND p.master_ticket_id > 0
                 ORDER BY p.master_ticket_id ASC
                 LIMIT 1
-            ) AS master_ticket_id' . $sla;
+            ) AS master_ticket_id' . $sla . $surveyExtras;
     }
 }
 
@@ -269,25 +347,18 @@ if (!function_exists('itm_tickets_list_load_filter_options')) {
             mysqli_stmt_close($prioStmt);
         }
 
-        $empStmt = mysqli_prepare(
+        $assigneeStmt = mysqli_prepare(
             $conn,
-            'SELECT id, first_name, last_name, username FROM employees
-             WHERE company_id = ? AND deleted_at IS NULL AND active = 1
-             ORDER BY first_name ASC, last_name ASC, username ASC'
+            'SELECT id, username, first_name, last_name FROM employees WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY username ASC'
         );
-        if ($empStmt) {
-            mysqli_stmt_bind_param($empStmt, 'i', $companyId);
-            mysqli_stmt_execute($empStmt);
-            $res = mysqli_stmt_get_result($empStmt);
+        if ($assigneeStmt) {
+            mysqli_stmt_bind_param($assigneeStmt, 'i', $companyId);
+            mysqli_stmt_execute($assigneeStmt);
+            $res = mysqli_stmt_get_result($assigneeStmt);
             while ($res && ($row = mysqli_fetch_assoc($res))) {
-                $label = trim((string) ($row['first_name'] ?? '') . ' ' . (string) ($row['last_name'] ?? ''));
-                if ($label === '') {
-                    $label = (string) ($row['username'] ?? '');
-                }
-                $row['label'] = $label;
                 $options['assignees'][] = $row;
             }
-            mysqli_stmt_close($empStmt);
+            mysqli_stmt_close($assigneeStmt);
         }
 
         return $options;

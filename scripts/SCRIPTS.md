@@ -1152,6 +1152,7 @@ Run `verify_reports_hub.php` when changing `modules/reports/`, `modules/reports/
 | `php scripts/run_scheduled_reports.php` | Cron: email due `scheduled_reports` rows (`includes/itm_scheduled_reports.php`). Executive catalog slugs + `saved_view:{id}`. Optional `--company=ID`. See `docs/SCHEDULED_REPORTS.md` and `docs/SAVED_REPORT_VIEWS.md`. |
 | `php scripts/verify_scheduled_reports.php` | Regression: `scheduled_reports` schema, cron matcher, dataset loader |
 | `php scripts/verify_saved_report_views.php` | Regression: `saved_report_views` schema, filter whitelist, export/share helpers, owner schedule permission, dashboard snapshot, save/run, `saved_view:{id}` slug. See `docs/SAVED_REPORT_VIEWS.md`. |
+| `php scripts/verify_ticket_surveys.php` | Regression: ticket questionnaires/surveys — five-company seeds, issue/submit, activity, webhook `ticket.survey_completed`, automation `send_ticket_survey`, merge `{{survey_url}}`, merge cancel pending, stats. See `docs/TICKET_SURVEYS.md`. |
 | `php scripts/run_webhook_queue.php` | Cron: deliver `integration_webhook_deliveries` with retry/backoff. Optional `--limit=N`. |
 | `php scripts/verify_integration_webhooks.php` | Regression: webhook tables, secret round-trip, URL SSRF guard, enqueue |
 | `php scripts/run_asset_depreciation.php` | Monthly cron: depreciation snapshots on `equipment_lifecycle_events`. Optional `--company=ID`. |
@@ -1381,6 +1382,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_appointment_settings.php` — `modules/appointment_settings/`, `includes/itm_appointment_settings_admin.php`
 - `php scripts/verify_live_chat.php` — Live Chat schema, SLA, ACL, notifications, ticket activity/comments helpers
 - `php scripts/verify_ticket_productivity.php` — Ticket canned responses, merge, CSAT token/public URL, merge smoke
+- `php scripts/verify_ticket_surveys.php` — Ticket questionnaires/surveys: seeds, issue/submit, activity, webhooks, automation, merge tag/cancel, stats (`docs/TICKET_SURVEYS.md`)
 - `php scripts/verify_automation_rules.php` — Workflow automation: tables, audit triggers, seed rule, `itm_automation_rules_run_rule()` by id, `automation_rule_runs` success row
 - `php scripts/run_automation_rules.php` — Cron: date-based triggers (`equipment.warranty_expiring` within 30 days)
 - `php scripts/debug_peer_options.php` — Debug Chat-with peer picker: `it_settings.chat_same_tenant`, accessible companies, merged peer options vs `list_employees` (CLI `--company_id=` `--employee_id=`; browser query params)

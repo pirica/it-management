@@ -18,6 +18,7 @@ Canonical DDL: `db/01_schema.sql`. Existing DBs: `db/migrations/automation_rules
 | `ticket.created` | After successful ticket create in `modules/tickets/create.php` |
 | `ticket.status_changed` | After ticket edit when `status_id` changes |
 | `ticket.priority_changed` | After ticket edit when `priority_id` changes |
+| `ticket.survey_completed` | After customer submits a ticket survey (`itm_ticket_survey_submit()` in `includes/itm_ticket_survey.php`) |
 | `alert.created` | After alert create in `modules/alerts/index.php` |
 | `expense.created` | After expense create in `modules/expenses/index.php` |
 | `equipment.disposed` | After disposal recorded via `itm_asset_lifecycle_record_disposal()` |
@@ -57,6 +58,7 @@ Empty array `[]` matches all events for that trigger.
 | `assign_ticket` | `employee_id` — sets `tickets.assigned_to_employee_id` |
 | `set_ticket_priority` | `priority_id` or `priority_name` |
 | `create_ticket` | `title`, optional `description`, `status_id`/`status_name`, `priority_id`/`priority_name`, `assigned_to_employee_id`, `created_by_employee_id` — inserts ticket, stamps `TCK-####`, fires `ticket.created` + webhooks |
+| `send_ticket_survey` | `ticket_id` (or context `ticket_id`), optional `questionnaire_id`, optional `send_email` (default 1) — calls `itm_ticket_survey_issue()` |
 | `emit_webhook` | `event_type` — queues matching integration webhooks (`includes/itm_webhook_queue.php`) |
 
 Example:

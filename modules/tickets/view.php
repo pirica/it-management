@@ -78,7 +78,13 @@ if ($id > 0) {
 
 $ticketCommentFlash = '';
 $ticketProblemFlash = '';
+$ticketSurveyFlash = '';
 $isSupportAgent = itm_live_chat_is_support_agent($conn, (int)($_SESSION['employee_id'] ?? 0));
+if ($item && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['issue_ticket_survey'])) {
+    itm_require_post_csrf();
+    $surveyId = itm_ticket_survey_issue($conn, (int)$company_id, (int)$item['id'], (int)($_POST['questionnaire_id'] ?? 0), '', !empty($_POST['send_survey_email']));
+    $ticketSurveyFlash = $surveyId > 0 ? 'Survey issued.' : 'Could not issue survey — check questionnaire configuration.';
+}
 if ($item && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ticket_link_problem'])) {
     itm_require_post_csrf();
     $problemId = (int)($_POST['problem_id'] ?? 0);
@@ -117,6 +123,7 @@ $ticketComments = $item ? itm_ticket_comments_for_ticket($conn, (int)$company_id
 $ticketLinkedProblems = $item ? itm_problem_list_for_ticket($conn, (int)$company_id, (int)$item['id']) : [];
 $ticketMasterTicketId = $item ? itm_ticket_resolve_master_ticket_id($conn, (int)$company_id, (int)$item['id']) : 0;
 $ticketKnownErrorSuggestions = [];
+$ticketLatestSurvey = $item ? itm_ticket_survey_get_latest_for_ticket($conn, (int)$company_id, (int)$item['id']) : null;
 if ($item && empty($ticketLinkedProblems)) {
     $ticketKnownErrorSuggestions = itm_known_error_suggest_for_ticket(
         $conn,
@@ -377,13 +384,38 @@ if (!isset($crud_title)) {
                             <button type="submit" name="add_ticket_comment" value="1" class="btn btn-primary" title="Save" style="margin-top:8px;">💾</button>
                         </form>
                     </div>
-                    <?php $csatPublicUrl = empty($item['csat_submitted_at']) ? itm_ticket_csat_build_public_url((int)$company_id, (int)$item['id']) : ''; ?>
-                    <?php if ($csatPublicUrl !== ''): ?>
-                        <div class="card" style="margin-top:16px;">
-                            <h3 title="Customer satisfaction">⭐</h3>
-                            <input type="text" class="form-control" readonly value="<?php echo sanitize($csatPublicUrl); ?>">
-                        </div>
+                    <?php $surveyPublicUrl = ''; ?>
+                    <?php if (is_array($ticketLatestSurvey) && !empty($ticketLatestSurvey['token']) && empty($ticketLatestSurvey['completed_at'])): ?>
+                        <?php $surveyPublicUrl = itm_ticket_survey_build_public_url((string)$ticketLatestSurvey['token']); ?>
                     <?php endif; ?>
+                    <div class="card" style="margin-top:16px;">
+                        <h3 title="Customer survey">📋</h3>
+                        <?php if ($ticketSurveyFlash !== ''): ?>
+                            <div class="alert alert-info"><?php echo sanitize($ticketSurveyFlash); ?></div>
+                        <?php endif; ?>
+                        <?php if (is_array($ticketLatestSurvey) && !empty($ticketLatestSurvey['completed_at'])): ?>
+                            <p><strong>Status:</strong> Completed</p>
+                            <?php if ($ticketLatestSurvey['average_score'] !== null): ?>
+                                <p><strong>Average score:</strong> <?php echo sanitize((string)$ticketLatestSurvey['average_score']); ?>/5</p>
+                            <?php endif; ?>
+                            <?php if (!empty($ticketLatestSurvey['questionnaire_name'])): ?>
+                                <p><strong>Template:</strong> <?php echo sanitize((string)$ticketLatestSurvey['questionnaire_name']); ?></p>
+                            <?php endif; ?>
+                        <?php elseif ($surveyPublicUrl !== ''): ?>
+                            <p><strong>Status:</strong> Pending</p>
+                            <input type="text" class="form-control" readonly value="<?php echo sanitize($surveyPublicUrl); ?>">
+                        <?php else: ?>
+                            <p>No survey issued yet.</p>
+                            <form method="POST" style="margin-top:8px;">
+                                <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
+                                <label class="itm-checkbox-control" style="margin-bottom:8px;">
+                                    <input type="checkbox" name="send_survey_email" value="1" checked>
+                                    <span>Send email to requester</span>
+                                </label>
+                                <button type="submit" name="issue_ticket_survey" value="1" class="btn btn-primary" title="Issue survey">⭐</button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
                 <?php endif; ?>
                 
                 <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">

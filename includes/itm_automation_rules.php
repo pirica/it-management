@@ -10,6 +10,7 @@ if (!function_exists('itm_automation_rules_trigger_slugs')) {
             'ticket.created',
             'ticket.status_changed',
             'ticket.priority_changed',
+            'ticket.survey_completed',
             'alert.created',
             'expense.created',
             'equipment.warranty_expiring',
@@ -580,6 +581,28 @@ if (!function_exists('itm_automation_rules_execute_actions')) {
                     $messages[] = 'create_ticket failed: ' . (string)($result['message'] ?? 'unknown');
                 } else {
                     $messages[] = 'create_ticket id ' . (int)($result['ticket_id'] ?? 0);
+                }
+                continue;
+            }
+
+            if ($type === 'send_ticket_survey') {
+                $ticketId = (int)($context['ticket_id'] ?? ($action['ticket_id'] ?? 0));
+                $questionnaireId = (int)($action['questionnaire_id'] ?? 0);
+                $sendEmail = !isset($action['send_email']) || (int)$action['send_email'] === 1 || $action['send_email'] === true;
+                if ($ticketId <= 0) {
+                    $ok = false;
+                    $messages[] = 'send_ticket_survey missing ticket_id';
+                    continue;
+                }
+                if (!function_exists('itm_ticket_survey_issue')) {
+                    require_once ROOT_PATH . 'includes/itm_ticket_survey.php';
+                }
+                $surveyId = itm_ticket_survey_issue($conn, $companyId, $ticketId, $questionnaireId, '', $sendEmail);
+                if ($surveyId <= 0) {
+                    $ok = false;
+                    $messages[] = 'send_ticket_survey failed for ticket ' . $ticketId;
+                } else {
+                    $messages[] = 'send_ticket_survey issued survey ' . $surveyId;
                 }
                 continue;
             }

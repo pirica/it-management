@@ -181,8 +181,8 @@ The application is composed of **13 central functional domains**, with **221** m
     *   `includes/itm_hotel_booking_distribution_webhooks.php`: Operates the outbound queue, calculating signature payloads and executing exponential backoff retries.
 
 #### 3.1.11 Support & Automated Chatbot
-*   **Tables:** `tickets`, `ticket_categories`, `ticket_priorities`, `ticket_statuses`, `knowledge_base`
-*   **Core Purpose:** IT Helpdesk ticketing and a tenant-scoped intelligent chatbot for immediate employee assistance.
+*   **Tables:** `tickets`, `ticket_categories`, `ticket_priorities`, `ticket_statuses`, `ticket_questionnaires`, `ticket_questionnaire_questions`, `ticket_surveys`, `ticket_survey_answers`, `knowledge_base`
+*   **Core Purpose:** IT Helpdesk ticketing, post-ticket satisfaction surveys (`docs/TICKET_SURVEYS.md`), and a tenant-scoped intelligent chatbot for immediate employee assistance.
 *   **Key Logic Files:**
     *   `modules/knowledge_base/chat_api.php`: Processes context search queries strictly bounded by the active `company_id`.
     *   `js/chatbot.js`: The frontend interface that parses search answers, escapes XSS inputs, and triggers contacts list escalations when the keyword "escalate" is entered.

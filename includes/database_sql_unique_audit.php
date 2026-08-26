@@ -430,6 +430,8 @@ if (!function_exists('itm_database_sql_unique_audit_run')) {
             'share_sessions' => 'Ephemeral share snapshot; identity is UNIQUE (access_token); module_slug + record_id or scope_path_hash.',
             'ticket_activity' => 'Append-only ticket timeline; identity is PRIMARY KEY (id) only.',
             'ticket_comments' => 'Many comments per ticket; identity is PRIMARY KEY (id) only.',
+            'ticket_surveys' => 'Many issued surveys per ticket over time; identity is PRIMARY KEY (id) and UNIQUE (token).',
+            'ticket_survey_answers' => 'One row per question per survey; identity is PRIMARY KEY (id) only.',
             'finance_payment_allocations' => 'Payment allocation rows; identity is PRIMARY KEY (id) only.',
             'finance_attachments' => 'Polymorphic attachment rows; identity is PRIMARY KEY (id) only.',
             'employee_notifications' => 'Per-employee notification feed; duplicate titles allowed.',
