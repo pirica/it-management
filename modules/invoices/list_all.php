@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Invoices — list_all (delegates to index.php).
  */

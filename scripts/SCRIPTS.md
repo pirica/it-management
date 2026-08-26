@@ -392,7 +392,9 @@ Do not add a script under `scripts/` without updating `scripts/scripts.php`.
 - **Hooks:** `itm_apply_script_bootstrap()` (apply tools, `supports_apply` true), `itm_script_output_begin()` (audit scripts), `itm_script_regression_entry.php`, `itm_check_script_begin_browser_admin()`.
 - **Static gate:** `php scripts/check_script_browser_usage.php` — usage function + hook + catalog stub per browser PHP row (skips exempt basenames).
 - **Static gate:** `php scripts/check_script_stdio_fwrite.php` — no raw `fwrite(STDOUT|STDERR)` under `scripts/`; use `itm_script_write_stdout()` / `itm_script_write_stderr()` from `scripts/lib/itm_script_stdio.php` (loaded via `script_cli_output.php`).
-- **Static gate:** `php scripts/check_script_php_utf8_no_bom.php` — no UTF-8 BOM at the start of `scripts/**/*.php` (BOM before `<?php` breaks `declare(strict_types=1)` and `php -l` on PHP 7.4).
+- **Static gate:** `php scripts/check_script_php_utf8_no_bom.php` — no UTF-8 BOM at the start of `scripts/**/*.php` (BOM before `<?php` breaks `declare(strict_types=1)` and `php -l` on PHP 7.4). **Tier 2:** included in `run_tier2_checks.php`.
+- **Static gate:** `php scripts/verify_source_utf8_mojibake.php` — tracked source UTF-8 / mojibake audit (`modules/`, `includes/`, `scripts/`, `js/`, `css/`, `config/`). **Tier 2:** included in `run_tier2_checks.php`.
+- **DB detect (dry-run):** `php scripts/repair_db_utf8_seed_corruption.php` — `????` emoji seed corruption in `ui_configuration.app_name` / `configuration_item_types.icon`; apply with `--apply`. **Tier 2:** dry-run in `run_tier2_checks.php` (SKIPs when MySQL unavailable; exit `1` when corruption found).
 
 #### API documentation (`scripts/api.php`)
 
@@ -640,7 +642,7 @@ GitHub Actions (`.github/workflows/smoke.yml`) runs four jobs on push/PR: **smok
 |-----|---------|---------|
 | **smoke** | `bash scripts/smoke_test.sh` | PHP syntax lint + CSRF + SQLi + FK label search coverage audits (no MySQL) |
 | **database-import** | `bash scripts/verify_database_sql_import.sh` then `php scripts/verify_crud_fk_label_search.php` | Full `db/` import on MySQL 8.0 service (`MYSQL_PORT=3306` in workflow — GHA maps `3306:3306`; local Dunebox uses `MYSQL_PORT=3307` or `.env`); asserts live table count matches `CREATE TABLE` entries in `db/01_schema.sql` (derived at runtime — `grep -c '^CREATE TABLE' db/01_schema.sql`); runtime FK label search regression |
-| **tier2** | `php scripts/run_tier2_checks.php` | Tier 2 static batch from `SCRIPTS_TEST_MATRIX.md` (`check_*` + `list_raw_columns.php` + `list_date_display_formats.php --include-inputs`; no MySQL) |
+| **tier2** | `php scripts/run_tier2_checks.php` | Tier 2 static batch from `SCRIPTS_TEST_MATRIX.md` (`check_*`, UTF-8 gates, `list_raw_columns.php`, `list_date_display_formats.php --include-inputs`; `repair_db_utf8_seed_corruption.php` dry-run SKIPs without MySQL) |
 | **phpunit** | `ITM_SKIP_DB_TESTS=1 php scripts/run_tests.php` | PHPUnit unit suite without live-database tests (DB integration cases skipped in CI) |
 
 **smoke** job steps only:

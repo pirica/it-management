@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $crud_table = 'hotel_bookings_future';
 $crud_title = 'Booking Future Status';
 $crud_action = 'create';

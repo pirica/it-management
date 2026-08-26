@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $crud_table = 'hotel_booking_housekeeping_maintenance';
 $crud_title = 'HSK Maintenance';
 $crud_action = 'create';

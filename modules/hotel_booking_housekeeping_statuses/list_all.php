@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $crud_table = 'hotel_booking_housekeeping_statuses';
 $crud_title = 'HSK Statuses';
 $crud_action = 'list_all';

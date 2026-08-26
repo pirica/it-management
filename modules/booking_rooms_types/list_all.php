@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Room Types — list_all routed through shared index handler.
  */

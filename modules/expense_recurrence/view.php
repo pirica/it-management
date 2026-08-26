@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $crud_table = 'expense_recurrence';
 $crud_title = 'Expense Recurrence';
 $crud_action = 'view';

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Room Types — read-only view routed through shared index handler.
  */

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $crud_table = 'booking_rooms_types';
 $crud_title = 'Room Types';
 $crud_action = $crud_action ?? 'index';

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $crud_table = 'bank_accounts';
 $crud_title = 'Bank Accounts';
 $crud_action = 'view';

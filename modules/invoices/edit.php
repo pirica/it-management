@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Invoices — edit (delegates to index.php for finance line grid).
  */

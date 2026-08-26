@@ -6,7 +6,7 @@
  * Browser menu: run_tier2_checks.php
  * Browser run: run_tier2_checks.php?run=1&continue=1 (optional continue=1)
  *
- * Why: SCRIPTS_TEST_MATRIX.md Tier 2 lists static gates not covered by smoke_test.sh (check_* + list_raw_columns.php + list_date_display_formats.php).
+ * Why: SCRIPTS_TEST_MATRIX.md Tier 2 lists static gates not covered by smoke_test.sh (check_* + list_raw_columns.php + list_date_display_formats.php + UTF-8 gates).
  */
 
 declare(strict_types=1);

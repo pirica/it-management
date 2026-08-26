@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $crud_table = 'integration_accounts';
 $crud_title = 'Integration Accounts';
 $crud_action = 'edit';

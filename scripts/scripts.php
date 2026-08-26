@@ -1503,7 +1503,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="run_tier2_checks.php" target="_blank" rel="nofollow noreferrer">run_tier2_checks.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Batch runner for all Tier 2 static scripts in <code>SCRIPTS_TEST_MATRIX.md</code> (<code>check_*</code> + <code>list_raw_columns.php</code>; pre-merge static cluster; no DB mutation). Stops on first failure by default; <code>--continue</code> collects all failures.</td>
+                    <td>Batch runner for all Tier 2 static scripts in <code>SCRIPTS_TEST_MATRIX.md</code> (<code>check_*</code>, UTF-8 gates, <code>list_raw_columns.php</code>, <code>list_date_display_formats.php</code>; pre-merge static cluster; no DB writes). Stops on first failure by default; <code>--continue</code> collects all failures.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">
@@ -1622,7 +1622,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="check_script_php_utf8_no_bom.php" target="_blank" rel="nofollow noreferrer">check_script_php_utf8_no_bom.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
-                    <td>Static gate: no UTF-8 BOM at file start under <code>scripts/**/*.php</code> (tracked source must be UTF-8 without BOM per <code>AGENTS.md</code>).</td>
+                    <td>Static gate: no UTF-8 BOM at file start under <code>scripts/**/*.php</code> (tracked source must be UTF-8 without BOM per <code>AGENTS.md</code>). Included in <code>run_tier2_checks.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="ui_configuration">
@@ -1699,7 +1699,14 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_source_utf8_mojibake.php" target="_blank" rel="nofollow noreferrer">verify_source_utf8_mojibake.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
-                    <td>Static audit: tracked <code>modules/</code>, <code>includes/</code>, <code>scripts/</code>, <code>js/</code>, <code>css/</code>, <code>config/</code> source must be valid UTF-8 without mojibake literals (corrupted emoji, accents, or punctuation). Optional scope: <code>?path=modules/patches_updates</code> / <code>--path=…</code>.</td>
+                    <td>Static audit: tracked <code>modules/</code>, <code>includes/</code>, <code>scripts/</code>, <code>js/</code>, <code>css/</code>, <code>config/</code> source must be valid UTF-8 without mojibake literals (corrupted emoji, accents, or punctuation). Optional scope: <code>?path=modules/patches_updates</code> / <code>--path=…</code>. Included in <code>run_tier2_checks.php</code>.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="repair_db_utf8_seed_corruption.php" target="_blank" rel="nofollow noreferrer">repair_db_utf8_seed_corruption.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-admin">Admin</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="ui_configuration">ui_configuration</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="configuration_item_types">configuration_item_types</span></span></td>
+                    <td>Dry-run detect (default) for <code>????</code> emoji seed corruption in <code>ui_configuration.app_name</code> and <code>configuration_item_types.icon</code> after a bad Windows SQL import pipe. Apply: <code>--apply</code> / <code>?run=1&amp;apply=1</code>. Tier 2: dry-run only (SKIPs when MySQL unavailable). Prefer <code>import_database_split.php</code> on Windows.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">

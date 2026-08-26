@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $crud_table = 'tax_rates';
 $crud_title = 'Tax Rates';
 $crud_action = 'list_all';

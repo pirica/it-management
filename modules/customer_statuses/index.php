@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $crud_table = 'customer_statuses';
 $crud_title = 'Customer Statuses';
 $crud_action = $crud_action ?? 'index';

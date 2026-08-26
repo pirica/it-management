@@ -391,7 +391,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'l
 
                 $fieldName = (string)$columnMeta['Field'];
                 $rawValue = trim((string)($sourceRow[$idx] ?? ''));
-                if ($rawValue === '' || $rawValue === '—') {
+                if ($rawValue === '' || $rawValue === '?') {
                     continue;
                 }
 
