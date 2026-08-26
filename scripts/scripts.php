@@ -1702,11 +1702,18 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Static audit: tracked <code>modules/</code>, <code>includes/</code>, <code>scripts/</code>, <code>js/</code>, <code>css/</code>, <code>config/</code> source must be valid UTF-8 without mojibake literals (corrupted emoji, accents, or punctuation). Optional scope: <code>?path=modules/patches_updates</code> / <code>--path=…</code>. Included in <code>run_tier2_checks.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
+                <tr data-tags="Codebase">
+                    <td><a href="check_equipment_type_sidebar_emoji.php" target="_blank" rel="nofollow noreferrer">check_equipment_type_sidebar_emoji.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-web">Browser</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="equipment_types">equipment_types</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="ui_configuration">ui_configuration</span></span></td>
+                    <td>Tier 2 static gate: canonical <code>is_*</code> sidebar labels and <code>db/02_data.sql</code> <code>equipment_types.field_edit_emoji</code> seeds must not be <code>????</code> corruption; seed emoji must match <code>itm_equipment_type_resolve_field_edit_emoji()</code>. No MySQL.</td>
+                    <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
+                </tr>
                 <tr data-tags="Mixed">
                     <td><a href="repair_db_utf8_seed_corruption.php" target="_blank" rel="nofollow noreferrer">repair_db_utf8_seed_corruption.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-admin">Admin</span></span></td>
-                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="ui_configuration">ui_configuration</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="configuration_item_types">configuration_item_types</span></span></td>
-                    <td>Dry-run detect (default) for <code>????</code> emoji seed corruption in <code>ui_configuration.app_name</code> and <code>configuration_item_types.icon</code> after a bad Windows SQL import pipe. Apply: <code>--apply</code> / <code>?run=1&amp;apply=1</code>. Tier 2: dry-run only (SKIPs when MySQL unavailable). Prefer <code>import_database_split.php</code> on Windows.</td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="ui_configuration">ui_configuration</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="configuration_item_types">configuration_item_types</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="equipment_types">equipment_types</span></span></td>
+                    <td>Dry-run detect (default) or repair with <code>--apply</code> / <code>?run=1&amp;apply=1</code> for <code>????</code> emoji corruption in <code>ui_configuration.app_name</code>, <code>configuration_item_types.icon</code>, and <code>equipment_types.field_edit_emoji</code>. Static seed audit when MySQL unavailable. <strong>Tier 2:</strong> runs <code>--apply</code> (same as browser <code>?run=1&amp;apply=1</code>) when MySQL is available, with <code>check_equipment_type_sidebar_emoji.php</code>. Prefer <code>import_database_split.php</code> on Windows.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">
@@ -2449,7 +2456,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_dashboard_widgets.php" target="_blank" rel="nofollow noreferrer">verify_dashboard_widgets.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">tickets</span></span></td>
-                    <td>Regression for role-aware smart dashboard widgets on <code>dashboard.php</code>: registry, RBAC gates, query helpers, <code>open_only</code> tickets filter, live metric SQL. Optional <code>ITM_TEST_COMPANY_ID</code>.</td>
+                    <td>Regression for role-aware smart dashboard widgets on <code>dashboard.php</code>: registry, RBAC gates, query helpers, <code>open_only</code> tickets filter, <code>dashboard_widget_prefs</code> save/resolve on <code>user-config.php</code>, live metric SQL. Optional <code>ITM_TEST_COMPANY_ID</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">

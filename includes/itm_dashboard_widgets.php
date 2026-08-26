@@ -97,6 +97,92 @@ if (!function_exists('itm_dashboard_widget_can_show')) {
     }
 }
 
+if (!function_exists('itm_normalize_dashboard_widget_prefs')) {
+    /**
+     * @return array<string,int> slug => 1 enabled, 0 disabled
+     */
+    function itm_normalize_dashboard_widget_prefs($raw)
+    {
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            $raw = is_array($decoded) ? $decoded : [];
+        }
+        if (!is_array($raw)) {
+            $raw = [];
+        }
+
+        $registry = itm_dashboard_widget_registry();
+        $normalized = [];
+        foreach ($registry as $slug => $def) {
+            $slug = trim((string)$slug);
+            if ($slug === '') {
+                continue;
+            }
+            if (!array_key_exists($slug, $raw)) {
+                continue;
+            }
+            $value = $raw[$slug];
+            $normalized[$slug] = ((string)$value === '0' || $value === 0 || $value === false) ? 0 : 1;
+        }
+
+        return $normalized;
+    }
+}
+
+if (!function_exists('itm_dashboard_widget_pref_enabled')) {
+    function itm_dashboard_widget_pref_enabled(array $prefs, $slug)
+    {
+        $slug = trim((string)$slug);
+        if ($slug === '') {
+            return false;
+        }
+        if (!array_key_exists($slug, $prefs)) {
+            return true;
+        }
+
+        return (int)($prefs[$slug] ?? 1) === 1;
+    }
+}
+
+if (!function_exists('itm_dashboard_widgets_for_user_config')) {
+    /**
+     * Widgets the signed-in employee may pin/unpin on user-config.php (RBAC-allowed only).
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    function itm_dashboard_widgets_for_user_config($conn, $companyId, $employeeId, array $prefs = null)
+    {
+        $companyId = (int)$companyId;
+        $employeeId = (int)$employeeId;
+        if ($prefs === null) {
+            $prefs = [];
+        }
+        $prefs = itm_normalize_dashboard_widget_prefs($prefs);
+
+        $items = [];
+        foreach (itm_dashboard_widget_registry() as $slug => $def) {
+            if (!itm_dashboard_widget_can_show($conn, $companyId, $employeeId, $slug)) {
+                continue;
+            }
+            $items[] = [
+                'slug' => $slug,
+                'title' => (string)($def['title'] ?? $slug),
+                'icon' => (string)($def['icon'] ?? ''),
+                'module_slug' => (string)($def['module_slug'] ?? ''),
+                'sort_order' => (int)($def['sort_order'] ?? 0),
+                'enabled' => itm_dashboard_widget_pref_enabled($prefs, $slug),
+                'deep_link' => itm_dashboard_widget_build_deep_link($slug, $companyId, $employeeId),
+            ];
+        }
+
+        usort($items, static function ($a, $b) {
+            return (int)($a['sort_order'] ?? 0) <=> (int)($b['sort_order'] ?? 0);
+        });
+
+        return $items;
+    }
+}
+
 if (!function_exists('itm_dashboard_resolve_widgets_for_employee')) {
     /**
      * @return array<int,array<string,mixed>>
@@ -105,9 +191,18 @@ if (!function_exists('itm_dashboard_resolve_widgets_for_employee')) {
     {
         $companyId = (int)$companyId;
         $employeeId = (int)$employeeId;
+        $prefs = [];
+        if (function_exists('itm_get_ui_configuration')) {
+            $uiConfig = itm_get_ui_configuration($conn, $companyId, $employeeId);
+            $prefs = itm_normalize_dashboard_widget_prefs($uiConfig['dashboard_widget_prefs'] ?? []);
+        }
+
         $visible = [];
         foreach (itm_dashboard_widget_registry() as $slug => $def) {
             if (!itm_dashboard_widget_can_show($conn, $companyId, $employeeId, $slug)) {
+                continue;
+            }
+            if (!itm_dashboard_widget_pref_enabled($prefs, $slug)) {
                 continue;
             }
             $visible[] = $def;

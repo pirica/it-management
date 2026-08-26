@@ -394,7 +394,7 @@ Do not add a script under `scripts/` without updating `scripts/scripts.php`.
 - **Static gate:** `php scripts/check_script_stdio_fwrite.php` — no raw `fwrite(STDOUT|STDERR)` under `scripts/`; use `itm_script_write_stdout()` / `itm_script_write_stderr()` from `scripts/lib/itm_script_stdio.php` (loaded via `script_cli_output.php`).
 - **Static gate:** `php scripts/check_script_php_utf8_no_bom.php` — no UTF-8 BOM at the start of `scripts/**/*.php` (BOM before `<?php` breaks `declare(strict_types=1)` and `php -l` on PHP 7.4). **Tier 2:** included in `run_tier2_checks.php`.
 - **Static gate:** `php scripts/verify_source_utf8_mojibake.php` — tracked source UTF-8 / mojibake audit (`modules/`, `includes/`, `scripts/`, `js/`, `css/`, `config/`). **Tier 2:** included in `run_tier2_checks.php`.
-- **DB detect (dry-run):** `php scripts/repair_db_utf8_seed_corruption.php` — `????` emoji seed corruption in `ui_configuration.app_name` / `configuration_item_types.icon`; apply with `--apply`. **Tier 2:** dry-run in `run_tier2_checks.php` (SKIPs when MySQL unavailable; exit `1` when corruption found).
+- **DB detect / repair:** `php scripts/repair_db_utf8_seed_corruption.php` (dry-run) or `php scripts/repair_db_utf8_seed_corruption.php --apply` — `????` emoji corruption in `ui_configuration.app_name`, `configuration_item_types.icon`, and `equipment_types.field_edit_emoji`; static seed audit when MySQL unavailable. **Tier 2:** `check_equipment_type_sidebar_emoji.php` (static) + `repair_db_utf8_seed_corruption.php --apply` when MySQL is available ([repair_db_utf8_seed_corruption.php?run=1&apply=1](http://localhost/it-management/scripts/repair_db_utf8_seed_corruption.php?run=1&apply=1) Admin).
 
 #### API documentation (`scripts/api.php`)
 
@@ -642,7 +642,7 @@ GitHub Actions (`.github/workflows/smoke.yml`) runs four jobs on push/PR: **smok
 |-----|---------|---------|
 | **smoke** | `bash scripts/smoke_test.sh` | PHP syntax lint + CSRF + SQLi + FK label search coverage audits (no MySQL) |
 | **database-import** | `bash scripts/verify_database_sql_import.sh` then `php scripts/verify_crud_fk_label_search.php` | Full `db/` import on MySQL 8.0 service (`MYSQL_PORT=3306` in workflow — GHA maps `3306:3306`; local Dunebox uses `MYSQL_PORT=3307` or `.env`); asserts live table count matches `CREATE TABLE` entries in `db/01_schema.sql` (derived at runtime — `grep -c '^CREATE TABLE' db/01_schema.sql`); runtime FK label search regression |
-| **tier2** | `php scripts/run_tier2_checks.php` | Tier 2 static batch from `SCRIPTS_TEST_MATRIX.md` (`check_*`, UTF-8 gates, `list_raw_columns.php`, `list_date_display_formats.php --include-inputs`; `repair_db_utf8_seed_corruption.php` dry-run SKIPs without MySQL) |
+| **tier2** | `php scripts/run_tier2_checks.php` | Tier 2 static batch from `SCRIPTS_TEST_MATRIX.md` (`check_*`, UTF-8 gates, `list_raw_columns.php`, `list_date_display_formats.php --include-inputs`; `repair_db_utf8_seed_corruption.php --apply` when MySQL available) |
 | **phpunit** | `ITM_SKIP_DB_TESTS=1 php scripts/run_tests.php` | PHPUnit unit suite without live-database tests (DB integration cases skipped in CI) |
 
 **smoke** job steps only:
@@ -1048,7 +1048,7 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 | `php scripts/verify_dashboard_active_employees.php` | Regression: **admin.php** row 2 **Active** / **On Leave** call `itm_employee_count_by_employment_status_name()` (no inline `LOWER(es.name)`); helper matches live `deleted_at IS NULL` counts; employee `dashboard.php` must not duplicate company counts; optional `ITM_TEST_COMPANY_ID` |
 | `php scripts/verify_dashboard_online_employees.php` | Regression: **admin.php** **Online now** stat, session presence touch hook, count after touch |
 | `php scripts/verify_employee_dashboard.php` | Regression: employee **dashboard.php** hero + grouped stat cards, smart widget wiring + Chart.js, `includes/itm_employee_dashboard.php` loader, no company switcher |
-| `php scripts/verify_dashboard_widgets.php` | Regression: role-aware smart dashboard widgets (`includes/itm_dashboard_widgets.php`, queries, RBAC gates, `open_only` tickets filter, live metric SQL); optional `ITM_TEST_COMPANY_ID` |
+| `php scripts/verify_dashboard_widgets.php` | Regression: role-aware smart dashboard widgets (`includes/itm_dashboard_widgets.php`, queries, RBAC gates, `open_only` tickets filter, `dashboard_widget_prefs` save/resolve, live metric SQL); optional `ITM_TEST_COMPANY_ID` |
 | `php scripts/verify_admin_page_gate.php` | Regression: **admin.php** `itm_is_admin()` gate and redirect to `dashboard.php` |
 | `php scripts/verify_settings_admin_buttons.php` | Regression: Settings **ADMIN** / **SCRIPTS** toolbar (admin-only), **All roles** chatbot block, **System (Admin Role only)** flags, and non-admin save preservation |
 

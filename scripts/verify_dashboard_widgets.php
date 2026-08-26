@@ -167,6 +167,48 @@ if ($adminId <= 0) {
     } else {
         dw_verify_fail('Unknown widget slug must not be allowed');
     }
+
+    if (!function_exists('itm_user_config_save_dashboard_widget_prefs')) {
+        dw_verify_fail('itm_user_config_save_dashboard_widget_prefs() must exist in ui_config.php');
+    } else {
+        dw_verify_pass('Dashboard widget prefs save helper exists');
+    }
+
+    $beforePrefs = itm_dashboard_resolve_widgets_for_employee($conn, $companyId, $adminId);
+    $beforeCount = count($beforePrefs);
+    if ($beforeCount < 1) {
+        dw_verify_fail('Admin must resolve widgets before prefs test');
+    } else {
+        $disableSlug = (string)($beforePrefs[0]['slug'] ?? '');
+        if ($disableSlug === '') {
+            dw_verify_fail('Could not pick widget slug for prefs test');
+        } elseif (!itm_user_config_save_dashboard_widget_prefs($conn, $companyId, $adminId, [])) {
+            dw_verify_fail('Saving empty dashboard_widgets should disable all RBAC widgets');
+        } else {
+            $afterAllDisabled = itm_dashboard_resolve_widgets_for_employee($conn, $companyId, $adminId);
+            if (count($afterAllDisabled) !== 0) {
+                dw_verify_fail('All widgets disabled should yield zero resolved widgets');
+            } else {
+                dw_verify_pass('Disabled prefs hide all smart widgets for Admin');
+            }
+            $restoreSlugs = [];
+            foreach (itm_dashboard_widget_registry() as $slug => $def) {
+                if (itm_dashboard_widget_can_show($conn, $companyId, $adminId, $slug)) {
+                    $restoreSlugs[] = $slug;
+                }
+            }
+            if (!itm_user_config_save_dashboard_widget_prefs($conn, $companyId, $adminId, $restoreSlugs)) {
+                dw_verify_fail('Restoring dashboard widget prefs failed');
+            } else {
+                $restored = itm_dashboard_resolve_widgets_for_employee($conn, $companyId, $adminId);
+                if (count($restored) !== $beforeCount) {
+                    dw_verify_fail('Restored widget count mismatch (' . count($restored) . ' vs ' . $beforeCount . ')');
+                } else {
+                    dw_verify_pass('Dashboard widget prefs round-trip restore OK');
+                }
+            }
+        }
+    }
 }
 
 if ($failures > 0) {

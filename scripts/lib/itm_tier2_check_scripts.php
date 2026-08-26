@@ -50,6 +50,7 @@ if (!function_exists('itm_tier2_check_scripts_canonical_fallback')) {
             'check_ui_configuration_coverage.php',
             'check_script_php_utf8_no_bom.php',
             'verify_source_utf8_mojibake.php',
+            'check_equipment_type_sidebar_emoji.php',
             'repair_db_utf8_seed_corruption.php',
             'list_date_display_formats.php',
             'list_raw_columns.php',
@@ -148,6 +149,11 @@ if (!function_exists('itm_tier2_check_scripts_extra_cli_args')) {
         if ($basename === 'list_date_display_formats.php') {
             // Why: Tier 2 must gate native date inputs too (browser: ?include_inputs=1&run=1).
             return ['--include-inputs'];
+        }
+
+        if ($basename === 'repair_db_utf8_seed_corruption.php') {
+            // Why: Tier 2 repairs live ???? emoji corruption when MySQL is available (browser: ?run=1&apply=1).
+            return ['--apply'];
         }
 
         return [];

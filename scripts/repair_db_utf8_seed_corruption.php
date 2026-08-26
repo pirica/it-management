@@ -16,7 +16,7 @@ declare(strict_types=1);
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-<code>php scripts/repair_db_utf8_seed_corruption.php</code> (dry-run) or <code>php scripts/repair_db_utf8_seed_corruption.php --apply</code>. Repairs <code>ui_configuration.app_name</code> and <code>configuration_item_types.icon</code> when a non-UTF-8 PowerShell SQL pipe stored <code>????</code> instead of emoji. Prefer <code>php scripts/import_database_split.php</code> on Windows instead of <code>Get-Content db/*.sql | mysql</code>.
+<code>php scripts/repair_db_utf8_seed_corruption.php</code> (dry-run) or <code>php scripts/repair_db_utf8_seed_corruption.php --apply</code>. Repairs <code>ui_configuration.app_name</code>, <code>configuration_item_types.icon</code>, and <code>equipment_types.field_edit_emoji</code> when a non-UTF-8 PowerShell SQL pipe stored <code>????</code> instead of emoji. Static seed audit runs when MySQL is unavailable. Prefer <code>php scripts/import_database_split.php</code> on Windows instead of <code>Get-Content db/*.sql | mysql</code>.
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 
@@ -53,24 +53,35 @@ if (PHP_SAPI === 'cli') {
 }
 
 if (!($conn instanceof mysqli)) {
-    echo itm_script_format_status_line('[SKIP] Database connection unavailable — dry-run skipped (tier2 CI has no MySQL).') . $nl;
+    require_once __DIR__ . '/lib/itm_utf8_emoji_corruption.php';
+    $staticFailures = itm_utf8_audit_equipment_sidebar_sources(dirname(__DIR__));
+    if ($staticFailures === []) {
+        echo itm_script_format_status_line('[PASS] Static equipment sidebar / seed emoji audit (no MySQL).') . $nl;
+        echo itm_script_format_status_line('[SKIP] Live DB probe skipped — database connection unavailable.') . $nl;
+        itm_script_output_end();
+        exit(0);
+    }
+    foreach ($staticFailures as $failure) {
+        echo itm_script_format_status_line('[FAIL] ' . $failure) . $nl;
+    }
+    echo itm_script_format_status_line('[FAIL] Static equipment sidebar / seed emoji audit failed (no MySQL).') . $nl;
     itm_script_output_end();
-    exit(0);
+    exit(1);
 }
+
+require_once __DIR__ . '/lib/itm_utf8_emoji_corruption.php';
 
 require_once ROOT_PATH . 'includes/itm_cmdb.php';
 require_once ROOT_PATH . 'includes/ui_config.php';
 
-/**
- * True when a seed string was reduced to ASCII question marks by a bad import pipe.
- */
-function itm_repair_db_utf8_is_question_mark_corruption(string $value): bool
-{
-    $value = trim($value);
-    if ($value === '') {
-        return false;
-    }
-    return (bool)preg_match('/^\?+(\s|$)/', $value) || (bool)preg_match('/^\?+$/', $value);
+$staticFailures = itm_utf8_audit_equipment_sidebar_sources(dirname(__DIR__));
+$exitCode = 0;
+foreach ($staticFailures as $failure) {
+    echo itm_script_format_status_line('[FAIL] ' . $failure) . $nl;
+    $exitCode = 1;
+}
+if ($staticFailures !== []) {
+    echo itm_script_format_status_line('[FAIL] Static equipment sidebar / seed emoji audit failed.') . $nl;
 }
 
 $canonicalAppName = (string)(itm_ui_config_defaults()['app_name'] ?? '⚙️ IT Controls');
@@ -84,10 +95,11 @@ if ($uiStmt) {
     $res = mysqli_stmt_get_result($uiStmt);
     while ($res && ($row = mysqli_fetch_assoc($res))) {
         $appName = (string)($row['app_name'] ?? '');
-        if (!itm_repair_db_utf8_is_question_mark_corruption($appName)) {
+        if (!itm_utf8_is_question_mark_corruption($appName)) {
             continue;
         }
         $uiRows++;
+        $exitCode = 1;
         $label = 'ui_configuration id=' . (int)($row['id'] ?? 0) . ' company=' . (int)($row['company_id'] ?? 0);
         if ($apply) {
             $upd = mysqli_prepare($conn, 'UPDATE ui_configuration SET app_name = ? WHERE id = ? AND company_id = ? LIMIT 1');
@@ -107,6 +119,7 @@ if ($uiStmt) {
 }
 
 $ciTypeRows = 0;
+$equipmentTypeRows = 0;
 $seeds = itm_cmdb_builtin_type_seeds();
 $companyRes = mysqli_query($conn, 'SELECT id FROM companies ORDER BY id');
 $companyIds = [];
@@ -144,10 +157,11 @@ foreach ($companyIds as $companyId) {
         if ($currentIcon === $icon) {
             continue;
         }
-        if (!itm_repair_db_utf8_is_question_mark_corruption($currentIcon)) {
+        if (!itm_utf8_is_question_mark_corruption($currentIcon)) {
             continue;
         }
         $ciTypeRows++;
+        $exitCode = 1;
         $label = 'configuration_item_types id=' . (int)($typeRow['id'] ?? 0)
             . ' company=' . $companyId . ' slug=' . $sourceSlug;
         if ($apply) {
@@ -168,14 +182,58 @@ foreach ($companyIds as $companyId) {
     }
 }
 
-if ($uiRows === 0 && $ciTypeRows === 0) {
+if (function_exists('itm_table_has_column') && itm_table_has_column($conn, 'equipment_types', 'field_edit_emoji')) {
+    $eqRes = mysqli_query(
+        $conn,
+        'SELECT id, company_id, name, field_edit_emoji FROM equipment_types WHERE deleted_at IS NULL'
+    );
+    while ($eqRes && ($eqRow = mysqli_fetch_assoc($eqRes))) {
+        $typeName = (string)($eqRow['name'] ?? '');
+        $currentEmoji = (string)($eqRow['field_edit_emoji'] ?? '');
+        if ($typeName === '') {
+            continue;
+        }
+        $canonical = itm_equipment_type_resolve_field_edit_emoji($typeName, '');
+        if ($canonical === '' || $currentEmoji === $canonical) {
+            continue;
+        }
+        $unusable = function_exists('itm_equipment_type_stored_emoji_unusable')
+            && itm_equipment_type_stored_emoji_unusable($currentEmoji);
+        if (!$unusable && !itm_utf8_is_question_mark_corruption($currentEmoji) && trim($currentEmoji) !== '') {
+            continue;
+        }
+        $equipmentTypeRows++;
+        $exitCode = 1;
+        $label = 'equipment_types id=' . (int)($eqRow['id'] ?? 0)
+            . ' company=' . (int)($eqRow['company_id'] ?? 0) . ' name=' . $typeName;
+        if ($apply) {
+            $upd = mysqli_prepare(
+                $conn,
+                'UPDATE equipment_types SET field_edit_emoji = ? WHERE id = ? AND company_id = ? LIMIT 1'
+            );
+            if ($upd) {
+                $typeId = (int)($eqRow['id'] ?? 0);
+                $companyId = (int)($eqRow['company_id'] ?? 0);
+                mysqli_stmt_bind_param($upd, 'sii', $canonical, $typeId, $companyId);
+                mysqli_stmt_execute($upd);
+                mysqli_stmt_close($upd);
+                echo itm_script_format_status_line('[PASS] Fixed ' . $label . ' → ' . $canonical) . $nl;
+            }
+        } else {
+            echo itm_script_format_status_line('[WARN] Would fix ' . $label . ' — ' . $currentEmoji . ' → ' . $canonical) . $nl;
+        }
+    }
+}
+
+if ($uiRows === 0 && $ciTypeRows === 0 && $equipmentTypeRows === 0 && $exitCode === 0) {
     echo itm_script_format_status_line('[PASS] No UTF-8 question-mark corruption detected.') . $nl;
-    $exitCode = 0;
+} elseif ($exitCode !== 0) {
+    echo itm_script_format_status_line('[FAIL] Static or live UTF-8 emoji corruption detected.') . $nl;
 } elseif (!$apply) {
     echo itm_script_format_status_line('[FAIL] Corruption detected — dry-run only; use --apply or browser ?run=1&apply=1 to repair.') . $nl;
     $exitCode = 1;
 } else {
-    echo itm_script_format_status_line('[PASS] Repair complete — ui_configuration=' . $uiRows . ', configuration_item_types=' . $ciTypeRows) . $nl;
+    echo itm_script_format_status_line('[PASS] Repair complete — ui_configuration=' . $uiRows . ', configuration_item_types=' . $ciTypeRows . ', equipment_types=' . $equipmentTypeRows) . $nl;
     $exitCode = 0;
 }
 

@@ -947,7 +947,7 @@ INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_e
 
 INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('1', '5', 'Port Patch Panel', 'PORT', '➿', '1', '2026-01-01 00:00:01');
 
-INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('1', '6', 'Access Point', 'AP', '🛜', '1', '2026-01-01 00:00:01');
+INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('1', '6', 'Access Point', 'AP', '📶', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `equipment_types` (`company_id`, `id`, `name`, `code`, `field_edit_emoji`, `active`, `created_at`) VALUES ('1', '7', 'Workstation', 'WS', '💻', '1', '2026-01-01 00:00:01');
 
