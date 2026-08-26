@@ -63,6 +63,7 @@ Manages IT assets (Equipment), including servers, workstations, switches, and pe
 - **Assignment replace policy:** One employee history row per company; assigning equipment B to an employee clears assignee on any other equipment that employee held (see **`modules/employee_assignment_history/AGENT_NOTES.md`**). [Cursor-Valid]
 - **Assign To Employee dropdown empty:** do not filter `employees` on row `active` for login eligibility — scope by `company_id` only in `equipment_fetch_employee_options()`; employment status is separate from soft-delete `active`. [Cursor-Fixed]
 - **Lifecycle date display:** `view.php` Asset lifecycle card and timeline must call `itm_format_cell_scalar_display($fieldName, $value, 'equipment')` — passing only the value triggers `ArgumentCountError` on PHP 8+. [Cursor-Fixed]
+- **View foreach dates:** `equipment_field_value()` routes scalar cells through `itm_format_cell_scalar_display($key, $value, 'equipment')` so `purchase_date`, `warranty_expiry`, and `certificate_expiry` render as UK `dd/mmm/yyyy` in the main detail table (audit fields still use `itm_crud_render_audit_cell_value()`).
 
 ## 11. Examples of Safe Code Patterns
 

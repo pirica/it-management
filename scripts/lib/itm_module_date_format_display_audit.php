@@ -367,6 +367,93 @@ if (!function_exists('itm_module_date_format_display_audit_line_is_form_value_bi
     }
 }
 
+if (!function_exists('itm_module_date_format_display_audit_field_value_helper_formats_dates')) {
+    /**
+     * True when a *_field_value() helper body routes dates through shared UK display helpers.
+     */
+    function itm_module_date_format_display_audit_field_value_helper_formats_dates(string $functionBody): bool
+    {
+        return (bool) preg_match(
+            '/itm_format_(?:date_display|cell_scalar_display|datetime_display|audit_timestamp_display|hotel_date_display)\s*\(|appt_format_date_display\s*\(|myactivity_format_display_datetime\s*\(/i',
+            $functionBody
+        );
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_field_value_helper_returns_raw_scalar')) {
+    /**
+     * True when helper default branch casts/returns a scalar without formatting (e.g. return (string)$value).
+     */
+    function itm_module_date_format_display_audit_field_value_helper_returns_raw_scalar(string $functionBody): bool
+    {
+        return (bool) preg_match('/return\s+(?:\(string\)\s*)?\$(?:value|v)\s*;/i', $functionBody);
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_scan_field_value_helpers')) {
+    /**
+     * Detect bespoke view helpers named *_field_value() that echo raw ISO dates via foreach loops.
+     *
+     * @param list<string> $lines
+     * @return array{rows:list<array<string,mixed>>,unformatted_helpers:list<string>}
+     */
+    function itm_module_date_format_display_audit_scan_field_value_helpers(
+        string $slug,
+        string $rel,
+        array $lines
+    ): array {
+        $rows = [];
+        $unformattedHelpers = [];
+        $lineCount = count($lines);
+        $index = 0;
+
+        while ($index < $lineCount) {
+            $line = (string) ($lines[$index] ?? '');
+            if (!preg_match('/function\s+(\w+_field_value)\s*\(/', $line, $match)) {
+                $index++;
+                continue;
+            }
+
+            $functionName = (string) ($match[1] ?? '');
+            $functionStartLine = $index + 1;
+            $depth = substr_count($line, '{') - substr_count($line, '}');
+            $bodyLines = [];
+            $index++;
+
+            while ($index < $lineCount && $depth > 0) {
+                $bodyLine = (string) ($lines[$index] ?? '');
+                $bodyLines[] = $bodyLine;
+                $depth += substr_count($bodyLine, '{') - substr_count($bodyLine, '}');
+                $index++;
+            }
+
+            $functionBody = implode("\n", $bodyLines);
+            if ($functionName === ''
+                || !itm_module_date_format_display_audit_field_value_helper_returns_raw_scalar($functionBody)
+                || itm_module_date_format_display_audit_field_value_helper_formats_dates($functionBody)) {
+                continue;
+            }
+
+            $unformattedHelpers[$functionName] = $functionName;
+            $rows[] = [
+                'status' => 'warn',
+                'module' => $slug,
+                'file' => $rel,
+                'line' => $functionStartLine,
+                'pattern' => 'bespoke_field_value_helper',
+                'format' => 'Y-m-d (raw)',
+                'notes' => 'Bespoke *_field_value() helper returns raw scalar — route date columns through itm_format_cell_scalar_display()',
+                'snippet' => itm_module_date_format_display_audit_trim_snippet($line),
+            ];
+        }
+
+        return [
+            'rows' => $rows,
+            'unformatted_helpers' => array_values($unformattedHelpers),
+        ];
+    }
+}
+
 if (!function_exists('itm_module_date_format_display_audit_scan_file')) {
     /**
      * @return list<array<string,mixed>>
@@ -393,6 +480,10 @@ if (!function_exists('itm_module_date_format_display_audit_scan_file')) {
         $rows = [];
 
         $lines = preg_split('/\R/', $content) ?: [];
+        $fieldValueHelperScan = itm_module_date_format_display_audit_scan_field_value_helpers($slug, $rel, $lines);
+        $rows = array_merge($rows, $fieldValueHelperScan['rows']);
+        $unformattedFieldValueHelpers = array_fill_keys($fieldValueHelperScan['unformatted_helpers'], true);
+
         foreach ($lines as $index => $line) {
             $lineNo = $index + 1;
             $trimmed = trim((string) $line);
@@ -428,6 +519,21 @@ if (!function_exists('itm_module_date_format_display_audit_scan_file')) {
                     'pattern' => (string) $rule['pattern'],
                     'format' => (string) $rule['format'],
                     'notes' => (string) $rule['notes'],
+                    'snippet' => itm_module_date_format_display_audit_trim_snippet($line),
+                ];
+            }
+
+            if ($unformattedFieldValueHelpers !== []
+                && preg_match('/\becho\b[^;]*\bsanitize\s*\(\s*(\w+_field_value)\s*\(/i', $line, $echoMatch)
+                && isset($unformattedFieldValueHelpers[(string) ($echoMatch[1] ?? '')])) {
+                $rows[] = [
+                    'status' => 'warn',
+                    'module' => $slug,
+                    'file' => $rel,
+                    'line' => $lineNo,
+                    'pattern' => 'bespoke_field_value_echo',
+                    'format' => 'Y-m-d (raw)',
+                    'notes' => 'View foreach echoes bespoke *_field_value() without UK date formatting',
                     'snippet' => itm_module_date_format_display_audit_trim_snippet($line),
                 ];
             }
@@ -561,5 +667,147 @@ if (!function_exists('itm_module_date_format_display_audit_run')) {
         });
 
         return $rows;
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_sort_columns')) {
+    /**
+     * @return array<string, string>
+     */
+    function itm_module_date_format_display_audit_sort_columns(): array
+    {
+        return [
+            'status' => 'status',
+            'module' => 'module',
+            'file' => 'file',
+            'line' => 'line',
+            'pattern' => 'pattern',
+            'format' => 'format',
+            'notes' => 'notes',
+            'snippet' => 'snippet',
+        ];
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_sort_row_value')) {
+    /**
+     * @param array<string, mixed> $row
+     */
+    function itm_module_date_format_display_audit_sort_row_value(array $row, string $sortKey): string
+    {
+        if ($sortKey === 'line') {
+            return str_pad((string) (int) ($row['line'] ?? 0), 10, '0', STR_PAD_LEFT);
+        }
+
+        $text = trim((string) ($row[$sortKey] ?? ''));
+
+        return $text === '' ? '~' : strtolower($text);
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_sort_rows')) {
+    /**
+     * @param list<array<string, mixed>> $rows
+     * @return list<array<string, mixed>>
+     */
+    function itm_module_date_format_display_audit_sort_rows(array $rows, string $sort, string $dir): array
+    {
+        $allowed = itm_module_date_format_display_audit_sort_columns();
+        if ($sort === '' || !isset($allowed[$sort])) {
+            return $rows;
+        }
+
+        $mult = strtolower($dir) === 'desc' ? -1 : 1;
+
+        usort($rows, static function (array $left, array $right) use ($sort, $mult): int {
+            $leftValue = itm_module_date_format_display_audit_sort_row_value($left, $sort);
+            $rightValue = itm_module_date_format_display_audit_sort_row_value($right, $sort);
+            $cmp = strcmp($leftValue, $rightValue);
+            if ($cmp === 0) {
+                $cmp = strcmp(
+                    itm_module_date_format_display_audit_sort_row_value($left, 'module'),
+                    itm_module_date_format_display_audit_sort_row_value($right, 'module')
+                );
+                if ($cmp === 0) {
+                    $cmp = strcmp(
+                        itm_module_date_format_display_audit_sort_row_value($left, 'file'),
+                        itm_module_date_format_display_audit_sort_row_value($right, 'file')
+                    );
+                }
+                if ($cmp === 0) {
+                    $cmp = strcmp(
+                        itm_module_date_format_display_audit_sort_row_value($left, 'line'),
+                        itm_module_date_format_display_audit_sort_row_value($right, 'line')
+                    );
+                }
+            }
+
+            return $mult * $cmp;
+        });
+
+        return $rows;
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_sort_query_params')) {
+    /**
+     * Preserve audit filter query params when building sort links.
+     *
+     * @return array<string, string>
+     */
+    function itm_module_date_format_display_audit_sort_query_params(): array
+    {
+        $params = ['run' => '1'];
+        if (isset($_GET['module']) && trim((string) $_GET['module']) !== '') {
+            $params['module'] = trim((string) $_GET['module']);
+        }
+        if (isset($_GET['all']) && (string) $_GET['all'] === '1') {
+            $params['all'] = '1';
+        }
+        if (isset($_GET['include_inputs']) && (string) $_GET['include_inputs'] === '1') {
+            $params['include_inputs'] = '1';
+        }
+        if (isset($_GET['no_show_pass']) && (string) $_GET['no_show_pass'] === '1') {
+            $params['no_show_pass'] = '1';
+        }
+        if (isset($_GET['no_show_skips']) && (string) $_GET['no_show_skips'] === '1') {
+            $params['no_show_skips'] = '1';
+        }
+
+        return $params;
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_sort_th')) {
+    function itm_module_date_format_display_audit_sort_th(
+        string $label,
+        string $sortKey,
+        string $currentSort,
+        string $currentDir,
+        array $baseQuery
+    ): string {
+        $allowed = itm_module_date_format_display_audit_sort_columns();
+        if (!isset($allowed[$sortKey])) {
+            return '<th scope="col">' . sanitize($label) . '</th>';
+        }
+
+        $nextDir = 'asc';
+        $indicator = '';
+        if ($currentSort === $sortKey) {
+            $nextDir = $currentDir === 'asc' ? 'desc' : 'asc';
+            $indicator = $currentDir === 'asc' ? ' ▲' : ' ▼';
+        }
+
+        $query = array_merge($baseQuery, [
+            'sort' => $sortKey,
+            'dir' => $currentSort === $sortKey ? $nextDir : 'asc',
+        ]);
+        $href = '?' . http_build_query($query);
+        $title = $currentSort === $sortKey
+            ? 'Sorted ' . $currentDir . ' — click for ' . $nextDir
+            : 'Sort by ' . $label;
+
+        return '<th scope="col"><a href="' . sanitize($href) . '" style="text-decoration:none;color:inherit;" title="'
+            . sanitize($title) . '">' . sanitize($label . $indicator) . '</a></th>';
     }
 }

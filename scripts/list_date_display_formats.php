@@ -10,6 +10,7 @@
  *   php scripts/list_date_display_formats.php --only-warn
  *   php scripts/list_date_display_formats.php --module=tickets
  *   php scripts/list_date_display_formats.php --include-inputs
+ *   php scripts/list_date_display_formats.php --sort=module --dir=desc
  *
  * Browser (Administrator): scripts/list_date_display_formats.php?run=1
  */
@@ -19,9 +20,9 @@ function itm_script_browser_how_to_use(): string
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
 Static audit: flags module PHP where <strong>displayed</strong> dates omit the UK <code>dd/mmm/yyyy</code> contract.<br>
 <strong>OK</strong> — <code>itm_format_date_display()</code>, <code>itm_format_cell_scalar_display()</code>, <code>itm_format_datetime_display()</code>, explicit <code>date('d/M/Y')</code>, or <code>itm_format_hotel_date_display()</code>.<br>
-<strong>WARN</strong> — raw ISO echo in list/view (<code>$row['due_date']</code> without a helper), legacy <code>date('d/m/Y')</code>, <code>date('Y-m-d')</code> on output lines, US/text <code>date()</code> patterns.<br>
+<strong>WARN</strong> — raw ISO echo in list/view (<code>$row['due_date']</code> without a helper), bespoke <code>*_field_value()</code> helpers that <code>return (string)$value</code> without <code>itm_format_*</code>, legacy <code>date('d/m/Y')</code>, <code>date('Y-m-d')</code> on output lines, US/text <code>date()</code> patterns.<br>
 Native <code>type="date"</code> / <code>datetime-local</code> form controls are <strong>skipped</strong> by default (ISO value is normal for HTML5 inputs). Pass <code>--include-inputs</code> to WARN on those too.<br>
-Default lists <strong>WARN</strong> rows, one <strong>OK</strong> <code>module_pass</code> per clean module, and <strong>SKIP</strong> <code>module_skip</code> for exempt modules (<code>reports</code>, <code>ops_report</code>, <code>ops_report_*</code>, <code>settings</code>, <code>backup_tape_log</code>, <code>birthdays</code>, <code>resignations</code>, <code>calendar</code>, <code>explorer</code>, <code>hotel*</code>). Does not scan <code>booking/</code> guest portal (outside <code>modules/</code>). <code>--all</code> adds line-level OK hits; <code>--no-show-pass</code> / <code>--no-show-skips</code> hide pass or skip rows.<br>
+Default lists <strong>WARN</strong> rows, one <strong>OK</strong> <code>module_pass</code> per clean module, and <strong>SKIP</strong> <code>module_skip</code> for exempt modules (<code>reports</code>, <code>ops_report</code>, <code>ops_report_*</code>, <code>settings</code>, <code>backup_tape_log</code>, <code>birthdays</code>, <code>resignations</code>, <code>calendar</code>, <code>explorer</code>, <code>hotel*</code>). Does not scan <code>booking/</code> guest portal (outside <code>modules/</code>). <code>--all</code> adds line-level OK hits; <code>--no-show-pass</code> / <code>--no-show-skips</code> hide pass or skip rows. Click column headers (browser) or pass <code>--sort=module</code> · <code>--dir=desc</code> (CLI / <code>?sort=</code> query).<br>
 CLI examples:<br>
 <code>php scripts/list_date_display_formats.php</code><br>
 <code>php scripts/list_date_display_formats.php --module=ticket_survey_dashboard</code>
@@ -32,6 +33,7 @@ define('ITM_CLI_SCRIPT', true);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/lib/script_cli_output.php';
 require_once __DIR__ . '/lib/itm_module_date_format_display_audit.php';
+require_once __DIR__ . '/lib/itm_script_report_table_sort.php';
 
 itm_script_output_begin('List date display formats');
 
@@ -86,6 +88,14 @@ $rows = itm_module_date_format_display_audit_run([
     'show_module_skips' => $showModuleSkips,
 ]);
 
+$sortColumns = itm_module_date_format_display_audit_sort_columns();
+$sortState = itm_script_report_table_sort_resolve($isCli, $sortColumns);
+$rows = itm_module_date_format_display_audit_sort_rows(
+    $rows,
+    (string) ($sortState['sort'] ?? ''),
+    (string) ($sortState['dir'] ?? 'asc')
+);
+
 $okCount = 0;
 $warnCount = 0;
 $skipCount = 0;
@@ -121,6 +131,12 @@ if (!$isCli) {
     } else {
         echo '<p><strong>Display-only:</strong> native date inputs skipped (add <code>?include_inputs=1</code> to WARN them)</p>';
     }
+    if (($sortState['sort'] ?? '') !== '') {
+        echo '<p><strong>Sort:</strong> <code>' . sanitize((string) $sortState['sort']) . '</code> '
+            . sanitize((string) $sortState['dir']) . ' (click headers to change)</p>';
+    } else {
+        echo '<p><strong>Sort:</strong> default module/file/line — click column headers for asc/desc</p>';
+    }
 
     if ($rows === []) {
         echo '<p>' . colorText('[INFO] No matching rows in scope.', 'info') . '</p>';
@@ -130,7 +146,17 @@ if (!$isCli) {
 
     echo '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;margin:16px 0;width:100%;max-width:100%;font-size:13px;">';
     echo '<thead><tr>';
-    echo '<th>Status</th><th>Module</th><th>File</th><th>Line</th><th>Pattern</th><th>Format</th><th>Notes</th><th>Snippet</th>';
+    $sortQuery = itm_module_date_format_display_audit_sort_query_params();
+    $activeSort = (string) ($sortState['sort'] ?? '');
+    $activeDir = (string) ($sortState['dir'] ?? 'asc');
+    echo itm_module_date_format_display_audit_sort_th('Status', 'status', $activeSort, $activeDir, $sortQuery);
+    echo itm_module_date_format_display_audit_sort_th('Module', 'module', $activeSort, $activeDir, $sortQuery);
+    echo itm_module_date_format_display_audit_sort_th('File', 'file', $activeSort, $activeDir, $sortQuery);
+    echo itm_module_date_format_display_audit_sort_th('Line', 'line', $activeSort, $activeDir, $sortQuery);
+    echo itm_module_date_format_display_audit_sort_th('Pattern', 'pattern', $activeSort, $activeDir, $sortQuery);
+    echo itm_module_date_format_display_audit_sort_th('Format', 'format', $activeSort, $activeDir, $sortQuery);
+    echo itm_module_date_format_display_audit_sort_th('Notes', 'notes', $activeSort, $activeDir, $sortQuery);
+    echo itm_module_date_format_display_audit_sort_th('Snippet', 'snippet', $activeSort, $activeDir, $sortQuery);
     echo '</tr></thead><tbody>';
 
     foreach ($rows as $row) {
@@ -201,6 +227,9 @@ if ($includeInputs) {
     echo 'Include inputs: yes (native date fields WARN)' . $nl;
 } else {
     echo 'Display-only: native date inputs skipped (pass --include-inputs to WARN)' . $nl;
+}
+if (($sortState['sort'] ?? '') !== '') {
+    echo 'Sort: ' . (string) $sortState['sort'] . ' ' . (string) $sortState['dir'] . $nl;
 }
 echo $nl;
 
