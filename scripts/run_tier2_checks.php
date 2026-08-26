@@ -6,7 +6,7 @@
  * Browser menu: run_tier2_checks.php
  * Browser run: run_tier2_checks.php?run=1&continue=1 (optional continue=1)
  *
- * Why: SCRIPTS_TEST_MATRIX.md Tier 2 lists static gates not covered by smoke_test.sh (check_* + list_raw_columns.php).
+ * Why: SCRIPTS_TEST_MATRIX.md Tier 2 lists static gates not covered by smoke_test.sh (check_* + list_raw_columns.php + list_date_display_formats.php).
  */
 
 declare(strict_types=1);
@@ -78,7 +78,7 @@ if (!$runRequested) {
     itm_script_output_begin('Tier 2 static checks');
     $self = basename(__FILE__);
     echo colorText('Tier 2 static check batch', 'info') . $nl . $nl;
-    echo 'Runs every Tier 2 script from SCRIPTS_TEST_MATRIX.md (check_* + list_raw_columns.php; no DB mutation).' . $nl;
+    echo 'Runs every Tier 2 script from SCRIPTS_TEST_MATRIX.md (check_* + list_raw_columns.php + list_date_display_formats.php; no DB mutation).' . $nl;
     echo 'Source: ' . htmlspecialchars($resolved['source'], ENT_QUOTES, 'UTF-8') . ' — '
         . count($resolved['scripts']) . ' script(s).' . $nl . $nl;
     echo 'CLI:' . $nl;

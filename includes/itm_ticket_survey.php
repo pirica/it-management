@@ -527,7 +527,16 @@ if (!function_exists('itm_ticket_survey_maybe_issue_on_close')) {
         if (!is_array($row) || (int)($row['is_closed'] ?? 0) !== 1) {
             return 0;
         }
-        return itm_ticket_survey_issue($conn, (int)$companyId, (int)$ticketId, 0, '', true);
+        if (
+            function_exists('itm_ticket_settings_auto_issue_survey_on_close')
+            && !itm_ticket_settings_auto_issue_survey_on_close($conn, (int)$companyId)
+        ) {
+            return 0;
+        }
+        $sendEmail = !function_exists('itm_ticket_settings_survey_send_email_on_issue')
+            || itm_ticket_settings_survey_send_email_on_issue($conn, (int)$companyId);
+
+        return itm_ticket_survey_issue($conn, (int)$companyId, (int)$ticketId, 0, '', $sendEmail);
     }
 }
 

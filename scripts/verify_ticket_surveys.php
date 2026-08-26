@@ -227,6 +227,84 @@ $testTicketId = (int)mysqli_insert_id($conn);
 mysqli_stmt_close($insertTicket);
 ts_pass('Created test ticket #' . $testTicketId);
 
+$closedStatusId = 0;
+$closedStmt = mysqli_prepare(
+    $conn,
+    'SELECT id FROM ticket_statuses WHERE company_id = ? AND is_closed = 1 AND deleted_at IS NULL AND active = 1 ORDER BY id ASC LIMIT 1'
+);
+if ($closedStmt) {
+    mysqli_stmt_bind_param($closedStmt, 'i', $companyId);
+    mysqli_stmt_execute($closedStmt);
+    $closedRes = mysqli_stmt_get_result($closedStmt);
+    $closedRow = $closedRes ? mysqli_fetch_assoc($closedRes) : null;
+    mysqli_stmt_close($closedStmt);
+    $closedStatusId = (int)($closedRow['id'] ?? 0);
+}
+
+if ($closedStatusId <= 0) {
+    ts_fail('No closed ticket status for company 1');
+} else {
+    $autoTicketInsert = mysqli_prepare(
+        $conn,
+        'INSERT INTO tickets (company_id, title, description, status_id, created_by_employee_id, assigned_to_employee_id, active)
+         VALUES (?, ?, ?, ?, ?, ?, 1)'
+    );
+    $autoTitle = 'MBQA auto survey off ' . bin2hex(random_bytes(3));
+    mysqli_stmt_bind_param($autoTicketInsert, 'issiii', $companyId, $autoTitle, $desc, $openStatusId, $employeeId, $employeeId);
+    mysqli_stmt_execute($autoTicketInsert);
+    $autoOffTicketId = (int)mysqli_insert_id($conn);
+    mysqli_stmt_close($autoTicketInsert);
+
+    if (!function_exists('itm_ticket_settings_save')) {
+        ts_fail('itm_ticket_settings_save missing');
+    } else {
+        itm_ticket_settings_save($conn, $companyId, $employeeId, [
+            'auto_issue_survey_on_close' => 0,
+            'survey_send_email_on_issue' => 1,
+            'sla_enabled_on_create' => 1,
+        ]);
+        $blockedSurveyId = itm_ticket_survey_maybe_issue_on_close($conn, $companyId, $autoOffTicketId, $closedStatusId);
+        if ($blockedSurveyId > 0) {
+            ts_fail('Auto-issue should be blocked when auto_issue_survey_on_close is off');
+        } else {
+            ts_pass('Auto-issue blocked when tenant toggle is off (default)');
+        }
+
+        itm_ticket_settings_save($conn, $companyId, $employeeId, [
+            'auto_issue_survey_on_close' => 1,
+            'survey_send_email_on_issue' => 0,
+            'sla_enabled_on_create' => 1,
+        ]);
+        $autoOnInsert = mysqli_prepare(
+            $conn,
+            'INSERT INTO tickets (company_id, title, description, status_id, created_by_employee_id, assigned_to_employee_id, active)
+             VALUES (?, ?, ?, ?, ?, ?, 1)'
+        );
+        $autoOnTitle = 'MBQA auto survey on ' . bin2hex(random_bytes(3));
+        mysqli_stmt_bind_param($autoOnInsert, 'issiii', $companyId, $autoOnTitle, $desc, $openStatusId, $employeeId, $employeeId);
+        mysqli_stmt_execute($autoOnInsert);
+        $autoOnTicketId = (int)mysqli_insert_id($conn);
+        mysqli_stmt_close($autoOnInsert);
+
+        $enabledSurveyId = itm_ticket_survey_maybe_issue_on_close($conn, $companyId, $autoOnTicketId, $closedStatusId);
+        if ($enabledSurveyId <= 0) {
+            ts_fail('Auto-issue should run when auto_issue_survey_on_close is enabled');
+        } else {
+            ts_pass('Auto-issue on closed status when tenant toggle enabled (survey #' . $enabledSurveyId . ')');
+        }
+
+        itm_ticket_settings_save($conn, $companyId, $employeeId, [
+            'auto_issue_survey_on_close' => 0,
+            'survey_send_email_on_issue' => 1,
+            'sla_enabled_on_create' => 1,
+        ]);
+
+        mysqli_query($conn, 'DELETE FROM ticket_surveys WHERE ticket_id IN (' . $autoOffTicketId . ',' . $autoOnTicketId . ')');
+        mysqli_query($conn, 'DELETE FROM ticket_activity WHERE ticket_id IN (' . $autoOffTicketId . ',' . $autoOnTicketId . ')');
+        mysqli_query($conn, 'DELETE FROM tickets WHERE id IN (' . $autoOffTicketId . ',' . $autoOnTicketId . ')');
+    }
+}
+
 $activityBeforeIssue = ts_activity_count($conn, $companyId, $testTicketId, 'survey_issued');
 $surveyId = itm_ticket_survey_issue($conn, $companyId, $testTicketId, 0, 'survey-verify@example.com', false);
 if ($surveyId <= 0) {

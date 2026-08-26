@@ -349,6 +349,7 @@ require_once ROOT_PATH . 'includes/itm_company_session.php';
 require_once ROOT_PATH . 'includes/equipment_poe_helpers.php';
 require_once ROOT_PATH . 'includes/itm_ticket_activity.php';
 require_once ROOT_PATH . 'includes/itm_ticket_comments.php';
+require_once ROOT_PATH . 'includes/itm_ticket_settings.php';
 require_once ROOT_PATH . 'includes/itm_ticket_sla.php';
 require_once ROOT_PATH . 'includes/itm_ticket_survey.php';
 require_once ROOT_PATH . 'includes/itm_ticket_csat.php';

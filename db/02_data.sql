@@ -1895,6 +1895,9 @@ INSERT INTO `appointment_settings` (`company_id`, `timezone`, `slot_duration_min
 INSERT INTO `short_url_settings` (`company_id`, `default_expiry_days`, `custom_code_min_length`, `require_https_destination`, `analytics_enabled`, `allow_password_protect`, `active`, `created_at`) VALUES
 (1, NULL, 4, 0, 1, 1, 1, '2026-01-01 00:00:01');
 
+INSERT INTO `ticket_settings` (`company_id`, `auto_issue_survey_on_close`, `survey_send_email_on_issue`, `sla_enabled_on_create`, `active`, `created_at`) VALUES
+(1, 0, 1, 1, 1, '2026-01-01 00:00:01');
+
 INSERT INTO `appointment_visit_reasons` (`company_id`, `name`, `sort_order`, `active`, `created_at`) VALUES
 (1, 'General IT support', 10, 1, '2026-01-01 00:00:01'),
 (1, 'Equipment pickup or return', 20, 1, '2026-01-01 00:00:01'),
@@ -2168,6 +2171,7 @@ INSERT IGNORE INTO `warranty_types` (`company_id`, `name`, `created_at`) SELECT 
 INSERT IGNORE INTO `license_types` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `license_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `appointment_settings` (`company_id`, `timezone`, `slot_duration_minutes`, `bookable_start_time`, `bookable_end_time`, `check_in_end_buffer_minutes`, `booking_enabled`, `active`, `created_at`) SELECT c.`id`, t.`timezone`, t.`slot_duration_minutes`, t.`bookable_start_time`, t.`bookable_end_time`, t.`check_in_end_buffer_minutes`, t.`booking_enabled`, t.`active`, '2026-01-01 00:00:01' FROM `appointment_settings` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `ticket_settings` (`company_id`, `auto_issue_survey_on_close`, `survey_send_email_on_issue`, `sla_enabled_on_create`, `active`, `created_at`) SELECT c.`id`, t.`auto_issue_survey_on_close`, t.`survey_send_email_on_issue`, t.`sla_enabled_on_create`, t.`active`, '2026-01-01 00:00:01' FROM `ticket_settings` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 
 INSERT IGNORE INTO `short_url_settings` (`company_id`, `default_expiry_days`, `custom_code_min_length`, `require_https_destination`, `analytics_enabled`, `allow_password_protect`, `public_base_url`, `active`, `created_at`) SELECT c.`id`, t.`default_expiry_days`, t.`custom_code_min_length`, t.`require_https_destination`, t.`analytics_enabled`, t.`allow_password_protect`, t.`public_base_url`, t.`active`, '2026-01-01 00:00:01' FROM `short_url_settings` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 

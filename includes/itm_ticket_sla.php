@@ -29,6 +29,12 @@ if (!function_exists('itm_ticket_sla_policy_for_priority')) {
 if (!function_exists('itm_ticket_sla_apply_on_create')) {
     function itm_ticket_sla_apply_on_create($conn, $ticketId, $companyId, $priorityId, $createdAt = null)
     {
+        if (
+            function_exists('itm_ticket_settings_sla_enabled_on_create')
+            && !itm_ticket_settings_sla_enabled_on_create($conn, (int)$companyId)
+        ) {
+            return false;
+        }
         $policy = itm_ticket_sla_policy_for_priority($conn, $companyId, $priorityId);
         if (!$policy) {
             return false;
