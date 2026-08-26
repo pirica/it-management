@@ -151,6 +151,11 @@ if (!function_exists('itm_tier2_check_scripts_extra_cli_args')) {
             return ['--include-inputs'];
         }
 
+        if ($basename === 'repair_db_utf8_seed_corruption.php') {
+            // Why: Tier 2 repairs live ???? emoji corruption when MySQL is available (browser: ?run=1&apply=1).
+            return ['--apply'];
+        }
+
         return [];
     }
 }

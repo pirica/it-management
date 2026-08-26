@@ -85,7 +85,7 @@ If tracked repo files were rewritten: `git checkout -- <paths>` (or a fresh work
 ### Order
 
 1. **Tier 1** - baseline (includes intentional DB re-import via `verify_database_sql_import.sh`)
-2. **Tier 2** - static `check_*`, UTF-8 gates, `list_raw_columns.php`, and `list_date_display_formats.php` (batch; no DB writes; `repair_db_utf8_seed_corruption.php` dry-run SKIPs without MySQL)
+2. **Tier 2** - static `check_*`, UTF-8 gates, `list_raw_columns.php`, and `list_date_display_formats.php` (batch; `repair_db_utf8_seed_corruption.php --apply` repairs live `????` emoji when MySQL available; static seed audit when MySQL unavailable)
 3. **Tier 3** - runtime verifiers in subsystem batches (Schema, Security, Explorer, Email/Auth, Dashboard/Ops)
 4. On any `DESTROYED_ENV` -> document -> fresh clone -> sanity -> resume
 5. **Tier 4** - only on a healthy clone with Apache + MySQL ready
@@ -229,7 +229,7 @@ php scripts/employees_delete_clear_table_test.php
 | 2 | `verify_source_utf8_mojibake.php` | PHP | none | static-manual | UTF-8 / mojibake gate on tracked source (`modules/`, `includes/`, `scripts/`, `js/`, `css/`, `config/`); exit `1` on violations; repair via `fix_source_utf8_mojibake.php` |
 | 2 | `check_script_php_utf8_no_bom.php` | PHP | none | static-manual | UTF-8 BOM gate on `scripts/**/*.php` (forbidden before `<?php` / `declare`) |
 | 2 | `check_equipment_type_sidebar_emoji.php` | PHP | none | static-manual | Canonical `is_*` sidebar labels + `db/02_data.sql` `equipment_types.field_edit_emoji` seeds — fails on `????` corruption or seed/canonical mismatch (no MySQL) |
-| 2 | `repair_db_utf8_seed_corruption.php` | MySQL | read-only | static-manual | Dry-run detect for `????` emoji corruption (`ui_configuration.app_name`, `configuration_item_types.icon`, `equipment_types.field_edit_emoji`); static seed audit when MySQL unavailable; exit `1` when corruption found; apply via `--apply` / `?apply=1` (not tier2 batch writes) |
+| 2 | `repair_db_utf8_seed_corruption.php` | MySQL | destructive | static-manual | Tier 2 runs `--apply` (browser `?run=1&apply=1`): repairs `????` emoji in `ui_configuration.app_name`, `configuration_item_types.icon`, `equipment_types.field_edit_emoji` when MySQL available; static seed audit when MySQL unavailable |
 | 3 | `check_company_id_ui_column.php` | PHP | none | static-manual | Company column inventory — scans modules/{slug}/**/*.php (report; `--strict` optional) |
 | 3 | `DBdesign.php` | PHP | low | runtime | Read-mostly listing / diagram tool |
 | 3 | `analyze_database_health.php` | MySQL | low | runtime | Runtime verify / repro / diagnostic |
