@@ -234,6 +234,21 @@ if ($userConfig === false) {
     } else {
         ucp_pass('user-config.php reloads $ui_config after sidebar save.');
     }
+    if (strpos($userConfig, 'itm_user_config_save_dashboard_widget_prefs') === false) {
+        ucp_fail('user-config.php must save dashboard widgets via itm_user_config_save_dashboard_widget_prefs().');
+    } else {
+        ucp_pass('user-config.php uses dashboard widget prefs save helper.');
+    }
+    if (strpos($userConfig, 'update_dashboard_widgets') === false || strpos($userConfig, 'itm_dashboard_widgets_for_user_config') === false) {
+        ucp_fail('user-config.php must render smart dashboard widget prefs (update_dashboard_widgets + itm_dashboard_widgets_for_user_config).');
+    } else {
+        ucp_pass('user-config.php smart dashboard widget prefs section present.');
+    }
+    if (!preg_match('/update_dashboard_widgets[\s\S]{0,400}\$ui_config\s*=\s*itm_get_ui_configuration/', $userConfig)) {
+        ucp_fail('user-config.php must reload $ui_config after successful update_dashboard_widgets.');
+    } else {
+        ucp_pass('user-config.php reloads $ui_config after dashboard widget save.');
+    }
 }
 
 // --- Explorer file.php: cross-tenant profile photo must be denied ---

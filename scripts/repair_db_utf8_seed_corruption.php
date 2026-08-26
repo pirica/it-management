@@ -107,6 +107,7 @@ if ($uiStmt) {
 }
 
 $ciTypeRows = 0;
+$equipmentTypeRows = 0;
 $seeds = itm_cmdb_builtin_type_seeds();
 $companyRes = mysqli_query($conn, 'SELECT id FROM companies ORDER BY id');
 $companyIds = [];
@@ -168,14 +169,54 @@ foreach ($companyIds as $companyId) {
     }
 }
 
-if ($uiRows === 0 && $ciTypeRows === 0) {
+if (function_exists('itm_table_has_column') && itm_table_has_column($conn, 'equipment_types', 'field_edit_emoji')) {
+    $eqRes = mysqli_query(
+        $conn,
+        'SELECT id, company_id, name, field_edit_emoji FROM equipment_types WHERE deleted_at IS NULL'
+    );
+    while ($eqRes && ($eqRow = mysqli_fetch_assoc($eqRes))) {
+        $typeName = (string)($eqRow['name'] ?? '');
+        $currentEmoji = (string)($eqRow['field_edit_emoji'] ?? '');
+        if ($typeName === '') {
+            continue;
+        }
+        $canonical = itm_equipment_type_resolve_field_edit_emoji($typeName, '');
+        if ($canonical === '' || $currentEmoji === $canonical) {
+            continue;
+        }
+        if (!itm_repair_db_utf8_is_question_mark_corruption($currentEmoji) && trim($currentEmoji) !== '') {
+            continue;
+        }
+        $equipmentTypeRows++;
+        $label = 'equipment_types id=' . (int)($eqRow['id'] ?? 0)
+            . ' company=' . (int)($eqRow['company_id'] ?? 0) . ' name=' . $typeName;
+        if ($apply) {
+            $upd = mysqli_prepare(
+                $conn,
+                'UPDATE equipment_types SET field_edit_emoji = ? WHERE id = ? AND company_id = ? LIMIT 1'
+            );
+            if ($upd) {
+                $typeId = (int)($eqRow['id'] ?? 0);
+                $companyId = (int)($eqRow['company_id'] ?? 0);
+                mysqli_stmt_bind_param($upd, 'sii', $canonical, $typeId, $companyId);
+                mysqli_stmt_execute($upd);
+                mysqli_stmt_close($upd);
+                echo itm_script_format_status_line('[PASS] Fixed ' . $label . ' → ' . $canonical) . $nl;
+            }
+        } else {
+            echo itm_script_format_status_line('[WARN] Would fix ' . $label . ' — ' . $currentEmoji . ' → ' . $canonical) . $nl;
+        }
+    }
+}
+
+if ($uiRows === 0 && $ciTypeRows === 0 && $equipmentTypeRows === 0) {
     echo itm_script_format_status_line('[PASS] No UTF-8 question-mark corruption detected.') . $nl;
     $exitCode = 0;
 } elseif (!$apply) {
     echo itm_script_format_status_line('[FAIL] Corruption detected — dry-run only; use --apply or browser ?run=1&apply=1 to repair.') . $nl;
     $exitCode = 1;
 } else {
-    echo itm_script_format_status_line('[PASS] Repair complete — ui_configuration=' . $uiRows . ', configuration_item_types=' . $ciTypeRows) . $nl;
+    echo itm_script_format_status_line('[PASS] Repair complete — ui_configuration=' . $uiRows . ', configuration_item_types=' . $ciTypeRows . ', equipment_types=' . $equipmentTypeRows) . $nl;
     $exitCode = 0;
 }
 

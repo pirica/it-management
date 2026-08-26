@@ -2,6 +2,7 @@
 require_once 'config/config.php';
 require_once ROOT_PATH . 'includes/itm_vault_master_key.php';
 require_once ROOT_PATH . 'includes/employee_profile_photo.php';
+require_once ROOT_PATH . 'includes/itm_dashboard_widgets.php';
 /**
  * user-config.php - Employee Profile & Preferences
  *
@@ -590,6 +591,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Unable to update sidebar preferences.';
             $message_type = 'error';
         }
+    } elseif ($action === 'update_dashboard_widgets') {
+        $widgetSlugs = is_array($_POST['dashboard_widgets'] ?? null) ? $_POST['dashboard_widgets'] : [];
+        if (itm_user_config_save_dashboard_widget_prefs($conn, $company_id, $user_id, $widgetSlugs)) {
+            $ui_config = itm_get_ui_configuration($conn, $company_id, $user_id);
+            itm_log_audit($conn, 'ui_configuration', $user_id, 'UPDATE', ['action' => 'dashboard_widget_prefs_change'], ['action' => 'dashboard_widget_prefs_change_success']);
+            $message = 'Dashboard widgets updated!';
+            $message_type = 'success';
+        } else {
+            $message = 'Unable to update dashboard widget preferences.';
+            $message_type = 'error';
+        }
     } elseif ($action === 'upload_photo') {
         if (isset($_FILES['photo'])) {
             $res = emp_profile_photo_store_upload($home_company_id, $current_user, $_FILES['photo']);
@@ -648,6 +660,12 @@ $user_config_sidebar_section_collapse_enabled = function_exists('itm_sidebar_sec
     ? itm_sidebar_section_collapse_feature_enabled($ui_config)
     : true;
 $user_config_sidebar_role_blocks_hide = itm_employee_role_sidebar_show_enabled($conn, $user_id);
+$user_config_dashboard_widgets = itm_dashboard_widgets_for_user_config(
+    $conn,
+    $company_id,
+    $user_id,
+    $ui_config['dashboard_widget_prefs'] ?? []
+);
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="<?php echo sanitize($profileTheme); ?>">
@@ -1111,6 +1129,34 @@ foreach ($access_fields as $f):
                             </form>
                         </div>
 
+                        <?php if (count($user_config_dashboard_widgets) > 0): ?>
+                        <div class="card">
+                            <div class="card-header"><strong>📊 Smart dashboard widgets</strong></div>
+                            <?php $user_config_render_flash('update_dashboard_widgets'); ?>
+                            <p class="form-hint" style="margin:0 0 12px;">Check widgets to show on <a class="itm-user-config-sidebar-link" href="dashboard.php" target="_blank" rel="noopener noreferrer">dashboard.php</a>; uncheck to hide. Save to apply.</p>
+                            <form method="POST" id="user-config-dashboard-widgets-form">
+                                <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>"><input type="hidden" name="action" value="update_dashboard_widgets">
+                                <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:10px;">
+                                    <?php foreach ($user_config_dashboard_widgets as $dashWidget):
+                                        $dashWidgetSlug = (string)($dashWidget['slug'] ?? '');
+                                        $dashWidgetEnabled = !empty($dashWidget['enabled']);
+                                        $dashWidgetTitle = trim((string)($dashWidget['icon'] ?? '') . ' ' . (string)($dashWidget['title'] ?? $dashWidgetSlug));
+                                        $dashWidgetHref = (string)($dashWidget['deep_link'] ?? '');
+                                        if ($dashWidgetHref !== '' && strpos($dashWidgetHref, 'http') !== 0) {
+                                            $dashWidgetHref = BASE_URL . ltrim($dashWidgetHref, '/');
+                                        }
+                                    ?>
+                                        <label class="itm-checkbox-control">
+                                            <input type="checkbox" name="dashboard_widgets[]" value="<?php echo sanitize($dashWidgetSlug); ?>"<?php echo $dashWidgetEnabled ? ' checked' : ''; ?>>
+                                            <span><?php if ($dashWidgetHref !== ''): ?><a class="itm-user-config-sidebar-link" href="<?php echo sanitize($dashWidgetHref); ?>" target="_blank" rel="noopener noreferrer"><?php echo sanitize($dashWidgetTitle); ?></a><?php else: ?><?php echo sanitize($dashWidgetTitle); ?><?php endif; ?> <span class="itm-check-indicator" aria-hidden="true"><?php echo $dashWidgetEnabled ? '✅' : '❌'; ?></span></span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="margin-top:15px;" title="Save">💾</button>
+                            </form>
+                        </div>
+                        <?php endif; ?>
+
                         <div class="card">
                             <div class="card-header"><strong>🕒 Recent Activity</strong></div>
                             <ul class="timeline">
@@ -1196,6 +1242,21 @@ foreach ($access_fields as $f):
     sidebarForm.addEventListener('change', function (event) {
         var target = event.target;
         if (!target || target.name !== 'sidebar_items[]') {
+            return;
+        }
+        var indicator = target.parentNode ? target.parentNode.querySelector('.itm-check-indicator') : null;
+        if (indicator) {
+            indicator.textContent = target.checked ? '✅' : '❌';
+        }
+    });
+})();
+(function () {
+    // Why: Smart dashboard widget checkboxes mirror Personalized Sidebar instant feedback.
+    var dashForm = document.getElementById('user-config-dashboard-widgets-form');
+    if (!dashForm) return;
+    dashForm.addEventListener('change', function (event) {
+        var target = event.target;
+        if (!target || target.name !== 'dashboard_widgets[]') {
             return;
         }
         var indicator = target.parentNode ? target.parentNode.querySelector('.itm-check-indicator') : null;

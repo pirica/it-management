@@ -3643,6 +3643,7 @@ CREATE TABLE `ui_configuration` (
   `favicon_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `equipment_type_sidebar_visibility` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `module_icon_overrides` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `dashboard_widget_prefs` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `api_key` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `api_key_is_active` tinyint(1) NOT NULL DEFAULT '1',
   `api_key_last_used_at` timestamp NULL DEFAULT NULL,

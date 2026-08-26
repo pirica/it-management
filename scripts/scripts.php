@@ -2449,7 +2449,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="verify_dashboard_widgets.php" target="_blank" rel="nofollow noreferrer">verify_dashboard_widgets.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">employees</span><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">tickets</span></span></td>
-                    <td>Regression for role-aware smart dashboard widgets on <code>dashboard.php</code>: registry, RBAC gates, query helpers, <code>open_only</code> tickets filter, live metric SQL. Optional <code>ITM_TEST_COMPANY_ID</code>.</td>
+                    <td>Regression for role-aware smart dashboard widgets on <code>dashboard.php</code>: registry, RBAC gates, query helpers, <code>open_only</code> tickets filter, <code>dashboard_widget_prefs</code> save/resolve on <code>user-config.php</code>, live metric SQL. Optional <code>ITM_TEST_COMPANY_ID</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Codebase">

@@ -341,6 +341,13 @@ function itm_sidebar_module_default_label($moduleName) {
         'ops_report' => '📋 Ops Report',
         'reports' => '📊 Reports Hub',
         'backup_tape_log' => '📼 Backup Tape Log File',
+        'is_access_point' => '📶 Is Access Point',
+        'is_cctv' => '🎥 Is CCTV',
+        'is_firewall' => '🔥 Is Firewall',
+        'is_phone' => '📞 Is Phone',
+        'is_port_patch_panel' => '➿ Is Port Patch Panel',
+        'is_router' => '✳️ Is Router',
+        'is_other' => '📦 Is Other',
         'system_status' => '🖥️ System Status',
         'schema_migrations' => '📜 Schema Migrations',
     ];
@@ -578,17 +585,64 @@ function itm_equipment_type_default_emoji($typeName) {
         'access_point' => '📶',
         'cctv' => '🎥',
         'firewall' => '🔥',
+        'other' => '📦',
         'phone' => '📞',
-        'port_patch_panel' => '➰',
+        'port_patch_panel' => '➿',
         'pos' => '🏧',
         'printer' => '🖨️',
-        'router' => '🛜',
+        'router' => '✳️',
         'server' => '🖥️',
         'switch' => '🔀',
         'workstation' => '💻',
     ];
 
     return $map[$normalized] ?? '';
+}
+
+/**
+ * True when a stored emoji column value is empty or UTF-8 import corruption (ASCII ?).
+ */
+function itm_equipment_type_stored_emoji_unusable($emoji) {
+    $emoji = trim((string)$emoji);
+    if ($emoji === '') {
+        return true;
+    }
+    if (preg_match('/^\?+$/', $emoji) || preg_match('/^\?+(\s|$)/', $emoji)) {
+        return true;
+    }
+    if (function_exists('mb_check_encoding') && !mb_check_encoding($emoji, 'UTF-8')) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Prefer live equipment_types.field_edit_emoji when valid; else canonical defaults.
+ */
+function itm_equipment_type_resolve_field_edit_emoji($typeName, $storedEmoji = '') {
+    $storedEmoji = trim((string)$storedEmoji);
+    if (!itm_equipment_type_stored_emoji_unusable($storedEmoji)) {
+        return $storedEmoji;
+    }
+
+    $default = itm_equipment_type_default_emoji($typeName);
+    if ($default !== '') {
+        return $default;
+    }
+
+    $moduleId = itm_equipment_type_sidebar_item_id($typeName);
+    if ($moduleId !== '') {
+        $defaultLabel = itm_sidebar_module_default_label($moduleId);
+        if ($defaultLabel !== null) {
+            $parts = preg_split('/\s+/', trim($defaultLabel), 2);
+            if (is_array($parts) && isset($parts[0]) && trim((string)$parts[0]) !== '') {
+                return trim((string)$parts[0]);
+            }
+        }
+    }
+
+    return '🖥️';
 }
 
 /**
@@ -614,6 +668,13 @@ function itm_ensure_equipment_type_module_scaffold($typeName) {
         'is_switch' => '🔀 Is Switch',
         'is_printer' => '🖨️ Is Printer',
         'is_pos' => '🏧 Is POS',
+        'is_access_point' => '📶 Is Access Point',
+        'is_cctv' => '🎥 Is CCTV',
+        'is_firewall' => '🔥 Is Firewall',
+        'is_phone' => '📞 Is Phone',
+        'is_port_patch_panel' => '➿ Is Port Patch Panel',
+        'is_router' => '✳️ Is Router',
+        'is_other' => '📦 Is Other',
     ];
     $searchPlaceholderMap = [
         'is_workstation' => 'Use SQL wildcards, e.g. %%desk%%',
@@ -798,6 +859,7 @@ function itm_sidebar_structure($conn = null, $forceRefresh = false) {
             while ($equipmentTypeRow = mysqli_fetch_assoc($equipmentTypeRes)) {
                 $typeName = (string)($equipmentTypeRow['name'] ?? '');
                 $typeEmoji = trim((string)($equipmentTypeRow['field_edit_emoji'] ?? ''));
+                $typeEmoji = itm_equipment_type_resolve_field_edit_emoji($typeName, $typeEmoji);
                 if ($autoScaffoldingEnabled) {
                     itm_ensure_equipment_type_module_scaffold($typeName);
                 }
@@ -873,12 +935,17 @@ function itm_sidebar_structure($conn = null, $forceRefresh = false) {
             $item['label'] = trim($registryIcon . ' ' . $registryName);
         }
         if (strpos($moduleName, 'is_') === 0) {
-            $typeLabel = trim(preg_replace('/^is[_\s-]*/i', '', (string)$moduleName));
-            $moduleEmoji = trim((string)($moduleMeta['emoji'] ?? ''));
-            if ($moduleEmoji === '') {
-                $moduleEmoji = itm_equipment_type_default_emoji($typeLabel);
+            $defaultLabel = itm_sidebar_module_default_label($moduleName);
+            if ($defaultLabel !== null) {
+                $item['label'] = $defaultLabel;
+            } else {
+                $typeLabel = trim(preg_replace('/^is[_\s-]*/i', '', (string)$moduleName));
+                $moduleEmoji = trim((string)($moduleMeta['emoji'] ?? ''));
+                if (itm_equipment_type_stored_emoji_unusable($moduleEmoji)) {
+                    $moduleEmoji = itm_equipment_type_resolve_field_edit_emoji($typeLabel, $moduleEmoji);
+                }
+                $item['label'] = trim($moduleEmoji . ' Is ' . itm_sidebar_humanize_table_name($typeLabel));
             }
-            $item['label'] = trim($moduleEmoji . ' Is ' . itm_sidebar_humanize_table_name($typeLabel));
             $discoveredEquipmentTypeItems[] = $item;
             continue;
         }
@@ -1467,6 +1534,7 @@ function itm_ui_config_defaults() {
         'favicon_path' => '',
         'equipment_type_sidebar_visibility' => [],
         'module_icon_overrides' => [],
+        'dashboard_widget_prefs' => [],
         'sidebar_visibility' => itm_default_sidebar_visibility(),
         'sidebar_main_order' => itm_default_sidebar_main_order(),
         'sidebar_submenu_order' => itm_default_sidebar_submenu_order(),
@@ -1592,6 +1660,7 @@ $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
         `favicon_path` VARCHAR(255) NOT NULL DEFAULT '',
         `equipment_type_sidebar_visibility` LONGTEXT NULL,
         `module_icon_overrides` LONGTEXT NULL,
+        `dashboard_widget_prefs` LONGTEXT NULL,
         `api_key` VARCHAR(191) NOT NULL DEFAULT '',
         `api_key_is_active` TINYINT(1) NOT NULL DEFAULT 1,
         `api_key_last_used_at` TIMESTAMP NULL DEFAULT NULL,
@@ -1641,7 +1710,8 @@ $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
         'favicon_path' => "ALTER TABLE `ui_configuration` ADD COLUMN `favicon_path` VARCHAR(255) NOT NULL DEFAULT '' AFTER `app_name`",
         'equipment_type_sidebar_visibility' => "ALTER TABLE `ui_configuration` ADD COLUMN `equipment_type_sidebar_visibility` LONGTEXT NULL AFTER `favicon_path`",
         'module_icon_overrides' => "ALTER TABLE `ui_configuration` ADD COLUMN `module_icon_overrides` LONGTEXT NULL AFTER `equipment_type_sidebar_visibility`",
-        'api_key' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key` VARCHAR(191) NOT NULL DEFAULT '' AFTER `module_icon_overrides`",
+        'dashboard_widget_prefs' => "ALTER TABLE `ui_configuration` ADD COLUMN `dashboard_widget_prefs` LONGTEXT NULL AFTER `module_icon_overrides`",
+        'api_key' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key` VARCHAR(191) NOT NULL DEFAULT '' AFTER `dashboard_widget_prefs`",
         'api_key_is_active' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key_is_active` TINYINT(1) NOT NULL DEFAULT 1 AFTER `api_key`",
         'api_key_last_used_at' => "ALTER TABLE `ui_configuration` ADD COLUMN `api_key_last_used_at` TIMESTAMP NULL DEFAULT NULL AFTER `api_key_is_active`",
         'rate_limit_window_start' => "ALTER TABLE `ui_configuration` ADD COLUMN `rate_limit_window_start` INT NOT NULL DEFAULT 0 AFTER `api_key_last_used_at`",
@@ -1799,7 +1869,7 @@ function itm_get_ui_configuration($conn, $company_id, $user_id = null, $clearCac
     }
 
     // Retrieve settings from the database
-    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, enable_chatbot, enable_sidebar_section_collapse, enable_auto_scaffolding, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides, api_key, api_key_is_active, api_key_last_used_at, rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier FROM ui_configuration WHERE company_id = ? AND employee_id = ? LIMIT 1';
+    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, enable_chatbot, enable_sidebar_section_collapse, enable_auto_scaffolding, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides, dashboard_widget_prefs, api_key, api_key_is_active, api_key_last_used_at, rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier FROM ui_configuration WHERE company_id = ? AND employee_id = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return $defaults;
@@ -1862,6 +1932,10 @@ function itm_normalize_ui_configuration($values) {
     $values['enable_auto_scaffolding'] = itm_normalize_flag($values['enable_auto_scaffolding'] ?? $defaults['enable_auto_scaffolding']);
     $values['equipment_type_sidebar_visibility'] = itm_normalize_equipment_type_sidebar_visibility($values['equipment_type_sidebar_visibility'] ?? []);
     $values['module_icon_overrides'] = itm_normalize_module_icon_overrides($values['module_icon_overrides'] ?? []);
+    if (!function_exists('itm_normalize_dashboard_widget_prefs')) {
+        require_once __DIR__ . '/itm_dashboard_widgets.php';
+    }
+    $values['dashboard_widget_prefs'] = itm_normalize_dashboard_widget_prefs($values['dashboard_widget_prefs'] ?? []);
 
     // Validate records per page
     $recordsPerPage = strtolower((string)($values['records_per_page'] ?? $defaults['records_per_page']));
@@ -2134,6 +2208,69 @@ function itm_normalize_module_icon_overrides($raw) {
     }
 
     return $normalized;
+}
+
+/**
+ * Persist smart dashboard widget enable/disable from user-config.php.
+ */
+function itm_user_config_save_dashboard_widget_prefs($conn, $companyId, $userId, array $enabledSlugs) {
+    if (!($conn instanceof mysqli)) {
+        return false;
+    }
+
+    $companyId = (int)$companyId;
+    $userId = (int)$userId;
+    if ($companyId <= 0 || $userId <= 0 || !itm_ensure_ui_configuration_table($conn)) {
+        return false;
+    }
+
+    if (!function_exists('itm_normalize_dashboard_widget_prefs')) {
+        require_once __DIR__ . '/itm_dashboard_widgets.php';
+    }
+
+    $enabledLookup = [];
+    foreach ($enabledSlugs as $slug) {
+        $slug = trim((string)$slug);
+        if ($slug !== '') {
+            $enabledLookup[$slug] = true;
+        }
+    }
+
+    $uiConfig = itm_get_ui_configuration($conn, $companyId, $userId);
+    $prefs = itm_normalize_dashboard_widget_prefs($uiConfig['dashboard_widget_prefs'] ?? []);
+
+    foreach (itm_dashboard_widget_registry() as $slug => $def) {
+        if (!itm_dashboard_widget_can_show($conn, $companyId, $userId, $slug)) {
+            continue;
+        }
+        $prefs[$slug] = isset($enabledLookup[$slug]) ? 1 : 0;
+    }
+
+    $prefsJson = json_encode($prefs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if ($prefsJson === false) {
+        return false;
+    }
+
+    $stmt = mysqli_prepare(
+        $conn,
+        'INSERT INTO ui_configuration (company_id, employee_id, dashboard_widget_prefs)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE dashboard_widget_prefs = VALUES(dashboard_widget_prefs)'
+    );
+    if (!$stmt) {
+        return false;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'iis', $companyId, $userId, $prefsJson);
+    $ok = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+    if (!$ok) {
+        return false;
+    }
+
+    itm_get_ui_configuration($conn, $companyId, $userId, true);
+
+    return true;
 }
 
 /**

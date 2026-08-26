@@ -394,7 +394,7 @@ Do not add a script under `scripts/` without updating `scripts/scripts.php`.
 - **Static gate:** `php scripts/check_script_stdio_fwrite.php` — no raw `fwrite(STDOUT|STDERR)` under `scripts/`; use `itm_script_write_stdout()` / `itm_script_write_stderr()` from `scripts/lib/itm_script_stdio.php` (loaded via `script_cli_output.php`).
 - **Static gate:** `php scripts/check_script_php_utf8_no_bom.php` — no UTF-8 BOM at the start of `scripts/**/*.php` (BOM before `<?php` breaks `declare(strict_types=1)` and `php -l` on PHP 7.4). **Tier 2:** included in `run_tier2_checks.php`.
 - **Static gate:** `php scripts/verify_source_utf8_mojibake.php` — tracked source UTF-8 / mojibake audit (`modules/`, `includes/`, `scripts/`, `js/`, `css/`, `config/`). **Tier 2:** included in `run_tier2_checks.php`.
-- **DB detect (dry-run):** `php scripts/repair_db_utf8_seed_corruption.php` — `????` emoji seed corruption in `ui_configuration.app_name` / `configuration_item_types.icon`; apply with `--apply`. **Tier 2:** dry-run in `run_tier2_checks.php` (SKIPs when MySQL unavailable; exit `1` when corruption found).
+- **DB detect (dry-run):** `php scripts/repair_db_utf8_seed_corruption.php` — `????` emoji seed corruption in `ui_configuration.app_name`, `configuration_item_types.icon`, and `equipment_types.field_edit_emoji`; apply with `--apply`. **Tier 2:** dry-run in `run_tier2_checks.php` (SKIPs when MySQL unavailable; exit `1` when corruption found).
 
 #### API documentation (`scripts/api.php`)
 
@@ -1048,7 +1048,7 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 | `php scripts/verify_dashboard_active_employees.php` | Regression: **admin.php** row 2 **Active** / **On Leave** call `itm_employee_count_by_employment_status_name()` (no inline `LOWER(es.name)`); helper matches live `deleted_at IS NULL` counts; employee `dashboard.php` must not duplicate company counts; optional `ITM_TEST_COMPANY_ID` |
 | `php scripts/verify_dashboard_online_employees.php` | Regression: **admin.php** **Online now** stat, session presence touch hook, count after touch |
 | `php scripts/verify_employee_dashboard.php` | Regression: employee **dashboard.php** hero + grouped stat cards, smart widget wiring + Chart.js, `includes/itm_employee_dashboard.php` loader, no company switcher |
-| `php scripts/verify_dashboard_widgets.php` | Regression: role-aware smart dashboard widgets (`includes/itm_dashboard_widgets.php`, queries, RBAC gates, `open_only` tickets filter, live metric SQL); optional `ITM_TEST_COMPANY_ID` |
+| `php scripts/verify_dashboard_widgets.php` | Regression: role-aware smart dashboard widgets (`includes/itm_dashboard_widgets.php`, queries, RBAC gates, `open_only` tickets filter, `dashboard_widget_prefs` save/resolve, live metric SQL); optional `ITM_TEST_COMPANY_ID` |
 | `php scripts/verify_admin_page_gate.php` | Regression: **admin.php** `itm_is_admin()` gate and redirect to `dashboard.php` |
 | `php scripts/verify_settings_admin_buttons.php` | Regression: Settings **ADMIN** / **SCRIPTS** toolbar (admin-only), **All roles** chatbot block, **System (Admin Role only)** flags, and non-admin save preservation |
 
