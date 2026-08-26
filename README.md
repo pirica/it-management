@@ -149,13 +149,13 @@
 
 <h2 align="center">Database Structure Overview</h2>
 
-<p align="center">Fresh import of <code>db/</code> split bundle provisions <strong>229 tables</strong> and approximately <strong>9,000+ seed rows</strong> (literal <code>INSERT</code>/<code>SELECT</code> data in <code>db/02_data.sql</code> plus derived rows such as <code>company_module_access</code> and <code>employee_sidebar_preferences</code>). Table count matches <code>grep -c '^CREATE TABLE' db/01_schema.sql</code> (or <code>php scripts/verify_database_schema.php</code> after import — output includes <code>Actual tables (MySQL): 229</code> when aligned). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
+<p align="center">Fresh import of <code>db/</code> split bundle provisions <strong>230 tables</strong> and approximately <strong>9,000+ seed rows</strong> (literal <code>INSERT</code>/<code>SELECT</code> data in <code>db/02_data.sql</code> plus derived rows such as <code>company_module_access</code> and <code>employee_sidebar_preferences</code>). Table count matches <code>grep -c '^CREATE TABLE' db/01_schema.sql</code> (or <code>php scripts/verify_database_schema.php</code> after import — output includes <code>Actual tables (MySQL): 230</code> when aligned). The schema supports multi-company SaaS, modular feature expansion, and granular access control.</p>
 
 <h3 align="center">High-level summary</h3>
 
 | Metric | Value |
 | --- | --- |
-| **Tables** | 229 (<code>db/01_schema.sql</code>; live check: [count_db_tables.php](http://localhost/it-management/scripts/count_db_tables.php)) |
+| **Tables** | 230 (<code>db/01_schema.sql</code>; live check: [count_db_tables.php](http://localhost/it-management/scripts/count_db_tables.php)) |
 | **Sample rows** | ~9,000+ after full <code>db/</code> import (literal seeds + derived matrix/sidebar rows) |
 | **Module folders** | 220 with <code>index.php</code> under <code>modules/</code> |
 | **Registry entries** | 167+ explicit <code>modules_registry</code> INSERTs in <code>02_data.sql</code> (hospitality/finance blocks add more; catalog slugs are not 1:1 with table count) |
@@ -285,7 +285,7 @@
 | Operations | 10 | ~15 |
 | Workstation reference | 7 | ~280 |
 | Live chat and notifications | 6+ | ~50+ |
-| **Total** | **229** | **~9,000+** |
+| **Total** | **230** | **~9,000+** |
 
 <h3 align="center">What this means</h3>
 
