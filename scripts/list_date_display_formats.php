@@ -1,0 +1,216 @@
+<?php
+/**
+ * List module date display patterns — dd/mm/yyyy helpers OK, other formats WARN.
+ *
+ * Static scan of module PHP under modules/ for UK date helpers vs raw ISO.
+ * Does not mutate code (detection only).
+ *
+ * CLI:
+ *   php scripts/list_date_display_formats.php
+ *   php scripts/list_date_display_formats.php --only-warn
+ *   php scripts/list_date_display_formats.php --module=tickets
+ *   php scripts/list_date_display_formats.php --module=ticket_survey_dashboard --all
+ *
+ * Browser (Administrator): scripts/list_date_display_formats.php?run=1
+ */
+
+function itm_script_browser_how_to_use(): string
+{
+    return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
+Static audit: flags module PHP where dates are shown or collected without the UK <code>dd/mm/yyyy</code> contract.<br>
+<strong>OK</strong> — <code>itm_format_date_display()</code>, <code>itm_format_cell_scalar_display()</code>, <code>itm_format_datetime_display()</code>, explicit <code>date('d/m/Y')</code>, or hospitality <code>itm_format_hotel_date_display()</code> in hotel modules.<br>
+<strong>WARN</strong> — raw ISO echo (<code>$row['due_date']</code>), <code>type="date"</code> / <code>datetime-local</code>, <code>date('Y-m-d')</code> on output lines, US/text <code>date()</code> patterns.<br>
+Default lists <strong>WARN</strong> rows only; pass <code>--all</code> for OK rows too. Filter one module: <code>--module=tickets</code>.<br>
+CLI examples:<br>
+<code>php scripts/list_date_display_formats.php --only-warn</code><br>
+<code>php scripts/list_date_display_formats.php --module=ticket_survey_dashboard</code>
+ITM_SCRIPT_BROWSER_HOW_TO_USE;
+}
+
+define('ITM_CLI_SCRIPT', true);
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/lib/script_cli_output.php';
+require_once __DIR__ . '/lib/itm_module_date_format_display_audit.php';
+
+itm_script_output_begin('List date display formats');
+
+$isCli = itm_script_cli_is_cli();
+$nl = itm_script_output_nl();
+$root = rtrim(ROOT_PATH, '/\\');
+
+$moduleFilter = '';
+$onlyWarn = true;
+$showAll = false;
+
+if ($isCli) {
+    foreach ($argv ?? [] as $arg) {
+        if (strpos($arg, '--module=') === 0) {
+            $moduleFilter = trim((string) substr($arg, 9));
+        } elseif ($arg === '--only-warn') {
+            $onlyWarn = true;
+            $showAll = false;
+        } elseif ($arg === '--all') {
+            $showAll = true;
+            $onlyWarn = false;
+        }
+    }
+} else {
+    itm_script_require_admin_script_or_exit($conn, 'Access denied. Administrator privileges required.');
+    $moduleFilter = isset($_GET['module']) ? trim((string) $_GET['module']) : '';
+    $onlyWarn = !isset($_GET['all']) || (string) $_GET['all'] !== '1';
+    $showAll = isset($_GET['all']) && (string) $_GET['all'] === '1';
+}
+
+$rows = itm_module_date_format_display_audit_run([
+    'root' => $root,
+    'module' => $moduleFilter,
+    'only_warn' => $onlyWarn && !$showAll,
+    'all' => $showAll,
+]);
+
+$okCount = 0;
+$warnCount = 0;
+$skipCount = 0;
+
+foreach ($rows as $row) {
+    $status = (string) ($row['status'] ?? 'ok');
+    if ($status === 'warn') {
+        $warnCount++;
+    } elseif ($status === 'skip') {
+        $skipCount++;
+    } elseif ($status === 'ok') {
+        $okCount++;
+    }
+}
+
+$exitCode = $warnCount > 0 ? 1 : 0;
+
+if (!$isCli) {
+    itm_script_output_close_pre();
+
+    echo '<h1>Date display format audit</h1>';
+    echo '<p><strong>Root:</strong> <code>' . sanitize($root) . '</code></p>';
+    if ($moduleFilter !== '') {
+        echo '<p><strong>Module filter:</strong> <code>' . sanitize($moduleFilter) . '</code></p>';
+    }
+    if ($showAll) {
+        echo '<p><strong>Filter:</strong> all rows (OK + WARN)</p>';
+    } else {
+        echo '<p><strong>Filter:</strong> WARN rows only (<code>?all=1</code> for OK too)</p>';
+    }
+
+    if ($rows === []) {
+        echo '<p>' . colorText('[INFO] No matching rows in scope.', 'info') . '</p>';
+        itm_script_output_end();
+        exit(0);
+    }
+
+    echo '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;margin:16px 0;width:100%;max-width:100%;font-size:13px;">';
+    echo '<thead><tr>';
+    echo '<th>Status</th><th>Module</th><th>File</th><th>Line</th><th>Pattern</th><th>Format</th><th>Notes</th><th>Snippet</th>';
+    echo '</tr></thead><tbody>';
+
+    foreach ($rows as $row) {
+        $status = strtoupper((string) ($row['status'] ?? 'ok'));
+        $statusColor = '#1a7f37';
+        if ($status === 'WARN') {
+            $statusColor = '#bf8700';
+        } elseif ($status === 'SKIP') {
+            $statusColor = '#6e7781';
+        }
+
+        $slug = (string) ($row['module'] ?? '');
+        $moduleCell = sanitize($slug);
+        if ($slug !== '' && function_exists('itm_script_format_modules_file_local_dev_link')) {
+            $moduleCell = itm_script_format_modules_file_local_dev_link('modules/' . $slug . '/index.php', $slug);
+        }
+
+        $fileRel = (string) ($row['file'] ?? '');
+        $fileCell = '<code>' . sanitize($fileRel) . '</code>';
+        if ($fileRel !== '' && function_exists('itm_script_format_modules_file_local_dev_link')) {
+            $fileCell = itm_script_format_modules_file_local_dev_link($fileRel, basename($fileRel));
+        }
+
+        echo '<tr>';
+        echo '<td style="color:' . $statusColor . ';font-weight:600;">' . sanitize($status) . '</td>';
+        echo '<td>' . $moduleCell . '</td>';
+        echo '<td>' . $fileCell . '</td>';
+        echo '<td>' . (int) ($row['line'] ?? 0) . '</td>';
+        echo '<td><code>' . sanitize((string) ($row['pattern'] ?? '')) . '</code></td>';
+        echo '<td><code>' . sanitize((string) ($row['format'] ?? '')) . '</code></td>';
+        echo '<td>' . sanitize((string) ($row['notes'] ?? '')) . '</td>';
+        echo '<td><code>' . sanitize((string) ($row['snippet'] ?? '')) . '</code></td>';
+        echo '</tr>';
+    }
+
+    echo '</tbody></table>';
+
+    echo '<p><strong>Summary:</strong> ok=' . (int) $okCount . ' warn=' . (int) $warnCount . ' skip=' . (int) $skipCount . '</p>';
+
+    echo '<div style="margin:16px 0;padding:12px;border:1px dashed #d0d7de;border-radius:6px;font-size:13px;">';
+    echo '<p><strong>OK</strong> = UK <code>dd/mm/yyyy</code> via shared helpers or explicit <code>date(\'d/m/Y\')</code>.</p>';
+    echo '<p><strong>WARN</strong> = other display format (raw MySQL ISO, native <code>type="date"</code>, US/text <code>date()</code>). Detection only — no auto-fix.</p>';
+    echo '<p>Canonical contract: <code>includes/itm_date_format.php</code> and <code>AGENTS.md</code> → Character encoding / dates.</p>';
+    echo '</div>';
+
+    if ($exitCode === 1) {
+        echo '<p>' . colorText('[WARN] Non-UK date display patterns found.', 'warn') . '</p>';
+    } else {
+        echo '<p>' . colorText('[PASS] No WARN rows in scope.', 'pass') . '</p>';
+    }
+
+    itm_script_output_end();
+    exit($exitCode);
+}
+
+echo colorText('Date display format audit', 'info') . $nl;
+echo 'Root: ' . $root . $nl;
+if ($moduleFilter !== '') {
+    echo 'Module filter: ' . $moduleFilter . $nl;
+}
+if ($showAll) {
+    echo 'Filter: all rows' . $nl;
+} else {
+    echo 'Filter: WARN only (pass --all for OK rows)' . $nl;
+}
+echo $nl;
+
+if ($rows === []) {
+    echo colorText('[INFO] No matching rows in scope.', 'info') . $nl;
+    itm_script_output_end();
+    exit(0);
+}
+
+echo str_pad('Status', 8) . ' '
+    . str_pad('Module', 28) . ' '
+    . str_pad('File', 42) . ' '
+    . str_pad('Line', 6) . ' '
+    . str_pad('Pattern', 24) . ' '
+    . str_pad('Format', 22) . ' '
+    . 'Notes' . $nl;
+echo str_repeat('-', 140) . $nl;
+
+foreach ($rows as $row) {
+    echo str_pad(strtoupper((string) ($row['status'] ?? 'ok')), 8) . ' '
+        . str_pad((string) ($row['module'] ?? ''), 28) . ' '
+        . str_pad((string) ($row['file'] ?? ''), 42) . ' '
+        . str_pad((string) ((int) ($row['line'] ?? 0)), 6) . ' '
+        . str_pad((string) ($row['pattern'] ?? ''), 24) . ' '
+        . str_pad((string) ($row['format'] ?? ''), 22) . ' '
+        . (string) ($row['notes'] ?? '') . $nl;
+}
+
+echo $nl;
+echo 'Summary: ok=' . $okCount . ' warn=' . $warnCount . ' skip=' . $skipCount . $nl;
+echo $nl;
+echo 'OK = dd/mm/yyyy via itm_format_* helpers.' . $nl;
+echo 'WARN = other display format (detection only).' . $nl;
+
+if ($exitCode === 1) {
+    echo colorText('[WARN] Non-UK date display patterns found.', 'warn') . $nl;
+} else {
+    echo colorText('[PASS] No WARN rows in scope.', 'pass') . $nl;
+}
+
+itm_script_output_end();
+exit($exitCode);
