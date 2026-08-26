@@ -256,7 +256,7 @@ if (!function_exists('itm_module_date_format_display_audit_line_rules')) {
             [
                 'status' => 'ok',
                 'pattern' => 'itm_format_audit_timestamp_display',
-                'format' => 'd-m-Y - H:i:s (audit)',
+                'format' => 'd/M/Y - H:i:s (audit)',
                 'regex' => '/itm_format_audit_timestamp_display\s*\(/',
                 'notes' => 'Audit stamp contract (not list date)',
             ],
