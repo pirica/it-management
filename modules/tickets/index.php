@@ -27,6 +27,48 @@ itm_crud_record_share_handle_ajax_request($conn, 'tickets');
 require_once ROOT_PATH . 'includes/itm_employee_employment_status.php';
 require __DIR__ . '/sample_seed_helpers.php';
 
+$ticketsActiveTab = isset($_GET['tab']) ? trim((string)$_GET['tab']) : 'list';
+if (!in_array($ticketsActiveTab, ['list', 'configuration'], true)) {
+    $ticketsActiveTab = 'list';
+}
+
+$ticketsEmployeeId = (int)($_SESSION['employee_id'] ?? 0);
+$ticketsCanEditSettings = itm_user_has_role_module_permission(
+    $conn,
+    $ticketsEmployeeId,
+    (int)($company_id ?? 0),
+    itm_resolve_rbac_module_name_for_slug($conn, 'tickets'),
+    'edit'
+);
+$ticketsConfigFlash = '';
+$ticketsSettingsRow = null;
+
+if ($ticketsActiveTab === 'configuration' && (int)($company_id ?? 0) > 0) {
+    $ticketsSettingsRow = itm_ticket_settings_ensure_company($conn, (int)$company_id, $ticketsEmployeeId);
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_ticket_settings'])) {
+    itm_require_post_csrf();
+    if (!$ticketsCanEditSettings) {
+        $_SESSION['crud_error'] = 'You do not have permission to edit ticket configuration.';
+        header('Location: index.php?tab=configuration');
+        exit;
+    }
+    if ((int)($company_id ?? 0) <= 0) {
+        $_SESSION['crud_error'] = 'Ticket configuration requires an active company.';
+        header('Location: index.php?tab=configuration');
+        exit;
+    }
+    $saved = itm_ticket_settings_save($conn, (int)$company_id, $ticketsEmployeeId, [
+        'auto_issue_survey_on_close' => isset($_POST['auto_issue_survey_on_close']) ? 1 : 0,
+        'survey_send_email_on_issue' => isset($_POST['survey_send_email_on_issue']) ? 1 : 0,
+        'sla_enabled_on_create' => isset($_POST['sla_enabled_on_create']) ? 1 : 0,
+    ]);
+    $_SESSION['crud_success'] = $saved ? 'Ticket configuration saved.' : 'Could not save ticket configuration.';
+    header('Location: index.php?tab=configuration');
+    exit;
+}
+
 // Why: tickets.is_archived is defined in db/ CREATE TABLE — no runtime ALTER.
 
 // Handle Excel/CSV database import requests from table-tools.js.
@@ -265,7 +307,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_sample_data'])) {
     exit;
 }
 
-// Extraction of search and sorting parameters
+if (!empty($_SESSION['crud_success']) && $ticketsActiveTab === 'configuration') {
+    $ticketsConfigFlash = (string)$_SESSION['crud_success'];
+    unset($_SESSION['crud_success']);
+}
+if (!empty($_SESSION['crud_error']) && $ticketsActiveTab === 'configuration') {
+    $ticketsConfigFlash = (string)$_SESSION['crud_error'];
+    unset($_SESSION['crud_error']);
+}
+
+// Extraction of search and sorting parameters — skip on configuration tab.
+if ($ticketsActiveTab === 'list') {
 require_once ROOT_PATH . 'includes/itm_tickets_list_query.php';
 // Why: list SQL applies deleted_at IS NULL in itm_tickets_list_build_sql_base().
 $ticketListFilters = itm_tickets_list_parse_filters($_GET);
@@ -311,6 +363,24 @@ $itmSavedReportsModuleSlug = 'tickets';
 $itmSavedReportsFilters = $ticketListFilters;
 $itmSavedReportsColumns = $uiColumns;
 $ticketListQueryString = itm_saved_reports_filters_query_string($ticketListFilters);
+} else {
+    $searchRaw = '';
+    $showArchived = false;
+    $sort = 'id';
+    $dir = 'DESC';
+    $totalRows = 0;
+    $companyTotalRows = 0;
+    $totalPages = 1;
+    $page = 1;
+    $offset = 0;
+    $ticketRows = [];
+    $items = [];
+    $ticketFilterOptions = ['statuses' => [], 'priorities' => [], 'assignees' => []];
+    $showBulkActions = false;
+    $newButtonPosition = itm_resolve_new_button_position($ui_config ?? null);
+    $moduleListHeading = itm_sidebar_label_for_module(basename(dirname($_SERVER['PHP_SELF']))) ?: $crud_title;
+    $ticketListQueryString = '';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -330,6 +400,12 @@ if (!isset($crud_title)) {
 <title><?= sanitize($crud_title) ?> - <?php echo sanitize($app_name ?? itm_ui_config_app_name($currentUiConfig)); ?></title>
     <?php echo itm_render_head_favicon_link($favicon_url ?? null); ?>
     <link rel="stylesheet" href="../../css/styles.css">
+    <style>
+        .tickets-tabs { display:flex; gap:10px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:10px; flex-wrap:wrap; }
+        .tickets-tab { padding:8px 16px; text-decoration:none; color:var(--text-primary); border-radius:6px; font-weight:500; }
+        .tickets-tab.active { background:var(--accent); color:#fff; font-weight:600; }
+        .tickets-tab:hover:not(.active) { background:var(--bg-secondary); }
+    </style>
 </head>
 <body>
 <div class="container">
@@ -337,12 +413,18 @@ if (!isset($crud_title)) {
     <div class="main-content">
         <?php include '../../includes/header.php'; ?>
         <div class="content">
+            <?php if ($ticketsActiveTab === 'list'): ?>
             <?php include ROOT_PATH . 'includes/itm_saved_reports_list_banner.php'; ?>
             <!-- HEADER SECTION -->
             <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                 <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a><?php else: ?><span></span><?php endif; ?>
                 <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
                 <?php if (in_array($newButtonPosition, ['right', 'left_right'], true)): ?><a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a><?php else: ?><span></span><?php endif; ?>
+            </div>
+
+            <div class="tickets-tabs">
+                <a href="index.php" class="itm-plain-link tickets-tab active">Tickets</a>
+                <a href="index.php?tab=configuration" class="itm-plain-link tickets-tab">Configuration</a>
             </div>
 
             <!-- SEARCH BAR -->
@@ -529,12 +611,26 @@ if (!isset($crud_title)) {
                     </form>
                 </div>
             <?php endif; ?>
+            <?php else: ?>
+            <div style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
+                <span></span>
+                <h1 style="position:absolute;left:50%;transform:translateX(-50%);margin:0;text-align:center;"><?php echo sanitize($moduleListHeading); ?></h1>
+                <span></span>
+            </div>
+            <div class="tickets-tabs">
+                <a href="index.php" class="itm-plain-link tickets-tab">Tickets</a>
+                <a href="index.php?tab=configuration" class="itm-plain-link tickets-tab active">Configuration</a>
+            </div>
+            <?php include __DIR__ . '/includes/tab_configuration.php'; ?>
+            <?php endif; ?>
         </div>
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<?php if ($ticketsActiveTab === 'list'): ?>
 <script src="../../js/bulk-delete-selection.js"></script>
 <?php itm_crud_record_share_include_modal(); ?>
+<?php endif; ?>
 </body>
 </html>
 <?php

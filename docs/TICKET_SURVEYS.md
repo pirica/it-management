@@ -43,7 +43,7 @@ Token builder: `itm_ticket_survey_build_public_url($token)` → `{BASE_URL}/tick
 ## Workflow
 
 1. **Template** — Admin creates a questionnaire (default and/or category-scoped) with ordered questions.
-2. **Issue** — Manual from ticket view, automation action `send_ticket_survey`, or auto on status → closed via `itm_ticket_survey_maybe_issue_on_close()` (when status row `is_closed = 1`).
+2. **Issue** — Manual from ticket view, automation action `send_ticket_survey`, or auto on status → closed via `itm_ticket_survey_maybe_issue_on_close()` when **Configuration → Auto issue survey on close** is enabled on [modules/tickets/index.php?tab=configuration](http://localhost/it-management/modules/tickets/index.php?tab=configuration) (default **off** per company in `ticket_settings`).
 3. **Respond** — Requester opens public URL; required ratings 1–5 and optional text; optional **accept feedback** checkbox.
 4. **Sync** — `itm_ticket_survey_sync_csat_columns()` maps overall satisfaction + first text comment onto `tickets.csat_*` for Reports Hub CSAT trend.
 5. **Review** — [modules/ticket_surveys/view.php](http://localhost/it-management/modules/ticket_surveys/view.php) shows answer snapshots; pending invites can be deleted from list.
@@ -90,6 +90,18 @@ php scripts/verify_ticket_productivity.php   # canned responses, merge, legacy C
 ```
 
 Browser: [verify_ticket_surveys.php?run=1](http://localhost/it-management/scripts/verify_ticket_surveys.php?run=1) (Admin session).
+
+## Tenant configuration
+
+Per-company toggles live in **`ticket_settings`** (one row per `company_id`). UI: [modules/tickets/index.php?tab=configuration](http://localhost/it-management/modules/tickets/index.php?tab=configuration) (Admin session with Tickets edit permission).
+
+| Toggle | Default | Effect |
+|--------|---------|--------|
+| Auto issue survey on close | **Off** | When on, closed status transitions call `itm_ticket_survey_maybe_issue_on_close()` |
+| Email survey link on issue | On | When on, `itm_ticket_survey_issue()` sends requester email (auto + manual issue) |
+| SLA on new tickets | On | When on, `itm_ticket_sla_apply_on_create()` stamps SLA due dates |
+
+Manual **Issue survey** on ticket view is unchanged. Automation `send_ticket_survey` is not gated by the auto-issue toggle. Migration: `db/migrations/ticket_settings.sql`.
 
 ## Sample data
 
