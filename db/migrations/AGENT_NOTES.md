@@ -29,6 +29,8 @@ Historical migration SQL files were **pruned** once live databases matched canon
 | `qr_design_templates.sql` | `qr_design_templates` — employee-scoped QR design presets (wizard Design step save/load) |
 | `short_url_public_base_url.sql` | Adds `public_base_url` on `short_url_settings` (destructive to settings rows only) |
 | `short_url.sql` | `short_urls`, `short_url_clicks`, `short_url_settings`, `qr_codes.short_url_id` — Short URLs module + QR back-link (destructive to `qr_codes` / `qr_code_scans`) |
+| `employee_sidebar_preferences_is_collapsed.sql` | `employee_sidebar_preferences.is_collapsed` — per-section fold for double-click sidebar collapse (destructive DROP+CREATE) |
+| `ui_configuration_enable_sidebar_section_collapse.sql` | `ui_configuration.enable_sidebar_section_collapse` — master toggle default **1** (destructive DROP+CREATE) |
 
 ## 12. Module Owner Notes
 

@@ -578,7 +578,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message_type = 'info';
     } elseif ($action === 'update_sidebar') {
         $items = is_array($_POST['sidebar_items'] ?? null) ? $_POST['sidebar_items'] : [];
-        if (itm_user_config_save_personalized_sidebar_items($conn, $company_id, $user_id, $items)) {
+        $collapseEnabled = isset($_POST['enable_sidebar_section_collapse']) ? 1 : 0;
+        $sidebarSaved = itm_user_config_save_personalized_sidebar_items($conn, $company_id, $user_id, $items);
+        $collapseSaved = itm_user_config_save_sidebar_section_collapse_enabled($conn, $company_id, $user_id, $collapseEnabled);
+        if ($sidebarSaved && $collapseSaved) {
             $ui_config = itm_get_ui_configuration($conn, $company_id, $user_id);
             itm_log_audit($conn, 'employee_sidebar_preferences', $user_id, 'UPDATE', ['action' => 'sidebar_preferences_change'], ['action' => 'sidebar_preferences_change_success']);
             $message = 'Sidebar updated!';
@@ -641,6 +644,9 @@ $totpQrUrl = $totpSetupPending
     : '';
 $ui_config = itm_get_ui_configuration($conn, $company_id, $user_id);
 $user_config_sidebar_ui = $ui_config;
+$user_config_sidebar_section_collapse_enabled = function_exists('itm_sidebar_section_collapse_feature_enabled')
+    ? itm_sidebar_section_collapse_feature_enabled($ui_config)
+    : true;
 $user_config_sidebar_role_blocks_hide = itm_employee_role_sidebar_show_enabled($conn, $user_id);
 ?>
 <!DOCTYPE html>
@@ -1072,6 +1078,11 @@ foreach ($access_fields as $f):
                             <div class="card-header"><strong>📑 Personalized Sidebar</strong></div>
                             <?php $user_config_render_flash('update_sidebar'); ?>
                             <p class="form-hint" style="margin:0 0 12px;">Check modules to show in your sidebar; uncheck to hide. Save to apply.</p>
+                            <label class="itm-checkbox-control" style="display:block;margin:0 0 12px;">
+                                <input type="checkbox" name="enable_sidebar_section_collapse" value="1"<?php echo $user_config_sidebar_section_collapse_enabled ? ' checked' : ''; ?>>
+                                <span>Double-click section collapse <span class="itm-check-indicator" aria-hidden="true"><?php echo $user_config_sidebar_section_collapse_enabled ? '✅' : '❌'; ?></span></span>
+                            </label>
+                            <p class="form-hint" style="margin:0 0 12px;">When enabled, double-click a sidebar section title (for example Planning) to hide or show its links. Your fold state is saved per section.</p>
                             <?php if ($user_config_sidebar_role_blocks_hide): ?>
                                 <p class="form-hint" style="margin:0 0 12px;">Your role keeps required modules visible in the live sidebar even when unchecked here. An administrator can turn off <strong>Sidebar show</strong> on your role in Roles &amp; Permissions to allow full hide/unhide.</p>
                             <?php endif; ?>

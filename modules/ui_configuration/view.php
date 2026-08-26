@@ -168,6 +168,7 @@ function cr_render_cell_value($table, $field, $value) {
         'enable_all_error_reporting',
         'enable_audit_logs',
         'enable_chatbot',
+        'enable_sidebar_section_collapse',
         'enable_auto_scaffolding',
         'api_key_is_active',
         'rate_limit_enabled',

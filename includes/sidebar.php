@@ -46,8 +46,14 @@ foreach ($mainOrder as $sectionId) {
 foreach ($sectionsById as $section) {
     $orderedSections[] = $section;
 }
+$enableSidebarSectionCollapse = function_exists('itm_sidebar_section_collapse_feature_enabled')
+    ? itm_sidebar_section_collapse_feature_enabled($sidebarConfig)
+    : true;
+$sidebarCollapsedMap = function_exists('itm_normalize_sidebar_collapsed_map')
+    ? itm_normalize_sidebar_collapsed_map($sidebarConfig['sidebar_collapsed'] ?? null)
+    : [];
 ?>
-<div class="sidebar" id="appSidebar" role="navigation" aria-label="Main navigation">
+<div class="sidebar" id="appSidebar" role="navigation" aria-label="Main navigation" data-itm-sidebar-section-collapse-enabled="<?php echo $enableSidebarSectionCollapse ? '1' : '0'; ?>">
     <div class="sidebar-header">
         <button
             type="button"
@@ -90,8 +96,37 @@ foreach ($sectionsById as $section) {
         if (!$visibleItems) {
             continue;
         }
+
+        $sectionHasActiveItem = false;
+        foreach ($visibleItems as $sidebarItemProbe) {
+            $probeActive = false;
+            if (isset($sidebarItemProbe['match_page'])) {
+                $probeActive = $current_page === $sidebarItemProbe['match_page'];
+            } elseif (isset($sidebarItemProbe['match_dir'])) {
+                $probeActive = $current_dir === $sidebarItemProbe['match_dir'];
+            }
+            if ($probeActive) {
+                $sectionHasActiveItem = true;
+                break;
+            }
+        }
+
+        $sectionIsCollapsed = $enableSidebarSectionCollapse
+            && ((int)($sidebarCollapsedMap[$sectionId] ?? 0) === 1)
+            && !$sectionHasActiveItem;
+        $sectionWrapperClass = 'sidebar-section' . ($sectionIsCollapsed ? ' sidebar-section-collapsed' : '');
+        $sectionTitleClass = 'sidebar-title' . ($enableSidebarSectionCollapse ? ' sidebar-section-toggle' : '');
         ?>
-        <div class="sidebar-title"><?php echo sanitize($section['title']); ?></div>
+        <div class="<?php echo sanitize($sectionWrapperClass); ?>" data-sidebar-section-id="<?php echo sanitize($sectionId); ?>">
+        <div
+            class="<?php echo sanitize($sectionTitleClass); ?>"
+            <?php if ($enableSidebarSectionCollapse): ?>
+            role="button"
+            tabindex="0"
+            aria-expanded="<?php echo $sectionIsCollapsed ? 'false' : 'true'; ?>"
+            title="Double-click to collapse section"
+            <?php endif; ?>
+        ><?php echo sanitize($section['title']); ?></div>
         <ul class="sidebar-nav">
             <?php foreach ($visibleItems as $sidebarItem): ?>
                 <?php
@@ -121,6 +156,7 @@ foreach ($sectionsById as $section) {
                 </li>
             <?php endforeach; ?>
         </ul>
+        </div>
     <?php endforeach; ?>
 
         <!-- Vault Status (Passwords Module Only) -->

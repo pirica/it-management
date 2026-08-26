@@ -1346,6 +1346,19 @@ function itm_sidebar_prepare_layout_config_for_save(array $config, $conn, $compa
 
     $config['sidebar_main_order'] = itm_normalize_sidebar_main_order($config['sidebar_main_order'] ?? itm_default_sidebar_main_order());
     $config['sidebar_submenu_order'] = itm_normalize_sidebar_submenu_order($config['sidebar_submenu_order'] ?? itm_default_sidebar_submenu_order());
+    if ($conn instanceof mysqli && $companyId > 0 && $employeeId > 0) {
+        $existingLayout = itm_get_employee_sidebar_preferences_config($conn, $companyId, $employeeId);
+        if (is_array($existingLayout) && is_array($existingLayout['sidebar_collapsed'] ?? null)) {
+            if (!isset($config['sidebar_collapsed']) || !is_array($config['sidebar_collapsed'])) {
+                $config['sidebar_collapsed'] = [];
+            }
+            $config['sidebar_collapsed'] = array_merge(
+                $existingLayout['sidebar_collapsed'],
+                $config['sidebar_collapsed']
+            );
+        }
+    }
+    $config['sidebar_collapsed'] = itm_normalize_sidebar_collapsed_map($config['sidebar_collapsed'] ?? null);
     $config['sidebar_visibility'] = itm_sidebar_sync_section_visibility_from_items(
         itm_normalize_sidebar_visibility($config['sidebar_visibility']),
         $config,
@@ -1391,6 +1404,7 @@ function itm_user_config_save_personalized_sidebar_items($conn, $companyId, $use
         'sidebar_visibility' => itm_normalize_sidebar_visibility($visibility),
         'sidebar_main_order' => $sidebarConfig['sidebar_main_order'] ?? itm_default_sidebar_main_order(),
         'sidebar_submenu_order' => $sidebarConfig['sidebar_submenu_order'] ?? itm_default_sidebar_submenu_order(),
+        'sidebar_collapsed' => is_array($sidebarConfig['sidebar_collapsed'] ?? null) ? $sidebarConfig['sidebar_collapsed'] : [],
     ];
     $layoutConfig = itm_sidebar_prepare_layout_config_for_save($layoutConfig, $conn, $companyId, $userId);
 
@@ -1446,6 +1460,7 @@ function itm_ui_config_defaults() {
         'enable_all_error_reporting' => 1,
         'enable_audit_logs' => 1,
         'enable_chatbot' => 1,
+        'enable_sidebar_section_collapse' => 1,
         'enable_auto_scaffolding' => 0,
         'records_per_page' => '25',
         'app_name' => '⚙️ IT Controls',
@@ -1455,6 +1470,7 @@ function itm_ui_config_defaults() {
         'sidebar_visibility' => itm_default_sidebar_visibility(),
         'sidebar_main_order' => itm_default_sidebar_main_order(),
         'sidebar_submenu_order' => itm_default_sidebar_submenu_order(),
+        'sidebar_collapsed' => [],
     ];
 }
 
@@ -1569,6 +1585,7 @@ $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
         `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1,
         `enable_audit_logs` TINYINT(1) NOT NULL DEFAULT 1,
         `enable_chatbot` TINYINT(1) NOT NULL DEFAULT 1,
+        `enable_sidebar_section_collapse` TINYINT(1) NOT NULL DEFAULT 1,
         `enable_auto_scaffolding` TINYINT(1) NOT NULL DEFAULT 0,
         `records_per_page` VARCHAR(10) NOT NULL DEFAULT '25',
         `app_name` VARCHAR(191) NOT NULL DEFAULT '⚙️ IT Controls',
@@ -1617,7 +1634,8 @@ $sql = "CREATE TABLE IF NOT EXISTS `ui_configuration` (
         'enable_all_error_reporting' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_all_error_reporting` TINYINT(1) NOT NULL DEFAULT 1 AFTER `back_save_position`",
         'enable_audit_logs' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_audit_logs` TINYINT(1) NOT NULL DEFAULT 1 AFTER `enable_all_error_reporting`",
         'enable_chatbot' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_chatbot` TINYINT(1) NOT NULL DEFAULT 1 AFTER `enable_audit_logs`",
-        'enable_auto_scaffolding' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_auto_scaffolding` TINYINT(1) NOT NULL DEFAULT 0 AFTER `enable_chatbot`",
+        'enable_sidebar_section_collapse' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_sidebar_section_collapse` TINYINT(1) NOT NULL DEFAULT 1 AFTER `enable_chatbot`",
+        'enable_auto_scaffolding' => "ALTER TABLE `ui_configuration` ADD COLUMN `enable_auto_scaffolding` TINYINT(1) NOT NULL DEFAULT 0 AFTER `enable_sidebar_section_collapse`",
         'records_per_page' => "ALTER TABLE `ui_configuration` ADD COLUMN `records_per_page` VARCHAR(10) NOT NULL DEFAULT '25' AFTER `enable_auto_scaffolding`",
         'app_name' => "ALTER TABLE `ui_configuration` ADD COLUMN `app_name` VARCHAR(191) NOT NULL DEFAULT '⚙️ IT Controls' AFTER `records_per_page`",
         'favicon_path' => "ALTER TABLE `ui_configuration` ADD COLUMN `favicon_path` VARCHAR(255) NOT NULL DEFAULT '' AFTER `app_name`",
@@ -1781,7 +1799,7 @@ function itm_get_ui_configuration($conn, $company_id, $user_id = null, $clearCac
     }
 
     // Retrieve settings from the database
-    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, enable_chatbot, enable_auto_scaffolding, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides, api_key, api_key_is_active, api_key_last_used_at, rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier FROM ui_configuration WHERE company_id = ? AND employee_id = ? LIMIT 1';
+    $sql = 'SELECT table_actions_position, new_button_position, export_buttons_position, back_save_position, enable_all_error_reporting, enable_audit_logs, enable_chatbot, enable_sidebar_section_collapse, enable_auto_scaffolding, records_per_page, app_name, favicon_path, equipment_type_sidebar_visibility, module_icon_overrides, api_key, api_key_is_active, api_key_last_used_at, rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier FROM ui_configuration WHERE company_id = ? AND employee_id = ? LIMIT 1';
     $stmt = mysqli_prepare($conn, $sql);
     if (!$stmt) {
         return $defaults;
@@ -1800,6 +1818,7 @@ function itm_get_ui_configuration($conn, $company_id, $user_id = null, $clearCac
             $defaults['sidebar_visibility'] = itm_normalize_sidebar_visibility($layoutConfig['sidebar_visibility']);
             $defaults['sidebar_main_order'] = itm_normalize_sidebar_main_order($layoutConfig['sidebar_main_order']);
             $defaults['sidebar_submenu_order'] = itm_normalize_sidebar_submenu_order($layoutConfig['sidebar_submenu_order']);
+            $defaults['sidebar_collapsed'] = itm_normalize_sidebar_collapsed_map($layoutConfig['sidebar_collapsed'] ?? null);
         }
         $itm_ui_config_cache[$cacheKey] = $defaults;
         return $defaults;
@@ -1812,6 +1831,7 @@ function itm_get_ui_configuration($conn, $company_id, $user_id = null, $clearCac
         $config['sidebar_visibility'] = itm_normalize_sidebar_visibility($layoutConfig['sidebar_visibility']);
         $config['sidebar_main_order'] = itm_normalize_sidebar_main_order($layoutConfig['sidebar_main_order']);
         $config['sidebar_submenu_order'] = itm_normalize_sidebar_submenu_order($layoutConfig['sidebar_submenu_order']);
+        $config['sidebar_collapsed'] = itm_normalize_sidebar_collapsed_map($layoutConfig['sidebar_collapsed'] ?? null);
     }
 
     $itm_ui_config_cache[$cacheKey] = $config;
@@ -1838,6 +1858,7 @@ function itm_normalize_ui_configuration($values) {
     $values['enable_all_error_reporting'] = itm_normalize_flag($values['enable_all_error_reporting'] ?? $defaults['enable_all_error_reporting']);
     $values['enable_audit_logs'] = itm_normalize_flag($values['enable_audit_logs'] ?? $defaults['enable_audit_logs']);
     $values['enable_chatbot'] = itm_normalize_flag($values['enable_chatbot'] ?? $defaults['enable_chatbot']);
+    $values['enable_sidebar_section_collapse'] = itm_normalize_flag($values['enable_sidebar_section_collapse'] ?? $defaults['enable_sidebar_section_collapse']);
     $values['enable_auto_scaffolding'] = itm_normalize_flag($values['enable_auto_scaffolding'] ?? $defaults['enable_auto_scaffolding']);
     $values['equipment_type_sidebar_visibility'] = itm_normalize_equipment_type_sidebar_visibility($values['equipment_type_sidebar_visibility'] ?? []);
     $values['module_icon_overrides'] = itm_normalize_module_icon_overrides($values['module_icon_overrides'] ?? []);
@@ -2137,6 +2158,194 @@ function itm_normalize_sidebar_visibility($raw) {
 }
 
 /**
+ * Normalizes per-section collapsed flags (section id => 0|1).
+ *
+ * @param mixed $raw
+ * @return array<string,int>
+ */
+function itm_normalize_sidebar_collapsed_map($raw) {
+    if (is_string($raw)) {
+        $decoded = json_decode($raw, true);
+        $raw = is_array($decoded) ? $decoded : [];
+    }
+    if (!is_array($raw)) {
+        return [];
+    }
+
+    $normalized = [];
+    foreach ($raw as $sectionId => $value) {
+        $sectionId = trim((string)$sectionId);
+        if ($sectionId === '') {
+            continue;
+        }
+        $normalized[$sectionId] = ((string)$value === '0' || $value === 0 || $value === false) ? 0 : 1;
+    }
+
+    return $normalized;
+}
+
+/**
+ * Whether double-click section collapse is enabled for the signed-in user.
+ */
+function itm_sidebar_section_collapse_feature_enabled($sidebarConfig) {
+    if (!is_array($sidebarConfig)) {
+        return true;
+    }
+
+    return ((int)($sidebarConfig['enable_sidebar_section_collapse'] ?? 1) === 1);
+}
+
+/**
+ * Validates a canonical sidebar section id.
+ */
+function itm_sidebar_is_valid_section_id($sectionId) {
+    $sectionId = trim((string)$sectionId);
+    if ($sectionId === '') {
+        return false;
+    }
+
+    foreach (itm_sidebar_structure() as $section) {
+        if ((string)($section['id'] ?? '') === $sectionId) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Persists the user-config master toggle for sidebar section collapse.
+ */
+function itm_user_config_save_sidebar_section_collapse_enabled($conn, $companyId, $userId, $enabled) {
+    if (!($conn instanceof mysqli)) {
+        return false;
+    }
+
+    $companyId = (int)$companyId;
+    $userId = (int)$userId;
+    if ($companyId <= 0 || $userId <= 0 || !itm_ensure_ui_configuration_table($conn)) {
+        return false;
+    }
+
+    $enabledFlag = itm_normalize_flag($enabled);
+    $stmt = mysqli_prepare(
+        $conn,
+        'INSERT INTO ui_configuration (company_id, employee_id, enable_sidebar_section_collapse)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE enable_sidebar_section_collapse = VALUES(enable_sidebar_section_collapse)'
+    );
+    if (!$stmt) {
+        return false;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'iii', $companyId, $userId, $enabledFlag);
+    $ok = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+    if (!$ok) {
+        return false;
+    }
+
+    itm_get_ui_configuration($conn, $companyId, $userId, true);
+
+    return true;
+}
+
+/**
+ * Toggles collapsed state for one sidebar section preference row.
+ *
+ * @return array{ok:bool,is_collapsed?:int,section_id?:string,error?:string}
+ */
+function itm_toggle_employee_sidebar_section_collapsed($conn, $companyId, $userId, $sectionId) {
+    if (!($conn instanceof mysqli)) {
+        return ['ok' => false, 'error' => 'invalid_connection'];
+    }
+
+    $companyId = (int)$companyId;
+    $userId = (int)$userId;
+    $sectionId = trim((string)$sectionId);
+    if ($companyId <= 0 || $userId <= 0 || !itm_sidebar_is_valid_section_id($sectionId)) {
+        return ['ok' => false, 'error' => 'invalid_section'];
+    }
+
+    $uiConfig = itm_get_ui_configuration($conn, $companyId, $userId);
+    if (!itm_sidebar_section_collapse_feature_enabled($uiConfig)) {
+        return ['ok' => false, 'error' => 'feature_disabled'];
+    }
+
+    if (!itm_ensure_employee_sidebar_preferences_table($conn)) {
+        return ['ok' => false, 'error' => 'preferences_unavailable'];
+    }
+
+    $selectStmt = mysqli_prepare(
+        $conn,
+        'SELECT id, is_collapsed FROM employee_sidebar_preferences
+         WHERE company_id = ? AND employee_id = ? AND entry_type = ? AND entry_id = ? AND active = 1
+         LIMIT 1'
+    );
+    if (!$selectStmt) {
+        return ['ok' => false, 'error' => 'query_failed'];
+    }
+
+    $entryType = 'section';
+    mysqli_stmt_bind_param($selectStmt, 'iiss', $companyId, $userId, $entryType, $sectionId);
+    mysqli_stmt_execute($selectStmt);
+    $result = mysqli_stmt_get_result($selectStmt);
+    $row = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($selectStmt);
+
+    $newCollapsed = 1;
+    if (is_array($row)) {
+        $newCollapsed = ((int)($row['is_collapsed'] ?? 0) === 1) ? 0 : 1;
+        $rowId = (int)($row['id'] ?? 0);
+        $updateStmt = mysqli_prepare(
+            $conn,
+            'UPDATE employee_sidebar_preferences SET is_collapsed = ?, updated_at = NOW() WHERE id = ? AND company_id = ? AND employee_id = ?'
+        );
+        if (!$updateStmt) {
+            return ['ok' => false, 'error' => 'query_failed'];
+        }
+        mysqli_stmt_bind_param($updateStmt, 'iiii', $newCollapsed, $rowId, $companyId, $userId);
+        $ok = mysqli_stmt_execute($updateStmt);
+        mysqli_stmt_close($updateStmt);
+        if (!$ok) {
+            return ['ok' => false, 'error' => 'update_failed'];
+        }
+    } else {
+        $mainOrder = itm_default_sidebar_main_order();
+        $displayOrder = 0;
+        foreach ($mainOrder as $index => $orderedSectionId) {
+            if ((string)$orderedSectionId === $sectionId) {
+                $displayOrder = (int)$index;
+                break;
+            }
+        }
+
+        $insertStmt = mysqli_prepare(
+            $conn,
+            'INSERT INTO employee_sidebar_preferences (company_id, employee_id, entry_type, entry_id, section_id, display_order, is_visible, is_collapsed, active)
+             VALUES (?, ?, ?, ?, NULL, ?, 1, 1, 1)'
+        );
+        if (!$insertStmt) {
+            return ['ok' => false, 'error' => 'query_failed'];
+        }
+        mysqli_stmt_bind_param($insertStmt, 'iissi', $companyId, $userId, $entryType, $sectionId, $displayOrder);
+        $ok = mysqli_stmt_execute($insertStmt);
+        mysqli_stmt_close($insertStmt);
+        if (!$ok) {
+            return ['ok' => false, 'error' => 'insert_failed'];
+        }
+    }
+
+    itm_get_ui_configuration($conn, $companyId, $userId, true);
+
+    return [
+        'ok' => true,
+        'section_id' => $sectionId,
+        'is_collapsed' => $newCollapsed,
+    ];
+}
+
+/**
  * Normalizes the order of top-level sidebar sections
  */
 function itm_normalize_sidebar_main_order($raw) {
@@ -2355,6 +2564,7 @@ function itm_ensure_employee_sidebar_preferences_table($conn, &$report = null) {
         `section_id` VARCHAR(191) NULL,
         `display_order` INT NOT NULL DEFAULT 0,
         `is_visible` TINYINT(1) NOT NULL DEFAULT 1,
+        `is_collapsed` TINYINT(1) NOT NULL DEFAULT 0,
         `active` TINYINT DEFAULT '1',
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -2418,6 +2628,22 @@ function itm_ensure_employee_sidebar_preferences_table($conn, &$report = null) {
     if ($sectionIdType !== 'varchar(191)' || !$sectionIdAllowsNull) {
         if (!itm_run_query($conn, 'ALTER TABLE `employee_sidebar_preferences` MODIFY `section_id` VARCHAR(191) NULL DEFAULT NULL')) {
             return false;
+        }
+    }
+
+    $collapsedRes = mysqli_query($conn, "SHOW COLUMNS FROM `employee_sidebar_preferences` LIKE 'is_collapsed'");
+    if ($collapsedRes === false) {
+        return false;
+    }
+    if (mysqli_num_rows($collapsedRes) === 0) {
+        if (!itm_run_query($conn, 'ALTER TABLE `employee_sidebar_preferences` ADD COLUMN `is_collapsed` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_visible`')) {
+            return false;
+        }
+        if (is_array($report)) {
+            if (!isset($report['added_columns']) || !is_array($report['added_columns'])) {
+                $report['added_columns'] = [];
+            }
+            $report['added_columns'][] = 'employee_sidebar_preferences.is_collapsed';
         }
     }
 
@@ -2822,7 +3048,7 @@ function itm_load_employee_sidebar_preferences_rows($conn, $company_id, $user_id
         return [];
     }
 
-    $sql = 'SELECT entry_type, entry_id, section_id, display_order, is_visible
+    $sql = 'SELECT entry_type, entry_id, section_id, display_order, is_visible, is_collapsed
             FROM employee_sidebar_preferences
             WHERE company_id = ? AND employee_id = ? AND active = 1
             ORDER BY entry_type ASC, display_order ASC, id ASC';
@@ -2890,6 +3116,7 @@ function itm_get_employee_sidebar_preferences_config($conn, $company_id, $user_i
     $visibility = [];
     $mainOrder = [];
     $submenuOrder = [];
+    $sidebarCollapsed = [];
 
     foreach ($rows as $row) {
         $entryType = (string)($row['entry_type'] ?? '');
@@ -2907,6 +3134,7 @@ function itm_get_employee_sidebar_preferences_config($conn, $company_id, $user_i
             if (!isset($submenuOrder[$entryId])) {
                 $submenuOrder[$entryId] = [];
             }
+            $sidebarCollapsed[$entryId] = ((int)($row['is_collapsed'] ?? 0) === 1) ? 1 : 0;
             continue;
         }
 
@@ -2920,6 +3148,7 @@ function itm_get_employee_sidebar_preferences_config($conn, $company_id, $user_i
         'sidebar_visibility' => itm_normalize_sidebar_visibility($visibility),
         'sidebar_main_order' => itm_normalize_sidebar_main_order($mainOrder),
         'sidebar_submenu_order' => itm_normalize_sidebar_submenu_order($submenuOrder),
+        'sidebar_collapsed' => itm_normalize_sidebar_collapsed_map($sidebarCollapsed),
     ];
 }
 
@@ -2997,7 +3226,7 @@ function itm_save_employee_sidebar_preferences($conn, $company_id, $user_id, $co
 
     $insertStmt = mysqli_prepare(
         $conn,
-        'INSERT INTO employee_sidebar_preferences (company_id, employee_id, entry_type, entry_id, section_id, display_order, is_visible, active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)'
+        'INSERT INTO employee_sidebar_preferences (company_id, employee_id, entry_type, entry_id, section_id, display_order, is_visible, is_collapsed, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)'
     );
     if (!$insertStmt) {
         mysqli_rollback($conn);
@@ -3019,7 +3248,8 @@ function itm_save_employee_sidebar_preferences($conn, $company_id, $user_id, $co
         }
         $displayOrder = (int)$row['display_order'];
         $isVisible = (int)$row['is_visible'];
-        mysqli_stmt_bind_param($insertStmt, 'iisssii', $company_id, $user_id, $entryType, $entryId, $sectionId, $displayOrder, $isVisible);
+        $isCollapsed = (int)($row['is_collapsed'] ?? 0);
+        mysqli_stmt_bind_param($insertStmt, 'iisssiii', $company_id, $user_id, $entryType, $entryId, $sectionId, $displayOrder, $isVisible, $isCollapsed);
         if (!mysqli_stmt_execute($insertStmt)) {
             error_log('itm_save_employee_sidebar_preferences insert failed: ' . mysqli_stmt_error($insertStmt));
             mysqli_stmt_close($insertStmt);
@@ -3039,6 +3269,7 @@ function itm_sidebar_layout_rows_from_config($config) {
     $sidebarStructure = itm_sidebar_structure();
     $defaultParentMap = itm_sidebar_default_item_parent_map();
     $catalog = itm_sidebar_item_catalog();
+    $collapsedMap = itm_normalize_sidebar_collapsed_map($config['sidebar_collapsed'] ?? null);
     $rows = [];
     $order = 0;
 
@@ -3050,6 +3281,7 @@ function itm_sidebar_layout_rows_from_config($config) {
             'section_id' => null,
             'display_order' => $order++,
             'is_visible' => ($config['sidebar_visibility'][$sectionId] ?? 1) === 0 ? 0 : 1,
+            'is_collapsed' => ((int)($collapsedMap[$sectionId] ?? 0) === 1) ? 1 : 0,
         ];
     }
 
@@ -3069,6 +3301,7 @@ function itm_sidebar_layout_rows_from_config($config) {
                 'section_id' => $sectionId,
                 'display_order' => $itemOrder++,
                 'is_visible' => ($config['sidebar_visibility'][$itemId] ?? 1) === 0 ? 0 : 1,
+                'is_collapsed' => 0,
             ];
         }
     }
@@ -3087,6 +3320,7 @@ function itm_sidebar_layout_rows_from_config($config) {
                 'section_id' => null,
                 'display_order' => $order++,
                 'is_visible' => 1,
+                'is_collapsed' => ((int)($collapsedMap[$section['id']] ?? 0) === 1) ? 1 : 0,
             ];
         }
     }
@@ -3103,6 +3337,7 @@ function itm_sidebar_layout_rows_from_config($config) {
             'section_id' => $parent,
             'display_order' => is_array($sectionItems) ? count($sectionItems) : 0,
             'is_visible' => ($config['sidebar_visibility'][$itemId] ?? 1) === 0 ? 0 : 1,
+            'is_collapsed' => 0,
         ];
     }
 
