@@ -20,7 +20,7 @@ Unit tests for shared helpers under `includes/` that are safe to exercise withou
 | `SwitchPortApiHelpersTest.php` | `includes/switch_port_api_helpers.php` |
 | `ApiRateLimitTest.php` | `includes/itm_api_rate_limit.php` (tier caps, Free no API key, probe payload) |
 | `AppointmentModalitySampleTest.php` | `itm_appointment_regression_*` canonical Mon–Fri modality matrix (DB-free) |
-| `ItmDateFormatTest.php` | `includes/itm_date_format.php` (dd/mmm/yyyy parse/display contract) |
+| `ItmDateFormatTest.php` | `includes/itm_date_format.php` (dd/mmm/yyyy parse/display; `itm_parse_datetime_input` UK `d/M/Y H:i`; `itm_datetime_input_local_value`) |
 | `ItmCrudScalarColumnSearchTest.php` | `includes/itm_crud_scalar_column_search.php` (scalar list search OR fragments) |
 | `CompanyModuleAccessDiscoveryTest.php` | `itm_ensure_registry_rows_for_module_slugs()`, `itm_sidebar_structure()` table discovery (requires MySQL) |
 

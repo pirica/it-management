@@ -246,7 +246,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
         $is_pinned = isset($_POST["is_pinned"]) ? 1 : 0;
         $is_important = isset($_POST["is_important"]) ? 1 : 0;
         $is_archived = isset($_POST["is_archived"]) ? 1 : 0;
-        $reminder_at = !empty($_POST["reminder_at"]) ? $_POST["reminder_at"] : null;
+        $reminder_at = !empty($_POST["reminder_at"]) ? (function_exists('itm_parse_datetime_input') ? itm_parse_datetime_input($_POST["reminder_at"]) : $_POST["reminder_at"]) : null;
 
         $image_files = $_POST['existing_images'] ?? [];
         if (!empty($_FILES['images'])) {
@@ -386,7 +386,7 @@ if (isset($_GET["ajax_action"])) {
         $title = $_POST["title"] ?? "";
         $content = $_POST["content"] ?? "";
         $is_checklist = (int)($_POST["is_checklist"] ?? 0);
-        $reminder_at = !empty($_POST["reminder_at"]) ? $_POST["reminder_at"] : null;
+        $reminder_at = !empty($_POST["reminder_at"]) ? (function_exists('itm_parse_datetime_input') ? itm_parse_datetime_input($_POST["reminder_at"]) : $_POST["reminder_at"]) : null;
         $image_files = [];
         if (!empty($_FILES['images'])) {
             $upload_dir = ROOT_PATH . "files/$company_id/Private/{$_SESSION['username']}_$logged_user_id/notes/";
@@ -1129,7 +1129,7 @@ if (!isset($crud_title)) {
                             </div>
                             <div class="form-group" id="reminder-section">
                                 <label>Reminder 🔔</label>
-                                <input type="datetime-local" name="reminder_at" id="reminder_at_input" value="<?php echo isset($data["reminder_at"]) ? str_replace(" ", "T", substr($data["reminder_at"], 0, 16)) : ""; ?>" onchange="updateReminderCheckbox()">
+                                <?php itm_render_uk_datetime_input('reminder_at', 'reminder_at_input', (string) ($data['reminder_at'] ?? '')); ?>
                             </div>
                             <div class="form-group" id="checklist-section">
                                 <label>Checklist</label>

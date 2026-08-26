@@ -1282,9 +1282,9 @@ if (!isset($crud_title)) {
                                     <option value="__add_new__">➕</option>
                                 </select>
                             <?php elseif ($isDateTime): ?>
-                                <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
+                                <?php itm_render_uk_datetime_input((string) $name, itm_crud_dom_input_id($name, 'dt'), (string) $displayVal); ?>
                             <?php elseif ($isDate): ?>
-                                <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
+                                <?php itm_render_uk_date_input((string) $name, itm_crud_dom_input_id($name, 'dt'), (string) $displayVal); ?>
                             <?php elseif ($isText): ?>
                                 <textarea name="<?php echo sanitize($name); ?>" rows="4"<?php echo $name === 'body' ? ' title="Press F2 to mention a user; Shift+F2 for canned response"' : ''; ?>><?php echo sanitize($displayVal); ?></textarea>
                                 <?php if ($name === 'body' && !empty($itmTicketCannedResponses)): ?>

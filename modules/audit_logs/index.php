@@ -199,6 +199,18 @@ $search = trim((string)($_GET['search'] ?? ''));
 $action = strtoupper(trim((string)($_GET['action_filter'] ?? '')));
 $dateFrom = trim((string)($_GET['date_from'] ?? ''));
 $dateTo = trim((string)($_GET['date_to'] ?? ''));
+if ($dateFrom !== '' && function_exists('itm_parse_date_input')) {
+    $parsedDateFrom = itm_parse_date_input($dateFrom);
+    if ($parsedDateFrom !== null) {
+        $dateFrom = $parsedDateFrom;
+    }
+}
+if ($dateTo !== '' && function_exists('itm_parse_date_input')) {
+    $parsedDateTo = itm_parse_date_input($dateTo);
+    if ($parsedDateTo !== null) {
+        $dateTo = $parsedDateTo;
+    }
+}
 $sortableColumns = [
     'created_at' => 'al.created_at',
     'table_name' => 'al.table_name',
@@ -646,11 +658,11 @@ if (!isset($crud_title)) {
                     </div>
                     <div class="form-group" style="margin:0;">
                         <label>Date From</label>
-                        <input type="date" name="date_from" value="<?php echo sanitize($dateFrom); ?>">
+                        <?php itm_render_uk_date_input('date_from', 'audit-date-from', (string) $dateFrom); ?>
                     </div>
                     <div class="form-group" style="margin:0;">
                         <label>Date To</label>
-                        <input type="date" name="date_to" value="<?php echo sanitize($dateTo); ?>">
+                        <?php itm_render_uk_date_input('date_to', 'audit-date-to', (string) $dateTo); ?>
                     </div>
                     <button type="submit" class="btn btn-primary">Search</button>
                     <a href="index.php" class="btn">🔙</a>

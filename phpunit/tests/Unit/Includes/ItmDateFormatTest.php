@@ -71,4 +71,17 @@ final class ItmDateFormatTest extends TestCase
         $this->assertSame("e.termination_date >= '1970-01-01'", $predicate);
         $this->assertStringNotContainsString('0000-00-00', $predicate);
     }
+
+    public function testParseDatetimeInputAcceptsUkAbbreviatedMonth(): void
+    {
+        $this->assertSame('2026-06-18 14:30:00', itm_parse_datetime_input('18/Jun/2026 14:30'));
+        $this->assertSame('2026-06-18 14:30:45', itm_parse_datetime_input('18/Jun/2026 14:30:45'));
+    }
+
+    public function testDatetimeInputLocalValueNormalizesToHtmlFive(): void
+    {
+        $this->assertSame('2026-06-18T14:30', itm_datetime_input_local_value('2026-06-18 14:30:00'));
+        $this->assertSame('2026-06-18T14:30', itm_datetime_input_local_value('18/Jun/2026 14:30'));
+        $this->assertSame('', itm_datetime_input_local_value(''));
+    }
 }

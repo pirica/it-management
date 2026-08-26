@@ -21,6 +21,18 @@ $moduleFilter = trim((string)($_GET['module'] ?? ''));
 $actionFilter = strtoupper(trim((string)($_GET['action_filter'] ?? '')));
 $dateFrom = trim((string)($_GET['date_from'] ?? ''));
 $dateTo = trim((string)($_GET['date_to'] ?? ''));
+if ($dateFrom !== '' && function_exists('itm_parse_date_input')) {
+    $parsedDateFrom = itm_parse_date_input($dateFrom);
+    if ($parsedDateFrom !== null) {
+        $dateFrom = $parsedDateFrom;
+    }
+}
+if ($dateTo !== '' && function_exists('itm_parse_date_input')) {
+    $parsedDateTo = itm_parse_date_input($dateTo);
+    if ($parsedDateTo !== null) {
+        $dateTo = $parsedDateTo;
+    }
+}
 $searchRaw = trim((string)($_GET['search'] ?? ''));
 $sort = trim((string)($_GET['sort'] ?? 'created_at'));
 $dir = (string)($_GET['dir'] ?? 'DESC');
@@ -236,11 +248,11 @@ $myactivitySortTh = static function (string $field, string $label) use ($sort, $
                     </div>
                     <div class="form-group" style="margin:0;">
                         <label for="date_from">Date from</label>
-                        <input type="date" name="date_from" id="date_from" class="form-control" value="<?php echo sanitize($dateFrom); ?>">
+                        <?php itm_render_uk_date_input('date_from', 'date_from', (string) $dateFrom, ['class' => 'form-control']); ?>
                     </div>
                     <div class="form-group" style="margin:0;">
                         <label for="date_to">Date to</label>
-                        <input type="date" name="date_to" id="date_to" class="form-control" value="<?php echo sanitize($dateTo); ?>">
+                        <?php itm_render_uk_date_input('date_to', 'date_to', (string) $dateTo, ['class' => 'form-control']); ?>
                     </div>
                     <button type="submit" class="btn btn-primary" title="Apply filters">Search</button>
                     <a href="index.php" class="btn" title="Clear filters">🔙</a>

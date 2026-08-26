@@ -2680,17 +2680,17 @@ if (!isset($crud_title)) {
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Warranty Type</label><select name="warranty_type_id" data-addable-select="1" data-add-table="warranty_types" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="warranty type"><option value="">-- Select --</option><?php render_options($warrantyTypes, $data['warranty_type_id']); ?><option value="__add_new__">➕</option></select></div>
-                <div class="form-group"><label>Warranty Expiry</label><input type="date" name="warranty_expiry" value="<?php echo sanitize($data['warranty_expiry']); ?>"></div>
+                <div class="form-group"><label>Warranty Expiry</label><?php itm_render_uk_date_input('warranty_expiry', 'equipment-warranty-expiry', (string) ($data['warranty_expiry'] ?? '')); ?></div>
                 <div class="form-group"></div>
             </div>
             <div id="server-fields" style="display:none;">
                 <div class="form-row">
-                    <div class="form-group"><label>Certificate Expiry</label><input type="date" name="certificate_expiry" value="<?php echo sanitize($data['certificate_expiry']); ?>"></div>
+                    <div class="form-group"><label>Certificate Expiry</label><?php itm_render_uk_date_input('certificate_expiry', 'equipment-certificate-expiry', (string) ($data['certificate_expiry'] ?? '')); ?></div>
                     <div class="form-group"></div>
                 </div>
             </div>
             <div class="form-row form-row-3">
-                <div class="form-group"><label>Purchase Date</label><input type="date" name="purchase_date" value="<?php echo sanitize($data['purchase_date']); ?>"></div>
+                <div class="form-group"><label>Purchase Date</label><?php itm_render_uk_date_input('purchase_date', 'equipment-purchase-date', (string) ($data['purchase_date'] ?? '')); ?></div>
                 <div class="form-group"><label>Purchase Cost</label><input type="number" step="0.01" name="purchase_cost" value="<?php echo sanitize($data['purchase_cost']); ?>"></div>
                 <div class="form-group"></div>
             </div>
@@ -2711,12 +2711,12 @@ if (!isset($crud_title)) {
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="form-group"><label>Depreciation start</label><input type="date" name="depreciation_start_date" value="<?php echo sanitize($data['depreciation_start_date']); ?>"></div>
+                    <div class="form-group"><label>Depreciation start</label><?php itm_render_uk_date_input('depreciation_start_date', 'equipment-depreciation-start', (string) ($data['depreciation_start_date'] ?? '')); ?></div>
                     <div class="form-group"><label>Useful life (months)</label><input type="number" min="1" name="useful_life_months" value="<?php echo sanitize($data['useful_life_months']); ?>"></div>
                 </div>
                 <div class="form-row form-row-3">
                     <div class="form-group"><label>Salvage value</label><input type="number" step="0.01" name="salvage_value" value="<?php echo sanitize($data['salvage_value']); ?>"></div>
-                    <div class="form-group"><label>Disposal date</label><input type="date" name="disposal_date" value="<?php echo sanitize($data['disposal_date']); ?>"></div>
+                    <div class="form-group"><label>Disposal date</label><?php itm_render_uk_date_input('disposal_date', 'equipment-disposal-date-create', (string) ($data['disposal_date'] ?? '')); ?></div>
                     <div class="form-group"><label>Disposal reason</label><input name="disposal_reason" value="<?php echo sanitize($data['disposal_reason']); ?>"></div>
                 </div>
             </div>
@@ -2755,7 +2755,7 @@ if (!isset($crud_title)) {
             </div>
             <div class="form-row form-row-3">
                 <div class="form-group"><label>Workstation Office</label><select name="workstation_office_id" data-addable-select="1" data-add-table="workstation_office" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation office"><option value="">-- None --</option><?php render_options($workstationOfficeOptions, $data['workstation_office_id']); ?><option value="__add_new__">➕</option></select></div>
-                <div class="form-group"><label>Workstation OS Installed On</label><input type="date" name="workstation_os_installed_on" value="<?php echo sanitize($data['workstation_os_installed_on']); ?>"></div>
+                <div class="form-group"><label>Workstation OS Installed On</label><?php itm_render_uk_date_input('workstation_os_installed_on', 'equipment-ws-os-installed', (string) ($data['workstation_os_installed_on'] ?? '')); ?></div>
                 <div class="form-group"><label>Workstation OS Version</label><select name="workstation_os_version_id" data-addable-select="1" data-add-table="workstation_os_versions" data-add-id-col="id" data-add-label-col="name" data-add-company-scoped="1" data-add-friendly="workstation os version"><option value="">-- None --</option><?php render_options($workstationOsVersions, $data['workstation_os_version_id']); ?><option value="__add_new__">➕</option></select></div>
             </div>
             <div class="form-row form-row-3">

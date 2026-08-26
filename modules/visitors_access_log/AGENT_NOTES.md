@@ -20,6 +20,7 @@ Manual visitor entry log for physical IT/office access with quick-add on the ind
 - **View audit meta:** Detail view loops business columns from filtered `$uiColumns` plus `itm_crud_render_view_audit_meta_rows()` for the six audit stamps. List/index builds `$uiColumns` with `itm_crud_is_list_hidden_audit_field()` so audit meta never renders as list columns.
 - Action-wrapper layout with sidebar/header; list heading uses `itm_sidebar_label_for_module()`; bulk toolbar loads `bulk-delete-selection.js` when `$totalRows >= $perPage`.
 - **List search:** `Search (all fields)` uses `itm_crud_scalar_column_search_conditions()` over `$displayFieldColumns` — text columns use `LIKE`; `date_time_in` / `date_time_out` also match list display (`d-M-Y H:i`) and ISO datetime substrings. `pre_approved_by` / `room_opened_by` are free-text (not employee FKs). Audit meta (`created_by`, etc.) stays view-only.
+- **Date/time inputs:** create/edit and quick-add use `itm_render_uk_datetime_input()` for `date_time_in` / `date_time_out` (UK `dd/mmm/yyyy HH:mm` + hidden `datetime-local`); POST handlers parse via `itm_parse_datetime_input()`.
 - Inline quick-add row always visible on index.
 - Historical rows (not today) show read-only cells — no edit/delete actions.
 - `tape_used_for_restore` / `ism_review` style restricted fields: only Admin or IT department staff may edit (when implemented on row).

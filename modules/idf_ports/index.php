@@ -936,6 +936,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
         // Generic value processing and numeric validation
         $value = $_POST[$name] ?? null;
+        if ($value !== '' && $value !== null && function_exists('itm_crud_coerce_post_date_value')) {
+            $colTypeRaw = (string) ($col['Type'] ?? '');
+            if (function_exists('itm_crud_column_type_is_datetime') && itm_crud_column_type_is_datetime(strtolower($colTypeRaw))) {
+                $coercedDate = itm_crud_coerce_post_date_value($value, $colTypeRaw);
+                if ($coercedDate === false) {
+                    $errors[] = cr_humanize_field($name) . ' must be a valid date (dd/mmm/yyyy).';
+                    $data[$name] = (string) $value;
+                    continue;
+                }
+                if ($coercedDate === null) {
+                    $value = null;
+                } else {
+                    $value = $coercedDate;
+                }
+            }
+        }
         if ($value === '' || $value === null) {
             $data[$name] = null;
         } elseif (preg_match('/int|decimal|float|double/', $col['Type'])) {
@@ -1286,9 +1302,9 @@ if (!isset($crud_title)) {
                                     <option value="__add_new__">➕</option>
                                 </select>
                             <?php elseif ($isDateTime): ?>
-                                <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
+                                <?php itm_render_uk_datetime_input((string) $name, itm_crud_dom_input_id($name, 'dt'), (string) $displayVal); ?>
                             <?php elseif ($isDate): ?>
-                                <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
+                                <?php itm_render_uk_date_input((string) $name, itm_crud_dom_input_id($name, 'dt'), (string) $displayVal); ?>
                             <?php elseif ($isText): ?>
                                 <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
                             <?php else: ?>

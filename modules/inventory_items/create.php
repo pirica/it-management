@@ -229,7 +229,7 @@ if (!isset($crud_title)) {
                         </div>
                         <div class="form-group">
                             <label>Storage Date</label>
-                            <input type="date" name="storage_date" value="<?php echo sanitize((string)($data['storage_date'] ?? '')); ?>">
+                            <?php itm_render_uk_date_input('storage_date', 'inventory-storage-date', (string) ($data['storage_date'] ?? '')); ?>
                         </div>
                     </div>
 

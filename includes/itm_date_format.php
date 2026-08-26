@@ -127,6 +127,21 @@ if (!function_exists('itm_parse_datetime_input')) {
             return null;
         }
 
+        if (preg_match('/^(\d{1,2})\/([A-Za-z]{3})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/', $raw, $ukMonMatch)) {
+            $candidate = (int) $ukMonMatch[1] . '/' . ucfirst(strtolower($ukMonMatch[2])) . '/' . $ukMonMatch[3]
+                . ' ' . (int) $ukMonMatch[4] . ':' . $ukMonMatch[5];
+            $dt = DateTimeImmutable::createFromFormat('!j/M/Y G:i', $candidate);
+            if ($dt instanceof DateTimeImmutable) {
+                $errors = DateTimeImmutable::getLastErrors();
+                $warn = (int) ($errors['warning_count'] ?? 0);
+                $err = (int) ($errors['error_count'] ?? 0);
+                if ($warn === 0 && $err === 0) {
+                    $seconds = isset($ukMonMatch[6]) ? (int) $ukMonMatch[6] : 0;
+                    return $dt->setTime((int) $ukMonMatch[4], (int) $ukMonMatch[5], $seconds)->format('Y-m-d H:i:s');
+                }
+            }
+        }
+
         $formats = [
             'Y-m-d H:i:s',
             'Y-m-d H:i',
@@ -172,6 +187,26 @@ if (!function_exists('itm_date_input_iso_value')) {
     {
         $parsed = itm_parse_date_input($rawValue);
         return ($parsed !== null && $parsed !== '') ? $parsed : '';
+    }
+}
+
+if (!function_exists('itm_datetime_input_local_value')) {
+    /**
+     * Normalize stored or user datetime text to Y-m-dTH:i for HTML5 datetime-local value attributes.
+     */
+    function itm_datetime_input_local_value($rawValue)
+    {
+        $parsed = itm_parse_datetime_input($rawValue);
+        if ($parsed === null || $parsed === '') {
+            return '';
+        }
+
+        $dt = DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', $parsed);
+        if (!$dt instanceof DateTimeImmutable) {
+            return '';
+        }
+
+        return $dt->format('Y-m-d\TH:i');
     }
 }
 

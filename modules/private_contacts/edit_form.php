@@ -178,7 +178,7 @@
             <div class="card-body">
                 <div class="form-group">
                     <label>Birthday</label>
-                    <input type="date" name="birthday" class="form-control" value="<?php echo $contact['birthday'] ?? ''; ?>">
+                    <?php itm_render_uk_date_input('birthday', 'pc-birthday', (string) ($contact['birthday'] ?? ''), ['class' => 'form-control']); ?>
                 </div>
                 <div class="row">
                     <div class="col-md-3 form-group">
@@ -187,7 +187,7 @@
                     </div>
                     <div class="col-md-9 form-group">
                         <label>&nbsp;</label>
-                        <input type="date" name="event1_value" class="form-control" value="<?php echo $contact['event1_value'] ?? ''; ?>">
+                        <?php itm_render_uk_date_input('event1_value', 'pc-event1-value', (string) ($contact['event1_value'] ?? ''), ['class' => 'form-control']); ?>
                     </div>
                 </div>
                 <div class="row">

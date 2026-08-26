@@ -27,11 +27,39 @@
         if (!dt) {
             return '';
         }
-        return String(dt.getDate()).padStart(2, '0') + '/' + String(dt.getMonth() + 1).padStart(2, '0') + '/' + dt.getFullYear();
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return String(dt.getDate()).padStart(2, '0') + '/' + months[dt.getMonth()] + '/' + dt.getFullYear();
+    }
+
+    function formatUkDatetime(localValue) {
+        if (!localValue || localValue.indexOf('T') === -1) {
+            return '';
+        }
+        var parts = String(localValue).split('T');
+        var dateText = formatUkDate(parts[0]);
+        if (!dateText) {
+            return '';
+        }
+        var timeParts = parts[1].split(':');
+        return dateText + ' ' + String(timeParts[0] || '00').padStart(2, '0') + ':' + String(timeParts[1] || '00').padStart(2, '0');
     }
 
     function parseUkDateText(text) {
         var raw = String(text || '').trim();
+        var monMatch = /^(\d{1,2})\/([A-Za-z]{3})\/(\d{4})$/.exec(raw);
+        if (monMatch) {
+            var months = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+            var monthKey = monMatch[2].toLowerCase();
+            if (Object.prototype.hasOwnProperty.call(months, monthKey)) {
+                var y = parseInt(monMatch[3], 10);
+                var m = months[monthKey];
+                var d = parseInt(monMatch[1], 10);
+                var dtMon = new Date(y, m, d);
+                if (dtMon.getFullYear() === y && dtMon.getMonth() === m && dtMon.getDate() === d) {
+                    return formatYmd(dtMon);
+                }
+            }
+        }
         var match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(raw);
         if (!match) {
             return '';
@@ -46,15 +74,45 @@
         return formatYmd(dt);
     }
 
+    function parseUkDatetimeText(text) {
+        var raw = String(text || '').trim();
+        var monMatch = /^(\d{1,2})\/([A-Za-z]{3})\/(\d{4})\s+(\d{1,2}):(\d{2})$/.exec(raw);
+        if (monMatch) {
+            var months = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+            var monthKey = monMatch[2].toLowerCase();
+            if (Object.prototype.hasOwnProperty.call(months, monthKey)) {
+                var y = parseInt(monMatch[3], 10);
+                var m = months[monthKey];
+                var d = parseInt(monMatch[1], 10);
+                var hh = String(parseInt(monMatch[4], 10)).padStart(2, '0');
+                var mm = String(parseInt(monMatch[5], 10)).padStart(2, '0');
+                var dtMon = new Date(y, m, d);
+                if (dtMon.getFullYear() === y && dtMon.getMonth() === m && dtMon.getDate() === d) {
+                    return formatYmd(dtMon) + 'T' + hh + ':' + mm;
+                }
+            }
+        }
+        var match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})$/.exec(raw);
+        if (!match) {
+            return '';
+        }
+        var isoDate = parseUkDateText(match[1] + '/' + match[2] + '/' + match[3]);
+        if (!isoDate) {
+            return '';
+        }
+        return isoDate + 'T' + String(parseInt(match[4], 10)).padStart(2, '0') + ':' + String(parseInt(match[5], 10)).padStart(2, '0');
+    }
+
     function syncNativeFromText(field) {
         var text = field.querySelector('.itm-uk-date-text');
         var native = field.querySelector('.itm-uk-date-native');
         if (!text || !native) {
             return;
         }
-        var iso = parseUkDateText(text.value);
-        if (iso === '' && /^\d{4}-\d{2}-\d{2}$/.test(text.value)) {
-            iso = text.value;
+        var isDatetime = field.classList.contains('itm-uk-datetime-field');
+        var iso = isDatetime ? parseUkDatetimeText(text.value) : parseUkDateText(text.value);
+        if (iso === '' && /^\d{4}-\d{2}-\d{2}/.test(text.value)) {
+            iso = isDatetime ? text.value.replace(' ', 'T').substring(0, 16) : text.value.substring(0, 10);
         }
         native.value = iso;
     }
@@ -63,6 +121,10 @@
         var text = field.querySelector('.itm-uk-date-text');
         var native = field.querySelector('.itm-uk-date-native');
         if (!text || !native || native.value === '') {
+            return;
+        }
+        if (field.classList.contains('itm-uk-datetime-field')) {
+            text.value = formatUkDatetime(native.value);
             return;
         }
         text.value = formatUkDate(native.value);

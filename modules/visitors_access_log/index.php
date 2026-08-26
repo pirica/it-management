@@ -151,7 +151,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_quick_add'])) 
     $reason_for_visit = trim((string)($_POST['reason_for_visit'] ?? ''));
     $pre_approved_by = trim((string)($_POST['pre_approved_by'] ?? ''));
     $room_opened_by = trim((string)($_POST['room_opened_by'] ?? ''));
-    $date_time_in = !empty($_POST['date_time_in']) ? $_POST['date_time_in'] : date('Y-m-d H:i:s');
+    $date_time_in = date('Y-m-d H:i:s');
+    if (!empty($_POST['date_time_in'])) {
+        $parsedIn = itm_parse_datetime_input($_POST['date_time_in']);
+        if ($parsedIn !== null && $parsedIn !== '') {
+            $date_time_in = $parsedIn;
+        }
+    }
 
     if ($visitor_name === '') {
         $_SESSION['crud_error'] = 'Visitor name is required.';
@@ -258,8 +264,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
     $reason_for_visit = trim((string)($_POST['reason_for_visit'] ?? ''));
     $pre_approved_by = trim((string)($_POST['pre_approved_by'] ?? ''));
     $room_opened_by = trim((string)($_POST['room_opened_by'] ?? ''));
-    $date_time_in = !empty($_POST['date_time_in']) ? str_replace('T', ' ', $_POST['date_time_in']) : null;
-    $date_time_out = !empty($_POST['date_time_out']) ? str_replace('T', ' ', $_POST['date_time_out']) : null;
+    $date_time_in = !empty($_POST['date_time_in']) ? itm_parse_datetime_input($_POST['date_time_in']) : null;
+    $date_time_out = !empty($_POST['date_time_out']) ? itm_parse_datetime_input($_POST['date_time_out']) : null;
 
     if ($visitor_name === '') {
         $errors[] = 'Visitor name is required.';
@@ -665,12 +671,12 @@ if (!isset($crud_title)) {
 
                         <div class="form-group">
                             <label>Date & Time IN</label>
-                            <input type="datetime-local" name="date_time_in" class="form-control" value="<?= !empty($data['date_time_in']) ? date('Y-m-d\TH:i', strtotime($data['date_time_in'])) : '' ?>">
+                            <?php itm_render_uk_datetime_input('date_time_in', 'val-date-time-in', (string) ($data['date_time_in'] ?? ''), ['class' => 'form-control']); ?>
                         </div>
 
                         <div class="form-group">
                             <label>Date & Time OUT</label>
-                            <input type="datetime-local" name="date_time_out" class="form-control" value="<?= !empty($data['date_time_out']) ? date('Y-m-d\TH:i', strtotime($data['date_time_out'])) : '' ?>">
+                            <?php itm_render_uk_datetime_input('date_time_out', 'val-date-time-out', (string) ($data['date_time_out'] ?? ''), ['class' => 'form-control']); ?>
                         </div>
 
                         <div class="form-actions">

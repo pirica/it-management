@@ -7,7 +7,7 @@
 ?>
 <div class="form-group">
     <label>Birthday</label>
-    <input type="date" name="birthday" value="<?= sanitize((string)($form['birthday'] ?? '')) ?>">
+    <?php itm_render_uk_date_input('birthday', 'employee-birthday', (string) ($form['birthday'] ?? '')); ?>
 </div>
 <div class="form-group">
     <label>Hide Year</label>

@@ -7,5 +7,5 @@
 ?>
 <div class="form-group">
     <label>Termination Date</label>
-    <input type="date" name="termination_date" value="<?= sanitize((string)($form['termination_date'] ?? '')) ?>">
+    <?php itm_render_uk_date_input('termination_date', 'employee-termination-date', (string) ($form['termination_date'] ?? '')); ?>
 </div>

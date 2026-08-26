@@ -7,7 +7,7 @@
 ?>
 <div class="form-group">
     <label>Request Date</label>
-    <input type="date" name="request_date" value="<?= sanitize((string)($form['request_date'] ?? '')) ?>">
+    <?php itm_render_uk_date_input('request_date', 'employee-request-date', (string) ($form['request_date'] ?? '')); ?>
 </div>
 <div class="form-group">
     <label>Requested By</label>
