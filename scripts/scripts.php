@@ -2020,7 +2020,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="list_date_display_formats.php" target="_blank" rel="nofollow noreferrer">list_date_display_formats.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-browser">Browser</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
-                    <td>Per-module date display audit: <strong>OK</strong> when UK <code>dd/mm/yyyy</code> helpers are used; <strong>WARN</strong> on raw ISO echo, <code>type="date"</code> / <code>datetime-local</code>, or non-UK <code>date()</code> patterns. Default WARN-only; <code>--module=</code> filter. Detection only (no auto-fix). Lib: <code>scripts/lib/itm_module_date_format_display_audit.php</code>.</td>
+                    <td>Per-module <strong>display</strong> date audit: <strong>OK</strong> when UK <code>dd/mm/yyyy</code> helpers are used; <strong>WARN</strong> on raw ISO list/view echo or non-UK <code>date()</code> on output. Native <code>type="date"</code> / <code>datetime-local</code> skipped by default (<code>--include-inputs</code> to WARN). Default WARN-only; <code>--module=</code> filter. Detection only. Lib: <code>scripts/lib/itm_module_date_format_display_audit.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
