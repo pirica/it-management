@@ -47,7 +47,7 @@ if (!function_exists('itm_webhook_queue_generate_secret')) {
 if (!function_exists('itm_webhook_queue_event_types')) {
     function itm_webhook_queue_event_types()
     {
-        return ['ticket.created', 'ticket.status_changed', 'ticket.priority_changed', 'ticket.comment_created', 'alert.created', 'hotel_booking.confirmed', 'expense.created', 'expense.approved', 'employee_onboarding.approved', 'equipment.disposed', 'problem.created', 'problem.status_changed', 'known_error.published'];
+        return ['ticket.created', 'ticket.status_changed', 'ticket.priority_changed', 'ticket.comment_created', 'ticket.survey_completed', 'alert.created', 'hotel_booking.confirmed', 'expense.created', 'expense.approved', 'employee_onboarding.approved', 'equipment.disposed', 'problem.created', 'problem.status_changed', 'known_error.published'];
     }
 }
 
@@ -392,6 +392,18 @@ if (!function_exists('itm_webhook_queue_emit_ticket_priority_changed')) {
             'changed_at' => date('Y-m-d H:i:s'),
         ], $extra);
         return itm_webhook_queue_enqueue($conn, (int) $companyId, 'ticket.priority_changed', $payload);
+    }
+}
+
+if (!function_exists('itm_webhook_queue_emit_ticket_survey_completed')) {
+    function itm_webhook_queue_emit_ticket_survey_completed($conn, $companyId, array $payload)
+    {
+        $payload = array_merge([
+            'event' => 'ticket.survey_completed',
+            'company_id' => (int) $companyId,
+            'completed_at' => date('Y-m-d H:i:s'),
+        ], $payload);
+        return itm_webhook_queue_enqueue($conn, (int) $companyId, 'ticket.survey_completed', $payload);
     }
 }
 

@@ -4,6 +4,15 @@ require_once __DIR__ . '/config/config.php';
 
 $token = trim((string)($_GET['token'] ?? $_POST['token'] ?? ''));
 $payload = $token !== '' ? itm_ticket_csat_verify_token($token) : null;
+
+if ($payload && $conn && function_exists('itm_ticket_survey_get_latest_for_ticket')) {
+    $survey = itm_ticket_survey_get_latest_for_ticket($conn, (int)$payload['company_id'], (int)$payload['ticket_id']);
+    if (is_array($survey) && !empty($survey['token']) && empty($survey['completed_at'])) {
+        header('Location: ' . itm_ticket_survey_build_public_url((string)$survey['token']));
+        exit;
+    }
+}
+
 $error = '';
 $success = false;
 $ticketTitle = '';

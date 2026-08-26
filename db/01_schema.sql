@@ -3197,6 +3197,103 @@ CREATE TABLE `ticket_comments` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- Table structure for `ticket_questionnaires`
+DROP TABLE IF EXISTS `ticket_survey_answers`;
+DROP TABLE IF EXISTS `ticket_surveys`;
+DROP TABLE IF EXISTS `ticket_questionnaire_questions`;
+DROP TABLE IF EXISTS `ticket_questionnaires`;
+
+CREATE TABLE `ticket_questionnaires` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `category_id` int DEFAULT NULL,
+  `is_default` tinyint(1) NOT NULL DEFAULT '0',
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ticket_questionnaires_company_name` (`company_id`,`name`),
+  KEY `idx_ticket_questionnaires_company_default` (`company_id`,`is_default`),
+  KEY `category_id` (`category_id`),
+  CONSTRAINT `fk_ticket_questionnaires_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ticket_questionnaires_category` FOREIGN KEY (`category_id`) REFERENCES `ticket_categories` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `ticket_questionnaire_questions` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `questionnaire_id` int NOT NULL,
+  `sort_order` tinyint unsigned NOT NULL,
+  `question_text` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `question_type` enum('rating_1_5','text') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'rating_1_5',
+  `is_required` tinyint(1) NOT NULL DEFAULT '1',
+  `active` tinyint(1) DEFAULT '1',
+  `deleted_by` int DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ticket_questionnaire_questions_order` (`company_id`,`questionnaire_id`,`sort_order`),
+  KEY `questionnaire_id` (`questionnaire_id`),
+  CONSTRAINT `fk_ticket_questionnaire_questions_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ticket_questionnaire_questions_questionnaire` FOREIGN KEY (`questionnaire_id`) REFERENCES `ticket_questionnaires` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `ticket_surveys` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_id` int NOT NULL,
+  `ticket_id` int NOT NULL,
+  `questionnaire_id` int NOT NULL,
+  `token` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `respondent_email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reference` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `completed_at` timestamp NULL DEFAULT NULL,
+  `average_score` decimal(4,1) DEFAULT NULL,
+  `accept_feedback` tinyint(1) DEFAULT NULL,
+  `issued_by_employee_id` int DEFAULT NULL,
+  `active` tinyint(1) DEFAULT '1',
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ticket_surveys_token` (`token`),
+  KEY `idx_ticket_surveys_company_ticket` (`company_id`,`ticket_id`),
+  KEY `idx_ticket_surveys_company_completed` (`company_id`,`completed_at`),
+  KEY `ticket_id` (`ticket_id`),
+  KEY `questionnaire_id` (`questionnaire_id`),
+  KEY `issued_by_employee_id` (`issued_by_employee_id`),
+  CONSTRAINT `fk_ticket_surveys_company` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ticket_surveys_ticket` FOREIGN KEY (`ticket_id`) REFERENCES `tickets` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ticket_surveys_questionnaire` FOREIGN KEY (`questionnaire_id`) REFERENCES `ticket_questionnaires` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_ticket_surveys_issued_by` FOREIGN KEY (`issued_by_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `ticket_survey_answers` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `survey_id` int NOT NULL,
+  `question_id` int NOT NULL,
+  `question_text_snapshot` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sort_order` tinyint unsigned NOT NULL,
+  `answer_rating` tinyint DEFAULT NULL,
+  `answer_text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ticket_survey_answers_survey_question` (`survey_id`,`question_id`),
+  KEY `question_id` (`question_id`),
+  CONSTRAINT `fk_ticket_survey_answers_survey` FOREIGN KEY (`survey_id`) REFERENCES `ticket_surveys` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ticket_survey_answers_question` FOREIGN KEY (`question_id`) REFERENCES `ticket_questionnaire_questions` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 -- Table structure for `ticket_canned_responses`
 DROP TABLE IF EXISTS `ticket_canned_responses`;
 

@@ -290,6 +290,12 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("ticket_canned_responses", "Ticket Canned Responses", 0, 1, "💬");
 
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("ticket_questionnaires", "Ticket Questionnaires", 0, 1, "📋");
+
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("ticket_surveys", "Ticket Surveys", 0, 1, "⭐");
+
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`, `icon`) VALUES ("ticket_survey_dashboard", "Ticket Survey Dashboard", 0, 1, "📊");
+
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("ticket_priorities", "Ticket Priorities", 0, 1);
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("ticket_statuses", "Ticket Statuses", 0, 1);
@@ -1567,7 +1573,23 @@ INSERT INTO `ticket_sla_policies` (`company_id`, `priority_id`, `response_minute
 INSERT INTO `ticket_canned_responses` (`company_id`, `title`, `body`, `category_id`, `active`, `created_at`) VALUES
 ('1', 'Acknowledge receipt', 'Thank you for contacting IT. We have received your request and will respond shortly.', 5, 1, '2026-01-01 00:00:01'),
 ('1', 'Request more information', 'Could you provide additional details (screenshots, error messages, or steps to reproduce) so we can assist you faster?', 5, 1, '2026-01-01 00:00:01'),
-('1', 'Resolved — please confirm', 'We believe this issue has been resolved. Please reply if you still need assistance.', 5, 1, '2026-01-01 00:00:01');
+('1', 'Resolved — please confirm', 'We believe this issue has been resolved. Please share your feedback: {{survey_url}}', 5, 1, '2026-01-01 00:00:01');
+
+INSERT INTO `ticket_questionnaires` (`id`, `company_id`, `name`, `description`, `category_id`, `is_default`, `active`, `created_at`) VALUES
+(1, 1, 'Default satisfaction survey', 'Company-wide post-ticket CSAT template', NULL, 1, 1, '2026-01-01 00:00:02'),
+(2, 1, 'Hardware satisfaction survey', 'Category-scoped template for hardware tickets', 1, 0, 1, '2026-01-01 00:00:02');
+
+INSERT INTO `ticket_questionnaire_questions` (`id`, `company_id`, `questionnaire_id`, `sort_order`, `question_text`, `question_type`, `is_required`, `active`, `created_at`) VALUES
+(1, 1, 1, 1, 'Overall satisfaction with IT support', 'rating_1_5', 1, 1, '2026-01-01 00:00:02'),
+(2, 1, 1, 2, 'How responsive was our team?', 'rating_1_5', 1, 1, '2026-01-01 00:00:02'),
+(3, 1, 1, 3, 'How clear was our communication?', 'rating_1_5', 1, 1, '2026-01-01 00:00:02'),
+(4, 1, 1, 4, 'Was your issue resolved?', 'rating_1_5', 1, 1, '2026-01-01 00:00:02'),
+(5, 1, 1, 5, 'Additional comments', 'text', 0, 1, '2026-01-01 00:00:02'),
+(6, 1, 2, 1, 'Overall satisfaction with hardware support', 'rating_1_5', 1, 1, '2026-01-01 00:00:02'),
+(7, 1, 2, 2, 'How quickly was the hardware issue addressed?', 'rating_1_5', 1, 1, '2026-01-01 00:00:02'),
+(8, 1, 2, 3, 'Was the technician knowledgeable?', 'rating_1_5', 1, 1, '2026-01-01 00:00:02'),
+(9, 1, 2, 4, 'Was replacement equipment satisfactory?', 'rating_1_5', 0, 1, '2026-01-01 00:00:02'),
+(10, 1, 2, 5, 'Hardware feedback comments', 'text', 0, 1, '2026-01-01 00:00:02');
 
 INSERT INTO `ticket_statuses` (`company_id`, `id`, `name`, `color`, `is_closed`, `active`, `created_at`) VALUES ('1', '1', 'Open', '#FF0000', '0', '1', '2026-01-01 00:00:01');
 
@@ -1590,6 +1612,25 @@ INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `des
 INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `tickets_photos`, `created_at`) VALUES ('4', '4', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '19', '13', '17', '1', '1', '4', NULL, '2026-01-01 00:00:01');
 
 INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `tickets_photos`, `created_at`) VALUES ('5', '5', 'TCK-0001', 'Server patching required', 'Patch cycle for file server', '24', '17', '22', '1', '1', '5', NULL, '2026-01-01 00:00:01');
+
+INSERT INTO `tickets` (`id`, `company_id`, `ticket_external_code`, `title`, `description`, `category_id`, `status_id`, `priority_id`, `created_by_employee_id`, `assigned_to_employee_id`, `equipment_id`, `tickets_photos`, `created_at`) VALUES
+('6', '1', 'TCK-CSAT-001', 'Laptop replacement completed', 'Closed hardware ticket for survey demo', '1', '4', '2', '1', '1', '1', NULL, '2026-01-02 00:00:01'),
+('7', '2', 'TCK-CSAT-001', 'Laptop replacement completed', 'Closed ticket for survey demo', '9', '5', '7', '1', '1', '2', NULL, '2026-01-02 00:00:01'),
+('8', '3', 'TCK-CSAT-001', 'Laptop replacement completed', 'Closed ticket for survey demo', '14', '9', '12', '1', '1', '3', NULL, '2026-01-02 00:00:01'),
+('9', '4', 'TCK-CSAT-001', 'Laptop replacement completed', 'Closed ticket for survey demo', '19', '13', '17', '1', '1', '4', NULL, '2026-01-02 00:00:01'),
+('10', '5', 'TCK-CSAT-001', 'Laptop replacement completed', 'Closed ticket for survey demo', '24', '17', '22', '1', '1', '5', NULL, '2026-01-02 00:00:01');
+
+INSERT INTO `ticket_surveys` (`id`, `company_id`, `ticket_id`, `questionnaire_id`, `token`, `respondent_email`, `reference`, `completed_at`, `average_score`, `accept_feedback`, `issued_by_employee_id`, `active`, `created_by`, `created_at`) VALUES
+(1, 1, 6, 2, 'seed_survey_token_company1_completed', 'admin@techcorp.example.com', 'TCK-CSAT-001 — Laptop replacement completed', '2026-01-03 10:00:00', 4.5, 1, 1, 1, 1, '2026-01-02 12:00:01');
+
+INSERT INTO `ticket_survey_answers` (`survey_id`, `question_id`, `question_text_snapshot`, `sort_order`, `answer_rating`, `answer_text`, `created_at`) VALUES
+(1, 6, 'Overall satisfaction with hardware support', 1, 5, NULL, '2026-01-03 10:00:00'),
+(1, 7, 'How quickly was the hardware issue addressed?', 2, 4, NULL, '2026-01-03 10:00:00'),
+(1, 8, 'Was the technician knowledgeable?', 3, 5, NULL, '2026-01-03 10:00:00'),
+(1, 9, 'Was replacement equipment satisfactory?', 4, 4, NULL, '2026-01-03 10:00:00'),
+(1, 10, 'Hardware feedback comments', 5, 0, 'Quick swap — thank you.', '2026-01-03 10:00:00');
+
+UPDATE `tickets` SET `csat_score` = 5, `csat_comment` = 'Quick swap — thank you.', `csat_submitted_at` = '2026-01-03 10:00:00' WHERE `id` = 6 AND `company_id` = 1;
 
 -- Data for `ui_configuration`
 -- Why: Per-company UI defaults belong to that tenant's seed Admin employee (not employee_id=1 for every company).
@@ -1986,6 +2027,71 @@ INNER JOIN `ticket_priorities` tp_src ON tp_src.`company_id` = t.`company_id` AN
 INNER JOIN `companies` c ON c.`id` <> t.`company_id`
 INNER JOIN `ticket_priorities` tp_target ON tp_target.`company_id` = c.`id` AND tp_target.`level` = tp_src.`level`
 WHERE t.`company_id` = @replicate_source_company_id;
+
+INSERT IGNORE INTO `ticket_questionnaires` (`company_id`, `name`, `description`, `category_id`, `is_default`, `active`, `created_at`)
+SELECT c.`id`, t.`name`, t.`description`,
+  (SELECT tc_t.`id` FROM `ticket_categories` tc_t INNER JOIN `ticket_categories` tc_s ON tc_s.`company_id` = t.`company_id` AND tc_s.`id` = t.`category_id` AND tc_t.`company_id` = c.`id` AND tc_t.`name` = tc_s.`name` LIMIT 1),
+  t.`is_default`, t.`active`, '2026-01-01 00:00:02'
+FROM `ticket_questionnaires` t
+JOIN `companies` c ON c.`id` <> t.`company_id`
+WHERE t.`company_id` = @replicate_source_company_id AND t.`deleted_at` IS NULL;
+
+INSERT IGNORE INTO `ticket_questionnaire_questions` (`company_id`, `questionnaire_id`, `sort_order`, `question_text`, `question_type`, `is_required`, `active`, `created_at`)
+SELECT c.`id`, tq_target.`id`, q.`sort_order`, q.`question_text`, q.`question_type`, q.`is_required`, q.`active`, '2026-01-01 00:00:02'
+FROM `ticket_questionnaire_questions` q
+INNER JOIN `ticket_questionnaires` tq_src ON tq_src.`id` = q.`questionnaire_id` AND tq_src.`company_id` = q.`company_id`
+INNER JOIN `companies` c ON c.`id` <> q.`company_id`
+INNER JOIN `ticket_questionnaires` tq_target ON tq_target.`company_id` = c.`id` AND tq_target.`name` = tq_src.`name`
+WHERE q.`company_id` = @replicate_source_company_id AND q.`deleted_at` IS NULL;
+
+INSERT INTO `ticket_surveys` (`id`, `company_id`, `ticket_id`, `questionnaire_id`, `token`, `respondent_email`, `reference`, `completed_at`, `average_score`, `accept_feedback`, `issued_by_employee_id`, `active`, `created_by`, `created_at`)
+SELECT 2, 2, 7, tq.`id`, 'seed_survey_token_company2_completed', COALESCE(e.`work_email`, ''), 'TCK-CSAT-001 — Laptop replacement completed', '2026-01-03 10:00:00', 4.0, 1, 1, 1, 1, '2026-01-02 12:00:01'
+FROM `ticket_questionnaires` tq
+LEFT JOIN `employees` e ON e.`company_id` = 2 AND e.`username` = 'Admin2' AND e.`deleted_at` IS NULL
+WHERE tq.`company_id` = 2 AND tq.`name` = 'Default satisfaction survey'
+LIMIT 1;
+
+INSERT INTO `ticket_surveys` (`id`, `company_id`, `ticket_id`, `questionnaire_id`, `token`, `respondent_email`, `reference`, `completed_at`, `average_score`, `accept_feedback`, `issued_by_employee_id`, `active`, `created_by`, `created_at`)
+SELECT 3, 3, 8, tq.`id`, 'seed_survey_token_company3_completed', COALESCE(e.`work_email`, ''), 'TCK-CSAT-001 — Laptop replacement completed', '2026-01-03 10:00:00', 5.0, 1, 1, 1, 1, '2026-01-02 12:00:01'
+FROM `ticket_questionnaires` tq
+LEFT JOIN `employees` e ON e.`company_id` = 3 AND e.`username` = 'Admin3' AND e.`deleted_at` IS NULL
+WHERE tq.`company_id` = 3 AND tq.`name` = 'Default satisfaction survey'
+LIMIT 1;
+
+INSERT INTO `ticket_surveys` (`id`, `company_id`, `ticket_id`, `questionnaire_id`, `token`, `respondent_email`, `reference`, `completed_at`, `average_score`, `accept_feedback`, `issued_by_employee_id`, `active`, `created_by`, `created_at`)
+SELECT 4, 4, 9, tq.`id`, 'seed_survey_token_company4_pending', COALESCE(e.`work_email`, ''), 'TCK-CSAT-001 — Laptop replacement completed', NULL, NULL, NULL, 1, 1, 1, '2026-01-02 12:00:01'
+FROM `ticket_questionnaires` tq
+LEFT JOIN `employees` e ON e.`company_id` = 4 AND e.`username` = 'Admin4' AND e.`deleted_at` IS NULL
+WHERE tq.`company_id` = 4 AND tq.`name` = 'Default satisfaction survey'
+LIMIT 1;
+
+INSERT INTO `ticket_surveys` (`id`, `company_id`, `ticket_id`, `questionnaire_id`, `token`, `respondent_email`, `reference`, `completed_at`, `average_score`, `accept_feedback`, `issued_by_employee_id`, `active`, `created_by`, `created_at`)
+SELECT 5, 5, 10, tq.`id`, 'seed_survey_token_company5_pending', COALESCE(e.`work_email`, ''), 'TCK-CSAT-001 — Laptop replacement completed', NULL, NULL, NULL, 1, 1, 1, '2026-01-02 12:00:01'
+FROM `ticket_questionnaires` tq
+LEFT JOIN `employees` e ON e.`company_id` = 5 AND e.`username` = 'Admin5' AND e.`deleted_at` IS NULL
+WHERE tq.`company_id` = 5 AND tq.`name` = 'Default satisfaction survey'
+LIMIT 1;
+
+INSERT INTO `ticket_survey_answers` (`survey_id`, `question_id`, `question_text_snapshot`, `sort_order`, `answer_rating`, `answer_text`, `created_at`)
+SELECT 2, q.`id`, q.`question_text`, q.`sort_order`,
+  CASE q.`sort_order` WHEN 1 THEN 4 WHEN 2 THEN 4 WHEN 3 THEN 4 WHEN 4 THEN 4 ELSE 0 END,
+  CASE q.`sort_order` WHEN 5 THEN 'Resolved on time.' ELSE NULL END,
+  '2026-01-03 10:00:00'
+FROM `ticket_questionnaire_questions` q
+INNER JOIN `ticket_questionnaires` tq ON tq.`id` = q.`questionnaire_id` AND tq.`company_id` = q.`company_id`
+WHERE tq.`company_id` = 2 AND tq.`name` = 'Default satisfaction survey' AND q.`deleted_at` IS NULL;
+
+INSERT INTO `ticket_survey_answers` (`survey_id`, `question_id`, `question_text_snapshot`, `sort_order`, `answer_rating`, `answer_text`, `created_at`)
+SELECT 3, q.`id`, q.`question_text`, q.`sort_order`,
+  CASE q.`sort_order` WHEN 1 THEN 5 WHEN 2 THEN 5 WHEN 3 THEN 5 WHEN 4 THEN 5 ELSE 0 END,
+  CASE q.`sort_order` WHEN 5 THEN 'Excellent support.' ELSE NULL END,
+  '2026-01-03 10:00:00'
+FROM `ticket_questionnaire_questions` q
+INNER JOIN `ticket_questionnaires` tq ON tq.`id` = q.`questionnaire_id` AND tq.`company_id` = q.`company_id`
+WHERE tq.`company_id` = 3 AND tq.`name` = 'Default satisfaction survey' AND q.`deleted_at` IS NULL;
+
+UPDATE `tickets` SET `csat_score` = 4, `csat_comment` = 'Resolved on time.', `csat_submitted_at` = '2026-01-03 10:00:00' WHERE `id` = 7 AND `company_id` = 2;
+UPDATE `tickets` SET `csat_score` = 5, `csat_comment` = 'Excellent support.', `csat_submitted_at` = '2026-01-03 10:00:00' WHERE `id` = 8 AND `company_id` = 3;
 
 INSERT IGNORE INTO `ticket_statuses` (`company_id`, `name`, `color`, `is_closed`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`color`, t.`is_closed`, t.`active`, '2026-01-01 00:00:01' FROM `ticket_statuses` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
 

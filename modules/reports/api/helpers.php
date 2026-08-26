@@ -875,6 +875,134 @@ function get_ticket_csat_trend() {
 }
 
 /**
+ * Ticket survey response rate trend (issued vs completed per month, last 12 months).
+ */
+function get_ticket_survey_response_rate_trend() {
+    global $conn, $company_id;
+
+    $labels = [];
+    for ($i = 11; $i >= 0; $i--) {
+        $labels[] = date('Y-m', strtotime("-$i month"));
+    }
+    $issued = array_fill_keys($labels, 0);
+    $completed = array_fill_keys($labels, 0);
+
+    $sql = "SELECT DATE_FORMAT(ts.created_at, '%Y-%m') AS month_str,
+                   COUNT(*) AS issued_count,
+                   SUM(CASE WHEN ts.completed_at IS NOT NULL THEN 1 ELSE 0 END) AS completed_count
+            FROM ticket_surveys ts
+            WHERE ts.company_id = ?
+              AND ts.created_at >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 12 MONTH), '%Y-%m-01')
+            GROUP BY month_str
+            ORDER BY month_str ASC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $company_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $month = (string)($row['month_str'] ?? '');
+            if (isset($issued[$month])) {
+                $issued[$month] = (int)($row['issued_count'] ?? 0);
+                $completed[$month] = (int)($row['completed_count'] ?? 0);
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    $issuedData = [];
+    $completedData = [];
+    $rates = [];
+    foreach ($labels as $label) {
+        $issuedCount = $issued[$label];
+        $completedCount = $completed[$label];
+        $issuedData[] = $issuedCount;
+        $completedData[] = $completedCount;
+        $rates[] = $issuedCount > 0 ? round(($completedCount / $issuedCount) * 100, 1) : null;
+    }
+
+    return [
+        'labels' => $labels,
+        'issued' => $issuedData,
+        'completed' => $completedData,
+        'rates' => $rates,
+    ];
+}
+
+/**
+ * Per-question rating averages for the company default questionnaire (last 90 days).
+ */
+function get_ticket_survey_question_averages() {
+    global $conn, $company_id;
+
+    $empty = [
+        'questionnaire_name' => '',
+        'questions' => [],
+    ];
+
+    $qStmt = mysqli_prepare(
+        $conn,
+        'SELECT id, name FROM ticket_questionnaires WHERE company_id = ? AND is_default = 1 AND deleted_at IS NULL LIMIT 1'
+    );
+    if (!$qStmt) {
+        return $empty;
+    }
+    mysqli_stmt_bind_param($qStmt, 'i', $company_id);
+    mysqli_stmt_execute($qStmt);
+    $qRes = mysqli_stmt_get_result($qStmt);
+    $qRow = $qRes ? mysqli_fetch_assoc($qRes) : null;
+    mysqli_stmt_close($qStmt);
+    if (!$qRow) {
+        return $empty;
+    }
+
+    $questionnaireId = (int)($qRow['id'] ?? 0);
+    $questionnaireName = (string)($qRow['name'] ?? '');
+
+    $sql = "SELECT tqq.id, tqq.question_text, tqq.sort_order,
+                   ROUND(AVG(tsa.answer_rating), 2) AS avg_rating,
+                   COUNT(tsa.answer_rating) AS response_count
+            FROM ticket_questionnaire_questions tqq
+            LEFT JOIN ticket_survey_answers tsa ON tsa.question_id = tqq.id
+            LEFT JOIN ticket_surveys ts ON ts.id = tsa.survey_id
+                AND ts.company_id = ?
+                AND ts.questionnaire_id = ?
+                AND ts.completed_at IS NOT NULL
+                AND ts.completed_at >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+            WHERE tqq.company_id = ? AND tqq.questionnaire_id = ?
+              AND tqq.question_type = 'rating_1_5' AND tqq.deleted_at IS NULL
+            GROUP BY tqq.id, tqq.question_text, tqq.sort_order
+            ORDER BY tqq.sort_order ASC, tqq.id ASC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return [
+            'questionnaire_name' => $questionnaireName,
+            'questions' => [],
+        ];
+    }
+    mysqli_stmt_bind_param($stmt, 'iiii', $company_id, $questionnaireId, $company_id, $questionnaireId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $questions = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $questions[] = [
+            'id' => (int)($row['id'] ?? 0),
+            'text' => (string)($row['question_text'] ?? ''),
+            'avg' => $row['avg_rating'] !== null ? (float)$row['avg_rating'] : null,
+            'count' => (int)($row['response_count'] ?? 0),
+        ];
+    }
+    mysqli_stmt_close($stmt);
+
+    return [
+        'questionnaire_name' => $questionnaireName,
+        'questions' => $questions,
+    ];
+}
+
+/**
  * Equipment lifecycle stage distribution.
  */
 function get_asset_lifecycle_stage_summary() {

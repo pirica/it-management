@@ -3,20 +3,18 @@ function cr_form_display_value($value) {
     return itm_cr_form_display_value($value);
 }
 /**
- * Ticket Comments Module - Index
+ * Ticket Questionnaires Module - Index
  * 
  * Main list view for departments. Users can view, create, edit, and delete
  * department records defined for the company.
  */
 
-$crud_table = 'ticket_comments';
-$crud_title = 'Ticket Comments';
+$crud_table = 'ticket_questionnaires';
+$crud_title = 'Ticket Questionnaires';
 $crud_action = $crud_action ?? 'index';
 ?>
 <?php
 require_once '../../config/config.php';
-require_once ROOT_PATH . 'includes/itm_crud_record_share.php';
-itm_crud_record_share_handle_ajax_request($conn, 'ticket_comments');
 
 require_once '../../includes/itm_crud_fk_label_search.php';
 
@@ -117,83 +115,6 @@ function cr_fk_metadata($conn, $table) {
 }
 
 /**
- * Resolves display labels for FK list/view cells (employee full name; other tables via label column).
- */
-function cr_fk_label_for_id($conn, $fk, $value, $company_id) {
-    $id = (int)$value;
-    if ($id <= 0) {
-        return null;
-    }
-
-    $table = (string)($fk['REFERENCED_TABLE_NAME'] ?? '');
-    $col = (string)($fk['REFERENCED_COLUMN_NAME'] ?? 'id');
-    $meta = cr_fk_metadata($conn, $table);
-    $available = $meta['available'];
-
-    if ($table === 'employees') {
-        $where = ' WHERE ' . cr_escape_identifier($col) . '=' . $id;
-        if (in_array('company_id', $available, true) && $company_id > 0) {
-            $where .= ' AND company_id=' . (int)$company_id;
-        }
-        $sql = 'SELECT first_name,last_name,username FROM ' . cr_escape_identifier($table) . $where . ' LIMIT 1';
-        $res = mysqli_query($conn, $sql);
-        if ($res && ($row = mysqli_fetch_assoc($res))) {
-            $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
-            $username = trim((string)($row['username'] ?? ''));
-            if ($fullName !== '') {
-                return $fullName;
-            }
-            if ($username !== '') {
-                return $username;
-            }
-            return 'User #' . $id;
-        }
-
-        $fallbackSql = 'SELECT first_name,last_name,username FROM ' . cr_escape_identifier($table)
-            . ' WHERE ' . cr_escape_identifier($col) . '=' . $id . ' LIMIT 1';
-        $fallbackRes = mysqli_query($conn, $fallbackSql);
-        if ($fallbackRes && ($row = mysqli_fetch_assoc($fallbackRes))) {
-            $fullName = trim((string)($row['first_name'] ?? '') . ' ' . (string)($row['last_name'] ?? ''));
-            $username = trim((string)($row['username'] ?? ''));
-            if ($fullName !== '') {
-                return $fullName;
-            }
-            if ($username !== '') {
-                return $username;
-            }
-            return 'User #' . $id;
-        }
-        return null;
-    }
-
-    $labelCol = (string)$meta['label_col'];
-    $where = ' WHERE ' . cr_escape_identifier($col) . '=' . $id;
-    if (in_array('company_id', $available, true) && $company_id > 0) {
-        $where .= ' AND company_id=' . (int)$company_id;
-    }
-    $sql = 'SELECT ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table) . $where . ' LIMIT 1';
-    $res = mysqli_query($conn, $sql);
-    if ($res && ($row = mysqli_fetch_assoc($res))) {
-        $label = trim((string)($row['label'] ?? ''));
-        if ($label !== '') {
-            return $label;
-        }
-    }
-
-    $fallbackSql = 'SELECT ' . cr_escape_identifier($labelCol) . ' AS label FROM ' . cr_escape_identifier($table)
-        . ' WHERE ' . cr_escape_identifier($col) . '=' . $id . ' LIMIT 1';
-    $fallbackRes = mysqli_query($conn, $fallbackSql);
-    if ($fallbackRes && ($row = mysqli_fetch_assoc($fallbackRes))) {
-        $label = trim((string)($row['label'] ?? ''));
-        if ($label !== '') {
-            return $label;
-        }
-    }
-
-    return null;
-}
-
-/**
  * Filters out system-managed columns from the list of manageable fields
  */
 function cr_manageable_columns($columns) {
@@ -250,6 +171,16 @@ function cr_is_hidden_employee_field($field) {
 /**
  * Renders a specific table cell value with formatting based on field type/module
  */
+/**
+ * Resolves FK label text for list/view cells.
+ */
+function cr_fk_label_by_id($conn, $fk, $company_id, $rawId) {
+    if (function_exists('itm_fk_label_by_id')) {
+        return itm_fk_label_by_id($conn, $fk, (int)$company_id, (int)$rawId);
+    }
+
+    return '';
+}
 function cr_render_cell_value($table, $field, $value) {
     if (function_exists('itm_crud_render_audit_cell_value')) {
         $auditHtml = itm_crud_render_audit_cell_value($GLOBALS['conn'] ?? null, (int)($GLOBALS['company_id'] ?? 0), $field, $value);
@@ -262,22 +193,8 @@ if ($field === 'active') {
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }
 
-    if (($GLOBALS['crud_table'] ?? '') === 'ticket_comments' && $field === 'is_internal') {
+    if ($field === 'is_default') {
         return ((int)$value === 1) ? '✅' : '❌';
-    }
-
-    $connRef = $GLOBALS['conn'] ?? null;
-    $companyIdRef = (int)($GLOBALS['company_id'] ?? 0);
-    if ($connRef instanceof mysqli && isset($GLOBALS['fkMap'][$field])) {
-        $fkRow = $GLOBALS['fkMap'][$field];
-        $fkDisplayId = (int)$value;
-        if ($fkDisplayId > 0 && $companyIdRef > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
-            $fkDisplayId = itm_fk_resolve_company_equivalent_id($connRef, $fkRow, $companyIdRef, $fkDisplayId);
-        }
-        $resolvedLabel = cr_fk_label_for_id($connRef, $fkRow, $fkDisplayId, $companyIdRef);
-        if ($resolvedLabel !== null && $resolvedLabel !== '') {
-            return sanitize((string)$resolvedLabel);
-        }
     }
 
     if (($GLOBALS['crud_table'] ?? '') === 'employees') {
@@ -287,7 +204,19 @@ if ($field === 'active') {
         }
     }
 
-    $text = (string)($value ?? '');
+    
+    if (isset($GLOBALS['fkMap'][$field])) {
+        $fkRow = $GLOBALS['fkMap'][$field];
+        $fkDisplayId = (int)$value;
+        if ($fkDisplayId > 0 && (int)($GLOBALS['company_id'] ?? 0) > 0 && function_exists('itm_fk_resolve_company_equivalent_id')) {
+            $fkDisplayId = itm_fk_resolve_company_equivalent_id($GLOBALS['conn'], $fkRow, (int)$GLOBALS['company_id'], $fkDisplayId);
+        }
+        $resolvedLabel = cr_fk_label_by_id($GLOBALS['conn'], $fkRow, (int)($GLOBALS['company_id'] ?? 0), $fkDisplayId);
+        if ($resolvedLabel !== '') {
+            return sanitize($resolvedLabel);
+        }
+    }
+$text = (string)($value ?? '');
     if (($table === 'employees' && ($field === 'work_email' || $field === 'personal_email')) || ($table === 'departments' && $field === 'email') && $text !== '') {
         $safeEmail = sanitize($text);
         $mailto = 'mailto:' . $text;
@@ -418,6 +347,113 @@ function cr_validate_numeric_value($rawValue, $column, $fieldName, &$normalizedV
     return false;
 }
 
+/**
+ * Loads questionnaire child questions for edit/view forms.
+ */
+function tq_fetch_questions($conn, $companyId, $questionnaireId)
+{
+    $rows = [];
+    $companyId = (int)$companyId;
+    $questionnaireId = (int)$questionnaireId;
+    if ($companyId <= 0 || $questionnaireId <= 0) {
+        return $rows;
+    }
+    $sql = 'SELECT sort_order, question_text, question_type, is_required
+            FROM ticket_questionnaire_questions
+            WHERE company_id = ? AND questionnaire_id = ? AND deleted_at IS NULL
+            ORDER BY sort_order ASC, id ASC';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return $rows;
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $companyId, $questionnaireId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($res && ($row = mysqli_fetch_assoc($res))) {
+        $rows[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+    return $rows;
+}
+
+/**
+ * Replaces questionnaire questions from POST array (delete/reinsert on edit).
+ */
+function tq_replace_questions_from_post($conn, $companyId, $questionnaireId, $employeeId)
+{
+    $companyId = (int)$companyId;
+    $questionnaireId = (int)$questionnaireId;
+    $employeeId = (int)$employeeId;
+    if ($companyId <= 0 || $questionnaireId <= 0) {
+        return false;
+    }
+
+    $questions = $_POST['questions'] ?? [];
+    if (!is_array($questions)) {
+        $questions = [];
+    }
+
+    $delStmt = mysqli_prepare($conn, 'DELETE FROM ticket_questionnaire_questions WHERE company_id = ? AND questionnaire_id = ?');
+    if (!$delStmt) {
+        return false;
+    }
+    mysqli_stmt_bind_param($delStmt, 'ii', $companyId, $questionnaireId);
+    if (!mysqli_stmt_execute($delStmt)) {
+        mysqli_stmt_close($delStmt);
+        return false;
+    }
+    mysqli_stmt_close($delStmt);
+
+    $insertSql = 'INSERT INTO ticket_questionnaire_questions
+        (company_id, questionnaire_id, sort_order, question_text, question_type, is_required, active, created_by)
+        VALUES (?, ?, ?, ?, ?, ?, 1, ?)';
+    $insertStmt = mysqli_prepare($conn, $insertSql);
+    if (!$insertStmt) {
+        return false;
+    }
+
+    $sortOrder = 0;
+    foreach ($questions as $q) {
+        if (!is_array($q)) {
+            continue;
+        }
+        $questionText = trim((string)($q['question_text'] ?? ''));
+        if ($questionText === '') {
+            continue;
+        }
+        $sortOrder++;
+        $orderVal = (int)($q['sort_order'] ?? $sortOrder);
+        if ($orderVal < 1) {
+            $orderVal = $sortOrder;
+        }
+        if ($orderVal > 255) {
+            $orderVal = 255;
+        }
+        $questionType = (string)($q['question_type'] ?? 'rating_1_5');
+        if (!in_array($questionType, ['rating_1_5', 'text'], true)) {
+            $questionType = 'rating_1_5';
+        }
+        $isRequired = isset($q['is_required']) ? 1 : 0;
+        mysqli_stmt_bind_param(
+            $insertStmt,
+            'iiissii',
+            $companyId,
+            $questionnaireId,
+            $orderVal,
+            $questionText,
+            $questionType,
+            $isRequired,
+            $employeeId
+        );
+        if (!mysqli_stmt_execute($insertStmt)) {
+            mysqli_stmt_close($insertStmt);
+            return false;
+        }
+    }
+    mysqli_stmt_close($insertStmt);
+    return true;
+}
+
 // Module initialization: load columns and foreign key maps
 $columns = cr_table_columns($conn, $crud_table);
 $fkMap = cr_fk_map($conn, $crud_table);
@@ -432,7 +468,7 @@ foreach ($fieldColumns as $c) {
 }
 
 
-$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'departments', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments', 'it_settings', 'knowledge_base', 'ticket_comments'];
+$hideCompanyIdTables = ['workstation_ram', 'workstation_os_versions', 'workstation_os_types', 'workstation_office', 'workstation_modes', 'workstation_device_types', 'warranty_types', 'employee_roles', 'ui_configuration', 'switch_port_types', 'switch_port_numbering_layout', 'sidebar_layout', 'role_module_permissions', 'role_hierarchy', 'role_assignment_rights', 'printer_device_types', 'inventory_items', 'inventory_categories', 'idf_positions', 'idf_ports', 'idf_links', 'equipment_rj45', 'equipment_poe', 'equipment_fiber_rack', 'equipment_fiber_patch', 'equipment_fiber_count', 'equipment_fiber', 'equipment_environment', 'assignment_types', 'departments', 'employee_statuses', 'ticket_priorities', 'ticket_statuses', 'ticket_categories', 'switch_status', 'rack_statuses', 'racks', 'supplier_statuses', 'suppliers', 'manufacturers', 'equipment_statuses', 'equipment_types', 'location_types', 'it_locations', 'employees', 'departments', 'it_settings', 'knowledge_base', 'ticket_questionnaires'];
 $uiColumns = array_values(array_filter($fieldColumns, function ($col) use ($hideCompanyIdTables) {
     $fieldName = (string)($col['Field'] ?? '');
     if (function_exists('itm_crud_is_list_hidden_audit_field') && itm_crud_is_list_hidden_audit_field($fieldName)) {
@@ -459,45 +495,6 @@ $viewColumns = array_values(array_filter($fieldColumns, function ($col) use ($hi
 $modulePath = dirname($_SERVER['PHP_SELF']);
 $listUrl = $modulePath . '/index.php';
 $csrfToken = cr_get_csrf_token();
-
-$itmTicketMentionUsers = [];
-$itmTicketCannedResponses = [];
-if (in_array($crud_action, ['create', 'edit'], true) && $company_id > 0) {
-    $mentionSql = 'SELECT id, username, first_name, last_name FROM employees
-                   WHERE company_id = ? AND deleted_at IS NULL AND active = 1
-                   ORDER BY username ASC';
-    $mentionStmt = mysqli_prepare($conn, $mentionSql);
-    if ($mentionStmt) {
-        mysqli_stmt_bind_param($mentionStmt, 'i', $company_id);
-        mysqli_stmt_execute($mentionStmt);
-        $mentionRes = mysqli_stmt_get_result($mentionStmt);
-        while ($mentionRes && ($mentionRow = mysqli_fetch_assoc($mentionRes))) {
-            $itmTicketMentionUsers[] = [
-                'id' => (int)$mentionRow['id'],
-                'username' => (string)($mentionRow['username'] ?? ''),
-                'first_name' => (string)($mentionRow['first_name'] ?? ''),
-                'last_name' => (string)($mentionRow['last_name'] ?? ''),
-            ];
-        }
-        mysqli_stmt_close($mentionStmt);
-    }
-    $cannedSql = 'SELECT id, title, body, category_id FROM ticket_canned_responses WHERE company_id = ? AND deleted_at IS NULL AND active = 1 ORDER BY title ASC';
-    $cannedStmt = mysqli_prepare($conn, $cannedSql);
-    if ($cannedStmt) {
-        mysqli_stmt_bind_param($cannedStmt, 'i', $company_id);
-        mysqli_stmt_execute($cannedStmt);
-        $cannedRes = mysqli_stmt_get_result($cannedStmt);
-        while ($cannedRes && ($cannedRow = mysqli_fetch_assoc($cannedRes))) {
-            $itmTicketCannedResponses[] = [
-                'id' => (int)$cannedRow['id'],
-                'title' => (string)($cannedRow['title'] ?? ''),
-                'body' => (string)($cannedRow['body'] ?? ''),
-                'category_id' => isset($cannedRow['category_id']) ? (int)$cannedRow['category_id'] : null,
-            ];
-        }
-        mysqli_stmt_close($cannedStmt);
-    }
-}
 
 // Handle Excel/CSV database import requests from table-tools.js.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['index', 'list_all'], true) && strpos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== false) {
@@ -736,9 +733,6 @@ foreach ($fieldColumns as $col) {
 }
 
 $editId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-if ($editId <= 0 && isset($_POST['id'])) {
-    $editId = (int)$_POST['id'];
-}
 
 // Fetch record details for Edit or View pages
 if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
@@ -752,6 +746,14 @@ if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0) {
         http_response_code(404);
         $errors[] = 'Record not found.';
     }
+}
+
+$questionnaireQuestions = [];
+if (in_array($crud_action, ['edit', 'view'], true) && $editId > 0 && !empty($data)) {
+    $questionnaireQuestions = tq_fetch_questions($conn, (int)$company_id, $editId);
+}
+if (in_array($crud_action, ['create', 'edit'], true) && $_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['questions']) && is_array($_POST['questions'])) {
+    $questionnaireQuestions = array_values($_POST['questions']);
 }
 
 // Handle record submission (Create or Edit)
@@ -907,18 +909,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
 
     // Build and execute the dynamic query
     if (empty($errors)) {
-        $previousCommentBody = '';
-        if ($crud_action === 'edit' && $editId > 0 && $crud_table === 'ticket_comments') {
-            $prevStmt = mysqli_prepare($conn, 'SELECT body FROM ticket_comments WHERE id = ? AND company_id = ? LIMIT 1');
-            if ($prevStmt) {
-                mysqli_stmt_bind_param($prevStmt, 'ii', $editId, $company_id);
-                mysqli_stmt_execute($prevStmt);
-                $prevRes = mysqli_stmt_get_result($prevStmt);
-                $prevRow = $prevRes ? mysqli_fetch_assoc($prevRes) : null;
-                mysqli_stmt_close($prevStmt);
-                $previousCommentBody = (string)($prevRow['body'] ?? '');
-            }
-        }
         if ($crud_action === 'create') {
             if (function_exists('itm_crud_stamp_create_audit')) {
                 itm_crud_stamp_create_audit($data, $sqlValues);
@@ -950,30 +940,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         $dbErrorCode = 0;
         $dbErrorMessage = '';
         if (itm_run_query($conn, $sql, $dbErrorCode, $dbErrorMessage)) {
-            if ($crud_table === 'ticket_comments') {
-                $ticketId = (int)($data['ticket_id'] ?? 0);
-                $body = (string)($data['body'] ?? '');
-                if ($crud_action === 'create') {
-                    $commentId = (int)mysqli_insert_id($conn);
-                    if ($commentId > 0 && $ticketId > 0 && $body !== '') {
-                        itm_notify_ticket_comment_mentions($conn, (int)$company_id, $ticketId, $commentId, $body, (int)($_SESSION['employee_id'] ?? 0));
-                        if (function_exists('itm_webhook_queue_emit_ticket_comment_created')) {
-                            require_once ROOT_PATH . 'includes/itm_webhook_queue.php';
-                            itm_webhook_queue_emit_ticket_comment_created($conn, (int)$company_id, [
-                                'id' => $commentId,
-                                'ticket_id' => $ticketId,
-                                'employee_id' => (int)($_SESSION['employee_id'] ?? 0),
-                                'is_internal' => (int)($data['is_internal'] ?? 0),
-                                'body' => $body,
-                                'created_at' => date('Y-m-d H:i:s'),
-                            ]);
-                        }
-                    }
-                    if ($ticketId > 0) {
-                        itm_ticket_sla_stamp_first_response($conn, $ticketId, (int)$company_id);
-                    }
-                } elseif ($crud_action === 'edit' && $editId > 0 && $ticketId > 0 && $body !== '') {
-                    itm_notify_ticket_comment_mentions($conn, (int)$company_id, $ticketId, (int)$editId, $body, (int)($_SESSION['employee_id'] ?? 0), $previousCommentBody);
+            $savedQuestionnaireId = $crud_action === 'create' ? (int)mysqli_insert_id($conn) : $editId;
+            if ($savedQuestionnaireId > 0) {
+                if (!tq_replace_questions_from_post($conn, (int)$company_id, $savedQuestionnaireId, (int)($_SESSION['employee_id'] ?? 0))) {
+                    $_SESSION['crud_error'] = 'Questionnaire saved but questions could not be updated.';
                 }
             }
             header('Location: ' . $listUrl);
@@ -1083,7 +1053,7 @@ if (!isset($currentUiConfig)) {
     $currentUiConfig = $ui_config ?? [];
 }
 if (!isset($crud_title)) {
-    $crud_title = 'Ticket Comments';
+    $crud_title = 'Ticket Questionnaires';
 }
     require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
         $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, (int)($company_id ?? 0), (int)($_SESSION['employee_id'] ?? 0), basename(dirname($_SERVER['PHP_SELF'])), (string)($crud_title ?? ''));
@@ -1236,9 +1206,6 @@ if (!isset($crud_title)) {
                 <h1><?php echo $crud_action === 'create' ? 'New ' : 'Edit '; ?><?php echo sanitize($crud_title); ?></h1>
                 <form method="POST" class="form-grid" style="max-width:980px;">
                     <input type="hidden" name="csrf_token" value="<?php echo sanitize($csrfToken); ?>">
-                    <?php if ($crud_action === 'edit' && $editId > 0): ?>
-                        <input type="hidden" name="id" value="<?php echo (int)$editId; ?>">
-                    <?php endif; ?>
                     <?php
                     // Reuse UI column filtering so table-specific hidden fields (like company_id for departments)
                     // stay hidden in create/edit forms while remaining available to backend save logic.
@@ -1286,23 +1253,56 @@ if (!isset($crud_title)) {
                             <?php elseif ($isDate): ?>
                                 <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
                             <?php elseif ($isText): ?>
-                                <textarea name="<?php echo sanitize($name); ?>" rows="4"<?php echo $name === 'body' ? ' title="Press F2 to mention a user; Shift+F2 for canned response"' : ''; ?>><?php echo sanitize($displayVal); ?></textarea>
-                                <?php if ($name === 'body' && !empty($itmTicketCannedResponses)): ?>
-                                    <div class="itm-ticket-canned-toolbar">
-                                        <label for="itm-canned-response-select">Canned response</label>
-                                        <select id="itm-canned-response-select" title="Insert canned response (or press Shift+F2)">
-                                            <option value="">-- Insert canned response --</option>
-                                            <?php foreach ($itmTicketCannedResponses as $cannedOpt): ?>
-                                                <option value="<?php echo (int)$cannedOpt['id']; ?>"><?php echo sanitize($cannedOpt['title']); ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                <?php endif; ?>
+                                <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
                             <?php else: ?>
                                 <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>">
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
+
+                    <div class="form-group" style="grid-column:1/-1;">
+                        <label>Questions</label>
+                        <div id="tq-questions-wrap" class="card" style="padding:12px;">
+                            <table id="tq-questions-table" style="width:100%;">
+                                <thead>
+                                <tr>
+                                    <th style="width:70px;">Order</th>
+                                    <th>Question</th>
+                                    <th style="width:140px;">Type</th>
+                                    <th style="width:90px;">Required</th>
+                                    <th style="width:60px;"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php
+                                $tqRows = !empty($questionnaireQuestions) ? $questionnaireQuestions : [['sort_order' => 1, 'question_text' => '', 'question_type' => 'rating_1_5', 'is_required' => 1]];
+                                foreach ($tqRows as $tqIdx => $tqRow):
+                                    $tqOrder = (int)($tqRow['sort_order'] ?? ($tqIdx + 1));
+                                    $tqText = (string)($tqRow['question_text'] ?? '');
+                                    $tqType = (string)($tqRow['question_type'] ?? 'rating_1_5');
+                                    $tqRequired = isset($tqRow['is_required']) ? (int)$tqRow['is_required'] : 1;
+                                    ?>
+                                    <tr class="tq-question-row">
+                                        <td><input type="number" name="questions[<?php echo (int)$tqIdx; ?>][sort_order]" min="1" max="255" value="<?php echo $tqOrder; ?>" style="width:64px;"></td>
+                                        <td><input type="text" name="questions[<?php echo (int)$tqIdx; ?>][question_text]" value="<?php echo sanitize($tqText); ?>" style="width:100%;" maxlength="500"></td>
+                                        <td>
+                                            <select name="questions[<?php echo (int)$tqIdx; ?>][question_type]">
+                                                <option value="rating_1_5" <?php echo $tqType === 'rating_1_5' ? 'selected' : ''; ?>>Rating 1–5</option>
+                                                <option value="text" <?php echo $tqType === 'text' ? 'selected' : ''; ?>>Text</option>
+                                            </select>
+                                        </td>
+                                        <td style="text-align:center;">
+                                            <input type="checkbox" name="questions[<?php echo (int)$tqIdx; ?>][is_required]" value="1" <?php echo $tqRequired ? 'checked' : ''; ?>>
+                                        </td>
+                                        <td><button type="button" class="btn btn-sm btn-danger tq-remove-question" title="Remove">🗑️</button></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                            <button type="button" class="btn btn-sm" id="tq-add-question" style="margin-top:10px;" title="Add question">➕</button>
+                        </div>
+                    </div>
+
                     <div class="form-actions">
                         <button class="btn btn-primary" type="submit">💾</button>
                         <a href="index.php" class="btn">🔙</a>
@@ -1323,8 +1323,34 @@ if (!isset($crud_title)) {
                         <?php endforeach; ?>
                         </tbody>
                     </table>
+
+                    <h2 style="margin-top:20px;" title="Questions">Questions</h2>
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Order</th>
+                            <th>Question</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php if (!empty($questionnaireQuestions)): ?>
+                            <?php foreach ($questionnaireQuestions as $tqViewRow): ?>
+                                <tr>
+                                    <td><?php echo (int)($tqViewRow['sort_order'] ?? 0); ?></td>
+                                    <td><?php echo sanitize($tqViewRow['question_text'] ?? ''); ?></td>
+                                    <td><?php echo sanitize($tqViewRow['question_type'] === 'text' ? 'Text' : 'Rating 1–5'); ?></td>
+                                    <td><?php echo ((int)($tqViewRow['is_required'] ?? 0) === 1) ? '✅' : '❌'; ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr><td colspan="4">No questions defined.</td></tr>
+                        <?php endif; ?>
+                        </tbody>
+                    </table>
+
                     <p style="margin-top:16px;">
-                        <?php echo itm_crud_record_share_render_action_buttons('departments', (int)($data['id'] ?? 0), 'department'); ?>
                         <a href="index.php" class="btn" title="Back">🔙</a> <a class="btn btn-primary" href="edit.php?id=<?php echo (int)($data['id'] ?? 0); ?>" title="Edit">✏️</a></p>
                 </div>
             <?php endif; ?>
@@ -1336,26 +1362,6 @@ if (!isset($crud_title)) {
 window.ITM_CSRF_TOKEN = <?php echo json_encode($csrfToken); ?>;
 </script>
 <script src="../../js/select-add-option.js"></script>
-<?php if (in_array($crud_action, ['create', 'edit'], true)): ?>
-<link rel="stylesheet" href="../../css/ticket-comment-mentions.css">
-<link rel="stylesheet" href="../../css/ticket-comment-canned-responses.css">
-<script>
-window.ITM_TICKET_MENTION_USERS = <?php echo json_encode($itmTicketMentionUsers, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
-<?php
-$itmTicketCannedResponsesForJs = $itmTicketCannedResponses;
-$ticketIdForCannedJs = (int)($data['ticket_id'] ?? ($_GET['ticket_id'] ?? 0));
-if ($ticketIdForCannedJs > 0 && function_exists('itm_ticket_survey_merge_canned_body')) {
-    $itmTicketCannedResponsesForJs = array_map(function ($row) use ($conn, $company_id, $ticketIdForCannedJs) {
-        $row['body'] = itm_ticket_survey_merge_canned_body($conn, $row['body'], (int)$company_id, $ticketIdForCannedJs);
-        return $row;
-    }, $itmTicketCannedResponses);
-}
-?>
-window.ITM_TICKET_CANNED_RESPONSES = <?php echo json_encode($itmTicketCannedResponsesForJs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
-</script>
-<script src="../../js/ticket-comment-mentions.js"></script>
-<script src="../../js/ticket-comment-canned-responses.js"></script>
-<?php endif; ?>
 
 <script>
 /**
@@ -1377,8 +1383,49 @@ document.addEventListener('change', function (event) {
         indicator.textContent = event.target.checked ? '✅' : '❌';
     }
 });
+
+(function () {
+    var wrap = document.getElementById('tq-questions-wrap');
+    if (!wrap) return;
+    var tbody = wrap.querySelector('#tq-questions-table tbody');
+    var addBtn = document.getElementById('tq-add-question');
+    function reindexRows() {
+        var rows = tbody.querySelectorAll('.tq-question-row');
+        rows.forEach(function (row, idx) {
+            row.querySelectorAll('input, select').forEach(function (el) {
+                if (!el.name) return;
+                el.name = el.name.replace(/questions\[\d+\]/, 'questions[' + idx + ']');
+            });
+            var orderInput = row.querySelector('input[type="number"]');
+            if (orderInput && !orderInput.value) {
+                orderInput.value = String(idx + 1);
+            }
+        });
+    }
+    if (addBtn) {
+        addBtn.addEventListener('click', function () {
+            var idx = tbody.querySelectorAll('.tq-question-row').length;
+            var tr = document.createElement('tr');
+            tr.className = 'tq-question-row';
+            tr.innerHTML = '<td><input type="number" name="questions[' + idx + '][sort_order]" min="1" max="255" value="' + (idx + 1) + '" style="width:64px;"></td>'
+                + '<td><input type="text" name="questions[' + idx + '][question_text]" value="" style="width:100%;" maxlength="500"></td>'
+                + '<td><select name="questions[' + idx + '][question_type]"><option value="rating_1_5">Rating 1–5</option><option value="text">Text</option></select></td>'
+                + '<td style="text-align:center;"><input type="checkbox" name="questions[' + idx + '][is_required]" value="1" checked></td>'
+                + '<td><button type="button" class="btn btn-sm btn-danger tq-remove-question" title="Remove">🗑️</button></td>';
+            tbody.appendChild(tr);
+        });
+    }
+    wrap.addEventListener('click', function (event) {
+        var btn = event.target.closest('.tq-remove-question');
+        if (!btn) return;
+        var row = btn.closest('.tq-question-row');
+        if (row && tbody.querySelectorAll('.tq-question-row').length > 1) {
+            row.remove();
+            reindexRows();
+        }
+    });
+})();
 </script>
 
-<?php itm_crud_record_share_include_modal(); ?>
 </body>
 </html>

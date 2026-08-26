@@ -32,6 +32,7 @@ The central helpdesk/ticketing module for managing support requests.
 - **Photo Upload**: Supports uploading photos/screenshots for troubleshooting.
 - **Search & Filter**: Extensive filtering by status, priority, assigned user; `show_archived=1` view. List sort uses `$sort` / `$dir` GET params with `$sortSql` in `ORDER BY` (static UI audit contract). Shared list filters: `includes/itm_tickets_list_query.php` (`itm_tickets_list_parse_filters()`).
 - **Saved report views:** 💾 save control on search row (`includes/itm_saved_reports_ui.php`); filters use `data-itm-saved-report-filter`. Saved views restore via `saved_view_id` query param (`itm_saved_reports_build_list_url()`). Doc: `docs/SAVED_REPORT_VIEWS.md`.
+- **Ticket surveys:** Issue from view (`issue_ticket_survey`); auto-issue on closed status (`itm_ticket_survey_maybe_issue_on_close()`). Public submit: `ticket-survey.php?token=`. List filters `survey_status` / `csat_min`; merge cancels pending surveys on source ticket. Doc: `docs/TICKET_SURVEYS.md`. Regression: `php scripts/verify_ticket_surveys.php`.
 - **Archive toggle**: `archive.php` POST sets `is_archived` 0/1 with company scope.
 - **Bulk toolbar:** when `$totalRows >= $perPage`, include `bulk-delete-selection.js` and `data-itm-bulk-cancel="1"` Cancel in `index.php` HTML.
 - **Create/edit audit scrape:** business **Created By** (`created_by_employee_id`) and **ticket logged-at** (`created_at`) are editable on `create.php` — not scaffold audit columns; reviewed in `scripts/data/fields_missing_reviewed.json`.

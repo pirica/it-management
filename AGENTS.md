@@ -574,6 +574,18 @@ The Problem Management module (`modules/problems/`) tracks root-cause investigat
 7. **Sidebar:** Management → Problem Management (`includes/ui_config.php`).
 8. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_problem_management.php` (includes cross-company master attach + sync + history); extend `php scripts/verify_chatbot.php` when changing chat known-error search.
 
+#### Ticket surveys (mandatory)
+
+Post-ticket CSAT questionnaires, public submit, and KPI dashboard — canonical doc: **`docs/TICKET_SURVEYS.md`**.
+
+1. **Tables:** **`ticket_questionnaires`**, **`ticket_questionnaire_questions`**, **`ticket_surveys`**, **`ticket_survey_answers`** — tenant-scoped; audit triggers on questionnaire tables only (`db/03_triggers.sql`).
+2. **Core helper:** `includes/itm_ticket_survey.php` — issue (`itm_ticket_survey_issue()`), public token (`ticket-survey.php?token=`), submit (`itm_ticket_survey_submit()`), CSAT column sync, stats (`itm_ticket_survey_stats_aggregate()`), merge tag `{{survey_url}}`, cancel pending on merge (`itm_ticket_survey_cancel_pending_for_ticket()`).
+3. **Modules:** `modules/ticket_questionnaires/` (CRUD templates), `modules/ticket_surveys/` (read-only issued list), `modules/ticket_survey_dashboard/` (KPI filters). Issue UI on `modules/tickets/view.php`; auto-issue on closed status via `itm_ticket_survey_maybe_issue_on_close()`.
+4. **List / saved views:** `survey_status`, `csat_min`, `survey_summary` column — `includes/itm_tickets_list_query.php`, `includes/itm_saved_reports.php` (`docs/SAVED_REPORT_VIEWS.md`).
+5. **Automation / webhooks:** Trigger `ticket.survey_completed`; action `send_ticket_survey`; webhook event `ticket.survey_completed` (`includes/itm_automation_rules.php`, `includes/itm_webhook_queue.php`).
+6. **Legacy CSAT:** `ticket-csat.php` + `includes/itm_ticket_csat.php` redirect to pending survey when present (`docs/TICKET_PRODUCTIVITY.md`).
+7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_ticket_surveys.php`; productivity pack: `php scripts/verify_ticket_productivity.php`.
+
 #### Email Management (mandatory)
 
 The email management module (`modules/emails/` and `modules/email_smtp_configurations/`) provides tenant SMTP configuration, send logging, and automated alert rules.

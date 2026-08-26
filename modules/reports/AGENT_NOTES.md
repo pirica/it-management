@@ -32,6 +32,9 @@ This module is read-only and aggregates data from:
 **Reports Hub charts (phase 2):**
 
 - **Ticket CSAT trend** — `get_ticket_csat_trend()` (12-month average `tickets.csat_score`)
+- **Survey response rate** — `get_ticket_survey_response_rate_trend()` (12-month issued vs completed bar chart `#surveyResponseRateChart` on index)
+- **Survey question averages** — `get_ticket_survey_question_averages()` (default questionnaire rating averages, last 90 days; HTML table on index)
+- **Ticket survey KPIs** — dedicated dashboard [modules/ticket_survey_dashboard/](http://localhost/it-management/modules/ticket_survey_dashboard/index.php) (`itm_ticket_survey_stats_aggregate()`; `docs/TICKET_SURVEYS.md`)
 - **Asset lifecycle stages** — `get_asset_lifecycle_stage_summary()` (equipment `lifecycle_stage` counts; see `docs/ASSET_LIFECYCLE.md`)
 - **Problem Management** — `get_problem_management_summary()` (`problems` status doughnut + linked incident / closed-this-month counts; see `docs/PROBLEM_MANAGEMENT.md`)
 
