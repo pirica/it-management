@@ -53,6 +53,88 @@ function itm_api_normalize_tier($tier) {
 }
 
 /**
+ * Why: Settings → API Access shows read-only "API Key Last Used"; NULL/empty → Never.
+ */
+function itm_api_format_key_last_used_display_label($apiKeyLastUsedAt) {
+    $raw = trim((string)($apiKeyLastUsedAt ?? ''));
+    if ($raw === '') {
+        return 'Never';
+    }
+
+    if (function_exists('itm_format_datetime_display')) {
+        $formatted = itm_format_datetime_display($raw);
+        if ($formatted !== '') {
+            return $formatted;
+        }
+    }
+
+    return $raw;
+}
+
+/**
+ * Why: Settings "API Key Last Used" reflects the last authenticated API access (probe or consumed request).
+ */
+function itm_api_touch_key_last_used_at($conn, array $row) {
+    if (!($conn instanceof mysqli)) {
+        return false;
+    }
+
+    $configId = (int)($row['id'] ?? 0);
+    $companyId = (int)($row['company_id'] ?? 0);
+    $employeeId = itm_api_row_employee_id($row);
+    if ($configId <= 0 || $companyId <= 0 || $employeeId <= 0) {
+        return false;
+    }
+
+    $touchSql = 'UPDATE ui_configuration
+                 SET api_key_last_used_at = CURRENT_TIMESTAMP
+                 WHERE id = ? AND company_id = ? AND employee_id = ?
+                 LIMIT 1';
+    $touchStmt = mysqli_prepare($conn, $touchSql);
+    if (!$touchStmt) {
+        return false;
+    }
+
+    mysqli_stmt_bind_param($touchStmt, 'iii', $configId, $companyId, $employeeId);
+    $ok = mysqli_stmt_execute($touchStmt);
+    mysqli_stmt_close($touchStmt);
+
+    return (bool)$ok;
+}
+
+/**
+ * Reloads a persisted ui_configuration rate-limit row after api_key_last_used_at updates.
+ */
+function itm_api_reload_rate_limit_row($conn, array $row) {
+    if (!($conn instanceof mysqli)) {
+        return null;
+    }
+
+    $configId = (int)($row['id'] ?? 0);
+    if ($configId <= 0) {
+        return null;
+    }
+
+    $sql = 'SELECT id, company_id, employee_id, api_key, api_key_is_active, api_key_last_used_at,
+                   rate_limit_window_start, rate_limit_request_count, rate_limit_enabled, tier
+            FROM ui_configuration
+            WHERE id = ?
+            LIMIT 1';
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return null;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'i', $configId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $reloaded = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+
+    return is_array($reloaded) ? $reloaded : null;
+}
+
+/**
  * Generates a high-entropy API key for ui_configuration.api_key.
  */
 function itm_api_generate_key() {
@@ -208,6 +290,31 @@ function itm_api_active_session_employee_id() {
 }
 
 /**
+ * Map session employee to the tenant ui_configuration owner (e.g. TechCorp Admin → Admin4 on company 4).
+ */
+function itm_api_resolve_configuration_employee_id($conn, $companyId, $employeeId) {
+    $companyId = (int)$companyId;
+    $employeeId = (int)$employeeId;
+    if ($companyId <= 0 || $employeeId <= 0 || !($conn instanceof mysqli)) {
+        return $employeeId;
+    }
+
+    if (!function_exists('itm_company_session_login_employee_id')
+        || !function_exists('itm_resolve_company_context_employee_id')) {
+        return $employeeId;
+    }
+
+    $loginEmployeeId = itm_company_session_login_employee_id();
+    $contextEmployeeId = itm_resolve_company_context_employee_id(
+        $conn,
+        $loginEmployeeId > 0 ? $loginEmployeeId : $employeeId,
+        $companyId
+    );
+
+    return $contextEmployeeId > 0 ? $contextEmployeeId : $employeeId;
+}
+
+/**
  * Resolves rate-limit row from API key or, on Free tier, the authenticated session.
  */
 function itm_api_resolve_rate_limit_row($conn) {
@@ -222,9 +329,10 @@ function itm_api_resolve_rate_limit_row($conn) {
         return null;
     }
 
-    $row = itm_api_lookup_configuration_by_user($conn, $companyId, $employeeId);
+    $configurationEmployeeId = itm_api_resolve_configuration_employee_id($conn, $companyId, $employeeId);
+    $row = itm_api_lookup_configuration_by_user($conn, $companyId, $configurationEmployeeId);
     if ($row === null) {
-        return itm_api_default_free_configuration_row($companyId, $employeeId);
+        return itm_api_default_free_configuration_row($companyId, $configurationEmployeeId);
     }
 
     if (itm_api_tier_requires_api_key($row['tier'] ?? 'Free')) {
@@ -369,18 +477,7 @@ function itm_api_consume_rate_limit($conn, array $row) {
     $now = time();
 
     if ($unlimited || !$enabled) {
-        if ($configId > 0) {
-            $touchSql = 'UPDATE ui_configuration
-                         SET api_key_last_used_at = CURRENT_TIMESTAMP
-                         WHERE id = ? AND company_id = ? AND employee_id = ?
-                         LIMIT 1';
-            $touchStmt = mysqli_prepare($conn, $touchSql);
-            if ($touchStmt) {
-                mysqli_stmt_bind_param($touchStmt, 'iii', $configId, $companyId, $employeeId);
-                mysqli_stmt_execute($touchStmt);
-                mysqli_stmt_close($touchStmt);
-            }
-        }
+        itm_api_touch_key_last_used_at($conn, $row);
 
         return [
             'allowed' => true,
@@ -512,7 +609,7 @@ function itm_api_enforce_rate_limit_or_exit($conn) {
 }
 
 /**
- * JSON probe used by scripts/api.php?rate_limit=1 (does not consume a request).
+ * JSON probe used by scripts/api.php?rate_limit=1 (does not consume quota; stamps api_key_last_used_at).
  */
 function itm_api_handle_rate_limit_probe_request($conn) {
     $apiKey = itm_api_extract_request_key();
@@ -529,6 +626,12 @@ function itm_api_handle_rate_limit_probe_request($conn) {
 
     if ($apiKey !== '' && (int)($row['api_key_is_active'] ?? 0) !== 1) {
         itm_api_send_json_error(403, 'API key is inactive.');
+    }
+
+    itm_api_touch_key_last_used_at($conn, $row);
+    $reloaded = itm_api_reload_rate_limit_row($conn, $row);
+    if (is_array($reloaded)) {
+        $row = $reloaded;
     }
 
     itm_api_send_json_response(itm_api_build_rate_limit_probe_payload($row));

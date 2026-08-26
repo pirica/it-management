@@ -133,10 +133,21 @@ if (isset($_SESSION['settings_flash_message'])) {
 $csrfToken = itm_get_csrf_token();
 $settingsUserId = isset($_SESSION['employee_id']) ? (int) $_SESSION['employee_id'] : 0;
 $settingsIsAdmin = $settingsUserId > 0 && itm_is_admin($conn, $settingsUserId);
-$currentUiConfig = itm_get_ui_configuration($conn, $company_id);
+$currentUiConfig = itm_get_ui_configuration($conn, $company_id, $settingsUserId);
 if ($settingsUserId > 0) {
     itm_ui_config_sync_favicon_path_from_disk($conn, (int) $company_id, $settingsUserId);
-    $currentUiConfig = itm_get_ui_configuration($conn, $company_id);
+    $currentUiConfig = itm_get_ui_configuration($conn, $company_id, $settingsUserId);
+}
+if ($settingsUserId > 0 && function_exists('itm_api_resolve_configuration_employee_id')) {
+    $apiAccessEmployeeId = itm_api_resolve_configuration_employee_id($conn, (int) $company_id, $settingsUserId);
+    $apiAccessRow = itm_api_lookup_configuration_by_user($conn, (int) $company_id, $apiAccessEmployeeId);
+    if (is_array($apiAccessRow)) {
+        foreach (['id', 'api_key', 'api_key_is_active', 'api_key_last_used_at', 'rate_limit_window_start', 'rate_limit_request_count', 'rate_limit_enabled', 'tier'] as $apiAccessField) {
+            if (array_key_exists($apiAccessField, $apiAccessRow)) {
+                $currentUiConfig[$apiAccessField] = $apiAccessRow[$apiAccessField];
+            }
+        }
+    }
 }
 $settingsChatSameTenant = itm_it_settings_chat_same_tenant_enabled($conn, (int)$company_id) ? 1 : 0;
 
@@ -749,7 +760,7 @@ $currentFaviconDisplayPath = $currentFaviconPath !== '' ? '/' . ltrim($currentFa
 $currentRecordsPerPage = strtolower((string)($currentUiConfig['records_per_page'] ?? '25'));
 $currentApiKey = trim((string)($currentUiConfig['api_key'] ?? ''));
 $currentApiKeyIsActive = ((int)($currentUiConfig['api_key_is_active'] ?? 1) === 1);
-$currentApiKeyLastUsedAt = trim((string)($currentUiConfig['api_key_last_used_at'] ?? ''));
+$currentApiKeyLastUsedLabel = itm_api_format_key_last_used_display_label($currentUiConfig['api_key_last_used_at'] ?? null);
 $currentRateLimitEnabled = ((int)($currentUiConfig['rate_limit_enabled'] ?? 1) === 1);
 $currentRateLimitWindowStart = (int)($currentUiConfig['rate_limit_window_start'] ?? 0);
 $currentRateLimitRequestCount = (int)($currentUiConfig['rate_limit_request_count'] ?? 0);
@@ -778,9 +789,6 @@ $currentApiRemainingLabel = $currentApiTierIsUnlimited
 $currentRateLimitWindowLabel = $currentRateLimitWindowStart > 0
     ? gmdate('Y-m-d H:i:s', $currentRateLimitWindowStart) . ' UTC'
     : 'Not started';
-$currentApiKeyLastUsedLabel = $currentApiKeyLastUsedAt !== ''
-    ? $currentApiKeyLastUsedAt
-    : 'Never';
 $currentApiResetLabel = !empty($currentApiRateStatus['reset_at'])
     ? gmdate('Y-m-d H:i:s', (int)$currentApiRateStatus['reset_at']) . ' UTC'
     : '—';
