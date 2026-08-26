@@ -21,7 +21,7 @@ Static audit: flags module PHP where <strong>displayed</strong> dates omit the U
 <strong>OK</strong> — <code>itm_format_date_display()</code>, <code>itm_format_cell_scalar_display()</code>, <code>itm_format_datetime_display()</code>, explicit <code>date('d/m/Y')</code>, or hospitality <code>itm_format_hotel_date_display()</code> in hotel modules.<br>
 <strong>WARN</strong> — raw ISO echo in list/view (<code>$row['due_date']</code> without a helper), <code>date('Y-m-d')</code> on output lines, US/text <code>date()</code> patterns.<br>
 Native <code>type="date"</code> / <code>datetime-local</code> form controls are <strong>skipped</strong> by default (ISO value is normal for HTML5 inputs). Pass <code>--include-inputs</code> to WARN on those too.<br>
-Default lists <strong>WARN</strong> rows only; <code>--all</code> includes OK rows; <code>--module=tickets</code> filters one module.<br>
+Default lists <strong>WARN</strong> rows plus one <strong>OK</strong> <code>module_pass</code> row per clean module; <code>--all</code> adds line-level OK hits; <code>--no-show-pass</code> hides pass rows.<br>
 CLI examples:<br>
 <code>php scripts/list_date_display_formats.php</code><br>
 <code>php scripts/list_date_display_formats.php --module=ticket_survey_dashboard</code>
@@ -43,6 +43,7 @@ $moduleFilter = '';
 $onlyWarn = true;
 $showAll = false;
 $includeInputs = false;
+$showPass = true;
 
 if ($isCli) {
     foreach ($argv ?? [] as $arg) {
@@ -56,6 +57,10 @@ if ($isCli) {
             $onlyWarn = false;
         } elseif ($arg === '--include-inputs') {
             $includeInputs = true;
+        } elseif ($arg === '--show-pass') {
+            $showPass = true;
+        } elseif ($arg === '--no-show-pass') {
+            $showPass = false;
         }
     }
 } else {
@@ -64,6 +69,7 @@ if ($isCli) {
     $onlyWarn = !isset($_GET['all']) || (string) $_GET['all'] !== '1';
     $showAll = isset($_GET['all']) && (string) $_GET['all'] === '1';
     $includeInputs = isset($_GET['include_inputs']) && (string) $_GET['include_inputs'] === '1';
+    $showPass = !isset($_GET['no_show_pass']) || (string) $_GET['no_show_pass'] !== '1';
 }
 
 $rows = itm_module_date_format_display_audit_run([
@@ -72,6 +78,7 @@ $rows = itm_module_date_format_display_audit_run([
     'only_warn' => $onlyWarn && !$showAll,
     'all' => $showAll,
     'include_inputs' => $includeInputs,
+    'show_pass' => $showPass,
 ]);
 
 $okCount = 0;
