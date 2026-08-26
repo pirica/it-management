@@ -98,4 +98,22 @@ class ApiRateLimitTest extends TestCase
         $this->assertFalse($payload['api_key_required']);
         $this->assertTrue($payload['unlimited']);
     }
+
+    public function testApiKeyLastUsedDisplayLabelNeverWhenEmpty(): void
+    {
+        $this->assertSame('Never', itm_api_format_key_last_used_display_label(null));
+        $this->assertSame('Never', itm_api_format_key_last_used_display_label(''));
+        $this->assertSame('Never', itm_api_format_key_last_used_display_label('   '));
+    }
+
+    public function testApiKeyLastUsedDisplayLabelPreservesTimestamp(): void
+    {
+        if (!function_exists('itm_format_datetime_display')) {
+            require_once __DIR__ . '/../../../../includes/itm_date_format.php';
+        }
+
+        $stamp = '2026-06-18 14:30:00';
+        $this->assertSame('18/Jun/2026 14:30', itm_api_format_key_last_used_display_label($stamp));
+        $this->assertSame('18/Jun/2026 14:30', itm_api_format_key_last_used_display_label('  ' . $stamp . '  '));
+    }
 }
