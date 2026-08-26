@@ -244,7 +244,7 @@ if (!function_exists('itm_format_datetime_display')) {
 
 if (!function_exists('itm_format_audit_timestamp_display')) {
     /**
-     * Display audit stamps (created_at / updated_at / deleted_at) as DD-MM-YYYY - HH:MM:SS.
+     * Display audit stamps (created_at / updated_at / deleted_at) as dd/mmm/yyyy - HH:MM:SS.
      * NULL or empty → blank.
      */
     function itm_format_audit_timestamp_display($rawValue)
@@ -260,7 +260,7 @@ if (!function_exists('itm_format_audit_timestamp_display')) {
             if ($ts === false) {
                 return '';
             }
-            return date('d-m-Y - H:i:s', $ts);
+            return date('d/M/Y - H:i:s', $ts);
         }
 
         $dt = DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', $canonical);
@@ -268,7 +268,7 @@ if (!function_exists('itm_format_audit_timestamp_display')) {
             return '';
         }
 
-        return $dt->format('d-m-Y - H:i:s');
+        return $dt->format('d/M/Y - H:i:s');
     }
 }
 

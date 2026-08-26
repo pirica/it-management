@@ -34,6 +34,13 @@ final class ItmDateFormatTest extends TestCase
         $this->assertSame('18/Jun/2026 14:30', itm_format_datetime_display('2026-06-18 14:30:00'));
     }
 
+    public function testFormatAuditTimestampDisplayUsesUkLayout(): void
+    {
+        $this->assertSame('01/Jan/2026 - 00:00:01', itm_format_audit_timestamp_display('2026-01-01 00:00:01'));
+        $this->assertSame('31/Aug/2026 - 14:30:00', itm_format_audit_timestamp_display('2026-08-31 14:30:00'));
+        $this->assertSame('', itm_format_audit_timestamp_display(null));
+    }
+
     public function testCellScalarDisplayFormatsDateFields(): void
     {
         $this->assertSame('18/Jun/2026', itm_format_cell_scalar_display('termination_date', '2026-06-18'));

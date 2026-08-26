@@ -94,16 +94,16 @@ if (!function_exists('itm_date_format_audit_run_helper_contracts')) {
         }
 
         $auditDisplay = itm_format_audit_timestamp_display('2026-08-31 14:30:00');
-        if ($auditDisplay === '31-08-2026 - 14:30:00') {
-            itm_date_format_audit_pass('itm_format_audit_timestamp_display d-m-Y - H:i:s');
+        if ($auditDisplay === '31/Aug/2026 - 14:30:00') {
+            itm_date_format_audit_pass('itm_format_audit_timestamp_display d/M/Y - H:i:s');
         } else {
-            itm_date_format_audit_fail('itm_format_audit_timestamp_display expected 31-08-2026 - 14:30:00 got ' . $auditDisplay, $fail);
+            itm_date_format_audit_fail('itm_format_audit_timestamp_display expected 31/Aug/2026 - 14:30:00 got ' . $auditDisplay, $fail);
         }
 
         if (itm_format_cell_scalar_display('due_date', '2026-08-31') === '31/Aug/2026'
             && itm_format_cell_scalar_display('from_date', '2026-10-01') === '01/Oct/2026'
             && itm_format_cell_scalar_display('start_date', '2026-10-01', 'hotel_booking_room_type_blocks') === '01/Oct/2026'
-            && itm_format_cell_scalar_display('start_date', '2026-10-01', 'events') === '01/10/2026') {
+            && itm_format_cell_scalar_display('start_date', '2026-10-01', 'events') === '01/Oct/2026') {
             itm_date_format_audit_pass('itm_format_cell_scalar_display UK vs hospitality routing');
         } else {
             itm_date_format_audit_fail('itm_format_cell_scalar_display routing broken', $fail);

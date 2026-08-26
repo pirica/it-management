@@ -13,7 +13,7 @@ function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
 Browser: <a href="check_date_format.php?run=1">check_date_format.php?run=1</a> (Administrator). CLI: <code>php scripts/check_date_format.php</code> — exit <code>1</code> on failure.
-<p>Contracts: UK <code>dd/mmm/yyyy</code> via <code>itm_format_date_display()</code> (PHP <code>d/M/Y</code>, e.g. <code>18/Jun/2026</code>); hospitality stay dates use the same helper or <code>itm_format_hotel_date_display()</code>; audit stamps <code>d-m-Y - H:i:s</code>. Import parsing still accepts numeric <code>dd/mm/yyyy</code> via <code>itm_parse_date_input()</code>.</p>
+<p>Contracts: UK <code>dd/mmm/yyyy</code> via <code>itm_format_date_display()</code> (PHP <code>d/M/Y</code>, e.g. <code>18/Jun/2026</code>); hospitality stay dates use the same helper or <code>itm_format_hotel_date_display()</code>; audit stamps <code>d/M/Y - H:i:s</code> (e.g. <code>01/Jan/2026 - 00:00:01</code>). Import parsing still accepts numeric <code>dd/mm/yyyy</code> via <code>itm_parse_date_input()</code>.</p>
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 
