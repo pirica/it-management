@@ -28,6 +28,8 @@ if (!function_exists('itm_module_date_format_display_audit_exempt_module_slugs')
             'resignations',
             'calendar',
             'explorer',
+            'ops_report',
+            'settings',
         ];
     }
 }
@@ -61,6 +63,8 @@ if (!function_exists('itm_module_date_format_display_audit_exempt_module_notes')
             'resignations' => 'Bespoke read-only list — out of flattened date-display scope',
             'calendar' => 'Integrated calendar grid — alternate date presentation',
             'explorer' => 'File browser — no standard list/view date column contract',
+            'ops_report' => 'Bespoke daily ops grid — report_date selectors and d.m.y UI suffix',
+            'settings' => 'Admin UI configuration — no flattened list/view date column contract',
         ];
 
         return $notes[$slug] ?? 'Module exempt from UK dd/mm/yyyy display audit';

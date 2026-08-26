@@ -2020,7 +2020,7 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="list_date_display_formats.php" target="_blank" rel="nofollow noreferrer">list_date_display_formats.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span><span class="scripts-badge scripts-badge-browser">Browser</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="codebase">Codebase</span></span></td>
-                    <td>Per-module <strong>display</strong> date audit: <strong>OK</strong> / <strong>WARN</strong> / <strong>SKIP</strong> (<code>module_skip</code> for <code>backup_tape_log</code>, <code>birthdays</code>, <code>resignations</code>, <code>calendar</code>, <code>explorer</code>, <code>hotel*</code>). Native <code>type="date"</code> skipped unless <code>--include-inputs</code>. Lib: <code>scripts/lib/itm_module_date_format_display_audit.php</code>.</td>
+                    <td>Per-module <strong>display</strong> date audit: <strong>OK</strong> / <strong>WARN</strong> / <strong>SKIP</strong> (<code>module_skip</code> for <code>backup_tape_log</code>, <code>birthdays</code>, <code>resignations</code>, <code>calendar</code>, <code>explorer</code>, <code>ops_report</code>, <code>settings</code>, <code>hotel*</code>). Native <code>type="date"</code> skipped unless <code>--include-inputs</code>. Lib: <code>scripts/lib/itm_module_date_format_display_audit.php</code>.</td>
                     <td class="scripts-catalog-how-stub">Open in browser for usage.</td>
                 </tr>
                 <tr data-tags="Mixed">
