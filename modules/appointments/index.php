@@ -561,11 +561,11 @@ function appt_employee_select_label(array $empRow)
                             </div>
                             <div class="form-group" style="margin:0;min-width:120px;">
                                 <label for="appt-list-date-from">From</label>
-                                <input type="text" id="appt-list-date-from" name="date_from" value="<?php echo sanitize($listDateFromDisplay); ?>" placeholder="dd/mm/yyyy">
+                                <input type="text" id="appt-list-date-from" name="date_from" value="<?php echo sanitize($listDateFromDisplay); ?>" placeholder="dd/mmm/yyyy">
                             </div>
                             <div class="form-group" style="margin:0;min-width:120px;">
                                 <label for="appt-list-date-to">To</label>
-                                <input type="text" id="appt-list-date-to" name="date_to" value="<?php echo sanitize($listDateToDisplay); ?>" placeholder="dd/mm/yyyy">
+                                <input type="text" id="appt-list-date-to" name="date_to" value="<?php echo sanitize($listDateToDisplay); ?>" placeholder="dd/mmm/yyyy">
                             </div>
                             <div class="form-group" style="margin:0;min-width:260px;flex:1;">
                                 <label for="appt-list-search">Search (all fields)</label>

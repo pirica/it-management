@@ -66,7 +66,7 @@ erDiagram
 - **Process:** Commas are converted to periods (`cr_normalize_price_input()`) prior to applying numerical verification (`cr_validate_numeric_value()`), preventing database save failures on European formatting.
 
 ### C. Localized Date Formatting
-- **Display Style:** Dates are presented in a user-friendly `dd/mm/yyyy` format in list views, detail screens, and excel exports.
+- **Display Style:** Dates are presented in a user-friendly `dd/mmm/yyyy` format in list views, detail screens, and excel exports.
 - **MySQL Conversion:** Inputs are parsed back to MySQL's standard `YYYY-MM-DD` representation via `itm_parse_date_input()` before query execution.
 
 ---

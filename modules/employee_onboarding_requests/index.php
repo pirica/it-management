@@ -580,7 +580,7 @@ function cr_onboarding_email_status_text($sentFlag, $sentAt) {
         return 'Sent (' . $stamp . ')';
     }
 
-    return 'Sent (' . date('d/m/Y H:i', $ts) . ')';
+    return 'Sent (' . itm_format_datetime_display(date('Y-m-d H:i:s', $ts)) . ')';
 }
 
 function cr_onboarding_sign_approval_action($recordId, $companyId, $approvalTarget, $approvalAction) {
@@ -861,7 +861,7 @@ function cr_format_onboarding_date($value) {
     if ($ts === false) {
         return $text;
     }
-    return date('d/m/Y', $ts);
+    return itm_format_date_display(date('Y-m-d', $ts));
 }
 
 function cr_onboarding_display_value($value, $isDateField = false, $fieldName = '') {

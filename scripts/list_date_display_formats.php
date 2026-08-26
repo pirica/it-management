@@ -1,6 +1,6 @@
 <?php
 /**
- * List module date display patterns — dd/mm/yyyy helpers OK, other formats WARN.
+ * List module date display patterns — dd/mmm/yyyy helpers OK, other formats WARN.
  *
  * Static scan of module PHP under modules/ for UK date helpers vs raw ISO.
  * Does not mutate code (detection only).
@@ -17,11 +17,11 @@
 function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
-Static audit: flags module PHP where <strong>displayed</strong> dates omit the UK <code>dd/mm/yyyy</code> contract.<br>
-<strong>OK</strong> — <code>itm_format_date_display()</code>, <code>itm_format_cell_scalar_display()</code>, <code>itm_format_datetime_display()</code>, explicit <code>date('d/m/Y')</code>, or hospitality <code>itm_format_hotel_date_display()</code> in hotel modules.<br>
-<strong>WARN</strong> — raw ISO echo in list/view (<code>$row['due_date']</code> without a helper), <code>date('Y-m-d')</code> on output lines, US/text <code>date()</code> patterns.<br>
+Static audit: flags module PHP where <strong>displayed</strong> dates omit the UK <code>dd/mmm/yyyy</code> contract.<br>
+<strong>OK</strong> — <code>itm_format_date_display()</code>, <code>itm_format_cell_scalar_display()</code>, <code>itm_format_datetime_display()</code>, explicit <code>date('d/M/Y')</code>, or <code>itm_format_hotel_date_display()</code>.<br>
+<strong>WARN</strong> — raw ISO echo in list/view (<code>$row['due_date']</code> without a helper), legacy <code>date('d/m/Y')</code>, <code>date('Y-m-d')</code> on output lines, US/text <code>date()</code> patterns.<br>
 Native <code>type="date"</code> / <code>datetime-local</code> form controls are <strong>skipped</strong> by default (ISO value is normal for HTML5 inputs). Pass <code>--include-inputs</code> to WARN on those too.<br>
-Default lists <strong>WARN</strong> rows, one <strong>OK</strong> <code>module_pass</code> per clean module, and <strong>SKIP</strong> <code>module_skip</code> for exempt modules (<code>backup_tape_log</code>, <code>birthdays</code>, <code>resignations</code>, <code>calendar</code>, <code>explorer</code>, <code>ops_report</code>, <code>reports</code>, <code>settings</code>, <code>hotel*</code>). <code>--all</code> adds line-level OK hits; <code>--no-show-pass</code> / <code>--no-show-skips</code> hide pass or skip rows.<br>
+Default lists <strong>WARN</strong> rows, one <strong>OK</strong> <code>module_pass</code> per clean module, and <strong>SKIP</strong> <code>module_skip</code> for exempt modules (<code>reports</code>, <code>ops_report</code>, <code>settings</code>, <code>backup_tape_log</code>, <code>birthdays</code>, <code>resignations</code>, <code>calendar</code>, <code>explorer</code>, <code>hotel*</code>, <code>booking_*</code>). Does not scan <code>booking/</code> guest portal (outside <code>modules/</code>). <code>--all</code> adds line-level OK hits; <code>--no-show-pass</code> / <code>--no-show-skips</code> hide pass or skip rows.<br>
 CLI examples:<br>
 <code>php scripts/list_date_display_formats.php</code><br>
 <code>php scripts/list_date_display_formats.php --module=ticket_survey_dashboard</code>
@@ -171,7 +171,7 @@ if (!$isCli) {
     echo '<p><strong>Summary:</strong> ok=' . (int) $okCount . ' warn=' . (int) $warnCount . ' skip=' . (int) $skipCount . '</p>';
 
     echo '<div style="margin:16px 0;padding:12px;border:1px dashed #d0d7de;border-radius:6px;font-size:13px;">';
-    echo '<p><strong>OK</strong> = UK <code>dd/mm/yyyy</code> via shared helpers or explicit <code>date(\'d/m/Y\')</code>.</p>';
+    echo '<p><strong>OK</strong> = UK <code>dd/mmm/yyyy</code> via shared helpers or explicit <code>date(\'d/M/Y\')</code>.</p>';
     echo '<p><strong>WARN</strong> = list/view shows ISO or non-UK format without shared helpers.</p>';
     echo '<p>Native form <code>type="date"</code> inputs are skipped unless <code>--include-inputs</code>.</p>';
     echo '<p>Canonical contract: <code>includes/itm_date_format.php</code> and <code>AGENTS.md</code> → Character encoding / dates.</p>';
@@ -232,7 +232,7 @@ foreach ($rows as $row) {
 echo $nl;
 echo 'Summary: ok=' . $okCount . ' warn=' . $warnCount . ' skip=' . $skipCount . $nl;
 echo $nl;
-echo 'OK = dd/mm/yyyy via itm_format_* helpers.' . $nl;
+echo 'OK = dd/mmm/yyyy via itm_format_* helpers.' . $nl;
 echo 'WARN = other display format (detection only).' . $nl;
 
 if ($exitCode === 1) {

@@ -766,7 +766,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         if (in_array($name, ['purchase_date', 'expiry_date'], true) && $value !== '' && $value !== null && function_exists('itm_parse_date_input')) {
             $parsedDate = itm_parse_date_input((string)$value);
             if ($parsedDate === '') {
-                $errors[] = cr_humanize_field($name) . ' must be a valid date (dd/mm/yyyy).';
+                $errors[] = cr_humanize_field($name) . ' must be a valid date (dd/mmm/yyyy).';
                 $data[$name] = (string)$value;
                 $sqlValues[$name] = 'NULL';
                 continue;
@@ -1132,7 +1132,7 @@ if (!isset($crud_title)) {
                             <?php elseif ($isDateTime): ?>
                                 <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
                             <?php elseif ($isDate): ?>
-                                <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>" placeholder="dd/mm/yyyy">
+                                <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>" placeholder="dd/mmm/yyyy">
                             <?php elseif ($name === 'price'): ?>
                                 <input type="text" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize($displayVal); ?>" inputmode="decimal" placeholder="0.00">
                             <?php elseif ($isText): ?>

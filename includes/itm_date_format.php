@@ -3,7 +3,7 @@
  * UK (en-GB) date display and parsing contract for ITM.
  *
  * Storage remains MySQL DATE/DATETIME in Y-m-d / Y-m-d H:i:s.
- * UI lists, views, and imports accept and show dd/mm/yyyy.
+ * UI lists, views, and imports accept dd/mm/yyyy or dd/mmm/yyyy; display uses dd/mmm/yyyy.
  */
 
 if (!function_exists('itm_is_date_field_name')) {
@@ -177,7 +177,7 @@ if (!function_exists('itm_date_input_iso_value')) {
 
 if (!function_exists('itm_format_date_display')) {
     /**
-     * Display a stored or raw date as dd/mm/yyyy.
+     * Display a stored or raw date as dd/mmm/yyyy (PHP d/M/Y — e.g. 18/Jun/2026).
      */
     function itm_format_date_display($rawValue)
     {
@@ -192,7 +192,7 @@ if (!function_exists('itm_format_date_display')) {
             return trim((string)$rawValue);
         }
 
-        return $dt->format('d/m/Y');
+        return $dt->format('d/M/Y');
     }
 }
 
@@ -219,7 +219,7 @@ if (!function_exists('itm_format_hotel_date_display')) {
 
 if (!function_exists('itm_format_datetime_display')) {
     /**
-     * Display a stored or raw datetime as dd/mm/yyyy HH:mm.
+     * Display a stored or raw datetime as dd/mmm/yyyy HH:mm.
      */
     function itm_format_datetime_display($rawValue)
     {
@@ -238,7 +238,7 @@ if (!function_exists('itm_format_datetime_display')) {
             return $raw;
         }
 
-        return $dt->format('d/m/Y H:i');
+        return $dt->format('d/M/Y H:i');
     }
 }
 
@@ -297,7 +297,7 @@ if (!function_exists('itm_is_hospitality_date_field_name')) {
 
 if (!function_exists('itm_format_cell_scalar_display')) {
     /**
-     * Format a list/view scalar for display (dates → dd/mm/yyyy; hospitality stay dates → d/M/Y).
+     * Format a list/view scalar for display (dates → dd/mmm/yyyy via itm_format_date_display()).
      *
      * @param string|null $tableName Optional source table for hospitality start_date/end_date.
      */

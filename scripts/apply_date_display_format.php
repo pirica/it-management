@@ -1,6 +1,6 @@
 <?php
 /**
- * Wire dd/mm/yyyy display into duplicated cr_render_cell_value() helpers.
+ * Wire dd/mmm/yyyy display into duplicated cr_render_cell_value() helpers.
  *
  * Browser + CLI. Default run is always dry-run; writes only with CLI --apply or browser ?apply=1 (Admin).
  */
@@ -57,7 +57,7 @@ foreach ($paths as $path) {
 }
 
 $modeLabel = $apply ? 'Updated' : 'Would update';
-echo $nl . $modeLabel . ' ' . count($changed) . ' file(s) with dd/mm/yyyy cell display.' . $nl . $nl;
+echo $nl . $modeLabel . ' ' . count($changed) . ' file(s) with dd/mmm/yyyy cell display.' . $nl . $nl;
 itm_apply_script_echo_list($modeLabel . ' files', $changed);
 itm_apply_script_echo_list('Skipped (already patched or different shape)', $skipped);
 itm_apply_script_finish_hint($apply, $boot['is_cli'], count($changed), $nl, 'apply_date_display_format.php');

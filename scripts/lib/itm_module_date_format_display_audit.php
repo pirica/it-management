@@ -1,9 +1,9 @@
 <?php
 /**
- * Static audit: module PHP date display should use UK dd/mm/yyyy helpers.
+ * Static audit: module PHP date display should use UK dd/mmm/yyyy helpers.
  *
  * Why: MySQL stores Y-m-d; list/view must route through itm_format_date_display() /
- * itm_format_cell_scalar_display() (or explicit date('d/m/Y')) — not raw ISO echo or
+ * itm_format_cell_scalar_display() (or explicit date('d/M/Y')) — not raw ISO echo or
  * browser-native type="date" values shown to users without UK formatting.
  */
 
@@ -16,7 +16,7 @@ if (!function_exists('itm_module_date_format_display_audit_hospitality_slug')) {
 
 if (!function_exists('itm_module_date_format_display_audit_exempt_module_slugs')) {
     /**
-     * Bespoke / alternate date-contract modules excluded from UK dd/mm/yyyy display audit.
+     * Bespoke / alternate date-contract modules excluded from UK dd/mmm/yyyy display audit.
      *
      * @return list<string>
      */
@@ -47,14 +47,15 @@ if (!function_exists('itm_module_date_format_display_audit_is_exempt_module')) {
             return true;
         }
 
-        return strpos($slug, 'hotel') === 0;
+        // Why: hotel* and booking_* hospitality modules use d/M/Y — out of flattened UK display audit scope.
+        return itm_module_date_format_display_audit_hospitality_slug($slug);
     }
 }
 
 if (!function_exists('itm_module_date_format_display_audit_exempt_module_notes')) {
     function itm_module_date_format_display_audit_exempt_module_notes(string $slug): string
     {
-        if (strpos($slug, 'hotel') === 0) {
+        if (itm_module_date_format_display_audit_hospitality_slug($slug)) {
             return 'Hospitality module — d/M/Y contract; see check_hospitality_date_format.php';
         }
 
@@ -69,7 +70,7 @@ if (!function_exists('itm_module_date_format_display_audit_exempt_module_notes')
             'settings' => 'Admin UI configuration — no flattened list/view date column contract',
         ];
 
-        return $notes[$slug] ?? 'Module exempt from UK dd/mm/yyyy display audit';
+        return $notes[$slug] ?? 'Module exempt from UK dd/mmm/yyyy display audit';
     }
 }
 
@@ -210,21 +211,21 @@ if (!function_exists('itm_module_date_format_display_audit_line_rules')) {
             [
                 'status' => 'ok',
                 'pattern' => 'itm_format_date_display',
-                'format' => 'dd/mm/yyyy',
+                'format' => 'dd/mmm/yyyy',
                 'regex' => '/itm_format_date_display\s*\(/',
-                'notes' => 'UK date helper',
+                'notes' => 'UK date helper (d/M/Y)',
             ],
             [
                 'status' => 'ok',
                 'pattern' => 'itm_format_cell_scalar_display',
-                'format' => 'dd/mm/yyyy (routed)',
+                'format' => 'dd/mmm/yyyy (routed)',
                 'regex' => '/itm_format_cell_scalar_display\s*\(/',
                 'notes' => 'Cell scalar routes date/datetime fields',
             ],
             [
                 'status' => 'ok',
                 'pattern' => 'itm_format_datetime_display',
-                'format' => 'dd/mm/yyyy HH:MM',
+                'format' => 'dd/mmm/yyyy HH:MM',
                 'regex' => '/itm_format_datetime_display\s*\(/',
                 'notes' => 'UK datetime helper',
             ],
@@ -237,15 +238,29 @@ if (!function_exists('itm_module_date_format_display_audit_line_rules')) {
             ],
             [
                 'status' => 'ok',
+                'pattern' => 'itm_format_hotel_date_display',
+                'format' => 'dd/mmm/yyyy',
+                'regex' => '/itm_format_hotel_date_display\s*\(/',
+                'notes' => 'Hospitality stay-date helper (same d/M/Y contract)',
+            ],
+            [
+                'status' => 'ok',
+                'pattern' => 'date_dmy_mon_slash',
+                'format' => 'dd/mmm/yyyy',
+                'regex' => '/date\s*\(\s*[\'"]d\/M\/Y/i',
+                'notes' => 'Explicit UK date() format with abbreviated month',
+            ],
+            [
+                'status' => 'warn',
                 'pattern' => 'date_dmy_slash',
-                'format' => 'dd/mm/yyyy',
+                'format' => 'dd/mm/yyyy (legacy)',
                 'regex' => '/date\s*\(\s*[\'"]d\/m\/Y/i',
-                'notes' => 'Explicit UK date() format',
+                'notes' => 'Legacy numeric-month date() — use itm_format_date_display() or date(\'d/M/Y\')',
             ],
             [
                 'status' => 'ok',
                 'pattern' => 'itm_render_uk_date_input',
-                'format' => 'dd/mm/yyyy (UK widget)',
+                'format' => 'dd/mmm/yyyy (UK widget)',
                 'regex' => '/itm_render_uk_date_input\s*\(/',
                 'notes' => 'Shared UK text + calendar input helper',
             ],
@@ -307,24 +322,6 @@ if (!function_exists('itm_module_date_format_display_audit_line_rules')) {
             ],
         ];
 
-        if ($isHospitality) {
-            $rules[] = [
-                'status' => 'ok',
-                'pattern' => 'itm_format_hotel_date_display',
-                'format' => 'd/M/Y (hospitality)',
-                'regex' => '/itm_format_hotel_date_display\s*\(/',
-                'notes' => 'Hospitality stay-date contract',
-            ];
-        } else {
-            $rules[] = [
-                'status' => 'warn',
-                'pattern' => 'itm_format_hotel_date_display',
-                'format' => 'd/M/Y (hospitality)',
-                'regex' => '/itm_format_hotel_date_display\s*\(/',
-                'notes' => 'Hospitality helper outside hotel/booking modules',
-            ];
-        }
-
         return $rules;
     }
 }
@@ -333,7 +330,7 @@ if (!function_exists('itm_module_date_format_display_audit_line_has_ok_helper'))
     function itm_module_date_format_display_audit_line_has_ok_helper(string $line): bool
     {
         return (bool) preg_match(
-            '/itm_format_(?:date_display|cell_scalar_display|datetime_display|audit_timestamp_display|hotel_date_display)\s*\(|appt_format_date_display\s*\(|myactivity_format_display_datetime\s*\(|itm_render_uk_date_input\s*\(|date\s*\(\s*[\'"]d\/m\/Y/i',
+            '/itm_format_(?:date_display|cell_scalar_display|datetime_display|audit_timestamp_display|hotel_date_display)\s*\(|appt_format_date_display\s*\(|myactivity_format_display_datetime\s*\(|itm_render_uk_date_input\s*\(|date\s*\(\s*[\'"]d\/M\/Y/i',
             $line
         );
     }
@@ -519,7 +516,7 @@ if (!function_exists('itm_module_date_format_display_audit_run')) {
                         'file' => 'modules/' . $passSlug,
                         'line' => 0,
                         'pattern' => 'module_pass',
-                        'format' => 'dd/mm/yyyy',
+                        'format' => 'dd/mmm/yyyy',
                         'notes' => 'No WARN date display patterns in scanned PHP',
                         'snippet' => '',
                     ];

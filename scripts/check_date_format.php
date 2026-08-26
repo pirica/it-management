@@ -1,6 +1,6 @@
 <?php
 /**
- * Project-wide date format audit: UK dd/mm/yyyy helpers + hospitality d/M/Y + static gates.
+ * Project-wide date format audit: UK dd/mmm/yyyy helpers + hospitality d/M/Y + static gates.
  *
  * Browser: scripts/check_date_format.php (Administrator session).
  * CLI: php scripts/check_date_format.php
@@ -13,7 +13,7 @@ function itm_script_browser_how_to_use(): string
 {
     return <<<'ITM_SCRIPT_BROWSER_HOW_TO_USE'
 Browser: <a href="check_date_format.php?run=1">check_date_format.php?run=1</a> (Administrator). CLI: <code>php scripts/check_date_format.php</code> — exit <code>1</code> on failure.
-<p>Contracts: UK <code>dd/mm/yyyy</code> via <code>itm_format_date_display()</code>; hospitality stay dates <code>d/M/Y</code> (e.g. <code>31/Aug/2026</code>, <code>01/Oct/2026</code>) via <code>itm_format_hotel_date_display()</code>; audit stamps <code>d-m-Y - H:i:s</code>.</p>
+<p>Contracts: UK <code>dd/mmm/yyyy</code> via <code>itm_format_date_display()</code> (PHP <code>d/M/Y</code>, e.g. <code>18/Jun/2026</code>); hospitality stay dates use the same helper or <code>itm_format_hotel_date_display()</code>; audit stamps <code>d-m-Y - H:i:s</code>. Import parsing still accepts numeric <code>dd/mm/yyyy</code> via <code>itm_parse_date_input()</code>.</p>
 ITM_SCRIPT_BROWSER_HOW_TO_USE;
 }
 

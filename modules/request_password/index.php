@@ -42,7 +42,7 @@ if (!$company_id) {
  */
 function cr_format_date($date) {
     if (!$date || $date == '0000-00-00' || $date == '0000-00-00 00:00:00') return '';
-    return date('d/m/Y', strtotime($date));
+    return itm_format_date_display($date);
 }
 
 /**

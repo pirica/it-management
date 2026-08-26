@@ -25,7 +25,7 @@ Date-range **inventory blocks** per hotel room type: closes availability for a r
 Flattened scaffold CRUD (same pattern as `hotel_booking_room_type_base_prices`):
 
 - Search includes FK labels for hotel and room type names.
-- Dates display **dd/mm/yyyy** via `itm_format_cell_scalar_display()` / `itm_parse_date_input()`.
+- Dates display **dd/mmm/yyyy** via `itm_format_cell_scalar_display()` / `itm_parse_date_input()`.
 - Bulk toolbar when `$totalRows >= $perPage`; hide `company_id`.
 
 ## 9. Audit Logging Requirements

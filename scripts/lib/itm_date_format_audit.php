@@ -64,10 +64,10 @@ if (!function_exists('itm_date_format_audit_run_helper_contracts')) {
         $repoRoot = itm_date_format_audit_repo_root();
         require_once $repoRoot . '/includes/itm_date_format.php';
 
-        if (itm_format_date_display('2026-08-31') === '31/08/2026') {
-            itm_date_format_audit_pass('itm_format_date_display UK d/m/Y');
+        if (itm_format_date_display('2026-08-31') === '31/Aug/2026') {
+            itm_date_format_audit_pass('itm_format_date_display UK d/M/Y');
         } else {
-            itm_date_format_audit_fail('itm_format_date_display expected 31/08/2026 got ' . itm_format_date_display('2026-08-31'), $fail);
+            itm_date_format_audit_fail('itm_format_date_display expected 31/Aug/2026 got ' . itm_format_date_display('2026-08-31'), $fail);
         }
 
         if (itm_format_hotel_date_display('2026-08-31') === '31/Aug/2026'
@@ -87,10 +87,10 @@ if (!function_exists('itm_date_format_audit_run_helper_contracts')) {
         }
 
         $dtDisplay = itm_format_datetime_display('2026-08-31 14:30:00');
-        if ($dtDisplay === '31/08/2026 14:30') {
+        if ($dtDisplay === '31/Aug/2026 14:30') {
             itm_date_format_audit_pass('itm_format_datetime_display UK');
         } else {
-            itm_date_format_audit_fail('itm_format_datetime_display expected 31/08/2026 14:30 got ' . $dtDisplay, $fail);
+            itm_date_format_audit_fail('itm_format_datetime_display expected 31/Aug/2026 14:30 got ' . $dtDisplay, $fail);
         }
 
         $auditDisplay = itm_format_audit_timestamp_display('2026-08-31 14:30:00');
@@ -100,7 +100,7 @@ if (!function_exists('itm_date_format_audit_run_helper_contracts')) {
             itm_date_format_audit_fail('itm_format_audit_timestamp_display expected 31-08-2026 - 14:30:00 got ' . $auditDisplay, $fail);
         }
 
-        if (itm_format_cell_scalar_display('due_date', '2026-08-31') === '31/08/2026'
+        if (itm_format_cell_scalar_display('due_date', '2026-08-31') === '31/Aug/2026'
             && itm_format_cell_scalar_display('from_date', '2026-10-01') === '01/Oct/2026'
             && itm_format_cell_scalar_display('start_date', '2026-10-01', 'hotel_booking_room_type_blocks') === '01/Oct/2026'
             && itm_format_cell_scalar_display('start_date', '2026-10-01', 'events') === '01/10/2026') {

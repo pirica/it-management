@@ -13,7 +13,7 @@ Contains modular PHP files included by `create.php` and `edit.php` to render spe
 
 ## 4. Business Rules (Critical for Agents)
 - **Attribute Parity**: Ensure that input `name` and `id` attributes match expected database columns exactly. Do not alter them, as doing so will break POST parsing in the parent handlers and validation during Excel imports.
-- **Date Format**: Standard picker inputs use standard formats; view formatting employs the `dd/mm/yyyy` display standard.
+- **Date Format**: Standard picker inputs use standard formats; view formatting employs the `dd/mmm/yyyy` display standard.
 
 ## 5. UI Behavior Requirements
 - **profile_fields.php** — Renders circular drag-and-drop avatar upload zone above the grid.

@@ -35,7 +35,7 @@ Employee self-service IT appointment scheduling: choose a **reason for your appo
 - **Past slots:** `itm_appointment_slot_is_past()` marks past slots unavailable in the grid; schedule/reschedule reject past times server-side.
 - **Self-service cancel/reschedule:** owner (`employee_id`) or admin (`itm_appointment_employee_can_modify()` / `appt_employee_can_modify()`) on `status = scheduled` rows. View page: emoji-only **📅** Reschedule and **🗑️** Cancel. Cancel sets `cancelled`, clears `booking_lock`, notifies assignee. Reschedule: `reschedule_prepare` clears lock; modal picks new slot; `reschedule` updates row in a transaction with new `booking_lock`.
 - **Confirmation email:** `itm_appointment_send_confirmation_email()` after schedule and reschedule — HTML body + `.ics` attachment via `itm_send_email()`; assignee CC when set and different from booker.
-- **List filters:** `list_all.php` supports `filter=mine`, `date_from` / `date_to` (dd/mm/yyyy or `Y-m-d`), search, sort, pagination via `records_per_page`.
+- **List filters:** `list_all.php` supports `filter=mine`, `date_from` / `date_to` (dd/mmm/yyyy or `Y-m-d`), search, sort, pagination via `records_per_page`.
 
 ## 5. UI Behavior Requirements
 
@@ -131,7 +131,7 @@ php -l modules/appointments/api.php
 |------|-----|---------------------|
 | QA | MBQA bespoke smoke only | Tier D index `list`/`search`/`sort`; extend steps when booking flow is stable |
 
-**Done (appointment pack):** slot summary uses `display_summary` / `date_display` (dd/mm/yyyy); sidebar hours use configured timezone; ⚙️ Settings link when `appt_user_can_access_settings()`; settings admin APSET-1–7 on `modules/appointment_settings/`.
+**Done (appointment pack):** slot summary uses `display_summary` / `date_display` (dd/mmm/yyyy); sidebar hours use configured timezone; ⚙️ Settings link when `appt_user_can_access_settings()`; settings admin APSET-1–7 on `modules/appointment_settings/`.
 
 ### Migration (existing DBs)
 
