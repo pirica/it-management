@@ -181,7 +181,7 @@ function equipment_field_value($key, $value) {
         return (int)$value === 1 ? 'Yes' : 'No';
     }
 
-    return (string)$value;
+    return itm_format_cell_scalar_display($key, $value, 'equipment');
 }
 
 function equipment_field_is_populated($key, $value) {
