@@ -127,6 +127,11 @@ window.ITM_FORBIDDEN_FLASH = <?php echo json_encode($itmForbiddenFlash !== '' ? 
 <script src="<?php echo BASE_URL; ?>js/vendor/xlsx.full.min.js"></script>
 <script src="<?php echo BASE_URL; ?>js/ui-layout.js"></script>
 <?php
+$itmSidebarSectionsPath = ROOT_PATH . 'js/sidebar-sections.js';
+$itmSidebarSectionsVersion = is_file($itmSidebarSectionsPath) ? (string)filemtime($itmSidebarSectionsPath) : '1';
+?>
+<script src="<?php echo BASE_URL; ?>js/sidebar-sections.js?v=<?php echo sanitize($itmSidebarSectionsVersion); ?>"></script>
+<?php
 $itmTableToolsPath = ROOT_PATH . 'js/table-tools.js';
 $itmTableToolsVersion = is_file($itmTableToolsPath) ? (string)filemtime($itmTableToolsPath) : '1';
 $itmBulkDeletePath = ROOT_PATH . 'js/bulk-delete-selection.js';

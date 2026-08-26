@@ -223,7 +223,7 @@ function cr_render_cell_value($table, $field, $value) {
             return $auditHtml;
         }
     }
-if (in_array($field, ['active', 'is_visible'], true)) {
+if (in_array($field, ['active', 'is_visible', 'is_collapsed'], true)) {
         $isActive = ((int)$value === 1);
         return '<span class="badge ' . ($isActive ? 'badge-success' : 'badge-danger') . '">' . ($isActive ? 'Active' : 'Inactive') . '</span>';
     }

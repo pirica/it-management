@@ -4,7 +4,7 @@
 Stores per-user sidebar section/item order and visibility (`employee_sidebar_preferences` rows). This module folder provides a **bespoke read-only audit list** for administrators — not the live drag-and-drop sidebar editor (that lives in [`includes/ui_config.php`](../../includes/ui_config.php)).
 
 ## 2. Key Tables
-- **employee_sidebar_preferences** — one row per sidebar section/item per `company_id` + `employee_id` (`entry_type`, `entry_id`, `section_id`, `display_order`, `is_visible`).
+- **employee_sidebar_preferences** — one row per sidebar section/item per `company_id` + `employee_id` (`entry_type`, `entry_id`, `section_id`, `display_order`, `is_visible`, **`is_collapsed`** on section rows for double-click fold state).
 
 ## 3. Required Relationships
 - **employee_sidebar_preferences** → **companies** (`company_id`, CASCADE).
