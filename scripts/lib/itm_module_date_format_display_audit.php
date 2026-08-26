@@ -333,7 +333,7 @@ if (!function_exists('itm_module_date_format_display_audit_line_has_ok_helper'))
     function itm_module_date_format_display_audit_line_has_ok_helper(string $line): bool
     {
         return (bool) preg_match(
-            '/itm_format_(?:date_display|cell_scalar_display|datetime_display|audit_timestamp_display|hotel_date_display)\s*\(|itm_render_uk_date_input\s*\(|date\s*\(\s*[\'"]d\/m\/Y/i',
+            '/itm_format_(?:date_display|cell_scalar_display|datetime_display|audit_timestamp_display|hotel_date_display)\s*\(|appt_format_date_display\s*\(|myactivity_format_display_datetime\s*\(|itm_render_uk_date_input\s*\(|date\s*\(\s*[\'"]d\/m\/Y/i',
             $line
         );
     }

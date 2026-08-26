@@ -78,7 +78,9 @@ if (!function_exists('expiring_display_date')) {
             return trim((string)$rawDate);
         }
 
-        return $parsed->format('Y-m-d');
+        return function_exists('itm_format_date_display')
+            ? itm_format_date_display($rawDate)
+            : $parsed->format('d/m/Y');
     }
 }
 
@@ -517,8 +519,8 @@ if (!isset($crud_title)) {
                                         <td><?php echo sanitize($row['equipment_type'] !== '' ? $row['equipment_type'] : '—'); ?></td>
                                         <td><?php echo sanitize($row['warranty_type'] !== '' ? $row['warranty_type'] : '—'); ?></td>
                                         <td><?php echo sanitize($row['serial_number'] !== '' ? $row['serial_number'] : '—'); ?></td>
-                                        <td><?php echo sanitize($row['purchase_date'] !== '' ? $row['purchase_date'] : '—'); ?></td>
-                                        <td><strong><?php echo sanitize($row['expiry_date']); ?></strong></td>
+                                        <td><?php echo sanitize($row['purchase_date'] !== '' ? itm_format_date_display($row['purchase_date']) : '—'); ?></td>
+                                        <td><strong><?php echo sanitize(itm_format_date_display($row['expiry_date'])); ?></strong></td>
                                         <td><?php echo sanitize($row['term_text']); ?></td>
                                         <td><?php echo sanitize($row['countdown_text']); ?></td>
                                         <td>

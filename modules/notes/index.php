@@ -861,7 +861,8 @@ if (!isset($crud_title)) {
                                         <a href="index.php" class="btn btn-sm">💡 Keep View</a>
                                     <?php endif; ?>
                             </div>
-                            <div class="date-subtitle"><?php echo date("l, F j"); ?></div>
+                            <?php $notesTodaySubtitle = date('l') . ', ' . itm_format_date_display(date('Y-m-d')); ?>
+                            <div class="date-subtitle"><?php echo sanitize($notesTodaySubtitle); ?></div>
 
                         <div class="card" style="margin-bottom:16px; margin-top: 20px;">
                             <form method="GET" action="<?php echo $crud_action === 'list_all' ? 'list_all.php' : 'index.php'; ?>" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">

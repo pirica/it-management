@@ -466,7 +466,7 @@ if (!isset($crud_title)) {
                                     —
                                 <?php endif; ?>
                             </td>
-                            <td><?php echo sanitize($t['due_date'] ?? '—'); ?></td>
+                            <td><?php echo sanitize(itm_format_date_display($t['due_date'] ?? '') ?: '—'); ?></td>
                             <td><?php echo sanitize($t['survey_summary'] ?? '—'); ?></td>
                             <td class="itm-actions-cell" data-itm-actions-origin="1">
                                 <div class="itm-actions-wrap">

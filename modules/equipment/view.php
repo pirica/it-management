@@ -349,6 +349,7 @@ if (isset($_GET['disposal_pending']) && (string)$_GET['disposal_pending'] === '1
         </form>
     <?php endif; ?>
     <?php if ($canRecordDisposal && !$hasPendingDisposal): ?>
+        <?php $equipmentDisposalDateDefault = date('Y-m-d'); ?>
         <form method="POST" style="margin-top:16px;max-width:640px;" class="form-grid">
             <input type="hidden" name="csrf_token" value="<?php echo sanitize(itm_get_csrf_token()); ?>">
             <input type="hidden" name="record_asset_disposal" value="1">
@@ -358,7 +359,7 @@ if (isset($_GET['disposal_pending']) && (string)$_GET['disposal_pending'] === '1
             <?php endif; ?>
             <div class="form-group">
                 <label>Disposal date</label>
-                <input type="date" name="disposal_date" value="<?php echo sanitize(date('Y-m-d')); ?>">
+                <input type="date" name="disposal_date" value="<?php echo sanitize($equipmentDisposalDateDefault); ?>">
             </div>
             <div class="form-group">
                 <label>Disposal reason</label>
