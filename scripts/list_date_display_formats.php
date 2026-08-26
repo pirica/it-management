@@ -21,7 +21,7 @@ Static audit: flags module PHP where <strong>displayed</strong> dates omit the U
 <strong>OK</strong> — <code>itm_format_date_display()</code>, <code>itm_format_cell_scalar_display()</code>, <code>itm_format_datetime_display()</code>, explicit <code>date('d/m/Y')</code>, or hospitality <code>itm_format_hotel_date_display()</code> in hotel modules.<br>
 <strong>WARN</strong> — raw ISO echo in list/view (<code>$row['due_date']</code> without a helper), <code>date('Y-m-d')</code> on output lines, US/text <code>date()</code> patterns.<br>
 Native <code>type="date"</code> / <code>datetime-local</code> form controls are <strong>skipped</strong> by default (ISO value is normal for HTML5 inputs). Pass <code>--include-inputs</code> to WARN on those too.<br>
-Default lists <strong>WARN</strong> rows plus one <strong>OK</strong> <code>module_pass</code> row per clean module; <code>--all</code> adds line-level OK hits; <code>--no-show-pass</code> hides pass rows.<br>
+Default lists <strong>WARN</strong> rows, one <strong>OK</strong> <code>module_pass</code> per clean module, and <strong>SKIP</strong> <code>module_skip</code> for exempt modules (<code>backup_tape_log</code>, <code>birthdays</code>, <code>resignations</code>, <code>calendar</code>, <code>explorer</code>, <code>ops_report</code>, <code>reports</code>, <code>settings</code>, <code>hotel*</code>). <code>--all</code> adds line-level OK hits; <code>--no-show-pass</code> / <code>--no-show-skips</code> hide pass or skip rows.<br>
 CLI examples:<br>
 <code>php scripts/list_date_display_formats.php</code><br>
 <code>php scripts/list_date_display_formats.php --module=ticket_survey_dashboard</code>
@@ -44,6 +44,7 @@ $onlyWarn = true;
 $showAll = false;
 $includeInputs = false;
 $showPass = true;
+$showModuleSkips = true;
 
 if ($isCli) {
     foreach ($argv ?? [] as $arg) {
@@ -61,6 +62,8 @@ if ($isCli) {
             $showPass = true;
         } elseif ($arg === '--no-show-pass') {
             $showPass = false;
+        } elseif ($arg === '--no-show-skips') {
+            $showModuleSkips = false;
         }
     }
 } else {
@@ -70,6 +73,7 @@ if ($isCli) {
     $showAll = isset($_GET['all']) && (string) $_GET['all'] === '1';
     $includeInputs = isset($_GET['include_inputs']) && (string) $_GET['include_inputs'] === '1';
     $showPass = !isset($_GET['no_show_pass']) || (string) $_GET['no_show_pass'] !== '1';
+    $showModuleSkips = !isset($_GET['no_show_skips']) || (string) $_GET['no_show_skips'] !== '1';
 }
 
 $rows = itm_module_date_format_display_audit_run([
@@ -79,6 +83,7 @@ $rows = itm_module_date_format_display_audit_run([
     'all' => $showAll,
     'include_inputs' => $includeInputs,
     'show_pass' => $showPass,
+    'show_module_skips' => $showModuleSkips,
 ]);
 
 $okCount = 0;
