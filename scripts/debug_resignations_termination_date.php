@@ -147,7 +147,7 @@ $params = drd_parse_args();
 $rawDate = (string)$params['date'];
 $canonicalDate = itm_parse_date_input($rawDate);
 if ($canonicalDate === null) {
-    drd_fail('Could not parse termination date: ' . $rawDate . ' (expected dd/mmm/yyyy, dd/mm/yyyy, or yyyy-mm-dd).');
+    drd_fail('Could not parse termination date: ' . $rawDate . ' (expected dd/mm/yyyy or yyyy-mm-dd).');
     exit(1);
 }
 

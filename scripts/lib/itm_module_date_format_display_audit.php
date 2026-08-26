@@ -7,10 +7,30 @@
  * browser-native type="date" values shown to users without UK formatting.
  */
 
-if (!function_exists('itm_module_date_format_display_audit_hospitality_slug')) {
-    function itm_module_date_format_display_audit_hospitality_slug(string $slug): bool
+if (!function_exists('itm_module_date_format_display_audit_prefix_exempt_slug')) {
+    /**
+     * Prefix SKIP rules (canonical list: reports, ops_report, settings, backup_tape_log,
+     * birthdays, resignations, calendar, explorer, hotel* — see exempt_module_slugs()).
+     *
+     * @return list<string> slug prefix patterns (hotel*, ops_report_* child modules)
+     */
+    function itm_module_date_format_display_audit_prefix_exempt_patterns(): array
     {
-        return strpos($slug, 'hotel') === 0 || strpos($slug, 'booking_') === 0;
+        return [
+            'hotel',
+            'ops_report_',
+        ];
+    }
+
+    function itm_module_date_format_display_audit_prefix_exempt_slug(string $slug): bool
+    {
+        foreach (itm_module_date_format_display_audit_prefix_exempt_patterns() as $prefix) {
+            if (strpos($slug, $prefix) === 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
@@ -47,16 +67,20 @@ if (!function_exists('itm_module_date_format_display_audit_is_exempt_module')) {
             return true;
         }
 
-        // Why: hotel* and booking_* hospitality modules use d/M/Y — out of flattened UK display audit scope.
-        return itm_module_date_format_display_audit_hospitality_slug($slug);
+        // Why: hotel* and ops_report_* child modules use bespoke date UX — out of flattened UK display audit scope.
+        return itm_module_date_format_display_audit_prefix_exempt_slug($slug);
     }
 }
 
 if (!function_exists('itm_module_date_format_display_audit_exempt_module_notes')) {
     function itm_module_date_format_display_audit_exempt_module_notes(string $slug): string
     {
-        if (itm_module_date_format_display_audit_hospitality_slug($slug)) {
+        if (strpos($slug, 'hotel') === 0) {
             return 'Hospitality module — d/M/Y contract; see check_hospitality_date_format.php';
+        }
+
+        if (strpos($slug, 'ops_report_') === 0) {
+            return 'Ops report child table — bespoke daily grid; parent ops_report exempt';
         }
 
         $notes = [
@@ -363,7 +387,7 @@ if (!function_exists('itm_module_date_format_display_audit_scan_file')) {
             ]];
         }
 
-        $isHospitality = itm_module_date_format_display_audit_hospitality_slug($slug);
+        $isHospitality = strpos($slug, 'hotel') === 0;
         $rules = itm_module_date_format_display_audit_line_rules($isHospitality, $includeInputs);
         $rel = itm_module_date_format_display_audit_rel_path($repoRoot, $absPath);
         $rows = [];

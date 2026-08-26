@@ -813,7 +813,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
         if (in_array($name, ['purchase_date', 'expiry_date'], true) && $value !== '' && $value !== null && function_exists('itm_parse_date_input')) {
             $parsedDate = itm_parse_date_input((string)$value);
             if ($parsedDate === '') {
-                $errors[] = cr_humanize_field($name) . ' must be a valid date (dd/mmm/yyyy).';
+                $errors[] = cr_humanize_field($name) . ' must be a valid date (dd/mm/yyyy).';
                 $data[$name] = (string)$value;
                 $sqlValues[$name] = 'NULL';
                 continue;
