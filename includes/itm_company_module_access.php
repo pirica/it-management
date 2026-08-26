@@ -177,6 +177,23 @@ if (!function_exists('itm_module_access_company_enabled_for_slug')) {
     }
 }
 
+if (!function_exists('itm_module_access_sanitize_display_icon')) {
+    /**
+     * Drop empty or placeholder-only icons (legacy utf8 imports may store literal "?" / "??").
+     */
+    function itm_module_access_sanitize_display_icon($icon)
+    {
+        $icon = trim((string)$icon);
+        if ($icon === '') {
+            return '';
+        }
+        if (preg_match('/^\?+$/u', $icon)) {
+            return '';
+        }
+        return $icon;
+    }
+}
+
 if (!function_exists('has_module_access')) {
     function has_module_access($conn, $company_id, $module_slug, $forceRefresh = false)
     {
@@ -249,7 +266,9 @@ if (!function_exists('has_module_access')) {
                     itm_module_access_shared_static_cache('registry', $slug, $regData);
                     itm_module_access_shared_static_cache('access', $slug, (int)$row['enabled']);
 
-                    $resolvedIcon = trim((string)($row['company_icon'] ?? '')) ?: trim((string)($row['registry_icon'] ?? ''));
+                    $resolvedIcon = itm_module_access_sanitize_display_icon(
+                        trim((string)($row['company_icon'] ?? '')) ?: trim((string)($row['registry_icon'] ?? ''))
+                    );
                     itm_module_access_shared_static_cache('icon', $slug, $resolvedIcon);
                 }
                 mysqli_stmt_close($stmt);
@@ -288,7 +307,11 @@ if (!function_exists('has_module_access')) {
                 $companyIcon = trim((string)($rowIcon['icon'] ?? ''));
                 mysqli_stmt_close($stmtIcon);
             }
-            itm_module_access_shared_static_cache('icon', $module_slug, $companyIcon ?: trim((string)($row['icon'] ?? '')));
+            itm_module_access_shared_static_cache(
+                'icon',
+                $module_slug,
+                itm_module_access_sanitize_display_icon($companyIcon ?: trim((string)($row['icon'] ?? '')))
+            );
 
             $registry_cache = itm_module_access_shared_static_cache('registry');
             $access_cache = itm_module_access_shared_static_cache('access');
@@ -613,7 +636,7 @@ if (!function_exists('itm_resolve_module_sidebar_icon')) {
             $uiConfig = itm_get_ui_configuration($conn, $company_id, $user_id);
             $overrides = is_array($uiConfig['module_icon_overrides'] ?? null) ? $uiConfig['module_icon_overrides'] : [];
             if (isset($overrides[$module_slug])) {
-                $overrideIcon = trim((string)$overrides[$module_slug]);
+                $overrideIcon = itm_module_access_sanitize_display_icon($overrides[$module_slug]);
                 if ($overrideIcon !== '') {
                     return $overrideIcon;
                 }
@@ -622,7 +645,7 @@ if (!function_exists('itm_resolve_module_sidebar_icon')) {
 
         // Why: The shared static cache in has_module_access() now holds the resolved icon.
         if (function_exists('itm_module_access_cached_icon')) {
-            $cachedIcon = itm_module_access_cached_icon($module_slug);
+            $cachedIcon = itm_module_access_sanitize_display_icon(itm_module_access_cached_icon($module_slug));
             if ($cachedIcon !== '') {
                 return $cachedIcon;
             }
@@ -645,7 +668,7 @@ if (!function_exists('itm_resolve_module_sidebar_icon')) {
                 $res = mysqli_stmt_get_result($stmt);
                 $row = $res ? mysqli_fetch_assoc($res) : null;
                 mysqli_stmt_close($stmt);
-                $companyIcon = trim((string)($row['icon'] ?? ''));
+                $companyIcon = itm_module_access_sanitize_display_icon($row['icon'] ?? '');
                 if ($companyIcon !== '') {
                     return $companyIcon;
                 }
@@ -654,13 +677,13 @@ if (!function_exists('itm_resolve_module_sidebar_icon')) {
 
         $registryRow = itm_module_access_registry_row($conn, $module_slug);
         if ($registryRow !== null) {
-            $registryIcon = trim((string)($registryRow['icon'] ?? ''));
+            $registryIcon = itm_module_access_sanitize_display_icon($registryRow['icon'] ?? '');
             if ($registryIcon !== '') {
                 return $registryIcon;
             }
         }
 
-        return itm_module_access_catalog_icon_for_slug($module_slug);
+        return itm_module_access_sanitize_display_icon(itm_module_access_catalog_icon_for_slug($module_slug));
     }
 }
 
