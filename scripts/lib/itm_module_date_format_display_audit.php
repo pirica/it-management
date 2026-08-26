@@ -14,6 +14,78 @@ if (!function_exists('itm_module_date_format_display_audit_hospitality_slug')) {
     }
 }
 
+if (!function_exists('itm_module_date_format_display_audit_exempt_module_slugs')) {
+    /**
+     * Bespoke / alternate date-contract modules excluded from UK dd/mm/yyyy display audit.
+     *
+     * @return list<string>
+     */
+    function itm_module_date_format_display_audit_exempt_module_slugs(): array
+    {
+        return [
+            'backup_tape_log',
+            'birthdays',
+            'resignations',
+            'calendar',
+            'explorer',
+        ];
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_is_exempt_module')) {
+    function itm_module_date_format_display_audit_is_exempt_module(string $slug): bool
+    {
+        $slug = trim($slug);
+        if ($slug === '') {
+            return false;
+        }
+
+        if (in_array($slug, itm_module_date_format_display_audit_exempt_module_slugs(), true)) {
+            return true;
+        }
+
+        return strpos($slug, 'hotel') === 0;
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_exempt_module_notes')) {
+    function itm_module_date_format_display_audit_exempt_module_notes(string $slug): string
+    {
+        if (strpos($slug, 'hotel') === 0) {
+            return 'Hospitality module — d/M/Y contract; see check_hospitality_date_format.php';
+        }
+
+        $notes = [
+            'backup_tape_log' => 'Bespoke monthly grid with custom log_date UX',
+            'birthdays' => 'Bespoke read-only list — out of flattened date-display scope',
+            'resignations' => 'Bespoke read-only list — out of flattened date-display scope',
+            'calendar' => 'Integrated calendar grid — alternate date presentation',
+            'explorer' => 'File browser — no standard list/view date column contract',
+        ];
+
+        return $notes[$slug] ?? 'Module exempt from UK dd/mm/yyyy display audit';
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_build_module_skip_row')) {
+    /**
+     * @return array<string,mixed>
+     */
+    function itm_module_date_format_display_audit_build_module_skip_row(string $slug): array
+    {
+        return [
+            'status' => 'skip',
+            'module' => $slug,
+            'file' => 'modules/' . $slug,
+            'line' => 0,
+            'pattern' => 'module_skip',
+            'format' => 'n/a',
+            'notes' => itm_module_date_format_display_audit_exempt_module_notes($slug),
+            'snippet' => '',
+        ];
+    }
+}
+
 if (!function_exists('itm_module_date_format_display_audit_collect_module_files')) {
     /**
      * @return list<string> Absolute paths
@@ -355,7 +427,7 @@ if (!function_exists('itm_module_date_format_display_audit_pass_module_slugs')) 
 
         $pass = [];
         foreach ($slugs as $slug) {
-            if ($slug !== '' && !isset($warnModules[$slug])) {
+            if ($slug !== '' && !isset($warnModules[$slug]) && !itm_module_date_format_display_audit_is_exempt_module($slug)) {
                 $pass[] = $slug;
             }
         }
@@ -368,7 +440,7 @@ if (!function_exists('itm_module_date_format_display_audit_pass_module_slugs')) 
 
 if (!function_exists('itm_module_date_format_display_audit_run')) {
     /**
-     * @param array{root:string,module?:string,only_warn?:bool,all?:bool,include_inputs?:bool,include_skips?:bool,show_pass?:bool} $options
+     * @param array{root:string,module?:string,only_warn?:bool,all?:bool,include_inputs?:bool,include_skips?:bool,show_pass?:bool,show_module_skips?:bool} $options
      * @return list<array<string,mixed>>
      */
     function itm_module_date_format_display_audit_run(array $options): array
@@ -380,6 +452,7 @@ if (!function_exists('itm_module_date_format_display_audit_run')) {
         $includeInputs = !empty($options['include_inputs']);
         $includeSkips = !empty($options['include_skips']);
         $showPass = !empty($options['show_pass']);
+        $showModuleSkips = !array_key_exists('show_module_skips', $options) || !empty($options['show_module_skips']);
 
         $slugs = $moduleFilter !== ''
             ? [$moduleFilter]
@@ -388,6 +461,13 @@ if (!function_exists('itm_module_date_format_display_audit_run')) {
         $scannedSlugs = [];
         $rows = [];
         foreach ($slugs as $slug) {
+            if (itm_module_date_format_display_audit_is_exempt_module($slug)) {
+                if ($showModuleSkips) {
+                    $rows[] = itm_module_date_format_display_audit_build_module_skip_row($slug);
+                }
+                continue;
+            }
+
             $files = itm_module_date_format_display_audit_collect_module_files($repoRoot, $slug);
             if ($files === []) {
                 if ($moduleFilter !== '') {
