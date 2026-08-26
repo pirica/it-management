@@ -66,7 +66,7 @@ if (!function_exists('itm_tickets_list_parse_filters')) {
             }
             if (function_exists('itm_parse_date_input')) {
                 $parsed = itm_parse_date_input($raw);
-                if ($parsed !== '') {
+                if ($parsed !== null && $parsed !== '') {
                     $filters[$key] = $parsed;
                 }
             } else {

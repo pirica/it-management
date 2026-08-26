@@ -5,7 +5,7 @@
 
 if (!function_exists('itm_render_uk_date_input')) {
     /**
-     * @param array{required?:bool,class?:string,min?:string,placeholder?:string} $options
+     * @param array{required?:bool,class?:string,min?:string,placeholder?:string,saved_report_filter?:bool} $options
      */
     function itm_render_uk_date_input($name, $id, $rawValue, array $options = [])
     {
@@ -21,12 +21,13 @@ if (!function_exists('itm_render_uk_date_input')) {
         }
         $minIso = trim((string) ($options['min'] ?? ''));
         $placeholder = trim((string) ($options['placeholder'] ?? 'dd/mmm/yyyy'));
+        $savedReportFilter = !empty($options['saved_report_filter']);
         $iso = function_exists('itm_date_input_iso_value') ? itm_date_input_iso_value($rawValue) : '';
         $display = function_exists('itm_format_date_display') ? itm_format_date_display($rawValue) : '';
         $nativeId = $id . '_native';
         ?>
 <div class="itm-uk-date-field">
-<input type="text" name="<?php echo sanitize($name); ?>" id="<?php echo sanitize($id); ?>" class="<?php echo sanitize($class); ?> itm-uk-date-text" value="<?php echo sanitize($display); ?>" placeholder="<?php echo sanitize($placeholder); ?>" autocomplete="off" inputmode="numeric"<?php echo $required ? ' required' : ''; ?>>
+<input type="text" name="<?php echo sanitize($name); ?>" id="<?php echo sanitize($id); ?>" class="<?php echo sanitize($class); ?> itm-uk-date-text" value="<?php echo sanitize($display); ?>" placeholder="<?php echo sanitize($placeholder); ?>" autocomplete="off" inputmode="numeric"<?php echo $required ? ' required' : ''; ?><?php echo $savedReportFilter ? ' data-itm-saved-report-filter="1"' : ''; ?>>
 <input type="date" id="<?php echo sanitize($nativeId); ?>" class="itm-uk-date-native" value="<?php echo sanitize(substr($iso, 0, 10)); ?>"<?php echo $minIso !== '' ? ' min="' . sanitize($minIso) . '"' : ''; ?> aria-hidden="true" tabindex="-1">
 <button type="button" class="btn btn-sm itm-uk-date-open" data-itm-uk-date-for="<?php echo sanitize($id); ?>" title="Pick date">📅</button>
 </div>

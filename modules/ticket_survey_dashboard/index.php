@@ -10,14 +10,21 @@ require_once dirname(__DIR__, 2) . '/config/config.php';
 itm_require_crud_role_module_permission($conn, 'view', 'ticket_survey_dashboard');
 
 $questionnaireId = (int)($_GET['questionnaire_id'] ?? 0);
-$dateFrom = trim((string)($_GET['date_from'] ?? ''));
-$dateTo = trim((string)($_GET['date_to'] ?? ''));
-
-if ($dateFrom !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
-    $dateFrom = '';
+$dateFromRaw = trim((string)($_GET['date_from'] ?? ''));
+$dateToRaw = trim((string)($_GET['date_to'] ?? ''));
+$dateFrom = '';
+$dateTo = '';
+if ($dateFromRaw !== '' && function_exists('itm_parse_date_input')) {
+    $parsedFrom = itm_parse_date_input($dateFromRaw);
+    if ($parsedFrom !== null && $parsedFrom !== '') {
+        $dateFrom = $parsedFrom;
+    }
 }
-if ($dateTo !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
-    $dateTo = '';
+if ($dateToRaw !== '' && function_exists('itm_parse_date_input')) {
+    $parsedTo = itm_parse_date_input($dateToRaw);
+    if ($parsedTo !== null && $parsedTo !== '') {
+        $dateTo = $parsedTo;
+    }
 }
 
 $questionnaires = [];
@@ -91,11 +98,11 @@ $moduleListHeading = trim($tsdIcon . ' ' . itm_module_access_strip_catalog_label
                     </div>
                     <div class="form-group">
                         <label for="tsvdDateFrom">From (issued)</label>
-                        <input type="date" name="date_from" id="tsvdDateFrom" value="<?php echo sanitize($dateFrom); ?>">
+                        <?php itm_render_uk_date_input('date_from', 'tsvdDateFrom', $dateFrom !== '' ? $dateFrom : $dateFromRaw); ?>
                     </div>
                     <div class="form-group">
                         <label for="tsvdDateTo">To (issued)</label>
-                        <input type="date" name="date_to" id="tsvdDateTo" value="<?php echo sanitize($dateTo); ?>">
+                        <?php itm_render_uk_date_input('date_to', 'tsvdDateTo', $dateTo !== '' ? $dateTo : $dateToRaw); ?>
                     </div>
                     <div class="form-group">
                         <button type="submit" class="btn btn-primary">Apply</button>
@@ -147,5 +154,6 @@ $moduleListHeading = trim($tsdIcon . ' ' . itm_module_access_strip_catalog_label
     </div>
 </div>
 <script src="../../js/theme.js"></script>
+<script src="../../js/itm-uk-date-input.js" defer></script>
 </body>
 </html>

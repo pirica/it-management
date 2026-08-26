@@ -461,13 +461,13 @@ if (!isset($crud_title)) {
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="form-group" style="margin:0;min-width:130px;">
+                    <div class="form-group" style="margin:0;min-width:160px;">
                         <label for="ticketDueFrom">Due from</label>
-                        <input type="date" id="ticketDueFrom" name="due_date_from" value="<?php echo sanitize((string)($ticketListFilters['due_date_from'] ?? '')); ?>" data-itm-saved-report-filter="1">
+                        <?php itm_render_uk_date_input('due_date_from', 'ticketDueFrom', (string)($ticketListFilters['due_date_from'] ?? $_GET['due_date_from'] ?? ''), ['saved_report_filter' => true]); ?>
                     </div>
-                    <div class="form-group" style="margin:0;min-width:130px;">
+                    <div class="form-group" style="margin:0;min-width:160px;">
                         <label for="ticketDueTo">Due to</label>
-                        <input type="date" id="ticketDueTo" name="due_date_to" value="<?php echo sanitize((string)($ticketListFilters['due_date_to'] ?? '')); ?>" data-itm-saved-report-filter="1">
+                        <?php itm_render_uk_date_input('due_date_to', 'ticketDueTo', (string)($ticketListFilters['due_date_to'] ?? $_GET['due_date_to'] ?? ''), ['saved_report_filter' => true]); ?>
                     </div>
                     <div class="form-group" style="margin:0;min-width:140px;">
                         <label for="ticketSurveyStatusFilter">Survey</label>
@@ -628,6 +628,7 @@ if (!isset($crud_title)) {
 </div>
 <script src="../../js/theme.js"></script>
 <?php if ($ticketsActiveTab === 'list'): ?>
+<script src="../../js/itm-uk-date-input.js" defer></script>
 <script src="../../js/bulk-delete-selection.js"></script>
 <?php itm_crud_record_share_include_modal(); ?>
 <?php endif; ?>
