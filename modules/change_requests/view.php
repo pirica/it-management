@@ -35,7 +35,10 @@ if (!$row) {
 
 $sourceCiId = (int)($row['source_configuration_item_id'] ?? 0);
 $affectedRows = itm_change_request_list_affected_rows($conn, $companyId, $id);
+$approvalRows = itm_change_request_list_approval_rows($conn, $companyId, $id);
+itm_change_request_ensure_submitted_cab_state($conn, $companyId, $id, $employeeId);
 $graph = itm_cmdb_build_impact_graph($conn, $companyId, $sourceCiId);
+$ticketId = (int)($row['ticket_id'] ?? 0);
 $crud_title = 'Change Request';
 $crud_title = itm_crud_apply_module_icon_to_browser_title($conn, $companyId, $employeeId, 'change_requests', $crud_title);
 $csrfToken = itm_get_csrf_token();
@@ -81,6 +84,13 @@ $ciViewBase = BASE_URL . 'modules/configuration_items/view.php?id=';
             <div class="card" style="margin-bottom:16px;">
                 <h2><?php echo sanitize((string)($row['title'] ?? '')); ?></h2>
                 <p><strong>Status:</strong> <span class="badge"><?php echo sanitize(itm_change_request_status_label((string)($row['status'] ?? ''))); ?></span></p>
+                <p><strong>Change type:</strong> <?php echo sanitize(itm_change_request_type_label((string)($row['change_type'] ?? ''))); ?></p>
+                <p><strong>Risk:</strong> <?php echo sanitize(itm_change_request_risk_label((string)($row['risk_level'] ?? ''))); ?></p>
+                <?php if ($ticketId > 0): ?>
+                <p><strong>Linked ticket:</strong>
+                    <a class="itm-plain-link" href="<?php echo sanitize(BASE_URL . 'modules/tickets/view.php?id=' . $ticketId); ?>">#<?php echo $ticketId; ?></a>
+                </p>
+                <?php endif; ?>
                 <p><strong>Source CI:</strong>
                     <a class="itm-plain-link" href="<?php echo sanitize($ciViewBase . $sourceCiId); ?>">
                         <?php echo sanitize((string)($row['source_ci_icon'] ?? '') . ' ' . (string)($row['source_ci_name'] ?? '')); ?>
@@ -89,6 +99,9 @@ $ciViewBase = BASE_URL . 'modules/configuration_items/view.php?id=';
                 </p>
                 <?php if (!empty($row['description'])): ?>
                 <p><strong>Description:</strong> <?php echo sanitize((string)$row['description']); ?></p>
+                <?php endif; ?>
+                <?php if (!empty($row['rollback_plan'])): ?>
+                <p><strong>Rollback plan:</strong> <?php echo sanitize((string)$row['rollback_plan']); ?></p>
                 <?php endif; ?>
                 <?php if (!empty($row['scheduled_start']) || !empty($row['scheduled_end'])): ?>
                 <p><strong>Scheduled:</strong>
@@ -99,6 +112,30 @@ $ciViewBase = BASE_URL . 'modules/configuration_items/view.php?id=';
                 </p>
                 <?php endif; ?>
             </div>
+
+            <?php if ($approvalRows !== []): ?>
+            <div class="card" style="margin-bottom:16px;">
+                <h3 title="CAB approvals">🛡️</h3>
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Approver</th>
+                        <th>Decision</th>
+                        <th>Decided</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($approvalRows as $approval): ?>
+                    <tr>
+                        <td><?php echo sanitize(trim((string)($approval['approver_name'] ?? '')) !== '' ? (string)$approval['approver_name'] : (string)($approval['approver_username'] ?? '')); ?></td>
+                        <td><?php echo sanitize(ucfirst((string)($approval['decision'] ?? ''))); ?></td>
+                        <td><?php echo sanitize((string)($approval['decided_at'] ?? '')); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
 
             <div class="card" style="margin-bottom:16px;">
                 <h3 title="Affected configuration items">🧩</h3>

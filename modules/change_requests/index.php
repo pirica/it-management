@@ -8,7 +8,7 @@ require_once ROOT_PATH . 'includes/itm_crud_browser_title.php';
 
 $search = trim((string)($_GET['search'] ?? ''));
 $page = max(1, (int)($_GET['page'] ?? 1));
-$sortableColumns = ['title', 'status', 'scheduled_start', 'created_at'];
+$sortableColumns = ['title', 'status', 'change_type', 'risk_level', 'scheduled_start', 'created_at'];
 $sort = (string)($_GET['sort'] ?? 'created_at');
 $dir = strtoupper((string)($_GET['dir'] ?? 'DESC'));
 if (!in_array($sort, $sortableColumns, true)) {
@@ -20,6 +20,8 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 $sortColumnMap = [
     'title' => 'cr.title',
     'status' => 'cr.status',
+    'change_type' => 'cr.change_type',
+    'risk_level' => 'cr.risk_level',
     'scheduled_start' => 'cr.scheduled_start',
     'created_at' => 'cr.created_at',
 ];
@@ -65,12 +67,13 @@ $where = 'cr.company_id = ? AND cr.deleted_at IS NULL';
 $params = [$companyId];
 $types = 'i';
 if ($search !== '') {
-    $where .= ' AND (cr.title LIKE ? OR cr.description LIKE ? OR ci.name LIKE ?)';
+    $where .= ' AND (cr.title LIKE ? OR cr.description LIKE ? OR cr.rollback_plan LIKE ? OR ci.name LIKE ?)';
     $like = '%' . $search . '%';
     $params[] = $like;
     $params[] = $like;
     $params[] = $like;
-    $types .= 'sss';
+    $params[] = $like;
+    $types .= 'ssss';
 }
 
 $countSql = "SELECT COUNT(*) AS total FROM change_requests cr
@@ -97,7 +100,7 @@ if ($page > $totalPages) {
     $offset = ($page - 1) * $perPage;
 }
 
-$listSql = "SELECT cr.id, cr.title, cr.status, cr.scheduled_start, cr.scheduled_end, cr.created_at,
+$listSql = "SELECT cr.id, cr.title, cr.status, cr.change_type, cr.risk_level, cr.scheduled_start, cr.scheduled_end, cr.created_at,
                    ci.name AS source_ci_name, cit.icon AS source_ci_icon
             FROM change_requests cr
             INNER JOIN configuration_items ci ON ci.id = cr.source_configuration_item_id AND ci.company_id = cr.company_id
@@ -165,6 +168,8 @@ $statuses = itm_change_request_statuses();
                         <?php foreach ([
                             'title' => 'Title',
                             'status' => 'Status',
+                            'change_type' => 'Type',
+                            'risk_level' => 'Risk',
                             'scheduled_start' => 'Scheduled',
                         ] as $sortField => $sortLabel):
                             $nextDir = ($sort === $sortField && $dir === 'ASC') ? 'DESC' : 'ASC';
@@ -182,11 +187,13 @@ $statuses = itm_change_request_statuses();
                     </thead>
                     <tbody>
                     <?php if (!$rows): ?>
-                    <tr><td colspan="5">No change requests found.</td></tr>
+                    <tr><td colspan="7">No change requests found.</td></tr>
                     <?php else: foreach ($rows as $row): ?>
                     <tr>
                         <td><?php echo sanitize((string)($row['title'] ?? '')); ?></td>
                         <td><span class="badge"><?php echo sanitize(itm_change_request_status_label((string)($row['status'] ?? ''))); ?></span></td>
+                        <td><?php echo sanitize(itm_change_request_type_label((string)($row['change_type'] ?? ''))); ?></td>
+                        <td><?php echo sanitize(itm_change_request_risk_label((string)($row['risk_level'] ?? ''))); ?></td>
                         <td><?php
                         $start = (string)($row['scheduled_start'] ?? '');
                         $end = (string)($row['scheduled_end'] ?? '');

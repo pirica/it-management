@@ -19,6 +19,11 @@ if (!function_exists('itm_automation_rules_trigger_slugs')) {
             'problem.created',
             'problem.status_changed',
             'known_error.published',
+            'change.submitted',
+            'change.approved',
+            'change.rejected',
+            'change.status_changed',
+            'change.implemented',
         ];
     }
 }
