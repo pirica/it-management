@@ -1,0 +1,363 @@
+<?php
+/**
+ * Static audit: module PHP date display should use UK dd/mm/yyyy helpers.
+ *
+ * Why: MySQL stores Y-m-d; list/view must route through itm_format_date_display() /
+ * itm_format_cell_scalar_display() (or explicit date('d/m/Y')) — not raw ISO echo or
+ * browser-native type="date" values shown to users without UK formatting.
+ */
+
+if (!function_exists('itm_module_date_format_display_audit_hospitality_slug')) {
+    function itm_module_date_format_display_audit_hospitality_slug(string $slug): bool
+    {
+        return strpos($slug, 'hotel') === 0 || strpos($slug, 'booking_') === 0;
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_collect_module_files')) {
+    /**
+     * @return list<string> Absolute paths
+     */
+    function itm_module_date_format_display_audit_collect_module_files(string $repoRoot, string $slug): array
+    {
+        $paths = [];
+        $moduleDir = rtrim($repoRoot, '/\\') . '/modules/' . $slug;
+        if (!is_dir($moduleDir)) {
+            return [];
+        }
+
+        $patterns = [
+            $moduleDir . '/*.php',
+            $moduleDir . '/includes/*.php',
+            $moduleDir . '/api/*.php',
+        ];
+
+        foreach ($patterns as $pattern) {
+            foreach (glob($pattern) ?: [] as $path) {
+                if (is_file($path)) {
+                    $paths[$path] = $path;
+                }
+            }
+        }
+
+        return array_values($paths);
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_list_module_slugs')) {
+    /**
+     * @return list<string>
+     */
+    function itm_module_date_format_display_audit_list_module_slugs(string $repoRoot): array
+    {
+        $modulesDir = rtrim($repoRoot, '/\\') . '/modules';
+        if (!is_dir($modulesDir)) {
+            return [];
+        }
+
+        $slugs = [];
+        foreach (scandir($modulesDir) ?: [] as $entry) {
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
+            $path = $modulesDir . '/' . $entry;
+            if (is_dir($path)) {
+                $slugs[] = $entry;
+            }
+        }
+
+        sort($slugs);
+
+        return $slugs;
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_rel_path')) {
+    function itm_module_date_format_display_audit_rel_path(string $repoRoot, string $absPath): string
+    {
+        $root = rtrim(str_replace('\\', '/', $repoRoot), '/');
+        $path = str_replace('\\', '/', $absPath);
+
+        if (strpos($path, $root . '/') === 0) {
+            return substr($path, strlen($root) + 1);
+        }
+
+        return $path;
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_trim_snippet')) {
+    function itm_module_date_format_display_audit_trim_snippet(string $line): string
+    {
+        $snippet = trim($line);
+        if (strlen($snippet) > 120) {
+            return substr($snippet, 0, 117) . '...';
+        }
+
+        return $snippet;
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_line_rules')) {
+    /**
+     * @return list<array{status:string,pattern:string,format:string,regex:string,notes:string}>
+     */
+    function itm_module_date_format_display_audit_line_rules(bool $isHospitality): array
+    {
+        $rules = [
+            [
+                'status' => 'ok',
+                'pattern' => 'itm_format_date_display',
+                'format' => 'dd/mm/yyyy',
+                'regex' => '/itm_format_date_display\s*\(/',
+                'notes' => 'UK date helper',
+            ],
+            [
+                'status' => 'ok',
+                'pattern' => 'itm_format_cell_scalar_display',
+                'format' => 'dd/mm/yyyy (routed)',
+                'regex' => '/itm_format_cell_scalar_display\s*\(/',
+                'notes' => 'Cell scalar routes date/datetime fields',
+            ],
+            [
+                'status' => 'ok',
+                'pattern' => 'itm_format_datetime_display',
+                'format' => 'dd/mm/yyyy HH:MM',
+                'regex' => '/itm_format_datetime_display\s*\(/',
+                'notes' => 'UK datetime helper',
+            ],
+            [
+                'status' => 'ok',
+                'pattern' => 'itm_format_audit_timestamp_display',
+                'format' => 'd-m-Y - H:i:s (audit)',
+                'regex' => '/itm_format_audit_timestamp_display\s*\(/',
+                'notes' => 'Audit stamp contract (not list date)',
+            ],
+            [
+                'status' => 'ok',
+                'pattern' => 'date_dmy_slash',
+                'format' => 'dd/mm/yyyy',
+                'regex' => '/date\s*\(\s*[\'"]d\/m\/Y/i',
+                'notes' => 'Explicit UK date() format',
+            ],
+            [
+                'status' => 'warn',
+                'pattern' => 'html_date_input',
+                'format' => 'browser ISO (Y-m-d)',
+                'regex' => '/type\s*=\s*[\'"]date[\'"]/i',
+                'notes' => 'Native date input shows ISO; prefer UK text + itm_parse_date_input or document filter-only use',
+            ],
+            [
+                'status' => 'warn',
+                'pattern' => 'html_datetime_local_input',
+                'format' => 'browser ISO (Y-m-dTH:i)',
+                'regex' => '/type\s*=\s*[\'"]datetime-local[\'"]/i',
+                'notes' => 'Native datetime-local uses ISO-like value',
+            ],
+            [
+                'status' => 'warn',
+                'pattern' => 'date_iso_storage',
+                'format' => 'Y-m-d',
+                'regex' => '/date\s*\(\s*[\'"]Y-m-d/i',
+                'notes' => 'date() with ISO pattern — OK for storage; WARN when echoed to UI',
+            ],
+            [
+                'status' => 'warn',
+                'pattern' => 'datetime_iso_storage',
+                'format' => 'Y-m-d H:i:s',
+                'regex' => '/date\s*\(\s*[\'"]Y-m-d[\s\\\\T]/i',
+                'notes' => 'date() with ISO datetime — OK for storage; WARN when echoed to UI',
+            ],
+            [
+                'status' => 'warn',
+                'pattern' => 'datetime_format_iso',
+                'format' => 'Y-m-d',
+                'regex' => '/->format\s*\(\s*[\'"]Y-m-d/i',
+                'notes' => 'DateTime::format ISO',
+            ],
+            [
+                'status' => 'warn',
+                'pattern' => 'date_us_slash',
+                'format' => 'm/d/Y',
+                'regex' => '/date\s*\(\s*[\'"]m\/d\/Y/i',
+                'notes' => 'US date format',
+            ],
+            [
+                'status' => 'warn',
+                'pattern' => 'date_text_month_name',
+                'format' => 'text month',
+                'regex' => '/date\s*\(\s*[\'"][^\'"]*F[^\'"]*[\'"]/i',
+                'notes' => 'date() with full month name (F)',
+            ],
+            [
+                'status' => 'warn',
+                'pattern' => 'raw_iso_date_echo',
+                'format' => 'Y-m-d (raw)',
+                'regex' => '/(?:echo|sanitize)\s*\([^;]*\[\s*[\'"](?:due_date|[^\'"]*_date|created_at|updated_at|deleted_at|resolved_at|completed_at|issued_at|submitted_at|first_response_at|sla_[a-z_]+_at|csat_submitted_at|expiry_date|purchase_date|certificate_expiry|warranty_expiry|log_date|report_date|date_from|date_to)[\'"]\s*\]/i',
+                'notes' => 'Date-like field echoed without itm_format_* helper on the same line',
+            ],
+        ];
+
+        if ($isHospitality) {
+            $rules[] = [
+                'status' => 'ok',
+                'pattern' => 'itm_format_hotel_date_display',
+                'format' => 'd/M/Y (hospitality)',
+                'regex' => '/itm_format_hotel_date_display\s*\(/',
+                'notes' => 'Hospitality stay-date contract',
+            ];
+        } else {
+            $rules[] = [
+                'status' => 'warn',
+                'pattern' => 'itm_format_hotel_date_display',
+                'format' => 'd/M/Y (hospitality)',
+                'regex' => '/itm_format_hotel_date_display\s*\(/',
+                'notes' => 'Hospitality helper outside hotel/booking modules',
+            ];
+        }
+
+        return $rules;
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_line_has_ok_helper')) {
+    function itm_module_date_format_display_audit_line_has_ok_helper(string $line): bool
+    {
+        return (bool) preg_match(
+            '/itm_format_(?:date_display|cell_scalar_display|datetime_display|audit_timestamp_display|hotel_date_display)\s*\(|date\s*\(\s*[\'"]d\/m\/Y/i',
+            $line
+        );
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_scan_file')) {
+    /**
+     * @return list<array<string,mixed>>
+     */
+    function itm_module_date_format_display_audit_scan_file(string $repoRoot, string $slug, string $absPath): array
+    {
+        $content = file_get_contents($absPath);
+        if ($content === false) {
+            return [[
+                'status' => 'skip',
+                'module' => $slug,
+                'file' => itm_module_date_format_display_audit_rel_path($repoRoot, $absPath),
+                'line' => 0,
+                'pattern' => 'unreadable',
+                'format' => '',
+                'notes' => 'Could not read file',
+                'snippet' => '',
+            ]];
+        }
+
+        $isHospitality = itm_module_date_format_display_audit_hospitality_slug($slug);
+        $rules = itm_module_date_format_display_audit_line_rules($isHospitality);
+        $rel = itm_module_date_format_display_audit_rel_path($repoRoot, $absPath);
+        $rows = [];
+
+        $lines = preg_split('/\R/', $content) ?: [];
+        foreach ($lines as $index => $line) {
+            $lineNo = $index + 1;
+            $trimmed = trim((string) $line);
+            if ($trimmed === '' || strpos($trimmed, '//') === 0 || strpos($trimmed, '*') === 0) {
+                continue;
+            }
+
+            foreach ($rules as $rule) {
+                if (!preg_match($rule['regex'], $line)) {
+                    continue;
+                }
+
+                $status = (string) $rule['status'];
+                if ($rule['pattern'] === 'raw_iso_date_echo' && itm_module_date_format_display_audit_line_has_ok_helper($line)) {
+                    continue;
+                }
+                if ($status === 'warn' && in_array($rule['pattern'], ['date_iso_storage', 'datetime_iso_storage'], true)) {
+                    if (preg_match('/\becho\b|<\?=\s*sanitize|>\s*<\?php\s+echo/i', $line)) {
+                        $status = 'warn';
+                    } else {
+                        continue;
+                    }
+                }
+
+                $rows[] = [
+                    'status' => $status,
+                    'module' => $slug,
+                    'file' => $rel,
+                    'line' => $lineNo,
+                    'pattern' => (string) $rule['pattern'],
+                    'format' => (string) $rule['format'],
+                    'notes' => (string) $rule['notes'],
+                    'snippet' => itm_module_date_format_display_audit_trim_snippet($line),
+                ];
+            }
+        }
+
+        return $rows;
+    }
+}
+
+if (!function_exists('itm_module_date_format_display_audit_run')) {
+    /**
+     * @param array{root:string,module?:string,only_warn?:bool,all?:bool} $options
+     * @return list<array<string,mixed>>
+     */
+    function itm_module_date_format_display_audit_run(array $options): array
+    {
+        $repoRoot = rtrim((string) ($options['root'] ?? ''), '/\\');
+        $moduleFilter = trim((string) ($options['module'] ?? ''));
+        $onlyWarn = !empty($options['only_warn']);
+        $showAll = !empty($options['all']);
+
+        $slugs = $moduleFilter !== ''
+            ? [$moduleFilter]
+            : itm_module_date_format_display_audit_list_module_slugs($repoRoot);
+
+        $rows = [];
+        foreach ($slugs as $slug) {
+            $files = itm_module_date_format_display_audit_collect_module_files($repoRoot, $slug);
+            if ($files === []) {
+                if ($moduleFilter !== '') {
+                    $rows[] = [
+                        'status' => 'skip',
+                        'module' => $slug,
+                        'file' => 'modules/' . $slug,
+                        'line' => 0,
+                        'pattern' => 'missing_module',
+                        'format' => '',
+                        'notes' => 'Module folder not found or has no PHP entry files',
+                        'snippet' => '',
+                    ];
+                }
+                continue;
+            }
+
+            foreach ($files as $filePath) {
+                foreach (itm_module_date_format_display_audit_scan_file($repoRoot, $slug, $filePath) as $row) {
+                    $status = (string) ($row['status'] ?? 'ok');
+                    if ($onlyWarn && $status !== 'warn') {
+                        continue;
+                    }
+                    if (!$showAll && !$onlyWarn && $status === 'ok') {
+                        continue;
+                    }
+                    $rows[] = $row;
+                }
+            }
+        }
+
+        usort($rows, static function (array $a, array $b): int {
+            $moduleCmp = strcmp((string) ($a['module'] ?? ''), (string) ($b['module'] ?? ''));
+            if ($moduleCmp !== 0) {
+                return $moduleCmp;
+            }
+            $fileCmp = strcmp((string) ($a['file'] ?? ''), (string) ($b['file'] ?? ''));
+            if ($fileCmp !== 0) {
+                return $fileCmp;
+            }
+            return ((int) ($a['line'] ?? 0)) <=> ((int) ($b['line'] ?? 0));
+        });
+
+        return $rows;
+    }
+}
