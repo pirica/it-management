@@ -310,7 +310,7 @@ $myactivitySortTh = static function (string $field, string $label) use ($sort, $
                         $summary = 'Old: ' . myactivity_preview_text($oldDisplay, 200) . ' | New: ' . myactivity_preview_text($newDisplay, 200);
                         ?>
                         <tr>
-                            <td><?php echo sanitize((string)($row['created_at'] ?? '')); ?></td>
+                            <td><?php echo sanitize(myactivity_format_display_datetime($row['created_at'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($row['action'] ?? '')); ?></td>
                             <td><?php echo sanitize((string)($row['table_name'] ?? '')); ?></td>
                             <td><?php echo (int)($row['record_id'] ?? 0); ?></td>

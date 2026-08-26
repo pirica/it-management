@@ -605,9 +605,10 @@ if (!isset($crud_title)) {
                                 <span aria-hidden="true"></span>
                             <?php endif; ?>
                         </div>
+                        <?php $todoTodaySubtitle = date('l') . ', ' . itm_format_date_display(date('Y-m-d')); ?>
                         <div class="todo-header">
                             <div class="todo-filter-subtitle"><?php echo sanitize($todoFilterHeading); ?></div>
-                            <div class="date-subtitle"><?php echo date("l, F j"); ?></div>
+                            <div class="date-subtitle"><?php echo sanitize($todoTodaySubtitle); ?></div>
                         </div>
 
                         <!-- SEARCH BAR -->
@@ -669,12 +670,12 @@ if (!isset($crud_title)) {
                                     <tr>
                                         <td><?php echo (int)$t['id']; ?></td>
                                         <td><?php echo sanitize($t['title']); ?></td>
-                                        <td><?php echo sanitize($t['due_date']); ?></td>
+                                        <td><?php echo sanitize(itm_format_date_display($t['due_date'] ?? '') ?: '—'); ?></td>
                                         <td><?php echo $t['importance'] ? 'Yes' : 'No'; ?></td>
                                         <td><?php echo $t['completed'] ? 'Yes' : 'No'; ?></td>
-                                        <td><?php echo sanitize($t['created_at']); ?></td>
+                                        <td><?php echo sanitize(itm_format_datetime_display($t['created_at'] ?? '') ?: '—'); ?></td>
                                         <td><?php echo sanitize($t['description']); ?></td>
-                                        <td><?php echo sanitize($t['reminder_at']); ?></td>
+                                        <td><?php echo sanitize(itm_format_datetime_display($t['reminder_at'] ?? '') ?: '—'); ?></td>
                                         <td><?php echo sanitize($t['repeat_pattern']); ?></td>
                                         <td><?php
                                             $cIds = explode(',', (string)$t['category_id']);

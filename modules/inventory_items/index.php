@@ -258,7 +258,7 @@ if (!isset($crud_title)) {
                             <td><?php echo (int)$i['id']; ?></td>
                             <td><?php echo sanitize((string)$i['name']); ?></td>
                             <td><?php echo sanitize((string)($i['serial'] ?? '-')); ?></td>
-                            <td><?php echo sanitize((string)($i['storage_date'] ?? '-')); ?></td>
+                            <td><?php echo sanitize(itm_format_date_display($i['storage_date'] ?? '') ?: '—'); ?></td>
                             <td><?php echo sanitize((string)($i['category_name'] ?? '-')); ?></td>
                             <td><?php echo (int)$i['quantity_on_hand']; ?></td>
                             <td><?php echo (int)$i['quantity_minimum']; ?></td>
@@ -268,7 +268,7 @@ if (!isset($crud_title)) {
                                     <span title="<?php echo sanitize((string)$i['comments']); ?>">💬</span>
                                 <?php endif; ?>
                             </td>
-                            <td><?php echo sanitize((string)($i['updated_at'] ?? '-')); ?></td>
+                            <td><?php echo sanitize(itm_format_datetime_display($i['updated_at'] ?? '') ?: '—'); ?></td>
                             <td>
                                 <span class="badge <?php echo (int)$i['active'] ? 'badge-success' : 'badge-danger'; ?>">
                                     <?php echo (int)$i['active'] ? 'Active' : 'Inactive'; ?>

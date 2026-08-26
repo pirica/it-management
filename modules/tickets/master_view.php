@@ -108,7 +108,7 @@ $backMasterHref = $masterTicketId > 0 ? '../master_tickets/view.php?id=' . $mast
                         <tr><th>Assigned To</th><td><?php echo sanitize($item['assigned_to_username'] ?? '—'); ?></td></tr>
                         <tr><th>Created By</th><td><?php echo sanitize($item['created_by_username'] ?? '—'); ?></td></tr>
                         <tr><th>Equipment</th><td><?php echo sanitize($item['equipment_name'] ?? '—'); ?></td></tr>
-                        <tr><th>Due Date</th><td><?php echo sanitize($item['due_date'] ?? '—'); ?></td></tr>
+                        <tr><th>Due Date</th><td><?php echo sanitize(itm_format_date_display($item['due_date'] ?? '') ?: '—'); ?></td></tr>
                         <tr>
                             <th>Master Ticket</th>
                             <td>

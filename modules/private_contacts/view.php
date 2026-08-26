@@ -160,13 +160,13 @@ if (!isset($crud_title)) {
                                     <?php if ($contact['birthday']): ?>
                                         <div class="info-row mb-3">
                                             <label class="small text-muted d-block">Birthday</label>
-                                            <span><?php echo date('j F Y', strtotime($contact['birthday'])); ?></span>
+                                            <span><?php echo sanitize(itm_format_date_display($contact['birthday'])); ?></span>
                                         </div>
                                     <?php endif; ?>
                                     <?php if ($contact['event1_value']): ?>
                                         <div class="info-row mb-3">
                                             <label class="small text-muted d-block"><?php echo htmlspecialchars($contact['event1_label'] ?: 'Event'); ?></label>
-                                            <span><?php echo date('j F Y', strtotime($contact['event1_value'])); ?></span>
+                                            <span><?php echo sanitize(itm_format_date_display($contact['event1_value'])); ?></span>
                                         </div>
                                     <?php endif; ?>
                                     <?php if ($contact['relation1_value']): ?>

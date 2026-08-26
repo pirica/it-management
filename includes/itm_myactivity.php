@@ -74,12 +74,14 @@ if (!function_exists('myactivity_resolve_module_href')) {
 if (!function_exists('myactivity_format_display_datetime')) {
     function myactivity_format_display_datetime($createdAt)
     {
-        $ts = strtotime((string)$createdAt);
-        if ($ts === false) {
-            return (string)$createdAt;
+        if (function_exists('itm_format_datetime_display')) {
+            $formatted = itm_format_datetime_display($createdAt);
+            if ($formatted !== '') {
+                return $formatted;
+            }
         }
 
-        return date('d M Y, H:i', $ts);
+        return trim((string)$createdAt) === '' ? '—' : (string)$createdAt;
     }
 }
 

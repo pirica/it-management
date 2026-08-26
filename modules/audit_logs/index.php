@@ -742,7 +742,7 @@ if (!isset($crud_title)) {
                             $previewText = 'Old: ' . itm_audit_preview($oldValuesDisplay, 80) . ' | New: ' . itm_audit_preview($newValuesDisplay, 80);
                             ?>
                             <tr>
-                                <td><?php echo sanitize((string)$row['created_at']); ?></td>
+                                <td><?php echo sanitize(itm_format_audit_timestamp_display($row['created_at'] ?? '')); ?></td>
                                 <td class="audit-user" title="<?php echo sanitize($userEmail !== '' ? ($userName . ' <' . $userEmail . '>') : $userName); ?>">
                                     <?php echo sanitize($userName); ?>
                                     <?php if ($userEmail !== ''): ?>
