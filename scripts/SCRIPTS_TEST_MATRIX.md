@@ -21,7 +21,7 @@ Generated from catalog on 2026-07-16. Catalog rows classified: **236**.
 | Runner | Covers | Does not cover |
 |--------|--------|----------------|
 | `bash scripts/smoke_test.sh` | PHP lint; `check_csrf_coverage.php`; `check_sql_injection_coverage.php`; `check_fk_label_search_coverage.php` | MySQL, PHPUnit, MBQA, most `check_*` / `verify_*` |
-| `php scripts/run_tier2_checks.php` | All Tier 2 static scripts from this matrix (`check_*` + `list_raw_columns.php`; parse or fallback list) | Tier 1 smoke trio, Tier 3+ runtime verifiers, MBQA |
+| `php scripts/run_tier2_checks.php` | All Tier 2 static scripts from this matrix (`check_*` + `list_raw_columns.php` + `list_date_display_formats.php`; parse or fallback list) | Tier 1 smoke trio, Tier 3+ runtime verifiers, MBQA |
 | `bash scripts/verify_database_sql_import.sh` | Full `db/` import + table count; calls schema verify | Module HTTP behaviour |
 | `bash scripts/import_database_split.sh` | `db/` import (01→02→03, one session) + schema verify | — |
 | `php scripts/verify_crud_fk_label_search.php` | Runtime FK label search (CI database-import) | Non-search modules |
@@ -85,7 +85,7 @@ If tracked repo files were rewritten: `git checkout -- <paths>` (or a fresh work
 ### Order
 
 1. **Tier 1** - baseline (includes intentional DB re-import via `verify_database_sql_import.sh`)
-2. **Tier 2** - static `check_*` and `list_raw_columns.php` (batch; no DB mutation expected)
+2. **Tier 2** - static `check_*`, `list_raw_columns.php`, and `list_date_display_formats.php` (batch; no DB mutation expected)
 3. **Tier 3** - runtime verifiers in subsystem batches (Schema, Security, Explorer, Email/Auth, Dashboard/Ops)
 4. On any `DESTROYED_ENV` -> document -> fresh clone -> sanity -> resume
 5. **Tier 4** - only on a healthy clone with Apache + MySQL ready
@@ -162,6 +162,7 @@ php scripts/check_standard_crud_delegate_requires.php
 php scripts/check_employees_clear_table_transaction.php
 php scripts/check_equipment_clear_table_delete.php
 php scripts/list_raw_columns.php
+php scripts/list_date_display_formats.php
 # plus remaining Tier 2 rows in the catalog table below
 ```
 
@@ -221,6 +222,7 @@ php scripts/employees_delete_clear_table_test.php
 | 2 | `check_pagination_emoji.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_ui_configuration_coverage.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `list_raw_columns.php` | PHP | none | static-manual | FK list/view display audit — static RAW/REPRO gate; included in `run_tier2_checks.php` |
+| 2 | `list_date_display_formats.php` | PHP | none | static-manual | UK dd/mmm/yyyy display audit — WARN on non-helper date echo; included in `run_tier2_checks.php` |
 | 3 | `check_company_id_ui_column.php` | PHP | none | static-manual | Company column inventory — scans modules/{slug}/**/*.php (report; `--strict` optional) |
 | 3 | `DBdesign.php` | PHP | low | runtime | Read-mostly listing / diagram tool |
 | 3 | `analyze_database_health.php` | MySQL | low | runtime | Runtime verify / repro / diagnostic |
