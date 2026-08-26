@@ -69,6 +69,21 @@ if (strpos($dashboardSource, 'itm_employee_dashboard_load_context') === false) {
     ed_verify_pass('dashboard.php loads employee dashboard context');
 }
 
+$smartWidgetWired = strpos($dashboardSource, 'itm_dashboard_load_smart_widgets') !== false
+    || strpos($dashboardSource, 'itm_dashboard_widgets_cards.php') !== false
+    || strpos($dashboardSource, 'itm_dashboard_widgets.php') !== false;
+if (!$smartWidgetWired) {
+    ed_verify_fail('dashboard.php must wire smart dashboard widgets (loader or cards partial)');
+} else {
+    ed_verify_pass('dashboard.php wires smart dashboard widgets');
+}
+
+if (strpos($dashboardSource, 'js/vendor/chart.js') === false) {
+    ed_verify_fail('dashboard.php must load Chart.js for smart widget sparklines');
+} else {
+    ed_verify_pass('dashboard.php loads Chart.js for smart widgets');
+}
+
 if (strpos($dashboardSource, 'itm_employee_count_by_employment_status_name') !== false) {
     ed_verify_fail('dashboard.php must not contain company Active/On Leave employment status counts');
 } else {

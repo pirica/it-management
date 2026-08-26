@@ -87,6 +87,10 @@ if (!function_exists('itm_tickets_list_parse_filters')) {
             $filters['csat_min'] = $csatMin;
         }
 
+        if ((int) ($get['open_only'] ?? 0) === 1) {
+            $filters['open_only'] = 1;
+        }
+
         return $filters;
     }
 }
@@ -143,6 +147,9 @@ if (!function_exists('itm_tickets_list_build_sql_base')) {
             $sqlBase .= ' AND t.assigned_to_employee_id = ?';
             $bindTypes .= 'i';
             $bindValues[] = (int) $filters['assigned_to_employee_id'];
+        }
+        if (!empty($filters['open_only'])) {
+            $sqlBase .= ' AND ts.is_closed = 0';
         }
         if (!empty($filters['due_date_from'])) {
             $sqlBase .= ' AND t.due_date >= ?';

@@ -6,6 +6,7 @@
 require_once 'config/config.php';
 require_once ROOT_PATH . 'includes/employee_profile_photo.php';
 require_once ROOT_PATH . 'includes/itm_employee_dashboard.php';
+require_once ROOT_PATH . 'includes/itm_dashboard_widgets.php';
 
 if (!isset($_SESSION['employee_id'])) {
     header('Location: ' . BASE_URL . 'login.php');
@@ -45,6 +46,8 @@ if (!empty($dash['reload_required'])) {
     header('Location: ' . BASE_URL . 'dashboard.php');
     exit;
 }
+
+$smartDash = itm_dashboard_load_smart_widgets($conn, $company_id, $user_id);
 
 $isAdminUser = itm_is_admin($conn, $user_id);
 $displayName = trim((string)($current_user['display_name'] ?? ''));
@@ -132,6 +135,7 @@ $stylesCssVersion = is_file($stylesCssPath) ? (string)filemtime($stylesCssPath) 
                 </div>
 
                 <div class="itm-emp-dash-body">
+                    <?php include ROOT_PATH . 'includes/itm_dashboard_widgets_cards.php'; ?>
                     <?php include ROOT_PATH . 'includes/itm_employee_dashboard_cards.php'; ?>
                 </div>
             </div>
@@ -140,6 +144,59 @@ $stylesCssVersion = is_file($stylesCssPath) ? (string)filemtime($stylesCssPath) 
 </div>
 <script src="js/theme.js"></script>
 <script src="js/script.js"></script>
+<?php if (!empty($smartDash['widgets'])): ?>
+<script src="<?php echo BASE_URL; ?>js/vendor/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof Chart === 'undefined') {
+        return;
+    }
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+    var textColor = isDark ? '#e1e1e1' : '#333';
+    Chart.defaults.color = textColor;
+    document.querySelectorAll('[data-itm-smart-dash-chart="1"]').forEach(function (canvas) {
+        var labels = [];
+        var data = [];
+        try {
+            labels = JSON.parse(canvas.getAttribute('data-chart-labels') || '[]');
+            data = JSON.parse(canvas.getAttribute('data-chart-data') || '[]');
+        } catch (e) {
+            labels = [];
+            data = [];
+        }
+        new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 2,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { display: false },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0, color: textColor },
+                        grid: { color: gridColor }
+                    }
+                }
+            }
+        });
+    });
+});
+</script>
+<?php endif; ?>
 <script>
     window.ITM_BASE_URL = <?php echo json_encode(BASE_URL); ?>;
 </script>
