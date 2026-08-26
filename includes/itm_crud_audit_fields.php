@@ -160,6 +160,48 @@ if (!function_exists('itm_crud_normalize_bind_values_for_persist')) {
     }
 }
 
+if (!function_exists('itm_crud_dom_input_id')) {
+    /**
+     * Build a stable DOM id for scaffold create/edit field widgets.
+     */
+    function itm_crud_dom_input_id($fieldName, $suffix = 'dt')
+    {
+        $slug = preg_replace('/[^a-zA-Z0-9_-]/', '_', (string) $fieldName);
+        $slug = trim((string) $slug, '_');
+        if ($slug === '') {
+            $slug = 'field';
+        }
+
+        return 'crud-' . $slug . '-' . trim((string) $suffix, '-');
+    }
+}
+
+if (!function_exists('itm_crud_coerce_post_date_value')) {
+    /**
+     * Parse UK date/datetime POST text to canonical SQL fragment for scaffold CRUD.
+     *
+     * @return string|null|false null when empty, string when parsed, false when invalid
+     */
+    function itm_crud_coerce_post_date_value($rawValue, $colType)
+    {
+        $raw = trim((string) $rawValue);
+        if ($raw === '') {
+            return null;
+        }
+
+        if (!function_exists('itm_normalize_sql_date_literal')) {
+            return $raw;
+        }
+
+        $parsed = itm_normalize_sql_date_literal($raw, (string) $colType);
+        if ($parsed === null || $parsed === '') {
+            return false;
+        }
+
+        return $parsed;
+    }
+}
+
 if (!function_exists('itm_crud_stamp_create_audit')) {
     /**
      * Stamp create actor/time onto $data and matching $sqlValues when keys exist.

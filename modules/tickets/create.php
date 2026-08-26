@@ -753,14 +753,14 @@ if (!isset($crud_title)) {
                         </div>
                         <div class="form-group">
                             <label>Created At</label>
-                            <input type="datetime-local" name="created_at" value="<?php echo sanitize((string)($data['created_at'] ?? '')); ?>">
+                            <?php itm_render_uk_datetime_input('created_at', 'ticket-created-at', (string) ($data['created_at'] ?? '')); ?>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label>Due Date</label>
-                            <input type="date" name="due_date" value="<?php echo sanitize((string)($data['due_date'] ?? '')); ?>">
+                            <?php itm_render_uk_date_input('due_date', 'ticket-due-date', (string) ($data['due_date'] ?? '')); ?>
                         </div>
                         <div class="form-group"></div>
                     </div>

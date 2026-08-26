@@ -195,8 +195,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_GET["ajax_action"])) {
     if (in_array($crud_action, ["create", "edit"], true)) {
         $title = $_POST["title"] ?? "";
         $description = $_POST["description"] ?? "";
-        $due_date = !empty($_POST["due_date"]) ? $_POST["due_date"] : null;
-        $reminder_at = !empty($_POST["reminder_at"]) ? $_POST["reminder_at"] : null;
+        $due_date = !empty($_POST["due_date"]) ? (function_exists('itm_parse_datetime_input') ? itm_parse_datetime_input($_POST["due_date"]) : $_POST["due_date"]) : null;
+        $reminder_at = !empty($_POST["reminder_at"]) ? (function_exists('itm_parse_datetime_input') ? itm_parse_datetime_input($_POST["reminder_at"]) : $_POST["reminder_at"]) : null;
         $repeat_pattern = !empty($_POST["repeat_pattern"]) ? $_POST["repeat_pattern"] : null;
         
         $category_ids = $_POST["category_id"] ?? [];
@@ -288,8 +288,8 @@ if (isset($_GET["ajax_action"])) {
             echo json_encode(["ok" => false, "error" => "Title is required"]);
             die();
         }
-        $due_date = !empty($_POST["due_date"]) ? $_POST["due_date"] : null;
-        $reminder_at = !empty($_POST["reminder_at"]) ? $_POST["reminder_at"] : null;
+        $due_date = !empty($_POST["due_date"]) ? (function_exists('itm_parse_datetime_input') ? itm_parse_datetime_input($_POST["due_date"]) : $_POST["due_date"]) : null;
+        $reminder_at = !empty($_POST["reminder_at"]) ? (function_exists('itm_parse_datetime_input') ? itm_parse_datetime_input($_POST["reminder_at"]) : $_POST["reminder_at"]) : null;
         $repeat_pattern = !empty($_POST["repeat_pattern"]) ? $_POST["repeat_pattern"] : null;
 
         $category_id = isset($_POST["category_id"]) ? implode(",", array_filter(array_map("intval", $_POST["category_id"]))) : null;
@@ -1048,11 +1048,11 @@ if (!isset($crud_title)) {
                             </div>
                             <div class="form-group">
                                 <label>Due Date</label>
-                                <input type="datetime-local" name="due_date" value="<?php echo isset($data["due_date"]) ? str_replace(" ", "T", substr($data["due_date"], 0, 16)) : ""; ?>">
+                                <?php itm_render_uk_datetime_input('due_date', 'todo-due-date', (string) ($data['due_date'] ?? '')); ?>
                             </div>
                             <div class="form-group">
                                 <label>Reminder</label>
-                                <input type="datetime-local" name="reminder_at" value="<?php echo isset($data["reminder_at"]) ? str_replace(" ", "T", substr($data["reminder_at"], 0, 16)) : ""; ?>">
+                                <?php itm_render_uk_datetime_input('reminder_at', 'todo-reminder-at', (string) ($data['reminder_at'] ?? '')); ?>
                             </div>
                             <div class="form-group">
                                 <label>Repeat Pattern</label>

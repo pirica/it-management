@@ -107,6 +107,7 @@ window.ITM_PREFERRED_THEME = <?php echo json_encode($itmPreferredTheme !== '' ? 
 </script>
 <script src="<?php echo BASE_URL; ?>js/theme.js"></script>
 <script src="<?php echo BASE_URL; ?>js/itm-ui-action-labels.js"></script>
+<script src="<?php echo BASE_URL; ?>js/itm-uk-date-input.js" defer></script>
 <script src="<?php echo BASE_URL; ?>js/itm-user-errors.js"></script>
 
 <script>

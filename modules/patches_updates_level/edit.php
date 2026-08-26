@@ -663,9 +663,9 @@ if (!isset($crud_title)) {
                             <?php elseif ($name === 'color'): ?>
                                 <input type="color" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize((preg_match('/^#[A-Fa-f0-9]{6}$/', $displayVal) ? $displayVal : '#000000')); ?>">
                             <?php elseif ($isDateTime): ?>
-                                <input type="datetime-local" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(str_replace(' ', 'T', substr($displayVal, 0, 16))); ?>">
+                                <?php itm_render_uk_datetime_input((string) $name, itm_crud_dom_input_id($name, 'dt'), (string) $displayVal); ?>
                             <?php elseif ($isDate): ?>
-                                <input type="date" name="<?php echo sanitize($name); ?>" value="<?php echo sanitize(substr($displayVal, 0, 10)); ?>">
+                                <?php itm_render_uk_date_input((string) $name, itm_crud_dom_input_id($name, 'dt'), (string) $displayVal); ?>
                             <?php elseif ($isText): ?>
                                 <textarea name="<?php echo sanitize($name); ?>" rows="4"><?php echo sanitize($displayVal); ?></textarea>
                             <?php else: ?>

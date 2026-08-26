@@ -289,6 +289,13 @@ if (!function_exists('itm_module_date_format_display_audit_line_rules')) {
                 'notes' => 'Shared UK text + calendar input helper',
             ],
             [
+                'status' => 'ok',
+                'pattern' => 'itm_render_uk_datetime_input',
+                'format' => 'dd/mmm/yyyy HH:mm (UK widget)',
+                'regex' => '/itm_render_uk_datetime_input\s*\(/',
+                'notes' => 'Shared UK datetime text + native picker helper',
+            ],
+            [
                 'status' => $inputStatus,
                 'pattern' => 'html_date_input',
                 'format' => 'browser ISO (Y-m-d)',
@@ -354,7 +361,7 @@ if (!function_exists('itm_module_date_format_display_audit_line_has_ok_helper'))
     function itm_module_date_format_display_audit_line_has_ok_helper(string $line): bool
     {
         return (bool) preg_match(
-            '/itm_format_(?:date_display|cell_scalar_display|datetime_display|audit_timestamp_display|hotel_date_display)\s*\(|appt_format_date_display\s*\(|myactivity_format_display_datetime\s*\(|itm_render_uk_date_input\s*\(|date\s*\(\s*[\'"]d\/M\/Y/i',
+            '/itm_format_(?:date_display|cell_scalar_display|datetime_display|audit_timestamp_display|hotel_date_display)\s*\(|appt_format_date_display\s*\(|myactivity_format_display_datetime\s*\(|itm_render_uk_(?:date|datetime)_input\s*\(|date\s*\(\s*[\'"]d\/M\/Y/i',
             $line
         );
     }
@@ -493,6 +500,12 @@ if (!function_exists('itm_module_date_format_display_audit_scan_file')) {
 
             foreach ($rules as $rule) {
                 if (!preg_match($rule['regex'], $line)) {
+                    continue;
+                }
+
+                if (in_array($rule['pattern'], ['html_date_input', 'html_datetime_local_input'], true)
+                    && preg_match('/id\s*=\s*[\'"]modalDatePickerInput[\'"]/i', $line)
+                    && !preg_match('/\bname\s*=/i', $line)) {
                     continue;
                 }
 

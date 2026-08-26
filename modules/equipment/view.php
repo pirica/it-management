@@ -359,7 +359,7 @@ if (isset($_GET['disposal_pending']) && (string)$_GET['disposal_pending'] === '1
             <?php endif; ?>
             <div class="form-group">
                 <label>Disposal date</label>
-                <input type="date" name="disposal_date" value="<?php echo sanitize($equipmentDisposalDateDefault); ?>">
+                <?php itm_render_uk_date_input('disposal_date', 'equipment-disposal-date', (string) $equipmentDisposalDateDefault); ?>
             </div>
             <div class="form-group">
                 <label>Disposal reason</label>
