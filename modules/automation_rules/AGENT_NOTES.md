@@ -43,6 +43,7 @@ Tenant-scoped workflow automation: admins define rules with a trigger, JSON cond
 ## 8. Hooks
 
 - `modules/tickets/create.php` — `ticket.created` on create; `ticket.status_changed` when `status_id` changes on edit; `ticket.priority_changed` when `priority_id` changes on edit.
+- `includes/itm_ticket_survey.php` — `ticket.survey_completed` after `itm_ticket_survey_submit()` (context includes `survey_id`, `average_score`).
 - `includes/itm_asset_depreciation.php` — `equipment.disposed` after `itm_asset_lifecycle_record_disposal()`.
 - `modules/alerts/index.php` — `alert.created` on successful alert create.
 - `modules/expenses/index.php` — `expense.created` on successful expense create.
@@ -52,13 +53,15 @@ Tenant-scoped workflow automation: admins define rules with a trigger, JSON cond
 
 ```bash
 php scripts/verify_automation_rules.php
+php scripts/verify_ticket_surveys.php
 ```
 
 ## 10. Known Pitfalls
 
 - Invalid JSON in conditions/actions fails validation on save.
 - Scheduled warranty/certificate triggers only run when enabled rules exist for those slugs.
-- Action types: `notify_employee`, `send_email`, `set_ticket_status`, `assign_ticket`, `set_ticket_priority`, `create_ticket`, `emit_webhook`.
+- Action types: `notify_employee`, `send_email`, `set_ticket_status`, `assign_ticket`, `set_ticket_priority`, `create_ticket`, `emit_webhook`, `send_ticket_survey` (issues via `itm_ticket_survey_issue()` — optional `questionnaire_id`, `send_email`).
+- Triggers include `ticket.survey_completed` — condition fields: `average_score` (`not_empty`, numeric compares). See `docs/TICKET_SURVEYS.md`.
 - Condition operators: `equals`, `not_equals`, `contains`, `not_empty`, `empty`.
 
 ## 11. Change Log
@@ -68,3 +71,4 @@ php scripts/verify_automation_rules.php
 ## 12. Related Docs
 
 - `docs/AUTOMATION_RULES.md`
+- `docs/TICKET_SURVEYS.md` — survey trigger/action catalog

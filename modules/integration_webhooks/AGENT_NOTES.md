@@ -13,10 +13,10 @@ Tenant-scoped outbound webhook endpoints for integration partners. Subscribes to
 
 - **Secrets:** Generated on create; hidden from list/view/forms. Rotate on edit via **Rotate signing secret** checkbox. Encryption: `includes/itm_webhook_queue.php`.
 - **URL hardening:** SSRF checks reuse hotel distribution webhook URL validator (blocks private/metadata hosts).
-- **Event catalog:** `ticket.created`, `ticket.status_changed`, `ticket.priority_changed`, `ticket.comment_created`, `alert.created`, `expense.created`, `expense.approved`, `employee_onboarding.approved`, `equipment.disposed`, `hotel_booking.confirmed` (`itm_webhook_queue_event_types()`).
-- **Emitters:** `modules/tickets/create.php`, `modules/alerts/index.php`, `modules/expenses/index.php` (create), `modules/employee_onboarding_requests/index.php` (`approval_api` approve), `itm_asset_lifecycle_record_disposal()`, hotel booking flows.
+- **Event catalog:** `ticket.created`, `ticket.status_changed`, `ticket.priority_changed`, `ticket.comment_created`, `ticket.survey_completed`, `alert.created`, `expense.created`, `expense.approved`, `employee_onboarding.approved`, `equipment.disposed`, `hotel_booking.confirmed` (`itm_webhook_queue_event_types()`).
+- **Emitters:** `modules/tickets/create.php`, `includes/itm_ticket_survey.php` (`ticket.survey_completed` after submit), `modules/alerts/index.php`, `modules/expenses/index.php` (create), `modules/employee_onboarding_requests/index.php` (`approval_api` approve), `itm_asset_lifecycle_record_disposal()`, hotel booking flows.
 - **Processor:** `php scripts/run_integration_webhooks.php` — [browser](http://localhost/it-management/scripts/run_integration_webhooks.php?run=1).
-- **Verify:** `php scripts/verify_integration_webhooks.php`.
+- **Verify:** `php scripts/verify_integration_webhooks.php`, `php scripts/verify_ticket_surveys.php` (survey enqueue probe).
 
 ## 4. UI
 
@@ -25,3 +25,4 @@ Flattened CRUD scaffold: [modules/integration_webhooks/index.php](http://localho
 ## 5. Related docs
 
 - `docs/INTEGRATION_WEBHOOKS.md`
+- `docs/TICKET_SURVEYS.md` — `ticket.survey_completed` payload notes
