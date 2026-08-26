@@ -134,6 +134,23 @@ if (!function_exists('itm_tier2_check_scripts_tail_output')) {
     }
 }
 
+if (!function_exists('itm_tier2_check_scripts_extra_cli_args')) {
+    /**
+     * Per-script CLI flags for Tier 2 subprocess runs (browser query params have CLI equivalents).
+     *
+     * @return array<int,string>
+     */
+    function itm_tier2_check_scripts_extra_cli_args(string $basename): array
+    {
+        if ($basename === 'list_date_display_formats.php') {
+            // Why: Tier 2 must gate native date inputs too (browser: ?include_inputs=1&run=1).
+            return ['--include-inputs'];
+        }
+
+        return [];
+    }
+}
+
 if (!function_exists('itm_tier2_check_scripts_run_one')) {
     /**
      * @return array{exit: int, seconds: float, output: string}
@@ -149,9 +166,15 @@ if (!function_exists('itm_tier2_check_scripts_run_one')) {
             ];
         }
 
+        $extraArgs = itm_tier2_check_scripts_extra_cli_args($basename);
+        $argSuffix = '';
+        foreach ($extraArgs as $arg) {
+            $argSuffix .= ' ' . escapeshellarg((string) $arg);
+        }
+
         $start = microtime(true);
         // Why: exec + quoted paths matches perform_audit.php and avoids Windows proc_open cmd parsing failures.
-        $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($scriptPath) . ' 2>&1';
+        $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($scriptPath) . $argSuffix . ' 2>&1';
         $lines = [];
         $exit = 0;
         exec($cmd, $lines, $exit);

@@ -222,7 +222,7 @@ php scripts/employees_delete_clear_table_test.php
 | 2 | `check_pagination_emoji.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `check_ui_configuration_coverage.php` | PHP | none | static-manual | Pre-merge static gate (not in smoke) |
 | 2 | `list_raw_columns.php` | PHP | none | static-manual | FK list/view display audit — static RAW/REPRO gate; included in `run_tier2_checks.php` |
-| 2 | `list_date_display_formats.php` | PHP | none | static-manual | UK dd/mmm/yyyy display audit — WARN on non-helper date echo; included in `run_tier2_checks.php` |
+| 2 | `list_date_display_formats.php` | PHP | none | static-manual | UK dd/mmm/yyyy display audit — WARN on non-helper date echo and native date inputs; `run_tier2_checks.php` runs CLI `--include-inputs` (browser: `?include_inputs=1&run=1`) |
 | 3 | `check_company_id_ui_column.php` | PHP | none | static-manual | Company column inventory — scans modules/{slug}/**/*.php (report; `--strict` optional) |
 | 3 | `DBdesign.php` | PHP | low | runtime | Read-mostly listing / diagram tool |
 | 3 | `analyze_database_health.php` | MySQL | low | runtime | Runtime verify / repro / diagnostic |

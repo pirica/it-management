@@ -116,7 +116,12 @@ $failures = [];
 
 foreach ($scripts as $index => $basename) {
     $step = ($index + 1) . '/' . count($scripts);
-    echo '==> [' . $step . '] ' . $basename . $nl;
+    $extraCliArgs = itm_tier2_check_scripts_extra_cli_args($basename);
+    $stepLabel = $basename;
+    if ($extraCliArgs !== []) {
+        $stepLabel .= ' ' . implode(' ', $extraCliArgs);
+    }
+    echo '==> [' . $step . '] ' . $stepLabel . $nl;
 
     $run = itm_tier2_check_scripts_run_one($phpBinary, $scriptsDir, $basename);
     $exit = (int)$run['exit'];
