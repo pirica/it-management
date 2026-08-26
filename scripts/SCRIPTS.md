@@ -1047,7 +1047,8 @@ Run `sync_modules_registry.php` after adding module folders; run `verify_company
 | `php scripts/check_department_select_quick_add.php` | Static audit: every department FK `<select>` in `modules/` and `scripts/` includes `__add_new__` ➕ quick-add (per-select block) |
 | `php scripts/verify_dashboard_active_employees.php` | Regression: **admin.php** row 2 **Active** / **On Leave** call `itm_employee_count_by_employment_status_name()` (no inline `LOWER(es.name)`); helper matches live `deleted_at IS NULL` counts; employee `dashboard.php` must not duplicate company counts; optional `ITM_TEST_COMPANY_ID` |
 | `php scripts/verify_dashboard_online_employees.php` | Regression: **admin.php** **Online now** stat, session presence touch hook, count after touch |
-| `php scripts/verify_employee_dashboard.php` | Regression: employee **dashboard.php** hero + grouped stat cards, `includes/itm_employee_dashboard.php` loader, no company switcher |
+| `php scripts/verify_employee_dashboard.php` | Regression: employee **dashboard.php** hero + grouped stat cards, smart widget wiring + Chart.js, `includes/itm_employee_dashboard.php` loader, no company switcher |
+| `php scripts/verify_dashboard_widgets.php` | Regression: role-aware smart dashboard widgets (`includes/itm_dashboard_widgets.php`, queries, RBAC gates, `open_only` tickets filter, live metric SQL); optional `ITM_TEST_COMPANY_ID` |
 | `php scripts/verify_admin_page_gate.php` | Regression: **admin.php** `itm_is_admin()` gate and redirect to `dashboard.php` |
 | `php scripts/verify_settings_admin_buttons.php` | Regression: Settings **ADMIN** / **SCRIPTS** toolbar (admin-only), **All roles** chatbot block, **System (Admin Role only)** flags, and non-admin save preservation |
 
@@ -1083,7 +1084,9 @@ Run `verify_dashboard_active_employees.php` when changing `admin.php` or `includ
 
 Run `verify_dashboard_online_employees.php` when changing `admin.php`, `includes/itm_active_sessions.php`, or the session presence hook in `config/config.php`.
 
-Run `verify_employee_dashboard.php` when changing employee `dashboard.php`, `includes/itm_employee_dashboard.php`, or `includes/itm_employee_dashboard_cards.php`.
+Run `verify_employee_dashboard.php` when changing employee `dashboard.php`, `includes/itm_employee_dashboard.php`, `includes/itm_employee_dashboard_cards.php`, or smart widget wiring on the landing dashboard.
+
+Run `verify_dashboard_widgets.php` when changing `includes/itm_dashboard_widgets.php`, `includes/itm_dashboard_queries.php`, `includes/itm_dashboard_widgets_cards.php`, or smart widget metrics / RBAC gates on `dashboard.php`.
 
 Run `verify_admin_page_gate.php` when changing `admin.php` access control.
 
