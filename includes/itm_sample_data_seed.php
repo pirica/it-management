@@ -3277,14 +3277,17 @@ if (!function_exists('itm_seed_insert_change_requests_sample_rows')) {
             $stmt = mysqli_prepare(
                 $conn,
                 'INSERT INTO change_requests
-                 (company_id, source_configuration_item_id, title, description, status, active, created_by)
-                 VALUES (?, ?, ?, ?, ?, 1, ?)'
+                 (company_id, source_configuration_item_id, title, description, change_type, risk_level, rollback_plan, status, active, created_by)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)'
             );
             if (!$stmt) {
                 $error = 'Could not prepare change_requests sample insert.';
                 return $inserted;
             }
-            mysqli_stmt_bind_param($stmt, 'iisssi', $companyId, $sourceCiId, $title, $description, $status, $employeeId);
+            $changeType = 'standard';
+            $riskLevel = 'medium';
+            $rollback = 'Restore prior package version and validate service health.';
+            mysqli_stmt_bind_param($stmt, 'iissssssi', $companyId, $sourceCiId, $title, $description, $changeType, $riskLevel, $rollback, $status, $employeeId);
             if (!mysqli_stmt_execute($stmt)) {
                 $dbErrorCode = (int)mysqli_errno($conn);
                 $dbErrorMessage = (string)mysqli_error($conn);

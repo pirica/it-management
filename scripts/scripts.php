@@ -2305,6 +2305,20 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td>Regression for CMDB Lite: schema, relationship cycle detection, impact BFS graph, API entry.</td>
                     <td class="scripts-catalog-how-stub"><code>php scripts/verify_cmdb.php</code></td>
                 </tr>
+                <tr data-tags="change_requests,change_request_approvals">
+                    <td><a href="verify_change_requests.php" target="_blank" rel="nofollow noreferrer">verify_change_requests.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">change_requests</span></span></td>
+                    <td>Regression for IT Change Management — CAB workflow, Approval Inbox adapter, calendar feed, automation/webhook <code>change.*</code> events. See <code>docs/CHANGE_MANAGEMENT.md</code>.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_change_requests.php</code></td>
+                </tr>
+                <tr data-tags="change_requests">
+                    <td><a href="run_change_request_reminders.php" target="_blank" rel="nofollow noreferrer">run_change_request_reminders.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="table">change_requests</span></span></td>
+                    <td>Pre-change reminder emails for submitted/approved changes approaching <code>scheduled_start</code> (<code>change_request_settings.reminder_days_before</code>).</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/run_change_request_reminders.php</code></td>
+                </tr>
                 <tr data-tags="Mixed">
                     <td><a href="verify_request_password.php" target="_blank" rel="nofollow noreferrer">verify_request_password.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>

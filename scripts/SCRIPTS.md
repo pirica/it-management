@@ -1215,6 +1215,8 @@ Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking
 | `php scripts/verify_approval_inbox.php` | Regression for `includes/itm_approval_inbox.php`, `approval_inbox_items` upsert/fetch, adapter registry |
 | `php scripts/verify_problem_management.php` | Regression for Problem Management + Known Error DB (`includes/itm_problem_management.php`, ticket linking, KB publish, suggest). See `docs/PROBLEM_MANAGEMENT.md`. |
 | `php scripts/verify_cmdb.php` | Regression for CMDB Lite (`includes/itm_cmdb.php`, `configuration_items*`, `change_requests`, rack/subnet/system_access sync, cycle detection, impact BFS, equipment/IDF/rack sync hooks). |
+| `php scripts/verify_change_requests.php` | Regression for IT Change Management pack (`includes/itm_change_requests.php`, CAB approvals, Approval Inbox adapter, calendar feed, reminders, automation/webhook `change.*` events). See `docs/CHANGE_MANAGEMENT.md`. |
+| `php scripts/run_change_request_reminders.php` | Daily cron — email requesters + CAB before `scheduled_start` (`change_request_settings.reminder_days_before`). CLI `--company=1`; browser Admin. |
 | `php scripts/test_email_forgot.php` | Manual forgot-password email test via `itm_send_email()` / tenant SMTP; creates a real 24-hour reset token for the matching employee before sending; CLI supports `--company=1` (defaults to session company or `1`) |
 | `php scripts/test_register_mail.php` | Manual registration welcome email test via `itm_send_email()`; CLI supports `--company=1` |
 

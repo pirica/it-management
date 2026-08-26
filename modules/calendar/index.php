@@ -372,6 +372,32 @@ if ($stmt) {
 
 }
 
+// Change requests (scheduled IT changes)
+if (has_module_access($conn, (int)$company_id, 'change_requests')) {
+    require_once ROOT_PATH . 'includes/itm_change_requests.php';
+    $changeRows = itm_change_request_list_calendar_rows($conn, (int)$company_id, $start_range, $end_range);
+    foreach ($changeRows as $row) {
+        $d = (string)($row['scheduled_start'] ?? '');
+        if ($d === '') {
+            continue;
+        }
+        $risk = (string)($row['risk_level'] ?? 'medium');
+        $color = '#0ea5e9';
+        if ($risk === 'high') {
+            $color = '#f59e0b';
+        } elseif ($risk === 'critical') {
+            $color = '#dc2626';
+        }
+        $events_data[$d][] = [
+            'type' => 'change_request',
+            'title' => (string)($row['title'] ?? 'Change'),
+            'color' => $color,
+            'icon' => '📝',
+            'id' => (int)($row['id'] ?? 0),
+        ];
+    }
+}
+
 // Data for side panel (selected day)
 $selected_day_events = $events_data[$current_date_param] ?? [];
 
@@ -547,6 +573,8 @@ if (!isset($crud_title)) {
                                             <a href="../equipment/view.php?id=<?php echo $ev['id']; ?>" class="btn btn-sm">Asset</a>
                                         <?php elseif ($ev['type'] === 'patch'): ?>
                                             <a href="../patches_updates/view.php?id=<?php echo $ev['id']; ?>" class="btn btn-sm">Patch</a>
+                                        <?php elseif ($ev['type'] === 'change_request'): ?>
+                                            <a href="../change_requests/view.php?id=<?php echo $ev['id']; ?>" class="btn btn-sm">Change</a>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -648,6 +676,7 @@ if (!isset($crud_title)) {
                                                 if ($ev['type'] === 'ticket') { $link = '../tickets/view.php?id=' . $ev['id']; }
                                                 elseif ($ev['type'] === 'equipment') { $link = '../equipment/view.php?id=' . $ev['id']; }
                                                 elseif ($ev['type'] === 'patch') { $link = '../patches_updates/view.php?id=' . $ev['id']; }
+                                                elseif ($ev['type'] === 'change_request') { $link = '../change_requests/view.php?id=' . $ev['id']; }
                                         ?>
                                             <div class="all-day-item" style="background:<?php echo $color; ?>;" onclick="location.href='<?php echo $link; ?>'">
                                                 <?php
@@ -740,6 +769,7 @@ if (!isset($crud_title)) {
                                                     elseif ($ev['type'] === 'alert') { $link = '../alerts/view.php?id=' . $ev['id']; }
                                                     elseif ($ev['type'] === 'equipment') { $link = '../equipment/view.php?id=' . $ev['id']; }
                                                     elseif ($ev['type'] === 'patch') { $link = '../patches_updates/view.php?id=' . $ev['id']; }
+                                                elseif ($ev['type'] === 'change_request') { $link = '../change_requests/view.php?id=' . $ev['id']; }
                                             ?>
                                                 <div class="all-day-item" style="background:<?php echo $color; ?>; width: 100%; overflow: hidden; text-overflow: ellipsis;" onclick="location.href='<?php echo $link; ?>'" title="<?php echo sanitize($ev['title']); ?>">
                                                     <?php

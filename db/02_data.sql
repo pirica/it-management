@@ -1428,6 +1428,24 @@ AND NOT EXISTS (
     WHERE j.`change_request_id` = cr.`id` AND j.`configuration_item_id` = ci.`id` AND j.`deleted_at` IS NULL
 );
 
+INSERT INTO `change_request_settings` (`company_id`, `reminder_days_before`, `active`, `created_at`)
+SELECT c.`id`, 1, 1, '2026-01-01 00:00:01'
+FROM `companies` c
+WHERE c.`id` BETWEEN 1 AND 5
+AND NOT EXISTS (
+    SELECT 1 FROM `change_request_settings` s WHERE s.`company_id` = c.`id` AND s.`deleted_at` IS NULL
+);
+
+INSERT INTO `change_request_cab_members` (`company_id`, `employee_id`, `active`, `created_by`, `created_at`)
+SELECT e.`company_id`, e.`id`, 1, e.`id`, '2026-01-01 00:00:01'
+FROM `employees` e
+INNER JOIN `employee_roles` er ON er.`id` = e.`role_id` AND er.`company_id` = e.`company_id`
+WHERE er.`name` = 'Admin' AND e.`company_id` BETWEEN 1 AND 5 AND e.`deleted_at` IS NULL
+AND NOT EXISTS (
+    SELECT 1 FROM `change_request_cab_members` m
+    WHERE m.`company_id` = e.`company_id` AND m.`employee_id` = e.`id` AND m.`deleted_at` IS NULL
+);
+
 -- Why: Relative expiry dates keep license alert seeds inside the default 30-day runner window after import.
 INSERT INTO `license_management` (`id`, `company_id`, `name`, `license_key`, `license_type_id`, `quantity`, `supplier_id`, `purchase_date`, `expiry_date`, `price`, `active`, `notes`, `created_at`) VALUES ('1', '1', 'Microsoft 365 E3', 'XXXXX-XXXXX-XXXXX', '1', '1', '1', '2025-01-15', DATE_ADD(CURDATE(), INTERVAL 20 DAY), '150.00', '1', 'Sample per-user subscription', '2026-01-01 00:00:01');
 

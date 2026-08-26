@@ -13,109 +13,80 @@ $employeeId = (int)($_SESSION['employee_id'] ?? 0);
 $error = '';
 $csrfToken = itm_get_csrf_token();
 $ciOptions = itm_cmdb_list_ci_options($conn, $companyId);
-$statuses = itm_change_request_statuses();
+$changeTypes = itm_change_request_change_types();
+$riskLevels = itm_change_request_risk_levels();
 
 $data = [
     'title' => '',
     'description' => '',
     'status' => 'draft',
+    'change_type' => 'standard',
+    'risk_level' => 'medium',
+    'rollback_plan' => '',
+    'ticket_id' => 0,
     'source_configuration_item_id' => 0,
     'scheduled_start' => '',
     'scheduled_end' => '',
 ];
 $selectedCiIds = [];
+$formStatuses = itm_change_request_form_status_options($conn, $employeeId, 'draft');
+
+$ticketOptions = [];
+$ticketStmt = mysqli_prepare(
+    $conn,
+    'SELECT id, title FROM tickets WHERE company_id = ? AND deleted_at IS NULL ORDER BY id DESC LIMIT 100'
+);
+if ($ticketStmt) {
+    mysqli_stmt_bind_param($ticketStmt, 'i', $companyId);
+    mysqli_stmt_execute($ticketStmt);
+    $ticketRes = mysqli_stmt_get_result($ticketStmt);
+    while ($ticketRes && ($tRow = mysqli_fetch_assoc($ticketRes))) {
+        $ticketOptions[] = $tRow;
+    }
+    mysqli_stmt_close($ticketStmt);
+}
 
 if ($isEdit) {
-    $stmt = mysqli_prepare(
-        $conn,
-        'SELECT * FROM change_requests WHERE id = ? AND company_id = ? AND deleted_at IS NULL LIMIT 1'
-    );
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'ii', $id, $companyId);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        $row = $res ? mysqli_fetch_assoc($res) : null;
-        mysqli_stmt_close($stmt);
-        if (!$row) {
-            header('Location: index.php');
-            exit;
-        }
-        $data = array_merge($data, $row);
-        $selectedCiIds = itm_change_request_list_affected_ci_ids($conn, $companyId, $id);
+    $row = itm_change_request_fetch_row($conn, $companyId, $id);
+    if (!$row) {
+        header('Location: index.php');
+        exit;
     }
+    $data = array_merge($data, $row);
+    $selectedCiIds = itm_change_request_list_affected_ci_ids($conn, $companyId, $id);
+    $formStatuses = itm_change_request_form_status_options($conn, $employeeId, (string)($row['status'] ?? 'draft'));
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     itm_require_post_csrf();
 
-    $title = trim((string)($_POST['title'] ?? ''));
-    $description = trim((string)($_POST['description'] ?? ''));
-    $status = strtolower(trim((string)($_POST['status'] ?? 'draft')));
-    $sourceCiId = (int)($_POST['source_configuration_item_id'] ?? 0);
-    $scheduledStart = trim((string)($_POST['scheduled_start'] ?? ''));
-    $scheduledEnd = trim((string)($_POST['scheduled_end'] ?? ''));
-  $postedCiIds = $_POST['configuration_item_ids'] ?? [];
+    $postedCiIds = $_POST['configuration_item_ids'] ?? [];
     if (!is_array($postedCiIds)) {
         $postedCiIds = [];
     }
 
-    if (!isset($statuses[$status])) {
-        $status = 'draft';
+    $postData = [
+        'title' => trim((string)($_POST['title'] ?? '')),
+        'description' => trim((string)($_POST['description'] ?? '')),
+        'status' => strtolower(trim((string)($_POST['status'] ?? 'draft'))),
+        'change_type' => strtolower(trim((string)($_POST['change_type'] ?? 'standard'))),
+        'risk_level' => strtolower(trim((string)($_POST['risk_level'] ?? 'medium'))),
+        'rollback_plan' => trim((string)($_POST['rollback_plan'] ?? '')),
+        'ticket_id' => (int)($_POST['ticket_id'] ?? 0),
+        'source_configuration_item_id' => (int)($_POST['source_configuration_item_id'] ?? 0),
+        'scheduled_start' => trim((string)($_POST['scheduled_start'] ?? '')),
+        'scheduled_end' => trim((string)($_POST['scheduled_end'] ?? '')),
+    ];
+
+    $result = itm_change_request_save($conn, $companyId, $employeeId, $isEdit ? $id : 0, $postData, $postedCiIds);
+    if (!empty($result['ok'])) {
+        header('Location: view.php?id=' . (int)($result['id'] ?? $id));
+        exit;
     }
-    if ($title === '') {
-        $error = 'Title is required.';
-    } elseif ($sourceCiId <= 0) {
-        $error = 'Source configuration item is required.';
-    } else {
-        $startDate = $scheduledStart !== '' ? itm_parse_date_input($scheduledStart) : null;
-        $endDate = $scheduledEnd !== '' ? itm_parse_date_input($scheduledEnd) : null;
-        if ($scheduledStart !== '' && $startDate === null) {
-            $error = 'Scheduled start must be dd/mmm/yyyy.';
-        } elseif ($scheduledEnd !== '' && $endDate === null) {
-            $error = 'Scheduled end must be dd/mmm/yyyy.';
-        } else {
-            $startSql = $startDate !== null ? "'" . mysqli_real_escape_string($conn, $startDate) . "'" : 'NULL';
-            $endSql = $endDate !== null ? "'" . mysqli_real_escape_string($conn, $endDate) . "'" : 'NULL';
-            if ($isEdit) {
-                $sql = 'UPDATE change_requests SET source_configuration_item_id = ' . (int)$sourceCiId
-                    . ', title = \'' . mysqli_real_escape_string($conn, $title) . '\''
-                    . ', description = \'' . mysqli_real_escape_string($conn, $description) . '\''
-                    . ', status = \'' . mysqli_real_escape_string($conn, $status) . '\''
-                    . ', scheduled_start = ' . $startSql
-                    . ', scheduled_end = ' . $endSql
-                    . ', updated_by = ' . (int)$employeeId
-                    . ', updated_at = NOW()'
-                    . ' WHERE id = ' . (int)$id . ' AND company_id = ' . (int)$companyId . ' AND deleted_at IS NULL LIMIT 1';
-                if (mysqli_query($conn, $sql)) {
-                    itm_change_request_replace_affected_cis($conn, $companyId, $id, $postedCiIds, $employeeId);
-                    header('Location: view.php?id=' . $id);
-                    exit;
-                }
-                $error = mysqli_error($conn);
-            } else {
-                $sql = 'INSERT INTO change_requests (company_id, source_configuration_item_id, title, description, status, scheduled_start, scheduled_end, active, created_by) VALUES ('
-                    . (int)$companyId . ', ' . (int)$sourceCiId
-                    . ', \'' . mysqli_real_escape_string($conn, $title) . '\''
-                    . ', \'' . mysqli_real_escape_string($conn, $description) . '\''
-                    . ', \'' . mysqli_real_escape_string($conn, $status) . '\''
-                    . ', ' . $startSql . ', ' . $endSql . ', 1, ' . (int)$employeeId . ')';
-                if (mysqli_query($conn, $sql)) {
-                    $newId = (int)mysqli_insert_id($conn);
-                    itm_change_request_replace_affected_cis($conn, $companyId, $newId, $postedCiIds, $employeeId);
-                    header('Location: view.php?id=' . $newId);
-                    exit;
-                }
-                $error = mysqli_error($conn);
-            }
-        }
-    }
-    $data['title'] = $title;
-    $data['description'] = $description;
-    $data['status'] = $status;
-    $data['source_configuration_item_id'] = $sourceCiId;
-    $data['scheduled_start'] = $scheduledStart;
-    $data['scheduled_end'] = $scheduledEnd;
+    $error = (string)($result['error'] ?? 'Save failed.');
+    $data = array_merge($data, $postData);
     $selectedCiIds = array_map('intval', $postedCiIds);
+    $formStatuses = itm_change_request_form_status_options($conn, $employeeId, (string)($postData['status'] ?? 'draft'));
 }
 
 $crud_title = $isEdit ? 'Edit Change Request' : 'New Change Request';
@@ -165,6 +136,37 @@ $ciViewBase = BASE_URL . 'modules/configuration_items/view.php?id=';
                     <textarea name="description" id="description" rows="4"><?php echo sanitize((string)($data['description'] ?? '')); ?></textarea>
                 </div>
                 <div class="form-group">
+                    <label for="change_type">Change type</label>
+                    <select name="change_type" id="change_type">
+                        <?php foreach ($changeTypes as $slug => $label): ?>
+                        <option value="<?php echo sanitize($slug); ?>"<?php echo (string)($data['change_type'] ?? '') === $slug ? ' selected' : ''; ?>><?php echo sanitize($label); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="risk_level">Risk</label>
+                    <select name="risk_level" id="risk_level">
+                        <?php foreach ($riskLevels as $slug => $label): ?>
+                        <option value="<?php echo sanitize($slug); ?>"<?php echo (string)($data['risk_level'] ?? '') === $slug ? ' selected' : ''; ?>><?php echo sanitize($label); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="rollback_plan">Rollback plan</label>
+                    <textarea name="rollback_plan" id="rollback_plan" rows="3"><?php echo sanitize((string)($data['rollback_plan'] ?? '')); ?></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="ticket_id">Linked ticket (optional)</label>
+                    <select name="ticket_id" id="ticket_id">
+                        <option value="0">-- None --</option>
+                        <?php foreach ($ticketOptions as $tOpt): ?>
+                        <option value="<?php echo (int)($tOpt['id'] ?? 0); ?>"<?php echo (int)($data['ticket_id'] ?? 0) === (int)($tOpt['id'] ?? 0) ? ' selected' : ''; ?>>
+                            #<?php echo (int)($tOpt['id'] ?? 0); ?> — <?php echo sanitize((string)($tOpt['title'] ?? '')); ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="source_configuration_item_id">Source CI (change target)</label>
                     <select name="source_configuration_item_id" id="source_configuration_item_id" required>
                         <option value="">-- Select --</option>
@@ -178,7 +180,7 @@ $ciViewBase = BASE_URL . 'modules/configuration_items/view.php?id=';
                 <div class="form-group">
                     <label for="status">Status</label>
                     <select name="status" id="status">
-                        <?php foreach ($statuses as $slug => $label): ?>
+                        <?php foreach ($formStatuses as $slug => $label): ?>
                         <option value="<?php echo sanitize($slug); ?>"<?php echo (string)($data['status'] ?? '') === $slug ? ' selected' : ''; ?>><?php echo sanitize($label); ?></option>
                         <?php endforeach; ?>
                     </select>
@@ -202,7 +204,7 @@ $ciViewBase = BASE_URL . 'modules/configuration_items/view.php?id=';
 
                 <div class="form-actions" style="margin-top:16px;">
                     <button type="submit" class="btn btn-primary" title="Save">💾</button>
-                    <a href="index.php" class="btn" title="Back">🔙</a>
+                    <a href="<?php echo $isEdit ? 'view.php?id=' . (int)$id : 'index.php'; ?>" class="btn" title="Back">🔙</a>
                 </div>
             </form>
         </div>

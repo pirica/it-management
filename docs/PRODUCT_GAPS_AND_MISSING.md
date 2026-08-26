@@ -10,7 +10,7 @@ Living inventory of **partial** and **not started** items from the Product & Arc
 
 | Category | Done (representative) | Partial | Not started |
 |----------|----------------------|---------|-------------|
-| Core ITSM / ops | SLA dashboard, approvals inbox, automation, problem/KEDB, CMDB lite, ticket productivity | Change requests (CAB depth) | — |
+| Core ITSM / ops | SLA dashboard, approvals inbox, automation, problem/KEDB, CMDB lite, ticket productivity, IT change management | — | — |
 | Integrations | Webhooks, SSO, Stripe, API v2 MVP | API v2 breadth | Network discovery |
 | Hospitality | Promo code validation | — | — |
 | Employee workflows | Appointment self-service core | Appointment UX polish, settings admin | Offboarding orchestration |
@@ -69,7 +69,7 @@ Living inventory of **partial** and **not started** items from the Product & Arc
 
 | # | Feature | Status | What is still missing |
 |---|---------|--------|------------------------|
-| 1 | IT Change Management | **Partial** | `change_type`, risk, rollback, ticket link, Approval Inbox adapter, calendar feed, reminder cron, automation/webhook events |
+| 1 | IT Change Management | **Done** | — (`docs/CHANGE_MANAGEMENT.md`, `php scripts/verify_change_requests.php`) |
 | 2 | Problem / Known Error DB | **Done** | — (includes master tickets) |
 | 3 | CMDB Lite | **Done** | Automated discovery → CI (see Feature 7) |
 | 4 | Appointment pack | **Done** (core) | Optional: deeper MBQA booking steps |

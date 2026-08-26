@@ -7,7 +7,7 @@
 if (!function_exists('itm_approval_inbox_adapter_slugs')) {
     function itm_approval_inbox_adapter_slugs()
     {
-        return ['request_password', 'employee_onboarding_requests', 'approvals', 'forecast_revisions'];
+        return ['request_password', 'employee_onboarding_requests', 'approvals', 'forecast_revisions', 'change_requests'];
     }
 }
 
@@ -357,6 +357,20 @@ if (!function_exists('itm_approval_inbox_apply_source_decision')) {
 
         if ($moduleSlug === 'forecast_revisions') {
             return itm_approval_inbox_apply_forecast_decision($conn, (int)$companyId, $recordId, $stage, $decision, 'forecast_revisions');
+        }
+
+        if ($moduleSlug === 'change_requests') {
+            if (strpos($stage, 'cab_') !== 0) {
+                return false;
+            }
+            $approverId = (int)substr($stage, 4);
+            if ($approverId <= 0) {
+                return false;
+            }
+            if (!function_exists('itm_change_request_apply_cab_decision')) {
+                require_once ROOT_PATH . 'includes/itm_change_requests.php';
+            }
+            return itm_change_request_apply_cab_decision($conn, (int)$companyId, $recordId, $approverId, $decision);
         }
 
         return false;
@@ -755,6 +769,17 @@ if (!function_exists('itm_approval_inbox_sync_onboarding_record')) {
     }
 }
 
+if (!function_exists('itm_approval_inbox_sync_change_request')) {
+    function itm_approval_inbox_sync_change_request(mysqli $conn, $companyId, $recordId)
+    {
+        if (!function_exists('itm_change_request_sync_cab_inbox')) {
+            require_once ROOT_PATH . 'includes/itm_change_requests.php';
+        }
+        itm_change_request_ensure_submitted_cab_state($conn, (int)$companyId, (int)$recordId);
+        itm_change_request_sync_cab_inbox($conn, (int)$companyId, (int)$recordId);
+    }
+}
+
 if (!function_exists('itm_approval_inbox_sync_module_record')) {
     function itm_approval_inbox_sync_module_record(mysqli $conn, $companyId, $moduleSlug, $recordId)
     {
@@ -766,6 +791,8 @@ if (!function_exists('itm_approval_inbox_sync_module_record')) {
             itm_approval_inbox_sync_approvals_record($conn, $companyId, $recordId);
         } elseif ($moduleSlug === 'forecast_revisions') {
             itm_approval_inbox_sync_forecast_revision($conn, $companyId, $recordId);
+        } elseif ($moduleSlug === 'change_requests') {
+            itm_approval_inbox_sync_change_request($conn, $companyId, $recordId);
         }
     }
 }
