@@ -29,6 +29,7 @@ if (!function_exists('itm_module_date_format_display_audit_exempt_module_slugs')
             'calendar',
             'explorer',
             'ops_report',
+            'reports',
             'settings',
         ];
     }
@@ -64,6 +65,7 @@ if (!function_exists('itm_module_date_format_display_audit_exempt_module_notes')
             'calendar' => 'Integrated calendar grid — alternate date presentation',
             'explorer' => 'File browser — no standard list/view date column contract',
             'ops_report' => 'Bespoke daily ops grid — report_date selectors and d.m.y UI suffix',
+            'reports' => 'Reports hub — bespoke dashboards and saved-report widgets',
             'settings' => 'Admin UI configuration — no flattened list/view date column contract',
         ];
 
