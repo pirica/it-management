@@ -5,6 +5,24 @@
  */
 
 /**
+ * Build canonical Y-m keys plus locale chart labels for trailing month series.
+ *
+ * @return array{keys:array<int,string>,labels:array<int,string>}
+ */
+function reports_build_year_month_series($monthsBack = 11)
+{
+    $keys = [];
+    for ($i = $monthsBack; $i >= 0; $i--) {
+        $keys[] = date('Y-m', strtotime('-' . (int) $i . ' month'));
+    }
+    $labels = [];
+    foreach ($keys as $ym) {
+        $labels[] = itm_ui_locale_format_year_month_chart_label($ym);
+    }
+    return ['keys' => $keys, 'labels' => $labels];
+}
+
+/**
  * Equipment statistics by type
  */
 function get_equipment_statistics() {
@@ -303,10 +321,7 @@ function get_budget_by_department() {
 function get_budget_vs_actual_trend() {
     global $conn, $company_id;
 
-    $months = [
-        1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun',
-        7 => 'Jul', 8 => 'Aug', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec'
-    ];
+    $months = itm_ui_locale_format_month_short_labels();
     $budget_data = array_fill(1, 12, 0);
     $actual_data = array_fill(1, 12, 0);
 
@@ -424,7 +439,8 @@ function get_upcoming_maintenance_forecast() {
     $months = [];
     for ($i = 0; $i < 6; $i++) {
         $m = (int)date('n', strtotime("+$i month"));
-        $months[$m] = date('M', strtotime("+$i month"));
+        $ym = date('Y-m', strtotime("+$i month"));
+        $months[$m] = itm_ui_locale_format_year_month_chart_label($ym);
     }
 
     $warranty_counts = array_fill_keys(array_keys($months), 0);
@@ -483,14 +499,8 @@ function get_upcoming_maintenance_forecast() {
 function get_employee_growth_trend() {
     global $conn, $company_id;
 
-    $labels = [];
-    $data = [];
-
-    // Last 12 months including current
-    for ($i = 11; $i >= 0; $i--) {
-        $labels[] = date('Y-m', strtotime("-$i month"));
-    }
-    $counts = array_fill_keys($labels, 0);
+    $series = reports_build_year_month_series(11);
+    $counts = array_fill_keys($series['keys'], 0);
 
     $sql = "SELECT DATE_FORMAT(start_date, '%Y-%m') as month_str, COUNT(*) as count
             FROM employees
@@ -510,9 +520,8 @@ function get_employee_growth_trend() {
         mysqli_stmt_close($stmt);
     }
 
-    // Cumulative growth calculation (simplified: just monthly new hires)
     return [
-        'labels' => array_keys($counts),
+        'labels' => $series['labels'],
         'data' => array_values($counts)
     ];
 }
@@ -559,7 +568,7 @@ function get_monthly_actual_comparison() {
     }
 
     return [
-        'month_name' => date('F'),
+        'month_name' => itm_ui_locale_format_month_full_label($this_month, null, $this_year),
         'this_year' => $this_year_total,
         'last_year' => $last_year_total,
         'labels' => [ (string)$last_year, (string)$this_year ],
@@ -603,11 +612,8 @@ function get_equipment_status_statistics() {
 function get_monthly_asset_additions() {
     global $conn, $company_id;
 
-    $labels = [];
-    for ($i = 11; $i >= 0; $i--) {
-        $labels[] = date('Y-m', strtotime("-$i month"));
-    }
-    $counts = array_fill_keys($labels, 0);
+    $series = reports_build_year_month_series(11);
+    $counts = array_fill_keys($series['keys'], 0);
 
     $sql = "SELECT DATE_FORMAT(created_at, '%Y-%m') as month_str, COUNT(*) as count
             FROM equipment
@@ -628,7 +634,7 @@ function get_monthly_asset_additions() {
     }
 
     return [
-        'labels' => array_keys($counts),
+        'labels' => $series['labels'],
         'data' => array_values($counts)
     ];
 }
@@ -723,7 +729,7 @@ function get_ops_occupancy_30day() {
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
         while ($row = mysqli_fetch_assoc($result)) {
-            $labels[] = date('d M', strtotime($row['report_date']));
+            $labels[] = itm_ui_locale_format_chart_day_label($row['report_date']);
             $data[] = (float)$row['occ'];
         }
         mysqli_stmt_close($stmt);
@@ -737,10 +743,7 @@ function get_ops_occupancy_30day() {
 function get_ops_monthly_revenue_yoy() {
     global $conn, $company_id;
 
-    $months = [
-        1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun',
-        7 => 'Jul', 8 => 'Aug', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec'
-    ];
+    $months = itm_ui_locale_format_month_short_labels();
     $this_year_data = array_fill(1, 12, 0);
     $last_year_data = array_fill(1, 12, 0);
 
@@ -829,12 +832,9 @@ function get_ops_revenue_mix_mtd() {
 function get_ticket_csat_trend() {
     global $conn, $company_id;
 
-    $labels = [];
-    for ($i = 11; $i >= 0; $i--) {
-        $labels[] = date('Y-m', strtotime("-$i month"));
-    }
-    $scores = array_fill_keys($labels, null);
-    $counts = array_fill_keys($labels, 0);
+    $series = reports_build_year_month_series(11);
+    $scores = array_fill_keys($series['keys'], null);
+    $counts = array_fill_keys($series['keys'], 0);
 
     $sql = "SELECT DATE_FORMAT(csat_submitted_at, '%Y-%m') AS month_str,
                    ROUND(AVG(csat_score), 2) AS avg_score,
@@ -863,12 +863,12 @@ function get_ticket_csat_trend() {
     }
 
     $data = [];
-    foreach ($labels as $label) {
-        $data[] = $scores[$label];
+    foreach ($series['keys'] as $ym) {
+        $data[] = $scores[$ym];
     }
 
     return [
-        'labels' => $labels,
+        'labels' => $series['labels'],
         'data' => $data,
         'counts' => array_values($counts),
     ];
@@ -880,12 +880,9 @@ function get_ticket_csat_trend() {
 function get_ticket_survey_response_rate_trend() {
     global $conn, $company_id;
 
-    $labels = [];
-    for ($i = 11; $i >= 0; $i--) {
-        $labels[] = date('Y-m', strtotime("-$i month"));
-    }
-    $issued = array_fill_keys($labels, 0);
-    $completed = array_fill_keys($labels, 0);
+    $series = reports_build_year_month_series(11);
+    $issued = array_fill_keys($series['keys'], 0);
+    $completed = array_fill_keys($series['keys'], 0);
 
     $sql = "SELECT DATE_FORMAT(ts.created_at, '%Y-%m') AS month_str,
                    COUNT(*) AS issued_count,
@@ -914,16 +911,16 @@ function get_ticket_survey_response_rate_trend() {
     $issuedData = [];
     $completedData = [];
     $rates = [];
-    foreach ($labels as $label) {
-        $issuedCount = $issued[$label];
-        $completedCount = $completed[$label];
+    foreach ($series['keys'] as $ym) {
+        $issuedCount = $issued[$ym];
+        $completedCount = $completed[$ym];
         $issuedData[] = $issuedCount;
         $completedData[] = $completedCount;
         $rates[] = $issuedCount > 0 ? round(($completedCount / $issuedCount) * 100, 1) : null;
     }
 
     return [
-        'labels' => $labels,
+        'labels' => $series['labels'],
         'issued' => $issuedData,
         'completed' => $completedData,
         'rates' => $rates,

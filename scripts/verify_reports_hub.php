@@ -208,6 +208,21 @@ if (!is_file($indexPath)) {
     if ($failures === 0 || strpos($indexSource, 'opsOccupancyChart') !== false) {
         rh_verify_pass('index.php defines core chart canvas elements.');
     }
+    if (strpos($indexSource, 'itm_ui_locale_format_money_display') === false) {
+        rh_verify_fail('index.php must format money insight cards via itm_ui_locale_format_money_display().');
+    } else {
+        rh_verify_pass('index.php uses locale money formatter for insight cards.');
+    }
+    if (strpos($indexSource, 'itmMoneyFormat') === false || strpos($indexSource, 'itmFormatChartMoney') === false) {
+        rh_verify_fail('index.php must expose Chart.js locale money formatter helpers.');
+    } else {
+        rh_verify_pass('index.php defines Chart.js locale money formatter.');
+    }
+    if (preg_match('/\$<\?php echo number_format\(/', $indexSource)) {
+        rh_verify_fail('index.php still hardcodes $ + number_format for money insight cards.');
+    } else {
+        rh_verify_pass('index.php has no hardcoded dollar number_format insight values.');
+    }
 }
 
 rh_verify_exit($failures > 0 ? 1 : 0);

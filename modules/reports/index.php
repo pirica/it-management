@@ -220,6 +220,9 @@ foreach ($ticket_data['labels'] as $idx => $label) {
     }
 }
 
+$reportsLocaleConfig = itm_ui_locale_active_config();
+$reportsMoneyFormat = itm_ui_locale_chart_money_format_payload($reportsLocaleConfig);
+
 // Why: connection is handled by config/config.php and used by footer.php, do not close here.
 ?>
 <!DOCTYPE html>
@@ -472,7 +475,7 @@ if (!isset($crud_title)) {
                                     <td><code><?php echo sanitize($sr['schedule_cron']); ?></code></td>
                                     <td><?php echo sanitize(strtoupper((string) $sr['format'])); ?></td>
                                     <td><?php echo (int) $sr['enabled'] === 1 ? 'Yes' : 'No'; ?></td>
-                                    <td><?php echo $sr['last_sent_at'] ? sanitize(itm_format_cell_scalar_display($sr['last_sent_at'])) : '—'; ?></td>
+                                    <td><?php echo $sr['last_sent_at'] ? sanitize(itm_format_datetime_display($sr['last_sent_at'])) : '—'; ?></td>
                                     <td class="itm-actions-cell" data-itm-actions-origin="1">
                                         <button type="button" class="btn btn-sm js-edit-schedule" title="Edit"
                                             data-id="<?php echo (int) $sr['id']; ?>"
@@ -581,15 +584,15 @@ if (!isset($crud_title)) {
                         </div>
                         <div class="insight-card" style="border-left-color: #10b981;">
                             <h4>MTD Avg ADR</h4>
-                            <div class="insight-value">$<?php echo number_format($ops_summary['avg_adr'], 2); ?></div>
+                            <div class="insight-value"><?php echo sanitize(itm_ui_locale_format_money_display($ops_summary['avg_adr'], $reportsLocaleConfig)); ?></div>
                         </div>
                         <div class="insight-card" style="border-left-color: #f59e0b;">
                             <h4>MTD Avg RevPAR</h4>
-                            <div class="insight-value">$<?php echo number_format($ops_summary['avg_revpar'], 2); ?></div>
+                            <div class="insight-value"><?php echo sanitize(itm_ui_locale_format_money_display($ops_summary['avg_revpar'], $reportsLocaleConfig)); ?></div>
                         </div>
                         <div class="insight-card" style="border-left-color: #ef4444;">
                             <h4>MTD Total Revenue</h4>
-                            <div class="insight-value">$<?php echo number_format($ops_summary['total_revenue'], 0); ?></div>
+                            <div class="insight-value"><?php echo sanitize(itm_ui_locale_format_money_display($ops_summary['total_revenue'], $reportsLocaleConfig, 'short')); ?></div>
                         </div>
                     </div>
 
@@ -638,19 +641,19 @@ if (!isset($crud_title)) {
                     <div class="insight-grid">
                         <div class="insight-card">
                             <h4>Current Year Budget</h4>
-                            <div class="insight-value">$<?php echo number_format($total_budget, 2); ?></div>
+                            <div class="insight-value"><?php echo sanitize(itm_ui_locale_format_money_display($total_budget, $reportsLocaleConfig)); ?></div>
                         </div>
                         <div class="insight-card" style="border-left-color: #f59e0b;">
                             <h4>Actual YTD Spend</h4>
-                            <div class="insight-value">$<?php echo number_format($total_actual, 2); ?></div>
+                            <div class="insight-value"><?php echo sanitize(itm_ui_locale_format_money_display($total_actual, $reportsLocaleConfig)); ?></div>
                         </div>
                         <div class="insight-card" style="border-left-color: #10b981;">
                             <h4>Remaining Funds</h4>
-                            <div class="insight-value">$<?php echo number_format($budget_remaining, 2); ?></div>
+                            <div class="insight-value"><?php echo sanitize(itm_ui_locale_format_money_display($budget_remaining, $reportsLocaleConfig)); ?></div>
                         </div>
                         <div class="insight-card" style="border-left-color: #6366f1;">
-                            <h4>Spend Comparison (<?php echo $monthly_comparison['month_name']; ?>)</h4>
-                            <div class="insight-value">$<?php echo number_format($monthly_comparison['this_year'], 2); ?></div>
+                            <h4>Spend Comparison (<?php echo sanitize($monthly_comparison['month_name']); ?>)</h4>
+                            <div class="insight-value"><?php echo sanitize(itm_ui_locale_format_money_display($monthly_comparison['this_year'], $reportsLocaleConfig)); ?></div>
                             <?php
                                 $diff = $monthly_comparison['this_year'] - $monthly_comparison['last_year'];
                                 $pct = $monthly_comparison['last_year'] > 0 ? ($diff / $monthly_comparison['last_year']) * 100 : 0;
@@ -894,6 +897,45 @@ if (!isset($crud_title)) {
     const isDark = document.body.classList.contains('dark');
     const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
     const textColor = isDark ? '#e1e1e1' : '#333';
+    const itmMoneyFormat = <?php echo json_encode($reportsMoneyFormat, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+
+    function itmFormatChartMoney(value, decimals) {
+        const n = Number(value);
+        if (!Number.isFinite(n)) {
+            return String(value);
+        }
+        const places = (decimals === undefined || decimals === null) ? 2 : decimals;
+        let formatted = n.toFixed(places);
+        const parts = formatted.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        formatted = places > 0 ? parts.join('.') : parts[0];
+        if (itmMoneyFormat.suffix) {
+            return formatted + itmMoneyFormat.symbol;
+        }
+        return itmMoneyFormat.symbol + formatted;
+    }
+
+    function itmChartMoneyAxisOptions() {
+        return {
+            ticks: {
+                callback: function (value) {
+                    return itmFormatChartMoney(value, 0);
+                }
+            }
+        };
+    }
+
+    function itmChartMoneyTooltipOptions() {
+        return {
+            callbacks: {
+                label: function (context) {
+                    const label = context.dataset.label ? context.dataset.label + ': ' : '';
+                    const raw = context.parsed && context.parsed.y !== undefined ? context.parsed.y : context.raw;
+                    return label + itmFormatChartMoney(raw, 2);
+                }
+            }
+        };
+    }
 
     Chart.defaults.color = textColor;
     Chart.defaults.font.family = "'Segoe UI', 'Roboto', sans-serif";
@@ -967,7 +1009,10 @@ if (!isset($crud_title)) {
                 ]
             },
             options: Object.assign({}, baseOptions, {
-                plugins: { legend: { display: true, position: 'top' } }
+                plugins: { legend: { display: true, position: 'top' }, tooltip: itmChartMoneyTooltipOptions() },
+                scales: {
+                    y: Object.assign({}, baseOptions.scales.y, itmChartMoneyAxisOptions())
+                }
             })
         });
 
@@ -990,7 +1035,10 @@ if (!isset($crud_title)) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: true, position: 'right' } },
+                plugins: {
+                    legend: { display: true, position: 'right' },
+                    tooltip: itmChartMoneyTooltipOptions()
+                },
                 scales: {
                     r: {
                         grid: { color: gridColor },
@@ -1057,7 +1105,10 @@ if (!isset($crud_title)) {
                 ]
             },
             options: Object.assign({}, baseOptions, {
-                plugins: { legend: { display: true, position: 'top' } }
+                plugins: { legend: { display: true, position: 'top' }, tooltip: itmChartMoneyTooltipOptions() },
+                scales: {
+                    y: Object.assign({}, baseOptions.scales.y, itmChartMoneyAxisOptions())
+                }
             })
         });
 
@@ -1072,7 +1123,12 @@ if (!isset($crud_title)) {
                     borderRadius: 5
                 }]
             },
-            options: baseOptions
+            options: Object.assign({}, baseOptions, {
+                plugins: { tooltip: itmChartMoneyTooltipOptions() },
+                scales: {
+                    y: Object.assign({}, baseOptions.scales.y, itmChartMoneyAxisOptions())
+                }
+            })
         });
 
         new Chart(document.getElementById('budgetYoyChart'), {
@@ -1086,7 +1142,12 @@ if (!isset($crud_title)) {
                     barThickness: 60
                 }]
             },
-            options: baseOptions
+            options: Object.assign({}, baseOptions, {
+                plugins: { tooltip: itmChartMoneyTooltipOptions() },
+                scales: {
+                    y: Object.assign({}, baseOptions.scales.y, itmChartMoneyAxisOptions())
+                }
+            })
         });
 
         new Chart(document.getElementById('assetValueChart'), {
@@ -1099,7 +1160,7 @@ if (!isset($crud_title)) {
                 }]
             },
             options: {
-                plugins: { legend: { display: true, position: 'right' } },
+                plugins: { legend: { display: true, position: 'right' }, tooltip: itmChartMoneyTooltipOptions() },
                 maintainAspectRatio: false
             }
         });

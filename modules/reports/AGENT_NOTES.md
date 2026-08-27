@@ -83,6 +83,7 @@ This module is read-only and aggregates data from:
 - Uses **Chart.js** for data visualization.
 - Responsive dashboard layout with stats cards and chart cards.
 - Dark/Light theme support via `body` class.
+- **Locale display (Settings → UI Configuration):** money insight cards and Chart.js financial axes/tooltips use `itm_ui_locale_format_money_display()` / `itm_ui_locale_chart_money_format_payload()` (symbol suffix/prefix from `ui_configuration`). Chart date labels in `api/helpers.php` use `itm_ui_locale_format_month_short_labels()`, `itm_ui_locale_format_year_month_chart_label()`, `itm_ui_locale_format_chart_day_label()`, and `itm_ui_locale_format_month_full_label()`. Scheduled report **Last sent** uses `itm_format_cell_scalar_display()` (datetime locale).
 - **UI configuration reviewed:** gate-excluded bespoke dashboard (`index.php` only) — no flattened CRUD table, CRUD entry files, or Settings list toolbar; all 16 `check_ui_configuration_coverage.php` list-contract checks registered in `scripts/data/ui_configuration_reviewed.json` as `[n/a][n/a][reviewed]`.
 
 ---

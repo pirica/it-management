@@ -122,6 +122,36 @@ if (itm_ui_locale_format_money_display(69.5, $prefixConfig) !== '€69.50') {
     ui_locale_pass('Prefix money format');
 }
 
+$europeanChartConfig = $sampleConfig;
+$europeanChartConfig['ui_date_format'] = 'european_ddmmmyyyy';
+$chartLabels = itm_ui_locale_format_month_short_labels($europeanChartConfig);
+if (($chartLabels[8] ?? '') !== 'Aug') {
+    ui_locale_fail('Month short labels failed for european_ddmmmyyyy');
+} else {
+    ui_locale_pass('Month short labels for european_ddmmmyyyy');
+}
+
+$isoConfig = $sampleConfig;
+$isoConfig['ui_date_format'] = 'iso_yyyymmdd';
+if (itm_ui_locale_format_year_month_chart_label('2026-08', $isoConfig) !== '2026-08') {
+    ui_locale_fail('Year-month chart label failed for iso_yyyymmdd');
+} else {
+    ui_locale_pass('Year-month chart label for iso_yyyymmdd');
+}
+
+if (itm_ui_locale_format_chart_day_label('2026-08-17', $europeanChartConfig) !== '17/Aug') {
+    ui_locale_fail('Chart day label failed for european_ddmmmyyyy');
+} else {
+    ui_locale_pass('Chart day label for european_ddmmmyyyy');
+}
+
+$chartMoneyPayload = itm_ui_locale_chart_money_format_payload($prefixConfig);
+if (($chartMoneyPayload['symbol'] ?? '') !== '€' || !empty($chartMoneyPayload['suffix'])) {
+    ui_locale_fail('Chart money payload failed for prefix config');
+} else {
+    ui_locale_pass('Chart money payload for prefix config');
+}
+
 if (itm_ui_locale_format_datetime_display('2026-08-17 22:58:00', $sampleConfig) !== '17/Aug/2026 22:58') {
     ui_locale_fail('European datetime2 display failed');
 } else {

@@ -327,3 +327,125 @@ if (!function_exists('itm_ui_locale_format_money_display')) {
         return itm_ui_locale_format_money_with_options($amount, $moneyOptions, $style);
     }
 }
+
+if (!function_exists('itm_ui_locale_format_month_short_labels')) {
+    /**
+     * Month axis labels (1–12) for chart datasets — follows ui_date_format.
+     *
+     * @return array<int,string>
+     */
+    function itm_ui_locale_format_month_short_labels($config = null)
+    {
+        $config = is_array($config) ? $config : itm_ui_locale_active_config();
+        $fmt = itm_ui_locale_date_format_from_config($config);
+        $labels = [];
+        for ($month = 1; $month <= 12; $month++) {
+            $dt = DateTimeImmutable::createFromFormat('!Y-m-d', sprintf('2026-%02d-15', $month));
+            if (!$dt instanceof DateTimeImmutable) {
+                continue;
+            }
+            if ($fmt === 'iso_yyyymmdd' || $fmt === 'us_mmddyyyy' || $fmt === 'european_ddmmyyyy') {
+                $labels[$month] = $dt->format('m');
+            } else {
+                $labels[$month] = $dt->format('M');
+            }
+        }
+        return $labels;
+    }
+}
+
+if (!function_exists('itm_ui_locale_format_year_month_chart_label')) {
+    /**
+     * Compact year-month label for trend charts (input canonical Y-m).
+     */
+    function itm_ui_locale_format_year_month_chart_label($yearMonth, $config = null)
+    {
+        $yearMonth = trim((string) $yearMonth);
+        if (!preg_match('/^(\d{4})-(\d{2})$/', $yearMonth)) {
+            return $yearMonth;
+        }
+        $dt = DateTimeImmutable::createFromFormat('!Y-m-d', $yearMonth . '-01');
+        if (!$dt instanceof DateTimeImmutable) {
+            return $yearMonth;
+        }
+        $config = is_array($config) ? $config : itm_ui_locale_active_config();
+        $fmt = itm_ui_locale_date_format_from_config($config);
+        if ($fmt === 'iso_yyyymmdd') {
+            return $dt->format('Y-m');
+        }
+        if ($fmt === 'us_mmddyyyy' || $fmt === 'european_ddmmyyyy') {
+            return $dt->format('m/Y');
+        }
+        return $dt->format('M/Y');
+    }
+}
+
+if (!function_exists('itm_ui_locale_format_chart_day_label')) {
+    /**
+     * Short day label for dense chart axes (input Y-m-d or parseable date text).
+     */
+    function itm_ui_locale_format_chart_day_label($rawValue, $config = null)
+    {
+        $canonical = function_exists('itm_parse_date_input') ? itm_parse_date_input($rawValue) : null;
+        if ($canonical === null) {
+            return trim((string) $rawValue);
+        }
+        $dt = DateTimeImmutable::createFromFormat('!Y-m-d', $canonical);
+        if (!$dt instanceof DateTimeImmutable) {
+            return trim((string) $rawValue);
+        }
+        $config = is_array($config) ? $config : itm_ui_locale_active_config();
+        $fmt = itm_ui_locale_date_format_from_config($config);
+        if ($fmt === 'iso_yyyymmdd') {
+            return $dt->format('Y-m-d');
+        }
+        if ($fmt === 'us_mmddyyyy') {
+            return $dt->format('n/j');
+        }
+        if ($fmt === 'european_ddmmyyyy') {
+            return $dt->format('j/n');
+        }
+        return $dt->format('j/M');
+    }
+}
+
+if (!function_exists('itm_ui_locale_format_month_full_label')) {
+    /**
+     * Full month label for insight cards (defaults to current calendar month).
+     */
+    function itm_ui_locale_format_month_full_label($month = null, $config = null, $year = null)
+    {
+        $month = $month === null ? (int) date('n') : (int) $month;
+        $year = $year === null ? (int) date('Y') : (int) $year;
+        if ($month < 1 || $month > 12) {
+            return '';
+        }
+        $dt = DateTimeImmutable::createFromFormat('!Y-m-d', sprintf('%04d-%02d-01', $year, $month));
+        if (!$dt instanceof DateTimeImmutable) {
+            return '';
+        }
+        $config = is_array($config) ? $config : itm_ui_locale_active_config();
+        $fmt = itm_ui_locale_date_format_from_config($config);
+        if ($fmt === 'iso_yyyymmdd') {
+            return $dt->format('Y-m');
+        }
+        return $dt->format('F');
+    }
+}
+
+if (!function_exists('itm_ui_locale_chart_money_format_payload')) {
+    /**
+     * JSON payload for Chart.js money tick/tooltip formatters.
+     *
+     * @return array{symbol:string,suffix:bool}
+     */
+    function itm_ui_locale_chart_money_format_payload($config = null)
+    {
+        $config = is_array($config) ? $config : itm_ui_locale_active_config();
+        $moneyOptions = itm_ui_locale_money_format_options_from_config($config);
+        return [
+            'symbol' => (string) ($moneyOptions['symbol'] ?? '€'),
+            'suffix' => !empty($moneyOptions['suffix']),
+        ];
+    }
+}
