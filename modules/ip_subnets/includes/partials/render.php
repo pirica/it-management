@@ -34,10 +34,27 @@ if (!isset($crud_title)) {
             <?php if (in_array($crud_action, ['index', 'list_all'], true)): ?>
                 <?php $itmSubnetListBulkGenerateColumn = (($crud_table ?? '') === 'ip_subnets'); ?>
                 <div class="card" style="margin-bottom:16px;padding:12px;display:flex;gap:8px;flex-wrap:wrap;">
-                    <a class="btn btn-sm btn-primary" href="index.php">Subnets</a>
-                    <a class="btn btn-sm" href="../network_discovery/index.php?tab=profiles">Discovery profiles</a>
-                    <a class="btn btn-sm" href="../network_discovery/index.php?tab=staging">Staging queue</a>
+                    <a class="btn btn-sm <?php echo ($ipSubnetsTab ?? 'subnets') === 'subnets' ? 'btn-primary' : ''; ?>" href="index.php">Subnets</a>
+                    <a class="btn btn-sm <?php echo ($ipSubnetsTab ?? '') === 'profiles' ? 'btn-primary' : ''; ?>" href="index.php?tab=profiles">Discovery profiles</a>
+                    <a class="btn btn-sm <?php echo ($ipSubnetsTab ?? '') === 'staging' ? 'btn-primary' : ''; ?>" href="index.php?tab=staging">Staging queue</a>
+                    <a class="btn btn-sm" href="../network_discovery/index.php" title="Open network discovery module">🧭</a>
                 </div>
+
+                <?php if (($ipSubnetsTab ?? 'subnets') !== 'subnets'): ?>
+                    <?php if (($crudSuccessMessage ?? '') !== ''): ?>
+                        <div class="alert alert-success"><?php echo sanitize($crudSuccessMessage); ?></div>
+                    <?php endif; ?>
+                    <?php
+                    $ndSubnetListUrl = 'index.php';
+                    $ndProfilesTabUrl = 'index.php?tab=profiles';
+                    $ndStagingTabUrl = 'index.php?tab=staging';
+                    if (($ipSubnetsTab ?? '') === 'profiles') {
+                        require __DIR__ . '/network_discovery_profiles.php';
+                    } else {
+                        require __DIR__ . '/network_discovery_staging.php';
+                        require __DIR__ . '/network_discovery_assets.php';
+                    }
+                <?php else: ?>
                 <div data-itm-new-button-managed="server" style="position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;min-height:40px;">
                     <?php if (in_array($newButtonPosition, ['left', 'left_right'], true)): ?>
                         <a href="create.php" class="btn btn-primary itm-list-new-button" title="Create">➕</a>
@@ -227,6 +244,8 @@ if (!isset($crud_title)) {
                             <?php endif; ?>
                         </div>
                     </div>
+                <?php endif; ?>
+
                 <?php endif; ?>
 
             <?php elseif (in_array($crud_action, ['create', 'edit'], true)): ?>

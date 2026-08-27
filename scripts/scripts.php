@@ -661,8 +661,22 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
                     <td><a href="run_network_discovery.php" target="_blank" rel="nofollow noreferrer">run_network_discovery.php</a></td>
                     <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
                     <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
-                    <td>Runs one chunked TCP discovery batch per due <code>network_discovery_profiles</code> row; optional <code>--company=1</code>, <code>--profile=ID</code>.</td>
+                    <td>Enqueues due <code>network_discovery_profiles</code> scan jobs; optional <code>--company=1</code>, <code>--profile=ID</code> runs one batch immediately.</td>
                     <td class="scripts-catalog-how-stub"><code>php scripts/run_network_discovery.php</code></td>
+                </tr>
+                <tr data-tags="Mixed">
+                    <td><a href="run_background_jobs.php" target="_blank" rel="nofollow noreferrer">run_background_jobs.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-web">Browser</span><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="mixed">Mixed</span></span></td>
+                    <td>Processes pending <code>background_jobs</code> rows (network discovery scan batches); optional <code>--company=1</code>, <code>--type=network_discovery_scan</code>, <code>--limit=20</code>.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/run_background_jobs.php</code></td>
+                </tr>
+                <tr data-tags="CLI">
+                    <td><a href="verify_background_jobs.php" target="_blank" rel="nofollow noreferrer">verify_background_jobs.php</a></td>
+                    <td class="scripts-access-cell"><span class="scripts-access-badges"><span class="scripts-badge scripts-badge-cli">CLI</span></span></td>
+                    <td class="scripts-tags-cell"><span class="scripts-tag-badges"><span class="scripts-badge scripts-badge-tag" data-tag-kind="cli">CLI</span></span></td>
+                    <td>Regression for <code>background_jobs</code> enqueue dedupe and profile scan migration off profile <code>scan_*</code> columns.</td>
+                    <td class="scripts-catalog-how-stub"><code>php scripts/verify_background_jobs.php</code></td>
                 </tr>
                 <tr data-tags="CLI">
                     <td><a href="verify_network_discovery.php" target="_blank" rel="nofollow noreferrer">verify_network_discovery.php</a></td>

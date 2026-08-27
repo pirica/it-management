@@ -41,7 +41,7 @@ if (!($conn instanceof mysqli)) {
     exit(1);
 }
 
-foreach (['network_discovery_profiles', 'network_discovery_staging'] as $table) {
+foreach (['background_jobs', 'network_discovery_profiles', 'network_discovery_staging'] as $table) {
     $res = mysqli_query($conn, "SHOW TABLES LIKE '" . mysqli_real_escape_string($conn, $table) . "'");
     if (!$res || mysqli_num_rows($res) === 0) {
         nd_verify_fail("Missing table {$table}");

@@ -287,14 +287,17 @@ if (!function_exists('itm_network_discovery_fetch_profile')) {
     }
 }
 
-if (!function_exists('itm_network_discovery_profile_run_batch')) {
+if (!function_exists('itm_network_discovery_enqueue_profile_scan')) {
     /**
-     * @return array{ok: bool, error?: string, complete?: bool, found?: int, scanned?: int, detail?: string}
+     * @return array{ok: bool, error?: string, id?: int, skipped?: bool}
      */
-    function itm_network_discovery_profile_run_batch(mysqli $conn, int $profileId, int $employeeId = 0): array
+    function itm_network_discovery_enqueue_profile_scan(mysqli $conn, int $profileId, int $employeeId = 0): array
     {
         if (!itm_network_discovery_table_exists($conn, 'network_discovery_profiles')) {
             return ['ok' => false, 'error' => 'Network discovery tables are not installed.'];
+        }
+        if (!function_exists('itm_background_jobs_enqueue')) {
+            require_once ROOT_PATH . 'includes/itm_background_jobs.php';
         }
 
         $stmt = mysqli_prepare(
@@ -314,57 +317,143 @@ if (!function_exists('itm_network_discovery_profile_run_batch')) {
         }
 
         $companyId = (int)($profile['company_id'] ?? 0);
-        $snmpEnabled = (int)($profile['snmp_enabled'] ?? 0) === 1;
-        $autoPolicy = (string)($profile['auto_create_policy'] ?? 'review');
-        $batchSize = itm_network_discovery_batch_size();
-        $inProgress = (int)($profile['scan_in_progress'] ?? 0) === 1;
-        $offset = (int)($profile['scan_offset'] ?? 0);
-        $ips = [];
+        if (itm_background_jobs_profile_has_active_scan($conn, $companyId, $profileId)) {
+            return ['ok' => true, 'skipped' => true];
+        }
 
-        if ($inProgress) {
-            $decoded = json_decode((string)($profile['scan_ips_json'] ?? '[]'), true);
-            if (is_array($decoded)) {
-                foreach ($decoded as $ip) {
-                    $ip = trim((string)$ip);
-                    if ($ip !== '') {
-                        $ips[] = $ip;
-                    }
-                }
-            }
-        } else {
-            $subnetIds = itm_network_discovery_decode_subnet_ids((string)($profile['subnet_ids_json'] ?? '[]'));
-            $built = itm_network_discovery_build_profile_ip_list($conn, $companyId, $subnetIds);
-            if (empty($built['ok'])) {
-                return ['ok' => false, 'error' => (string)($built['error'] ?? 'Could not build IP list.')];
-            }
-            $ips = $built['ips'] ?? [];
-            $ipsJson = json_encode($ips, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            $start = mysqli_prepare(
+        $subnetIds = itm_network_discovery_decode_subnet_ids((string)($profile['subnet_ids_json'] ?? '[]'));
+        $built = itm_network_discovery_build_profile_ip_list($conn, $companyId, $subnetIds);
+        if (empty($built['ok'])) {
+            return ['ok' => false, 'error' => (string)($built['error'] ?? 'Could not build IP list.')];
+        }
+        $ips = $built['ips'] ?? [];
+        $payload = [
+            'profile_id' => $profileId,
+            'ips' => $ips,
+            'snmp_enabled' => (int)($profile['snmp_enabled'] ?? 0) === 1,
+            'auto_create_policy' => (string)($profile['auto_create_policy'] ?? 'review'),
+            'employee_id' => $employeeId,
+        ];
+        $enqueue = itm_background_jobs_enqueue(
+            $conn,
+            $companyId,
+            itm_background_job_type_network_discovery_scan(),
+            $payload,
+            $employeeId,
+            count($ips)
+        );
+        if (empty($enqueue['ok'])) {
+            return ['ok' => false, 'error' => (string)($enqueue['error'] ?? 'Could not enqueue scan job.')];
+        }
+        return ['ok' => true, 'id' => (int)($enqueue['id'] ?? 0)];
+    }
+}
+
+if (!function_exists('itm_background_jobs_find_active_profile_scan')) {
+    function itm_background_jobs_find_active_profile_scan(mysqli $conn, int $companyId, int $profileId): ?array
+    {
+        if ($companyId <= 0 || $profileId <= 0 || !itm_background_jobs_table_exists($conn)) {
+            return null;
+        }
+        $type = itm_background_job_type_network_discovery_scan();
+        $sql = 'SELECT * FROM background_jobs
+                WHERE company_id = ? AND job_type = ? AND deleted_at IS NULL
+                  AND status IN (\'pending\', \'running\')
+                  AND CAST(JSON_UNQUOTE(JSON_EXTRACT(payload_json, \'$.profile_id\')) AS UNSIGNED) = ?
+                ORDER BY id ASC LIMIT 1';
+        $stmt = mysqli_prepare($conn, $sql);
+        if (!$stmt) {
+            return null;
+        }
+        mysqli_stmt_bind_param($stmt, 'isi', $companyId, $type, $profileId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        return $row ?: null;
+    }
+}
+
+if (!function_exists('itm_network_discovery_process_background_job')) {
+    /**
+     * @param array<string, mixed> $job
+     * @return array{ok: bool, error?: string, complete?: bool, found?: int, scanned?: int, detail?: string}
+     */
+    function itm_network_discovery_process_background_job(mysqli $conn, array $job): array
+    {
+        $jobId = (int)($job['id'] ?? 0);
+        $companyId = (int)($job['company_id'] ?? 0);
+        $status = (string)($job['status'] ?? '');
+        if ($jobId <= 0 || $companyId <= 0) {
+            return ['ok' => false, 'error' => 'Invalid job row.'];
+        }
+        if ($status === 'pending') {
+            $claim = mysqli_prepare(
                 $conn,
-                'UPDATE network_discovery_profiles
-                 SET scan_in_progress = 1, scan_offset = 0, scan_ips_json = ?, updated_at = NOW()
-                 WHERE id = ? AND company_id = ?'
+                'UPDATE background_jobs SET status = \'running\', started_at = IFNULL(started_at, NOW()), updated_at = NOW()
+                 WHERE id = ? AND status = \'pending\' AND deleted_at IS NULL'
             );
-            if ($start) {
-                mysqli_stmt_bind_param($start, 'sii', $ipsJson, $profileId, $companyId);
-                mysqli_stmt_execute($start);
-                mysqli_stmt_close($start);
+            if ($claim) {
+                mysqli_stmt_bind_param($claim, 'i', $jobId);
+                mysqli_stmt_execute($claim);
+                mysqli_stmt_close($claim);
             }
-            $offset = 0;
-            $inProgress = true;
+        }
+
+        $payload = json_decode((string)($job['payload_json'] ?? '{}'), true);
+        if (!is_array($payload)) {
+            if (!function_exists('itm_background_jobs_mark_failed')) {
+                require_once ROOT_PATH . 'includes/itm_background_jobs.php';
+            }
+            itm_background_jobs_mark_failed($conn, $jobId, 'Invalid job payload JSON.', false);
+            return ['ok' => false, 'error' => 'Invalid job payload JSON.'];
+        }
+
+        $profileId = (int)($payload['profile_id'] ?? 0);
+        $snmpEnabled = !empty($payload['snmp_enabled']);
+        $autoPolicy = (string)($payload['auto_create_policy'] ?? 'review');
+        $employeeId = (int)($payload['employee_id'] ?? 0);
+        $ips = [];
+        foreach ($payload['ips'] ?? [] as $ip) {
+            $ip = trim((string)$ip);
+            if ($ip !== '') {
+                $ips[] = $ip;
+            }
+        }
+
+        if ($profileId <= 0) {
+            if (!function_exists('itm_background_jobs_mark_failed')) {
+                require_once ROOT_PATH . 'includes/itm_background_jobs.php';
+            }
+            itm_background_jobs_mark_failed($conn, $jobId, 'Missing profile_id in payload.', false);
+            return ['ok' => false, 'error' => 'Missing profile_id in payload.'];
         }
 
         if ($ips === []) {
-            mysqli_query($conn, 'UPDATE network_discovery_profiles SET scan_in_progress = 0, scan_offset = 0, scan_ips_json = NULL, last_run_at = NOW() WHERE id = ' . (int)$profileId);
+            if (!function_exists('itm_background_jobs_mark_completed')) {
+                require_once ROOT_PATH . 'includes/itm_background_jobs.php';
+            }
+            itm_background_jobs_mark_completed($conn, $jobId);
+            mysqli_query(
+                $conn,
+                'UPDATE network_discovery_profiles SET last_run_at = NOW(), updated_at = NOW() WHERE id = '
+                . (int)$profileId . ' AND company_id = ' . (int)$companyId
+            );
             return ['ok' => true, 'complete' => true, 'found' => 0, 'scanned' => 0, 'detail' => 'No addresses to scan.'];
         }
 
+        $offset = (int)($job['progress_offset'] ?? 0);
+        $batchSize = itm_network_discovery_batch_size();
         if (!function_exists('itm_ipam_network_discovery_scan_ips_batch')) {
             require_once ROOT_PATH . 'includes/ipam_helpers.php';
         }
 
         $batch = itm_ipam_network_discovery_scan_ips_batch($conn, $companyId, $ips, $offset, $batchSize);
         if (empty($batch['ok'])) {
+            if (!function_exists('itm_background_jobs_mark_failed')) {
+                require_once ROOT_PATH . 'includes/itm_background_jobs.php';
+            }
+            itm_background_jobs_mark_failed($conn, $jobId, (string)($batch['error'] ?? 'Scan batch failed.'));
             return ['ok' => false, 'error' => (string)($batch['error'] ?? 'Scan batch failed.')];
         }
 
@@ -396,28 +485,18 @@ if (!function_exists('itm_network_discovery_profile_run_batch')) {
 
         $nextOffset = (int)($batch['next_offset'] ?? $offset);
         $complete = !empty($batch['complete']);
+        if (!function_exists('itm_background_jobs_mark_completed')) {
+            require_once ROOT_PATH . 'includes/itm_background_jobs.php';
+        }
         if ($complete) {
-            $done = mysqli_prepare(
+            itm_background_jobs_mark_completed($conn, $jobId);
+            mysqli_query(
                 $conn,
-                'UPDATE network_discovery_profiles
-                 SET scan_in_progress = 0, scan_offset = 0, scan_ips_json = NULL, last_run_at = NOW(), updated_at = NOW()
-                 WHERE id = ? AND company_id = ?'
+                'UPDATE network_discovery_profiles SET last_run_at = NOW(), updated_at = NOW() WHERE id = '
+                . (int)$profileId . ' AND company_id = ' . (int)$companyId
             );
-            if ($done) {
-                mysqli_stmt_bind_param($done, 'ii', $profileId, $companyId);
-                mysqli_stmt_execute($done);
-                mysqli_stmt_close($done);
-            }
         } else {
-            $prog = mysqli_prepare(
-                $conn,
-                'UPDATE network_discovery_profiles SET scan_offset = ?, updated_at = NOW() WHERE id = ? AND company_id = ?'
-            );
-            if ($prog) {
-                mysqli_stmt_bind_param($prog, 'iii', $nextOffset, $profileId, $companyId);
-                mysqli_stmt_execute($prog);
-                mysqli_stmt_close($prog);
-            }
+            itm_background_jobs_mark_progress($conn, $jobId, $nextOffset);
         }
 
         return [
@@ -429,6 +508,47 @@ if (!function_exists('itm_network_discovery_profile_run_batch')) {
                 ? 'Profile scan complete.'
                 : ('Scanned ' . $nextOffset . ' of ' . count($ips) . ' addresses…'),
         ];
+    }
+}
+
+if (!function_exists('itm_network_discovery_profile_run_batch')) {
+    /**
+     * Enqueue a profile scan when needed and process one background job batch.
+     *
+     * @return array{ok: bool, error?: string, complete?: bool, found?: int, scanned?: int, detail?: string}
+     */
+    function itm_network_discovery_profile_run_batch(mysqli $conn, int $profileId, int $employeeId = 0): array
+    {
+        if (!function_exists('itm_background_jobs_enqueue')) {
+            require_once ROOT_PATH . 'includes/itm_background_jobs.php';
+        }
+
+        $enqueue = itm_network_discovery_enqueue_profile_scan($conn, $profileId, $employeeId);
+        if (empty($enqueue['ok'])) {
+            return $enqueue;
+        }
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT company_id FROM network_discovery_profiles WHERE id = ? AND deleted_at IS NULL LIMIT 1'
+        );
+        if (!$stmt) {
+            return ['ok' => false, 'error' => 'Profile lookup failed.'];
+        }
+        mysqli_stmt_bind_param($stmt, 'i', $profileId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $profile = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
+        if (!$profile) {
+            return ['ok' => false, 'error' => 'Profile not found.'];
+        }
+        $companyId = (int)($profile['company_id'] ?? 0);
+        $job = itm_background_jobs_find_active_profile_scan($conn, $companyId, $profileId);
+        if (!$job) {
+            return ['ok' => true, 'complete' => true, 'found' => 0, 'scanned' => 0, 'detail' => 'No addresses to scan.'];
+        }
+        return itm_network_discovery_process_background_job($conn, $job);
     }
 }
 
@@ -743,47 +863,55 @@ if (!function_exists('itm_network_discovery_dismiss_staging')) {
 
 if (!function_exists('itm_network_discovery_run_scheduled')) {
     /**
-     * @return array{profiles: int, batches: int, found: int, errors: array<int, string>}
+     * @return array{profiles: int, enqueued: int, errors: array<int, string>}
      */
     function itm_network_discovery_run_scheduled(mysqli $conn, int $companyFilter = 0): array
     {
         if (!itm_network_discovery_table_exists($conn, 'network_discovery_profiles')) {
-            return ['profiles' => 0, 'batches' => 0, 'found' => 0, 'errors' => ['Tables not installed.']];
+            return ['profiles' => 0, 'enqueued' => 0, 'errors' => ['Tables not installed.']];
         }
         if (!function_exists('itm_scheduled_reports_cron_is_due')) {
             require_once ROOT_PATH . 'includes/itm_scheduled_reports.php';
         }
 
-        $sql = 'SELECT id, company_id, schedule_cron, scan_in_progress FROM network_discovery_profiles
+        $sql = 'SELECT id, company_id, schedule_cron FROM network_discovery_profiles
                 WHERE deleted_at IS NULL AND active = 1 AND enabled = 1';
         if ($companyFilter > 0) {
             $sql .= ' AND company_id = ' . (int)$companyFilter;
         }
         $sql .= ' ORDER BY company_id ASC, id ASC';
 
+        if (!function_exists('itm_background_jobs_profile_has_active_scan')) {
+            require_once ROOT_PATH . 'includes/itm_background_jobs.php';
+        }
+
         $profiles = 0;
-        $batches = 0;
-        $found = 0;
+        $enqueued = 0;
         $errors = [];
         $res = mysqli_query($conn, $sql);
         while ($res && ($row = mysqli_fetch_assoc($res))) {
             $profileId = (int)($row['id'] ?? 0);
-            $inProgress = (int)($row['scan_in_progress'] ?? 0) === 1;
+            $companyId = (int)($row['company_id'] ?? 0);
             $cron = (string)($row['schedule_cron'] ?? '');
-            if (!$inProgress && !itm_scheduled_reports_cron_is_due($cron)) {
+            $hasActive = itm_background_jobs_profile_has_active_scan($conn, $companyId, $profileId);
+            if (!$hasActive && !itm_scheduled_reports_cron_is_due($cron)) {
                 continue;
             }
             $profiles++;
-            $batch = itm_network_discovery_profile_run_batch($conn, $profileId, 0);
-            $batches++;
-            if (empty($batch['ok'])) {
-                $errors[] = 'Profile #' . $profileId . ': ' . (string)($batch['error'] ?? 'failed');
+            if ($hasActive) {
                 continue;
             }
-            $found += (int)($batch['found'] ?? 0);
+            $enqueue = itm_network_discovery_enqueue_profile_scan($conn, $profileId, 0);
+            if (empty($enqueue['ok'])) {
+                $errors[] = 'Profile #' . $profileId . ': ' . (string)($enqueue['error'] ?? 'enqueue failed');
+                continue;
+            }
+            if (empty($enqueue['skipped'])) {
+                $enqueued++;
+            }
         }
 
-        return ['profiles' => $profiles, 'batches' => $batches, 'found' => $found, 'errors' => $errors];
+        return ['profiles' => $profiles, 'enqueued' => $enqueued, 'errors' => $errors];
     }
 }
 

@@ -75,7 +75,7 @@ Living inventory of **partial** and **not started** items from the Product & Arc
 | 4 | Appointment pack | **Done** (core) | Optional: deeper MBQA booking steps |
 | 5 | PWA field shell | **Missing** | manifest, service worker, `enable_pwa`, field layout |
 | 6 | OpenAPI v2 gateway | **Partial (MVP)** | Resources beyond tickets + equipment; broader `api-examples/` |
-| 7 | Network discovery | **Missing** | Profiles, SNMP staging queue, review UI, cron |
+| 7 | Network discovery | **Done** | Profiles, staging queue, `background_jobs` worker, shared IP Subnets tabs |
 | 8 | Vendor contracts | **Missing** | Module, renewal alerts, contract links |
 | 9 | Offboarding orchestration | **Missing** | Checklist tables, module, termination hooks |
 | 10 | Bespoke UX parity | **Missing** | 58 modules in `docs/list_bespoke_UI.txt` |
@@ -111,7 +111,7 @@ Living inventory of **partial** and **not started** items from the Product & Arc
 |----|-----|-------|
 | PLAT-1 | Customer / requester self-service portal | No magic-link ticket status; inbound email → tickets only |
 | PLAT-2 | SAM / license compliance metering | License CRUD + expiry alerts; no seat reconciliation |
-| PLAT-3 | Generic background job queue | Webhook delivery queue exists; no shared `job_queue` |
+| PLAT-3 | Generic background job queue | **Partial** — `background_jobs` + `run_background_jobs.php` (network discovery scans); extend for more job types |
 | PLAT-4 | ~119 `verify_*` scripts vs CI | Quartet in GHA; most verify scripts local-only |
 | PLAT-5 | Private-module command palette | Vault modules intentionally excluded from `search_index` |
 | PLAT-6 | `docs/FEATURE_ROADMAP.md` stale | Use this file for Phase 2 backlog |
