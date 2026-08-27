@@ -14,6 +14,50 @@ if (!function_exists('itm_ticket_comment_body_preview')) {
     }
 }
 
+if (!function_exists('itm_ticket_comment_run_post_create_hooks')) {
+    function itm_ticket_comment_run_post_create_hooks($conn, $companyId, $ticketId, $commentId, $employeeId, $body, $isInternal, $logActivity = true)
+    {
+        $companyId = (int)$companyId;
+        $ticketId = (int)$ticketId;
+        $commentId = (int)$commentId;
+        $employeeId = (int)$employeeId;
+        $body = trim((string)$body);
+        $isInternal = (int)((bool)$isInternal);
+        if ($companyId <= 0 || $ticketId <= 0 || $commentId <= 0 || $body === '') {
+            return;
+        }
+
+        if ($logActivity && function_exists('itm_ticket_activity_log')) {
+            itm_ticket_activity_log($conn, $companyId, $ticketId, $employeeId, 'comment_added', [
+                'comment_id' => $commentId,
+                'is_internal' => $isInternal,
+                'body_preview' => itm_ticket_comment_body_preview($body),
+                'source' => 'ticket_comments',
+            ]);
+        }
+
+        if (function_exists('itm_notify_ticket_comment_mentions')) {
+            itm_notify_ticket_comment_mentions($conn, $companyId, $ticketId, $commentId, $body, $employeeId);
+        }
+
+        if (function_exists('itm_webhook_queue_emit_ticket_comment_created')) {
+            require_once ROOT_PATH . 'includes/itm_webhook_queue.php';
+            itm_webhook_queue_emit_ticket_comment_created($conn, $companyId, [
+                'id' => $commentId,
+                'ticket_id' => $ticketId,
+                'employee_id' => $employeeId,
+                'is_internal' => $isInternal,
+                'body' => $body,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        if (function_exists('itm_ticket_sla_stamp_first_response')) {
+            itm_ticket_sla_stamp_first_response($conn, $ticketId, $companyId);
+        }
+    }
+}
+
 if (!function_exists('itm_ticket_comment_create')) {
     function itm_ticket_comment_create($conn, $companyId, $ticketId, $employeeId, $body, $isInternal = 0)
     {
@@ -38,23 +82,7 @@ if (!function_exists('itm_ticket_comment_create')) {
         $commentId = $ok ? (int)mysqli_insert_id($conn) : 0;
         mysqli_stmt_close($stmt);
         if ($ok && $commentId > 0) {
-            itm_ticket_activity_log($conn, $companyId, $ticketId, $employeeId, 'comment_added', [
-                'comment_id' => $commentId,
-                'is_internal' => $isInternal,
-                'body_preview' => itm_ticket_comment_body_preview($body),
-                'source' => 'ticket_comments',
-            ]);
-            if (function_exists('itm_webhook_queue_emit_ticket_comment_created')) {
-                require_once ROOT_PATH . 'includes/itm_webhook_queue.php';
-                itm_webhook_queue_emit_ticket_comment_created($conn, $companyId, [
-                    'id' => $commentId,
-                    'ticket_id' => $ticketId,
-                    'employee_id' => $employeeId,
-                    'is_internal' => $isInternal,
-                    'body' => $body,
-                    'created_at' => date('Y-m-d H:i:s'),
-                ]);
-            }
+            itm_ticket_comment_run_post_create_hooks($conn, $companyId, $ticketId, $commentId, $employeeId, $body, $isInternal);
         }
         return $ok ? $commentId : false;
     }

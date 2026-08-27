@@ -566,6 +566,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($newAssigneeId > 0 && $newAssigneeId !== $previousAssigneeId) {
                     itm_notify_ticket_assigned($conn, (int)$company_id, $newAssigneeId, $savedTicketId, $title, $ticket_external_code);
                 }
+                if ($is_edit && function_exists('itm_ticket_log_edit_field_changes')) {
+                    $newStatusIdForActivity = ($status_id === 'NULL' || $status_id === null) ? 0 : (int)$status_id;
+                    $newPriorityIdForActivity = ($priority_id === 'NULL' || $priority_id === null) ? 0 : (int)$priority_id;
+                    itm_ticket_log_edit_field_changes(
+                        $conn,
+                        (int)$company_id,
+                        $savedTicketId,
+                        (int)$_SESSION['employee_id'],
+                        [
+                            'status_id' => $previousStatusId,
+                            'priority_id' => $previousPriorityId,
+                            'assigned_to_employee_id' => $previousAssigneeId,
+                        ],
+                        [
+                            'status_id' => $newStatusIdForActivity,
+                            'priority_id' => $newPriorityIdForActivity,
+                            'assigned_to_employee_id' => $newAssigneeId,
+                        ]
+                    );
+                }
             }
             header('Location: index.php'); exit;
         }

@@ -19,7 +19,7 @@ CRUD for **`ticket_comments`** — notes on support tickets (`ticket_id`, `emplo
 ## 4. Business Rules (Critical for Agents)
 
 - **`is_internal`**: when `1`, comment is staff-only where downstream flows respect the flag.
-- **@mentions:** on create/edit save, `itm_notify_ticket_comment_mentions()` notifies newly mentioned `@username` targets; edit compares against previous body.
+- On create/edit save, `itm_ticket_comment_run_post_create_hooks()` handles activity log, @mentions, webhook, and SLA first-response stamp (canonical path for view, inbound email, and scaffold create).
 - **Mention UI:** F2 user picker on `body` (`js/ticket-comment-mentions.js`).
 
 ## 5. UI Behavior Requirements

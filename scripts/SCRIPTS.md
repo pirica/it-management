@@ -1391,6 +1391,7 @@ Run after changes to modules that previously relied only on MBQA/PHPUnit/repro s
 - `php scripts/verify_appointment.php` — `modules/appointments/`, `includes/itm_appointment.php`, appointment `db/` bundle
 - `php scripts/verify_appointment_settings.php` — `modules/appointment_settings/`, `includes/itm_appointment_settings_admin.php`
 - `php scripts/verify_live_chat.php` — Live Chat schema, SLA, ACL, notifications, ticket activity/comments helpers
+- `php scripts/verify_ticket_activity.php` — Ticket Activity unified feed, comment post-create hooks, edit/archive activity logging (`includes/itm_ticket_activity.php`, `modules/tickets/view.php`)
 - `php scripts/verify_ticket_productivity.php` — Ticket canned responses, merge, CSAT token/public URL, merge smoke
 - `php scripts/verify_ticket_surveys.php` — Ticket questionnaires/surveys: seeds, issue/submit, activity, webhooks, automation, merge tag/cancel, stats (`docs/TICKET_SURVEYS.md`)
 - `php scripts/verify_automation_rules.php` — Workflow automation: tables, audit triggers, seed rule, `itm_automation_rules_run_rule()` by id, `automation_rule_runs` success row

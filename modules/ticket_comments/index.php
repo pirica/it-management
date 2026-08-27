@@ -955,22 +955,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($crud_action, ['create', '
                 $body = (string)($data['body'] ?? '');
                 if ($crud_action === 'create') {
                     $commentId = (int)mysqli_insert_id($conn);
-                    if ($commentId > 0 && $ticketId > 0 && $body !== '') {
-                        itm_notify_ticket_comment_mentions($conn, (int)$company_id, $ticketId, $commentId, $body, (int)($_SESSION['employee_id'] ?? 0));
-                        if (function_exists('itm_webhook_queue_emit_ticket_comment_created')) {
-                            require_once ROOT_PATH . 'includes/itm_webhook_queue.php';
-                            itm_webhook_queue_emit_ticket_comment_created($conn, (int)$company_id, [
-                                'id' => $commentId,
-                                'ticket_id' => $ticketId,
-                                'employee_id' => (int)($_SESSION['employee_id'] ?? 0),
-                                'is_internal' => (int)($data['is_internal'] ?? 0),
-                                'body' => $body,
-                                'created_at' => date('Y-m-d H:i:s'),
-                            ]);
-                        }
-                    }
-                    if ($ticketId > 0) {
-                        itm_ticket_sla_stamp_first_response($conn, $ticketId, (int)$company_id);
+                    if ($commentId > 0 && $ticketId > 0 && $body !== '' && function_exists('itm_ticket_comment_run_post_create_hooks')) {
+                        itm_ticket_comment_run_post_create_hooks(
+                            $conn,
+                            (int)$company_id,
+                            $ticketId,
+                            $commentId,
+                            (int)($data['employee_id'] ?? ($_SESSION['employee_id'] ?? 0)),
+                            $body,
+                            (int)($data['is_internal'] ?? 0)
+                        );
                     }
                 } elseif ($crud_action === 'edit' && $editId > 0 && $ticketId > 0 && $body !== '') {
                     itm_notify_ticket_comment_mentions($conn, (int)$company_id, $ticketId, (int)$editId, $body, (int)($_SESSION['employee_id'] ?? 0), $previousCommentBody);

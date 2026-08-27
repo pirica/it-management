@@ -1,225 +1,76 @@
-Read AGENTS.md 
-Read README.md 
-Read scripts/scripts.php 
-Read phpunit/* 
-Read scripts/api.php 
-Read scripts/SCRIPTS.md
-Read db/ 
-Read full project
-
-On base on your learnings edit/update or create AGENT_NOTES.md is none exists for each modules/ on base of this (Module Template) don't use scripts to auto the process.
-`templates/AGENT_NOTES.md` (Module Template)
-
-
-# AGENT_NOTES.md — module template
-
-Use this outline for every in-scope folder (`modules/<slug>/`, `config/`, `includes/`, `scripts/lib/`, etc.). **Read the module PHP and `db/` first** — do not bulk-generate or copy generic boilerplate without verifying behaviour.
-
-File title: `# AGENT_NOTES.md - <Human Name>`
-
----
+# AGENT_NOTES.md - Ticket Activity
 
 ## 1. Module Purpose
 
-Briefly describe what this module does and why it exists.
-
-Example: This module manages workstation assets, including OS version, RAM, office location, and assignment history.
-
----
+Append-only **system event** log for support tickets (`ticket_activity`). Rows are written by `itm_ticket_activity_log()` from ticket edits, comments, SLA, surveys, live chat, problem management, and merge flows. The primary user-facing timeline is the **Activity** card on [modules/tickets/view.php](http://localhost/it-management/modules/tickets/view.php), which merges `ticket_comments` with non-duplicate `ticket_activity` events via `itm_ticket_unified_activity_feed()`.
 
 ## 2. Key Tables
 
-List only tables this module owns or primarily interacts with.
-
-Format:
-
-- **table_name** — purpose
-
-Example:
-
-- **workstations** — main workstation records
-- **workstation_ram** — lookup table for RAM sizes
-
----
+- **ticket_activity** — per-ticket timeline events (`event_type`, `payload_json`, optional `actor_employee_id`).
+- **tickets** — parent FK (`ticket_id`).
 
 ## 3. Required Relationships
 
-Document foreign keys and cross-module dependencies.
-
-Format:
-
-- **this_table** → depends on **other_table** (`fk_column`, `ON DELETE` behaviour)
-- **this_table** → referenced by **child_table**
-
-Example:
-
-- Workstations link to employees via `employee_id`.
-- Workstations link to equipment when a workstation is also an asset.
-
----
+- **ticket_activity.company_id** → **companies**
+- **ticket_activity.ticket_id** → **tickets**
+- **ticket_activity.actor_employee_id** → **employees** (nullable for system/cron events)
 
 ## 4. Business Rules (Critical for Agents)
 
-Rules that must never be violated. Document module-specific constraints from `AGENTS.md` when applicable.
-
-Examples:
-
-- A workstation cannot be assigned to an inactive employee.
-- OS version must exist in `workstation_os_versions`.
-- Deleting a workstation must archive assignment history, not remove it.
-
----
+- **Append-only UX:** prefer `itm_ticket_activity_log()` from mutation paths; do not ask agents to hand-insert rows except via this helper or admin CRUD.
+- **Unified feed:** `itm_ticket_unified_activity_feed()` shows comment bodies from `ticket_comments` and skips `comment_added` activity rows (avoids duplicates).
+- **Core ticket edits:** `itm_ticket_log_edit_field_changes()` in `includes/itm_ticket_activity.php` logs `status_changed`, `priority_changed`, and `assigned` from [modules/tickets/create.php](modules/tickets/create.php) on edit.
+- **Archive:** [modules/tickets/archive.php](modules/tickets/archive.php) logs `archived` / `unarchived`.
+- **Not private-data exempt** — audit triggers required.
 
 ## 5. UI Behavior Requirements
 
-Document UI constraints agents must preserve. Match **actual** module code — not a generic CRUD checklist.
-
-### Flattened CRUD (`modules/<slug>/index.php` with `$crud_table`)
-
-Typical contract (verify per module):
-
-- Search, sort, server-side pagination (`records_per_page`)
-- Bulk delete when `$totalRows >= $perPage` (not inverted)
-- `$displayFieldColumns = $uiColumns` before search block when search uses `$displayFieldColumns`
-- Hide `company_id` from list/view/forms
-- Actions column: `class="itm-actions-cell"` and `data-itm-actions-origin="1"`
-- Import: `data-itm-db-import-endpoint="index.php"` on the table that handles `import_excel_rows` (may be `list_all.php` on bespoke modules)
-- **CSRF:** POST handlers use **`cr_require_valid_csrf_token()`** (local helper in manufacturers-style CRUD); forms include `csrf_token` from `itm_get_csrf_token()`. Do **not** document `itm_require_post_csrf()` unless that helper is actually called in this module's PHP.
-- **`active` checkbox:** double-label `itm-checkbox-control` pattern (`AGENTS.md`)
-
-### `is_*` equipment façades
-
-- **List/view:** type filter via `$equipmentTypeNameFilter` in wrapper `index.php` / `view.php`
-- **Edit:** wrapper `edit.php` often `require`s `equipment/edit.php` **without** the type filter — document as a **known gap** if true; do not claim edit is type-guarded unless code enforces it
-- JSON/import handlers run through façade `index.php` when it `require`s `equipment/index.php`
-
-### Bespoke / read-only modules
-
-Describe real screens (e.g. calendar aggregation, resignations report, explorer ACL). Call out exceptions (e.g. calendar ICS import writes to `events`).
-
----
+- Flattened admin CRUD under this folder (list/view for operators); hide **`company_id`** from list/view/forms.
+- Ticket view Activity card: chronological comments + system events; comment form posts `add_ticket_comment` with CSRF.
 
 ## 6. API Actions (If Applicable)
 
-Document endpoints this module exposes.
-
-Format:
-
-- **action_name** — purpose, required params, response format
-
-Examples:
-
-- **import_excel_rows** — JSON POST on `index.php` (flattened CRUD)
-- **ajax_inline_edit** — POST on bespoke `index.php` with CSRF
-
-Use `None` or `N/A` when the module has no API surface.
-
----
+- N/A — events are written from shared helpers and ticket handlers, not a public JSON API.
 
 ## 7. File Structure
 
-List files and their purpose.
-
-Example:
-
-- **index.php** — list view
-- **create.php** — create form
-- **edit.php** — update form
-- **delete.php** — delete handler
-- **view.php** — detail view
-- **list_all.php** — alternate list wrapper
-
----
+- **index.php** — flattened list/view/admin CRUD for `ticket_activity`
+- **create.php**, **edit.php**, **delete.php**, **view.php**, **list_all.php** — standard wrappers
 
 ## 8. Multi-Tenant Rules
 
-Document scoping beyond generic `company_id`.
-
-Examples:
-
-- All queries filter by `company_id` from session.
-- Private data also filters by `employee_id` — **only document if code actually does this**.
-- Child `ops_report_id` rows: FK does not always enforce parent `company_id` match — note if application must validate.
-
----
+- All queries scoped by session **`company_id`**; feed helpers require matching `company_id` + `ticket_id`.
 
 ## 9. Audit Logging Requirements
 
-Describe what is logged and how.
-
-### Database triggers (most CRUD tables)
-
-- Name triggers: `trg_{table}_audit_insert|update|delete` in `db/03_triggers.sql`
-- Triggers **always** insert into `audit_logs` on DML — they are **not** gated by the `enable_audit_logs` UI setting
-- Actor context: `@app_employee_id`, `@app_company_id` from `config/config.php`
-
-### Application / read-only modules
-
-- State explicitly when no writes occur (e.g. resignations report)
-
-Do **not** write “when `enable_audit_logs` is enabled” for standard DB trigger tables unless PHP explicitly checks that flag before DML.
-
----
+- **`trg_ticket_activity_audit_insert|update|delete`** in `db/03_triggers.sql`.
 
 ## 10. Common Pitfalls
 
-Mistakes agents must avoid. Verify FK delete behaviour in `db/03_triggers.sql`:
-
-| Child FK | Pitfall text |
-|----------|----------------|
-| `ON DELETE SET NULL` | Child FKs null out automatically — no manual detach |
-| `ON DELETE CASCADE` | Parent delete removes children |
-| No CASCADE / no SET NULL | Detach or clear child FKs for active `company_id` **before** parent delete |
-
-Other examples:
-
-- Do not delete rows still referenced when schema blocks delete.
-- Do not copy generic “detach first” text without checking `information_schema` / `db/`.
-- Bespoke or sensitive modules: change only when explicitly requested.
-- Document **known gaps** (missing `employee_id` filter, unguarded edit URLs) rather than ideal behaviour.
-
----
+- Logging `comment_added` in the feed **and** rendering the comment row — use unified feed helper only.
+- Forgetting activity hooks when adding new ticket mutation paths (edit, archive, merge, inbound email).
+- Showing raw `event_type` or JSON to end users — use `itm_ticket_activity_format_event_summary()`.
 
 ## 11. Examples of Safe Code Patterns
 
-Provide 1–2 examples using **real table and column names** from `db/01_schema.sql`.
-
-### Safe SELECT
+### Log a status change
 
 ```php
-$stmt = $conn->prepare('SELECT * FROM example_table WHERE company_id = ? AND id = ?');
-$stmt->bind_param('ii', $companyId, $id);
-$stmt->execute();
+itm_ticket_activity_log($conn, $companyId, $ticketId, $actorEmployeeId, 'status_changed', [
+    'from_status_id' => $prevStatusId,
+    'to_status_id' => $newStatusId,
+    'from_status_name' => $fromName,
+    'to_status_name' => $toName,
+]);
 ```
 
-### Safe INSERT
+### Load unified Activity feed
 
 ```php
-$stmt = $conn->prepare('INSERT INTO example_table (company_id, name) VALUES (?, ?)');
-$stmt->bind_param('is', $companyId, $name);
-$stmt->execute();
+$feed = itm_ticket_unified_activity_feed($conn, $companyId, $ticketId, $viewerEmployeeId, $isSupportAgent);
 ```
-
-Rules:
-
-- Use MySQLi prepared statements only — never concatenate user input into SQL
-- For `IN (...)` lists, use placeholder expansion (`str_repeat('i', count($ids))`), not `implode(',', $ids)` in the query string
-
----
 
 ## 12. Module Owner Notes (Optional)
 
-Regression scripts, related `AGENT_NOTES.md` files, or follow-up hardening (document only — do not cite numbered PRs).
-
-Example: Regression: `php scripts/verify_<module>.php`. Parent module: `modules/ops_report/AGENT_NOTES.md`.
-
----
-
-## Authoring checklist (before marking complete)
-
-1. Read module entry PHP (`index.php` minimum; wrappers for `is_*`).
-2. Grep `db/` for `CREATE TABLE` and `trg_{table}_audit_*`.
-3. Confirm CSRF helper name in PHP matches section 5.
-4. Confirm audit section matches unconditional triggers (unless module is read-only).
-5. Confirm section 11 column names exist in schema.
-6. Update parent folder `AGENT_NOTES.md` when editing a subfolder.
+- Regression: `php scripts/verify_ticket_activity.php` — [verify_ticket_activity.php?run=1](http://localhost/it-management/scripts/verify_ticket_activity.php?run=1) (Admin session for browser landing).
+- Related: `includes/itm_ticket_comments.php`, `modules/ticket_comments/AGENT_NOTES.md`, `modules/tickets/AGENT_NOTES.md`.
