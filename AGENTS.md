@@ -120,7 +120,8 @@ This project stores and displays **Unicode** text (including emoji such as 🧩)
 
 ### Locales and copy
 
-* **Dates (display and import):** use **dd/mmm/yyyy** in UI lists and views (PHP `d/M/Y`, e.g. `18/Jun/2026`). Excel import parsing still accepts **dd/mm/yyyy** and **dd/mmm/yyyy** via `itm_parse_date_input()`. MySQL storage stays `Y-m-d` / `Y-m-d H:i:s`. Shared helpers: `includes/itm_date_format.php` (`itm_parse_date_input`, `itm_format_date_display`, `itm_format_cell_scalar_display`). Maintenance: `php scripts/apply_date_display_format.php` when new flattened CRUD modules omit the `cr_render_cell_value()` hook.
+* **Dates (display and import):** portal list/view dates and datetimes follow per-employee **`ui_configuration`** locale prefs (Settings → UI Configuration) via `includes/itm_ui_locale_format.php` and `itm_format_date_display()` / `itm_format_cell_scalar_display()` in `includes/itm_date_format.php` — default **dd/mmm/yyyy** (`european_ddmmmyyyy`, PHP `d/M/Y`, e.g. `18/Jun/2026`). Employees may switch to US, ISO, or European numeric formats; combined datetime styles are configurable separately. Excel import parsing still accepts **dd/mm/yyyy** and **dd/mmm/yyyy** via `itm_parse_date_input()`. MySQL storage stays `Y-m-d` / `Y-m-d H:i:s`. **Hotel guest portal** date/time display uses `hotel_booking_settings.portal_*` columns — not `ui_configuration` locale keys. Maintenance: `php scripts/apply_date_display_format.php` when new flattened CRUD modules omit the `cr_render_cell_value()` hook; regression: `php scripts/verify_ui_locale_format.php`.
+* **Money (display):** list/view price/cost/amount columns route through `itm_ui_locale_format_money_display()` inside `itm_format_cell_scalar_display()` when the column name matches `itm_is_money_field_name()` (e.g. `price`, `purchase_cost`, `amount`). Symbol suffix vs prefix is per-employee on `ui_configuration` (`ui_money_symbol`, `ui_money_symbol_suffix`, `ui_money_symbol_prefix`). Storage stays numeric in MySQL; formatting is display-only.
 * **Emoji** in UI, `AGENTS.md`, and seed data are allowed when intentional (e.g. 🧩 section markers, toolbar icons in copy).
 
 ### HTTP and PHP output
@@ -274,6 +275,7 @@ Modules must read/validate settings via `itm_get_ui_configuration()`:
 * **Table Actions:** Add **`class="itm-actions-cell"`** and **`data-itm-actions-origin="1"`** to Actions headers and body cells so the global layout engine can map `table_actions_position` (`js/ui-layout.js`). Module browser QA **`ui_check`** step fails when an Actions column renders without both markers on the header (and on body cells when data rows exist).
 * **DB Import Endpoint (Index Tables):** Add `data-itm-db-import-endpoint="index.php"` to every module index table so `📥Import Excel` can use the save-to-database flow.
 * **Global Behaviors:** Respect system toggles for `enable_all_error_reporting`, `enable_audit_logs`, and `records_per_page`.
+* **Locale display (money + date/time):** Per-employee portal formatting lives on **`ui_configuration`** and is edited in **Settings → UI Configuration** (`modules/settings/`). Modules must render list/view dates, datetimes, audit stamps, and money columns through `itm_format_date_display()`, `itm_format_datetime_display()`, `itm_format_audit_timestamp_display()`, and `itm_format_cell_scalar_display()` — not ad-hoc `date()` / manual currency concatenation. See **Settings UI locale format (mandatory)** below.
 * **API keys and rate limits:** See **API keys and rate limits (mandatory)** below.
 
 ### 4. Standard Feature Set
@@ -644,6 +646,18 @@ The Appointment module (`modules/appointments/`) provides employee self-service 
 7. **Sample templates:** `db/02_data_sample.sql` includes `appointments` rows for Add sample data / MBQA when the table is empty for a tenant.
 8. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_appointment.php`.
 
+#### Settings UI locale format (mandatory)
+
+Per-employee **employee ITM portal** money and date/time display preferences — separate from **hotel guest portal** `hotel_booking_settings.portal_*` columns.
+
+1. **Storage:** **`ui_configuration`** columns — `ui_money_symbol`, `ui_money_symbol_suffix`, `ui_money_symbol_prefix`, `ui_date_format`, `ui_time_format`, `ui_datetime_european1_enabled`, `ui_datetime_european2_enabled`, `ui_datetime_iso_enabled`, `ui_datetime_readable_enabled`, `ui_datetime_format_default`. Canonical DDL in `db/01_schema.sql`; migration `db/migrations/ui_configuration_locale_format.sql` for existing databases.
+2. **Settings UI:** `modules/settings/index.php` — **UI Configuration** card (money symbol with mutually exclusive suffix/prefix checkboxes; portal date format; 12h/24h time; combined datetime style toggles + default). POST normalized by `itm_ui_locale_normalize_post_values()`; persisted by `itm_save_ui_configuration()` (`mysqli_stmt_bind_param` type string `iissssiiiiisssssiissiiiis` — 25 INSERT placeholders).
+3. **Core helpers:** `includes/itm_ui_locale_format.php` — `itm_ui_locale_format_money_display()`, `itm_ui_locale_format_date_display()`, `itm_ui_locale_format_datetime_display()`, `itm_is_money_field_name()`, active config via `$GLOBALS['ui_config']` from `itm_get_ui_configuration()`.
+4. **Date delegation:** `includes/itm_date_format.php` — `itm_format_date_display()`, `itm_format_datetime_display()`, `itm_format_audit_timestamp_display()`, and `itm_format_cell_scalar_display()` delegate to locale helpers when loaded; legacy UK **dd/mmm/yyyy** remains when locale keys are absent.
+5. **Money in lists:** `itm_format_cell_scalar_display()` routes money field names (`price`, `purchase_cost`, `amount`, etc.) through `itm_ui_locale_format_money_display()` so modules like **`license_management`** and **`equipment`** pick up suffix/prefix without per-module changes.
+6. **Defaults:** EUR suffix (`69.50€`), `european_ddmmmyyyy`, 24-hour time, `european2` combined datetime enabled by default.
+7. **Regression scripts** (`scripts/SCRIPTS.md`, catalog `scripts/scripts.php`): `php scripts/verify_ui_locale_format.php` — schema + Settings form wiring, formatter unit checks, four-step `ui_date_format` flip via `$GLOBALS['ui_config']`, audit-pass module spot checks (`list_date_display_formats.php` OK set), `due_date` US/EU cell scalar, money suffix/prefix cell scalar, `itm_save_ui_configuration` bind_param placeholder count. PHPUnit: `php scripts/run_tests.php --filter 'UiLocaleFormat|ItmDateFormat'`.
+
 #### License Management (mandatory)
 
 The license management module (`modules/license_management/`) tracks software licenses per company.
@@ -652,7 +666,7 @@ The license management module (`modules/license_management/`) tracks software li
 2. **Required fields:** **`name`** is required on create/edit; **`quantity`** defaults to **1** when omitted; **`active`** defaults to **1**.
 3. **Foreign keys:** **`license_type_id`** → `license_types` (**RESTRICT** on delete); **`supplier_id`** → `suppliers` (**SET NULL** on delete).
 4. **Price:** Accepts `.` as decimal separator; **comma is converted to dot** on POST and Excel import (`cr_normalize_price_input()`).
-5. **Dates:** Stored as MySQL `DATE`; list/view display **dd/mmm/yyyy** via `itm_format_cell_scalar_display()` / `itm_format_date_display()`; import accepts **dd/mm/yyyy** or **dd/mmm/yyyy** via `itm_parse_date_input()`.
+5. **Dates:** Stored as MySQL `DATE`; list/view display follows employee locale via `itm_format_cell_scalar_display()` / `itm_format_date_display()` (default **dd/mmm/yyyy**); import accepts **dd/mm/yyyy** or **dd/mmm/yyyy** via `itm_parse_date_input()`.
 6. **FK labels:** List/view must show **Type** and **Supplier** names (not raw IDs) via `itm_fk_label_by_id()` / `cr_fk_label_by_id()`. Form field order: Name, License Key, Type, Quantity, Supplier, Purchase Date, Expiry Date, Price, Active, Notes.
 7. **Standard CRUD:** Flattened departments scaffold — bulk delete, search, pagination, Excel import/export (`import_excel_rows` on `index.php`), empty-state sample data from `db/01_schema.sql`.
 8. **Audit logging:** `db/` defines `trg_license_management_audit_insert|update|delete` and `trg_license_types_audit_*` (when Type rows are quick-added).
