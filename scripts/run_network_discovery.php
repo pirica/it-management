@@ -65,9 +65,8 @@ if ($profileFilter > 0) {
     }
 } else {
     $summary = itm_network_discovery_run_scheduled($conn, $companyFilter);
-    echo 'Profiles run: ' . (int)($summary['profiles'] ?? 0) . $nl;
-    echo 'Batches: ' . (int)($summary['batches'] ?? 0) . $nl;
-    echo 'Hosts found: ' . (int)($summary['found'] ?? 0) . $nl;
+    echo 'Profiles due: ' . (int)($summary['profiles'] ?? 0) . $nl;
+    echo 'Jobs enqueued: ' . (int)($summary['enqueued'] ?? 0) . $nl;
     if ($verbose && !empty($summary['errors'])) {
         foreach ($summary['errors'] as $err) {
             echo 'Error: ' . $err . $nl;

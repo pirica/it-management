@@ -1605,6 +1605,31 @@ END$$
 
 DELIMITER ;
 
+DROP TRIGGER IF EXISTS `trg_background_jobs_audit_insert`;
+
+DROP TRIGGER IF EXISTS `trg_background_jobs_audit_update`;
+
+DROP TRIGGER IF EXISTS `trg_background_jobs_audit_delete`;
+
+DELIMITER $$
+
+CREATE TRIGGER `trg_background_jobs_audit_insert` AFTER INSERT ON `background_jobs` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'background_jobs', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'job_type', NEW.`job_type`, 'status', NEW.`status`, 'progress_offset', NEW.`progress_offset`, 'progress_total', NEW.`progress_total`, 'attempt_count', NEW.`attempt_count`, 'max_attempts', NEW.`max_attempts`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_background_jobs_audit_update` AFTER UPDATE ON `background_jobs` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'background_jobs', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'job_type', OLD.`job_type`, 'status', OLD.`status`, 'progress_offset', OLD.`progress_offset`, 'progress_total', OLD.`progress_total`, 'attempt_count', OLD.`attempt_count`, 'max_attempts', OLD.`max_attempts`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'job_type', NEW.`job_type`, 'status', NEW.`status`, 'progress_offset', NEW.`progress_offset`, 'progress_total', NEW.`progress_total`, 'attempt_count', NEW.`attempt_count`, 'max_attempts', NEW.`max_attempts`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+END$$
+
+CREATE TRIGGER `trg_background_jobs_audit_delete` AFTER DELETE ON `background_jobs` FOR EACH ROW BEGIN
+  INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'background_jobs', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'job_type', OLD.`job_type`, 'status', OLD.`status`, 'progress_offset', OLD.`progress_offset`, 'progress_total', OLD.`progress_total`, 'attempt_count', OLD.`attempt_count`, 'max_attempts', OLD.`max_attempts`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+END$$
+
+DELIMITER ;
+
 DROP TRIGGER IF EXISTS `trg_network_discovery_profiles_audit_insert`;
 
 DROP TRIGGER IF EXISTS `trg_network_discovery_profiles_audit_update`;
@@ -1621,17 +1646,17 @@ DELIMITER $$
 
 CREATE TRIGGER `trg_network_discovery_profiles_audit_insert` AFTER INSERT ON `network_discovery_profiles` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'network_discovery_profiles', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'subnet_ids_json', NEW.`subnet_ids_json`, 'schedule_cron', NEW.`schedule_cron`, 'snmp_enabled', NEW.`snmp_enabled`, 'auto_create_policy', NEW.`auto_create_policy`, 'enabled', NEW.`enabled`, 'last_run_at', NEW.`last_run_at`, 'scan_in_progress', NEW.`scan_in_progress`, 'scan_offset', NEW.`scan_offset`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'network_discovery_profiles', COALESCE(NEW.`id`, 0), 'INSERT', NULL, JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'subnet_ids_json', NEW.`subnet_ids_json`, 'schedule_cron', NEW.`schedule_cron`, 'snmp_enabled', NEW.`snmp_enabled`, 'auto_create_policy', NEW.`auto_create_policy`, 'enabled', NEW.`enabled`, 'last_run_at', NEW.`last_run_at`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 
 CREATE TRIGGER `trg_network_discovery_profiles_audit_update` AFTER UPDATE ON `network_discovery_profiles` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'network_discovery_profiles', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'subnet_ids_json', OLD.`subnet_ids_json`, 'schedule_cron', OLD.`schedule_cron`, 'snmp_enabled', OLD.`snmp_enabled`, 'auto_create_policy', OLD.`auto_create_policy`, 'enabled', OLD.`enabled`, 'last_run_at', OLD.`last_run_at`, 'scan_in_progress', OLD.`scan_in_progress`, 'scan_offset', OLD.`scan_offset`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'subnet_ids_json', NEW.`subnet_ids_json`, 'schedule_cron', NEW.`schedule_cron`, 'snmp_enabled', NEW.`snmp_enabled`, 'auto_create_policy', NEW.`auto_create_policy`, 'enabled', NEW.`enabled`, 'last_run_at', NEW.`last_run_at`, 'scan_in_progress', NEW.`scan_in_progress`, 'scan_offset', NEW.`scan_offset`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, NEW.`company_id`, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'network_discovery_profiles', COALESCE(NEW.`id`, OLD.`id`, 0), 'UPDATE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'subnet_ids_json', OLD.`subnet_ids_json`, 'schedule_cron', OLD.`schedule_cron`, 'snmp_enabled', OLD.`snmp_enabled`, 'auto_create_policy', OLD.`auto_create_policy`, 'enabled', OLD.`enabled`, 'last_run_at', OLD.`last_run_at`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), JSON_OBJECT('id', NEW.`id`, 'company_id', NEW.`company_id`, 'name', NEW.`name`, 'subnet_ids_json', NEW.`subnet_ids_json`, 'schedule_cron', NEW.`schedule_cron`, 'snmp_enabled', NEW.`snmp_enabled`, 'auto_create_policy', NEW.`auto_create_policy`, 'enabled', NEW.`enabled`, 'last_run_at', NEW.`last_run_at`, 'active', NEW.`active`, 'created_at', NEW.`created_at`, 'updated_at', NEW.`updated_at`), @app_ip_address, @app_user_agent);
 END$$
 
 CREATE TRIGGER `trg_network_discovery_profiles_audit_delete` AFTER DELETE ON `network_discovery_profiles` FOR EACH ROW BEGIN
   INSERT INTO `audit_logs` (`company_id`, `employee_id`, `actor_username`, `actor_email`, `table_name`, `record_id`, `action`, `old_values`, `new_values`, `ip_address`, `user_agent`)
-  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'network_discovery_profiles', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'subnet_ids_json', OLD.`subnet_ids_json`, 'schedule_cron', OLD.`schedule_cron`, 'snmp_enabled', OLD.`snmp_enabled`, 'auto_create_policy', OLD.`auto_create_policy`, 'enabled', OLD.`enabled`, 'last_run_at', OLD.`last_run_at`, 'scan_in_progress', OLD.`scan_in_progress`, 'scan_offset', OLD.`scan_offset`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
+  VALUES (COALESCE(@app_company_id, OLD.`company_id`, 0), @app_employee_id, @app_username, @app_email, 'network_discovery_profiles', COALESCE(OLD.`id`, 0), 'DELETE', JSON_OBJECT('id', OLD.`id`, 'company_id', OLD.`company_id`, 'name', OLD.`name`, 'subnet_ids_json', OLD.`subnet_ids_json`, 'schedule_cron', OLD.`schedule_cron`, 'snmp_enabled', OLD.`snmp_enabled`, 'auto_create_policy', OLD.`auto_create_policy`, 'enabled', OLD.`enabled`, 'last_run_at', OLD.`last_run_at`, 'active', OLD.`active`, 'created_at', OLD.`created_at`, 'updated_at', OLD.`updated_at`), NULL, @app_ip_address, @app_user_agent);
 END$$
 
 CREATE TRIGGER `trg_network_discovery_staging_audit_insert` AFTER INSERT ON `network_discovery_staging` FOR EACH ROW BEGIN

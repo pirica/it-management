@@ -1224,8 +1224,10 @@ Run `verify_hotel_booking.php` when changing `modules/hotel_bookings/`, `booking
 | `php scripts/send_mailpit_inbound_test_email.php` | Sends a test message **To** a tenant `companies.email` via Mailpit SMTP (`127.0.0.1:1025`); optional `--process` runs inbound ticket creation for that company |
 | `php scripts/verify_inbound_email_tickets.php` | Regression for inbound parsers, dedupe, threading, keyword routing, event logging, requester resolution, schema columns; live Mailpit E2E when API at `http://localhost/mailpit/api/v1` responds |
 | `php scripts/run_notification_digest.php` | Sends digest emails for employees with unread `employee_notifications` rows; optional `--company=1` |
-| `php scripts/run_network_discovery.php` | Chunked scheduled discovery for `network_discovery_profiles`; optional `--company=1`, `--profile=ID`, `--verbose`; schedule every 5–15 min |
+| `php scripts/run_network_discovery.php` | Enqueues due discovery profiles into `background_jobs`; `--profile=ID` runs one immediate batch; schedule every 5–15 min |
+| `php scripts/run_background_jobs.php` | Processes pending `background_jobs` (network discovery scan batches); optional `--company=1`, `--type=network_discovery_scan`, `--limit=20`; schedule every 1–5 min |
 | `php scripts/verify_network_discovery.php` | Regression for profiles, staging promote/link/dismiss, CMDB sync on promote (`includes/itm_network_discovery.php`) |
+| `php scripts/verify_background_jobs.php` | Regression for `background_jobs` schema, enqueue dedupe, profile scan state on jobs |
 | `php scripts/run_ticket_sla_monitor.php` | Stamps `sla_*_breached_at`, logs `ticket_activity`, notifies assignees; optional `--company=1`; schedule every 15 min |
 | `php scripts/verify_ticket_sla_dashboard.php` | Regression for SLA Command Center (`includes/itm_ticket_sla.php`, `modules/ticket_sla_dashboard/`, breach columns) |
 | `php scripts/verify_employee_notifications.php` | Regression for `itm_notify_employee()`, unread count, mark read, header API/JS assets |
