@@ -1971,7 +1971,9 @@ $defaultDatetimeMap = itm_hotel_booking_portal_datetime_format_enabled_map([]);
 if (!empty($defaultDatetimeMap['european2'])
     && itm_hotel_booking_portal_datetime_format_default_from_settings([]) === 'european2'
     && itm_hotel_booking_portal_format_date_display('2026-08-17', ['portal_date_format' => 'european_ddmmyyyy']) === '17/08/2026'
-    && itm_hotel_booking_portal_format_date_display('2026-08-17', ['portal_date_format' => 'us_mmddyyyy']) === '08/17/2026') {
+    && itm_hotel_booking_portal_format_date_display('2026-08-17', ['portal_date_format' => 'european_ddmmmyyyy']) === '17/Aug/2026'
+    && itm_hotel_booking_portal_format_date_display('2026-08-17', ['portal_date_format' => 'us_mmddyyyy']) === '08/17/2026'
+    && itm_hotel_booking_portal_format_date_display('2026-08-17', ['portal_date_format' => 'iso_yyyymmdd']) === '2026-08-17') {
     hb_pass('portal date/time format helpers + default datetime2');
 } else {
     hb_fail('portal date/time format helpers + default datetime2');

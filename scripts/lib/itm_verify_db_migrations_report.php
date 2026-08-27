@@ -752,6 +752,20 @@ if (!function_exists('itm_verify_db_migrations_probe_custom')) {
             );
         }
 
+        if ($filename === 'hotel_booking_portal_date_ddmmmyyyy.sql') {
+            $colType = itm_verify_db_migrations_column_type($conn, 'hotel_booking_settings', 'portal_date_format');
+            $ok = strpos($colType, 'european_ddmmmyyyy') !== false;
+
+            return itm_verify_db_migrations_row(
+                $filename,
+                $ok ? 'pass' : 'fail',
+                $ok ? 'Applied' : 'Not applied',
+                $ok
+                    ? 'hotel_booking_settings.portal_date_format includes european_ddmmmyyyy (DD/MMM/YYYY).'
+                    : 'portal_date_format enum missing european_ddmmmyyyy — apply migration or fresh db/ import.'
+            );
+        }
+
         if ($filename === 'news_module_registry.sql') {
             $newsRows = itm_verify_db_migrations_scalar_count(
                 $conn,

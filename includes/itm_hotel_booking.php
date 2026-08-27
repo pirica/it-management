@@ -7742,7 +7742,7 @@ if (!function_exists('itm_hotel_booking_portal_date_format_from_settings')) {
   function itm_hotel_booking_portal_date_format_from_settings($settings) {
     $settings = is_array($settings) ? $settings : [];
     $fmt = strtolower(trim((string) ($settings['portal_date_format'] ?? 'european_ddmmyyyy')));
-    if (!in_array($fmt, ['european_ddmmyyyy', 'us_mmddyyyy', 'iso_yyyymmdd'], true)) {
+    if (!in_array($fmt, ['european_ddmmyyyy', 'european_ddmmmyyyy', 'us_mmddyyyy', 'iso_yyyymmdd'], true)) {
       return 'european_ddmmyyyy';
     }
     return $fmt;
@@ -7808,6 +7808,9 @@ if (!function_exists('itm_hotel_booking_portal_format_date_display')) {
     }
     if ($fmt === 'iso_yyyymmdd') {
       return $dt->format('Y-m-d');
+    }
+    if ($fmt === 'european_ddmmmyyyy') {
+      return $dt->format('d/M/Y');
     }
     return $dt->format('d/m/Y');
   }

@@ -192,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $showInternalRates = !empty($_POST['portal_show_internal_rates']) ? 1 : 0;
     $portalDateFormat = strtolower(trim((string) ($_POST['portal_date_format'] ?? 'european_ddmmyyyy')));
-    if (!in_array($portalDateFormat, ['european_ddmmyyyy', 'us_mmddyyyy', 'iso_yyyymmdd'], true)) {
+    if (!in_array($portalDateFormat, ['european_ddmmyyyy', 'european_ddmmmyyyy', 'us_mmddyyyy', 'iso_yyyymmdd'], true)) {
         $portalDateFormat = 'european_ddmmyyyy';
     }
     $portalTimeFormat = strtolower(trim((string) ($_POST['portal_time_format'] ?? 'h24')));
@@ -597,6 +597,7 @@ itm_hospitality_admin_layout_begin($crud_title);
 <div class="form-group">
 <label>Date positioning</label>
 <label class="itm-checkbox-control"><input type="radio" name="portal_date_format" value="european_ddmmyyyy" <?php echo $portalDateFormat === 'european_ddmmyyyy' ? 'checked' : ''; ?>> European — DD/MM/YYYY</label>
+<label class="itm-checkbox-control"><input type="radio" name="portal_date_format" value="european_ddmmmyyyy" <?php echo $portalDateFormat === 'european_ddmmmyyyy' ? 'checked' : ''; ?>> European — DD/MMM/YYYY</label>
 <label class="itm-checkbox-control"><input type="radio" name="portal_date_format" value="us_mmddyyyy" <?php echo $portalDateFormat === 'us_mmddyyyy' ? 'checked' : ''; ?>> US — MM/DD/YYYY</label>
 <label class="itm-checkbox-control"><input type="radio" name="portal_date_format" value="iso_yyyymmdd" <?php echo $portalDateFormat === 'iso_yyyymmdd' ? 'checked' : ''; ?>> ISO — YYYY-MM-DD</label>
 </div>
