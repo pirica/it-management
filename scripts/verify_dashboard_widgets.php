@@ -63,7 +63,7 @@ if (!is_file($queriesPath)) {
 }
 
 $registry = itm_dashboard_widget_registry();
-$expectedSlugs = ['my_open_tickets', 'expiring_30d', 'visitors_today', 'backup_tape_gaps'];
+$expectedSlugs = ['my_open_tickets', 'expiring_30d', 'patches_due_30d', 'visitors_today', 'backup_tape_gaps'];
 foreach ($expectedSlugs as $slug) {
     if (!isset($registry[$slug])) {
         dw_verify_fail('Registry missing widget slug: ' . $slug);
