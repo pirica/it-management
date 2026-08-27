@@ -140,6 +140,31 @@ if (!empty($normalized['errors'])) {
     ui_locale_pass('POST normalize enforces prefix/suffix and date format');
 }
 
+$expectedSaveBindTypes = 'iissssiiiiisssssiissiiiis';
+$uiConfigSource = file_get_contents(ROOT_PATH . 'includes/ui_config.php');
+if ($uiConfigSource === false) {
+    ui_locale_fail('Unable to read includes/ui_config.php');
+} else {
+    $saveFnStart = strpos($uiConfigSource, 'function itm_save_ui_configuration');
+    $saveFnChunk = $saveFnStart !== false ? substr($uiConfigSource, $saveFnStart, 8000) : '';
+    if ($saveFnChunk === '' || !preg_match("/mysqli_stmt_bind_param\(\s*\\\$stmt,\s*'([a-z]+)'/s", $saveFnChunk, $bindMatch)) {
+        ui_locale_fail('itm_save_ui_configuration bind_param type string not found');
+    } elseif ($bindMatch[1] !== $expectedSaveBindTypes) {
+        ui_locale_fail(
+            'itm_save_ui_configuration bind_param expected `' . $expectedSaveBindTypes . '` ('
+            . strlen($expectedSaveBindTypes) . ' types), got `' . $bindMatch[1] . '` ('
+            . strlen($bindMatch[1]) . ' types)'
+        );
+    } elseif (
+        !preg_match('/INSERT INTO ui_configuration \([^)]+\)\s+VALUES \(([^)]+)\)/s', $saveFnChunk, $valuesMatch)
+        || substr_count($valuesMatch[1], '?') !== strlen($expectedSaveBindTypes)
+    ) {
+        ui_locale_fail('itm_save_ui_configuration INSERT placeholder count does not match bind_param types');
+    } else {
+        ui_locale_pass('itm_save_ui_configuration bind_param matches 25 INSERT placeholders');
+    }
+}
+
 // Why: Modules read locale via $GLOBALS['ui_config'] through itm_format_date_display() / cell scalar hook.
 $sampleYmd = '2026-08-17';
 $formatCycles = [
