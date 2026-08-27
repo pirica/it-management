@@ -323,6 +323,22 @@ INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("vlans", "Vlans", 0, 1);
 
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("vlans_config", "VLAN Config", 0, 1);
+
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("vlans_uplink", "VLAN Uplink", 0, 1);
+
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("vlans_group_policy", "VLAN Group Policy", 0, 1);
+
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("vlans_vpn_mode", "VLAN VPN Mode", 0, 1);
+
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("vlans_per_port", "VLANs Per Port", 0, 1);
+
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("vlans_per_port_modules", "VLAN Per Port Modules", 0, 1);
+
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("vlans_per_port_types", "VLAN Per Port Types", 0, 1);
+
+INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("vlans_per_port_access_policies", "VLAN Per Port Access Policies", 0, 1);
+
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("warranty_types", "Warranty Types", 0, 1);
 
 INSERT INTO `modules_registry` (`module_slug`, `module_name`, `is_system_module`, `active`) VALUES ("workstation_device_types", "Workstation Device Types", 0, 1);
@@ -1243,6 +1259,14 @@ INNER JOIN (
       UNION ALL SELECT 'item' AS entry_type, 'employee_roles' AS entry_id, 'reference_data' AS section_id, 52 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'employee_sidebar_preferences' AS entry_id, 'reference_data' AS section_id, 53 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'vlans' AS entry_id, 'reference_data' AS section_id, 54 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'vlans_config' AS entry_id, 'reference_data' AS section_id, 54 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'vlans_uplink' AS entry_id, 'reference_data' AS section_id, 54 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'vlans_group_policy' AS entry_id, 'reference_data' AS section_id, 54 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'vlans_vpn_mode' AS entry_id, 'reference_data' AS section_id, 54 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'vlans_per_port' AS entry_id, 'reference_data' AS section_id, 54 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'vlans_per_port_modules' AS entry_id, 'reference_data' AS section_id, 54 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'vlans_per_port_types' AS entry_id, 'reference_data' AS section_id, 54 AS display_order
+      UNION ALL SELECT 'item' AS entry_type, 'vlans_per_port_access_policies' AS entry_id, 'reference_data' AS section_id, 54 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'warranty_types' AS entry_id, 'reference_data' AS section_id, 55 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'workstation_device_types' AS entry_id, 'reference_data' AS section_id, 56 AS display_order
       UNION ALL SELECT 'item' AS entry_type, 'workstation_modes' AS entry_id, 'reference_data' AS section_id, 57 AS display_order
@@ -1790,7 +1814,25 @@ INNER JOIN (
   UNION ALL SELECT 'IT Assistant', 'User'
 ) map ON map.`role_name` = src.`name` AND map.`target_name` = tgt.`name`;
 
-INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`, `created_at`) VALUES ('1', '1', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1', '2026-01-01 00:00:01');
+INSERT INTO `vlans_config` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('1', '1', 'Manual', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `vlans_config` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('1', '2', 'Auto', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `vlans_uplink` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('1', '1', 'Any', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `vlans_group_policy` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('1', '1', 'None', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `vlans_vpn_mode` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('1', '1', 'Enabled', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `vlans_vpn_mode` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('1', '2', 'Disabled', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `vlans_per_port_modules` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('1', '1', 'Built-in', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `vlans_per_port_types` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('1', '1', 'Access', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `vlans_per_port_access_policies` (`company_id`, `id`, `name`, `active`, `created_at`) VALUES ('1', '1', 'Open', '1', '2026-01-01 00:00:01');
+
+INSERT INTO `vlans` (`id`, `company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `config_id`, `uplink_id`, `group_policy_id`, `vpn_mode_id`, `active`, `created_at`) VALUES ('1', '1', '1', 'Factory Default', '#2E86DE', '192.168.10.0/24', '192.168.10.10', 'Primary office VLAN', '192.168.10.1', '1', '1', '1', '1', '1', '2026-01-01 00:00:01');
 
 INSERT INTO `ip_subnets` (`company_id`, `vlan_id`, `cidr`, `network_ip`, `prefix_length`, `gateway_ip`, `dns1_ip`, `dns2_ip`, `dhcp_enabled`, `description`, `active`, `created_at`) VALUES ('1', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '1', NULL, '1', '2026-01-01 00:00:01'),
 ('2', NULL, '192.168.10.0/24', '192.168.10.0', '24', '192.168.10.1', NULL, NULL, '1', NULL, '1', '2026-01-01 00:00:01'),
@@ -2566,7 +2608,21 @@ WHERE t.`company_id` = @replicate_source_company_id
         AND u.`employee_id` = e_target.`id`
   );
 
-INSERT IGNORE INTO `vlans` (`company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `active`, `created_at`) SELECT c.`id`, t.`vlan_number`, t.`vlan_name`, t.`vlan_color`, t.`subnet`, t.`ip`, t.`comments`, t.`gateway_ip`, t.`active`, '2026-01-01 00:00:01' FROM `vlans` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+INSERT IGNORE INTO `vlans_config` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `vlans_config` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+
+INSERT IGNORE INTO `vlans_uplink` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `vlans_uplink` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+
+INSERT IGNORE INTO `vlans_group_policy` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `vlans_group_policy` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+
+INSERT IGNORE INTO `vlans_vpn_mode` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `vlans_vpn_mode` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+
+INSERT IGNORE INTO `vlans_per_port_modules` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `vlans_per_port_modules` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+
+INSERT IGNORE INTO `vlans_per_port_types` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `vlans_per_port_types` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+
+INSERT IGNORE INTO `vlans_per_port_access_policies` (`company_id`, `name`, `active`, `created_at`) SELECT c.`id`, t.`name`, t.`active`, '2026-01-01 00:00:01' FROM `vlans_per_port_access_policies` t JOIN `companies` c ON c.`id` <> t.`company_id` WHERE t.`company_id` = @replicate_source_company_id;
+
+INSERT IGNORE INTO `vlans` (`company_id`, `vlan_number`, `vlan_name`, `vlan_color`, `subnet`, `ip`, `comments`, `gateway_ip`, `config_id`, `uplink_id`, `group_policy_id`, `vpn_mode_id`, `active`, `created_at`) SELECT c.`id`, t.`vlan_number`, t.`vlan_name`, t.`vlan_color`, t.`subnet`, t.`ip`, t.`comments`, t.`gateway_ip`, vc_target.`id`, vu_target.`id`, vgp_target.`id`, vvm_target.`id`, t.`active`, '2026-01-01 00:00:01' FROM `vlans` t JOIN `companies` c ON c.`id` <> t.`company_id` LEFT JOIN `vlans_config` vc_source ON vc_source.`id` = t.`config_id` LEFT JOIN `vlans_config` vc_target ON vc_target.`company_id` = c.`id` AND vc_target.`name` = vc_source.`name` LEFT JOIN `vlans_uplink` vu_source ON vu_source.`id` = t.`uplink_id` LEFT JOIN `vlans_uplink` vu_target ON vu_target.`company_id` = c.`id` AND vu_target.`name` = vu_source.`name` LEFT JOIN `vlans_group_policy` vgp_source ON vgp_source.`id` = t.`group_policy_id` LEFT JOIN `vlans_group_policy` vgp_target ON vgp_target.`company_id` = c.`id` AND vgp_target.`name` = vgp_source.`name` LEFT JOIN `vlans_vpn_mode` vvm_source ON vvm_source.`id` = t.`vpn_mode_id` LEFT JOIN `vlans_vpn_mode` vvm_target ON vvm_target.`company_id` = c.`id` AND vvm_target.`name` = vvm_source.`name` WHERE t.`company_id` = @replicate_source_company_id;
 
 -- Why: Remove catalog rows whose FK parents belong to another company (legacy replicate row or partial import).
 DELETE c FROM `catalogs` c
