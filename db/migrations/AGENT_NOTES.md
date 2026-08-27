@@ -31,6 +31,7 @@ Historical migration SQL files were **pruned** once live databases matched canon
 | `short_url.sql` | `short_urls`, `short_url_clicks`, `short_url_settings`, `qr_codes.short_url_id` — Short URLs module + QR back-link (destructive to `qr_codes` / `qr_code_scans`) |
 | `employee_sidebar_preferences_is_collapsed.sql` | `employee_sidebar_preferences.is_collapsed` — per-section fold for double-click sidebar collapse (destructive DROP+CREATE) |
 | `hotel_booking_portal_date_ddmmmyyyy.sql` | `hotel_booking_settings.portal_date_format` adds `european_ddmmmyyyy` (DD/MMM/YYYY) |
+| `ui_configuration_locale_format.sql` | `ui_configuration` locale display columns (money symbol + suffix/prefix, date/time, combined datetime toggles + default) — destructive DROP+CREATE; Settings UI Configuration; helpers in `includes/itm_ui_locale_format.php` |
 
 ## 12. Module Owner Notes
 

@@ -212,10 +212,14 @@ if (!function_exists('itm_datetime_input_local_value')) {
 
 if (!function_exists('itm_format_date_display')) {
     /**
-     * Display a stored or raw date as dd/mmm/yyyy (PHP d/M/Y — e.g. 18/Jun/2026).
+     * Display a stored or raw date using per-employee ui_configuration locale when set.
      */
     function itm_format_date_display($rawValue)
     {
+        if (function_exists('itm_ui_locale_format_date_display')) {
+            return itm_ui_locale_format_date_display($rawValue);
+        }
+
         $canonical = itm_parse_date_input($rawValue);
         if ($canonical === null) {
             $text = trim((string)$rawValue);
@@ -254,10 +258,14 @@ if (!function_exists('itm_format_hotel_date_display')) {
 
 if (!function_exists('itm_format_datetime_display')) {
     /**
-     * Display a stored or raw datetime as dd/mmm/yyyy HH:mm.
+     * Display a stored or raw datetime using per-employee ui_configuration locale when set.
      */
     function itm_format_datetime_display($rawValue)
     {
+        if (function_exists('itm_ui_locale_format_datetime_display')) {
+            return itm_ui_locale_format_datetime_display($rawValue);
+        }
+
         $raw = trim((string)$rawValue);
         if ($raw === '' || $raw === '0000-00-00 00:00:00') {
             return '';
@@ -279,11 +287,17 @@ if (!function_exists('itm_format_datetime_display')) {
 
 if (!function_exists('itm_format_audit_timestamp_display')) {
     /**
-     * Display audit stamps (created_at / updated_at / deleted_at) as dd/mmm/yyyy - HH:MM:SS.
-     * NULL or empty → blank.
+     * Display audit stamps using the configured datetime style (seconds + dash separator).
      */
     function itm_format_audit_timestamp_display($rawValue)
     {
+        if (function_exists('itm_ui_locale_format_datetime_display')) {
+            $formatted = itm_ui_locale_format_datetime_display($rawValue, null, 'audit');
+            if ($formatted !== '') {
+                return $formatted;
+            }
+        }
+
         $raw = trim((string)($rawValue ?? ''));
         if ($raw === '' || $raw === '0000-00-00' || $raw === '0000-00-00 00:00:00') {
             return '';
